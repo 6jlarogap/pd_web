@@ -4,3 +4,5 @@ tmp
 ENV
 .idea
 build
+pd/media
+pd/static

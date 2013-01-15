@@ -1,0 +1,8 @@
+Django==1.4.3
+Pillow==1.7.8
+South==0.7.6
+argparse==1.2.1
+distribute==0.6.24
+docutils==0.10
+pytils==0.2.3
+wsgiref==0.1.2
