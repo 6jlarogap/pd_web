@@ -1,3 +1,5 @@
 local_settings.py
 *.pyc
 tmp
+ENV
+build
