@@ -32,7 +32,10 @@ def deploy():
     local('git pull')
     local('git push')
 
-    local('cd wiki && git commit -a -m "docs update"')
+    try:
+        local('cd wiki && git commit -a -m "docs update"')
+    except:
+        pass
     local('cd wiki && git pull')
     local('cd wiki && git push')
 
