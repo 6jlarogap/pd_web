@@ -17,6 +17,9 @@ import os
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "pd.settings")
 
+activate_this = os.path.join(os.path.dirname(__file__), '..', '..', 'ENV', 'bin', 'activate_this.py')
+execfile(activate_this, dict(__file__=activate_this))
+
 # This application object is used by any WSGI server configured to use this
 # file. This includes Django's development server, if the WSGI_APPLICATION
 # setting points here.
