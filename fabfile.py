@@ -33,6 +33,7 @@ def deploy():
     local('git push')
 
     with cd('wiki'):
+        local('git commit -a -m "docs update"')
         local('git pull')
         local('git push')
 
