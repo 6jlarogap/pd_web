@@ -29,9 +29,9 @@ def sshagent_run(cmd):
             local('ssh -A %s "%s"' % (h, cmd))
 
 def deploy():
-    local('git push')
+    local('git pull')
     local('git push')
 
     local('ssh-add')
-    sshagent_run('cd /home/www-data/django/pd_web/ && git pull')
+    sshagent_run('cd /home/www-data/django/pd_web/ && sudo -u www-data git pull')
     run('sudo /etc/init.d/apache2 reload')
