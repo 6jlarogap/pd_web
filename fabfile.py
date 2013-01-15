@@ -32,10 +32,9 @@ def deploy():
     local('git pull')
     local('git push')
 
-    with cd('wiki'):
-        local('git commit -a -m "docs update"')
-        local('git pull')
-        local('git push')
+    local('cd wiki && git commit -a -m "docs update"')
+    local('cd wiki && git pull')
+    local('cd wiki && git push')
 
     local('ssh-add')
     sshagent_run('cd /home/www-data/django/pd_web/ && sudo -u www-data git pull')
