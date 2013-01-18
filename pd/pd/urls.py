@@ -6,7 +6,7 @@ from django.conf import settings
 from django.contrib import admin
 admin.autodiscover()
 
-from organizations.backends import invitation_backend
+from organizations.backends import invitation_backend, registration_backend
 
 urlpatterns = patterns('')
 
@@ -55,6 +55,7 @@ urlpatterns += patterns('',
 urlpatterns += patterns('',
     url(r'^accounts/', include('organizations.urls')),
     url(r'^invitations/', include(invitation_backend().get_urls())),
+    url(r'^registration/', include(registration_backend().get_urls())),
 )
 
 if settings.DEBUG:

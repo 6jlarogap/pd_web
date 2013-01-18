@@ -1,4 +1,7 @@
 {% extends "base.html" %}
+
+{% load i18n %}
+
 {% block scripts %}
 <script type="text/javascript" src="/media/js/jquery-1.4.4.min.js"></script>
 <script type="text/javascript" charset="utf-8">
@@ -22,5 +25,9 @@ $(function(){
             <label for="id_password">Пароль:</label> <input type="password" name="password" id="id_password" />
         </p>
         <input type="submit" value="Войти" />
+
+        <p>
+            <a href="{% url registration_create %}">{% trans "Register" %}</a>
+        </p>
 </form>
 {% endblock %}

@@ -17,6 +17,9 @@ DATABASES = {
         'PASSWORD': '',                  # Not used with sqlite3.
         'HOST': '',                      # Set to empty string for localhost. Not used with sqlite3.
         'PORT': '',                      # Set to empty string for default. Not used with sqlite3.
+        'OPTIONS': {
+            'autocommit': True,
+        },
     }
 }
 
@@ -79,7 +82,7 @@ INSTALLED_APPS = (
     'django.contrib.admindocs',
 
     'south',
-    'orgs',
+    'organizations',
     'pytils',
     'debug_toolbar',
 
@@ -114,7 +117,11 @@ LOGGING = {
     }
 }
 
+SOUTH_TESTS_MIGRATE = False
+
 INTERNAL_IPS = []
+
+REGISTRATION_BACKEND = 'pd.reg_backend.OrgRegBackend'
 
 LOGIN_URL = "/login/"
 LOGOUT_URL = "/logout/"
@@ -142,3 +149,6 @@ try:
 except ImportError:
     pass
 
+import sys
+if len(sys.argv) > 1 and sys.argv[1] == 'test':
+    from test_settings import *

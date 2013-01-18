@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% load i18n %}
+
+{% block scripts %}
+    <script type="text/javascript" src="/media/js/jquery-1.4.4.min.js"></script>
+    <script type="text/javascript" charset="utf-8">
+        $(function(){
+            $("#id_username").focus();
+        })
+    </script>
+{% endblock %}
+
+{% block title %}Вход в систему{% endblock %}
+{% block h1 %}Вход в систему:{% endblock %}
+{% block content %}
+    <form method="post" action="">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <input type="submit" value="Войти" />
+
+        <p>
+            <a href="{% url ulogin %}">{% trans "Log in" %}</a>
+        </p>
+    </form>
+{% endblock %}

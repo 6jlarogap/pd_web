@@ -2,6 +2,7 @@
 import datetime
 import urllib
 
+from django.views.generic import ListView
 from django.contrib.auth import login, logout
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.decorators import login_required, user_passes_test
@@ -12,7 +13,6 @@ from django.db.models import Count
 from django.db.models.query_utils import Q
 from django.shortcuts import redirect, render, get_object_or_404
 from django.utils.safestring import mark_safe
-from django.views.generic import object_list
 from django.utils import simplejson
 from django.http import HttpResponse, HttpResponseRedirect
 from django.contrib import messages
@@ -43,8 +43,8 @@ def ulogin(request):
     else:
         form = AuthenticationForm()
         request.session.set_test_cookie()
-    return render(request, 'login.html', {'form':
-                                                      form})
+    return render(request, 'login.html', {'form':form})
+
 @login_required
 def ulogout(request):
     """
@@ -54,122 +54,134 @@ def ulogout(request):
     next_url = request.GET.get("next", "/")
     return redirect(next_url)
 
-def main_page(request):
+class SearchView(ListView):
     """
-    Главная страница.
+    Поиск захоронений
     """
 
-    burials = Burial.objects.all()
-    paginate_by = 10
-    if request.user.is_authenticated():
-        p, _tmp = UserProfile.objects.get_or_create(user=request.user)
-        initial = {'records_order_by': p.records_order_by, 'per_page': p.records_per_page}
-        paginate_by = int(p.records_per_page or paginate_by)
-    else:
-        initial = None
-    form = SearchForm(request.GET or None, initial=initial)
-    if form.data and form.is_valid():
-        if form.cleaned_data['operation']:
-            burials = burials.filter(operation=form.cleaned_data['operation'])
-        if form.cleaned_data['customer_type']:
-            ct = form.cleaned_data['customer_type']
-            burials = burials.filter(**{ct + '__isnull': False})
-        if form.cleaned_data['fio']:
-            fio = [f.strip('.') for f in form.cleaned_data['fio'].split(' ')]
-            q = Q()
-            if len(fio) > 2:
-                q &= Q(person__middle_name__icontains=fio[2])
-            if len(fio) > 1:
-                q &= Q(person__first_name__icontains=fio[1])
-            if len(fio) > 0:
-                q &= Q(person__last_name__icontains=fio[0])
-            burials = burials.filter(q)
-        if form.cleaned_data['birth_date_from']:
-            burials = burials.filter(person__birth_date__gte=form.cleaned_data['birth_date_from'])
-        if form.cleaned_data['birth_date_to']:
-            burials = burials.filter(person__birth_date__lte=form.cleaned_data['birth_date_to'])
-        if form.cleaned_data['death_date_from']:
-            burials = burials.filter(person__death_date__gte=form.cleaned_data['death_date_from'])
-        if form.cleaned_data['death_date_to']:
-            burials = burials.filter(person__death_date__lte=form.cleaned_data['death_date_to'])
-        if form.cleaned_data['burial_date_from']:
-            burials = burials.filter(date_fact__gte=form.cleaned_data['burial_date_from'])
-        if form.cleaned_data['burial_date_to']:
-            burials = burials.filter(date_fact__lte=form.cleaned_data['burial_date_to'])
-        if form.cleaned_data['account_number_from']:
-            burials = burials.filter(account_number__gte=form.cleaned_data['account_number_from'])
-        if form.cleaned_data['account_number_to']:
-            burials = burials.filter(account_number__lte=form.cleaned_data['account_number_to'])
-        if form.cleaned_data['customer']:
-            if not form.cleaned_data['customer_type'] or form.cleaned_data['customer_type'] == 'client_person':
-                q = Q(client_person__last_name__icontains=form.cleaned_data['customer'])
-            else:
-                q = Q()
-
-            if not form.cleaned_data['customer_type'] or form.cleaned_data['customer_type'] == 'client_organization':
-                oq = Q(name__icontains=form.cleaned_data['customer'])
-                orgs = list(Organization.objects.filter(oq))
-
-                aq = Q(person__last_name__icontains=form.cleaned_data['customer'])
-                aq |= Q(organization__name__icontains=form.cleaned_data['customer'])
-                agents = list(Agent.objects.filter(aq))
-
-                q = q | Q(agent__in=agents) | Q(client_organization__in=orgs)
-
-            burials = burials.filter(q).distinct()
-        if form.cleaned_data['responsible']:
-            burials = burials.filter(place__responsible__last_name__icontains=form.cleaned_data['responsible'])
-        if form.cleaned_data['cemetery']:
-            burials = burials.filter(place__cemetery=form.cleaned_data['cemetery'])
-        if form.cleaned_data['area']:
-            burials = burials.filter(place__area=form.cleaned_data['area'])
-        if form.cleaned_data['row']:
-            burials = burials.filter(place__row=form.cleaned_data['row'])
-        if form.cleaned_data['seat']:
-            burials = burials.filter(place__seat=form.cleaned_data['seat'])
-        if form.cleaned_data['no_exhumated']:
-            burials = burials.filter(exhumated_date__isnull=True)
-        if form.cleaned_data['no_last_name']:
-            burials = burials.filter(person__last_name='')
-
-        if form.cleaned_data['deleted']:
-            burials = burials.filter(deleted=True)
+    def get_template_names(self):
+        if self.request.REQUEST.get('print'):
+            return 'burials_print.html'
         else:
-            burials = burials.filter(deleted=False)
+            return 'burials.html'
 
-        if form.cleaned_data['unowned']:
-            burials = burials.filter(place__unowned=True)
+    def get_paginate_by(self, queryset):
+        paginate_by = 10
+        if self.request.user.is_authenticated():
+            p, _tmp = UserProfile.objects.get_or_create(user=self.request.user)
+            paginate_by = int(p.records_per_page or paginate_by)
+        if self.request.REQUEST.get('per_page'):
+            paginate_by = int(self.request.REQUEST.get('per_page'))
+        return paginate_by
 
-        if form.cleaned_data['no_responsible']:
-            burials = burials.filter(place__responsible__isnull=True)
-
-        if form.cleaned_data['creator']:
-            burials = burials.filter(creator=form.cleaned_data['creator'])
-
-        if form.cleaned_data['records_order_by']:
-            burials = burials.order_by(form.cleaned_data['records_order_by'])
-        if form.cleaned_data['per_page']:
-            paginate_by = int(form.cleaned_data['per_page'])
-    else:
-        burials = Burial.objects.none()
-
-    result = {
-        "form": form,
-        "close": request.GET.get('close'),
-        "GET_PARAMS": urllib.urlencode([(k, v.encode('utf-8')) for k,v in request.GET.items() if k != 'page']),
-    }
-
-    if request.REQUEST.get('print'):
-        return render(request, 'burials_print.html', {
-            'object_list': burials,
+    def get_context_data(self, **kwargs):
+        data = super(SearchView, self).get_context_data(**kwargs)
+        if self.request.user.is_authenticated():
+            p, _tmp = UserProfile.objects.get_or_create(user=self.request.user)
+            initial = {'records_order_by': p.records_order_by, 'per_page': p.records_per_page}
+        else:
+            initial = None
+        data.update({
+            "form": SearchForm(self.request.GET or None, initial=initial),
+            "close": self.request.GET.get('close'),
+            "GET_PARAMS": urllib.urlencode([(k, v.encode('utf-8')) for k,v in self.request.GET.items() if k != 'page']),
         })
+        return data
 
-    return object_list(request,
-        template_name='burials.html',
-        queryset=burials,
-        paginate_by=paginate_by,
-        extra_context=result,
-    )
+    def get_queryset(self):
+        burials = Burial.objects.all()
+        if self.request.user.is_authenticated():
+            p, _tmp = UserProfile.objects.get_or_create(user=self.request.user)
+            initial = {'records_order_by': p.records_order_by, 'per_page': p.records_per_page}
+        else:
+            initial = None
+        form = SearchForm(self.request.GET or None, initial=initial)
+        if form.data and form.is_valid():
+            if form.cleaned_data['operation']:
+                burials = burials.filter(operation=form.cleaned_data['operation'])
+            if form.cleaned_data['customer_type']:
+                ct = form.cleaned_data['customer_type']
+                burials = burials.filter(**{ct + '__isnull': False})
+            if form.cleaned_data['fio']:
+                fio = [f.strip('.') for f in form.cleaned_data['fio'].split(' ')]
+                q = Q()
+                if len(fio) > 2:
+                    q &= Q(person__middle_name__icontains=fio[2])
+                if len(fio) > 1:
+                    q &= Q(person__first_name__icontains=fio[1])
+                if len(fio) > 0:
+                    q &= Q(person__last_name__icontains=fio[0])
+                burials = burials.filter(q)
+            if form.cleaned_data['birth_date_from']:
+                burials = burials.filter(person__birth_date__gte=form.cleaned_data['birth_date_from'])
+            if form.cleaned_data['birth_date_to']:
+                burials = burials.filter(person__birth_date__lte=form.cleaned_data['birth_date_to'])
+            if form.cleaned_data['death_date_from']:
+                burials = burials.filter(person__death_date__gte=form.cleaned_data['death_date_from'])
+            if form.cleaned_data['death_date_to']:
+                burials = burials.filter(person__death_date__lte=form.cleaned_data['death_date_to'])
+            if form.cleaned_data['burial_date_from']:
+                burials = burials.filter(date_fact__gte=form.cleaned_data['burial_date_from'])
+            if form.cleaned_data['burial_date_to']:
+                burials = burials.filter(date_fact__lte=form.cleaned_data['burial_date_to'])
+            if form.cleaned_data['account_number_from']:
+                burials = burials.filter(account_number__gte=form.cleaned_data['account_number_from'])
+            if form.cleaned_data['account_number_to']:
+                burials = burials.filter(account_number__lte=form.cleaned_data['account_number_to'])
+            if form.cleaned_data['customer']:
+                if not form.cleaned_data['customer_type'] or form.cleaned_data['customer_type'] == 'client_person':
+                    q = Q(client_person__last_name__icontains=form.cleaned_data['customer'])
+                else:
+                    q = Q()
+
+                if not form.cleaned_data['customer_type'] or form.cleaned_data['customer_type'] == 'client_organization':
+                    oq = Q(name__icontains=form.cleaned_data['customer'])
+                    orgs = list(Organization.objects.filter(oq))
+
+                    aq = Q(person__last_name__icontains=form.cleaned_data['customer'])
+                    aq |= Q(organization__name__icontains=form.cleaned_data['customer'])
+                    agents = list(Agent.objects.filter(aq))
+
+                    q = q | Q(agent__in=agents) | Q(client_organization__in=orgs)
+
+                burials = burials.filter(q).distinct()
+            if form.cleaned_data['responsible']:
+                burials = burials.filter(place__responsible__last_name__icontains=form.cleaned_data['responsible'])
+            if form.cleaned_data['cemetery']:
+                burials = burials.filter(place__cemetery=form.cleaned_data['cemetery'])
+            if form.cleaned_data['area']:
+                burials = burials.filter(place__area=form.cleaned_data['area'])
+            if form.cleaned_data['row']:
+                burials = burials.filter(place__row=form.cleaned_data['row'])
+            if form.cleaned_data['seat']:
+                burials = burials.filter(place__seat=form.cleaned_data['seat'])
+            if form.cleaned_data['no_exhumated']:
+                burials = burials.filter(exhumated_date__isnull=True)
+            if form.cleaned_data['no_last_name']:
+                burials = burials.filter(person__last_name='')
+
+            if form.cleaned_data['deleted']:
+                burials = burials.filter(deleted=True)
+            else:
+                burials = burials.filter(deleted=False)
+
+            if form.cleaned_data['unowned']:
+                burials = burials.filter(place__unowned=True)
+
+            if form.cleaned_data['no_responsible']:
+                burials = burials.filter(place__responsible__isnull=True)
+
+            if form.cleaned_data['creator']:
+                burials = burials.filter(creator=form.cleaned_data['creator'])
+
+            if form.cleaned_data['records_order_by']:
+                burials = burials.order_by(form.cleaned_data['records_order_by'])
+        else:
+            burials = Burial.objects.none()
+
+        return burials
+
+main_page = SearchView.as_view()
 
 @login_required
 @user_passes_test(lambda u: u.has_perm('burials.add_burial'))
@@ -275,7 +287,7 @@ def new_burial_place(request):
 
     return render(request, 'burial_create_place.html', {
         'place_form': place_form,
-        })
+    })
 
 @login_required
 def new_burial_person(request):

@@ -119,137 +119,6 @@ class BurialForm(forms.ModelForm):
             'agent': forms.HiddenInput(),
         }
 
-    def clean_account_number(self):
-        a = self.cleaned_data['account_number']
-        if not a:
-            return a
-        if len(a) != 8:
-            raise forms.ValidationError(u"Необходимо ровно 8 цифр")
-        if not a.isdigit():
-            raise forms.ValidationError(u"Допустимы только цифры")
-        if a.endswith('0000'):
-            raise forms.ValidationError(u"Последние 4 цифры не могут быть нулями")
-
-
-        place = Place.objects.get(pk=self.data['place'])
-        burials = Burial.objects.all().filter(place__cemetery=place.cemetery)
-        if self.instance:
-            burials = burials.exclude(pk=self.instance.pk)
-        try:
-            burials.filter(account_number=a)[0]
-        except IndexError:
-            return a
-        else:
-            raise forms.ValidationError(u"Этот номер уже используется")
-
-    def clean(self):
-        account_number = self.cleaned_data.get('account_number')
-        if account_number and self.cleaned_data.get('date_fact'):
-            if str(account_number)[:4] != str(self.cleaned_data['date_fact'].year):
-                raise forms.ValidationError(u"Номер не соответствует дате")
-
-        if not account_number:
-            try:
-                account_number = unicode(int(Burial.objects.filter(deleted=False).order_by('-account_number')[0].account_number) + 1)
-            except:
-                pass
-
-        customer = self.cleaned_data.get('client_person')
-        try:
-            personid = customer and customer.personid or None
-        except ObjectDoesNotExist:
-            personid = None
-        if customer and personid and personid.date and self.cleaned_data.get('date_fact'):
-            try:
-                if personid.date < self.cleaned_data['date_fact'] - datetime.timedelta(75 * 365):
-                    raise forms.ValidationError(u"Дата документа заказчика раньше 75 лет до даты захоронения")
-            except ObjectDoesNotExist:
-                pass
-
-        place = self.cleaned_data.get('place')
-        if place and place.seat:
-            if self.cleaned_data.get('operation').op_type == u'Захоронение':
-                others = Burial.objects.filter(place=place).select_related()
-                if self.instance and self.instance.pk:
-                    others = others.exclude(pk=self.instance.pk)
-                if any(filter(lambda o: not o.operation.is_empty(), others)):
-                    raise forms.ValidationError(u"Место не пустое, Операция не должна быть \"Захоронение\"")
-
-            if account_number and account_number < place.seat:
-                raise forms.ValidationError(u"Рег. № меньше номера места")
-
-        operation = self.cleaned_data.get('operation')
-        if operation and place:
-            try:
-                instance_op = self.instance.operation
-            except ObjectDoesNotExist:
-                instance_op = None
-            old_empty = not self.instance or not instance_op or instance_op.is_empty()
-            try:
-                instance_place = self.instance.place
-            except ObjectDoesNotExist:
-                instance_place = None
-            global_change = not self.instance or not self.instance.pk or instance_op != operation or instance_place != place
-            rooms_free = place.rooms_free
-            if not operation.is_empty() and old_empty and rooms_free <= 0 and global_change:
-                raise forms.ValidationError(u"Нет свободных могил в указанном месте")
-
-            if operation.is_empty() and not place.seat:
-                raise forms.ValidationError(u"Для указанного типа захоронения необходим номер места")
-
-            if operation.is_empty() and self.cleaned_data['date_fact']:
-                min_date = min([b.date_fact for b in place.burial_set.all() if not b.operation.is_empty()], None)
-                if min_date and self.cleaned_data['date_fact'] < min_date:
-                    raise forms.ValidationError(u"В указанном месте должно быть хотя бы одно Захоронение раньше, чем это Подзахоронение")
-
-        if self.cleaned_data['date_fact'] and self.cleaned_data['exhumated_date']:
-            if self.cleaned_data['date_fact'] >= self.cleaned_data['exhumated_date']:
-                raise forms.ValidationError(u"Дата эксгумации должна быть позже даты захоронения")
-
-        place = self.cleaned_data.get('place')
-        if account_number:
-            an = account_number
-        else:
-            an = Burial(place=self.cleaned_data['place']).generate_account_number()
-        if an and place and place.seat and place.seat != an and operation.op_type == u'Захоронение':
-            raise forms.ValidationError(u"Для Захоронений номер места должен совпадать с учетным номером захоронения")
-
-        if self.cleaned_data['date_fact'] and self.cleaned_data['doverennost']:
-            if self.cleaned_data['date_fact'] >= datetime.date.today():
-                if self.cleaned_data['agent']:
-                    dov =  self.cleaned_data['doverennost']
-                    if not dov or not dov.number or not dov.issue_date or not dov.expire_date:
-                        raise forms.ValidationError(u"Для неархивных захоронений необходимы данные доверенности агента")
-
-        if self.cleaned_data['date_fact'] and self.cleaned_data['doverennost']:
-            dov = self.cleaned_data['doverennost']
-            doc_date = min(self.cleaned_data['date_fact'], datetime.date.today())
-            if dov.expire_date and doc_date > dov.expire_date:
-                raise forms.ValidationError(u"Дата окончания действия доверенности раньше даты захоронения")
-            if dov.issue_date and self.cleaned_data['date_fact'] < dov.issue_date:
-                raise forms.ValidationError(u"Дата выпуска доверенности позже даты захоронения")
-
-        person = self.cleaned_data.get('person')
-        if person and person.first_name or person.first_name or person.first_name:
-            kwargs = dict(
-                date_fact = self.cleaned_data['date_fact'],
-                place__cemetery = self.cleaned_data['place'].cemetery,
-                person__first_name = self.cleaned_data['person'].first_name,
-                person__last_name = self.cleaned_data['person'].last_name,
-                person__middle_name = self.cleaned_data['person'].middle_name,
-                person__birth_date = self.cleaned_data['person'].birth_date,
-                person__death_date = self.cleaned_data['person'].death_date,
-            )
-            duplicates = Burial.objects.filter(**kwargs)
-            if self.instance and self.instance.pk:
-                duplicates = duplicates.exclude(pk=self.instance.pk)
-            if duplicates.exists() and not self.cleaned_data['allow_duplicates']:
-                self.duplicates_found = True
-                self.duplicates_list = duplicates
-                raise forms.ValidationError(u"Обнаружены дубликаты")
-
-        return self.cleaned_data
-
     def __init__(self, *args, **kwargs):
         instance = kwargs.get('instance')
         if instance and instance.pk and instance.place and instance.place.responsible:
@@ -275,14 +144,8 @@ class BurialForm(forms.ModelForm):
         return burial
 
 class PersonForm(forms.ModelForm):
-    instance = forms.ChoiceField(widget=forms.RadioSelect, required=False)
     birth_date = UnclearDateField(label=u"Дата рождения", required=False)
     skip_last_name = forms.BooleanField(label=u"Фамилия не известна", initial=False, required=False)
-
-    INSTANCE_CHOICES = [
-        ('', u'Не выбрано'),
-        ('NEW', u'Новый'),
-    ]
 
     class Meta:
         model = Person
@@ -291,95 +154,17 @@ class PersonForm(forms.ModelForm):
         }
 
     def __init__(self, dead=None, need_name=False, *args, **kwargs):
-        data = dict(kwargs.get('data') or {})
-        instance_pk = data.get('instance')
-        self.need_name = need_name
-        if instance_pk and instance_pk not in [None, '', 'NEW']:
-            kwargs['instance'] = Person.objects.get(pk=instance_pk)
-            kwargs['instance'].birth_date = kwargs['instance'].unclear_birth_date
-
-            real_initial = kwargs.get('initial', {}).copy()
-            kwargs['initial'] = model_to_dict(kwargs['instance'], [], [])
-            kwargs['initial'].update({'instance': instance_pk})
-            if data and not data.get('last_name') and not data.get('skip_last_name'):
-                old_data = dict(kwargs['data'].copy())
-                old_data.update(kwargs['initial'])
-                kwargs['data'] = old_data
-            kwargs['initial'].update(real_initial)
-
-        super(PersonForm, self).__init__(*args, **kwargs)
-        self.data = dict(self.data.items())
-        if not any(self.data.values()) or self.data.keys() == ['instance']:
-            if not self.initial.keys() == ['death_date']:
-                self.data = self.initial.copy()
-        if self.data and self.data.get('last_name') or self.data.get('instance') or self.data.get('skip_last_name'):
+        if self.data and self.data.get('last_name'):
             person_kwargs = {
                 'first_name__istartswith': self.data.get('first_name', ''),
                 'last_name__istartswith': self.data.get('last_name', ''),
                 'middle_name__istartswith': self.data.get('middle_name', ''),
             }
-            if self.data.get('instance') not in [None, '', 'NEW']:
-                self.instance = Person.objects.get(pk=self.data.get('instance'))
-                self.fields['instance'].choices = self.INSTANCE_CHOICES + [
-                    (str(p.pk), self.full_person_data(p)) for p in Person.objects.filter(pk=self.data.get('instance'))
-                ]
-                if not self.data.get('selected'):
-                    self.data = None
-                    self.is_bound = False
-                    dead = self.initial and self.initial.get('death_date')
-                    self.initial = model_to_dict(self.instance, self._meta.fields, self._meta.exclude)
-                    self.initial.update({
-                        'instance': self.instance.pk,
-                        'death_date': dead,
-                        'birth_date': self.instance.unclear_birth_date
-                    })
-            else:
-                if self.data.get('instance') == 'NEW':
-                    if dead and not self.data.get('death_date') :
-                        self.data['death_date'] = datetime.date.today() - datetime.timedelta(1)
-                if self.data and self.data.get('skip_last_name'):
-                    self.fields['instance'].choices = self.INSTANCE_CHOICES
-                else:
-                    self.fields['instance'].choices = self.INSTANCE_CHOICES + [
-                        (str(p.pk), self.full_person_data(p)) for p in Person.objects.filter(**person_kwargs)
-                    ]
-        else:
-            self.fields['instance'].widget = forms.HiddenInput()
-
-        if self.instance and not self.instance.last_name:
-            self.fields['last_name'].required = False
-            self.fields['skip_last_name'].initial = True
-
-        if self.data and self.data.get('skip_last_name'):
-            self.fields['last_name'].required = False
-
-    def full_person_data(self, p):
-        dates = ''
-        if p.get_birth_date():
-            if p.death_date:
-                dates = '%s - %s' % (p.get_birth_date().strftime('%d.%m.%Y'), p.death_date.strftime('%d.%m.%Y'))
-            else:
-                dates = u'род. %s' % p.get_birth_date().strftime('%d.%m.%Y')
-        else:
-            if p.death_date:
-                dates = u'ум. %s' % p.death_date.strftime('%d.%m.%Y')
-
-        if dates:
-            dates = u'%s, ' % dates
-
-        params = (p.full_name_complete(), dates, p.address or u'', self.get_person_status(p))
-        return u'%s (%sадрес: %s), Статус: %s' % params
-
-    def get_person_status(self, p):
-        if p.buried.filter(exhumated_date__isnull=False).count() > 0:
-            return u'Эксгумированный'
-        if p.buried.all().count() > 0:
-            return u'Усопший'
-        if p.ordr_customer.all().count() > 0:
-            return u'Заказчик'
-        if p.place_set.all().count() > 0:
-            return u'Ответственный'
-        return u'Н/д'
+            try:
+                kwargs['instance'] = Person.objects.get(**person_kwargs)
+            except Person.DoesNotExist:
+                pass
+        super(PersonForm, self).__init__(*args, **kwargs)
 
     def clean_birth_date(self):
         if self.cleaned_data.get('birth_date') and self.cleaned_data['birth_date'] >= datetime.date.today():
@@ -398,27 +183,10 @@ class PersonForm(forms.ModelForm):
             if self.cleaned_data['birth_date'] < self.cleaned_data['death_date'] - datetime.timedelta(365*150):
                 raise forms.ValidationError(u"Дата рождения раньше 150 лет до даты смерти")
 
-        if self.need_name and self.cleaned_data['last_name'].replace('*', '').replace(' ', '') == '':
+        if self.cleaned_data['last_name'].replace('*', '').replace(' ', '') == '':
             raise forms.ValidationError(u"Нужно указать ФИО")
 
         return self.cleaned_data
-
-    def is_valid(self):
-        if not self.is_bound or not self.data:
-            return False
-
-        if not self.data.get('instance'):
-            return False
-
-        if not self.data.get('selected'):
-            return False
-
-        return super(PersonForm, self).is_valid()
-
-    def is_selected(self):
-        is_old = self.instance and self.instance.pk
-        is_new = self.data and self.data.get('instance')
-        return is_old or is_new or False
 
     def save(self, location=None, commit=True):
         person = super(PersonForm, self).save(commit=False)
