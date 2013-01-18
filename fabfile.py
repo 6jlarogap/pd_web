@@ -22,11 +22,13 @@ def sshagent_run(cmd):
             try:
                 # catch username too
                 user, real_host = host.split('@')
-                local('ssh -p %s -A %s -l %s "%s"' % (port, real_host, user, cmd))
+                cmd_line = 'ssh -p %s -A %s -l %s "%s"' % (port, real_host, user, cmd)
             except ValueError:
-                local('ssh -p %s -A %s "%s"' % (port, host, cmd))
+                cmd_line = 'ssh -p %s -A %s "%s"' % (port, host, cmd)
         except ValueError:
-            local('ssh -A %s "%s"' % (h, cmd))
+            cmd_line = 'ssh -A %s "%s"' % (h, cmd)
+        print 'Running', cmd_line
+        local(cmd_line)
 
 def deploy():
     local('git pull')

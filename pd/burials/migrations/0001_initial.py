@@ -7,6 +7,11 @@ from django.db import models
 
 class Migration(SchemaMigration):
 
+    depends_on = (
+        ('persons', '0001_initial'),
+        ('orgs', '0001_initial'),
+    )
+
     def forwards(self, orm):
         # Adding model 'Cemetery'
         db.create_table(u'burials_cemetery', (
