@@ -1,32 +1,34 @@
-from django.contrib.sites.models import Site
+from django.contrib.sites.models import Site, RequestSite
 from django.shortcuts import redirect, render
 
-from organizations.backends.defaults import RegistrationBackend
-from organizations.backends.forms import OrganizationRegistrationForm
-from organizations.utils import create_organization
+from registration.backends.default import DefaultBackend
+
+from pd.forms import OrgRegForm
+from registration.models import RegistrationProfile
+from registration.signals import user_registered
 
 
-class OrgRegBackend(RegistrationBackend):
-    def create_view(self, request):
-        """
-        Initiates the organization and user account creation process
-        """
-        if request.user.is_authenticated():
-            return redirect("organization_add")
-        form = OrganizationRegistrationForm(request.POST or None)
-        if form.is_valid():
-            try:
-                self.user_model.objects.get(email=form.cleaned_data['email'])
-            except self.user_model.DoesNotExist:
-                user = self.user_model.objects.create(username=self.get_username(),
-                                                      email=form.cleaned_data['email'],
-                                                      password=self.user_model.objects.make_random_password())
-                user.is_active = False
-                user.save()
-                self.send_activation(user, sender=None, site=Site.objects.get_current())
-            else:
-                return redirect("organization_add")
-            organization = create_organization(user, form.cleaned_data['name'], form.cleaned_data['slug'], is_active=False)
-            return render(request, 'organizations/register_success.html', {'user': user, 'organization': organization})
-        return render(request, 'organizations/register_form.html', {'form': form})
+class OrgRegBackend(DefaultBackend):
+    """
+    Registration backend for creating an Organization of provided type
+    """
+    def get_form_class(self, request):
+        return OrgRegForm
 
+    def register(self, request, **kwargs):
+        form_class = self.get_form_class(request)
+        form = form_class(data=request.POST, files=request.FILES)
+        org = form.save(commit=False)
+
+        username, email, password = kwargs['username'], kwargs['email'], kwargs['password1']
+        if Site._meta.installed:
+            site = Site.objects.get_current()
+        else:
+            site = RequestSite(request)
+        new_user = RegistrationProfile.objects.create_inactive_user(username, email, password, site)
+        user_registered.send(sender=self.__class__, user=new_user, request=request)
+
+        org.owner = new_user
+        org.save()
+
+        return new_user

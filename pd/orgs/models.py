@@ -6,15 +6,25 @@ from django.db import models
 from persons.models import Person
 from utils.models import LengthValidator, NotEmptyValidator, DigitsValidator, VarLengthValidator
 
+ORG_TYPES_UGH = 'ugh'
+ORG_TYPES_LORU = 'loru'
+
+ORG_TYPES = (
+    (ORG_TYPES_UGH, u'УГХ'),
+    (ORG_TYPES_LORU, u'ЛОРУ'),
+)
+
 class Organization(models.Model):
     """
     Юридическое лицо.
     """
+    type = models.CharField(u"Тип", max_length=15, null=True, choices=ORG_TYPES)
+    owner = models.ForeignKey('auth.User', null=True, editable=False)
     ogrn = models.CharField(u"ОГРН/ОГРИП", max_length=15, blank=True)                                  # ОГРН
     inn = models.CharField(u"ИНН", max_length=12, blank=True, validators=[VarLengthValidator((10, 12)), DigitsValidator(), ])                                    # ИНН
     kpp = models.CharField(u"КПП", max_length=9, blank=True, validators=[DigitsValidator(), ])                                     # КПП
     name = models.CharField(u"Краткое название организации", max_length=99)                      # Название краткое
-    full_name = models.CharField(u"Полное название организации", max_length=255, null=True)      # Название полное
+    full_name = models.CharField(u"Полное название организации", max_length=255, blank=True, null=True)      # Название полное
     ceo = models.ForeignKey(Person, verbose_name=u"Директор", null=True, blank=True, limit_choices_to={'death_date__isnull': True})
     ceo_name_who = models.CharField(u"ФИО директора р.п.", max_length=255, null=True, blank=True, help_text=u'родительный падеж, напр. ИВАНОВА И.И.')
     ceo_document = models.CharField(u"Документ директора", max_length=255, null=True, blank=True, help_text=u'на основании чего? например, УСТАВА')

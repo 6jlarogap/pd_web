@@ -23,7 +23,7 @@
             <dt>Место</dt>
             <dd>{{ place.seat }}</dd>
         {% endif %}
-        {% if user|has_perm:"cemetery_app.edit_burial"  %}
+        {% if user|has_perm:"burials.edit_burial"  %}
             <dt></dt>
             <dd>
                 <a class="btn btn-primary" href="{% url new_burial %}?place={{ place.pk }}">Добавить родственное</a>
@@ -33,10 +33,10 @@
             <dt>Ответственный</dt>
             <dd>
                 {{ place.responsible }}
-                {% if place.responsible.phones and user|has_perm:"cemetery_app.add_burial" %}
+                {% if place.responsible.phones and user|has_perm:"burials.add_burial" %}
                     (тел. {{ place.responsible.phones }})
                 {% endif %}
-                {% if user|has_perm:"cemetery_app.add_burial" %}
+                {% if user|has_perm:"burials.add_burial" %}
                     <a class="btn btn-danger" href="?delete_responsible=1">открепить</a>
                 {% endif %}
             </dd>
@@ -53,7 +53,7 @@
 
     <h3>Захоронения:</h3>
     <form action="" method="POST">
-        {% if user|has_perm:"cemetery_app.add_burial" %}
+        {% if user|has_perm:"burials.add_burial" %}
             {{ rf.as_p }}
         {% endif %}
         <p>Свободно для захоронения: {{ place.rooms_free }} мест{{ place.rooms_free|choose_plural:"о,а," }}</p>
@@ -68,10 +68,10 @@
                         {% if d.burials %}
                             {% for b in d.burials %}
                                 <a href="{% url view_burial b.pk %}">{{ b }}</a>
-                                {% if b.exhumated_date or user|has_perm:"cemetery_app.add_burial" %}
-                                    ({% if b.exhumated_date %}Эксгумировано, {% endif %}{% if user|has_perm:"cemetery_app.add_burial" %}<a href="{% url edit_burial b.pk %}"><i class="icon icon-edit"></i> правка</a>{% endif %})
+                                {% if b.exhumated_date or user|has_perm:"burials.add_burial" %}
+                                    ({% if b.exhumated_date %}Эксгумировано, {% endif %}{% if user|has_perm:"burials.add_burial" %}<a href="{% url edit_burial b.pk %}"><i class="icon icon-edit"></i> правка</a>{% endif %})
                                 {% endif %}
-                                {% if user|has_perm:"cemetery_app.add_burial"  %}
+                                {% if user|has_perm:"burials.add_burial"  %}
                                     <a title="открепить" href="?unlink={{ b.pk }}"><i class="icon icon-remove"></i></a>
                                 {% endif %}
                                 <br/>
@@ -79,7 +79,7 @@
                         {% endif %}
                         {% if d.available %}
                             {{ f.burial.errors }}
-                            {% if user|has_perm:"cemetery_app.add_burial"  %}
+                            {% if user|has_perm:"burials.add_burial"  %}
                                 {{ f.burial }}
                             {% endif %}
                         {% endif %}
@@ -93,8 +93,8 @@
                         <td>
                             {{ forloop.counter }}.
                             <a href="{% url view_burial b.pk %}">{{ b }}</a>
-                            {% if b.exhumated_date or user|has_perm:"cemetery_app.add_burial" %}
-                                ({% if b.exhumated_date %}Эксгумировано, {% endif %}{% if user|has_perm:"cemetery_app.add_burial" %}<a href="{% url edit_burial b.pk %}"><i class="icon icon-edit"></i> правка</a>{% endif %})
+                            {% if b.exhumated_date or user|has_perm:"burials.add_burial" %}
+                                ({% if b.exhumated_date %}Эксгумировано, {% endif %}{% if user|has_perm:"burials.add_burial" %}<a href="{% url edit_burial b.pk %}"><i class="icon icon-edit"></i> правка</a>{% endif %})
                             {% endif %}
                         </td>
                     </tr>
@@ -107,11 +107,11 @@
                         <td>
                             {{ forloop.counter }}.
                             <a href="{% url view_burial b.pk %}">{{ b }}</a>
-                            {% if b.exhumated_date or user|has_perm:"cemetery_app.add_burial" %}
+                            {% if b.exhumated_date or user|has_perm:"burials.add_burial" %}
                                 ({% if b.exhumated_date %}Эксгумировано,
                                     {% if b.grave_id %}было место {{ b.grave_id|add:1 }}, {% endif %}
                                 {% endif %}
-                                {% if user|has_perm:"cemetery_app.add_burial" %}
+                                {% if user|has_perm:"burials.add_burial" %}
                                     <a href="{% url edit_burial b.pk %}"><i class="icon icon-edit"></i> правка</a>
                                 {% endif %})
                             {% endif %}
@@ -121,7 +121,7 @@
             {% endif %}
 
         </table>
-        {% if user|has_perm:"cemetery_app.add_burial"  %}
+        {% if user|has_perm:"burials.add_burial"  %}
             <h2 class="buttons">
                 <button class="btn btn-primary btn-large">Сохранить</button>
             </h2>

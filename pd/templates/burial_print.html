@@ -62,7 +62,7 @@
     <div id="free_form">
     <form action="" method="post" enctype="multipart/form-data" target="_blank">
         {{ form.non_field_errors }}
-        <table width="800" {% if not user|has_perm:"cemetery_app.add_serviceposition" %}style="display: none;"{% endif %}>
+        <table width="800" {% if not user|has_perm:"burials.add_serviceposition" %}style="display: none;"{% endif %}>
             <tr>
                 <td colspan="6">
                     <h2>Счет-заказ</h2>
@@ -164,7 +164,7 @@
             </tr>
         </table>
         <br />
-        <div {% if not user|has_perm:"cemetery_app.add_serviceposition" %}style="display: none;"{% endif %}>
+        <div {% if not user|has_perm:"burials.add_serviceposition" %}style="display: none;"{% endif %}>
             {{ print_form.add_info.label_tag }}
             {{ print_form.add_info }}{{ print_form.add_info.errors }}
         </div>
@@ -172,13 +172,13 @@
             {{ print_form.org.label_tag }}
             {{ print_form.org }}{{ print_form.org.errors }}
         </div>
-        {% if user|has_perm:"cemetery_app.add_serviceposition" %}
+        {% if user|has_perm:"burials.add_serviceposition" %}
             <input type="submit" value="Распечатать документы" />
         {% endif %}
         {% if not burial.exhumated_date %}
             <input type="submit" name="receipt" value="Распечатать справку" />
         {% endif %}
-        {% if user|has_perm:"cemetery_app.add_burial" %}
+        {% if user|has_perm:"burials.add_burial" %}
             <input type="submit" name="notification" value="Распечатать уведомление" />
             <input type="submit" name="dogovor" value="Распечатать договор отв." />
         {% endif %}

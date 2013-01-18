@@ -64,14 +64,14 @@
                             {% if user|has_perm:"organizations.add_organization"  %}
                                 <li><a href="{% url management_org %}" target="_blank">Организации</a></li>
                             {% endif %}
-                            {% if user|has_perm:"cemetery_app.add_cemetery"  %}
+                            {% if user|has_perm:"burials.add_cemetery"  %}
                                 <li><a href="{% url management_cemetery %}" target="_blank">Кладбища</a></li>
                             {% endif %}
-                            {% if user|has_perm:"cemetery_app.add_operation"  %}
-                                <li><a href="{% url admin:cemetery_app_operation_changelist %}" target="_blank">Услуги</a></li>
+                            {% if user|has_perm:"burials.add_operation"  %}
+                                <li><a href="{% url admin:burials_operation_changelist %}" target="_blank">Услуги</a></li>
                             {% endif %}
-                            {% if user|has_perm:"cemetery_app.add_service"  %}
-                                <li><a href="{% url admin:cemetery_app_service_changelist %}" target="_blank">Услуги для с/з</a></li>
+                            {% if user|has_perm:"burials.add_service"  %}
+                                <li><a href="{% url admin:burials_service_changelist %}" target="_blank">Услуги для с/з</a></li>
                             {% endif %}
                             {% if user.is_superuser %}
                                 <li><a href="{% url admin:index %}" target="_blank">Прочие данные</a></li>
@@ -84,15 +84,16 @@
                         </ul>
                     {% else %}
                         <a class="btn" href="{% url ulogin %}">Войти</a>
+                        <a class="btn" href="{% url registration_register %}">Зарегистрироваться (для ЮЛ)</a>
                     {% endif %}
                 </div>
                 <div class="nav-collapse">
                     <ul class="nav">
                         <li{% if request.path == '/' %} class="active"{% endif %}><a href="{% url main_page %}">Поиск</a></li>
-                        {% if user|has_perm:"cemetery_app.add_burial" %}
+                        {% if user|has_perm:"burials.add_burial" %}
                             <li{% if request.path == '/create/' %} class="active"{% endif %}><a href="{% url new_burial %}">Ввод данных</a></li>
                         {% endif %}
-                        {% if user|has_perm:"cemetery_app.add_serviceposition" %}
+                        {% if user|has_perm:"burials.add_serviceposition" %}
                             <li{% if request.path == '/print/cats/' %} class="active"{% endif %}><a href="{% url print_catafalques %}">Заявка на катафалки</a></li>
                         {% endif %}
                     </ul>

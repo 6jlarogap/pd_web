@@ -6,8 +6,6 @@ from django.conf import settings
 from django.contrib import admin
 admin.autodiscover()
 
-from organizations.backends import invitation_backend, registration_backend
-
 urlpatterns = patterns('')
 
 urlpatterns += patterns('pd.views',
@@ -52,10 +50,9 @@ urlpatterns += patterns('',
     url(r'^admin/', include(admin.site.urls)),
 )
 
-urlpatterns += patterns('',
-    url(r'^accounts/', include('organizations.urls')),
-    url(r'^invitations/', include(invitation_backend().get_urls())),
-    url(r'^registration/', include(registration_backend().get_urls())),
+urlpatterns += patterns('registration.views',
+    url(r'^accounts/register/$', 'register', {'backend': 'pd.reg_backend.OrgRegBackend'}, name='registration_register'),
+    url(r'^accounts/', include('registration.backends.default.urls')),
 )
 
 if settings.DEBUG:

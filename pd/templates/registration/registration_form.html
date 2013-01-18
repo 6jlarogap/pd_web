@@ -11,16 +11,16 @@
     </script>
 {% endblock %}
 
-{% block title %}Вход в систему{% endblock %}
-{% block h1 %}Вход в систему:{% endblock %}
+{% block title %}Регистрация{% endblock %}
+{% block h1 %}Регистрация:{% endblock %}
 {% block content %}
     <form method="post" action="">
         {% csrf_token %}
         {{ form.as_p }}
-        <input type="submit" value="Войти" />
+        <input type="submit" value="Зарегистрироваться" />
 
         <p>
-            <a href="{% url ulogin %}">{% trans "Log in" %}</a>
+            <a href="{% url ulogin %}">{% trans "Login" %}</a>
         </p>
     </form>
 {% endblock %}

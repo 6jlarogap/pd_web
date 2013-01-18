@@ -64,7 +64,7 @@
                             {% if b.orderfiles_set.count %}
                                 <small><a title="файл прикреплен"><i class="icon icon-file"></i></a></small>
                             {% endif %}
-                            {% if user|has_perm:"cemetery_app.add_burial"  %}
+                            {% if user|has_perm:"burials.add_burial"  %}
                                 <a title="редактировать" target="_blank" href='{% url edit_burial b.pk %}'><i class="icon icon-edit"></i></a>
                             {% endif %}
                             <a title="карточка" href="{% url view_burial b.pk %}"><i class="icon icon-list"></i></a>
@@ -262,7 +262,7 @@
                                 {% if b.orderfiles_set.count %}
                                     <small><a title="файл прикреплен"><i class="icon icon-file"></i></a></small>
                                 {% endif %}
-                                {% if user|has_perm:"cemetery_app.add_burial"  %}
+                                {% if user|has_perm:"burials.add_burial"  %}
                                     <a title="редактировать" target="_blank" href='{% url edit_burial b.pk %}'><i class="icon icon-edit"></i></a>
                                 {% endif %}
                                 <a title="карточка" href="{% url view_burial b.pk %}"><i class="icon icon-list"></i></a>

@@ -82,7 +82,7 @@ INSTALLED_APPS = (
     'django.contrib.admindocs',
 
     'south',
-    'organizations',
+    'registration',
     'pytils',
     'debug_toolbar',
 
@@ -121,7 +121,7 @@ SOUTH_TESTS_MIGRATE = False
 
 INTERNAL_IPS = []
 
-REGISTRATION_BACKEND = 'pd.reg_backend.OrgRegBackend'
+ACCOUNT_ACTIVATION_DAYS = 7
 
 LOGIN_URL = "/login/"
 LOGOUT_URL = "/logout/"

@@ -1,3 +1,4 @@
+from orgs.models import ORG_TYPES_UGH
 import re
 
 from django.contrib.auth.models import User
@@ -11,12 +12,15 @@ class OrgRegTest(TestCase):
         c = Client()
         self.assertEqual(User.objects.count(), 0)
 
-        r = c.post('/registration/', {
-            'name': 'test',
-            'slug': 'test',
+        r = c.post('/accounts/register/', {
+            'username': 'test',
             'email': 'test@example.com',
+            'password1': 'password',
+            'password2': 'password',
+            'type': ORG_TYPES_UGH,
+            'name': 'test',
         })
-        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.status_code, 302)
         self.assertEqual(len(mail.outbox), 1)
         self.assertEqual(User.objects.count(), 1)
         self.assertEqual(User.objects.filter(is_active=False).count(), 1)
@@ -25,15 +29,7 @@ class OrgRegTest(TestCase):
         self.assertEqual(len(re_match), 1)
 
         url = re_match[0]
-        r2 = c.post(url, {
-            'username': 'test',
-            'email': 'test@example.com',
-            'first_name': 'John',
-            'last_name': 'Smith',
-            'password': 'password',
-            'password_confirm': 'password',
-        })
-        print r2.content
+        r2 = c.get(url)
         self.assertEqual(r2.status_code, 302)
         self.assertEqual(User.objects.count(), 1)
         self.assertEqual(User.objects.filter(is_active=True).count(), 1)
