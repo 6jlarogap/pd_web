@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{%  load my_filters %}
+{% block title %}Управление{% endblock %}
+{% block content %}
+    <h1>Управление</h1>
+    <h3>Перейдите по интересующей вас ссылке</h3>
+    {% if user.is_authenticated %}
+        {% if user.is_superuser %}
+            <h2><a href='/management/cemetery/'>Кладбища </a></h2>
+            <h2><a href='/management/user/'>Персонал </a></h2>
+            <h2><a href='/management/import/'>[Импорт]</a></h2>
+
+            <h2><a href='/admin/common/soulproducttypeoperation/' target="_blank">Услуги (виды захоронений) </a></h2>
+        {% endif %}
+        <h2><a href='/admin/common/orderproduct/' target="_blank">Услуги для Счет-заказа </a></h2>
+        <h2><a href='/admin/common/iddocumenttype/' target="_blank">Документы, удостоверяющие личность </a></h2>
+        <h2><a href='/admin/common/zags/' target="_blank">ЗАГСы </a></h2>
+        <h2><a href='/admin/common/organization/' target="_blank">Заказчики - Юр. лица</a></h2>
+    {% endif %}
+{% endblock %}

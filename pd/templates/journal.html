@@ -1,0 +1,778 @@
+{% extends "base.html" %}
+{% load adminmedia %}
+{% load my_filters %}
+{% block scripts %}
+    {{ form.media }}
+    <link rel="stylesheet" href="/media/css/ui-lightness/jquery-ui-1.8.6.custom.css" type="text/css" />
+    <link rel="stylesheet" href="/media/css/jquery-ui-timepicker.css?v=0.2.3" type="text/css" />
+
+    <style type="text/css">
+        .free_form.highlight {
+            background-color: #ffe45c;
+        }
+    </style>
+
+    <script type="text/javascript" src="/media/js/jquery-ui-1.8.6.custom.min.js"></script>
+    <script type="text/javascript" src="/media/js/jquery.query-2.1.7.js"></script>
+    <script type="text/javascript" src="/admin_media/js/admin/RelatedObjectLookups.js"></script>
+    <script type="text/javascript" src="/media/js/jquery.ui.timepicker.js?v=0.2.3"></script>
+    <script type="text/javascript" src="/media/js/address.js"></script>
+    <script type="text/javascript">
+        window.__admin_media_prefix__ = "{% filter escapejs %}{% admin_media_prefix %}{% endfilter %}";
+    </script>
+
+    <script type="text/javascript" charset="utf-8">
+
+    function updateResponsible() {
+        if ($('#id_responsible_myself:checked').length == 0) {
+            $('.responsible_myself').show()
+        } else {
+            $('.responsible_myself').hide()
+        }
+    }
+
+    function updateAgent() {
+        if ($('#id_agent_director:visible').length > 0 && $('#id_agent_director:checked').length == 0) {
+            $('.agent').show()
+        } else {
+            $('.agent').hide()
+        }
+    }
+
+    function updateOPF(el) {
+        var cls = 'opf_' + $('[name=opf]:checked').val();
+        $('.opf_fizik, .opf_yurik').hide();
+        $('.'+cls).show();
+        if (el) {
+            $('#id_responsible_myself').removeAttr('checked');
+            updateResponsible();
+        }
+    }
+
+    function updateDover(el) {
+        var agent = $('#id_agent').val();
+        if (!agent) return;
+        $.getJSON('{% url get_dover %}?agent=' + agent, function(data){
+            if (!data) return
+            if (el || !$('#id_dover_number').val()) { $('#id_dover_number').val(data.number || ''); }
+            if (el || !$('#id_dover_date').val()) { $('#id_dover_date').val(data.date || ''); }
+            if (el || !$('#id_dover_expire').val()) { $('#id_dover_expire').val(data.expire || ''); }
+        })
+    }
+
+    $(function(){
+        $('#id_rooms, #id_rooms_free').css('width', '30px');
+
+        $('#id_organization').css('width', '420px');
+
+        var CALENDAR_ICON = '/admin_media/img/admin/icon_calendar.gif';
+        var CLOCK_IMAGE = '/admin_media/img/admin/icon_clock.gif';
+
+        $.datepicker.setDefaults($.datepicker.regional['']);
+        var now = new Date();
+        var now_year = now.getFullYear();
+        $('input[name$=date],input[name$=expire],input[name$=when]').css('width', '100px').datepicker({
+            dateFormat: 'dd.mm.yy',
+            changeMonth: true,
+            changeYear: true,
+            yearRange: '1900:' + now_year,
+            firstDay: 1,
+            monthNamesShort: ['Янв','Фев','Март','Апрель','Май','Июнь','Июль','Авг','Сен','Окт','Ноя','Дек'],
+            dayNamesMin: ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'],
+            showOn: "both",
+            buttonImage: CALENDAR_ICON,
+            buttonImageOnly: true
+        });
+        if (now.getMonth() == 11 && now.getDate() > 20) {
+            $('input#id_burial_date').datepicker('option', 'yearRange', '1900:' +  (now_year + 1));
+        }
+
+        $('input[name$=time]').each(function() {
+            var btn_id = $(this).attr('id') + '_button';
+            var img = $('<img src="'+CLOCK_IMAGE+'"/>').attr('id', btn_id).insertAfter($(this));
+            $(this).css('width', '100px').timepicker({
+                showOn: "both",
+                button: "#" + btn_id,
+                hourText: 'Ч',
+                minuteText: 'М',
+                showPeriodLabels: false,
+                minutes: {
+                    starts: 0,
+                    ends: 45,
+                    interval: 15
+                },
+                hours: {
+                    starts: 8,
+                    ends: 19,
+                    interval: 1
+                }
+            });
+        });
+
+        $(':input,textarea,select').each(function(i, el) {
+            $(el).attr('tabIndex', i+1);
+        })
+
+        $('#id_responsible_myself').change(updateResponsible);
+        setTimeout("updateResponsible();", 100);
+
+        $('#id_opf_0, #id_opf_1').change(updateOPF);
+        setTimeout("updateOPF();", 50);
+        setTimeout("updateOPF();", 450);
+
+        $('#id_agent_director').change(updateAgent);
+        setTimeout("updateAgent();", 100);
+        setTimeout("updateAgent();", 500);
+
+        $("#id_burial_date, #id_birth_date, #id_death_date").focus(function(){
+            this.select();
+        });
+
+        $("#id_last_name").focus(function(){
+            if ($(this).val()=="{{ UNKNOWN_NAME }}")
+            {$(this).val("");}
+        });
+
+        $("#id_last_name").focusout(function(){
+            if ($(this).val()=="")
+            { $(this).val("{{ UNKNOWN_NAME }}");}
+        });
+
+        {% if additional_burial %}
+            var add_ids = '#id_cemetery, #id_area, #id_row, #id_seat, #id_responsible_last_name, #id_responsible_first_name, #id_responsible_patronymic';
+            $(add_ids).attr('disabled', 'disabled');
+            $('form').submit(function() {
+                $(add_ids).removeAttr('disabled')
+            })
+        {% endif %}
+
+    });
+
+    //Первоначальное заполнение списка услуг.
+    $(function(){
+        //Фокус в нужное поле.
+        $("#id_account_number").focus();
+
+        $("#id_hoperation").val($("#id_operation option:selected").val());
+        $("#id_operation").html("");
+        if ($("#id_cemetery").val()){
+            updateServices();
+        }
+    });
+
+    function updateServices(){
+        $.getJSON("/getoper/",{id: $("#id_cemetery").val(), ajax: 'true', 'parent': "{{ request.GET.burial }}"}, function(j){
+            var options = '';
+            for (var i = 0; i < j.length; i++) {
+                if (j[i].optionValue == $("#id_hoperation").val())
+                {
+                    options += '<option selected value="' + j[i].optionValue + '">' + j[i].optionDisplay + '</option>';
+                }
+                else
+                {
+                    options += '<option value="' + j[i].optionValue + '">' + j[i].optionDisplay + '</option>';
+                }
+            }
+            $("#id_operation").html(options);
+        });
+    }
+
+    $(function(){
+// Обработчик изменения выбранной услуги.
+        $("#id_operation").change(function(){
+            $("#id_hoperation").val($("#id_operation").val());
+        });
+        // Обработчик изменения выбранного кладбища.
+        $("#id_cemetery").change(updateServices);
+
+        // Обработчик изменения выбранного кладбища.
+        function updateAgents(){
+            $.getJSON("/getagents/", {id: $('#id_organization').val(), ajax: 'true'}, function(j){
+                var options = '';
+                for (var i = 0; i < j.length; i++) {
+                    if (j[i].optionValue == $("#id_agent").val())
+                    {
+                        options += '<option selected value="' + j[i].optionValue + '">' + j[i].optionDisplay + '</option>';
+                    }
+                    else
+                    {
+                        options += '<option value="' + j[i].optionValue + '">' + j[i].optionDisplay + '</option>';
+                    }
+                }
+                $("#id_agent").html(options);
+                $("#id_agent").next('a').attr('href', "/admin/common/organization/"+$("#id_organization").val()+"/");
+            });
+        }
+
+        function processAgentsCreation() {
+            if (AGENTS_HTML && AGENTS_HTML == $("#id_agent").html()) {
+                updateAgents();
+                setTimeout(processAgentsCreation, 500);
+            } else {
+                AGENTS_HTML = $("#id_agent").html();
+            }
+
+        }
+
+        var AGENTS_HTML;
+        $("#id_organization").change(updateAgents);
+        $('#id_agent').change(updateDover);
+        updateDover(false);
+
+        $("#id_organization").after('<a href="/admin/common/organization/add/" class="add-another" id="add_id_organization" onclick="return showAddAnotherPopup(this);">создать</a>');
+        $("#id_certificate-zags").after('<a href="/admin/common/zags/add/" class="add-another" id="add_id_certificate-zags" onclick="return showAddAnotherPopup(this);">создать</a>');
+        $("#id_id-id_type").after('<a href="/admin/common/iddocumenttype/add/" class="add-another" id="add_id_id-id_type" onclick="return showAddAnotherPopup(this);">создать</a>');
+        $("#id_agent").after('<a href="/admin/common/organization/"+$("#id_organization").val()+"/" target="_blank">создать</a>');
+
+        $("#id_agent").siblings('a').click(function() {
+            AGENTS_HTML = $("#id_agent").html();
+            processAgentsCreation();
+        });
+
+        $(':input[name$=-house], :input[name$=-block], :input[name$=-building], :input[name$=-flat]').css('width', '40px');
+
+        $("input:text[id$=-who]").autocomplete({
+            source: '{% url get_passport_sources %}',
+            minLength: 1,
+            delay: 100
+        });
+
+
+    })
+    </script>
+{% endblock %}
+{% block title %}Ввод журнала{% endblock %}
+{% block content %}
+    <div id="free_form">
+    <form enctype="multipart/form-data" action="" method="post">
+    {% if duplicates %}
+        <ul class="errorlist"><li>Возможно, это попытка двойной регистрации.</li></ul>
+        <p><label><input type="checkbox" name="duplicates_ok"/>игнорировать предупреждение о двойной регистрации</label></p>
+        <table width="100%" border=1>
+            <caption style="background:#2D992D">Обнаружены дубли:</caption>
+            <thead>
+            <td>№ в кн</td>
+            <td>ФИО</td>
+            <td>Дата захор</td>
+            <td>Уч</td>
+            <td>Ряд</td>
+            <td>Мог</td>
+            <td>Кладб</td>
+            <td>Услуга</td>
+            <td>Заказчик</td>
+            <td>Телефон</td>
+            <td>Комментарий</td>
+            <td>Опции</td>
+            </thead>
+            {% for b in duplicates %}
+                <tr>
+                    <td>{{ b.account_number }}</td>
+                    <td>
+                        <b> {{ b.person.last_name }}</b>
+                        {{ b.person.first_name }}
+                        {{ b.person.patronymic }}
+                    </td>
+                    <td>{{ b.date_fact|date:"d.m.Y" }}</td>
+                    <td>{{ b.product.place.area }}</td>
+                    <td>{{ b.product.place.row }}</td>
+                    <td>{{ b.product.place.seat }}</td>
+                    <td>{{ b.product.place.cemetery.name }}</td>
+                    <td>{{ b.operation.op_type }}</td>
+                    {% if b.customer.person.last_name %}
+                        <td>
+                            {{ b.customer.person.last_name }}
+                            {{ b.customer.person.first_name }}
+                            {{ b.customer.person.patronymic }}
+                        </td>
+                    {% else %}
+                        <td>&nbsp;</td>
+                    {% endif %}
+                    <td>
+                        {% for phone in b.customer.phone_set.all  %}
+                            {{ phone.f_number }}
+                            <br>
+                        {%endfor%}
+                    </td>
+                    <td>
+                        {% for comment in b.ordercomments_set.all %}
+                            {{ comment.comment }}
+                        {% endfor %}
+                    </td>
+                    <td>
+                        {% if user|in_group:"edit_burial" %}
+                            <a title="редактировать" href='/burial/{{ b.uuid }}/'><img src="/media/edit.png"></a>
+                        {% endif %}
+                        <a title="к могиле" href='/?cemetery={{ b.product.place.cemetery.uuid }}&area={{ b.product.place.area }}&row={{ b.product.place.row }}&seat={{ b.product.place.seat }}'><img width="16" src="/media/tree.png"></a>
+                    </td>
+                </tr>
+            {% endfor %}
+        </table>
+    {% endif %}
+
+    {% if form.data %}{{ form.non_field_errors }}{% endif %}
+    {% if certificate_form.data %}{{ certificate_form.non_field_errors }}{% endif %}
+    <table width="800">
+    <!-- burial  -->
+    <tr>
+        <td colspan="3">
+            <h2>{% block title_h2 %}Данные Заказа{% endblock %}</h2>
+        </td>
+    </tr>
+    <tr>
+        <td class="free_form">{{ form.account_number.label_tag }}</td>
+        <td class="free_form">{{ form.burial_date.label_tag }}</td>
+        <td >{% if burial %}{{ form.exhumated_date.label_tag }}{% endif %}</td>
+    </tr>
+    <tr>
+        <td >
+            {{ form.account_number.errors }}{{ form.account_number }}
+            <br/>
+            {{ form.account_number.help_text }}
+        </td>
+        <td >{{ form.burial_date.errors }}{{ form.burial_date }}<br/>{{ form.burial_time.errors }}{{ form.burial_time }}</td>
+        <td >{{ form.exhumated_date.errors }}{% if burial %}{{ form.exhumated_date }}{% endif %}</td>
+    </tr>
+    <!-- /burial  -->
+
+    <!-- deadman -->
+    <tr>
+        <td colspan="3">
+            <h2>Данные усопшего</h2>
+        </td>
+    </tr>
+    <tr>
+        <td class="free_form">{{ form.last_name.label_tag }}</td>
+        <td class="free_form">{{ form.first_name.label_tag }}</td>
+        <td class="free_form">{{ form.patronymic.label_tag }}</td>
+    </tr>
+    <tr>
+        <td class="free_form">{{ form.last_name.errors }}{{ form.last_name }}</td>
+        <td class="free_form">{{ form.first_name.errors }}{{ form.first_name }}</td>
+        <td class="free_form">{{ form.patronymic.errors }}{{ form.patronymic }}</td>
+    </tr>
+    <tr>
+        <td class="free_form">{{ form.birth_date.label_tag }}</td>
+        <td class="free_form">{{ form.death_date.label_tag }}</td>
+        <td >{{ certificate_form.zags.label_tag }}</td>
+    </tr>
+    <tr>
+        <td >{{ form.birth_date.errors }}{{ form.birth_date }}</td>
+        <td >{{ form.death_date.errors }}{{ form.death_date }}</td>
+        <td >{{ certificate_form.zags.errors }}{{ certificate_form.zags }}</td>
+    </tr>
+    <!-- deadman's certificate -->
+    <tr>
+        <td class="free_form">{{ certificate_form.series.label_tag }}</td>
+        <td >{{ certificate_form.s_number.label_tag }}</td>
+        <td class="free_form">{{ certificate_form.release_date.label_tag }}</td>
+    </tr>
+    <tr>
+        <td >{{ certificate_form.series.errors }}{{ certificate_form.series }}</td>
+        <td >{{ certificate_form.s_number.errors }}{{ certificate_form.s_number }}</td>
+        <td >{{ certificate_form.release_date.errors }}{{ certificate_form.release_date }}</td>
+    </tr>
+    <tr>
+        <td colspan="3">
+            <h2>Адрес усопшего</h2>
+            {% if not registration_valid %}{{ registration_form.non_field_errors }}{% endif %}
+        </td>
+    </tr>
+    <tr>
+        <td class="free_form">{{ registration_form.street.label_tag }}</td>
+        <td class="free_form">{{ registration_form.house.label_tag }}</td>
+        <td class="free_form">{{ registration_form.block.label_tag }}, {{ registration_form.building.label_tag }}</td>
+        <td class="free_form">{{ registration_form.flat.label_tag }}</td>
+    </tr>
+    <tr>
+        <td class="free_form">
+            {{ registration_form.street.errors }}{{ registration_form.street }}<br/>
+            {{ registration_form.new_street.label_tag }}{{ registration_form.new_street }}
+        </td>
+        <td class="free_form">{{ registration_form.house.errors }}{{ registration_form.house }}</td>
+        <td class="free_form">
+            {{ registration_form.block.errors }}{{ registration_form.building.errors }} {{ registration_form.block }}, {{ registration_form.building }}
+        </td>
+        <td class="free_form">{{ registration_form.flat.errors }}{{ registration_form.flat }}</td>
+    </tr>
+    <tr>
+        <td class="free_form">{{ registration_form.city.label_tag }}</td>
+        <td class="free_form">{{ registration_form.region.label_tag }}</td>
+        <td class="free_form">{{ registration_form.country.label_tag }}</td>
+    </tr>
+    <tr>
+        <td class="free_form">
+            {{ registration_form.city.errors }}{{ registration_form.city }}<br/>
+            {{ registration_form.new_city.label_tag }}{{ registration_form.new_city }}
+        </td>
+        <td class="free_form">
+            {{ registration_form.region.errors }}{{ registration_form.region }}<br/>
+            {{ registration_form.new_region.label_tag }}{{ registration_form.new_region }}
+        </td>
+        <td class="free_form">
+            {{ registration_form.country.errors }}{{ registration_form.country }}<br/>
+            {{ registration_form.new_country.label_tag }}{{ registration_form.new_country }}
+        </td>
+    </tr>
+    <tr>
+        <td class="free_form">{{ registration_form.post_index.label_tag }}</td>
+        <td class="free_form">{{ registration_form.post_index.errors }}{{ registration_form.post_index }}</td>
+        <td class="free_form">{{ registration_form.info.label_tag }}</td>
+        <td class="free_form">{{ registration_form.info.errors }}{{ registration_form.info }}</td>
+    </tr>
+    <!-- /deadman -->
+
+    <!-- cemetery -->
+    <tr>
+        <td colspan="3">
+            <h2>Данные кладбища</h2>
+        </td>
+    </tr>
+    <tr>
+        <td class="free_form">{{ form.cemetery.label_tag }}</td>
+        <td class="free_form">{{ form.operation.label_tag }}</td>
+        <td >&nbsp;</td>
+    </tr>
+    <tr>
+        <td class="free_form">{{ form.cemetery.errors }}{{ form.cemetery }}</td>
+        <td class="free_form">{{ form.operation.errors }}{{ form.operation }}{{ form.hoperation.errors }}{{ form.hoperation }}</td>
+        <td >&nbsp;</td>
+    </tr>
+    <tr>
+        <td class="free_form">{{ form.area.label_tag }}</td>
+        <td class="free_form">{{ form.row.label_tag }}</td>
+        <td class="free_form">{{ form.seat.label_tag }}</td>
+        <td class="free_form"> Мест в ограде</td>
+    </tr>
+    <tr>
+        <td class="free_form">{{ form.area.errors }}{{ form.area }}</td>
+        <td class="free_form">{{ form.row.errors }}{{ form.row }}</td>
+        <td class="free_form">
+            {{ form.seat.errors }}{{ form.seat }}
+            <br/>
+            {{ form.seat.help_text }}
+        </td>
+        <td class="free_form {% if request.GET.from_separate %}highlight{% endif %}">
+            {{ form.rooms.errors }}{{ form.rooms }} всего /
+            {{ form.rooms_free.errors }}{{ form.rooms_free }} своб
+        </td>
+    </tr>
+    <!-- -->
+
+    <tr>
+        <td colspan="3">
+            <h2>Данные Заказчика</h2>
+        </td>
+    </tr>
+    <tr>
+        <td class="free_form">{{ form.opf.label_tag }}</td>
+    </tr>
+    <tr>
+        <td class="free_form">{{ form.opf.errors }}{{ form.opf }}</td>
+    </tr>
+    <tr class="opf_yurik">
+        <td class="free_form opf_yurik" colspan="2">{{ form.organization.label_tag }}</td>
+        <td class="free_form opf_yurik">{{ form.agent_director.label_tag }}</td>
+    <tr>
+    <tr class="opf_yurik">
+        <td class="free_form opf_yurik" colspan="2">{{ form.organization.errors }}{{ form.organization }}</td>
+        <td class="free_form opf_yurik">{{ form.agent_director.errors }}{{ form.agent_director }}</td>
+    <tr>
+    <tr class="opf_yurik agent">
+        <td colspan="3">
+            <h2>Данные Агента</h2>
+        </td>
+    </tr>
+    <tr class="opf_yurik agent">
+        <td class="free_form">{{ form.agent.label_tag }}</td>
+        <td class="free_form">{{ form.dover_number.label_tag }}</td>
+        <td class="free_form">{{ form.dover_date.label_tag }}</td>
+        <td class="free_form">{{ form.dover_expire.label_tag }}</td>
+    </tr>
+    <tr class="opf_yurik agent">
+        <td class="free_form">{{ form.agent.errors }}{{ form.agent }}</td>
+        <td class="free_form">{{ form.dover_number.errors }}{{ form.dover_number }}</td>
+        <td class="free_form">{{ form.dover_date.errors }}{{ form.dover_date }}</td>
+        <td class="free_form">{{ form.dover_expire.errors }}{{ form.dover_expire }}</td>
+    </tr>
+    <tr class="opf_fizik">
+        <td class="free_form">{{ form.customer_last_name.label_tag }}</td>
+        <td class="free_form">{{ form.customer_first_name.label_tag }}</td>
+        <td class="free_form">{{ form.customer_patronymic.label_tag }}</td>
+    </tr>
+    <tr class="opf_fizik">
+        <td class="free_form">{{ form.customer_last_name.errors }}{{ form.customer_last_name }}</td>
+        <td class="free_form">{{ form.customer_first_name.errors }}{{ form.customer_first_name }}</td>
+        <td class="free_form">{{ form.customer_patronymic.errors }}{{ form.customer_patronymic }}</td>
+    </tr>
+    <tr class="opf_fizik">
+        <td class="free_form">{{ id_form.id_type.label_tag }}</td>
+        <td class="free_form">{{ id_form.series.label_tag }}</td>
+        <td class="free_form">{{ id_form.number.label_tag }}</td>
+    </tr>
+    <tr class="opf_fizik">
+        <td class="free_form">{{ id_form.id_type.errors }}{{ id_form.id_type }}</td>
+        <td class="free_form">{{ id_form.series.errors }}{{ id_form.series }}</td>
+        <td class="free_form">{{ id_form.number.errors }}{{ id_form.number }}</td>
+    </tr>
+    <tr class="opf_fizik">
+        <td class="free_form">{{ id_form.who.label_tag }}</td>
+        <td class="free_form">{{ id_form.when.label_tag }}</td>
+    </tr>
+    <tr class="opf_fizik">
+        <td class="free_form">{{ id_form.who.errors }}{{ id_form.who }}</td>
+        <td class="free_form">{{ id_form.when.errors }}{{ id_form.when }}</td>
+    </tr>
+
+
+    <!-- LOCATION -->
+    <tr class="opf_fizik">
+        <td colspan="3">
+            <h2>Адрес проживания заказчика-физлица (для связи)</h2>
+            {% if not customer_addr_valid %}{{ location_form.non_field_errors }}{% endif %}
+        </td>
+    </tr>
+    <tr class="opf_fizik">
+        <td class="free_form">
+            {{ location_form.street.label_tag }}
+        </td>
+        <td class="free_form">{{ location_form.house.label_tag }}</td>
+        <td class="free_form">{{ location_form.block.label_tag }}, {{ location_form.building.label_tag }}</td>
+        <td class="free_form">{{ location_form.flat.label_tag }}</td>
+    </tr>
+    <tr class="opf_fizik">
+        <td class="free_form">
+            {{ location_form.street.errors }}{{ location_form.street }}<br/>
+            {{ location_form.new_street.label_tag }}{{ location_form.new_street }}
+        </td>
+        <td class="free_form">{{ location_form.house.errors }}{{ location_form.house }}</td>
+        <td class="free_form">{{ location_form.block.errors }}{{ location_form.building.errors }}{{ location_form.block }}, {{ location_form.building }}</td>
+        <td class="free_form">{{ location_form.flat.errors }}{{ location_form.flat }}</td>
+    </tr>
+    <tr class="opf_fizik">
+        <td class="free_form">{{ location_form.city.label_tag }}</td>
+        <td class="free_form">{{ location_form.region.label_tag }}</td>
+        <td class="free_form">{{ location_form.country.label_tag }}</td>
+    </tr>
+    <tr class="opf_fizik">
+        <td class="free_form">
+            {{ location_form.city.errors }}{{ location_form.city }}<br/>
+            {{ location_form.new_city.label_tag }}{{ location_form.new_city }}
+        </td>
+        <td class="free_form">
+            {{ location_form.region.errors }}{{ location_form.region }}<br/>
+            {{ location_form.new_region.label_tag }}{{ location_form.new_region }}
+        </td>
+        <td class="free_form">
+            {{ location_form.country.errors }}{{ location_form.country }}<br/>
+            {{ location_form.new_country.label_tag }}{{ location_form.new_country }}
+        </td>
+    </tr>
+    <tr class="opf_fizik">
+        <td class="free_form">{{ location_form.post_index.label_tag }}</td>
+        <td class="free_form">{{ location_form.post_index.errors }}{{ location_form.post_index }}</td>
+        <td class="free_form">{{ location_form.info.label_tag }}</td>
+        <td class="free_form">{{ location_form.info.errors }}{{ location_form.info }}</td>
+    </tr>
+    <!-- /LOCATION -->
+
+
+    <!-- responsible -->
+    <tr class="free_form {% if request.GET.from_separate %}highlight{% endif %}">
+        <td colspan="3">
+            <h2>Ответственное лицо</h2>
+            {% if responsible_form.country.data %}{{ responsible_form.non_field_errors }}{% endif %}
+        </td>
+    </tr>
+    <tr class="opf_fizik">
+        <td class="free_form {% if request.GET.from_separate %}highlight{% endif %}">{{ form.responsible_myself.label_tag }}</td>
+    </tr>
+    <tr class="opf_fizik">
+        <td class="free_form {% if request.GET.from_separate %}highlight{% endif %}">{{ form.responsible_myself.errors }}{{ form.responsible_myself }}</td>
+    </tr>
+    <tr class="responsible_myself ">
+        <td class="free_form {% if request.GET.from_separate %}highlight{% endif %}">{{ form.responsible_last_name.label_tag }}</td>
+        <td class="free_form {% if request.GET.from_separate %}highlight{% endif %}">{{ form.responsible_first_name.label_tag }}</td>
+        <td class="free_form {% if request.GET.from_separate %}highlight{% endif %}">{{ form.responsible_patronymic.label_tag }}</td>
+    </tr>
+    <tr class="responsible_myself">
+        <td class="free_form {% if request.GET.from_separate %}highlight{% endif %}">{{ form.responsible_last_name.errors }}{{ form.responsible_last_name }}</td>
+        <td class="free_form {% if request.GET.from_separate %}highlight{% endif %}">{{ form.responsible_first_name.errors }}{{ form.responsible_first_name }}</td>
+        <td class="free_form {% if request.GET.from_separate %}highlight{% endif %}">{{ form.responsible_patronymic.errors }}{{ form.responsible_patronymic }}</td>
+    </tr>
+
+    <tr class="responsible_myself">
+        <td class="free_form {% if request.GET.from_separate %}highlight{% endif %}">{{ responsible_form.street.label_tag }}</td>
+        <td class="free_form {% if request.GET.from_separate %}highlight{% endif %}">{{ responsible_form.house.label_tag }}</td>
+        <td class="free_form {% if request.GET.from_separate %}highlight{% endif %}">{{ responsible_form.block.label_tag }}, {{ responsible_form.building.label_tag }}</td>
+        <td class="free_form {% if request.GET.from_separate %}highlight{% endif %}">{{ responsible_form.flat.label_tag }}</td>
+    </tr>
+    <tr class="responsible_myself">
+        <td class="free_form {% if request.GET.from_separate %}highlight{% endif %}">
+            {{ responsible_form.street.errors }}{{ responsible_form.street }}<br/>
+            {{ responsible_form.new_street.label_tag }}{{ responsible_form.new_street }}
+        </td>
+        <td class="free_form {% if request.GET.from_separate %}highlight{% endif %}">{{ responsible_form.house.errors }}{{ responsible_form.house }}</td>
+        <td class="free_form {% if request.GET.from_separate %}highlight{% endif %}">
+            {{ responsible_form.block }}, {{ responsible_form.building }}
+            {{ responsible_form.block.errors }}{{ responsible_form.building.errors }}
+        </td>
+        <td class="free_form {% if request.GET.from_separate %}highlight{% endif %}">{{ responsible_form.flat.errors }}{{ responsible_form.flat }}</td>
+    </tr>
+    <tr class="responsible_myself">
+        <td class="free_form {% if request.GET.from_separate %}highlight{% endif %}">{{ responsible_form.city.label_tag }}</td>
+        <td class="free_form {% if request.GET.from_separate %}highlight{% endif %}">{{ responsible_form.region.label_tag }}</td>
+        <td class="free_form {% if request.GET.from_separate %}highlight{% endif %}">{{ responsible_form.country.label_tag }}</td>
+    </tr>
+    <tr class="responsible_myself">
+        <td class="free_form {% if request.GET.from_separate %}highlight{% endif %}">
+            {{ responsible_form.city.errors }}{{ responsible_form.city }}<br/>
+            {{ responsible_form.new_city.label_tag }}{{ responsible_form.new_city }}
+        </td>
+        <td class="free_form {% if request.GET.from_separate %}highlight{% endif %}">
+            {{ responsible_form.region.errors }}{{ responsible_form.region }}<br/>
+            {{ responsible_form.new_region.label_tag }}{{ responsible_form.new_region }}
+        </td>
+        <td class="free_form {% if request.GET.from_separate %}highlight{% endif %}">
+            {{ responsible_form.country.errors }}{{ responsible_form.country }}<br/>
+            {{ responsible_form.new_country.label_tag }}{{ responsible_form.new_country }}
+        </td>
+    </tr>
+    <tr class="responsible_myself">
+        <td class="free_form {% if request.GET.from_separate %}highlight{% endif %}">{{ responsible_form.post_index.label_tag }}</td>
+        <td class="free_form {% if request.GET.from_separate %}highlight{% endif %}">{{ responsible_form.post_index.errors }}{{ responsible_form.post_index }}</td>
+        <td class="free_form {% if request.GET.from_separate %}highlight{% endif %}">{{ responsible_form.info.label_tag }}</td>
+        <td class="free_form {% if request.GET.from_separate %}highlight{% endif %}">{{ responsible_form.info.errors }}{{ responsible_form.info }}</td>
+    </tr>
+    <!-- /responsible -->
+
+    <tr class="free_form">
+        <td colspan="3"><h2>Телефоны ответственного лица</h2></td>
+    </tr>
+    <tr>
+        {{ phoneset }}
+    </tr>
+    <tr>
+        <td colspan="3" class="free_form">{{ form.comment.label_tag }}</td>
+    </tr>
+    {% for oc in burial.ordercomments_set.all %}
+        <tr>
+            <td class="free_form">{{ oc.date_of_creation|date:"d.m.Y H:i" }}</td>
+            <td >{{ oc.comment }}</td>
+            <td >
+                {{ oc.creator.userprofile.user }}
+                <a href="?delete_ordercomment={{ oc.pk }}" class="delete">удалить</a>
+            </td>
+        </tr>
+    {% endfor %}
+    <tr>
+        <td colspan="3" class="free_form">{{ form.comment.errors }}{{ form.comment }}</td>
+    </tr>
+
+    <tr>
+        <td class="free_form">{{ form.file1.label_tag }}</td>
+        <td class="free_form">{{ form.file1_comment.label_tag }}</td>
+        <td >&nbsp;</td>
+    </tr>
+    {% for of in burial.orderfiles_set.all %}
+        <tr>
+            <td class="free_form"><a href="{{ of.ofile.url }}" target="_blank">{{ of.name|safe }}</a></td>
+            <td class="free_form">{{ of.comment }}</td>
+            <td >
+                {{ of.creator.userprofile.user }}
+                <a href="?delete_orderfile={{ of.pk }}" class="delete">удалить</a>
+            </td>
+        </tr>
+    {% endfor %}
+    <tr>
+        <td class="free_form">{{ form.file1.errors }}{{ form.file1 }}</td>
+        <td class="free_form">{{ form.file1_comment.errors }}{{ form.file1_comment }}</td>
+        <td >&nbsp;</td>
+    </tr>
+    </table>
+    {% block buttons %}
+        <table>
+            <tfoot>
+            <tr>
+                <td >&nbsp;</td>
+                <td ><input type="submit" name="and_print" value="Сохранить и распечатать" tabindex="22"></td>
+                <td ><input type="submit" value="Сохранить" tabindex="22"></td>
+                <td ><input type="reset" value="Сброс" tabindex="23"></td>
+            </tr>
+            </tfoot>
+        </table>
+    {% endblock %}
+    </form>
+
+    {% if object_list %}
+        <table width="100%" border=1>
+            <caption style="background:#2D992D">История ввода</caption>
+            <thead>
+            <td>№ в кн</td>
+            <td>ФИО</td>
+            <td>Дата захор</td>
+            <td>Уч</td>
+            <td>Ряд</td>
+            <td>Мог</td>
+            <td>Кладб</td>
+            <td>Услуга</td>
+            <td>Заказчик</td>
+            <td>Телефон</td>
+            <td>Комментарий</td>
+            <td>Опции</td>
+            </thead>
+            {% for b in object_list %}
+                <tr>
+                    <td>{{ b.account_number }}</td>
+                    <td>
+                        <b> {{ b.person.last_name }}</b>
+                        {{ b.person.first_name }}
+                        {{ b.person.patronymic }}
+                    </td>
+                    <td>{{ b.date_fact|date:"d.m.Y" }}</td>
+                    <td>{{ b.product.place.area }}</td>
+                    <td>{{ b.product.place.row }}</td>
+                    <td>{{ b.product.place.seat }}</td>
+                    <td>{{ b.product.place.cemetery.name }}</td>
+                    <td>{{ b.operation.op_type }}</td>
+                    {% if b.organization %}
+                        <td>
+                            {{ b.organization }}<br/>
+                            {% if b.responsible_agent %}{{ b.responsible_agent.person }}{% else %}{{ b.ceo_name }}{% endif %}
+                        </td>
+                    {% else %}
+                        <td>
+                            {{ b.customer.person.last_name }}
+                            {{ b.customer.person.first_name }}
+                            {{ b.customer.person.patronymic }}
+                        </td>
+                    {% endif %}
+                    <td>
+                        {% for phone in b.customer.phone_set.all  %}
+                            {{ phone.f_number }}
+                            <br>
+                        {%endfor%}
+                    </td>
+                    <td>
+                        {% for comment in b.ordercomments_set.all %}
+                            {{ comment.comment }}
+                        {% endfor %}
+                    </td>
+                    <td>
+                        {% if user|in_group:"edit_burial" %}
+                            <a title="редактировать" href='/burial/{{ b.uuid }}/' target="_blank"><img src="/media/edit.png"></a>
+                        {% endif %}
+                        <a title="к могиле" href='/?cemetery={{ b.product.place.cemetery.uuid }}&area={{ b.product.place.area }}&row={{ b.product.place.row }}&seat={{ b.product.place.seat }}'><img width="16" src="/media/tree.png"></a>
+                    </td>
+                </tr>
+            {% endfor %}
+        </table>
+        <br>
+    {% endif %}
+
+    </div>
+
+    <script type="text/javascript">
+        $(function() { $('a.delete').click(function() { return confirm('Действительно удалить?') } ) })
+    </script>
+
+{% endblock %}

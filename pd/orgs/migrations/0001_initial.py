@@ -8,89 +8,69 @@ from django.db import models
 class Migration(SchemaMigration):
 
     depends_on = (
-        ('geo', '0001_initial'),
+        ('persons', '0001_initial'),
     )
 
     def forwards(self, orm):
-        # Adding model 'IDDocumentType'
-        db.create_table(u'persons_iddocumenttype', (
+        # Adding model 'Organization'
+        db.create_table(u'orgs_organization', (
             (u'id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('name', self.gf('django.db.models.fields.CharField')(max_length=255)),
-        ))
-        db.send_create_signal(u'persons', ['IDDocumentType'])
-
-        # Adding model 'Person'
-        db.create_table(u'persons_person', (
-            (u'id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('user', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['auth.User'], null=True)),
-            ('last_name', self.gf('django.db.models.fields.CharField')(max_length=255, blank=True)),
-            ('first_name', self.gf('django.db.models.fields.CharField')(max_length=255, blank=True)),
-            ('middle_name', self.gf('django.db.models.fields.CharField')(max_length=255, blank=True)),
-            ('birth_date', self.gf('django.db.models.fields.DateField')(null=True, blank=True)),
-            ('birth_date_no_month', self.gf('django.db.models.fields.BooleanField')(default=False)),
-            ('birth_date_no_day', self.gf('django.db.models.fields.BooleanField')(default=False)),
-            ('death_date', self.gf('django.db.models.fields.DateField')(null=True, blank=True)),
-            ('address', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['geo.Location'], null=True)),
+            ('ogrn', self.gf('django.db.models.fields.CharField')(max_length=15, blank=True)),
+            ('inn', self.gf('django.db.models.fields.CharField')(max_length=12, blank=True)),
+            ('kpp', self.gf('django.db.models.fields.CharField')(max_length=9, blank=True)),
+            ('name', self.gf('django.db.models.fields.CharField')(max_length=99)),
+            ('full_name', self.gf('django.db.models.fields.CharField')(max_length=255, null=True)),
+            ('ceo', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['persons.Person'], null=True, blank=True)),
+            ('ceo_name_who', self.gf('django.db.models.fields.CharField')(max_length=255, null=True, blank=True)),
+            ('ceo_document', self.gf('django.db.models.fields.CharField')(max_length=255, null=True, blank=True)),
             ('phones', self.gf('django.db.models.fields.TextField')(null=True, blank=True)),
+            ('location', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['geo.Location'], null=True, blank=True)),
         ))
-        db.send_create_signal(u'persons', ['Person'])
+        db.send_create_signal(u'orgs', ['Organization'])
 
-        # Adding model 'DocumentSource'
-        db.create_table(u'persons_documentsource', (
+        # Adding model 'BankAccount'
+        db.create_table(u'orgs_bankaccount', (
             (u'id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('name', self.gf('django.db.models.fields.CharField')(unique=True, max_length=255)),
+            ('organization', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['orgs.Organization'])),
+            ('rs', self.gf('django.db.models.fields.CharField')(max_length=20)),
+            ('ks', self.gf('django.db.models.fields.CharField')(max_length=20, blank=True)),
+            ('bik', self.gf('django.db.models.fields.CharField')(max_length=9)),
+            ('bankname', self.gf('django.db.models.fields.CharField')(max_length=64)),
+            ('ls', self.gf('django.db.models.fields.CharField')(max_length=11, null=True, blank=True)),
         ))
-        db.send_create_signal(u'persons', ['DocumentSource'])
+        db.send_create_signal(u'orgs', ['BankAccount'])
 
-        # Adding model 'PersonID'
-        db.create_table(u'persons_personid', (
+        # Adding model 'Agent'
+        db.create_table(u'orgs_agent', (
             (u'id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('person', self.gf('django.db.models.fields.related.OneToOneField')(to=orm['persons.Person'], unique=True)),
-            ('id_type', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['persons.IDDocumentType'])),
-            ('series', self.gf('django.db.models.fields.CharField')(max_length=255, null=True)),
-            ('number', self.gf('django.db.models.fields.CharField')(max_length=255)),
-            ('source', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['persons.DocumentSource'], null=True, blank=True)),
-            ('date', self.gf('django.db.models.fields.DateField')(null=True, blank=True)),
+            ('person', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['persons.Person'])),
+            ('organization', self.gf('django.db.models.fields.related.ForeignKey')(related_name='agents', to=orm['orgs.Organization'])),
         ))
-        db.send_create_signal(u'persons', ['PersonID'])
+        db.send_create_signal(u'orgs', ['Agent'])
 
-        # Adding model 'ZAGS'
-        db.create_table(u'persons_zags', (
+        # Adding model 'Doverennost'
+        db.create_table(u'orgs_doverennost', (
             (u'id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('name', self.gf('django.db.models.fields.CharField')(max_length=255)),
+            ('agent', self.gf('django.db.models.fields.related.ForeignKey')(related_name='doverennosti', to=orm['orgs.Agent'])),
+            ('number', self.gf('django.db.models.fields.CharField')(max_length=255, null=True)),
+            ('issue_date', self.gf('django.db.models.fields.DateField')(null=True, blank=True)),
+            ('expire_date', self.gf('django.db.models.fields.DateField')(null=True, blank=True)),
         ))
-        db.send_create_signal(u'persons', ['ZAGS'])
-
-        # Adding model 'DeathCertificate'
-        db.create_table(u'persons_deathcertificate', (
-            (u'id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('person', self.gf('django.db.models.fields.related.OneToOneField')(to=orm['persons.Person'], unique=True)),
-            ('s_number', self.gf('django.db.models.fields.CharField')(max_length=255, null=True, blank=True)),
-            ('series', self.gf('django.db.models.fields.CharField')(max_length=255, null=True, blank=True)),
-            ('release_date', self.gf('django.db.models.fields.DateField')(null=True, blank=True)),
-            ('zags', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['persons.ZAGS'], null=True)),
-        ))
-        db.send_create_signal(u'persons', ['DeathCertificate'])
+        db.send_create_signal(u'orgs', ['Doverennost'])
 
 
     def backwards(self, orm):
-        # Deleting model 'IDDocumentType'
-        db.delete_table(u'persons_iddocumenttype')
+        # Deleting model 'Organization'
+        db.delete_table(u'orgs_organization')
 
-        # Deleting model 'Person'
-        db.delete_table(u'persons_person')
+        # Deleting model 'BankAccount'
+        db.delete_table(u'orgs_bankaccount')
 
-        # Deleting model 'DocumentSource'
-        db.delete_table(u'persons_documentsource')
+        # Deleting model 'Agent'
+        db.delete_table(u'orgs_agent')
 
-        # Deleting model 'PersonID'
-        db.delete_table(u'persons_personid')
-
-        # Deleting model 'ZAGS'
-        db.delete_table(u'persons_zags')
-
-        # Deleting model 'DeathCertificate'
-        db.delete_table(u'persons_deathcertificate')
+        # Deleting model 'Doverennost'
+        db.delete_table(u'orgs_doverennost')
 
 
     models = {
@@ -169,24 +149,43 @@ class Migration(SchemaMigration):
             u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'name': ('django.db.models.fields.CharField', [], {'max_length': '255', 'db_index': 'True'})
         },
-        u'persons.deathcertificate': {
-            'Meta': {'object_name': 'DeathCertificate'},
+        u'orgs.agent': {
+            'Meta': {'object_name': 'Agent'},
             u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'person': ('django.db.models.fields.related.OneToOneField', [], {'to': u"orm['persons.Person']", 'unique': 'True'}),
-            'release_date': ('django.db.models.fields.DateField', [], {'null': 'True', 'blank': 'True'}),
-            's_number': ('django.db.models.fields.CharField', [], {'max_length': '255', 'null': 'True', 'blank': 'True'}),
-            'series': ('django.db.models.fields.CharField', [], {'max_length': '255', 'null': 'True', 'blank': 'True'}),
-            'zags': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['persons.ZAGS']", 'null': 'True'})
+            'organization': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'agents'", 'to': u"orm['orgs.Organization']"}),
+            'person': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['persons.Person']"})
         },
-        u'persons.documentsource': {
-            'Meta': {'object_name': 'DocumentSource'},
+        u'orgs.bankaccount': {
+            'Meta': {'object_name': 'BankAccount'},
+            'bankname': ('django.db.models.fields.CharField', [], {'max_length': '64'}),
+            'bik': ('django.db.models.fields.CharField', [], {'max_length': '9'}),
             u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'name': ('django.db.models.fields.CharField', [], {'unique': 'True', 'max_length': '255'})
+            'ks': ('django.db.models.fields.CharField', [], {'max_length': '20', 'blank': 'True'}),
+            'ls': ('django.db.models.fields.CharField', [], {'max_length': '11', 'null': 'True', 'blank': 'True'}),
+            'organization': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['orgs.Organization']"}),
+            'rs': ('django.db.models.fields.CharField', [], {'max_length': '20'})
         },
-        u'persons.iddocumenttype': {
-            'Meta': {'object_name': 'IDDocumentType'},
+        u'orgs.doverennost': {
+            'Meta': {'ordering': "['-issue_date']", 'object_name': 'Doverennost'},
+            'agent': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'doverennosti'", 'to': u"orm['orgs.Agent']"}),
+            'expire_date': ('django.db.models.fields.DateField', [], {'null': 'True', 'blank': 'True'}),
             u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'name': ('django.db.models.fields.CharField', [], {'max_length': '255'})
+            'issue_date': ('django.db.models.fields.DateField', [], {'null': 'True', 'blank': 'True'}),
+            'number': ('django.db.models.fields.CharField', [], {'max_length': '255', 'null': 'True'})
+        },
+        u'orgs.organization': {
+            'Meta': {'ordering': "['name']", 'object_name': 'Organization'},
+            'ceo': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['persons.Person']", 'null': 'True', 'blank': 'True'}),
+            'ceo_document': ('django.db.models.fields.CharField', [], {'max_length': '255', 'null': 'True', 'blank': 'True'}),
+            'ceo_name_who': ('django.db.models.fields.CharField', [], {'max_length': '255', 'null': 'True', 'blank': 'True'}),
+            'full_name': ('django.db.models.fields.CharField', [], {'max_length': '255', 'null': 'True'}),
+            u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'inn': ('django.db.models.fields.CharField', [], {'max_length': '12', 'blank': 'True'}),
+            'kpp': ('django.db.models.fields.CharField', [], {'max_length': '9', 'blank': 'True'}),
+            'location': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['geo.Location']", 'null': 'True', 'blank': 'True'}),
+            'name': ('django.db.models.fields.CharField', [], {'max_length': '99'}),
+            'ogrn': ('django.db.models.fields.CharField', [], {'max_length': '15', 'blank': 'True'}),
+            'phones': ('django.db.models.fields.TextField', [], {'null': 'True', 'blank': 'True'})
         },
         u'persons.person': {
             'Meta': {'ordering': "['last_name', 'first_name', 'middle_name']", 'object_name': 'Person'},
@@ -201,22 +200,7 @@ class Migration(SchemaMigration):
             'middle_name': ('django.db.models.fields.CharField', [], {'max_length': '255', 'blank': 'True'}),
             'phones': ('django.db.models.fields.TextField', [], {'null': 'True', 'blank': 'True'}),
             'user': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['auth.User']", 'null': 'True'})
-        },
-        u'persons.personid': {
-            'Meta': {'object_name': 'PersonID'},
-            'date': ('django.db.models.fields.DateField', [], {'null': 'True', 'blank': 'True'}),
-            u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'id_type': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['persons.IDDocumentType']"}),
-            'number': ('django.db.models.fields.CharField', [], {'max_length': '255'}),
-            'person': ('django.db.models.fields.related.OneToOneField', [], {'to': u"orm['persons.Person']", 'unique': 'True'}),
-            'series': ('django.db.models.fields.CharField', [], {'max_length': '255', 'null': 'True'}),
-            'source': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['persons.DocumentSource']", 'null': 'True', 'blank': 'True'})
-        },
-        u'persons.zags': {
-            'Meta': {'ordering': "['name']", 'object_name': 'ZAGS'},
-            u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'name': ('django.db.models.fields.CharField', [], {'max_length': '255'})
         }
     }
 
-    complete_apps = ['persons']
+    complete_apps = ['orgs']

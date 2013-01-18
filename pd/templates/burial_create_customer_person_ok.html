@@ -1,0 +1,14 @@
+<form class='form-horizontal in-place' action="{% url new_burial_place %}" method="POST">
+    <div class="well">
+        Данные сохранены.
+        <script type="text/javascript">
+            var a  = $('<a href="{% url new_burial_customer %}?customer_type=0&instance={{ person.pk }}" class="link-customer load">ФЛ {{ person }}</a>');
+            $('.link-customer').replaceWith(a);
+            $('#id_client_person').val('{{ person.pk }}').change();
+
+            $('#id_client_organization').val('').change();
+            $('#id_doverennost').val('').change();
+            $('#id_agent').val('').change();
+        </script>
+    </div><!--/.well -->
+</form>

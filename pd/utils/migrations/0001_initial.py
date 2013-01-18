@@ -17,4 +17,4 @@ class Migration(SchemaMigration):
         
     }
 
-    complete_apps = ['organizations']
+    complete_apps = ['utils']

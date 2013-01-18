@@ -1,0 +1,65 @@
+<form class='form-horizontal in-place' method="POST" action="{% url new_burial_person %}?dead={{ request.GET.dead }}">
+    <div class="well">
+        <h2>Усопший</h2>
+        {{ person_form.non_field_errors }}
+        <p>
+            {{ person_form.last_name.label_tag }}
+            {{ person_form.last_name }}
+            {{ person_form.last_name.errors }}
+        </p>
+        <p>
+            {{ person_form.skip_last_name.label_tag }}
+            {{ person_form.skip_last_name }}
+            {{ person_form.skip_last_name.errors }}
+        </p>
+        <p>
+            {{ person_form.first_name.label_tag }}
+            {{ person_form.first_name }}
+            {{ person_form.first_name.errors }}
+        </p>
+        <p>
+            {{ person_form.middle_name.label_tag }}
+            {{ person_form.middle_name }}
+            {{ person_form.middle_name.errors }}
+        </p>
+        <br/>
+        {{ person_form.instance }}
+        {{ person_form.instance.errors }}
+        {% if person_form.is_selected %}
+            <input type="hidden" name="selected" value="true" />
+            <p>
+                {{ person_form.birth_date.label_tag }}
+                {{ person_form.birth_date }}
+                {{ person_form.birth_date.errors }}
+            </p>
+            <p>
+                {{ person_form.death_date.label_tag }}
+                {{ person_form.death_date }}
+                {{ person_form.death_date.errors }}
+            </p>
+            {% include "burial_location_form.html" %}
+            <h2>Свидетельство о смерти</h2>
+            <p class="narrow">
+                {{ dc_form.series.label_tag }}
+                {{ dc_form.series }}
+                {{ dc_form.series.errors }}
+            </p>
+            <p class="narrow">
+                {{ dc_form.s_number.label_tag }}
+                {{ dc_form.s_number }}
+                {{ dc_form.s_number.errors }}
+            </p>
+            <p class="narrow">
+                {{ dc_form.release_date.label_tag }}
+                {{ dc_form.release_date }}
+                {{ dc_form.release_date.errors }}
+            </p>
+            <p>
+                {{ dc_form.zags.label_tag }}
+                {{ dc_form.zags }}
+                {{ dc_form.zags.errors }}
+            </p>
+        {% endif %}
+        <h2 class="buttons"><button class="btn">{% if person_form.is_selected %}Сохранить{% else %}Далее{% endif %}</button></h2>
+    </div><!--/.well -->
+</form>

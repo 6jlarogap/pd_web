@@ -1,0 +1,60 @@
+<h3>Адрес</h3>
+<p>
+    {{ location_form.street.label_tag }}
+    {{ location_form.street_name }}
+    {{ location_form.street.errors }} {{ location_form.street_name.errors }}
+</p>
+<p class="narrow">
+    {{ location_form.house.label_tag }}
+    {{ location_form.house }}
+    {{ location_form.house.errors }}
+</p>
+<p class="narrow">
+    {{ location_form.block.label_tag }}
+    {{ location_form.block }}
+    {{ location_form.block.errors }}
+</p>
+<p class="narrow">
+    {{ location_form.building.label_tag }}
+    {{ location_form.building }}
+    {{ location_form.building.errors }}
+</p>
+<p class="narrow">
+    {{ location_form.flat.label_tag }}
+    {{ location_form.flat }}
+    {{ location_form.flat.errors }}
+</p>
+{% if person_form.phones and person_form.is_selected and not dc_form %}
+    <p>
+        {{ person_form.phones.label_tag }}
+        {{ person_form.phones }}
+        {{ person_form.phones.errors }}
+    </p>
+{% endif %}
+<br/>
+<p>
+    {{ location_form.city.label_tag }}
+    {{ location_form.city_name }}
+    {{ location_form.city.errors }} {{ location_form.city_name.errors }}
+</p>
+<p>
+    {{ location_form.region.label_tag }}
+    {{ location_form.region_name }}
+    {{ location_form.region.errors }} {{ location_form.region_name.errors }}
+</p>
+<p>
+    {{ location_form.country.label_tag }}
+    {{ location_form.country_name }}
+    {{ location_form.country.errors }} {{ location_form.country_name.errors }}
+</p>
+<p class="narrow">
+    {{ location_form.post_index.label_tag }}
+    {{ location_form.post_index }}
+    {{ location_form.post_index.errors }}
+</p>
+<br/>
+<p class="wide">
+    {{ location_form.info.label_tag }}
+    {{ location_form.info }}
+    {{ location_form.info.errors }}
+</p>

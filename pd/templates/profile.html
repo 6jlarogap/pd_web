@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block title %}Профиль пользователя{% endblock %}
+{% block scripts %}
+<script type="text/javascript" src="/media/js/jquery-1.4.4.min.js"></script>
+<script type="text/javascript" src="/media/js/jquery.autocomplete.min.js"></script>
+<script type="text/javascript" src="/media/js/jquery.bgiframe.min.js"></script>
+<link rel="stylesheet" href="/media/css/jquery.autocomplete.css" type="text/css" />
+<script>
+    $(function(){
+        $("#id_default_country").change(function(){
+            $("#id_default_region").val("");
+            $("#id_default_city").val("");
+        });
+        $("#id_default_region").change(function(){
+            $("#id_default_city").val("");
+        });
+
+    //автодополнение города 1.
+    $("#id_default_city").autocomplete("/get_cities/", {
+        autoFill: true,
+        matchContains: true,
+        minChars: 1,
+        extraParams: {
+            region: function(){
+                return $("#id_lawadr_region").val();
+            }
+        },
+        cacheLength: 1,
+        selectFirst: true,
+        max: 24
+    });
+
+
+
+
+    })
+    function copy1(){
+        $("#id_factadr_index").val($("#id_lawadr_index").val());
+        $("#id_factadr_country").val($("#id_lawadr_country").val());
+        $("#id_factadr_region").val($("#id_lawadr_region").val());
+        $("#id_factadr_city").val($("#id_lawadr_city").val());
+        $("#id_factadr_street").val($("#id_lawadr_street").val());
+        $("#id_factadr_house").val($("#id_lawadr_house").val());
+    }
+
+    function copy2(){
+        $("#id_postadr_index").val($("#id_factadr_index").val());
+        $("#id_postadr_country").val($("#id_factadr_country").val());
+        $("#id_postadr_region").val($("#id_factadr_region").val());
+        $("#id_postadr_city").val($("#id_factadr_city").val());
+        $("#id_postadr_street").val($("#id_factadr_street").val());
+        $("#id_postadr_house").val($("#id_factadr_house").val());
+    }
+</script>
+{% endblock %}
+
+{% block content %}
+    <h1>Профиль пользователя</h1>
+    <div id="forms">
+        <form action="" method="post">
+            <table>
+                {{ form.as_table }}
+                <tfoot>
+                    <tr>
+                        <td align="right" colspan="2">
+                            <input type="submit" value="Сохранить">
+                        </td>
+                    </tr>
+                    <tr>
+                        <td align="right" colspan="2">
+                            <input type="reset" value="Очистить">
+                        </td>
+                    </tr>
+                </tfoot>
+            </table>
+        </form>
+    </div>
+{% endblock %}

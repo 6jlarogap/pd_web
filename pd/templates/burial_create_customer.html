@@ -1,0 +1,161 @@
+<form class='form-horizontal in-place' method="POST" action="{% url new_burial_customer %}">
+    <div class="well">
+        <h2>Заказчик</h2>
+        {{ person_form.non_field_errors }}
+        {{ customer_id_form.non_field_errors }}
+        {{ customer_form.non_field_errors }}
+        <p>
+            {{ customer_form.customer_type.label_tag }}
+            {{ customer_form.customer_type }}
+            {{ customer_form.customer_type.errors }}
+        </p>
+        <div class="fields-fizik clear clearfix">
+            <p>
+                {{ person_form.last_name.label_tag }}
+                {{ person_form.last_name }}
+                {{ person_form.last_name.errors }}
+            </p>
+            <p>
+                {{ person_form.first_name.label_tag }}
+                {{ person_form.first_name }}
+                {{ person_form.first_name.errors }}
+            </p>
+            <p>
+                {{ person_form.middle_name.label_tag }}
+                {{ person_form.middle_name }}
+                {{ person_form.middle_name.errors }}
+            </p>
+            <br/>
+            {{ person_form.instance }}
+            {{ person_form.instance.errors }}
+            {% if person_form.is_selected %}
+                <input type="hidden" name="selected" value="true" />
+                <br/>
+                <p>
+                    {{ customer_id_form.id_type.label_tag }}
+                    {{ customer_id_form.id_type }}
+                    {{ customer_id_form.id_type.errors }}
+                </p>
+                <p class="narrow">
+                    {{ customer_id_form.series.label_tag }}
+                    {{ customer_id_form.series }}
+                    {{ customer_id_form.series.errors }}
+                </p>
+                <p class="narrow">
+                    {{ customer_id_form.number.label_tag }}
+                    {{ customer_id_form.number }}
+                    {{ customer_id_form.number.errors }}
+                </p>
+                <p>
+                    {{ customer_id_form.source.label_tag }}
+                    {{ customer_id_form.source }}
+                    {{ customer_id_form.source.errors }}
+                </p>
+                <p class="narrow">
+                    {{ customer_id_form.date.label_tag }}
+                    {{ customer_id_form.date }}
+                    {{ customer_id_form.date.errors }}
+                </p>
+                {% include "burial_location_form.html" %}
+            {% endif %}
+        </div>
+        <div class="fields-yurik clear clearfix">
+            <p>
+                {{ customer_form.organization.label_tag }}
+                {{ customer_form.organization }}
+                {{ customer_form.organization.errors }}
+            </p>
+            <p>
+                {{ customer_form.agent_director.label_tag }}
+                {{ customer_form.agent_director }}
+                {{ customer_form.agent_director.errors }}
+            </p>
+            <div class="fields-agent">
+                <h2>Агент</h2>
+                <p>
+                    {{ customer_form.agent_person.label_tag }}
+                    {{ customer_form.agent_person }}
+                    {{ customer_form.agent_person.errors }}
+                    <a href="#addAgent" role="button" class="btn" data-toggle="modal" id="add_agent_btn">Добавить </a>
+                </p>
+                <p class="narrow">
+                    {{ customer_form.agent_doverennost.label_tag }}
+                    {{ customer_form.agent_doverennost }}
+                    {{ customer_form.agent_doverennost.errors }}
+                    <a href="#addDover" role="button" class="btn" data-toggle="modal" id="add_dover_btn">Добавить </a>
+                </p>
+            </div>
+        </div>
+        <h2 class="buttons"><button class="btn">{% if person_form.is_selected %}Сохранить{% else %}Далее{% endif %}</button></h2>
+    </div><!--/.well -->
+</form>
+
+<div class="modal" id="addAgent" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+    <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+        <h3 id="myModalLabel">Добавить агента</h3>
+    </div>
+    <div class="modal-body">
+        <form action="{% url new_agent %}" method="POST" id="agent_form">
+            {% csrf_token %}
+            <div class="form-internal">
+                {{ add_agent_form.as_p }}
+            </div>
+        </form>
+    </div>
+    <div class="modal-footer">
+        <button class="btn" data-dismiss="modal" aria-hidden="true">Отмена</button>
+        <button class="btn btn-primary" id="add_commit">Добавить</button>
+    </div>
+</div>
+
+<div class="modal" id="addDover" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+    <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+        <h3 id="myModalLabel">Добавить доверенность</h3>
+    </div>
+    <div class="modal-body">
+        <form action="{% url new_dover %}" method="POST" id="dover_form">
+            {% csrf_token %}
+            <div class="form-internal">
+                {{ doverennost_form.as_p }}
+            </div>
+        </form>
+    </div>
+    <div class="modal-footer">
+        <button class="btn" data-dismiss="modal" aria-hidden="true">Отмена</button>
+        <button class="btn btn-primary" id="add_dover">Добавить</button>
+    </div>
+</div>
+
+<script type="text/javascript">
+    ORG_AGENTS = {
+        {% for o in organizations %}
+            {{ o.pk }}: {
+                {% for a in o.agents.all %}
+                    {{ a.person.pk }}: {
+                        name: "{{ a.person }}",
+                        agent_pk: {{ a.pk }},
+                        cur_dov: {{ a.doverennosti.all.0.pk|default:"null" }},
+                        dover: [
+                            {% for d in a.doverennosti.all %}
+                                {pk: {{ d.pk }}, label: "{{ d }}"}{% if not forloop.last %},{% endif %}
+                            {% endfor %}
+                        ]
+                    }{% if not forloop.last %},{% endif %}
+                {% endfor %}
+            }{% if not forloop.last %},{% endif %}
+        {% endfor %}
+    }
+
+    $(function() {
+        $('#add_agent_btn').hide();
+        $('#add_dover_btn').hide();
+
+        $('#id_customer-organization').change();
+
+        $('#addAgent').modal().modal('hide');
+        $('#addDover').modal().modal('hide');
+    });
+</script>
+

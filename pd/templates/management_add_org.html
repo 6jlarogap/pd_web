@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{%  load my_filters %}
+{% block title %}Управление организациями{% endblock %}
+{% block content %}<h1>Управление организациями</h1>
+<h3>Организации можно создавать и редактировать.</h3>
+<div id="forms" class="form-horizontal">
+    <form action="" method="post">
+        {{ org_form.as_p }}
+        {% include "burial_location_form.html" %}
+
+        <h3>Директор</h3>
+        {{ ceo_form.as_p }}
+
+        <h3>Агенты</h3>
+        {{ agents_formset.management_form }}
+        {{ agents_formset.errors }}
+        {% for f in agents_formset.forms %}
+            <div class="well">{{ f.as_p }}</div>
+        {% endfor %}
+
+        <h3>Счета</h3>
+        {{ accounts_formset.management_form }}
+        {{ accounts_formset.errors }}
+        {% for f in accounts_formset.forms %}
+            <div class="well">{{ f.as_p }}</div>
+        {% endfor %}
+
+        <h2 class="buttons">
+            <button class="btn btn-primary btn-large">Создать</button>
+            <input type="reset" class="btn" value="Очистить" />
+        </h2>
+    </form>
+</div>
+{% if orgs %}
+<br>
+<table class="burials table table-striped table-bordered">
+    <thead>
+        <td width="40%">
+            Наименование
+        </td>
+        <td width="30%">
+            Адрес
+        </td>
+        <td width="30%" align="center">
+            Опции
+        </td>
+    </thead>
+    {% for org in orgs %}
+    <tr>
+        <td width="40%">
+            {{ org.name }}
+        </td>
+        <td width="30%">
+            {{ org.location|default:"" }}
+        </td>
+        <td width="30%" align="center">
+            <a title="редактировать" href="/management/org/?pk={{ org.pk }}"><i class="icon icon-edit"></i></a>
+        </td>
+    </tr>
+    {% endfor %}
+</table>
+{% endif %}
+
+<link rel="stylesheet" href="/media/css/ui-lightness/jquery-ui-1.8.6.custom.css" type="text/css" />
+<link rel="stylesheet" href="/media/css/jquery-ui-timepicker.css?v=0.2.3" type="text/css" />
+<script type="text/javascript" src="/media/js/jquery-1.4.4.min.js"></script>
+<script type="text/javascript" src="/media/js/jquery-ui-1.8.6.custom.min.js"></script>
+<script type="text/javascript" src="/media/js/jquery.query-2.1.7.js"></script>
+<script type="text/javascript" src="/admin_media/js/admin/RelatedObjectLookups.js"></script>
+<script type="text/javascript" src="/media/js/jquery.ui.timepicker.js?v=0.2.3"></script>
+<script type="text/javascript" src="/media/js/address.js"></script>
+{% endblock %}

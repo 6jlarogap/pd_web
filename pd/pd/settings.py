@@ -1,6 +1,6 @@
-# Django settings for pd project.
+# coding: utf-8
 
-DEBUG = True
+DEBUG = False
 TEMPLATE_DEBUG = DEBUG
 
 ADMINS = (
@@ -57,6 +57,7 @@ MIDDLEWARE_CLASSES = (
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
+    'debug_toolbar.middleware.DebugToolbarMiddleware',
 )
 
 ROOT_URLCONF = 'pd.urls'
@@ -78,11 +79,15 @@ INSTALLED_APPS = (
     'django.contrib.admindocs',
 
     'south',
+    'orgs',
+    'pytils',
+    'debug_toolbar',
 
     'burials',
     'geo',
-    'organizations',
+    'orgs',
     'persons',
+    'utils',
 )
 
 LOGGING = {
@@ -108,6 +113,29 @@ LOGGING = {
         },
     }
 }
+
+INTERNAL_IPS = []
+
+LOGIN_URL = "/login/"
+LOGOUT_URL = "/logout/"
+LOGIN_REDIRECT_URL = "/"
+
+PAGINATION_USER_PER_PAGE_ALLOWED = True
+PAGINATION_PER_PAGE = 50
+
+# Кодировка для файлов обмена.
+CSV_ENCODING = "utf8"
+
+# Настройки пэйджинации.
+PAGINATION_USER_PER_PAGE_MAX = 50
+PAGINATION_PER_PAGE = 5
+
+SENTRY_TESTING = True
+
+DEBUG_TOOLBAR_CONFIG = {'INTERCEPT_REDIRECTS': False}
+
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+SESSION_SAVE_EVERY_REQUEST = True
 
 try:
     from local_settings import *

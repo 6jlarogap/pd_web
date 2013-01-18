@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{%  load my_filters %}
+{% block title %}Профиль пользователя{% endblock %}
+{% block scripts %}
+<script type="text/javascript" src="/media/js/jquery-1.4.4.min.js"></script>
+{#<script type="text/javascript" src="/media/js/jquery.autocomplete.min.js"></script>#}
+{#<script type="text/javascript" src="/media/js/jquery.bgiframe.min.js"></script>#}
+{#<link rel="stylesheet" href="/media/css/jquery.autocomplete.css" type="text/css" />#}
+<script>
+//Первоначальное заполнение списка услуг.
+$(function(){
+    $.getJSON("/getoper/",{id: $("#id_cemetery").val(), ajax: 'true'}, function(j){
+      var options = '';
+      for (var i = 0; i < j.length; i++) {
+        if (j[i].optionValue == $("#id_hoperation").val())
+        {
+            options += '<option selected value="' + j[i].optionValue + '">' + j[i].optionDisplay + '</option>';
+        }
+        else
+        {
+            options += '<option value="' + j[i].optionValue + '">' + j[i].optionDisplay + '</option>';
+        }
+      }
+      $("#id_operation").html(options);
+    });
+    });
+$(function(){
+  // Обработчик изменения выбранной услуги.
+  $("#id_operation").change(function(){
+    $("#id_hoperation").val($("#id_operation").val());
+  });
+  // Обработчик изменения выбранного кладбища.
+  $("#id_cemetery").change(function(){
+    $.getJSON("/getoper/",{id: $(this).val(), ajax: 'true'}, function(j){
+      var options = '';
+      for (var i = 0; i < j.length; i++) {
+        if (j[i].optionValue == $("#id_hoperation").val())
+        {
+            options += '<option selected value="' + j[i].optionValue + '">' + j[i].optionDisplay + '</option>';
+        }
+        else
+        {
+            options += '<option value="' + j[i].optionValue + '">' + j[i].optionDisplay + '</option>';
+        }
+      }
+      $("#id_operation").html(options);
+    });
+  });
+});
+</script>
+{% endblock %}
+{% block content %}
+    <h1>Профиль пользователя</h1>
+    <h3>Выбирите значения по умолчанию</h3>
+    <div id="forms">
+        <form action="" method="post">
+            <table>
+                {{ form.as_table }}
+                <tfoot>
+                    <tr>
+                        <td align="right" colspan="2">
+                            <input type="submit" value="Сохранить">
+                        </td>
+                    </tr>
+                    <tr>
+                        <td align="right" colspan="2">
+                            <input type="reset" value="Очистить">
+                        </td>
+                    </tr>
+                </tfoot>
+            </table>
+        </form>
+    </div>
+{% endblock %}

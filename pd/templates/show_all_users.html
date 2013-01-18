@@ -1,0 +1,8 @@
+{% extends "base.html" %}
+{% block title %}Список пользователей{% endblock %}
+{% block h1 %}Список пользователей:{% endblock %}
+{% block content %}
+    {% for person in persons %}
+        {{ person }}<br />
+    {% endfor %}
+{% endblock %}

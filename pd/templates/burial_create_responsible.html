@@ -1,0 +1,29 @@
+<form class='form-horizontal in-place' method="POST" action="{% url new_burial_responsible %}">
+    <div class="well">
+        <h2>Ответственный</h2>
+        {{ person_form.non_field_errors }}
+        <p>
+            {{ person_form.last_name.label_tag }}
+            {{ person_form.last_name }}
+            {{ person_form.last_name.errors }}
+        </p>
+        <p>
+            {{ person_form.first_name.label_tag }}
+            {{ person_form.first_name }}
+            {{ person_form.first_name.errors }}
+        </p>
+        <p>
+            {{ person_form.middle_name.label_tag }}
+            {{ person_form.middle_name }}
+            {{ person_form.middle_name.errors }}
+        </p>
+        <br/>
+        {{ person_form.instance }}
+        {{ person_form.instance.errors }}
+        {% if person_form.is_selected %}
+            <input type="hidden" name="selected" value="true" />
+            {% include "burial_location_form.html" %}
+        {% endif %}
+        <h2 class="buttons"><button class="btn">{% if person_form.is_selected %}Сохранить{% else %}Далее{% endif %}</button></h2>
+    </div><!--/.well -->
+</form>

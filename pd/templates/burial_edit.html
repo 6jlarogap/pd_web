@@ -1,0 +1,25 @@
+{% extends "burial_create.html" %}
+
+{% block title %}Редактирование захоронения{% endblock %}
+
+{% block buttons %}
+    <a href="{% url print_burial burial_form.instance.pk %}" class="btn">Документы</a>
+
+    <br/>
+    <br/>
+    <br/>
+    {% if burial_form.instance.deleted %}
+        <a href="{% url edit_burial burial_form.instance.pk %}?recover=1" class="btn btn-success">Восстановить</a>
+    {% else %}
+        <a href="{% url edit_burial burial_form.instance.pk %}?delete=1" class="btn btn-danger">Удалить</a>
+    {% endif %}
+
+    <script type="text/javascript">
+        $(function() {
+            $('.btn-danger').click(function() {
+                return confirm('Вы уверены?');
+            })
+        })
+    </script>
+{% endblock %}
+

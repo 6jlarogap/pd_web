@@ -1,4 +1,4 @@
-Django==1.4.3
+-e git+git://github.com/django/django.git@stable/1.5.x#egg=Django
 Fabric==1.5.1
 Pillow==1.7.8
 South==0.7.6

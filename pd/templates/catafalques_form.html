@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% load adminmedia %}
+{% load my_filters %}
+
+{% block title %}Документы захоронения{% endblock %}
+
+{% block scripts %}
+    {{ form.media }}
+{% endblock %}
+
+{% block content %}
+<div id="free_form">
+    <form action="" method="GET" enctype="multipart/form-data" target="_blank">
+        {{ form.non_field_errors }}
+        {{ form.as_p }}
+        <input type="submit" value="Распечатать" />
+    </form>
+</div>
+{% endblock %}

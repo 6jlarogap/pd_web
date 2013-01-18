@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Импорт{% endblock %}
+{% block content %}
+    <h1>Импорт</h1>
+    <h3>Нажмите 'обзор', затем выберите файл и нажмите 'Импорт'</h3>
+    <div id="forms">
+        <form enctype="multipart/form-data" action="" method="post">
+            <table>
+                {{ form.as_table }}
+            </table>
+            <input type="submit" value="Импорт"/>
+        </form>
+    </div>
+{% endblock %}

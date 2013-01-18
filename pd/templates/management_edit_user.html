@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{%  load my_filters %}
+{% block title %}Редактирование персонала{% endblock %}
+{% block content %}
+<h1>Редактирование персонала</h1>
+    <h3>Измените поля и нажмите 'Сохранить'</h3>
+    <div id="forms">
+        <form action="" method="post">
+            <table>
+                {{ form.as_table }}
+                {{ phoneset }}
+                <tfoot>
+                    <tr><td align="right" colspan="2">
+                        <input type="submit" class="btn btn-primary btn-large" value="Сохранить" />
+                        {% if current_user.is_active %}
+                            <a href="?user_pk={{ request.GET.user_pk }}&deactivate=1" class="btn btn-danger">Деактивировать</a>
+                        {% else %}
+                            <a href="?user_pk={{ request.GET.user_pk }}&activate=1" class="btn btn-danger">Деактивировать</a>
+                        {% endif %}
+                    </td></tr>
+                    <tr><td align="right" colspan="2"><input type="reset" class="btn" value="Очистить" /></td></tr>
+                </tfoot>
+            </table>
+        </form>
+    </div>
+    <a href="/management/user/">Вернуться к списку исполнителей</a>
+{% endblock %}

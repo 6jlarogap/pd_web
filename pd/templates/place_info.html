@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+{% load adminmedia %}
+{% load my_filters %}
+{% load pytils_numeral %}
+
+{% block title %}Место{% endblock %}
+
+{% block content %}
+    <dl>
+        {% if place.cemetery %}
+            <dt>Кладбище</dt>
+            <dd>{{ place.cemetery }}</dd>
+        {% endif %}
+        {% if place.area %}
+            <dt>Участок</dt>
+            <dd>{{ place.area }}</dd>
+        {% endif %}
+        {% if place.row %}
+            <dt>Ряд</dt>
+            <dd>{{ place.row }}</dd>
+        {% endif %}
+        {% if place.seat %}
+            <dt>Место</dt>
+            <dd>{{ place.seat }}</dd>
+        {% endif %}
+        {% if user|has_perm:"cemetery_app.edit_burial"  %}
+            <dt></dt>
+            <dd>
+                <a class="btn btn-primary" href="{% url new_burial %}?place={{ place.pk }}">Добавить родственное</a>
+            </dd>
+        {% endif %}
+        {% if place.responsible %}
+            <dt>Ответственный</dt>
+            <dd>
+                {{ place.responsible }}
+                {% if place.responsible.phones and user|has_perm:"cemetery_app.add_burial" %}
+                    (тел. {{ place.responsible.phones }})
+                {% endif %}
+                {% if user|has_perm:"cemetery_app.add_burial" %}
+                    <a class="btn btn-danger" href="?delete_responsible=1">открепить</a>
+                {% endif %}
+            </dd>
+        {% endif %}
+        {% if place.unowned %}
+            <dt>Бесхозяйное</dt>
+            <dd></dd>
+        {% endif %}
+    </dl>
+
+    <h2 class="buttons">
+
+    </h2>
+
+    <h3>Захоронения:</h3>
+    <form action="" method="POST">
+        {% if user|has_perm:"cemetery_app.add_burial" %}
+            {{ rf.as_p }}
+        {% endif %}
+        <p>Свободно для захоронения: {{ place.rooms_free }} мест{{ place.rooms_free|choose_plural:"о,а," }}</p>
+        {{ pbf.management_form }}
+        {{ pbf.non_form_errors }}
+        <table>
+            {% for d,f in pbf.pbf_data %}
+                <tr>
+                    <td>
+                        {{ f.non_field_errors }}
+                        {{ forloop.counter }}.
+                        {% if d.burials %}
+                            {% for b in d.burials %}
+                                <a href="{% url view_burial b.pk %}">{{ b }}</a>
+                                {% if b.exhumated_date or user|has_perm:"cemetery_app.add_burial" %}
+                                    ({% if b.exhumated_date %}Эксгумировано, {% endif %}{% if user|has_perm:"cemetery_app.add_burial" %}<a href="{% url edit_burial b.pk %}"><i class="icon icon-edit"></i> правка</a>{% endif %})
+                                {% endif %}
+                                {% if user|has_perm:"cemetery_app.add_burial"  %}
+                                    <a title="открепить" href="?unlink={{ b.pk }}"><i class="icon icon-remove"></i></a>
+                                {% endif %}
+                                <br/>
+                            {% endfor %}
+                        {% endif %}
+                        {% if d.available %}
+                            {{ f.burial.errors }}
+                            {% if user|has_perm:"cemetery_app.add_burial"  %}
+                                {{ f.burial }}
+                            {% endif %}
+                        {% endif %}
+                    </td>
+                </tr>
+            {% endfor %}
+            {% if pbf.free_burials %}
+                <tr><td><h3>+ непривязанные</h3></td></tr>
+                {% for b in pbf.free_burials %}
+                    <tr>
+                        <td>
+                            {{ forloop.counter }}.
+                            <a href="{% url view_burial b.pk %}">{{ b }}</a>
+                            {% if b.exhumated_date or user|has_perm:"cemetery_app.add_burial" %}
+                                ({% if b.exhumated_date %}Эксгумировано, {% endif %}{% if user|has_perm:"cemetery_app.add_burial" %}<a href="{% url edit_burial b.pk %}"><i class="icon icon-edit"></i> правка</a>{% endif %})
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            {% endif %}
+            {% if pbf.exhumated_burials %}
+                <tr><td><h3>+ эксгумированные</h3></td></tr>
+                {% for b in pbf.exhumated_burials %}
+                    <tr>
+                        <td>
+                            {{ forloop.counter }}.
+                            <a href="{% url view_burial b.pk %}">{{ b }}</a>
+                            {% if b.exhumated_date or user|has_perm:"cemetery_app.add_burial" %}
+                                ({% if b.exhumated_date %}Эксгумировано,
+                                    {% if b.grave_id %}было место {{ b.grave_id|add:1 }}, {% endif %}
+                                {% endif %}
+                                {% if user|has_perm:"cemetery_app.add_burial" %}
+                                    <a href="{% url edit_burial b.pk %}"><i class="icon icon-edit"></i> правка</a>
+                                {% endif %})
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            {% endif %}
+
+        </table>
+        {% if user|has_perm:"cemetery_app.add_burial"  %}
+            <h2 class="buttons">
+                <button class="btn btn-primary btn-large">Сохранить</button>
+            </h2>
+        {% endif %}
+    </form>
+{% endblock %}

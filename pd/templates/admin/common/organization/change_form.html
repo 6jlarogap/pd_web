@@ -1,0 +1,10 @@
+{% extends "admin/change_form.html" %}
+
+{% block extrahead %}
+    {{ block.super }}
+    <script>
+        django.jQuery(function() {
+            django.jQuery('#id_full_name').css('width', '100%');
+        })
+    </script>
+{% endblock %}

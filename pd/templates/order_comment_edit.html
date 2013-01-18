@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Редактирование комментария{% endblock %}
+{% block content %}
+<h1>Редактирование комментария</h1>
+    <h3>Измените комментарий и нажмите 'Сохранить'</h3>
+    <div id="forms">
+        <form action="" method="post">
+            <table>
+                {{ form.as_table }}
+                <tfoot>
+                    <tr><td align="right" colspan="2"><input type="submit" value="Сохранить"></td></tr>
+                    <tr><td align="right" colspan="2"><input type="reset" value="Очистить"></td></tr>
+                </tfoot>
+            </table>
+        </form>
+    </div>
+{% endblock %}
