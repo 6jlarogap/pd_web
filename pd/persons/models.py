@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from django.contrib.auth.models import User
 
 from django.db import models
 
@@ -21,6 +22,8 @@ class Person(models.Model):
     Физическое лицо (клиент, сотрудник, кто угодно).
     """
     user = models.ForeignKey('auth.User', editable=False, null=True)
+    creator = models.ForeignKey(User, editable=False, null=True, related_name='created_persons')
+    date_of_creation = models.DateTimeField(auto_now_add=True, null=True)
 
     last_name = models.CharField(u"Фамилия", max_length=255, blank=True)  # Фамилия.
     first_name = models.CharField(u"Имя", max_length=255, blank=True)  # Имя.

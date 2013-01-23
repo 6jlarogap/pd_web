@@ -772,13 +772,17 @@ def management_user(request):
     Страница управления пользователями (создание нового, показ существующих).
     """
 
+    q = Q(creator__isnull=True)
+    if request.user.is_authenticated():
+        q |= Q(creator=request.user)
+
     instance = None
     user = None
     if request.GET.get('pk'):
-        instance = get_object_or_404(Person, pk=request.GET.get('pk'))
+        instance = get_object_or_404(Person, q, pk=request.GET.get('pk'))
     elif request.GET.get('user_pk'):
         user_pk = request.GET.get('user_pk')
-        user = User.objects.get(pk=user_pk)
+        user = User.objects.filter(q).get(pk=user_pk)
 
         if request.GET.get('deactivate'):
             user.is_active = False
@@ -810,7 +814,8 @@ def management_user(request):
         person = form.save(creator=request.user)
         messages.success(request, u'Данные сохранены успешно')
         return redirect('management_user')
-    users = User.objects.all().order_by('last_name')
+
+    users = User.objects.filter(q).order_by('last_name')
     return render(request, 'management_user.html', {'form': form, "users": users, 'current_user': user})
 
 @user_passes_test(lambda u: u.has_perm('burials.add_cemetery'))
@@ -819,9 +824,13 @@ def management_cemetery(request):
     """
     Страница управления кладбищами.
     """
+    q = Q(creator__isnull=True)
+    if request.user.is_authenticated():
+        q |= Q(creator=request.user)
+
     cemetery = None
     if request.GET.get('pk'):
-        cemetery = get_object_or_404(Cemetery, pk=request.GET.get('pk'))
+        cemetery = get_object_or_404(Cemetery, q, pk=request.GET.get('pk'))
 
     cemetery_form = CemeteryForm(data=request.POST or None, instance=cemetery)
     location_form = LocationForm(data=request.POST or None, instance=cemetery and cemetery.location)
@@ -832,7 +841,7 @@ def management_cemetery(request):
         cemetery.save()
         return redirect(reverse('management_cemetery') + '?pk=%s' % cemetery.pk)
 
-    cemeteries = Cemetery.objects.all()
+    cemeteries = Cemetery.objects.filter(q)
     return render(request, 'management_add_cemetery.html', {'cemetery_form': cemetery_form, "location_form": location_form, "cemeteries": cemeteries})
 
 @user_passes_test(lambda u: u.has_perm('organizations.add_organization'))
@@ -841,9 +850,13 @@ def management_org(request):
     """
     Страница управления организациями.
     """
+    q = Q(creator__isnull=True)
+    if request.user.is_authenticated():
+        q |= Q(creator=request.user)
+
     org = None
     if request.GET.get('pk'):
-        org = get_object_or_404(Organization, pk=request.GET.get('pk'))
+        org = get_object_or_404(Organization, q, pk=request.GET.get('pk'))
 
     org_form = OrganizationForm(data=request.POST or None, instance=org)
     location_form = LocationForm(data=request.POST or None, instance=org and org.location)
@@ -856,7 +869,7 @@ def management_org(request):
             ceo = ceo_form.save()
         else:
             ceo = None
-        org = org_form.save(location=location, ceo=ceo)
+        org = org_form.save(location=location, ceo=ceo, creator=request.user)
         accounts_formset = AccountsFormset(data=request.POST or None, instance=org, prefix='accounts')
         agents_formset = AgentsFormset(data=request.POST or None, instance=org, prefix='agents')
         accounts_formset.save()
@@ -864,7 +877,7 @@ def management_org(request):
         messages.success(request, u'Успешно сохранено')
         return redirect(reverse('management_org') + '?pk=%s' % org.pk)
 
-    orgs = Organization.objects.all()
+    orgs = Organization.objects.filter(q)
     return render(request, 'management_add_org.html', {
         'org_form': org_form,
         "location_form": location_form,

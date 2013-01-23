@@ -21,8 +21,8 @@ class Cemetery(models.Model):
     organization = models.ForeignKey(Organization, related_name="cemetery", verbose_name=u'Организация*')
     location = models.ForeignKey(Location, blank=True, null=True, verbose_name=u'Адрес')
     name = models.CharField(u"Название", max_length=255, blank=True)
-    creator = models.ForeignKey(User, editable=False)
-    date_of_creation = models.DateTimeField(auto_now_add=True)
+    creator = models.ForeignKey(User, editable=False, null=True)
+    date_of_creation = models.DateTimeField(auto_now_add=True, null=True)
     ordering = models.PositiveIntegerField(blank=True, default=1, verbose_name=u'Сортировка')
     phones = models.TextField(u"Телефоны", blank=True, null=True)
 
@@ -129,6 +129,8 @@ class Operation(models.Model):
 
     op_type = models.CharField(u"Имя операции", max_length=255)
     ordering = models.PositiveSmallIntegerField(u"Сортировка", default=1)
+    creator = models.ForeignKey(User, editable=False, null=True)
+    date_of_creation = models.DateTimeField(auto_now_add=True, null=True)
 
     def __unicode__(self):
         return self.op_type[:24]
@@ -381,6 +383,8 @@ class Service(models.Model):
     measure = models.CharField(u"Единицы измерения", max_length=255, blank=True)
     price = models.DecimalField(u"Цена", decimal_places=2, max_digits=10)
     ordering = models.PositiveSmallIntegerField(u"Сортировка", default=1)
+    creator = models.ForeignKey(User, editable=False, null=True)
+    date_of_creation = models.DateTimeField(auto_now_add=True, null=True)
 
     def __unicode__(self):
         return self.name

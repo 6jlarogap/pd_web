@@ -611,10 +611,11 @@ class OrganizationForm(forms.ModelForm):
                 raise forms.ValidationError(u"ИНН дублируется. Вы уверены")
         return self.cleaned_data
 
-    def save(self, location=None, ceo=None, *args, **kwargs):
+    def save(self, location=None, ceo=None, creator=None, *args, **kwargs):
         org = super(OrganizationForm, self).save(*args, **kwargs)
         org.location = location
         org.ceo = ceo
+        org.creator = creator
         org.save()
         return org
 

@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import datetime
+from django.contrib.auth.models import User
 
 from django.db import models
 
@@ -19,7 +20,9 @@ class Organization(models.Model):
     Юридическое лицо.
     """
     type = models.CharField(u"Тип", max_length=15, null=True, choices=ORG_TYPES)
-    owner = models.ForeignKey('auth.User', null=True, editable=False)
+    creator = models.ForeignKey(User, editable=False, null=True)
+    date_of_creation = models.DateTimeField(auto_now_add=True, null=True)
+    
     ogrn = models.CharField(u"ОГРН/ОГРИП", max_length=15, blank=True)                                  # ОГРН
     inn = models.CharField(u"ИНН", max_length=12, blank=True, validators=[VarLengthValidator((10, 12)), DigitsValidator(), ])                                    # ИНН
     kpp = models.CharField(u"КПП", max_length=9, blank=True, validators=[DigitsValidator(), ])                                     # КПП

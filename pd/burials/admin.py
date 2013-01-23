@@ -41,17 +41,24 @@ class PersonAdmin(admin.ModelAdmin):
         return obj.address or ''
     get_address.short_description = u'Адрес'
 
-class CemeteryAdmin(admin.ModelAdmin):
-    raw_id_fields = ['organization', 'location', ]
-    list_display = ['name', 'organization', 'ordering']
-    list_editable = ['ordering']
-
+class OwnedObjectsAdmin(admin.ModelAdmin):
     def save_model(self, request, obj, form, change):
         if not obj.creator:
             obj.creator = request.user
         obj.save()
 
-class ServiceAdmin(admin.ModelAdmin):
+    def queryset(self, request):
+        return super(OwnedObjectsAdmin, self).queryset(request).filter(Q(creator=None) | Q(creator=request.user))
+
+class CemeteryAdmin(OwnedObjectsAdmin):
+    raw_id_fields = ['organization', 'location', ]
+    list_display = ['name', 'organization', 'ordering']
+    list_editable = ['ordering']
+
+class OperationAdmin(OwnedObjectsAdmin):
+    list_display = ['name']
+
+class ServiceAdmin(OwnedObjectsAdmin):
     list_display = ['name']
 
 class PlaceAdmin(admin.ModelAdmin):
@@ -60,7 +67,7 @@ class PlaceAdmin(admin.ModelAdmin):
     list_filter = ['cemetery', ]
 
 admin.site.register(Cemetery, CemeteryAdmin)
-admin.site.register(Operation)
+admin.site.register(Operation, OperationAdmin)
 admin.site.register(Place, PlaceAdmin)
 admin.site.register(Service, ServiceAdmin)
 admin.site.register(ZAGS)
