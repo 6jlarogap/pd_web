@@ -1,10 +1,10 @@
 {% extends "base.html" %}
 {% block title %}Профиль пользователя{% endblock %}
 {% block scripts %}
-<script type="text/javascript" src="/media/js/jquery-1.4.4.min.js"></script>
-<script type="text/javascript" src="/media/js/jquery.autocomplete.min.js"></script>
-<script type="text/javascript" src="/media/js/jquery.bgiframe.min.js"></script>
-<link rel="stylesheet" href="/media/css/jquery.autocomplete.css" type="text/css" />
+<script type="text/javascript" src="{{ STATIC_URL }}js/jquery-1.4.4.min.js"></script>
+<script type="text/javascript" src="{{ STATIC_URL }}js/jquery.autocomplete.min.js"></script>
+<script type="text/javascript" src="{{ STATIC_URL }}js/jquery.bgiframe.min.js"></script>
+<link rel="stylesheet" href="{{ STATIC_URL }}css/jquery.autocomplete.css" type="text/css" />
 <script>
     $(function(){
         $("#id_default_country").change(function(){

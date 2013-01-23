@@ -1,11 +1,11 @@
 {% extends "base.html" %}
 {% block title %}Инициализация{% endblock %}
 {% block scripts %}
-<link rel="stylesheet" href="/media/css/ui-lightness/jquery-ui-1.8.6.custom.css" type="text/css" />
-<script type="text/javascript" src="/media/js/jquery-1.4.4.min.js"></script>
-<script type="text/javascript" src="/media/js/jquery-ui-1.8.6.custom.min.js"></script>
-<script type="text/javascript" src="/media/js/jquery.query-2.1.7.js"></script>
-<script type="text/javascript" src="/media/js/address.js"></script>
+<link rel="stylesheet" href="{{ STATIC_URL }}css/ui-lightness/jquery-ui-1.8.6.custom.css" type="text/css" />
+<script type="text/javascript" src="{{ STATIC_URL }}js/jquery-1.4.4.min.js"></script>
+<script type="text/javascript" src="{{ STATIC_URL }}js/jquery-ui-1.8.6.custom.min.js"></script>
+<script type="text/javascript" src="{{ STATIC_URL }}js/jquery.query-2.1.7.js"></script>
+<script type="text/javascript" src="{{ STATIC_URL }}js/address.js"></script>
 {% endblock %}
 {% block content %}
     <h1>Инициализация</h1>

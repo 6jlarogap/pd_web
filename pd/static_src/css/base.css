@@ -1,0 +1,44 @@
+#mainform p { display: inline-block; }
+#mainform p.clear { display: block; clear: both;}
+
+#mainform input.hasDatepicker { width: 80px; }
+
+#mainform #id_cemetery { width: 100px; }
+#mainform #id_account_number_from, #mainform #id_account_number_to { width: 75px; }
+#mainform #id_operation { width: 100px; }
+#mainform #id_customer_type { width: 60px; }
+
+#id_row, #id_area, #id_seat { width: 60px; }
+
+#id_house { width: 60px; }
+#id_building { width: 55px; }
+#id_block, #id_flat { width: 40px; }
+#id_post_index { width: 110px; }
+#id_info { height: 3em; }
+
+#id_per_page { width: 50px; }
+#id_records_order_by { width: 150px; }
+
+.form-horizontal p { display: inline-block; }
+
+.block-selectable input { width: 200px; }
+.block-selectable input[type=radio] { width: auto; }
+.block-selectable input[type=checkbox] { width: auto; }
+.block-selectable select { width: 200px; }
+
+.block-selectable ul { list-style: none; }
+
+h2.buttons { margin-top: 1em; }
+
+.form-horizontal p.wide { width: 99%; }
+.form-horizontal p.wide textarea { width: 100%; }
+
+.form-horizontal p.narrow input { width: 100px }
+
+span.move-left { position: relative; left: -20px; }
+
+ul.messages { list-style: none; }
+
+select#id_birth_date_day { width: 60px; }
+select#id_birth_date_month { width: 90px; }
+select#id_birth_date_year { width: 70px; }

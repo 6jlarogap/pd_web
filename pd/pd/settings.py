@@ -40,6 +40,7 @@ STATIC_ROOT = './static/'
 STATIC_URL = '/static/'
 
 STATICFILES_DIRS = (
+    './static_src/',
 )
 
 STATICFILES_FINDERS = (
@@ -91,6 +92,7 @@ INSTALLED_APPS = (
     'orgs',
     'persons',
     'utils',
+    'orders',
 )
 
 LOGGING = {

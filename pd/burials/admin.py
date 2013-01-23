@@ -43,7 +43,7 @@ class PersonAdmin(admin.ModelAdmin):
 
 class OwnedObjectsAdmin(admin.ModelAdmin):
     def save_model(self, request, obj, form, change):
-        if not obj.creator:
+        if not obj.creator and not request.user.is_superuser:
             obj.creator = request.user
         obj.save()
 
@@ -56,7 +56,7 @@ class CemeteryAdmin(OwnedObjectsAdmin):
     list_editable = ['ordering']
 
 class OperationAdmin(OwnedObjectsAdmin):
-    list_display = ['name']
+    list_display = ['op_type']
 
 class ServiceAdmin(OwnedObjectsAdmin):
     list_display = ['name']
