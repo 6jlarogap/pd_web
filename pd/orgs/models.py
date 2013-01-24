@@ -9,10 +9,12 @@ from utils.models import LengthValidator, NotEmptyValidator, DigitsValidator, Va
 
 ORG_TYPES_UGH = 'ugh'
 ORG_TYPES_LORU = 'loru'
+ORG_TYPES_CLIENT = 'client'
 
 ORG_TYPES = (
     (ORG_TYPES_UGH, u'УГХ'),
     (ORG_TYPES_LORU, u'ЛОРУ'),
+    (ORG_TYPES_CLIENT, u'Клиент')
 )
 
 class Organization(models.Model):
@@ -42,6 +44,12 @@ class Organization(models.Model):
             return self.bankaccount_set.all()[0]
         except IndexError:
             return
+
+    def is_loru(self):
+        return self.type == ORG_TYPES_LORU
+
+    def is_ugh(self):
+        return self.type == ORG_TYPES_UGH
 
     @property
     def ceo_name(self):

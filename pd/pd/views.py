@@ -184,7 +184,6 @@ class SearchView(ListView):
 main_page = SearchView.as_view()
 
 @login_required
-@user_passes_test(lambda u: u.has_perm('burials.add_burial'))
 def new_burial(request):
     """
     Добавление захоронения
@@ -218,7 +217,7 @@ def new_burial(request):
         messages.success(request, u'Успешно сохранено')
         return redirect('edit_burial', pk=b.pk)
 
-    return render(request, 'burial_create.html', {
+    return render(request, 'burial_create1.html', {
         'burial_form': burial_form,
         'last_entered': Burial.objects.all().order_by('-id')[:10],
     })

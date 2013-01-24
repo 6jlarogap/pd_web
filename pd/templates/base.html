@@ -90,11 +90,8 @@
                 <div class="nav-collapse">
                     <ul class="nav">
                         <li{% if request.path == '/' %} class="active"{% endif %}><a href="{% url main_page %}">Поиск</a></li>
-                        {% if user|has_perm:"burials.add_burial" %}
-                            <li{% if request.path == '/create/' %} class="active"{% endif %}><a href="{% url new_burial %}">Ввод данных</a></li>
-                        {% endif %}
-                        {% if user|has_perm:"burials.add_serviceposition" %}
-                            <li{% if request.path == '/print/cats/' %} class="active"{% endif %}><a href="{% url print_catafalques %}">Заявка на катафалки</a></li>
+                        {% if user.organization_set.all.0.is_loru %}
+                            <li{% if request.path == '/orders/create/' %} class="active"{% endif %}><a href="{% url new_order %}">Новый заказ</a></li>
                         {% endif %}
                     </ul>
                 </div><!--/.nav-collapse -->

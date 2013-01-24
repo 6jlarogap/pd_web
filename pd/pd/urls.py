@@ -42,6 +42,7 @@ urlpatterns += patterns('pd.views',
     url(r'^logout/$', 'ulogout', name='ulogout'),
 
     url(r'^geo/', include('geo.urls')),
+    url(r'^orders/', include('orders.urls')),
 )
 
 urlpatterns += patterns('',

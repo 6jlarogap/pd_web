@@ -6,7 +6,7 @@
     <script type="text/javascript" src="{{ STATIC_URL }}js/jquery-1.4.4.min.js"></script>
     <script type="text/javascript" charset="utf-8">
         $(function(){
-            $("#id_type").focus();
+            $("#id_username").focus();
         })
     </script>
 {% endblock %}
@@ -14,13 +14,5 @@
 {% block title %}Регистрация{% endblock %}
 {% block h1 %}Регистрация:{% endblock %}
 {% block content %}
-    <form method="post" action="">
-        {% csrf_token %}
-        {{ form.as_p }}
-        <input type="submit" value="Зарегистрироваться" />
-
-        <p>
-            <a href="{% url ulogin %}">{% trans "Login" %}</a>
-        </p>
-    </form>
+    <h1>{% trans "Регистрация успешна, проверьте свой email-ящик" %}</h1>
 {% endblock %}

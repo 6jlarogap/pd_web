@@ -2,6 +2,7 @@
 
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
+from orgs.models import ORG_TYPES_CLIENT
 
 PT_COMMON = ''
 PT_BURIAL = 'burial'
@@ -31,16 +32,23 @@ class Order(models.Model):
     """
     Container for few products for one exact client (person or organization)
     """
-    client_person = models.ForeignKey('persons.Person')
-    client_org = models.ForeignKey('orgs.Organization')
+    creator = models.ForeignKey('auth.User', blank=True, null=True, editable=False)
+
+    client_person = models.ForeignKey('persons.Person', blank=True, null=True, limit_choices_to={'death_date__isnull': True})
+    client_org = models.ForeignKey('orgs.Organization', blank=True, null=True, limit_choices_to={'type': ORG_TYPES_CLIENT})
 
     created = models.DateTimeField(auto_now_add=True)
     changed = models.DateTimeField(auto_now=True)
+
+    @property
+    def client(self):
+        return self.client_org or self.client_person
 
 class OrderItem(models.Model):
     """
     One product used in Order. Contains almost nothing now but can be extended further.
     """
-    order = models.ForeignKey(Order)
-    ordering = models.PositiveIntegerField()
+    order = models.ForeignKey(Order, editable=False)
+    ordering = models.PositiveIntegerField(default=1)
     product = models.ForeignKey(Product)
+    burial = models.ForeignKey('burials.Burial', editable=False, null=True)

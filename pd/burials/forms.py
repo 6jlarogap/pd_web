@@ -154,11 +154,12 @@ class PersonForm(forms.ModelForm):
         }
 
     def __init__(self, dead=None, need_name=False, *args, **kwargs):
-        if self.data and self.data.get('last_name'):
+        data = kwargs['data']
+        if data and data.get('last_name'):
             person_kwargs = {
-                'first_name__istartswith': self.data.get('first_name', ''),
-                'last_name__istartswith': self.data.get('last_name', ''),
-                'middle_name__istartswith': self.data.get('middle_name', ''),
+                'first_name__istartswith': data.get('first_name', ''),
+                'last_name__istartswith': data.get('last_name', ''),
+                'middle_name__istartswith': data.get('middle_name', ''),
             }
             try:
                 kwargs['instance'] = Person.objects.get(**person_kwargs)

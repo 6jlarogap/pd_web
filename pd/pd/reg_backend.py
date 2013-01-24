@@ -28,7 +28,12 @@ class OrgRegBackend(DefaultBackend):
         new_user = RegistrationProfile.objects.create_inactive_user(username, email, password, site)
         user_registered.send(sender=self.__class__, user=new_user, request=request)
 
-        org.owner = new_user
+        org.creator = new_user
         org.save()
+
+        if org.is_loru():
+            new_user.is_staff = True
+            new_user.add_perm('orgs:add_organization')
+            new_user.add_perm('persons:add_person')
 
         return new_user
