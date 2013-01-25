@@ -24,6 +24,7 @@ from burials.forms import SearchForm, PlaceForm, BurialForm, PersonForm, Locatio
 from burials.forms import UserProfileForm, DoverennostForm, CustomerIDForm, CustomerForm, CommentForm
 from burials.forms import AddAgentForm, CatafalquesPrintForm
 from orders.models import OrderItem
+from orgs.views import get_user_org
 from persons.models import DeathCertificate, PersonID, DocumentSource
 from orgs.models import Organization, Agent
 
@@ -919,3 +920,48 @@ def new_dover(request):
             'label': u'%s' % dover,
         }), mimetype='application/json')
     return HttpResponse(form.as_p(), mimetype='text/html')
+
+@login_required
+def for_action(request):
+    org = get_user_org(request.user)
+    if org:
+        if org.is_loru():
+            data = dict(burials = Burial.objects.filter(ugh_approved=True, loru_processed=False))
+            template = 'for_action_loru.html'
+        elif org.is_ugh():
+            data = dict(
+                burials_approval = Burial.objects.filter(ugh_approved=False),
+                burials_finish = Burial.objects.filter(loru_processed=True, ugh_finished=False),
+            )
+            template = 'for_action_ugh.html'
+        else:
+            return redirect('/')
+    else:
+        return redirect('/')
+    return render(request, template, data)
+
+@user_passes_test(lambda u: get_user_org(u) and get_user_org(u).is_ugh())
+def for_action_approve(request, pk):
+    b = get_object_or_404(Burial, pk=pk, ugh_approved=False)
+    b.ugh_approved = True
+    b.generate_seat_number()
+    b.save()
+    messages.success(request, u'Одобрено')
+    return redirect('for_action')
+
+@user_passes_test(lambda u: get_user_org(u) and get_user_org(u).is_ugh())
+def for_action_process(request, pk):
+    b = get_object_or_404(Burial, pk=pk, loru_processed=False)
+    b.loru_processed = True
+    b.save()
+    messages.success(request, u'Выполнено')
+    return redirect('for_action')
+
+@user_passes_test(lambda u: get_user_org(u) and get_user_org(u).is_ugh())
+def for_action_finish(request, pk):
+    b = get_object_or_404(Burial, pk=pk, ugh_finished=False)
+    b.ugh_finished = True
+    b.generate_account_number()
+    b.save()
+    messages.success(request, u'Завершено')
+    return redirect('for_action')

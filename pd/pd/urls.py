@@ -10,6 +10,7 @@ urlpatterns = patterns('')
 
 urlpatterns += patterns('pd.views',
     url(r'^$', 'main_page', name='main_page'),
+    url(r'^for_action/$', 'for_action', name='for_action'),
     url(r'^create/$', 'new_burial', name='new_burial'),
     url(r'^create/place/$', 'new_burial_place', name='new_burial_place'),
     url(r'^create/person/$', 'new_burial_person', name='new_burial_person'),
@@ -17,6 +18,10 @@ urlpatterns += patterns('pd.views',
     url(r'^create/dover/$', 'new_dover', name='new_dover'),
     url(r'^create/customer/$', 'new_burial_customer', name='new_burial_customer'),
     url(r'^create/responsible/$', 'new_burial_responsible', name='new_burial_responsible'),
+
+    url(r'^for_action/(\d+)/approve/$', 'for_action_approve', name='for_action_approve'),
+    url(r'^for_action/(\d+)/process/$', 'for_action_process', name='for_action_process'),
+    url(r'^for_action/(\d+)/finish/$', 'for_action_finish', name='for_action_finish'),
 
     url(r'^edit/(?P<pk>\d+)/$', 'edit_burial', name='edit_burial'),
 

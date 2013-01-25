@@ -90,6 +90,9 @@
                 <div class="nav-collapse">
                     <ul class="nav">
                         <li{% if request.path == '/' %} class="active"{% endif %}><a href="{% url main_page %}">Поиск</a></li>
+                        {% if user.organization_set.all.0 %}
+                            <li{% if request.path == '/for_action/' %} class="active"{% endif %}><a href="{% url for_action %}">К исполнению</a></li>
+                        {% endif %}
                         {% if user.organization_set.all.0.is_loru %}
                             <li{% if request.path == '/orders/create/' %} class="active"{% endif %}><a href="{% url new_order %}">Новый заказ</a></li>
                         {% endif %}

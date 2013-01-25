@@ -186,6 +186,10 @@ class Burial(models.Model):
     editor = models.ForeignKey('auth.User', null=True, editable=False, related_name='edited_burials')
     deleted = models.BooleanField(editable=False, default=False)  # Удален.
 
+    ugh_approved = models.BooleanField(editable=False, default=False)
+    loru_processed = models.BooleanField(editable=False, default=False)
+    ugh_finished = models.BooleanField(editable=False, default=False)
+
     class Meta:
         verbose_name = (u'захоронение')
         verbose_name_plural = (u'захоронения')
