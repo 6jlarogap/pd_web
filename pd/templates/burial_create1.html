@@ -9,9 +9,15 @@
         <div class="span3">
             <form class='form-horizontal main-add' method="POST">
                 <div class="well">
+                    {% csrf_token %}
                     {{ burial_form.non_field_errors }}
                     <div class="row-fluid">
                         <h2>Захоронение</h2>
+                        <p>
+                            {{ burial_form.operation.label_tag }}
+                            {{ burial_form.operation }}
+                            {{ burial_form.operation.errors }}
+                        </p>
                         <p class="narrow">
                             {{ burial_form.date_fact.label_tag }}
                             {{ burial_form.date_fact }}

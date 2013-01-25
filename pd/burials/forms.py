@@ -71,6 +71,10 @@ class PlaceForm(forms.ModelForm):
         model = Place
         exclude = ['rooms', 'unowned']
 
+    def __init__(self, request, *args, **kwargs):
+        super(PlaceForm, self).__init__(*args, **kwargs)
+        self.fields['cemetery'].queryset = Cemetery.objects.filter(Q(creator=request.user) | Q(creator=None))
+
     def clean_seat(self):
         a = self.cleaned_data['seat']
         if not a:
@@ -166,6 +170,8 @@ class PersonForm(forms.ModelForm):
             except Person.DoesNotExist:
                 pass
         super(PersonForm, self).__init__(*args, **kwargs)
+        if dead:
+            self.fields['death_date'].required = True
 
     def clean_birth_date(self):
         if self.cleaned_data.get('birth_date') and self.cleaned_data['birth_date'] >= datetime.date.today():

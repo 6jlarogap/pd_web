@@ -64,19 +64,19 @@
                             {% if user|has_perm:"organizations.add_organization"  %}
                                 <li><a href="{% url management_org %}" target="_blank">Организации</a></li>
                             {% endif %}
-                            {% if user|has_perm:"burials.add_cemetery"  %}
+                            {% if user|has_perm:"burials.add_cemetery" or user.organization_set.all.0.is_loru  %}
                                 <li><a href="{% url management_cemetery %}" target="_blank">Кладбища</a></li>
                             {% endif %}
-                            {% if user|has_perm:"burials.add_operation"  %}
-                                <li><a href="{% url admin:burials_operation_changelist %}" target="_blank">Услуги</a></li>
+                            {% if user|has_perm:"burials.add_operation" or user.organization_set.all.0.is_loru  %}
+                                <li><a href="{% url admin:burials_operation_changelist %}" target="_blank">Виды захоронений</a></li>
                             {% endif %}
-                            {% if user|has_perm:"burials.add_service"  %}
+                            {% if user|has_perm:"burials.add_service" or user.organization_set.all.0.is_loru  %}
                                 <li><a href="{% url admin:burials_service_changelist %}" target="_blank">Услуги для с/з</a></li>
                             {% endif %}
                             {% if user.is_superuser %}
                                 <li><a href="{% url admin:index %}" target="_blank">Прочие данные</a></li>
                             {% endif %}
-                            {% if user|has_perm:"auth.add_user"  %}
+                            {% if user|has_perm:"auth.add_user" or user.organization_set.all.0 %}
                                 <li><a href="{% url management_user %}" target="_blank">Пользователи</a></li>
                             {% endif %}
                             <li class="divider"></li>

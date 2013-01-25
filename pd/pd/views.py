@@ -23,6 +23,7 @@ from burials.models import Burial, Place, UserProfile, Service, ServicePosition,
 from burials.forms import SearchForm, PlaceForm, BurialForm, PersonForm, LocationForm, DeathCertificateForm, OrderPaymentForm, OrderPositionsFormset, PrintOptionsForm, UserForm, CemeteryForm, PlaceBurialsFormset, PlaceRoomsForm, OrganizationForm, AccountsFormset, AgentsFormset, CeoForm
 from burials.forms import UserProfileForm, DoverennostForm, CustomerIDForm, CustomerForm, CommentForm
 from burials.forms import AddAgentForm, CatafalquesPrintForm
+from orders.models import OrderItem
 from persons.models import DeathCertificate, PersonID, DocumentSource
 from orgs.models import Organization, Agent
 
@@ -209,11 +210,17 @@ def new_burial(request):
     burial_form = BurialForm(data=request.POST or None, instance=tmp_b)
 
     if request.POST and burial_form.is_valid():
-        b = burial_form.save()
+        oi = OrderItem.objects.get(pk=request.GET.get('order_item_pk'))
+
+        b = burial_form.save(commit=False)
         if not b.creator:
             b.creator = request.user
         b.editor = request.user
         b.save()
+
+        oi.burial = b
+        oi.save()
+
         messages.success(request, u'Успешно сохранено')
         return redirect('edit_burial', pk=b.pk)
 
@@ -276,13 +283,13 @@ def new_burial_place(request):
         instance = None
         initial = {'cemetery': p.default_cemetery}
 
-    place_form = PlaceForm(data=request.POST or None, instance=instance, initial=initial)
+    place_form = PlaceForm(data=request.POST or None, instance=instance, initial=initial, request=request)
 
     if request.POST and place_form.is_valid():
         place = place_form.save(user=request.user)
         return render(request, 'burial_create_place_ok.html', {
             'place': place,
-            })
+        })
 
     return render(request, 'burial_create_place.html', {
         'place_form': place_form,
@@ -297,7 +304,8 @@ def new_burial_person(request):
     if request.REQUEST.keys() and request.REQUEST.keys() != ['dead']:
         data = request.REQUEST
     initial = {}
-    person_form = PersonForm(data=data, initial=initial, dead=request.GET.get('dead'))
+    dead = request.GET.get('dead')
+    person_form = PersonForm(data=data, initial=initial, dead=dead)
     location_form = LocationForm(person=person_form.instance, data=request.POST.get('country_name') and request.POST or None)
 
     try:
@@ -322,6 +330,7 @@ def new_burial_person(request):
         'person_form': person_form,
         'location_form': location_form,
         'dc_form': dc_form,
+        'dead': dead,
     })
 
 @login_required
@@ -817,7 +826,7 @@ def management_user(request):
     users = User.objects.filter(q).order_by('last_name')
     return render(request, 'management_user.html', {'form': form, "users": users, 'current_user': user})
 
-@user_passes_test(lambda u: u.has_perm('burials.add_cemetery'))
+@login_required
 @transaction.commit_on_success
 def management_cemetery(request):
     """

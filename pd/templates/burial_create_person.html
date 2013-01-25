@@ -1,6 +1,7 @@
-<form class='form-horizontal in-place' method="POST" action="{% url new_burial_person %}?dead={{ request.GET.dead }}">
+<form class='form-horizontal in-place' method="POST" action="{% url new_burial_person %}?dead={{ dead }}">
     <div class="well">
         <h2>Усопший</h2>
+        {% csrf_token %}
         {{ person_form.non_field_errors }}
         <p>
             {{ person_form.last_name.label_tag }}

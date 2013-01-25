@@ -1,6 +1,7 @@
 <form class='form-horizontal in-place' action="{% url new_burial_place %}" method="POST">
     <div class="well">
         <h2>Место</h2>
+        {% csrf_token %}
         <p>
             {{ place_form.cemetery.label_tag }}
             {{ place_form.cemetery }}

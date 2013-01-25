@@ -285,9 +285,6 @@ class Burial(models.Model):
         return self.client_person and self.client_person.full_human_name() or ''
 
     def save(self, *args, **kwargs):
-        if not self.account_number:
-            self.generate_account_number()
-
         if not self.date_fact:
             self.date_fact = datetime.datetime.now()
 

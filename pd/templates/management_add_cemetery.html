@@ -5,6 +5,7 @@
 <h3>Кладбища можно создавать и редактировать.</h3>
 <div id="forms" class="form-horizontal">
     <form action="" method="post">
+        {% csrf_token %}
         {{ cemetery_form.as_p }}
         {% include "burial_location_form.html" %}
         <h2 class="buttons">

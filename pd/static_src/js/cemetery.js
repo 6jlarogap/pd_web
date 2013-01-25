@@ -212,17 +212,13 @@ $(function() {
         return false;
     });
 
-    $('#id_operation, #id_place, #id_person, #id_client_person, #id_client_organization').live('change', function(){
+    $('#id_place, #id_person').live('change', function(){
         var ready = true;
-        $('#id_operation, #id_place, #id_person').each(function() {
+        $('#id_place, #id_person').each(function() {
             if (!$(this).val()) {
                 ready = false;
             }
         });
-
-        if (!$('#id_client_person').val() && !$('#id_client_organization').val()) {
-            ready = false;
-        }
 
         if (!ready) {
             $('form.main-add .btn-primary').attr('disabled', 'disabled');
@@ -396,7 +392,7 @@ $(function() {
     $('.dropdown-toggle').dropdown();
 
     $('#id_cemetery').live('change', function() {
-        $(this).closest('.well').find('input').val('');
+        $(this).closest('.well').find('input:not([name=csrfmiddlewaretoken])').val('');
         $('#place_rooms').text('1');
     })
 });
