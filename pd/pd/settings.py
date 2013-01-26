@@ -83,6 +83,8 @@ TEMPLATE_DIRS = (
     './templates/',
 )
 
+SENTRY_DSN = 'https://3d969464fe0c413f8394d2a045afc2d9:ab5346a1afbc43ceb131bd02c1f2ed53@app.getsentry.com/4786'
+
 INSTALLED_APPS = (
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -97,6 +99,7 @@ INSTALLED_APPS = (
     'registration',
     'pytils',
     'debug_toolbar',
+    'raven.contrib.django',
 
     'burials',
     'geo',
