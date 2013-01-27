@@ -26,7 +26,7 @@ class LoginView(View):
             if next_url == '/logout/':
                 next_url = '/'
             return redirect(next_url)
-        return super(LoginView, self).get(request, *args, **kwargs)
+        return self.get(request, *args, **kwargs)
 
     def get(self, request, *args, **kwargs):
         form = AuthenticationForm()
@@ -39,7 +39,11 @@ class LogoutView(View):
     """
     Выход пользователя из системы.
     """
-    @login_required
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_authenticated():
+            return redirect('/')
+        return super(LogoutView, self).dispatch(request, *args, **kwargs)
+
     def dispatch(self, request, *args, **kwargs):
         logout(request)
         next_url = request.GET.get("next", "/")

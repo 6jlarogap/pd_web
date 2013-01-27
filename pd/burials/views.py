@@ -73,6 +73,7 @@ class CreateRequestView(CreateView):
     form_class = BurialRequestCreateForm
 
     def dispatch(self, request, *args, **kwargs):
+        self.request = request
         if not request.user.is_authenticated() or not self.request.user.is_loru():
             return redirect('/')
         return super(CreateRequestView, self).dispatch(request, *args, **kwargs)
