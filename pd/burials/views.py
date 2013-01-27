@@ -4,7 +4,7 @@ from burials.forms import BurialRequestCreateForm
 from django.contrib import messages
 from django.db.models.query_utils import Q
 from django.shortcuts import redirect
-from django.views.generic.base import TemplateView
+from django.views.generic.base import TemplateView, View
 
 from burials.models import BurialRequest, Cemetery
 from django.views.generic.detail import DetailView
@@ -88,16 +88,17 @@ create_request = CreateRequestView.as_view()
 
 class UGHRequiredMixin:
     def dispatch(self, request, *args, **kwargs):
-        if not request.user.is_authenticated() or not self.request.user.is_ugh():
+        self.request = request
+        if not request.user.is_authenticated() or not getattr(self.request.user, 'profile', None) or not self.request.user.profile.is_ugh():
             return redirect('/')
-        return super(UGHRequiredMixin, self).dispatch(request, *args, **kwargs)
+        return View.dispatch(self, request, *args, **kwargs)
 
 class CemeteryList(UGHRequiredMixin, ListView):
     template_name = 'cemetery_list.html'
     model = Cemetery
 
     def get_queryset(self):
-        return Cemetery.objects.filter(Q(creator__isnull=True) | Q(creator=self.requst.user))
+        return Cemetery.objects.filter(Q(creator__isnull=True) | Q(creator=self.request.user))
 
 manage_cemeteries = CemeteryList.as_view()
 
