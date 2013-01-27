@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <h1>Заявка</h1>
+    <p>Кладбище: {{ object.cemetery }}</p>
+    <p>Место: {{ object.place_number|default:"Н/Д" }}</p>
+    <p>Дата: {{ object.plan_date }} {{ object.plan_time }}</p>
+
+    {% if user.profile.is_loru and object.approved_ugh and not object.processed_loru %}
+        <p>
+            <a class="btn" href="?execute=1">выполнена</a>
+        </p>
+    {% endif %}
+    {% if user.profile.is_ugh and not object.approved_ugh %}
+        <p>
+            <a class="btn" href="?approve=1">одобрена</a>
+        </p>
+    {% endif %}
+    {% if user.profile.is_ugh and object.processed_loru and not object.completed_ugh %}
+        <p>
+            <a class="btn" href="?complete=1">завершена</a>
+        </p>
+    {% endif %}
+{% endblock %}

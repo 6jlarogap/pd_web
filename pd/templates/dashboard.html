@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <h1>К исполнению</h1>
+    <table>
+        {% for b in burials %}
+            <tr>
+                <td>{{ b.cemetery }}</td>
+                <td>{{ b.place_number|default:"" }}</td>
+                <td>
+                    <a class="btn" href="{% url view_request b.pk %}">просмотр</a>
+                </td>
+            </tr>
+        {% endfor %}
+    </table>
+
+    {% if user.profile.is_loru %}
+        <p>
+            <a class="btn" href="{% url create_request %}">создать заявку</a>
+        </p>
+    {% endif %}
+{% endblock %}

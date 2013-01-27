@@ -25,13 +25,13 @@ DATABASES = {
 
 TIME_ZONE = 'Europe/Moscow'
 
-LANGUAGE_CODE = 'ru-ru'
+LANGUAGE_CODE = 'ru'
 
 SITE_ID = 1
 
 USE_I18N = True
-USE_L10N = True
-USE_TZ = True
+USE_L10N = False
+USE_TZ = False
 
 MEDIA_ROOT = './media/'
 MEDIA_URL = '/media/'
@@ -96,17 +96,12 @@ INSTALLED_APPS = (
     'django.contrib.admindocs',
 
     'south',
-    'registration',
     'pytils',
     'debug_toolbar',
     'raven.contrib.django',
 
     'burials',
-    'geo',
-    'orgs',
-    'persons',
-    'utils',
-    'orders',
+    'users',
 )
 
 LOGGING = {
@@ -132,6 +127,10 @@ LOGGING = {
         },
     }
 }
+
+DATE_INPUT_FORMATS = (
+    '%d.%m.%Y', '%Y-%m-%d',
+)
 
 SOUTH_TESTS_MIGRATE = False
 

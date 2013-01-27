@@ -1,12 +1,12 @@
 {% extends "base.html" %}
 
 {% block content %}
-    <h1>Вход</h1>
+    <h1>Новая заявка</h1>
     <form action="" method="POST">
         {% csrf_token %}
         {{ form.as_p }}
         <p>
-            <input type="submit" value="Войти"/>
+            <input type="submit" value="Создать"/>
         </p>
     </form>
 {% endblock %}

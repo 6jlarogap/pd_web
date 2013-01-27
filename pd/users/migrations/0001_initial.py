@@ -17,4 +17,4 @@ class Migration(SchemaMigration):
         
     }
 
-    complete_apps = ['burials']
+    complete_apps = ['users']

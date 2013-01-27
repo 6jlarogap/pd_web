@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <h1>Кладбища</h1>
+    <table>
+        {% for c in object_list %}
+            <tr>
+                <td>{{ c.name }}</td>
+            </tr>
+        {% endfor %}
+    </table>
+
+    {% if user.profile.is_ugh %}
+        <p>
+            <a class="btn" href="{% url manage_cemeteries_create %}">создать</a>
+        </p>
+    {% endif %}
+{% endblock %}
