@@ -2,7 +2,7 @@ from burials.models import Cemetery, BurialRequest
 from django.contrib.auth.models import User
 from django.test.client import Client
 from django.test.testcases import TestCase
-from users.models import Profile
+from users.models import Profile, ProfileLORU
 
 
 class LoginTest(TestCase):
@@ -20,6 +20,7 @@ class LoginTest(TestCase):
         self.loru_client = Client()
         self.loru_client.login(username='loru', password='test')
         self.cemetery = Cemetery.objects.create(name='test cem', time_begin='12:00', time_end='17:00')
+        self.ugh_user.profile.loru_list.create(loru=self.loru_user.profile)
 
     def test_lists(self):
         r = self.ugh_client.get('/')
@@ -60,8 +61,15 @@ class LoginTest(TestCase):
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r.context['burials'].count(), 0)
 
-    def test_created_lists(self):
+        ProfileLORU.objects.all().delete()
+
+        r = self.ugh_client.get('/')
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.context['burials'].count(), 0)
+
+    def test_actions(self):
         r = self.loru_client.post('/create/', {'cemetery': self.cemetery.pk, 'plan_date': '12.12.2013', 'plan_time': '12:00'})
+
         self.assertEqual(r.status_code, 302)
         br = BurialRequest.objects.all()[0]
 

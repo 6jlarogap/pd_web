@@ -12,48 +12,48 @@ from django.views.generic.detail import DetailView
 from django.views.generic.edit import CreateView
 from django.views.generic.list import ListView
 
+class BurialsListGenericMixin:
+    def get_qs_filter(self):
+        qs = Q(pk__isnull=True)
+        if self.request.user.is_authenticated():
+            if self.request.user.profile.is_loru():
+                qs = Q(creator=self.request.user)
+            if self.request.user.profile.is_ugh():
+                qs = Q(creator__profile__ugh_list__ugh__user=self.request.user)
+        return qs
 
-class DashboardView(TemplateView):
+class DashboardView(BurialsListGenericMixin, TemplateView):
     template_name = 'dashboard.html'
 
     def get_context_data(self, **kwargs):
-        qs = Q()
+        qs = self.get_qs_filter()
         try:
             profile = self.request.user.profile
         except AttributeError:
             pass
         else:
             if profile.is_loru():
-                qs = Q(approved_ugh__isnull=False, processed_loru__isnull=True)
+                qs &= Q(approved_ugh__isnull=False, processed_loru__isnull=True)
             if profile.is_ugh():
-                qs = Q(approved_ugh__isnull=True) | Q(processed_loru__isnull=False, completed_ugh__isnull=True)
+                qs &= Q(approved_ugh__isnull=True) | Q(processed_loru__isnull=False, completed_ugh__isnull=True)
         return {'burials': BurialRequest.objects.filter(qs)}
 
 dashboard = DashboardView.as_view()
 
-class ArchiveView(TemplateView):
+class ArchiveView(BurialsListGenericMixin, TemplateView):
     template_name = 'archive.html'
 
     def get_context_data(self, **kwargs):
-        qs = Q()
-        try:
-            profile = self.request.user.profile
-        except AttributeError:
-            pass
-        else:
-            if profile.is_loru():
-                qs = Q()
-            if profile.is_ugh():
-                qs = Q()
+        qs = self.get_qs_filter()
         return {'burials': BurialRequest.objects.filter(qs)}
 
 archive = ArchiveView.as_view()
 
-class RequestView(DetailView):
+class RequestView(BurialsListGenericMixin, DetailView):
     template_name = 'view_request.html'
 
     def get_queryset(self):
-        qs = Q()
+        qs = self.get_qs_filter()
         return BurialRequest.objects.filter(qs)
 
     def get(self, request, *args, **kwargs):
