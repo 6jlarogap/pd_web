@@ -71,6 +71,7 @@
                 <div class="nav-collapse">
                     <ul class="nav">
                         <li{% if request.path == '/' %} class="active"{% endif %}><a href="{% url dashboard %}">К исполнению</a></li>
+                        <li{% if request.path == '/archive/' %} class="active"{% endif %}><a href="{% url archive %}">Архив</a></li>
                     </ul>
                 </div><!--/.nav-collapse -->
             </div>

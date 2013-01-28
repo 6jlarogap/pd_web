@@ -5,6 +5,7 @@ from django.conf import settings
 
 urlpatterns = patterns('burials.views',
     url(r'^$', 'dashboard', name='dashboard'),
+    url(r'^archive/$', 'archive', name='archive'),
     url(r'^create/$', 'create_request', name='create_request'),
     url(r'^view/(?P<pk>\d+)/$', 'view_request', name='view_request'),
 
