@@ -11,6 +11,8 @@ from burials.models import BurialRequest, Cemetery
 from django.views.generic.detail import DetailView
 from django.views.generic.edit import CreateView
 from django.views.generic.list import ListView
+from logs.models import write_log
+
 
 class BurialsListGenericMixin:
     def get_qs_filter(self):
@@ -90,13 +92,16 @@ class CreateRequestView(CreateView):
             return redirect('/')
         return super(CreateRequestView, self).dispatch(request, *args, **kwargs)
 
-    def get_form_kwargs(self):
-        return {'request': self.request}
+    def get_form_kwargs(self, *args, **kwargs):
+        data = super(CreateRequestView, self).get_form_kwargs(*args, **kwargs)
+        data.update({'request': self.request})
+        return data
 
     def form_valid(self, form):
         self.object = form.save(commit=False)
         self.object.creator = self.request.user
         self.object.save()
+        write_log(self.request, self.object, _(u'Создана заявка'))
         messages.success(self.request, _(u"Заявка создана и отправлена на согласование в УГХ"))
         return redirect('dashboard')
 

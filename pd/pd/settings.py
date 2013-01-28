@@ -107,6 +107,7 @@ INSTALLED_APPS = (
 
     'burials',
     'users',
+    'logs',
 )
 
 LOGGING = {
