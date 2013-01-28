@@ -5,6 +5,7 @@ from django.contrib import messages
 from django.db.models.query_utils import Q
 from django.shortcuts import redirect
 from django.views.generic.base import TemplateView, View
+from django.utils.translation import ugettext_lazy as _
 
 from burials.models import BurialRequest, Cemetery
 from django.views.generic.detail import DetailView
@@ -51,18 +52,18 @@ class RequestView(DetailView):
         if request.GET.get('approve') and request.user.profile.is_ugh():
             b.approved_ugh = datetime.datetime.now()
             b.save()
-            messages.success(request, u"Заявка одобрена и передана ЛОРУ")
+            messages.success(request, _(u"Заявка одобрена и передана ЛОРУ"))
             return redirect('dashboard')
         if request.GET.get('execute') and request.user.profile.is_loru():
             b.processed_loru = datetime.datetime.now()
             b.save()
-            messages.success(request, u"Захоронение произведено, заявка передана УГХ для проверки")
+            messages.success(request, _(u"Захоронение произведено, заявка передана УГХ для проверки"))
             return redirect('dashboard')
         if request.GET.get('complete') and request.user.profile.is_ugh():
             b.completed_ugh = datetime.datetime.now()
             b.number = b.pk
             b.save()
-            messages.success(request, u"Заявка закрыта")
+            messages.success(request, _(u"Заявка закрыта"))
             return redirect('dashboard')
         return super(RequestView, self).get(request, *args, **kwargs)
 
@@ -82,7 +83,7 @@ class CreateRequestView(CreateView):
         self.object = form.save(commit=False)
         self.object.creator = self.request.user
         self.object.save()
-        messages.success(self.request, u"Заявка создана и отправлена на согласование в УГХ")
+        messages.success(self.request, _(u"Заявка создана и отправлена на согласование в УГХ"))
         return redirect('dashboard')
 
 create_request = CreateRequestView.as_view()
@@ -111,7 +112,7 @@ class CemeteryCreate(UGHRequiredMixin, CreateView):
         self.object = form.save(commit=False)
         self.object.creator = self.request.user
         self.object.save()
-        messages.success(self.request, u"Кладбище создано")
+        messages.success(self.request, _(u"Кладбище создано"))
         return redirect('manage_cemeteries')
 
 manage_cemeteries_create = CemeteryCreate.as_view()

@@ -1,26 +1,27 @@
 # coding=utf-8
 from django import forms
 from django.contrib.auth.models import User
+from django.utils.translation import ugettext_lazy as _
 
 from users.models import Profile
 
 
 class RegisterForm(forms.Form):
-    username = forms.SlugField(label=u"Имя пользователя")
+    username = forms.SlugField(label=_(u"Имя пользователя"))
     email = forms.EmailField()
-    password1 = forms.CharField(label=u"Пароль", widget=forms.PasswordInput())
-    password2 = forms.CharField(label=u"Пароль (повторите)", widget=forms.PasswordInput())
-    name = forms.CharField(label=u"Организация")
-    type = forms.ChoiceField(label=u"Тип", choices=Profile.PROFILE_TYPES)
+    password1 = forms.CharField(label=_(u"Пароль"), widget=forms.PasswordInput())
+    password2 = forms.CharField(label=_(u"Пароль (повторите)"), widget=forms.PasswordInput())
+    name = forms.CharField(label=_(u"Организация"))
+    type = forms.ChoiceField(label=_(u"Тип"), choices=Profile.PROFILE_TYPES)
 
     def clean_username(self):
         if User.objects.filter(username=self.cleaned_data['username']).exists():
-            raise forms.ValidationError(u"Это имя уже используется")
+            raise forms.ValidationError(_(u"Это имя уже используется"))
         return self.cleaned_data['username']
 
     def clean(self):
         if self.cleaned_data['password1'] != self.cleaned_data['password2']:
-            raise forms.ValidationError(u"Пароли не совпадают")
+            raise forms.ValidationError(_(u"Пароли не совпадают"))
         return self.cleaned_data
 
     def save(self, *args, **kwargs):

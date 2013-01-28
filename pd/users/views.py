@@ -4,6 +4,7 @@ from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import AuthenticationForm
 from django.shortcuts import redirect, render
+from django.utils.translation import ugettext_lazy as _
 
 from django.views.generic.base import View
 from users.forms import RegisterForm
@@ -66,7 +67,7 @@ class RegisterView(View):
         form = RegisterForm(data=request.POST)
         if form.is_valid():
             user = form.save()
-            messages.success(self.request, u"Все хорошо, теперь можете зайти на сервис")
+            messages.success(self.request, _(u"Все хорошо, теперь можете зайти на сервис"))
             return redirect('ulogin')
         return super(RegisterView, self).get(request, *args, **kwargs)
 
