@@ -1,5 +1,8 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="ru" lang="ru">
+
+{% load i18n %}
+
 <head>
     <title>{% block title %}{% endblock %}</title>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
@@ -51,27 +54,7 @@
                     <span class="icon-bar"></span>
                 </a>
                 <a class="brand" href="/">PohoronnoeDelo.ru</a>
-                <div class="btn-group pull-right dropdown" id="auth_menu">
-                    {% if user.is_authenticated %}
-                        <a class="btn dropdown-toggle" data-toggle="dropdown" href="#auth_menu">
-                            <i class="icon-user"></i> {{ user.username }}
-                            <span class="caret"></span>
-                        </a>
-                        <ul class="dropdown-menu">
-                            {% if user.profile.is_ugh %}
-                                <li><a href="{% url manage_cemeteries %}">Кладбища</a></li>
-                            {% endif %}
-                            <li><a href="{% url ulogout %}">Выйти</a></li>
-                        </ul>
-                    {% else %}
-                        <a class="btn" href="{% url ulogin %}">Войти</a>
-                        <a class="btn" href="{% url uregister %}">Зарегистрироваться (для ЮЛ)</a>
-                    {% endif %}
-                </div>
                 <div class="nav-collapse">
-                    <ul class="nav">
-                        <li{% if request.path == '/' %} class="active"{% endif %}><a href="{% url dashboard %}">К исполнению</a></li>
-                    </ul>
                 </div><!--/.nav-collapse -->
             </div>
         </div>

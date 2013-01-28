@@ -1,12 +1,14 @@
 {% extends "base.html" %}
 
+{% load i18n %}
+
 {% block content %}
-    <h1>Новое кладбище</h1>
+    <h1>{% trans "Новое кладбище" %}</h1>
     <form action="" method="POST">
         {% csrf_token %}
         {{ form.as_p }}
         <p>
-            <input type="submit" value="Создать"/>
+            <input type="submit" value="{% trans "Создать" %}"/>
         </p>
     </form>
 {% endblock %}

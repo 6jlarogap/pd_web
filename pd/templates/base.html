@@ -1,5 +1,8 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="ru" lang="ru">
+
+{% load i18n %}
+
 <head>
     <title>{% block title %}{% endblock %}</title>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
@@ -59,19 +62,19 @@
                         </a>
                         <ul class="dropdown-menu">
                             {% if user.profile.is_ugh %}
-                                <li><a href="{% url manage_cemeteries %}">Кладбища</a></li>
+                                <li><a href="{% url manage_cemeteries %}">{% trans "Кладбища" %}</a></li>
                             {% endif %}
-                            <li><a href="{% url ulogout %}">Выйти</a></li>
+                            <li><a href="{% url ulogout %}">{% trans "Выйти" %}</a></li>
                         </ul>
                     {% else %}
-                        <a class="btn" href="{% url ulogin %}">Войти</a>
-                        <a class="btn" href="{% url uregister %}">Зарегистрироваться (для ЮЛ)</a>
+                        <a class="btn" href="{% url ulogin %}">{% trans "Войти" %}</a>
+                        <a class="btn" href="{% url uregister %}">{% trans "Зарегистрироваться (для ЮЛ)" %}</a>
                     {% endif %}
                 </div>
                 <div class="nav-collapse">
                     <ul class="nav">
-                        <li{% if request.path == '/' %} class="active"{% endif %}><a href="{% url dashboard %}">К исполнению</a></li>
-                        <li{% if request.path == '/archive/' %} class="active"{% endif %}><a href="{% url archive %}">Архив</a></li>
+                        <li{% if request.path == '/' %} class="active"{% endif %}><a href="{% url dashboard %}">{% trans "К исполнению" %}</a></li>
+                        <li{% if request.path == '/archive/' %} class="active"{% endif %}><a href="{% url archive %}">{% trans "Архив" %}</a></li>
                     </ul>
                 </div><!--/.nav-collapse -->
             </div>
