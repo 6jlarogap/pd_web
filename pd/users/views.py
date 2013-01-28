@@ -68,7 +68,7 @@ class RegisterView(View):
             user = form.save()
             messages.success(self.request, _(u"Все хорошо, теперь можете зайти на сервис"))
             return redirect('ulogin')
-        return super(RegisterView, self).get(request, *args, **kwargs)
+        return self.get(request, *args, **kwargs)
 
     def get(self, request, *args, **kwargs):
         form = RegisterForm()
