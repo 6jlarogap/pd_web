@@ -1,13 +1,14 @@
 # -*- coding: utf-8 -*-
 from django.contrib import messages
 from django.contrib.auth import login, logout
-from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import AuthenticationForm
+from django.core.urlresolvers import reverse
 from django.shortcuts import redirect, render
 from django.utils.translation import ugettext_lazy as _
 
 from django.views.generic.base import View
-from users.forms import RegisterForm
+from django.views.generic.edit import UpdateView
+from users.forms import RegisterForm, LoruFormset
 from users.models import Profile
 
 
@@ -45,9 +46,7 @@ class LogoutView(View):
     def dispatch(self, request, *args, **kwargs):
         if not request.user.is_authenticated():
             return redirect('/')
-        return super(LogoutView, self).dispatch(request, *args, **kwargs)
 
-    def dispatch(self, request, *args, **kwargs):
         logout(request)
         next_url = request.GET.get("next", "/")
         return redirect(next_url)
@@ -78,4 +77,40 @@ class RegisterView(View):
 
 
 uregister = RegisterView.as_view()
+
+class ProfileView(UpdateView):
+    """
+    Редактирование профиля
+    """
+
+    template_name = 'profile.html'
+    model = Profile
+
+    def get_success_url(self):
+        return reverse('profile')
+
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_authenticated():
+            return redirect('/')
+        if request.user.profile.is_ugh():
+            self.formset = LoruFormset(data=request.POST or None, instance=request.user.profile)
+        else:
+            self.formset = LoruFormset()
+        return super(ProfileView, self).dispatch(request, *args, **kwargs)
+
+    def get_object(self, queryset=None):
+        return self.request.user.profile
+
+    def get_context_data(self, **kwargs):
+        data = super(ProfileView, self).get_context_data(**kwargs)
+        data['formset'] = self.formset
+        return data
+
+    def form_valid(self, form):
+        self.formset.save()
+        form.save()
+        messages.success(self.request, _(u"Данные сохранены"))
+        return redirect(self.get_success_url())
+
+profile = ProfileView.as_view()
 

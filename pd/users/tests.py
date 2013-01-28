@@ -67,4 +67,32 @@ class RegisterTest(TestCase):
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r.context['user'].profile.is_user(), True)
 
+class ProfileTest(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username='test', email='test@example.com', password='test')
+        self.client = Client()
 
+    def test_profile(self):
+        self.client.login(username='test', password='test')
+        r = self.client.get('/profile/')
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.context['user'], self.user)
+        self.assertNotIn('id="id_loru_list-1-loru"', r.content)
+
+        r = self.client.post('/profile/', {'type': Profile.PROFILE_LORU, 'name': 'LORU'})
+        self.assertEqual(r.status_code, 302)
+
+        profile = Profile.objects.get()
+        self.assertEqual(profile.type, Profile.PROFILE_LORU)
+
+        r = self.client.get('/profile/')
+        self.assertNotIn('id="id_loru_list-1-loru"', r.content)
+
+        r = self.client.post('/profile/', {'type': Profile.PROFILE_UGH, 'name': 'UGH'})
+        self.assertEqual(r.status_code, 302)
+
+        profile = Profile.objects.get()
+        self.assertEqual(profile.type, Profile.PROFILE_UGH)
+
+        r = self.client.get('/profile/')
+        self.assertIn('id="id_loru_list-1-loru"', r.content)

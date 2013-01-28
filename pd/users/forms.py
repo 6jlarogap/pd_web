@@ -1,9 +1,10 @@
 # coding=utf-8
 from django import forms
 from django.contrib.auth.models import User
+from django.forms.models import inlineformset_factory, BaseInlineFormSet
 from django.utils.translation import ugettext_lazy as _
 
-from users.models import Profile
+from users.models import Profile, ProfileLORU
 
 
 class RegisterForm(forms.Form):
@@ -37,3 +38,4 @@ class RegisterForm(forms.Form):
         )
         return user
 
+LoruFormset = inlineformset_factory(Profile, ProfileLORU, fk_name='ugh')

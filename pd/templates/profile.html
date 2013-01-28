@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% load i18n %}
+
+{% block content %}
+    <h1>{% trans "Профиль" %}</h1>
+    <form action="" method="POST">
+        {% csrf_token %}
+        {{ form.as_p }}
+        {% if form.instance.is_ugh %}
+            {{ formset.management_form }}
+            <table>
+                {% for f in formset.forms %}
+                    {{ f.as_table }}
+                {% endfor %}
+            </table>
+        {% endif %}
+        <p>
+            <input type="submit" value="{% trans "Сохранить" %}"/>
+        </p>
+    </form>
+{% endblock %}

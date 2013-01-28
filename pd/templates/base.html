@@ -64,6 +64,8 @@
                             {% if user.profile.is_ugh %}
                                 <li><a href="{% url manage_cemeteries %}">{% trans "Кладбища" %}</a></li>
                             {% endif %}
+                            <li><a href="{% url profile %}">{% trans "Профиль" %}</a></li>
+                            <li class="divider"></li>
                             <li><a href="{% url ulogout %}">{% trans "Выйти" %}</a></li>
                         </ul>
                     {% else %}
