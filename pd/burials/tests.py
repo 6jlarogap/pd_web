@@ -2,11 +2,13 @@ from burials.models import Cemetery, BurialRequest
 from django.contrib.auth.models import User
 from django.test.client import Client
 from django.test.testcases import TestCase
+from django.utils.translation import activate, get_language
 from users.models import Profile, ProfileLORU
 
 
 class LoginTest(TestCase):
     def setUp(self):
+        activate('ru')
         self.ugh_user = User.objects.create_user(username='ugh', email='test@example.com', password='test')
         Profile.objects.create(
             user=self.ugh_user, type=Profile.PROFILE_UGH, name='ugh'
@@ -69,7 +71,6 @@ class LoginTest(TestCase):
 
     def test_actions(self):
         r = self.loru_client.post('/create/', {'cemetery': self.cemetery.pk, 'plan_date': '12.12.2013', 'plan_time': '12:00'})
-
         self.assertEqual(r.status_code, 302)
         br = BurialRequest.objects.all()[0]
 

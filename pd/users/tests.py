@@ -1,10 +1,12 @@
 from django.contrib.auth.models import User, AnonymousUser
 from django.test import TestCase, Client
+from django.utils.translation import activate
 from users.models import Profile
 
 
 class LoginTest(TestCase):
     def setUp(self):
+        activate('ru')
         self.user = User.objects.create_user(username='test', email='test@example.com', password='test')
         self.client = Client()
 
@@ -29,6 +31,7 @@ class LoginTest(TestCase):
 
 class RegisterTest(TestCase):
     def setUp(self):
+        activate('ru')
         self.client = Client()
 
     def test_loru(self):
@@ -69,6 +72,7 @@ class RegisterTest(TestCase):
 
 class ProfileTest(TestCase):
     def setUp(self):
+        activate('ru')
         self.user = User.objects.create_user(username='test', email='test@example.com', password='test')
         self.client = Client()
 

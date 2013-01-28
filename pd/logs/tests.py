@@ -1,12 +1,14 @@
 from burials.models import Cemetery
 from django.contrib.auth.models import User
 from django.test import TestCase, Client
+from django.utils.translation import activate
 from logs.models import write_log, Log
 from users.models import Profile
 
 
 class LogsTest(TestCase):
     def setUp(self):
+        activate('ru')
         self.user = User.objects.create_user(username='ugh', email='test@example.com', password='test')
         self.client = Client()
         self.client.login(username='ugh', password='test')
