@@ -74,6 +74,8 @@ class RequestView(DetailView):
             b.save()
             messages.success(request, _(u"Заявка закрыта"))
             return redirect('dashboard')
+        if request.GET:
+            return redirect('view_request', b.pk)
         return super(RequestView, self).get(request, *args, **kwargs)
 
 view_request = RequestView.as_view()

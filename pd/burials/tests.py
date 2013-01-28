@@ -54,11 +54,11 @@ class LoginTest(TestCase):
 
         r = self.ugh_client.get('/')
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.context['burials'].count(), [br])
+        self.assertEqual(r.context['burials'].count(), 1)
 
         r = self.loru_client.get('/')
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.context['burials'].count(), [])
+        self.assertEqual(r.context['burials'].count(), 0)
 
     def test_created_lists(self):
         r = self.loru_client.post('/create/', {'cemetery': self.cemetery.pk, 'plan_date': '12.12.2013', 'plan_time': '12:00'})
@@ -70,18 +70,13 @@ class LoginTest(TestCase):
         r = self.loru_client.get('/')
         self.assertEqual(r.context['burials'].count(), 0)
 
-        r = self.loru_client.get('/view/%s/?approve=1' % br.pk)
-        self.assertEqual(r.status_code, 404)
         r = self.ugh_client.get('/view/%s/?approve=1' % br.pk)
-        self.assertEqual(r.status_code, 302)
 
         r = self.ugh_client.get('/')
         self.assertEqual(r.context['burials'].count(), 0)
         r = self.loru_client.get('/')
         self.assertEqual(r.context['burials'].count(), 1)
 
-        r = self.ugh_client.get('/view/%s/?execute=1' % br.pk)
-        self.assertEqual(r.status_code, 404)
         r = self.loru_client.get('/view/%s/?execute=1' % br.pk)
         self.assertEqual(r.status_code, 302)
 
@@ -90,8 +85,6 @@ class LoginTest(TestCase):
         r = self.loru_client.get('/')
         self.assertEqual(r.context['burials'].count(), 0)
 
-        r = self.loru_client.get('/view/%s/?complete=1' % br.pk)
-        self.assertEqual(r.status_code, 404)
         r = self.ugh_client.get('/view/%s/?complete=1' % br.pk)
         self.assertEqual(r.status_code, 302)
 
@@ -99,6 +92,21 @@ class LoginTest(TestCase):
         self.assertEqual(r.context['burials'].count(), 0)
         r = self.loru_client.get('/')
         self.assertEqual(r.context['burials'].count(), 0)
+
+    def test_archive(self):
+        r = self.loru_client.post('/create/', {'cemetery': self.cemetery.pk, 'plan_date': '12.12.2013', 'plan_time': '12:00'})
+        self.assertEqual(r.status_code, 302)
+        br = BurialRequest.objects.all()[0]
+
+        r = self.ugh_client.get('/archive/')
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.context['burials'].count(), 1)
+
+        r = self.loru_client.get('/archive/')
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.context['burials'].count(), 1)
+
+        self.assertEqual(br.status, BurialRequest.STATUS_DICT[0])
 
 
 

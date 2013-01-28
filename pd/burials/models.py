@@ -19,6 +19,13 @@ class Cemetery(models.Model):
         return self.name
 
 class BurialRequest(models.Model):
+    STATUS_DICT = {
+        0: _(u"Создана"),
+        1: _(u"Одобрена"),
+        2: _(u"Выполнена"),
+        3: _(u"Закрыта"),
+    }
+
     number = models.CharField(_(u"Номер"), max_length=255)
     plan_date = models.DateField(_(u"План. дата"))
     plan_time = models.TimeField(_(u"План. время"))
@@ -37,5 +44,9 @@ class BurialRequest(models.Model):
         verbose_name = _(u"Заявка на захоронение")
         verbose_name_plural = _(u"Заявки на захоронение")
 
-
+    @property
+    def status(self):
+        flags = [self.approved_ugh, self.processed_loru, self.completed_ugh]
+        cnt = len(filter(lambda f: f, flags))
+        return self.STATUS_DICT[cnt]
 
