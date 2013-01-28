@@ -36,7 +36,7 @@ class DashboardView(BurialsListGenericMixin, TemplateView):
                 qs &= Q(approved_ugh__isnull=False, processed_loru__isnull=True)
             if profile.is_ugh():
                 qs &= Q(approved_ugh__isnull=True) | Q(processed_loru__isnull=False, completed_ugh__isnull=True)
-        return {'burials': BurialRequest.objects.filter(qs)}
+        return {'burials': BurialRequest.objects.filter(qs).distinct()}
 
 dashboard = DashboardView.as_view()
 
@@ -45,7 +45,7 @@ class ArchiveView(BurialsListGenericMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         qs = self.get_qs_filter()
-        return {'burials': BurialRequest.objects.filter(qs)}
+        return {'burials': BurialRequest.objects.filter(qs).distinct()}
 
 archive = ArchiveView.as_view()
 
@@ -54,7 +54,7 @@ class RequestView(BurialsListGenericMixin, DetailView):
 
     def get_queryset(self):
         qs = self.get_qs_filter()
-        return BurialRequest.objects.filter(qs)
+        return BurialRequest.objects.filter(qs).distinct()
 
     def get(self, request, *args, **kwargs):
         b = self.get_object()
@@ -89,6 +89,9 @@ class CreateRequestView(CreateView):
         if not request.user.is_authenticated() or not self.request.user.profile.is_loru():
             return redirect('/')
         return super(CreateRequestView, self).dispatch(request, *args, **kwargs)
+
+    def get_form_kwargs(self):
+        return {'request': self.request}
 
     def form_valid(self, form):
         self.object = form.save(commit=False)
