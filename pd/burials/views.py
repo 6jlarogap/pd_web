@@ -16,18 +16,17 @@ class DashboardView(TemplateView):
     template_name = 'dashboard.html'
 
     def get_context_data(self, **kwargs):
+        qs = Q()
         try:
             profile = self.request.user.profile
         except AttributeError:
-            qs = Q()
+            pass
         else:
             if profile.is_loru():
                 qs = Q(approved_ugh__isnull=False, processed_loru__isnull=True)
             if profile.is_ugh():
                 qs = Q(approved_ugh__isnull=True) | Q(processed_loru__isnull=False, completed_ugh__isnull=True)
-        return {
-            'burials': BurialRequest.objects.filter(qs),
-            }
+        return {'burials': BurialRequest.objects.filter(qs)}
 
 dashboard = DashboardView.as_view()
 
@@ -35,10 +34,11 @@ class RequestView(DetailView):
     template_name = 'view_request.html'
 
     def get_queryset(self):
+        qs = Q()
         try:
             profile = self.request.user.profile
         except AttributeError:
-            qs = Q()
+            pass
         else:
             if profile.is_loru():
                 qs = Q(approved_ugh__isnull=False, processed_loru__isnull=True)

@@ -7,6 +7,7 @@ from django.shortcuts import redirect, render
 
 from django.views.generic.base import View
 from users.forms import RegisterForm
+from users.models import Profile
 
 
 class LoginView(View):
@@ -21,7 +22,8 @@ class LoginView(View):
     def post(self, request, *args, **kwargs):
         form = AuthenticationForm(request, data=request.POST)
         if form.is_valid():
-            login(request, form.get_user())
+            user = form.get_user()
+            login(request, user)
             next_url = request.GET.get("next", "/")
             if next_url == '/logout/':
                 next_url = '/'

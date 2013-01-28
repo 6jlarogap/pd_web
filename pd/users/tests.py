@@ -1,16 +1,70 @@
-"""
-This file demonstrates writing tests using the unittest module. These will pass
-when you run "manage.py test".
-
-Replace this with more appropriate tests for your application.
-"""
-
-from django.test import TestCase
+from django.contrib.auth.models import User, AnonymousUser
+from django.test import TestCase, Client
+from users.models import Profile
 
 
-class SimpleTest(TestCase):
-    def test_basic_addition(self):
-        """
-        Tests that 1 + 1 always equals 2.
-        """
-        self.assertEqual(1 + 1, 2)
+class LoginTest(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username='test', email='test@example.com', password='test')
+        self.client = Client()
+
+    def test_login(self):
+        self.client.get('/login/')
+        r = self.client.post('/login/', dict(username='test', password='test'))
+        self.assertEqual(r.status_code, 302)
+        r = self.client.get('/')
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.context['user'], self.user)
+
+    def test_logout(self):
+        self.client.login(username='test', password='test')
+        r = self.client.get('/')
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.context['user'], self.user)
+
+        r = self.client.get('/logout/')
+        self.assertEqual(r.status_code, 302)
+        r = self.client.get('/')
+        self.assertIsInstance(r.context['user'], AnonymousUser)
+
+class RegisterTest(TestCase):
+    def setUp(self):
+        self.client = Client()
+
+    def test_loru(self):
+        self.client.get('/register/')
+        r = self.client.post('/register/', dict(
+            username='test', email='test@example.com', password1='test', password2='test',
+            type=Profile.PROFILE_LORU, name='test loru'
+        ))
+        self.assertEqual(r.status_code, 302)
+        self.client.login(username='test', password='test')
+        r = self.client.get('/')
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.context['user'].profile.is_loru(), True)
+
+    def test_ugh(self):
+        self.client.get('/register/')
+        r = self.client.post('/register/', dict(
+            username='test', email='test@example.com', password1='test', password2='test',
+            type=Profile.PROFILE_UGH, name='test ugh'
+        ))
+        self.assertEqual(r.status_code, 302)
+        self.client.login(username='test', password='test')
+        r = self.client.get('/')
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.context['user'].profile.is_ugh(), True)
+
+    def test_user(self):
+        self.client.get('/register/')
+        r = self.client.post('/register/', dict(
+            username='test', email='test@example.com', password1='test', password2='test',
+            type=Profile.PROFILE_USER, name='test user'
+        ))
+        self.assertEqual(r.status_code, 302)
+        self.client.login(username='test', password='test')
+        r = self.client.get('/')
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.context['user'].profile.is_user(), True)
+
+
