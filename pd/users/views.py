@@ -5,11 +5,11 @@ from django.contrib.auth.forms import AuthenticationForm
 from django.core.urlresolvers import reverse
 from django.shortcuts import redirect, render
 from django.utils.translation import ugettext_lazy as _
-
 from django.views.generic.base import View
 from django.views.generic.edit import UpdateView
+
 from logs.models import write_log
-from users.forms import RegisterForm, LoruFormset
+from users.forms import RegisterForm, LoruFormset, ProfileForm
 from users.models import Profile
 
 
@@ -86,6 +86,7 @@ class ProfileView(UpdateView):
 
     template_name = 'profile.html'
     model = Profile
+    form_class = ProfileForm
 
     def get_success_url(self):
         return reverse('profile')
@@ -93,8 +94,8 @@ class ProfileView(UpdateView):
     def dispatch(self, request, *args, **kwargs):
         if not request.user.is_authenticated():
             return redirect('/')
-        if request.user.profile.is_ugh():
-            self.formset = LoruFormset(data=request.POST or None, instance=request.user.profile)
+        if request.user.profile.org and request.user.profile.is_ugh():
+            self.formset = LoruFormset(data=request.POST or None, instance=request.user.profile.org)
         else:
             self.formset = LoruFormset()
         return super(ProfileView, self).dispatch(request, *args, **kwargs)

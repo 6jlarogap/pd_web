@@ -1,3 +1,9 @@
+# coding=utf-8
+from django.contrib import messages
+from django.core.urlresolvers import reverse
+from django.shortcuts import redirect
+from django.utils.translation import ugettext_lazy as _
+
 from users.models import Profile
 
 
@@ -7,4 +13,8 @@ class ProfileMiddleware():
             try:
                 request.user.profile
             except Profile.DoesNotExist:
-                Profile.objects.create(user=request.user, type=Profile.PROFILE_USER)
+                Profile.objects.create(user=request.user)
+
+            if not request.user.profile.org and request.path != reverse('profile'):
+                messages.error(request, _(u"Укажите или создайте организацию"))
+                return redirect('profile')

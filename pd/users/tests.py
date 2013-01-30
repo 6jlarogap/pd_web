@@ -1,13 +1,15 @@
 from django.contrib.auth.models import User, AnonymousUser
 from django.test import TestCase, Client
 from django.utils.translation import activate
-from users.models import Profile
+from users.models import Profile, Org
 
 
 class LoginTest(TestCase):
     def setUp(self):
         activate('ru')
         self.user = User.objects.create_user(username='test', email='test@example.com', password='test')
+        org = Org.objects.create(name='name', type=Org.PROFILE_LORU)
+        Profile.objects.create(user=self.user, org=org)
         self.client = Client()
 
     def test_login(self):
@@ -38,10 +40,14 @@ class RegisterTest(TestCase):
         self.client.get('/register/')
         r = self.client.post('/register/', dict(
             username='test', email='test@example.com', password1='test', password2='test',
-            type=Profile.PROFILE_LORU, name='test loru'
+            type=Org.PROFILE_LORU, name='test loru'
         ))
         self.assertEqual(r.status_code, 302)
         self.client.login(username='test', password='test')
+        org = Org.objects.create(name='name', type=Org.PROFILE_LORU)
+        profile = User.objects.get().profile
+        profile.org = org
+        profile.save()
         r = self.client.get('/')
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r.context['user'].profile.is_loru(), True)
@@ -50,25 +56,16 @@ class RegisterTest(TestCase):
         self.client.get('/register/')
         r = self.client.post('/register/', dict(
             username='test', email='test@example.com', password1='test', password2='test',
-            type=Profile.PROFILE_UGH, name='test ugh'
         ))
         self.assertEqual(r.status_code, 302)
         self.client.login(username='test', password='test')
+        org = Org.objects.create(name='name', type=Org.PROFILE_UGH)
+        profile = User.objects.get().profile
+        profile.org = org
+        profile.save()
         r = self.client.get('/')
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r.context['user'].profile.is_ugh(), True)
-
-    def test_user(self):
-        self.client.get('/register/')
-        r = self.client.post('/register/', dict(
-            username='test', email='test@example.com', password1='test', password2='test',
-            type=Profile.PROFILE_USER, name='test user'
-        ))
-        self.assertEqual(r.status_code, 302)
-        self.client.login(username='test', password='test')
-        r = self.client.get('/')
-        self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.context['user'].profile.is_user(), True)
 
 class ProfileTest(TestCase):
     def setUp(self):
@@ -83,20 +80,23 @@ class ProfileTest(TestCase):
         self.assertEqual(r.context['user'], self.user)
         self.assertNotIn('id="id_loru_list-1-loru"', r.content)
 
-        r = self.client.post('/profile/', {'type': Profile.PROFILE_LORU, 'name': 'LORU'})
+        r = self.client.post('/profile/', {'org_type': Org.PROFILE_LORU, 'org_name': 'LORU'})
         self.assertEqual(r.status_code, 302)
 
         profile = Profile.objects.get()
-        self.assertEqual(profile.type, Profile.PROFILE_LORU)
+        self.assertEqual(profile.org.type, Org.PROFILE_LORU)
 
         r = self.client.get('/profile/')
         self.assertNotIn('id="id_loru_list-1-loru"', r.content)
 
-        r = self.client.post('/profile/', {'type': Profile.PROFILE_UGH, 'name': 'UGH'})
+        profile.org = None
+        profile.save()
+
+        r = self.client.post('/profile/', {'org_type': Org.PROFILE_UGH, 'org_name': 'UGH'})
         self.assertEqual(r.status_code, 302)
 
         profile = Profile.objects.get()
-        self.assertEqual(profile.type, Profile.PROFILE_UGH)
+        self.assertEqual(profile.org.type, Org.PROFILE_UGH)
 
         r = self.client.get('/profile/')
         self.assertIn('id="id_loru_list-1-loru"', r.content)

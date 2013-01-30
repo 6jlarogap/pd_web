@@ -3,26 +3,32 @@ from django.contrib.auth.models import User
 from django.test.client import Client
 from django.test.testcases import TestCase
 from django.utils.translation import activate, get_language
-from users.models import Profile, ProfileLORU
+from users.models import Profile, ProfileLORU, Org
 
 
 class LoginTest(TestCase):
     def setUp(self):
         activate('ru')
         self.ugh_user = User.objects.create_user(username='ugh', email='test@example.com', password='test')
+        ugh_org = Org.objects.create(
+            type=Org.PROFILE_UGH, name='ugh'
+        )
         Profile.objects.create(
-            user=self.ugh_user, type=Profile.PROFILE_UGH, name='ugh'
+            user=self.ugh_user, org=ugh_org,
         )
         self.loru_user = User.objects.create_user(username='loru', email='test@example.com', password='test')
+        loru_org = Org.objects.create(
+            type=Org.PROFILE_LORU, name='loru'
+        )
         Profile.objects.create(
-            user=self.loru_user, type=Profile.PROFILE_LORU, name='loru'
+            user=self.loru_user, org=loru_org,
         )
         self.ugh_client = Client()
         self.ugh_client.login(username='ugh', password='test')
         self.loru_client = Client()
         self.loru_client.login(username='loru', password='test')
         self.cemetery = Cemetery.objects.create(name='test cem', time_begin='12:00', time_end='17:00')
-        self.ugh_user.profile.loru_list.create(loru=self.loru_user.profile)
+        self.ugh_user.profile.org.loru_list.create(loru=loru_org)
 
     def test_lists(self):
         r = self.ugh_client.get('/')
@@ -123,7 +129,7 @@ class LoginTest(TestCase):
         r = self.loru_client.get('/archive/')
         self.assertEqual(r.context['burials'].count(), 1)
 
-        self.ugh_user.profile.loru_list.all().delete()
+        self.ugh_user.profile.org.loru_list.all().delete()
 
         r = self.ugh_client.get('/archive/')
         self.assertEqual(r.context['burials'].count(), 1)

@@ -7,6 +7,9 @@
     <form action="" method="POST">
         {% csrf_token %}
         {{ form.as_p }}
+        {% if form.instance.org %}
+            <p>{% trans "Организация" %}: {{ form.instance.org }}</p>
+        {% endif %}
         {% if form.instance.is_ugh %}
             {{ formset.management_form }}
             <table>

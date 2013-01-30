@@ -21,7 +21,7 @@ class BurialsListGenericMixin:
             if self.request.user.profile.is_loru():
                 qs = Q(creator=self.request.user)
             if self.request.user.profile.is_ugh():
-                qs = Q(creator__profile__ugh_list__ugh__user=self.request.user)
+                qs = Q(creator__profile__org__ugh_list__ugh=self.request.user.profile.org)
         return qs
 
 class DashboardView(BurialsListGenericMixin, TemplateView):

@@ -37,7 +37,7 @@ class BurialRequest(models.Model):
     creator = models.ForeignKey('auth.User', verbose_name=_(u"Владелец"), editable=False, null=True)
     created = models.DateTimeField(_(u"Создано"), auto_now_add=True)
 
-    connected_ugh = models.ManyToManyField('auth.User', verbose_name=_(u"УГХ"), editable=False, blank=True, related_name='connected_requests')
+    connected_ugh = models.ManyToManyField('users.Org', verbose_name=_(u"УГХ"), editable=False, blank=True, related_name='connected_requests')
 
     ready_loru = models.DateTimeField(_(u"Готово к согласованию"), editable=False, null=True)
     approved_ugh = models.DateTimeField(_(u"Согласовано УГХ"), editable=False, null=True)
@@ -55,14 +55,14 @@ class BurialRequest(models.Model):
         return self.STATUS_DICT[cnt]
 
     def ugh_names(self):
-        return ', '.join([ugh.profile.name for ugh in self.connected_ugh.all()])
+        return ', '.join([ugh.name for ugh in self.connected_ugh.all()])
 
     def loru_name(self):
-        return self.creator.profile.name
+        return self.creator.profile.org.name
 
 def connect_ugh(instance, created, **kwargs):
     if created:
-        for ugh_loru in instance.creator.profile.ugh_list.all():
-            instance.connected_ugh.add(ugh_loru.ugh.user)
+        for ugh_loru in instance.creator.profile.org.ugh_list.all():
+            instance.connected_ugh.add(ugh_loru.ugh)
 models.signals.post_save.connect(connect_ugh, sender=BurialRequest)
 
