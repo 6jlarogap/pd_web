@@ -52,6 +52,12 @@ class BurialRequest(models.Model):
         cnt = len(filter(lambda f: f, flags))
         return self.STATUS_DICT[cnt]
 
+    def ugh_names(self):
+        return ', '.join([ugh.profile.name for ugh in self.connected_ugh.all()])
+
+    def loru_name(self):
+        return self.creator.profile.name
+
 def connect_ugh(instance, created, **kwargs):
     if created:
         for ugh_loru in instance.creator.profile.ugh_list.all():
