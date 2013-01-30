@@ -13,6 +13,7 @@
             <th>{% trans "Номер" %}</th>
             <th>{% trans "Создано" %}</th>
             <th>{% trans "Согласовано" %}</th>
+            <th>{% trans "Запланировано" %}</th>
             <th>{% trans "Выполнено" %}</th>
             <th>{% trans "Статус" %}</th>
             <th></th>
@@ -26,6 +27,7 @@
                 <td>{{ b.number|default:"" }}</td>
                 <td>{{ b.created|default:"" }}</td>
                 <td>{{ b.approved_ugh|default:"" }}</td>
+                <td>{{ b.plan_date }} {{ b.plan_time }}</td>
                 <td>{{ b.processed_loru|default:"" }}</td>
                 <th>{{ b.status|default:"" }}</th>
                 <td>
