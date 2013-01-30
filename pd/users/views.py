@@ -111,7 +111,7 @@ class ProfileView(UpdateView):
     def form_valid(self, form):
         self.formset.save()
         form.save()
-        write_log(self.request, form.instance, _(u'Изменены данные ЛОРУ: %s') % (list(self.formset.changed_data), ))
+        write_log(self.request, form.instance, _(u'Изменены данные ЛОРУ'))
         messages.success(self.request, _(u"Данные сохранены"))
         return redirect(self.get_success_url())
 
