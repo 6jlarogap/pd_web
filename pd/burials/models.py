@@ -27,11 +27,11 @@ class BurialRequest(models.Model):
         4: _(u"Закрыта"),
     }
 
-    number = models.CharField(_(u"Номер"), max_length=255)
-    plan_date = models.DateField(_(u"План. дата"))
-    plan_time = models.TimeField(_(u"План. время"))
+    number = models.CharField(_(u"Номер"), max_length=255, null=True, blank=True)
+    plan_date = models.DateField(_(u"План. дата"), null=True, blank=True)
+    plan_time = models.TimeField(_(u"План. время"), null=True, blank=True)
 
-    cemetery = models.ForeignKey(Cemetery, verbose_name=_(u"Кладбище"))
+    cemetery = models.ForeignKey(Cemetery, verbose_name=_(u"Кладбище"), null=True, blank=True)
     place_number = models.CharField(_(u"Номер места"), max_length=255, null=True, blank=True)
 
     creator = models.ForeignKey('auth.User', verbose_name=_(u"Владелец"), editable=False, null=True)
