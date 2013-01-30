@@ -44,3 +44,11 @@ def deploy():
     local('ssh-add')
     sshagent_run('cd /home/www-data/django/pd_web/ && sudo -u www-data git pull')
     run('sudo /etc/init.d/apache2 reload')
+
+def deploy_lite():
+    local('git pull')
+    local('git push')
+
+    local('ssh-add')
+    sshagent_run('cd /home/www-data/django/pd_web/ && sudo -u www-data git pull')
+    run('sudo /etc/init.d/apache2 reload')
