@@ -6,6 +6,7 @@
     <h1>{% trans "К исполнению" %}</h1>
     <table class="table table-bordered table-striped">
         <tr>
+            <th>{% trans "Номер" %}</th>
             {% if user.profile.is_ugh %}<th>{% trans "ЛОРУ" %}</th>{% endif %}
             {% if user.profile.is_loru %}<th>{% trans "УГХ" %}</th>{% endif %}
             <th>{% trans "Кладбище" %}</th>
@@ -20,6 +21,7 @@
         </tr>
         {% for b in burials %}
             <tr>
+                <td>{{ b.pk }}</td>
                 {% if user.profile.is_ugh %}<th>{{ b.loru_name }}</th>{% endif %}
                 {% if user.profile.is_loru %}<th>{{ b.ugh_names }}</th>{% endif %}
                 <td>{{ b.cemetery }}</td>

@@ -3,7 +3,7 @@
 {% load i18n %}
 
 {% block content %}
-    <h1>{% trans "Заявка" %}</h1>
+    <h1>{% trans "Заявка" %} {{ b.pk }}</h1>
     <p>{% trans "Кладбище" %}: {{ object.cemetery }}</p>
     <p>{% trans "Место" %}: {{ object.place_number|default:"" }}</p>
     <p>{% trans "Дата" %}: {{ object.plan_date }} {{ object.plan_time }}</p>
