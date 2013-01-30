@@ -4,6 +4,7 @@
 
 {% block content %}
     <h1>{% trans "Заявка" %} {{ object.pk }}</h1>
+    <p>{% trans "ЛОРУ" %}: <a href="">{{ object.loru_name }}</a></p>
     <p>{% trans "Кладбище" %}: {{ object.cemetery }}</p>
     <p>{% trans "Место" %}: {{ object.place_number|default:"" }}</p>
     <p>{% trans "Дата" %}: {{ object.plan_date }} {{ object.plan_time }}</p>
