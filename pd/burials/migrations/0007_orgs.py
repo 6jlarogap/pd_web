@@ -7,6 +7,10 @@ from django.db import models
 
 class Migration(SchemaMigration):
 
+    depends_on = (
+        ('users', '0005_orgs'),
+    )
+
     def forwards(self, orm):
         # Removing M2M table for field connected_ugh on 'BurialRequest'
         db.delete_table('burials_burialrequest_connected_ugh')
