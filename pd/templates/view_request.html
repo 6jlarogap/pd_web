@@ -16,7 +16,7 @@
     {% endif %}
     {% if user.profile.is_loru and not object.ready_loru %}
         <p>
-            <a class="btn" href="?execute=1">{% trans "согласовать" %}</a>
+            <a class="btn" href="?ready=1">{% trans "согласовать" %}</a>
         </p>
     {% endif %}
     {% if user.profile.is_ugh and not object.approved_ugh %}
