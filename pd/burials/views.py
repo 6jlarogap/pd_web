@@ -35,9 +35,9 @@ class DashboardView(BurialsListGenericMixin, TemplateView):
             pass
         else:
             if profile.is_loru():
-                qs &= Q(approved_ugh__isnull=False, processed_loru__isnull=True)
+                qs &= Q(ready_loru__isnull=True) | Q(approved_ugh__isnull=False, processed_loru__isnull=True)
             if profile.is_ugh():
-                qs &= Q(approved_ugh__isnull=True) | Q(processed_loru__isnull=False, completed_ugh__isnull=True)
+                qs &= Q(ready_loru__isnull=False, approved_ugh__isnull=True) | Q(processed_loru__isnull=False, completed_ugh__isnull=True)
         return {'burials': BurialRequest.objects.filter(qs).distinct()}
 
 dashboard = DashboardView.as_view()
@@ -69,6 +69,12 @@ class RequestView(BurialsListGenericMixin, DetailView):
 
     def get(self, request, *args, **kwargs):
         b = self.get_object()
+        if request.GET.get('ready') and request.user.profile.is_loru():
+            b.ready_loru = datetime.datetime.now()
+            b.save()
+            write_log(request, b, _(u'Заявка отправлена на согласование'))
+            messages.success(request, _(u"Заявка отправлена на согласование"))
+            return redirect('dashboard')
         if request.GET.get('approve') and request.user.profile.is_ugh():
             b.approved_ugh = datetime.datetime.now()
             b.save()
@@ -112,6 +118,8 @@ class CreateRequestView(CreateView):
     def form_valid(self, form):
         self.object = form.save(commit=False)
         self.object.creator = self.request.user
+        if self.request.REQUEST.get('ready'):
+            self.object.ready_loru = datetime.datetime.now()
         self.object.save()
         write_log(self.request, self.object, _(u'Создана заявка'))
         messages.success(self.request, _(u"Заявка создана и отправлена на согласование в УГХ"))

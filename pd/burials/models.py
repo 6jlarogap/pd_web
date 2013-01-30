@@ -20,10 +20,11 @@ class Cemetery(models.Model):
 
 class BurialRequest(models.Model):
     STATUS_DICT = {
-        0: _(u"Создана"),
-        1: _(u"Одобрена"),
-        2: _(u"Выполнена"),
-        3: _(u"Закрыта"),
+        0: _(u"Черновик"),
+        1: _(u"Создана"),
+        2: _(u"Одобрена"),
+        3: _(u"Выполнена"),
+        4: _(u"Закрыта"),
     }
 
     number = models.CharField(_(u"Номер"), max_length=255)
@@ -38,6 +39,7 @@ class BurialRequest(models.Model):
 
     connected_ugh = models.ManyToManyField('auth.User', verbose_name=_(u"УГХ"), editable=False, blank=True, related_name='connected_requests')
 
+    ready_loru = models.DateTimeField(_(u"Готово к согласованию"), editable=False, null=True)
     approved_ugh = models.DateTimeField(_(u"Согласовано УГХ"), editable=False, null=True)
     processed_loru = models.DateTimeField(_(u"Выполнено ЛОРУ"), editable=False, null=True)
     completed_ugh = models.DateTimeField(_(u"Закрыто УГХ"), editable=False, null=True)
@@ -48,7 +50,7 @@ class BurialRequest(models.Model):
 
     @property
     def status(self):
-        flags = [self.approved_ugh, self.processed_loru, self.completed_ugh]
+        flags = [self.ready_loru, self.approved_ugh, self.processed_loru, self.completed_ugh]
         cnt = len(filter(lambda f: f, flags))
         return self.STATUS_DICT[cnt]
 

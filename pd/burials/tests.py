@@ -41,7 +41,7 @@ class LoginTest(TestCase):
         self.assertEqual(r.status_code, 200)
         self.assertEqual(BurialRequest.objects.all().count(), 0)
 
-        r = self.loru_client.post('/create/', {'cemetery': self.cemetery.pk, 'plan_date': '12.12.2013', 'plan_time': '12:00'})
+        r = self.loru_client.post('/create/', {'cemetery': self.cemetery.pk, 'plan_date': '12.12.2013', 'plan_time': '12:00', 'ready': '1'})
         self.assertEqual(r.status_code, 302)
         self.assertEqual(BurialRequest.objects.all().count(), 1)
 
@@ -51,7 +51,7 @@ class LoginTest(TestCase):
         self.assertEqual(br.completed_ugh, None)
 
     def test_created_lists(self):
-        r = self.loru_client.post('/create/', {'cemetery': self.cemetery.pk, 'plan_date': '12.12.2013', 'plan_time': '12:00'})
+        r = self.loru_client.post('/create/', {'cemetery': self.cemetery.pk, 'plan_date': '12.12.2013', 'plan_time': '12:00', 'ready': '1'})
         self.assertEqual(r.status_code, 302)
         br = BurialRequest.objects.all()[0]
 
@@ -75,8 +75,16 @@ class LoginTest(TestCase):
         br = BurialRequest.objects.all()[0]
 
         r = self.ugh_client.get('/')
+        self.assertEqual(r.context['burials'].count(), 0)
+        r = self.loru_client.get('/')
+        self.assertEqual(r.context['burials'].count(), 1)
+
+        r = self.loru_client.get('/view/%s/?ready=1' % br.pk)
+
+        r = self.ugh_client.get('/')
         self.assertEqual(r.context['burials'].count(), 1)
         self.assertIn('loru', r.content)
+
         r = self.loru_client.get('/')
         self.assertEqual(r.context['burials'].count(), 0)
 
@@ -104,10 +112,10 @@ class LoginTest(TestCase):
         self.assertEqual(r.context['burials'].count(), 0)
 
     def test_archive(self):
-        r = self.loru_client.post('/create/', {'cemetery': self.cemetery.pk, 'plan_date': '12.12.2013', 'plan_time': '12:00'})
+        r = self.loru_client.post('/create/', {'cemetery': self.cemetery.pk, 'plan_date': '12.12.2013', 'plan_time': '12:00', 'ready': '1'})
         self.assertEqual(r.status_code, 302)
         br = BurialRequest.objects.all()[0]
-        self.assertEqual(br.status, BurialRequest.STATUS_DICT[0])
+        self.assertEqual(unicode(br.status), unicode(BurialRequest.STATUS_DICT[1]))
 
         r = self.ugh_client.get('/archive/')
         self.assertEqual(r.context['burials'].count(), 1)
