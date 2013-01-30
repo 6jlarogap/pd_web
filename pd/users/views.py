@@ -8,6 +8,7 @@ from django.utils.translation import ugettext_lazy as _
 
 from django.views.generic.base import View
 from django.views.generic.edit import UpdateView
+from logs.models import write_log
 from users.forms import RegisterForm, LoruFormset
 from users.models import Profile
 
@@ -109,6 +110,7 @@ class ProfileView(UpdateView):
     def form_valid(self, form):
         self.formset.save()
         form.save()
+        write_log(self.request, form.instance, _(u'Изменены данные ЛОРУ: %s') % (list(self.formset.changed_data), ))
         messages.success(self.request, _(u"Данные сохранены"))
         return redirect(self.get_success_url())
 

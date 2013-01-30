@@ -72,17 +72,20 @@ class RequestView(BurialsListGenericMixin, DetailView):
         if request.GET.get('approve') and request.user.profile.is_ugh():
             b.approved_ugh = datetime.datetime.now()
             b.save()
+            write_log(request, b, _(u'Заявка одобрена и передана ЛОРУ'))
             messages.success(request, _(u"Заявка одобрена и передана ЛОРУ"))
             return redirect('dashboard')
         if request.GET.get('execute') and request.user.profile.is_loru():
             b.processed_loru = datetime.datetime.now()
             b.save()
+            write_log(request, b, _(u'Захоронение произведено'))
             messages.success(request, _(u"Захоронение произведено, заявка передана УГХ для проверки"))
             return redirect('dashboard')
         if request.GET.get('complete') and request.user.profile.is_ugh():
             b.completed_ugh = datetime.datetime.now()
             b.number = b.pk
             b.save()
+            write_log(request, b, _(u'Заявка закрыта'))
             messages.success(request, _(u"Заявка закрыта"))
             return redirect('dashboard')
         if request.GET:

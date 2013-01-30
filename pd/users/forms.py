@@ -38,4 +38,11 @@ class RegisterForm(forms.Form):
         )
         return user
 
-LoruFormset = inlineformset_factory(Profile, ProfileLORU, fk_name='ugh')
+class BaseLoruFormset(BaseInlineFormSet):
+    @property
+    def changed_data(self):
+        for f in self.forms:
+            if f.is_valid() and any(f.cleaned_data.values()):
+                yield f.cleaned_data
+
+LoruFormset = inlineformset_factory(Profile, ProfileLORU, fk_name='ugh', formset=BaseLoruFormset)
