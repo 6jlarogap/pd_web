@@ -76,6 +76,7 @@ class LoginTest(TestCase):
 
         r = self.ugh_client.get('/')
         self.assertEqual(r.context['burials'].count(), 1)
+        self.assertIn('loru', r.content)
         r = self.loru_client.get('/')
         self.assertEqual(r.context['burials'].count(), 0)
 
