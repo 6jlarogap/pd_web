@@ -106,17 +106,21 @@ class LoginTest(TestCase):
         r = self.loru_client.post('/create/', {'cemetery': self.cemetery.pk, 'plan_date': '12.12.2013', 'plan_time': '12:00'})
         self.assertEqual(r.status_code, 302)
         br = BurialRequest.objects.all()[0]
+        self.assertEqual(br.status, BurialRequest.STATUS_DICT[0])
 
         r = self.ugh_client.get('/archive/')
-        self.assertEqual(r.status_code, 200)
         self.assertEqual(r.context['burials'].count(), 1)
 
         r = self.loru_client.get('/archive/')
-        self.assertEqual(r.status_code, 200)
         self.assertEqual(r.context['burials'].count(), 1)
 
-        self.assertEqual(br.status, BurialRequest.STATUS_DICT[0])
+        self.ugh_user.profile.loru_list.all().delete()
 
+        r = self.ugh_client.get('/archive/')
+        self.assertEqual(r.context['burials'].count(), 1)
+
+        r = self.loru_client.get('/archive/')
+        self.assertEqual(r.context['burials'].count(), 1)
 
 
 

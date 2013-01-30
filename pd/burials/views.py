@@ -45,6 +45,15 @@ dashboard = DashboardView.as_view()
 class ArchiveView(BurialsListGenericMixin, TemplateView):
     template_name = 'archive.html'
 
+    def get_qs_filter(self):
+        qs = Q(pk__isnull=True)
+        if self.request.user.is_authenticated():
+            if self.request.user.profile.is_loru():
+                qs = Q(creator=self.request.user)
+            if self.request.user.profile.is_ugh():
+                qs = Q(connected_ugh=self.request.user)
+        return qs
+
     def get_context_data(self, **kwargs):
         qs = self.get_qs_filter()
         return {'burials': BurialRequest.objects.filter(qs).distinct()}

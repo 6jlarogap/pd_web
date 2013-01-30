@@ -36,6 +36,8 @@ class BurialRequest(models.Model):
     creator = models.ForeignKey('auth.User', verbose_name=_(u"Владелец"), editable=False, null=True)
     created = models.DateTimeField(_(u"Создано"), auto_now_add=True)
 
+    connected_ugh = models.ManyToManyField('auth.User', verbose_name=_(u"УГХ"), editable=False, blank=True, related_name='connected_requests')
+
     approved_ugh = models.DateTimeField(_(u"Согласовано УГХ"), editable=False, null=True)
     processed_loru = models.DateTimeField(_(u"Выполнено ЛОРУ"), editable=False, null=True)
     completed_ugh = models.DateTimeField(_(u"Закрыто УГХ"), editable=False, null=True)
@@ -49,4 +51,10 @@ class BurialRequest(models.Model):
         flags = [self.approved_ugh, self.processed_loru, self.completed_ugh]
         cnt = len(filter(lambda f: f, flags))
         return self.STATUS_DICT[cnt]
+
+def connect_ugh(instance, created, **kwargs):
+    if created:
+        for ugh_loru in instance.creator.profile.ugh_list.all():
+            instance.connected_ugh.add(ugh_loru.ugh.user)
+models.signals.post_save.connect(connect_ugh, sender=BurialRequest)
 
