@@ -8,6 +8,7 @@ urlpatterns = patterns('burials.views',
     url(r'^archive/$', 'archive', name='archive'),
     url(r'^create/$', 'create_request', name='create_request'),
     url(r'^view/(?P<pk>\d+)/$', 'view_request', name='view_request'),
+    url(r'^edit/(?P<pk>\d+)/$', 'edit_request', name='edit_request'),
 
     url(r'^manage/cemetery/$', 'manage_cemeteries', name='manage_cemeteries'),
     url(r'^manage/cemetery/create/$', 'manage_cemeteries_create', name='manage_cemeteries_create'),

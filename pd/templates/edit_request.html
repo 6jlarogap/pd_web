@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% load i18n %}
+
+{% block content %}
+    <h1>{% trans "Заявка" %} {{ object.pk }}</h1>
+    <form action="" method="POST">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <p>
+            <input type="submit" value="{% trans "Сохранить черновик" %}"/>
+            <input type="submit" name="ready" value="{% trans "Отправить на одобрение УГХ" %}"/>
+        </p>
+    </form>
+{% endblock %}

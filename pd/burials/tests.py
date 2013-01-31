@@ -137,6 +137,15 @@ class LoginTest(TestCase):
         r = self.loru_client.get('/archive/')
         self.assertEqual(r.context['burials'].count(), 1)
 
+    def test_edit(self):
+        r = self.loru_client.post('/create/', {'cemetery': self.cemetery.pk, 'plan_date': '12.12.2013', 'plan_time': '12:00', 'ready': '1'})
+        self.assertEqual(r.status_code, 302)
 
+        br = BurialRequest.objects.all()[0]
+        r = self.loru_client.get('/edit/%s/' % br.pk)
+        self.assertEqual(r.status_code, 200)
+
+        r = self.ugh_client.get('/edit/%s/' % br.pk)
+        self.assertEqual(r.status_code, 302)
 
 

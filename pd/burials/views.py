@@ -9,7 +9,7 @@ from django.utils.translation import ugettext_lazy as _
 
 from burials.models import BurialRequest, Cemetery
 from django.views.generic.detail import DetailView
-from django.views.generic.edit import CreateView
+from django.views.generic.edit import CreateView, UpdateView
 from django.views.generic.list import ListView
 from logs.models import write_log
 
@@ -133,6 +133,37 @@ class CreateRequestView(CreateView):
         return redirect('dashboard')
 
 create_request = CreateRequestView.as_view()
+
+class EditRequestView(UpdateView):
+    template_name = 'edit_request.html'
+    form_class = BurialRequestCreateForm
+
+    def get_queryset(self):
+        return BurialRequest.objects.filter(creator=self.request.user, ready_loru__isnull=True)
+
+    def dispatch(self, request, *args, **kwargs):
+        self.request = request
+        if not request.user.is_authenticated() or not self.request.user.profile.is_loru():
+            return redirect('/')
+        return super(EditRequestView, self).dispatch(request, *args, **kwargs)
+
+    def get_form_kwargs(self, *args, **kwargs):
+        data = super(EditRequestView, self).get_form_kwargs(*args, **kwargs)
+        data.update({'request': self.request})
+        return data
+
+    def form_valid(self, form):
+        self.object = form.save(commit=False)
+        if self.request.REQUEST.get('ready'):
+            self.object.ready_loru = datetime.datetime.now()
+            messages.success(self.request, _(u"Заявка сохранена и отправлена на согласование в УГХ"))
+        else:
+            messages.success(self.request, _(u"Черновик сохранен"))
+        self.object.save()
+        write_log(self.request, self.object, _(u'Изменена заявка'))
+        return redirect('dashboard')
+
+edit_request = EditRequestView.as_view()
 
 class UGHRequiredMixin:
     def dispatch(self, request, *args, **kwargs):
