@@ -9,7 +9,6 @@
             <th>{% trans "Номер" %}</th>
             <th>{% trans "Кладбище" %}</th>
             <th>{% trans "Место" %}</th>
-            <th>{% trans "Номер" %}</th>
             <th>{% trans "Создано" %}</th>
             <th>{% trans "Согласовано" %}</th>
             <th>{% trans "Запланировано" %}</th>
@@ -22,7 +21,6 @@
                 <td>{{ b.pk }}</td>
                 <td>{{ b.cemetery }}</td>
                 <td>{{ b.place_number|default:"" }}</td>
-                <td>{{ b.number|default:"" }}</td>
                 <td>{{ b.created|default:"" }}</td>
                 <td>{{ b.approved_ugh|default:"" }}</td>
                 <td>{{ b.plan_date }} {{ b.plan_time }}</td>
