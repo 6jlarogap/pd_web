@@ -63,6 +63,9 @@ class BurialRequest(models.Model):
     def loru_name(self):
         return self.creator.profile.org.name
 
+    def __unicode__(self):
+        return u'%s' % self.pk
+
 def connect_ugh(instance, created, **kwargs):
     if instance.cemetery and not instance.connected_ugh.all().count() and instance.cemetery.ugh:
         instance.connected_ugh.add(instance.cemetery.ugh)

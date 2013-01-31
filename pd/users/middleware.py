@@ -15,6 +15,6 @@ class ProfileMiddleware():
             except Profile.DoesNotExist:
                 Profile.objects.create(user=request.user)
 
-            if not request.user.profile.org and request.path != reverse('profile'):
+            if not request.user.profile.org and request.path != reverse('profile') and not request.path.startswith('/admin/'):
                 messages.error(request, _(u"Укажите или создайте организацию"))
                 return redirect('profile')
