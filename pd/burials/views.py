@@ -126,9 +126,11 @@ class CreateRequestView(CreateView):
         self.object.creator = self.request.user
         if self.request.REQUEST.get('ready'):
             self.object.ready_loru = datetime.datetime.now()
+            messages.success(self.request, _(u"Заявка создана и отправлена на согласование в УГХ"))
+        else:
+            messages.success(self.request, _(u"Черновик сохранен"))
         self.object.save()
         write_log(self.request, self.object, _(u'Создана заявка'))
-        messages.success(self.request, _(u"Заявка создана и отправлена на согласование в УГХ"))
         return redirect('dashboard')
 
 create_request = CreateRequestView.as_view()
