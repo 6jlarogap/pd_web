@@ -95,7 +95,6 @@ class RequestView(BurialsListGenericMixin, DetailView):
             return redirect('dashboard')
         if request.GET.get('complete') and request.user.profile.is_ugh():
             b.completed_ugh = datetime.datetime.now()
-            b.number = b.pk
             b.save()
             write_log(request, b, _(u'Заявка закрыта'))
             messages.success(request, _(u"Заявка закрыта"))

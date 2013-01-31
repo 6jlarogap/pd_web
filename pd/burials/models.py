@@ -30,7 +30,6 @@ class BurialRequest(models.Model):
         4: _(u"Закрыта"),
     }
 
-    number = models.CharField(_(u"Номер"), max_length=255, null=True, blank=True)
     plan_date = models.DateField(_(u"План. дата"), null=True, blank=True)
     plan_time = models.TimeField(_(u"План. время"), null=True, blank=True)
 
