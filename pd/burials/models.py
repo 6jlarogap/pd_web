@@ -24,7 +24,7 @@ class Cemetery(models.Model):
 class BurialRequest(models.Model):
     STATUS_DICT = {
         0: _(u"Черновик"),
-        1: _(u"Создана"),
+        1: _(u"На согласовании"),
         2: _(u"Одобрена"),
         3: _(u"Выполнена"),
         4: _(u"Закрыта"),

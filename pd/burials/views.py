@@ -57,7 +57,7 @@ class ArchiveView(BurialsListGenericMixin, TemplateView):
             if self.request.user.profile.is_loru():
                 qs = Q(creator=self.request.user)
             if self.request.user.profile.is_ugh():
-                qs = Q(connected_ug=self.request.user.profile.org)
+                qs = Q(connected_ugh=self.request.user.profile.org)
         return qs
 
     def get_context_data(self, **kwargs):
