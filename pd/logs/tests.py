@@ -17,7 +17,7 @@ class LogsTest(TestCase):
         self.cemetery = Cemetery.objects.create(name='test cem', time_begin='12:00', time_end='17:00')
 
     def test_basic(self):
-        r = self.client.get('/')
+        r = self.client.get('/?show=1')
         self.assertEqual(Log.objects.all().count(), 0)
 
         req = r.context['request']
