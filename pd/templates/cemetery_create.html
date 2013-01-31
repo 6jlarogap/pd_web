@@ -8,8 +8,7 @@
         {% csrf_token %}
         {{ form.as_p }}
         <p>
-            <input type="submit" value="{% trans "Сохранить черновик" %}"/>
-            <input type="submit" name="ready" value="{% trans "Отправить на одобрение УГХ" %}"/>
+            <input type="submit" value="{% trans "Создать" %}"/>
         </p>
     </form>
 {% endblock %}
