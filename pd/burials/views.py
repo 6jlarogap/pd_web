@@ -40,6 +40,12 @@ class DashboardView(BurialsListGenericMixin, TemplateView):
                 qs &= Q(ready_loru__isnull=False, approved_ugh__isnull=True) | Q(processed_loru__isnull=False, completed_ugh__isnull=True)
         return {'burials': BurialRequest.objects.filter(qs).distinct()}
 
+    def get(self, request, *args, **kwargs):
+        if not request.GET:
+            return redirect('archive')
+        else:
+            return super(DashboardView, self).get(request, *args, **kwargs)
+
 dashboard = DashboardView.as_view()
 
 class ArchiveView(BurialsListGenericMixin, TemplateView):

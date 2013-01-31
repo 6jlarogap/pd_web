@@ -31,11 +31,11 @@ class LoginTest(TestCase):
         self.ugh_user.profile.org.loru_list.create(loru=loru_org)
 
     def test_lists(self):
-        r = self.ugh_client.get('/')
+        r = self.ugh_client.get('/?show=1')
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r.context['burials'].count(), 0)
 
-        r = self.loru_client.get('/')
+        r = self.loru_client.get('/?show=1')
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r.context['burials'].count(), 0)
 
@@ -61,17 +61,17 @@ class LoginTest(TestCase):
         self.assertEqual(r.status_code, 302)
         br = BurialRequest.objects.all()[0]
 
-        r = self.ugh_client.get('/')
+        r = self.ugh_client.get('/?show=1')
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r.context['burials'].count(), 1)
 
-        r = self.loru_client.get('/')
+        r = self.loru_client.get('/?show=1')
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r.context['burials'].count(), 0)
 
         ProfileLORU.objects.all().delete()
 
-        r = self.ugh_client.get('/')
+        r = self.ugh_client.get('/?show=1')
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r.context['burials'].count(), 0)
 
@@ -80,41 +80,41 @@ class LoginTest(TestCase):
         self.assertEqual(r.status_code, 302)
         br = BurialRequest.objects.all()[0]
 
-        r = self.ugh_client.get('/')
+        r = self.ugh_client.get('/?show=1')
         self.assertEqual(r.context['burials'].count(), 0)
-        r = self.loru_client.get('/')
+        r = self.loru_client.get('/?show=1')
         self.assertEqual(r.context['burials'].count(), 1)
 
         r = self.loru_client.get('/view/%s/?ready=1' % br.pk)
 
-        r = self.ugh_client.get('/')
+        r = self.ugh_client.get('/?show=1')
         self.assertEqual(r.context['burials'].count(), 1)
         self.assertIn('loru', r.content)
 
-        r = self.loru_client.get('/')
+        r = self.loru_client.get('/?show=1')
         self.assertEqual(r.context['burials'].count(), 0)
 
         r = self.ugh_client.get('/view/%s/?approve=1' % br.pk)
 
-        r = self.ugh_client.get('/')
+        r = self.ugh_client.get('/?show=1')
         self.assertEqual(r.context['burials'].count(), 0)
-        r = self.loru_client.get('/')
+        r = self.loru_client.get('/?show=1')
         self.assertEqual(r.context['burials'].count(), 1)
 
         r = self.loru_client.get('/view/%s/?execute=1' % br.pk)
         self.assertEqual(r.status_code, 302)
 
-        r = self.ugh_client.get('/')
+        r = self.ugh_client.get('/?show=1')
         self.assertEqual(r.context['burials'].count(), 1)
-        r = self.loru_client.get('/')
+        r = self.loru_client.get('/?show=1')
         self.assertEqual(r.context['burials'].count(), 0)
 
         r = self.ugh_client.get('/view/%s/?complete=1' % br.pk)
         self.assertEqual(r.status_code, 302)
 
-        r = self.ugh_client.get('/')
+        r = self.ugh_client.get('/?show=1')
         self.assertEqual(r.context['burials'].count(), 0)
-        r = self.loru_client.get('/')
+        r = self.loru_client.get('/?show=1')
         self.assertEqual(r.context['burials'].count(), 0)
 
     def test_archive(self):
