@@ -27,7 +27,7 @@ class LoginTest(TestCase):
         self.ugh_client.login(username='ugh', password='test')
         self.loru_client = Client()
         self.loru_client.login(username='loru', password='test')
-        self.cemetery = Cemetery.objects.create(name='test cem', time_begin='12:00', time_end='17:00')
+        self.cemetery = Cemetery.objects.create(name='test cem', time_begin='12:00', time_end='17:00', ugh=ugh_org)
         self.ugh_user.profile.org.loru_list.create(loru=loru_org)
 
     def test_lists(self):

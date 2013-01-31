@@ -12,5 +12,5 @@ class BurialRequestCreateForm(forms.ModelForm):
     def __init__(self, request, *args, **kwargs):
         super(BurialRequestCreateForm, self).__init__(*args, **kwargs)
         self.fields['cemetery'].queryset = Cemetery.objects.filter(
-            Q(creator__isnull=True) | Q(creator__profile__org__loru_list__loru=request.user.profile.org)
+            Q(ugh__isnull=True) | Q(ugh__loru_list__loru=request.user.profile.org)
         ).distinct()

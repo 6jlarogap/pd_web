@@ -1,6 +1,8 @@
 # coding=utf-8
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
+from users.models import Org
+
 
 class Cemetery(models.Model):
     name = models.CharField(_(u"Название"), max_length=255)
@@ -10,6 +12,7 @@ class Cemetery(models.Model):
 
     creator = models.ForeignKey('auth.User', verbose_name=_(u"Владелец"), editable=False, null=True)
     created = models.DateTimeField(_(u"Создано"), auto_now_add=True)
+    ugh = models.ForeignKey(Org, verbose_name=_(u"УГХ"), null=True, limit_choices_to={'type': Org.PROFILE_UGH})
 
     class Meta:
         verbose_name = _(u"Кладбище")
@@ -31,13 +34,14 @@ class BurialRequest(models.Model):
     plan_date = models.DateField(_(u"План. дата"), null=True, blank=True)
     plan_time = models.TimeField(_(u"План. время"), null=True, blank=True)
 
-    cemetery = models.ForeignKey(Cemetery, verbose_name=_(u"Кладбище"), null=True, blank=True)
+    cemetery = models.ForeignKey(Cemetery, verbose_name=_(u"Кладбище"), null=True)
     place_number = models.CharField(_(u"Номер места"), max_length=255, null=True, blank=True)
 
     creator = models.ForeignKey('auth.User', verbose_name=_(u"Владелец"), editable=False, null=True)
     created = models.DateTimeField(_(u"Создано"), auto_now_add=True)
 
-    connected_ugh = models.ManyToManyField('users.Org', verbose_name=_(u"УГХ"), editable=False, blank=True, related_name='connected_requests')
+    connected_ugh = models.ManyToManyField(Org, verbose_name=_(u"УГХ"), editable=False, blank=True,
+                                           related_name='connected_requests', limit_choices_to={'type': Org.PROFILE_UGH})
 
     ready_loru = models.DateTimeField(_(u"Готово к согласованию"), editable=False, null=True)
     approved_ugh = models.DateTimeField(_(u"Согласовано УГХ"), editable=False, null=True)
@@ -61,8 +65,7 @@ class BurialRequest(models.Model):
         return self.creator.profile.org.name
 
 def connect_ugh(instance, created, **kwargs):
-    if created:
-        for ugh_loru in instance.creator.profile.org.ugh_list.all():
-            instance.connected_ugh.add(ugh_loru.ugh)
+    if instance.cemetery and not instance.connected_ugh.all().count() and instance.cemetery.ugh:
+        instance.connected_ugh.add(instance.cemetery.ugh)
 models.signals.post_save.connect(connect_ugh, sender=BurialRequest)
 
