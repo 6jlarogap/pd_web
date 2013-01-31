@@ -11,22 +11,22 @@
 
     {% if user.profile.is_loru and object.approved_ugh and not object.processed_loru %}
         <p>
-            <a class="btn" href="?execute=1">{% trans "выполнена" %}</a>
+            <a class="btn" href="?execute=1">{% trans "выполнить работы" %}</a>
         </p>
     {% endif %}
     {% if user.profile.is_loru and not object.ready_loru %}
         <p>
-            <a class="btn" href="?ready=1">{% trans "согласовать" %}</a>
+            <a class="btn" href="?ready=1">{% trans "отправить на согласование" %}</a>
         </p>
     {% endif %}
-    {% if user.profile.is_ugh and not object.approved_ugh %}
+    {% if user.profile.is_ugh and object.ready_loru and not object.approved_ugh %}
         <p>
-            <a class="btn" href="?approve=1">{% trans "одобрена" %}</a>
+            <a class="btn" href="?approve=1">{% trans "согласовать" %}</a>
         </p>
     {% endif %}
     {% if user.profile.is_ugh and object.processed_loru and not object.completed_ugh %}
         <p>
-            <a class="btn" href="?complete=1">{% trans "завершена" %}</a>
+            <a class="btn" href="?complete=1">{% trans "завершить" %}</a>
         </p>
     {% endif %}
 {% endblock %}
