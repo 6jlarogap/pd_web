@@ -58,7 +58,7 @@ class ArchiveMixin(BurialsListGenericMixin):
                 qs = Q(cemetery__ugh=self.request.user.profile.org)
         return qs
 
-class ArchiveView(BurialsListGenericMixin, TemplateView):
+class ArchiveView(ArchiveMixin, TemplateView):
     template_name = 'archive.html'
 
     def get_context_data(self, **kwargs):
