@@ -4,10 +4,15 @@
 
 {% block content %}
     <h1>{% trans "Кладбища" %}</h1>
-    <table>
+    <table class="table table-bordered">
         {% for c in object_list %}
             <tr>
                 <td>{{ c.name }}</td>
+                <td>
+                    {% if user.profile.org == c.ugh %}
+                        <a href="{% url manage_cemeteries_edit c.pk %}" class="btn">{% trans "править" %}</a>
+                    {% endif %}
+                </td>
             </tr>
         {% endfor %}
     </table>

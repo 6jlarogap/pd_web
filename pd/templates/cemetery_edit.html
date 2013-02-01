@@ -3,12 +3,12 @@
 {% load i18n %}
 
 {% block content %}
-    <h1>{% trans "Регистрация" %}</h1>
+    <h1>{% trans "Кладбище" %} {{ form.instance }}</h1>
     <form action="" method="POST">
         {% csrf_token %}
         {{ form.as_p }}
         <p>
-            <input type="submit" class="btn" value="{% trans "Зарегистрироваться" %}"/>
+            <input type="submit" class="btn" value="{% trans "Сохранить" %}" class="btn"/>
         </p>
     </form>
 {% endblock %}

@@ -192,7 +192,23 @@ class CemeteryCreate(UGHRequiredMixin, CreateView):
         self.object.creator = self.request.user
         self.object.ugh = self.request.user.profile.org
         self.object.save()
+        write_log(self.request, self.object, _(u'Кладбище создано'))
         messages.success(self.request, _(u"Кладбище создано"))
         return redirect('manage_cemeteries')
 
 manage_cemeteries_create = CemeteryCreate.as_view()
+
+class CemeteryEdit(UGHRequiredMixin, UpdateView):
+    template_name = 'cemetery_edit.html'
+    form_class = CemeteryForm
+
+    def get_queryset(self):
+        return Cemetery.objects.filter(ugh=self.request.user.profile.org)
+
+    def form_valid(self, form):
+        self.object = form.save()
+        write_log(self.request, self.object, _(u'Кладбище изменено'))
+        messages.success(self.request, _(u"Кладбище изменено"))
+        return redirect('manage_cemeteries')
+
+manage_cemeteries_edit = CemeteryEdit.as_view()

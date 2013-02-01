@@ -30,7 +30,7 @@
                 <th>{{ b.status|default:"" }}</th>
                 <td>
                     <a class="btn" href="{% url view_request b.pk %}">{% trans "просмотр" %}</a>
-                    {% if user == b.creator and not b.ready_loru %}
+                    {% if user.profile.org == b.loru and not b.ready_loru %}
                         <a class="btn" href="{% url edit_request b.pk %}">{% trans "правка" %}</a>
                     {% endif %}
                 </td>
