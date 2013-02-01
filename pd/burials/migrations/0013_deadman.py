@@ -7,7 +7,7 @@ from django.db import models
 
 class Migration(SchemaMigration):
 
-    depends = (
+    depends_on = (
         ('persons', '0002__basic'),
     )
 
