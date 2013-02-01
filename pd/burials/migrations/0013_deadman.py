@@ -7,6 +7,10 @@ from django.db import models
 
 class Migration(SchemaMigration):
 
+    depends = (
+        ('persons', '0002__basic'),
+    )
+
     def forwards(self, orm):
         # Adding field 'BurialRequest.deadman'
         db.add_column('burials_burialrequest', 'deadman',
