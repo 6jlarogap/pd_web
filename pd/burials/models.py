@@ -38,9 +38,7 @@ class BurialRequest(models.Model):
 
     creator = models.ForeignKey('auth.User', verbose_name=_(u"Владелец"), editable=False, null=True)
     created = models.DateTimeField(_(u"Создано"), auto_now_add=True)
-
-    connected_ugh = models.ManyToManyField(Org, verbose_name=_(u"УГХ"), editable=False, blank=True,
-                                           related_name='connected_requests', limit_choices_to={'type': Org.PROFILE_UGH})
+    loru = models.ForeignKey(Org, verbose_name=_(u"ЛОРУ"), null=True, limit_choices_to={'type': Org.PROFILE_LORU})
 
     ready_loru = models.DateTimeField(_(u"Готово к согласованию"), editable=False, null=True)
     approved_ugh = models.DateTimeField(_(u"Согласовано УГХ"), editable=False, null=True)
@@ -58,16 +56,11 @@ class BurialRequest(models.Model):
         return self.STATUS_DICT[cnt]
 
     def ugh_names(self):
-        return ', '.join([ugh.name for ugh in self.connected_ugh.all()])
+        return self.cemetery.ugh and self.cemetery.ugh.name or ''
 
     def loru_name(self):
-        return self.creator.profile.org.name
+        return self.loru and self.loru.name or ''
 
     def __unicode__(self):
         return u'%s' % self.pk
-
-def connect_ugh(instance, created, **kwargs):
-    if instance.cemetery and not instance.connected_ugh.all().count() and instance.cemetery.ugh:
-        instance.connected_ugh.add(instance.cemetery.ugh)
-models.signals.post_save.connect(connect_ugh, sender=BurialRequest)
 

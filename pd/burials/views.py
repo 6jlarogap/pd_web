@@ -1,6 +1,6 @@
 # coding=utf-8
 import datetime
-from burials.forms import BurialRequestCreateForm
+from burials.forms import BurialRequestCreateForm, CemeteryForm
 from django.contrib import messages
 from django.db.models.query_utils import Q
 from django.shortcuts import redirect
@@ -19,9 +19,9 @@ class BurialsListGenericMixin:
         qs = Q(pk__isnull=True)
         if self.request.user.is_authenticated():
             if self.request.user.profile.is_loru():
-                qs = Q(creator=self.request.user)
+                qs = Q(loru=self.request.user.profile.org)
             if self.request.user.profile.is_ugh():
-                qs = Q(creator__profile__org__ugh_list__ugh=self.request.user.profile.org)
+                qs = Q(loru__ugh_list__ugh=self.request.user.profile.org)
         return qs
 
 class DashboardView(BurialsListGenericMixin, TemplateView):
@@ -48,17 +48,18 @@ class DashboardView(BurialsListGenericMixin, TemplateView):
 
 dashboard = DashboardView.as_view()
 
-class ArchiveView(BurialsListGenericMixin, TemplateView):
-    template_name = 'archive.html'
-
+class ArchiveMixin(BurialsListGenericMixin):
     def get_qs_filter(self):
         qs = Q(pk__isnull=True)
         if self.request.user.is_authenticated():
             if self.request.user.profile.is_loru():
-                qs = Q(creator=self.request.user)
+                qs = Q(loru=self.request.user.profile.org)
             if self.request.user.profile.is_ugh():
-                qs = Q(connected_ugh=self.request.user.profile.org)
+                qs = Q(cemetery__ugh=self.request.user.profile.org)
         return qs
+
+class ArchiveView(BurialsListGenericMixin, TemplateView):
+    template_name = 'archive.html'
 
     def get_context_data(self, **kwargs):
         qs = self.get_qs_filter()
@@ -66,7 +67,7 @@ class ArchiveView(BurialsListGenericMixin, TemplateView):
 
 archive = ArchiveView.as_view()
 
-class RequestView(BurialsListGenericMixin, DetailView):
+class RequestView(ArchiveMixin, DetailView):
     template_name = 'view_request.html'
 
     def get_queryset(self):
@@ -123,6 +124,7 @@ class CreateRequestView(CreateView):
     def form_valid(self, form):
         self.object = form.save(commit=False)
         self.object.creator = self.request.user
+        self.object.loru = self.request.user.profile.org
         if self.request.REQUEST.get('ready'):
             self.object.ready_loru = datetime.datetime.now()
             messages.success(self.request, _(u"Заявка создана и отправлена на согласование в УГХ"))
@@ -177,17 +179,18 @@ class CemeteryList(UGHRequiredMixin, ListView):
     model = Cemetery
 
     def get_queryset(self):
-        return Cemetery.objects.filter(Q(creator__isnull=True) | Q(creator=self.request.user))
+        return Cemetery.objects.filter(Q(creator__isnull=True) | Q(ugh=self.request.user.profile.org))
 
 manage_cemeteries = CemeteryList.as_view()
 
 class CemeteryCreate(UGHRequiredMixin, CreateView):
     template_name = 'cemetery_create.html'
-    model = Cemetery
+    form_class = CemeteryForm
 
     def form_valid(self, form):
         self.object = form.save(commit=False)
         self.object.creator = self.request.user
+        self.object.ugh = self.request.user.profile.org
         self.object.save()
         messages.success(self.request, _(u"Кладбище создано"))
         return redirect('manage_cemeteries')
