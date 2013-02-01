@@ -35,6 +35,9 @@
                 </tr>
             {% endfor %}
         </table>
+        <p>
+            <a href="{% url add_user %}" class="btn">{% trans "новый пользователь" %}</a>
+        </p>
 
         {% if form.instance.is_ugh %}
             <h2>{% trans "ЛОРУ" %}</h2>

@@ -107,13 +107,13 @@ class EditDataTest(TestCase):
         self.user = User.objects.create_user(username='test', email='test@example.com', password='test')
         self.client = Client()
 
-    def test_data(self):
         r = self.client.login(username='test', password='test')
         self.assertEquals(r, True)
 
         r = self.client.post('/profile/', {'org_type': Org.PROFILE_LORU, 'org_name': 'LORU'})
         self.assertEqual(r.status_code, 302)
 
+    def test_data(self):
         r = self.client.get('/user/%s/edit/' % self.user.pk)
         self.assertEqual(r.status_code, 200)
 
@@ -128,6 +128,7 @@ class EditDataTest(TestCase):
         self.assertEqual(u.username, 'test1')
         self.assertEqual(u.email, 'test1@example.com')
 
+    def test_password(self):
         r = self.client.get('/user/%s/password/' % self.user.pk)
         self.assertEqual(r.status_code, 200)
 
@@ -136,5 +137,16 @@ class EditDataTest(TestCase):
 
         self.client.logout()
         r = self.client.login(username='test', password='test')
-
         self.assertEquals(r, False)
+        r = self.client.login(username='test', password='test1')
+        self.assertEquals(r, True)
+
+    def test_create(self):
+        r = self.client.post('/user/create/', dict(
+            username='test1', email='test1@example.com', password1='test1', password2='test1',
+        ))
+        self.assertEqual(r.status_code, 302)
+
+        self.client.logout()
+        r = self.client.login(username='test1', password='test1')
+        self.assertEquals(r, True)

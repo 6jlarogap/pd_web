@@ -7,7 +7,7 @@ from django.core.urlresolvers import reverse
 from django.shortcuts import redirect, render
 from django.utils.translation import ugettext_lazy as _
 from django.views.generic.base import View
-from django.views.generic.edit import UpdateView
+from django.views.generic.edit import UpdateView, CreateView
 
 from logs.models import write_log
 from users.forms import RegisterForm, LoruFormset, ProfileForm, UserDataForm, ChangePasswordForm
@@ -117,6 +117,35 @@ class ProfileView(UpdateView):
         return redirect(self.get_success_url())
 
 profile = ProfileView.as_view()
+
+class UserAddForm(CreateView):
+    template_name = 'add_user.html'
+    model = User
+    form_class = RegisterForm
+
+    def form_valid(self, form):
+        self.object = form.save()
+        self.object.profile.org = self.request.user.profile.org
+        self.object.profile.save()
+
+        messages.success(self.request, _(u"Пользователь создан"))
+        write_log(self.request, self.object, _(u'Создан пользователь'))
+        return redirect(self.get_success_url())
+
+    def get_success_url(self):
+        return reverse('profile')
+
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_authenticated():
+            return redirect('/')
+        return super(UserAddForm, self).dispatch(request, *args, **kwargs)
+
+    def get_form_kwargs(self, **kwargs):
+        data = super(UserAddForm, self).get_form_kwargs(**kwargs)
+        del data['instance']
+        return data
+
+add_user = UserAddForm.as_view()
 
 class UserEditForm(UpdateView):
     template_name = 'edit_user.html'

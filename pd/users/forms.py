@@ -50,16 +50,14 @@ class ProfileForm(forms.ModelForm):
 
     class Meta:
         model = Profile
+        exclude = ['org', ]
         
     def __init__(self, *args, **kwargs):
         super(ProfileForm, self).__init__(*args, **kwargs)
         if self.instance.org:
-            self.fields['org'].widget = forms.HiddenInput()
             for f in self.fields:
                 if f.startswith('org_'):
                     self.initial.update({f: getattr(self.instance.org, f[4:])})
-        else:
-            self.fields['org'].required = False
 
     def save(self, commit=True, *args, **kwargs):
         obj = super(ProfileForm, self).save(commit=False, *args, **kwargs)
@@ -90,7 +88,9 @@ class ChangePasswordForm(forms.ModelForm):
             raise forms.ValidationError(_(u"Пароли не совпадают"))
         return self.cleaned_data
 
-    def save(self, *args, **kwargs):
+    def save(self, commit=True, *args, **kwargs):
         self.instance.set_password(self.cleaned_data['password1'])
+        if commit:
+            self.instance.save()
         return self.instance
 
