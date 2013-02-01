@@ -10,11 +10,14 @@
     <p>{% trans "Место" %}: {{ object.place_number|default:"" }}</p>
     <p>{% trans "Дата" %}: {{ object.plan_date }} {{ object.plan_time }}</p>
 
-    {% if user.profile.is_loru and object.approved_ugh and not object.processed_loru %}
-        <p>
-            <a class="btn" href="?execute=1">{% trans "выполнить работы" %}</a>
-        </p>
-    {% endif %}
+    {% comment %}
+        {% if user.profile.is_loru and object.approved_ugh and not object.processed_loru %}
+            <p>
+                <a class="btn" href="?execute=1">{% trans "выполнить работы" %}</a>
+            </p>
+        {% endif %}
+    {% endcomment %}
+
     {% if user.profile.is_loru and not object.ready_loru %}
         <p>
             <a class="btn" href="?ready=1">{% trans "отправить на согласование" %}</a>
@@ -25,7 +28,7 @@
             <a class="btn" href="?approve=1">{% trans "согласовать" %}</a>
         </p>
     {% endif %}
-    {% if user.profile.is_ugh and object.processed_loru and not object.completed_ugh %}
+    {% if user.profile.is_ugh and object.approved_ugh and not object.completed_ugh %}
         <p>
             <a class="btn" href="?complete=1">{% trans "завершить" %}</a>
         </p>
