@@ -132,7 +132,10 @@ class CreateRequestView(CreateView):
             messages.success(self.request, _(u"Черновик сохранен"))
         self.object.save()
         write_log(self.request, self.object, _(u'Создана заявка'))
-        return redirect('edit_request', self.object.pk)
+        if self.request.REQUEST.get('ready'):
+            return redirect('dashboard')
+        else:
+            return redirect('edit_request', self.object.pk)
 
 create_request = CreateRequestView.as_view()
 
