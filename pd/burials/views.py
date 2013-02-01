@@ -144,7 +144,7 @@ class EditRequestView(UpdateView):
     form_class = BurialRequestCreateForm
 
     def get_queryset(self):
-        return BurialRequest.objects.filter(creator=self.request.user, ready_loru__isnull=True)
+        return BurialRequest.objects.filter(loru=self.request.user.profile.org, ready_loru__isnull=True)
 
     def dispatch(self, request, *args, **kwargs):
         self.request = request
