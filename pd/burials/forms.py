@@ -1,3 +1,4 @@
+import datetime
 from django import forms
 
 from burials.models import BurialRequest, Cemetery
@@ -14,6 +15,7 @@ class BurialRequestCreateForm(forms.ModelForm):
         self.fields['cemetery'].queryset = Cemetery.objects.filter(
             Q(ugh__isnull=True) | Q(ugh__loru_list__loru=request.user.profile.org)
         ).distinct()
+        self.fields['plan_date'].initial = datetime.date.today() + datetime.timedelta(1)
 
 class CemeteryForm(forms.ModelForm):
     class Meta:

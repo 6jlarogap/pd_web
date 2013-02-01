@@ -30,11 +30,19 @@ class BurialRequest(models.Model):
         4: _(u"Закрыта"),
     }
 
-    plan_date = models.DateField(_(u"План. дата"), null=True, blank=True)
-    plan_time = models.TimeField(_(u"План. время"), null=True, blank=True)
+    BURIAL_TYPES = (
+        ('common', _(u'Захоронение')),
+        ('additional', _(u'Подзахоронение')),
+        ('overlap', _(u'Захоронение в существующую')),
+        ('urn', _(u'Урна')),
+    )
 
     cemetery = models.ForeignKey(Cemetery, verbose_name=_(u"Кладбище"), null=True)
+    burial_type = models.CharField(_(u"Тип захоронения"), max_length=255, null=True, blank=True, choices=BURIAL_TYPES)
     place_number = models.CharField(_(u"Номер места"), max_length=255, null=True, blank=True)
+
+    plan_date = models.DateField(_(u"План. дата"), null=True, blank=True)
+    plan_time = models.TimeField(_(u"План. время"), null=True, blank=True)
 
     creator = models.ForeignKey('auth.User', verbose_name=_(u"Владелец"), editable=False, null=True)
     created = models.DateTimeField(_(u"Создано"), auto_now_add=True)
