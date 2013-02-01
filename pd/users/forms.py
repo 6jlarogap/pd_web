@@ -71,3 +71,26 @@ class ProfileForm(forms.ModelForm):
         if commit:
             obj.save()
         return obj
+
+class UserDataForm(forms.ModelForm):
+    class Meta:
+        model = User
+        fields = ['username', 'email', 'first_name', 'last_name',]
+
+class ChangePasswordForm(forms.ModelForm):
+    class Meta:
+        model = User
+        fields = ['id', ] # guaranteed to be invisible and non-editable
+
+    password1 = forms.CharField(label=_(u"Пароль"), widget=forms.PasswordInput())
+    password2 = forms.CharField(label=_(u"Пароль (повторите)"), widget=forms.PasswordInput())
+
+    def clean(self):
+        if self.cleaned_data['password1'] != self.cleaned_data['password2']:
+            raise forms.ValidationError(_(u"Пароли не совпадают"))
+        return self.cleaned_data
+
+    def save(self, *args, **kwargs):
+        self.instance.set_password(self.cleaned_data['password1'])
+        return self.instance
+

@@ -100,3 +100,41 @@ class ProfileTest(TestCase):
 
         r = self.client.get('/profile/')
         self.assertIn('id="id_loru_list-1-loru"', r.content)
+
+class EditDataTest(TestCase):
+    def setUp(self):
+        activate('ru')
+        self.user = User.objects.create_user(username='test', email='test@example.com', password='test')
+        self.client = Client()
+
+    def test_data(self):
+        r = self.client.login(username='test', password='test')
+        self.assertEquals(r, True)
+
+        r = self.client.post('/profile/', {'org_type': Org.PROFILE_LORU, 'org_name': 'LORU'})
+        self.assertEqual(r.status_code, 302)
+
+        r = self.client.get('/user/%s/edit/' % self.user.pk)
+        self.assertEqual(r.status_code, 200)
+
+        u = User.objects.get()
+        self.assertEqual(u.username, 'test')
+        self.assertEqual(u.email, 'test@example.com')
+
+        r = self.client.post('/user/%s/edit/' % self.user.pk, {'username': 'test1', 'email': 'test1@example.com'})
+        self.assertEqual(r.status_code, 302)
+
+        u = User.objects.get()
+        self.assertEqual(u.username, 'test1')
+        self.assertEqual(u.email, 'test1@example.com')
+
+        r = self.client.get('/user/%s/password/' % self.user.pk)
+        self.assertEqual(r.status_code, 200)
+
+        r = self.client.post('/user/%s/password/' % self.user.pk, {'password1': 'test1', 'password2': 'test1'})
+        self.assertEqual(r.status_code, 302)
+
+        self.client.logout()
+        r = self.client.login(username='test', password='test')
+
+        self.assertEquals(r, False)

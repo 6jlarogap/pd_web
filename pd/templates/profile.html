@@ -6,11 +6,38 @@
     <h1>{% trans "Профиль" %}</h1>
     <form action="" method="POST">
         {% csrf_token %}
-        {{ form.as_p }}
         {% if form.instance.org %}
-            <p>{% trans "Организация" %}: {{ form.instance.org }}</p>
+            <h2>{% trans "Организация" %}: {{ form.instance.org }}</h2>
         {% endif %}
+        {{ form.as_p }}
+
+        <h2>{% trans "Пользователи" %}</h2>
+        <table class="table table-bordered">
+            <tr>
+                <th>Имя пользователя</th>
+                <th>Email</th>
+                <th>Фамилия</th>
+                <th>Имя</th>
+                <th>Активен</th>
+                <th></th>
+            </tr>
+            {% for p in user.profile.org.profile_set.all %}
+                <tr>
+                    <td>{{ p.user.username }}</td>
+                    <td>{{ p.user.email }}</td>
+                    <td>{{ p.user.first_name }}</td>
+                    <td>{{ p.user.last_name }}</td>
+                    <td>{{ p.user.is_active|yesno }}</td>
+                    <td>
+                        <a href="{% url change_password p.user.pk %}" class="btn">сменить пароль</a>
+                        <a href="{% url edit_user p.user.pk %}" class="btn">править данные</a>
+                    </td>
+                </tr>
+            {% endfor %}
+        </table>
+
         {% if form.instance.is_ugh %}
+            <h2>{% trans "ЛОРУ" %}</h2>
             {{ formset.management_form }}
             <table>
                 {% for f in formset.forms %}

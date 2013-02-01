@@ -2,6 +2,7 @@
 from django.contrib import messages
 from django.contrib.auth import login, logout
 from django.contrib.auth.forms import AuthenticationForm
+from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
 from django.shortcuts import redirect, render
 from django.utils.translation import ugettext_lazy as _
@@ -9,7 +10,7 @@ from django.views.generic.base import View
 from django.views.generic.edit import UpdateView
 
 from logs.models import write_log
-from users.forms import RegisterForm, LoruFormset, ProfileForm
+from users.forms import RegisterForm, LoruFormset, ProfileForm, UserDataForm, ChangePasswordForm
 from users.models import Profile
 
 
@@ -116,4 +117,38 @@ class ProfileView(UpdateView):
         return redirect(self.get_success_url())
 
 profile = ProfileView.as_view()
+
+class UserEditForm(UpdateView):
+    template_name = 'edit_user.html'
+    model = User
+    form_class = UserDataForm
+
+    def get_success_url(self):
+        messages.success(self.request, _(u"Данные изменены"))
+        write_log(self.request, self.object, _(u'Изменены данные пользователя'))
+        return reverse('profile')
+
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_authenticated():
+            return redirect('/')
+        return super(UserEditForm, self).dispatch(request, *args, **kwargs)
+
+edit_user = UserEditForm.as_view()
+
+class ChangePasswordForm(UpdateView):
+    template_name = 'change_password.html'
+    model = User
+    form_class = ChangePasswordForm
+
+    def get_success_url(self):
+        messages.success(self.request, _(u"Пароль изменен"))
+        write_log(self.request, self.object, _(u'Пароль изменен'))
+        return reverse('profile')
+
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_authenticated():
+            return redirect('/')
+        return super(ChangePasswordForm, self).dispatch(request, *args, **kwargs)
+
+change_password = ChangePasswordForm.as_view()
 
