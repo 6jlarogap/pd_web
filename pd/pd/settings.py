@@ -105,7 +105,9 @@ INSTALLED_APPS = (
     'debug_toolbar',
     'raven.contrib.django',
 
+    'geo',
     'burials',
+    'persons',
     'users',
     'logs',
 )

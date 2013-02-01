@@ -11,6 +11,8 @@ urlpatterns = patterns('')
 urlpatterns += patterns('pd.views',
     url(r'^', include('users.urls')),
     url(r'^', include('burials.urls')),
+    url(r'^', include('persons.urls')),
+    url(r'^', include('geo.urls')),
 )
 
 urlpatterns += patterns('',
