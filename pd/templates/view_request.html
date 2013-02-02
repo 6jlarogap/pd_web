@@ -4,12 +4,21 @@
 
 {% block content %}
     <h1>{% trans "Заявка" %} {{ object.pk }}</h1>
-    <p>{% trans "Статус" %}: {{ object.status }}</p>
-    <p>{% trans "ЛОРУ" %}: <a href="">{{ object.loru_name }}</a></p>
-    <p>{% trans "Кладбище" %}: {{ object.cemetery }}</p>
-    <p>{% trans "Место" %}: {{ object.place_number|default:"" }}</p>
-    <p>{% trans "Дата" %}: {{ object.plan_date }} {{ object.plan_time }}</p>
-
+    <dl>
+        <dt>{% trans "Статус" %}:</dt><dd>{{ object.status }}</dd>
+        <dt>{% trans "ЛОРУ" %}:</dt><dd><a href="">{{ object.loru_name }}</a></dd>
+        {% if object.deadman %}
+            <dt>{% trans "Усопший" %}:</dt>
+            <dd>
+                {{ object.deadman|default:"" }}
+                <br/>
+                {{ object.deadman.address|default:"" }}
+            </dd>
+        {% endif %}
+        <dt>{% trans "Кладбище" %}:</dt><dd>{{ object.cemetery }}</dd>
+        <dt>{% trans "Место" %}:</dt><dd>{{ object.place_number|default:"" }}</dd>
+        <dt>{% trans "Дата" %}:</dt><dd>{{ object.plan_date }} {{ object.plan_time }}</dd>
+    </dl>
     {% comment %}
         {% if user.profile.is_loru and object.approved_ugh and not object.processed_loru %}
             <p>

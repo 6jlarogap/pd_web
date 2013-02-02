@@ -22,8 +22,10 @@ class CreateDeadmanView(CreateView):
         return super(CreateDeadmanView, self).dispatch(request, *args, **kwargs)
 
     def create_forms(self):
-        self.dc_form = DeathCertificateForm(data=self.request.POST or None, prefix='dc')
-        self.addr_form = LocationForm(data=self.request.POST or None, prefix='addr')
+        dm = self.get_instance()
+        self.dc_form = DeathCertificateForm(
+            data=self.request.POST or None, prefix='dc', instance=dm and dm.deathcertificate)
+        self.addr_form = LocationForm(data=self.request.POST or None, prefix='addr', instance=dm and dm.address)
 
     def get_br(self):
         return BurialRequest.objects.get(pk=self.kwargs['br_pk'])
@@ -49,6 +51,15 @@ class CreateDeadmanView(CreateView):
             return redirect('edit_request', br.pk)
         else:
             return self.form_invalid(form)
+
+    def get_instance(self):
+        br = self.get_br()
+        return br.deadman
+
+    def get_form_kwargs(self, **kwargs):
+        data = super(CreateDeadmanView, self).get_form_kwargs(**kwargs)
+        data['instance'] = self.get_instance()
+        return data
 
     def get_context_data(self, **kwargs):
         data = super(CreateDeadmanView, self).get_context_data(**kwargs)

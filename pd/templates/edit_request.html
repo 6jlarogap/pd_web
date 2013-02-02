@@ -9,8 +9,12 @@
         {{ form.as_p }}
         <p>
             <label>{% trans "Усопший" %}</label>
-            {% if object.deadman %}{{ object.deadman }}{% endif %}
-            <a href="{% url create_deadman object.pk %}" class="btn">{% trans "прикрепить" %}</a>
+            {% if object.deadman %}
+                {{ object.deadman }}<br/>{{ object.deadman.address }}
+                <a href="{% url create_deadman object.pk %}" class="btn">{% trans "править" %}</a>
+            {% else %}
+                <a href="{% url create_deadman object.pk %}" class="btn">{% trans "прикрепить" %}</a>
+            {% endif %}
         </p>
         <p>
             <input type="submit" class="btn" value="{% trans "Сохранить черновик" %}"/>
