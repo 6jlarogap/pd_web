@@ -16,5 +16,5 @@ class ProfileMiddleware():
                 Profile.objects.create(user=request.user)
 
             if not request.user.profile.org and request.path != reverse('profile') and not request.path.startswith('/admin/'):
-                messages.error(request, _(u"Укажите или создайте организацию"))
+                messages.error(request, _(u"Пожалуйста, для продолжения работы создайте организацию"))
                 return redirect('profile')
