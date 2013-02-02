@@ -15,8 +15,8 @@
         {% for c in object_list %}
             <tr>
                 <td>{{ c.name }}</td>
-                <td>{{ c.time_begin }}</td>
-                <td>{{ c.time_end }}</td>
+                <td>{{ c.time_begin|time:"H:i" }}</td>
+                <td>{{ c.time_end|time:"H:i" }}</td>
                 <td>{{ c.ugh }}</td>
                 <td>
                     {% if user.profile.org == c.ugh %}
