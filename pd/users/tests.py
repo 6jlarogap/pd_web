@@ -43,13 +43,13 @@ class RegisterTest(TestCase):
             type=Org.PROFILE_LORU, name='test loru'
         ))
         self.assertEqual(r.status_code, 302)
-        self.client.login(username='test', password='test')
         org = Org.objects.create(name='name', type=Org.PROFILE_LORU)
         profile = User.objects.get().profile
         profile.org = org
         profile.save()
         r = self.client.get('/?show=1')
         self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.context['user'].is_authenticated(), True)
         self.assertEqual(r.context['user'].profile.is_loru(), True)
 
     def test_ugh(self):
@@ -58,13 +58,13 @@ class RegisterTest(TestCase):
             username='test', email='test@example.com', password1='test', password2='test',
         ))
         self.assertEqual(r.status_code, 302)
-        self.client.login(username='test', password='test')
         org = Org.objects.create(name='name', type=Org.PROFILE_UGH)
         profile = User.objects.get().profile
         profile.org = org
         profile.save()
         r = self.client.get('/?show=1')
         self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.context['user'].is_authenticated(), True)
         self.assertEqual(r.context['user'].profile.is_ugh(), True)
 
 class ProfileTest(TestCase):

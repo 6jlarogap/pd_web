@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from django.contrib import messages
-from django.contrib.auth import login, logout
+from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
@@ -67,9 +67,11 @@ class RegisterView(View):
     def post(self, request, *args, **kwargs):
         form = RegisterForm(data=request.POST)
         if form.is_valid():
-            user = form.save()
-            messages.success(self.request, _(u"Все хорошо, теперь можете зайти на сервис"))
-            return redirect('ulogin')
+            form.save()
+            user = authenticate(username=form.cleaned_data['username'], password=form.cleaned_data['password1'])
+            login(request, user)
+            messages.success(self.request, _(u"Все хорошо, регистрация успешна"))
+            return redirect('dashboard')
         return self.get(request, *args, **kwargs)
 
     def get(self, request, *args, **kwargs):
