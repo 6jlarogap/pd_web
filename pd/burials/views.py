@@ -85,8 +85,8 @@ class RequestView(ArchiveMixin, DetailView):
         if request.GET.get('approve') and request.user.profile.is_ugh():
             b.approved_ugh = datetime.datetime.now()
             b.save()
-            write_log(request, b, _(u'Заявка одобрена и передана ЛОРУ'))
-            messages.success(request, _(u"Заявка одобрена и передана ЛОРУ"))
+            write_log(request, b, _(u'Заявка одобрена'))
+            messages.success(request, _(u"Заявка одобрена"))
             return redirect('dashboard')
         if request.GET.get('execute') and request.user.profile.is_loru():
             b.processed_loru = datetime.datetime.now()
