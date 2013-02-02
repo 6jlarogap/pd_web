@@ -114,6 +114,8 @@ class BurialRequest(models.Model):
             params.update({'row': self.row})
         if self.place_number:
             params.update({'place': self.place_number})
+        else:
+            return None
         try:
             return Place.objects.get(**params)
         except Place.DoesNotExist:

@@ -98,7 +98,6 @@ class CreateResponsibleView(CreateView):
 
     def form_valid(self, form):
         self.create_forms()
-        print 'self.id_form.is_valid() and self.addr_form.is_valid()', self.id_form.errors
         if self.id_form.is_valid() and self.addr_form.is_valid():
             responsible = form.save(commit=False)
             responsible.address = self.addr_form.save()
