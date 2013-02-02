@@ -7,12 +7,13 @@ from django.utils.translation import ugettext_lazy as _
 
 from geo.forms import LocationForm
 from logs.models import write_log
-from persons.forms import DeathCertificateForm, PersonIDForm
+from persons.forms import DeathCertificateForm, DeadPersonForm
 from persons.models import DeadPerson
 
 
 class CreateDeadmanView(CreateView):
     model = DeadPerson
+    form_class = DeadPersonForm
     template_name = 'create_deadman.html'
 
     def dispatch(self, request, *args, **kwargs):

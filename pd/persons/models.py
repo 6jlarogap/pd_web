@@ -105,6 +105,28 @@ class DeadPerson(BasePerson):
     Мертвое ФЛ
     """
     death_date = models.DateField(_(u"Дата смерти"), blank=True, null=True)
+    death_date_no_month = models.BooleanField(default=False, editable=False)
+    death_date_no_day = models.BooleanField(default=False, editable=False)
+
+    def get_death_date(self):
+        if not self.death_date:
+            return None
+        death_date = UnclearDate(self.death_date.year, self.death_date.month, self.death_date.day)
+        if self.death_date_no_day:
+            death_date.day = None
+        if self.death_date_no_month:
+            death_date.month = None
+        return death_date
+
+    def set_death_date(self, ubd):
+        self.death_date = ubd
+        if ubd:
+            if ubd.no_day:
+                self.death_date_no_day = True
+            if ubd.no_month:
+                self.death_date_no_month = True
+
+    unclear_death_date = property(get_death_date, set_death_date)
 
 class AlivePerson(BasePerson):
     """
