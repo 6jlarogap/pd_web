@@ -1,10 +1,11 @@
 from django.contrib import admin
 
 from burials.models import Cemetery, BurialRequest
+from burials.forms import CemeteryAdminForm
 
 
 class CemeteryAdmin(admin.ModelAdmin):
-    pass
+    form = CemeteryAdminForm
 
 admin.site.register(Cemetery, CemeteryAdmin)
 

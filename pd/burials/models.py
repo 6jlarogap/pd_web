@@ -1,6 +1,7 @@
 # coding=utf-8
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
+
 from persons.models import DeadPerson
 from users.models import Org
 
@@ -9,7 +10,8 @@ class Cemetery(models.Model):
     name = models.CharField(_(u"Название"), max_length=255)
     time_begin = models.TimeField(_(u"Начало работы"))
     time_end = models.TimeField(_(u"Окончание работы"))
-    period = models.PositiveSmallIntegerField(_(u"Длительность захоронения"), default=15)
+    time_slots = models.TextField(_(u"Время для захоронения"), default='',
+                                  help_text=_(u'В формате ЧЧ:ММ, по одному на строку'))
 
     creator = models.ForeignKey('auth.User', verbose_name=_(u"Владелец"), editable=False, null=True)
     created = models.DateTimeField(_(u"Создано"), auto_now_add=True)
@@ -21,6 +23,9 @@ class Cemetery(models.Model):
 
     def __unicode__(self):
         return self.name
+
+    def get_time_choices(self):
+        return [(s, s) for s in self.time_slots.split('\n') if s.strip()]
 
 class BurialRequest(models.Model):
     STATUS_DICT = {

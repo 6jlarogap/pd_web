@@ -1,5 +1,7 @@
+# coding=utf-8
 import datetime
 from django import forms
+from django.utils.translation import ugettext_lazy as _
 
 from burials.models import BurialRequest, Cemetery
 from django.db.models.query_utils import Q
@@ -15,9 +17,30 @@ class BurialRequestCreateForm(forms.ModelForm):
         self.fields['cemetery'].queryset = Cemetery.objects.filter(
             Q(ugh__isnull=True) | Q(ugh__loru_list__loru=request.user.profile.org)
         ).distinct()
+        if self.instance and self.instance.cemetery and self.instance.cemetery.time_slots:
+            choices = [('', '')] + self.instance.cemetery.get_time_choices()
+            self.fields['plan_time'] = forms.ChoiceField(label=_(u"План. время"), choices=choices, required=False)
         self.fields['plan_date'].initial = datetime.date.today() + datetime.timedelta(1)
 
-class CemeteryForm(forms.ModelForm):
+    def clean_plan_time(self):
+        return self.cleaned_data['plan_time'] or None
+
+class BaseCemeteryForm(forms.ModelForm):
+    def clean_time_slots(self):
+        slots = self.cleaned_data['time_slots'].split('\n')
+        slots = filter(lambda s: s.strip(), slots)
+        try:
+            slots = map(lambda s: datetime.datetime.strptime(s.strip(), '%H:%M'), slots)
+        except ValueError:
+            raise forms.ValidationError(_(u'Формат должен быть: по одному времени в формате ЧЧ:ММ на строку'))
+        return u'\n'.join([s.strftime('%H:%M') for s in slots])
+
+class CemeteryForm(BaseCemeteryForm):
     class Meta:
         model = Cemetery
         exclude = ['ugh', ]
+
+class CemeteryAdminForm(BaseCemeteryForm):
+    class Meta:
+        model = Cemetery
+
