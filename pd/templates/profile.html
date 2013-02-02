@@ -7,7 +7,7 @@
     <form action="" method="POST">
         {% csrf_token %}
         {% if form.instance.org %}
-            <h2>{% trans "Организация" %}: {{ form.instance.org }} (<strong>{{ form.instance.org.type }}</strong>)</h2>
+            <h2>{% trans "Организация" %}: {{ form.instance.org }} (<strong>{{ form.instance.org.get_type_display }}</strong>)</h2>
         {% endif %}
         {{ form.as_p }}
 
