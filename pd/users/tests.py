@@ -40,32 +40,39 @@ class RegisterTest(TestCase):
         self.client.get('/register/')
         r = self.client.post('/register/', dict(
             username='test', email='test@example.com', password1='test', password2='test',
-            type=Org.PROFILE_LORU, name='test loru'
+            first_name='test loru', last_name='last loru',
         ))
         self.assertEqual(r.status_code, 302)
         org = Org.objects.create(name='name', type=Org.PROFILE_LORU)
-        profile = User.objects.get().profile
+        u = User.objects.get()
+        profile = u.profile
         profile.org = org
         profile.save()
         r = self.client.get('/?show=1')
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r.context['user'].is_authenticated(), True)
         self.assertEqual(r.context['user'].profile.is_loru(), True)
+        self.assertEqual(r.context['user'].first_name, 'test loru')
+        self.assertEqual(r.context['user'].last_name, 'last loru')
 
     def test_ugh(self):
         self.client.get('/register/')
         r = self.client.post('/register/', dict(
             username='test', email='test@example.com', password1='test', password2='test',
+            first_name='test ugh', last_name='last ugh',
         ))
         self.assertEqual(r.status_code, 302)
         org = Org.objects.create(name='name', type=Org.PROFILE_UGH)
-        profile = User.objects.get().profile
+        u = User.objects.get()
+        profile = u.profile
         profile.org = org
         profile.save()
         r = self.client.get('/?show=1')
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r.context['user'].is_authenticated(), True)
         self.assertEqual(r.context['user'].profile.is_ugh(), True)
+        self.assertEqual(r.context['user'].first_name, 'test ugh')
+        self.assertEqual(r.context['user'].last_name, 'last ugh')
 
 class ProfileTest(TestCase):
     def setUp(self):
