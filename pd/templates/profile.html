@@ -7,9 +7,22 @@
     <form action="" method="POST">
         {% csrf_token %}
         {% if form.instance.org %}
-            <h2>{% trans "Организация" %}: {{ form.instance.org }}</h2>
+            <h2>{% trans "Организация" %}: {{ form.instance.org }} (<strong>{{ form.instance.org.type }}</strong>)</h2>
         {% endif %}
         {{ form.as_p }}
+
+        {% if form.instance.is_ugh %}
+            <h2>{% trans "ЛОРУ" %}</h2>
+            {{ formset.management_form }}
+            <table>
+                {% for f in formset.forms %}
+                    {{ f.as_table }}
+                {% endfor %}
+            </table>
+        {% endif %}
+        <p>
+            <input type="submit" class="btn" value="{% trans "Сохранить" %}"/>
+        </p>
 
         <h2>{% trans "Пользователи" %}</h2>
         <table class="table table-bordered">
@@ -37,19 +50,6 @@
         </table>
         <p>
             <a href="{% url add_user %}" class="btn">{% trans "новый пользователь" %}</a>
-        </p>
-
-        {% if form.instance.is_ugh %}
-            <h2>{% trans "ЛОРУ" %}</h2>
-            {{ formset.management_form }}
-            <table>
-                {% for f in formset.forms %}
-                    {{ f.as_table }}
-                {% endfor %}
-            </table>
-        {% endif %}
-        <p>
-            <input type="submit" class="btn" value="{% trans "Сохранить" %}"/>
         </p>
     </form>
 {% endblock %}

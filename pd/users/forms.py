@@ -65,6 +65,7 @@ class ProfileForm(forms.ModelForm):
             for f in self.fields:
                 if f.startswith('org_'):
                     self.initial.update({f: getattr(self.instance.org, f[4:])})
+            del self.fields['org_type']
 
     def save(self, commit=True, *args, **kwargs):
         obj = super(ProfileForm, self).save(commit=False, *args, **kwargs)
