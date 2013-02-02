@@ -117,6 +117,43 @@ class LoginTest(TestCase):
         r = self.loru_client.get('/?show=1')
         self.assertEqual(r.context['burials'].count(), 0)
 
+    def test_back(self):
+        r = self.loru_client.post('/create/', {'cemetery': self.cemetery.pk, 'plan_date': '12.12.2013', 'plan_time': '12:00'})
+        br = BurialRequest.objects.all()[0]
+
+        r = self.loru_client.get('/view/%s/?ready=1' % br.pk)
+        r = self.ugh_client.get('/view/%s/?approve=1' % br.pk)
+
+        br = BurialRequest.objects.all()[0]
+        self.assertEqual(unicode(br.status), unicode(BurialRequest.STATUS_DICT[2]))
+        self.assertEqual(br.backed_loru, None)
+        self.assertNotEqual(br.ready_loru, None)
+        self.assertNotEqual(br.approved_ugh, None)
+        self.assertEqual(br.processed_loru, None)
+        self.assertEqual(br.completed_ugh, None)
+
+        r = self.loru_client.get('/view/%s/?back=1' % br.pk)
+
+        br = BurialRequest.objects.all()[0]
+        self.assertEqual(unicode(br.status), unicode(BurialRequest.STATUS_DICT[-1]))
+        self.assertNotEqual(br.backed_loru, None)
+        self.assertNotEqual(br.ready_loru, None)
+        self.assertEqual(br.approved_ugh, None)
+        self.assertEqual(br.processed_loru, None)
+        self.assertEqual(br.completed_ugh, None)
+
+        r = self.loru_client.get('/view/%s/?ready=1' % br.pk)
+        r = self.ugh_client.get('/view/%s/?approve=1' % br.pk)
+        r = self.ugh_client.get('/view/%s/?complete=1' % br.pk)
+
+        br = BurialRequest.objects.all()[0]
+        self.assertEqual(unicode(br.status), unicode(BurialRequest.STATUS_DICT[4]))
+        self.assertNotEqual(br.backed_loru, None)
+        self.assertNotEqual(br.ready_loru, None)
+        self.assertNotEqual(br.approved_ugh, None)
+        self.assertNotEqual(br.processed_loru, None)
+        self.assertNotEqual(br.completed_ugh, None)
+
     def test_archive(self):
         r = self.loru_client.post('/create/', {'cemetery': self.cemetery.pk, 'plan_date': '12.12.2013', 'plan_time': '12:00', 'ready': '1'})
         self.assertEqual(r.status_code, 302)

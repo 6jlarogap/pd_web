@@ -55,7 +55,10 @@ class ArchiveMixin(BurialsListGenericMixin):
             if self.request.user.profile.is_loru():
                 qs = Q(loru=self.request.user.profile.org)
             if self.request.user.profile.is_ugh():
-                qs = Q(cemetery__ugh=self.request.user.profile.org)
+                qs = Q(
+                    Q(ready_loru__isnull=False) | Q(backed_loru__isnull=False),
+                    cemetery__ugh=self.request.user.profile.org,
+                )
         return qs
 
 class ArchiveView(ArchiveMixin, TemplateView):
@@ -76,7 +79,19 @@ class RequestView(ArchiveMixin, DetailView):
 
     def get(self, request, *args, **kwargs):
         b = self.get_object()
+        if request.GET.get('back') and request.user.profile.is_loru():
+            b.backed_loru = datetime.datetime.now()
+            b.ready_loru = None
+            b.approved_ugh = None
+            b.processed_loru = None
+            b.processed_loru = None
+            b.completed_ugh = None
+            b.save()
+            write_log(request, b, _(u'Заявка отозвана'))
+            messages.success(request, _(u"Заявка отозвана"))
+            return redirect('dashboard')
         if request.GET.get('ready') and request.user.profile.is_loru():
+            b.backed_loru = None
             b.ready_loru = datetime.datetime.now()
             b.save()
             write_log(request, b, _(u'Заявка отправлена на согласование'))
@@ -95,6 +110,8 @@ class RequestView(ArchiveMixin, DetailView):
             messages.success(request, _(u"Захоронение произведено, заявка передана УГХ для проверки"))
             return redirect('dashboard')
         if request.GET.get('complete') and request.user.profile.is_ugh():
+            if not b.processed_loru:
+                b.processed_loru = datetime.datetime.now()
             b.completed_ugh = datetime.datetime.now()
             b.save()
             write_log(request, b, _(u'Заявка закрыта'))
@@ -160,6 +177,7 @@ class EditRequestView(UpdateView):
     def form_valid(self, form):
         self.object = form.save(commit=False)
         if self.request.REQUEST.get('ready'):
+            self.object.backed_loru = None
             self.object.ready_loru = datetime.datetime.now()
             messages.success(self.request, _(u"Заявка сохранена и отправлена на согласование в УГХ"))
         else:

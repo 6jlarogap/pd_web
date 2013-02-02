@@ -29,6 +29,7 @@ class Cemetery(models.Model):
 
 class BurialRequest(models.Model):
     STATUS_DICT = {
+        -1: _(u"Отозвана"),
         0: _(u"Черновик"),
         1: _(u"На согласовании"),
         2: _(u"Одобрена"),
@@ -56,6 +57,7 @@ class BurialRequest(models.Model):
     created = models.DateTimeField(_(u"Создано"), auto_now_add=True)
     loru = models.ForeignKey(Org, verbose_name=_(u"ЛОРУ"), null=True, limit_choices_to={'type': Org.PROFILE_LORU})
 
+    backed_loru = models.DateTimeField(_(u"Отозвано"), editable=False, null=True)
     ready_loru = models.DateTimeField(_(u"Готово к согласованию"), editable=False, null=True)
     approved_ugh = models.DateTimeField(_(u"Согласовано УГХ"), editable=False, null=True)
     processed_loru = models.DateTimeField(_(u"Выполнено ЛОРУ"), editable=False, null=True)
@@ -67,6 +69,8 @@ class BurialRequest(models.Model):
 
     @property
     def status(self):
+        if self.backed_loru:
+            return self.STATUS_DICT[-1]
         flags = [self.ready_loru, self.approved_ugh, self.processed_loru, self.completed_ugh]
         cnt = len(filter(lambda f: f, flags))
         return self.STATUS_DICT[cnt]
