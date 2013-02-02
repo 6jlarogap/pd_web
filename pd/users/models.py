@@ -16,7 +16,7 @@ class Profile(models.Model):
         return self.org and self.org.type == Org.PROFILE_UGH
 
 class Org(models.Model):
-    PROFILE_ZAGS = 'loru'
+    PROFILE_ZAGS = 'zags'
     PROFILE_LORU = 'loru'
     PROFILE_UGH = 'ugh'
     PROFILE_TYPES = (
