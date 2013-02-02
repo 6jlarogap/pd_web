@@ -25,6 +25,12 @@ class BurialRequestCreateForm(forms.ModelForm):
     def clean_plan_time(self):
         return self.cleaned_data['plan_time'] or None
 
+    def clean(self):
+        if self.cleaned_data['cemetery'] and self.cleaned_data['area']:
+            if self.cleaned_data['cemetery'] != self.cleaned_data['area'].cemetery:
+                raise forms.ValidationError(_('Участок не от этого кладбища'))
+        return self.cleaned_data
+
 class BaseCemeteryForm(forms.ModelForm):
     def clean_time_slots(self):
         slots = self.cleaned_data['time_slots'].split('\n')

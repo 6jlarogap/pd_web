@@ -27,6 +27,28 @@ class Cemetery(models.Model):
     def get_time_choices(self):
         return [(s, s) for s in self.time_slots.split('\n') if s.strip()]
 
+class Area(models.Model):
+    cemetery = models.ForeignKey(Cemetery, verbose_name=_(u"Кладбище"))
+    name = models.CharField(_(u"Название"), max_length=255)
+
+    class Meta:
+        verbose_name = _(u"Кладбище")
+        verbose_name_plural = _(u"Кладбища")
+
+    def __unicode__(self):
+        return self.name
+
+class Place(models.Model):
+    cemetery = models.ForeignKey(Cemetery, verbose_name=_(u"Кладбище"))
+    area = models.ForeignKey(Area, verbose_name=_(u"Участок"), blank=True, null=True)
+    row = models.CharField(_(u"Ряд"), max_length=255, blank=True, null=True)
+    place = models.CharField(_(u"Место"), max_length=255, blank=True, null=True)
+    responsible = models.ForeignKey('persons.AlivePerson', verbose_name=_(u"Ответственный"), blank=True, null=True)
+
+    class Meta:
+        verbose_name = _(u"Место")
+        verbose_name_plural = _(u"Место")
+
 class BurialRequest(models.Model):
     STATUS_DICT = {
         -1: _(u"Отозвана"),
@@ -44,9 +66,12 @@ class BurialRequest(models.Model):
         ('urn', _(u'Урна')),
     )
 
-    cemetery = models.ForeignKey(Cemetery, verbose_name=_(u"Кладбище"), null=True)
     burial_type = models.CharField(_(u"Тип захоронения"), max_length=255, null=True, blank=True, choices=BURIAL_TYPES)
+    cemetery = models.ForeignKey(Cemetery, verbose_name=_(u"Кладбище"), null=True)
+    area = models.ForeignKey(Area, verbose_name=_(u"Участок"), blank=True, null=True)
+    row = models.CharField(_(u"Ряд"), max_length=255, blank=True, null=True)
     place_number = models.CharField(_(u"Номер места"), max_length=255, null=True, blank=True)
+    responsible = models.ForeignKey('persons.AlivePerson', verbose_name=_(u"Ответственный"), blank=True, null=True)
 
     plan_date = models.DateField(_(u"План. дата"), null=True, blank=True)
     plan_time = models.TimeField(_(u"План. время"), null=True, blank=True)
@@ -75,11 +100,27 @@ class BurialRequest(models.Model):
         cnt = len(filter(lambda f: f, flags))
         return self.STATUS_DICT[cnt]
 
-    def ugh_names(self):
+    def ugh_name(self):
         return self.cemetery.ugh and self.cemetery.ugh.name or ''
 
     def loru_name(self):
         return self.loru and self.loru.name or ''
+
+    def get_place(self):
+        params = {'cemetery': self.cemetery}
+        if self.area:
+            params.update({'area': self.area})
+        if self.row:
+            params.update({'row': self.row})
+        if self.place_number:
+            params.update({'place': self.place_number})
+        try:
+            return Place.objects.get(**params)
+        except Place.DoesNotExist:
+            return None
+
+    def get_responsible(self):
+        return self.responsible or (self.get_place() and self.get_place().responsible) or None
 
     def __unicode__(self):
         return u'%s' % self.pk

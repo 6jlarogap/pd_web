@@ -2,7 +2,7 @@ import datetime
 
 from django import forms
 
-from persons.models import DeadPerson, PersonID, DeathCertificate
+from persons.models import DeadPerson, PersonID, DeathCertificate, AlivePerson
 
 
 class DeadPersonForm(forms.ModelForm):
@@ -18,6 +18,7 @@ class DeadPersonForm(forms.ModelForm):
 class PersonIDForm(forms.ModelForm):
     class Meta:
         model = PersonID
+        exclude = ['person', ]
 
 class DeathCertificateForm(forms.ModelForm):
     class Meta:
@@ -30,4 +31,6 @@ class DeathCertificateForm(forms.ModelForm):
         })
         super(DeathCertificateForm, self).__init__(*args, **kwargs)
 
-
+class AlivePersonForm(forms.ModelForm):
+    class Meta:
+        model = AlivePerson

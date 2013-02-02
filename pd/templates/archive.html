@@ -22,8 +22,12 @@
             <tr>
                 <td>{{ b.pk }}</td>
                 {% if user.profile.is_ugh %}<th>{{ b.loru_name }}</th>{% endif %}
-                <td>{{ b.cemetery }} / {{ b.ugh_names }}</td>
-                <td>{{ b.place_number|default:"" }}</td>
+                <td>{{ b.cemetery }} / {{ b.ugh_name }}</td>
+                <td>
+                    {{ b.area|default:"" }}
+                    {{ b.row|default:"" }}
+                    {{ b.place_number|default:"" }}
+                </td>
                 <td>{{ b.deadman|default:"" }}</td>
                 <td>{{ b.created|default:"" }}</td>
                 <td>{{ b.approved_ugh|default:"" }}</td>

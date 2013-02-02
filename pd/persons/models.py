@@ -132,7 +132,6 @@ class AlivePerson(BasePerson):
     """
     Живое ФЛ с телефоном
     """
-    death_date = models.DateField(_(u"Дата смерти"), blank=True, null=True)
     phones = models.TextField(_(u"Телефоны"), blank=True, null=True)
 
 class DocumentSource(models.Model):

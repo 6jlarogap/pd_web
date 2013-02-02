@@ -17,6 +17,15 @@
             {% endif %}
         </p>
         <p>
+            <label>{% trans "Ответственный" %}</label>
+            {% if object.get_responsible %}
+                {{ object.get_responsible }}
+                <a href="{% url create_responsible object.pk %}" class="btn">{% trans "править" %}</a>
+            {% else %}
+                <a href="{% url create_responsible object.pk %}" class="btn">{% trans "прикрепить" %}</a>
+            {% endif %}
+        </p>
+        <p>
             <input type="submit" class="btn" value="{% trans "Сохранить черновик" %}"/>
             <input type="submit" class="btn" name="ready" value="{% trans "Отправить на одобрение УГХ" %}"/>
         </p>

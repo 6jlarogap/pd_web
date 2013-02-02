@@ -16,8 +16,12 @@
             </dd>
         {% endif %}
         <dt>{% trans "Кладбище" %}:</dt><dd>{{ object.cemetery }}</dd>
-        <dt>{% trans "Место" %}:</dt><dd>{{ object.place_number|default:"" }}</dd>
-        <dt>{% trans "Дата" %}:</dt><dd>{{ object.plan_date }} {{ object.plan_time }}</dd>
+        <dt>{% trans "Место" %}:</dt><dd>
+            {{ object.area|default:"" }}
+            {{ object.row|default:"" }}
+            {{ object.place_number|default:"" }}
+        </dd>
+        <dt>{% trans "Дата" %}:</dt><dd>{{ object.plan_date|default:"" }} {{ object.plan_time|default:"" }}</dd>
     </dl>
     {% comment %}
         {% if user.profile.is_loru and object.approved_ugh and not object.processed_loru %}
