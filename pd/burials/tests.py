@@ -137,7 +137,7 @@ class LoginTest(TestCase):
         br = BurialRequest.objects.all()[0]
         self.assertEqual(unicode(br.status), unicode(BurialRequest.STATUS_DICT[-1]))
         self.assertNotEqual(br.backed_loru, None)
-        self.assertNotEqual(br.ready_loru, None)
+        self.assertEqual(br.ready_loru, None)
         self.assertEqual(br.approved_ugh, None)
         self.assertEqual(br.processed_loru, None)
         self.assertEqual(br.completed_ugh, None)
@@ -148,7 +148,7 @@ class LoginTest(TestCase):
 
         br = BurialRequest.objects.all()[0]
         self.assertEqual(unicode(br.status), unicode(BurialRequest.STATUS_DICT[4]))
-        self.assertNotEqual(br.backed_loru, None)
+        self.assertEqual(br.backed_loru, None)
         self.assertNotEqual(br.ready_loru, None)
         self.assertNotEqual(br.approved_ugh, None)
         self.assertNotEqual(br.processed_loru, None)
