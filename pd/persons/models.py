@@ -6,6 +6,8 @@ from django.utils.translation import ugettext_lazy as _
 import datetime
 from geo.models import Location
 from pd.utils import UnclearDate
+from users.models import Org
+
 
 class IDDocumentType(models.Model):
     name = models.CharField(_(u"Тип документа"), max_length=255)
@@ -160,17 +162,6 @@ class PersonID(models.Model):
         self.series = self.series.upper()
         super(PersonID, self).save(*args, **kwargs)
 
-class ZAGS(models.Model):
-    name = models.CharField(_(u"Название"), max_length=255)
-
-    def __unicode__(self):
-        return self.name
-
-    class Meta:
-        ordering = ['name']
-        verbose_name = (_(u"ЗАГС"))
-        verbose_name_plural = (_(u"ЗАГС"))
-
 class DeathCertificate(models.Model):
     """
     Свидетельство о смерти.
@@ -181,7 +172,7 @@ class DeathCertificate(models.Model):
     s_number = models.CharField(_(u"Номер"), max_length=255, blank=True, null=True)
     series = models.CharField(_(u"Серия"), max_length=255, blank=True, null=True)
     release_date = models.DateField(_(u"Дата выдачи"), null=True, blank=True)
-    zags = models.ForeignKey(ZAGS, verbose_name=_(u"ЗАГС*"), null=True)
+    zags = models.ForeignKey(Org, verbose_name=_(u"ЗАГС*"), null=True, limit_choices_to={'type': Org.PROFILE_ZAGS})
 
     def __unicode__(self):
         return _(u"Свид. о смерти (%s)") % self.person.__unicode__()

@@ -8,7 +8,7 @@ from django.utils.translation import activate, get_language
 
 from burials.models import Cemetery, BurialRequest, Place
 from geo.models import Country, Region, City, Street
-from persons.models import ZAGS, IDDocumentType, AlivePerson
+from persons.models import IDDocumentType, AlivePerson
 from users.models import Profile, ProfileLORU, Org
 
 
@@ -40,7 +40,7 @@ class DeadManTest(TestCase):
         self.region = Region.objects.create(name='Lenoblast', country=self.country)
         self.city = City.objects.create(name='SPb', region=self.region)
         self.street = Street.objects.create(name='Stachek', city=self.city)
-        self.zags = ZAGS.objects.create(name='ZAGS')
+        self.zags = Org.objects.create(name='ZAGS', type=Org.PROFILE_ZAGS)
 
     def test_add(self):
         r = self.ugh_client.get('/create_deadman/%s/' % self.br.pk)
@@ -64,7 +64,7 @@ class DeadManTest(TestCase):
             'addr-house': '123',
             'dc-s_number': '1111',
             'dc-zags': self.zags.pk,
-            })
+        })
         self.assertEqual(r.status_code, 302)
 
         self.br = BurialRequest.objects.get()

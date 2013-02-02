@@ -16,11 +16,13 @@ class Profile(models.Model):
         return self.org and self.org.type == Org.PROFILE_UGH
 
 class Org(models.Model):
+    PROFILE_ZAGS = 'loru'
     PROFILE_LORU = 'loru'
     PROFILE_UGH = 'ugh'
     PROFILE_TYPES = (
         (PROFILE_LORU, _(u"ЛОРУ")),
         (PROFILE_UGH, _(u"УГХ")),
+        (PROFILE_ZAGS, _(u"ЗАГС")),
     )
 
     type = models.CharField(_(u"Тип"), max_length=255, choices=PROFILE_TYPES)
