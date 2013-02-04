@@ -114,6 +114,9 @@ class RequestView(ArchiveMixin, DetailView):
             messages.success(request, _(u"Заявка аннулирована"))
         if old_status != b.status:
             b.save()
+        else:
+            msg = _(u"Выполнить операцию не удалось: заявка в статусе \"%s\"") % b.get_status_display()
+            messages.success(request, msg)
         return redirect('dashboard')
 
     def get_context_data(self, **kwargs):
