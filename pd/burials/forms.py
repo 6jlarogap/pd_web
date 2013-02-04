@@ -29,7 +29,7 @@ class BurialRequestCreateForm(forms.ModelForm):
     def clean(self):
         if self.cleaned_data.get('cemetery') and self.cleaned_data.get('area'):
             if self.cleaned_data['cemetery'] != self.cleaned_data['area'].cemetery:
-                raise forms.ValidationError(_('Участок не от этого кладбища'))
+                raise forms.ValidationError(_(u'Участок не от этого кладбища'))
         return self.cleaned_data
 
 class BaseCemeteryForm(forms.ModelForm):
