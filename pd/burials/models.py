@@ -96,6 +96,8 @@ class BurialRequest(models.Model):
     changed = models.DateTimeField(_(u"Изменено"), editable=False, null=True)
     changed_by = models.ForeignKey('auth.User', editable=False, null=True, related_name='changed_requests')
 
+    burial = models.OneToOneField('Burial', editable=False, null=True)
+
     class Meta:
         verbose_name = _(u"Заявка на захоронение")
         verbose_name_plural = _(u"Заявки на захоронение")
@@ -163,6 +165,25 @@ class BurialRequest(models.Model):
         ct = ContentType.objects.get_for_model(self)
         return Log.objects.filter(ct=ct, obj_id=self.pk).order_by('-pk')
 
+    def close(self):
+        place = self.get_place() or Place(
+            cemetery=self.cemetery,
+            area=self.area,
+            row=self.row,
+            place=self.place_number,
+        )
+        place.responsible = self.get_responsible()
+        place.save()
+        self.burial = Burial.objects.create(
+            burial_type=self.burial_type,
+            place=place,
+            fact_date=self.plan_date,
+            fact_time=self.plan_time,
+            deadman=self.deadman,
+        )
+        self.save()
+        return self.burial
+
     def __unicode__(self):
         return u'%s' % self.pk
 
@@ -190,4 +211,17 @@ class Reason(models.Model):
 
     def __unicode__(self):
         return u'%s' % self.pk
+
+class Burial(models.Model):
+    burial_type = models.CharField(_(u"Тип захоронения"), max_length=255, null=True, blank=True, choices=BurialRequest.BURIAL_TYPES)
+    place = models.ForeignKey(Place, verbose_name=_(u"Место"))
+
+    fact_date = models.DateField(_(u"План. дата"))
+    fact_time = models.TimeField(_(u"План. время"))
+
+    deadman = models.ForeignKey(DeadPerson, verbose_name=_(u"Усопший"), editable=False)
+
+    class Meta:
+        verbose_name = _(u"Захоронение")
+        verbose_name_plural = _(u"Захоронения")
 

@@ -31,7 +31,7 @@ class LogsTest(TestCase):
     def test_create_request(self):
         self.assertEqual(Log.objects.all().count(), 0)
 
-        r = self.client.post('/create/', {'cemetery': self.cemetery.pk, 'plan_date': '12.12.2013', 'plan_time': '12:00'})
+        r = self.client.post('/requests/create/', {'cemetery': self.cemetery.pk, 'plan_date': '12.12.2013', 'plan_time': '12:00'})
         self.assertEqual(r.status_code, 302)
         self.assertEqual(Log.objects.all().count(), 1)
 

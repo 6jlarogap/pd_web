@@ -116,9 +116,15 @@ class RequestView(ArchiveMixin, DetailView):
             ))
         if request.POST.get('complete') and request.user.profile.is_ugh() and b.is_approved():
             b.status = BurialRequest.STATUS_CLOSED
+            try:
+                burial = b.close()
+            except Exception, e:
+                messages.error(request, _(u'Ошибка: %s') % e)
+                return redirect('view_request', b.pk)
             write_log(request, b, _(u'Заявка закрыта'))
-            messages.success(request, _(u"<a href='%s'>Заявка %s</a> закрыта") % (
+            messages.success(request, _(u"<a href='%s'>Заявка %s</a> закрыта, создано <a href='%s'>захоронение %s</a>") % (
                 reverse('view_request', args=[b.pk]), b.pk,
+                reverse('view_burial', args=[burial.pk]), burial.pk,
             ))
         if request.POST.get('annulate') and request.user.profile.is_ugh() and b.is_approved():
             b.status = BurialRequest.STATUS_ANNULATED
@@ -142,9 +148,15 @@ class RequestView(ArchiveMixin, DetailView):
             'reason_typical_back': Reason.objects.filter(reason_type=Reason.TYPE_BACK),
             'reason_typical_decline': Reason.objects.filter(reason_type=Reason.TYPE_DECLINE),
             'reason_typical_annulate': Reason.objects.filter(reason_type=Reason.TYPE_ANNULATE),
-        }
+            }
 
 view_request = RequestView.as_view()
+
+class BurialView(DetailView):
+    template_name = 'view_burial.html'
+    context_object_name = 'b'
+
+view_burial = RequestView.as_view()
 
 class CreateRequestView(CreateView):
     template_name = 'create_request.html'

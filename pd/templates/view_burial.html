@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% load i18n %}
+
+{% block content %}
+    <h1>{% trans "Захоронение" %} {{ b.pk }}</h1>
+    <dl>
+        <dt>{% trans "ЛОРУ" %}:</dt><dd><a href="">{{ b.burialrequest.loru_name }}</a></dd>
+
+        <dt>{% trans "Усопший" %}:</dt>
+        <dd>
+            {{ b.deadman|default:"" }}
+            <br/>
+            {{ b.deadman.address|default:"" }}
+        </dd>
+
+        <dt>{% trans "Кладбище" %}:</dt><dd>{{ b.place.cemetery }}</dd>
+        <dt>{% trans "Место" %}:</dt><dd>
+            {{ b.place.area|default:"" }}
+            {{ b.place.row|default:"" }}
+            {{ b.place.place_number|default:"" }}
+        </dd>
+        {% if b.place.responsible %}
+            <dt>{% trans "Ответственный" %}:</dt>
+            <dd>
+                {{ b.place.responsible }}
+                <br/>
+                {{ b.place.responsible.address|default:"" }}
+            </dd>
+        {% endif %}
+        <dt>{% trans "Дата" %}:</dt><dd>{{ b.fact_date|default:"" }} {{ b.fact_time|default:"" }}</dd>
+    </dl>
+{% endblock %}
