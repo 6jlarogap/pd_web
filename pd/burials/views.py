@@ -56,7 +56,7 @@ class ArchiveMixin(BurialsListGenericMixin):
                 qs = Q(loru=self.request.user.profile.org)
             if self.request.user.profile.is_ugh():
                 qs = Q(
-                    Q(ready_loru__isnull=False) | Q(backed_loru__isnull=False),
+                    # Q(ready_loru__isnull=False) | Q(backed_loru__isnull=False),
                     cemetery__ugh=self.request.user.profile.org,
                 )
         return qs
