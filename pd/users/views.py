@@ -130,7 +130,11 @@ class UserAddForm(CreateView):
         self.object.profile.org = self.request.user.profile.org
         self.object.profile.save()
 
-        messages.success(self.request, _(u"Пользователь создан"))
+        msg = _(u"<a href='%s'>Пользователь %s</a> создан") % (
+            reverse('edit_user', args=[self.object.pk]),
+            self.object.username,
+        )
+        messages.success(self.request, msg)
         write_log(self.request, self.object, _(u'Создан пользователь'))
         return redirect(self.get_success_url())
 
@@ -155,7 +159,11 @@ class UserEditForm(UpdateView):
     form_class = UserDataForm
 
     def get_success_url(self):
-        messages.success(self.request, _(u"Данные изменены"))
+        msg = _(u"<a href='%s'>Пользователь %s</a> изменен") % (
+            reverse('edit_user', args=[self.object.pk]),
+            self.object.username,
+        )
+        messages.success(self.request, msg)
         write_log(self.request, self.object, _(u'Изменены данные пользователя'))
         return reverse('profile')
 
@@ -172,7 +180,11 @@ class ChangePasswordForm(UpdateView):
     form_class = ChangePasswordForm
 
     def get_success_url(self):
-        messages.success(self.request, _(u"Пароль изменен"))
+        msg = _(u"Пароль <a href='%s'>пользователя %s</a> изменен") % (
+            reverse('edit_user', args=[self.object.pk]),
+            self.object.username,
+        )
+        messages.success(self.request, msg)
         write_log(self.request, self.object, _(u'Пароль изменен'))
         return reverse('profile')
 

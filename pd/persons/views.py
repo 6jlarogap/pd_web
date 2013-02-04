@@ -1,6 +1,7 @@
 # coding=utf-8
 from burials.models import BurialRequest
 from django.contrib import messages
+from django.core.urlresolvers import reverse
 from django.shortcuts import redirect
 from django.views.generic.edit import CreateView
 from django.utils.translation import ugettext_lazy as _
@@ -50,7 +51,11 @@ class CreateDeadmanView(CreateView):
             br.save()
 
             write_log(self.request, deadman, _(u'Усопший прикреплен'))
-            messages.success(self.request, _(u"Усопший прикреплен"))
+            msg = _(u"<a href='%s'>Усопший %s</a> прикреплен") % (
+                reverse('create_deadman', args=[br.pk]),
+                deadman.last_name,
+            )
+            messages.success(self.request, msg)
 
             return redirect('edit_request', br.pk)
         else:
@@ -112,7 +117,11 @@ class CreateResponsibleView(CreateView):
             br.save()
 
             write_log(self.request, responsible, _(u'Ответственный прикреплен'))
-            messages.success(self.request, _(u"Ответственный прикреплен"))
+            msg = _(u"<a href='%s'>Ответственный %s</a> прикреплен") % (
+                reverse('create_responsible', args=[br.pk]),
+                responsible.last_name,
+            )
+            messages.success(self.request, msg)
 
             return redirect('edit_request', br.pk)
         else:

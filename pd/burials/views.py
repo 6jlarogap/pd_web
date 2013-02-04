@@ -2,6 +2,7 @@
 import datetime
 from burials.forms import BurialRequestCreateForm, CemeteryForm, AreaFormset
 from django.contrib import messages
+from django.core.urlresolvers import reverse
 from django.db.models.query_utils import Q
 from django.shortcuts import redirect
 from django.views.generic.base import TemplateView, View
@@ -91,31 +92,47 @@ class RequestView(ArchiveMixin, DetailView):
         if request.POST.get('back') and request.user.profile.is_loru() and not b.is_finished():
             b.status = BurialRequest.STATUS_BACKED
             write_log(request, b, _(u'Заявка отозвана'), reason)
-            messages.success(request, _(u"Заявка отозвана"))
+            messages.success(request, _(u"<a href='%s'>Заявка %s</a> отозвана") % (
+                reverse('view_request', args=[b.pk]), b.pk,
+            ))
         if request.POST.get('ready') and request.user.profile.is_loru() and b.is_edit():
             b.status = BurialRequest.STATUS_READY
             write_log(request, b, _(u'Заявка отправлена на согласование'))
-            messages.success(request, _(u"Заявка отправлена на согласование"))
+            msg = _(u"<a href='%s'>Заявка %s</a> отправлена на согласование") % (
+                reverse('view_request', args=[b.pk]), b.pk,
+            )
+            messages.success(request, msg)
         if request.POST.get('approve') and request.user.profile.is_ugh() and b.is_ready():
             b.status = BurialRequest.STATUS_APPROVED
             write_log(request, b, _(u'Заявка одобрена'))
-            messages.success(request, _(u"Заявка одобрена"))
+            messages.success(request, _(u"<a href='%s'>Заявка %s</a> одобрена") % (
+                reverse('view_request', args=[b.pk]), b.pk,
+            ))
         if request.POST.get('decline') and request.user.profile.is_ugh() and b.is_ready():
             b.status = BurialRequest.STATUS_DECLINED
             write_log(request, b, _(u'Заявка отклонена'), reason)
-            messages.success(request, _(u"Заявка отклонена"))
+            messages.success(request, _(u"<a href='%s'>Заявка %s</a> отклонена") % (
+                reverse('view_request', args=[b.pk]), b.pk,
+            ))
         if request.POST.get('complete') and request.user.profile.is_ugh() and b.is_approved():
             b.status = BurialRequest.STATUS_CLOSED
             write_log(request, b, _(u'Заявка закрыта'))
-            messages.success(request, _(u"Заявка закрыта"))
+            messages.success(request, _(u"<a href='%s'>Заявка %s</a> закрыта") % (
+                reverse('view_request', args=[b.pk]), b.pk,
+            ))
         if request.POST.get('annulate') and request.user.profile.is_ugh() and b.is_approved():
             b.status = BurialRequest.STATUS_ANNULATED
             write_log(request, b, _(u'Заявка аннулирована'), reason)
-            messages.success(request, _(u"Заявка аннулирована"))
+            messages.success(request, _(u"<a href='%s'>Заявка %s</a> аннулирована") % (
+                reverse('view_request', args=[b.pk]), b.pk,
+            ))
         if old_status != b.status:
             b.save()
         else:
-            msg = _(u"Выполнить операцию не удалось: заявка в статусе \"%s\"") % b.get_status_display()
+            msg = _(u"Выполнить операцию не удалось: <a href='%s'>заявка</a> в статусе \"%s\"") % (
+                reverse('view_request', args=[b.pk]),
+                b.get_status_display(),
+            )
             messages.success(request, msg)
         return redirect('dashboard')
 
@@ -219,7 +236,11 @@ class CemeteryCreate(UGHRequiredMixin, CreateView):
         self.object.ugh = self.request.user.profile.org
         self.object.save()
         write_log(self.request, self.object, _(u'Кладбище создано'))
-        messages.success(self.request, _(u"Кладбище создано"))
+        msg = _(u"<a href='%s'>Кладбище %s</a> создано") % (
+            reverse('manage_cemeteries_edit', args=[self.object.pk]),
+            self.object.name,
+        )
+        messages.success(self.request, msg)
         return redirect('manage_cemeteries')
 
 manage_cemeteries_create = CemeteryCreate.as_view()
@@ -250,7 +271,11 @@ class CemeteryEdit(UGHRequiredMixin, UpdateView):
         self.formset.save()
         self.object = form.save()
         write_log(self.request, self.object, _(u'Кладбище изменено'))
-        messages.success(self.request, _(u"Кладбище изменено"))
+        msg = _(u"<a href='%s'>Кладбище %s</a> изменено") % (
+            reverse('manage_cemeteries_edit', args=[self.object.pk]),
+            self.object.name,
+        )
+        messages.success(self.request, msg)
         return redirect('manage_cemeteries')
 
 manage_cemeteries_edit = CemeteryEdit.as_view()
