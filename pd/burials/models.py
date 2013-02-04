@@ -55,8 +55,7 @@ class BurialRequest(models.Model):
         0: _(u"Черновик"),
         1: _(u"На согласовании"),
         2: _(u"Одобрена"),
-        3: _(u"Выполнена"),
-        4: _(u"Закрыта"),
+        3: _(u"Закрыта"),
     }
 
     BURIAL_TYPES = (
@@ -85,7 +84,6 @@ class BurialRequest(models.Model):
     backed_loru = models.DateTimeField(_(u"Отозвано"), editable=False, null=True)
     ready_loru = models.DateTimeField(_(u"Готово к согласованию"), editable=False, null=True)
     approved_ugh = models.DateTimeField(_(u"Согласовано УГХ"), editable=False, null=True)
-    processed_loru = models.DateTimeField(_(u"Выполнено ЛОРУ"), editable=False, null=True)
     completed_ugh = models.DateTimeField(_(u"Закрыто УГХ"), editable=False, null=True)
 
     class Meta:
@@ -96,7 +94,7 @@ class BurialRequest(models.Model):
     def status(self):
         if self.backed_loru:
             return self.STATUS_DICT[-1]
-        flags = [self.ready_loru, self.approved_ugh, self.processed_loru, self.completed_ugh]
+        flags = [self.ready_loru, self.approved_ugh, self.completed_ugh]
         cnt = len(filter(lambda f: f, flags))
         return self.STATUS_DICT[cnt]
 
