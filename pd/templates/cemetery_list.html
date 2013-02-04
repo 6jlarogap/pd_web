@@ -7,17 +7,19 @@
     <table class="table table-bordered">
         <tr>
             <th>{% trans "Название" %}</th>
-            <th>{% trans "Открытие" %}</th>
-            <th>{% trans "Закрытие" %}</th>
+            <th>{% trans "Часы работы" %}</th>
             <th>{% trans "УГХ" %}</th>
+            <th>{% trans "Участков" %}</th>
             <th></th>
         </tr>
         {% for c in object_list %}
             <tr>
                 <td>{{ c.name }}</td>
-                <td>{{ c.time_begin|time:"H:i" }}</td>
-                <td>{{ c.time_end|time:"H:i" }}</td>
+                <td>
+                    {{ c.time_begin|time:"H:i" }} &mdash; {{ c.time_end|time:"H:i" }}
+                </td>
                 <td>{{ c.ugh }}</td>
+                <td>{{ c.area_set.all.count }}</td>
                 <td>
                     {% if user.profile.org == c.ugh %}
                         <a href="{% url manage_cemeteries_edit c.pk %}" class="btn">{% trans "править" %}</a>

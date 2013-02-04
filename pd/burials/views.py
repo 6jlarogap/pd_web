@@ -1,6 +1,6 @@
 # coding=utf-8
 import datetime
-from burials.forms import BurialRequestCreateForm, CemeteryForm
+from burials.forms import BurialRequestCreateForm, CemeteryForm, AreaFormset
 from django.contrib import messages
 from django.db.models.query_utils import Q
 from django.shortcuts import redirect
@@ -143,17 +143,10 @@ class CreateRequestView(CreateView):
         self.object = form.save(commit=False)
         self.object.creator = self.request.user
         self.object.loru = self.request.user.profile.org
-        if self.request.REQUEST.get('ready'):
-            self.object.ready_loru = datetime.datetime.now()
-            messages.success(self.request, _(u"Заявка создана и отправлена на согласование в УГХ"))
-        else:
-            messages.success(self.request, _(u"Черновик сохранен"))
         self.object.save()
+        messages.success(self.request, _(u"Черновик сохранен"))
         write_log(self.request, self.object, _(u'Создана заявка'))
-        if self.request.REQUEST.get('ready'):
-            return redirect('dashboard')
-        else:
-            return redirect('edit_request', self.object.pk)
+        return redirect('edit_request', self.object.pk)
 
 create_request = CreateRequestView.as_view()
 
@@ -227,7 +220,23 @@ class CemeteryEdit(UGHRequiredMixin, UpdateView):
     def get_queryset(self):
         return Cemetery.objects.filter(ugh=self.request.user.profile.org)
 
+    def dispatch(self, request, *args, **kwargs):
+        self.request = request
+        self.args = args
+        self.kwargs = kwargs
+        if request.user.profile.org and request.user.profile.is_ugh():
+            self.formset = AreaFormset(data=request.POST or None, instance=self.get_object())
+        else:
+            self.formset = AreaFormset()
+        return super(CemeteryEdit, self).dispatch(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        data = super(CemeteryEdit, self).get_context_data(**kwargs)
+        data['formset'] = self.formset
+        return data
+
     def form_valid(self, form):
+        self.formset.save()
         self.object = form.save()
         write_log(self.request, self.object, _(u'Кладбище изменено'))
         messages.success(self.request, _(u"Кладбище изменено"))

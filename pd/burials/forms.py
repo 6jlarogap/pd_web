@@ -1,9 +1,10 @@
 # coding=utf-8
 import datetime
 from django import forms
+from django.forms.models import inlineformset_factory
 from django.utils.translation import ugettext_lazy as _
 
-from burials.models import BurialRequest, Cemetery
+from burials.models import BurialRequest, Cemetery, Area
 from django.db.models.query_utils import Q
 
 
@@ -50,3 +51,4 @@ class CemeteryAdminForm(BaseCemeteryForm):
     class Meta:
         model = Cemetery
 
+AreaFormset = inlineformset_factory(Cemetery, Area)

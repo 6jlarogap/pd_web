@@ -7,6 +7,14 @@
     <form action="" method="POST">
         {% csrf_token %}
         {{ form.as_p }}
+
+        <h2>{% trans "Участки" %}</h2>
+        {{ formset.management_form }}
+        <table>
+            {% for f in formset.forms %}
+                {{ f.as_table }}
+            {% endfor %}
+        </table>
         <p>
             <input type="submit" class="btn" value="{% trans "Сохранить" %}" class="btn"/>
         </p>
