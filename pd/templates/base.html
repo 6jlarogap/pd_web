@@ -78,6 +78,9 @@
                     <ul class="nav">
                         <!-- <li{% if request.path == '/' %} class="active"{% endif %}><a href="{% url dashboard %}">{% trans "К исполнению" %}</a></li> -->
                         <li{% if request.path == '/archive/' %} class="active"{% endif %}><a href="{% url archive %}">{% trans "Архив" %}</a></li>
+                        {% if user.profile.is_loru %}
+                            <li{% if request.path == '/create/' %} class="active"{% endif %}><a href="{% url create_request %}">{% trans "Создать заявку" %}</a></li>
+                        {% endif %}
                     </ul>
                 </div><!--/.nav-collapse -->
             </div>

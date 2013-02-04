@@ -10,7 +10,7 @@ from django.db.models.query_utils import Q
 class BurialRequestCreateForm(forms.ModelForm):
     class Meta:
         model = BurialRequest
-        exclude = ['loru', ]
+        exclude = ['loru', 'responsible']
 
     def __init__(self, request, *args, **kwargs):
         super(BurialRequestCreateForm, self).__init__(*args, **kwargs)

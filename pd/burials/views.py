@@ -66,7 +66,7 @@ class ArchiveView(ArchiveMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         qs = self.get_qs_filter()
-        return {'burials': BurialRequest.objects.filter(qs).distinct()}
+        return {'burials': BurialRequest.objects.filter(qs).distinct().order_by('-pk')}
 
 archive = ArchiveView.as_view()
 

@@ -41,7 +41,7 @@
                     <label>{% trans "Причина" %}</label>
                     <select name="reason_typical">
                         <option value=""></option>
-                        {% for r in reason_typical_back %}<option value="{{ r.name }}">{{ r.name }}</option>{% endfor %}
+                        {% for r in reason_typical_back %}<option value="{{ r.text }}">{{ r.name }}</option>{% endfor %}
                     </select>
                     <textarea name="reason" rows="5" cols="30"></textarea>
                     <br/>
@@ -56,7 +56,7 @@
                 <label>{% trans "Причина" %}</label>
                 <select name="reason_typical">
                     <option value=""></option>
-                    {% for r in reason_typical_decline %}<option value="{{ r.name }}">{{ r.name }}</option>{% endfor %}
+                    {% for r in reason_typical_decline %}<option value="{{ r.text }}">{{ r.name }}</option>{% endfor %}
                 </select>
                 <textarea name="reason" rows="5" cols="30"></textarea>
                 <br/>
@@ -67,7 +67,7 @@
                 <label>{% trans "Причина" %}</label>
                 <select name="reason_typical">
                     <option value=""></option>
-                    {% for r in reason_typical_annulate %}<option value="{{ r.name }}">{{ r.name }}</option>{% endfor %}
+                    {% for r in reason_typical_annulate %}<option value="{{ r.text }}">{{ r.name }}</option>{% endfor %}
                 </select>
                 <textarea name="reason" rows="5" cols="30"></textarea>
                 <br/>
