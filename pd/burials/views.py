@@ -147,6 +147,8 @@ class CreateRequestView(CreateView):
     def form_valid(self, form):
         self.object = form.save(commit=False)
         self.object.creator = self.request.user
+        self.object.changed = datetime.datetime.now()
+        self.object.changed_by = self.request.user
         self.object.loru = self.request.user.profile.org
         self.object.save()
         messages.success(self.request, _(u"Черновик сохранен"))
