@@ -177,7 +177,7 @@ class Reason(models.Model):
     )
     name = models.CharField(_(u'Название'), max_length=255)
     reason_type = models.CharField(_(u'Тип'), max_length=255, choices=TYPE_CHOICES)
-    text = models.TextField(_(u'Текст'), max_length=255)
+    text = models.TextField(_(u'Текст'), default='')
 
     class Meta:
         verbose_name = _(u"Причина отказа")
