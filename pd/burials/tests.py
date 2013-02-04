@@ -53,7 +53,6 @@ class LoginTest(TestCase):
 
         br = BurialRequest.objects.all()[0]
         self.assertEqual(br.approved_ugh, None)
-        self.assertEqual(br.processed_loru, None)
         self.assertEqual(br.completed_ugh, None)
 
     def test_created_lists(self):
@@ -129,7 +128,6 @@ class LoginTest(TestCase):
         self.assertEqual(br.backed_loru, None)
         self.assertNotEqual(br.ready_loru, None)
         self.assertNotEqual(br.approved_ugh, None)
-        self.assertEqual(br.processed_loru, None)
         self.assertEqual(br.completed_ugh, None)
 
         r = self.loru_client.get('/view/%s/?back=1' % br.pk)
@@ -139,7 +137,6 @@ class LoginTest(TestCase):
         self.assertNotEqual(br.backed_loru, None)
         self.assertEqual(br.ready_loru, None)
         self.assertEqual(br.approved_ugh, None)
-        self.assertEqual(br.processed_loru, None)
         self.assertEqual(br.completed_ugh, None)
 
         r = self.loru_client.get('/view/%s/?ready=1' % br.pk)
@@ -151,7 +148,6 @@ class LoginTest(TestCase):
         self.assertEqual(br.backed_loru, None)
         self.assertNotEqual(br.ready_loru, None)
         self.assertNotEqual(br.approved_ugh, None)
-        self.assertNotEqual(br.processed_loru, None)
         self.assertNotEqual(br.completed_ugh, None)
 
     def test_archive(self):

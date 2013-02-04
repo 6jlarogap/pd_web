@@ -35,9 +35,9 @@ class DashboardView(BurialsListGenericMixin, TemplateView):
             pass
         else:
             if profile.is_loru():
-                qs &= Q(ready_loru__isnull=True) | Q(approved_ugh__isnull=False, processed_loru__isnull=True)
+                qs &= Q(ready_loru__isnull=True)
             if profile.is_ugh():
-                qs &= Q(ready_loru__isnull=False, approved_ugh__isnull=True) | Q(processed_loru__isnull=False, completed_ugh__isnull=True)
+                qs &= Q(ready_loru__isnull=False, approved_ugh__isnull=True) | Q(approved_ugh__isnull=False, completed_ugh__isnull=True)
         return {'burials': BurialRequest.objects.filter(qs).distinct()}
 
     def get(self, request, *args, **kwargs):
@@ -83,8 +83,6 @@ class RequestView(ArchiveMixin, DetailView):
             b.backed_loru = datetime.datetime.now()
             b.ready_loru = None
             b.approved_ugh = None
-            b.processed_loru = None
-            b.processed_loru = None
             b.completed_ugh = None
             b.save()
             write_log(request, b, _(u'Заявка отозвана'))
@@ -103,15 +101,7 @@ class RequestView(ArchiveMixin, DetailView):
             write_log(request, b, _(u'Заявка одобрена'))
             messages.success(request, _(u"Заявка одобрена"))
             return redirect('dashboard')
-        if request.GET.get('execute') and request.user.profile.is_loru():
-            b.processed_loru = datetime.datetime.now()
-            b.save()
-            write_log(request, b, _(u'Захоронение произведено'))
-            messages.success(request, _(u"Захоронение произведено, заявка передана УГХ для проверки"))
-            return redirect('dashboard')
         if request.GET.get('complete') and request.user.profile.is_ugh():
-            if not b.processed_loru:
-                b.processed_loru = datetime.datetime.now()
             b.completed_ugh = datetime.datetime.now()
             b.save()
             write_log(request, b, _(u'Заявка закрыта'))
