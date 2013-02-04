@@ -27,10 +27,6 @@ class BasePerson(models.Model):
     first_name = models.CharField(_(u"Имя"), max_length=255, blank=True)
     middle_name = models.CharField(_(u"Отчество"), max_length=255, blank=True)
 
-    birth_date = models.DateField(_(u"Дата рождения"), blank=True, null=True)
-    birth_date_no_month = models.BooleanField(default=False, editable=False)
-    birth_date_no_day = models.BooleanField(default=False, editable=False)
-
     address = models.ForeignKey(Location, editable=False, null=True)
 
     def __unicode__(self):
@@ -43,29 +39,6 @@ class BasePerson(models.Model):
         else:
             result = _(u"Неизвестный")
         return result
-
-    def get_birth_date(self):
-        if not self.birth_date:
-            return None
-        birth_date = UnclearDate(self.birth_date.year, self.birth_date.month, self.birth_date.day)
-        if self.birth_date_no_day:
-            birth_date.day = None
-        if self.birth_date_no_month:
-            birth_date.month = None
-        return birth_date
-
-    def set_birth_date(self, ubd):
-        self.birth_date = ubd
-        if ubd:
-            if ubd.no_day:
-                self.birth_date_no_day = True
-            if ubd.no_month:
-                self.birth_date_no_month = True
-
-    unclear_birth_date = property(get_birth_date, set_birth_date)
-
-    def unclear_birth_date_str(self):
-        return self.unclear_birth_date and self.unclear_birth_date.strftime('%d.%m.%Y') or ''
 
     def full_human_name(self):
         return ' '.join((self.last_name, self.first_name, self.middle_name)).strip()
@@ -106,9 +79,36 @@ class DeadPerson(BasePerson):
     """
     Мертвое ФЛ
     """
+    birth_date = models.DateField(_(u"Дата рождения"), blank=True, null=True)
+    birth_date_no_month = models.BooleanField(default=False, editable=False)
+    birth_date_no_day = models.BooleanField(default=False, editable=False)
+
     death_date = models.DateField(_(u"Дата смерти"), blank=True, null=True)
     death_date_no_month = models.BooleanField(default=False, editable=False)
     death_date_no_day = models.BooleanField(default=False, editable=False)
+
+    def get_birth_date(self):
+        if not self.birth_date:
+            return None
+        birth_date = UnclearDate(self.birth_date.year, self.birth_date.month, self.birth_date.day)
+        if self.birth_date_no_day:
+            birth_date.day = None
+        if self.birth_date_no_month:
+            birth_date.month = None
+        return birth_date
+
+    def set_birth_date(self, ubd):
+        self.birth_date = ubd
+        if ubd:
+            if ubd.no_day:
+                self.birth_date_no_day = True
+            if ubd.no_month:
+                self.birth_date_no_month = True
+
+    unclear_birth_date = property(get_birth_date, set_birth_date)
+
+    def unclear_birth_date_str(self):
+        return self.unclear_birth_date and self.unclear_birth_date.strftime('%d.%m.%Y') or ''
 
     def get_death_date(self):
         if not self.death_date:
