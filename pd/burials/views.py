@@ -35,9 +35,11 @@ class DashboardView(BurialsListGenericMixin, TemplateView):
             pass
         else:
             if profile.is_loru():
-                qs &= Q(ready_loru__isnull=True)
+                qs &= Q(status=BurialRequest.STATUS_DRAFT) | \
+                      Q(status=BurialRequest.STATUS_BACKED) | \
+                      Q(status=BurialRequest.STATUS_DECLINED)
             if profile.is_ugh():
-                qs &= Q(ready_loru__isnull=False, approved_ugh__isnull=True) | Q(approved_ugh__isnull=False, completed_ugh__isnull=True)
+                qs &= Q(status=BurialRequest.STATUS_READY) | Q(status=BurialRequest.STATUS_APPROVED)
         return {'burials': BurialRequest.objects.filter(qs).distinct()}
 
     def get(self, request, *args, **kwargs):
@@ -155,7 +157,10 @@ class EditRequestView(UpdateView):
     form_class = BurialRequestCreateForm
 
     def get_queryset(self):
-        return BurialRequest.objects.filter(loru=self.request.user.profile.org, ready_loru__isnull=True)
+        q = Q(status=BurialRequest.STATUS_DRAFT) | \
+            Q(status=BurialRequest.STATUS_DECLINED) | \
+            Q(status=BurialRequest.STATUS_BACKED)
+        return BurialRequest.objects.filter(q, loru=self.request.user.profile.org)
 
     def dispatch(self, request, *args, **kwargs):
         self.request = request
@@ -171,8 +176,9 @@ class EditRequestView(UpdateView):
     def form_valid(self, form):
         self.object = form.save(commit=False)
         if self.request.REQUEST.get('ready'):
-            self.object.backed_loru = None
-            self.object.ready_loru = datetime.datetime.now()
+            self.object.status = BurialRequest.STATUS_READY
+            self.object.changed = datetime.datetime.now()
+            self.object.changed_by = self.request.user
             messages.success(self.request, _(u"Заявка сохранена и отправлена на согласование в УГХ"))
         else:
             messages.success(self.request, _(u"Черновик сохранен"))
