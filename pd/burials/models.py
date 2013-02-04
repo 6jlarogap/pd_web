@@ -177,11 +177,16 @@ class Reason(models.Model):
     )
     name = models.CharField(_(u'Название'), max_length=255)
     reason_type = models.CharField(_(u'Тип'), max_length=255, choices=TYPE_CHOICES)
-    text = models.TextField(_(u'Текст'), default='')
+    text = models.TextField(_(u'Текст'), default='', blank=True)
 
     class Meta:
         verbose_name = _(u"Причина отказа")
         verbose_name_plural = _(u"Причина отказа")
+
+    def save(self, *args, **kwargs):
+        if not self.text.strip():
+            self.text = self.name
+        return super(Reason, self).save(*args, **kwargs)
 
     def __unicode__(self):
         return u'%s' % self.pk

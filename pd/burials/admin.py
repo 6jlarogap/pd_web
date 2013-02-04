@@ -18,7 +18,8 @@ class BurialRequestAdmin(admin.ModelAdmin):
 admin.site.register(BurialRequest, BurialRequestAdmin)
 
 class ReasonAdmin(admin.ModelAdmin):
-    pass
+    list_display = ['name', 'reason_type', 'text',]
+    list_filter = ['reason_type',]
 
 admin.site.register(Reason, ReasonAdmin)
 
