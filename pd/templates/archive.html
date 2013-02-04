@@ -11,10 +11,7 @@
             <th>{% trans "Кладбище" %}</th>
             <th>{% trans "Место" %}</th>
             <th>{% trans "Усопший" %}</th>
-            <th>{% trans "Создано" %}</th>
-            <th>{% trans "Согласовано" %}</th>
             <th>{% trans "Запланировано" %}</th>
-            <th>{% trans "Выполнено" %}</th>
             <th>{% trans "Статус" %}</th>
             <th></th>
         </tr>
@@ -29,18 +26,18 @@
                     {{ b.place_number|default:"" }}
                 </td>
                 <td>{{ b.deadman|default:"" }}</td>
-                <td>{{ b.created|default:"" }}</td>
-                <td>{{ b.approved_ugh|default:"" }}</td>
                 <td>{{ b.plan_date|default:"" }} {{ b.plan_time|default:"" }}</td>
-                <td>{{ b.processed_loru|default:"" }}</td>
-                <th>{{ b.status|default:"" }}</th>
+                <th>
+                    {{ b.status_str|default:"" }}
+                    <br/>
+                    {{ b.status_dt|default:"" }}
+                    <br/>
+                    {{ b.changed_by.profile|default:"" }}
+                </th>
                 <td>
                     <a class="btn" href="{% url view_request b.pk %}">{% trans "просмотр" %}</a>
-                    {% if user.profile.org == b.loru and not b.ready_loru %}
+                    {% if user.profile.org == b.loru and b.is_edit %}
                         <a class="btn" href="{% url edit_request b.pk %}">{% trans "правка" %}</a>
-                    {% endif %}
-                    {% if user.profile.org == b.loru and not b.completed_ugh %}
-                        <a class="btn" href="{% url view_request b.pk %}?back=1">{% trans "отозвать" %}</a>
                     {% endif %}
                 </td>
             </tr>

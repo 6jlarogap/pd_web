@@ -12,7 +12,7 @@ class RegisterForm(forms.ModelForm):
         model = User
         fields = ['username', 'email', 'first_name', 'last_name',]
 
-    username = forms.SlugField(label=_(u"Имя пользователя"))
+    username = forms.SlugField(label=_(u"Логин"))
     password1 = forms.CharField(label=_(u"Пароль"), widget=forms.PasswordInput())
     password2 = forms.CharField(label=_(u"Пароль (повторите)"), widget=forms.PasswordInput())
 

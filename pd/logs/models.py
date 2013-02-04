@@ -15,7 +15,12 @@ class Log(models.Model):
     dt = models.DateTimeField(auto_now_add=True, verbose_name=_(u"Время"))
     msg = models.CharField(max_length=255, editable=False, verbose_name=_(u"Описание"))
 
-def write_log(request, obj=None, msg=''):
+def write_log(request, obj=None, msg='', reason=None):
+    if reason:
+        if msg:
+            msg = u'%s: %s' % (msg, reason)
+        else:
+            msg = reason
     user = request.user.is_authenticated() and request.user or None
     Log.objects.create(
         user=user,

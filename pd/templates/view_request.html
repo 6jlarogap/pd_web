@@ -3,52 +3,96 @@
 {% load i18n %}
 
 {% block content %}
-    <h1>{% trans "Заявка" %} {{ object.pk }}</h1>
+    <h1>{% trans "Заявка" %} {{ b.pk }}</h1>
     <dl>
-        <dt>{% trans "Статус" %}:</dt><dd>{{ object.status }}</dd>
-        <dt>{% trans "ЛОРУ" %}:</dt><dd><a href="">{{ object.loru_name }}</a></dd>
-        {% if object.deadman %}
+        <dt>{% trans "Статус" %}:</dt><dd>{{ b.status_str }}</dd>
+        <dt>{% trans "ЛОРУ" %}:</dt><dd><a href="">{{ b.loru_name }}</a></dd>
+        {% if b.deadman %}
             <dt>{% trans "Усопший" %}:</dt>
             <dd>
-                {{ object.deadman|default:"" }}
+                {{ b.deadman|default:"" }}
                 <br/>
-                {{ object.deadman.address|default:"" }}
+                {{ b.deadman.address|default:"" }}
             </dd>
         {% endif %}
-        <dt>{% trans "Кладбище" %}:</dt><dd>{{ object.cemetery }}</dd>
+        <dt>{% trans "Кладбище" %}:</dt><dd>{{ b.cemetery }}</dd>
         <dt>{% trans "Место" %}:</dt><dd>
-            {{ object.area|default:"" }}
-            {{ object.row|default:"" }}
-            {{ object.place_number|default:"" }}
+            {{ b.area|default:"" }}
+            {{ b.row|default:"" }}
+            {{ b.place_number|default:"" }}
         </dd>
-        <dt>{% trans "Дата" %}:</dt><dd>{{ object.plan_date|default:"" }} {{ object.plan_time|default:"" }}</dd>
-    </dl>
-    {% comment %}
-        {% if user.profile.is_loru and object.approved_ugh and not object.processed_loru %}
-            <p>
-                <a class="btn" href="?execute=1">{% trans "выполнить работы" %}</a>
-            </p>
+        {% if b.get_responsible %}
+            <dt>{% trans "Ответственный" %}:</dt>
+            <dd>
+                {{ b.get_responsible }}
+                <br/>
+                {{ b.get_responsible.address|default:"" }}
+            </dd>
         {% endif %}
-    {% endcomment %}
-
-    {% if user.profile.is_loru and not object.ready_loru %}
-        <p>
-            <a class="btn" href="?ready=1">{% trans "отправить на согласование" %}</a>
-        </p>
-    {% endif %}
-    {% if user.profile.is_ugh and object.ready_loru and not object.approved_ugh %}
-        <p>
-            <a class="btn" href="?approve=1">{% trans "согласовать" %}</a>
-        </p>
-    {% endif %}
-    {% if user.profile.is_ugh and object.approved_ugh and not object.completed_ugh %}
-        <p>
-            <a class="btn" href="?complete=1">{% trans "завершить" %}</a>
-        </p>
-    {% endif %}
-    {% if user.profile.org == b.loru and not b.ready_loru %}
-        <p>
+        <dt>{% trans "Дата" %}:</dt><dd>{{ b.plan_date|default:"" }} {{ b.plan_time|default:"" }}</dd>
+    </dl>
+    <form action="" method="POST">
+        {% csrf_token %}
+        {% if user.profile.is_loru %}
+            {% if b.is_edit %}
+                <input type="submit" class="btn" name="ready" value="{% trans "отправить на согласование" %}">
+            {% elif not b.is_finished %}
+                {% if b.is_approved %}
+                    <label>{% trans "Причина" %}</label>
+                    <select name="reason_typical">
+                        <option value=""></option>
+                        {% for r in reason_typical_back %}<option value="{{ r.name }}">{{ r.name }}</option>{% endfor %}
+                    </select>
+                    <textarea name="reason" rows="5" cols="30"></textarea>
+                    <br/>
+                {% endif %}
+                <input type="submit" class="btn" name="back" value="{% trans "отозвать" %}">
+            {% endif %}
+        {% endif %}
+        {% if user.profile.is_ugh %}
+            {% if b.is_ready %}
+                <input type="submit" class="btn" name="approve" value="{% trans "согласовать" %}">
+                <br/><br/>
+                <label>{% trans "Причина" %}</label>
+                <select name="reason_typical">
+                    <option value=""></option>
+                    {% for r in reason_typical_decline %}<option value="{{ r.name }}">{{ r.name }}</option>{% endfor %}
+                </select>
+                <textarea name="reason" rows="5" cols="30"></textarea>
+                <br/>
+                <input type="submit" class="btn" name="decline" value="{% trans "отклонить" %}">
+            {% elif b.is_approved %}
+                <input type="submit" class="btn" name="complete" value="{% trans "завершить" %}">
+                <br/><br/>
+                <label>{% trans "Причина" %}</label>
+                <select name="reason_typical">
+                    <option value=""></option>
+                    {% for r in reason_typical_annulate %}<option value="{{ r.name }}">{{ r.name }}</option>{% endfor %}
+                </select>
+                <textarea name="reason" rows="5" cols="30"></textarea>
+                <br/>
+                <input type="submit" class="btn" name="annulate" value="{% trans "аннулировать" %}">
+            {% endif %}
+        {% endif %}
+        {% if user.profile.org == b.loru and not b.ready_loru %}
             <a class="btn" href="{% url edit_request b.pk %}">{% trans "правка" %}</a>
-        </p>
-    {% endif %}
+        {% endif %}
+    </form>
+    
+    <h2>{% trans "Журнал" %}</h2>
+    <table class="table table-bordered">
+        <tr>
+            <th>{% trans "Дата" %}</th>
+            <th>{% trans "Пользователь" %}</th>
+            <th>{% trans "Действие" %}</th>
+        </tr>
+        {% for log in b.get_logs %}
+            <tr>
+                <td>{{ log.dt }}</td>
+                <td>{{ log.user.profile }}</td>
+                <td>{{ log.msg }}</td>
+            </tr>
+        {% endfor %}
+    </table>
+    
 {% endblock %}

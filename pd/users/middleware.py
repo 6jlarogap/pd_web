@@ -15,6 +15,12 @@ class ProfileMiddleware():
             except Profile.DoesNotExist:
                 Profile.objects.create(user=request.user)
 
-            if not request.user.profile.org and request.path != reverse('profile') and not request.path.startswith('/admin/'):
+            if not request.user.profile.org:
+                if request.path != reverse('profile'):
+                    return
+                if request.path != reverse('ulogout'):
+                    return
+                if request.path.startswith('/admin/'):
+                    return
                 messages.error(request, _(u"Пожалуйста, для продолжения работы создайте организацию"))
                 return redirect('profile')

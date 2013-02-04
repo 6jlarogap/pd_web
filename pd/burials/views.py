@@ -7,7 +7,7 @@ from django.shortcuts import redirect
 from django.views.generic.base import TemplateView, View
 from django.utils.translation import ugettext_lazy as _
 
-from burials.models import BurialRequest, Cemetery
+from burials.models import BurialRequest, Cemetery, Reason
 from django.views.generic.detail import DetailView
 from django.views.generic.edit import CreateView, UpdateView
 from django.views.generic.list import ListView
@@ -72,44 +72,55 @@ archive = ArchiveView.as_view()
 
 class RequestView(ArchiveMixin, DetailView):
     template_name = 'view_request.html'
+    context_object_name = 'b'
 
     def get_queryset(self):
         qs = self.get_qs_filter()
         return BurialRequest.objects.filter(qs).distinct()
 
-    def get(self, request, *args, **kwargs):
-        b = self.get_object()
-        if request.GET.get('back') and request.user.profile.is_loru():
-            b.backed_loru = datetime.datetime.now()
-            b.ready_loru = None
-            b.approved_ugh = None
-            b.completed_ugh = None
-            b.save()
-            write_log(request, b, _(u'Заявка отозвана'))
-            messages.success(request, _(u"Заявка отозвана"))
+    def post(self, request, *args, **kwargs):
+        if not request.user.is_authenticated():
             return redirect('dashboard')
-        if request.GET.get('ready') and request.user.profile.is_loru():
-            b.backed_loru = None
-            b.ready_loru = datetime.datetime.now()
-            b.save()
+        b = self.get_object()
+        b.changed = datetime.datetime.now()
+        b.changed_by = request.user
+        old_status = b.status
+        reason = request.POST.get('reason') or request.POST.get('reason_typical')
+        if request.POST.get('back') and request.user.profile.is_loru() and not b.is_finished():
+            b.status = BurialRequest.STATUS_BACKED
+            write_log(request, b, _(u'Заявка отозвана'), reason)
+            messages.success(request, _(u"Заявка отозвана"))
+        if request.POST.get('ready') and request.user.profile.is_loru() and b.is_edit():
+            b.status = BurialRequest.STATUS_READY
             write_log(request, b, _(u'Заявка отправлена на согласование'))
             messages.success(request, _(u"Заявка отправлена на согласование"))
-            return redirect('dashboard')
-        if request.GET.get('approve') and request.user.profile.is_ugh():
-            b.approved_ugh = datetime.datetime.now()
-            b.save()
+        if request.POST.get('approve') and request.user.profile.is_ugh() and b.is_ready():
+            b.status = BurialRequest.STATUS_APPROVED
             write_log(request, b, _(u'Заявка одобрена'))
             messages.success(request, _(u"Заявка одобрена"))
-            return redirect('dashboard')
-        if request.GET.get('complete') and request.user.profile.is_ugh():
-            b.completed_ugh = datetime.datetime.now()
-            b.save()
+        if request.POST.get('decline') and request.user.profile.is_ugh() and b.is_ready():
+            b.status = BurialRequest.STATUS_DECLINED
+            write_log(request, b, _(u'Заявка отклонена'), reason)
+            messages.success(request, _(u"Заявка отклонена"))
+        if request.POST.get('complete') and request.user.profile.is_ugh() and b.is_approved():
+            b.status = BurialRequest.STATUS_CLOSED
             write_log(request, b, _(u'Заявка закрыта'))
             messages.success(request, _(u"Заявка закрыта"))
-            return redirect('dashboard')
-        if request.GET:
-            return redirect('view_request', b.pk)
-        return super(RequestView, self).get(request, *args, **kwargs)
+        if request.POST.get('annulate') and request.user.profile.is_ugh() and b.is_approved():
+            b.status = BurialRequest.STATUS_ANNULATED
+            write_log(request, b, _(u'Заявка аннулирована'), reason)
+            messages.success(request, _(u"Заявка аннулирована"))
+        if old_status != b.status:
+            b.save()
+        return redirect('dashboard')
+
+    def get_context_data(self, **kwargs):
+        return {
+            'b': self.get_object(),
+            'reason_typical_back': Reason.objects.filter(reason_type=Reason.TYPE_BACK),
+            'reason_typical_decline': Reason.objects.filter(reason_type=Reason.TYPE_DECLINE),
+            'reason_typical_annulate': Reason.objects.filter(reason_type=Reason.TYPE_ANNULATE),
+        }
 
 view_request = RequestView.as_view()
 

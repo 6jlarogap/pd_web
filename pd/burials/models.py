@@ -1,9 +1,11 @@
 # coding=utf-8
+from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
 
 from persons.models import DeadPerson
 from users.models import Org
+from logs.models import Log
 
 
 class Cemetery(models.Model):
@@ -50,13 +52,22 @@ class Place(models.Model):
         verbose_name_plural = _(u"Место")
 
 class BurialRequest(models.Model):
-    STATUS_DICT = {
-        -1: _(u"Отозвана"),
-        0: _(u"Черновик"),
-        1: _(u"На согласовании"),
-        2: _(u"Одобрена"),
-        3: _(u"Закрыта"),
-    }
+    STATUS_BACKED = 'backed'
+    STATUS_DECLINED = 'declined'
+    STATUS_DRAFT = 'draft'
+    STATUS_READY = 'ready'
+    STATUS_APPROVED = 'approved'
+    STATUS_CLOSED = 'closed'
+    STATUS_ANNULATED = 'annulated'
+    STATUS_CHOICES = (
+        (STATUS_BACKED, _(u"Отозвана")),
+        (STATUS_DECLINED, _(u"Отклонена")),
+        (STATUS_DRAFT, _(u"Черновик")),
+        (STATUS_READY, _(u"На согласовании")),
+        (STATUS_APPROVED, _(u"Одобрена")),
+        (STATUS_CLOSED, _(u"Закрыта")),
+        (STATUS_ANNULATED, _(u"Аннулирована")),
+    )
 
     BURIAL_TYPES = (
         ('common', _(u'Захоронение')),
@@ -81,22 +92,48 @@ class BurialRequest(models.Model):
     created = models.DateTimeField(_(u"Создано"), auto_now_add=True)
     loru = models.ForeignKey(Org, verbose_name=_(u"ЛОРУ"), null=True, limit_choices_to={'type': Org.PROFILE_LORU})
 
-    backed_loru = models.DateTimeField(_(u"Отозвано"), editable=False, null=True)
-    ready_loru = models.DateTimeField(_(u"Готово к согласованию"), editable=False, null=True)
-    approved_ugh = models.DateTimeField(_(u"Согласовано УГХ"), editable=False, null=True)
-    completed_ugh = models.DateTimeField(_(u"Закрыто УГХ"), editable=False, null=True)
+    status = models.CharField(_(u"Статус"), max_length=255, choices=STATUS_CHOICES, default=STATUS_DRAFT, editable=False)
+    changed = models.DateTimeField(_(u"Изменено"), editable=False, null=True)
+    changed_by = models.ForeignKey('auth.User', editable=False, null=True, related_name='changed_requests')
 
     class Meta:
         verbose_name = _(u"Заявка на захоронение")
         verbose_name_plural = _(u"Заявки на захоронение")
 
+    def is_edit(self):
+        return self.is_draft() or self.is_backed() or self.is_declined()
+
+    def is_draft(self):
+        return self.status == self.STATUS_DRAFT
+
+    def is_ready(self):
+        return self.status == self.STATUS_READY
+
+    def is_approved(self):
+        return self.status == self.STATUS_APPROVED
+
+    def is_closed(self):
+        return self.status == self.STATUS_CLOSED
+
+    def is_backed(self):
+        return self.status == self.STATUS_BACKED
+
+    def is_declined(self):
+        return self.status == self.STATUS_DECLINED
+
+    def is_annulated(self):
+        return self.status == self.STATUS_ANNULATED
+
+    def is_finished(self):
+        return self.is_closed() or self.is_annulated()
+
     @property
-    def status(self):
-        if self.backed_loru:
-            return self.STATUS_DICT[-1]
-        flags = [self.ready_loru, self.approved_ugh, self.completed_ugh]
-        cnt = len(filter(lambda f: f, flags))
-        return self.STATUS_DICT[cnt]
+    def status_str(self):
+        return self.get_status_display()
+
+    @property
+    def status_dt(self):
+        return self.changed
 
     def ugh_name(self):
         return self.cemetery.ugh and self.cemetery.ugh.name or ''
@@ -121,6 +158,29 @@ class BurialRequest(models.Model):
 
     def get_responsible(self):
         return self.responsible or (self.get_place() and self.get_place().responsible) or None
+
+    def get_logs(self):
+        ct = ContentType.objects.get_for_model(self)
+        return Log.objects.filter(ct=ct, obj_id=self.pk).order_by('-pk')
+
+    def __unicode__(self):
+        return u'%s' % self.pk
+
+class Reason(models.Model):
+    TYPE_BACK = 'back'
+    TYPE_DECLINE = 'decline'
+    TYPE_ANNULATE = 'annulate'
+    TYPE_CHOICES = (
+        (TYPE_BACK, _(u'Отзыв ЛОРУ')),
+        (TYPE_DECLINE, _(u'Отказ УГХ')),
+        (TYPE_ANNULATE, _(u'Аннулирование УГХ')),
+    )
+    name = models.CharField(_(u'Название'), max_length=255)
+    reason_type = models.CharField(_(u'Тип'), max_length=255, choices=TYPE_CHOICES)
+
+    class Meta:
+        verbose_name = _(u"Причина отказа")
+        verbose_name_plural = _(u"Причина отказа")
 
     def __unicode__(self):
         return u'%s' % self.pk

@@ -27,7 +27,7 @@ class DeathCertificateForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         kwargs.setdefault('initial', {}).update({
-            'release_date': datetime.date.today() - datetime.timedelta(1),
+            'release_date': datetime.date.today(),
         })
         super(DeathCertificateForm, self).__init__(*args, **kwargs)
 
