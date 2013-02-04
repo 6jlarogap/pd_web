@@ -14,8 +14,9 @@ class Log(models.Model):
     obj = generic.GenericForeignKey(ct_field='ct', fk_field='obj_id')
     dt = models.DateTimeField(auto_now_add=True, verbose_name=_(u"Время"))
     msg = models.CharField(max_length=255, editable=False, verbose_name=_(u"Описание"))
+    code = models.CharField(max_length=255, default='', editable=False, verbose_name=_(u"Спец. код"))
 
-def write_log(request, obj=None, msg='', reason=None):
+def write_log(request, obj=None, msg='', reason=None, code=None):
     if reason:
         if msg:
             msg = u'%s: %s' % (msg, reason)
@@ -26,5 +27,6 @@ def write_log(request, obj=None, msg='', reason=None):
         user=user,
         ct=obj and ContentType.objects.get_for_model(obj) or None,
         obj_id=obj and obj.pk or None,
-        msg=msg
+        msg=msg,
+        code=code or '',
     )

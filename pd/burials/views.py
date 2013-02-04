@@ -196,6 +196,19 @@ class EditRequestView(UpdateView):
         return data
 
     def form_valid(self, form):
+        changed_fields = []
+        b = self.get_object()
+        for f in form.changed_data:
+            old_value = getattr(b, f, None)
+            new_value = form.cleaned_data[f]
+            if new_value != old_value:
+                changed_fields.append([form.fields[f].label, old_value, new_value])
+
+        if changed_fields:
+            changed_fields_str = u'\n' + u'\n'.join([u"%s: %s -> %s" % tuple(cf) for cf in changed_fields])
+        else:
+            changed_fields_str = u''
+
         self.object = form.save(commit=False)
         if self.request.REQUEST.get('ready'):
             self.object.status = BurialRequest.STATUS_READY
@@ -205,7 +218,10 @@ class EditRequestView(UpdateView):
         else:
             messages.success(self.request, _(u"Черновик сохранен"))
         self.object.save()
-        write_log(self.request, self.object, _(u'Изменена заявка'))
+        if changed_fields_str:
+            write_log(self.request, self.object, _(u'Изменена заявка %s') % changed_fields_str, code='edit_request')
+        if self.request.REQUEST.get('ready'):
+            write_log(self.request, self.object, _(u'Заявка отправлена на согласование'))
         return redirect('dashboard')
 
 edit_request = EditRequestView.as_view()

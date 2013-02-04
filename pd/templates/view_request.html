@@ -87,11 +87,13 @@
             <th>{% trans "Действие" %}</th>
         </tr>
         {% for log in b.get_logs %}
-            <tr>
-                <td>{{ log.dt }}</td>
-                <td>{{ log.user.profile }}</td>
-                <td>{{ log.msg }}</td>
-            </tr>
+            {% if user.profile.is_loru or log.code != 'edit_request' %}
+                <tr>
+                    <td>{{ log.dt }}</td>
+                    <td>{{ log.user.profile }}</td>
+                    <td>{{ log.msg|linebreaksbr }}</td>
+                </tr>
+            {% endif %}
         {% endfor %}
     </table>
     
