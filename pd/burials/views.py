@@ -8,7 +8,7 @@ from django.shortcuts import redirect
 from django.views.generic.base import TemplateView, View
 from django.utils.translation import ugettext_lazy as _
 
-from burials.models import BurialRequest, Cemetery, Reason
+from burials.models import BurialRequest, Cemetery, Reason, Burial
 from django.views.generic.detail import DetailView
 from django.views.generic.edit import CreateView, UpdateView
 from django.views.generic.list import ListView
@@ -155,8 +155,9 @@ view_request = RequestView.as_view()
 class BurialView(DetailView):
     template_name = 'view_burial.html'
     context_object_name = 'b'
+    model = Burial
 
-view_burial = RequestView.as_view()
+view_burial = BurialView.as_view()
 
 class CreateRequestView(CreateView):
     template_name = 'create_request.html'
