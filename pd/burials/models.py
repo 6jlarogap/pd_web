@@ -64,7 +64,7 @@ class BurialRequest(models.Model):
         (STATUS_DECLINED, _(u"Отклонена")),
         (STATUS_DRAFT, _(u"Черновик")),
         (STATUS_READY, _(u"На согласовании")),
-        (STATUS_APPROVED, _(u"Одобрена")),
+        (STATUS_APPROVED, _(u"Согласована")),
         (STATUS_CLOSED, _(u"Закрыта")),
         (STATUS_ANNULATED, _(u"Аннулирована")),
     )

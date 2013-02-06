@@ -104,8 +104,8 @@ class RequestView(ArchiveMixin, DetailView):
             messages.success(request, msg)
         if request.POST.get('approve') and request.user.profile.is_ugh() and b.is_ready():
             b.status = BurialRequest.STATUS_APPROVED
-            write_log(request, b, _(u'Заявка одобрена'))
-            messages.success(request, _(u"<a href='%s'>Заявка %s</a> одобрена") % (
+            write_log(request, b, _(u'Заявка согласована'))
+            messages.success(request, _(u"<a href='%s'>Заявка %s</a> согласована") % (
                 reverse('view_request', args=[b.pk]), b.pk,
             ))
         if request.POST.get('decline') and request.user.profile.is_ugh() and b.is_ready():
