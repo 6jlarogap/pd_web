@@ -29,16 +29,39 @@ class Cemetery(models.Model):
     def get_time_choices(self):
         return [(s, s) for s in self.time_slots.split('\n') if s.strip()]
 
+class AreaPurpose(models.Model):
+    name = models.CharField(_(u"Название"), max_length=255)
+
+    class Meta:
+        verbose_name = _(u"Назначение участков")
+        verbose_name_plural = _(u"Назначение участков")
+
+    def __unicode__(self):
+        return self.name
+
 class Area(models.Model):
+    AVAILABILITY_OPEN = 'open'
+    AVAILABILITY_OLD = 'old_only'
+    AVAILABILITY_CLOSED = 'closed'
+
+    AVAILABILITY_CHOICES = (
+        (AVAILABILITY_OPEN, _(u'Открыт')),
+        (AVAILABILITY_OLD, _(u'Только подзахоронения')),
+        (AVAILABILITY_CLOSED, _(u'Закрыт')),
+    )
+
     cemetery = models.ForeignKey(Cemetery, verbose_name=_(u"Кладбище"))
     name = models.CharField(_(u"Название"), max_length=255)
+    availability = models.CharField(_(u"Открытость"), max_length=32, choices=AVAILABILITY_CHOICES, null=True)
+    purpose = models.ForeignKey(AreaPurpose, verbose_name=_(u"Назначение"), null=True)
+    places_count = models.PositiveIntegerField(_(u"Кол-во могил"), default=1)
 
     class Meta:
         verbose_name = _(u"Участок")
         verbose_name_plural = _(u"Участки")
 
     def __unicode__(self):
-        return self.name
+        return u'%s (%s, %s, %s могил)' % (self.name, self.get_availability_display(), self.purpose, self.places_count)
 
 class Place(models.Model):
     cemetery = models.ForeignKey(Cemetery, verbose_name=_(u"Кладбище"))
