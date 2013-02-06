@@ -8,7 +8,7 @@
 #mainform #id_operation { width: 100px; }
 #mainform #id_customer_type { width: 60px; }
 
-#id_row, #id_area, #id_seat { width: 60px; }
+#id_row, #id_seat { width: 60px; }
 
 #id_house { width: 60px; }
 #id_building { width: 55px; }
