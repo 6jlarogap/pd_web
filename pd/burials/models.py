@@ -178,7 +178,6 @@ class BurialRequest(models.Model):
             burial_type=self.burial_type,
             place=place,
             fact_date=self.plan_date,
-            fact_time=self.plan_time,
             deadman=self.deadman,
         )
         self.save()
