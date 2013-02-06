@@ -5,11 +5,6 @@ from django.utils.translation import ugettext as _
 
 import re
 
-def cleanup_geo_name(s):
-    s = s.capitalize()
-    s = re.sub(u'(\.\s?)([\wа-я])', lambda m: u''.join(map(lambda g: g.capitalize(), m.groups())), s)
-    return s
-
 class Country(models.Model):
     """
     Страна.
@@ -19,11 +14,6 @@ class Country(models.Model):
 
     def __unicode__(self):
         return self.name[:16]
-
-    def save(self, *args, **kwargs):
-        if not self.pk:
-            self.name = cleanup_geo_name(self.name)
-        return super(Country, self).save(*args, **kwargs)
 
     class Meta:
         db_table = "common_geocountry"
@@ -43,11 +33,6 @@ class Region(models.Model):
     def __unicode__(self):
         return self.name[:24]
 
-    def save(self, *args, **kwargs):
-        if not self.pk:
-            self.name = cleanup_geo_name(self.name)
-        return super(Region, self).save(*args, **kwargs)
-
     class Meta:
         unique_together = (("country", "name"),)
         verbose_name = _(u"регион")
@@ -65,11 +50,6 @@ class City(models.Model):
 
     def __unicode__(self):
         return self.name[:24]
-
-    def save(self, *args, **kwargs):
-        if not self.pk:
-            self.name = cleanup_geo_name(self.name)
-        return super(City, self).save(*args, **kwargs)
 
     class Meta:
         unique_together = (("region", "name"),)
@@ -91,11 +71,6 @@ class Street(models.Model):
         unique_together = (("city", "name"),)
         verbose_name = (_(u"улица"))
         verbose_name_plural = (_(u"улицы"))
-
-    def save(self, *args, **kwargs):
-        if not self.pk:
-            self.name = cleanup_geo_name(self.name)
-        return super(Street, self).save(*args, **kwargs)
 
     def __unicode__(self):
         return self.name
@@ -146,3 +121,25 @@ class Location(models.Model):
             return addr.replace(', ,', ', ')
         else:
             return _(u"незаполненный адрес")
+
+class DFiasAddrobj(models.Model):
+    """
+    Импорт из ФИАС
+    """	
+    aolevel = models.IntegerField()
+    aoguid = models.CharField(max_length=36, primary_key=True)
+    citycode = models.CharField(max_length=3)
+    areacode = models.CharField(max_length=3)
+    ctarcode = models.CharField(max_length=3)
+    placecode = models.CharField(max_length=3)
+    streetcode = models.CharField(max_length=4)
+    extrcode = models.CharField(max_length=4)
+    sextcode = models.CharField(max_length=3)
+    formalname = models.CharField(max_length=120)
+    offname = models.CharField(max_length=120)
+    shortname = models.CharField(max_length=10)
+    parentguid = models.CharField(max_length=36)
+    enddate = models.DateField()
+
+    class Meta:
+        db_table = u'd_fias_addrobj'

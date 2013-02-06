@@ -9,6 +9,7 @@ class AreaInine(admin.TabularInline):
 
 class CemeteryAdmin(admin.ModelAdmin):
     form = CemeteryAdminForm
+    inlines = [AreaInine, ]
 
 admin.site.register(Cemetery, CemeteryAdmin)
 
