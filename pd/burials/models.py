@@ -216,8 +216,7 @@ class Burial(models.Model):
     burial_type = models.CharField(_(u"Тип захоронения"), max_length=255, null=True, blank=True, choices=BurialRequest.BURIAL_TYPES)
     place = models.ForeignKey(Place, verbose_name=_(u"Место"))
 
-    fact_date = models.DateField(_(u"План. дата"))
-    fact_time = models.TimeField(_(u"План. время"))
+    fact_date = models.DateField(_(u"Факт. дата"))
 
     deadman = models.ForeignKey(DeadPerson, verbose_name=_(u"Усопший"), editable=False)
 
