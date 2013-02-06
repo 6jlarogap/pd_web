@@ -34,8 +34,8 @@ class Area(models.Model):
     name = models.CharField(_(u"Название"), max_length=255)
 
     class Meta:
-        verbose_name = _(u"Кладбище")
-        verbose_name_plural = _(u"Кладбища")
+        verbose_name = _(u"Участок")
+        verbose_name_plural = _(u"Участки")
 
     def __unicode__(self):
         return self.name
