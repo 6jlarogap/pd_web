@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% load i18n %}
+
+{% block content %}
+    <h1>{% trans "Новая заявка" %}</h1>
+    <form action="" method="POST">
+        {% csrf_token %}
+        {{ burial_form.as_p }}
+        {{ place_form.as_p }}
+        <h2>{% trans "Усопший" %}</h2>
+        {{ deadman_form.as_p }}
+        <h3>{% trans "Адрес" %}</h3>
+        {{ deadman_address_form.as_p }}
+        <h3>{% trans "Свидетельство о смерти" %}</h3>
+        {{ deadman_dc_form.as_p }}
+        <h2>{% trans "Ответственный" %}</h2>
+        {{ responsible_form.as_p }}
+        <h3>{% trans "Адрес" %}</h3>
+        {{ responsible_address_form.as_p }}
+        <h3>{% trans "Удостоверение личности" %}</h3>
+        {{ responsible_id_form.as_p }}
+        <p>
+            <input type="submit" class="btn" value="{% trans "Создать захоронение" %}"/>
+        </p>
+    </form>
+{% endblock %}

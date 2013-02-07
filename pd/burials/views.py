@@ -1,6 +1,6 @@
 # coding=utf-8
 import datetime
-from burials.forms import BurialRequestCreateForm, CemeteryForm, AreaFormset, BurialSearchForm
+from burials.forms import BurialRequestCreateForm, CemeteryForm, AreaFormset, BurialSearchForm, BurialForm, PlaceForm
 from django.contrib import messages
 from django.core.urlresolvers import reverse
 from django.db.models.query_utils import Q
@@ -12,7 +12,9 @@ from burials.models import BurialRequest, Cemetery, Reason, Burial, Place
 from django.views.generic.detail import DetailView
 from django.views.generic.edit import CreateView, UpdateView
 from django.views.generic.list import ListView
+from geo.forms import LocationForm
 from logs.models import write_log
+from persons.forms import DeadPersonForm, DeathCertificateForm, AlivePersonForm, PersonIDForm
 
 
 class BurialsListGenericMixin:
@@ -376,4 +378,105 @@ class PlaceView(DetailView):
     model = Place
 
 view_place = PlaceView.as_view()
+
+class CreateBurial(TemplateView):
+    template_name = 'create_burial.html'
+
+    def get_context_data(self, **kwargs):
+        return {
+            'burial_form': self.get_burial_form(),
+            'deadman_form': self.get_deadman_form(),
+            'deadman_address_form': self.get_deadman_address_form(),
+            'deadman_dc_form': self.get_deadman_dc_form(),
+            'place_form': self.get_place_form(),
+            'responsible_form': self.get_responsible_form(),
+            'responsible_address_form': self.get_responsible_address_form(),
+            'responsible_id_form': self.get_responsible_id_form(),
+        }
+
+    def get_burial_form(self):
+        return BurialForm(data=self.request.POST or None)
+
+    def get_deadman_form(self):
+        return DeadPersonForm(data=self.request.POST or None, prefix='deadman')
+
+    def get_deadman_address_form(self):
+        return LocationForm(data=self.request.POST or None, prefix='deadman-address')
+
+    def get_deadman_dc_form(self):
+        return DeathCertificateForm(data=self.request.POST or None, prefix='deadman-dc')
+
+    def get_place_form(self):
+        return PlaceForm(data=self.request.POST or None, prefix='place')
+
+    def get_responsible_form(self):
+        return AlivePersonForm(data=self.request.POST or None, prefix='responsible')
+
+    def get_responsible_address_form(self):
+        return LocationForm(data=self.request.POST or None, prefix='responsible-address')
+
+    def get_responsible_id_form(self):
+        return PersonIDForm(data=self.request.POST or None, prefix='responsible-personid')
+    
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_authenticated() or not request.user.profile.is_ugh():
+            messages.error(request, _(u"У Вас нет прав создавать захоронения вручную"))
+            return redirect('/')
+        return super(CreateBurial, self).dispatch(request, *args, **kwargs)
+    
+    def post(self, request, *args, **kwargs):
+        self.request = request
+
+        burial_form = self.get_burial_form()
+        deadman_form = self.get_deadman_form()
+        deadman_address_form = self.get_deadman_address_form()
+        deadman_dc_form = self.get_deadman_dc_form()
+        place_form = self.get_place_form()
+        responsible_form = self.get_responsible_form()
+        responsible_address_form = self.get_responsible_address_form()
+        responsible_id_form = self.get_responsible_id_form()
+
+        if burial_form.is_valid() and deadman_form.is_valid() and deadman_dc_form.is_valid() and place_form.is_valid():
+            burial = burial_form.save(commit=False)
+
+            deadman = deadman_form.save(commit=False)
+            if deadman_address_form.is_valid():
+                deadman.address = deadman_address_form.save()
+            deadman.save()
+
+            dc = deadman_dc_form.save(commit=False)
+            dc.person = deadman
+            dc.save()
+
+            place = place_form.save(commit=False)
+            if responsible_form.is_valid():
+                place.responsible = responsible_form.save(commit=False)
+                if responsible_address_form.is_valid():
+                    place.responsible.address = responsible_address_form.save()
+                place.responsible.save()
+
+                if responsible_id_form.is_valid():
+                    dc = responsible_id_form.save(commit=False)
+                    dc.person = place.responsible
+                    dc.save()
+
+            place.save()
+
+            burial.place = place
+            burial.deadman = deadman
+
+            burial.save()
+
+            write_log(self.request, burial, _(u'Захоронение создано вручную'))
+            msg = _(u"<a href='%s'>Захоронение %s</a> создано вручную") % (
+                reverse('view_burial', args=[burial.pk]),
+                burial.pk,
+            )
+            messages.success(self.request, msg)
+
+            return redirect('view_burial', burial.pk)
+
+        return self.get(request, *args, **kwargs)
+
+create_burial = CreateBurial.as_view()
 

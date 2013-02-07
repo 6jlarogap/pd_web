@@ -4,7 +4,7 @@ from django import forms
 from django.forms.models import inlineformset_factory
 from django.utils.translation import ugettext_lazy as _
 
-from burials.models import BurialRequest, Cemetery, Area
+from burials.models import BurialRequest, Cemetery, Area, Burial, Place
 from django.db.models.query_utils import Q
 
 
@@ -75,3 +75,15 @@ class BurialSearchForm(forms.Form):
     row = forms.CharField(required=False, label=_(u"Ряд"))
     place = forms.CharField(required=False, label=_(u"Место"))
     no_responsible = forms.BooleanField(required=False, initial=False, label=_(u"Без отв."))
+
+class BurialForm(forms.ModelForm):
+    class Meta:
+        model = Burial
+        exclude = ['place', 'deadman', ]
+
+
+class PlaceForm(forms.ModelForm):
+    class Meta:
+        model = Place
+        exclude = ['responsible', ]
+

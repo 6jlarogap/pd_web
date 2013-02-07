@@ -74,6 +74,15 @@ class Place(models.Model):
         verbose_name = _(u"Место")
         verbose_name_plural = _(u"Место")
 
+    def save(self, *args, **kwargs):
+        if not self.place:
+            other_places = Place.objects.filter(cemetery=self.cemetery, area=self.area, row=self.row)
+            try:
+                self.place = other_places.order_by('-place')[0].place + 1
+            except IndexError:
+                self.place = 1
+        return super(Place, self).save(*args, **kwargs)
+
 class BurialRequest(models.Model):
     STATUS_BACKED = 'backed'
     STATUS_DECLINED = 'declined'
