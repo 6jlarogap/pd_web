@@ -6,6 +6,7 @@ from burials.forms import CemeteryAdminForm
 
 class AreaInine(admin.TabularInline):
     model = Area
+    can_delete = False
 
 class CemeteryAdmin(admin.ModelAdmin):
     form = CemeteryAdminForm

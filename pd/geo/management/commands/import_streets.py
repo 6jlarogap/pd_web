@@ -20,8 +20,10 @@ class Command(BaseCommand):
                 city = None
                 parent = fias
                 while not city:
-                    prev_parent = parent
-                    parent = DFiasAddrobj.objects.using('fias').filter(aoguid=parent.parentguid, enddate__gte=datetime.datetime.now())[0]
+                    try:
+                        parent = DFiasAddrobj.objects.using('fias').filter(aoguid=parent.parentguid, enddate__gte=datetime.datetime.now())[0]
+                    except IndexError:
+                        break
                     if parent.citycode != '000':
                         try:
                             city = City.objects.get(name=u'%s %s' % (parent.shortname, parent.formalname))

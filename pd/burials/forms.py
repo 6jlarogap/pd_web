@@ -51,4 +51,4 @@ class CemeteryAdminForm(BaseCemeteryForm):
     class Meta:
         model = Cemetery
 
-AreaFormset = inlineformset_factory(Cemetery, Area)
+AreaFormset = inlineformset_factory(Cemetery, Area, can_delete=False)
