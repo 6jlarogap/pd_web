@@ -7,7 +7,7 @@ from persons.models import DeadPerson
 from users.models import Profile, ProfileLORU, Org
 
 
-class LoginTest(TestCase):
+class BurialsTest(TestCase):
     def setUp(self):
         activate('ru')
         self.ugh_user = User.objects.create_user(username='ugh', email='test@example.com', password='test')
@@ -83,6 +83,10 @@ class LoginTest(TestCase):
         br.deadman = DeadPerson.objects.create(last_name='Ivanov')
         br.save()
 
+        r = self.loru_client.get('/burials/')
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.context['burials'].count(), 0)
+
         r = self.ugh_client.get('/?show=1')
         self.assertEqual(r.context['burials'].count(), 0)
         r = self.loru_client.get('/?show=1')
@@ -104,6 +108,10 @@ class LoginTest(TestCase):
         r = self.loru_client.get('/?show=1')
         self.assertEqual(r.context['burials'].count(), 0)
 
+        r = self.loru_client.get('/burials/')
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.context['burials'].count(), 0)
+
         r = self.ugh_client.post('/requests/view/%s/' % br.pk, {'complete': '1'})
         self.assertEqual(r.status_code, 302)
 
@@ -111,6 +119,10 @@ class LoginTest(TestCase):
         self.assertEqual(r.context['burials'].count(), 0)
         r = self.loru_client.get('/?show=1')
         self.assertEqual(r.context['burials'].count(), 0)
+
+        r = self.loru_client.get('/burials/')
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.context['burials'].count(), 1)
 
     def test_back(self):
         r = self.loru_client.post('/requests/create/', {'cemetery': self.cemetery.pk, 'plan_date': '12.12.2013', 'plan_time': '12:00'})

@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% load i18n %}
+
+{% block content %}
+    <h1>{% trans "Захоронения" %}</h1>
+    <table class="table table-bordered table-striped">
+        <tr>
+            <th>{% trans "Номер" %}</th>
+            <th>{% trans "Кладбище" %}</th>
+            <th>{% trans "Место" %}</th>
+            <th>{% trans "Усопший" %}</th>
+            <th>{% trans "Дата" %}</th>
+            <th></th>
+        </tr>
+        {% for b in burials %}
+            <tr>
+                <td>{{ b.pk }}</td>
+                <td>{{ b.place.cemetery }}</td>
+                <td>
+                    {{ b.place.area|default:"" }}
+                    {{ b.place.row|default:"" }}
+                    {{ b.place.place_number|default:"" }}
+                </td>
+                <td>{{ b.deadman|default:"" }}</td>
+                <td>{{ b.fact_date|default:"" }}</td>
+                <td>
+                    <a class="btn" href="{% url view_request b.pk %}">{% trans "просмотр" %}</a>
+                </td>
+            </tr>
+        {% endfor %}
+    </table>
+{% endblock %}

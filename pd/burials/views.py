@@ -308,3 +308,15 @@ class CemeteryEdit(UGHRequiredMixin, UpdateView):
         return redirect('manage_cemeteries')
 
 manage_cemeteries_edit = CemeteryEdit.as_view()
+
+class BurialsListView(ListView):
+    template_name = 'burial_list.html'
+    paginate_by = 20
+    context_object_name = 'burials'
+
+    def get_queryset(self):
+        burials = Burial.objects.all().order_by('-pk')
+        return burials
+
+burial_list = BurialsListView.as_view()
+
