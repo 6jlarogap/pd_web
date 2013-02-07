@@ -37,7 +37,7 @@
                 <td>{{ b.deadman|default:"" }}</td>
                 <td>{{ b.fact_date|default:"" }}</td>
                 <td>
-                    <a class="btn" href="{% url view_request b.pk %}">{% trans "просмотр" %}</a>
+                    <a class="btn" href="{% url view_burial b.pk %}">{% trans "просмотр" %}</a>
                 </td>
             </tr>
         {% endfor %}
