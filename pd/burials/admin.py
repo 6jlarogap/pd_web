@@ -12,6 +12,9 @@ class CemeteryAdmin(admin.ModelAdmin):
     form = CemeteryAdminForm
     inlines = [AreaInine, ]
 
+    def has_delete_permission(self, request, obj=None):
+        return False
+
 admin.site.register(Cemetery, CemeteryAdmin)
 
 class AreaPurposeAdmin(admin.ModelAdmin):
