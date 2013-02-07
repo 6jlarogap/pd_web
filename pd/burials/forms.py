@@ -20,7 +20,10 @@ class BurialRequestCreateForm(forms.ModelForm):
         ).distinct()
         if self.instance and self.instance.cemetery and self.instance.cemetery.time_slots:
             choices = [('', '')] + self.instance.cemetery.get_time_choices()
+            # self.fields['plan_time'] = forms.ChoiceField(label=_(u'План. время'), choices=choices, required=False)
             self.fields['plan_time'].widget = forms.Select(choices=choices)
+        if self.instance and self.instance.plan_time:
+            self.initial['plan_time'] = self.instance.plan_time.strftime('%H:%M')
         self.fields['plan_date'].initial = datetime.date.today() + datetime.timedelta(1)
 
     def clean_plan_time(self):
