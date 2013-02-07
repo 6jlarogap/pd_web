@@ -350,7 +350,7 @@ class BurialsListView(ListView):
                 burials = burials.filter(place__area=form.cleaned_data['area'])
             if form.cleaned_data['row']:
                 burials = burials.filter(place__row=form.cleaned_data['row'])
-            if form.cleaned_data['seat']:
+            if form.cleaned_data['place']:
                 burials = burials.filter(place__seat=form.cleaned_data['seat'])
             if form.cleaned_data['no_last_name']:
                 burials = burials.filter(Q(deadman__last_name='') | Q(deadman__last_name__isnull=True))

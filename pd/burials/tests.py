@@ -1,4 +1,6 @@
-from burials.models import Cemetery, BurialRequest
+import datetime
+from PIL.XVThumbImagePlugin import r
+from burials.models import Cemetery, BurialRequest, Burial, Place
 from django.contrib.auth.models import User
 from django.test.client import Client
 from django.test.testcases import TestCase
@@ -7,7 +9,7 @@ from persons.models import DeadPerson
 from users.models import Profile, ProfileLORU, Org
 
 
-class BurialsTest(TestCase):
+class RequestsTest(TestCase):
     def setUp(self):
         activate('ru')
         self.ugh_user = User.objects.create_user(username='ugh', email='test@example.com', password='test')
@@ -182,4 +184,48 @@ class BurialsTest(TestCase):
         r = self.ugh_client.get('/requests/edit/%s/' % br.pk)
         self.assertEqual(r.status_code, 302)
 
+class BurialsTest(TestCase):
+    def setUp(self):
+        activate('ru')
+        self.client = Client()
+        ugh_org = Org.objects.create(
+            type=Org.PROFILE_UGH, name='ugh'
+        )
+        self.cemetery = Cemetery.objects.create(name='test cem', time_begin='12:00', time_end='17:00', ugh=ugh_org)
+
+    def test_search(self):
+        r = self.client.get('/burials/')
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.context['burials'].count(), 0)
+
+        Burial.objects.create(
+            burial_type=BurialRequest.BURIAL_TYPES[0][0],
+            place=Place.objects.create(
+                cemetery=self.cemetery,
+                area=None,
+                row=None,
+                place=None,
+                responsible=None,
+            ),
+            fact_date=datetime.date.today(),
+            deadman=DeadPerson.objects.create(
+                last_name=u'Ivanov',
+            )
+        )
+
+        r = self.client.get('/burials/')
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.context['burials'].count(), 1)
+
+        r = self.client.get('/burials/?fio=Petrov')
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.context['burials'].count(), 0)
+
+        r = self.client.get('/burials/?fio=Ivanov')
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.context['burials'].count(), 1)
+
+        r = self.client.get('/burials/?fio=Ivanov Ivan')
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.context['burials'].count(), 0)
 
