@@ -10,8 +10,10 @@ urlpatterns = patterns('burials.views',
     url(r'^requests/view/(?P<pk>\d+)/$', 'view_request', name='view_request'),
     url(r'^requests/edit/(?P<pk>\d+)/$', 'edit_request', name='edit_request'),
 
-    url(r'^view/(?P<pk>\d+)/$', 'view_burial', name='view_burial'),
+    url(r'^burials/(?P<pk>\d+)/$', 'view_burial', name='view_burial'),
     url(r'^burials/$', 'burial_list', name='burial_list'),
+
+    url(r'^places/(?P<pk>\d+)/$', 'view_place', name='view_place'),
 
     url(r'^manage/cemetery/$', 'manage_cemeteries', name='manage_cemeteries'),
     url(r'^manage/cemetery/create/$', 'manage_cemeteries_create', name='manage_cemeteries_create'),

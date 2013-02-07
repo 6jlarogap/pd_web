@@ -8,7 +8,7 @@ from django.shortcuts import redirect
 from django.views.generic.base import TemplateView, View
 from django.utils.translation import ugettext_lazy as _
 
-from burials.models import BurialRequest, Cemetery, Reason, Burial
+from burials.models import BurialRequest, Cemetery, Reason, Burial, Place
 from django.views.generic.detail import DetailView
 from django.views.generic.edit import CreateView, UpdateView
 from django.views.generic.list import ListView
@@ -369,4 +369,11 @@ class BurialsListView(ListView):
         return data
 
 burial_list = BurialsListView.as_view()
+
+class PlaceView(DetailView):
+    template_name = 'view_place.html'
+    context_object_name = 'place'
+    model = Place
+
+view_place = PlaceView.as_view()
 

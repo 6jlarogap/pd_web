@@ -20,6 +20,9 @@
             {{ b.place.area|default:"" }}
             {{ b.place.row|default:"" }}
             {{ b.place.place_number|default:"" }}
+            {% if b.place.pk %}
+                <a href="{% url view_place b.place.pk %}">{% trans "просмотр" %}</a>
+            {% endif %}
         </dd>
         {% if b.place.responsible %}
             <dt>{% trans "Ответственный" %}:</dt>

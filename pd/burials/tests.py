@@ -262,3 +262,18 @@ class BurialsTest(TestCase):
 
         r = self.client.get('/burials/?page=3')
         self.assertEqual(r.status_code, 404)
+
+    def test_place(self):
+        r = self.client.get('/places/000/')
+        self.assertEqual(r.status_code, 404)
+
+        place = Place.objects.create(
+            cemetery=self.cemetery,
+            area=None,
+            row=None,
+            place=None,
+            responsible=None,
+        )
+
+        r = self.client.get('/places/%s/' % place.pk)
+        self.assertEqual(r.status_code, 200)

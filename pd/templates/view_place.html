@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+
+{% load i18n %}
+
+{% block content %}
+    <h1>{% trans "Место" %} {{ place.pk }}</h1>
+    <dl>
+        {% if place.cemetery %}
+            <dt>Кладбище</dt>
+            <dd>{{ place.cemetery }}</dd>
+        {% endif %}
+        {% if place.area %}
+            <dt>Участок</dt>
+            <dd>{{ place.area }}</dd>
+        {% endif %}
+        {% if place.row %}
+            <dt>Ряд</dt>
+            <dd>{{ place.row }}</dd>
+        {% endif %}
+        {% if place.seat %}
+            <dt>Место</dt>
+            <dd>{{ place.seat }}</dd>
+        {% endif %}
+        {% if place.responsible %}
+            <dt>Ответственный</dt>
+            <dd>
+                {{ place.responsible }}
+                {% if place.responsible.phones %}
+                    (тел. {{ place.responsible.phones }})
+                {% endif %}
+            </dd>
+        {% endif %}
+    </dl>
+{% endblock %}
