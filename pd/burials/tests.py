@@ -206,11 +206,11 @@ class BurialsTest(TestCase):
                 row=None,
                 place=None,
                 responsible=None,
-            ),
+                ),
             fact_date=datetime.date.today(),
             deadman=DeadPerson.objects.create(
                 last_name=u'Ivanov',
-            )
+                )
         )
 
         r = self.client.get('/burials/')
@@ -229,3 +229,36 @@ class BurialsTest(TestCase):
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r.context['burials'].count(), 0)
 
+    def test_paginate(self):
+        r = self.client.get('/burials/')
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.context['burials'].count(), 0)
+
+        params = dict(
+            burial_type=BurialRequest.BURIAL_TYPES[0][0],
+            place=Place.objects.create(
+                cemetery=self.cemetery,
+                area=None,
+                row=None,
+                place=None,
+                responsible=None,
+            ),
+            fact_date=datetime.date.today(),
+            deadman=DeadPerson.objects.create(
+                last_name=u'Ivanov',
+            )
+        )
+
+        for i in range(30):
+            Burial.objects.create(**params)
+
+        r = self.client.get('/burials/')
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.context['burials'].count(), 20)
+
+        r = self.client.get('/burials/?page=2')
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.context['burials'].count(), 10)
+
+        r = self.client.get('/burials/?page=3')
+        self.assertEqual(r.status_code, 404)
