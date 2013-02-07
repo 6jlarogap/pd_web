@@ -1,0 +1,32 @@
+{% load i18n %}
+
+<div class="pagination">
+    <ul>
+        {% if page_obj.has_previous %}
+            <li><a href="?{{ GET_PARAMS }}&page={{ page_obj.previous_page_number }}">{% trans "предыдущая" %}</a></li>
+        {% endif %}
+        {% if page_obj.number > 5 %}
+            <li><a href="#">&hellip;</a></li>
+        {% endif %}
+        {% for p in paginator.page_range %}
+            {% if p >= page_obj.number|add:-5 and p <= page_obj.number|add:5 %}
+                <li{% if p == page_obj.number %} class="active"{% endif %}>
+                    <a href="?{{ GET_PARAMS }}&page={{ p }}">{{ p }}</a>
+                </li>
+            {% endif %}
+        {% endfor %}
+        {% if page_obj.number < paginator.page_range|length|add:-5 %}
+            <li><a href="#">&hellip;</a></li>
+        {% endif %}
+        {% if page_obj.has_next %}
+            <li><a href="?{{ GET_PARAMS }}&page={{ page_obj.next_page_number }}">{% trans "следующая" %}</a></li>
+        {% endif %}
+        <li>
+            {% trans "Или выберите" %}: <select id="paginator_select" style="width: 75px;">
+                {% for p in paginator.page_range %}
+                    <option value="?{{ GET_PARAMS }}&page={{ p }}"{% if p == page_obj.number %} selected="1"{% endif %}>{{ p }}</option>
+                {% endfor %}
+            </select>
+        </li>
+    </ul>
+</div>

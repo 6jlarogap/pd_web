@@ -55,3 +55,23 @@ class CemeteryAdminForm(BaseCemeteryForm):
         model = Cemetery
 
 AreaFormset = inlineformset_factory(Cemetery, Area, can_delete=False)
+
+class BurialSearchForm(forms.Form):
+    """
+    Форма поиска на главной странице.
+    """
+    fio = forms.CharField(required=False, max_length=100, label=_(u"ФИО"))
+    no_last_name = forms.BooleanField(required=False, initial=False, label=_(u"Неизв."))
+    birth_date_from = forms.DateField(required=False, label=_(u"Дата рожд. с"))
+    birth_date_to = forms.DateField(required=False, label=_(u"по"))
+    death_date_from = forms.DateField(required=False, label=_(u"Дата смерти с"))
+    death_date_to = forms.DateField(required=False, label=_(u"по"))
+    burial_date_from = forms.DateField(required=False, label=_(u"Дата захор. с"))
+    burial_date_to = forms.DateField(required=False, label=_(u"по"))
+    responsible = forms.CharField(required=False, max_length=30, label=_(u"Ответственный"))
+    operation = forms.ChoiceField(required=False, choices=BurialRequest.BURIAL_TYPES, label=_(u"Услуга"))
+    cemetery = forms.CharField(required=False, label=_(u"Кладбища"))
+    area = forms.CharField(required=False, label=_(u"Участок"))
+    row = forms.CharField(required=False, label=_(u"Ряд"))
+    place = forms.CharField(required=False, label=_(u"Место"))
+    no_responsible = forms.BooleanField(required=False, initial=False, label=_(u"Без отв."))

@@ -4,6 +4,18 @@
 
 {% block content %}
     <h1>{% trans "Захоронения" %}</h1>
+    <div class="row-fluid">
+        <div class="span12">
+            <div class="row-fluid">
+                <form id="mainform" class="form-horizontal" method="get" action="/">
+                    {{ form.as_p }}
+
+                    <p class="buttons"><input type="submit" value="Искать" class="btn btn-primary" /></p>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <table class="table table-bordered table-striped">
         <tr>
             <th>{% trans "Номер" %}</th>
@@ -30,4 +42,6 @@
             </tr>
         {% endfor %}
     </table>
+
+    {% include "paginator.html" %}
 {% endblock %}
