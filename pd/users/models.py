@@ -3,7 +3,7 @@ from django.db import models
 from django.utils.translation import ugettext_lazy as _
 
 class Profile(models.Model):
-    user = models.OneToOneField('auth.User', editable=False)
+    user = models.OneToOneField('auth.User', editable=False, null=True)
     org = models.ForeignKey('users.Org', null=True)
 
     is_agent = models.BooleanField(_(u"Агент"), default=False, blank=True)
