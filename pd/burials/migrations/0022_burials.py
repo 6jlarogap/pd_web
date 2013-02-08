@@ -19,7 +19,7 @@ class Migration(SchemaMigration):
         ))
         db.send_create_signal('burials', ['Burial'])
 
-        # Adding field 'BurialRequest.burial'
+        # Adding field 'Burial.burial'
         db.add_column('burials_burialrequest', 'burial',
                       self.gf('django.db.models.fields.related.OneToOneField')(to=orm['burials.Burial'], unique=True, null=True),
                       keep_default=False)
@@ -29,7 +29,7 @@ class Migration(SchemaMigration):
         # Deleting model 'Burial'
         db.delete_table('burials_burial')
 
-        # Deleting field 'BurialRequest.burial'
+        # Deleting field 'Burial.burial'
         db.delete_column('burials_burialrequest', 'burial_id')
 
 
@@ -79,7 +79,7 @@ class Migration(SchemaMigration):
             'place': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['burials.Place']"})
         },
         'burials.burialrequest': {
-            'Meta': {'object_name': 'BurialRequest'},
+            'Meta': {'object_name': 'Burial'},
             'area': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['burials.Area']", 'null': 'True', 'blank': 'True'}),
             'burial': ('django.db.models.fields.related.OneToOneField', [], {'to': "orm['burials.Burial']", 'unique': 'True', 'null': 'True'}),
             'burial_type': ('django.db.models.fields.CharField', [], {'max_length': '255', 'null': 'True', 'blank': 'True'}),

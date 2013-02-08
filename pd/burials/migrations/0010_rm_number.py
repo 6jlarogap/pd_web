@@ -8,12 +8,12 @@ from django.db import models
 class Migration(SchemaMigration):
 
     def forwards(self, orm):
-        # Deleting field 'BurialRequest.number'
+        # Deleting field 'Burial.number'
         db.delete_column('burials_burialrequest', 'number')
 
 
     def backwards(self, orm):
-        # Adding field 'BurialRequest.number'
+        # Adding field 'Burial.number'
         db.add_column('burials_burialrequest', 'number',
                       self.gf('django.db.models.fields.CharField')(max_length=255, null=True, blank=True),
                       keep_default=False)
@@ -50,7 +50,7 @@ class Migration(SchemaMigration):
             'username': ('django.db.models.fields.CharField', [], {'unique': 'True', 'max_length': '30'})
         },
         'burials.burialrequest': {
-            'Meta': {'object_name': 'BurialRequest'},
+            'Meta': {'object_name': 'Burial'},
             'approved_ugh': ('django.db.models.fields.DateTimeField', [], {'null': 'True'}),
             'cemetery': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['burials.Cemetery']", 'null': 'True'}),
             'completed_ugh': ('django.db.models.fields.DateTimeField', [], {'null': 'True'}),

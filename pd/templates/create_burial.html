@@ -7,7 +7,6 @@
     <form action="" method="POST">
         {% csrf_token %}
         {{ burial_form.as_p }}
-        {{ place_form.as_p }}
         <h2>{% trans "Усопший" %}</h2>
         {{ deadman_form.as_p }}
         <h3>{% trans "Адрес" %}</h3>

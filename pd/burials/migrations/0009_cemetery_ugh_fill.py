@@ -51,7 +51,7 @@ class Migration(DataMigration):
             'username': ('django.db.models.fields.CharField', [], {'unique': 'True', 'max_length': '30'})
         },
         'burials.burialrequest': {
-            'Meta': {'object_name': 'BurialRequest'},
+            'Meta': {'object_name': 'Burial'},
             'approved_ugh': ('django.db.models.fields.DateTimeField', [], {'null': 'True'}),
             'cemetery': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['burials.Cemetery']", 'null': 'True'}),
             'completed_ugh': ('django.db.models.fields.DateTimeField', [], {'null': 'True'}),

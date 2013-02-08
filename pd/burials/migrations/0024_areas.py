@@ -98,7 +98,7 @@ class Migration(SchemaMigration):
             'place': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['burials.Place']"})
         },
         'burials.burialrequest': {
-            'Meta': {'object_name': 'BurialRequest'},
+            'Meta': {'object_name': 'Burial'},
             'area': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['burials.Area']", 'null': 'True', 'blank': 'True'}),
             'burial': ('django.db.models.fields.related.OneToOneField', [], {'to': "orm['burials.Burial']", 'unique': 'True', 'null': 'True'}),
             'burial_type': ('django.db.models.fields.CharField', [], {'max_length': '255', 'null': 'True', 'blank': 'True'}),

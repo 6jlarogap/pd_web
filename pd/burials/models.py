@@ -4,7 +4,7 @@ from django.db import models
 from django.utils.translation import ugettext_lazy as _
 
 from persons.models import DeadPerson
-from users.models import Org
+from users.models import Org, Profile
 from logs.models import Log
 
 
@@ -83,7 +83,7 @@ class Place(models.Model):
                 self.place = 1
         return super(Place, self).save(*args, **kwargs)
 
-class BurialRequest(models.Model):
+class Burial(models.Model):
     STATUS_BACKED = 'backed'
     STATUS_DECLINED = 'declined'
     STATUS_DRAFT = 'draft'
@@ -109,12 +109,15 @@ class BurialRequest(models.Model):
     )
 
     burial_type = models.CharField(_(u"Тип захоронения"), max_length=255, null=True, blank=True, choices=BURIAL_TYPES)
-    cemetery = models.ForeignKey(Cemetery, verbose_name=_(u"Кладбище"), null=True)
+
+    place = models.ForeignKey(Place, verbose_name=_(u"Место"), null=True, blank=True)
+    cemetery = models.ForeignKey(Cemetery, verbose_name=_(u"Кладбище"), null=True, blank=True)
     area = models.ForeignKey(Area, verbose_name=_(u"Участок"), blank=True, null=True)
     row = models.CharField(_(u"Ряд"), max_length=255, blank=True, null=True)
     place_number = models.CharField(_(u"Номер места"), max_length=255, null=True, blank=True)
     responsible = models.ForeignKey('persons.AlivePerson', verbose_name=_(u"Ответственный"), blank=True, null=True)
 
+    fact_date = models.DateField(_(u"Факт. дата"), null=True, blank=True)
     plan_date = models.DateField(_(u"План. дата"), null=True, blank=True)
     plan_time = models.TimeField(_(u"План. время"), null=True, blank=True)
 
@@ -122,13 +125,12 @@ class BurialRequest(models.Model):
 
     creator = models.ForeignKey('auth.User', verbose_name=_(u"Владелец"), editable=False, null=True)
     created = models.DateTimeField(_(u"Создано"), auto_now_add=True)
-    loru = models.ForeignKey(Org, verbose_name=_(u"ЛОРУ"), null=True, limit_choices_to={'type': Org.PROFILE_LORU})
+    loru = models.ForeignKey(Org, verbose_name=_(u"ЛОРУ"), null=True, blank=True, limit_choices_to={'type': Org.PROFILE_LORU})
+    agent = models.ForeignKey(Profile, verbose_name=_(u"Агент"), null=True, blank=True)
 
     status = models.CharField(_(u"Статус"), max_length=255, choices=STATUS_CHOICES, default=STATUS_DRAFT, editable=False)
     changed = models.DateTimeField(_(u"Изменено"), editable=False, null=True)
     changed_by = models.ForeignKey('auth.User', editable=False, null=True, related_name='changed_requests')
-
-    burial = models.OneToOneField('Burial', editable=False, null=True)
 
     class Meta:
         verbose_name = _(u"Заявка на захоронение")
@@ -176,6 +178,9 @@ class BurialRequest(models.Model):
         return self.loru and self.loru.name or ''
 
     def get_place(self):
+        if self.place:
+            return self.place
+
         params = {'cemetery': self.cemetery}
         if self.area:
             params.update({'area': self.area})
@@ -206,12 +211,7 @@ class BurialRequest(models.Model):
         )
         place.responsible = self.get_responsible()
         place.save()
-        self.burial = Burial.objects.create(
-            burial_type=self.burial_type,
-            place=place,
-            fact_date=self.plan_date,
-            deadman=self.deadman,
-        )
+        self.place = place
         self.save()
         return self.burial
 
@@ -242,16 +242,3 @@ class Reason(models.Model):
 
     def __unicode__(self):
         return u'%s' % self.pk
-
-class Burial(models.Model):
-    burial_type = models.CharField(_(u"Тип захоронения"), max_length=255, null=True, blank=True, choices=BurialRequest.BURIAL_TYPES)
-    place = models.ForeignKey(Place, verbose_name=_(u"Место"))
-
-    fact_date = models.DateField(_(u"Факт. дата"))
-
-    deadman = models.ForeignKey(DeadPerson, verbose_name=_(u"Усопший"), editable=False)
-
-    class Meta:
-        verbose_name = _(u"Захоронение")
-        verbose_name_plural = _(u"Захоронения")
-

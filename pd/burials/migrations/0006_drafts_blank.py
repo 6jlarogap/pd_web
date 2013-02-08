@@ -9,31 +9,31 @@ class Migration(SchemaMigration):
 
     def forwards(self, orm):
 
-        # Changing field 'BurialRequest.plan_date'
+        # Changing field 'Burial.plan_date'
         db.alter_column('burials_burialrequest', 'plan_date', self.gf('django.db.models.fields.DateField')(null=True))
 
-        # Changing field 'BurialRequest.cemetery'
+        # Changing field 'Burial.cemetery'
         db.alter_column('burials_burialrequest', 'cemetery_id', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['burials.Cemetery'], null=True))
 
-        # Changing field 'BurialRequest.number'
+        # Changing field 'Burial.number'
         db.alter_column('burials_burialrequest', 'number', self.gf('django.db.models.fields.CharField')(max_length=255, null=True))
 
-        # Changing field 'BurialRequest.plan_time'
+        # Changing field 'Burial.plan_time'
         db.alter_column('burials_burialrequest', 'plan_time', self.gf('django.db.models.fields.TimeField')(null=True))
 
     def backwards(self, orm):
 
-        # User chose to not deal with backwards NULL issues for 'BurialRequest.plan_date'
-        raise RuntimeError("Cannot reverse this migration. 'BurialRequest.plan_date' and its values cannot be restored.")
+        # User chose to not deal with backwards NULL issues for 'Burial.plan_date'
+        raise RuntimeError("Cannot reverse this migration. 'Burial.plan_date' and its values cannot be restored.")
 
-        # User chose to not deal with backwards NULL issues for 'BurialRequest.cemetery'
-        raise RuntimeError("Cannot reverse this migration. 'BurialRequest.cemetery' and its values cannot be restored.")
+        # User chose to not deal with backwards NULL issues for 'Burial.cemetery'
+        raise RuntimeError("Cannot reverse this migration. 'Burial.cemetery' and its values cannot be restored.")
 
-        # User chose to not deal with backwards NULL issues for 'BurialRequest.number'
-        raise RuntimeError("Cannot reverse this migration. 'BurialRequest.number' and its values cannot be restored.")
+        # User chose to not deal with backwards NULL issues for 'Burial.number'
+        raise RuntimeError("Cannot reverse this migration. 'Burial.number' and its values cannot be restored.")
 
-        # User chose to not deal with backwards NULL issues for 'BurialRequest.plan_time'
-        raise RuntimeError("Cannot reverse this migration. 'BurialRequest.plan_time' and its values cannot be restored.")
+        # User chose to not deal with backwards NULL issues for 'Burial.plan_time'
+        raise RuntimeError("Cannot reverse this migration. 'Burial.plan_time' and its values cannot be restored.")
 
     models = {
         'auth.group': {
@@ -66,7 +66,7 @@ class Migration(SchemaMigration):
             'username': ('django.db.models.fields.CharField', [], {'unique': 'True', 'max_length': '30'})
         },
         'burials.burialrequest': {
-            'Meta': {'object_name': 'BurialRequest'},
+            'Meta': {'object_name': 'Burial'},
             'approved_ugh': ('django.db.models.fields.DateTimeField', [], {'null': 'True'}),
             'cemetery': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['burials.Cemetery']", 'null': 'True', 'blank': 'True'}),
             'completed_ugh': ('django.db.models.fields.DateTimeField', [], {'null': 'True'}),

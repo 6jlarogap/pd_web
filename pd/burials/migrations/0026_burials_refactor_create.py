@@ -8,18 +8,34 @@ from django.db import models
 class Migration(SchemaMigration):
 
     def forwards(self, orm):
-        # Adding model 'Reason'
-        db.create_table('burials_reason', (
+        # Adding model 'Burial'
+        db.create_table('burials_burial', (
             ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('name', self.gf('django.db.models.fields.CharField')(max_length=255)),
-            ('reason_type', self.gf('django.db.models.fields.CharField')(max_length=255)),
+            ('burial_type', self.gf('django.db.models.fields.CharField')(max_length=255, null=True, blank=True)),
+            ('place', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['burials.Place'], null=True, blank=True)),
+            ('cemetery', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['burials.Cemetery'], null=True)),
+            ('area', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['burials.Area'], null=True, blank=True)),
+            ('row', self.gf('django.db.models.fields.CharField')(max_length=255, null=True, blank=True)),
+            ('place_number', self.gf('django.db.models.fields.CharField')(max_length=255, null=True, blank=True)),
+            ('responsible', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['persons.AlivePerson'], null=True, blank=True)),
+            ('fact_date', self.gf('django.db.models.fields.DateField')(null=True, blank=True)),
+            ('plan_date', self.gf('django.db.models.fields.DateField')(null=True, blank=True)),
+            ('plan_time', self.gf('django.db.models.fields.TimeField')(null=True, blank=True)),
+            ('deadman', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['persons.DeadPerson'], null=True)),
+            ('creator', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['auth.User'], null=True)),
+            ('created', self.gf('django.db.models.fields.DateTimeField')(auto_now_add=True, blank=True)),
+            ('loru', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['users.Org'], null=True)),
+            ('agent', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['users.Profile'], null=True, blank=True)),
+            ('status', self.gf('django.db.models.fields.CharField')(default='draft', max_length=255)),
+            ('changed', self.gf('django.db.models.fields.DateTimeField')(null=True)),
+            ('changed_by', self.gf('django.db.models.fields.related.ForeignKey')(related_name='changed_requests', null=True, to=orm['auth.User'])),
         ))
-        db.send_create_signal('burials', ['Reason'])
+        db.send_create_signal('burials', ['Burial'])
 
 
     def backwards(self, orm):
-        # Deleting model 'Reason'
-        db.delete_table('burials_reason')
+        # Deleting model 'Burial'
+        db.delete_table('burials_burial')
 
 
     models = {
@@ -54,12 +70,21 @@ class Migration(SchemaMigration):
         },
         'burials.area': {
             'Meta': {'object_name': 'Area'},
+            'availability': ('django.db.models.fields.CharField', [], {'max_length': '32', 'null': 'True'}),
             'cemetery': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['burials.Cemetery']"}),
+            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'name': ('django.db.models.fields.CharField', [], {'max_length': '255'}),
+            'places_count': ('django.db.models.fields.PositiveIntegerField', [], {'default': '1'}),
+            'purpose': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['burials.AreaPurpose']", 'null': 'True'})
+        },
+        'burials.areapurpose': {
+            'Meta': {'object_name': 'AreaPurpose'},
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'name': ('django.db.models.fields.CharField', [], {'max_length': '255'})
         },
-        'burials.burialrequest': {
+        'burials.burial': {
             'Meta': {'object_name': 'Burial'},
+            'agent': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['users.Profile']", 'null': 'True', 'blank': 'True'}),
             'area': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['burials.Area']", 'null': 'True', 'blank': 'True'}),
             'burial_type': ('django.db.models.fields.CharField', [], {'max_length': '255', 'null': 'True', 'blank': 'True'}),
             'cemetery': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['burials.Cemetery']", 'null': 'True'}),
@@ -68,8 +93,10 @@ class Migration(SchemaMigration):
             'created': ('django.db.models.fields.DateTimeField', [], {'auto_now_add': 'True', 'blank': 'True'}),
             'creator': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['auth.User']", 'null': 'True'}),
             'deadman': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['persons.DeadPerson']", 'null': 'True'}),
+            'fact_date': ('django.db.models.fields.DateField', [], {'null': 'True', 'blank': 'True'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'loru': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['users.Org']", 'null': 'True'}),
+            'place': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['burials.Place']", 'null': 'True', 'blank': 'True'}),
             'place_number': ('django.db.models.fields.CharField', [], {'max_length': '255', 'null': 'True', 'blank': 'True'}),
             'plan_date': ('django.db.models.fields.DateField', [], {'null': 'True', 'blank': 'True'}),
             'plan_time': ('django.db.models.fields.TimeField', [], {'null': 'True', 'blank': 'True'}),
@@ -101,7 +128,8 @@ class Migration(SchemaMigration):
             'Meta': {'object_name': 'Reason'},
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'name': ('django.db.models.fields.CharField', [], {'max_length': '255'}),
-            'reason_type': ('django.db.models.fields.CharField', [], {'max_length': '255'})
+            'reason_type': ('django.db.models.fields.CharField', [], {'max_length': '255'}),
+            'text': ('django.db.models.fields.TextField', [], {'default': "''", 'blank': 'True'})
         },
         'contenttypes.contenttype': {
             'Meta': {'ordering': "('name',)", 'unique_together': "(('app_label', 'model'),)", 'object_name': 'ContentType', 'db_table': "'django_content_type'"},
@@ -157,9 +185,6 @@ class Migration(SchemaMigration):
         'persons.baseperson': {
             'Meta': {'ordering': "['last_name', 'first_name', 'middle_name']", 'object_name': 'BasePerson'},
             'address': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['geo.Location']", 'null': 'True'}),
-            'birth_date': ('django.db.models.fields.DateField', [], {'null': 'True', 'blank': 'True'}),
-            'birth_date_no_day': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
-            'birth_date_no_month': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'first_name': ('django.db.models.fields.CharField', [], {'max_length': '255', 'blank': 'True'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'last_name': ('django.db.models.fields.CharField', [], {'max_length': '255', 'blank': 'True'}),
@@ -168,6 +193,9 @@ class Migration(SchemaMigration):
         'persons.deadperson': {
             'Meta': {'ordering': "['last_name', 'first_name', 'middle_name']", 'object_name': 'DeadPerson', '_ormbases': ['persons.BasePerson']},
             'baseperson_ptr': ('django.db.models.fields.related.OneToOneField', [], {'to': "orm['persons.BasePerson']", 'unique': 'True', 'primary_key': 'True'}),
+            'birth_date': ('django.db.models.fields.DateField', [], {'null': 'True', 'blank': 'True'}),
+            'birth_date_no_day': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
+            'birth_date_no_month': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'death_date': ('django.db.models.fields.DateField', [], {'null': 'True', 'blank': 'True'}),
             'death_date_no_day': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'death_date_no_month': ('django.db.models.fields.BooleanField', [], {'default': 'False'})
@@ -180,6 +208,12 @@ class Migration(SchemaMigration):
             'inn': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '255'}),
             'name': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '255'}),
             'type': ('django.db.models.fields.CharField', [], {'max_length': '255'})
+        },
+        'users.profile': {
+            'Meta': {'object_name': 'Profile'},
+            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'org': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['users.Org']", 'null': 'True'}),
+            'user': ('django.db.models.fields.related.OneToOneField', [], {'to': "orm['auth.User']", 'unique': 'True'})
         }
     }
 

@@ -6,7 +6,7 @@ from django.test.client import Client
 from django.test.testcases import TestCase
 from django.utils.translation import activate, get_language
 
-from burials.models import Cemetery, BurialRequest, Place
+from burials.models import Cemetery, Burial, Place
 from geo.models import Country, Region, City, Street
 from persons.models import IDDocumentType, AlivePerson
 from users.models import Profile, ProfileLORU, Org
@@ -35,7 +35,7 @@ class DeadManTest(TestCase):
         self.loru_client.login(username='loru', password='test')
         self.cemetery = Cemetery.objects.create(name='test cem', time_begin='12:00', time_end='17:00', ugh=ugh_org)
         self.ugh_user.profile.org.loru_list.create(loru=loru_org)
-        self.br = BurialRequest.objects.create(cemetery=self.cemetery)
+        self.br = Burial.objects.create(cemetery=self.cemetery)
         self.country = Country.objects.create(name='Russia')
         self.region = Region.objects.create(name='Lenoblast', country=self.country)
         self.city = City.objects.create(name='SPb', region=self.region)
@@ -49,7 +49,7 @@ class DeadManTest(TestCase):
         r = self.loru_client.get('/create_deadman/%s/' % self.br.pk)
         self.assertEqual(r.status_code, 200)
 
-        self.br = BurialRequest.objects.get()
+        self.br = Burial.objects.get()
         self.assertEqual(self.br.deadman, None)
 
         r = self.loru_client.post('/create_deadman/%s/' % self.br.pk, {
@@ -67,7 +67,7 @@ class DeadManTest(TestCase):
         })
         self.assertEqual(r.status_code, 302)
 
-        self.br = BurialRequest.objects.get()
+        self.br = Burial.objects.get()
         self.assertEqual(self.br.deadman.last_name, u'Иванов')
         self.assertEqual(self.br.deadman.death_date, datetime.date(2013, 1, 1))
         self.assertEqual(self.br.deadman.address.street, self.street)
@@ -99,7 +99,7 @@ class ResponsibleTest(TestCase):
         self.loru_client.login(username='loru', password='test')
         self.cemetery = Cemetery.objects.create(name='test cem', time_begin='12:00', time_end='17:00', ugh=ugh_org)
         self.ugh_user.profile.org.loru_list.create(loru=loru_org)
-        self.br = BurialRequest.objects.create(cemetery=self.cemetery)
+        self.br = Burial.objects.create(cemetery=self.cemetery)
         self.country = Country.objects.create(name='Russia')
         self.region = Region.objects.create(name='Lenoblast', country=self.country)
         self.city = City.objects.create(name='SPb', region=self.region)
@@ -113,7 +113,7 @@ class ResponsibleTest(TestCase):
         r = self.loru_client.get('/create_responsible/%s/' % self.br.pk)
         self.assertEqual(r.status_code, 200)
 
-        self.br = BurialRequest.objects.get()
+        self.br = Burial.objects.get()
         self.assertEqual(self.br.responsible, None)
 
         r = self.loru_client.post('/create_responsible/%s/' % self.br.pk, {
@@ -131,7 +131,7 @@ class ResponsibleTest(TestCase):
             })
         self.assertEqual(r.status_code, 302)
 
-        self.br = BurialRequest.objects.get()
+        self.br = Burial.objects.get()
         self.assertEqual(self.br.responsible.last_name, u'Иванов')
         self.assertEqual(self.br.responsible.address.street, self.street)
         self.assertEqual(self.br.responsible.address.house, '123')
@@ -143,7 +143,7 @@ class ResponsibleTest(TestCase):
         self.assertEqual(self.br.responsible, self.br.get_responsible())
 
     def test_place(self):
-        self.br = BurialRequest.objects.get()
+        self.br = Burial.objects.get()
         self.assertEqual(self.br.get_place(), None)
         self.assertEqual(self.br.get_responsible(), None)
 

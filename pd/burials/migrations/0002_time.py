@@ -20,7 +20,7 @@ class Migration(SchemaMigration):
         ))
         db.send_create_signal('burials', ['Cemetery'])
 
-        # Adding model 'BurialRequest'
+        # Adding model 'Burial'
         db.create_table('burials_burialrequest', (
             ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
             ('number', self.gf('django.db.models.fields.CharField')(max_length=255)),
@@ -34,14 +34,14 @@ class Migration(SchemaMigration):
             ('processed_loru', self.gf('django.db.models.fields.DateTimeField')(null=True)),
             ('completed_ugh', self.gf('django.db.models.fields.DateTimeField')(null=True)),
         ))
-        db.send_create_signal('burials', ['BurialRequest'])
+        db.send_create_signal('burials', ['Burial'])
 
 
     def backwards(self, orm):
         # Deleting model 'Cemetery'
         db.delete_table('burials_cemetery')
 
-        # Deleting model 'BurialRequest'
+        # Deleting model 'Burial'
         db.delete_table('burials_burialrequest')
 
 
@@ -76,7 +76,7 @@ class Migration(SchemaMigration):
             'username': ('django.db.models.fields.CharField', [], {'unique': 'True', 'max_length': '30'})
         },
         'burials.burialrequest': {
-            'Meta': {'object_name': 'BurialRequest'},
+            'Meta': {'object_name': 'Burial'},
             'approved_ugh': ('django.db.models.fields.DateTimeField', [], {'null': 'True'}),
             'cemetery': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['burials.Cemetery']"}),
             'completed_ugh': ('django.db.models.fields.DateTimeField', [], {'null': 'True'}),

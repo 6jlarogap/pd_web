@@ -8,14 +8,14 @@ from django.db import models
 class Migration(SchemaMigration):
 
     def forwards(self, orm):
-        # Adding field 'BurialRequest.changed_by'
+        # Adding field 'Burial.changed_by'
         db.add_column('burials_burialrequest', 'changed_by',
                       self.gf('django.db.models.fields.related.ForeignKey')(related_name='changed_requests', null=True, to=orm['auth.User']),
                       keep_default=False)
 
 
     def backwards(self, orm):
-        # Deleting field 'BurialRequest.changed_by'
+        # Deleting field 'Burial.changed_by'
         db.delete_column('burials_burialrequest', 'changed_by_id')
 
 
@@ -56,7 +56,7 @@ class Migration(SchemaMigration):
             'name': ('django.db.models.fields.CharField', [], {'max_length': '255'})
         },
         'burials.burialrequest': {
-            'Meta': {'object_name': 'BurialRequest'},
+            'Meta': {'object_name': 'Burial'},
             'area': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['burials.Area']", 'null': 'True', 'blank': 'True'}),
             'burial_type': ('django.db.models.fields.CharField', [], {'max_length': '255', 'null': 'True', 'blank': 'True'}),
             'cemetery': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['burials.Cemetery']", 'null': 'True'}),

@@ -4,17 +4,17 @@ from django import forms
 from django.forms.models import inlineformset_factory
 from django.utils.translation import ugettext_lazy as _
 
-from burials.models import BurialRequest, Cemetery, Area, Burial, Place
+from burials.models import Cemetery, Area, Burial, Place
 from django.db.models.query_utils import Q
 
 
-class BurialRequestCreateForm(forms.ModelForm):
+class BurialCreateForm(forms.ModelForm):
     class Meta:
-        model = BurialRequest
+        model = Burial
         exclude = ['loru', 'responsible']
 
     def __init__(self, request, *args, **kwargs):
-        super(BurialRequestCreateForm, self).__init__(*args, **kwargs)
+        super(BurialCreateForm, self).__init__(*args, **kwargs)
         self.fields['cemetery'].queryset = Cemetery.objects.filter(
             Q(ugh__isnull=True) | Q(ugh__loru_list__loru=request.user.profile.org)
         ).distinct()
@@ -69,7 +69,7 @@ class BurialSearchForm(forms.Form):
     burial_date_from = forms.DateField(required=False, label=_(u"Дата захор. с"))
     burial_date_to = forms.DateField(required=False, label=_(u"по"))
     responsible = forms.CharField(required=False, max_length=30, label=_(u"Ответственный"))
-    operation = forms.ChoiceField(required=False, choices=BurialRequest.BURIAL_TYPES, label=_(u"Услуга"))
+    operation = forms.ChoiceField(required=False, choices=Burial.BURIAL_TYPES, label=_(u"Услуга"))
     cemetery = forms.CharField(required=False, label=_(u"Кладбища"))
     area = forms.CharField(required=False, label=_(u"Участок"))
     row = forms.CharField(required=False, label=_(u"Ряд"))
@@ -79,7 +79,7 @@ class BurialSearchForm(forms.Form):
 class BurialForm(forms.ModelForm):
     class Meta:
         model = Burial
-        exclude = ['place', 'deadman', ]
+        exclude = ['place', 'deadman', 'responsible', ]
 
 
 class PlaceForm(forms.ModelForm):

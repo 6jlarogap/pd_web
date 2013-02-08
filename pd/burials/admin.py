@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from burials.models import Cemetery, BurialRequest, Reason, Area, Place, Burial, AreaPurpose
+from burials.models import Cemetery, Burial, Reason, Area, Place, AreaPurpose
 from burials.forms import CemeteryAdminForm
 
 
@@ -22,10 +22,10 @@ class AreaPurposeAdmin(admin.ModelAdmin):
 
 admin.site.register(AreaPurpose, AreaPurposeAdmin)
 
-class BurialRequestAdmin(admin.ModelAdmin):
+class BurialAdmin(admin.ModelAdmin):
     pass
 
-admin.site.register(BurialRequest, BurialRequestAdmin)
+admin.site.register(Burial, BurialAdmin)
 
 class ReasonAdmin(admin.ModelAdmin):
     list_display = ['name', 'reason_type', 'text',]
@@ -37,9 +37,4 @@ class PlaceAdmin(admin.ModelAdmin):
     pass
 
 admin.site.register(Place, PlaceAdmin)
-
-class BurialAdmin(admin.ModelAdmin):
-    pass
-
-admin.site.register(Burial, BurialAdmin)
 

@@ -1,5 +1,5 @@
 # coding=utf-8
-from burials.models import BurialRequest
+from burials.models import Burial
 from django.contrib import messages
 from django.core.urlresolvers import reverse
 from django.shortcuts import redirect
@@ -33,7 +33,7 @@ class CreateDeadmanView(CreateView):
         self.addr_form = LocationForm(data=self.request.POST or None, prefix='addr', instance=dm and dm.address)
 
     def get_br(self):
-        return BurialRequest.objects.get(pk=self.kwargs['br_pk'])
+        return Burial.objects.get(pk=self.kwargs['br_pk'])
 
     def form_valid(self, form):
         self.create_forms()
@@ -99,7 +99,7 @@ class CreateResponsibleView(CreateView):
         self.addr_form = LocationForm(data=self.request.POST or None, prefix='addr', instance=dm and dm.address)
 
     def get_br(self):
-        return BurialRequest.objects.get(pk=self.kwargs['br_pk'])
+        return Burial.objects.get(pk=self.kwargs['br_pk'])
 
     def form_valid(self, form):
         self.create_forms()

@@ -1,5 +1,5 @@
 import datetime
-from burials.models import Cemetery, BurialRequest, Burial, Place
+from burials.models import Cemetery, Burial, Place
 from django.contrib.auth.models import User
 from django.test.client import Client
 from django.test.testcases import TestCase
@@ -47,20 +47,20 @@ class RequestsTest(TestCase):
 
         r = self.loru_client.get('/requests/create/')
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(BurialRequest.objects.all().count(), 0)
+        self.assertEqual(Burial.objects.all().count(), 0)
 
         r = self.loru_client.post('/requests/create/', {'cemetery': self.cemetery.pk, 'plan_date': '12.12.2013', 'plan_time': '12:00'})
         self.assertEqual(r.status_code, 302)
-        self.assertEqual(BurialRequest.objects.all().count(), 1)
+        self.assertEqual(Burial.objects.all().count(), 1)
 
-        br = BurialRequest.objects.all()[0]
-        self.assertEqual(br.status, BurialRequest.STATUS_DRAFT)
+        br = Burial.objects.all()[0]
+        self.assertEqual(br.status, Burial.STATUS_DRAFT)
 
     def test_created_lists(self):
         r = self.loru_client.post('/requests/create/', {'cemetery': self.cemetery.pk, 'plan_date': '12.12.2013', 'plan_time': '12:00'})
         self.assertEqual(r.status_code, 302)
-        br = BurialRequest.objects.all()[0]
-        br.status = BurialRequest.STATUS_READY
+        br = Burial.objects.all()[0]
+        br.status = Burial.STATUS_READY
         br.save()
 
         r = self.ugh_client.get('/?show=1')
@@ -80,7 +80,7 @@ class RequestsTest(TestCase):
     def test_actions(self):
         r = self.loru_client.post('/requests/create/', {'cemetery': self.cemetery.pk, 'plan_date': '12.12.2013', 'plan_time': '12:00'})
         self.assertEqual(r.status_code, 302)
-        br = BurialRequest.objects.all()[0]
+        br = Burial.objects.all()[0]
         br.deadman = DeadPerson.objects.create(last_name='Ivanov')
         br.save()
 
@@ -127,33 +127,33 @@ class RequestsTest(TestCase):
 
     def test_back(self):
         r = self.loru_client.post('/requests/create/', {'cemetery': self.cemetery.pk, 'plan_date': '12.12.2013', 'plan_time': '12:00'})
-        br = BurialRequest.objects.all()[0]
+        br = Burial.objects.all()[0]
         br.deadman = DeadPerson.objects.create(last_name='Ivanov')
         br.save()
 
         r = self.loru_client.post('/requests/view/%s/' % br.pk, {'ready': '1'})
         r = self.ugh_client.post('/requests/view/%s/' % br.pk, {'approve': '1'})
 
-        br = BurialRequest.objects.all()[0]
-        self.assertEqual(br.status, BurialRequest.STATUS_APPROVED)
+        br = Burial.objects.all()[0]
+        self.assertEqual(br.status, Burial.STATUS_APPROVED)
 
         r = self.loru_client.post('/requests/view/%s/' % br.pk, {'back': '1'})
 
-        br = BurialRequest.objects.all()[0]
-        self.assertEqual(br.status, BurialRequest.STATUS_BACKED)
+        br = Burial.objects.all()[0]
+        self.assertEqual(br.status, Burial.STATUS_BACKED)
 
         r = self.loru_client.post('/requests/view/%s/' % br.pk, {'ready': '1'})
         r = self.ugh_client.post('/requests/view/%s/' % br.pk, {'approve': '1'})
         r = self.ugh_client.post('/requests/view/%s/' % br.pk, {'complete': '1'})
 
-        br = BurialRequest.objects.all()[0]
-        self.assertEqual(br.status, BurialRequest.STATUS_CLOSED)
+        br = Burial.objects.all()[0]
+        self.assertEqual(br.status, Burial.STATUS_CLOSED)
 
     def test_archive(self):
         r = self.loru_client.post('/requests/create/', {'cemetery': self.cemetery.pk, 'plan_date': '12.12.2013', 'plan_time': '12:00'})
         self.assertEqual(r.status_code, 302)
-        br = BurialRequest.objects.all()[0]
-        self.assertEqual(br.status, BurialRequest.STATUS_DRAFT)
+        br = Burial.objects.all()[0]
+        self.assertEqual(br.status, Burial.STATUS_DRAFT)
 
         r = self.ugh_client.get('/requests/archive/')
         self.assertEqual(r.context['burials'].count(), 1)
@@ -173,7 +173,7 @@ class RequestsTest(TestCase):
         r = self.loru_client.post('/requests/create/', {'cemetery': self.cemetery.pk, 'plan_date': '12.12.2013', 'plan_time': '12:00'})
         self.assertEqual(r.status_code, 302)
 
-        br = BurialRequest.objects.all()[0]
+        br = Burial.objects.all()[0]
         self.assertEqual(br.creator, self.loru_user)
         self.assertEqual(br.is_edit(), True)
 
@@ -204,18 +204,19 @@ class BurialsTest(TestCase):
         self.assertEqual(r.context['burials'].count(), 0)
 
         Burial.objects.create(
-            burial_type=BurialRequest.BURIAL_TYPES[0][0],
+            burial_type=Burial.BURIAL_TYPES[0][0],
             place=Place.objects.create(
                 cemetery=self.cemetery,
                 area=None,
                 row=None,
                 place=None,
                 responsible=None,
-                ),
+            ),
             fact_date=datetime.date.today(),
+            status=Burial.STATUS_CLOSED,
             deadman=DeadPerson.objects.create(
                 last_name=u'Ivanov',
-                )
+            )
         )
 
         r = self.client.get('/burials/')
@@ -240,7 +241,7 @@ class BurialsTest(TestCase):
         self.assertEqual(r.context['burials'].count(), 0)
 
         params = dict(
-            burial_type=BurialRequest.BURIAL_TYPES[0][0],
+            burial_type=Burial.BURIAL_TYPES[0][0],
             place=Place.objects.create(
                 cemetery=self.cemetery,
                 area=None,
@@ -249,6 +250,7 @@ class BurialsTest(TestCase):
                 responsible=None,
             ),
             fact_date=datetime.date.today(),
+            status=Burial.STATUS_CLOSED,
             deadman=DeadPerson.objects.create(
                 last_name=u'Ivanov',
             )
@@ -293,7 +295,7 @@ class BurialsTest(TestCase):
         self.assertEquals(Burial.objects.all().count(), 0)
 
         r = self.ugh_client.post('/burials/create/', {
-            'burial_type': BurialRequest.BURIAL_TYPES[0][0],
+            'burial_type': Burial.BURIAL_TYPES[0][0],
             'fact_date': datetime.date.today().strftime('%d.%m.%Y'),
             'place-cemetery': self.cemetery.pk,
             'place-place': 123,

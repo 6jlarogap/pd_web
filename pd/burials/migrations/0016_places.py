@@ -27,17 +27,17 @@ class Migration(SchemaMigration):
         ))
         db.send_create_signal('burials', ['Area'])
 
-        # Adding field 'BurialRequest.area'
+        # Adding field 'Burial.area'
         db.add_column('burials_burialrequest', 'area',
                       self.gf('django.db.models.fields.related.ForeignKey')(to=orm['burials.Area'], null=True, blank=True),
                       keep_default=False)
 
-        # Adding field 'BurialRequest.row'
+        # Adding field 'Burial.row'
         db.add_column('burials_burialrequest', 'row',
                       self.gf('django.db.models.fields.CharField')(max_length=255, null=True, blank=True),
                       keep_default=False)
 
-        # Adding field 'BurialRequest.responsible'
+        # Adding field 'Burial.responsible'
         db.add_column('burials_burialrequest', 'responsible',
                       self.gf('django.db.models.fields.related.ForeignKey')(to=orm['persons.AlivePerson'], null=True, blank=True),
                       keep_default=False)
@@ -50,13 +50,13 @@ class Migration(SchemaMigration):
         # Deleting model 'Area'
         db.delete_table('burials_area')
 
-        # Deleting field 'BurialRequest.area'
+        # Deleting field 'Burial.area'
         db.delete_column('burials_burialrequest', 'area_id')
 
-        # Deleting field 'BurialRequest.row'
+        # Deleting field 'Burial.row'
         db.delete_column('burials_burialrequest', 'row')
 
-        # Deleting field 'BurialRequest.responsible'
+        # Deleting field 'Burial.responsible'
         db.delete_column('burials_burialrequest', 'responsible_id')
 
 
@@ -97,7 +97,7 @@ class Migration(SchemaMigration):
             'name': ('django.db.models.fields.CharField', [], {'max_length': '255'})
         },
         'burials.burialrequest': {
-            'Meta': {'object_name': 'BurialRequest'},
+            'Meta': {'object_name': 'Burial'},
             'approved_ugh': ('django.db.models.fields.DateTimeField', [], {'null': 'True'}),
             'area': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['burials.Area']", 'null': 'True', 'blank': 'True'}),
             'backed_loru': ('django.db.models.fields.DateTimeField', [], {'null': 'True'}),

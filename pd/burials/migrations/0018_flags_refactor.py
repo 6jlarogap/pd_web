@@ -8,54 +8,54 @@ from django.db import models
 class Migration(SchemaMigration):
 
     def forwards(self, orm):
-        # Deleting field 'BurialRequest.completed_ugh'
+        # Deleting field 'Burial.completed_ugh'
         db.delete_column('burials_burialrequest', 'completed_ugh')
 
-        # Deleting field 'BurialRequest.approved_ugh'
+        # Deleting field 'Burial.approved_ugh'
         db.delete_column('burials_burialrequest', 'approved_ugh')
 
-        # Deleting field 'BurialRequest.ready_loru'
+        # Deleting field 'Burial.ready_loru'
         db.delete_column('burials_burialrequest', 'ready_loru')
 
-        # Deleting field 'BurialRequest.backed_loru'
+        # Deleting field 'Burial.backed_loru'
         db.delete_column('burials_burialrequest', 'backed_loru')
 
-        # Adding field 'BurialRequest.status'
+        # Adding field 'Burial.status'
         db.add_column('burials_burialrequest', 'status',
                       self.gf('django.db.models.fields.CharField')(default='draft', max_length=255),
                       keep_default=False)
 
-        # Adding field 'BurialRequest.changed'
+        # Adding field 'Burial.changed'
         db.add_column('burials_burialrequest', 'changed',
                       self.gf('django.db.models.fields.DateTimeField')(null=True),
                       keep_default=False)
 
 
     def backwards(self, orm):
-        # Adding field 'BurialRequest.completed_ugh'
+        # Adding field 'Burial.completed_ugh'
         db.add_column('burials_burialrequest', 'completed_ugh',
                       self.gf('django.db.models.fields.DateTimeField')(null=True),
                       keep_default=False)
 
-        # Adding field 'BurialRequest.approved_ugh'
+        # Adding field 'Burial.approved_ugh'
         db.add_column('burials_burialrequest', 'approved_ugh',
                       self.gf('django.db.models.fields.DateTimeField')(null=True),
                       keep_default=False)
 
-        # Adding field 'BurialRequest.ready_loru'
+        # Adding field 'Burial.ready_loru'
         db.add_column('burials_burialrequest', 'ready_loru',
                       self.gf('django.db.models.fields.DateTimeField')(null=True),
                       keep_default=False)
 
-        # Adding field 'BurialRequest.backed_loru'
+        # Adding field 'Burial.backed_loru'
         db.add_column('burials_burialrequest', 'backed_loru',
                       self.gf('django.db.models.fields.DateTimeField')(null=True),
                       keep_default=False)
 
-        # Deleting field 'BurialRequest.status'
+        # Deleting field 'Burial.status'
         db.delete_column('burials_burialrequest', 'status')
 
-        # Deleting field 'BurialRequest.changed'
+        # Deleting field 'Burial.changed'
         db.delete_column('burials_burialrequest', 'changed')
 
 
@@ -96,7 +96,7 @@ class Migration(SchemaMigration):
             'name': ('django.db.models.fields.CharField', [], {'max_length': '255'})
         },
         'burials.burialrequest': {
-            'Meta': {'object_name': 'BurialRequest'},
+            'Meta': {'object_name': 'Burial'},
             'area': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['burials.Area']", 'null': 'True', 'blank': 'True'}),
             'burial_type': ('django.db.models.fields.CharField', [], {'max_length': '255', 'null': 'True', 'blank': 'True'}),
             'cemetery': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['burials.Cemetery']", 'null': 'True'}),

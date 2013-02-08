@@ -12,7 +12,7 @@ class Migration(SchemaMigration):
     )
 
     def forwards(self, orm):
-        # Removing M2M table for field connected_ugh on 'BurialRequest'
+        # Removing M2M table for field connected_ugh on 'Burial'
         db.delete_table('burials_burialrequest_connected_ugh')
         db.create_table('burials_burialrequest_connected_ugh', (
             ('id', models.AutoField(verbose_name='ID', primary_key=True, auto_created=True)),
@@ -24,7 +24,7 @@ class Migration(SchemaMigration):
 
     def backwards(self, orm):
         db.delete_table('burials_burialrequest_connected_ugh')
-        # Adding M2M table for field connected_ugh on 'BurialRequest'
+        # Adding M2M table for field connected_ugh on 'Burial'
         db.create_table('burials_burialrequest_connected_ugh', (
             ('id', models.AutoField(verbose_name='ID', primary_key=True, auto_created=True)),
             ('burialrequest', models.ForeignKey(orm['burials.burialrequest'], null=False)),
@@ -64,7 +64,7 @@ class Migration(SchemaMigration):
             'username': ('django.db.models.fields.CharField', [], {'unique': 'True', 'max_length': '30'})
         },
         'burials.burialrequest': {
-            'Meta': {'object_name': 'BurialRequest'},
+            'Meta': {'object_name': 'Burial'},
             'approved_ugh': ('django.db.models.fields.DateTimeField', [], {'null': 'True'}),
             'cemetery': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['burials.Cemetery']", 'null': 'True', 'blank': 'True'}),
             'completed_ugh': ('django.db.models.fields.DateTimeField', [], {'null': 'True'}),
