@@ -8,7 +8,9 @@
         {% csrf_token %}
         {{ form.as_p }}
         <h2>{% trans "Адрес" %}<h2>
-        {{ addr_form.as_p }}
+        <div class="form_block">
+            {{ addr_form.as_p }}
+        </div>
         <h2>{% trans "Удостоверение личности" %}<h2>
         {{ id_form.as_p }}
         <p>

@@ -31,7 +31,7 @@ function setup_address_autocompletes() {
         form.prepend('<p class="instance_alert alert">Очистите поля ФИО для нового поиска</p>')
     });
 
-    $('input.autocomplete[name$=country_name]').attr('autocomplete', 'off').typeahead({
+    $('input[name$=country_name]').attr('autocomplete', 'off').typeahead({
         items: 100,
         source: function (typeahead, query) {
             if (query.length < 2) { return }
@@ -44,13 +44,13 @@ function setup_address_autocompletes() {
             });
         }
     });
-    $('input.autocomplete[name$=region_name]').attr('autocomplete', 'off').typeahead({
+    $('input[name$=region_name]').attr('autocomplete', 'off').typeahead({
         items: 100,
         source: function (typeahead, query) {
             if (query.length < 2) { return }
             var input = $(this)[0].$element;
             typeahead.input_el = input;
-            var country = input.parents('.well').find('input[name$=country_name]').val() || '';
+            var country = input.parents('.form_block').find('input[name$=country_name]').val() || '';
             $.ajax({
                 url: REGION_URL + "?query=" + query + "&country=" + country,
                 dataType: 'json',
@@ -67,13 +67,13 @@ function setup_address_autocompletes() {
             this.$element.val(val.real_value);
         }
     });
-    $('input.autocomplete[name$=city_name]').attr('autocomplete', 'off').typeahead({
+    $('input[name$=city_name]').attr('autocomplete', 'off').typeahead({
         items: 100,
         source: function (typeahead, query) {
             if (query.length < 2) { return }
             var input = $(this)[0].$element;
-            var region = input.parents('.well').find('input[name$=region_name]').val() || '';
-            var country = input.parents('.well').find('input[name$=country_name]').val() || '';
+            var region = input.parents('.form_block').find('input[name$=region_name]').val() || '';
+            var country = input.parents('.form_block').find('input[name$=country_name]').val() || '';
             $.ajax({
                 url: CITY_URL + "?query=" + query + "&country=" + country + "&region=" + region,
                 dataType: 'json',
@@ -94,14 +94,14 @@ function setup_address_autocompletes() {
             this.$element.val(val.real_value);
         }
     });
-    $('input.autocomplete[name$=street_name]').attr('autocomplete', 'off').typeahead({
+    $('input[name$=street_name]').attr('autocomplete', 'off').typeahead({
         items: 100,
         source: function (typeahead, query) {
             if (query.length < 2) { return }
             var input = $(this)[0].$element;
-            var country = input.parents('.well').find('input[name$=country_name]').val() || '';
-            var region = input.parents('.well').find('input[name$=region_name]').val() || '';
-            var city = input.parents('.well').find('input[name$=city_name]').val() || '';
+            var country = input.parents('.form_block').find('input[name$=country_name]').val() || '';
+            var region = input.parents('.form_block').find('input[name$=region_name]').val() || '';
+            var city = input.parents('.form_block').find('input[name$=city_name]').val() || '';
             $.ajax({
                 url: STREET_URL + "?query=" + query + "&country=" + country + "&region=" + region + "&city=" + city,
                 dataType: 'json',

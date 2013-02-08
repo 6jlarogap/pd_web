@@ -12,7 +12,7 @@ urlpatterns += patterns('pd.views',
     url(r'^', include('users.urls')),
     url(r'^', include('burials.urls')),
     url(r'^', include('persons.urls')),
-    url(r'^', include('geo.urls')),
+    url(r'^geo/', include('geo.urls')),
 )
 
 urlpatterns += patterns('',

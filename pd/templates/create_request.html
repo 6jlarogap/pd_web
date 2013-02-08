@@ -6,7 +6,9 @@
     <h1>{% trans "Новая заявка" %}</h1>
     <form action="" method="POST">
         {% csrf_token %}
-        {{ form.as_p }}
+        <div class="form_block">
+            {{ form.as_p }}
+        </div>
         <p>
             <input type="submit" class="btn" value="{% trans "Сохранить черновик" %}"/>
         </p>

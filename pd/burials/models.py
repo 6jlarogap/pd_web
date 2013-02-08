@@ -81,8 +81,8 @@ class Place(models.Model):
         if not self.place:
             other_places = Place.objects.filter(cemetery=self.cemetery, area=self.area, row=self.row)
             try:
-                self.place = other_places.order_by('-place')[0].place + 1
-            except IndexError:
+                self.place = int(other_places.order_by('-place')[0].place) + 1
+            except (ValueError, IndexError):
                 self.place = 1
         return super(Place, self).save(*args, **kwargs)
 
