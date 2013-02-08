@@ -61,8 +61,7 @@ class ArchiveMixin(BurialsListGenericMixin):
                 qs = Q(loru=self.request.user.profile.org)
             if self.request.user.profile.is_ugh():
                 qs = Q(
-                    # Q(ready_loru__isnull=False) | Q(backed_loru__isnull=False),
-                    cemetery__ugh=self.request.user.profile.org,
+                    Q(cemetery__ugh=self.request.user.profile.org) | Q(creator=self.request.user),
                 )
         return qs
 
@@ -97,7 +96,7 @@ class RequestView(ArchiveMixin, DetailView):
             messages.success(request, _(u"<a href='%s'>Заявка %s</a> отозвана") % (
                 reverse('view_request', args=[b.pk]), b.pk,
             ))
-        if request.POST.get('ready') and request.user.profile.is_loru() and b.is_edit():
+        if request.POST.get('ready') and request.user == b.creator and b.is_edit():
             b.status = Burial.STATUS_READY
             write_log(request, b, _(u'Заявка отправлена на согласование'))
             msg = _(u"<a href='%s'>Заявка %s</a> отправлена на согласование") % (
@@ -193,7 +192,13 @@ class EditRequestView(UpdateView):
         q = Q(status=Burial.STATUS_DRAFT) | \
             Q(status=Burial.STATUS_DECLINED) | \
             Q(status=Burial.STATUS_BACKED)
-        return Burial.objects.filter(q, loru=self.request.user.profile.org)
+        if self.request.user.profile.is_loru():
+            q2 = Q(source_type=Burial.SOURCE_FULL, loru=self.request.user.profile.org)
+        elif self.request.user.profile.is_ugh():
+            q2 = Q(source_type=Burial.SOURCE_UGH, creator=self.request.user)
+        else:
+            return Burial.objects.none()
+        return Burial.objects.filter(q, q2)
 
     def dispatch(self, request, *args, **kwargs):
         self.request = request
@@ -430,6 +435,9 @@ class CreateBurial(TemplateView):
         if burial_form.is_valid() and deadman_form.is_valid() and deadman_dc_form.is_valid():
             burial = burial_form.save(commit=False)
 
+            burial.creator = request.user
+            burial.changed = datetime.datetime.now()
+            burial.changed_by = request.user
             burial.source_type = Burial.SOURCE_UGH
 
             deadman = deadman_form.save(commit=False)
@@ -457,12 +465,12 @@ class CreateBurial(TemplateView):
 
             write_log(self.request, burial, _(u'Захоронение создано вручную'))
             msg = _(u"<a href='%s'>Захоронение %s</a> создано вручную") % (
-                reverse('view_burial', args=[burial.pk]),
+                reverse('view_request', args=[burial.pk]),
                 burial.pk,
             )
             messages.success(self.request, msg)
 
-            return redirect('view_burial', burial.pk)
+            return redirect('view_request', burial.pk)
 
         return self.get(request, *args, **kwargs)
 
