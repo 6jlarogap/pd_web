@@ -7,10 +7,6 @@
     <dl>
         <dt>{% trans "Статус" %}:</dt><dd>{{ b.status_str }}</dd>
         <dt>{% trans "ЛОРУ" %}:</dt><dd><a href="">{{ b.loru_name }}</a></dd>
-        {% if b.burial %}
-            <dt>{% trans "Захоронение" %}:</dt>
-            <dd><a href="{% url view_burial b.burial.pk %}">{% trans "просмотр" %}</a></dd>
-        {% endif %}
         {% if b.deadman %}
             <dt>{% trans "Усопший" %}:</dt>
             <dd>
@@ -40,7 +36,7 @@
         {% if user.profile.is_loru %}
             {% if b.is_edit %}
                 <input type="submit" class="btn" name="ready" value="{% trans "отправить на согласование" %}">
-            {% elif not b.is_finished %}
+            {% elif b.can_back %}
                 {% if b.is_approved %}
                     <label>{% trans "Причина" %}</label>
                     <select name="reason_typical">
@@ -56,15 +52,17 @@
         {% if user.profile.is_ugh %}
             {% if b.is_ready %}
                 <input type="submit" class="btn" name="approve" value="{% trans "согласовать" %}">
-                <br/><br/>
-                <label>{% trans "Причина" %}</label>
-                <select name="reason_typical">
-                    <option value=""></option>
-                    {% for r in reason_typical_decline %}<option value="{{ r.text }}">{{ r.name }}</option>{% endfor %}
-                </select>
-                <textarea name="reason" rows="5" cols="30"></textarea>
-                <br/>
-                <input type="submit" class="btn" name="decline" value="{% trans "отклонить" %}">
+                {% if b.can_decline %}
+                    <br/><br/>
+                    <label>{% trans "Причина" %}</label>
+                    <select name="reason_typical">
+                        <option value=""></option>
+                        {% for r in reason_typical_decline %}<option value="{{ r.text }}">{{ r.name }}</option>{% endfor %}
+                    </select>
+                    <textarea name="reason" rows="5" cols="30"></textarea>
+                    <br/>
+                    <input type="submit" class="btn" name="decline" value="{% trans "отклонить" %}">
+                {% endif %}
             {% elif b.is_approved %}
                 <input type="submit" class="btn" name="complete" value="{% trans "завершить" %}">
                 <br/><br/>

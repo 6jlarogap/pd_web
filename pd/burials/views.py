@@ -91,7 +91,7 @@ class RequestView(ArchiveMixin, DetailView):
         b.changed_by = request.user
         old_status = b.status
         reason = request.POST.get('reason') or request.POST.get('reason_typical')
-        if request.POST.get('back') and request.user.profile.is_loru() and not b.is_finished():
+        if request.POST.get('back') and request.user.profile.is_loru() and b.can_back():
             b.status = Burial.STATUS_BACKED
             write_log(request, b, _(u'Заявка отозвана'), reason)
             messages.success(request, _(u"<a href='%s'>Заявка %s</a> отозвана") % (
@@ -110,7 +110,7 @@ class RequestView(ArchiveMixin, DetailView):
             messages.success(request, _(u"<a href='%s'>Заявка %s</a> согласована") % (
                 reverse('view_request', args=[b.pk]), b.pk,
             ))
-        if request.POST.get('decline') and request.user.profile.is_ugh() and b.is_ready():
+        if request.POST.get('decline') and request.user.profile.is_ugh() and b.is_ready() and b.can_decline():
             b.status = Burial.STATUS_DECLINED
             write_log(request, b, _(u'Заявка отклонена'), reason)
             messages.success(request, _(u"<a href='%s'>Заявка %s</a> отклонена") % (
@@ -118,15 +118,10 @@ class RequestView(ArchiveMixin, DetailView):
             ))
         if request.POST.get('complete') and request.user.profile.is_ugh() and b.is_approved():
             b.status = Burial.STATUS_CLOSED
-            try:
-                burial = b.close()
-            except Exception, e:
-                messages.error(request, _(u'Ошибка: %s') % e)
-                return redirect('view_request', b.pk)
+            b.close()
             write_log(request, b, _(u'Заявка закрыта'))
-            messages.success(request, _(u"<a href='%s'>Заявка %s</a> закрыта, создано <a href='%s'>захоронение %s</a>") % (
+            messages.success(request, _(u"<a href='%s'>Заявка %s</a> закрыта") % (
                 reverse('view_request', args=[b.pk]), b.pk,
-                reverse('view_burial', args=[burial.pk]), burial.pk,
             ))
         if request.POST.get('annulate') and request.user.profile.is_ugh() and b.is_approved():
             b.status = Burial.STATUS_ANNULATED
@@ -182,6 +177,7 @@ class CreateRequestView(CreateView):
         self.object.changed = datetime.datetime.now()
         self.object.changed_by = self.request.user
         self.object.loru = self.request.user.profile.org
+        self.object.source_type = Burial.SOURCE_FULL
         self.object.save()
         messages.success(self.request, _(u"Черновик сохранен"))
         write_log(self.request, self.object, _(u'Создана заявка'))
@@ -433,6 +429,8 @@ class CreateBurial(TemplateView):
 
         if burial_form.is_valid() and deadman_form.is_valid() and deadman_dc_form.is_valid():
             burial = burial_form.save(commit=False)
+
+            burial.source_type = Burial.SOURCE_UGH
 
             deadman = deadman_form.save(commit=False)
             if deadman_address_form.is_valid():

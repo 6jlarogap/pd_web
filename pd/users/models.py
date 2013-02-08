@@ -6,6 +6,8 @@ class Profile(models.Model):
     user = models.OneToOneField('auth.User', editable=False)
     org = models.ForeignKey('users.Org', null=True)
 
+    is_agent = models.BooleanField(_(u"Агент"), default=False, blank=True)
+
     def __unicode__(self):
         return self.org and self.org.name or self.user.username
 
@@ -31,10 +33,28 @@ class Org(models.Model):
     inn = models.CharField(_(u"ИНН"), max_length=255, default='')
     director = models.CharField(_(u"Директор"), max_length=255, default='')
 
+    class Meta:
+        verbose_name = _(u'Организация')
+        verbose_name_plural = _(u'Организации')
+
     def __unicode__(self):
         return self.name
 
 class ProfileLORU(models.Model):
     ugh = models.ForeignKey(Org, related_name='loru_list', limit_choices_to={'type': Org.PROFILE_UGH}, verbose_name=_(u"УГХ"))
     loru = models.ForeignKey(Org, related_name='ugh_list', limit_choices_to={'type': Org.PROFILE_LORU}, verbose_name=_(u"ЛОРУ"))
+
+class Dover(models.Model):
+    agent = models.ForeignKey(Profile, verbose_name=_(u"Агент"), limit_choices_to={'is_agent': True})
+    org = models.ForeignKey(Org, verbose_name=_(u"Организация"), limit_choices_to={'type': Org.PROFILE_LORU})
+    number = models.CharField(_(u"Номер"), max_length=255)
+    begin = models.DateField(_(u"Начало"))
+    end = models.DateField(_(u"Окончание"))
+    document = models.FileField(_(u"Скан доверенности"), upload_to='dover', blank=True, null=True)
+
+    class Meta:
+        verbose_name = _(u'Доверенность')
+        verbose_name_plural = _(u'Доверенности')
+
+
 

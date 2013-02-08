@@ -15,9 +15,11 @@ class Cemetery(models.Model):
     time_slots = models.TextField(_(u"Время для захоронения"), default='',
                                   help_text=_(u'В формате ЧЧ:ММ, по одному на строку'))
 
-    creator = models.ForeignKey('auth.User', verbose_name=_(u"Владелец"), editable=False, null=True)
+    creator = models.ForeignKey('auth.User', verbose_name=_(u"Владелец"), editable=False, null=True,
+                                on_delete=models.PROTECT)
     created = models.DateTimeField(_(u"Создано"), auto_now_add=True)
-    ugh = models.ForeignKey(Org, verbose_name=_(u"УГХ"), null=True, limit_choices_to={'type': Org.PROFILE_UGH})
+    ugh = models.ForeignKey(Org, verbose_name=_(u"УГХ"), null=True, limit_choices_to={'type': Org.PROFILE_UGH},
+                            on_delete=models.PROTECT)
 
     class Meta:
         verbose_name = _(u"Кладбище")
@@ -50,10 +52,10 @@ class Area(models.Model):
         (AVAILABILITY_CLOSED, _(u'Закрыт')),
     )
 
-    cemetery = models.ForeignKey(Cemetery, verbose_name=_(u"Кладбище"))
+    cemetery = models.ForeignKey(Cemetery, verbose_name=_(u"Кладбище"), on_delete=models.PROTECT)
     name = models.CharField(_(u"Название"), max_length=255)
     availability = models.CharField(_(u"Открытость"), max_length=32, choices=AVAILABILITY_CHOICES, null=True)
-    purpose = models.ForeignKey(AreaPurpose, verbose_name=_(u"Назначение"), null=True)
+    purpose = models.ForeignKey(AreaPurpose, verbose_name=_(u"Назначение"), null=True, on_delete=models.PROTECT)
     places_count = models.PositiveIntegerField(_(u"Кол-во могил"), default=1)
 
     class Meta:
@@ -64,11 +66,12 @@ class Area(models.Model):
         return u'%s (%s, %s, %s могил)' % (self.name, self.get_availability_display(), self.purpose, self.places_count)
 
 class Place(models.Model):
-    cemetery = models.ForeignKey(Cemetery, verbose_name=_(u"Кладбище"))
+    cemetery = models.ForeignKey(Cemetery, verbose_name=_(u"Кладбище"), on_delete=models.PROTECT)
     area = models.ForeignKey(Area, verbose_name=_(u"Участок"), blank=True, null=True)
     row = models.CharField(_(u"Ряд"), max_length=255, blank=True, null=True)
     place = models.CharField(_(u"Место"), max_length=255, blank=True, null=True)
-    responsible = models.ForeignKey('persons.AlivePerson', verbose_name=_(u"Ответственный"), blank=True, null=True)
+    responsible = models.ForeignKey('persons.AlivePerson', verbose_name=_(u"Ответственный"), blank=True, null=True,
+                                    on_delete=models.PROTECT)
 
     class Meta:
         verbose_name = _(u"Место")
@@ -108,10 +111,18 @@ class Burial(models.Model):
         ('urn', _(u'Урна')),
     )
 
-    burial_type = models.CharField(_(u"Тип захоронения"), max_length=255, null=True, blank=True, choices=BURIAL_TYPES)
+    SOURCE_FULL = 'full'
+    SOURCE_UGH = 'ugh'
+    SOURCE_TYPES = (
+        (SOURCE_FULL, _(u"Полная")),
+        (SOURCE_UGH, _(u"Только УГХ")),
+    )
 
-    place = models.ForeignKey(Place, verbose_name=_(u"Место"), null=True, blank=True)
-    cemetery = models.ForeignKey(Cemetery, verbose_name=_(u"Кладбище"), null=True, blank=True)
+    burial_type = models.CharField(_(u"Тип захоронения"), max_length=255, null=True, blank=True, choices=BURIAL_TYPES)
+    source_type = models.CharField(_(u"Источник"), max_length=255, null=True, editable=False, choices=SOURCE_TYPES)
+
+    place = models.ForeignKey(Place, verbose_name=_(u"Место"), null=True, blank=True, on_delete=models.PROTECT)
+    cemetery = models.ForeignKey(Cemetery, verbose_name=_(u"Кладбище"), null=True, blank=True, on_delete=models.PROTECT)
     area = models.ForeignKey(Area, verbose_name=_(u"Участок"), blank=True, null=True)
     row = models.CharField(_(u"Ряд"), max_length=255, blank=True, null=True)
     place_number = models.CharField(_(u"Номер места"), max_length=255, null=True, blank=True)
@@ -123,14 +134,18 @@ class Burial(models.Model):
 
     deadman = models.ForeignKey(DeadPerson, verbose_name=_(u"Усопший"), null=True, editable=False)
 
-    creator = models.ForeignKey('auth.User', verbose_name=_(u"Владелец"), editable=False, null=True)
+    creator = models.ForeignKey('auth.User', verbose_name=_(u"Владелец"), editable=False, null=True,
+                                on_delete=models.PROTECT)
     created = models.DateTimeField(_(u"Создано"), auto_now_add=True)
-    loru = models.ForeignKey(Org, verbose_name=_(u"ЛОРУ"), null=True, blank=True, limit_choices_to={'type': Org.PROFILE_LORU})
-    agent = models.ForeignKey(Profile, verbose_name=_(u"Агент"), null=True, blank=True)
+    loru = models.ForeignKey(Org, verbose_name=_(u"ЛОРУ"), null=True, blank=True,
+                             limit_choices_to={'type': Org.PROFILE_LORU}, on_delete=models.PROTECT)
+    agent = models.ForeignKey(Profile, verbose_name=_(u"Агент"), null=True, blank=True,
+                              limit_choices_to={'is_agent': True}, on_delete=models.PROTECT)
 
     status = models.CharField(_(u"Статус"), max_length=255, choices=STATUS_CHOICES, default=STATUS_DRAFT, editable=False)
     changed = models.DateTimeField(_(u"Изменено"), editable=False, null=True)
-    changed_by = models.ForeignKey('auth.User', editable=False, null=True, related_name='changed_requests')
+    changed_by = models.ForeignKey('auth.User', editable=False, null=True, related_name='changed_requests',
+                                   on_delete=models.PROTECT)
 
     class Meta:
         verbose_name = _(u"Заявка на захоронение")
@@ -162,6 +177,18 @@ class Burial(models.Model):
 
     def is_finished(self):
         return self.is_closed() or self.is_annulated()
+
+    def is_ugh_only(self):
+        return self.source_type == self.SOURCE_UGH
+
+    def is_full(self):
+        return self.source_type == self.SOURCE_FULL
+
+    def can_back(self):
+        return self.is_full() and not self.is_edit() and not self.is_finished()
+
+    def can_decline(self):
+        return self.is_full() and self.is_ready() and not self.is_finished()
 
     @property
     def status_str(self):
@@ -213,7 +240,7 @@ class Burial(models.Model):
         place.save()
         self.place = place
         self.save()
-        return self.burial
+        return self
 
     def __unicode__(self):
         return u'%s' % self.pk

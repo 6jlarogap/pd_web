@@ -11,7 +11,7 @@ from django.db.models.query_utils import Q
 class BurialCreateForm(forms.ModelForm):
     class Meta:
         model = Burial
-        exclude = ['loru', 'responsible']
+        exclude = ['place', 'deadman', 'responsible', 'loru', 'agent', 'fact_date']
 
     def __init__(self, request, *args, **kwargs):
         super(BurialCreateForm, self).__init__(*args, **kwargs)
@@ -79,7 +79,7 @@ class BurialSearchForm(forms.Form):
 class BurialForm(forms.ModelForm):
     class Meta:
         model = Burial
-        exclude = ['place', 'deadman', 'responsible', ]
+        exclude = ['place', 'deadman', 'responsible', 'plan_date', 'plan_time', ]
 
 
 class PlaceForm(forms.ModelForm):

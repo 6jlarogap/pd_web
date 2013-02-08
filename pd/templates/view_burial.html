@@ -5,12 +5,7 @@
 {% block content %}
     <h1>{% trans "Захоронение" %} {{ b.pk }}</h1>
     <dl>
-        <dt>{% trans "ЛОРУ" %}:</dt><dd><a href="">{{ b.burialrequest.loru_name }}</a></dd>
-
-        {% if b.burialrequest %}
-            <dt>{% trans "Заявка" %}:</dt>
-            <dd><a href="{% url view_request b.burialrequest.pk %}">{% trans "просмотр" %}</a></dd>
-        {% endif %}
+        <dt>{% trans "ЛОРУ" %}:</dt><dd><a href="">{{ b.loru_name }}</a></dd>
 
         <dt>{% trans "Усопший" %}:</dt>
         <dd>
