@@ -64,12 +64,6 @@ class BasePerson(models.Model):
         fio = u"%s %s %s" % (self.last_name, self.first_name, self.middle_name)
         return fio.strip() or _(u"Неизвестный")
 
-    def save(self, *args, **kwargs):
-        self.first_name = self.first_name.capitalize().strip(' ').strip('*')
-        self.last_name = self.last_name.capitalize().strip(' ').strip('*')
-        self.middle_name = self.middle_name.capitalize().strip(' ').strip('*')
-        super(BasePerson, self).save(*args, **kwargs)
-
     class Meta:
         ordering = ['last_name', 'first_name', 'middle_name', ]
         verbose_name = _(u"физ. лицо")
@@ -86,6 +80,12 @@ class DeadPerson(BasePerson):
     death_date = models.DateField(_(u"Дата смерти"), blank=True, null=True)
     death_date_no_month = models.BooleanField(default=False, editable=False)
     death_date_no_day = models.BooleanField(default=False, editable=False)
+
+    def save(self, *args, **kwargs):
+        self.first_name = self.first_name.capitalize().strip(' ').strip('*')
+        self.last_name = self.last_name.capitalize().strip(' ').strip('*')
+        self.middle_name = self.middle_name.capitalize().strip(' ').strip('*')
+        super(DeadPerson, self).save(*args, **kwargs)
 
     def get_birth_date(self):
         if not self.birth_date:
@@ -135,6 +135,12 @@ class AlivePerson(BasePerson):
     Живое ФЛ с телефоном
     """
     phones = models.TextField(_(u"Телефоны"), blank=True, null=True)
+
+    def save(self, *args, **kwargs):
+        self.first_name = self.first_name.capitalize().strip(' ').strip('*')
+        self.last_name = self.last_name.capitalize().strip(' ').strip('*')
+        self.middle_name = self.middle_name.capitalize().strip(' ').strip('*')
+        super(AlivePerson, self).save(*args, **kwargs)
 
 class DocumentSource(models.Model):
     name = models.CharField(_(u"Наименование органа"), max_length=255, unique=True)
