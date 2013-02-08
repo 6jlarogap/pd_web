@@ -134,7 +134,7 @@ class Burial(models.Model):
 
     deadman = models.ForeignKey(DeadPerson, verbose_name=_(u"Усопший"), null=True, editable=False)
 
-    creator = models.ForeignKey('auth.User', verbose_name=_(u"Владелец"), editable=False, null=True,
+    creator = models.ForeignKey('auth.User', verbose_name=_(u"Cоздатель"), editable=False, null=True,
                                 on_delete=models.PROTECT)
     created = models.DateTimeField(_(u"Создано"), auto_now_add=True)
     loru = models.ForeignKey(Org, verbose_name=_(u"ЛОРУ"), null=True, blank=True,
