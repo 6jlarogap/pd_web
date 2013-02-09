@@ -31,7 +31,12 @@
         </div>
         {% block buttons %}
             <p>
-                <input type="submit" class="btn" value="{% trans "Создать захоронение" %}"/>
+                <input type="submit" class="btn btn-primary" value="{% trans "Сохранить" %}"/>
+                {% if b.is_ugh_only %}
+                    <input type="submit" class="btn" name="approve" value="{% trans "Сохранить и согласовать" %}"/>
+                {% else %}
+                    <input type="submit" class="btn" name="ready" value="{% trans "Сохранить и отправить на согласование" %}"/>
+                {% endif %}
             </p>
         {% endblock buttons %}
     </form>

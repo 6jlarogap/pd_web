@@ -184,6 +184,9 @@ class Burial(models.Model):
     def is_full(self):
         return self.source_type == self.SOURCE_FULL
 
+    def is_ready_to_approve(self):
+        return self.is_full() and self.is_ready() or self.is_draft()
+
     def can_back(self):
         return self.is_full() and not self.is_edit() and not self.is_finished()
 
