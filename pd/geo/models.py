@@ -119,6 +119,8 @@ class Location(models.Model):
             addr += u', %s' % (self.region or self.street and self.street.city.region or '')
             addr += u', %s' % (self.country or self.street and self.street.city.region.country or '')
             return addr.replace(', ,', ', ')
+        elif self.fias_parents.all():
+            return u", ".join(map(unicode, self.fias_parents.all()))
         else:
             return _(u"незаполненный адрес")
 
@@ -127,6 +129,9 @@ class LocationFIAS(models.Model):
     guid = models.CharField(max_length=255, db_index=True)
     name = models.CharField(max_length=255)
     level = models.PositiveSmallIntegerField(db_index=True)
+
+    class Meta:
+        ordering = 'level'
 
 class DFiasAddrobj(models.Model):
     """

@@ -39,7 +39,7 @@ class LocationForm(forms.ModelForm):
                 if self.instance.street:
                     self.initial['street_name'] = self.instance.street.name
             else:
-                for i, fias_link in enumerate(self.instance.fias_parents.all().order_by('level')):
+                for i, fias_link in enumerate(self.instance.fias_parents.all()):
                     self.initial['fias_%s' % (i+1)] = fias_link.guid
 
             for i in range(1, 7):
