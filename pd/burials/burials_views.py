@@ -275,12 +275,12 @@ class CreateBurial(TemplateView):
                     old_value = form.initial.get(f) or (form.instance and getattr(form.instance, f, None))
                     new_value = form.cleaned_data.get(f)
                     old_value = old_value or ''
-                    new_value = new_value or ''
                     try:
                         new_value = new_value.pk
                     except AttributeError:
                         pass
-                    if new_value != old_value:
+                    new_value = new_value or ''
+                    if new_value != old_value and unicode(new_value) != unicode(old_value):
                         changed_data.append((form.fields[f].label, old_value, new_value))
 
             burial = burial_form.save(commit=False)
@@ -336,11 +336,10 @@ class CreateBurial(TemplateView):
 
             burial.save()
 
-            changed_data_str = u''
             if changed_data:
                 changed_data_str = u'\n'.join([u'%s: %s -> %s' % cd for cd in changed_data])
 
-                write_log(self.request, burial, _(u'Заявка сохранена') + changed_data_str)
+                write_log(self.request, burial, _(u'Заявка сохранена') + u'\n' + changed_data_str)
 
             msg = _(u"<a href='%s'>Заявка %s</a> сохранена") % (
                 reverse('view_burial', args=[burial.pk]),
