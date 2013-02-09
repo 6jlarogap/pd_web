@@ -280,7 +280,7 @@ class CreateBurial(TemplateView):
                     except AttributeError:
                         pass
                     new_value = new_value or ''
-                    if new_value != old_value and unicode(new_value) != unicode(old_value):
+                    if new_value != old_value and unicode(new_value) != unicode(old_value) and (new_value or old_value):
                         changed_data.append((form.fields[f].label, old_value, new_value))
 
             burial = burial_form.save(commit=False)
