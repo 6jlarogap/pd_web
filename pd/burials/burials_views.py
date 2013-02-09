@@ -266,7 +266,17 @@ class CreateBurial(TemplateView):
         responsible_address_form = self.get_responsible_address_form()
         responsible_id_form = self.get_responsible_id_form()
 
-        if burial_form.is_valid() and deadman_form.is_valid() and deadman_dc_form.is_valid():
+        forms = [burial_form, deadman_form, deadman_address_form, deadman_dc_form, responsible_form, responsible_address_form]
+
+        if all([f.is_valid() for f in forms]):
+            changed_data = []
+            for form in forms:
+                for f in form.fields:
+                    old_value = form.initial.get(f) or (form.instance and getattr(form.instance, f, None))
+                    new_value = form.cleaned_data.get(f)
+                    if new_value != old_value:
+                        changed_data.append((form.fields[f].label, old_value, new_value))
+
             burial = burial_form.save(commit=False)
 
             burial.changed = datetime.datetime.now()
@@ -320,7 +330,11 @@ class CreateBurial(TemplateView):
 
             burial.save()
 
-            write_log(self.request, burial, _(u'Заявка сохранена'))
+            changed_data_str = u''
+            if changed_data:
+                changed_data_str = u'\n'.join([u'%s: %s -> %s' % cd for cd in changed_data])
+
+            write_log(self.request, burial, _(u'Заявка сохранена') + changed_data_str)
             msg = _(u"<a href='%s'>Заявка %s</a> сохранена") % (
                 reverse('view_burial', args=[burial.pk]),
                 burial.pk,
