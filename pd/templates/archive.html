@@ -39,6 +39,11 @@
                     {% if user.profile.org == b.loru and b.is_edit %}
                         <a class="btn" href="{% url edit_burial b.pk %}">{% trans "правка" %}</a>
                     {% endif %}
+                    {% if b.is_edit and b.is_ugh_only %}
+                        {% if user.profile.org == b.cemetery.ugh or b.creator == user %}
+                            <a class="btn" href="{% url edit_burial b.pk %}">{% trans "правка" %}</a>
+                        {% endif %}
+                    {% endif %}
                 </td>
             </tr>
         {% endfor %}
