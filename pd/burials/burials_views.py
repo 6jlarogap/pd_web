@@ -275,6 +275,7 @@ class CreateBurial(TemplateView):
                     old_value = form.initial.get(f) or (form.instance and getattr(form.instance, f, None))
                     new_value = form.cleaned_data.get(f)
                     old_value = old_value or ''
+                    new_value = new_value or ''
                     try:
                         new_value = new_value.pk
                     except AttributeError:
