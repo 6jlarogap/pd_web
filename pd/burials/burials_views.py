@@ -339,7 +339,8 @@ class CreateBurial(TemplateView):
             if changed_data:
                 changed_data_str = u'\n'.join([u'%s: %s -> %s' % cd for cd in changed_data])
 
-            write_log(self.request, burial, _(u'Заявка сохранена') + changed_data_str)
+                write_log(self.request, burial, _(u'Заявка сохранена') + changed_data_str)
+
             msg = _(u"<a href='%s'>Заявка %s</a> сохранена") % (
                 reverse('view_burial', args=[burial.pk]),
                 burial.pk,
