@@ -11,6 +11,10 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': ':memory:',                      # Or path to database file if using sqlite3.
+    },
+    'fias': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': ':memory:',                      # Or path to database file if using sqlite3.
     }
 }
 

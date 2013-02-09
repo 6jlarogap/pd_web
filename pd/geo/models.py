@@ -122,6 +122,12 @@ class Location(models.Model):
         else:
             return _(u"незаполненный адрес")
 
+class LocationFIAS(models.Model):
+    loc = models.ForeignKey(Location, related_name='fias_parents')
+    guid = models.CharField(max_length=255, db_index=True)
+    name = models.CharField(max_length=255)
+    level = models.PositiveSmallIntegerField(db_index=True)
+
 class DFiasAddrobj(models.Model):
     """
     Импорт из ФИАС
@@ -143,3 +149,6 @@ class DFiasAddrobj(models.Model):
 
     class Meta:
         db_table = u'd_fias_addrobj'
+
+    def __unicode__(self):
+        return u'%s %s' % (self.offname, self.shortname)
