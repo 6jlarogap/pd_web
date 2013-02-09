@@ -34,7 +34,7 @@
     <form action="" method="POST">
         {% csrf_token %}
         {% if user.profile.is_loru and b.is_full %}
-            {% if b.is_edit and b.is_ugh_only %}
+            {% if b.is_edit %}
                 <input type="submit" class="btn" name="ready" value="{% trans "отправить на согласование" %}">
             {% elif b.can_back %}
                 {% if b.is_approved %}

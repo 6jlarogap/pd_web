@@ -309,7 +309,7 @@ class CreateBurial(TemplateView):
                     reverse('view_burial', args=[burial.pk]), burial.pk,
                 ))
 
-            if self.request.user.profile.is_loru() and burial.is_draft() and self.request.POST.get('ready'):
+            if self.request.user.profile.is_loru() and burial.is_edit() and self.request.POST.get('ready'):
                 burial.status = Burial.STATUS_READY
 
                 write_log(request, burial, _(u'Заявка отправлена на согласование'))
