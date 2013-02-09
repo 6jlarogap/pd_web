@@ -128,9 +128,9 @@ class Burial(models.Model):
     place_number = models.CharField(_(u"Номер места"), max_length=255, null=True, blank=True)
     responsible = models.ForeignKey('persons.AlivePerson', verbose_name=_(u"Ответственный"), blank=True, null=True)
 
-    fact_date = models.DateField(_(u"Факт. дата"), null=True, blank=True)
     plan_date = models.DateField(_(u"План. дата"), null=True, blank=True)
     plan_time = models.TimeField(_(u"План. время"), null=True, blank=True)
+    fact_date = models.DateField(_(u"Факт. дата"), null=True, blank=True)
 
     deadman = models.ForeignKey(DeadPerson, verbose_name=_(u"Усопший"), null=True, editable=False)
 

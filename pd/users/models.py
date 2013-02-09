@@ -17,6 +17,9 @@ class Profile(models.Model):
     def is_ugh(self):
         return self.org and self.org.type == Org.PROFILE_UGH
 
+    def can_create_burials(self):
+        return self.is_ugh() or self.is_loru()
+
 class Org(models.Model):
     PROFILE_ZAGS = 'zags'
     PROFILE_LORU = 'loru'

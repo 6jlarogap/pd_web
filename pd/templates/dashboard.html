@@ -29,7 +29,7 @@
                 <td>{{ b.processed_loru|default:"" }}</td>
                 <th>{{ b.status|default:"" }}</th>
                 <td>
-                    <a class="btn" href="{% url view_request b.pk %}">{% trans "просмотр" %}</a>
+                    <a class="btn" href="{% url view_burial b.pk %}">{% trans "просмотр" %}</a>
                 </td>
             </tr>
         {% endfor %}
@@ -37,7 +37,7 @@
 
     {% if user.profile.is_loru %}
         <p>
-            <a class="btn" href="{% url create_request %}">{% trans "создать заявку" %}</a>
+            <a class="btn" href="{% url create_burial %}">{% trans "создать заявку" %}</a>
         </p>
     {% endif %}
 {% endblock %}

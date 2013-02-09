@@ -1,6 +1,6 @@
 # coding=utf-8
 import datetime
-from burials.forms import BurialCreateForm, CemeteryForm, AreaFormset, BurialSearchForm, BurialForm, PlaceForm
+from burials.forms import CemeteryForm, AreaFormset, BurialSearchForm, BurialForm, PlaceForm
 from django.contrib import messages
 from django.core.urlresolvers import reverse
 from django.db.models.query_utils import Q
@@ -57,12 +57,9 @@ class ArchiveMixin(BurialsListGenericMixin):
     def get_qs_filter(self):
         qs = Q(pk__isnull=True)
         if self.request.user.is_authenticated():
-            if self.request.user.profile.is_loru():
-                qs = Q(loru=self.request.user.profile.org)
-            if self.request.user.profile.is_ugh():
-                qs = Q(
-                    Q(cemetery__ugh=self.request.user.profile.org) | Q(creator=self.request.user),
-                )
+            qs = Q(loru=self.request.user.profile.org) | \
+                 Q(cemetery__ugh=self.request.user.profile.org) | \
+                 Q(creator=self.request.user)
         return qs
 
 class ArchiveView(ArchiveMixin, TemplateView):
@@ -74,8 +71,8 @@ class ArchiveView(ArchiveMixin, TemplateView):
 
 archive = ArchiveView.as_view()
 
-class RequestView(ArchiveMixin, DetailView):
-    template_name = 'view_request.html'
+class BurialView(ArchiveMixin, DetailView):
+    template_name = 'view_burial.html'
     context_object_name = 'b'
 
     def get_queryset(self):
@@ -144,103 +141,9 @@ class RequestView(ArchiveMixin, DetailView):
             'reason_typical_back': Reason.objects.filter(reason_type=Reason.TYPE_BACK),
             'reason_typical_decline': Reason.objects.filter(reason_type=Reason.TYPE_DECLINE),
             'reason_typical_annulate': Reason.objects.filter(reason_type=Reason.TYPE_ANNULATE),
-            }
-
-view_request = RequestView.as_view()
-
-class BurialView(DetailView):
-    template_name = 'view_burial.html'
-    context_object_name = 'b'
-    model = Burial
+        }
 
 view_burial = BurialView.as_view()
-
-class CreateRequestView(CreateView):
-    template_name = 'create_request.html'
-    form_class = BurialCreateForm
-
-    def dispatch(self, request, *args, **kwargs):
-        self.request = request
-        if not request.user.is_authenticated() or not self.request.user.profile.is_loru():
-            return redirect('/')
-        return super(CreateRequestView, self).dispatch(request, *args, **kwargs)
-
-    def get_form_kwargs(self, *args, **kwargs):
-        data = super(CreateRequestView, self).get_form_kwargs(*args, **kwargs)
-        data.update({'request': self.request})
-        return data
-
-    def form_valid(self, form):
-        self.object = form.save(commit=False)
-        self.object.creator = self.request.user
-        self.object.changed = datetime.datetime.now()
-        self.object.changed_by = self.request.user
-        self.object.loru = self.request.user.profile.org
-        self.object.source_type = Burial.SOURCE_FULL
-        self.object.save()
-        messages.success(self.request, _(u"Черновик сохранен"))
-        write_log(self.request, self.object, _(u'Создана заявка'))
-        return redirect('edit_request', self.object.pk)
-
-create_request = CreateRequestView.as_view()
-
-class EditRequestView(UpdateView):
-    template_name = 'edit_request.html'
-    form_class = BurialCreateForm
-
-    def get_queryset(self):
-        q = Q(status=Burial.STATUS_DRAFT) | \
-            Q(status=Burial.STATUS_DECLINED) | \
-            Q(status=Burial.STATUS_BACKED)
-        if self.request.user.profile.is_loru():
-            q2 = Q(source_type=Burial.SOURCE_FULL, loru=self.request.user.profile.org)
-        elif self.request.user.profile.is_ugh():
-            q2 = Q(source_type=Burial.SOURCE_UGH, creator=self.request.user)
-        else:
-            return Burial.objects.none()
-        return Burial.objects.filter(q, q2)
-
-    def dispatch(self, request, *args, **kwargs):
-        self.request = request
-        if not request.user.is_authenticated() or not self.request.user.profile.is_loru():
-            return redirect('/')
-        return super(EditRequestView, self).dispatch(request, *args, **kwargs)
-
-    def get_form_kwargs(self, *args, **kwargs):
-        data = super(EditRequestView, self).get_form_kwargs(*args, **kwargs)
-        data.update({'request': self.request})
-        return data
-
-    def form_valid(self, form):
-        changed_fields = []
-        b = self.get_object()
-        for f in form.changed_data:
-            old_value = getattr(b, f, None)
-            new_value = form.cleaned_data[f]
-            if new_value != old_value:
-                changed_fields.append([form.fields[f].label, old_value, new_value])
-
-        if changed_fields:
-            changed_fields_str = u'\n' + u'\n'.join([u"%s: %s -> %s" % tuple(cf) for cf in changed_fields])
-        else:
-            changed_fields_str = u''
-
-        self.object = form.save(commit=False)
-        if self.request.REQUEST.get('ready'):
-            self.object.status = Burial.STATUS_READY
-            self.object.changed = datetime.datetime.now()
-            self.object.changed_by = self.request.user
-            messages.success(self.request, _(u"Заявка сохранена и отправлена на согласование в УГХ"))
-        else:
-            messages.success(self.request, _(u"Черновик сохранен"))
-        self.object.save()
-        if changed_fields_str:
-            write_log(self.request, self.object, _(u'Изменена заявка %s') % changed_fields_str, code='edit_request')
-        if self.request.REQUEST.get('ready'):
-            write_log(self.request, self.object, _(u'Заявка отправлена на согласование'))
-        return redirect('dashboard')
-
-edit_request = EditRequestView.as_view()
 
 class UGHRequiredMixin:
     def dispatch(self, request, *args, **kwargs):
@@ -318,7 +221,12 @@ class BurialsListView(ListView):
     context_object_name = 'burials'
 
     def get_queryset(self):
-        burials = Burial.objects.filter(status=Burial.STATUS_CLOSED).order_by('-pk')
+        burials = Burial.objects.filter(
+            Q(loru=self.request.user.profile.org) |
+            Q(cemetery__ugh=self.request.user.profile.org) |
+            Q(creator=self.request.user),
+            status=Burial.STATUS_CLOSED,
+        ).order_by('-pk')
         form = self.get_form()
         if form.data and form.is_valid():
             if form.cleaned_data['operation']:
@@ -395,7 +303,7 @@ class CreateBurial(TemplateView):
         }
 
     def get_burial_form(self):
-        return BurialForm(data=self.request.POST or None)
+        return BurialForm(data=self.request.POST or None, request=self.request)
 
     def get_deadman_form(self):
         return DeadPersonForm(data=self.request.POST or None, prefix='deadman')
@@ -416,11 +324,11 @@ class CreateBurial(TemplateView):
         return PersonIDForm(data=self.request.POST or None, prefix='responsible-personid')
     
     def dispatch(self, request, *args, **kwargs):
-        if not request.user.is_authenticated() or not request.user.profile.is_ugh():
+        if not request.user.is_authenticated() or (not request.user.profile.can_create_burials()):
             messages.error(request, _(u"У Вас нет прав создавать захоронения вручную"))
             return redirect('/')
         return super(CreateBurial, self).dispatch(request, *args, **kwargs)
-    
+
     def post(self, request, *args, **kwargs):
         self.request = request
 
@@ -435,10 +343,16 @@ class CreateBurial(TemplateView):
         if burial_form.is_valid() and deadman_form.is_valid() and deadman_dc_form.is_valid():
             burial = burial_form.save(commit=False)
 
-            burial.creator = request.user
             burial.changed = datetime.datetime.now()
             burial.changed_by = request.user
-            burial.source_type = Burial.SOURCE_UGH
+
+            if not burial.pk:
+                burial.creator = request.user
+                if self.request.user.profile.is_loru():
+                    burial.loru = self.request.user.profile.org
+                    burial.source_type = Burial.SOURCE_FULL
+                else:
+                    burial.source_type = Burial.SOURCE_UGH
 
             deadman = deadman_form.save(commit=False)
             if deadman_address_form.is_valid():
@@ -463,16 +377,66 @@ class CreateBurial(TemplateView):
 
             burial.save()
 
-            write_log(self.request, burial, _(u'Захоронение создано вручную'))
-            msg = _(u"<a href='%s'>Захоронение %s</a> создано вручную") % (
-                reverse('view_request', args=[burial.pk]),
-                burial.pk,
-            )
-            messages.success(self.request, msg)
+            if self.request.user.profile.is_loru():
+                write_log(self.request, burial, _(u'Создана заявка'))
+                messages.success(self.request, _(u"Черновик сохранен"))
+            else:
+                write_log(self.request, burial, _(u'Захоронение создано вручную'))
+                msg = _(u"<a href='%s'>Захоронение %s</a> создано вручную") % (
+                    reverse('view_request', args=[burial.pk]),
+                    burial.pk,
+                )
+                messages.success(self.request, msg)
 
-            return redirect('view_request', burial.pk)
+            return redirect('view_burial', burial.pk)
 
         return self.get(request, *args, **kwargs)
 
 create_burial = CreateBurial.as_view()
+
+class EditBurialView(CreateBurial):
+    template_name = 'edit_burial.html'
+    form_class = BurialForm
+
+    def get_queryset(self):
+        q = Q(status=Burial.STATUS_DRAFT) | \
+            Q(status=Burial.STATUS_DECLINED) | \
+            Q(status=Burial.STATUS_BACKED)
+        if self.request.user.profile.is_loru():
+            q2 = Q(source_type=Burial.SOURCE_FULL, loru=self.request.user.profile.org)
+        elif self.request.user.profile.is_ugh():
+            q2 = Q(source_type=Burial.SOURCE_UGH, creator=self.request.user)
+        else:
+            return Burial.objects.none()
+        return Burial.objects.filter(q, q2)
+
+    def get_object(self):
+        return self.get_queryset().get(pk=self.kwargs['pk'])
+
+    def get_burial_form(self):
+        return BurialForm(data=self.request.POST or None, request=self.request, instance=self.get_object())
+
+    def get_deadman_form(self):
+        return DeadPersonForm(data=self.request.POST or None, prefix='deadman', instance=self.get_object().deadman)
+
+    def get_deadman_address_form(self):
+        addr = self.get_object().deadman and self.get_object().deadman.address
+        return LocationForm(data=self.request.POST or None, prefix='deadman-address', instance=addr)
+
+    def get_deadman_dc_form(self):
+        dc = self.get_object().deadman and self.get_object().deadman.deathcertificate
+        return DeathCertificateForm(data=self.request.POST or None, prefix='deadman-dc', instance=dc)
+
+    def get_responsible_form(self):
+        return AlivePersonForm(data=self.request.POST or None, prefix='responsible', instance=self.get_object().responsible)
+
+    def get_responsible_address_form(self):
+        addr = self.get_object().responsible and self.get_object().responsible.address
+        return LocationForm(data=self.request.POST or None, prefix='responsible-address', instance=addr)
+
+    def get_responsible_id_form(self):
+        pid = self.get_object().responsible and self.get_object().responsible.personid
+        return PersonIDForm(data=self.request.POST or None, prefix='responsible-personid', instance=pid)
+
+edit_burial = EditBurialView.as_view()
 

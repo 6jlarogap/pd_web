@@ -1,0 +1,11 @@
+{% extends "create_burial.html" %}
+
+{% load i18n %}
+
+{% block form_title %}<h1>{% trans "Заявка" %} {{ burial.pk }}</h1>{% endblock form_title %}
+
+{% block buttons %}
+    <p>
+        <input type="submit" class="btn" value="{% trans "Сохранить" %}"/>
+    </p>
+{% endblock buttons %}
