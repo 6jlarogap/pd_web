@@ -7,7 +7,7 @@ urlpatterns = patterns('burials.views',
     url(r'^$', 'dashboard', name='dashboard'),
     url(r'^burials/archive/$', 'archive', name='archive'),
     url(r'^burials/create/$', 'create_burial', name='create_burial'),
-    url(r'^burials/view/(?P<pk>\d+)/$', 'view_burial', name='view_burial'),
+    url(r'^burials/(?P<pk>\d+)/$', 'view_burial', name='view_burial'),
     url(r'^burials/edit/(?P<pk>\d+)/$', 'edit_burial', name='edit_burial'),
     url(r'^burials/$', 'burial_list', name='burial_list'),
 

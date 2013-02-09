@@ -4,6 +4,7 @@ import datetime
 from django.contrib import messages
 from django.core.urlresolvers import reverse
 from django.db.models.query_utils import Q
+from django.http import Http404
 from django.shortcuts import redirect
 from django.views.generic.base import TemplateView
 from django.utils.translation import ugettext_lazy as _
@@ -57,8 +58,7 @@ class ArchiveMixin(BurialsListGenericMixin):
     def get_qs_filter(self):
         qs = Q(pk__isnull=True)
         if self.request.user.is_authenticated():
-            qs = Q(loru=self.request.user.profile.org) | \
-                 Q(cemetery__ugh=self.request.user.profile.org) | \
+            qs = Q(loru=self.request.user.profile.org) | Q(cemetery__ugh=self.request.user.profile.org) | \
                  Q(creator=self.request.user)
         return qs
 
@@ -93,7 +93,7 @@ class BurialView(ArchiveMixin, DetailView):
             messages.success(request, _(u"<a href='%s'>Заявка %s</a> отозвана") % (
                 reverse('view_burial', args=[b.pk]), b.pk,
             ))
-        if request.POST.get('ready') and request.user == b.creator and b.is_edit() and b.is_ugh_only():
+        if request.POST.get('ready') and request.user == b.creator and b.is_edit() and b.is_full():
             b.status = Burial.STATUS_READY
             write_log(request, b, _(u'Заявка отправлена на согласование'))
             msg = _(u"<a href='%s'>Заявка %s</a> отправлена на согласование") % (
@@ -151,12 +151,15 @@ class BurialsListView(ListView):
     context_object_name = 'burials'
 
     def get_queryset(self):
-        burials = Burial.objects.filter(
-            Q(loru=self.request.user.profile.org) |
-            Q(cemetery__ugh=self.request.user.profile.org) |
-            Q(creator=self.request.user),
-            status=Burial.STATUS_CLOSED,
-        ).order_by('-pk')
+        if self.request.user.is_authenticated():
+            burials = Burial.objects.filter(
+                Q(loru=self.request.user.profile.org) |
+                Q(cemetery__ugh=self.request.user.profile.org) |
+                Q(creator=self.request.user),
+                status=Burial.STATUS_CLOSED,
+            ).order_by('-pk')
+        else:
+            burials = Burial.objects.none()
         form = self.get_form()
         if form.data and form.is_valid():
             if form.cleaned_data['operation']:
@@ -245,7 +248,7 @@ class CreateBurial(TemplateView):
 
     def get_responsible_id_form(self):
         return PersonIDForm(data=self.request.POST or None, prefix='responsible-personid')
-    
+
     def dispatch(self, request, *args, **kwargs):
         if not request.user.is_authenticated() or (not request.user.profile.can_create_burials()):
             messages.error(request, _(u"У Вас нет прав создавать захоронения вручную"))
@@ -338,16 +341,21 @@ class EditBurialView(CreateBurial):
         q = Q(status=Burial.STATUS_DRAFT) | \
             Q(status=Burial.STATUS_DECLINED) | \
             Q(status=Burial.STATUS_BACKED)
+
         if self.request.user.profile.is_loru():
             q2 = Q(source_type=Burial.SOURCE_FULL, loru=self.request.user.profile.org)
         elif self.request.user.profile.is_ugh():
             q2 = Q(source_type=Burial.SOURCE_UGH, creator=self.request.user)
         else:
             return Burial.objects.none()
+
         return Burial.objects.filter(q, q2)
 
     def get_object(self):
-        return self.get_queryset().get(pk=self.kwargs['pk'])
+        try:
+            return self.get_queryset().get(pk=self.kwargs['pk'])
+        except Burial.DoesNotExist:
+            raise Http404
 
     def get_burial_form(self):
         return BurialForm(data=self.request.POST or None, request=self.request, instance=self.get_object())

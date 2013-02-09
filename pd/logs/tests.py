@@ -3,6 +3,7 @@ from django.contrib.auth.models import User
 from django.test import TestCase, Client
 from django.utils.translation import activate
 from logs.models import write_log, Log
+from persons.models import IDDocumentType
 from users.models import Profile, Org
 
 
@@ -15,6 +16,8 @@ class LogsTest(TestCase):
         self.client = Client()
         self.client.login(username='ugh', password='test')
         self.cemetery = Cemetery.objects.create(name='test cem', time_begin='12:00', time_end='17:00')
+        self.zags = Org.objects.create(name='name', type=Org.PROFILE_ZAGS)
+        self.doc_type = IDDocumentType.objects.create(name='Passport')
 
     def test_basic(self):
         r = self.client.get('/?show=1')
@@ -31,7 +34,11 @@ class LogsTest(TestCase):
     def test_create_request(self):
         self.assertEqual(Log.objects.all().count(), 0)
 
-        r = self.client.post('/requests/create/', {'cemetery': self.cemetery.pk, 'plan_date': '12.12.2013', 'plan_time': '12:00'})
+        r = self.client.post('/burials/create/', {
+            'cemetery': self.cemetery.pk, 'plan_date': '12.12.2013', 'plan_time': '12:00',
+            'deadman-dc-zags': self.zags.pk, 'responsible-personid-number': '11', 'responsible-personid-series': '11',
+            'responsible-personid-id_type': self.doc_type.pk,
+        })
         self.assertEqual(r.status_code, 302)
         self.assertEqual(Log.objects.all().count(), 1)
 
