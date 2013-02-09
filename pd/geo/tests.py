@@ -28,20 +28,41 @@ class TestLocationForm(TestCase):
 
     def test_fias(self):
         fias_data = dict(
-            aolevel=1,
-            aoguid='',
-            citycode='',
+            aoid='',
+            formalname='',
+            regioncode='',
+            autocode='',
             areacode='',
+            citycode='',
             ctarcode='',
             placecode='',
             streetcode='',
             extrcode='',
             sextcode='',
-            formalname='',
             offname='',
+            postalcode='',
+            ifnsfl='',
+            terrifnsfl='',
+            ifnsul='',
+            terrifnsul='',
+            okato='',
+            oktmo='',
+            updatedate=datetime.date.today(),
             shortname='',
+            aolevel='',
             parentguid='',
-            enddate=datetime.date.today()
+            aoguid='',
+            previd='',
+            nextid='',
+            code='',
+            plaincode='',
+            actstatus=1,
+            centstatus=1,
+            operstatus=1,
+            currstatus=1,
+            startdate=datetime.date.today(),
+            enddate=datetime.date.today(),
+            normdoc='',
         )
         fias_data.update(aolevel=1, aoguid='c2deb16a-0330-4f05-821f-1d09c93331e6', offname=u'СПб', shortname=u'г')
         DFiasAddrobj.objects.using('fias').create(**fias_data)
@@ -64,6 +85,11 @@ class TestLocationForm(TestCase):
 
         self.assertEqual(Location.objects.all().count(), 1)
         self.assertEqual(LocationFIAS.objects.all().count(), 2)
+
+        data.update(
+            fias_1=DFiasAddrobj.objects.using('fias').get(pk=data['fias_1']),
+            fias_2=DFiasAddrobj.objects.using('fias').get(pk=data['fias_2']),
+        )
 
         f = LocationForm(instance=Location.objects.get())
         self.assertDictContainsSubset(data, f.initial)

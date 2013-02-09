@@ -34,26 +34,28 @@ class LocationForm(forms.ModelForm):
         if self.instance:
             if self.instance.country:
                 self.initial['country_name'] = self.instance.country.name
-            if self.instance.region:
-                self.initial['region_name'] = self.instance.region.name
-                if self.instance.city:
-                    self.initial['city_name'] = self.instance.city.name
-                if self.instance.street:
-                    self.initial['street_name'] = self.instance.street.name
-            else:
-                for i, fias_link in enumerate(self.instance.fias_parents.all()):
-                    self.initial['fias_%s' % (i+1)] = fias_link.guid
+
+                if self.instance.region:
+                    self.initial['region_name'] = self.instance.region.name
+                    if self.instance.city:
+                        self.initial['city_name'] = self.instance.city.name
+                    if self.instance.street:
+                        self.initial['street_name'] = self.instance.street.name
+                else:
+                    for i, fias_link in enumerate(self.instance.fias_parents.all()):
+                        self.initial['fias_%s' % (i+1)] = FIAS_QS.get(aoguid=fias_link.guid)
 
             for i in range(1, 7):
                 prefix = self.prefix and '%s-' % self.prefix or ''
-                data = self.data.get('%sfias_%s' % (prefix, i)) or self.initial.get('fias_%s' % i)
+                init = self.initial.get('fias_%s' % i)
+                data = self.data.get('%sfias_%s' % (prefix, i)) or (init and init.aoguid)
                 if data:
                     try:
                         parent = FIAS_QS.get(aoguid=data)
                     except DFiasAddrobj.DoesNotExist:
                         break
                     else:
-                        qs = FIAS_QS.filter(aolevel=i+1, parentguid=parent.aoguid).order_by('offname')
+                        qs = FIAS_QS.filter(parentguid=parent.aoguid).order_by('offname')
                         self.fields['fias_%s' % (i+1)].queryset = qs
 
     def is_valid(self):

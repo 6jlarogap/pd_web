@@ -145,7 +145,7 @@ class DFiasAddrobj(models.Model):
     """
     Импорт из ФИАС
     """
-    aoid = models.CharField(max_length=108, primary_key=True)
+    aoid = models.CharField(max_length=108)
     formalname = models.CharField(max_length=360)
     regioncode = models.CharField(max_length=6)
     autocode = models.CharField(max_length=3)
@@ -168,7 +168,7 @@ class DFiasAddrobj(models.Model):
     shortname = models.CharField(max_length=30)
     aolevel = models.IntegerField()
     parentguid = models.CharField(max_length=108)
-    aoguid = models.CharField(max_length=108)
+    aoguid = models.CharField(max_length=108, primary_key=True)
     previd = models.CharField(max_length=108)
     nextid = models.CharField(max_length=108)
     code = models.CharField(max_length=51)

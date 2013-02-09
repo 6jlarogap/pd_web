@@ -31,6 +31,12 @@ function setup_address_autocompletes() {
         form.prepend('<p class="instance_alert alert">Очистите поля ФИО для нового поиска</p>')
     });
 
+    $('select[name*=fias_]').each(function() {
+        if (!$(this).children('option[value!=""]').length) {
+            $(this).closest('p').hide();
+        }
+    });
+
     $('input[name$=country_name]').attr('autocomplete', 'off').typeahead({
         items: 100,
         source: function (typeahead, query) {
