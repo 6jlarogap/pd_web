@@ -131,7 +131,7 @@ class LocationFIAS(models.Model):
     level = models.PositiveSmallIntegerField(db_index=True)
 
     class Meta:
-        ordering = 'level'
+        ordering = ['level', ]
 
 class DFiasAddrobj(models.Model):
     """
