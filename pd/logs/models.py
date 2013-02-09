@@ -13,7 +13,7 @@ class Log(models.Model):
     obj_id = models.PositiveIntegerField(null=True, editable=False, verbose_name=_(u"ID объекта"))
     obj = generic.GenericForeignKey(ct_field='ct', fk_field='obj_id')
     dt = models.DateTimeField(auto_now_add=True, verbose_name=_(u"Время"))
-    msg = models.CharField(max_length=255, editable=False, verbose_name=_(u"Описание"))
+    msg = models.TextField(editable=False, verbose_name=_(u"Описание"))
     code = models.CharField(max_length=255, default='', editable=False, verbose_name=_(u"Спец. код"))
 
 def write_log(request, obj=None, msg='', reason=None, code=None):
