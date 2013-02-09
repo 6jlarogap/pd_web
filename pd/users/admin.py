@@ -4,7 +4,7 @@ from users.models import Profile, Org, ProfileLORU, Dover
 
 
 class ProfileAdmin(admin.ModelAdmin):
-    pass
+    inlines = [AgentDoverInline, ]
 
 admin.site.register(Profile, ProfileAdmin)
 
@@ -17,7 +17,7 @@ class AgentDoverInline(admin.TabularInline):
     can_delete = False
 
 class OrgAdmin(admin.ModelAdmin):
-    inlines = [ProfileLORUInline, AgentDoverInline, ]
+    inlines = [ProfileLORUInline, ]
     list_display = ['name', 'type']
 
 admin.site.register(Org, OrgAdmin)

@@ -49,7 +49,6 @@ class ProfileLORU(models.Model):
 
 class Dover(models.Model):
     agent = models.ForeignKey(Profile, verbose_name=_(u"Агент"), limit_choices_to={'is_agent': True})
-    org = models.ForeignKey(Org, verbose_name=_(u"Организация"), limit_choices_to={'type': Org.PROFILE_LORU})
     number = models.CharField(_(u"Номер"), max_length=255)
     begin = models.DateField(_(u"Начало"))
     end = models.DateField(_(u"Окончание"))
