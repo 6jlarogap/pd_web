@@ -274,6 +274,11 @@ class CreateBurial(TemplateView):
                 for f in form.fields:
                     old_value = form.initial.get(f) or (form.instance and getattr(form.instance, f, None))
                     new_value = form.cleaned_data.get(f)
+                    old_value = old_value or ''
+                    try:
+                        new_value = new_value.pk
+                    except AttributeError:
+                        pass
                     if new_value != old_value:
                         changed_data.append((form.fields[f].label, old_value, new_value))
 
