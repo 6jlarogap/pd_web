@@ -93,24 +93,28 @@ class Location(models.Model):
     gps_y = models.FloatField(_(u"Координата Y"), blank=True, null=True, editable=False)
     info = models.TextField(_(u"Дополнительная информация"), blank=True, null=True)
 
+    def get_local_addr(self, addr):
+        if self.house:
+            if addr:
+                addr += _(u', дом %s') % self.house
+            else:
+                addr += _(u'дом %s') % self.house
+        if self.block:
+            addr += _(u', корп. %s') % self.block
+        if self.building:
+            addr += _(u', строен. %s') % self.building
+        if self.flat:
+            addr += _(u', кв. %s') % self.flat
+        if self.info:
+            addr += u', %s' % self.info
+        return addr
+
     def __unicode__(self):
         if self.street or self.region:
             addr = u''
             if self.street:
                 addr += u'%s' % self.street
-            if self.house:
-                if addr:
-                    addr += _(u', дом %s') % self.house
-                else:
-                    addr += _(u'дом %s') % self.house
-            if self.block:
-                addr += _(u', корп. %s') % self.block
-            if self.building:
-                addr += _(u', строен. %s') % self.building
-            if self.flat:
-                addr += _(u', кв. %s') % self.flat
-            if self.info:
-                addr += u', %s' % self.info
+            addr = self.get_local_addr(addr)
 
             if addr:
                 addr += u', %s' % (self.city or self.street and self.street.city or '')
@@ -120,7 +124,8 @@ class Location(models.Model):
             addr += u', %s' % (self.country or self.street and self.street.city.region.country or '')
             return addr.replace(', ,', ', ')
         elif self.fias_parents.all():
-            return u", ".join(map(unicode, self.fias_parents.all()))
+            addr = u", ".join(map(unicode, self.fias_parents.all()))
+            return self.get_local_addr(addr)
         else:
             return _(u"незаполненный адрес")
 
@@ -133,24 +138,48 @@ class LocationFIAS(models.Model):
     class Meta:
         ordering = ['level', ]
 
+    def __unicode__(self):
+        return self.name
+
 class DFiasAddrobj(models.Model):
     """
     Импорт из ФИАС
-    """	
+    """
+    aoid = models.CharField(max_length=108, primary_key=True)
+    formalname = models.CharField(max_length=360)
+    regioncode = models.CharField(max_length=6)
+    autocode = models.CharField(max_length=3)
+    areacode = models.CharField(max_length=9)
+    citycode = models.CharField(max_length=9)
+    ctarcode = models.CharField(max_length=9)
+    placecode = models.CharField(max_length=9)
+    streetcode = models.CharField(max_length=12)
+    extrcode = models.CharField(max_length=12)
+    sextcode = models.CharField(max_length=9)
+    offname = models.CharField(max_length=360)
+    postalcode = models.CharField(max_length=18)
+    ifnsfl = models.CharField(max_length=12)
+    terrifnsfl = models.CharField(max_length=12)
+    ifnsul = models.CharField(max_length=12)
+    terrifnsul = models.CharField(max_length=12)
+    okato = models.CharField(max_length=33)
+    oktmo = models.CharField(max_length=24)
+    updatedate = models.DateField()
+    shortname = models.CharField(max_length=30)
     aolevel = models.IntegerField()
-    aoguid = models.CharField(max_length=36, primary_key=True)
-    citycode = models.CharField(max_length=3)
-    areacode = models.CharField(max_length=3)
-    ctarcode = models.CharField(max_length=3)
-    placecode = models.CharField(max_length=3)
-    streetcode = models.CharField(max_length=4)
-    extrcode = models.CharField(max_length=4)
-    sextcode = models.CharField(max_length=3)
-    formalname = models.CharField(max_length=120)
-    offname = models.CharField(max_length=120)
-    shortname = models.CharField(max_length=10)
-    parentguid = models.CharField(max_length=36)
+    parentguid = models.CharField(max_length=108)
+    aoguid = models.CharField(max_length=108)
+    previd = models.CharField(max_length=108)
+    nextid = models.CharField(max_length=108)
+    code = models.CharField(max_length=51)
+    plaincode = models.CharField(max_length=45)
+    actstatus = models.IntegerField()
+    centstatus = models.IntegerField()
+    operstatus = models.IntegerField()
+    currstatus = models.IntegerField()
+    startdate = models.DateField()
     enddate = models.DateField()
+    normdoc = models.CharField(max_length=108)
 
     class Meta:
         db_table = u'd_fias_addrobj'

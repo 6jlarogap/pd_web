@@ -91,45 +91,45 @@ class BurialView(ArchiveMixin, DetailView):
             b.status = Burial.STATUS_BACKED
             write_log(request, b, _(u'Заявка отозвана'), reason)
             messages.success(request, _(u"<a href='%s'>Заявка %s</a> отозвана") % (
-                reverse('view_request', args=[b.pk]), b.pk,
+                reverse('view_burial', args=[b.pk]), b.pk,
             ))
         if request.POST.get('ready') and request.user == b.creator and b.is_edit() and b.is_ugh_only():
             b.status = Burial.STATUS_READY
             write_log(request, b, _(u'Заявка отправлена на согласование'))
             msg = _(u"<a href='%s'>Заявка %s</a> отправлена на согласование") % (
-                reverse('view_request', args=[b.pk]), b.pk,
+                reverse('view_burial', args=[b.pk]), b.pk,
             )
             messages.success(request, msg)
         if request.POST.get('approve') and request.user.profile.is_ugh() and b.is_ready_to_approve():
             b.status = Burial.STATUS_APPROVED
             write_log(request, b, _(u'Заявка согласована'))
             messages.success(request, _(u"<a href='%s'>Заявка %s</a> согласована") % (
-                reverse('view_request', args=[b.pk]), b.pk,
+                reverse('view_burial', args=[b.pk]), b.pk,
             ))
         if request.POST.get('decline') and request.user.profile.is_ugh() and b.is_ready() and b.can_decline():
             b.status = Burial.STATUS_DECLINED
             write_log(request, b, _(u'Заявка отклонена'), reason)
             messages.success(request, _(u"<a href='%s'>Заявка %s</a> отклонена") % (
-                reverse('view_request', args=[b.pk]), b.pk,
+                reverse('view_burial', args=[b.pk]), b.pk,
             ))
         if request.POST.get('complete') and request.user.profile.is_ugh() and b.is_approved():
             b.status = Burial.STATUS_CLOSED
             b.close()
             write_log(request, b, _(u'Заявка закрыта'))
             messages.success(request, _(u"<a href='%s'>Заявка %s</a> закрыта") % (
-                reverse('view_request', args=[b.pk]), b.pk,
+                reverse('view_burial', args=[b.pk]), b.pk,
             ))
         if request.POST.get('annulate') and request.user.profile.is_ugh() and b.is_approved():
             b.status = Burial.STATUS_ANNULATED
             write_log(request, b, _(u'Заявка аннулирована'), reason)
             messages.success(request, _(u"<a href='%s'>Заявка %s</a> аннулирована") % (
-                reverse('view_request', args=[b.pk]), b.pk,
+                reverse('view_burial', args=[b.pk]), b.pk,
             ))
         if old_status != b.status:
             b.save()
         else:
             msg = _(u"Выполнить операцию не удалось: <a href='%s'>заявка</a> в статусе \"%s\"") % (
-                reverse('view_request', args=[b.pk]),
+                reverse('view_burial', args=[b.pk]),
                 b.get_status_display(),
             )
             messages.success(request, msg)
@@ -303,7 +303,7 @@ class CreateBurial(TemplateView):
 
                 write_log(request, burial, _(u'Заявка согласована'))
                 messages.success(request, _(u"<a href='%s'>Заявка %s</a> согласована") % (
-                    reverse('view_request', args=[burial.pk]), burial.pk,
+                    reverse('view_burial', args=[burial.pk]), burial.pk,
                 ))
 
             if self.request.user.profile.is_loru() and burial.is_draft() and self.request.POST.get('ready'):
@@ -311,7 +311,7 @@ class CreateBurial(TemplateView):
 
                 write_log(request, burial, _(u'Заявка отправлена на согласование'))
                 msg = _(u"<a href='%s'>Заявка %s</a> отправлена на согласование") % (
-                    reverse('view_request', args=[burial.pk]), burial.pk,
+                    reverse('view_burial', args=[burial.pk]), burial.pk,
                 )
                 messages.success(request, msg)
 
@@ -319,7 +319,7 @@ class CreateBurial(TemplateView):
 
             write_log(self.request, burial, _(u'Заявка сохранена'))
             msg = _(u"<a href='%s'>Заявка %s</a> сохранена") % (
-                reverse('view_request', args=[burial.pk]),
+                reverse('view_burial', args=[burial.pk]),
                 burial.pk,
             )
             messages.success(self.request, msg)

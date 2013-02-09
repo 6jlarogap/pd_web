@@ -57,7 +57,7 @@ class CreateDeadmanView(CreateView):
             )
             messages.success(self.request, msg)
 
-            return redirect('edit_request', br.pk)
+            return redirect('edit_burial', br.pk)
         else:
             return self.form_invalid(form)
 
@@ -123,7 +123,7 @@ class CreateResponsibleView(CreateView):
             )
             messages.success(self.request, msg)
 
-            return redirect('edit_request', br.pk)
+            return redirect('edit_burial', br.pk)
         else:
             return self.form_invalid(form)
 

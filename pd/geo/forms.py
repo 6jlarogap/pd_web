@@ -1,11 +1,13 @@
 # coding=utf-8
+import datetime
+
 from django import forms
 from django.utils.translation import ugettext as _
 
 from geo.models import Location, Country, Region, City, Street, DFiasAddrobj
 
 
-FIAS_QS = DFiasAddrobj.objects.using('fias')
+FIAS_QS = DFiasAddrobj.objects.using('fias').filter(actstatus=1, enddate__gte=datetime.date.today())
 
 class LocationForm(forms.ModelForm):
     country_name = forms.CharField(label=_(u"Страна"), required=False)
