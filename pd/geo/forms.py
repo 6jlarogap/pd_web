@@ -58,8 +58,8 @@ class LocationForm(forms.ModelForm):
                         qs = FIAS_QS.filter(parentguid=parent.aoguid).order_by('offname')
                         self.fields['fias_%s' % (i+1)].queryset = qs
 
-    def is_valid(self):
-        return super(LocationForm, self).is_valid() and any(self.cleaned_data.values())
+    def is_valid_data(self):
+        return self.is_valid() and any(self.cleaned_data.values())
 
     def save(self, commit=True, *args, **kwargs):
         if self.cleaned_data['country_name']:

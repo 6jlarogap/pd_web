@@ -291,7 +291,7 @@ class CreateBurial(TemplateView):
                     burial.source_type = Burial.SOURCE_UGH
 
             deadman = deadman_form.save(commit=False)
-            if deadman_address_form.is_valid():
+            if deadman_address_form.is_valid_data():
                 deadman.address = deadman_address_form.save()
             deadman.save()
 
@@ -300,7 +300,7 @@ class CreateBurial(TemplateView):
             dc.save()
 
             burial.responsible = responsible_form.save(commit=False)
-            if responsible_address_form.is_valid():
+            if responsible_address_form.is_valid_data():
                 burial.responsible.address = responsible_address_form.save()
             burial.responsible.save()
 
