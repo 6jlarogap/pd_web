@@ -202,7 +202,7 @@ class Burial(models.Model):
         return self.changed
 
     def ugh_name(self):
-        return self.cemetery.ugh and self.cemetery.ugh.name or ''
+        return self.cemetery and self.cemetery.ugh and self.cemetery.ugh.name or ''
 
     def loru_name(self):
         return self.loru and self.loru.name or ''
