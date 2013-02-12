@@ -222,6 +222,7 @@ class CreateBurial(TemplateView):
             'deadman_dc_form': self.get_deadman_dc_form(),
             'responsible_form': self.get_responsible_form(),
             'responsible_address_form': self.get_responsible_address_form(),
+            'b': self.get_object(),
         }
 
     def get_object(self):
@@ -355,6 +356,7 @@ class CreateBurial(TemplateView):
 
             return redirect('view_burial', burial.pk)
 
+        messages.error(self.request, _(u'Обнаружены ошибки, их необходимо исправить'))
         return self.get(request, *args, **kwargs)
 
 create_burial = CreateBurial.as_view()
