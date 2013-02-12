@@ -120,7 +120,7 @@ class BurialForm(forms.ModelForm):
         changed_data = []
         obj = self.instance
         if obj and obj.pk:
-            for form in self.forms:
+            for form in [self] + self.forms:
                 prefix = u''
                 if form in [self.deadman_form, self.deadman_address_form, self.dc_form]:
                     prefix = _(u"Усопший ")
