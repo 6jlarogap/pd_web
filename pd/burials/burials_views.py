@@ -9,9 +9,10 @@ from django.shortcuts import redirect
 from django.views.generic.base import TemplateView
 from django.utils.translation import ugettext_lazy as _
 from django.views.generic.detail import DetailView
+from django.views.generic.edit import CreateView
 from django.views.generic.list import ListView
 
-from burials.forms import BurialSearchForm, BurialForm
+from burials.forms import BurialSearchForm, BurialForm, BurialCommitForm
 from burials.models import Reason, Burial
 from geo.forms import LocationForm
 from logs.models import write_log
@@ -93,18 +94,9 @@ class BurialView(ArchiveMixin, DetailView):
                 reverse('view_burial', args=[b.pk]), b.pk,
             ))
         if request.POST.get('ready') and b.is_edit() and b.is_full():
-            b.status = Burial.STATUS_READY
-            write_log(request, b, _(u'Заявка отправлена на согласование'))
-            msg = _(u"<a href='%s'>Заявка %s</a> отправлена на согласование") % (
-                reverse('view_burial', args=[b.pk]), b.pk,
-            )
-            messages.success(request, msg)
+            return redirect(reverse('validate_burial', args=[b.pk]) + '?action=ready')
         if request.POST.get('approve') and request.user.profile.is_ugh() and b.is_ready_to_approve():
-            b.status = Burial.STATUS_APPROVED
-            write_log(request, b, _(u'Заявка согласована'))
-            messages.success(request, _(u"<a href='%s'>Заявка %s</a> согласована") % (
-                reverse('view_burial', args=[b.pk]), b.pk,
-            ))
+            return redirect(reverse('validate_burial', args=[b.pk]) + '?action=approve')
         if request.POST.get('decline') and request.user.profile.is_ugh() and b.is_ready() and b.can_decline():
             b.status = Burial.STATUS_DECLINED
             write_log(request, b, _(u'Заявка отклонена'), reason)
@@ -211,40 +203,23 @@ class BurialsListView(ListView):
 
 burial_list = BurialsListView.as_view()
 
-class CreateBurial(TemplateView):
+class CreateBurial(CreateView):
     template_name = 'create_burial.html'
+    form_class = BurialForm
 
     def get_context_data(self, **kwargs):
         return {
-            'burial_form': self.get_burial_form(),
-            'deadman_form': self.get_deadman_form(),
-            'deadman_address_form': self.get_deadman_address_form(),
-            'deadman_dc_form': self.get_deadman_dc_form(),
-            'responsible_form': self.get_responsible_form(),
-            'responsible_address_form': self.get_responsible_address_form(),
+            'form': self.get_form(self.form_class),
             'b': self.get_object(),
         }
 
-    def get_object(self):
+    def get_object(self, *args, **kwargs):
         return None
 
-    def get_burial_form(self):
-        return BurialForm(data=self.request.POST or None, request=self.request)
-
-    def get_deadman_form(self):
-        return DeadPersonForm(data=self.request.POST or None, prefix='deadman')
-
-    def get_deadman_address_form(self):
-        return LocationForm(data=self.request.POST or None, prefix='deadman-address')
-
-    def get_deadman_dc_form(self):
-        return DeathCertificateForm(data=self.request.POST or None, prefix='deadman-dc')
-
-    def get_responsible_form(self):
-        return AlivePersonForm(data=self.request.POST or None, prefix='responsible')
-
-    def get_responsible_address_form(self):
-        return LocationForm(data=self.request.POST or None, prefix='responsible-address')
+    def get_form_kwargs(self, *args, **kwargs):
+        data = super(CreateBurial, self).get_form_kwargs(*args, **kwargs)
+        data['request'] = self.request
+        return data
 
     def dispatch(self, request, *args, **kwargs):
         if not request.user.is_authenticated() or (not request.user.profile.can_create_burials()):
@@ -252,118 +227,19 @@ class CreateBurial(TemplateView):
             return redirect('/')
         return super(CreateBurial, self).dispatch(request, *args, **kwargs)
 
-    def post(self, request, *args, **kwargs):
-        self.request = request
-
-        burial_form = self.get_burial_form()
-        deadman_form = self.get_deadman_form()
-        deadman_address_form = self.get_deadman_address_form()
-        deadman_dc_form = self.get_deadman_dc_form()
-        responsible_form = self.get_responsible_form()
-        responsible_address_form = self.get_responsible_address_form()
-
-        forms = [burial_form, deadman_form, deadman_address_form, deadman_dc_form, responsible_form, responsible_address_form]
-
-        if all([f.is_valid() for f in forms]):
-            changed_data = []
-            obj = self.get_object()
-            if obj:
-                for form in forms:
-                    prefix = u''
-                    if form in [deadman_form, deadman_address_form, deadman_dc_form]:
-                        prefix = _(u"Усопший ")
-                    if form in [responsible_form, responsible_address_form]:
-                        prefix = _(u"Ответственный ")
-                    for f in form.changed_data:
-                        old_value = obj and getattr(obj, f, None) or form.initial.get(f) or ''
-                        new_value = form.cleaned_data.get(f) or ''
-
-                        if isinstance(old_value, datetime.date):
-                            old_value = old_value.strftime('%d.%m.%Y')
-                        if isinstance(new_value, datetime.date):
-                            new_value = new_value.strftime('%d.%m.%Y')
-                        if isinstance(old_value, datetime.time):
-                            old_value = old_value.strftime('%H:%M')
-                        if isinstance(new_value, datetime.time):
-                            new_value = new_value.strftime('%H:%M')
-
-                        changed_data.append((u'%s%s' % (prefix, form.fields[f].label), old_value, new_value))
-
-            burial = burial_form.save(commit=False)
-
-            burial.changed = datetime.datetime.now()
-            burial.changed_by = request.user
-
-            if not burial.ugh:
-                if request.user.profile.is_ugh():
-                    burial.ugh = request.user.profile.org
-                elif burial.cemetery:
-                    burial.ugh = burial.cemetery.ugh
-
-            if not burial.pk:
-                if self.request.user.profile.is_loru():
-                    burial.loru = self.request.user.profile.org
-                    burial.source_type = Burial.SOURCE_FULL
-                else:
-                    burial.source_type = Burial.SOURCE_UGH
-
-            deadman = deadman_form.save(commit=False)
-            if deadman_address_form.is_valid_data():
-                deadman.address = deadman_address_form.save()
-            deadman.save()
-
-            if any(deadman_dc_form.cleaned_data.values()):
-                dc = deadman_dc_form.save(commit=False)
-                dc.person = deadman
-                dc.save()
-
-            burial.responsible = responsible_form.save(commit=False)
-            if responsible_address_form.is_valid_data():
-                burial.responsible.address = responsible_address_form.save()
-            burial.responsible.save()
-
-            burial.deadman = deadman
-
-            if self.request.user.profile.is_ugh() and burial.is_ready_to_approve() and self.request.POST.get('approve'):
-                burial.status = Burial.STATUS_APPROVED
-
-                write_log(request, burial, _(u'Заявка согласована'))
-                messages.success(request, _(u"<a href='%s'>Заявка %s</a> согласована") % (
-                    reverse('view_burial', args=[burial.pk]), burial.pk,
-                ))
-
-            if self.request.user.profile.is_loru() and burial.is_edit() and self.request.POST.get('ready'):
-                burial.status = Burial.STATUS_READY
-
-                write_log(request, burial, _(u'Заявка отправлена на согласование'))
-                msg = _(u"<a href='%s'>Заявка %s</a> отправлена на согласование") % (
-                    reverse('view_burial', args=[burial.pk]), burial.pk,
-                )
-                messages.success(request, msg)
-
-            burial.save()
-
-            if changed_data or not self.get_object():
-                changed_data_str = u'\n'.join([u'%s: %s -> %s' % cd for cd in changed_data])
-
-                write_log(self.request, burial, _(u'Заявка сохранена') + u'\n' + changed_data_str)
-
-            msg = _(u"<a href='%s'>Заявка %s</a> сохранена") % (
-                reverse('view_burial', args=[burial.pk]),
-                burial.pk,
-            )
-            messages.success(self.request, msg)
-
-            return redirect('view_burial', burial.pk)
-
+    def form_invalid(self, *args, **kwargs):
         messages.error(self.request, _(u'Обнаружены ошибки, их необходимо исправить'))
-        return self.get(request, *args, **kwargs)
+        return super(CreateBurial, self).form_invalid(*args, **kwargs)
+
+    def form_valid(self, form, *args, **kwargs):
+        burial = form.save()
+        return redirect('view_burial', burial.pk)
 
 create_burial = CreateBurial.as_view()
 
 class EditBurialView(CreateBurial):
     template_name = 'edit_burial.html'
-    form_class = BurialForm
+    context_object_name = 'b'
 
     def get_queryset(self):
         q = Q(status=Burial.STATUS_DRAFT) | \
@@ -385,30 +261,52 @@ class EditBurialView(CreateBurial):
         except Burial.DoesNotExist:
             raise Http404
 
-    def get_burial_form(self):
-        return BurialForm(data=self.request.POST or None, request=self.request, instance=self.get_object())
-
-    def get_deadman_form(self):
-        return DeadPersonForm(data=self.request.POST or None, prefix='deadman', instance=self.get_object().deadman)
-
-    def get_deadman_address_form(self):
-        addr = self.get_object().deadman and self.get_object().deadman.address
-        return LocationForm(data=self.request.POST or None, prefix='deadman-address', instance=addr)
-
-    def get_deadman_dc_form(self):
-        dc = self.get_object().deadman and self.get_object().deadman.deathcertificate
-        return DeathCertificateForm(data=self.request.POST or None, prefix='deadman-dc', instance=dc)
-
-    def get_responsible_form(self):
-        return AlivePersonForm(data=self.request.POST or None, prefix='responsible', instance=self.get_object().responsible)
-
-    def get_responsible_address_form(self):
-        addr = self.get_object().responsible and self.get_object().responsible.address
-        return LocationForm(data=self.request.POST or None, prefix='responsible-address', instance=addr)
-
-    def get_responsible_id_form(self):
-        pid = self.get_object().responsible and self.get_object().responsible.personid
-        return PersonIDForm(data=self.request.POST or None, prefix='responsible-personid', instance=pid)
+    def get_form_kwargs(self, *args, **kwargs):
+        data = super(EditBurialView, self).get_form_kwargs(*args, **kwargs)
+        data['instance'] = self.get_object()
+        return data
 
 edit_burial = EditBurialView.as_view()
 
+class ValidateBurialView(EditBurialView):
+    template_name = 'validate_burial.html'
+    form_class = BurialCommitForm
+
+    def get(self, request, *args, **kwargs):
+        request.POST = request.POST.copy()
+        request.method = 'POST'
+        return self.post(request, *args, **kwargs)
+
+    def form_valid(self, form, *args, **kwargs):
+        b = form.save()
+
+        old_status = b.status
+        action = self.request.REQUEST.get('action')
+
+        if action == 'ready' and self.request.user.profile.is_loru() and b.is_edit():
+            b.status = Burial.STATUS_READY
+            write_log(self.request, b, _(u'Заявка отправлена на согласование'))
+            msg = _(u"<a href='%s'>Заявка %s</a> отправлена на согласование") % (
+                reverse('view_burial', args=[b.pk]), b.pk,
+            )
+            messages.success(self.request, msg)
+
+        if action == 'approve' and self.request.user.profile.is_ugh() and b.is_ready_to_approve():
+            b.status = Burial.STATUS_APPROVED
+            write_log(self.request, b, _(u'Заявка согласована'))
+            messages.success(self.request, _(u"<a href='%s'>Заявка %s</a> согласована") % (
+                reverse('view_burial', args=[b.pk]), b.pk,
+            ))
+
+        if old_status != b.status:
+            b.save()
+        else:
+            msg = _(u"Выполнить операцию не удалось: <a href='%s'>заявка</a> в статусе \"%s\"") % (
+                reverse('view_burial', args=[b.pk]),
+                b.get_status_display(),
+            )
+            messages.success(self.request, msg)
+        return redirect('dashboard')
+
+
+validate_burial = ValidateBurialView.as_view()

@@ -4,8 +4,11 @@ from django import forms
 
 from persons.models import DeadPerson, PersonID, DeathCertificate, AlivePerson
 
+class ValidDataMixin:
+    def is_valid_data(self):
+        return self.is_valid() and any(self.cleaned_data.values())
 
-class DeadPersonForm(forms.ModelForm):
+class DeadPersonForm(ValidDataMixin, forms.ModelForm):
     class Meta:
         model = DeadPerson
 
@@ -17,12 +20,12 @@ class DeadPersonForm(forms.ModelForm):
             })
         super(DeadPersonForm, self).__init__(*args, **kwargs)
 
-class PersonIDForm(forms.ModelForm):
+class PersonIDForm(ValidDataMixin, forms.ModelForm):
     class Meta:
         model = PersonID
         exclude = ['person', ]
 
-class DeathCertificateForm(forms.ModelForm):
+class DeathCertificateForm(ValidDataMixin, forms.ModelForm):
     class Meta:
         model = DeathCertificate
         exclude = ['person', ]
@@ -35,6 +38,6 @@ class DeathCertificateForm(forms.ModelForm):
             })
         super(DeathCertificateForm, self).__init__(*args, **kwargs)
 
-class AlivePersonForm(forms.ModelForm):
+class AlivePersonForm(ValidDataMixin, forms.ModelForm):
     class Meta:
         model = AlivePerson

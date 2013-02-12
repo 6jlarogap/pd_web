@@ -196,7 +196,7 @@ class RequestsTest(TestCase):
             'cemetery': self.cemetery.pk, 'plan_date': '12.12.2013', 'plan_time': '12:00',
             'deadman-dc-zags': self.zags.pk, 'responsible-personid-number': '11', 'responsible-personid-series': '11',
             'responsible-personid-id_type': self.doc_type.pk,
-        })
+            })
         self.assertEqual(r.status_code, 302)
 
         br = Burial.objects.all()[0]
@@ -210,6 +210,18 @@ class RequestsTest(TestCase):
 
         r = self.ugh_client.get('/burials/edit/%s/' % br.pk)
         self.assertEqual(r.status_code, 404)
+
+    def test_edit(self):
+        r = self.loru_client.post('/burials/create/', {
+            'cemetery': self.cemetery.pk, 'plan_date': '12.12.2013', 'plan_time': '12:00',
+            'deadman-dc-zags': self.zags.pk, 'responsible-personid-number': '11', 'responsible-personid-series': '11',
+            'responsible-personid-id_type': self.doc_type.pk,
+            })
+        self.assertEqual(r.status_code, 302)
+        br = Burial.objects.all()[0]
+
+        r = self.loru_client.get('/burials/validate/%s/' % br.pk)
+        self.assertEqual(r.status_code, 200)
 
 class BurialsTest(TestCase):
     def setUp(self):

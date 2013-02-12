@@ -4,27 +4,27 @@
 
 {% block content %}
     {% block form_title %}<h1>{% trans "Новая заявка" %}</h1>{% endblock form_title %}
-    <form action="" method="POST">
+    <form action="{% block form_action %}{% endblock form_action %}" method="POST">
         {% csrf_token %}
-        {{ burial_form.as_p }}
-        <h2>{% trans "Усопший" %} {{ deadman_form.instance|default:"" }}</h2>
+        {{ form.as_p }}
+        <h2>{% trans "Усопший" %} {{ form.deadman_form.instance|default:"" }}</h2>
         <a href="#" onclick="$('#cont_dead').slideToggle(); return false">{% trans "развернуть" %}</a>
         <div id="cont_dead" style="display: none">
-            {{ deadman_form.as_p }}
+            {{ form.deadman_form.as_p }}
             <h3>{% trans "Адрес" %}</h3>
             <div class="form_block">
-                {{ deadman_address_form.as_p }}
+                {{ form.deadman_address_form.as_p }}
             </div>
             <h3>{% trans "Свидетельство о смерти" %}</h3>
-            {{ deadman_dc_form.as_p }}
+            {{ form.dc_form.as_p }}
         </div>
-        <h2>{% trans "Ответственный" %} {{ responsible_form.instance|default:"" }}</h2>
+        <h2>{% trans "Ответственный" %} {{ form.responsible_form.instance|default:"" }}</h2>
         <a href="#" onclick="$('#cont_responsible').slideToggle(); return false">{% trans "развернуть" %}</a>
         <div id="cont_responsible" style="display: none">
-            {{ responsible_form.as_p }}
+            {{ form.responsible_form.as_p }}
             <h3>{% trans "Адрес" %}</h3>
             <div class="form_block">
-                {{ responsible_address_form.as_p }}
+                {{ form.responsible_address_form.as_p }}
             </div>
         </div>
         {% block buttons %}

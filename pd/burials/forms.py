@@ -1,11 +1,16 @@
 # coding=utf-8
 import datetime
 from django import forms
+from django.contrib import messages
+from django.core.urlresolvers import reverse
 from django.forms.models import inlineformset_factory
 from django.utils.translation import ugettext_lazy as _
 
 from burials.models import Cemetery, Area, Burial, Place
 from django.db.models.query_utils import Q
+from geo.forms import LocationForm
+from logs.models import write_log
+from persons.forms import DeadPersonForm, DeathCertificateForm, AlivePersonForm
 
 
 class BaseCemeteryForm(forms.ModelForm):
@@ -74,6 +79,26 @@ class BurialForm(forms.ModelForm):
             del self.fields['loru']
             del self.fields['agent']
 
+        self.forms = self.construct_forms()
+
+    def construct_forms(self):
+        data = self.data or None
+        deadman = self.instance and self.instance.deadman
+        self.deadman_form = DeadPersonForm(data=data, prefix='deadman', instance=deadman)
+        deadman_addr = self.instance and self.instance.deadman and self.instance.deadman.address
+        self.deadman_address_form = LocationForm(data=data, prefix='deadman-address', instance=deadman_addr)
+        dc = self.instance and self.instance.deadman and self.instance.deadman.deathcertificate
+        self.dc_form = DeathCertificateForm(data=data, prefix='deadman-dc', instance=dc)
+        responsible = self.instance and self.instance.responsible
+        self.responsible_form = AlivePersonForm(data=data, prefix='responsible', instance=responsible)
+        resp_addr = self.instance and self.instance.responsible and self.instance.responsible.address
+        self.responsible_address_form =  LocationForm(data=data, prefix='responsible-address', instance=resp_addr)
+
+        return [self.deadman_form, self.deadman_address_form, self.dc_form, self.responsible_form, self.responsible_address_form]
+
+    def is_valid(self):
+        return super(BurialForm, self).is_valid() and all([f.is_valid() for f in self.forms])
+
     def clean_plan_time(self):
         return self.cleaned_data['plan_time'] or None
 
@@ -86,9 +111,162 @@ class BurialForm(forms.ModelForm):
                 raise forms.ValidationError(_(u'Агент не от этого ЛОРУ'))
         return self.cleaned_data
 
+    def save(self, commit=True, **kwargs):
+        request = self.request
+        changed_data = []
+        obj = self.instance
+        if obj and obj.pk:
+            for form in self.forms:
+                prefix = u''
+                if form in [self.deadman_form, self.deadman_address_form, self.dc_form]:
+                    prefix = _(u"Усопший ")
+                if form in [self.responsible_form, self.responsible_address_form]:
+                    prefix = _(u"Ответственный ")
+                for f in form.changed_data:
+                    old_value = obj and getattr(obj, f, None) or form.initial.get(f) or ''
+                    new_value = form.cleaned_data.get(f) or ''
+
+                    if isinstance(old_value, datetime.date):
+                        old_value = old_value.strftime('%d.%m.%Y')
+                    if isinstance(new_value, datetime.date):
+                        new_value = new_value.strftime('%d.%m.%Y')
+                    if isinstance(old_value, datetime.time):
+                        old_value = old_value.strftime('%H:%M')
+                    if isinstance(new_value, datetime.time):
+                        new_value = new_value.strftime('%H:%M')
+
+                    changed_data.append((u'%s%s' % (prefix, form.fields[f].label), old_value, new_value))
+
+        burial = super(BurialForm, self).save(commit=False)
+
+        burial.changed = datetime.datetime.now()
+        burial.changed_by = request.user
+
+        if not burial.ugh:
+            if request.user.profile.is_ugh():
+                burial.ugh = request.user.profile.org
+            elif burial.cemetery:
+                burial.ugh = burial.cemetery.ugh
+
+        if not burial.pk:
+            if self.request.user.profile.is_loru():
+                burial.loru = self.request.user.profile.org
+                burial.source_type = Burial.SOURCE_FULL
+            else:
+                burial.source_type = Burial.SOURCE_UGH
+
+        if self.deadman_form.is_valid_data():
+            burial.deadman = self.deadman_form.save(commit=False)
+            if self.deadman_address_form.is_valid_data():
+                burial.deadman.address = self.deadman_address_form.save()
+            burial.deadman.save()
+
+            if self.dc_form.is_valid_data():
+                dc = self.dc_form.save(commit=False)
+                dc.person = burial.deadman
+                dc.save()
+
+        if self.responsible_form.is_valid_data():
+            burial.responsible = self.responsible_form.save(commit=False)
+            if self.responsible_address_form.is_valid_data():
+                burial.responsible.address = self.responsible_address_form.save()
+            burial.responsible.save()
+
+        if self.request.user.profile.is_ugh() and burial.is_ready_to_approve() and self.request.POST.get('approve'):
+            burial.status = Burial.STATUS_APPROVED
+
+            write_log(request, burial, _(u'Заявка согласована'))
+            messages.success(request, _(u"<a href='%s'>Заявка %s</a> согласована") % (
+                reverse('view_burial', args=[burial.pk]), burial.pk,
+            ))
+
+        if self.request.user.profile.is_loru() and burial.is_edit() and self.request.POST.get('ready'):
+            burial.status = Burial.STATUS_READY
+
+            write_log(request, burial, _(u'Заявка отправлена на согласование'))
+            msg = _(u"<a href='%s'>Заявка %s</a> отправлена на согласование") % (
+                reverse('view_burial', args=[burial.pk]), burial.pk,
+            )
+            messages.success(request, msg)
+
+        burial.save()
+
+        if changed_data or not self.get_object():
+            changed_data_str = u'\n'.join([u'%s: %s -> %s' % cd for cd in changed_data])
+
+            write_log(self.request, burial, _(u'Заявка сохранена') + u'\n' + changed_data_str)
+
+        msg = _(u"<a href='%s'>Заявка %s</a> сохранена") % (
+            reverse('view_burial', args=[burial.pk]),
+            burial.pk,
+        )
+        messages.success(self.request, msg)
+
+        return burial
 
 class PlaceForm(forms.ModelForm):
     class Meta:
         model = Place
         exclude = ['responsible', ]
+
+class BurialCommitForm(BurialForm):
+    def __init__(self, *args, **kwargs):
+        super(BurialCommitForm, self).__init__(*args, **kwargs)
+
+        self.mock_data()
+        self.forms = self.construct_forms()
+
+        self.setup_required()
+
+    def form_to_data(self, form):
+        data = {}
+        for f in form.fields:
+            k = form.prefix and '%s-%s' % (form.prefix, f) or f
+            v = form.initial.get(f) or None
+            data.update({k:v})
+        return data
+
+    def setup_required(self):
+        for f in self.fields:
+            if f in ['burial_type', 'cemetery', 'area', 'plan_date', 'plan_time']:
+                self.fields[f].required = True
+
+        bt = self.data['burial_type'] or (self.instance and self.instance.burial_type) or None
+        if bt not in ['common', 'urn']:
+            self.fields['place_number'].required = True
+
+        self.setup_required_deadman()
+        self.setup_required_deadman_address()
+        self.setup_required_deadman_dc()
+        self.setup_required_responsible()
+        self.setup_required_responsible_address()
+
+    def setup_required_deadman(self):
+        pass
+
+    def setup_required_deadman_address(self):
+        pass
+
+    def setup_required_deadman_dc(self):
+        if any([True for k,v in self.data.items() if v and k.startswith(self.dc_form.prefix)]):
+            if self.data.get('deadman-last_name'):
+                for f in self.dc_form.fields:
+                    self.dc_form.fields[f].required = True
+
+    def setup_required_responsible(self):
+        pass
+
+    def setup_required_responsible_address(self):
+        if self.data.get('responsible-last_name'):
+            for f in self.responsible_address_form.fields:
+                if f in ['country_name', 'region_name', 'city_name', 'street_name', 'house']:
+                    self.responsible_address_form.fields[f].required = True
+
+    def mock_data(self):
+        if not self.data:
+            self.data = {}
+            self.data.update(self.form_to_data(self))
+            for f in self.forms:
+                self.data.update(self.form_to_data(f))
+
 
