@@ -58,7 +58,18 @@ class ProfileForm(forms.ModelForm):
     class Meta:
         model = Profile
         exclude = ['org', ]
-        
+
+    def clean_org_inn(self):
+        inn = self.cleaned_data['org_inn']
+        if inn:
+            orgs = Org.objects.filter(inn=inn)
+            if self.instance and self.instance.pk:
+                orgs = orgs.exclude(pk=self.instance.pk)
+            if orgs.exists():
+                raise forms.ValidationError(_(u"ИНН уже зарегистрирован"))
+        return inn
+
+
     def __init__(self, *args, **kwargs):
         super(ProfileForm, self).__init__(*args, **kwargs)
         if self.instance.org:
