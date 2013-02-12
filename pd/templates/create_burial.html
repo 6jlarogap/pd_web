@@ -32,7 +32,9 @@
         {% block buttons %}
             <p>
                 <input type="submit" class="btn btn-primary" value="{% trans "Сохранить" %}"/>
-                {% if b.is_ugh_only %}
+                {% if b.pk and b.is_ugh_only %}
+                    <input type="submit" class="btn" name="approve" value="{% trans "Сохранить и согласовать" %}"/>
+                {% elif not b.pk and user.profile.is_ugh %}
                     <input type="submit" class="btn" name="approve" value="{% trans "Сохранить и согласовать" %}"/>
                 {% else %}
                     <input type="submit" class="btn" name="ready" value="{% trans "Сохранить и отправить на согласование" %}"/>
