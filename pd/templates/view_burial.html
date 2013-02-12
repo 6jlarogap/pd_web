@@ -29,6 +29,9 @@
             {{ b.area|default:"" }}
             {{ b.row|default:"" }}
             {{ b.place_number|default:"" }}
+            {% if user.profile.is_ugh and b.place %}
+                <a href="{% url view_place b.place.pk %}" class="btn">{% trans "карточка" %}</a>
+            {% endif %}
         </dd>
         {% if b.get_responsible %}
             <dt>{% trans "Ответственный" %}:</dt>
