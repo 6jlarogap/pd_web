@@ -11,6 +11,7 @@ from django.db.models.query_utils import Q
 from geo.forms import LocationForm
 from logs.models import write_log
 from persons.forms import DeadPersonForm, DeathCertificateForm, AlivePersonForm
+from persons.models import DeathCertificate
 
 
 class BaseCemeteryForm(forms.ModelForm):
@@ -87,7 +88,10 @@ class BurialForm(forms.ModelForm):
         self.deadman_form = DeadPersonForm(data=data, prefix='deadman', instance=deadman)
         deadman_addr = self.instance and self.instance.deadman and self.instance.deadman.address
         self.deadman_address_form = LocationForm(data=data, prefix='deadman-address', instance=deadman_addr)
-        dc = self.instance and self.instance.deadman and self.instance.deadman.deathcertificate
+        try:
+            dc = self.instance and self.instance.deadman and self.instance.deadman.deathcertificate
+        except DeathCertificate.DoesNotExist:
+            dc = None
         self.dc_form = DeathCertificateForm(data=data, prefix='deadman-dc', instance=dc)
         responsible = self.instance and self.instance.responsible
         self.responsible_form = AlivePersonForm(data=data, prefix='responsible', instance=responsible)
@@ -191,10 +195,11 @@ class BurialForm(forms.ModelForm):
 
         burial.save()
 
-        if changed_data or not self.get_object():
+        if changed_data or not self.instance or not self.instance.pk:
             changed_data_str = u'\n'.join([u'%s: %s -> %s' % cd for cd in changed_data])
-
             write_log(self.request, burial, _(u'Заявка сохранена') + u'\n' + changed_data_str)
+        else:
+            write_log(self.request, burial, _(u'Заявка сохранена'))
 
         msg = _(u"<a href='%s'>Заявка %s</a> сохранена") % (
             reverse('view_burial', args=[burial.pk]),
@@ -248,8 +253,8 @@ class BurialCommitForm(BurialForm):
         pass
 
     def setup_required_deadman_dc(self):
-        if any([True for k,v in self.data.items() if v and k.startswith(self.dc_form.prefix)]):
-            if self.data.get('deadman-last_name'):
+        if self.data.get('deadman-last_name'):
+            if any([True for k,v in self.data.items() if v and k.startswith(self.dc_form.prefix)]):
                 for f in self.dc_form.fields:
                     self.dc_form.fields[f].required = True
 

@@ -1,5 +1,5 @@
 import datetime
-from burials.models import Cemetery, Burial, Place
+from burials.models import Cemetery, Burial, Place, Area
 from django.contrib.auth.models import User
 from django.test.client import Client
 from django.test.testcases import TestCase
@@ -30,6 +30,7 @@ class RequestsTest(TestCase):
         self.loru_client = Client()
         self.loru_client.login(username='loru', password='test')
         self.cemetery = Cemetery.objects.create(name='test cem', time_begin='12:00', time_end='17:00', ugh=ugh_org)
+        self.area = Area.objects.create(cemetery=self.cemetery, name='rest')
         self.ugh_user.profile.org.loru_list.create(loru=loru_org)
         self.zags = Org.objects.create(name='ZAGS', type=Org.PROFILE_ZAGS)
         self.doc_type = IDDocumentType.objects.create(name='Passport')
@@ -89,14 +90,12 @@ class RequestsTest(TestCase):
 
     def test_actions(self):
         r = self.loru_client.post('/burials/create/', {
-            'cemetery': self.cemetery.pk, 'plan_date': '12.12.2013', 'plan_time': '12:00',
-            'deadman-dc-zags': self.zags.pk, 'responsible-personid-number': '11', 'responsible-personid-series': '11',
-            'responsible-personid-id_type': self.doc_type.pk,
+            'burial_type': 'common',
+            'cemetery': self.cemetery.pk, 'area': self.area.pk,
+            'plan_date': '12.12.2013', 'plan_time': '12:00',
         })
         self.assertEqual(r.status_code, 302)
         br = Burial.objects.all()[0]
-        br.deadman = DeadPerson.objects.create(last_name='Ivanov')
-        br.save()
 
         r = self.loru_client.get('/burials/')
         self.assertEqual(r.status_code, 200)
@@ -107,7 +106,7 @@ class RequestsTest(TestCase):
         r = self.loru_client.get('/?show=1')
         self.assertEqual(r.context['burials'].count(), 1)
 
-        r = self.loru_client.post('/burials/%s/' % br.pk, {'ready': '1'})
+        r = self.loru_client.post('/burials/%s/' % br.pk, {'ready': '1'}, follow=True)
 
         r = self.ugh_client.get('/?show=1')
         self.assertEqual(r.context['burials'].count(), 1)
@@ -116,7 +115,7 @@ class RequestsTest(TestCase):
         r = self.loru_client.get('/?show=1')
         self.assertEqual(r.context['burials'].count(), 0)
 
-        r = self.ugh_client.post('/burials/%s/' % br.pk, {'approve': '1'})
+        r = self.ugh_client.post('/burials/%s/' % br.pk, {'approve': '1'}, follow=True)
 
         r = self.ugh_client.get('/?show=1')
         self.assertEqual(r.context['burials'].count(), 1)
@@ -127,8 +126,7 @@ class RequestsTest(TestCase):
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r.context['burials'].count(), 0)
 
-        r = self.ugh_client.post('/burials/%s/' % br.pk, {'complete': '1'})
-        self.assertEqual(r.status_code, 302)
+        r = self.ugh_client.post('/burials/%s/' % br.pk, {'complete': '1'}, follow=True)
 
         r = self.ugh_client.get('/?show=1')
         self.assertEqual(r.context['burials'].count(), 0)
@@ -141,16 +139,14 @@ class RequestsTest(TestCase):
 
     def test_back(self):
         r = self.loru_client.post('/burials/create/', {
-            'cemetery': self.cemetery.pk, 'plan_date': '12.12.2013', 'plan_time': '12:00',
-            'deadman-dc-zags': self.zags.pk, 'responsible-personid-number': '11', 'responsible-personid-series': '11',
-            'responsible-personid-id_type': self.doc_type.pk,
+            'burial_type': 'common',
+            'cemetery': self.cemetery.pk, 'area': self.area.pk,
+            'plan_date': '12.12.2013', 'plan_time': '12:00',
         })
         br = Burial.objects.all()[0]
-        br.deadman = DeadPerson.objects.create(last_name='Ivanov')
-        br.save()
 
-        r = self.loru_client.post('/burials/%s/' % br.pk, {'ready': '1'})
-        r = self.ugh_client.post('/burials/%s/' % br.pk, {'approve': '1'})
+        r = self.loru_client.post('/burials/%s/' % br.pk, {'ready': '1'}, follow=True)
+        r = self.ugh_client.post('/burials/%s/' % br.pk, {'approve': '1'}, follow=True)
 
         br = Burial.objects.all()[0]
         self.assertEqual(br.status, Burial.STATUS_APPROVED)
@@ -160,9 +156,9 @@ class RequestsTest(TestCase):
         br = Burial.objects.all()[0]
         self.assertEqual(br.status, Burial.STATUS_BACKED)
 
-        r = self.loru_client.post('/burials/%s/' % br.pk, {'ready': '1'})
-        r = self.ugh_client.post('/burials/%s/' % br.pk, {'approve': '1'})
-        r = self.ugh_client.post('/burials/%s/' % br.pk, {'complete': '1'})
+        r = self.loru_client.post('/burials/%s/' % br.pk, {'ready': '1'}, follow=True)
+        r = self.ugh_client.post('/burials/%s/' % br.pk, {'approve': '1'}, follow=True)
+        r = self.ugh_client.post('/burials/%s/' % br.pk, {'complete': '1'}, follow=True)
 
         br = Burial.objects.all()[0]
         self.assertEqual(br.status, Burial.STATUS_CLOSED)

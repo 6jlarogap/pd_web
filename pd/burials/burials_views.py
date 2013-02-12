@@ -96,7 +96,14 @@ class BurialView(ArchiveMixin, DetailView):
         if request.POST.get('ready') and b.is_edit() and b.is_full():
             return redirect(reverse('validate_burial', args=[b.pk]) + '?action=ready')
         if request.POST.get('approve') and request.user.profile.is_ugh() and b.is_ready_to_approve():
-            return redirect(reverse('validate_burial', args=[b.pk]) + '?action=approve')
+            if b.is_full():
+                b.status = Burial.STATUS_APPROVED
+                write_log(request, b, _(u'Заявка согласована'))
+                messages.success(request, _(u"<a href='%s'>Заявка %s</a> согласована") % (
+                    reverse('view_burial', args=[b.pk]), b.pk,
+                ))
+            else:
+                return redirect(reverse('validate_burial', args=[b.pk]) + '?action=approve')
         if request.POST.get('decline') and request.user.profile.is_ugh() and b.is_ready() and b.can_decline():
             b.status = Burial.STATUS_DECLINED
             write_log(request, b, _(u'Заявка отклонена'), reason)
@@ -283,7 +290,7 @@ class ValidateBurialView(EditBurialView):
         old_status = b.status
         action = self.request.REQUEST.get('action')
 
-        if action == 'ready' and self.request.user.profile.is_loru() and b.is_edit():
+        if action == 'ready' and self.request.user.profile.is_loru() and b.is_edit() and b.is_full():
             b.status = Burial.STATUS_READY
             write_log(self.request, b, _(u'Заявка отправлена на согласование'))
             msg = _(u"<a href='%s'>Заявка %s</a> отправлена на согласование") % (
@@ -291,7 +298,7 @@ class ValidateBurialView(EditBurialView):
             )
             messages.success(self.request, msg)
 
-        if action == 'approve' and self.request.user.profile.is_ugh() and b.is_ready_to_approve():
+        if action == 'approve' and self.request.user.profile.is_ugh() and b.is_ready_to_approve() and b.is_ugh_only():
             b.status = Burial.STATUS_APPROVED
             write_log(self.request, b, _(u'Заявка согласована'))
             messages.success(self.request, _(u"<a href='%s'>Заявка %s</a> согласована") % (
