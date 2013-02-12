@@ -225,6 +225,9 @@ class CreateBurial(TemplateView):
             'responsible_id_form': self.get_responsible_id_form(),
         }
 
+    def get_object(self):
+        return None
+
     def get_burial_form(self):
         return BurialForm(data=self.request.POST or None, request=self.request)
 
@@ -267,18 +270,18 @@ class CreateBurial(TemplateView):
 
         if all([f.is_valid() for f in forms]):
             changed_data = []
-            for form in forms:
-                for f in form.fields:
-                    old_value = form.initial.get(f) or (form.instance and getattr(form.instance, f, None))
-                    new_value = form.cleaned_data.get(f)
-                    old_value = old_value or ''
-                    try:
-                        new_value = new_value.pk
-                    except AttributeError:
-                        pass
-                    new_value = new_value or ''
-                    if new_value != old_value and unicode(new_value) != unicode(old_value) and (new_value or old_value):
-                        changed_data.append((form.fields[f].label, old_value, new_value))
+            obj = self.get_object()
+            if obj:
+                for form in forms:
+                    prefix = u''
+                    if form in [deadman_form, deadman_address_form, deadman_dc_form]:
+                        prefix = _(u"Усопший ")
+                    if form in [responsible_form, responsible_address_form]:
+                        prefix = _(u"Ответственный ")
+                    for f in form.changed_data:
+                        old_value = obj and getattr(obj, f, None) or ''
+                        new_value = form.cleaned_data.get(f) or ''
+                        changed_data.append((u'%s%s' % (prefix, form.fields[f].label), old_value, new_value))
 
             burial = burial_form.save(commit=False)
 
@@ -338,7 +341,7 @@ class CreateBurial(TemplateView):
 
             burial.save()
 
-            if changed_data:
+            if changed_data or not self.get_object():
                 changed_data_str = u'\n'.join([u'%s: %s -> %s' % cd for cd in changed_data])
 
                 write_log(self.request, burial, _(u'Заявка сохранена') + u'\n' + changed_data_str)

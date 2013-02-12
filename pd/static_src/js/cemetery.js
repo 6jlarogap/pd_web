@@ -66,7 +66,7 @@ function setup_address_autocompletes() {
             });
         },
         onselect: function(val) {
-            var $country = $(this)[0].$element.parents('form').find('input[name$=country_name]');
+            var $country = $(this)[0].$element.closest('form,.form_block').find('input[name$=country_name]');
             if (!$country.val()) {
                 $country.val(val.country);
             };
@@ -89,11 +89,11 @@ function setup_address_autocompletes() {
             });
         },
         onselect: function(val) {
-            var $region = $(this)[0].$element.parents('form').find('input[name$=region_name]');
+            var $region = $(this)[0].$element.closest('form,.form_block').find('input[name$=region_name]');
             if (!$region.val()) {
                 $region.val(val.region);
             }
-            var $country = $(this)[0].$element.parents('form').find('input[name$=country_name]');
+            var $country = $(this)[0].$element.closest('form,.form_block').find('input[name$=country_name]');
             if (!$country.val()) {
                 $country.val(val.country);
             }
@@ -118,15 +118,15 @@ function setup_address_autocompletes() {
             });
         },
         onselect: function(val) {
-            var $city = $(this)[0].$element.parents('form').find('input[name$=city_name]');
+            var $city = $(this)[0].$element.closest('form,.form_block').find('input[name$=city_name]');
             if (!$city.val()) {
                 $city.val(val.city);
             }
-            var $region = $(this)[0].$element.parents('form').find('input[name$=region_name]');
+            var $region = $(this)[0].$element.closest('form,.form_block').find('input[name$=region_name]');
             if (!$region.val()) {
                 $region.val(val.region);
             }
-            var $country = $(this)[0].$element.parents('form').find('input[name$=country_name]');
+            var $country = $(this)[0].$element.closest('form,.form_block').find('input[name$=country_name]');
             if (!$country.val()) {
                 $country.val(val.country);
             }

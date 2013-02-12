@@ -94,11 +94,8 @@
         {% endif %}
         {% if user.profile.org == b.loru and b.is_edit and b.is_full %}
             <a class="btn" href="{% url edit_burial b.pk %}">{% trans "правка" %}</a>
-        {% endif %}
-        {% if b.is_edit and b.is_ugh_only %}
-            {% if user.profile.org == b.cemetery.ugh or b.creator == user %}
-                <a class="btn" href="{% url edit_burial b.pk %}">{% trans "правка" %}</a>
-            {% endif %}
+        {% elif user.profile.org == b.ugh and b.is_edit and b.is_ugh_only %}
+            <a class="btn" href="{% url edit_burial b.pk %}">{% trans "правка" %}</a>
         {% endif %}
     </form>
     
@@ -113,7 +110,7 @@
             {% if user.profile.is_loru or log.code != 'edit_request' %}
                 <tr>
                     <td>{{ log.dt }}</td>
-                    <td>{{ log.user.profile }}</td>
+                    <td>{{ log.user.get_full_name }}, {{ log.user.profile }}</td>
                     <td>{{ log.msg|linebreaksbr }}</td>
                 </tr>
             {% endif %}
