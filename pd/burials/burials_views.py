@@ -274,8 +274,18 @@ class CreateBurial(TemplateView):
                     if form in [responsible_form, responsible_address_form]:
                         prefix = _(u"Ответственный ")
                     for f in form.changed_data:
-                        old_value = obj and getattr(obj, f, None) or ''
+                        old_value = obj and getattr(obj, f, None) or form.initial.get(f) or ''
                         new_value = form.cleaned_data.get(f) or ''
+
+                        if isinstance(old_value, datetime.date):
+                            old_value = old_value.strftime('%d.%m.%Y')
+                        if isinstance(new_value, datetime.date):
+                            new_value = new_value.strftime('%d.%m.%Y')
+                        if isinstance(old_value, datetime.time):
+                            old_value = old_value.strftime('%H:%M')
+                        if isinstance(new_value, datetime.time):
+                            new_value = new_value.strftime('%H:%M')
+
                         changed_data.append((u'%s%s' % (prefix, form.fields[f].label), old_value, new_value))
 
             burial = burial_form.save(commit=False)

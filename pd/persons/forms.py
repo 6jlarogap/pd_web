@@ -10,9 +10,11 @@ class DeadPersonForm(forms.ModelForm):
         model = DeadPerson
 
     def __init__(self, *args, **kwargs):
-        kwargs.setdefault('initial', {}).update({
-            'death_date': datetime.date.today() - datetime.timedelta(1),
-        })
+        kwargs.setdefault('initial', {})
+        if not kwargs.get('instance'):
+            kwargs['initial'].update({
+                'death_date': datetime.date.today() - datetime.timedelta(1),
+            })
         super(DeadPersonForm, self).__init__(*args, **kwargs)
 
 class PersonIDForm(forms.ModelForm):
@@ -26,9 +28,11 @@ class DeathCertificateForm(forms.ModelForm):
         exclude = ['person', ]
 
     def __init__(self, *args, **kwargs):
-        kwargs.setdefault('initial', {}).update({
-            'release_date': datetime.date.today(),
-        })
+        kwargs.setdefault('initial', {})
+        if not kwargs.get('instance'):
+            kwargs['initial'].update({
+                'release_date': datetime.date.today(),
+            })
         super(DeathCertificateForm, self).__init__(*args, **kwargs)
 
 class AlivePersonForm(forms.ModelForm):

@@ -67,7 +67,8 @@ class BurialForm(forms.ModelForm):
             self.fields['plan_time'].widget = forms.Select(choices=choices)
         if self.instance and self.instance.plan_time:
             self.initial['plan_time'] = self.instance.plan_time.strftime('%H:%M')
-        self.fields['plan_date'].initial = datetime.date.today() + datetime.timedelta(1)
+        else:
+            self.fields['plan_date'].initial = datetime.date.today() + datetime.timedelta(1)
 
         if self.request.user.profile.is_loru():
             del self.fields['loru']
