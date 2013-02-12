@@ -13,6 +13,7 @@ class ProfileLORUInline(admin.TabularInline):
 
 class ProfileAdmin(admin.ModelAdmin):
     inlines = [AgentDoverInline, ]
+    readonly_fields = ['user', ]
 
 admin.site.register(Profile, ProfileAdmin)
 
