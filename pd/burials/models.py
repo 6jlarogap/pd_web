@@ -191,7 +191,7 @@ class Burial(models.Model):
         return self.is_full() and not self.is_edit() and not self.is_finished()
 
     def can_decline(self):
-        return self.is_full() and self.is_ready() and not self.is_finished()
+        return self.is_full() and self.is_ready()
 
     @property
     def status_str(self):

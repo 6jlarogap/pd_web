@@ -365,7 +365,7 @@ class EditBurialView(CreateBurial):
         if self.request.user.profile.is_loru():
             q2 = Q(source_type=Burial.SOURCE_FULL, loru=self.request.user.profile.org)
         elif self.request.user.profile.is_ugh():
-            q2 = Q(Q(creator=self.request.user) | Q(cemetery__ugh=self.request.user.profile.org), source_type=Burial.SOURCE_UGH)
+            q2 = Q(source_type=Burial.SOURCE_UGH, cemetery__ugh=self.request.user.profile.org)
         else:
             return Burial.objects.none()
 
