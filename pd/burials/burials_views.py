@@ -301,9 +301,10 @@ class CreateBurial(TemplateView):
                 deadman.address = deadman_address_form.save()
             deadman.save()
 
-            dc = deadman_dc_form.save(commit=False)
-            dc.person = deadman
-            dc.save()
+            if any(deadman_dc_form.cleaned_data.values()):
+                dc = deadman_dc_form.save(commit=False)
+                dc.person = deadman
+                dc.save()
 
             burial.responsible = responsible_form.save(commit=False)
             if responsible_address_form.is_valid_data():
