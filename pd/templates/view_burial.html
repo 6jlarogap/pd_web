@@ -9,6 +9,7 @@
         {% if b.is_full %}
             <dt>{% trans "ЛОРУ" %}:</dt><dd><a href="">{{ b.loru }}</a></dd>
         {% elif b.is_ugh_only %}
+            <dt>{% trans "УГХ" %}:</dt><dd>{{ b.ugh }}</dd>
             <dt>{% trans "ЛОРУ" %}:</dt>
             <dd>
                 {% for loru_link in b.ugh.loru_list.all %}
@@ -24,11 +25,14 @@
                 {{ b.deadman.address|default:"" }}
             </dd>
         {% endif %}
+        {% if b.agent %}
+            <dt>{% trans "Агент" %}:</dt><dd>{{ b.agent }}</dd>
+        {% endif %}
         <dt>{% trans "Кладбище" %}:</dt><dd>{{ b.cemetery }}</dd>
         <dt>{% trans "Место" %}:</dt><dd>
-            {{ b.area|default:"" }}
-            {{ b.row|default:"" }}
-            {{ b.place_number|default:"" }}
+            Участок: {{ b.area|default:"" }}<br/>
+            Ряд: {{ b.row|default:"" }}<br/>
+            Место: {{ b.place_number|default:"" }}<br/>
             {% if user.profile.is_ugh and b.place %}
                 <a href="{% url view_place b.place.pk %}" class="btn">{% trans "карточка" %}</a>
             {% endif %}
