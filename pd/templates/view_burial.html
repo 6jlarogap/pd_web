@@ -30,9 +30,9 @@
         {% endif %}
         <dt>{% trans "Кладбище" %}:</dt><dd>{{ b.cemetery }}</dd>
         <dt>{% trans "Место" %}:</dt><dd>
-            Участок: {{ b.area|default:"" }}<br/>
-            Ряд: {{ b.row|default:"" }}<br/>
-            Место: {{ b.place_number|default:"" }}<br/>
+            {% trans "Участок" %}: {{ b.area|default:"" }}<br/>
+            {% trans "Ряд" %}: {{ b.row|default:"" }}<br/>
+            {% trans "Место" %}: {{ b.place_number|default:"" }}<br/>
             {% if user.profile.is_ugh and b.place %}
                 <a href="{% url view_place b.place.pk %}" class="btn">{% trans "карточка" %}</a>
             {% endif %}

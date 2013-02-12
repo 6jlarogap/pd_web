@@ -21,9 +21,9 @@
                 {% if user.profile.is_ugh %}<th>{{ b.loru_name }}</th>{% endif %}
                 <td>{{ b.cemetery }} / {{ b.ugh_name }}</td>
                 <td>
-                    {{ b.area|default:"" }}
-                    {{ b.row|default:"" }}
-                    {{ b.place_number|default:"" }}
+                    {% trans "Участок" %}: {{ b.area|default:"" }}<br/>
+                    {% trans "Ряд" %}: {{ b.row|default:"" }}<br/>
+                    {% trans "Место" %}: {{ b.place_number|default:"" }}
                 </td>
                 <td>{{ b.deadman|default:"" }}</td>
                 <td>{{ b.plan_date|default:"" }} {{ b.plan_time|default:"" }}</td>
