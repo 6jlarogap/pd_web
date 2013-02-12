@@ -52,7 +52,7 @@ class BurialSearchForm(forms.Form):
 class BurialForm(forms.ModelForm):
     class Meta:
         model = Burial
-        exclude = ['place', 'deadman', 'responsible', ]
+        exclude = ['place', 'deadman', 'responsible', 'fact_date', ]
 
     def __init__(self, request, *args, **kwargs):
         super(BurialForm, self).__init__(*args, **kwargs)

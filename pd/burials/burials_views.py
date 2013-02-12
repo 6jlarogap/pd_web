@@ -222,7 +222,6 @@ class CreateBurial(TemplateView):
             'deadman_dc_form': self.get_deadman_dc_form(),
             'responsible_form': self.get_responsible_form(),
             'responsible_address_form': self.get_responsible_address_form(),
-            'responsible_id_form': self.get_responsible_id_form(),
         }
 
     def get_object(self):
@@ -246,9 +245,6 @@ class CreateBurial(TemplateView):
     def get_responsible_address_form(self):
         return LocationForm(data=self.request.POST or None, prefix='responsible-address')
 
-    def get_responsible_id_form(self):
-        return PersonIDForm(data=self.request.POST or None, prefix='responsible-personid')
-
     def dispatch(self, request, *args, **kwargs):
         if not request.user.is_authenticated() or (not request.user.profile.can_create_burials()):
             messages.error(request, _(u"У Вас нет прав создавать захоронения вручную"))
@@ -264,7 +260,6 @@ class CreateBurial(TemplateView):
         deadman_dc_form = self.get_deadman_dc_form()
         responsible_form = self.get_responsible_form()
         responsible_address_form = self.get_responsible_address_form()
-        responsible_id_form = self.get_responsible_id_form()
 
         forms = [burial_form, deadman_form, deadman_address_form, deadman_dc_form, responsible_form, responsible_address_form]
 
@@ -314,11 +309,6 @@ class CreateBurial(TemplateView):
             if responsible_address_form.is_valid_data():
                 burial.responsible.address = responsible_address_form.save()
             burial.responsible.save()
-
-            if responsible_id_form.is_valid():
-                dc = responsible_id_form.save(commit=False)
-                dc.person = burial.responsible
-                dc.save()
 
             burial.deadman = deadman
 
