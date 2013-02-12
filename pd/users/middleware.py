@@ -16,9 +16,9 @@ class ProfileMiddleware():
                 Profile.objects.create(user=request.user)
 
             if not request.user.profile.org:
-                if request.path != reverse('profile'):
+                if request.path == reverse('profile'):
                     return
-                if request.path != reverse('ulogout'):
+                if request.path == reverse('ulogout'):
                     return
                 if request.path.startswith('/admin/'):
                     return
