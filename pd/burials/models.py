@@ -134,10 +134,9 @@ class Burial(models.Model):
 
     deadman = models.ForeignKey(DeadPerson, verbose_name=_(u"Усопший"), null=True, editable=False)
 
-    creator = models.ForeignKey('auth.User', verbose_name=_(u"Cоздатель"), editable=False, null=True,
-                                on_delete=models.PROTECT)
-    created = models.DateTimeField(_(u"Создано"), auto_now_add=True)
-    loru = models.ForeignKey(Org, verbose_name=_(u"ЛОРУ"), null=True, blank=True,
+    ugh = models.ForeignKey(Org, verbose_name=_(u"ЛОРУ"), null=True, editable=False, related_name='ugh_created',
+                            limit_choices_to={'type': Org.PROFILE_UGH}, on_delete=models.PROTECT)
+    loru = models.ForeignKey(Org, verbose_name=_(u"ЛОРУ"), null=True, blank=True, related_name='loru_created',
                              limit_choices_to={'type': Org.PROFILE_LORU}, on_delete=models.PROTECT)
     agent = models.ForeignKey(Profile, verbose_name=_(u"Агент"), null=True, blank=True,
                               limit_choices_to={'is_agent': True}, on_delete=models.PROTECT)

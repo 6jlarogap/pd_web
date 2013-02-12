@@ -200,7 +200,7 @@ class RequestsTest(TestCase):
         self.assertEqual(r.status_code, 302)
 
         br = Burial.objects.all()[0]
-        self.assertEqual(br.creator, self.loru_user)
+        self.assertEqual(br.loru, self.loru_user.profile.org)
         self.assertEqual(br.cemetery, self.cemetery)
         self.assertEqual(br.cemetery.ugh, self.ugh_user.profile.org)
         self.assertEqual(br.is_edit(), True)
@@ -234,6 +234,7 @@ class BurialsTest(TestCase):
         Burial.objects.create(
             burial_type=Burial.BURIAL_TYPES[0][0],
             cemetery=self.cemetery,
+            ugh=self.cemetery.ugh,
             area=None,
             row=None,
             place=None,
@@ -267,6 +268,7 @@ class BurialsTest(TestCase):
         params = dict(
             burial_type=Burial.BURIAL_TYPES[0][0],
             cemetery=self.cemetery,
+            ugh=self.cemetery.ugh,
             area=None,
             row=None,
             place=None,
@@ -336,7 +338,7 @@ class BurialsTest(TestCase):
 
         self.assertEqual(br.status, Burial.STATUS_DRAFT)
         self.assertEqual(br.source_type, Burial.SOURCE_UGH)
-        self.assertEqual(br.creator, self.ugh_user)
+        self.assertEqual(br.ugh, self.ugh_user.profile.org)
 
         r = self.client.get('/burials/%s/' % br.pk)
         self.assertEqual(r.status_code, 404)

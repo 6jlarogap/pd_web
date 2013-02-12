@@ -58,8 +58,7 @@ class ArchiveMixin(BurialsListGenericMixin):
     def get_qs_filter(self):
         qs = Q(pk__isnull=True)
         if self.request.user.is_authenticated():
-            qs = Q(loru=self.request.user.profile.org) | Q(cemetery__ugh=self.request.user.profile.org) | \
-                 Q(creator=self.request.user)
+            qs = Q(loru=self.request.user.profile.org) | Q(ugh=self.request.user.profile.org)
         return qs
 
 class ArchiveView(ArchiveMixin, TemplateView):
@@ -93,7 +92,7 @@ class BurialView(ArchiveMixin, DetailView):
             messages.success(request, _(u"<a href='%s'>Заявка %s</a> отозвана") % (
                 reverse('view_burial', args=[b.pk]), b.pk,
             ))
-        if request.POST.get('ready') and request.user == b.creator and b.is_edit() and b.is_full():
+        if request.POST.get('ready') and b.is_edit() and b.is_full():
             b.status = Burial.STATUS_READY
             write_log(request, b, _(u'Заявка отправлена на согласование'))
             msg = _(u"<a href='%s'>Заявка %s</a> отправлена на согласование") % (
@@ -153,9 +152,7 @@ class BurialsListView(ListView):
     def get_queryset(self):
         if self.request.user.is_authenticated():
             burials = Burial.objects.filter(
-                Q(loru=self.request.user.profile.org) |
-                Q(cemetery__ugh=self.request.user.profile.org) |
-                Q(creator=self.request.user),
+                Q(loru=self.request.user.profile.org) | Q(ugh=self.request.user.profile.org),
                 status=Burial.STATUS_CLOSED,
             ).order_by('-pk')
         else:
@@ -288,8 +285,13 @@ class CreateBurial(TemplateView):
             burial.changed = datetime.datetime.now()
             burial.changed_by = request.user
 
+            if not burial.ugh:
+                if request.user.profile.is_ugh():
+                    burial.ugh = request.user.profile.org
+                elif burial.cemetery:
+                    burial.ugh = burial.cemetery.ugh
+
             if not burial.pk:
-                burial.creator = request.user
                 if self.request.user.profile.is_loru():
                     burial.loru = self.request.user.profile.org
                     burial.source_type = Burial.SOURCE_FULL
@@ -365,7 +367,7 @@ class EditBurialView(CreateBurial):
         if self.request.user.profile.is_loru():
             q2 = Q(source_type=Burial.SOURCE_FULL, loru=self.request.user.profile.org)
         elif self.request.user.profile.is_ugh():
-            q2 = Q(source_type=Burial.SOURCE_UGH, cemetery__ugh=self.request.user.profile.org)
+            q2 = Q(source_type=Burial.SOURCE_UGH, ugh=self.request.user.profile.org)
         else:
             return Burial.objects.none()
 
