@@ -80,6 +80,9 @@ class BurialForm(forms.ModelForm):
         if self.cleaned_data.get('cemetery') and self.cleaned_data.get('area'):
             if self.cleaned_data['cemetery'] != self.cleaned_data['area'].cemetery:
                 raise forms.ValidationError(_(u'Участок не от этого кладбища'))
+        if self.cleaned_data.get('loru') and self.cleaned_data.get('agent'):
+            if self.cleaned_data['loru'] != self.cleaned_data['agent'].org:
+                raise forms.ValidationError(_(u'Агент не от этого ЛОРУ'))
         return self.cleaned_data
 
 

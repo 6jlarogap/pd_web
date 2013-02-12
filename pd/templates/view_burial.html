@@ -11,7 +11,7 @@
         {% elif b.is_ugh_only %}
             <dt>{% trans "ЛОРУ" %}:</dt>
             <dd>
-                {% for loru_link in b.ugh.loru_list %}
+                {% for loru_link in b.ugh.loru_list.all %}
                     <a href="">{{ loru_link.loru }}</a>{% if not forloop.last %}, {% endif %}
                 {% endfor %}
             </dd>
