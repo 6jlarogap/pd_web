@@ -116,7 +116,7 @@
             {% if user.profile.is_loru or log.code != 'edit_request' %}
                 <tr>
                     <td>{{ log.dt }}</td>
-                    <td>{{ log.user.profile }}</td>
+                    <td>{{ log.user.profile }} / {{ log.user.profile.org }}</td>
                     <td>{{ log.msg|linebreaksbr }}</td>
                 </tr>
             {% endif %}
