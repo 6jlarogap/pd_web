@@ -166,8 +166,6 @@ class BurialForm(forms.ModelForm):
                     if isinstance(new_value, datetime.time):
                         new_value = new_value.strftime('%H:%M')
 
-                    print f, old_value, new_value
-
                     if old_value != new_value:
                         changed_data.append((u'%s%s' % (prefix, form.fields[f].label), old_value, new_value))
 
@@ -200,6 +198,8 @@ class BurialForm(forms.ModelForm):
                 dc.person = deadman
                 dc.save()
             self.instance.deadman = deadman
+        else:
+            self.instance.deadman = None
 
         if self.responsible_form.is_valid_data():
             responsible = self.responsible_form.save(commit=False)
@@ -207,6 +207,8 @@ class BurialForm(forms.ModelForm):
                 responsible.address = self.responsible_address_form.save()
             responsible.save()
             self.instance.responsible = responsible
+        else:
+            self.instance.responsible = None
 
         if self.applicant_form.is_valid_data():
             applicant = self.applicant_form.save(commit=False)
@@ -219,6 +221,8 @@ class BurialForm(forms.ModelForm):
                 pid.person = applicant
                 pid.save()
             self.instance.applicant = applicant
+        else:
+            self.instance.applicant = None
 
         self.instance.save()
 
@@ -264,7 +268,7 @@ class BurialCommitForm(BurialForm):
                 self.fields[f].required = True
 
         bt = self.data['burial_type'] or (self.instance and self.instance.burial_type) or None
-        if bt not in ['common', 'urn']:
+        if bt not in Burial.NEW_BURIAL_TYPES:
             self.fields['place_number'].required = True
 
         self.setup_required_deadman()
@@ -305,6 +309,24 @@ class BurialCommitForm(BurialForm):
 
     def setup_required_applicant_id(self):
         pass
+
+    def clean(self):
+        if self.cleaned_data.get('burial_type') not in Burial.NEW_BURIAL_TYPES:
+            for f in [self.responsible_form, self.responsible_address_form]:
+                if f.is_valid() and any(f.cleaned_data.values()):
+                    raise forms.ValidationError(_(u"Для подзахоронений Ответственного быть не должно"))
+        is_ugh = False
+        if self.instance and self.instance.is_ugh_only():
+            is_ugh = True
+        if (not self.instance or not self.instance.pk) and self.request.user.profile.is_ugh():
+            is_ugh = True
+        if is_ugh:
+            if not self.cleaned_data.get('loru') or not self.cleaned_data.get('agent'):
+                if not self.applicant_form.is_valid_data():
+                    raise forms.ValidationError(_(u"Нужно указать ЛОРУ или ФЛ-Заявителя"))
+
+        return self.cleaned_data
+
 
     def mock_data(self):
         if not self.data:

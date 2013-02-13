@@ -77,6 +77,9 @@ class Place(models.Model):
         verbose_name = _(u"Место")
         verbose_name_plural = _(u"Место")
 
+    def __unicode__(self):
+        return _(u'Кл. %s, уч. %s, ряд %s, место %s') % (self.cemetery, self.area and self.area.name or '', self.row, self.place)
+
     def save(self, *args, **kwargs):
         if not self.place:
             other_places = Place.objects.filter(cemetery=self.cemetery, area=self.area, row=self.row)
@@ -110,6 +113,8 @@ class Burial(models.Model):
         ('overlap', _(u'Захоронение в существующую')),
         ('urn', _(u'Урна')),
     )
+
+    NEW_BURIAL_TYPES = ['common', 'urn']
 
     SOURCE_FULL = 'full'
     SOURCE_UGH = 'ugh'
