@@ -27,11 +27,12 @@
         <h2>{% trans "Пользователи" %}</h2>
         <table class="table table-bordered">
             <tr>
-                <th>Имя пользователя</th>
-                <th>Email</th>
-                <th>Фамилия</th>
-                <th>Имя</th>
-                <th>Активен</th>
+                <th>{% trans "Имя пользователя" %}</th>
+                <th>{% trans "Email" %}</th>
+                <th>{% trans "Фамилия" %}</th>
+                <th>{% trans "Имя" %}</th>
+                <th>{% trans "Агент" %}</th>
+                <th>{% trans "Активен" %}</th>
                 <th></th>
             </tr>
             {% for p in user.profile.org.profile_set.all %}
@@ -40,6 +41,7 @@
                     <td>{{ p.user.email }}</td>
                     <td>{{ p.user.last_name }}</td>
                     <td>{{ p.user.first_name }}</td>
+                    <td>{{ p.is_agent|yesno }}</td>
                     <td>{{ p.user.is_active|yesno }}</td>
                     <td>
                         <a href="{% url change_password p.user.pk %}" class="btn">сменить пароль</a>

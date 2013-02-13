@@ -57,7 +57,7 @@ class ProfileForm(forms.ModelForm):
 
     class Meta:
         model = Profile
-        exclude = ['org', ]
+        exclude = ['org', 'is_agent']
 
     def clean_org_inn(self):
         inn = self.cleaned_data['org_inn']
@@ -90,9 +90,22 @@ class ProfileForm(forms.ModelForm):
         return obj
 
 class UserDataForm(forms.ModelForm):
+    is_agent = forms.BooleanField(label=_(u"Агент"))
+
     class Meta:
         model = User
         fields = ['username', 'email', 'first_name', 'last_name', 'is_active' ,]
+
+    def __init__(self, *args, **kwargs):
+        super(UserDataForm, self).__init__(*args, **kwargs)
+        if self.instance and self.instance.profile:
+            self.initial['is_agent'] = self.instance.profile.is_agent
+
+    def save(self, *args, **kwargs):
+        user = super(UserDataForm, self).save(*args, **kwargs)
+        user.profile.is_agent = self.cleaned_data['is_agent']
+        user.profile.save()
+        return user
 
 class ChangePasswordForm(forms.ModelForm):
     class Meta:
