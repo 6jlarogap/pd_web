@@ -10,8 +10,8 @@ from burials.models import Cemetery, Area, Burial, Place
 from django.db.models.query_utils import Q
 from geo.forms import LocationForm
 from logs.models import write_log
-from persons.forms import DeadPersonForm, DeathCertificateForm, AlivePersonForm
-from persons.models import DeathCertificate
+from persons.forms import DeadPersonForm, DeathCertificateForm, AlivePersonForm, PersonIDForm
+from persons.models import DeathCertificate, PersonID
 
 
 class BaseCemeteryForm(forms.ModelForm):
@@ -58,7 +58,7 @@ class BurialSearchForm(forms.Form):
 class BurialForm(forms.ModelForm):
     class Meta:
         model = Burial
-        exclude = ['place', 'deadman', 'responsible', 'fact_date', ]
+        exclude = ['place', 'deadman', 'responsible', 'applicant', 'fact_date', ]
 
     def __init__(self, request, *args, **kwargs):
         super(BurialForm, self).__init__(*args, **kwargs)
@@ -93,12 +93,29 @@ class BurialForm(forms.ModelForm):
         except DeathCertificate.DoesNotExist:
             dc = None
         self.dc_form = DeathCertificateForm(data=data, prefix='deadman-dc', instance=dc)
+
         responsible = self.instance and self.instance.responsible
         self.responsible_form = AlivePersonForm(data=data, prefix='responsible', instance=responsible)
         resp_addr = self.instance and self.instance.responsible and self.instance.responsible.address
         self.responsible_address_form =  LocationForm(data=data, prefix='responsible-address', instance=resp_addr)
 
-        return [self.deadman_form, self.deadman_address_form, self.dc_form, self.responsible_form, self.responsible_address_form]
+        applicant = self.instance and self.instance.applicant
+        self.applicant_form = AlivePersonForm(data=data, prefix='applicant', instance=applicant)
+        applicant_addr = self.instance and self.instance.applicant and self.instance.applicant.address
+        self.applicant_address_form =  LocationForm(data=data, prefix='applicant-address', instance=applicant_addr)
+        try:
+            applicant_id = self.instance and self.instance.applicant and self.instance.applicant.personid
+        except PersonID.DoesNotExist:
+            applicant_id = None
+        self.applicant_id_form = PersonIDForm(data=data, prefix='applicant-pid', instance=applicant_id)
+
+        if self.request.user.profile.is_loru():
+            return [self.deadman_form, self.deadman_address_form, self.dc_form,
+                    self.responsible_form, self.responsible_address_form]
+        else:
+            return [self.deadman_form, self.deadman_address_form, self.dc_form,
+                    self.responsible_form, self.responsible_address_form,
+                    self.applicant_form, self.applicant_address_form, self.applicant_id_form]
 
     def is_valid(self):
         return super(BurialForm, self).is_valid() and all([f.is_valid() for f in self.forms])
@@ -126,6 +143,8 @@ class BurialForm(forms.ModelForm):
                     prefix = _(u"Усопший ")
                 if form in [self.responsible_form, self.responsible_address_form]:
                     prefix = _(u"Ответственный ")
+                if form in [self.applicant_form, self.applicant_address_form, self.applicant_id_form]:
+                    prefix = _(u"Заявитель ")
                 for f in form.changed_data:
                     old_value = obj and getattr(obj, f, None) or form.initial.get(f) or ''
                     new_value = form.cleaned_data.get(f) or ''
@@ -139,75 +158,73 @@ class BurialForm(forms.ModelForm):
                     if isinstance(new_value, datetime.time):
                         new_value = new_value.strftime('%H:%M')
 
-                    changed_data.append((u'%s%s' % (prefix, form.fields[f].label), old_value, new_value))
+                    if old_value != new_value:
+                        changed_data.append((u'%s%s' % (prefix, form.fields[f].label), old_value, new_value))
 
-        burial = super(BurialForm, self).save(commit=False)
+        self.instance = super(BurialForm, self).save()
 
-        burial.changed = datetime.datetime.now()
-        burial.changed_by = request.user
+        self.instance.changed = datetime.datetime.now()
+        self.instance.changed_by = request.user
 
-        if not burial.ugh:
+        if not self.instance.ugh:
             if request.user.profile.is_ugh():
-                burial.ugh = request.user.profile.org
-            elif burial.cemetery:
-                burial.ugh = burial.cemetery.ugh
+                self.instance.ugh = request.user.profile.org
+            elif self.instance.cemetery:
+                self.instance.ugh = self.instance.cemetery.ugh
 
-        if not burial.pk:
+        if not self.instance.pk:
             if self.request.user.profile.is_loru():
-                burial.loru = self.request.user.profile.org
-                burial.source_type = Burial.SOURCE_FULL
+                self.instance.loru = self.request.user.profile.org
+                self.instance.source_type = Burial.SOURCE_FULL
             else:
-                burial.source_type = Burial.SOURCE_UGH
+                self.instance.source_type = Burial.SOURCE_UGH
 
         if self.deadman_form.is_valid_data():
-            burial.deadman = self.deadman_form.save(commit=False)
+            deadman = self.deadman_form.save(commit=False)
             if self.deadman_address_form.is_valid_data():
-                burial.deadman.address = self.deadman_address_form.save()
-            burial.deadman.save()
+                deadman.address = self.deadman_address_form.save()
+            deadman.save()
 
             if self.dc_form.is_valid_data():
                 dc = self.dc_form.save(commit=False)
-                dc.person = burial.deadman
+                dc.person = deadman
                 dc.save()
+            self.instance.deadman = deadman
 
         if self.responsible_form.is_valid_data():
-            burial.responsible = self.responsible_form.save(commit=False)
+            responsible = self.responsible_form.save(commit=False)
             if self.responsible_address_form.is_valid_data():
-                burial.responsible.address = self.responsible_address_form.save()
-            burial.responsible.save()
+                responsible.address = self.responsible_address_form.save()
+            responsible.save()
+            self.instance.responsible = responsible
 
-        if self.request.user.profile.is_ugh() and burial.is_ready_to_approve() and self.request.POST.get('approve'):
-            burial.status = Burial.STATUS_APPROVED
+        if self.applicant_form.is_valid_data():
+            applicant = self.applicant_form.save(commit=False)
+            if self.applicant_address_form.is_valid_data():
+                applicant.address = self.applicant_address_form.save()
+            applicant.save()
 
-            write_log(request, burial, _(u'Заявка согласована'))
-            messages.success(request, _(u"<a href='%s'>Заявка %s</a> согласована") % (
-                reverse('view_burial', args=[burial.pk]), burial.pk,
-            ))
+            if self.request.user.profile.is_ugh() and self.applicant_id_form.is_valid_data():
+                pid = self.applicant_id_form.save(commit=False)
+                pid.person = applicant
+                pid.save()
+            self.instance.applicant = applicant
 
-        if self.request.user.profile.is_loru() and burial.is_edit() and self.request.POST.get('ready'):
-            burial.status = Burial.STATUS_READY
-
-            write_log(request, burial, _(u'Заявка отправлена на согласование'))
-            msg = _(u"<a href='%s'>Заявка %s</a> отправлена на согласование") % (
-                reverse('view_burial', args=[burial.pk]), burial.pk,
-            )
-            messages.success(request, msg)
-
-        burial.save()
+        self.instance.save()
 
         if changed_data or not self.instance or not self.instance.pk:
             changed_data_str = u'\n'.join([u'%s: %s -> %s' % cd for cd in changed_data])
-            write_log(self.request, burial, _(u'Заявка сохранена') + u'\n' + changed_data_str)
+            write_log(self.request, self.instance, _(u'Заявка сохранена') + u'\n' + changed_data_str)
         else:
-            write_log(self.request, burial, _(u'Заявка сохранена'))
+            write_log(self.request, self.instance, _(u'Заявка сохранена'))
 
         msg = _(u"<a href='%s'>Заявка %s</a> сохранена") % (
-            reverse('view_burial', args=[burial.pk]),
-            burial.pk,
+            reverse('view_burial', args=[self.instance.pk]),
+            self.instance.pk,
         )
         messages.success(self.request, msg)
 
-        return burial
+        return self.instance
 
 class PlaceForm(forms.ModelForm):
     class Meta:
@@ -245,6 +262,9 @@ class BurialCommitForm(BurialForm):
         self.setup_required_deadman_dc()
         self.setup_required_responsible()
         self.setup_required_responsible_address()
+        self.setup_required_applicant()
+        self.setup_required_applicant_address()
+        self.setup_required_applicant_id()
 
     def setup_required_deadman(self):
         pass
@@ -267,11 +287,18 @@ class BurialCommitForm(BurialForm):
                 if f in ['country_name', 'region_name', 'city_name', 'street_name', 'house']:
                     self.responsible_address_form.fields[f].required = True
 
+    def setup_required_applicant(self):
+        pass
+
+    def setup_required_applicant_address(self):
+        pass
+
+    def setup_required_applicant_id(self):
+        pass
+
     def mock_data(self):
         if not self.data:
             self.data = {}
             self.data.update(self.form_to_data(self))
             for f in self.forms:
                 self.data.update(self.form_to_data(f))
-
-

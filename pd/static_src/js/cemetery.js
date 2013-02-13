@@ -151,6 +151,12 @@ function setup_address_autocompletes() {
 $(function() {
     updateControls();
 
+    $('.btn-commit-burial').click(function() {
+        if ($(this).attr('rel')) {
+            $(this).closest('form').attr('action', $(this).attr('rel'));
+        }
+    });
+
     $('#paginator_select').live('change', function() {
         top.location.href = $(this).val();
     });

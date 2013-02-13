@@ -216,7 +216,7 @@ class RequestsTest(TestCase):
         self.assertEqual(r.status_code, 302)
         br = Burial.objects.all()[0]
 
-        r = self.loru_client.get('/burials/validate/%s/' % br.pk)
+        r = self.loru_client.get('/burials/edit/%s/' % br.pk)
         self.assertEqual(r.status_code, 200)
 
 class BurialsTest(TestCase):

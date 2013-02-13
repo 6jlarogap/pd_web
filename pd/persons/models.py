@@ -164,6 +164,13 @@ class PersonID(models.Model):
     source = models.ForeignKey(DocumentSource, verbose_name=_(u"Кем выдан"), blank=True, null=True)
     date = models.DateField(_(u"Дата выдачи"), blank=True, null=True)
 
+    class Meta:
+        verbose_name = _(u"Удостоверение личности")
+        verbose_name_plural = _(u"Удостоверения личности")
+
+    def __unicode__(self):
+        return _(u"%s %s %s") % (self.id_type, self.series, self.number)
+
     def save(self, *args, **kwargs):
         self.series = self.series.upper()
         super(PersonID, self).save(*args, **kwargs)
@@ -180,12 +187,12 @@ class DeathCertificate(models.Model):
     release_date = models.DateField(_(u"Дата выдачи"), null=True, blank=True)
     zags = models.ForeignKey(Org, verbose_name=_(u"ЗАГС"), null=True, blank=True, limit_choices_to={'type': Org.PROFILE_ZAGS})
 
+    class Meta:
+        verbose_name = _(u"свидетельство о смерти")
+        verbose_name_plural = _(u"свидетельства о смерти")
+
     def __unicode__(self):
         return _(u"Свид. о смерти (%s)") % self.person.__unicode__()
-
-    class Meta:
-        verbose_name = (_(u"свидетельство о смерти"))
-        verbose_name_plural = (_(u"свидетельства о смерти"))
 
     def save(self, *args, **kwargs):
         self.series = self.series.upper()

@@ -1,8 +1,10 @@
 # coding=utf-8
 import datetime
+from django import db
 
 from django.contrib import messages
 from django.core.urlresolvers import reverse
+from django.db import transaction
 from django.db.models.query_utils import Q
 from django.http import Http404
 from django.shortcuts import redirect
@@ -94,7 +96,7 @@ class BurialView(ArchiveMixin, DetailView):
                 reverse('view_burial', args=[b.pk]), b.pk,
             ))
         if request.POST.get('ready') and b.is_edit() and b.is_full():
-            return redirect(reverse('validate_burial', args=[b.pk]) + '?action=ready')
+            return redirect(reverse('edit_burial', args=[b.pk]) + '?action=ready')
         if request.POST.get('approve') and request.user.profile.is_ugh() and b.is_ready_to_approve():
             if b.is_full():
                 b.status = Burial.STATUS_APPROVED
@@ -103,7 +105,7 @@ class BurialView(ArchiveMixin, DetailView):
                     reverse('view_burial', args=[b.pk]), b.pk,
                 ))
             else:
-                return redirect(reverse('validate_burial', args=[b.pk]) + '?action=approve')
+                return redirect(reverse('edit_burial', args=[b.pk]) + '?action=approve')
         if request.POST.get('decline') and request.user.profile.is_ugh() and b.is_ready() and b.can_decline():
             b.status = Burial.STATUS_DECLINED
             write_log(request, b, _(u'Заявка отклонена'), reason)
@@ -215,10 +217,9 @@ class CreateBurial(CreateView):
     form_class = BurialForm
 
     def get_context_data(self, **kwargs):
-        return {
-            'form': self.get_form(self.form_class),
-            'b': self.get_object(),
-        }
+        data = super(CreateBurial, self).get_context_data(**kwargs)
+        data.update({'b': self.get_object()})
+        return data
 
     def get_object(self, *args, **kwargs):
         return None
@@ -234,13 +235,67 @@ class CreateBurial(CreateView):
             return redirect('/')
         return super(CreateBurial, self).dispatch(request, *args, **kwargs)
 
-    def form_invalid(self, *args, **kwargs):
+    def form_invalid(self, form, *args, **kwargs):
+        print form.errors
         messages.error(self.request, _(u'Обнаружены ошибки, их необходимо исправить'))
-        return super(CreateBurial, self).form_invalid(*args, **kwargs)
+        return super(CreateBurial, self).form_invalid(form, *args, **kwargs)
 
     def form_valid(self, form, *args, **kwargs):
-        burial = form.save()
-        return redirect('view_burial', burial.pk)
+        b = form.save()
+        b.save()
+
+        action = self.get_action()
+        if action:
+            old_status = b.status
+
+            if action == 'ready' and self.request.user.profile.is_loru() and b.is_edit() and b.is_full():
+                b.status = Burial.STATUS_READY
+                write_log(self.request, b, _(u'Заявка отправлена на согласование'))
+                msg = _(u"<a href='%s'>Заявка %s</a> отправлена на согласование") % (
+                    reverse('view_burial', args=[b.pk]), b.pk,
+                )
+                messages.success(self.request, msg)
+
+            if action == 'approve' and self.request.user.profile.is_ugh() and b.is_ready_to_approve() and b.is_ugh_only():
+                b.status = Burial.STATUS_APPROVED
+                write_log(self.request, b, _(u'Заявка согласована'))
+                messages.success(self.request, _(u"<a href='%s'>Заявка %s</a> согласована") % (
+                    reverse('view_burial', args=[b.pk]), b.pk,
+                ))
+
+            if old_status != b.status:
+                b.save()
+            else:
+                msg = _(u"Выполнить операцию не удалось: <a href='%s'>заявка</a> в статусе \"%s\"") % (
+                    reverse('view_burial', args=[b.pk]),
+                    b.get_status_display(),
+                )
+                messages.success(self.request, msg)
+            return redirect('dashboard')
+        else:
+            return redirect('view_burial', b.pk)
+
+    def get_action(self):
+        action = self.request.REQUEST.get('action')
+        if self.request.REQUEST.get('approve'):
+            action = 'approve'
+        if self.request.REQUEST.get('ready'):
+            action = 'ready'
+        return action
+
+    def get_form_class(self):
+        if self.get_action():
+            return BurialCommitForm
+        else:
+            return BurialForm
+
+    def get(self, request, *args, **kwargs):
+        if self.get_action():
+            request.POST = request.POST.copy()
+            request.method = 'POST'
+            return self.post(request, *args, **kwargs)
+        else:
+            return super(CreateBurial, self).get(request, *args, **kwargs)
 
 create_burial = CreateBurial.as_view()
 
@@ -274,46 +329,3 @@ class EditBurialView(CreateBurial):
         return data
 
 edit_burial = EditBurialView.as_view()
-
-class ValidateBurialView(EditBurialView):
-    template_name = 'validate_burial.html'
-    form_class = BurialCommitForm
-
-    def get(self, request, *args, **kwargs):
-        request.POST = request.POST.copy()
-        request.method = 'POST'
-        return self.post(request, *args, **kwargs)
-
-    def form_valid(self, form, *args, **kwargs):
-        b = form.save()
-
-        old_status = b.status
-        action = self.request.REQUEST.get('action')
-
-        if action == 'ready' and self.request.user.profile.is_loru() and b.is_edit() and b.is_full():
-            b.status = Burial.STATUS_READY
-            write_log(self.request, b, _(u'Заявка отправлена на согласование'))
-            msg = _(u"<a href='%s'>Заявка %s</a> отправлена на согласование") % (
-                reverse('view_burial', args=[b.pk]), b.pk,
-            )
-            messages.success(self.request, msg)
-
-        if action == 'approve' and self.request.user.profile.is_ugh() and b.is_ready_to_approve() and b.is_ugh_only():
-            b.status = Burial.STATUS_APPROVED
-            write_log(self.request, b, _(u'Заявка согласована'))
-            messages.success(self.request, _(u"<a href='%s'>Заявка %s</a> согласована") % (
-                reverse('view_burial', args=[b.pk]), b.pk,
-            ))
-
-        if old_status != b.status:
-            b.save()
-        else:
-            msg = _(u"Выполнить операцию не удалось: <a href='%s'>заявка</a> в статусе \"%s\"") % (
-                reverse('view_burial', args=[b.pk]),
-                b.get_status_display(),
-            )
-            messages.success(self.request, msg)
-        return redirect('dashboard')
-
-
-validate_burial = ValidateBurialView.as_view()

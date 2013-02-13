@@ -20,6 +20,9 @@ class DeadPersonForm(ValidDataMixin, forms.ModelForm):
             })
         super(DeadPersonForm, self).__init__(*args, **kwargs)
 
+    def is_valid_data(self):
+        return self.is_valid() and len([k for k,v in self.cleaned_data.items() if v]) > 1 # more than just death date
+
 class PersonIDForm(ValidDataMixin, forms.ModelForm):
     class Meta:
         model = PersonID
@@ -41,3 +44,7 @@ class DeathCertificateForm(ValidDataMixin, forms.ModelForm):
 class AlivePersonForm(ValidDataMixin, forms.ModelForm):
     class Meta:
         model = AlivePerson
+
+    def is_valid_data(self):
+        return self.is_valid() and self.cleaned_data.get('last_name') # last name should be present
+

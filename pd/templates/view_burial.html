@@ -40,6 +40,16 @@
                 {{ b.get_responsible.address|default:"" }}
             </dd>
         {% endif %}
+        {% if b.applicant %}
+            <dt>{% trans "Заявитель" %}:</dt>
+            <dd>
+                {{ b.applicant|default:"" }}
+                <br/>
+                {{ b.applicant.address|default:"" }}
+                <br/>
+                {{ b.applicant.personid|default:"" }}
+            </dd>
+        {% endif %}
         <dt>{% trans "Дата" %}:</dt><dd>{{ b.plan_date|default:"" }} {{ b.plan_time|default:"" }}</dd>
     </dl>
     <form action="" method="POST">

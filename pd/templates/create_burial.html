@@ -27,15 +27,30 @@
                 {{ form.responsible_address_form.as_p }}
             </div>
         </div>
+        {% if user.profile.is_ugh %}
+            <h2>{% trans "Заявитель" %} {{ form.applicant_form.instance|default:"" }}</h2>
+            <a href="#" onclick="$('#cont_applicant').slideToggle(); return false">{% trans "развернуть" %}</a>
+            <div id="cont_applicant" style="display: none">
+                {{ form.applicant_form.as_p }}
+                <h3>{% trans "Адрес" %}</h3>
+                <div class="form_block">
+                    {{ form.applicant_address_form.as_p }}
+                </div>
+                <h3>{% trans "Удостоверение личности" %}</h3>
+                <div class="form_block">
+                    {{ form.applicant_id_form.as_p }}
+                </div>
+            </div>
+        {% endif %}
         {% block buttons %}
             <p>
-                <input type="submit" class="btn btn-primary" value="{% trans "Сохранить" %}"/>
+                <input type="submit" class="btn btn-primary btn-commit-burial" value="{% trans "Сохранить" %}"/>
                 {% if b.pk and b.is_ugh_only %}
-                    <input type="submit" class="btn" name="approve" value="{% trans "Сохранить и согласовать" %}"/>
+                    <input type="submit" class="btn btn-commit-burial" name="approve" value="{% trans "Сохранить и согласовать" %}"/>
                 {% elif not b.pk and user.profile.is_ugh %}
-                    <input type="submit" class="btn" name="approve" value="{% trans "Сохранить и согласовать" %}"/>
+                    <input type="submit" class="btn btn-commit-burial" name="approve" value="{% trans "Сохранить и согласовать" %}"/>
                 {% else %}
-                    <input type="submit" class="btn" name="ready" value="{% trans "Сохранить и отправить на согласование" %}"/>
+                    <input type="submit" class="btn btn-commit-burial" name="ready" value="{% trans "Сохранить и отправить на согласование" %}"/>
                 {% endif %}
             </p>
         {% endblock buttons %}

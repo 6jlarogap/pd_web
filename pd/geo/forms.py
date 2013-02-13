@@ -15,13 +15,13 @@ class LocationForm(forms.ModelForm):
     city_name = forms.CharField(label=_(u"Город"), required=False)
     street_name = forms.CharField(label=_(u"Улица"), required=False)
 
-    fias_1 = forms.ModelChoiceField(queryset=FIAS_QS.filter(aolevel=1).order_by('offname'), required=False)
-    fias_2 = forms.ModelChoiceField(queryset=FIAS_QS.none(), required=False)
-    fias_3 = forms.ModelChoiceField(queryset=FIAS_QS.none(), required=False)
-    fias_4 = forms.ModelChoiceField(queryset=FIAS_QS.none(), required=False)
-    fias_5 = forms.ModelChoiceField(queryset=FIAS_QS.none(), required=False)
-    fias_6 = forms.ModelChoiceField(queryset=FIAS_QS.none(), required=False)
-    fias_7 = forms.ModelChoiceField(queryset=FIAS_QS.none(), required=False)
+    # fias_1 = forms.ModelChoiceField(queryset=FIAS_QS.filter(aolevel=1).order_by('offname'), required=False)
+    # fias_2 = forms.ModelChoiceField(queryset=FIAS_QS.none(), required=False)
+    # fias_3 = forms.ModelChoiceField(queryset=FIAS_QS.none(), required=False)
+    # fias_4 = forms.ModelChoiceField(queryset=FIAS_QS.none(), required=False)
+    # fias_5 = forms.ModelChoiceField(queryset=FIAS_QS.none(), required=False)
+    # fias_6 = forms.ModelChoiceField(queryset=FIAS_QS.none(), required=False)
+    # fias_7 = forms.ModelChoiceField(queryset=FIAS_QS.none(), required=False)
 
     class Meta:
         model = Location
