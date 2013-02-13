@@ -38,8 +38,8 @@
                 <tr>
                     <td>{{ p.user.username }}</td>
                     <td>{{ p.user.email }}</td>
-                    <td>{{ p.user.first_name }}</td>
                     <td>{{ p.user.last_name }}</td>
+                    <td>{{ p.user.first_name }}</td>
                     <td>{{ p.user.is_active|yesno }}</td>
                     <td>
                         <a href="{% url change_password p.user.pk %}" class="btn">сменить пароль</a>
