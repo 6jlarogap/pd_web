@@ -216,6 +216,8 @@ class RequestsTest(TestCase):
         self.assertEqual(r.status_code, 302)
         br = Burial.objects.all()[0]
 
+        self.assertEqual(br.loru, self.loru_user.profile.org)
+
         r = self.loru_client.get('/burials/edit/%s/' % br.pk)
         self.assertEqual(r.status_code, 200)
 
@@ -334,9 +336,10 @@ class BurialsTest(TestCase):
             'deadman-last_name': u'Ivanov',
             'deadman-dc-zags': self.zags.pk,
             'responsible-last_name': u'Petrov',
-            'responsible-personid-id_type': self.doc_type.pk,
-            'responsible-personid-series': '11111',
-            'responsible-personid-number': '222',
+            'applicant-last_name': u'Petrov',
+            'applicant-pid-id_type': self.doc_type.pk,
+            'applicant-pid-series': '11111',
+            'applicant-pid-number': '222',
         })
         self.assertEqual(r.status_code, 302)
 

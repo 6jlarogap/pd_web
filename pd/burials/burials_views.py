@@ -236,13 +236,11 @@ class CreateBurial(CreateView):
         return super(CreateBurial, self).dispatch(request, *args, **kwargs)
 
     def form_invalid(self, form, *args, **kwargs):
-        print form.errors
         messages.error(self.request, _(u'Обнаружены ошибки, их необходимо исправить'))
         return super(CreateBurial, self).form_invalid(form, *args, **kwargs)
 
     def form_valid(self, form, *args, **kwargs):
         b = form.save()
-        b.save()
 
         action = self.get_action()
         if action:

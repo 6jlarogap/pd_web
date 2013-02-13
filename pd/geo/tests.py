@@ -26,7 +26,7 @@ class TestLocationForm(TestCase):
         f = LocationForm(instance=Location.objects.get())
         self.assertDictContainsSubset(data, f.initial)
 
-    def test_fias(self):
+    def _test_fias(self):
         fias_data = dict(
             aoid='',
             formalname='',

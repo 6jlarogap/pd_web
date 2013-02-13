@@ -161,7 +161,7 @@ class BurialForm(forms.ModelForm):
                     if old_value != new_value:
                         changed_data.append((u'%s%s' % (prefix, form.fields[f].label), old_value, new_value))
 
-        self.instance = super(BurialForm, self).save()
+        self.instance = super(BurialForm, self).save(commit=False)
 
         self.instance.changed = datetime.datetime.now()
         self.instance.changed_by = request.user

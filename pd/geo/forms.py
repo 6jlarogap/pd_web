@@ -65,7 +65,7 @@ class LocationForm(forms.ModelForm):
         if self.cleaned_data['country_name']:
             loc = super(LocationForm, self).save(commit=False, *args, **kwargs)
             loc.country, _tmp = Country.objects.get_or_create(name=self.cleaned_data['country_name'])
-            if not self.cleaned_data['fias_1']:
+            if not self.cleaned_data.get('fias_1'):
                 if self.cleaned_data['region_name']:
                     loc.region, _tmp = Region.objects.get_or_create(name=self.cleaned_data['region_name'], country=loc.country)
                     if self.cleaned_data['city_name']:
@@ -76,7 +76,7 @@ class LocationForm(forms.ModelForm):
                 loc.save()
 
                 loc.fias_parents.all().delete()
-                if self.cleaned_data['fias_1']:
+                if self.cleaned_data.get('fias_1'):
                     for fi in range(1, 8):
                         f = 'fias_%s' % fi
                         fd = self.cleaned_data.get(f)
