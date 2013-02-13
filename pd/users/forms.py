@@ -49,10 +49,10 @@ class BaseLoruFormset(BaseInlineFormSet):
 LoruFormset = inlineformset_factory(Org, ProfileLORU, fk_name='ugh', formset=BaseLoruFormset)
 
 class ProfileForm(forms.ModelForm):
-    org_type = forms.ChoiceField(label=_(u"Тип"), choices=Org.PROFILE_TYPES, required=False)
-    org_name = forms.CharField(label=_(u"Краткое название организации"), required=False)
+    org_type = forms.ChoiceField(label=_(u"Тип"), choices=Org.PROFILE_TYPES)
+    org_name = forms.CharField(label=_(u"Краткое название организации"))
     org_full_name = forms.CharField(label=_(u"Полное название организации"), required=False)
-    org_inn = forms.CharField(label=_(u"ИНН организации"), required=False)
+    org_inn = forms.CharField(label=_(u"ИНН организации"))
     org_director = forms.CharField(label=_(u"Директор"), required=False)
 
     class Meta:
@@ -63,8 +63,8 @@ class ProfileForm(forms.ModelForm):
         inn = self.cleaned_data['org_inn']
         if inn:
             orgs = Org.objects.filter(inn=inn)
-            if self.instance and self.instance.pk:
-                orgs = orgs.exclude(pk=self.instance.pk)
+            if self.instance and self.instance.org:
+                orgs = orgs.exclude(pk=self.instance.org.pk)
             if orgs.exists():
                 raise forms.ValidationError(_(u"ИНН уже зарегистрирован"))
         return inn
