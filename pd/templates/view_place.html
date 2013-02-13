@@ -28,6 +28,7 @@
                 {% if place.responsible.phones %}
                     (тел. {{ place.responsible.phones }})
                 {% endif %}
+                <a href="{% url create_burial %}" class="btn" onclick="alert('Не готово'); return false;">{% trans "открепить" %}</a>
             </dd>
         {% endif %}
     </dl>
