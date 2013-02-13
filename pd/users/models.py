@@ -9,7 +9,7 @@ class Profile(models.Model):
     is_agent = models.BooleanField(_(u"Агент"), default=False, blank=True)
 
     def __unicode__(self):
-        return self.org and self.org.name or self.user.username
+        return self.user.get_full_name() or self.user.username
 
     def is_loru(self):
         return self.org and self.org.type == Org.PROFILE_LORU
