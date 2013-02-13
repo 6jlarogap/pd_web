@@ -6,16 +6,11 @@
     <h1>{% trans "Заявка" %} {{ b.pk }}</h1>
     <dl>
         <dt>{% trans "Статус" %}:</dt><dd>{{ b.status_str }}</dd>
-        {% if b.is_full %}
-            <dt>{% trans "ЛОРУ" %}:</dt><dd><a href="">{{ b.loru }}</a></dd>
-        {% elif b.is_ugh_only %}
+        {% if b.ugh %}
             <dt>{% trans "УГХ" %}:</dt><dd>{{ b.ugh }}</dd>
-            <dt>{% trans "ЛОРУ" %}:</dt>
-            <dd>
-                {% for loru_link in b.ugh.loru_list.all %}
-                    <a href="">{{ loru_link.loru }}</a>{% if not forloop.last %}, {% endif %}
-                {% endfor %}
-            </dd>
+        {% endif %}
+        {% if b.loru %}
+            <dt>{% trans "ЛОРУ" %}:</dt><dd><a href="">{{ b.loru }}</a></dd>
         {% endif %}
         {% if b.deadman %}
             <dt>{% trans "Усопший" %}:</dt>
