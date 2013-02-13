@@ -7,7 +7,7 @@
     <table class="table table-bordered table-striped">
         <tr>
             <th>{% trans "Номер" %}</th>
-            {% if user.profile.is_ugh %}<th>{% trans "ЛОРУ" %}</th>{% endif %}
+            {% if user.profile.is_ugh %}<th>{% trans "Заявитель" %}</th>{% endif %}
             <th>{% trans "Кладбище" %}</th>
             <th>{% trans "Место" %}</th>
             <th>{% trans "Усопший" %}</th>
@@ -18,7 +18,15 @@
         {% for b in burials %}
             <tr>
                 <td>{{ b.pk }}</td>
-                {% if user.profile.is_ugh %}<th>{{ b.loru_name }}</th>{% endif %}
+                {% if user.profile.is_ugh %}
+                    <th>
+                        {% if b.applicant %}
+                            {{ b.applicant }}
+                        {% else %}
+                            {{ b.loru_name }}
+                        {% endif %}
+                    </th>
+                {% endif %}
                 <td>{{ b.cemetery }} / {{ b.ugh_name }}</td>
                 <td>
                     {% trans "Участок" %}: {{ b.area|default:"" }}<br/>
