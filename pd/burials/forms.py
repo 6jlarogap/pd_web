@@ -327,6 +327,9 @@ class BurialCommitForm(BurialForm):
             if not self.cleaned_data.get('loru') or not self.cleaned_data.get('agent'):
                 if not self.applicant_form.is_valid_data():
                     raise forms.ValidationError(_(u"Нужно указать ЛОРУ или ФЛ-Заявителя"))
+            if self.cleaned_data.get('loru') or self.cleaned_data.get('agent'):
+                if self.applicant_form.is_valid_data():
+                    raise forms.ValidationError(_(u"Нужно указать либо ЛОРУ, либо ФЛ-Заявителя"))
 
         return self.cleaned_data
 
