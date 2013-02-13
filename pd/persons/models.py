@@ -158,9 +158,9 @@ class PersonID(models.Model):
     """
 
     person = models.OneToOneField(BasePerson)
-    id_type = models.ForeignKey(IDDocumentType, verbose_name=_(u"Тип документа"))
-    series = models.CharField(_(u"Серия*"), max_length=255)
-    number = models.CharField(_(u"Номер*"), max_length=255)
+    id_type = models.ForeignKey(IDDocumentType, verbose_name=_(u"Тип документа"), blank=True, null=True)
+    series = models.CharField(_(u"Серия*"), max_length=255, blank=True, null=True)
+    number = models.CharField(_(u"Номер*"), max_length=255, blank=True, null=True)
     source = models.ForeignKey(DocumentSource, verbose_name=_(u"Кем выдан"), blank=True, null=True)
     date = models.DateField(_(u"Дата выдачи"), blank=True, null=True)
 

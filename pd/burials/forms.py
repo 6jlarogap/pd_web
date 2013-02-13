@@ -308,7 +308,10 @@ class BurialCommitForm(BurialForm):
         pass
 
     def setup_required_applicant_id(self):
-        pass
+        if self.data.get('applicant-last_name'):
+            for f in self.applicant_id_form.fields:
+                if f in ['id_type', 'series', 'number',]:
+                    self.applicant_id_form.fields[f].required = True
 
     def clean(self):
         if self.cleaned_data.get('burial_type') not in Burial.NEW_BURIAL_TYPES:

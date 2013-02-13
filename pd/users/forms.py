@@ -100,11 +100,14 @@ class UserDataForm(forms.ModelForm):
         super(UserDataForm, self).__init__(*args, **kwargs)
         if self.instance and self.instance.profile:
             self.initial['is_agent'] = self.instance.profile.is_agent
+        if self.instance and self.instance.profile and self.instance.profile.is_ugh():
+            del self.fields['is_agent']
 
     def save(self, *args, **kwargs):
         user = super(UserDataForm, self).save(*args, **kwargs)
-        user.profile.is_agent = self.cleaned_data['is_agent']
-        user.profile.save()
+        if not user.profile.is_ugh():
+            user.profile.is_agent = self.cleaned_data['is_agent']
+            user.profile.save()
         return user
 
 class ChangePasswordForm(forms.ModelForm):
