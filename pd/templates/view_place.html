@@ -3,7 +3,7 @@
 {% load i18n %}
 
 {% block content %}
-    <h1>{% trans "Место" %} {{ place }}</h1>
+    <h1>{{ place }}</h1>
     <dl>
         {% if place.cemetery %}
             <dt>Кладбище</dt>
@@ -32,4 +32,18 @@
         {% endif %}
     </dl>
     <a href="{% url create_burial %}" class="btn" onclick="alert('Не готово'); return false;">{% trans "Добавить родственное" %}</a>
+
+    <h2>{% trans "Усопшие" %}</h2>
+    <table class="table table-bordered">
+        <tr>
+            <th>{% trans "Усопший" %}</th>
+            <th></th>
+        </tr>
+        {% for b in place.burial_set.all %}
+            <tr>
+                <td>{{ b.deadman|default:"Неизвестный" }}</td>
+                <td><a href="{% url view_burial b.pk %}" class="btn">{% trans "карточка" %}</a></td>
+            </tr>
+        {% endfor %}
+    </table>
 {% endblock %}
