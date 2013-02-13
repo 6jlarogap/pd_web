@@ -20,6 +20,9 @@ class Profile(models.Model):
     def can_create_burials(self):
         return self.is_ugh() or self.is_loru()
 
+    def full_name(self):
+        return self.user.get_full_name()
+
 class Org(models.Model):
     PROFILE_ZAGS = 'zags'
     PROFILE_LORU = 'loru'

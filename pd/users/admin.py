@@ -12,6 +12,8 @@ class ProfileLORUInline(admin.TabularInline):
     fk_name = 'ugh'
 
 class ProfileAdmin(admin.ModelAdmin):
+    list_display = ['user', 'full_name', 'is_agent', ]
+    list_filter = ['is_agent',]
     inlines = [AgentDoverInline, ]
     readonly_fields = ['user', ]
 
