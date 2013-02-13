@@ -137,6 +137,7 @@ class BurialForm(forms.ModelForm):
         changed_data = []
         obj = self.instance
         if obj and obj.pk:
+            obj = Burial.objects.get(pk=obj.pk)
             for form in [self] + self.forms:
                 prefix = u''
                 if form in [self.deadman_form, self.deadman_address_form, self.dc_form]:
@@ -157,6 +158,8 @@ class BurialForm(forms.ModelForm):
                         old_value = old_value.strftime('%H:%M')
                     if isinstance(new_value, datetime.time):
                         new_value = new_value.strftime('%H:%M')
+
+                    print f, old_value, new_value
 
                     if old_value != new_value:
                         changed_data.append((u'%s%s' % (prefix, form.fields[f].label), old_value, new_value))

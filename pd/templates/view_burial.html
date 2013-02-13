@@ -6,6 +6,7 @@
     <h1>{% trans "Заявка" %} {{ b.pk }}</h1>
     <dl>
         <dt>{% trans "Статус" %}:</dt><dd>{{ b.status_str }}</dd>
+        <dt>{% trans "Тип" %}:</dt><dd>{{ b.get_burial_type_display }}</dd>
         {% if b.ugh %}
             <dt>{% trans "УГХ" %}:</dt><dd>{{ b.ugh }}</dd>
         {% endif %}
@@ -50,7 +51,7 @@
                 {{ b.applicant.personid|default:"" }}
             </dd>
         {% endif %}
-        <dt>{% trans "Дата" %}:</dt><dd>{{ b.plan_date|default:"" }} {{ b.plan_time|default:"" }}</dd>
+        <dt>{% trans "Дата" %}:</dt><dd>{{ b.plan_date|date:"d.m.Y"|default:"" }} {{ b.plan_time|time:"H:i"|default:"" }}</dd>
     </dl>
     <form action="" method="POST">
         {% csrf_token %}
