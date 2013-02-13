@@ -70,7 +70,7 @@ class BurialForm(forms.ModelForm):
             Q(ugh=self.request.user.profile.org)
         ).distinct()
         if self.instance and self.instance.cemetery and self.instance.cemetery.time_slots:
-            choices = [('', '')] + self.instance.cemetery.get_time_choices()
+            choices = [('', '')] + self.instance.cemetery.get_time_choices(date=self.instance.plan_date)
             self.fields['plan_time'].widget = forms.Select(choices=choices)
         if self.instance and self.instance.plan_time:
             self.initial['plan_time'] = self.instance.plan_time.strftime('%H:%M')

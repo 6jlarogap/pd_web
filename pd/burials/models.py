@@ -28,8 +28,19 @@ class Cemetery(models.Model):
     def __unicode__(self):
         return self.name
 
-    def get_time_choices(self):
-        return [(s, s) for s in self.time_slots.split('\n') if s.strip()]
+    def get_time_choices(self, date=None):
+        others = Burial.objects.none()
+        if date:
+            others = Burial.objects.filter(cemetery=self, plan_date=date)
+        result = []
+
+        for s in self.time_slots.split('\n'):
+            if s.strip():
+                planned = filter(lambda b: b.is_ready() and b.plan_time.strftime('%H:%M') == s, others)
+                approved = filter(lambda b: b.is_approved() and b.plan_time.strftime('%H:%M') == s, others)
+                v = u'%s (%s|%s)' % (s, len(planned), len(approved))
+                result.append((s, v))
+        return result
 
 class AreaPurpose(models.Model):
     name = models.CharField(_(u"Название"), max_length=255)
