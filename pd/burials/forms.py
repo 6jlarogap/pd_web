@@ -12,6 +12,7 @@ from geo.forms import LocationForm
 from logs.models import write_log
 from persons.forms import DeadPersonForm, DeathCertificateForm, AlivePersonForm, PersonIDForm
 from persons.models import DeathCertificate, PersonID
+from users.models import Org, Profile
 
 
 class BaseCemeteryForm(forms.ModelForm):
@@ -79,6 +80,12 @@ class BurialForm(forms.ModelForm):
         if self.request.user.profile.is_loru():
             del self.fields['loru']
             del self.fields['agent']
+
+        if self.request.user.profile.is_ugh():
+            ugh = self.request.user.profile.org
+            loru_list = Org.objects.filter(type=Org.PROFILE_LORU, ugh_list__ugh=ugh)
+            self.fields['loru'].queryset = loru_list
+            self.fields['agent'].queryset = Profile.objects.filter(org__in=loru_list, is_agent=True)
 
         self.forms = self.construct_forms()
 
