@@ -90,7 +90,7 @@ class ProfileForm(forms.ModelForm):
         return obj
 
 class UserDataForm(forms.ModelForm):
-    is_agent = forms.BooleanField(label=_(u"Агент"))
+    is_agent = forms.BooleanField(label=_(u"Агент"), required=False)
 
     class Meta:
         model = User
