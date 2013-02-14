@@ -129,9 +129,11 @@ class Burial(models.Model):
 
     SOURCE_FULL = 'full'
     SOURCE_UGH = 'ugh'
+    SOURCE_ARCHIVE = 'archive'
     SOURCE_TYPES = (
         (SOURCE_FULL, _(u"Полная")),
         (SOURCE_UGH, _(u"Только УГХ")),
+        (SOURCE_ARCHIVE, _(u"Архивное")),
     )
 
     burial_type = models.CharField(_(u"Тип захоронения"), max_length=255, null=True, blank=True, choices=BURIAL_TYPES)
@@ -202,11 +204,25 @@ class Burial(models.Model):
     def is_full(self):
         return self.source_type == self.SOURCE_FULL
 
-    def is_ready_to_approve(self):
-        if self.is_full():
+    def is_archive(self):
+        return self.source_type == self.SOURCE_ARCHIVE
+
+    def can_approve(self):
+        if self.is_archive():
+            return False
+        elif self.is_full():
             return self.is_ready()
         else:
             return self.is_draft()
+
+    def can_finish(self):
+        if self.is_archive():
+            return self.is_draft()
+        else:
+            return self.is_approved()
+
+    def can_annulate(self):
+        return self.can_finish() and not self.is_archive()
 
     def can_back(self):
         return self.is_full() and not self.is_edit() and not self.is_finished()

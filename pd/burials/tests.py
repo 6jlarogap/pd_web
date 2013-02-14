@@ -357,3 +357,47 @@ class BurialsTest(TestCase):
         r = self.ugh_client.get('/burials/%s/' % br.pk)
         self.assertEqual(r.status_code, 200)
 
+class TestArchived(TestCase):
+    def setUp(self):
+        activate('ru')
+        self.client = Client()
+        self.ugh_client = Client()
+
+        self.ugh_user = User.objects.create_user(username='ugh', email='test@example.com', password='test')
+        ugh_org = Org.objects.create(type=Org.PROFILE_UGH, name='ugh')
+        Profile.objects.create(user=self.ugh_user, org=ugh_org)
+        self.ugh_client.login(username='ugh', password='test')
+
+        self.cemetery = Cemetery.objects.create(name='test cem', time_begin='12:00', time_end='17:00', ugh=ugh_org)
+        self.zags = Org.objects.create(name='ZAGS', type=Org.PROFILE_ZAGS)
+        self.doc_type = IDDocumentType.objects.create(name='Passport')
+
+    def test_create(self):
+        r = self.ugh_client.get('/burials/create/?archive=1')
+        self.assertEqual(r.status_code, 200)
+
+        self.assertEquals(Burial.objects.all().count(), 0)
+
+        r = self.ugh_client.post('/burials/create/?archive=1', {
+            'burial_type': Burial.BURIAL_TYPES[0][0],
+            'fact_date': datetime.date.today().strftime('%d.%m.%Y'),
+            'cemetery': self.cemetery.pk,
+            'place_number': 123,
+            'deadman-last_name': u'Ivanov',
+            'deadman-dc-zags': self.zags.pk,
+        })
+        self.assertEqual(r.status_code, 302)
+
+        self.assertEquals(Burial.objects.all().count(), 1)
+
+        br = Burial.objects.get()
+
+        self.assertEqual(br.status, Burial.STATUS_DRAFT)
+        self.assertEqual(br.source_type, Burial.SOURCE_ARCHIVE)
+        self.assertEqual(br.ugh, self.ugh_user.profile.org)
+
+        r = self.client.get('/burials/%s/' % br.pk)
+        self.assertEqual(r.status_code, 404)
+
+        r = self.ugh_client.get('/burials/%s/' % br.pk)
+        self.assertEqual(r.status_code, 200)

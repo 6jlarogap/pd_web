@@ -97,7 +97,7 @@ class BurialView(ArchiveMixin, DetailView):
             ))
         if request.POST.get('ready') and b.is_edit() and b.is_full():
             return redirect(reverse('edit_burial', args=[b.pk]) + '?action=ready')
-        if request.POST.get('approve') and request.user.profile.is_ugh() and b.is_ready_to_approve():
+        if request.POST.get('approve') and request.user.profile.is_ugh() and b.can_approve():
             if b.is_full():
                 b.status = Burial.STATUS_APPROVED
                 write_log(request, b, _(u'Заявка согласована'))
@@ -106,20 +106,23 @@ class BurialView(ArchiveMixin, DetailView):
                 ))
             else:
                 return redirect(reverse('edit_burial', args=[b.pk]) + '?action=approve')
-        if request.POST.get('decline') and request.user.profile.is_ugh() and b.is_ready() and b.can_decline():
+        if request.POST.get('decline') and request.user.profile.is_ugh() and b.can_decline():
             b.status = Burial.STATUS_DECLINED
             write_log(request, b, _(u'Заявка отклонена'), reason)
             messages.success(request, _(u"<a href='%s'>Заявка %s</a> отклонена") % (
                 reverse('view_burial', args=[b.pk]), b.pk,
             ))
-        if request.POST.get('complete') and request.user.profile.is_ugh() and b.is_approved():
-            b.status = Burial.STATUS_CLOSED
-            b.close()
-            write_log(request, b, _(u'Заявка закрыта'))
-            messages.success(request, _(u"<a href='%s'>Заявка %s</a> закрыта") % (
-                reverse('view_burial', args=[b.pk]), b.pk,
-            ))
-        if request.POST.get('annulate') and request.user.profile.is_ugh() and b.is_approved():
+        if request.POST.get('complete') and request.user.profile.is_ugh() and b.can_finish():
+            if b.is_archive():
+                return redirect(reverse('edit_burial', args=[b.pk]) + '?action=complete')
+            else:
+                b.status = Burial.STATUS_CLOSED
+                b.close()
+                write_log(request, b, _(u'Заявка закрыта'))
+                messages.success(request, _(u"<a href='%s'>Заявка %s</a> закрыта") % (
+                    reverse('view_burial', args=[b.pk]), b.pk,
+                ))
+        if request.POST.get('annulate') and request.user.profile.is_ugh() and b.can_annulate():
             b.status = Burial.STATUS_ANNULATED
             write_log(request, b, _(u'Заявка аннулирована'), reason)
             messages.success(request, _(u"<a href='%s'>Заявка %s</a> аннулирована") % (
@@ -254,10 +257,17 @@ class CreateBurial(CreateView):
                 )
                 messages.success(self.request, msg)
 
-            if action == 'approve' and self.request.user.profile.is_ugh() and b.is_ready_to_approve() and b.is_ugh_only():
+            if action == 'approve' and self.request.user.profile.is_ugh() and b.can_approve() and b.is_ugh_only():
                 b.status = Burial.STATUS_APPROVED
                 write_log(self.request, b, _(u'Заявка согласована'))
                 messages.success(self.request, _(u"<a href='%s'>Заявка %s</a> согласована") % (
+                    reverse('view_burial', args=[b.pk]), b.pk,
+                ))
+
+            if action == 'complete' and self.request.user.profile.is_ugh() and b.can_finish() and b.is_archive():
+                b.status = Burial.STATUS_CLOSED
+                write_log(self.request, b, _(u'Заявка закрыта'))
+                messages.success(self.request, _(u"<a href='%s'>Заявка %s</a> закрыта") % (
                     reverse('view_burial', args=[b.pk]), b.pk,
                 ))
 
@@ -309,7 +319,7 @@ class EditBurialView(CreateBurial):
         if self.request.user.profile.is_loru():
             q2 = Q(source_type=Burial.SOURCE_FULL, loru=self.request.user.profile.org)
         elif self.request.user.profile.is_ugh():
-            q2 = Q(source_type=Burial.SOURCE_UGH, ugh=self.request.user.profile.org)
+            q2 = Q(source_type__in=[Burial.SOURCE_UGH, Burial.SOURCE_ARCHIVE], ugh=self.request.user.profile.org)
         else:
             return Burial.objects.none()
 

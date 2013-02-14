@@ -59,7 +59,7 @@ class BurialSearchForm(forms.Form):
 class BurialForm(forms.ModelForm):
     class Meta:
         model = Burial
-        exclude = ['place', 'deadman', 'responsible', 'applicant', 'fact_date', ]
+        exclude = ['place', 'deadman', 'responsible', 'applicant', ]
 
     def __init__(self, request, *args, **kwargs):
         super(BurialForm, self).__init__(*args, **kwargs)
@@ -86,6 +86,12 @@ class BurialForm(forms.ModelForm):
             loru_list = Org.objects.filter(type=Org.PROFILE_LORU, ugh_list__ugh=ugh)
             self.fields['loru'].queryset = loru_list
             self.fields['agent'].queryset = Profile.objects.filter(org__in=loru_list, is_agent=True)
+
+        if not self.request.user.profile.is_ugh() or not self.request.REQUEST.get('archive'):
+            del self.fields['fact_date']
+        else:
+            del self.fields['plan_date']
+            del self.fields['plan_time']
 
         self.forms = self.construct_forms()
 
@@ -116,7 +122,8 @@ class BurialForm(forms.ModelForm):
             applicant_id = None
         self.applicant_id_form = PersonIDForm(data=data, prefix='applicant-pid', instance=applicant_id)
 
-        if self.request.user.profile.is_loru():
+        is_archive = self.request.REQUEST.get('archive') or self.instance and self.instance.is_archive()
+        if self.request.user.profile.is_loru() or is_archive:
             return [self.deadman_form, self.deadman_address_form, self.dc_form,
                     self.responsible_form, self.responsible_address_form]
         else:
@@ -184,8 +191,11 @@ class BurialForm(forms.ModelForm):
             if self.request.user.profile.is_loru():
                 self.instance.loru = self.request.user.profile.org
                 self.instance.source_type = Burial.SOURCE_FULL
-            else:
-                self.instance.source_type = Burial.SOURCE_UGH
+            elif self.request.user.profile.is_ugh():
+                if self.request.REQUEST.get('archive'):
+                    self.instance.source_type = Burial.SOURCE_ARCHIVE
+                else:
+                    self.instance.source_type = Burial.SOURCE_UGH
 
         if self.deadman_form.is_valid_data():
             deadman = self.deadman_form.save(commit=False)
