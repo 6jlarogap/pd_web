@@ -12,6 +12,12 @@
         {% endif %}
         {% if b.loru %}
             <dt>{% trans "ЛОРУ" %}:</dt><dd><a href="">{{ b.loru }}</a></dd>
+            {% if b.agent %}
+                <dt>{% trans "Агент" %}:</dt><dd>{{ b.agent }}</dd>
+                {% if b.dover %}
+                    <dt>{% trans "Доверенность" %}:</dt><dd>{{ b.dover }}</dd>
+                {% endif %}
+            {% endif %}
         {% endif %}
         {% if b.deadman %}
             <dt>{% trans "Усопший" %}:</dt>
@@ -20,9 +26,6 @@
                 <br/>
                 {{ b.deadman.address|default:"" }}
             </dd>
-        {% endif %}
-        {% if b.agent %}
-            <dt>{% trans "Агент" %}:</dt><dd>{{ b.agent }}</dd>
         {% endif %}
         <dt>{% trans "Кладбище" %}:</dt><dd>{{ b.cemetery|default:"" }}</dd>
         <dt>{% trans "Место" %}:</dt><dd>
