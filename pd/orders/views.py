@@ -8,8 +8,8 @@ from django.views.generic.edit import CreateView, UpdateView
 from django.views.generic.list import ListView
 from django.utils.translation import ugettext_lazy as _
 from logs.models import write_log
-from orders.forms import ProductForm
-from orders.models import Product
+from orders.forms import ProductForm, OrderForm, OrderItemFormset
+from orders.models import Product, Order
 
 
 class LORURequiredMixin:
@@ -68,3 +68,63 @@ class ProductEdit(LORURequiredMixin, UpdateView):
         return redirect('manage_products')
 
 manage_products_edit = ProductEdit.as_view()
+
+class OrderList(LORURequiredMixin, ListView):
+    template_name = 'order_list.html'
+    model = Order
+
+    def get_queryset(self):
+        return Order.objects.filter(loru=self.request.user.profile.org)
+
+order_list = OrderList.as_view()
+
+class OrderCreate(LORURequiredMixin, CreateView):
+    template_name = 'order_create.html'
+    form_class = OrderForm
+
+    def form_valid(self, form):
+        self.object = form.save(commit=False)
+        self.object.loru = self.request.user.profile.org
+        self.object.save()
+        write_log(self.request, self.object, _(u'Заказ создан'))
+        msg = _(u"<a href='%s'>Заказ %s</a> создан") % (
+            reverse('order_edit', args=[self.object.pk]),
+            self.object.pk,
+        )
+        messages.success(self.request, msg)
+        return redirect('order_edit', self.object.pk)
+
+order_create = OrderCreate.as_view()
+
+class OrderEdit(LORURequiredMixin, UpdateView):
+    template_name = 'order_edit.html'
+    form_class = OrderForm
+
+    def get_queryset(self):
+        return Order.objects.filter(loru=self.request.user.profile.org)
+
+    def dispatch(self, request, *args, **kwargs):
+        self.request = request
+        self.args = args
+        self.kwargs = kwargs
+        self.formset = OrderItemFormset(data=request.POST or None, instance=self.get_object())
+        return super(OrderEdit, self).dispatch(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        data = super(OrderEdit, self).get_context_data(**kwargs)
+        data['formset'] = self.formset
+        return data
+
+    def form_valid(self, form):
+        self.formset.save()
+        self.object = form.save()
+        write_log(self.request, self.object, _(u'Заказ изменен'))
+        msg = _(u"<a href='%s'>Заказ %s</a> изменен") % (
+            reverse('order_edit', args=[self.object.pk]),
+            self.object.pk,
+        )
+        messages.success(self.request, msg)
+        return redirect('order_list')
+
+order_edit = OrderEdit.as_view()
+

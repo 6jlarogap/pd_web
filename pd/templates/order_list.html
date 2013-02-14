@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% load i18n %}
+
+{% block content %}
+    <h1>{% trans "Заказы" %}</h1>
+    <table class="table table-bordered">
+        <tr>
+            <th>{% trans "Дата" %}</th>
+            <th>{% trans "Заказчик" %}</th>
+            <th>{% trans "Позиций" %}</th>
+            <th>{% trans "Стоимость" %}</th>
+            <th></th>
+        </tr>
+        {% for c in object_list %}
+            <tr>
+                <td>{{ c.dt }}</td>
+                <td>{{ c.customer }}</td>
+                <td>{{ c.orderitem_set.all.count }}</td>
+                <td>{{ c.total }}</td>
+                <td>
+                    {% if user.profile.org == c.loru %}
+                        <a href="{% url order_edit c.pk %}" class="btn">{% trans "править" %}</a>
+                    {% endif %}
+                </td>
+            </tr>
+        {% endfor %}
+    </table>
+
+    {% if user.profile.is_loru %}
+        <p>
+            <a class="btn" href="{% url order_create %}">{% trans "создать" %}</a>
+        </p>
+    {% endif %}
+{% endblock %}

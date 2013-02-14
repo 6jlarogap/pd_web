@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% load i18n %}
+
+{% block content %}
+    <h1>{% trans "Заказ" %} {{ form.instance }}</h1>
+    <form action="" method="POST">
+        {% csrf_token %}
+        {{ form.as_p }}
+
+        <h2>{% trans "Позиции" %}</h2>
+        {{ formset.management_form }}
+        <table>
+            {% for f in formset.forms %}
+                {{ f.as_table }}
+            {% endfor %}
+        </table>
+        <p>
+            <input type="submit" class="btn" value="{% trans "Сохранить" %}" class="btn"/>
+        </p>
+    </form>
+{% endblock %}

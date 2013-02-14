@@ -1,4 +1,5 @@
 # coding=utf-8
+from __builtin__ import property
 from django.db import models
 from django.utils.translation import ugettext as _
 
@@ -29,6 +30,8 @@ class Product(models.Model):
 
 class Order(models.Model):
     loru = models.ForeignKey(Org, limit_choices_to={'type': Org.PROFILE_LORU}, null=True, verbose_name=_(u"ЛОРУ"))
+    person = models.CharField(_(u"Заказчик-ФЛ"), max_length=255, null=True, blank=True)
+    org = models.CharField(_(u"Заказчик-ЮЛ"), max_length=255, null=True, blank=True)
     dt = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -38,12 +41,19 @@ class Order(models.Model):
     def __unicode__(self):
         return u'%s %s' % (self.loru, self.dt)
 
+    @property
+    def customer(self):
+        return self.person or self.org
+
+    @property
+    def total(self):
+        return sum([i.total for i in self.orderitem_set.all()], 0)
+
 class OrderItem(models.Model):
-    order = models.ForeignKey(Order)
+    order = models.ForeignKey(Order, editable=False)
     product = models.ForeignKey(Product, verbose_name=_(u"Товар"))
     quantity = models.DecimalField(_(u"Кол-во"), max_digits=20, decimal_places=2, default=1)
-    cost = models.DecimalField(_(u"Цена"), max_digits=20, decimal_places=2)
-    total = models.DecimalField(_(u"Стоимость"), max_digits=20, decimal_places=2)
+    cost = models.DecimalField(_(u"Цена"), max_digits=20, decimal_places=2, editable=False)
 
     class Meta:
         verbose_name = _(u"Позиция")
@@ -51,4 +61,16 @@ class OrderItem(models.Model):
 
     def __unicode__(self):
         return u'%s - %s' % (self.order, self.product)
+    
+    def save(self, *args, **kwargs):
+        if not self.cost:
+            try:
+                self.cost = self.product.price
+            except Product.DoesNotExist:
+                pass
+            else:
+                return super(OrderItem, self).save(*args, **kwargs)
 
+    @property
+    def total(self):
+        return self.cost * self.quantity
