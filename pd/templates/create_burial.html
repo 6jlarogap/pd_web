@@ -7,6 +7,7 @@
     <form action="" method="POST">
         {% csrf_token %}
         {{ form.as_p }}
+        <p><a href="#" class="btn">{% trans "добавить доверенность" %}</a></p>
         <h2>{% trans "Усопший" %} {{ form.deadman_form.instance|default:"" }}</h2>
         <a href="#" onclick="$('#cont_dead').slideToggle(); return false">{% trans "развернуть" %}</a>
         <div id="cont_dead" style="display: none">
@@ -57,5 +58,7 @@
     </form>
     <script type="text/javascript">
         CEMETERY_AREAS = {{ form.cemetery_areas_json }};
+        AGENT_DOVER = {{ form.agent_dover_json }};
+        LORU_AGENTS = {{ form.loru_agents_json }};
     </script>
 {% endblock %}

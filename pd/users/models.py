@@ -61,5 +61,8 @@ class Dover(models.Model):
         verbose_name = _(u'Доверенность')
         verbose_name_plural = _(u'Доверенности')
 
+    def __unicode__(self):
+        return u'%s (%s - %s)' % (self.number, self.begin.strftime('%d.%m.%Y'), self.end.strftime('%d.%m.%Y'))
+
 
 

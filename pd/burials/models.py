@@ -4,7 +4,7 @@ from django.db import models
 from django.utils.translation import ugettext_lazy as _
 
 from persons.models import DeadPerson
-from users.models import Org, Profile
+from users.models import Org, Profile, Dover
 from logs.models import Log
 
 
@@ -165,6 +165,7 @@ class Burial(models.Model):
                              limit_choices_to={'type': Org.PROFILE_LORU}, on_delete=models.PROTECT)
     agent = models.ForeignKey(Profile, verbose_name=_(u"Агент"), null=True, blank=True,
                               limit_choices_to={'is_agent': True}, on_delete=models.PROTECT)
+    dover = models.ForeignKey(Dover, verbose_name=_(u"Доверенность"), null=True, blank=True, on_delete=models.PROTECT)
 
     status = models.CharField(_(u"Статус"), max_length=255, choices=STATUS_CHOICES, default=STATUS_DRAFT, editable=False)
     changed = models.DateTimeField(_(u"Изменено"), editable=False, null=True)

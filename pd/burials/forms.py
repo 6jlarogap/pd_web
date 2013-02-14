@@ -15,7 +15,7 @@ from geo.forms import LocationForm
 from logs.models import write_log
 from persons.forms import DeadPersonForm, DeathCertificateForm, AlivePersonForm, PersonIDForm
 from persons.models import DeathCertificate, PersonID
-from users.models import Org, Profile
+from users.models import Org, Profile, Dover
 
 
 class BaseCemeteryForm(forms.ModelForm):
@@ -83,12 +83,14 @@ class BurialForm(forms.ModelForm):
         if self.request.user.profile.is_loru():
             del self.fields['loru']
             del self.fields['agent']
+            del self.fields['dover']
 
         if self.request.user.profile.is_ugh():
             ugh = self.request.user.profile.org
             loru_list = Org.objects.filter(type=Org.PROFILE_LORU, ugh_list__ugh=ugh)
             self.fields['loru'].queryset = loru_list
             self.fields['agent'].queryset = Profile.objects.filter(org__in=loru_list, is_agent=True)
+            self.fields['dover'].queryset = Dover.objects.filter(agent__org__in=loru_list)
 
         if not self.request.user.profile.is_ugh() or not self.request.REQUEST.get('archive'):
             del self.fields['fact_date']
@@ -134,11 +136,21 @@ class BurialForm(forms.ModelForm):
                     self.responsible_form, self.responsible_address_form,
                     self.applicant_form, self.applicant_address_form, self.applicant_id_form]
 
+    def universal_children_json(self, parent, children_rel, filter_kw=None):
+        parents = {}
+        filter_kw = filter_kw or {}
+        for c in self.fields[parent].queryset:
+            parents[c.pk] = [[a.pk, u'%s' % a] for a in getattr(c, children_rel).filter(**filter_kw)]
+        return mark_safe(json.dumps(parents))
+
     def cemetery_areas_json(self):
-        cemeteries = {}
-        for c in self.fields['cemetery'].queryset:
-            cemeteries[c.pk] = [[a.pk, u'%s' % a] for a in c.area_set.all()]
-        return mark_safe(json.dumps(cemeteries))
+        return self.universal_children_json('cemetery', 'area_set')
+
+    def agent_dover_json(self):
+        return self.universal_children_json('agent', 'dover_set')
+
+    def loru_agents_json(self):
+        return self.universal_children_json('loru', 'profile_set', filter_kw={'is_agent': True})
 
     def is_valid(self):
         return super(BurialForm, self).is_valid() and all([f.is_valid() for f in self.forms])
@@ -153,6 +165,9 @@ class BurialForm(forms.ModelForm):
         if self.cleaned_data.get('loru') and self.cleaned_data.get('agent'):
             if self.cleaned_data['loru'] != self.cleaned_data['agent'].org:
                 raise forms.ValidationError(_(u'Агент не от этого ЛОРУ'))
+        if self.cleaned_data.get('agent') and self.cleaned_data.get('dover'):
+            if self.cleaned_data['agent'] != self.cleaned_data['dover'].agent:
+                raise forms.ValidationError(_(u'Доверенность не от этого Агента'))
         return self.cleaned_data
 
     def save(self, commit=True, **kwargs):

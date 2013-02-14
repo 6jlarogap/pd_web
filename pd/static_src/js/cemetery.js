@@ -148,14 +148,27 @@ function setup_address_autocompletes() {
     });
 }
 
-function updateAreas() {
-    var cem = $('#id_cemetery').val();
+function updateAnything(parent, children, data) {
+    var cem = parent.val();
     var options = '<option value="">----------</option>';
-    var area_list = CEMETERY_AREAS[cem] || [];
+    var area_list = data[cem] || [];
     for (var i in area_list) {
         options += '<option value="'+area_list[i][0]+'">'+area_list[i][1]+'</option>';
     }
-    $('#id_area').html(options);
+    children.html(options);
+    children.change();
+}
+
+function updateAreas() {
+    updateAnything($('#id_cemetery'), $('#id_area'), CEMETERY_AREAS);
+}
+
+function updateDover() {
+    updateAnything($('#id_agent'), $('#id_dover'), AGENT_DOVER);
+}
+
+function updateAgents() {
+    updateAnything($('#id_loru'), $('#id_agent'), LORU_AGENTS);
 }
 
 $(function() {
@@ -169,6 +182,12 @@ $(function() {
 
     $('#id_cemetery').change(updateAreas);
     updateAreas();
+
+    $('#id_agent').change(updateDover);
+    updateDover();
+
+    $('#id_loru').change(updateAgents);
+    updateAgents();
 
     $('#paginator_select').live('change', function() {
         top.location.href = $(this).val();
