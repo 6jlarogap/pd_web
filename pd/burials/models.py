@@ -74,7 +74,11 @@ class Area(models.Model):
         verbose_name_plural = _(u"Участки")
 
     def __unicode__(self):
-        return u'%s (%s, %s, %s могил)' % (self.name, self.get_availability_display(), self.purpose, self.places_count)
+        return _(u'%s (%s, %s, %s могил)') % (
+            self.name,
+            self.get_availability_display() or _(u"откр.неизв"), self.purpose or _(u"назн. неизв"),
+            self.places_count
+        )
 
 class Place(models.Model):
     cemetery = models.ForeignKey(Cemetery, verbose_name=_(u"Кладбище"), on_delete=models.PROTECT)

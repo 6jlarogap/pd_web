@@ -148,6 +148,16 @@ function setup_address_autocompletes() {
     });
 }
 
+function updateAreas() {
+    var cem = $('#id_cemetery').val();
+    var options = '<option value="">----------</option>';
+    var area_list = CEMETERY_AREAS[cem] || [];
+    for (var i in area_list) {
+        options += '<option value="'+area_list[i][0]+'">'+area_list[i][1]+'</option>';
+    }
+    $('#id_area').html(options);
+}
+
 $(function() {
     updateControls();
 
@@ -156,6 +166,9 @@ $(function() {
             $(this).closest('form').attr('action', $(this).attr('rel'));
         }
     });
+
+    $('#id_cemetery').change(updateAreas);
+    updateAreas();
 
     $('#paginator_select').live('change', function() {
         top.location.href = $(this).val();

@@ -1,13 +1,16 @@
 # coding=utf-8
 import datetime
+import json
+
 from django import forms
 from django.contrib import messages
 from django.core.urlresolvers import reverse
 from django.forms.models import inlineformset_factory
+from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext_lazy as _
+from django.db.models.query_utils import Q
 
 from burials.models import Cemetery, Area, Burial, Place
-from django.db.models.query_utils import Q
 from geo.forms import LocationForm
 from logs.models import write_log
 from persons.forms import DeadPersonForm, DeathCertificateForm, AlivePersonForm, PersonIDForm
@@ -130,6 +133,12 @@ class BurialForm(forms.ModelForm):
             return [self.deadman_form, self.deadman_address_form, self.dc_form,
                     self.responsible_form, self.responsible_address_form,
                     self.applicant_form, self.applicant_address_form, self.applicant_id_form]
+
+    def cemetery_areas_json(self):
+        cemeteries = {}
+        for c in self.fields['cemetery'].queryset:
+            cemeteries[c.pk] = [[a.pk, u'%s' % a] for a in c.area_set.all()]
+        return mark_safe(json.dumps(cemeteries))
 
     def is_valid(self):
         return super(BurialForm, self).is_valid() and all([f.is_valid() for f in self.forms])
