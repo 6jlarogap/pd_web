@@ -117,6 +117,7 @@ INSTALLED_APPS = (
     'burials',
     'persons',
     'users',
+    'orders',
     'logs',
 )
 

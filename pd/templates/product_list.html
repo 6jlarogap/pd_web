@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% load i18n %}
+
+{% block content %}
+    <h1>{% trans "Товары" %}</h1>
+    <table class="table table-bordered">
+        <tr>
+            <th>{% trans "Название" %}</th>
+            <th>{% trans "Ед. изм." %}</th>
+            <th>{% trans "Цена" %}</th>
+            <th></th>
+        </tr>
+        {% for c in object_list %}
+            <tr>
+                <td>{{ c.name }}</td>
+                <td>{{ c.measure }}</td>
+                <td>{{ c.price }}</td>
+                <td>
+                    {% if user.profile.org == c.loru %}
+                        <a href="{% url manage_products_edit c.pk %}" class="btn">{% trans "править" %}</a>
+                    {% endif %}
+                </td>
+            </tr>
+        {% endfor %}
+    </table>
+
+    {% if user.profile.is_loru %}
+        <p>
+            <a class="btn" href="{% url manage_products_create %}">{% trans "создать" %}</a>
+        </p>
+    {% endif %}
+{% endblock %}
