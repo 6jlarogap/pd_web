@@ -126,7 +126,11 @@ class RequestsTest(TestCase):
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r.context['burials'].count(), 0)
 
-        r = self.ugh_client.post('/burials/%s/' % br.pk, {'complete': '1'}, follow=True)
+        r = self.ugh_client.post('/burials/%s/' % br.pk, {
+            'complete': '1',
+            'close-cemetery': self.cemetery.pk, 'close-area': self.area.pk,
+            'close-place_number': '123', 'close-fact_date': datetime.date.today().strftime('%d.%m.%Y'),
+        }, follow=True)
 
         r = self.ugh_client.get('/?show=1')
         self.assertEqual(r.context['burials'].count(), 0)
@@ -158,7 +162,11 @@ class RequestsTest(TestCase):
 
         r = self.loru_client.post('/burials/%s/' % br.pk, {'ready': '1'}, follow=True)
         r = self.ugh_client.post('/burials/%s/' % br.pk, {'approve': '1'}, follow=True)
-        r = self.ugh_client.post('/burials/%s/' % br.pk, {'complete': '1'}, follow=True)
+        r = self.ugh_client.post('/burials/%s/' % br.pk, {
+            'complete': '1',
+            'close-cemetery': self.cemetery.pk, 'close-area': self.area.pk,
+            'close-place_number': '123', 'close-fact_date': datetime.date.today().strftime('%d.%m.%Y'),
+        }, follow=True)
 
         br = Burial.objects.all()[0]
         self.assertEqual(br.status, Burial.STATUS_CLOSED)
