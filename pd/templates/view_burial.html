@@ -89,6 +89,7 @@
                     <input type="submit" class="btn" name="decline" value="{% trans "отклонить" %}">
                 {% endif %}
             {% elif b.can_finish %}
+                {{ close_form.as_p }}
                 <input type="submit" class="btn" name="complete" value="{% trans "завершить" %}">
                 {% if b.can_annulate %}
                     <br/><br/>

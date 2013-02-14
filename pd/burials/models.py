@@ -28,17 +28,24 @@ class Cemetery(models.Model):
     def __unicode__(self):
         return self.name
 
-    def get_time_choices(self, date=None):
+    def get_time_choices(self, date, burial, request):
         others = Burial.objects.none()
+        others_loru = Burial.objects.none()
         if date:
             others = Burial.objects.filter(cemetery=self, plan_date=date)
+            others_loru = Burial.objects.filter(loru=request.user.profile.org, plan_date=date)
         result = []
 
         for s in self.time_slots.split('\n'):
             if s.strip():
                 planned = filter(lambda b: b.is_ready() and b.plan_time.strftime('%H:%M') == s, others)
                 approved = filter(lambda b: b.is_approved() and b.plan_time.strftime('%H:%M') == s, others)
-                v = u'%s (%s|%s)' % (s, len(planned), len(approved))
+                if request.user.profile.is_loru():
+                    planned_others = filter(lambda b: b.is_ready() and b.plan_time.strftime('%H:%M') == s, others_loru)
+                    approved_others = filter(lambda b: b.is_approved() and b.plan_time.strftime('%H:%M') == s, others_loru)
+                    v = u'%s (%s|%s|%s|%s)' % (s, len(planned), len(approved), len(planned_others), len(approved_others))
+                else:
+                    v = u'%s (%s|%s)' % (s, len(planned), len(approved))
                 result.append((s, v))
         return result
 

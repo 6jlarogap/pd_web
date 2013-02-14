@@ -73,7 +73,11 @@ class BurialForm(forms.ModelForm):
             Q(ugh=self.request.user.profile.org)
         ).distinct()
         if self.instance and self.instance.cemetery and self.instance.cemetery.time_slots:
-            choices = [('', '')] + self.instance.cemetery.get_time_choices(date=self.instance.plan_date)
+            choices = [('', '----------')] + self.instance.cemetery.get_time_choices(
+                date=self.instance.plan_date,
+                burial=self.instance,
+                request=self.request,
+            )
             self.fields['plan_time'].widget = forms.Select(choices=choices)
         if self.instance and self.instance.plan_time:
             self.initial['plan_time'] = self.instance.plan_time.strftime('%H:%M')
@@ -139,8 +143,9 @@ class BurialForm(forms.ModelForm):
     def universal_children_json(self, parent, children_rel, filter_kw=None):
         parents = {}
         filter_kw = filter_kw or {}
-        for c in self.fields[parent].queryset:
-            parents[c.pk] = [[a.pk, u'%s' % a] for a in getattr(c, children_rel).filter(**filter_kw)]
+        if self.fields.get(parent):
+            for c in self.fields[parent].queryset:
+                parents[c.pk] = [[a.pk, u'%s' % a] for a in getattr(c, children_rel).filter(**filter_kw)]
         return mark_safe(json.dumps(parents))
 
     def cemetery_areas_json(self):
@@ -305,6 +310,9 @@ class BurialCommitForm(BurialForm):
         if bt not in Burial.NEW_BURIAL_TYPES:
             self.fields['place_number'].required = True
 
+        if self.instance.is_archive():
+            self.fields['fact_date'].required = True
+
         self.setup_required_deadman()
         self.setup_required_deadman_address()
         self.setup_required_deadman_dc()
@@ -374,3 +382,15 @@ class BurialCommitForm(BurialForm):
             self.data.update(self.form_to_data(self))
             for f in self.forms:
                 self.data.update(self.form_to_data(f))
+
+class BurialCloseForm(forms.ModelForm):
+    class Meta:
+        model = Burial
+        fields = ['cemetery', 'area', 'row', 'place_number', 'fact_date', ]
+
+    def __init__(self, *args, **kwargs):
+        super(BurialCloseForm, self).__init__(*args, **kwargs)
+        self.initial['fact_date'] = self.instance.plan_date
+        for f in self.fields:
+            if f not in ['row', ]:
+                self.fields[f].required = True

@@ -14,7 +14,7 @@ from django.views.generic.detail import DetailView
 from django.views.generic.edit import CreateView
 from django.views.generic.list import ListView
 
-from burials.forms import BurialSearchForm, BurialForm, BurialCommitForm
+from burials.forms import BurialSearchForm, BurialForm, BurialCommitForm, BurialCloseForm
 from burials.models import Reason, Burial
 from geo.forms import LocationForm
 from logs.models import write_log
@@ -84,6 +84,7 @@ class BurialView(ArchiveMixin, DetailView):
     def post(self, request, *args, **kwargs):
         if not request.user.is_authenticated():
             return redirect('dashboard')
+
         b = self.get_object()
         b.changed = datetime.datetime.now()
         b.changed_by = request.user
@@ -113,15 +114,20 @@ class BurialView(ArchiveMixin, DetailView):
                 reverse('view_burial', args=[b.pk]), b.pk,
             ))
         if request.POST.get('complete') and request.user.profile.is_ugh() and b.can_finish():
-            if b.is_archive():
-                return redirect(reverse('edit_burial', args=[b.pk]) + '?action=complete')
+            close_form = self.get_close_form()
+            if close_form.is_valid():
+                b = close_form.save()
+                if b.is_archive():
+                    return redirect(reverse('edit_burial', args=[b.pk]) + '?action=complete')
+                else:
+                    b.status = Burial.STATUS_CLOSED
+                    b.close()
+                    write_log(request, b, _(u'Заявка закрыта'))
+                    messages.success(request, _(u"<a href='%s'>Заявка %s</a> закрыта") % (
+                        reverse('view_burial', args=[b.pk]), b.pk,
+                    ))
             else:
-                b.status = Burial.STATUS_CLOSED
-                b.close()
-                write_log(request, b, _(u'Заявка закрыта'))
-                messages.success(request, _(u"<a href='%s'>Заявка %s</a> закрыта") % (
-                    reverse('view_burial', args=[b.pk]), b.pk,
-                ))
+                return self.get(request, *args, **kwargs)
         if request.POST.get('annulate') and request.user.profile.is_ugh() and b.can_annulate():
             b.status = Burial.STATUS_ANNULATED
             write_log(request, b, _(u'Заявка аннулирована'), reason)
@@ -138,12 +144,16 @@ class BurialView(ArchiveMixin, DetailView):
             messages.success(request, msg)
         return redirect('dashboard')
 
+    def get_close_form(self):
+        return BurialCloseForm(data=self.request.POST or None, prefix='close', instance=self.get_object())
+
     def get_context_data(self, **kwargs):
         return {
             'b': self.get_object(),
             'reason_typical_back': Reason.objects.filter(reason_type=Reason.TYPE_BACK),
             'reason_typical_decline': Reason.objects.filter(reason_type=Reason.TYPE_DECLINE),
             'reason_typical_annulate': Reason.objects.filter(reason_type=Reason.TYPE_ANNULATE),
+            'close_form': self.get_close_form(),
         }
 
 view_burial = BurialView.as_view()
