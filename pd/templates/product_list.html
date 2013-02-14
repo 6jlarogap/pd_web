@@ -7,6 +7,7 @@
     <table class="table table-bordered">
         <tr>
             <th>{% trans "Название" %}</th>
+            <th>{% trans "Тип" %}</th>
             <th>{% trans "Ед. изм." %}</th>
             <th>{% trans "Цена" %}</th>
             <th></th>
@@ -14,6 +15,7 @@
         {% for c in object_list %}
             <tr>
                 <td>{{ c.name }}</td>
+                <td>{{ c.get_ptype_display|default:"" }}</td>
                 <td>{{ c.measure }}</td>
                 <td>{{ c.price }}</td>
                 <td>
