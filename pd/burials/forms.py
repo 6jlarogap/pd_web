@@ -119,6 +119,8 @@ class BurialForm(ChildrenJSONMixin, forms.ModelForm):
             self.fields['agent'].queryset = Profile.objects.filter(org__in=loru_list, is_agent=True)
             self.fields['dover'].queryset = Dover.objects.filter(agent__org__in=loru_list)
 
+            self.fields.keyOrder.insert(self.fields.keyOrder.index('loru'), self.fields.keyOrder.pop(-1))
+
         if not self.request.user.profile.is_ugh() or not self.request.REQUEST.get('archive'):
             del self.fields['fact_date']
         else:
