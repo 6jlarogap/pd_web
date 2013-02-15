@@ -31,7 +31,7 @@
                 <th>{% trans "Email" %}</th>
                 <th>{% trans "Фамилия" %}</th>
                 <th>{% trans "Имя" %}</th>
-                <th>{% trans "Агент" %}</th>
+                {% if user.profile.is_loru %}<th>{% trans "Агент" %}</th>{% endif %}
                 <th>{% trans "Активен" %}</th>
                 <th></th>
             </tr>
@@ -41,7 +41,7 @@
                     <td>{{ p.user.email }}</td>
                     <td>{{ p.user.last_name }}</td>
                     <td>{{ p.user.first_name }}</td>
-                    <td>{{ p.is_agent|yesno }}</td>
+                    {% if user.profile.is_loru %}<td>{{ p.is_agent|yesno }}</td>{% endif %}
                     <td>{{ p.user.is_active|yesno }}</td>
                     <td>
                         <a href="{% url change_password p.user.pk %}" class="btn">сменить пароль</a>
