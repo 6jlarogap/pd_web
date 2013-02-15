@@ -65,7 +65,7 @@ class RequestsTest(TestCase):
 
     def test_created_lists(self):
         r = self.loru_client.post('/burials/create/', {
-            'cemetery': self.cemetery.pk, 'plan_date': '12.12.2013', 'plan_time': '12:00',
+            'cemetery': self.cemetery.pk, 'plan_date': '12.12.2013', 'plan_time': '12:00', 'opf': 'org',
             'deadman-dc-zags': self.zags.pk, 'responsible-personid-number': '11', 'responsible-personid-series': '11',
             'responsible-personid-id_type': self.doc_type.pk,
         })
@@ -90,7 +90,7 @@ class RequestsTest(TestCase):
 
     def test_actions(self):
         r = self.loru_client.post('/burials/create/', {
-            'burial_type': 'common',
+            'burial_type': 'common', 'opf': 'org',
             'cemetery': self.cemetery.pk, 'area': self.area.pk,
             'plan_date': '12.12.2013', 'plan_time': '12:00',
         })
@@ -143,7 +143,7 @@ class RequestsTest(TestCase):
 
     def test_back(self):
         r = self.loru_client.post('/burials/create/', {
-            'burial_type': 'common',
+            'burial_type': 'common', 'opf': 'org',
             'cemetery': self.cemetery.pk, 'area': self.area.pk,
             'plan_date': '12.12.2013', 'plan_time': '12:00',
         })
@@ -173,7 +173,7 @@ class RequestsTest(TestCase):
 
     def test_archive(self):
         r = self.loru_client.post('/burials/create/', {
-            'cemetery': self.cemetery.pk, 'plan_date': '12.12.2013', 'plan_time': '12:00',
+            'cemetery': self.cemetery.pk, 'plan_date': '12.12.2013', 'plan_time': '12:00', 'opf': 'org',
             'deadman-dc-zags': self.zags.pk, 'responsible-personid-number': '11', 'responsible-personid-series': '11',
             'responsible-personid-id_type': self.doc_type.pk,
         })
@@ -197,7 +197,7 @@ class RequestsTest(TestCase):
 
     def test_edit(self):
         r = self.loru_client.post('/burials/create/', {
-            'cemetery': self.cemetery.pk, 'plan_date': '12.12.2013', 'plan_time': '12:00',
+            'cemetery': self.cemetery.pk, 'plan_date': '12.12.2013', 'plan_time': '12:00', 'opf': 'org',
             'deadman-dc-zags': self.zags.pk, 'responsible-personid-number': '11', 'responsible-personid-series': '11',
             'responsible-personid-id_type': self.doc_type.pk,
             })
@@ -217,10 +217,10 @@ class RequestsTest(TestCase):
 
     def test_edit(self):
         r = self.loru_client.post('/burials/create/', {
-            'cemetery': self.cemetery.pk, 'plan_date': '12.12.2013', 'plan_time': '12:00',
+            'cemetery': self.cemetery.pk, 'plan_date': '12.12.2013', 'plan_time': '12:00', 'opf': 'org',
             'deadman-dc-zags': self.zags.pk, 'responsible-personid-number': '11', 'responsible-personid-series': '11',
             'responsible-personid-id_type': self.doc_type.pk,
-            })
+        })
         self.assertEqual(r.status_code, 302)
         br = Burial.objects.all()[0]
 
@@ -340,6 +340,7 @@ class BurialsTest(TestCase):
             'burial_type': Burial.BURIAL_TYPES[0][0],
             'fact_date': datetime.date.today().strftime('%d.%m.%Y'),
             'cemetery': self.cemetery.pk,
+            'opf': 'person',
             'place_number': 123,
             'deadman-last_name': u'Ivanov',
             'deadman-dc-zags': self.zags.pk,
@@ -390,6 +391,7 @@ class TestArchived(TestCase):
             'burial_type': Burial.BURIAL_TYPES[0][0],
             'fact_date': datetime.date.today().strftime('%d.%m.%Y'),
             'cemetery': self.cemetery.pk,
+            'opf': 'org',
             'place_number': 123,
             'deadman-last_name': u'Ivanov',
             'deadman-dc-zags': self.zags.pk,

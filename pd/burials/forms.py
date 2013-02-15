@@ -60,6 +60,8 @@ class BurialSearchForm(forms.Form):
     no_responsible = forms.BooleanField(required=False, initial=False, label=_(u"Без отв."))
 
 class BurialForm(forms.ModelForm):
+    opf = forms.ChoiceField(label=_(u'ОПФ'), choices=(('person', _(u'ФЛ')), ('org', _(u'ЮЛ'))))
+
     class Meta:
         model = Burial
         exclude = ['place', 'deadman', 'responsible', 'applicant', ]
@@ -173,7 +175,7 @@ class BurialForm(forms.ModelForm):
             if self.cleaned_data['agent'] != self.cleaned_data['dover'].agent:
                 raise forms.ValidationError(_(u'Доверенность не от этого Агента'))
 
-        if self.cleaned_data.get('loru') and self.applicant_form.is_valid_data():
+        if not self.cleaned_data.get('loru') and not self.applicant_form.is_valid_data():
             raise forms.ValidationError(_(u"Нужно указать либо ЛОРУ, либо ФЛ-Заявителя"))
 
         return self.cleaned_data
@@ -252,7 +254,7 @@ class BurialForm(forms.ModelForm):
         else:
             self.instance.responsible = None
 
-        if self.applicant_form.is_valid_data():
+        if self.cleaned_data.get('opf') == 'person' and self.applicant_form.is_valid_data():
             applicant = self.applicant_form.save(commit=False)
             if self.applicant_address_form.is_valid_data():
                 applicant.address = self.applicant_address_form.save()
@@ -263,6 +265,7 @@ class BurialForm(forms.ModelForm):
                 pid.person = applicant
                 pid.save()
             self.instance.applicant = applicant
+            self.instance.loru = None
         else:
             self.instance.applicant = None
 
@@ -375,6 +378,14 @@ class BurialCommitForm(BurialForm):
             if self.cleaned_data.get('loru') or self.cleaned_data.get('agent'):
                 if self.applicant_form.is_valid_data():
                     raise forms.ValidationError(_(u"Нужно указать либо ЛОРУ, либо ФЛ-Заявителя"))
+
+        if self.cleaned_data.get('opf') == 'person':
+            if not self.applicant_form.is_valid_data():
+                raise forms.ValidationError(_(u"Нужно указать ФЛ-Заявителя"))
+
+        if self.cleaned_data.get('opf') == 'org':
+            if not self.cleaned_data.get('loru'):
+                raise forms.ValidationError(_(u"Нужно указать ЛОРУ"))
 
         return self.cleaned_data
 
