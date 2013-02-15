@@ -30,7 +30,7 @@ def sshagent_run(cmd):
         print 'Running', cmd_line
         local(cmd_line)
 
-def deploy():
+def deploy_docs():
     local('git pull')
     local('git push')
 
@@ -52,3 +52,15 @@ def deploy_lite():
     local('ssh-add')
     sshagent_run('cd /home/www-data/django/pd_web/ && sudo -u www-data git pull')
     run('sudo /etc/init.d/apache2 reload')
+
+def deploy():
+    local('git pull')
+    local('git push')
+
+    local('ssh-add')
+    sshagent_run('cd /home/www-data/django/pd_web/ && sudo -u www-data git pull')
+
+    run('sudo /etc/init.d/apache2 reload')
+    run('/home/www-data/django/pd_web/ENV/bin/python /home/www-data/django/pd_web/pd/manage.py migrate --noinput')
+    run('/home/www-data/django/pd_web/ENV/bin/python /home/www-data/django/pd_web/pd/manage.py collectstatic --noinput')
+
