@@ -183,8 +183,8 @@ class BurialForm(forms.ModelForm):
             if not self.cleaned_data.get('agent') and self.cleaned_data.get('dover'):
                 raise forms.ValidationError(_(u'Нельзя указать Доверенность без Агента'))
 
-            if not self.cleaned_data.get('loru') and not self.applicant_form.is_valid_data():
-                raise forms.ValidationError(_(u"Нужно указать либо ЛОРУ, либо ФЛ-Заявителя"))
+            if self.cleaned_data.get('loru') and self.applicant_form.is_valid_data():
+                raise forms.ValidationError(_(u"Нужно указать только либо ЛОРУ, либо ФЛ-Заявителя"))
 
         return self.cleaned_data
 

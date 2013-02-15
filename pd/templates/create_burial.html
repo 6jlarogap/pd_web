@@ -7,7 +7,9 @@
     <form action="" method="POST">
         {% csrf_token %}
         {{ form.as_p }}
-        <p><a href="#" class="btn">{% trans "добавить доверенность" %}</a></p>
+        {% if user.profile.is_ugh %}
+            <p><a href="#" class="btn">{% trans "добавить доверенность" %}</a></p>
+        {% endif %}
         <h2>{% trans "Усопший" %} {{ form.deadman_form.instance|default:"" }}</h2>
         <a href="#" onclick="$('#cont_dead').slideToggle(); return false">{% trans "развернуть" %}</a>
         <div id="cont_dead" style="display: none">
