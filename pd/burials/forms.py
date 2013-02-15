@@ -169,14 +169,20 @@ class BurialForm(forms.ModelForm):
         if self.cleaned_data.get('cemetery') and self.cleaned_data.get('area'):
             if self.cleaned_data['cemetery'] != self.cleaned_data['area'].cemetery:
                 raise forms.ValidationError(_(u'Участок не от этого кладбища'))
-        if self.cleaned_data.get('loru') and self.cleaned_data.get('agent'):
-            if self.cleaned_data['loru'] != self.cleaned_data['agent'].org:
-                raise forms.ValidationError(_(u'Агент не от этого ЛОРУ'))
-        if self.cleaned_data.get('agent') and self.cleaned_data.get('dover'):
-            if self.cleaned_data['agent'] != self.cleaned_data['dover'].agent:
-                raise forms.ValidationError(_(u'Доверенность не от этого Агента'))
 
         if self.request.user.profile.is_ugh():
+            if self.cleaned_data.get('loru') and self.cleaned_data.get('agent'):
+                if self.cleaned_data['loru'] != self.cleaned_data['agent'].org:
+                    raise forms.ValidationError(_(u'Агент не от этого ЛОРУ'))
+            if self.cleaned_data.get('agent') and self.cleaned_data.get('dover'):
+                if self.cleaned_data['agent'] != self.cleaned_data['dover'].agent:
+                    raise forms.ValidationError(_(u'Доверенность не от этого Агента'))
+
+            if not self.cleaned_data.get('loru') and self.cleaned_data.get('agent'):
+                raise forms.ValidationError(_(u'Нельзя указать Агента без ЛОРУ'))
+            if not self.cleaned_data.get('agent') and self.cleaned_data.get('dover'):
+                raise forms.ValidationError(_(u'Нельзя указать Доверенность без Агента'))
+
             if not self.cleaned_data.get('loru') and not self.applicant_form.is_valid_data():
                 raise forms.ValidationError(_(u"Нужно указать либо ЛОРУ, либо ФЛ-Заявителя"))
 

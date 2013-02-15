@@ -5,7 +5,7 @@ from django.test.client import Client
 from django.test.testcases import TestCase
 from django.utils.translation import activate, get_language
 from persons.models import DeadPerson, IDDocumentType
-from users.models import Profile, ProfileLORU, Org
+from users.models import Profile, ProfileLORU, Org, Dover
 
 
 class RequestsTest(TestCase):
@@ -219,13 +219,13 @@ class RequestsTest(TestCase):
         r = self.ugh_client.get('/burials/edit/%s/' % br.pk)
         self.assertEqual(r.status_code, 404)
 
-    def test_edit(self):
+    def test_edit_loru(self):
         r = self.loru_client.post('/burials/create/', {
             'cemetery': self.cemetery.pk, 'plan_date': '12.12.2013', 'plan_time': '12:00',
             'opf': 'person', 'applicant-last_name': u'Petrov',
             'deadman-dc-zags': self.zags.pk, 'responsible-personid-number': '11', 'responsible-personid-series': '11',
             'responsible-personid-id_type': self.doc_type.pk,
-        })
+            })
         self.assertEqual(r.status_code, 302)
         br = Burial.objects.all()[0]
 
@@ -284,6 +284,32 @@ class BurialsTest(TestCase):
         r = self.ugh_client.get('/burials/?fio=Ivanov Ivan')
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r.context['burials'].count(), 0)
+
+    def test_hierarchy(self):
+        loru = Org.objects.create(name='loru', type=Org.PROFILE_LORU)
+        ProfileLORU.objects.create(loru=loru, ugh=self.ugh_user.profile.org)
+        agent = Profile.objects.create(org=loru, is_agent=True)
+        dover = Dover.objects.create(agent=agent, number=1, begin='2010-10-10', end='2020-10-10')
+
+        r = self.ugh_client.post('/burials/create/', {
+            'plan_date': '12.12.2013', 'opf': 'org',
+            'dover': dover.pk,
+        })
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.context['form'].is_valid(), False)
+
+        r = self.ugh_client.post('/burials/create/', {
+            'plan_date': '12.12.2013', 'opf': 'org',
+            'agent': agent.pk, 'dover': dover.pk,
+        })
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.context['form'].is_valid(), False)
+
+        r = self.ugh_client.post('/burials/create/', {
+            'plan_date': '12.12.2013', 'opf': 'org',
+            'loru': loru.pk, 'agent': agent.pk, 'dover': dover.pk,
+        })
+        self.assertEqual(r.status_code, 302)
 
     def test_paginate(self):
         r = self.ugh_client.get('/burials/')
