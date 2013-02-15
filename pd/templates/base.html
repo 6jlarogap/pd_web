@@ -91,7 +91,7 @@
                         </li>
                         {% if user.profile.is_loru %}
                             <li{% if request.path == '/burials/create/' %} class="active"{% endif %}>
-                                <a href="{% url create_burial %}">{% trans "Создать заявку" %}</a>
+                                <a href="{% url create_burial %}">{% trans "Создать захоронение" %}</a>
                             </li>
                             <li{% if request.path == '/order/' %} class="active"{% endif %}>
                                 <a href="{% url order_list %}">{% trans "Счет-заказы" %}</a>

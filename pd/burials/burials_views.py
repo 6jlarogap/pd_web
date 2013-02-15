@@ -16,9 +16,7 @@ from django.views.generic.list import ListView
 
 from burials.forms import BurialSearchForm, BurialForm, BurialCommitForm, BurialCloseForm
 from burials.models import Reason, Burial
-from geo.forms import LocationForm
 from logs.models import write_log
-from persons.forms import DeadPersonForm, DeathCertificateForm, AlivePersonForm, PersonIDForm
 
 
 class BurialsListGenericMixin:
@@ -90,8 +88,8 @@ class BurialView(ArchiveMixin, DetailView):
         reason = request.POST.get('reason') or request.POST.get('reason_typical')
         if request.POST.get('back') and request.user.profile.is_loru() and b.can_back():
             b.status = Burial.STATUS_BACKED
-            write_log(request, b, _(u'Заявка отозвана'), reason)
-            messages.success(request, _(u"<a href='%s'>Заявка %s</a> отозвана") % (
+            write_log(request, b, _(u'Захоронение отозвано'), reason)
+            messages.success(request, _(u"<a href='%s'>Захоронение %s</a> отозвано") % (
                 reverse('view_burial', args=[b.pk]), b.pk,
             ))
         if request.POST.get('ready') and b.is_edit() and b.is_full():
@@ -99,16 +97,16 @@ class BurialView(ArchiveMixin, DetailView):
         if request.POST.get('approve') and request.user.profile.is_ugh() and b.can_approve():
             if b.is_full():
                 b.status = Burial.STATUS_APPROVED
-                write_log(request, b, _(u'Заявка согласована'))
-                messages.success(request, _(u"<a href='%s'>Заявка %s</a> согласована") % (
+                write_log(request, b, _(u'Захоронение согласовано'))
+                messages.success(request, _(u"<a href='%s'>Захоронение %s</a> согласовано") % (
                     reverse('view_burial', args=[b.pk]), b.pk,
                 ))
             else:
                 return redirect(reverse('edit_burial', args=[b.pk]) + '?action=approve')
         if request.POST.get('decline') and request.user.profile.is_ugh() and b.can_decline():
             b.status = Burial.STATUS_DECLINED
-            write_log(request, b, _(u'Заявка отклонена'), reason)
-            messages.success(request, _(u"<a href='%s'>Заявка %s</a> отклонена") % (
+            write_log(request, b, _(u'Захоронение отклонено'), reason)
+            messages.success(request, _(u"<a href='%s'>Захоронение %s</a> отклонено") % (
                 reverse('view_burial', args=[b.pk]), b.pk,
             ))
         if request.POST.get('complete') and request.user.profile.is_ugh() and b.can_finish():
@@ -120,22 +118,22 @@ class BurialView(ArchiveMixin, DetailView):
                 else:
                     b.status = Burial.STATUS_CLOSED
                     b.close()
-                    write_log(request, b, _(u'Заявка закрыта'))
-                    messages.success(request, _(u"<a href='%s'>Заявка %s</a> закрыта") % (
+                    write_log(request, b, _(u'Захоронение закрыто'))
+                    messages.success(request, _(u"<a href='%s'>Захоронение %s</a> закрыто") % (
                         reverse('view_burial', args=[b.pk]), b.pk,
                     ))
             else:
                 return self.get(request, *args, **kwargs)
         if request.POST.get('annulate') and request.user.profile.is_ugh() and b.can_annulate():
             b.status = Burial.STATUS_ANNULATED
-            write_log(request, b, _(u'Заявка аннулирована'), reason)
-            messages.success(request, _(u"<a href='%s'>Заявка %s</a> аннулирована") % (
+            write_log(request, b, _(u'Захоронение аннулировано'), reason)
+            messages.success(request, _(u"<a href='%s'>Захоронение %s</a> аннулировано") % (
                 reverse('view_burial', args=[b.pk]), b.pk,
             ))
         if old_status != b.status:
             b.save()
         else:
-            msg = _(u"Выполнить операцию не удалось: <a href='%s'>заявка</a> в статусе \"%s\"") % (
+            msg = _(u"Выполнить операцию не удалось: <a href='%s'>захоронение в статусе \"%s\"") % (
                 reverse('view_burial', args=[b.pk]),
                 b.get_status_display(),
             )
@@ -259,30 +257,30 @@ class CreateBurial(CreateView):
 
             if action == 'ready' and self.request.user.profile.is_loru() and b.is_edit() and b.is_full():
                 b.status = Burial.STATUS_READY
-                write_log(self.request, b, _(u'Заявка отправлена на согласование'))
-                msg = _(u"<a href='%s'>Заявка %s</a> отправлена на согласование") % (
+                write_log(self.request, b, _(u'Захоронение отправлено на согласование'))
+                msg = _(u"<a href='%s'>Захоронение %s</a> отправлено на согласование") % (
                     reverse('view_burial', args=[b.pk]), b.pk,
                 )
                 messages.success(self.request, msg)
 
             if action == 'approve' and self.request.user.profile.is_ugh() and b.can_approve() and b.is_ugh_only():
                 b.status = Burial.STATUS_APPROVED
-                write_log(self.request, b, _(u'Заявка согласована'))
-                messages.success(self.request, _(u"<a href='%s'>Заявка %s</a> согласована") % (
+                write_log(self.request, b, _(u'Захоронение согласовано'))
+                messages.success(self.request, _(u"<a href='%s'>Захоронение %s</a> согласовано") % (
                     reverse('view_burial', args=[b.pk]), b.pk,
                 ))
 
             if action == 'complete' and self.request.user.profile.is_ugh() and b.can_finish() and b.is_archive():
                 b.status = Burial.STATUS_CLOSED
-                write_log(self.request, b, _(u'Заявка закрыта'))
-                messages.success(self.request, _(u"<a href='%s'>Заявка %s</a> закрыта") % (
+                write_log(self.request, b, _(u'Захоронение закрыто'))
+                messages.success(self.request, _(u"<a href='%s'>Захоронение %s</a> закрыто") % (
                     reverse('view_burial', args=[b.pk]), b.pk,
                 ))
 
             if old_status != b.status:
                 b.save()
             else:
-                msg = _(u"Выполнить операцию не удалось: <a href='%s'>заявка</a> в статусе \"%s\"") % (
+                msg = _(u"Выполнить операцию не удалось: <a href='%s'>захоронение</a> в статусе \"%s\"") % (
                     reverse('view_burial', args=[b.pk]),
                     b.get_status_display(),
                 )

@@ -3,7 +3,7 @@
 {% load i18n %}
 
 {% block content %}
-    {% block form_title %}<h1>{% trans "Новая заявка" %}</h1>{% endblock form_title %}
+    {% block form_title %}<h1>{% trans "Новое захоронение" %}</h1>{% endblock form_title %}
     <form action="" method="POST" class="burial-form">
         {% csrf_token %}
         {{ form.as_p }}

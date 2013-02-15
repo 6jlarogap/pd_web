@@ -180,8 +180,8 @@ class Burial(models.Model):
                                    on_delete=models.PROTECT)
 
     class Meta:
-        verbose_name = _(u"Заявка на захоронение")
-        verbose_name_plural = _(u"Заявки на захоронение")
+        verbose_name = _(u"Захоронение")
+        verbose_name_plural = _(u"Захоронение")
 
     def is_edit(self):
         return self.is_draft() or self.is_backed() or self.is_declined()

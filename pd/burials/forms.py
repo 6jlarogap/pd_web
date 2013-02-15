@@ -285,11 +285,11 @@ class BurialForm(ChildrenJSONMixin, forms.ModelForm):
 
         if changed_data or not self.instance or not self.instance.pk:
             changed_data_str = u'\n'.join([u'%s: %s -> %s' % cd for cd in changed_data])
-            write_log(self.request, self.instance, _(u'Заявка сохранена') + u'\n' + changed_data_str)
+            write_log(self.request, self.instance, _(u'Захоронение сохранено') + u'\n' + changed_data_str)
         else:
-            write_log(self.request, self.instance, _(u'Заявка сохранена'))
+            write_log(self.request, self.instance, _(u'Захоронение сохранено'))
 
-        msg = _(u"<a href='%s'>Заявка %s</a> сохранена") % (
+        msg = _(u"<a href='%s'>Захоронение %s</a> сохранено") % (
             reverse('view_burial', args=[self.instance.pk]),
             self.instance.pk,
         )
