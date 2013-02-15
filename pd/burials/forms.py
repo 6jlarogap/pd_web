@@ -39,6 +39,26 @@ class CemeteryAdminForm(BaseCemeteryForm):
 
 AreaFormset = inlineformset_factory(Cemetery, Area, can_delete=False)
 
+class ChildrenJSONMixin:
+    def universal_children_json(self, parent, children_rel, filter_kw=None):
+        parents = {}
+        filter_kw = filter_kw or {}
+        if self.fields.get(parent):
+            for c in self.fields[parent].queryset:
+                parents[c.pk] = [[a.pk, u'%s' % a] for a in getattr(c, children_rel).filter(**filter_kw)]
+        return mark_safe(json.dumps(parents))
+
+    def cemetery_areas_json(self):
+        return self.universal_children_json('cemetery', 'area_set')
+
+    def agent_dover_json(self):
+        return self.universal_children_json('agent', 'dover_set')
+
+    def loru_agents_json(self):
+        return self.universal_children_json('loru', 'profile_set', filter_kw={'is_agent': True})
+
+
+
 class BurialSearchForm(forms.Form):
     """
     Форма поиска на главной странице.
@@ -59,7 +79,7 @@ class BurialSearchForm(forms.Form):
     place = forms.CharField(required=False, label=_(u"Место"))
     no_responsible = forms.BooleanField(required=False, initial=False, label=_(u"Без отв."))
 
-class BurialForm(forms.ModelForm):
+class BurialForm(ChildrenJSONMixin, forms.ModelForm):
     opf = forms.ChoiceField(label=_(u'ОПФ'), choices=(('person', _(u'ФЛ')), ('org', _(u'ЮЛ'))))
 
     class Meta:
@@ -141,23 +161,6 @@ class BurialForm(forms.ModelForm):
             return [self.deadman_form, self.deadman_address_form, self.dc_form,
                     self.responsible_form, self.responsible_address_form,
                     self.applicant_form, self.applicant_address_form, self.applicant_id_form]
-
-    def universal_children_json(self, parent, children_rel, filter_kw=None):
-        parents = {}
-        filter_kw = filter_kw or {}
-        if self.fields.get(parent):
-            for c in self.fields[parent].queryset:
-                parents[c.pk] = [[a.pk, u'%s' % a] for a in getattr(c, children_rel).filter(**filter_kw)]
-        return mark_safe(json.dumps(parents))
-
-    def cemetery_areas_json(self):
-        return self.universal_children_json('cemetery', 'area_set')
-
-    def agent_dover_json(self):
-        return self.universal_children_json('agent', 'dover_set')
-
-    def loru_agents_json(self):
-        return self.universal_children_json('loru', 'profile_set', filter_kw={'is_agent': True})
 
     def is_valid(self):
         return super(BurialForm, self).is_valid() and all([f.is_valid() for f in self.forms])
@@ -405,14 +408,15 @@ class BurialCommitForm(BurialForm):
             for f in self.forms:
                 self.data.update(self.form_to_data(f))
 
-class BurialCloseForm(forms.ModelForm):
+class BurialCloseForm(ChildrenJSONMixin, forms.ModelForm):
     class Meta:
         model = Burial
         fields = ['cemetery', 'area', 'row', 'place_number', 'fact_date', ]
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, request, *args, **kwargs):
         super(BurialCloseForm, self).__init__(*args, **kwargs)
         self.initial['fact_date'] = self.instance.plan_date
         for f in self.fields:
             if f not in ['row', ]:
                 self.fields[f].required = True
+        self.fields['cemetery'].queryset = Cemetery.objects.filter(ugh=request.user.profile.org)

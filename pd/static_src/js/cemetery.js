@@ -150,12 +150,16 @@ function setup_address_autocompletes() {
 
 function updateAnything(parent, children, data) {
     var cem = parent.val();
+    var val = children.val();
     var options = '<option value="">----------</option>';
     var area_list = data[cem] || [];
     for (var i in area_list) {
         options += '<option value="'+area_list[i][0]+'">'+area_list[i][1]+'</option>';
     }
     children.html(options);
+    if (val) {
+        children.val(val);
+    }
     children.change();
 }
 

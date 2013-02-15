@@ -1,6 +1,8 @@
 import datetime
+from burials.forms import BurialCloseForm
 from burials.models import Cemetery, Burial, Place, Area
 from django.contrib.auth.models import User
+from django.http import HttpRequest
 from django.test.client import Client
 from django.test.testcases import TestCase
 from django.utils.translation import activate, get_language
@@ -443,3 +445,22 @@ class TestArchived(TestCase):
 
         r = self.ugh_client.get('/burials/%s/' % br.pk)
         self.assertEqual(r.status_code, 200)
+
+class TestForms(TestCase):
+    def setUp(self):
+        activate('ru')
+        self.client = Client()
+        self.ugh_client = Client()
+
+        self.ugh_user = User.objects.create_user(username='ugh', email='test@example.com', password='test')
+        ugh_org = Org.objects.create(type=Org.PROFILE_UGH, name='ugh')
+        Profile.objects.create(user=self.ugh_user, org=ugh_org)
+        self.ugh_client.login(username='ugh', password='test')
+
+    def test_children(self):
+        request = HttpRequest()
+        request.user = self.ugh_user
+        f = BurialCloseForm(request)
+        self.assertEqual(f.cemetery_areas_json(), "{}")
+        self.assertEqual(f.agent_dover_json(), "{}")
+        self.assertEqual(f.loru_agents_json(), "{}")

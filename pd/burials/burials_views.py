@@ -143,7 +143,7 @@ class BurialView(ArchiveMixin, DetailView):
         return redirect('dashboard')
 
     def get_close_form(self):
-        return BurialCloseForm(data=self.request.POST or None, prefix='close', instance=self.get_object())
+        return BurialCloseForm(request=self.request, data=self.request.POST or None, instance=self.get_object())
 
     def get_context_data(self, **kwargs):
         return {
