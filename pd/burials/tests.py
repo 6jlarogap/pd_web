@@ -132,8 +132,8 @@ class RequestsTest(TestCase):
 
         r = self.ugh_client.post('/burials/%s/' % br.pk, {
             'complete': '1',
-            'close-cemetery': self.cemetery.pk, 'close-area': self.area.pk,
-            'close-place_number': '123', 'close-fact_date': datetime.date.today().strftime('%d.%m.%Y'),
+            'cemetery': self.cemetery.pk, 'area': self.area.pk,
+            'place_number': '123', 'fact_date': datetime.date.today().strftime('%d.%m.%Y'),
         }, follow=True)
 
         r = self.ugh_client.get('/?show=1')
@@ -168,8 +168,8 @@ class RequestsTest(TestCase):
         r = self.ugh_client.post('/burials/%s/' % br.pk, {'approve': '1'}, follow=True)
         r = self.ugh_client.post('/burials/%s/' % br.pk, {
             'complete': '1',
-            'close-cemetery': self.cemetery.pk, 'close-area': self.area.pk,
-            'close-place_number': '123', 'close-fact_date': datetime.date.today().strftime('%d.%m.%Y'),
+            'cemetery': self.cemetery.pk, 'area': self.area.pk,
+            'place_number': '123', 'fact_date': datetime.date.today().strftime('%d.%m.%Y'),
         }, follow=True)
 
         br = Burial.objects.all()[0]
