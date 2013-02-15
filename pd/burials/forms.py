@@ -112,7 +112,7 @@ class BurialForm(ChildrenJSONMixin, forms.ModelForm):
             del self.fields['dover']
             del self.fields['opf']
 
-        if self.request.user.profile.is_ugh():
+        if self.request.user.profile.is_ugh() or self.instance.is_ugh_only():
             ugh = self.request.user.profile.org
             loru_list = Org.objects.filter(type=Org.PROFILE_LORU, ugh_list__ugh=ugh)
             self.fields['loru'].queryset = loru_list
@@ -120,12 +120,20 @@ class BurialForm(ChildrenJSONMixin, forms.ModelForm):
             self.fields['dover'].queryset = Dover.objects.filter(agent__org__in=loru_list)
 
             self.fields.keyOrder.insert(self.fields.keyOrder.index('loru'), self.fields.keyOrder.pop(-1))
+            if self.instance.pk:
+                if self.instance.loru and self.instance.is_ugh():
+                    self.initial['opf'] = 'org'
+                else:
+                    self.initial['opf'] = 'person'
 
-        if not self.request.user.profile.is_ugh() or not self.request.REQUEST.get('archive'):
-            del self.fields['fact_date']
-        else:
+        if self.request.user.profile.is_ugh() and self.request.REQUEST.get('archive'):
             del self.fields['plan_date']
             del self.fields['plan_time']
+        elif self.instance.is_archive():
+            del self.fields['plan_date']
+            del self.fields['plan_time']
+        else:
+            del self.fields['fact_date']
 
         self.forms = self.construct_forms()
 

@@ -111,7 +111,7 @@
         {% endif %}
         {% if user.profile.org == b.loru and b.is_edit and b.is_full %}
             <a class="btn" href="{% url edit_burial b.pk %}">{% trans "правка" %}</a>
-        {% elif user.profile.org == b.ugh and b.is_edit and b.is_ugh_only %}
+        {% elif user.profile.org == b.ugh and b.is_edit and b.is_ugh %}
             <a class="btn" href="{% url edit_burial b.pk %}">{% trans "правка" %}</a>
         {% endif %}
     </form>

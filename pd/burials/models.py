@@ -219,6 +219,9 @@ class Burial(models.Model):
     def is_archive(self):
         return self.source_type == self.SOURCE_ARCHIVE
 
+    def is_ugh(self):
+        return self.is_ugh_only() or self.is_archive()
+
     def can_approve(self):
         if self.is_archive():
             return False
