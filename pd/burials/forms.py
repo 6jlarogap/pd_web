@@ -172,6 +172,10 @@ class BurialForm(forms.ModelForm):
         if self.cleaned_data.get('agent') and self.cleaned_data.get('dover'):
             if self.cleaned_data['agent'] != self.cleaned_data['dover'].agent:
                 raise forms.ValidationError(_(u'Доверенность не от этого Агента'))
+
+        if self.cleaned_data.get('loru') and self.applicant_form.is_valid_data():
+            raise forms.ValidationError(_(u"Нужно указать либо ЛОРУ, либо ФЛ-Заявителя"))
+
         return self.cleaned_data
 
     def save(self, commit=True, **kwargs):
@@ -373,7 +377,6 @@ class BurialCommitForm(BurialForm):
                     raise forms.ValidationError(_(u"Нужно указать либо ЛОРУ, либо ФЛ-Заявителя"))
 
         return self.cleaned_data
-
 
     def mock_data(self):
         if not self.data:
