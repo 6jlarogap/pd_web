@@ -42,11 +42,9 @@ class DashboardView(BurialsListGenericMixin, TemplateView):
             pass
         else:
             if profile.is_loru():
-                qs &= Q(status=Burial.STATUS_DRAFT) | \
-                      Q(status=Burial.STATUS_BACKED) | \
-                      Q(status=Burial.STATUS_DECLINED)
+                qs &= Q(status__in=[Burial.STATUS_DRAFT, Burial.STATUS_BACKED, Burial.STATUS_DECLINED])
             if profile.is_ugh():
-                qs &= Q(status=Burial.STATUS_READY) | Q(status=Burial.STATUS_APPROVED)
+                qs &= Q(status__in=[Burial.STATUS_READY, Burial.STATUS_APPROVED])
         return {'burials': Burial.objects.filter(qs).distinct()}
 
     def get(self, request, *args, **kwargs):

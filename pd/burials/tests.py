@@ -54,6 +54,7 @@ class RequestsTest(TestCase):
 
         r = self.loru_client.post('/burials/create/', {
             'cemetery': self.cemetery.pk, 'plan_date': '12.12.2013', 'plan_time': '12:00',
+            'opf': 'person', 'applicant-last_name': u'Petrov',
             'deadman-dc-zags': self.zags.pk, 'responsible-personid-number': '11', 'responsible-personid-series': '11',
             'responsible-personid-id_type': self.doc_type.pk,
         })
@@ -65,7 +66,8 @@ class RequestsTest(TestCase):
 
     def test_created_lists(self):
         r = self.loru_client.post('/burials/create/', {
-            'cemetery': self.cemetery.pk, 'plan_date': '12.12.2013', 'plan_time': '12:00', 'opf': 'org',
+            'cemetery': self.cemetery.pk, 'plan_date': '12.12.2013', 'plan_time': '12:00',
+            'opf': 'person', 'applicant-last_name': u'Petrov',
             'deadman-dc-zags': self.zags.pk, 'responsible-personid-number': '11', 'responsible-personid-series': '11',
             'responsible-personid-id_type': self.doc_type.pk,
         })
@@ -90,7 +92,7 @@ class RequestsTest(TestCase):
 
     def test_actions(self):
         r = self.loru_client.post('/burials/create/', {
-            'burial_type': 'common', 'opf': 'org',
+            'burial_type': 'common', 'opf': 'person', 'applicant-last_name': u'Petrov',
             'cemetery': self.cemetery.pk, 'area': self.area.pk,
             'plan_date': '12.12.2013', 'plan_time': '12:00',
         })
@@ -143,7 +145,7 @@ class RequestsTest(TestCase):
 
     def test_back(self):
         r = self.loru_client.post('/burials/create/', {
-            'burial_type': 'common', 'opf': 'org',
+            'burial_type': 'common', 'opf': 'person', 'applicant-last_name': u'Petrov',
             'cemetery': self.cemetery.pk, 'area': self.area.pk,
             'plan_date': '12.12.2013', 'plan_time': '12:00',
         })
@@ -173,7 +175,8 @@ class RequestsTest(TestCase):
 
     def test_archive(self):
         r = self.loru_client.post('/burials/create/', {
-            'cemetery': self.cemetery.pk, 'plan_date': '12.12.2013', 'plan_time': '12:00', 'opf': 'org',
+            'cemetery': self.cemetery.pk, 'plan_date': '12.12.2013', 'plan_time': '12:00',
+            'opf': 'person', 'applicant-last_name': u'Petrov',
             'deadman-dc-zags': self.zags.pk, 'responsible-personid-number': '11', 'responsible-personid-series': '11',
             'responsible-personid-id_type': self.doc_type.pk,
         })
@@ -197,10 +200,11 @@ class RequestsTest(TestCase):
 
     def test_edit(self):
         r = self.loru_client.post('/burials/create/', {
-            'cemetery': self.cemetery.pk, 'plan_date': '12.12.2013', 'plan_time': '12:00', 'opf': 'org',
+            'cemetery': self.cemetery.pk, 'plan_date': '12.12.2013', 'plan_time': '12:00',
+            'opf': 'person', 'applicant-last_name': u'Petrov',
             'deadman-dc-zags': self.zags.pk, 'responsible-personid-number': '11', 'responsible-personid-series': '11',
             'responsible-personid-id_type': self.doc_type.pk,
-            })
+        })
         self.assertEqual(r.status_code, 302)
 
         br = Burial.objects.all()[0]
@@ -217,7 +221,8 @@ class RequestsTest(TestCase):
 
     def test_edit(self):
         r = self.loru_client.post('/burials/create/', {
-            'cemetery': self.cemetery.pk, 'plan_date': '12.12.2013', 'plan_time': '12:00', 'opf': 'org',
+            'cemetery': self.cemetery.pk, 'plan_date': '12.12.2013', 'plan_time': '12:00',
+            'opf': 'person', 'applicant-last_name': u'Petrov',
             'deadman-dc-zags': self.zags.pk, 'responsible-personid-number': '11', 'responsible-personid-series': '11',
             'responsible-personid-id_type': self.doc_type.pk,
         })
@@ -391,7 +396,8 @@ class TestArchived(TestCase):
             'burial_type': Burial.BURIAL_TYPES[0][0],
             'fact_date': datetime.date.today().strftime('%d.%m.%Y'),
             'cemetery': self.cemetery.pk,
-            'opf': 'org',
+            'opf': 'person',
+            'applicant-last_name': u'Petrov',
             'place_number': 123,
             'deadman-last_name': u'Ivanov',
             'deadman-dc-zags': self.zags.pk,

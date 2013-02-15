@@ -90,6 +90,7 @@ class BurialForm(forms.ModelForm):
             del self.fields['loru']
             del self.fields['agent']
             del self.fields['dover']
+            del self.fields['opf']
 
         if self.request.user.profile.is_ugh():
             ugh = self.request.user.profile.org
@@ -175,8 +176,9 @@ class BurialForm(forms.ModelForm):
             if self.cleaned_data['agent'] != self.cleaned_data['dover'].agent:
                 raise forms.ValidationError(_(u'Доверенность не от этого Агента'))
 
-        if not self.cleaned_data.get('loru') and not self.applicant_form.is_valid_data():
-            raise forms.ValidationError(_(u"Нужно указать либо ЛОРУ, либо ФЛ-Заявителя"))
+        if self.request.user.profile.is_ugh():
+            if not self.cleaned_data.get('loru') and not self.applicant_form.is_valid_data():
+                raise forms.ValidationError(_(u"Нужно указать либо ЛОРУ, либо ФЛ-Заявителя"))
 
         return self.cleaned_data
 
@@ -254,20 +256,21 @@ class BurialForm(forms.ModelForm):
         else:
             self.instance.responsible = None
 
-        if self.cleaned_data.get('opf') == 'person' and self.applicant_form.is_valid_data():
-            applicant = self.applicant_form.save(commit=False)
-            if self.applicant_address_form.is_valid_data():
-                applicant.address = self.applicant_address_form.save()
-            applicant.save()
+        if self.request.user.profile.is_ugh():
+            if self.cleaned_data.get('opf') == 'person' and self.applicant_form.is_valid_data():
+                applicant = self.applicant_form.save(commit=False)
+                if self.applicant_address_form.is_valid_data():
+                    applicant.address = self.applicant_address_form.save()
+                applicant.save()
 
-            if self.request.user.profile.is_ugh() and self.applicant_id_form.is_valid_data():
-                pid = self.applicant_id_form.save(commit=False)
-                pid.person = applicant
-                pid.save()
-            self.instance.applicant = applicant
-            self.instance.loru = None
-        else:
-            self.instance.applicant = None
+                if self.applicant_id_form.is_valid_data():
+                    pid = self.applicant_id_form.save(commit=False)
+                    pid.person = applicant
+                    pid.save()
+                self.instance.applicant = applicant
+                self.instance.loru = None
+            else:
+                self.instance.applicant = None
 
         self.instance.save()
 
@@ -379,13 +382,13 @@ class BurialCommitForm(BurialForm):
                 if self.applicant_form.is_valid_data():
                     raise forms.ValidationError(_(u"Нужно указать либо ЛОРУ, либо ФЛ-Заявителя"))
 
-        if self.cleaned_data.get('opf') == 'person':
-            if not self.applicant_form.is_valid_data():
-                raise forms.ValidationError(_(u"Нужно указать ФЛ-Заявителя"))
+            if self.cleaned_data.get('opf') == 'person':
+                if not self.applicant_form.is_valid_data():
+                    raise forms.ValidationError(_(u"Нужно указать ФЛ-Заявителя"))
 
-        if self.cleaned_data.get('opf') == 'org':
-            if not self.cleaned_data.get('loru'):
-                raise forms.ValidationError(_(u"Нужно указать ЛОРУ"))
+            if self.cleaned_data.get('opf') == 'org':
+                if not self.cleaned_data.get('loru'):
+                    raise forms.ValidationError(_(u"Нужно указать ЛОРУ"))
 
         return self.cleaned_data
 
