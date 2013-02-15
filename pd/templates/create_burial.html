@@ -4,7 +4,7 @@
 
 {% block content %}
     {% block form_title %}<h1>{% trans "Новая заявка" %}</h1>{% endblock form_title %}
-    <form action="" method="POST">
+    <form action="" method="POST" class="burial-form">
         {% csrf_token %}
         {{ form.as_p }}
         {% if user.profile.is_ugh %}

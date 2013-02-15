@@ -17,7 +17,7 @@ function setup_address_autocompletes() {
             });
         }
     }
-    $('input').attr('autocomplete', 'off');
+    $('.burial-form input').attr('autocomplete', 'off');
 
     COUNTRY_URL = '/geo/autocomplete/country/';
     REGION_URL = '/geo/autocomplete/region/';
