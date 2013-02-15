@@ -189,6 +189,21 @@ $(function() {
     $('#id_loru').change(updateAgents);
     updateAgents();
 
+    $('#id_opf').change(function() {
+        if ($(this).val() == 'org') {
+            $('#applicant_form_block').hide();
+            $('#id_loru').closest('p').show();
+            $('#id_agent').closest('p').show();
+            $('#id_dover').closest('p').show();
+        } else {
+            $('#applicant_form_block').show();
+            $('#id_loru').closest('p').hide();
+            $('#id_agent').closest('p').hide();
+            $('#id_dover').closest('p').hide();
+        }
+    });
+    $('#id_opf').change();
+
     $('#paginator_select').live('change', function() {
         top.location.href = $(this).val();
     });
