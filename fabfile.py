@@ -45,22 +45,21 @@ def deploy_docs():
     sshagent_run('cd /home/www-data/django/pd_web/ && sudo -u www-data git pull')
     run('sudo /etc/init.d/apache2 reload')
 
-def deploy_lite():
-    local('git pull')
-    local('git push')
-
-    local('ssh-add')
-    sshagent_run('cd /home/www-data/django/pd_web/ && sudo -u www-data git pull')
-    run('sudo /etc/init.d/apache2 reload')
-
 def deploy():
+    local('git push')
+
+    local('ssh-add')
+    sshagent_run('cd /home/www-data/django/pd_web/ && sudo -u www-data git pull')
+    run('sudo /etc/init.d/apache2 reload')
+
+def deploy_full():
     local('git pull')
     local('git push')
 
     local('ssh-add')
     sshagent_run('cd /home/www-data/django/pd_web/ && sudo -u www-data git pull')
 
+    run('cd /home/www-data/django/pd_web/pd/ && ../ENV/bin/python ./manage.py migrate --noinput')
+    run('cd /home/www-data/django/pd_web/pd/ && ../ENV/bin/python ./manage.py collectstatic --noinput')
     run('sudo /etc/init.d/apache2 reload')
-    run('/home/www-data/django/pd_web/ENV/bin/python /home/www-data/django/pd_web/pd/manage.py migrate --noinput')
-    run('/home/www-data/django/pd_web/ENV/bin/python /home/www-data/django/pd_web/pd/manage.py collectstatic --noinput')
 
