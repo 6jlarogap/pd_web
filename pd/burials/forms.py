@@ -131,8 +131,7 @@ class BurialForm(forms.ModelForm):
             applicant_id = None
         self.applicant_id_form = PersonIDForm(data=data, prefix='applicant-pid', instance=applicant_id)
 
-        is_archive = self.request.REQUEST.get('archive') or self.instance and self.instance.is_archive()
-        if self.request.user.profile.is_loru() or is_archive:
+        if self.request.user.profile.is_loru():
             return [self.deadman_form, self.deadman_address_form, self.dc_form,
                     self.responsible_form, self.responsible_address_form]
         else:

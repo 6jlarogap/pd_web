@@ -28,7 +28,7 @@
                 {{ form.responsible_address_form.as_p }}
             </div>
         </div>
-        {% if user.profile.is_ugh and not form.instance.is_archive and not request.REQUEST.archive %}
+        {% if user.profile.is_ugh %}
             <h2>{% trans "Заявитель" %} {{ form.applicant_form.instance|default:"" }}</h2>
             <a href="#" onclick="$('#cont_applicant').slideToggle(); return false">{% trans "развернуть" %}</a>
             <div id="cont_applicant" style="display: none">
