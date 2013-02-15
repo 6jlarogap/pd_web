@@ -328,7 +328,7 @@ class BurialCommitForm(BurialForm):
         if bt not in Burial.NEW_BURIAL_TYPES:
             self.fields['place_number'].required = True
 
-        if self.instance.is_archive():
+        if self.instance.is_archive() and self.fields.get('fact_date'):
             self.fields['fact_date'].required = True
 
         self.setup_required_deadman()
