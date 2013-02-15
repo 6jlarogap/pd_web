@@ -178,6 +178,10 @@ function updateAgents() {
 $(function() {
     updateControls();
 
+    if (!window.CEMETERY_AREAS) { CEMETERY_AREAS = {} }
+    if (!window.AGENT_DOVER) { AGENT_DOVER = {} }
+    if (!window.LORU_AGENTS) { LORU_AGENTS = {} }
+
     $('.btn-commit-burial').click(function() {
         if ($(this).attr('rel')) {
             $(this).closest('form').attr('action', $(this).attr('rel'));
@@ -207,6 +211,8 @@ $(function() {
         }
     });
     $('#id_opf').change();
+
+    $(':input:visible:first').focus();
 
     $('#paginator_select').live('change', function() {
         top.location.href = $(this).val();
