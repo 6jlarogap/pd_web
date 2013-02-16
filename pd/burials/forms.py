@@ -18,6 +18,8 @@ from persons.models import DeathCertificate, PersonID
 from users.models import Org, Profile, Dover
 
 
+OPF_CHOICES = (('person', _(u'ФЛ')), ('org', _(u'ЮЛ')))
+
 class BaseCemeteryForm(forms.ModelForm):
     def clean_time_slots(self):
         slots = self.cleaned_data['time_slots'].split('\n')
@@ -128,7 +130,7 @@ class BurialSearchForm(forms.Form):
     no_responsible = forms.BooleanField(required=False, initial=False, label=_(u"Без отв."))
 
 class BurialForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelForm):
-    opf = forms.ChoiceField(label=_(u'ОПФ'), choices=(('person', _(u'ФЛ')), ('org', _(u'ЮЛ'))))
+    opf = forms.ChoiceField(label=_(u'ОПФ'), choices=OPF_CHOICES, widget=forms.RadioSelect)
 
     class Meta:
         model = Burial
@@ -173,6 +175,9 @@ class BurialForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelForm):
                     self.initial['opf'] = 'org'
                 else:
                     self.initial['opf'] = 'person'
+
+        if not self.instance.pk:
+            self.initial['places_type'] = self.request.user.profile.places_type
 
         if self.request.user.profile.is_ugh() and self.request.REQUEST.get('archive'):
             del self.fields['plan_date']

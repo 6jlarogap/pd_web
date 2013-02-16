@@ -3,9 +3,23 @@ from django.db import models
 from django.utils.translation import ugettext_lazy as _
 
 class Profile(models.Model):
+    PLACE_CEMETERY = 'cemetery'
+    PLACE_AREA = 'area'
+    PLACE_ROW = 'row'
+    PLACE_K2 = 'k2'
+    PLACE_MANUAL = 'manual'
+    PLACE_TYPES = (
+        (PLACE_CEMETERY, _(u'По кладбищу')),
+        (PLACE_AREA, _(u'По участку')),
+        (PLACE_ROW, _(u'По ряду')),
+        (PLACE_K2, _(u'Кладбище + год')),
+        (PLACE_MANUAL, _(u'Ручное')),
+    )
+
     user = models.OneToOneField('auth.User', editable=False, null=True)
     org = models.ForeignKey('users.Org', null=True)
 
+    places_type = models.CharField(_(u"Номера мест"), max_length=255, choices=PLACE_TYPES, default=PLACE_MANUAL)
     is_agent = models.BooleanField(_(u"Агент"), default=False, blank=True)
 
     def __unicode__(self):
