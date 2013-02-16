@@ -173,10 +173,10 @@ class BurialForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelForm):
 
             self.fields.keyOrder.insert(self.fields.keyOrder.index('loru'), self.fields.keyOrder.pop(-1))
             if self.instance.pk:
-                if self.instance.loru and self.instance.is_ugh():
-                    self.initial['opf'] = 'org'
-                else:
+                if self.instance.applicant and self.instance.is_ugh():
                     self.initial['opf'] = 'person'
+                else:
+                    self.initial['opf'] = 'org'
 
         if self.request.user.profile.is_ugh() and self.request.REQUEST.get('archive'):
             del self.fields['plan_date']
@@ -391,6 +391,7 @@ class BurialCommitForm(BurialForm):
 
             if self.instance.agent_director or self.data.get('agent_director'):
                 self.fields['dover'].required = False
+                self.fields['agent'].required = False
 
         self.setup_required_deadman()
         self.setup_required_deadman_address()

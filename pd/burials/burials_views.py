@@ -307,6 +307,8 @@ class CreateBurial(CreateView):
     def get_form_class(self):
         if self.get_action():
             return BurialCommitForm
+        elif self.get_object() and self.get_object().is_finished() and self.request.user.profile.is_ugh():
+            return BurialCommitForm
         else:
             return BurialForm
 
@@ -330,13 +332,14 @@ class EditBurialView(CreateBurial):
             Q(status=Burial.STATUS_BACKED)
 
         if self.request.user.profile.is_loru():
-            q2 = Q(source_type=Burial.SOURCE_FULL, loru=self.request.user.profile.org)
+            q2 = q & Q(source_type=Burial.SOURCE_FULL, loru=self.request.user.profile.org)
         elif self.request.user.profile.is_ugh():
             q2 = Q(source_type__in=[Burial.SOURCE_UGH, Burial.SOURCE_ARCHIVE], ugh=self.request.user.profile.org)
+            q2 |= Q(source_type=Burial.STATUS_CLOSED)
         else:
             return Burial.objects.none()
 
-        return Burial.objects.filter(q, q2)
+        return Burial.objects.filter(q2)
 
     def get_object(self):
         try:

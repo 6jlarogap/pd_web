@@ -46,6 +46,12 @@
                 <a href="{% url view_place b.place.pk %}" class="btn">{% trans "карточка" %}</a>
             {% endif %}
         </dd>
+        {% if b.cemetery and b.is_approved %}
+            <dt>{% trans "Алгоритм расстановки мест" %}:</dt>
+            <dd>
+                {{ b.cemetery.get_places_algo_display }}
+            </dd>
+        {% endif %}
         {% if b.get_responsible %}
             <dt>{% trans "Ответственный" %}:</dt>
             <dd>
@@ -122,6 +128,8 @@
         {% if user.profile.org == b.loru and b.is_edit and b.is_full %}
             <a class="btn" href="{% url edit_burial b.pk %}">{% trans "правка" %}</a>
         {% elif user.profile.org == b.ugh and b.is_edit and b.is_ugh %}
+            <a class="btn" href="{% url edit_burial b.pk %}">{% trans "правка" %}</a>
+        {% elif user.profile.org == b.ugh and b.is_closed %}
             <a class="btn" href="{% url edit_burial b.pk %}">{% trans "правка" %}</a>
         {% endif %}
         {% if b.can_print_notification %}

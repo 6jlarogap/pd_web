@@ -240,9 +240,12 @@ $(function() {
         if ($(this).is(':checked')) {
             $('#id_dover').val('');
             $('#id_dover').closest('p').hide();
+            $('#id_agent').val('');
+            $('#id_agent').closest('p').hide();
             $('.btn-dover').closest('p').hide();
         } else {
             $('#id_dover').closest('p').show();
+            $('#id_agent').closest('p').show();
             $('.btn-dover').closest('p').show();
         }
     });
