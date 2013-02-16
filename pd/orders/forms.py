@@ -16,9 +16,9 @@ class ProductForm(forms.ModelForm):
 class OrderForm(forms.ModelForm):
     opf = forms.ChoiceField(label=_(u'ОПФ'), choices=OPF_CHOICES, widget=forms.RadioSelect, initial='person')
 
-    person_last_name = forms.CharField(label=_(u"Фамилия"))
-    person_first_name = forms.CharField(label=_(u"Имя"))
-    person_middle_name = forms.CharField(label=_(u"Отчество"))
+    person_last_name = forms.CharField(label=_(u"Фамилия"), required=False)
+    person_first_name = forms.CharField(label=_(u"Имя"), required=False)
+    person_middle_name = forms.CharField(label=_(u"Отчество"), required=False)
 
     class Meta:
         model = Order
@@ -32,6 +32,11 @@ class OrderForm(forms.ModelForm):
             self.initial['person_last_name'] = self.instance.person.last_name or u""
             self.initial['person_first_name'] = self.instance.person.first_name or u""
             self.initial['person_middle_name'] = self.instance.person.middle_name or u""
+
+        if self.data and self.data.get('opf') == 'person':
+            self.fields['person_last_name'].required = True
+            self.fields['person_first_name'].required = True
+            self.fields['person_middle_name'].required = True
 
     def save(self, commit=True, *args, **kwargs):
         self.instance = super(OrderForm, self).save(*args, **kwargs)

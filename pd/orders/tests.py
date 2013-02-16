@@ -77,22 +77,22 @@ class OrdersTest(TestCase):
         self.assertEqual(Order.objects.all().count(), 0)
 
         r = self.loru_client.post('/order/create/', {
-            'person': 'Test testov', 'org': self.loru_org.pk,
+            'org': self.loru_org.pk, 'opf': 'org',
         })
         self.assertEqual(r.status_code, 302)
         self.assertEqual(Order.objects.all().count(), 1)
         self.assertEqual(Order.objects.get().loru, self.loru_user.profile.org)
-        self.assertEqual(Order.objects.get().person, 'Test testov')
-        self.assertEqual(Order.objects.get().org, 'Test LTD')
+        self.assertEqual(Order.objects.get().person, None)
+        self.assertEqual(Order.objects.get().org, self.loru_org)
 
     def test_edit(self):
-        o = Order.objects.create(loru=self.loru_user.profile.org, org='test LTD')
+        o = Order.objects.create(loru=self.loru_user.profile.org, org=self.loru_org)
 
         r = self.loru_client.get('/order/%s/edit/' % o.pk)
         self.assertEqual(r.status_code, 200)
 
         r = self.loru_client.post('/order/%s/edit/' % o.pk, {
-            'person_last_name': 'Test', 'person_first_name': 'Test', 'person_middle_name': 'Test', 'org': '',
+            'person_last_name': 'Test', 'person_first_name': 'Test', 'person_middle_name': 'Test', 'org': '', 'opf': 'person',
             'orderitem_set-0-id': u'', 'orderitem_set-0-product': u'%s' % self.product.pk, 'orderitem_set-0-quantity': u'10',
             'orderitem_set-1-id': u'', 'orderitem_set-1-product': u'', 'orderitem_set-1-quantity': u'1',
             'orderitem_set-2-id': u'', 'orderitem_set-2-quantity': u'1', 'orderitem_set-2-product': u'',
@@ -100,7 +100,7 @@ class OrdersTest(TestCase):
         })
         self.assertEqual(r.status_code, 302)
         self.assertEqual(Order.objects.get().loru, self.loru_user.profile.org)
-        self.assertEqual(Order.objects.get().person, 'Test testov')
-        self.assertEqual(Order.objects.get().org, '')
+        self.assertEqual(Order.objects.get().person.last_name, 'Test')
+        self.assertEqual(Order.objects.get().org, None)
         self.assertEqual(Order.objects.get().orderitem_set.all().count(), 1)
 
