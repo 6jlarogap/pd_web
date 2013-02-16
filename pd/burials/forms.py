@@ -378,7 +378,7 @@ class BurialCommitForm(BurialForm):
             for f in ['loru', 'agent', 'dover']:
                 self.fields[f].required = True
 
-            if self.instance.agent_director:
+            if self.instance.agent_director or self.data.get('agent_director'):
                 self.fields['dover'].required = False
 
         self.setup_required_deadman()
