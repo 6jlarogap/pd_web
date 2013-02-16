@@ -57,15 +57,15 @@ class OrdersTest(TestCase):
     def setUp(self):
         activate('ru')
         self.loru_user = User.objects.create_user(username='loru', email='test@example.com', password='test')
-        loru_org = Org.objects.create(
+        self.loru_org = Org.objects.create(
             type=Org.PROFILE_LORU, name='loru'
         )
         Profile.objects.create(
-            user=self.loru_user, org=loru_org,
+            user=self.loru_user, org=self.loru_org,
         )
         self.loru_client = Client()
         self.loru_client.login(username='loru', password='test')
-        self.product = Product.objects.create(loru=loru_org, name='test product', measure='items', price='10.50')
+        self.product = Product.objects.create(loru=self.loru_org, name='test product', measure='items', price='10.50')
 
     def test_list(self):
         r = self.loru_client.get('/order/')
@@ -77,8 +77,8 @@ class OrdersTest(TestCase):
         self.assertEqual(Order.objects.all().count(), 0)
 
         r = self.loru_client.post('/order/create/', {
-            'person': 'Test testov', 'org': 'Test LTD',
-            })
+            'person': 'Test testov', 'org': self.loru_org.pk,
+        })
         self.assertEqual(r.status_code, 302)
         self.assertEqual(Order.objects.all().count(), 1)
         self.assertEqual(Order.objects.get().loru, self.loru_user.profile.org)
@@ -92,7 +92,7 @@ class OrdersTest(TestCase):
         self.assertEqual(r.status_code, 200)
 
         r = self.loru_client.post('/order/%s/edit/' % o.pk, {
-            'person': 'Test testov', 'org': '',
+            'person_last_name': 'Test', 'person_first_name': 'Test', 'person_middle_name': 'Test', 'org': '',
             'orderitem_set-0-id': u'', 'orderitem_set-0-product': u'%s' % self.product.pk, 'orderitem_set-0-quantity': u'10',
             'orderitem_set-1-id': u'', 'orderitem_set-1-product': u'', 'orderitem_set-1-quantity': u'1',
             'orderitem_set-2-id': u'', 'orderitem_set-2-quantity': u'1', 'orderitem_set-2-product': u'',

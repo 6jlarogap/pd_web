@@ -43,7 +43,13 @@
         {% for b in place.burial_set.all %}
             <tr>
                 <td>{{ b.deadman|default:"Неизвестный" }}</td>
-                <td><a href="{% url view_burial b.pk %}" class="btn">{% trans "карточка" %}</a></td>
+                <td>
+                    <a href="{% url view_burial b.pk %}" class="btn">{% trans "карточка" %}</a>
+                    {% if user.profile.is_ugh %}
+                        <a href="{% url edit_burial b.pk %}" class="btn">{% trans "править" %}</a>
+                        <a href="#" class="btn">{% trans "эксгумировать" %}</a>
+                    {% endif %}
+                </td>
             </tr>
         {% endfor %}
     </table>
