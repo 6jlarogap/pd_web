@@ -10,7 +10,7 @@ from django.views.generic.detail import DetailView
 from django.views.generic.edit import CreateView, UpdateView
 from django.views.generic.list import ListView
 
-from burials.forms import CemeteryForm, AreaFormset
+from burials.forms import CemeteryForm, AreaFormset, PlaceEditForm
 from burials.models import Cemetery, Place
 from burials.burials_views import *
 from logs.models import write_log
@@ -86,10 +86,15 @@ class CemeteryEdit(UGHRequiredMixin, UpdateView):
 
 manage_cemeteries_edit = CemeteryEdit.as_view()
 
-class PlaceView(DetailView):
+class PlaceView(UpdateView):
     template_name = 'view_place.html'
     context_object_name = 'place'
     model = Place
+    form_class = PlaceEditForm
+
+    def get_success_url(self):
+        messages.success(self.request, _(u"Данные обновлены"))
+        return reverse('view_place', args=[self.get_object().pk])
 
 view_place = PlaceView.as_view()
 

@@ -42,6 +42,19 @@ class CemeteryAdminForm(BaseCemeteryForm):
 
 AreaFormset = inlineformset_factory(Cemetery, Area, can_delete=False)
 
+class PlaceEditForm(forms.ModelForm):
+    class Meta:
+        model = Place
+        fields = ['places_count']
+
+    def __init__(self, *args, **kwargs):
+        super(PlaceEditForm, self).__init__(*args, **kwargs)
+        if not self.instance.places_count:
+            if self.instance.area:
+                self.initial['places_count'] = self.instance.area.places_count
+            else:
+                self.initial['places_count'] = 1
+
 class ChildrenJSONMixin:
     def universal_children_json(self, parent, children_rel, filter_kw=None):
         parents = {}

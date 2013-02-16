@@ -108,6 +108,7 @@ class Place(models.Model):
     area = models.ForeignKey(Area, verbose_name=_(u"Участок"), blank=True, null=True)
     row = models.CharField(_(u"Ряд"), max_length=255, blank=True, null=True)
     place = models.CharField(_(u"Место"), max_length=255, blank=True, null=True)
+    places_count = models.PositiveIntegerField(_(u"Кол-во могил"), null=True)
     responsible = models.ForeignKey('persons.AlivePerson', verbose_name=_(u"Ответственный"), blank=True, null=True,
                                     on_delete=models.PROTECT)
 
@@ -316,6 +317,7 @@ class Burial(models.Model):
             area=self.area,
             row=self.row,
             place=self.place_number,
+            places_count=self.area and self.area.places_count or None,
         )
         place.responsible = self.get_responsible()
         place.save()

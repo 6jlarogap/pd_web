@@ -32,7 +32,16 @@
             </dd>
         {% endif %}
     </dl>
-    <a href="{% url create_burial %}" class="btn" onclick="alert('Не готово'); return false;">{% trans "Добавить родственное" %}</a>
+    <a href="{% url create_burial %}" class="btn" onclick="alert('Не готово'); return false;">{% trans "добавить родственное" %}</a>
+
+    <h2>{% trans "Данные" %}</h2>
+    <form action="" method="POST">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <p>
+            <input type="submit" class="btn btn-primary btn-commit-burial" value="{% trans "cохранить" %}"/>
+        </p>
+    </form>
 
     <h2>{% trans "Усопшие" %}</h2>
     <table class="table table-bordered">
