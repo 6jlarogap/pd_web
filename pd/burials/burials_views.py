@@ -17,6 +17,7 @@ from django.views.generic.list import ListView
 from burials.forms import BurialSearchForm, BurialForm, BurialCommitForm, BurialCloseForm
 from burials.models import Reason, Burial
 from logs.models import write_log
+from orders.models import Order
 
 
 class BurialsListGenericMixin:
@@ -250,6 +251,11 @@ class CreateBurial(CreateView):
 
     def form_valid(self, form, *args, **kwargs):
         b = form.save()
+
+        if self.request.GET.get('order') and not b.order:
+            order = Order.objects.get(pk=self.request.GET.get('order'), loru=self.request.user.profile.org)
+            b.order = order
+            b.save()
 
         action = self.get_action()
         if action:

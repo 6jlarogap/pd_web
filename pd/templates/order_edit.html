@@ -16,7 +16,13 @@
             {% endfor %}
         </table>
         <p>
+            <label for="id_total">{% trans "Итог" %}</label>
+            <input id="id_total" type="text" value="{{ form.instance.total }}" />
+        </p>
+
+        <p>
             <input type="submit" class="btn" value="{% trans "Сохранить" %}" class="btn"/>
+            <a class="btn" href="{% url create_burial %}?order={{ form.instance.pk }}">{% trans "Добавить захоронение" %}</a>
         </p>
     </form>
 {% endblock %}

@@ -177,6 +177,8 @@ class Burial(models.Model):
     agent_director = models.BooleanField(_(u"Агент-директор"), default=False, blank=True)
     dover = models.ForeignKey(Dover, verbose_name=_(u"Доверенность"), null=True, blank=True, on_delete=models.PROTECT)
 
+    order = models.ForeignKey('orders.Order', editable=False, null=True)
+
     status = models.CharField(_(u"Статус"), max_length=255, choices=STATUS_CHOICES, default=STATUS_DRAFT, editable=False)
     changed = models.DateTimeField(_(u"Изменено"), editable=False, null=True)
     changed_by = models.ForeignKey('auth.User', editable=False, null=True, related_name='changed_requests',
