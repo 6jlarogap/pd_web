@@ -94,7 +94,7 @@ class LoggingFormMixin:
                     if isinstance(new_value, datetime.time):
                         new_value = new_value.strftime('%H:%M')
 
-                    if getattr(form.fields[f], 'choices'):
+                    if getattr(form.fields[f], 'choices', None):
                         old_value = dict(form.fields[f].choices).get(old_value, old_value)
                         new_value = dict(form.fields[f].choices).get(new_value, new_value)
 

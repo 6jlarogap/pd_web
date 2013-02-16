@@ -30,8 +30,8 @@ class Product(models.Model):
 
 class Order(models.Model):
     loru = models.ForeignKey(Org, limit_choices_to={'type': Org.PROFILE_LORU}, null=True, verbose_name=_(u"ЛОРУ"))
-    person = models.CharField(_(u"Заказчик-ФЛ"), max_length=255, null=True, blank=True)
-    org = models.CharField(_(u"Заказчик-ЮЛ"), max_length=255, null=True, blank=True)
+    person = models.ForeignKey('persons.AlivePerson', verbose_name=_(u"Заказчик-ФЛ"), null=True, blank=True)
+    org = models.ForeignKey(Org, verbose_name=_(u"Заказчик-ЮЛ"), null=True, blank=True, related_name='org_orders')
     dt = models.DateTimeField(auto_now_add=True)
 
     class Meta:

@@ -220,7 +220,7 @@ $(function() {
             $('#id_agent').closest('p').show();
             $('#id_dover').closest('p').show();
 
-            $('#id_person').closest('p').hide();
+            $('input[name^=person]').closest('p').hide();
             $('#id_org').closest('p').show();
         } else {
             $('#applicant_form_block').show();
@@ -228,7 +228,7 @@ $(function() {
             $('#id_agent').closest('p').hide();
             $('#id_dover').closest('p').hide();
 
-            $('#id_person').closest('p').show();
+            $('input[name^=person]').closest('p').show();
             $('#id_org').closest('p').hide();
         }
     });

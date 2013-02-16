@@ -107,7 +107,7 @@ class OrderEdit(LORURequiredMixin, UpdateView):
         self.request = request
         self.args = args
         self.kwargs = kwargs
-        self.formset = OrderItemFormset(data=request.POST or None, instance=self.get_object())
+        self.formset = OrderItemFormset(request=self.request, data=request.POST or None, instance=self.get_object())
         return super(OrderEdit, self).dispatch(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
@@ -127,4 +127,3 @@ class OrderEdit(LORURequiredMixin, UpdateView):
         return redirect('order_list')
 
 order_edit = OrderEdit.as_view()
-

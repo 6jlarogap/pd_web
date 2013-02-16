@@ -1,10 +1,11 @@
 # coding=utf-8
 from django import forms
-from django.forms.models import inlineformset_factory
+from django.forms.models import inlineformset_factory, BaseInlineFormSet
 from django.utils.translation import ugettext as _
 
 from orders.models import Product, Order, OrderItem
 from burials.forms import OPF_CHOICES
+from persons.models import AlivePerson
 
 
 class ProductForm(forms.ModelForm):
@@ -15,17 +16,51 @@ class ProductForm(forms.ModelForm):
 class OrderForm(forms.ModelForm):
     opf = forms.ChoiceField(label=_(u'ОПФ'), choices=OPF_CHOICES, widget=forms.RadioSelect, initial='person')
 
+    person_last_name = forms.CharField(label=_(u"Фамилия"))
+    person_first_name = forms.CharField(label=_(u"Имя"))
+    person_middle_name = forms.CharField(label=_(u"Отчество"))
+
     class Meta:
         model = Order
-        exclude = ['loru', ]
+        exclude = ['loru', 'person' ]
 
     def __init__(self, *args, **kwargs):
         super(OrderForm, self).__init__(*args, **kwargs)
-        self.fields.keyOrder.insert(0, self.fields.keyOrder.pop(-1))
+        self.fields.keyOrder.insert(0, self.fields.keyOrder.pop(-4))
+
+        if self.instance.person:
+            self.initial['person_last_name'] = self.instance.person.last_name or u""
+            self.initial['person_first_name'] = self.instance.person.first_name or u""
+            self.initial['person_middle_name'] = self.instance.person.middle_name or u""
+
+    def save(self, commit=True, *args, **kwargs):
+        self.instance = super(OrderForm, self).save(*args, **kwargs)
+
+        if self.cleaned_data['opf'] == 'person':
+            person = self.instance.person or AlivePerson()
+
+            person.last_name = self.cleaned_data['person_last_name']
+            person.first_name = self.cleaned_data['person_first_name']
+            person.middle_name = self.cleaned_data['person_middle_name']
+            person.save()
+
+            self.instance.person = person
+            self.instance.org = None
+        else:
+            self.instance.person = None
+        self.instance.save()
+
+        return self.instance
 
 class OrderItemForm(forms.ModelForm):
     class Meta:
         model = OrderItem
         exclude=['price']
 
-OrderItemFormset = inlineformset_factory(Order, OrderItem, form=OrderItemForm)
+class BaseOrderItemFormset(BaseInlineFormSet):
+    def __init__(self, request, *args, **kwargs):
+        super(BaseOrderItemFormset, self).__init__(*args, **kwargs)
+        for f in self.forms:
+            f.fields['product'].queryset = Product.objects.filter(loru=request.user.profile.org)
+
+OrderItemFormset = inlineformset_factory(Order, OrderItem, form=OrderItemForm, formset=BaseOrderItemFormset)

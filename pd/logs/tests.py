@@ -35,7 +35,7 @@ class LogsTest(TestCase):
         self.assertEqual(Log.objects.all().count(), 0)
 
         r = self.client.post('/burials/create/', {
-            'cemetery': self.cemetery.pk, 'plan_date': '12.12.2013', 'plan_time': '12:00',
+            'cemetery': self.cemetery.pk, 'plan_date': '12.12.2013', 'plan_time': '12:00', 'places_type': 'manual',
             'deadman-dc-zags': self.zags.pk, 'responsible-personid-number': '11', 'responsible-personid-series': '11',
             'responsible-personid-id_type': self.doc_type.pk,
         })
