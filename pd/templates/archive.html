@@ -46,7 +46,7 @@
                     <a class="btn" href="{% url view_burial b.pk %}">{% trans "просмотр" %}</a>
                     {% if user.profile.org == b.loru and b.is_full and b.is_edit %}
                         <a class="btn" href="{% url edit_burial b.pk %}">{% trans "правка" %}</a>
-                    {% elif b.is_edit and b.is_ugh_only %}
+                    {% elif b.is_edit and b.is_ugh %}
                         {% if user.profile.org == b.cemetery.ugh %}
                             <a class="btn" href="{% url edit_burial b.pk %}">{% trans "правка" %}</a>
                         {% endif %}

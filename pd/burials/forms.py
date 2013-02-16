@@ -57,6 +57,43 @@ class ChildrenJSONMixin:
     def loru_agents_json(self):
         return self.universal_children_json('loru', 'profile_set', filter_kw={'is_agent': True})
 
+class LoggingFormMixin:
+    def get_prefix(self, form):
+        return u''
+
+    def collect_log_data(self):
+        self.changed_list = []
+        obj = self.instance
+        if obj and obj.pk:
+            obj = Burial.objects.get(pk=obj.pk)
+            for form in [self] + self.forms:
+                prefix = self.get_prefix(form)
+                for f in form.changed_data:
+                    old_value = obj and getattr(obj, f, None) or form.initial.get(f) or ''
+                    new_value = form.cleaned_data.get(f) or ''
+
+                    if isinstance(old_value, datetime.date):
+                        old_value = old_value.strftime('%d.%m.%Y')
+                    if isinstance(new_value, datetime.date):
+                        new_value = new_value.strftime('%d.%m.%Y')
+                    if isinstance(old_value, datetime.time):
+                        old_value = old_value.strftime('%H:%M')
+                    if isinstance(new_value, datetime.time):
+                        new_value = new_value.strftime('%H:%M')
+
+                    if getattr(form.fields[f], 'choices'):
+                        old_value = dict(form.fields[f].choices).get(old_value, old_value)
+                        new_value = dict(form.fields[f].choices).get(new_value, new_value)
+
+                    if old_value != new_value:
+                        self.changed_list.append((u'%s%s' % (prefix, form.fields[f].label), old_value, new_value))
+
+    def put_log_data(self, msg=_(u'Захоронение сохранено')):
+        if self.changed_list or not self.instance or not self.instance.pk:
+            changed_data_str = u'\n'.join([u'%s: %s -> %s' % cd for cd in self.changed_list])
+            write_log(self.request, self.instance, msg + u'\n' + changed_data_str)
+        else:
+            write_log(self.request, self.instance, msg)
 
 
 class BurialSearchForm(forms.Form):
@@ -79,7 +116,7 @@ class BurialSearchForm(forms.Form):
     place = forms.CharField(required=False, label=_(u"Место"))
     no_responsible = forms.BooleanField(required=False, initial=False, label=_(u"Без отв."))
 
-class BurialForm(ChildrenJSONMixin, forms.ModelForm):
+class BurialForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelForm):
     opf = forms.ChoiceField(label=_(u'ОПФ'), choices=(('person', _(u'ФЛ')), ('org', _(u'ЮЛ'))))
 
     class Meta:
@@ -201,35 +238,19 @@ class BurialForm(ChildrenJSONMixin, forms.ModelForm):
 
         return self.cleaned_data
 
+    def get_prefix(self, form):
+        prefix = u''
+        if form in [self.deadman_form, self.deadman_address_form, self.dc_form]:
+            prefix = _(u"Усопший ")
+        if form in [self.responsible_form, self.responsible_address_form]:
+            prefix = _(u"Ответственный ")
+        if form in [self.applicant_form, self.applicant_address_form, self.applicant_id_form]:
+            prefix = _(u"Заявитель ")
+        return prefix
+
     def save(self, commit=True, **kwargs):
         request = self.request
-        changed_data = []
-        obj = self.instance
-        if obj and obj.pk:
-            obj = Burial.objects.get(pk=obj.pk)
-            for form in [self] + self.forms:
-                prefix = u''
-                if form in [self.deadman_form, self.deadman_address_form, self.dc_form]:
-                    prefix = _(u"Усопший ")
-                if form in [self.responsible_form, self.responsible_address_form]:
-                    prefix = _(u"Ответственный ")
-                if form in [self.applicant_form, self.applicant_address_form, self.applicant_id_form]:
-                    prefix = _(u"Заявитель ")
-                for f in form.changed_data:
-                    old_value = obj and getattr(obj, f, None) or form.initial.get(f) or ''
-                    new_value = form.cleaned_data.get(f) or ''
-
-                    if isinstance(old_value, datetime.date):
-                        old_value = old_value.strftime('%d.%m.%Y')
-                    if isinstance(new_value, datetime.date):
-                        new_value = new_value.strftime('%d.%m.%Y')
-                    if isinstance(old_value, datetime.time):
-                        old_value = old_value.strftime('%H:%M')
-                    if isinstance(new_value, datetime.time):
-                        new_value = new_value.strftime('%H:%M')
-
-                    if old_value != new_value:
-                        changed_data.append((u'%s%s' % (prefix, form.fields[f].label), old_value, new_value))
+        self.collect_log_data()
 
         self.instance = super(BurialForm, self).save(commit=False)
 
@@ -293,11 +314,7 @@ class BurialForm(ChildrenJSONMixin, forms.ModelForm):
 
         self.instance.save()
 
-        if changed_data or not self.instance or not self.instance.pk:
-            changed_data_str = u'\n'.join([u'%s: %s -> %s' % cd for cd in changed_data])
-            write_log(self.request, self.instance, _(u'Захоронение сохранено') + u'\n' + changed_data_str)
-        else:
-            write_log(self.request, self.instance, _(u'Захоронение сохранено'))
+        self.put_log_data()
 
         msg = _(u"<a href='%s'>Захоронение %s</a> сохранено") % (
             reverse('view_burial', args=[self.instance.pk]),
@@ -340,6 +357,10 @@ class BurialCommitForm(BurialForm):
 
         if self.instance.is_archive() and self.fields.get('fact_date'):
             self.fields['fact_date'].required = True
+
+        if self.instance and self.instance.is_ugh() and self.instance.loru:
+            for f in ['loru', 'agent', 'dover']:
+                self.fields[f].required = True
 
         self.setup_required_deadman()
         self.setup_required_deadman_address()
@@ -389,15 +410,15 @@ class BurialCommitForm(BurialForm):
                 if f.is_valid() and any(f.cleaned_data.values()):
                     raise forms.ValidationError(_(u"Для подзахоронений Ответственного быть не должно"))
         is_ugh = False
-        if self.instance and self.instance.is_ugh_only():
+        if self.instance and self.instance.is_ugh():
             is_ugh = True
         if (not self.instance or not self.instance.pk) and self.request.user.profile.is_ugh():
             is_ugh = True
         if is_ugh:
-            if not self.cleaned_data.get('loru') or not self.cleaned_data.get('agent'):
+            if not self.cleaned_data.get('loru'):
                 if not self.applicant_form.is_valid_data():
                     raise forms.ValidationError(_(u"Нужно указать ЛОРУ или ФЛ-Заявителя"))
-            if self.cleaned_data.get('loru') or self.cleaned_data.get('agent'):
+            if self.cleaned_data.get('loru'):
                 if self.applicant_form.is_valid_data():
                     raise forms.ValidationError(_(u"Нужно указать либо ЛОРУ, либо ФЛ-Заявителя"))
 
@@ -418,15 +439,24 @@ class BurialCommitForm(BurialForm):
             for f in self.forms:
                 self.data.update(self.form_to_data(f))
 
-class BurialCloseForm(ChildrenJSONMixin, forms.ModelForm):
+class BurialCloseForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelForm):
     class Meta:
         model = Burial
         fields = ['cemetery', 'area', 'row', 'place_number', 'fact_date', ]
 
     def __init__(self, request, *args, **kwargs):
         super(BurialCloseForm, self).__init__(*args, **kwargs)
-        self.initial['fact_date'] = self.instance.plan_date
+        if not self.instance.fact_date:
+            self.initial['fact_date'] = self.instance.plan_date
         for f in self.fields:
             if f not in ['row', ]:
                 self.fields[f].required = True
         self.fields['cemetery'].queryset = Cemetery.objects.filter(ugh=request.user.profile.org)
+        self.forms = []
+        self.request = request
+
+    def save(self, **kwargs):
+        self.collect_log_data()
+        self.instance = super(BurialCloseForm, self).save(**kwargs)
+        self.put_log_data()
+        return self.instance

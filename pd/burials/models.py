@@ -43,9 +43,9 @@ class Cemetery(models.Model):
                 if request.user.profile.is_loru():
                     planned_others = filter(lambda b: b.is_ready() and b.plan_time.strftime('%H:%M') == s, others_loru)
                     approved_others = filter(lambda b: b.is_approved() and b.plan_time.strftime('%H:%M') == s, others_loru)
-                    v = u'%s (кладб. %s, лору%s)' % (s, len(planned)+len(approved), len(planned_others)+len(approved_others))
+                    v = u'%s (резерв кладб. %s, лору%s)' % (s, len(planned)+len(approved), len(planned_others)+len(approved_others))
                 else:
-                    v = u'%s (кладб. %s)' % (s, len(planned)+len(approved))
+                    v = u'%s (резерв кладб. %s)' % (s, len(planned)+len(approved))
                 result.append((s, v))
         return result
 
