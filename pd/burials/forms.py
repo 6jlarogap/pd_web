@@ -178,9 +178,6 @@ class BurialForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelForm):
                 else:
                     self.initial['opf'] = 'person'
 
-        if not self.instance.pk:
-            self.initial['places_type'] = self.request.user.profile.places_type
-
         if self.request.user.profile.is_ugh() and self.request.REQUEST.get('archive'):
             del self.fields['plan_date']
             del self.fields['plan_time']

@@ -10,11 +10,26 @@ from logs.models import Log
 
 
 class Cemetery(models.Model):
+    PLACE_CEMETERY = 'cemetery'
+    PLACE_AREA = 'area'
+    PLACE_ROW = 'row'
+    PLACE_CEM_YEAR = 'cem_year'
+    PLACE_MANUAL = 'manual'
+    PLACE_TYPES = (
+        (PLACE_CEMETERY, _(u'По кладбищу')),
+        (PLACE_AREA, _(u'По участку')),
+        (PLACE_ROW, _(u'По ряду')),
+        (PLACE_CEM_YEAR, _(u'Кладбище + год')),
+        (PLACE_MANUAL, _(u'Ручное')),
+    )
+
     name = models.CharField(_(u"Название"), max_length=255)
     time_begin = models.TimeField(_(u"Начало работы"))
     time_end = models.TimeField(_(u"Окончание работы"))
     time_slots = models.TextField(_(u"Время для захоронения"), default='',
                                   help_text=_(u'В формате ЧЧ:ММ, по одному на строку'))
+
+    places_algo = models.CharField(_(u"Расстановка номеров мест"), max_length=255, choices=PLACE_TYPES, default=PLACE_MANUAL)
 
     creator = models.ForeignKey('auth.User', verbose_name=_(u"Владелец"), editable=False, null=True,
                                 on_delete=models.PROTECT)
@@ -156,8 +171,6 @@ class Burial(models.Model):
     area = models.ForeignKey(Area, verbose_name=_(u"Участок"), blank=True, null=True)
     row = models.CharField(_(u"Ряд"), max_length=255, blank=True, null=True)
     place_number = models.CharField(_(u"Номер места"), max_length=255, null=True, blank=True)
-    places_type = models.CharField(_(u"Алгоритм заполнения мест"), max_length=255,
-                                   choices=Profile.PLACE_TYPES, default=Profile.PLACE_MANUAL)
     responsible = models.ForeignKey('persons.AlivePerson', verbose_name=_(u"Ответственный"), blank=True, null=True,
                                     related_name='responsible_burials')
 
