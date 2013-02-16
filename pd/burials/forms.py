@@ -160,6 +160,7 @@ class BurialForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelForm):
         if self.request.user.profile.is_loru():
             del self.fields['loru']
             del self.fields['agent']
+            del self.fields['agent_director']
             del self.fields['dover']
             del self.fields['opf']
 
