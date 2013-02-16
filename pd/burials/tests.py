@@ -215,10 +215,10 @@ class RequestsTest(TestCase):
         self.assertEqual(br.cemetery.ugh, self.ugh_user.profile.org)
         self.assertEqual(br.is_edit(), True)
 
-        r = self.loru_client.get('/burials/edit/%s/' % br.pk)
+        r = self.loru_client.get('/burials/%s/edit/' % br.pk)
         self.assertEqual(r.status_code, 200)
 
-        r = self.ugh_client.get('/burials/edit/%s/' % br.pk)
+        r = self.ugh_client.get('/burials/%s/edit/' % br.pk)
         self.assertEqual(r.status_code, 404)
 
     def test_edit_loru(self):
@@ -233,7 +233,7 @@ class RequestsTest(TestCase):
 
         self.assertEqual(br.loru, self.loru_user.profile.org)
 
-        r = self.loru_client.get('/burials/edit/%s/' % br.pk)
+        r = self.loru_client.get('/burials/%s/edit/' % br.pk)
         self.assertEqual(r.status_code, 200)
 
 class BurialsTest(TestCase):

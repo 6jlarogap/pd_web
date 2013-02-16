@@ -119,6 +119,7 @@ INSTALLED_APPS = (
     'users',
     'orders',
     'logs',
+    'reports',
 )
 
 LOGGING = {

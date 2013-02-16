@@ -4,6 +4,7 @@ from django.db import models
 from django.utils.translation import ugettext_lazy as _
 
 from persons.models import DeadPerson
+from reports.models import Report
 from users.models import Org, Profile, Dover
 from logs.models import Log
 
@@ -250,6 +251,9 @@ class Burial(models.Model):
     def can_decline(self):
         return self.is_full() and self.is_ready()
 
+    def can_print_notification(self):
+        return self.is_approved() or self.is_closed()
+
     @property
     def status_str(self):
         return self.get_status_display()
@@ -288,6 +292,10 @@ class Burial(models.Model):
     def get_logs(self):
         ct = ContentType.objects.get_for_model(self)
         return Log.objects.filter(ct=ct, obj_id=self.pk).order_by('-pk')
+
+    def get_documents(self):
+        ct = ContentType.objects.get_for_model(self)
+        return Report.objects.filter(content_type=ct, object_id=self.pk).order_by('-pk')
 
     def close(self):
         place = self.get_place() or Place(

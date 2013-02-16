@@ -18,6 +18,7 @@ from burials.forms import BurialSearchForm, BurialForm, BurialCommitForm, Burial
 from burials.models import Reason, Burial
 from logs.models import write_log
 from orders.models import Order
+from reports.models import make_report
 
 
 class BurialsListGenericMixin:
@@ -349,3 +350,22 @@ class EditBurialView(CreateBurial):
         return data
 
 edit_burial = EditBurialView.as_view()
+
+class MakeNotificationView(ArchiveMixin, DetailView):
+    context_object_name = 'burial'
+
+    def get_queryset(self):
+        qs = self.get_qs_filter()
+        return Burial.objects.filter(qs).distinct()
+
+    def render_to_response(self, context, **response_kwargs):
+        report = make_report(
+            user=self.request.user,
+            msg=_(u"Уведомление"),
+            obj=self.get_object(),
+            template='reports/notification.html',
+            context=context
+        )
+        return redirect('report_view', report.pk)
+
+make_notification = MakeNotificationView.as_view()

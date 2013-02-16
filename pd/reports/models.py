@@ -1,0 +1,28 @@
+# coding=utf-8
+from django.contrib.contenttypes import generic
+from django.contrib.contenttypes.models import ContentType
+from django.template.loader import render_to_string
+from django.utils.translation import ugettext as _
+from django.db import models
+
+class Report(models.Model):
+    content_type = models.ForeignKey(ContentType)
+    object_id = models.PositiveIntegerField()
+    content_object = generic.GenericForeignKey('content_type', 'object_id')
+
+    user = models.ForeignKey('auth.User', editable=False)
+    dt = models.DateTimeField(auto_now_add=True)
+
+    description = models.TextField(_(u"Название отчета"))
+    html = models.TextField(editable=False)
+
+def make_report(user, msg, obj, template, context):
+    ct = ContentType.objects.get_for_model(obj)
+    return Report.objects.create(
+        user=user,
+        description=msg,
+        content_type=ct,
+        object_id=obj.pk,
+        html=render_to_string(template, context),
+    )
+
