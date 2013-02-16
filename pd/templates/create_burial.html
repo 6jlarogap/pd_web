@@ -3,7 +3,13 @@
 {% load i18n %}
 
 {% block content %}
-    {% block form_title %}<h1>{% trans "Новое захоронение" %}</h1>{% endblock form_title %}
+    {% block form_title %}<h1>
+        {% if request.GET.archive %}
+            {% trans "Архивное захоронение" %}
+        {% else %}
+            {% trans "Новое захоронение" %}
+        {% endif %}
+    </h1>{% endblock form_title %}
     <form action="" method="POST" class="burial-form">
         {% csrf_token %}
         {{ form.as_p }}
