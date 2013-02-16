@@ -4,12 +4,14 @@ from django.core.urlresolvers import reverse
 from django.db.models.query_utils import Q
 from django.shortcuts import redirect
 from django.views.generic.base import View
+from django.views.generic.detail import DetailView
 from django.views.generic.edit import CreateView, UpdateView
 from django.views.generic.list import ListView
 from django.utils.translation import ugettext_lazy as _
 from logs.models import write_log
 from orders.forms import ProductForm, OrderForm, OrderItemFormset
 from orders.models import Product, Order
+from reports.models import make_report
 
 
 class LORURequiredMixin:
@@ -127,3 +129,22 @@ class OrderEdit(LORURequiredMixin, UpdateView):
         return redirect('order_list')
 
 order_edit = OrderEdit.as_view()
+
+class PrintOrderView(LORURequiredMixin, DetailView):
+    context_object_name = 'order'
+
+    def get_queryset(self):
+        return Order.objects.filter(loru=self.request.user.profile.org).distinct()
+
+    def render_to_response(self, context, **response_kwargs):
+        report = make_report(
+            user=self.request.user,
+            msg=_(u"Счет-заказ"),
+            obj=self.get_object(),
+            template='reports/order.html',
+            context=context
+        )
+        return redirect('report_view', report.pk)
+
+order_print = PrintOrderView.as_view()
+

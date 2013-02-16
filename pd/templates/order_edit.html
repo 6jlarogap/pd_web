@@ -4,6 +4,7 @@
 
 {% block content %}
     <h1>{% trans "Заказ" %} {{ form.instance }}</h1>
+    <p><a href="{% url order_print form.instance.pk %}" class="btn">{% trans "распечатать" %}</a></p>
     <form action="" method="POST">
         {% csrf_token %}
         {{ form.as_p }}
@@ -21,8 +22,29 @@
         </p>
 
         <p>
-            <input type="submit" class="btn" value="{% trans "Сохранить" %}" class="btn"/>
-            <a class="btn" href="{% url create_burial %}?order={{ form.instance.pk }}">{% trans "Добавить захоронение" %}</a>
+            <input type="submit" class="btn" value="{% trans "сохранить" %}" class="btn"/>
+            <a class="btn" href="{% url create_burial %}?order={{ form.instance.pk }}">{% trans "добавить захоронение" %}</a>
         </p>
     </form>
+
+    {% if form.instance.get_documents %}
+        <h2>{% trans "Документы" %}</h2>
+        <table class="table table-bordered">
+            <tr>
+                <th>{% trans "Дата" %}</th>
+                <th>{% trans "Пользователь" %}</th>
+                <th>{% trans "Описание" %}</th>
+                <th></th>
+            </tr>
+            {% for doc in form.instance.get_documents %}
+                <tr>
+                    <td>{{ doc.dt }}</td>
+                    <td>{{ doc.user.profile }} / {{ doc.user.profile.org }}</td>
+                    <td>{{ doc.description }}</td>
+                    <td><a class="btn" href="{% url report_view doc.pk %}">{% trans "просмотр" %}</a></td>
+                </tr>
+            {% endfor %}
+        </table>
+    {% endif %}
+
 {% endblock %}

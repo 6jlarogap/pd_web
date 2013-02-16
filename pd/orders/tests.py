@@ -97,10 +97,19 @@ class OrdersTest(TestCase):
             'orderitem_set-1-id': u'', 'orderitem_set-1-product': u'', 'orderitem_set-1-quantity': u'1',
             'orderitem_set-2-id': u'', 'orderitem_set-2-quantity': u'1', 'orderitem_set-2-product': u'',
             'orderitem_set-INITIAL_FORMS': u'0', 'orderitem_set-MAX_NUM_FORMS': u'', 'orderitem_set-TOTAL_FORMS': u'3',
-        })
+            })
         self.assertEqual(r.status_code, 302)
         self.assertEqual(Order.objects.get().loru, self.loru_user.profile.org)
         self.assertEqual(Order.objects.get().person.last_name, 'Test')
         self.assertEqual(Order.objects.get().org, None)
         self.assertEqual(Order.objects.get().orderitem_set.all().count(), 1)
+
+    def test_print(self):
+        o = Order.objects.create(loru=self.loru_user.profile.org, org=self.loru_org)
+        self.assertEqual(o.get_documents().count(), 0)
+
+        r = self.loru_client.get('/order/%s/print/' % o.pk)
+        self.assertEqual(r.status_code, 302)
+
+        self.assertEqual(o.get_documents().count(), 1)
 

@@ -1,8 +1,10 @@
 # coding=utf-8
 from __builtin__ import property
+from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.utils.translation import ugettext as _
 
+from reports.models import Report
 from users.models import Org
 
 
@@ -48,6 +50,10 @@ class Order(models.Model):
     @property
     def total(self):
         return sum([i.total for i in self.orderitem_set.all()], 0)
+
+    def get_documents(self):
+        ct = ContentType.objects.get_for_model(self)
+        return Report.objects.filter(content_type=ct, object_id=self.pk).order_by('-pk')
 
 class OrderItem(models.Model):
     order = models.ForeignKey(Order, editable=False)
