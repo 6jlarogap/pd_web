@@ -173,9 +173,9 @@ class Burial(models.Model):
                             limit_choices_to={'type': Org.PROFILE_UGH}, on_delete=models.PROTECT)
     loru = models.ForeignKey(Org, verbose_name=_(u"ЛОРУ"), null=True, blank=True, related_name='loru_created',
                              limit_choices_to={'type': Org.PROFILE_LORU}, on_delete=models.PROTECT)
+    agent_director = models.BooleanField(_(u"Агент-директор"), default=False, blank=True)
     agent = models.ForeignKey(Profile, verbose_name=_(u"Агент"), null=True, blank=True,
                               limit_choices_to={'is_agent': True}, on_delete=models.PROTECT)
-    agent_director = models.BooleanField(_(u"Агент-директор"), default=False, blank=True)
     dover = models.ForeignKey(Dover, verbose_name=_(u"Доверенность"), null=True, blank=True, on_delete=models.PROTECT)
 
     order = models.ForeignKey('orders.Order', editable=False, null=True)
