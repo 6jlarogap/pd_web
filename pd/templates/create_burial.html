@@ -56,7 +56,9 @@
         {% block buttons %}
             <p>
                 <input type="submit" class="btn btn-primary btn-commit-burial" value="{% trans "Сохранить" %}"/>
-                {% if b.pk and b.is_ugh_only %}
+                {% if user.profile.is_ugh and b.is_archive or request.REQUEST.archive %}
+                    <input type="submit" class="btn btn-commit-burial" name="complete" value="{% trans "Сохранить и закрыть" %}"/>
+                {% elif b.pk and b.is_ugh_only %}
                     <input type="submit" class="btn btn-commit-burial" name="approve" value="{% trans "Сохранить и согласовать" %}"/>
                 {% elif not b.pk and user.profile.is_ugh %}
                     <input type="submit" class="btn btn-commit-burial" name="approve" value="{% trans "Сохранить и согласовать" %}"/>
