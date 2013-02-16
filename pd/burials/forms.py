@@ -5,6 +5,7 @@ import json
 from django import forms
 from django.contrib import messages
 from django.core.urlresolvers import reverse
+from django.db.models.deletion import ProtectedError
 from django.forms.models import inlineformset_factory
 from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext_lazy as _
@@ -301,6 +302,10 @@ class BurialForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelForm):
                 dc.save()
             self.instance.deadman = deadman
         else:
+            try:
+                self.instance.deadman.delete()
+            except (AttributeError, ProtectedError):
+                pass
             self.instance.deadman = None
 
         if self.responsible_form.is_valid_data():
@@ -310,6 +315,10 @@ class BurialForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelForm):
             responsible.save()
             self.instance.responsible = responsible
         else:
+            try:
+                self.instance.responsible.delete()
+            except (AttributeError, ProtectedError):
+                pass
             self.instance.responsible = None
 
         if self.request.user.profile.is_ugh():
@@ -326,6 +335,10 @@ class BurialForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelForm):
                 self.instance.applicant = applicant
                 self.instance.loru = None
             else:
+                try:
+                    self.instance.applicant.delete()
+                except (AttributeError, ProtectedError):
+                    pass
                 self.instance.applicant = None
 
         self.instance.save()
