@@ -51,6 +51,17 @@ class ChildrenJSONMixin:
     def cemetery_areas_json(self):
         return self.universal_children_json('cemetery', 'area_set')
 
+    def cemetery_times_json(self):
+        parents = {}
+        if self.fields.get('cemetery'):
+            for c in self.fields['cemetery'].queryset:
+                parents[c.pk] = c.get_time_choices(
+                    date=self.instance.plan_date or self.initial.get('plan_date'),
+                    burial=self.instance,
+                    request=self.request
+                )
+        return mark_safe(json.dumps(parents))
+
     def agent_dover_json(self):
         return self.universal_children_json('agent', 'dover_set')
 
@@ -361,6 +372,9 @@ class BurialCommitForm(BurialForm):
         if self.instance and self.instance.is_ugh() and self.instance.loru:
             for f in ['loru', 'agent', 'dover']:
                 self.fields[f].required = True
+
+            if self.instance.agent_director:
+                self.fields['dover'].required = False
 
         self.setup_required_deadman()
         self.setup_required_deadman_address()

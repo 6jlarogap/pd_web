@@ -175,10 +175,23 @@ function updateAgents() {
     updateAnything($('#id_loru'), $('#id_agent'), LORU_AGENTS);
 }
 
+function updateTimes() {
+    var val = $('#id_plan_time').val();
+    $('input#id_plan_time').replaceWith('<select id="id_plan_time" name="plan_time"></select>');
+    updateAnything($('#id_cemetery'), $('#id_plan_time'), CEMETERY_TIMES);
+    if ($('select#id_plan_time option').length < 2) {
+        $('select#id_plan_time').replaceWith('<input type="text" id="id_plan_time" name="plan_time"></input>');
+        $('#id_plan_time').closest('p').find('.add-on').remove();
+        makeTimePicker($('#id_plan_time'));
+    }
+    $('#id_plan_time').val(val);
+}
+
 $(function() {
     updateControls();
 
     if (!window.CEMETERY_AREAS) { CEMETERY_AREAS = {} }
+    if (!window.CEMETERY_TIMES) { CEMETERY_TIMES = {} }
     if (!window.AGENT_DOVER) { AGENT_DOVER = {} }
     if (!window.LORU_AGENTS) { LORU_AGENTS = {} }
 
@@ -190,6 +203,9 @@ $(function() {
 
     $('#id_cemetery').change(updateAreas);
     updateAreas();
+
+    $('#id_cemetery').change(updateTimes);
+    updateTimes();
 
     $('#id_agent').change(updateDover);
     updateDover();
@@ -214,6 +230,18 @@ $(function() {
 
     $(':input:visible:first').focus();
 
+    $('#id_agent_director').change(function() {
+        if ($(this).is(':checked')) {
+            $('#id_dover').val('');
+            $('#id_dover').closest('p').hide();
+            $('.btn-dover').closest('p').hide();
+        } else {
+            $('#id_dover').closest('p').show();
+            $('.btn-dover').closest('p').show();
+        }
+    });
+    $('#id_agent_director').change();
+
     $('#paginator_select').live('change', function() {
         top.location.href = $(this).val();
     });
@@ -233,237 +261,9 @@ $(function() {
         $(this).closest('.well').find('input.autocomplete[name$=region_name]').val('');
     });
 
-    $('#clean_exhumation').click(function() {
-        $('#id_exhumated_date').val('')
-    });
-
-    if ($('#exhumation_block input').val()) {
-        $('#show_exhumation').hide();
-    } else {
-        $('#exhumation_block').hide();
-        $('#show_exhumation').click(function() {
-            $('#exhumation_block').show();
-            $('#show_exhumation').hide();
-        });
-    }
-
-    $('a.load').live('click', function(){
-        $('#block_empty').hide();
-        $('#block_empty').load(this.href, function() {
-            updateControls();
-            $('#block_empty').fadeIn('fast', function() {
-                $('#id_customer-customer_type').change();
-            });
-            setup_address_autocompletes();
-        });
-        return false;
-    });
-
-    $('#id_last_name').live('keyup', function() {
-        var $check = $(this).closest('.well').find('#id_skip_last_name');
-        if ($(this).val()) {
-            $check.removeAttr('checked');
-        } else {
-            $check.attr('checked', '1');
-        }
-    });
-
-    $('form.in-place').live('submit', function(){
-        var url = $(this).attr('action');
-        var data = $(this).serialize();
-        $.post(url, data, function(data) {
-            $('#block_empty').html(data);
-            $('.errorlist').addClass('alert');
-            updateInnerForm();
-            setup_address_autocompletes();
-            window.scrollTo(0,0);
-        });
-        return false;
-    });
-
-    $('#id_place, #id_person').live('change', function(){
-        var ready = true;
-        $('#id_place, #id_person').each(function() {
-            if (!$(this).val()) {
-                ready = false;
-            }
-        });
-
-        if (!ready) {
-            $('form.main-add .btn-primary').attr('disabled', 'disabled');
-        } else {
-            $('form.main-add .btn-primary').removeAttr('disabled');
-        }
-    });
-
-    $('#add_agent_btn').live('click', function() {
-        $('#agent_form .form-internal').load($('#agent_form').attr('action'));
-    });
-
-    $('#add_dover_btn').live('click', function() {
-        $('#dover_form .form-internal').load($('#dover_form').attr('action'), function() {
-            updateControls();
-            $('#id_customer-agent_person').change();
-        });
-    });
-
-    $('#id_customer-organization').live('change', function() {
-        var options = '<option value="">---------------</option>';
-        var org_id = $(this).val();
-        var agent;
-        var val = $('#id_customer-agent_person').val();
-        for(var i in ORG_AGENTS[org_id]) {
-            agent = ORG_AGENTS[org_id][i];
-            options += '<option value="'+i+'">'+agent.name+'</option>';
-        }
-        $('#id_customer-agent_person').html(options);
-        $('#id_customer-agent_person').val(val);
-        if ($('#id_customer-organization').val()) {
-            $('#add_agent_btn').show();
-            $('#add_dover_btn').show();
-        }
-
-        $('#id_customer-agent_person').change();
-    });
-
-    $('#id_customer-agent_person').live('change', function() {
-        var org_id = $('#id_customer-organization').val();
-        var agent_id = $('#id_customer-agent_person').val();
-        var agent = ORG_AGENTS && ORG_AGENTS[org_id] && ORG_AGENTS[org_id][agent_id];
-
-        $('#id_customer-agent_doverennost option').remove();
-        var options = '<option value="">---------------</option>';
-        if (agent) {
-            $('#id_add_dover-agent').val(agent.agent_pk);
-            var dov_list = agent['dover'];
-            for(var i in dov_list) {
-                options += '<option value="'+dov_list[i].pk+'">'+dov_list[i].label+'</option>';
-            }
-        }
-        $('#id_customer-agent_doverennost').html(options);
-        if (agent) {
-            if ($('#id_agent').val() == agent.agent_pk) {
-                $('#id_customer-agent_doverennost').val($('#id_doverennost').val() || agent.cur_dov);
-            } else {
-                $('#id_customer-agent_doverennost').val(agent.cur_dov);
-            }
-        }
-    });
-
-    $('#add_commit').live('click', function() {
-        $('#id_add_dover-agent').val($('#id_customer-agent_person').val());
-        var url = $('#agent_form').attr('action');
-        var send_data = $('#agent_form').serialize();
-        $.ajax({
-            type: 'POST',
-            url: url,
-            data: send_data,
-            success: function(data) {
-                if (data.pk) {
-                    var opt = '<option value="'+data.pk+'">'+data.label+'</option>';
-                    var org_id = $('#id_customer-organization').val();
-                    $('#id_customer-agent_person').append($(opt));
-                    $('#id_customer-agent_person').val(data.pk);
-                    ORG_AGENTS[org_id][data.pk] = {
-                        name: data.label,
-                        agent_pk: data.agent_pk,
-                        cur_dov: data.cur_dov,
-                        dover: data.dover_dict
-                    }
-                    $('#addAgent').modal('hide');
-                } else {
-                    $('#agent_form .form-internal').html(data);
-                    updateControls();
-                }
-            },
-            error: function(err, errType) {
-                console.log(err);
-                alert('Ошибка');
-            }
-        });
-    });
-
-    $('#add_dover').live('click', function() {
-        var url = $('#dover_form').attr('action');
-        var send_data = $('#dover_form').serialize();
-        $.ajax({
-            type: 'POST',
-            url: url,
-            data: send_data,
-            success: function(data) {
-                if (data.pk) {
-                    var opt = '<option value="'+data.pk+'">'+data.label+'</option>';
-                    var org_id = $('#id_customer-organization').val();
-                    var agent_pk = $('#id_customer-agent_person').val();
-                    $('#id_customer-agent_doverennost').append($(opt));
-                    $('#id_customer-agent_doverennost').val(data.pk);
-                    ORG_AGENTS[org_id][agent_pk]['dover'].push({pk: data.pk, label: data.label});
-                    $('#addDover').modal('hide');
-                } else {
-                    $('#dover_form .form-internal').html(data);
-                    updateControls();
-                }
-            },
-            error: function(err, errType) {
-                console.log(err);
-                alert('Ошибка');
-            }
-        });
-    });
-
-    $('#id_operation, #id_place, #id_person').change();
-
     $('.errorlist').addClass('alert');
 
-    $('#id_customer-customer_type').live('change', function() {
-        if ($(this).val() == 1) {
-            $('.fields-fizik').slideUp('fast', function() {
-                $('.fields-yurik').slideDown('fast');
-            });
-        } else {
-            $('.fields-yurik').slideUp('fast', function() {
-                $('.fields-fizik').slideDown('fast');
-            });
-        }
-    });
-
-    $('#id_per_page').parents('p').find('label, :input').css('display', 'inline');
-    $('#id_records_order_by').parents('p').find('label, :input').css('display', 'inline');
-
-    $('#id_customer-agent_director').live('change', function() {
-        if ($(this).is(':checked') ) {
-            $('.fields-agent').slideUp('fast');
-        } else {
-            $('.fields-agent').slideDown('fast');
-        }
-    });
-
-    $('#copy_responsible_to_client').live('click', function() {
-        var responsible_id = $('#id_responsible').val();
-        if (!responsible_id) { return }
-
-        var responsible_name = $('.link-responsible').html();
-
-        var a  = $('<a href="/create/customer/?customer_type=0&instance='+responsible_id+'" class="link-customer load">Отв. '+responsible_name+'</a>');
-        $('.link-customer').replaceWith(a);
-
-        $('#id_client_organization').val('').change();
-        $('#id_doverennost').val('').change();
-        $('#id_agent').val('').change();
-
-        $('#id_client_person').val(responsible_id).change();
-
-        $('.link-customer').click();
-
-        return false;
-    });
-
     $('.dropdown-toggle').dropdown();
-
-    $('#id_cemetery').live('change', function() {
-        $(this).closest('.well').find('input:not([name=csrfmiddlewaretoken])').val('');
-        $('#place_rooms').text('1');
-    })
 });
 
 function makeDatePicker(obj) {
