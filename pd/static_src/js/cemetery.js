@@ -242,6 +242,8 @@ $(function() {
 
             $('input[name^=person]').closest('p').hide();
             $('#id_org').closest('p').show();
+
+            $('#id_agent_director').change();
         } else {
             $('#applicant_form_block').show();
 
