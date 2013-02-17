@@ -1,4 +1,5 @@
 import datetime
+import json
 from burials.forms import BurialCloseForm
 from burials.models import Cemetery, Burial, Place, Area
 from django.contrib.auth.models import User
@@ -466,3 +467,26 @@ class TestForms(TestCase):
         self.assertEqual(f.cemetery_areas_json(), "{}")
         self.assertEqual(f.agent_dover_json(), "{}")
         self.assertEqual(f.loru_agents_json(), "{}")
+
+class TestAJAX(TestCase):
+    def setUp(self):
+        activate('ru')
+        self.client = Client()
+        self.ugh_client = Client()
+
+        self.ugh_user = User.objects.create_user(username='ugh', email='test@example.com', password='test')
+        ugh_org = Org.objects.create(type=Org.PROFILE_UGH, name='ugh')
+        Profile.objects.create(user=self.ugh_user, org=ugh_org)
+        self.ugh_client.login(username='ugh', password='test')
+
+        self.cemetery = Cemetery.objects.create(name='test cem', time_begin='12:00', time_end='17:00', ugh=ugh_org,
+                                                time_slots='10:20\n10:40\n11:00')
+
+    def test_cemetery_times(self):
+        params = (self.cemetery.pk, datetime.date.today().strftime('%d.%m.%Y'))
+        r = self.client.get('/cemetery_times/?cem=%s&date=%s' % params)
+        self.assertEqual(r.status_code, 302)
+
+        r = self.ugh_client.get('/cemetery_times/?cem=%s&date=%s' % params)
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(len(json.loads(r.content)), 3)

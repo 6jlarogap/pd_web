@@ -213,6 +213,21 @@ $(function() {
     $('#id_loru').change(updateAgents);
     updateAgents();
 
+    $('#id_plan_date, #id_cemetery').change(function() {
+        var cem = $('#id_cemetery').val();
+        var date = $('#id_plan_date').val();
+        if (cem && date) {
+            $.getJSON('/cemetery_times/?cem='+cem+'&date='+date, function(data) {
+                CEMETERY_TIMES = data;
+                updateTimes();
+            });
+        } else {
+            CEMETERY_TIMES = {};
+            updateTimes();
+        }
+    });
+    $('#id_plan_date').change();
+
     $('input[name=opf]').change(function() {
         if ($('input[name=opf]:checked').val() == 'org') {
             $('#applicant_form_block').hide();

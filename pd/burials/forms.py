@@ -73,7 +73,6 @@ class ChildrenJSONMixin:
             for c in self.fields['cemetery'].queryset:
                 parents[c.pk] = c.get_time_choices(
                     date=self.instance.plan_date or self.initial.get('plan_date'),
-                    burial=self.instance,
                     request=self.request
                 )
         return mark_safe(json.dumps(parents))
@@ -161,7 +160,6 @@ class BurialForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelForm):
         if self.instance and self.instance.cemetery and self.instance.cemetery.time_slots:
             choices = [('', '----------')] + self.instance.cemetery.get_time_choices(
                 date=self.instance.plan_date,
-                burial=self.instance,
                 request=self.request,
             )
             self.fields['plan_time'].widget = forms.Select(choices=choices)
@@ -185,11 +183,11 @@ class BurialForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelForm):
             self.fields['dover'].queryset = Dover.objects.filter(agent__org__in=loru_list)
 
             self.fields.keyOrder.insert(self.fields.keyOrder.index('loru'), self.fields.keyOrder.pop(-1))
-            if self.instance.pk:
-                if self.instance.applicant and self.instance.is_ugh():
-                    self.initial['opf'] = 'person'
-                else:
-                    self.initial['opf'] = 'org'
+            if self.instance.pk and self.instance.applicant and self.instance.is_ugh():
+                self.initial['opf'] = 'person'
+            else:
+                self.initial['opf'] = 'org'
+
 
         if self.request.user.profile.is_ugh() and self.request.REQUEST.get('archive'):
             del self.fields['plan_date']

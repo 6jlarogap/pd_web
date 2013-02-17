@@ -18,4 +18,6 @@ urlpatterns = patterns('burials.views',
     url(r'^manage/cemetery/create/$', 'manage_cemeteries_create', name='manage_cemeteries_create'),
     url(r'^manage/cemetery/(?P<pk>\d+)/edit/$', 'manage_cemeteries_edit', name='manage_cemeteries_edit'),
 
+    url(r'^cemetery_times/', 'cemetery_times', name='cemetery_times'),
+
 )

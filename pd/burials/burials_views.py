@@ -1,22 +1,23 @@
 # coding=utf-8
 import datetime
+import json
 from django import db
 
 from django.contrib import messages
 from django.core.urlresolvers import reverse
 from django.db import transaction
 from django.db.models.query_utils import Q
-from django.http import Http404
+from django.http import Http404, HttpResponse
 from django.shortcuts import redirect
 from django.template.context import RequestContext
-from django.views.generic.base import TemplateView
+from django.views.generic.base import TemplateView, View
 from django.utils.translation import ugettext_lazy as _
 from django.views.generic.detail import DetailView
 from django.views.generic.edit import CreateView
 from django.views.generic.list import ListView
 
 from burials.forms import BurialSearchForm, BurialForm, BurialCommitForm, BurialCloseForm
-from burials.models import Reason, Burial
+from burials.models import Reason, Burial, Cemetery
 from logs.models import write_log
 from orders.models import Order
 from reports.models import make_report
@@ -373,3 +374,15 @@ class MakeNotificationView(ArchiveMixin, DetailView):
         return redirect('report_view', report.pk)
 
 make_notification = MakeNotificationView.as_view()
+
+class GetCemeteryTimes(View):
+    def get(self, request, *args, **kwargs):
+        if not request.user.is_authenticated():
+            messages.error(request, _(u"Доступно только для пользователей"))
+            return redirect('/')
+        c = Cemetery.objects.get(pk=request.GET.get('cem'))
+        date = datetime.datetime.strptime(request.GET.get('date'), '%d.%m.%Y').date
+        data = c.get_time_choices(date=date, request=request)
+        return HttpResponse(json.dumps({c.pk: data}), mimetype='application/json')
+
+cemetery_times = GetCemeteryTimes.as_view()

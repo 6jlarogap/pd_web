@@ -44,7 +44,7 @@ class Cemetery(models.Model):
     def __unicode__(self):
         return self.name
 
-    def get_time_choices(self, date, burial, request):
+    def get_time_choices(self, date, request):
         others = Burial.objects.none()
         others_loru = Burial.objects.none()
         if date:
