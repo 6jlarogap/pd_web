@@ -14,6 +14,7 @@
         {% csrf_token %}
         {{ form.as_p }}
         {% if user.profile.is_ugh %}
+            <p><a href="#" class="btn btn-agent">{% trans "добавить агента" %}</a></p>
             <p><a href="#" class="btn btn-dover">{% trans "добавить доверенность" %}</a></p>
         {% endif %}
         <h2>{% trans "Усопший" %} {{ form.deadman_form.instance|default:"" }}</h2>

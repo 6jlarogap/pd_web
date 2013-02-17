@@ -231,17 +231,27 @@ $(function() {
     $('input[name=opf]').change(function() {
         if ($('input[name=opf]:checked').val() == 'org') {
             $('#applicant_form_block').hide();
+
             $('#id_loru').closest('p').show();
+            $('#id_agent_director').closest('p').show();
             $('#id_agent').closest('p').show();
             $('#id_dover').closest('p').show();
+
+            $('.btn-dover').closest('p').show();
+            $('.btn-agent').closest('p').show();
 
             $('input[name^=person]').closest('p').hide();
             $('#id_org').closest('p').show();
         } else {
             $('#applicant_form_block').show();
+
             $('#id_loru').closest('p').hide();
+            $('#id_agent_director').closest('p').hide();
             $('#id_agent').closest('p').hide();
             $('#id_dover').closest('p').hide();
+
+            $('.btn-dover').closest('p').hide();
+            $('.btn-agent').closest('p').hide();
 
             $('input[name^=person]').closest('p').show();
             $('#id_org').closest('p').hide();
@@ -254,14 +264,16 @@ $(function() {
     $('#id_agent_director').change(function() {
         if ($(this).is(':checked')) {
             $('#id_dover').val('');
-            $('#id_dover').closest('p').hide();
             $('#id_agent').val('');
+            $('#id_dover').closest('p').hide();
             $('#id_agent').closest('p').hide();
             $('.btn-dover').closest('p').hide();
+            $('.btn-agent').closest('p').hide();
         } else {
             $('#id_dover').closest('p').show();
             $('#id_agent').closest('p').show();
             $('.btn-dover').closest('p').show();
+            $('.btn-agent').closest('p').show();
         }
     });
     $('#id_agent_director').change();
