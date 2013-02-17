@@ -137,13 +137,13 @@ class Burial(models.Model):
     STATUS_CLOSED = 'closed'
     STATUS_ANNULATED = 'annulated'
     STATUS_CHOICES = (
-        (STATUS_BACKED, _(u"Отозвана")),
-        (STATUS_DECLINED, _(u"Отклонена")),
+        (STATUS_BACKED, _(u"Отозвано")),
+        (STATUS_DECLINED, _(u"Отклонено")),
         (STATUS_DRAFT, _(u"Черновик")),
         (STATUS_READY, _(u"На согласовании")),
-        (STATUS_APPROVED, _(u"Согласована")),
-        (STATUS_CLOSED, _(u"Закрыта")),
-        (STATUS_ANNULATED, _(u"Аннулирована")),
+        (STATUS_APPROVED, _(u"Согласовано")),
+        (STATUS_CLOSED, _(u"Закрыто")),
+        (STATUS_ANNULATED, _(u"Аннулировано")),
     )
 
     BURIAL_TYPES = (
@@ -159,7 +159,7 @@ class Burial(models.Model):
     SOURCE_UGH = 'ugh'
     SOURCE_ARCHIVE = 'archive'
     SOURCE_TYPES = (
-        (SOURCE_FULL, _(u"Полная")),
+        (SOURCE_FULL, _(u"Полное")),
         (SOURCE_UGH, _(u"Только УГХ")),
         (SOURCE_ARCHIVE, _(u"Архивное")),
     )
