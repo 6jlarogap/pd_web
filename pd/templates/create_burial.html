@@ -10,7 +10,7 @@
             {% trans "Новое захоронение" %}
         {% endif %}
     </h1>{% endblock form_title %}
-    <form action="" method="POST" class="burial-form">
+    <form action="{{ request.path }}" method="POST" class="burial-form">
         {% csrf_token %}
         {{ form.as_p }}
         {% if user.profile.is_ugh %}
