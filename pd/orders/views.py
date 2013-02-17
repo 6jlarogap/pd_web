@@ -3,6 +3,7 @@ from django.contrib import messages
 from django.core.urlresolvers import reverse
 from django.db.models.query_utils import Q
 from django.shortcuts import redirect
+from django.template.context import RequestContext
 from django.views.generic.base import View
 from django.views.generic.detail import DetailView
 from django.views.generic.edit import CreateView, UpdateView
@@ -142,7 +143,7 @@ class PrintOrderView(LORURequiredMixin, DetailView):
             msg=_(u"Счет-заказ"),
             obj=self.get_object(),
             template='reports/order.html',
-            context=context
+            context=RequestContext(self.request, context),
         )
         return redirect('report_view', report.pk)
 

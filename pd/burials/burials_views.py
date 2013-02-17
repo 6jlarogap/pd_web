@@ -8,6 +8,7 @@ from django.db import transaction
 from django.db.models.query_utils import Q
 from django.http import Http404
 from django.shortcuts import redirect
+from django.template.context import RequestContext
 from django.views.generic.base import TemplateView
 from django.utils.translation import ugettext_lazy as _
 from django.views.generic.detail import DetailView
@@ -367,7 +368,7 @@ class MakeNotificationView(ArchiveMixin, DetailView):
             msg=_(u"Уведомление"),
             obj=self.get_object(),
             template='reports/notification.html',
-            context=context
+            context=RequestContext(self.request, context),
         )
         return redirect('report_view', report.pk)
 

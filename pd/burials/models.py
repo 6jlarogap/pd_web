@@ -311,6 +311,9 @@ class Burial(models.Model):
         ct = ContentType.objects.get_for_model(self)
         return Report.objects.filter(content_type=ct, object_id=self.pk).order_by('-pk')
 
+    def approved_dt(self):
+        return self.changed
+
     def close(self):
         place = self.get_place() or Place(
             cemetery=self.cemetery,
