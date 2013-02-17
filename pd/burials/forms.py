@@ -397,6 +397,9 @@ class BurialCommitForm(BurialForm):
         if self.instance.is_archive() and self.fields.get('fact_date'):
             self.fields['fact_date'].required = True
 
+        if self.instance.is_finished():
+            self.fields['place_number'].required = True
+
         if self.instance and self.instance.is_ugh() and self.instance.loru:
             for f in ['loru', 'agent', 'dover']:
                 self.fields[f].required = True

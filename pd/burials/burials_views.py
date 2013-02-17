@@ -309,6 +309,7 @@ class CreateBurial(CreateView):
         return action
 
     def get_form_class(self):
+        print self.get_object(), self.get_object().is_finished(), self.request.user.profile.is_ugh()
         if self.get_action():
             return BurialCommitForm
         elif self.get_object() and self.get_object().is_finished() and self.request.user.profile.is_ugh():
