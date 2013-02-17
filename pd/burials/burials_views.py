@@ -304,6 +304,8 @@ class CreateBurial(CreateView):
             action = 'approve'
         if self.request.REQUEST.get('ready'):
             action = 'ready'
+        if self.request.REQUEST.get('complete'):
+            action = 'complete'
         return action
 
     def get_form_class(self):

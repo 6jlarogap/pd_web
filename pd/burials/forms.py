@@ -472,10 +472,10 @@ class BurialCommitForm(BurialForm):
             if self.cleaned_data.get('opf') == 'org':
                 if not self.cleaned_data.get('loru'):
                     raise forms.ValidationError(_(u"Нужно указать ЛОРУ"))
-                if not self.cleaned_data.get('agent_director') and not self.cleaned_data.get('agent'):
-                    raise forms.ValidationError(_(u"Нужно указать Агента или указать, что Агент - Директор"))
-                if not self.cleaned_data.get('agent_director') and not self.cleaned_data.get('dover'):
-                    raise forms.ValidationError(_(u"Нужно указать Доверенность или указать, что Агент - Директор"))
+                if not self.cleaned_data.get('agent_director'):
+                    if not self.cleaned_data.get('agent') or not self.cleaned_data.get('dover'):
+                        msg = _(u"Нужно указать Агента и Доверенность или указать, что Агент - Директор")
+                        raise forms.ValidationError(msg)
 
         return self.cleaned_data
 
