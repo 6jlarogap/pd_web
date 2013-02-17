@@ -323,8 +323,7 @@ class Burial(models.Model):
             place=self.place_number,
             places_count=self.area and self.area.places_count or None,
         )
-        if self.get_responsible():
-            place.responsible = self.get_responsible()
+        place.responsible = self.get_responsible()
         place.save()
         self.place = place
         self.save()
