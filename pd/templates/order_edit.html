@@ -4,10 +4,18 @@
 
 {% block content %}
     <h1>{% trans "Заказ" %} {{ form.instance }}</h1>
-    <p><a href="{% url order_print form.instance.pk %}" class="btn">{% trans "распечатать" %}</a></p>
+    <p><a href="{% url order_print form.instance.pk %}" class="btn" target="_blank">{% trans "распечатать" %}</a></p>
     <form action="" method="POST">
         {% csrf_token %}
         {{ form.as_p }}
+
+        {% if form.instance.get_burial %}
+            <p>
+                <a href="{% url view_burial form.instance.get_burial.pk %}">
+                    Захоронение: {{ form.instance.get_burial }}
+                </a>
+            </p>
+        {% endif %}
 
         <h2>{% trans "Позиции" %}</h2>
         {{ formset.management_form }}
@@ -23,7 +31,15 @@
 
         <p>
             <input type="submit" class="btn" value="{% trans "сохранить" %}" class="btn"/>
-            <a class="btn" href="{% url create_burial %}?order={{ form.instance.pk }}">{% trans "добавить захоронение" %}</a>
+            {% if form.instance.get_burial %}
+                <a class="btn" href="{% url edit_burial form.instance.get_burial.pk %}">
+                    {% trans "править захоронение" %}
+                </a>
+            {% else %}
+                <a class="btn" href="{% url create_burial %}?order={{ form.instance.pk }}">
+                    {% trans "добавить захоронение" %}
+                </a>
+            {% endif %}
         </p>
     </form>
 
@@ -41,7 +57,7 @@
                     <td>{{ doc.dt }}</td>
                     <td>{{ doc.user.profile }} / {{ doc.user.profile.org }}</td>
                     <td>{{ doc.description }}</td>
-                    <td><a class="btn" href="{% url report_view doc.pk %}">{% trans "просмотр" %}</a></td>
+                    <td><a class="btn" href="{% url report_view doc.pk %}" target="_blank">{% trans "просмотр" %}</a></td>
                 </tr>
             {% endfor %}
         </table>

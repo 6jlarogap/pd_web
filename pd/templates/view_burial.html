@@ -133,7 +133,7 @@
             <a class="btn" href="{% url edit_burial b.pk %}">{% trans "правка" %}</a>
         {% endif %}
         {% if b.can_print_notification %}
-            <a class="btn" href="{% url make_notification b.pk %}">{% trans "уведомление" %}</a>
+            <a class="btn" href="{% url make_notification b.pk %}" target="_blank">{% trans "уведомление" %}</a>
         {% endif %}
     </form>
 
@@ -151,7 +151,7 @@
                     <td>{{ doc.dt }}</td>
                     <td>{{ doc.user.profile }} / {{ doc.user.profile.org }}</td>
                     <td>{{ doc.description }}</td>
-                    <td><a class="btn" href="{% url report_view doc.pk %}">{% trans "просмотр" %}</a></td>
+                    <td><a class="btn" href="{% url report_view doc.pk %}" target="_blank">{% trans "просмотр" %}</a></td>
                 </tr>
             {% endfor %}
         </table>

@@ -1,5 +1,6 @@
 # coding=utf-8
 from __builtin__ import property
+from burials.models import Burial
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.utils.translation import ugettext as _
@@ -54,6 +55,13 @@ class Order(models.Model):
     def get_documents(self):
         ct = ContentType.objects.get_for_model(self)
         return Report.objects.filter(content_type=ct, object_id=self.pk).order_by('-pk')
+
+    def get_burial(self):
+        bo = Burial.objects.filter(order=self)
+        try:
+            return bo[0]
+        except IndexError:
+            return None
 
 class OrderItem(models.Model):
     order = models.ForeignKey(Order, editable=False)

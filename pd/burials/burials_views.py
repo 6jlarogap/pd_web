@@ -243,9 +243,20 @@ class CreateBurial(CreateView):
         return data
 
     def dispatch(self, request, *args, **kwargs):
+        self.request = request
+        self.args = args
+        self.kwargs = kwargs
+
         if not request.user.is_authenticated() or (not request.user.profile.can_create_burials()):
             messages.error(request, _(u"У Вас нет прав создавать захоронения вручную"))
             return redirect('/')
+
+        b = self.get_object()
+        if request.REQUEST.get('order') and not b:
+            order = Order.objects.get(pk=request.REQUEST.get('order'), loru=request.user.profile.org)
+            if order.get_burial():
+                return redirect('edit_burial', order.get_burial().pk)
+
         return super(CreateBurial, self).dispatch(request, *args, **kwargs)
 
     def form_invalid(self, form, *args, **kwargs):
@@ -255,8 +266,8 @@ class CreateBurial(CreateView):
     def form_valid(self, form, *args, **kwargs):
         b = form.save()
 
-        if self.request.GET.get('order') and not b.order:
-            order = Order.objects.get(pk=self.request.GET.get('order'), loru=self.request.user.profile.org)
+        if self.request.REQUEST.get('order') and not b.order:
+            order = Order.objects.get(pk=self.request.REQUEST.get('order'), loru=self.request.user.profile.org)
             b.order = order
             b.save()
 
@@ -309,7 +320,6 @@ class CreateBurial(CreateView):
         return action
 
     def get_form_class(self):
-        print self.get_object(), self.get_object().is_finished(), self.request.user.profile.is_ugh()
         if self.get_action():
             return BurialCommitForm
         elif self.get_object() and self.get_object().is_finished() and self.request.user.profile.is_ugh():

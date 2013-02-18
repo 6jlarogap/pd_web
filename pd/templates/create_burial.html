@@ -12,6 +12,7 @@
     </h1>{% endblock form_title %}
     <form action="{{ request.path }}" method="POST" class="burial-form">
         {% csrf_token %}
+        <input type="hidden" name="order"  value="{{ request.REQUEST.order }}" />
         {{ form.as_p }}
         {% if user.profile.is_ugh %}
             <p><a href="#" class="btn btn-agent">{% trans "добавить агента" %}</a></p>

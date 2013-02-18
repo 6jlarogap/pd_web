@@ -196,7 +196,8 @@ class BurialForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelForm):
             del self.fields['plan_date']
             del self.fields['plan_time']
         else:
-            del self.fields['fact_date']
+            if not self.instance.is_finished():
+                del self.fields['fact_date']
             del self.fields['account_number']
 
         self.forms = self.construct_forms()
