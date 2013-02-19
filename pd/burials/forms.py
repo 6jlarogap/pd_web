@@ -357,6 +357,9 @@ class BurialForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelForm):
 
         self.instance.save()
 
+        if self.instance.is_closed():
+            self.instance.close()
+
         self.put_log_data()
 
         msg = _(u"<a href='%s'>Захоронение %s</a> сохранено") % (
