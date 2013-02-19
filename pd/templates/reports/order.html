@@ -31,7 +31,7 @@
 </TR>
 <TR>
     <TD ALIGN=CENTER VALIGN=BOTTOM colspan=9><B><I><FONT SIZE=5 COLOR="#000000">
-        Счёт-заказ № {{ burial.account_number }}/{{ burial.place.cemetery }}
+        Счёт-заказ № {{ order.pk }}
     </FONT></I></B></TD>
 </TR>
 <TR>
@@ -123,136 +123,25 @@
     <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=CENTER VALIGN=MIDDLE><FONT COLOR="#000000">Цена</FONT></TD>
     <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=CENTER VALIGN=MIDDLE><FONT COLOR="#000000">Сумма</FONT></TD>
 </TR>
-{% if positions and print_positions%}
-    {% for p in positions %}
-        <TR>
-            <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" HEIGHT=19 ALIGN=CENTER VALIGN=TOP SDVAL="1" SDNUM="1033;"><FONT COLOR="#000000">{{ forloop.counter }}</FONT></TD>
-            <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" COLSPAN=3 ALIGN=LEFT VALIGN=MIDDLE SDNUM="1033;0;@"><FONT COLOR="#000000">{{ p.service }}</FONT></TD>
-            <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=CENTER VALIGN=BOTTOM ><FONT SIZE=1 COLOR="#000000">{{ p.service.measure }}</FONT></TD>
-            <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=CENTER VALIGN=BOTTOM ><FONT COLOR="#000000">{% if p.service.name == 'Рытье могилы' %}Размер гроба: {{ coffin_size }}{% endif %}</FONT></TD>
-            <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=center VALIGN=BOTTOM ><FONT COLOR="#000000">{{ p.count|floatformat:"2" }}</FONT></TD>
-            <TD STYLE="padding-right:0.5em; border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=right VALIGN=BOTTOM ><FONT COLOR="#000000">{{ p.price|floatformat:"2" }}</FONT></TD>
-            <TD STYLE="padding-right:0.5em; border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=right VALIGN=BOTTOM ><FONT COLOR="#000000">{{ p.sum|floatformat:"2" }}</FONT></TD>
-        </TR>
-    {% endfor %}
-{% else %}
+{% for p in order.orderitem_set.all %}
     <TR>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" HEIGHT=19 ALIGN=CENTER VALIGN=TOP SDVAL="1" SDNUM="1033;"><FONT COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" COLSPAN=3 ALIGN=LEFT VALIGN=MIDDLE SDNUM="1033;0;@"><FONT COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=CENTER VALIGN=BOTTOM ><FONT SIZE=1 COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=LEFT VALIGN=BOTTOM ><FONT COLOR="#000000"><BR></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=LEFT VALIGN=BOTTOM ><FONT COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=LEFT VALIGN=BOTTOM ><FONT COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=LEFT VALIGN=BOTTOM ><FONT COLOR="#000000"></FONT></TD>
+        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" HEIGHT=19 ALIGN=CENTER VALIGN=TOP SDVAL="1" SDNUM="1033;"><FONT COLOR="#000000">{{ forloop.counter }}</FONT></TD>
+        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" COLSPAN=3 ALIGN=LEFT VALIGN=MIDDLE SDNUM="1033;0;@"><FONT COLOR="#000000">{{ p.product }}</FONT></TD>
+        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=CENTER VALIGN=BOTTOM ><FONT SIZE=1 COLOR="#000000">{{ p.product.measure }}</FONT></TD>
+        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=CENTER VALIGN=BOTTOM ><FONT COLOR="#000000"></FONT></TD>
+        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=center VALIGN=BOTTOM ><FONT COLOR="#000000">{{ p.quantity|floatformat:"2" }}</FONT></TD>
+        <TD STYLE="padding-right:0.5em; border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=right VALIGN=BOTTOM ><FONT COLOR="#000000">{{ p.price|floatformat:"2" }}</FONT></TD>
+        <TD STYLE="padding-right:0.5em; border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=right VALIGN=BOTTOM ><FONT COLOR="#000000">{{ p.total|floatformat:"2" }}</FONT></TD>
     </TR>
-    <TR>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" HEIGHT=19 ALIGN=CENTER VALIGN=TOP SDVAL="1" SDNUM="1033;"><FONT COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" COLSPAN=3 ALIGN=LEFT VALIGN=MIDDLE SDNUM="1033;0;@"><FONT COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=CENTER VALIGN=BOTTOM ><FONT SIZE=1 COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=LEFT VALIGN=BOTTOM ><FONT COLOR="#000000"><BR></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=LEFT VALIGN=BOTTOM ><FONT COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=LEFT VALIGN=BOTTOM ><FONT COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=LEFT VALIGN=BOTTOM ><FONT COLOR="#000000"></FONT></TD>
-    </TR>
-    <TR>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" HEIGHT=19 ALIGN=CENTER VALIGN=TOP SDVAL="1" SDNUM="1033;"><FONT COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" COLSPAN=3 ALIGN=LEFT VALIGN=MIDDLE SDNUM="1033;0;@"><FONT COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=CENTER VALIGN=BOTTOM ><FONT SIZE=1 COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=LEFT VALIGN=BOTTOM ><FONT COLOR="#000000"><BR></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=LEFT VALIGN=BOTTOM ><FONT COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=LEFT VALIGN=BOTTOM ><FONT COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=LEFT VALIGN=BOTTOM ><FONT COLOR="#000000"></FONT></TD>
-    </TR>
-    <TR>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" HEIGHT=19 ALIGN=CENTER VALIGN=TOP SDVAL="1" SDNUM="1033;"><FONT COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" COLSPAN=3 ALIGN=LEFT VALIGN=MIDDLE SDNUM="1033;0;@"><FONT COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=CENTER VALIGN=BOTTOM ><FONT SIZE=1 COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=LEFT VALIGN=BOTTOM ><FONT COLOR="#000000"><BR></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=LEFT VALIGN=BOTTOM ><FONT COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=LEFT VALIGN=BOTTOM ><FONT COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=LEFT VALIGN=BOTTOM ><FONT COLOR="#000000"></FONT></TD>
-    </TR>
-    <TR>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" HEIGHT=19 ALIGN=CENTER VALIGN=TOP SDVAL="1" SDNUM="1033;"><FONT COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" COLSPAN=3 ALIGN=LEFT VALIGN=MIDDLE SDNUM="1033;0;@"><FONT COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=CENTER VALIGN=BOTTOM ><FONT SIZE=1 COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=LEFT VALIGN=BOTTOM ><FONT COLOR="#000000"><BR></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=LEFT VALIGN=BOTTOM ><FONT COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=LEFT VALIGN=BOTTOM ><FONT COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=LEFT VALIGN=BOTTOM ><FONT COLOR="#000000"></FONT></TD>
-    </TR>
-    <TR>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" HEIGHT=19 ALIGN=CENTER VALIGN=TOP SDVAL="1" SDNUM="1033;"><FONT COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" COLSPAN=3 ALIGN=LEFT VALIGN=MIDDLE SDNUM="1033;0;@"><FONT COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=CENTER VALIGN=BOTTOM ><FONT SIZE=1 COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=LEFT VALIGN=BOTTOM ><FONT COLOR="#000000"><BR></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=LEFT VALIGN=BOTTOM ><FONT COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=LEFT VALIGN=BOTTOM ><FONT COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=LEFT VALIGN=BOTTOM ><FONT COLOR="#000000"></FONT></TD>
-    </TR>
-    <TR>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" HEIGHT=19 ALIGN=CENTER VALIGN=TOP SDVAL="1" SDNUM="1033;"><FONT COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" COLSPAN=3 ALIGN=LEFT VALIGN=MIDDLE SDNUM="1033;0;@"><FONT COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=CENTER VALIGN=BOTTOM ><FONT SIZE=1 COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=LEFT VALIGN=BOTTOM ><FONT COLOR="#000000"><BR></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=LEFT VALIGN=BOTTOM ><FONT COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=LEFT VALIGN=BOTTOM ><FONT COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=LEFT VALIGN=BOTTOM ><FONT COLOR="#000000"></FONT></TD>
-    </TR>
-    <TR>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" HEIGHT=19 ALIGN=CENTER VALIGN=TOP SDVAL="1" SDNUM="1033;"><FONT COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" COLSPAN=3 ALIGN=LEFT VALIGN=MIDDLE SDNUM="1033;0;@"><FONT COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=CENTER VALIGN=BOTTOM ><FONT SIZE=1 COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=LEFT VALIGN=BOTTOM ><FONT COLOR="#000000"><BR></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=LEFT VALIGN=BOTTOM ><FONT COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=LEFT VALIGN=BOTTOM ><FONT COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=LEFT VALIGN=BOTTOM ><FONT COLOR="#000000"></FONT></TD>
-    </TR>
-    <TR>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" HEIGHT=19 ALIGN=CENTER VALIGN=TOP SDVAL="1" SDNUM="1033;"><FONT COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" COLSPAN=3 ALIGN=LEFT VALIGN=MIDDLE SDNUM="1033;0;@"><FONT COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=CENTER VALIGN=BOTTOM ><FONT SIZE=1 COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=LEFT VALIGN=BOTTOM ><FONT COLOR="#000000"><BR></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=LEFT VALIGN=BOTTOM ><FONT COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=LEFT VALIGN=BOTTOM ><FONT COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=LEFT VALIGN=BOTTOM ><FONT COLOR="#000000"></FONT></TD>
-    </TR>
-    <TR>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" HEIGHT=19 ALIGN=CENTER VALIGN=TOP SDVAL="1" SDNUM="1033;"><FONT COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" COLSPAN=3 ALIGN=LEFT VALIGN=MIDDLE SDNUM="1033;0;@"><FONT COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=CENTER VALIGN=BOTTOM ><FONT SIZE=1 COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=LEFT VALIGN=BOTTOM ><FONT COLOR="#000000"><BR></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=LEFT VALIGN=BOTTOM ><FONT COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=LEFT VALIGN=BOTTOM ><FONT COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=LEFT VALIGN=BOTTOM ><FONT COLOR="#000000"></FONT></TD>
-    </TR>
-    <TR>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" HEIGHT=19 ALIGN=CENTER VALIGN=TOP SDVAL="1" SDNUM="1033;"><FONT COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" COLSPAN=3 ALIGN=LEFT VALIGN=MIDDLE SDNUM="1033;0;@"><FONT COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=CENTER VALIGN=BOTTOM ><FONT SIZE=1 COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=LEFT VALIGN=BOTTOM ><FONT COLOR="#000000"><BR></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=LEFT VALIGN=BOTTOM ><FONT COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=LEFT VALIGN=BOTTOM ><FONT COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=LEFT VALIGN=BOTTOM ><FONT COLOR="#000000"></FONT></TD>
-    </TR>
-    <TR>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" HEIGHT=19 ALIGN=CENTER VALIGN=TOP SDVAL="1" SDNUM="1033;"><FONT COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" COLSPAN=3 ALIGN=LEFT VALIGN=MIDDLE SDNUM="1033;0;@"><FONT COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=CENTER VALIGN=BOTTOM ><FONT SIZE=1 COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=LEFT VALIGN=BOTTOM ><FONT COLOR="#000000"><BR></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=LEFT VALIGN=BOTTOM ><FONT COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=LEFT VALIGN=BOTTOM ><FONT COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=LEFT VALIGN=BOTTOM ><FONT COLOR="#000000"></FONT></TD>
-    </TR>
-{% endif %}
+{% endfor %}
 <TR>
     <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" HEIGHT=20 ALIGN=CENTER VALIGN=TOP><FONT COLOR="#000000"><BR></FONT></TD>
     <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" COLSPAN=7 ALIGN=RIGHT VALIGN=BOTTOM SDNUM="1033;0;@"><B><FONT COLOR="#000000">Итого (сумма прописью)</FONT></B></TD>
-    <TD STYLE="padding-right:0.5em; border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=right VALIGN=BOTTOM><FONT COLOR="#000000">{% if total %}{{ total|floatformat:"2" }}{% endif %}</FONT></TD>
+    <TD STYLE="padding-right:0.5em; border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=right VALIGN=BOTTOM><FONT COLOR="#000000">{% if order.total %}{{ order.total|floatformat:"2" }}{% endif %}</FONT></TD>
 </TR>
 <TR>
     <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" HEIGHT=20 ALIGN=LEFT VALIGN=BOTTOM><FONT COLOR="#000000"><BR></FONT></TD>
-    <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" COLSPAN=8 ALIGN=RIGHT VALIGN=BOTTOM SDNUM="1033;0;@"><FONT COLOR="#000000">{% if total %}{{ total|rubles|capfirst }}{% endif %}</FONT></TD>
+    <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" COLSPAN=8 ALIGN=RIGHT VALIGN=BOTTOM SDNUM="1033;0;@"><FONT COLOR="#000000">{% if order.total_float %}{{ order.total_float|rubles|capfirst }}{% endif %}</FONT></TD>
 </TR>
 <TR>
     <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000" HEIGHT=19 ALIGN=CENTER VALIGN=TOP SDNUM="1033;0;@"><FONT COLOR="#000000">*</FONT></TD>
@@ -323,7 +212,7 @@
 </TR>
 <TR>
     <TD STYLE="border-left: 1px solid #000000" COLSPAN=9 HEIGHT=35 ALIGN=CENTER VALIGN=BOTTOM>
-        <B><I><FONT SIZE=5 COLOR="#000000">Счёт-заказ №{{ burial.account_number }}/{{ burial.place.cemetery }}
+        <B><I><FONT SIZE=5 COLOR="#000000">Счёт-заказ №{{ order.pk }}
         </FONT></I></B></TD>
 </TR>
 <TR>
@@ -413,136 +302,25 @@
     <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=CENTER VALIGN=MIDDLE><FONT COLOR="#000000">Цена</FONT></TD>
     <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=CENTER VALIGN=MIDDLE><FONT COLOR="#000000">Сумма</FONT></TD>
 </TR>
-{% if positions and print_positions%}
-    {% for p in positions %}
-        <TR>
-            <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" HEIGHT=19 ALIGN=CENTER VALIGN=TOP SDVAL="1" SDNUM="1033;"><FONT COLOR="#000000">{{ forloop.counter }}</FONT></TD>
-            <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" COLSPAN=3 ALIGN=LEFT VALIGN=MIDDLE SDNUM="1033;0;@"><FONT COLOR="#000000">{{ p.service }}</FONT></TD>
-            <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=CENTER VALIGN=BOTTOM ><FONT SIZE=1 COLOR="#000000">{{ p.service.measure }}</FONT></TD>
-            <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=CENTER VALIGN=BOTTOM ><FONT COLOR="#000000">{% if p.service.name == 'Рытье могилы' %}Размер гроба: {{ coffin_size }}{% endif %}</FONT></TD>
-            <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=center VALIGN=BOTTOM ><FONT COLOR="#000000">{{ p.count|floatformat:"2" }}</FONT></TD>
-            <TD STYLE="padding-right:0.5em; border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=right VALIGN=BOTTOM ><FONT COLOR="#000000">{{ p.price|floatformat:"2" }}</FONT></TD>
-            <TD STYLE="padding-right:0.5em; border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=right VALIGN=BOTTOM ><FONT COLOR="#000000">{{ p.sum|floatformat:"2" }}</FONT></TD>
-        </TR>
-    {% endfor %}
-{% else %}
+{% for p in order.orderitem_set.all %}
     <TR>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" HEIGHT=19 ALIGN=CENTER VALIGN=TOP SDVAL="1" SDNUM="1033;"><FONT COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" COLSPAN=3 ALIGN=LEFT VALIGN=MIDDLE SDNUM="1033;0;@"><FONT COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=CENTER VALIGN=BOTTOM ><FONT SIZE=1 COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=LEFT VALIGN=BOTTOM ><FONT COLOR="#000000"><BR></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=LEFT VALIGN=BOTTOM ><FONT COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=LEFT VALIGN=BOTTOM ><FONT COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=LEFT VALIGN=BOTTOM ><FONT COLOR="#000000"></FONT></TD>
+        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" HEIGHT=19 ALIGN=CENTER VALIGN=TOP SDVAL="1" SDNUM="1033;"><FONT COLOR="#000000">{{ forloop.counter }}</FONT></TD>
+        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" COLSPAN=3 ALIGN=LEFT VALIGN=MIDDLE SDNUM="1033;0;@"><FONT COLOR="#000000">{{ p.product }}</FONT></TD>
+        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=CENTER VALIGN=BOTTOM ><FONT SIZE=1 COLOR="#000000">{{ p.product.measure }}</FONT></TD>
+        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=CENTER VALIGN=BOTTOM ><FONT COLOR="#000000"></FONT></TD>
+        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=center VALIGN=BOTTOM ><FONT COLOR="#000000">{{ p.quantity|floatformat:"2" }}</FONT></TD>
+        <TD STYLE="padding-right:0.5em; border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=right VALIGN=BOTTOM ><FONT COLOR="#000000">{{ p.price|floatformat:"2" }}</FONT></TD>
+        <TD STYLE="padding-right:0.5em; border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=right VALIGN=BOTTOM ><FONT COLOR="#000000">{{ p.total|floatformat:"2" }}</FONT></TD>
     </TR>
-    <TR>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" HEIGHT=19 ALIGN=CENTER VALIGN=TOP SDVAL="1" SDNUM="1033;"><FONT COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" COLSPAN=3 ALIGN=LEFT VALIGN=MIDDLE SDNUM="1033;0;@"><FONT COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=CENTER VALIGN=BOTTOM ><FONT SIZE=1 COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=LEFT VALIGN=BOTTOM ><FONT COLOR="#000000"><BR></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=LEFT VALIGN=BOTTOM ><FONT COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=LEFT VALIGN=BOTTOM ><FONT COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=LEFT VALIGN=BOTTOM ><FONT COLOR="#000000"></FONT></TD>
-    </TR>
-    <TR>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" HEIGHT=19 ALIGN=CENTER VALIGN=TOP SDVAL="1" SDNUM="1033;"><FONT COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" COLSPAN=3 ALIGN=LEFT VALIGN=MIDDLE SDNUM="1033;0;@"><FONT COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=CENTER VALIGN=BOTTOM ><FONT SIZE=1 COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=LEFT VALIGN=BOTTOM ><FONT COLOR="#000000"><BR></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=LEFT VALIGN=BOTTOM ><FONT COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=LEFT VALIGN=BOTTOM ><FONT COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=LEFT VALIGN=BOTTOM ><FONT COLOR="#000000"></FONT></TD>
-    </TR>
-    <TR>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" HEIGHT=19 ALIGN=CENTER VALIGN=TOP SDVAL="1" SDNUM="1033;"><FONT COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" COLSPAN=3 ALIGN=LEFT VALIGN=MIDDLE SDNUM="1033;0;@"><FONT COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=CENTER VALIGN=BOTTOM ><FONT SIZE=1 COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=LEFT VALIGN=BOTTOM ><FONT COLOR="#000000"><BR></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=LEFT VALIGN=BOTTOM ><FONT COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=LEFT VALIGN=BOTTOM ><FONT COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=LEFT VALIGN=BOTTOM ><FONT COLOR="#000000"></FONT></TD>
-    </TR>
-    <TR>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" HEIGHT=19 ALIGN=CENTER VALIGN=TOP SDVAL="1" SDNUM="1033;"><FONT COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" COLSPAN=3 ALIGN=LEFT VALIGN=MIDDLE SDNUM="1033;0;@"><FONT COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=CENTER VALIGN=BOTTOM ><FONT SIZE=1 COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=LEFT VALIGN=BOTTOM ><FONT COLOR="#000000"><BR></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=LEFT VALIGN=BOTTOM ><FONT COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=LEFT VALIGN=BOTTOM ><FONT COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=LEFT VALIGN=BOTTOM ><FONT COLOR="#000000"></FONT></TD>
-    </TR>
-    <TR>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" HEIGHT=19 ALIGN=CENTER VALIGN=TOP SDVAL="1" SDNUM="1033;"><FONT COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" COLSPAN=3 ALIGN=LEFT VALIGN=MIDDLE SDNUM="1033;0;@"><FONT COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=CENTER VALIGN=BOTTOM ><FONT SIZE=1 COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=LEFT VALIGN=BOTTOM ><FONT COLOR="#000000"><BR></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=LEFT VALIGN=BOTTOM ><FONT COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=LEFT VALIGN=BOTTOM ><FONT COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=LEFT VALIGN=BOTTOM ><FONT COLOR="#000000"></FONT></TD>
-    </TR>
-    <TR>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" HEIGHT=19 ALIGN=CENTER VALIGN=TOP SDVAL="1" SDNUM="1033;"><FONT COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" COLSPAN=3 ALIGN=LEFT VALIGN=MIDDLE SDNUM="1033;0;@"><FONT COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=CENTER VALIGN=BOTTOM ><FONT SIZE=1 COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=LEFT VALIGN=BOTTOM ><FONT COLOR="#000000"><BR></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=LEFT VALIGN=BOTTOM ><FONT COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=LEFT VALIGN=BOTTOM ><FONT COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=LEFT VALIGN=BOTTOM ><FONT COLOR="#000000"></FONT></TD>
-    </TR>
-    <TR>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" HEIGHT=19 ALIGN=CENTER VALIGN=TOP SDVAL="1" SDNUM="1033;"><FONT COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" COLSPAN=3 ALIGN=LEFT VALIGN=MIDDLE SDNUM="1033;0;@"><FONT COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=CENTER VALIGN=BOTTOM ><FONT SIZE=1 COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=LEFT VALIGN=BOTTOM ><FONT COLOR="#000000"><BR></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=LEFT VALIGN=BOTTOM ><FONT COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=LEFT VALIGN=BOTTOM ><FONT COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=LEFT VALIGN=BOTTOM ><FONT COLOR="#000000"></FONT></TD>
-    </TR>
-    <TR>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" HEIGHT=19 ALIGN=CENTER VALIGN=TOP SDVAL="1" SDNUM="1033;"><FONT COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" COLSPAN=3 ALIGN=LEFT VALIGN=MIDDLE SDNUM="1033;0;@"><FONT COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=CENTER VALIGN=BOTTOM ><FONT SIZE=1 COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=LEFT VALIGN=BOTTOM ><FONT COLOR="#000000"><BR></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=LEFT VALIGN=BOTTOM ><FONT COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=LEFT VALIGN=BOTTOM ><FONT COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=LEFT VALIGN=BOTTOM ><FONT COLOR="#000000"></FONT></TD>
-    </TR>
-    <TR>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" HEIGHT=19 ALIGN=CENTER VALIGN=TOP SDVAL="1" SDNUM="1033;"><FONT COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" COLSPAN=3 ALIGN=LEFT VALIGN=MIDDLE SDNUM="1033;0;@"><FONT COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=CENTER VALIGN=BOTTOM ><FONT SIZE=1 COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=LEFT VALIGN=BOTTOM ><FONT COLOR="#000000"><BR></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=LEFT VALIGN=BOTTOM ><FONT COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=LEFT VALIGN=BOTTOM ><FONT COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=LEFT VALIGN=BOTTOM ><FONT COLOR="#000000"></FONT></TD>
-    </TR>
-    <TR>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" HEIGHT=19 ALIGN=CENTER VALIGN=TOP SDVAL="1" SDNUM="1033;"><FONT COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" COLSPAN=3 ALIGN=LEFT VALIGN=MIDDLE SDNUM="1033;0;@"><FONT COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=CENTER VALIGN=BOTTOM ><FONT SIZE=1 COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=LEFT VALIGN=BOTTOM ><FONT COLOR="#000000"><BR></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=LEFT VALIGN=BOTTOM ><FONT COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=LEFT VALIGN=BOTTOM ><FONT COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=LEFT VALIGN=BOTTOM ><FONT COLOR="#000000"></FONT></TD>
-    </TR>
-    <TR>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" HEIGHT=19 ALIGN=CENTER VALIGN=TOP SDVAL="1" SDNUM="1033;"><FONT COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" COLSPAN=3 ALIGN=LEFT VALIGN=MIDDLE SDNUM="1033;0;@"><FONT COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=CENTER VALIGN=BOTTOM ><FONT SIZE=1 COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=LEFT VALIGN=BOTTOM ><FONT COLOR="#000000"><BR></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=LEFT VALIGN=BOTTOM ><FONT COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=LEFT VALIGN=BOTTOM ><FONT COLOR="#000000"></FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=LEFT VALIGN=BOTTOM ><FONT COLOR="#000000"></FONT></TD>
-    </TR>
-{% endif %}
+{% endfor %}
 <TR>
     <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" HEIGHT=20 ALIGN=CENTER VALIGN=TOP><FONT COLOR="#000000"><BR></FONT></TD>
     <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" COLSPAN=7 ALIGN=RIGHT VALIGN=BOTTOM SDNUM="1033;0;@"><B><FONT COLOR="#000000">Итого (сумма прописью)</FONT></B></TD>
-    <TD STYLE="padding-right:0.5em; border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=right VALIGN=BOTTOM><FONT COLOR="#000000">{% if total %}{{ total|floatformat:"2" }}{% endif %}</FONT></TD>
+    <TD STYLE="padding-right:0.5em; border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" ALIGN=right VALIGN=BOTTOM><FONT COLOR="#000000">{% if order.total %}{{ order.total|floatformat:"2" }}{% endif %}</FONT></TD>
 </TR>
 <TR>
     <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" HEIGHT=20 ALIGN=LEFT VALIGN=BOTTOM><FONT COLOR="#000000"><BR></FONT></TD>
-    <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" COLSPAN=8 ALIGN=RIGHT VALIGN=BOTTOM SDNUM="1033;0;@"><FONT COLOR="#000000">{% if total %}{{ total|rubles|capfirst }}{% endif %}</FONT></TD>
+    <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" COLSPAN=8 ALIGN=RIGHT VALIGN=BOTTOM SDNUM="1033;0;@"><FONT COLOR="#000000">{% if order.total_float %}{{ order.total_float|rubles|capfirst }}{% endif %}</FONT></TD>
 </TR>
 <TR>
     <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000" HEIGHT=19 ALIGN=CENTER VALIGN=TOP SDNUM="1033;0;@"><FONT COLOR="#000000">*</FONT></TD>

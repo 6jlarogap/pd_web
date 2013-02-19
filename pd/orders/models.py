@@ -52,6 +52,9 @@ class Order(models.Model):
     def total(self):
         return sum([i.total for i in self.orderitem_set.all()], 0)
 
+    def total_float(self):
+        return float(self.total)
+
     def get_documents(self):
         ct = ContentType.objects.get_for_model(self)
         return Report.objects.filter(content_type=ct, object_id=self.pk).order_by('-pk')

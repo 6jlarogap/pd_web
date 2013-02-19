@@ -42,6 +42,7 @@
             {% trans "Участок" %}: {{ b.area|default:"" }}<br/>
             {% trans "Ряд" %}: {{ b.row|default:"" }}<br/>
             {% trans "Место" %}: {{ b.place_number|default:"" }}<br/>
+            1 {{ b.place }} 2 {{ b.get_place }}
             {% if user.profile.is_ugh and b.place %}
                 <a href="{% url view_place b.place.pk %}" class="btn">{% trans "карточка" %}</a>
             {% endif %}

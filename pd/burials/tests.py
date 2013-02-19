@@ -175,6 +175,8 @@ class RequestsTest(TestCase):
 
         br = Burial.objects.all()[0]
         self.assertEqual(br.status, Burial.STATUS_CLOSED)
+        self.assertIsNotNone(br.place)
+        self.assertIsNotNone(br.get_place())
 
     def test_archive(self):
         r = self.loru_client.post('/burials/create/', {

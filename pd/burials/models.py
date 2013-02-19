@@ -119,6 +119,9 @@ class Place(models.Model):
     def __unicode__(self):
         return _(u'Кл. %s, уч. %s, ряд %s, место %s') % (self.cemetery, self.area and self.area.name or '', self.row, self.place)
 
+    def burial_count(self):
+        return self.burial_set.all().count()
+
     def save(self, *args, **kwargs):
         if not self.place:
             other_places = Place.objects.filter(cemetery=self.cemetery, area=self.area, row=self.row)
@@ -315,15 +318,27 @@ class Burial(models.Model):
     def approved_dt(self):
         return self.changed
 
-    def close(self):
+    def close(self, old_place=None):
         place = self.get_place() or Place(
-            cemetery=self.cemetery,
-            area=self.area,
-            row=self.row,
-            place=self.place_number,
             places_count=self.area and self.area.places_count or None,
         )
-        place.responsible = self.get_responsible()
+        if place != old_place:
+            if not place.pk or not place.burial_count(): # move TO new
+                if old_place and (not old_place.pk or not old_place.burial_count()): # and FROM new
+                    place = old_place # edit OLD
+                else: # from OLD and POPULATED (or non-existing at all)
+                    pass
+                place.responsible = self.get_responsible() # update responsible
+            else: # move TO existing
+                if not old_place or not old_place.pk or not old_place.burial_count(): # and FROM old and populated
+                    pass # do not touch anything
+                else: # from new
+                    old_place.delete() # deleting old
+
+        place.cemetery = self.cemetery
+        place.area = self.area
+        place.row = self.row
+        place.place = self.place_number
         place.save()
         self.place = place
         self.save()

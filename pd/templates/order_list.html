@@ -22,7 +22,7 @@
                     {% if user.profile.org == c.loru %}
                         <a href="{% url order_edit c.pk %}" class="btn">{% trans "править" %}</a>
                     {% endif %}
-                    <a href="{% url order_print c.pk %}" class="btn">{% trans "распечатать" %}</a>
+                    <a href="{% url order_print c.pk %}" class="btn" target="_blank">{% trans "распечатать" %}</a>
                 </td>
             </tr>
         {% endfor %}

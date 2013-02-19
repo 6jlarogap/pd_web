@@ -206,6 +206,7 @@ class BurialForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelForm):
     def construct_forms(self):
         data = self.data or None
         deadman = self.instance and self.instance.deadman
+        self.old_place = self.instance and self.instance.get_place()
         self.deadman_form = DeadPersonForm(data=data, prefix='deadman', instance=deadman)
         deadman_addr = self.instance and self.instance.deadman and self.instance.deadman.address
         self.deadman_address_form = LocationForm(data=data, prefix='deadman-address', instance=deadman_addr)
@@ -359,7 +360,7 @@ class BurialForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelForm):
         self.instance.save()
 
         if self.instance.is_closed():
-            self.instance.close()
+            self.instance.close(old_place=self.old_place)
 
         self.put_log_data()
 
