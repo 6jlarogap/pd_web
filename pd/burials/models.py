@@ -334,6 +334,8 @@ class Burial(models.Model):
                     pass # do not touch anything
                 else: # from new
                     old_place.delete() # deleting old
+        else:
+            place.responsible = self.get_responsible() # just update responsible
 
         place.cemetery = self.cemetery
         place.area = self.area
