@@ -233,8 +233,9 @@ class CreateBurial(CreateView):
         data = super(CreateBurial, self).get_context_data(**kwargs)
         data.update({
             'b': self.get_object(),
-            'agent_form': AddAgentForm(),
-            'dover_form': AddDoverForm(),
+            'agent_form': AddAgentForm(prefix='agent'),
+            'agent_dover_form': AddDoverForm(prefix='agent_dover'),
+            'dover_form': AddDoverForm(prefix='dover'),
         })
         return data
 

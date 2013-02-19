@@ -102,7 +102,7 @@ view_place = PlaceView.as_view()
 
 class AddDoverView(UGHRequiredMixin, View):
     def post(self, request, *args, **kwargs):
-        f = AddDoverForm(data=request.POST)
+        f = AddDoverForm(data=request.POST, prefix='dover')
         try:
             agent = Profile.objects.get(pk=request.GET['agent'], is_agent=True)
         except Profile.DoesNotExist:
@@ -122,8 +122,8 @@ add_dover = csrf_exempt(AddDoverView.as_view())
 
 class AddAgentView(UGHRequiredMixin, View):
     def post(self, request, *args, **kwargs):
-        fa = AddAgentForm(data=request.POST)
-        fd = AddDoverForm(data=request.POST)
+        fa = AddAgentForm(data=request.POST, prefix='agent')
+        fd = AddDoverForm(data=request.POST, prefix='agent_dover')
         try:
             loru = Org.objects.get(pk=request.GET['loru'], type=Org.PROFILE_LORU)
         except Org.DoesNotExist:

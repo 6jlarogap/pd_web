@@ -400,12 +400,8 @@ function updateControls() {
     $('span.move-left').remove();
     makeDatePicker($('input[id*=date]'));
     makeTimePicker($('input[id*=time]'));
-    makeDatePicker($('.modal #id_begin'));
-    makeDatePicker($('.modal #id_end'));
-    $('#id_customer-customer_type').change();
-    setTimeout(function() {
-        $('#id_customer-agent_director').change();
-    }, 100);
+    makeDatePicker($('.modal input[id$=begin]'));
+    makeDatePicker($('.modal input[id$=end]'));
     setup_address_autocompletes();
 }
 

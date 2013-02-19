@@ -496,13 +496,13 @@ class TestAJAX(TestCase):
     def test_add_agent(self):
         loru = Org.objects.create(type=Org.PROFILE_LORU, name='loru')
         data = {
-            'username': 'test',
-            'email': 'test@example.com',
-            'first_name': 'test',
-            'last_name': 'testov',
-            'number': '123',
-            'begin': '10.10.2010',
-            'end': '20.02.2020',
+            'agent-username': 'test',
+            'agent-email': 'test@example.com',
+            'agent-first_name': 'test',
+            'agent-last_name': 'testov',
+            'agent_dover-number': '123',
+            'agent_dover-begin': '10.10.2010',
+            'agent_dover-end': '20.02.2020',
         }
         self.assertEqual(Profile.objects.filter(is_agent=True).count(), 0)
         self.assertEqual(Dover.objects.all().count(), 0)
@@ -518,9 +518,9 @@ class TestAJAX(TestCase):
     def test_add_dover(self):
         agent = Profile.objects.create(org=self.ugh_org, is_agent=True)
         data = {
-            'number': '123',
-            'begin': '10.10.2010',
-            'end': '20.02.2020',
+            'dover-number': '123',
+            'dover-begin': '10.10.2010',
+            'dover-end': '20.02.2020',
         }
         self.assertEqual(Dover.objects.all().count(), 0)
 
