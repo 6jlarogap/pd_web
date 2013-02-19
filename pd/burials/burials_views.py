@@ -16,7 +16,7 @@ from django.views.generic.detail import DetailView
 from django.views.generic.edit import CreateView
 from django.views.generic.list import ListView
 
-from burials.forms import BurialSearchForm, BurialForm, BurialCommitForm, BurialCloseForm
+from burials.forms import BurialSearchForm, BurialForm, BurialCommitForm, BurialCloseForm, AddAgentForm, AddDoverForm
 from burials.models import Reason, Burial, Cemetery
 from logs.models import write_log
 from orders.models import Order
@@ -231,7 +231,11 @@ class CreateBurial(CreateView):
 
     def get_context_data(self, **kwargs):
         data = super(CreateBurial, self).get_context_data(**kwargs)
-        data.update({'b': self.get_object()})
+        data.update({
+            'b': self.get_object(),
+            'agent_form': AddAgentForm(),
+            'dover_form': AddDoverForm(),
+        })
         return data
 
     def get_object(self, *args, **kwargs):

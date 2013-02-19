@@ -278,6 +278,56 @@ $(function() {
     });
     $('#id_agent_director').change();
 
+    $('#add_agent').find('.btn-primary').click(function() {
+        var loru_pk = $('#id_loru').val();
+        if (!loru_pk) {
+            return alert('Выберите ЛОРУ');
+        }
+        var data = $('#add_agent form').serialize();
+        $.post('/burials/add_agent/?loru='+loru_pk, data, function(data){
+            if (data.pk) {
+                $('#id_agent').append('<option value="'+data.pk+'">'+data.label+'</option>');
+                $('#id_dover').append('<option value="'+data.dover_pk+'">'+data.dover_label+'</option>');
+                $('#id_agent').val(data.pk);
+                $('#id_dover').val(data.dover_pk);
+                if (!LORU_AGENTS[loru_pk]) {
+                    LORU_AGENTS[loru_pk] = [];
+                }
+                LORU_AGENTS[loru_pk].push([data.pk, data.label])
+                if (!AGENT_DOVER[data.pk]) {
+                    AGENT_DOVER[data.pk] = [];
+                }
+                AGENT_DOVER[data.pk].push([data.dover_pk, data.dover_label])
+                $('#add_agent').modal('hide');
+                $('#add_agent form').reset();
+            } else {
+                alert(data);
+            }
+        })
+    });
+
+    $('#add_dover').find('.btn-primary').click(function() {
+        var agent_pk = $('#id_agent').val();
+        if (!agent_pk) {
+            return alert('Выберите агента');
+        }
+        var data = $('#add_dover form').serialize();
+        $.post('/burials/add_dover/?agent='+agent_pk, data, function(data){
+            if (data.pk) {
+                $('#id_dover').append('<option value="'+data.pk+'">'+data.label+'</option>');
+                $('#id_dover').val(data.pk);
+                if (!AGENT_DOVER[agent_pk]) {
+                    AGENT_DOVER[agent_pk] = [];
+                }
+                AGENT_DOVER[agent_pk].push([data.pk, data.label])
+                $('#add_dover').modal('hide');
+                $('#add_dover form').reset();
+            } else {
+                alert(data);
+            }
+        })
+    });
+
     $('#paginator_select').live('change', function() {
         top.location.href = $(this).val();
     });
@@ -350,6 +400,8 @@ function updateControls() {
     $('span.move-left').remove();
     makeDatePicker($('input[id*=date]'));
     makeTimePicker($('input[id*=time]'));
+    makeDatePicker($('.modal #id_begin'));
+    makeDatePicker($('.modal #id_end'));
     $('#id_customer-customer_type').change();
     setTimeout(function() {
         $('#id_customer-agent_director').change();
@@ -360,6 +412,7 @@ function updateControls() {
 function updateInnerForm() {
     makeDatePicker($('#block_empty input[id*=date]'));
     makeTimePicker($('#block_empty input[id*=time]'));
+
     $('#id_customer-customer_type').change();
     setTimeout(function() {
         $('#id_customer-agent_director').change();

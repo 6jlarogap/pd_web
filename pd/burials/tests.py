@@ -475,11 +475,11 @@ class TestAJAX(TestCase):
         self.ugh_client = Client()
 
         self.ugh_user = User.objects.create_user(username='ugh', email='test@example.com', password='test')
-        ugh_org = Org.objects.create(type=Org.PROFILE_UGH, name='ugh')
-        Profile.objects.create(user=self.ugh_user, org=ugh_org)
+        self.ugh_org = Org.objects.create(type=Org.PROFILE_UGH, name='ugh')
+        Profile.objects.create(user=self.ugh_user, org=self.ugh_org)
         self.ugh_client.login(username='ugh', password='test')
 
-        self.cemetery = Cemetery.objects.create(name='test cem', time_begin='12:00', time_end='17:00', ugh=ugh_org,
+        self.cemetery = Cemetery.objects.create(name='test cem', time_begin='12:00', time_end='17:00', ugh=self.ugh_org,
                                                 time_slots='10:20\n10:40\n11:00')
 
     def test_cemetery_times(self):
@@ -489,4 +489,40 @@ class TestAJAX(TestCase):
 
         r = self.ugh_client.get('/cemetery_times/?cem=%s&date=%s' % params)
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(len(json.loads(r.content)), 3)
+        self.assertEqual(len(json.loads(r.content)), 1)
+
+    def test_add_agent(self):
+        loru = Org.objects.create(type=Org.PROFILE_LORU, name='loru')
+        data = {
+            'username': 'test',
+            'email': 'test@example.com',
+            'first_name': 'test',
+            'last_name': 'testov',
+            'number': '123',
+            'begin': '10.10.2010',
+            'end': '20.02.2020',
+        }
+        self.assertEqual(Profile.objects.filter(is_agent=True).count(), 0)
+        self.assertEqual(Dover.objects.all().count(), 0)
+
+        r = self.ugh_client.post('/burials/add_agent/?loru=%s' % loru.pk, data)
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(json.loads(r.content)['pk'], 2)
+        self.assertEqual(json.loads(r.content)['dover_pk'], 1)
+        self.assertEqual(Profile.objects.filter(is_agent=True).count(), 1)
+        self.assertEqual(Dover.objects.all().count(), 1)
+        self.assertEqual(Dover.objects.get().agent, Profile.objects.get(is_agent=True))
+
+    def test_add_dover(self):
+        agent = Profile.objects.create(org=self.ugh_org, is_agent=True)
+        data = {
+            'number': '123',
+            'begin': '10.10.2010',
+            'end': '20.02.2020',
+        }
+        self.assertEqual(Dover.objects.all().count(), 0)
+
+        r = self.ugh_client.post('/burials/add_dover/?agent=%s' % agent.pk, data)
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(json.loads(r.content)['pk'], 1)
+        self.assertEqual(Dover.objects.all().count(), 1)

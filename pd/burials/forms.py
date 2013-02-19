@@ -4,6 +4,7 @@ import json
 
 from django import forms
 from django.contrib import messages
+from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
 from django.db.models.deletion import ProtectedError
 from django.forms.models import inlineformset_factory
@@ -517,3 +518,14 @@ class BurialCloseForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelForm):
         self.instance = super(BurialCloseForm, self).save(**kwargs)
         self.put_log_data()
         return self.instance
+
+class AddAgentForm(forms.ModelForm):
+    class Meta:
+        model = User
+        fields = ['username', 'email', 'first_name', 'last_name', ]
+
+class AddDoverForm(forms.ModelForm):
+    class Meta:
+        model = Dover
+        exclude = ['agent', 'document', ]
+
