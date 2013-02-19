@@ -39,6 +39,7 @@ class Org(models.Model):
     full_name = models.CharField(_(u"Полное название"), max_length=255, default='')
     inn = models.CharField(_(u"ИНН"), max_length=255, default='')
     director = models.CharField(_(u"Директор"), max_length=255, default='')
+    email = models.EmailField(_(u"Email"), null=True, blank=True)
 
     class Meta:
         verbose_name = _(u'Организация')

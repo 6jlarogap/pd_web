@@ -54,6 +54,7 @@ class ProfileForm(forms.ModelForm):
     org_full_name = forms.CharField(label=_(u"Полное название организации"), required=False)
     org_inn = forms.CharField(label=_(u"ИНН организации"))
     org_director = forms.CharField(label=_(u"Директор"), required=False)
+    org_email = forms.EmailField(label=_(u"Email"))
 
     class Meta:
         model = Profile

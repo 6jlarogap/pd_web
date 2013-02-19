@@ -172,7 +172,7 @@ function updateDover() {
 }
 
 function updateAgents() {
-    updateAnything($('#id_loru'), $('#id_agent'), LORU_AGENTS);
+    updateAnything($('#id_applicant_organization'), $('#id_agent'), LORU_AGENTS);
 }
 
 function updateTimes() {
@@ -210,7 +210,7 @@ $(function() {
     $('#id_agent').change(updateDover);
     updateDover();
 
-    $('#id_loru').change(updateAgents);
+    $('#id_applicant_organization').change(updateAgents);
     updateAgents();
 
     $('#id_plan_date, #id_cemetery').change(function() {
@@ -232,7 +232,7 @@ $(function() {
         if ($('input[name=opf]:checked').val() == 'org') {
             $('#applicant_form_block').hide();
 
-            $('#id_loru').closest('p').show();
+            $('#id_applicant_organization').closest('p').show();
             $('#id_agent_director').closest('p').show();
             $('#id_agent').closest('p').show();
             $('#id_dover').closest('p').show();
@@ -247,7 +247,7 @@ $(function() {
         } else {
             $('#applicant_form_block').show();
 
-            $('#id_loru').closest('p').hide();
+            $('#id_applicant_organization').closest('p').hide();
             $('#id_agent_director').closest('p').hide();
             $('#id_agent').closest('p').hide();
             $('#id_dover').closest('p').hide();
@@ -279,7 +279,7 @@ $(function() {
     $('#id_agent_director').change();
 
     $('#add_agent').find('.btn-primary').click(function() {
-        var loru_pk = $('#id_loru').val();
+        var loru_pk = $('#id_applicant_organization').val();
         if (!loru_pk) {
             return alert('Выберите ЛОРУ');
         }

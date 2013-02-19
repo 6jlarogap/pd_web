@@ -1,6 +1,8 @@
 # coding=utf-8
 import datetime
 import json
+import random
+import string
 
 from django import forms
 from django.contrib import messages
@@ -523,7 +525,22 @@ class BurialCloseForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelForm):
 class AddAgentForm(forms.ModelForm):
     class Meta:
         model = User
-        fields = ['username', 'email', 'first_name', 'last_name', ]
+        fields = ['first_name', 'last_name', ]
+
+    def random_string(self):
+        chars = string.ascii_uppercase + string.ascii_lowercase + string.digits
+        return ''.join(random.choice(chars) for x in range(10))
+
+    def save(self, commit=True, *args, **kwargs):
+        loru = kwargs.pop('loru')
+        user = super(AddAgentForm, self).save(commit=False, *args, **kwargs)
+        user.email = loru.email or ''
+        user.username = loru.email
+        while not user.username or User.objects.filter(username=user.username).exists():
+            user.username = self.random_string()
+        if commit:
+            user.save()
+        return user
 
 class AddDoverForm(forms.ModelForm):
     class Meta:
