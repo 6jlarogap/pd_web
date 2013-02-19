@@ -214,7 +214,7 @@ class BurialForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelForm):
             dc = None
         self.dc_form = DeathCertificateForm(data=data, prefix='deadman-dc', instance=dc)
 
-        responsible = self.instance and self.instance.responsible
+        responsible = self.instance and self.instance.get_responsible()
         self.responsible_form = AlivePersonForm(data=data, prefix='responsible', instance=responsible)
         resp_addr = self.instance and self.instance.responsible and self.instance.responsible.address
         self.responsible_address_form =  LocationForm(data=data, prefix='responsible-address', instance=resp_addr)

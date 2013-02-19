@@ -43,15 +43,19 @@
         </p>
     </form>
 
-    <h2>{% trans "Усопшие" %}</h2>
+    <h2>{% trans "Захоронения" %}</h2>
     <table class="table table-bordered">
         <tr>
+            <th>{% trans "Номер" %}</th>
             <th>{% trans "Усопший" %}</th>
+            <th>{% trans "Дата" %}</th>
             <th></th>
         </tr>
         {% for b in place.burial_set.all %}
             <tr>
+                <td>{{ b.pk }}</td>
                 <td>{{ b.deadman|default:"Неизвестный" }}</td>
+                <td>{{ b.fact_date|date:"d.m.Y"|default:"" }}</td>
                 <td>
                     <a href="{% url view_burial b.pk %}" class="btn">{% trans "карточка" %}</a>
                     {% if user.profile.is_ugh %}
