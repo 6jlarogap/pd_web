@@ -299,7 +299,7 @@ $(function() {
                 }
                 AGENT_DOVER[data.pk].push([data.dover_pk, data.dover_label])
                 $('#add_agent').modal('hide');
-                $('#add_agent form').reset();
+                $('#add_agent form :input').val('');
             } else {
                 alert(data);
             }
@@ -321,7 +321,7 @@ $(function() {
                 }
                 AGENT_DOVER[agent_pk].push([data.pk, data.label])
                 $('#add_dover').modal('hide');
-                $('#add_dover form').reset();
+                $('#add_dover form :input').val('');
             } else {
                 alert(data);
             }
