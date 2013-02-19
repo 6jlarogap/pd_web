@@ -534,6 +534,7 @@ class AddAgentForm(forms.ModelForm):
     def save(self, commit=True, *args, **kwargs):
         loru = kwargs.pop('loru')
         user = super(AddAgentForm, self).save(commit=False, *args, **kwargs)
+        user.is_active = False
         user.email = loru.email or ''
         user.username = loru.email
         while not user.username or User.objects.filter(username=user.username).exists():
