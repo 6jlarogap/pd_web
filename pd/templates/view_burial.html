@@ -27,6 +27,8 @@
                 {% if b.dover %}
                     <dt>{% trans "Доверенность" %}:</dt><dd>{{ b.dover }}</dd>
                 {% endif %}
+            {% elif b.agent_director %}
+                <dt>{% trans "Агент" %}:</dt><dd>{% trans "Директор" %}</dd>
             {% endif %}
         {% endif %}
         {% if b.deadman %}
