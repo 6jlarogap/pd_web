@@ -548,3 +548,18 @@ class AddDoverForm(forms.ModelForm):
         model = Dover
         exclude = ['agent', 'document', ]
 
+class AddOrgForm(forms.ModelForm):
+    class Meta:
+        model = Org
+        exclude = ['type', ]
+
+    def clean_inn(self):
+        inn = self.cleaned_data['inn']
+        if inn:
+            orgs = Org.objects.filter(inn=inn)
+            if self.instance and self.instance.pk:
+                orgs = orgs.exclude(pk=self.instance.pk)
+            if orgs.exists():
+                raise forms.ValidationError(_(u"ИНН уже зарегистрирован"))
+        return inn
+

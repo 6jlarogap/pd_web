@@ -11,7 +11,7 @@ from django.views.generic.detail import DetailView
 from django.views.generic.edit import CreateView, UpdateView
 from django.views.generic.list import ListView
 
-from burials.forms import CemeteryForm, AreaFormset, PlaceEditForm
+from burials.forms import CemeteryForm, AreaFormset, PlaceEditForm, AddOrgForm
 from burials.models import Cemetery, Place
 from burials.burials_views import *
 from logs.models import write_log
@@ -115,8 +115,8 @@ class AddDoverView(UGHRequiredMixin, View):
             dover.save()
             return HttpResponse(json.dumps({'pk': dover.pk, 'label': u'%s' % dover}), mimetype='application/json')
         else:
-            print f.errors
-            return HttpResponse(_(u'Данные невалидны'), mimetype='text/plain')
+            errors = '\n'.join([u'%s: %s' % (k,v[0]) for k,v in f.errors.items()])
+            return HttpResponse(_(u'Данные невалидны: %s') % errors, mimetype='text/plain')
 
 add_dover = csrf_exempt(AddDoverView.as_view())
 
@@ -145,3 +145,19 @@ class AddAgentView(UGHRequiredMixin, View):
             return HttpResponse(_(u'Данные невалидны: %s') % errors, mimetype='text/plain')
 
 add_agent = csrf_exempt(AddAgentView.as_view())
+
+class AddOrgView(UGHRequiredMixin, View):
+    def post(self, request, *args, **kwargs):
+        f = AddOrgForm(data=request.POST, prefix='loru')
+        if f.is_valid():
+            loru = f.save(commit=False)
+            loru.type = Org.PROFILE_LORU
+            loru.save()
+            loru.ugh_list.create(ugh=request.user.profile.org)
+            return HttpResponse(json.dumps({'pk': loru.pk, 'label': u'%s' % loru}), mimetype='application/json')
+        else:
+            errors = '\n'.join([u'%s: %s' % (k,v[0]) for k,v in f.errors.items()])
+            return HttpResponse(_(u'Данные невалидны: %s') % errors, mimetype='text/plain')
+
+add_org = csrf_exempt(AddOrgView.as_view())
+

@@ -17,6 +17,11 @@
         {{ form.as_p }}
         {% if user.profile.is_ugh %}
             <p>
+                <a href="#add_loru" role="button" class="btn btn-loru" data-toggle="modal">
+                    {% trans "добавить юрлицо" %}
+                </a>
+            </p>
+            <p>
                 <a href="#add_agent" role="button" class="btn btn-agent" data-toggle="modal">
                     {% trans "добавить агента" %}
                 </a>
@@ -81,6 +86,22 @@
             </p>
         {% endblock buttons %}
     </form>
+
+    <div id="add_loru" class="modal hide fade" tabindex="-1" role="dialog" aria-labelledby="{% trans "добавить юрлицо" %}" aria-hidden="true">
+        <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+            <h3 id="myModalLabel">{% trans "Добавить юрлицо" %}</h3>
+        </div>
+        <div class="modal-body">
+            <form>
+                {{ loru_form.as_p }}
+            </form>
+        </div>
+        <div class="modal-footer">
+            <button class="btn" data-dismiss="modal" aria-hidden="true">{% trans "закрыть" %}</button>
+            <button class="btn btn-primary">{% trans "добавить" %}</button>
+        </div>
+    </div>
 
     <div id="add_agent" class="modal hide fade" tabindex="-1" role="dialog" aria-labelledby="{% trans "добавить агента" %}" aria-hidden="true">
         <div class="modal-header">

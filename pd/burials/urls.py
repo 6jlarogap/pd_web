@@ -5,8 +5,11 @@ from django.conf import settings
 
 urlpatterns = patterns('burials.views',
     url(r'^$', 'dashboard', name='dashboard'),
+
     url(r'^burials/add_agent/$', 'add_agent', name='add_agent'),
     url(r'^burials/add_dover/$', 'add_dover', name='add_dover'),
+    url(r'^burials/add_org/$', 'add_org', name='add_org'),
+
     url(r'^burials/archive/$', 'archive', name='archive'),
     url(r'^burials/create/$', 'create_burial', name='create_burial'),
     url(r'^burials/(?P<pk>\d+)/$', 'view_burial', name='view_burial'),

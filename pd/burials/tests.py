@@ -528,3 +528,17 @@ class TestAJAX(TestCase):
         self.assertEqual(r.status_code, 200)
         self.assertEqual(json.loads(r.content)['pk'], 1)
         self.assertEqual(Dover.objects.all().count(), 1)
+
+    def test_add_loru(self):
+        data = {
+            'loru-name': '123',
+            'loru-full_name': '10.10.2010',
+            'loru-inn': '123456789',
+            'loru-director': 'Petrov',
+        }
+        self.assertEqual(Org.objects.all().count(), 1)
+
+        r = self.ugh_client.post('/burials/add_org/', data)
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(json.loads(r.content)['pk'], 2)
+        self.assertEqual(Org.objects.all().count(), 2)

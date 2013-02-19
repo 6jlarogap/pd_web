@@ -219,10 +219,12 @@ $(function() {
 
     $('#id_applicant_organization').change(updateAgents);
     $('#id_applicant_organization').change(function() {
-        if ($(this).val()) {
-            $('.btn-agent').closest('p').show();
-        } else {
-            $('.btn-agent').closest('p').hide();
+        if (!$('#id_agent_director').is(':checked')) {
+            if ($(this).val()) {
+                $('.btn-agent').closest('p').show();
+            } else {
+                $('.btn-agent').closest('p').hide();
+            }
         }
     });
     $('#id_applicant_organization:visible').change();
@@ -247,11 +249,13 @@ $(function() {
             $('#applicant_form_block').hide();
 
             $('#id_applicant_organization').closest('p').show();
+            $('#id_agent_director').closest('p').show();
             $('#id_applicant_organization').change();
 
             $('input[name^=person]').closest('p').hide();
             $('#id_org').closest('p').show();
 
+            $('.btn-loru').closest('p').show();
             $('#id_agent_director').change();
         } else {
             $('#applicant_form_block').show();
@@ -261,6 +265,7 @@ $(function() {
             $('#id_agent').closest('p').hide();
             $('#id_dover').closest('p').hide();
 
+            $('.btn-loru').closest('p').hide();
             $('.btn-dover').closest('p').hide();
             $('.btn-agent').closest('p').hide();
 
@@ -330,6 +335,21 @@ $(function() {
                 AGENT_DOVER[agent_pk].push([data.pk, data.label])
                 $('#add_dover').modal('hide');
                 $('#add_dover form :input').val('');
+            } else {
+                alert(data);
+            }
+        })
+    });
+
+    $('#add_loru').find('.btn-primary').click(function() {
+        var data = $('#add_loru form').serialize();
+        $.post('/burials/add_org/', data, function(data){
+            if (data.pk) {
+                var select = $('#id_applicant_organization');
+                select.append('<option value="'+data.pk+'">'+data.label+'</option>');
+                select.val(data.pk);
+                $('#add_loru').modal('hide');
+                $('#add_loru form :input').val('');
             } else {
                 alert(data);
             }
