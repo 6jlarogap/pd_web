@@ -208,10 +208,24 @@ $(function() {
     updateTimes();
 
     $('#id_agent').change(updateDover);
-    updateDover();
+    $('#id_agent').change(function() {
+        if ($(this).val()) {
+            $('.btn-dover').closest('p').show();
+        } else {
+            $('.btn-dover').closest('p').hide();
+        }
+    });
+    $('#id_agent:visible').change();
 
     $('#id_applicant_organization').change(updateAgents);
-    updateAgents();
+    $('#id_applicant_organization').change(function() {
+        if ($(this).val()) {
+            $('.btn-agent').closest('p').show();
+        } else {
+            $('.btn-agent').closest('p').hide();
+        }
+    });
+    $('#id_applicant_organization:visible').change();
 
     $('#id_plan_date, #id_cemetery').change(function() {
         var cem = $('#id_cemetery').val();
@@ -233,12 +247,7 @@ $(function() {
             $('#applicant_form_block').hide();
 
             $('#id_applicant_organization').closest('p').show();
-            $('#id_agent_director').closest('p').show();
-            $('#id_agent').closest('p').show();
-            $('#id_dover').closest('p').show();
-
-            $('.btn-dover').closest('p').show();
-            $('.btn-agent').closest('p').show();
+            $('#id_applicant_organization').change();
 
             $('input[name^=person]').closest('p').hide();
             $('#id_org').closest('p').show();
@@ -272,11 +281,10 @@ $(function() {
         } else {
             $('#id_dover').closest('p').show();
             $('#id_agent').closest('p').show();
-            $('.btn-dover').closest('p').show();
-            $('.btn-agent').closest('p').show();
+            $('#id_applicant_organization').change();
         }
     });
-    $('#id_agent_director').change();
+    $('#id_agent_director:visible').change();
 
     $('#add_agent').find('.btn-primary').click(function() {
         var loru_pk = $('#id_applicant_organization').val();
