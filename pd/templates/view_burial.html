@@ -106,13 +106,15 @@
                     <input type="submit" class="btn" name="decline" value="{% trans "отклонить" %}">
                 {% endif %}
             {% elif b.can_finish %}
-                {{ close_form.as_p }}
-                <script type="text/javascript">
-                    CEMETERY_AREAS = {{ close_form.cemetery_areas_json }};
-                    AGENT_DOVER = {{ close_form.agent_dover_json }};
-                    LORU_AGENTS = {{ close_form.loru_agents_json }};
-                </script>
-                <input type="submit" class="btn" name="complete" value="{% trans "закрыть" %}">
+                {% if not b.is_archive %}
+                    {{ close_form.as_p }}
+                    <script type="text/javascript">
+                        CEMETERY_AREAS = {{ close_form.cemetery_areas_json }};
+                        AGENT_DOVER = {{ close_form.agent_dover_json }};
+                        LORU_AGENTS = {{ close_form.loru_agents_json }};
+                    </script>
+                    <input type="submit" class="btn" name="complete" value="{% trans "закрыть" %}">
+                {% endif %}
                 {% if b.can_annulate %}
                     <br/><br/>
                     <label>{% trans "Причина" %}</label>
