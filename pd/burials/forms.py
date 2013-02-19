@@ -82,7 +82,7 @@ class ChildrenJSONMixin:
         return self.universal_children_json('agent', 'dover_set')
 
     def loru_agents_json(self):
-        return self.universal_children_json('loru', 'profile_set', filter_kw={'is_agent': True})
+        return self.universal_children_json('applicant_organization', 'profile_set', filter_kw={'is_agent': True})
 
 class LoggingFormMixin:
     def get_prefix(self, form):
@@ -170,7 +170,7 @@ class BurialForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelForm):
             self.fields['plan_date'].initial = datetime.date.today() + datetime.timedelta(1)
 
         if self.request.user.profile.is_loru():
-            del self.fields['loru']
+            del self.fields['applicant_organization']
             del self.fields['agent']
             del self.fields['agent_director']
             del self.fields['dover']
@@ -179,11 +179,11 @@ class BurialForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelForm):
         if self.request.user.profile.is_ugh() or self.instance.is_ugh_only():
             ugh = self.request.user.profile.org
             loru_list = Org.objects.filter(type=Org.PROFILE_LORU, ugh_list__ugh=ugh)
-            self.fields['loru'].queryset = loru_list
+            self.fields['applicant_organization'].queryset = loru_list
             self.fields['agent'].queryset = Profile.objects.filter(org__in=loru_list, is_agent=True)
             self.fields['dover'].queryset = Dover.objects.filter(agent__org__in=loru_list)
 
-            self.fields.keyOrder.insert(self.fields.keyOrder.index('loru'), self.fields.keyOrder.pop(-1))
+            self.fields.keyOrder.insert(self.fields.keyOrder.index('applicant_organization'), self.fields.keyOrder.pop(-1))
             if self.instance.pk and self.instance.applicant and self.instance.is_ugh():
                 self.initial['opf'] = 'person'
             else:
@@ -251,19 +251,19 @@ class BurialForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelForm):
                 raise forms.ValidationError(_(u'Участок не от этого кладбища'))
 
         if self.request.user.profile.is_ugh():
-            if self.cleaned_data.get('loru') and self.cleaned_data.get('agent'):
-                if self.cleaned_data['loru'] != self.cleaned_data['agent'].org:
+            if self.cleaned_data.get('applicant_organization') and self.cleaned_data.get('agent'):
+                if self.cleaned_data['applicant_organization'] != self.cleaned_data['agent'].org:
                     raise forms.ValidationError(_(u'Агент не от этого ЛОРУ'))
             if self.cleaned_data.get('agent') and self.cleaned_data.get('dover'):
                 if self.cleaned_data['agent'] != self.cleaned_data['dover'].agent:
                     raise forms.ValidationError(_(u'Доверенность не от этого Агента'))
 
-            if not self.cleaned_data.get('loru') and self.cleaned_data.get('agent'):
+            if not self.cleaned_data.get('applicant_organization') and self.cleaned_data.get('agent'):
                 raise forms.ValidationError(_(u'Нельзя указать Агента без ЛОРУ'))
             if not self.cleaned_data.get('agent') and self.cleaned_data.get('dover'):
                 raise forms.ValidationError(_(u'Нельзя указать Доверенность без Агента'))
 
-            if self.cleaned_data.get('loru') and self.applicant_form.is_valid_data():
+            if self.cleaned_data.get('applicant_organization') and self.applicant_form.is_valid_data():
                 raise forms.ValidationError(_(u"Нужно указать только либо ЛОРУ, либо ФЛ-Заявителя"))
 
             if self.cleaned_data.get('agent_director'):
@@ -298,7 +298,7 @@ class BurialForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelForm):
 
         if not self.instance.pk:
             if self.request.user.profile.is_loru():
-                self.instance.loru = self.request.user.profile.org
+                self.instance.applicant_organization = self.request.user.profile.org
                 self.instance.source_type = Burial.SOURCE_FULL
             elif self.request.user.profile.is_ugh():
                 if self.request.REQUEST.get('archive'):
@@ -349,7 +349,7 @@ class BurialForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelForm):
                     pid.person = applicant
                     pid.save()
                 self.instance.applicant = applicant
-                self.instance.loru = None
+                self.instance.applicant_organization = None
             else:
                 try:
                     self.instance.applicant.delete()
@@ -409,8 +409,8 @@ class BurialCommitForm(BurialForm):
         if self.instance.is_finished():
             self.fields['place_number'].required = True
 
-        if self.instance and self.instance.is_ugh() and self.instance.loru:
-            for f in ['loru', 'agent', 'dover']:
+        if self.instance and self.instance.is_ugh() and self.instance.applicant_organization:
+            for f in ['applicant_organization', 'agent', 'dover']:
                 self.fields[f].required = True
 
             if self.instance.agent_director or self.data.get('agent_director'):
@@ -470,10 +470,10 @@ class BurialCommitForm(BurialForm):
         if (not self.instance or not self.instance.pk) and self.request.user.profile.is_ugh():
             is_ugh = True
         if is_ugh:
-            if not self.cleaned_data.get('loru'):
+            if not self.cleaned_data.get('applicant_organization'):
                 if not self.applicant_form.is_valid_data():
                     raise forms.ValidationError(_(u"Нужно указать ЛОРУ или ФЛ-Заявителя"))
-            if self.cleaned_data.get('loru'):
+            if self.cleaned_data.get('applicant_organization'):
                 if self.applicant_form.is_valid_data():
                     raise forms.ValidationError(_(u"Нужно указать либо ЛОРУ, либо ФЛ-Заявителя"))
 
@@ -482,7 +482,7 @@ class BurialCommitForm(BurialForm):
                     raise forms.ValidationError(_(u"Нужно указать ФЛ-Заявителя"))
 
             if self.cleaned_data.get('opf') == 'org':
-                if not self.cleaned_data.get('loru'):
+                if not self.cleaned_data.get('applicant_organization'):
                     raise forms.ValidationError(_(u"Нужно указать ЛОРУ"))
                 if not self.cleaned_data.get('agent_director'):
                     if not self.cleaned_data.get('agent') or not self.cleaned_data.get('dover'):

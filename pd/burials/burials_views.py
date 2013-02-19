@@ -28,9 +28,9 @@ class BurialsListGenericMixin:
         qs = Q(pk__isnull=True)
         if self.request.user.is_authenticated():
             if self.request.user.profile.is_loru():
-                qs = Q(loru=self.request.user.profile.org)
+                qs = Q(applicant_organization=self.request.user.profile.org)
             if self.request.user.profile.is_ugh():
-                qs = Q(loru__ugh_list__ugh=self.request.user.profile.org)
+                qs = Q(applicant_organization__ugh_list__ugh=self.request.user.profile.org)
         return qs
 
 class DashboardView(BurialsListGenericMixin, TemplateView):
@@ -61,7 +61,7 @@ class ArchiveMixin(BurialsListGenericMixin):
     def get_qs_filter(self):
         qs = Q(pk__isnull=True)
         if self.request.user.is_authenticated():
-            qs = Q(loru=self.request.user.profile.org) | Q(ugh=self.request.user.profile.org)
+            qs = Q(applicant_organization=self.request.user.profile.org) | Q(ugh=self.request.user.profile.org)
         return qs
 
 class ArchiveView(ArchiveMixin, TemplateView):
@@ -166,7 +166,7 @@ class BurialsListView(ListView):
     def get_queryset(self):
         if self.request.user.is_authenticated():
             burials = Burial.objects.filter(
-                Q(loru=self.request.user.profile.org) | Q(ugh=self.request.user.profile.org),
+                Q(applicant_organization=self.request.user.profile.org) | Q(ugh=self.request.user.profile.org),
                 status=Burial.STATUS_CLOSED,
             ).order_by('-pk')
         else:
@@ -258,7 +258,7 @@ class CreateBurial(CreateView):
 
         b = self.get_object()
         if request.REQUEST.get('order') and not b:
-            order = Order.objects.get(pk=request.REQUEST.get('order'), loru=request.user.profile.org)
+            order = Order.objects.get(pk=request.REQUEST.get('order'), applicant_organization=request.user.profile.org)
             if order.get_burial():
                 return redirect('edit_burial', order.get_burial().pk)
 
@@ -272,7 +272,7 @@ class CreateBurial(CreateView):
         b = form.save()
 
         if self.request.REQUEST.get('order') and not b.order:
-            order = Order.objects.get(pk=self.request.REQUEST.get('order'), loru=self.request.user.profile.org)
+            order = Order.objects.get(pk=self.request.REQUEST.get('order'), applicant_organization=self.request.user.profile.org)
             b.order = order
             b.save()
 
@@ -352,7 +352,7 @@ class EditBurialView(CreateBurial):
             Q(status=Burial.STATUS_BACKED)
 
         if self.request.user.profile.is_loru():
-            q2 = q & Q(source_type=Burial.SOURCE_FULL, loru=self.request.user.profile.org)
+            q2 = q & Q(source_type=Burial.SOURCE_FULL, applicant_organization=self.request.user.profile.org)
         elif self.request.user.profile.is_ugh():
             q2 = Q(source_type__in=[Burial.SOURCE_UGH, Burial.SOURCE_ARCHIVE], ugh=self.request.user.profile.org)
             q2 |= Q(source_type=Burial.STATUS_CLOSED)

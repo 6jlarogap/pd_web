@@ -20,8 +20,8 @@
         {% if b.ugh %}
             <dt>{% trans "УГХ" %}:</dt><dd>{{ b.ugh }}</dd>
         {% endif %}
-        {% if b.loru %}
-            <dt>{% trans "ЛОРУ" %}:</dt><dd><a href="">{{ b.loru }}</a></dd>
+        {% if b.applicant_organization %}
+            <dt>{% trans "ЛОРУ" %}:</dt><dd><a href="">{{ b.applicant_organization }}</a></dd>
             {% if b.agent %}
                 <dt>{% trans "Агент" %}:</dt><dd>{{ b.agent }}</dd>
                 {% if b.dover %}
@@ -128,7 +128,7 @@
                 {% endif %}
             {% endif %}
         {% endif %}
-        {% if user.profile.org == b.loru and b.is_edit and b.is_full %}
+        {% if user.profile.org == b.applicant_organization and b.is_edit and b.is_full %}
             <a class="btn" href="{% url edit_burial b.pk %}">{% trans "правка" %}</a>
         {% elif user.profile.org == b.ugh and b.is_edit and b.is_ugh %}
             <a class="btn" href="{% url edit_burial b.pk %}">{% trans "правка" %}</a>

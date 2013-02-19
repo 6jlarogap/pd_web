@@ -49,7 +49,7 @@ class Cemetery(models.Model):
         others_loru = Burial.objects.none()
         if date:
             others = Burial.objects.filter(cemetery=self, plan_date=date)
-            others_loru = Burial.objects.filter(loru=request.user.profile.org, plan_date=date)
+            others_loru = Burial.objects.filter(applicant_organization=request.user.profile.org, plan_date=date)
         result = []
 
         for s in self.time_slots.split('\n'):
@@ -189,8 +189,9 @@ class Burial(models.Model):
                                   related_name='applied_burials')
     ugh = models.ForeignKey(Org, verbose_name=_(u"ЛОРУ"), null=True, editable=False, related_name='ugh_created',
                             limit_choices_to={'type': Org.PROFILE_UGH}, on_delete=models.PROTECT)
-    loru = models.ForeignKey(Org, verbose_name=_(u"ЛОРУ"), null=True, blank=True, related_name='loru_created',
-                             limit_choices_to={'type': Org.PROFILE_LORU}, on_delete=models.PROTECT)
+    applicant_organization = models.ForeignKey(Org, verbose_name=_(u"Заявитель-ЮЛ"), null=True, blank=True,
+                                               related_name='loru_created', limit_choices_to={'type': Org.PROFILE_LORU},
+                                               on_delete=models.PROTECT)
     agent_director = models.BooleanField(_(u"Агент-директор"), default=False, blank=True)
     agent = models.ForeignKey(Profile, verbose_name=_(u"Агент"), null=True, blank=True,
                               limit_choices_to={'is_agent': True}, on_delete=models.PROTECT)
@@ -284,7 +285,7 @@ class Burial(models.Model):
         return self.cemetery and self.cemetery.ugh and self.cemetery.ugh.name or ''
 
     def loru_name(self):
-        return self.loru and self.loru.name or ''
+        return self.applicant_organization and self.applicant_organization.name or ''
 
     def get_place(self):
         if self.place:

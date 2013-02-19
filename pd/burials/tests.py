@@ -213,7 +213,7 @@ class RequestsTest(TestCase):
         self.assertEqual(r.status_code, 302)
 
         br = Burial.objects.all()[0]
-        self.assertEqual(br.loru, self.loru_user.profile.org)
+        self.assertEqual(br.applicant_organization, self.loru_user.profile.org)
         self.assertEqual(br.cemetery, self.cemetery)
         self.assertEqual(br.cemetery.ugh, self.ugh_user.profile.org)
         self.assertEqual(br.is_edit(), True)
@@ -234,7 +234,7 @@ class RequestsTest(TestCase):
         self.assertEqual(r.status_code, 302)
         br = Burial.objects.all()[0]
 
-        self.assertEqual(br.loru, self.loru_user.profile.org)
+        self.assertEqual(br.applicant_organization, self.loru_user.profile.org)
 
         r = self.loru_client.get('/burials/%s/edit/' % br.pk)
         self.assertEqual(r.status_code, 200)
@@ -312,7 +312,7 @@ class BurialsTest(TestCase):
 
         r = self.ugh_client.post('/burials/create/', {
             'plan_date': '12.12.2013', 'opf': 'org', 'places_type': 'manual',
-            'loru': loru.pk, 'agent': agent.pk, 'dover': dover.pk,
+            'applicant_organization': loru.pk, 'agent': agent.pk, 'dover': dover.pk,
         })
         self.assertEqual(r.status_code, 302)
 

@@ -20,7 +20,7 @@ class BurialReportTest(TestCase):
         self.loru_client.login(username='loru', password='test')
 
     def test_create(self):
-        b = Burial.objects.create(loru=self.loru_org)
+        b = Burial.objects.create(applicant_organization=self.loru_org)
         self.assertEqual(Report.objects.all().count(), 0)
 
         r = self.loru_client.get('/burials/%s/notification/' % b.pk)
