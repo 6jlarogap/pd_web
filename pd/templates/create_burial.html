@@ -13,6 +13,7 @@
     <form action="{{ request.path }}" method="POST" class="burial-form">
         {% csrf_token %}
         <input type="hidden" name="order"  value="{{ request.REQUEST.order }}" />
+        <input type="hidden" name="archive"  value="{{ request.REQUEST.archive }}" />
         {{ form.as_p }}
         {% if user.profile.is_ugh %}
             <p><a href="#" class="btn btn-agent">{% trans "добавить агента" %}</a></p>
