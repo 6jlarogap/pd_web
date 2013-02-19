@@ -265,8 +265,6 @@ $(function() {
 
     $('#id_agent_director').change(function() {
         if ($(this).is(':checked')) {
-            $('#id_dover').val('');
-            $('#id_agent').val('');
             $('#id_dover').closest('p').hide();
             $('#id_agent').closest('p').hide();
             $('.btn-dover').closest('p').hide();

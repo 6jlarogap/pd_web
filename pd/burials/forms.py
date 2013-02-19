@@ -264,6 +264,9 @@ class BurialForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelForm):
             if self.cleaned_data.get('loru') and self.applicant_form.is_valid_data():
                 raise forms.ValidationError(_(u"Нужно указать только либо ЛОРУ, либо ФЛ-Заявителя"))
 
+            if self.cleaned_data.get('agent_director'):
+                self.cleaned_data.update(agent=None, dover=None, )
+
         return self.cleaned_data
 
     def get_prefix(self, form):

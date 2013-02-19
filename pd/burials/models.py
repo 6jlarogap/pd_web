@@ -159,8 +159,8 @@ class Burial(models.Model):
     SOURCE_UGH = 'ugh'
     SOURCE_ARCHIVE = 'archive'
     SOURCE_TYPES = (
-        (SOURCE_FULL, _(u"Полное")),
-        (SOURCE_UGH, _(u"Только УГХ")),
+        (SOURCE_FULL, _(u"Электронное")),
+        (SOURCE_UGH, _(u"Ручное")),
         (SOURCE_ARCHIVE, _(u"Архивное")),
     )
 
