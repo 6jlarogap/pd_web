@@ -11,8 +11,16 @@ from users.models import Org
 
 class Product(models.Model):
     PRODUCT_BURIAL = 'burial'
+    PRODUCT_CATAFALQUE = 'catafalque'
+    PRODUCT_LOADERS = 'loaders'
+    PRODUCT_DIGGERS = 'diggers'
+    PRODUCT_SIGN = 'SIGN'
     PRODUCT_TYPES = (
         (PRODUCT_BURIAL, _(u"Захоронение")),
+        (PRODUCT_CATAFALQUE, _(u"Автокатафалк")),
+        (PRODUCT_LOADERS, _(u"Грузчики")),
+        (PRODUCT_DIGGERS, _(u"Рытье могилы")),
+        (PRODUCT_SIGN, _(u"Написание надмогильной таблички")),
     )
 
     loru = models.ForeignKey(Org, limit_choices_to={'type': Org.PROFILE_LORU}, null=True, verbose_name=_(u"ЛОРУ"))

@@ -1,5 +1,7 @@
 # coding=utf-8
 from django import forms
+from django.db.models.expressions import F
+from django.db.models.query_utils import Q
 from django.forms.models import inlineformset_factory, BaseInlineFormSet
 from django.utils.translation import ugettext as _
 
@@ -61,6 +63,30 @@ class OrderItemForm(forms.ModelForm):
     class Meta:
         model = OrderItem
         exclude=['price']
+
+    def clean(self):
+        p = self.cleaned_data['product']
+        if p and p.ptype:
+            self.cleaned_data['quantity'] = 1
+        return self.cleaned_data
+
+    def save(self, commit=True, *args, **kwargs):
+        if self.is_valid():
+            p = self.cleaned_data['product']
+
+            q = Q(product=p)
+            if p.ptype:
+                q |= Q(product__ptype=p.ptype)
+            same_product = OrderItem.objects.filter(q)
+
+            if p.ptype:
+                same_product.update(quantity=1)
+            try:
+                return same_product[0]
+            except IndexError:
+                pass
+
+            return super(OrderItemForm, self).save(commit=commit, *args, **kwargs)
 
 class BaseOrderItemFormset(BaseInlineFormSet):
     def __init__(self, request, *args, **kwargs):

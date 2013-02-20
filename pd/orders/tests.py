@@ -65,7 +65,9 @@ class OrdersTest(TestCase):
         )
         self.loru_client = Client()
         self.loru_client.login(username='loru', password='test')
-        self.product = Product.objects.create(loru=self.loru_org, name='test product', measure='items', price='10.50')
+        self.product = Product.objects.create(
+            loru=self.loru_org, name='test product', measure='items', price='10.50', ptype=Product.PRODUCT_BURIAL
+        )
 
     def test_list(self):
         r = self.loru_client.get('/order/')
@@ -97,7 +99,7 @@ class OrdersTest(TestCase):
             'orderitem_set-1-id': u'', 'orderitem_set-1-product': u'', 'orderitem_set-1-quantity': u'1',
             'orderitem_set-2-id': u'', 'orderitem_set-2-quantity': u'1', 'orderitem_set-2-product': u'',
             'orderitem_set-INITIAL_FORMS': u'0', 'orderitem_set-MAX_NUM_FORMS': u'', 'orderitem_set-TOTAL_FORMS': u'3',
-            })
+        })
         self.assertEqual(r.status_code, 302)
         self.assertEqual(Order.objects.get().loru, self.loru_user.profile.org)
         self.assertEqual(Order.objects.get().person.last_name, 'Test')
@@ -113,3 +115,27 @@ class OrdersTest(TestCase):
 
         self.assertEqual(o.get_documents().count(), 1)
 
+    def test_same_products(self):
+        self.product_same = self.product
+        self.product_type = Product.objects.create(
+            loru=self.loru_org, name='test other', measure='items', price='10.50', ptype=Product.PRODUCT_BURIAL
+        )
+        self.product_other = Product.objects.create(
+            loru=self.loru_org, name='test diggers', measure='items', price='10.50', ptype=Product.PRODUCT_DIGGERS
+        )
+
+        o = Order.objects.create(loru=self.loru_user.profile.org, org=self.loru_org)
+        self.assertEqual(Order.objects.get().orderitem_set.all().count(), 0)
+
+        r = self.loru_client.post('/order/%s/edit/' % o.pk, {
+            'person_last_name': 'Test', 'person_first_name': 'Test', 'person_middle_name': 'Test', 'org': '', 'opf': 'person',
+            'orderitem_set-0-id': u'', 'orderitem_set-0-product': u'%s' % self.product.pk, 'orderitem_set-0-quantity': u'10',
+            'orderitem_set-1-id': u'', 'orderitem_set-1-product': u'%s' % self.product_same.pk, 'orderitem_set-1-quantity': u'1',
+            'orderitem_set-2-id': u'', 'orderitem_set-2-product': u'%s' % self.product_type.pk, 'orderitem_set-2-quantity': u'1',
+            'orderitem_set-3-id': u'', 'orderitem_set-3-product': u'%s' % self.product_other.pk, 'orderitem_set-3-quantity': u'1',
+            'orderitem_set-INITIAL_FORMS': u'0', 'orderitem_set-MAX_NUM_FORMS': u'', 'orderitem_set-TOTAL_FORMS': u'4',
+        })
+        self.assertEqual(r.status_code, 302)
+        self.assertEqual(Order.objects.get().orderitem_set.all().count(), 2)
+        self.assertEqual(Order.objects.get().orderitem_set.get(product=self.product).quantity, 1)
+        self.assertEqual(Order.objects.get().orderitem_set.get(product=self.product_other).quantity, 1)
