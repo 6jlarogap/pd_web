@@ -350,6 +350,7 @@ $(function() {
                 select.val(data.pk);
                 $('#add_loru').modal('hide');
                 $('#add_loru form :input').val('');
+                select.change();
             } else {
                 alert(data);
             }
