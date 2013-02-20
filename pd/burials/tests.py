@@ -57,7 +57,7 @@ class RequestsTest(TestCase):
 
         r = self.loru_client.post('/burials/create/', {
             'cemetery': self.cemetery.pk, 'plan_date': '12.12.2013', 'plan_time': '12:00',
-            'opf': 'person', 'applicant-last_name': u'Petrov', 'places_type': 'manual',
+            'opf': 'person', 'applicant-last_name': u'Petrov', 'places_type': 'manual', 'grave_number': 1,
             'deadman-dc-zags': self.zags.pk, 'responsible-personid-number': '11', 'responsible-personid-series': '11',
             'responsible-personid-id_type': self.doc_type.pk,
         })
@@ -70,7 +70,7 @@ class RequestsTest(TestCase):
     def test_created_lists(self):
         r = self.loru_client.post('/burials/create/', {
             'cemetery': self.cemetery.pk, 'plan_date': '12.12.2013', 'plan_time': '12:00',
-            'opf': 'person', 'applicant-last_name': u'Petrov', 'places_type': 'manual',
+            'opf': 'person', 'applicant-last_name': u'Petrov', 'places_type': 'manual', 'grave_number': 1,
             'deadman-dc-zags': self.zags.pk, 'responsible-personid-number': '11', 'responsible-personid-series': '11',
             'responsible-personid-id_type': self.doc_type.pk,
         })
@@ -97,7 +97,7 @@ class RequestsTest(TestCase):
         r = self.loru_client.post('/burials/create/', {
             'burial_type': 'common', 'opf': 'person', 'applicant-last_name': u'Petrov',
             'cemetery': self.cemetery.pk, 'area': self.area.pk, 'places_type': 'manual',
-            'plan_date': '12.12.2013', 'plan_time': '12:00',
+            'plan_date': '12.12.2013', 'plan_time': '12:00', 'grave_number': 1,
         })
         self.assertEqual(r.status_code, 302)
         br = Burial.objects.all()[0]
@@ -150,7 +150,7 @@ class RequestsTest(TestCase):
         r = self.loru_client.post('/burials/create/', {
             'burial_type': 'common', 'opf': 'person', 'applicant-last_name': u'Petrov',
             'cemetery': self.cemetery.pk, 'area': self.area.pk, 'places_type': 'manual',
-            'plan_date': '12.12.2013', 'plan_time': '12:00',
+            'plan_date': '12.12.2013', 'plan_time': '12:00', 'grave_number': 1,
         })
         br = Burial.objects.all()[0]
 
@@ -181,7 +181,7 @@ class RequestsTest(TestCase):
     def test_archive(self):
         r = self.loru_client.post('/burials/create/', {
             'cemetery': self.cemetery.pk, 'plan_date': '12.12.2013', 'plan_time': '12:00',
-            'opf': 'person', 'applicant-last_name': u'Petrov', 'places_type': 'manual',
+            'opf': 'person', 'applicant-last_name': u'Petrov', 'places_type': 'manual', 'grave_number': 1,
             'deadman-dc-zags': self.zags.pk, 'responsible-personid-number': '11', 'responsible-personid-series': '11',
             'responsible-personid-id_type': self.doc_type.pk,
         })
@@ -206,7 +206,7 @@ class RequestsTest(TestCase):
     def test_edit(self):
         r = self.loru_client.post('/burials/create/', {
             'cemetery': self.cemetery.pk, 'plan_date': '12.12.2013', 'plan_time': '12:00',
-            'opf': 'person', 'applicant-last_name': u'Petrov', 'places_type': 'manual',
+            'opf': 'person', 'applicant-last_name': u'Petrov', 'places_type': 'manual', 'grave_number': 1,
             'deadman-dc-zags': self.zags.pk, 'responsible-personid-number': '11', 'responsible-personid-series': '11',
             'responsible-personid-id_type': self.doc_type.pk,
         })
@@ -227,7 +227,7 @@ class RequestsTest(TestCase):
     def test_edit_loru(self):
         r = self.loru_client.post('/burials/create/', {
             'cemetery': self.cemetery.pk, 'plan_date': '12.12.2013', 'plan_time': '12:00',
-            'opf': 'person', 'applicant-last_name': u'Petrov', 'places_type': 'manual',
+            'opf': 'person', 'applicant-last_name': u'Petrov', 'places_type': 'manual', 'grave_number': 1,
             'deadman-dc-zags': self.zags.pk, 'responsible-personid-number': '11', 'responsible-personid-series': '11',
             'responsible-personid-id_type': self.doc_type.pk,
             })
@@ -298,20 +298,20 @@ class BurialsTest(TestCase):
 
         r = self.ugh_client.post('/burials/create/', {
             'plan_date': '12.12.2013', 'opf': 'org', 'places_type': 'manual',
-            'dover': dover.pk,
+            'dover': dover.pk, 'grave_number': 1,
         })
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r.context['form'].is_valid(), False)
 
         r = self.ugh_client.post('/burials/create/', {
             'plan_date': '12.12.2013', 'opf': 'org', 'places_type': 'manual',
-            'agent': agent.pk, 'dover': dover.pk,
+            'agent': agent.pk, 'dover': dover.pk, 'grave_number': 1,
         })
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r.context['form'].is_valid(), False)
 
         r = self.ugh_client.post('/burials/create/', {
-            'plan_date': '12.12.2013', 'opf': 'org', 'places_type': 'manual',
+            'plan_date': '12.12.2013', 'opf': 'org', 'places_type': 'manual', 'grave_number': 1,
             'applicant_organization': loru.pk, 'agent': agent.pk, 'dover': dover.pk,
         })
         self.assertEqual(r.status_code, 302)
@@ -376,6 +376,7 @@ class BurialsTest(TestCase):
             'burial_type': Burial.BURIAL_TYPES[0][0],
             'fact_date': datetime.date.today().strftime('%d.%m.%Y'),
             'cemetery': self.cemetery.pk,
+            'grave_number': 1,
             'opf': 'person',
             'places_type': 'manual',
             'place_number': 123,
@@ -428,6 +429,7 @@ class TestArchived(TestCase):
             'burial_type': Burial.BURIAL_TYPES[0][0],
             'fact_date': datetime.date.today().strftime('%d.%m.%Y'),
             'cemetery': self.cemetery.pk,
+            'grave_number': 1,
             'opf': 'person',
             'places_type': 'manual',
             'applicant-last_name': u'Petrov',
