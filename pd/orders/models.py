@@ -82,6 +82,15 @@ class Order(models.Model):
         ptypes = [Product.PRODUCT_DIGGERS, Product.PRODUCT_LOADERS]
         return self.orderitem_set.filter(product__ptype__in=ptypes).exists()
 
+    def has_sign(self):
+        return self.orderitem_set.filter(product__ptype=Product.PRODUCT_SIGN).exists()
+
+    def has_diggers(self):
+        return self.orderitem_set.filter(product__ptype=Product.PRODUCT_DIGGERS).exists()
+
+    def has_loaders(self):
+        return self.orderitem_set.filter(product__ptype=Product.PRODUCT_LOADERS).exists()
+
     def get_documents(self):
         ct = ContentType.objects.get_for_model(self)
         return Report.objects.filter(content_type=ct, object_id=self.pk).order_by('-pk')
@@ -92,6 +101,8 @@ class Order(models.Model):
             return bo[0]
         except IndexError:
             return None
+
+    burial = property(get_burial)
 
 class OrderItem(models.Model):
     order = models.ForeignKey(Order, editable=False)

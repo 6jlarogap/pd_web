@@ -1,7 +1,8 @@
 # coding=utf-8
+import datetime
+
 from django.contrib import messages
 from django.core.urlresolvers import reverse
-from django.db.models.query_utils import Q
 from django.shortcuts import redirect
 from django.template.context import RequestContext
 from django.views.generic.base import View
@@ -9,6 +10,7 @@ from django.views.generic.detail import DetailView
 from django.views.generic.edit import CreateView, UpdateView
 from django.views.generic.list import ListView
 from django.utils.translation import ugettext_lazy as _
+
 from logs.models import write_log
 from orders.forms import ProductForm, OrderForm, OrderItemFormset, CoffinForm, CatafalqueForm
 from orders.models import Product, Order
@@ -161,6 +163,7 @@ class PrintOrderView(LORURequiredMixin, DetailView):
         return Order.objects.filter(loru=self.request.user.profile.org).distinct()
 
     def render_to_response(self, context, **response_kwargs):
+        context['now'] = datetime.datetime.now()
         report = make_report(
             user=self.request.user,
             msg=_(u"Счет-заказ"),

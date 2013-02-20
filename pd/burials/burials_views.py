@@ -260,7 +260,7 @@ class CreateBurial(CreateView):
 
         b = self.get_object()
         if request.REQUEST.get('order') and not b:
-            order = Order.objects.get(pk=request.REQUEST.get('order'), applicant_organization=request.user.profile.org)
+            order = Order.objects.get(pk=request.REQUEST.get('order'), loru=request.user.profile.org)
             if order.get_burial():
                 return redirect('edit_burial', order.get_burial().pk)
 
@@ -274,7 +274,7 @@ class CreateBurial(CreateView):
         b = form.save()
 
         if self.request.REQUEST.get('order') and not b.order:
-            order = Order.objects.get(pk=self.request.REQUEST.get('order'), applicant_organization=self.request.user.profile.org)
+            order = Order.objects.get(pk=self.request.REQUEST.get('order'), loru=self.request.user.profile.org)
             b.order = order
             b.save()
 
