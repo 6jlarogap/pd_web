@@ -5,7 +5,7 @@ from django.db.models.query_utils import Q
 from django.forms.models import inlineformset_factory, BaseInlineFormSet
 from django.utils.translation import ugettext as _
 
-from orders.models import Product, Order, OrderItem
+from orders.models import Product, Order, OrderItem, CatafalqueData, CoffinData
 from burials.forms import OPF_CHOICES
 from persons.models import AlivePerson
 
@@ -95,3 +95,11 @@ class BaseOrderItemFormset(BaseInlineFormSet):
             f.fields['product'].queryset = Product.objects.filter(loru=request.user.profile.org)
 
 OrderItemFormset = inlineformset_factory(Order, OrderItem, form=OrderItemForm, formset=BaseOrderItemFormset)
+
+class CatafalqueForm(forms.ModelForm):
+    class Meta:
+        model = CatafalqueData
+
+class CoffinForm(forms.ModelForm):
+    class Meta:
+        model = CoffinData

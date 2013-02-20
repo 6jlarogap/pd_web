@@ -29,6 +29,16 @@
             <input id="id_total" type="text" value="{{ form.instance.total }}" />
         </p>
 
+        {% if form.instance.has_catafalque %}
+            <h2>{% trans "Катафалк" %}</h2>
+            {{ catafalque_form.as_p }}
+        {% endif %}
+
+        {% if form.instance.has_coffin %}
+            <h2>{% trans "Гроб" %}</h2>
+            {{ coffin_form.as_p }}
+        {% endif %}
+
         <p>
             <input type="submit" class="btn" value="{% trans "сохранить" %}" class="btn"/>
             {% if form.instance.get_burial %}

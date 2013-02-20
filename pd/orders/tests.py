@@ -4,7 +4,7 @@ from django.test.client import Client
 from django.test.testcases import TestCase
 from django.utils.translation import activate
 
-from orders.models import Product, Order
+from orders.models import Product, Order, CatafalqueData, OrderItem, CoffinData
 from users.models import Org, Profile
 
 
@@ -139,3 +139,66 @@ class OrdersTest(TestCase):
         self.assertEqual(Order.objects.get().orderitem_set.all().count(), 2)
         self.assertEqual(Order.objects.get().orderitem_set.get(product=self.product).quantity, 1)
         self.assertEqual(Order.objects.get().orderitem_set.get(product=self.product_other).quantity, 1)
+
+    def test_cat(self):
+        self.product_cat = Product.objects.create(
+            loru=self.loru_org, name='test', measure='items', price='10.50', ptype=Product.PRODUCT_CATAFALQUE
+        )
+
+        o = Order.objects.create(loru=self.loru_user.profile.org, org=self.loru_org)
+        self.assertEqual(o.has_catafalque(), False)
+        self.assertEqual(o.get_catafalquedata(), None)
+
+        oi = OrderItem.objects.create(product=self.product_cat, order=o)
+        self.assertEqual(o.has_catafalque(), True)
+        self.assertEqual(o.get_catafalquedata(), None)
+
+        cd = CatafalqueData.objects.create(order=o, route='test', start_time='12:00', duration_time='1:00')
+        self.assertEqual(o.has_catafalque(), True)
+        self.assertEqual(o.get_catafalquedata(), cd)
+
+    def test_coffin_diggers(self):
+        self.product_cat = Product.objects.create(
+            loru=self.loru_org, name='test', measure='items', price='10.50', ptype=Product.PRODUCT_DIGGERS
+        )
+
+        o = Order.objects.create(loru=self.loru_user.profile.org, org=self.loru_org)
+        self.assertEqual(o.has_coffin(), False)
+        self.assertEqual(o.get_coffindata(), None)
+
+        oi = OrderItem.objects.create(product=self.product_cat, order=o)
+        self.assertEqual(o.has_coffin(), True)
+        self.assertEqual(o.get_coffindata(), None)
+
+        cd = CoffinData.objects.create(order=o, size='1:0:0')
+        self.assertEqual(o.has_coffin(), True)
+        self.assertEqual(o.get_coffindata(), cd)
+
+    def test_coffin_loaders(self):
+        self.product_cat = Product.objects.create(
+            loru=self.loru_org, name='test', measure='items', price='10.50', ptype=Product.PRODUCT_LOADERS
+        )
+
+        o = Order.objects.create(loru=self.loru_user.profile.org, org=self.loru_org)
+        self.assertEqual(o.has_coffin(), False)
+        self.assertEqual(o.get_coffindata(), None)
+
+        oi = OrderItem.objects.create(product=self.product_cat, order=o)
+        self.assertEqual(o.has_coffin(), True)
+        self.assertEqual(o.get_coffindata(), None)
+
+        cd = CoffinData.objects.create(order=o, size='1:0:0')
+        self.assertEqual(o.has_coffin(), True)
+        self.assertEqual(o.get_coffindata(), cd)
+
+    def test_cat_coffin_others(self):
+        self.product_cat = Product.objects.create(
+            loru=self.loru_org, name='test', measure='items', price='10.50', ptype=Product.PRODUCT_BURIAL
+        )
+
+        o = Order.objects.create(loru=self.loru_user.profile.org, org=self.loru_org)
+        oi = OrderItem.objects.create(product=self.product_cat, order=o)
+        self.assertEqual(o.has_coffin(), False)
+        self.assertEqual(o.get_coffindata(), None)
+        self.assertEqual(o.has_catafalque(), False)
+        self.assertEqual(o.get_catafalquedata(), None)

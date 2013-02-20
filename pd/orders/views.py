@@ -10,7 +10,7 @@ from django.views.generic.edit import CreateView, UpdateView
 from django.views.generic.list import ListView
 from django.utils.translation import ugettext_lazy as _
 from logs.models import write_log
-from orders.forms import ProductForm, OrderForm, OrderItemFormset
+from orders.forms import ProductForm, OrderForm, OrderItemFormset, CoffinForm, CatafalqueForm
 from orders.models import Product, Order
 from reports.models import make_report
 
@@ -111,23 +111,46 @@ class OrderEdit(LORURequiredMixin, UpdateView):
         self.args = args
         self.kwargs = kwargs
         self.formset = OrderItemFormset(request=self.request, data=request.POST or None, instance=self.get_object())
+        self.catafalque_form = CatafalqueForm(data=request.POST or None, instance=self.get_object().get_catafalquedata())
+        self.coffin_form = CoffinForm(data=request.POST or None, instance=self.get_object().get_coffindata())
         return super(OrderEdit, self).dispatch(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
         data = super(OrderEdit, self).get_context_data(**kwargs)
-        data['formset'] = self.formset
+        data.update({'formset': self.formset})
+        if self.get_object().has_catafalque():
+            data.update({'catafalque_form': self.catafalque_form})
+        if self.get_object().has_coffin():
+            data.update({'coffin_form': self.coffin_form})
         return data
 
     def form_valid(self, form):
-        self.formset.save()
-        self.object = form.save()
-        write_log(self.request, self.object, _(u'Заказ изменен'))
-        msg = _(u"<a href='%s'>Заказ %s</a> изменен") % (
-            reverse('order_edit', args=[self.object.pk]),
-            self.object.pk,
-        )
-        messages.success(self.request, msg)
-        return redirect('order_list')
+        catafalque_ok = not self.get_object().has_catafalque() or self.catafalque_form.is_valid()
+        coffin_ok = not self.get_object().has_coffin() or self.coffin_form.is_valid()
+        if self.formset.is_valid() and catafalque_ok and coffin_ok:
+            self.formset.save()
+            self.object = form.save()
+
+            if self.catafalque_form.is_valid():
+                cat = self.catafalque_form.save(commit=False)
+                cat.order = self.object
+                cat.save()
+
+            if self.coffin_form.is_valid():
+                coffin = self.coffin_form.save(commit=False)
+                coffin.order = self.object
+                coffin.save()
+
+            write_log(self.request, self.object, _(u'Заказ изменен'))
+            msg = _(u"<a href='%s'>Заказ %s</a> изменен") % (
+                reverse('order_edit', args=[self.object.pk]),
+                self.object.pk,
+            )
+            messages.success(self.request, msg)
+            return redirect('order_list')
+        else:
+            messages.error(self.request, _(u"Обнаружены ошибки"))
+            return self.form_invalid(form)
 
 order_edit = OrderEdit.as_view()
 

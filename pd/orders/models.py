@@ -63,6 +63,25 @@ class Order(models.Model):
     def total_float(self):
         return float(self.total)
 
+    def get_catafalquedata(self):
+        try:
+            return self.catafalquedata
+        except CatafalqueData.DoesNotExist:
+            return
+
+    def has_catafalque(self):
+        return self.orderitem_set.filter(product__ptype=Product.PRODUCT_CATAFALQUE).exists()
+
+    def get_coffindata(self):
+        try:
+            return self.coffindata
+        except CoffinData.DoesNotExist:
+            return
+
+    def has_coffin(self):
+        ptypes = [Product.PRODUCT_DIGGERS, Product.PRODUCT_LOADERS]
+        return self.orderitem_set.filter(product__ptype__in=ptypes).exists()
+
     def get_documents(self):
         ct = ContentType.objects.get_for_model(self)
         return Report.objects.filter(content_type=ct, object_id=self.pk).order_by('-pk')
@@ -99,3 +118,15 @@ class OrderItem(models.Model):
     @property
     def total(self):
         return self.cost * self.quantity
+
+class CatafalqueData(models.Model):
+    order = models.OneToOneField('orders.Order', editable=False)
+
+    route = models.TextField(_(u"Маршрут"))
+    start_time = models.TimeField(_(u"Время подачи"))
+    duration_time = models.TimeField(_(u"Время работы"))
+
+class CoffinData(models.Model):
+    order = models.OneToOneField('orders.Order', editable=False)
+
+    size = models.TextField(_(u"Размер"))
