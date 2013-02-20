@@ -32,7 +32,7 @@
             </dd>
         {% endif %}
     </dl>
-    <a href="{% url create_burial %}" class="btn" onclick="alert('Не готово'); return false;">{% trans "добавить родственное" %}</a>
+    <a href="{% url create_burial %}?place_id={{ place.pk }}" class="btn">{% trans "добавить родственное" %}</a>
 
     <h2>{% trans "Данные" %}</h2>
     <form action="" method="POST">

@@ -14,6 +14,8 @@
         {% csrf_token %}
         <input type="hidden" name="order"  value="{{ request.REQUEST.order }}" />
         <input type="hidden" name="archive"  value="{{ request.REQUEST.archive }}" />
+        <input type="hidden" name="place_id"  value="{{ request.REQUEST.place_id }}" />
+
         {{ form.as_p }}
         {% if user.profile.is_ugh %}
             <p>

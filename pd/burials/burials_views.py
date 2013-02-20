@@ -18,7 +18,7 @@ from django.views.generic.list import ListView
 
 from burials.forms import BurialSearchForm, BurialForm, BurialCommitForm, BurialCloseForm
 from burials.forms import AddAgentForm, AddDoverForm, AddOrgForm
-from burials.models import Reason, Burial, Cemetery
+from burials.models import Reason, Burial, Cemetery, Place
 from logs.models import write_log
 from orders.models import Order
 from reports.models import make_report
@@ -250,6 +250,17 @@ class CreateBurial(CreateView):
 
     def get_form_kwargs(self, *args, **kwargs):
         data = super(CreateBurial, self).get_form_kwargs(*args, **kwargs)
+        if self.request.REQUEST.get('place_id'):
+            place = Place.objects.get(pk=self.request.REQUEST.get('place_id'))
+            if not data.get('instance'):
+                data['instance'] = Burial(
+                    cemetery=place.cemetery,
+                    area=place.area,
+                    row=place.row,
+                    place_number=place.place,
+                    responsible=place.responsible,
+                    burial_type=Burial.BURIAL_ADD,
+                )
         data['request'] = self.request
         return data
 

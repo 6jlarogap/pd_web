@@ -149,11 +149,16 @@ class Burial(models.Model):
         (STATUS_ANNULATED, _(u"Аннулировано")),
     )
 
+    BURIAL_NEW = 'common'
+    BURIAL_ADD = 'additional'
+    BURIAL_OVER = 'overlap'
+    BURIAL_URN = 'urn'
+
     BURIAL_TYPES = (
-        ('common', _(u'Захоронение')),
-        ('additional', _(u'Подзахоронение')),
-        ('overlap', _(u'Захоронение в существующую')),
-        ('urn', _(u'Урна')),
+        (BURIAL_NEW, _(u'Захоронение')),
+        (BURIAL_ADD, _(u'Подзахоронение')),
+        (BURIAL_OVER, _(u'Захоронение в существующую')),
+        (BURIAL_URN, _(u'Урна')),
     )
 
     NEW_BURIAL_TYPES = ['common', 'urn']
