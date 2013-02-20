@@ -18,4 +18,12 @@
             <li><a href="{% url view_burial b.pk %}">{{ b.deadman|default:"Неизвестный" }}</a></li>
         {% endfor %}
     </ul>
+
+    <script type="text/javascript">
+        var options = '';
+        for (var i=1; i<={{ place.places_count }}; i++) {
+            options += '<option value="'+i+'">'+i+'</option>';
+        }
+        $('#id_grave_number').html(options);
+    </script>
 </div>

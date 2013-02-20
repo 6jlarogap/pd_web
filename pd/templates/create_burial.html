@@ -16,6 +16,7 @@
         <input type="hidden" name="archive"  value="{{ request.REQUEST.archive }}" />
         <input type="hidden" name="place_id"  value="{{ request.REQUEST.place_id }}" />
 
+        {{ form.non_field_errors }}
         {% include "create_burial_main_form.html" %}
 
         <h2>{% trans "Усопший" %} {{ form.deadman_form.instance|default:"" }}</h2>
@@ -25,6 +26,7 @@
             <h3>{% trans "Адрес" %}</h3>
             <div class="form_block">
                 {% with form.deadman_address_form as form %}
+                    {{ form.non_field_errors }}
                     {% include "create_burial_location_form.html" %}
                 {% endwith %}
             </div>
@@ -38,6 +40,7 @@
             <h3>{% trans "Адрес" %}</h3>
             <div class="form_block">
                 {% with form.responsible_address_form as form %}
+                    {{ form.non_field_errors }}
                     {% include "create_burial_location_form.html" %}
                 {% endwith %}
             </div>
@@ -51,6 +54,7 @@
                     <h3>{% trans "Адрес" %}</h3>
                     <div class="form_block">
                         {% with form.applicant_address_form as form %}
+                            {{ form.non_field_errors }}
                             {% include "create_burial_location_form.html" %}
                         {% endwith %}
                     </div>

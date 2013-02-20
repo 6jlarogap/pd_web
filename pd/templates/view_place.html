@@ -6,31 +6,33 @@
     <h1>{{ place }}</h1>
     <dl>
         {% if place.cemetery %}
-            <dt>Кладбище</dt>
+            <dt>{% trans "Кладбище" %}</dt>
             <dd>{{ place.cemetery }}</dd>
         {% endif %}
         {% if place.area %}
-            <dt>Участок</dt>
+            <dt>{% trans "Участок" %}</dt>
             <dd>{{ place.area }}</dd>
         {% endif %}
         {% if place.row %}
-            <dt>Ряд</dt>
+            <dt>{% trans "Ряд" %}</dt>
             <dd>{{ place.row }}</dd>
         {% endif %}
         {% if place.seat %}
-            <dt>Место</dt>
+            <dt>{% trans "Место" %}</dt>
             <dd>{{ place.seat }}</dd>
         {% endif %}
         {% if place.responsible %}
-            <dt>Ответственный</dt>
+            <dt>{% trans "Ответственный" %}</dt>
             <dd>
                 {{ place.responsible }}
                 {% if place.responsible.phones %}
-                    (тел. {{ place.responsible.phones }})
+                    ({% trans "тел." %} {{ place.responsible.phones }})
                 {% endif %}
                 <a href="{% url create_burial %}" class="btn" onclick="alert('Не готово'); return false;">{% trans "открепить" %}</a>
             </dd>
         {% endif %}
+        <dt>{% trans "Могил всего" %}</dt>
+        <dd>{{ place.places_count }}</dd>
     </dl>
     <a href="{% url create_burial %}?place_id={{ place.pk }}" class="btn">{% trans "добавить родственное" %}</a>
 
@@ -46,14 +48,14 @@
     <h2>{% trans "Захоронения" %}</h2>
     <table class="table table-bordered">
         <tr>
-            <th>{% trans "Номер" %}</th>
+            <th>{% trans "Могила" %}</th>
             <th>{% trans "Усопший" %}</th>
             <th>{% trans "Дата" %}</th>
             <th></th>
         </tr>
         {% for b in place.burial_set.all %}
             <tr>
-                <td>{{ b.pk }}</td>
+                <td>{{ b.grave_number|default:"" }}</td>
                 <td>{{ b.deadman|default:"Неизвестный" }}</td>
                 <td>{{ b.fact_date|date:"d.m.Y"|default:"" }}</td>
                 <td>

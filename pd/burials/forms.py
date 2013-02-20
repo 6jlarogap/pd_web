@@ -103,10 +103,14 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, forms.Mo
                 request=self.request,
             )
             self.fields['plan_time'].widget = forms.Select(choices=choices)
-        if self.instance and self.instance.plan_time:
+        if self.instance.plan_time:
             self.initial['plan_time'] = self.instance.plan_time.strftime('%H:%M')
         else:
             self.fields['plan_date'].initial = datetime.date.today() + datetime.timedelta(1)
+
+        max_grave = self.instance.place and self.instance.place.places_count or 1
+        grave_choices = [(i,i) for i in range(1, max_grave+1)]
+        self.fields['grave_number'].widget = forms.Select(choices=grave_choices)
 
         if self.request.user.profile.is_loru():
             del self.fields['applicant_organization']
@@ -402,7 +406,8 @@ class BurialCommitForm(BurialForm):
         if self.cleaned_data.get('burial_type') not in Burial.NEW_BURIAL_TYPES:
             for f in [self.responsible_form, self.responsible_address_form]:
                 if f.is_valid() and any(f.cleaned_data.values()):
-                    raise forms.ValidationError(_(u"Для подзахоронений Ответственного быть не должно"))
+                    if not self.instance.get_place() or self.responsible_form.cleaned_data['last_name'] != self.instance.get_place().responsible.last_name:
+                        raise forms.ValidationError(_(u"Для подзахоронений Ответственного быть не должно"))
         is_ugh = False
         if self.instance and self.instance.is_ugh():
             is_ugh = True

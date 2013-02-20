@@ -7,7 +7,9 @@
 .burial-form #id_cemetery { width: 150px; }
 .burial-form #id_operation { width: 100px; }
 
-#id_row, #id_place_number { width: 60px; }
+.burial-form #id_row { width: 60px; }
+.burial-form #id_place_number { width: 60px; }
+.burial-form #id_grave_number { width: 60px; }
 
 #id_house { width: 60px; }
 #id_building { width: 55px; }
