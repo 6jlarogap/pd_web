@@ -198,6 +198,10 @@ class BurialsListView(ListView):
                 burials = burials.filter(date_fact__gte=form.cleaned_data['burial_date_from'])
             if form.cleaned_data['burial_date_to']:
                 burials = burials.filter(date_fact__lte=form.cleaned_data['burial_date_to'])
+            if form.cleaned_data['account_number_from']:
+                burials = burials.filter(account_number__gte=form.cleaned_data['account_number_from'])
+            if form.cleaned_data['account_number_to']:
+                burials = burials.filter(account_number__lte=form.cleaned_data['account_number_to'])
             if form.cleaned_data['responsible']:
                 burials = burials.filter(place__responsible__last_name__icontains=form.cleaned_data['responsible'])
             if form.cleaned_data['cemetery']:
