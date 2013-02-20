@@ -1,0 +1,21 @@
+{% load i18n %}
+
+<div class="well">
+    <h2>{% trans "Место найдено" %}</h2>
+
+    <h3>{{ place }}</h3>
+
+    <dl>
+        {% if place.responsible %}
+            <dt>{% trans "Ответственный" %}</dt>
+            <dd>{{ place.responsible }}</dd>
+        {% endif %}
+    </dl>
+
+    <h3>{% trans "Усопшие" %}</h3>
+    <ul>
+        {% for b in place.burial_set.all %}
+            <li><a href="{% url view_burial b.pk %}">{{ b.deadman|default:"Неизвестный" }}</a></li>
+        {% endfor %}
+    </ul>
+</div>

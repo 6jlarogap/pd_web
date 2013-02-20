@@ -3,7 +3,7 @@
 from django.contrib import messages
 from django.core.urlresolvers import reverse
 from django.db.models.query_utils import Q
-from django.shortcuts import redirect
+from django.shortcuts import redirect, render
 from django.views.decorators.csrf import csrf_exempt
 from django.views.generic.base import View
 from django.utils.translation import ugettext as _
@@ -12,7 +12,7 @@ from django.views.generic.edit import CreateView, UpdateView
 from django.views.generic.list import ListView
 
 from burials.forms import CemeteryForm, AreaFormset, PlaceEditForm, AddOrgForm
-from burials.models import Cemetery, Place
+from burials.models import Cemetery, Place, Area
 from burials.burials_views import *
 from logs.models import write_log
 from users.models import Profile, Org
@@ -161,3 +161,30 @@ class AddOrgView(UGHRequiredMixin, View):
 
 add_org = csrf_exempt(AddOrgView.as_view())
 
+class GetPlaceView(View):
+    def dispatch(self, request, *args, **kwargs):
+        self.request = request
+        if not request.user.is_authenticated():
+            return redirect('/')
+        return View.dispatch(self, request, *args, **kwargs)
+
+    def get(self, request, *args, **kwargs):
+        places = Place.objects.all()
+        data = dict(
+            cemetery__pk=request.GET.get('cemetery') or None,
+            area__pk=request.GET.get('area') or None,
+            row=request.GET.get('row') or None,
+            place=request.GET.get('place_number') or None,
+        )
+        data = dict([(k,v) for k,v in data.items() if v])
+
+        try:
+            p = places.get(**data)
+        except Place.DoesNotExist:
+            return HttpResponse('')
+        except Place.MultipleObjectsReturned:
+            return HttpResponse('')
+        else:
+            return render(request, 'create_burial_place_info.html', {'place': p})
+
+get_place = GetPlaceView.as_view()

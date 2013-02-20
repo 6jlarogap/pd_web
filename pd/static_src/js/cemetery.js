@@ -356,6 +356,12 @@ $(function() {
         })
     });
 
+    $('#id_cemetery, #id_area, #id_row, #id_place_number').change(function() {
+        var data = $('#id_cemetery, #id_area, #id_row, #id_place_number').serialize();
+        $('#place_info').load('/burials/get_place/?'+data)
+    });
+    $('#id_cemetery, #id_area, #id_row, #id_place_number').change();
+
     $('#paginator_select').live('change', function() {
         top.location.href = $(this).val();
     });

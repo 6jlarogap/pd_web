@@ -16,31 +16,17 @@
         <input type="hidden" name="archive"  value="{{ request.REQUEST.archive }}" />
         <input type="hidden" name="place_id"  value="{{ request.REQUEST.place_id }}" />
 
-        {{ form.as_p }}
-        {% if user.profile.is_ugh %}
-            <p>
-                <a href="#add_loru" role="button" class="btn btn-loru" data-toggle="modal">
-                    {% trans "добавить юрлицо" %}
-                </a>
-            </p>
-            <p>
-                <a href="#add_agent" role="button" class="btn btn-agent" data-toggle="modal">
-                    {% trans "добавить агента" %}
-                </a>
-            </p>
-            <p>
-                <a href="#add_dover" role="button" class="btn btn-dover" data-toggle="modal">
-                    {% trans "добавить доверенность" %}
-                </a>
-            </p>
-        {% endif %}
+        {% include "create_burial_main_form.html" %}
+
         <h2>{% trans "Усопший" %} {{ form.deadman_form.instance|default:"" }}</h2>
         <a href="#" onclick="$('#cont_dead').slideToggle(); return false">{% trans "развернуть" %}</a>
         <div id="cont_dead" style="display: none">
             {{ form.deadman_form.as_p }}
             <h3>{% trans "Адрес" %}</h3>
             <div class="form_block">
-                {{ form.deadman_address_form.as_p }}
+                {% with form.deadman_address_form as form %}
+                    {% include "create_burial_location_form.html" %}
+                {% endwith %}
             </div>
             <h3>{% trans "Свидетельство о смерти" %}</h3>
             {{ form.dc_form.as_p }}
@@ -51,7 +37,9 @@
             {{ form.responsible_form.as_p }}
             <h3>{% trans "Адрес" %}</h3>
             <div class="form_block">
-                {{ form.responsible_address_form.as_p }}
+                {% with form.responsible_address_form as form %}
+                    {% include "create_burial_location_form.html" %}
+                {% endwith %}
             </div>
         </div>
         {% if user.profile.is_ugh %}
@@ -62,7 +50,9 @@
                     {{ form.applicant_form.as_p }}
                     <h3>{% trans "Адрес" %}</h3>
                     <div class="form_block">
-                        {{ form.applicant_address_form.as_p }}
+                        {% with form.applicant_address_form as form %}
+                            {% include "create_burial_location_form.html" %}
+                        {% endwith %}
                     </div>
                     <h3>{% trans "Удостоверение личности" %}</h3>
                     <div class="form_block">
@@ -72,7 +62,7 @@
             </div>
         {% endif %}
         {% block buttons %}
-            <p>
+            <p class="clear">
                 <input type="submit" class="btn btn-primary btn-commit-burial" value="{% trans "cохранить" %}"/>
                 {% if not b.is_finished %}
                     {% if user.profile.is_ugh and b.is_archive or request.REQUEST.archive %}

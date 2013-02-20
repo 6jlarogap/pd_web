@@ -10,6 +10,7 @@ from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
 from django.db.models.deletion import ProtectedError
 from django.forms.models import inlineformset_factory
+from django.utils.datastructures import SortedDict
 from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext_lazy as _
 from django.db.models.query_utils import Q
@@ -17,6 +18,7 @@ from django.db.models.query_utils import Q
 from burials.models import Cemetery, Area, Burial, Place
 from geo.forms import LocationForm
 from logs.models import write_log
+from pd.forms import PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin
 from persons.forms import DeadPersonForm, DeathCertificateForm, AlivePersonForm, PersonIDForm
 from persons.models import DeathCertificate, PersonID
 from users.models import Org, Profile, Dover
@@ -58,73 +60,6 @@ class PlaceEditForm(forms.ModelForm):
             else:
                 self.initial['places_count'] = 1
 
-class ChildrenJSONMixin:
-    def universal_children_json(self, parent, children_rel, filter_kw=None):
-        parents = {}
-        filter_kw = filter_kw or {}
-        if self.fields.get(parent):
-            for c in self.fields[parent].queryset:
-                parents[c.pk] = [[a.pk, u'%s' % a] for a in getattr(c, children_rel).filter(**filter_kw)]
-        return mark_safe(json.dumps(parents))
-
-    def cemetery_areas_json(self):
-        return self.universal_children_json('cemetery', 'area_set')
-
-    def cemetery_times_json(self):
-        parents = {}
-        if self.fields.get('cemetery'):
-            for c in self.fields['cemetery'].queryset:
-                parents[c.pk] = c.get_time_choices(
-                    date=self.instance.plan_date or self.initial.get('plan_date'),
-                    request=self.request
-                )
-        return mark_safe(json.dumps(parents))
-
-    def agent_dover_json(self):
-        return self.universal_children_json('agent', 'dover_set')
-
-    def loru_agents_json(self):
-        return self.universal_children_json('applicant_organization', 'profile_set', filter_kw={'is_agent': True})
-
-class LoggingFormMixin:
-    def get_prefix(self, form):
-        return u''
-
-    def collect_log_data(self):
-        self.changed_list = []
-        obj = self.instance
-        if obj and obj.pk:
-            obj = Burial.objects.get(pk=obj.pk)
-            for form in [self] + self.forms:
-                prefix = self.get_prefix(form)
-                for f in form.changed_data:
-                    old_value = obj and getattr(obj, f, None) or form.initial.get(f) or ''
-                    new_value = form.cleaned_data.get(f) or ''
-
-                    if isinstance(old_value, datetime.date):
-                        old_value = old_value.strftime('%d.%m.%Y')
-                    if isinstance(new_value, datetime.date):
-                        new_value = new_value.strftime('%d.%m.%Y')
-                    if isinstance(old_value, datetime.time):
-                        old_value = old_value.strftime('%H:%M')
-                    if isinstance(new_value, datetime.time):
-                        new_value = new_value.strftime('%H:%M')
-
-                    if getattr(form.fields[f], 'choices', None):
-                        old_value = dict(form.fields[f].choices).get(old_value, old_value)
-                        new_value = dict(form.fields[f].choices).get(new_value, new_value)
-
-                    if old_value != new_value:
-                        self.changed_list.append((u'%s%s' % (prefix, form.fields[f].label), old_value, new_value))
-
-    def put_log_data(self, msg=_(u'Захоронение сохранено')):
-        if self.changed_list or not self.instance or not self.instance.pk:
-            changed_data_str = u'\n'.join([u'%s: %s -> %s' % cd for cd in self.changed_list])
-            write_log(self.request, self.instance, msg + u'\n' + changed_data_str)
-        else:
-            write_log(self.request, self.instance, msg)
-
-
 class BurialSearchForm(forms.Form):
     """
     Форма поиска на главной странице.
@@ -147,7 +82,7 @@ class BurialSearchForm(forms.Form):
     place = forms.CharField(required=False, label=_(u"Место"))
     no_responsible = forms.BooleanField(required=False, initial=False, label=_(u"Без отв."))
 
-class BurialForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelForm):
+class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, forms.ModelForm):
     opf = forms.ChoiceField(label=_(u'ОПФ'), choices=OPF_CHOICES, widget=forms.RadioSelect)
 
     class Meta:

@@ -542,3 +542,17 @@ class TestAJAX(TestCase):
         self.assertEqual(r.status_code, 200)
         self.assertEqual(json.loads(r.content)['pk'], 2)
         self.assertEqual(Org.objects.all().count(), 2)
+
+    def test_place_info(self):
+        area = Area.objects.create(cemetery=self.cemetery, name='area')
+        params = (self.cemetery.pk, area.pk, '123', )
+
+        r = self.ugh_client.get('/burials/get_place/?cemetery=%s&area=%s&row=&place_number=%s' % params)
+        self.assertEqual(r.content, u'')
+
+        p = Place.objects.create(cemetery=self.cemetery, area=area, place='123')
+
+        r = self.ugh_client.get('/burials/get_place/?cemetery=%s&area=%s&row=&place_number=%s' % params)
+        self.assertNotEqual(r.content, u'')
+        self.assertContains(r, p.place)
+

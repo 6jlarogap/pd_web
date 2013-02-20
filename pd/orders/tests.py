@@ -79,7 +79,7 @@ class OrdersTest(TestCase):
         self.assertEqual(Order.objects.all().count(), 0)
 
         r = self.loru_client.post('/order/create/', {
-            'org': self.loru_org.pk, 'opf': 'org',
+            'org': self.loru_org.pk, 'opf': 'org', 'payment': 'cash'
         })
         self.assertEqual(r.status_code, 302)
         self.assertEqual(Order.objects.all().count(), 1)
@@ -94,7 +94,8 @@ class OrdersTest(TestCase):
         self.assertEqual(r.status_code, 200)
 
         r = self.loru_client.post('/order/%s/edit/' % o.pk, {
-            'person_last_name': 'Test', 'person_first_name': 'Test', 'person_middle_name': 'Test', 'org': '', 'opf': 'person',
+            'person_last_name': 'Test', 'person_first_name': 'Test', 'person_middle_name': 'Test', 'org': '',
+            'opf': 'person', 'payment': 'cash',
             'orderitem_set-0-id': u'', 'orderitem_set-0-product': u'%s' % self.product.pk, 'orderitem_set-0-quantity': u'10',
             'orderitem_set-1-id': u'', 'orderitem_set-1-product': u'', 'orderitem_set-1-quantity': u'1',
             'orderitem_set-2-id': u'', 'orderitem_set-2-quantity': u'1', 'orderitem_set-2-product': u'',
@@ -128,7 +129,8 @@ class OrdersTest(TestCase):
         self.assertEqual(Order.objects.get().orderitem_set.all().count(), 0)
 
         r = self.loru_client.post('/order/%s/edit/' % o.pk, {
-            'person_last_name': 'Test', 'person_first_name': 'Test', 'person_middle_name': 'Test', 'org': '', 'opf': 'person',
+            'person_last_name': 'Test', 'person_first_name': 'Test', 'person_middle_name': 'Test', 'org': '',
+            'opf': 'person', 'payment': 'cash',
             'orderitem_set-0-id': u'', 'orderitem_set-0-product': u'%s' % self.product.pk, 'orderitem_set-0-quantity': u'10',
             'orderitem_set-1-id': u'', 'orderitem_set-1-product': u'%s' % self.product_same.pk, 'orderitem_set-1-quantity': u'1',
             'orderitem_set-2-id': u'', 'orderitem_set-2-product': u'%s' % self.product_type.pk, 'orderitem_set-2-quantity': u'1',
