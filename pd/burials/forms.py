@@ -212,7 +212,7 @@ class BurialForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelForm):
         deadman = self.instance and self.instance.deadman
         self.old_place = self.instance and self.instance.get_place()
         self.deadman_form = DeadPersonForm(data=data, prefix='deadman', instance=deadman)
-        deadman_addr = self.instance and self.instance.deadman and self.instance.deadman.address
+        deadman_addr = deadman and deadman.address
         self.deadman_address_form = LocationForm(data=data, prefix='deadman-address', instance=deadman_addr)
         try:
             dc = self.instance and self.instance.deadman and self.instance.deadman.deathcertificate
@@ -222,12 +222,12 @@ class BurialForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelForm):
 
         responsible = self.instance and self.instance.get_responsible()
         self.responsible_form = AlivePersonForm(data=data, prefix='responsible', instance=responsible)
-        resp_addr = self.instance and self.instance.responsible and self.instance.responsible.address
+        resp_addr = responsible and responsible.address
         self.responsible_address_form =  LocationForm(data=data, prefix='responsible-address', instance=resp_addr)
 
         applicant = self.instance and self.instance.applicant
         self.applicant_form = AlivePersonForm(data=data, prefix='applicant', instance=applicant)
-        applicant_addr = self.instance and self.instance.applicant and self.instance.applicant.address
+        applicant_addr = applicant and applicant.address
         self.applicant_address_form =  LocationForm(data=data, prefix='applicant-address', instance=applicant_addr)
         try:
             applicant_id = self.instance and self.instance.applicant and self.instance.applicant.personid
