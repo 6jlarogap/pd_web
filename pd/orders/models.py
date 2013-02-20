@@ -28,6 +28,7 @@ class Product(models.Model):
     measure = models.CharField(_(u"Ед. изм."), max_length=255, default=_(u"шт"))
     price = models.DecimalField(_(u"Цена"), max_digits=20, decimal_places=2)
     ptype = models.CharField(_(u"Тип"), max_length=255, choices=PRODUCT_TYPES, null=True, blank=True)
+    default = models.BooleanField(_(u"По умолчанию"), default=False, blank=True)
 
     class Meta:
         verbose_name = _(u"Товар")
@@ -40,7 +41,15 @@ class Product(models.Model):
         return self.ptype == self.PRODUCT_BURIAL
 
 class Order(models.Model):
+    PAYMENT_CASH = 'cash'
+    PAYMENT_WIRE = 'wire'
+    PAYMENT_CHOICES = (
+        (PAYMENT_CASH, _(u'Наличный')),
+        (PAYMENT_WIRE, _(u'Безналичный')),
+    )
+
     loru = models.ForeignKey(Org, limit_choices_to={'type': Org.PROFILE_LORU}, null=True, verbose_name=_(u"ЛОРУ"))
+    payment = models.CharField(_(u"Тип платежа"), max_length=255, choices=PAYMENT_CHOICES, default=PAYMENT_CASH)
     person = models.ForeignKey('persons.AlivePerson', verbose_name=_(u"Заказчик-ФЛ"), null=True, blank=True)
     org = models.ForeignKey(Org, verbose_name=_(u"Заказчик-ЮЛ"), null=True, blank=True, related_name='org_orders')
     dt = models.DateTimeField(auto_now_add=True)

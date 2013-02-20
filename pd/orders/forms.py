@@ -40,6 +40,8 @@ class OrderForm(forms.ModelForm):
             self.fields['person_first_name'].required = True
             self.fields['person_middle_name'].required = True
 
+        self.fields['payment'].widget = forms.RadioSelect(choices=Order.PAYMENT_CHOICES)
+
     def save(self, commit=True, *args, **kwargs):
         self.instance = super(OrderForm, self).save(*args, **kwargs)
 

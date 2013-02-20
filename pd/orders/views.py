@@ -13,7 +13,7 @@ from django.utils.translation import ugettext_lazy as _
 
 from logs.models import write_log
 from orders.forms import ProductForm, OrderForm, OrderItemFormset, CoffinForm, CatafalqueForm
-from orders.models import Product, Order
+from orders.models import Product, Order, OrderItem
 from reports.models import make_report
 
 
@@ -91,6 +91,10 @@ class OrderCreate(LORURequiredMixin, CreateView):
         self.object = form.save(commit=False)
         self.object.loru = self.request.user.profile.org
         self.object.save()
+
+        for p in Product.objects.filter(loru=self.request.user.profile.org, default=True):
+            OrderItem.objects.create(order=self.object, product=p)
+
         write_log(self.request, self.object, _(u'Заказ создан'))
         msg = _(u"<a href='%s'>Заказ %s</a> создан") % (
             reverse('order_edit', args=[self.object.pk]),

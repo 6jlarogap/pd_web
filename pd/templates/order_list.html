@@ -8,6 +8,7 @@
         <tr>
             <th>{% trans "Дата" %}</th>
             <th>{% trans "Заказчик" %}</th>
+            <th>{% trans "Захоронение" %}</th>
             <th>{% trans "Позиций" %}</th>
             <th>{% trans "Стоимость" %}</th>
             <th></th>
@@ -16,6 +17,13 @@
             <tr>
                 <td>{{ c.dt }}</td>
                 <td>{{ c.customer }}</td>
+                <td>
+                    {% if c.burial %}
+                        <a href="{% url view_burial c.burial.pk %}">{% trans "Номер" %} {{ c.burial.pk }}</a>,
+                        {{ c.burial.get_status_display }}<br/>
+                        {{ c.burial.changed }}, {{ c.burial.changed_by }}
+                    {% endif %}
+                </td>
                 <td>{{ c.orderitem_set.all.count }}</td>
                 <td>{{ c.total }}</td>
                 <td>
