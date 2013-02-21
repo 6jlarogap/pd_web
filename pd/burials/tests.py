@@ -7,6 +7,7 @@ from django.http import HttpRequest
 from django.test.client import Client
 from django.test.testcases import TestCase
 from django.utils.translation import activate, get_language
+from logs.models import Log
 from persons.models import DeadPerson, IDDocumentType
 from users.models import Profile, ProfileLORU, Org, Dover
 
@@ -134,7 +135,7 @@ class RequestsTest(TestCase):
         r = self.ugh_client.post('/burials/%s/' % br.pk, {
             'complete': '1',
             'cemetery': self.cemetery.pk, 'area': self.area.pk,
-            'place_number': '123', 'fact_date': datetime.date.today().strftime('%d.%m.%Y'),
+            'place_number': '123', 'fact_date_day': 10, 'fact_date_month': 10, 'fact_date_year': 2010,
         }, follow=True)
 
         r = self.ugh_client.get('/?show=1')
@@ -170,7 +171,7 @@ class RequestsTest(TestCase):
         r = self.ugh_client.post('/burials/%s/' % br.pk, {
             'complete': '1',
             'cemetery': self.cemetery.pk, 'area': self.area.pk,
-            'place_number': '123', 'fact_date': datetime.date.today().strftime('%d.%m.%Y'),
+            'place_number': '123', 'fact_date_day': 10, 'fact_date_month': 10, 'fact_date_year': 2010,
         }, follow=True)
 
         br = Burial.objects.all()[0]
@@ -230,7 +231,7 @@ class RequestsTest(TestCase):
             'opf': 'person', 'applicant-last_name': u'Petrov', 'places_type': 'manual', 'grave_number': 1,
             'deadman-dc-zags': self.zags.pk, 'responsible-personid-number': '11', 'responsible-personid-series': '11',
             'responsible-personid-id_type': self.doc_type.pk,
-            })
+        })
         self.assertEqual(r.status_code, 302)
         br = Burial.objects.all()[0]
 
@@ -238,6 +239,18 @@ class RequestsTest(TestCase):
 
         r = self.loru_client.get('/burials/%s/edit/' % br.pk)
         self.assertEqual(r.status_code, 200)
+
+    def test_comment(self):
+        r = self.loru_client.post('/burials/create/', {'cemetery': self.cemetery.pk, 'plan_date': '12.12.2013', 'grave_number': 1})
+        print r.context['form'].errors
+        self.assertEqual(r.status_code, 302)
+        br = Burial.objects.all()[0]
+
+        r = self.loru_client.post('/burials/%s/comment/' % br.pk, {'comment': 'test'})
+        self.assertEqual(r.status_code, 302)
+
+        self.assertEqual(Log.objects.all().count(), 1)
+        self.assertTrue('test' in Log.objects.get().msg)
 
 class BurialsTest(TestCase):
     def setUp(self):
@@ -374,7 +387,7 @@ class BurialsTest(TestCase):
 
         r = self.ugh_client.post('/burials/create/', {
             'burial_type': Burial.BURIAL_TYPES[0][0],
-            'fact_date': datetime.date.today().strftime('%d.%m.%Y'),
+            'fact_date_day': 10, 'fact_date_month': 10, 'fact_date_year': 2010,
             'cemetery': self.cemetery.pk,
             'grave_number': 1,
             'opf': 'person',
@@ -427,7 +440,7 @@ class TestArchived(TestCase):
 
         r = self.ugh_client.post('/burials/create/?archive=1', {
             'burial_type': Burial.BURIAL_TYPES[0][0],
-            'fact_date': datetime.date.today().strftime('%d.%m.%Y'),
+            'fact_date_day': 10, 'fact_date_month': 10, 'fact_date_year': 2010,
             'cemetery': self.cemetery.pk,
             'grave_number': 1,
             'opf': 'person',
@@ -555,6 +568,6 @@ class TestAJAX(TestCase):
         p = Place.objects.create(cemetery=self.cemetery, area=area, place='123')
 
         r = self.ugh_client.get('/burials/get_place/?cemetery=%s&area=%s&row=&place_number=%s' % params)
-        self.assertNotEqual(r.content, u'')
+        self.assertNotEqual(unicode(r.content.decode('utf-8')), u'')
         self.assertContains(r, p.place)
 

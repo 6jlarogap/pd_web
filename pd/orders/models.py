@@ -4,6 +4,7 @@ from burials.models import Burial
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.utils.translation import ugettext as _
+from logs.models import Log
 
 from reports.models import Report
 from users.models import Org
@@ -112,6 +113,10 @@ class Order(models.Model):
             return None
 
     burial = property(get_burial)
+
+    def get_logs(self):
+        ct = ContentType.objects.get_for_model(self)
+        return Log.objects.filter(ct=ct, obj_id=self.pk).order_by('-pk')
 
 class OrderItem(models.Model):
     order = models.ForeignKey(Order, editable=False)

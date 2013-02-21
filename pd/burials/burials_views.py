@@ -21,6 +21,7 @@ from burials.forms import AddAgentForm, AddDoverForm, AddOrgForm
 from burials.models import Reason, Burial, Cemetery, Place
 from logs.models import write_log
 from orders.models import Order
+from pd.forms import CommentForm
 from reports.models import make_report
 
 
@@ -155,6 +156,7 @@ class BurialView(ArchiveMixin, DetailView):
             'reason_typical_decline': Reason.objects.filter(reason_type=Reason.TYPE_DECLINE),
             'reason_typical_annulate': Reason.objects.filter(reason_type=Reason.TYPE_ANNULATE),
             'close_form': self.get_close_form(),
+            'comment_form': CommentForm(),
         }
 
 view_burial = BurialView.as_view()

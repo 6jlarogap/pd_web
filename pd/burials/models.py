@@ -2,6 +2,7 @@
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
+from pd.models import UnclearDateModelField
 
 from persons.models import DeadPerson
 from reports.models import Report
@@ -187,7 +188,7 @@ class Burial(models.Model):
 
     plan_date = models.DateField(_(u"План. дата"), null=True, blank=True)
     plan_time = models.TimeField(_(u"План. время"), null=True, blank=True)
-    fact_date = models.DateField(_(u"Факт. дата"), null=True, blank=True)
+    fact_date = UnclearDateModelField(_(u"Факт. дата"), null=True, blank=True)
 
     deadman = models.ForeignKey(DeadPerson, verbose_name=_(u"Усопший"), null=True, editable=False)
 

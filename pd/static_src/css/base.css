@@ -11,6 +11,10 @@
 .burial-form #id_place_number { width: 60px; }
 .burial-form #id_grave_number { width: 60px; }
 
+.burial-form [id$=_day] { width: 50px; }
+.burial-form [id$=_month] { width: 50px; }
+.burial-form [id$=_year] { width: 70px; }
+
 #id_house { width: 60px; }
 #id_building { width: 55px; }
 #id_block, #id_flat { width: 40px; }
@@ -39,7 +43,3 @@ h2.buttons { margin-top: 1em; }
 span.move-left { position: relative; left: -20px; }
 
 ul.messages { list-style: none; }
-
-select#id_birth_date_day { width: 60px; }
-select#id_birth_date_month { width: 90px; }
-select#id_birth_date_year { width: 70px; }

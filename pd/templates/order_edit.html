@@ -53,6 +53,31 @@
         </p>
     </form>
 
+    <h2>{% trans "Комментарий" %}</h2>
+    <form action="{% url order_comment form.instance.pk %}" method="POST">
+        {% csrf_token %}
+        {{ comment_form.as_p }}
+        <p>
+            <input type="submit" class="btn btn-primary" value="{% trans "добавить" %}" />
+        </p>
+    </form>
+
+    <h2>{% trans "Журнал" %}</h2>
+    <table class="table table-bordered">
+        <tr>
+            <th>{% trans "Дата" %}</th>
+            <th>{% trans "Пользователь" %}</th>
+            <th>{% trans "Действие" %}</th>
+        </tr>
+        {% for log in form.instance.get_logs %}
+            <tr>
+                <td>{{ log.dt }}</td>
+                <td>{{ log.user.profile }} / {{ log.user.profile.org }}</td>
+                <td>{{ log.msg|linebreaksbr }}</td>
+            </tr>
+        {% endfor %}
+    </table>
+
     {% if form.instance.get_documents %}
         <h2>{% trans "Документы" %}</h2>
         <table class="table table-bordered">

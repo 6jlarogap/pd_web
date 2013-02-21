@@ -13,4 +13,5 @@ urlpatterns = patterns('orders.views',
     url(r'^order/(?P<pk>\d+)/edit/$', 'order_edit', name='order_edit'),
     url(r'^order/(?P<pk>\d+)/print/$', 'order_print', name='order_print'),
     url(r'^order/(?P<pk>\d+)/contract/$', 'order_contract', name='order_contract'),
+    url(r'^order/(?P<pk>\d+)/comment/$', 'order_comment', name='order_comment'),
 )

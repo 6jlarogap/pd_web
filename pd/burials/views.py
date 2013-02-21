@@ -195,3 +195,19 @@ class GetPlaceView(View):
             return render(request, 'create_burial_place_info.html', {'place': p})
 
 get_place = GetPlaceView.as_view()
+
+class CommentView(BurialsListGenericMixin, DetailView):
+    def dispatch(self, request, *args, **kwargs):
+        self.request = request
+        if not request.user.is_authenticated():
+            return redirect('/')
+        return View.dispatch(self, request, *args, **kwargs)
+
+    def get_queryset(self):
+        return Burial.objects.filter(self.get_qs_filter()).distinct()
+
+    def post(self, request, *args, **kwargs):
+        write_log(request, self.get_object(), _(u'Комментарий: %s') % request.POST.get('comment'))
+        return redirect('view_burial', self.get_object().pk)
+
+burial_comment = CommentView.as_view()

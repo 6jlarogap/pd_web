@@ -5,7 +5,7 @@ from django.utils.translation import ugettext as _
 
 import datetime
 from geo.models import Location
-from pd.utils import UnclearDate
+from pd.models import UnclearDate, UnclearDateModelField
 from users.models import Org
 
 
@@ -73,13 +73,8 @@ class DeadPerson(BasePerson):
     """
     Мертвое ФЛ
     """
-    birth_date = models.DateField(_(u"Дата рождения"), blank=True, null=True)
-    birth_date_no_month = models.BooleanField(default=False, editable=False)
-    birth_date_no_day = models.BooleanField(default=False, editable=False)
-
-    death_date = models.DateField(_(u"Дата смерти"), blank=True, null=True)
-    death_date_no_month = models.BooleanField(default=False, editable=False)
-    death_date_no_day = models.BooleanField(default=False, editable=False)
+    birth_date = UnclearDateModelField(_(u"Дата рождения"), blank=True, null=True)
+    death_date = UnclearDateModelField(_(u"Дата смерти"), blank=True, null=True)
 
     def save(self, *args, **kwargs):
         self.first_name = self.first_name.capitalize().strip(' ').strip('*')

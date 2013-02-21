@@ -3,6 +3,7 @@ from django.contrib.auth.models import User
 from django.test.client import Client
 from django.test.testcases import TestCase
 from django.utils.translation import activate
+from logs.models import Log
 
 from orders.models import Product, Order, CatafalqueData, OrderItem, CoffinData
 from users.models import Org, Profile
@@ -207,3 +208,12 @@ class OrdersTest(TestCase):
         self.assertEqual(o.get_coffindata(), None)
         self.assertEqual(o.has_catafalque(), False)
         self.assertEqual(o.get_catafalquedata(), None)
+
+    def test_comment(self):
+        o = Order.objects.create(loru=self.loru_user.profile.org, org=self.loru_org)
+
+        r = self.loru_client.post('/order/%s/comment/' % o.pk, {'comment': 'test'})
+        self.assertEqual(r.status_code, 302)
+
+        self.assertEqual(Log.objects.all().count(), 1)
+        self.assertTrue('test' in Log.objects.get().msg)

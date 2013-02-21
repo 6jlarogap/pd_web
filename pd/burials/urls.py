@@ -18,6 +18,7 @@ urlpatterns = patterns('burials.views',
     url(r'^burials/(?P<pk>\d+)/edit/$', 'edit_burial', name='edit_burial'),
     url(r'^burials/(?P<pk>\d+)/notification/$', 'make_notification', name='make_notification'),
     url(r'^burials/(?P<pk>\d+)/spravka/$', 'make_spravka', name='make_spravka'),
+    url(r'^burials/(?P<pk>\d+)/comment/$', 'burial_comment', name='burial_comment'),
     url(r'^burials/$', 'burial_list', name='burial_list'),
 
     url(r'^places/(?P<pk>\d+)/$', 'view_place', name='view_place'),

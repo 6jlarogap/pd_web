@@ -143,6 +143,15 @@
         {% endif %}
     </form>
 
+    <h2>{% trans "Комментарий" %}</h2>
+    <form action="{% url burial_comment b.pk %}" method="POST">
+        {% csrf_token %}
+        {{ comment_form.as_p }}
+        <p>
+            <input type="submit" class="btn btn-primary" value="{% trans "добавить" %}" />
+        </p>
+    </form>
+
     {% if b.get_documents %}
         <h2>{% trans "Документы" %}</h2>
         <table class="table table-bordered">

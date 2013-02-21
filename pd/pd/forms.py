@@ -1,6 +1,11 @@
 # coding=utf-8
 import json
 import datetime
+from django import forms
+from django.conf import settings
+from django.forms.extras.widgets import SelectDateWidget, RE_DATE, _parse_date_fmt
+from django.utils.dates import MONTHS
+from django.utils.formats import get_format
 
 from django.utils.translation import ugettext as _
 from django.utils.datastructures import SortedDict
@@ -8,6 +13,7 @@ from django.utils.safestring import mark_safe
 
 from burials.models import Burial
 from logs.models import write_log
+from pd.models import UnclearDate
 
 
 class ChildrenJSONMixin:
@@ -105,4 +111,117 @@ class PartialFormMixin:
                 }
         result += "</textarea>"
         return result
+
+class CommentForm(forms.Form):
+    comment = forms.CharField(label=_(u'Комментарий'), widget=forms.Textarea)
+
+class UnclearSelectDateWidget(SelectDateWidget):
+    month_unclear = False
+    year_unclear = False
+
+    def __init__(self, attrs=None, years=None, required=True):
+        if not years:
+            years = range(datetime.date.today().year, 1899, -1)
+        return super(UnclearSelectDateWidget, self).__init__(attrs, years, required)
+
+    def render(self, name, value, attrs=None):
+        try:
+            year_val = value.year
+            month_val = None if value.no_month else value.month
+            day_val = None if value.no_day else value.day
+        except AttributeError:
+            year_val = month_val = day_val = None
+            if isinstance(value, basestring):
+                if settings.USE_L10N:
+                    try:
+                        input_format = get_format('DATE_INPUT_FORMATS')[0]
+                        # Python 2.4 compatibility:
+                        #     v = datetime.datetime.strptime(value, input_format)
+                        # would be clearer, but datetime.strptime was added in
+                        # Python 2.5
+                        v = datetime.datetime(*(datetime.time.strptime(value, input_format)[0:6]))
+                        year_val, month_val, day_val = v.year, v.month, v.day
+                    except ValueError:
+                        pass
+                else:
+                    match = RE_DATE.match(value)
+                    if match:
+                        year_val, month_val, day_val = [int(v) for v in match.groups()]
+        choices = [(i, i) for i in self.years]
+        year_html = self.create_select(name, self.year_field, value, year_val, choices, {'class': 'date-year'})
+        choices = zip(MONTHS.keys(), MONTHS.keys())
+        month_html = self.create_select(name, self.month_field, value, month_val, choices, {'class': 'date-month'})
+        choices = [(i, i) for i in range(1, 32)]
+        day_html = self.create_select(name, self.day_field, value, day_val,  choices, {'class': 'date-day'})
+
+        output = []
+        for field in _parse_date_fmt():
+            if field == 'year':
+                output.append(year_html)
+            elif field == 'month':
+                output.append(month_html)
+            elif field == 'day':
+                output.append(day_html)
+        return mark_safe(u'\n'.join(output))
+
+    def value_from_datadict(self, data, files, name):
+        from django.forms.extras.widgets import get_format, datetime_safe
+
+        y = data.get(self.year_field % name)
+        m = data.get(self.month_field % name)
+        d = data.get(self.day_field % name)
+        if y == m == d == "0" or y == m == d == "":
+            return None
+
+        self.no_day = self.no_month = False
+
+        if y:
+            if settings.USE_L10N:
+                input_format = get_format('DATE_INPUT_FORMATS')[0]
+                try:
+                    ud = UnclearDate(int(y), int(m), int(d))
+                except ValueError, e:
+                    return '%s-%s-%s' % (y, m, d)
+                else:
+                    return ud
+            else:
+                return '%s-%s-%s' % (y, m, d)
+        return data.get(name, None)
+
+    def create_select(self, name, field, value, val, choices, attrs):
+        from django.forms.extras.widgets import Select
+        if 'id' in self.attrs:
+            id_ = self.attrs['id']
+        else:
+            id_ = 'id_%s' % name
+        choices.insert(0, self.none_value)
+        local_attrs = self.build_attrs(id=field % id_, **attrs)
+        s = Select(choices=choices)
+        select_html = s.render(field % name, val, local_attrs)
+        return select_html
+
+class UnclearDateField(forms.DateField):
+    widget = UnclearSelectDateWidget()
+    empty_strings_allowed = True
+
+    def __init__(self, *args, **kwargs):
+        super(UnclearDateField, self).__init__(*args, **kwargs)
+        self.widget.required = self.required
+
+    def to_python(self, value):
+        if not value:
+            return None
+        if isinstance(value, UnclearDate):
+            return value
+        return super(UnclearDateField, self).to_python(value)
+
+    def prepare_value(self, value):
+        if not value:
+            return None
+        if isinstance(value, UnclearDate):
+            return value
+        return value
+
+    def clean(self, value):
+        return value
 

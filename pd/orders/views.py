@@ -15,6 +15,7 @@ from django.utils.translation import ugettext_lazy as _
 from logs.models import write_log
 from orders.forms import ProductForm, OrderForm, OrderItemFormset, CoffinForm, CatafalqueForm
 from orders.models import Product, Order, OrderItem
+from pd.forms import CommentForm
 from reports.models import make_report
 
 
@@ -129,7 +130,10 @@ class OrderEdit(LORURequiredMixin, UpdateView):
 
     def get_context_data(self, **kwargs):
         data = super(OrderEdit, self).get_context_data(**kwargs)
-        data.update({'formset': self.formset})
+        data.update({
+            'formset': self.formset,
+            'comment_form': CommentForm(),
+        })
         if self.get_object().has_catafalque():
             data.update({'catafalque_form': self.catafalque_form})
         if self.get_object().has_coffin():
@@ -180,7 +184,7 @@ class PrintOrderView(LORURequiredMixin, DetailView):
             obj=self.get_object(),
             template='reports/order.html',
             context=RequestContext(self.request, context),
-            )
+        )
         return redirect('report_view', report.pk)
 
 order_print = PrintOrderView.as_view()
@@ -204,3 +208,12 @@ class PrintContractView(LORURequiredMixin, DetailView):
 
 order_contract = PrintContractView.as_view()
 
+class CommentView(LORURequiredMixin, DetailView):
+    def get_queryset(self):
+        return Order.objects.filter(loru=self.request.user.profile.org).distinct()
+
+    def post(self, request, *args, **kwargs):
+        write_log(request, self.get_object(), _(u'Комментарий: %s') % request.POST.get('comment'))
+        return redirect('order_edit', self.get_object().pk)
+
+order_comment = CommentView.as_view()
