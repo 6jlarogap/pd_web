@@ -145,6 +145,9 @@ class CatafalqueData(models.Model):
     route = models.TextField(_(u"Маршрут"))
     start_time = models.TimeField(_(u"Время подачи"))
     duration_time = models.TimeField(_(u"Время работы"))
+    start_place = models.TextField(_(u"Место подачи"), null=True)
+    end_time = models.TimeField(_(u"Время отпуска клиентом"), null=True)
+    cemetery_time = models.TimeField(_(u"Время заезда на кладбище"), null=True)
 
 class CoffinData(models.Model):
     order = models.OneToOneField('orders.Order', editable=False)

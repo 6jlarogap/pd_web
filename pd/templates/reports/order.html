@@ -147,15 +147,15 @@
         <TD COLSPAN="3" STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000" HEIGHT=20 ALIGN=LEFT
             VALIGN=TOP><FONT COLOR="#000000"> время подачи с/транспорта {{ order.get_catafalquedata.start_time|default:"" }}</FONT></TD>
         <TD COLSPAN="6" STYLE="border-top: 1px solid #000000; border-left: 0" HEIGHT=20 ALIGN=LEFT VALIGN=TOP><FONT
-                COLOR="#000000">место подачи с/транспорта </FONT></TD>
+                COLOR="#000000">место подачи с/транспорта {{ order.get_catafalquedata.start_place|default:"" }}</FONT></TD>
     </TR>
     <TR>
         <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000" COLSPAN=9 HEIGHT=20 ALIGN=LEFT
-            VALIGN=TOP><FONT COLOR="#000000">Время отпуска с/транспорта клиентом в _____ ч______мин.</FONT></TD>
+            VALIGN=TOP><FONT COLOR="#000000">Время отпуска с/транспорта клиентом в {{ order.get_catafalquedata.end_time|default:"" }}</FONT></TD>
     </TR>
     <TR>
         <TD COLSPAN="5" STYLE="border-bottom: 1px solid #000000; border-left: 1px solid #000000" HEIGHT=20 ALIGN=LEFT
-            VALIGN=TOP><FONT COLOR="#000000">Время заезда а/к на кладбище _____ ч______мин.</FONT></TD>
+            VALIGN=TOP><FONT COLOR="#000000">Время заезда а/к на кладбище {{ order.get_catafalquedata.cemetery_time|default:"" }}</FONT></TD>
         <TD COLSPAN="4" STYLE="border-bottom: 1px solid #000000" ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000">Время
             захоронения умершего {{ order.burial.plan_time|time:"H ч. i мин." }}</FONT></TD>
     </TR>
@@ -412,22 +412,22 @@
     </TR>
     <TR>
         <TD COLSPAN="9" STYLE="border-bottom: 1px solid #000000; border-left: 1px solid #000000" HEIGHT=20 ALIGN=LEFT
-            VALIGN=TOP><FONT COLOR="#000000">Маршрут движения с/транспорта: {{ catafalque_route|default:"" }}</FONT>
+            VALIGN=TOP><FONT COLOR="#000000">Маршрут движения с/транспорта: {{ order.get_catafalquedata.route|default:"" }}</FONT>
         </TD>
     </TR>
     <TR>
         <TD COLSPAN="3" STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000" HEIGHT=20 ALIGN=LEFT
             VALIGN=TOP><FONT COLOR="#000000"> время подачи с/транспорта {{ order.get_catafalquedata.start_time|default:"" }}</FONT></TD>
         <TD COLSPAN="6" STYLE="border-top: 1px solid #000000; border-left: 0" HEIGHT=20 ALIGN=LEFT VALIGN=TOP><FONT
-                COLOR="#000000">место подачи с/транспорта </FONT></TD>
+                COLOR="#000000">место подачи с/транспорта {{ order.get_catafalquedata.start_place|default:"" }}</FONT></TD>
     </TR>
     <TR>
         <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000" COLSPAN=9 HEIGHT=20 ALIGN=LEFT
-            VALIGN=TOP><FONT COLOR="#000000">Время отпуска с/транспорта клиентом в _____ ч______мин.</FONT></TD>
+            VALIGN=TOP><FONT COLOR="#000000">Время отпуска с/транспорта клиентом в {{ order.get_catafalquedata.end_time|default:"" }}</FONT></TD>
     </TR>
     <TR>
         <TD COLSPAN="5" STYLE="border-bottom: 1px solid #000000; border-left: 1px solid #000000" HEIGHT=20 ALIGN=LEFT
-            VALIGN=TOP><FONT COLOR="#000000">Время заезда а/к на кладбище _____ ч______мин.</FONT></TD>
+            VALIGN=TOP><FONT COLOR="#000000">Время заезда а/к на кладбище {{ order.get_catafalquedata.cemetery_time|default:"" }}</FONT></TD>
         <TD COLSPAN="4" STYLE="border-bottom: 1px solid #000000" ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000">Время
             захоронения умершего {{ order.burial.plan_time|time:"H ч. i мин." }}</FONT></TD>
     </TR>
