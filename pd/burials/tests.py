@@ -242,7 +242,6 @@ class RequestsTest(TestCase):
 
     def test_comment(self):
         r = self.loru_client.post('/burials/create/', {'cemetery': self.cemetery.pk, 'plan_date': '12.12.2013', 'grave_number': 1})
-        print r.context['form'].errors
         self.assertEqual(r.status_code, 302)
         br = Burial.objects.all()[0]
 
