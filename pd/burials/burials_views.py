@@ -366,15 +366,14 @@ class EditBurialView(CreateBurial):
     context_object_name = 'b'
 
     def get_queryset(self):
-        q = Q(status=Burial.STATUS_DRAFT) | \
-            Q(status=Burial.STATUS_DECLINED) | \
-            Q(status=Burial.STATUS_BACKED)
+        q = Q(status__in=[Burial.STATUS_DRAFT, Burial.STATUS_DECLINED, Burial.STATUS_BACKED])
 
         if self.request.user.profile.is_loru():
             q2 = q & Q(source_type=Burial.SOURCE_FULL, applicant_organization=self.request.user.profile.org)
         elif self.request.user.profile.is_ugh():
             q2 = Q(source_type__in=[Burial.SOURCE_UGH, Burial.SOURCE_ARCHIVE], ugh=self.request.user.profile.org)
-            q2 |= Q(source_type=Burial.STATUS_CLOSED)
+            q2 |= Q(source_type__in=[Burial.SOURCE_UGH, Burial.SOURCE_ARCHIVE], cemetery__ugh=self.request.user.profile.org)
+            q2 |= Q(status__in=[Burial.STATUS_CLOSED, Burial.STATUS_ANNULATED], cemetery__ugh=self.request.user.profile.org)
         else:
             return Burial.objects.none()
 
