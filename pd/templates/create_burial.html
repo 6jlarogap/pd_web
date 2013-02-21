@@ -83,55 +83,7 @@
         {% endblock buttons %}
     </form>
 
-    <div id="add_loru" class="modal hide fade" tabindex="-1" role="dialog" aria-labelledby="{% trans "добавить юрлицо" %}" aria-hidden="true">
-        <div class="modal-header">
-            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
-            <h3 id="myModalLabel">{% trans "Добавить юрлицо" %}</h3>
-        </div>
-        <div class="modal-body">
-            <form>
-                {{ loru_form.as_p }}
-            </form>
-        </div>
-        <div class="modal-footer">
-            <button class="btn" data-dismiss="modal" aria-hidden="true">{% trans "закрыть" %}</button>
-            <button class="btn btn-primary">{% trans "добавить" %}</button>
-        </div>
-    </div>
-
-    <div id="add_agent" class="modal hide fade" tabindex="-1" role="dialog" aria-labelledby="{% trans "добавить агента" %}" aria-hidden="true">
-        <div class="modal-header">
-            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
-            <h3 id="myModalLabel">{% trans "Добавить агента" %}</h3>
-        </div>
-        <div class="modal-body">
-            <form>
-                {{ agent_form.as_p }}
-                <h3>{% trans "Доверенность" %}</h3>
-                {{ agent_dover_form.as_p }}
-            </form>
-        </div>
-        <div class="modal-footer">
-            <button class="btn" data-dismiss="modal" aria-hidden="true">{% trans "закрыть" %}</button>
-            <button class="btn btn-primary">{% trans "добавить" %}</button>
-        </div>
-    </div>
-
-    <div id="add_dover" class="modal hide fade" tabindex="-1" role="dialog" aria-labelledby="{% trans "добавить доверенность" %}" aria-hidden="true">
-        <div class="modal-header">
-            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
-            <h3 id="myModalLabel">{% trans "Добавить доверенность" %}</h3>
-        </div>
-        <div class="modal-body">
-            <form>
-                {{ dover_form.as_p }}
-            </form>
-        </div>
-        <div class="modal-footer">
-            <button class="btn" data-dismiss="modal" aria-hidden="true">{% trans "закрыть" %}</button>
-            <button class="btn btn-primary">{% trans "добавить" %}</button>
-        </div>
-    </div>
+    {% include "create_burial_popups.html" %}
 
     <script type="text/javascript">
         CEMETERY_AREAS = {{ form.cemetery_areas_json }};

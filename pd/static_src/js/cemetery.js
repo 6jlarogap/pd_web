@@ -256,6 +256,8 @@ $(function() {
             $('#id_org').closest('p').show();
 
             $('.btn-loru').closest('p').show();
+            $('.btn-org').closest('p').show();
+
             $('#id_agent_director').change();
         } else {
             $('#applicant_form_block').show();
@@ -268,6 +270,8 @@ $(function() {
             $('.btn-loru').closest('p').hide();
             $('.btn-dover').closest('p').hide();
             $('.btn-agent').closest('p').hide();
+            $('.btn-org').closest('p').hide();
+
 
             $('input[name^=person]').closest('p').show();
             $('#id_org').closest('p').hide();
@@ -350,6 +354,22 @@ $(function() {
                 select.val(data.pk);
                 $('#add_loru').modal('hide');
                 $('#add_loru form :input').val('');
+                select.change();
+            } else {
+                alert(data);
+            }
+        })
+    });
+
+    $('#add_org').find('.btn-primary').click(function() {
+        var data = $('#add_org form').serialize();
+        $.post('/burials/add_org/', data, function(data){
+            if (data.pk) {
+                var select = $('#id_org');
+                select.append('<option value="'+data.pk+'">'+data.label+'</option>');
+                select.val(data.pk);
+                $('#add_org').modal('hide');
+                $('#add_org form :input').val('');
                 select.change();
             } else {
                 alert(data);

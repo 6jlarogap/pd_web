@@ -1,5 +1,6 @@
 # coding=utf-8
 import datetime
+from burials.forms import AddOrgForm
 
 from django.contrib import messages
 from django.core.urlresolvers import reverse
@@ -86,6 +87,11 @@ order_list = OrderList.as_view()
 class OrderCreate(LORURequiredMixin, CreateView):
     template_name = 'order_create.html'
     form_class = OrderForm
+
+    def get_context_data(self, **kwargs):
+        data = super(OrderCreate, self).get_context_data(**kwargs)
+        data['org_form'] = AddOrgForm(prefix='loru')
+        return data
 
     def form_valid(self, form):
         self.object = form.save(commit=False)
