@@ -139,6 +139,7 @@
         {% endif %}
         {% if b.can_print_notification %}
             <a class="btn" href="{% url make_notification b.pk %}" target="_blank">{% trans "уведомление" %}</a>
+            <a class="btn" href="{% url make_spravka b.pk %}" target="_blank">{% trans "справка" %}</a>
         {% endif %}
     </form>
 

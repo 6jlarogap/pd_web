@@ -29,3 +29,8 @@ class BurialReportTest(TestCase):
         self.assertEqual(Report.objects.all().count(), 1)
         r = self.loru_client.get('/reports/%s/' % Report.objects.get().pk)
         self.assertEqual(r.status_code, 200)
+
+        r = self.loru_client.get('/burials/%s/spravka/' % b.pk)
+        self.assertEqual(r.status_code, 302)
+
+        self.assertEqual(Report.objects.all().count(), 2)

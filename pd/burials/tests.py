@@ -271,7 +271,7 @@ class BurialsTest(TestCase):
             status=Burial.STATUS_CLOSED,
             deadman=DeadPerson.objects.create(
                 last_name=u'Ivanov',
-            )
+                )
         )
 
         r = self.ugh_client.get('/burials/')

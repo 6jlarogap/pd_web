@@ -399,16 +399,37 @@ class MakeNotificationView(ArchiveMixin, DetailView):
         return Burial.objects.filter(qs).distinct()
 
     def render_to_response(self, context, **response_kwargs):
+        context['now'] = datetime.datetime.now()
         report = make_report(
             user=self.request.user,
             msg=_(u"Уведомление"),
             obj=self.get_object(),
             template='reports/notification.html',
             context=RequestContext(self.request, context),
-        )
+            )
         return redirect('report_view', report.pk)
 
 make_notification = MakeNotificationView.as_view()
+
+class MakeSpravka(ArchiveMixin, DetailView):
+    context_object_name = 'burial'
+
+    def get_queryset(self):
+        qs = self.get_qs_filter()
+        return Burial.objects.filter(qs).distinct()
+
+    def render_to_response(self, context, **response_kwargs):
+        context['now'] = datetime.datetime.now()
+        report = make_report(
+            user=self.request.user,
+            msg=_(u"Справка"),
+            obj=self.get_object(),
+            template='reports/spravka.html',
+            context=RequestContext(self.request, context),
+        )
+        return redirect('report_view', report.pk)
+
+make_spravka = MakeSpravka.as_view()
 
 class GetCemeteryTimes(View):
     def get(self, request, *args, **kwargs):
