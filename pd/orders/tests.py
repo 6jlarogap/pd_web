@@ -113,8 +113,11 @@ class OrdersTest(TestCase):
 
         r = self.loru_client.get('/order/%s/print/' % o.pk)
         self.assertEqual(r.status_code, 302)
-
         self.assertEqual(o.get_documents().count(), 1)
+
+        r = self.loru_client.get('/order/%s/contract/' % o.pk)
+        self.assertEqual(r.status_code, 302)
+        self.assertEqual(o.get_documents().count(), 2)
 
     def test_same_products(self):
         self.product_same = self.product

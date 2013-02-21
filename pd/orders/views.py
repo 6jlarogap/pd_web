@@ -180,8 +180,27 @@ class PrintOrderView(LORURequiredMixin, DetailView):
             obj=self.get_object(),
             template='reports/order.html',
             context=RequestContext(self.request, context),
-        )
+            )
         return redirect('report_view', report.pk)
 
 order_print = PrintOrderView.as_view()
+
+class PrintContractView(LORURequiredMixin, DetailView):
+    context_object_name = 'order'
+
+    def get_queryset(self):
+        return Order.objects.filter(loru=self.request.user.profile.org).distinct()
+
+    def render_to_response(self, context, **response_kwargs):
+        context['now'] = datetime.datetime.now()
+        report = make_report(
+            user=self.request.user,
+            msg=_(u"Договор"),
+            obj=self.get_object(),
+            template='reports/contract.html',
+            context=RequestContext(self.request, context),
+        )
+        return redirect('report_view', report.pk)
+
+order_contract = PrintContractView.as_view()
 
