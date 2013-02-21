@@ -353,8 +353,9 @@ class BurialCommitForm(BurialForm):
             self.fields['place_number'].required = True
 
         if self.instance and self.instance.is_ugh() and self.instance.applicant_organization:
-            for f in ['applicant_organization', 'agent', 'dover']:
-                self.fields[f].required = True
+            if not self.instance.is_archive():
+                for f in ['applicant_organization', 'agent', 'dover']:
+                    self.fields[f].required = True
 
             if self.instance.agent_director or self.data.get('agent_director'):
                 self.fields['dover'].required = False
@@ -414,24 +415,25 @@ class BurialCommitForm(BurialForm):
         if (not self.instance or not self.instance.pk) and self.request.user.profile.is_ugh():
             is_ugh = True
         if is_ugh:
-            if not self.cleaned_data.get('applicant_organization'):
-                if not self.applicant_form.is_valid_data():
-                    raise forms.ValidationError(_(u"Нужно указать ЛОРУ или ФЛ-Заявителя"))
-            if self.cleaned_data.get('applicant_organization'):
-                if self.applicant_form.is_valid_data():
-                    raise forms.ValidationError(_(u"Нужно указать либо ЛОРУ, либо ФЛ-Заявителя"))
-
-            if self.cleaned_data.get('opf') == 'person':
-                if not self.applicant_form.is_valid_data():
-                    raise forms.ValidationError(_(u"Нужно указать ФЛ-Заявителя"))
-
-            if self.cleaned_data.get('opf') == 'org':
+            if not self.instance.is_archive():
                 if not self.cleaned_data.get('applicant_organization'):
-                    raise forms.ValidationError(_(u"Нужно указать ЛОРУ"))
-                if not self.cleaned_data.get('agent_director'):
-                    if not self.cleaned_data.get('agent') or not self.cleaned_data.get('dover'):
-                        msg = _(u"Нужно указать Агента и Доверенность или указать, что Агент - Директор")
-                        raise forms.ValidationError(msg)
+                    if not self.applicant_form.is_valid_data():
+                        raise forms.ValidationError(_(u"Нужно указать ЛОРУ или ФЛ-Заявителя"))
+                if self.cleaned_data.get('applicant_organization'):
+                    if self.applicant_form.is_valid_data():
+                        raise forms.ValidationError(_(u"Нужно указать либо ЛОРУ, либо ФЛ-Заявителя"))
+
+                if self.cleaned_data.get('opf') == 'person':
+                    if not self.applicant_form.is_valid_data():
+                        raise forms.ValidationError(_(u"Нужно указать ФЛ-Заявителя"))
+
+                if self.cleaned_data.get('opf') == 'org':
+                    if not self.cleaned_data.get('applicant_organization'):
+                        raise forms.ValidationError(_(u"Нужно указать ЛОРУ"))
+                    if not self.cleaned_data.get('agent_director'):
+                        if not self.cleaned_data.get('agent') or not self.cleaned_data.get('dover'):
+                            msg = _(u"Нужно указать Агента и Доверенность или указать, что Агент - Директор")
+                            raise forms.ValidationError(msg)
 
         return self.cleaned_data
 
