@@ -342,7 +342,7 @@ class Burial(models.Model):
 
     def close(self, old_place=None):
         place = self.get_place() or Place(
-            places_count=self.area and self.area.places_count or None,
+            places_count=self.area and self.area.places_count or 1,
         )
         if place != old_place:
             if not place.pk or not place.burial_count(): # move TO new
