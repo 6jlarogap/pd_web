@@ -15,7 +15,7 @@
     <h3>{% trans "Усопшие" %}</h3>
     <ul>
         {% for b in place.burial_set.all %}
-            <li><a href="{% url view_burial b.pk %}">{{ b.deadman|default:"Неизвестный" }}</a></li>
+            <li>{{ b.get_burial_type_display }} &mdash; <a href="{% url view_burial b.pk %}">{{ b.deadman|default:"Неизвестный" }}</a></li>
         {% endfor %}
     </ul>
 

@@ -33,38 +33,7 @@
             <h3>{% trans "Свидетельство о смерти" %}</h3>
             {{ form.dc_form.as_p }}
         </div>
-        <h2>{% trans "Ответственный" %} {{ form.responsible_form.instance|default:"" }}</h2>
-        <a href="#" onclick="$('#cont_responsible').slideToggle(); return false">{% trans "развернуть" %}</a>
-        <div id="cont_responsible" style="display: none">
-            {{ form.responsible_form.as_p }}
-            <h3>{% trans "Адрес" %}</h3>
-            <div class="form_block">
-                {% with form.responsible_address_form as form %}
-                    {{ form.non_field_errors }}
-                    {% include "create_burial_location_form.html" %}
-                {% endwith %}
-            </div>
-        </div>
-        {% if user.profile.is_ugh %}
-            <div id="applicant_form_block">
-                <h2>{% trans "Заявитель" %} {{ form.applicant_form.instance|default:"" }}</h2>
-                <a href="#" onclick="$('#cont_applicant').slideToggle(); return false">{% trans "развернуть" %}</a>
-                <div id="cont_applicant" style="display: none">
-                    {{ form.applicant_form.as_p }}
-                    <h3>{% trans "Адрес" %}</h3>
-                    <div class="form_block">
-                        {% with form.applicant_address_form as form %}
-                            {{ form.non_field_errors }}
-                            {% include "create_burial_location_form.html" %}
-                        {% endwith %}
-                    </div>
-                    <h3>{% trans "Удостоверение личности" %}</h3>
-                    <div class="form_block">
-                        {{ form.applicant_id_form.as_p }}
-                    </div>
-                </div>
-            </div>
-        {% endif %}
+
         {% block buttons %}
             <p class="clear">
                 <input type="submit" class="btn btn-primary btn-commit-burial" value="{% trans "cохранить" %}"/>

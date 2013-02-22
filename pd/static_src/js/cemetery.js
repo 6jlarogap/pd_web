@@ -246,7 +246,8 @@ $(function() {
 
     $('input[name=opf]').change(function() {
         if ($('input[name=opf]:checked').val() == 'org') {
-            $('#applicant_form_block').hide();
+            $('#applicant_form_org').show();
+            $('#applicant_form_person').hide();
 
             $('#id_applicant_organization').closest('p').show();
             $('#id_agent_director').closest('p').show();
@@ -260,7 +261,8 @@ $(function() {
 
             $('#id_agent_director').change();
         } else {
-            $('#applicant_form_block').show();
+            $('#applicant_form_org').hide();
+            $('#applicant_form_person').show();
 
             $('#id_applicant_organization').closest('p').hide();
             $('#id_agent_director').closest('p').hide();

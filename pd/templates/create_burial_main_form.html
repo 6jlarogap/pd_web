@@ -3,60 +3,107 @@
 {{ form.burial_type.errors }}
 <p>{{ form.burial_type.label_tag }} {{ form.burial_type }}<span class="helptext">{{ form.burial_type.help_text }}</span></p>
 
-{{ form.cemetery.errors }}
-<p class="inline">{{ form.cemetery.label_tag }} {{ form.cemetery }}<span class="helptext">{{ form.cemetery.help_text }}</span></p>
+<h2>{% trans "Место" %} {{ form.instance.get_place|default:"" }}</h2>
+<a href="#" onclick="$('#cont_place').slideToggle(); return false">{% trans "развернуть" %}</a>
+<div id="cont_place" style="display: none">
+    {{ form.cemetery.errors }}
+    <p class="inline">{{ form.cemetery.label_tag }} {{ form.cemetery }}<span class="helptext">{{ form.cemetery.help_text }}</span></p>
 
-{{ form.area.errors }}
-<p class="inline">{{ form.area.label_tag }} {{ form.area }}<span class="helptext">{{ form.area.help_text }}</span></p>
+    {{ form.area.errors }}
+    <p class="inline">{{ form.area.label_tag }} {{ form.area }}<span class="helptext">{{ form.area.help_text }}</span></p>
 
-{{ form.row.errors }}
-<p class="inline">{{ form.row.label_tag }} {{ form.row }}<span class="helptext">{{ form.row.help_text }}</span></p>
+    {{ form.row.errors }}
+    <p class="inline">{{ form.row.label_tag }} {{ form.row }}<span class="helptext">{{ form.row.help_text }}</span></p>
 
-{{ form.place_number.errors }}
-<p class="inline">{{ form.place_number.label_tag }} {{ form.place_number }}<span class="helptext">{{ form.place_number.help_text }}</span></p>
+    {{ form.place_number.errors }}
+    <p class="inline">{{ form.place_number.label_tag }} {{ form.place_number }}<span class="helptext">{{ form.place_number.help_text }}</span></p>
 
-{{ form.grave_number.errors }}
-<p class="inline">{{ form.grave_number.label_tag }} {{ form.grave_number }}<span class="helptext">{{ form.grave_number.help_text }}</span></p>
+    {{ form.grave_number.errors }}
+    <p class="inline">{{ form.grave_number.label_tag }} {{ form.grave_number }}<span class="helptext">{{ form.grave_number.help_text }}</span></p>
 
-<p id="place_info"></p>
+    <p id="place_info"></p>
 
-{{ form.plan_date.errors }}
-<p class="inline">{{ form.plan_date.label_tag }} {{ form.plan_date }}<span class="helptext">{{ form.plan_date.help_text }}</span></p>
+    {{ form.plan_date.errors }}
+    <p class="inline">{{ form.plan_date.label_tag }} {{ form.plan_date }}<span class="helptext">{{ form.plan_date.help_text }}</span></p>
 
-{{ form.plan_time.errors }}
-<p class="inline">{{ form.plan_time.label_tag }} {{ form.plan_time }}<span class="helptext">{{ form.plan_time.help_text }}</span></p>
+    {{ form.plan_time.errors }}
+    <p class="inline">{{ form.plan_time.label_tag }} {{ form.plan_time }}<span class="helptext">{{ form.plan_time.help_text }}</span></p>
+</div>
+
+<h2>{% trans "Ответственный" %} {{ form.responsible_form.instance|default:"" }}</h2>
+<a href="#" onclick="$('#cont_responsible').slideToggle(); return false">{% trans "развернуть" %}</a>
+<div id="cont_responsible" style="display: none">
+    {{ form.responsible_form.as_p }}
+    <h3>{% trans "Адрес" %}</h3>
+    <div class="form_block">
+        {% with form.responsible_address_form as form %}
+            {{ form.non_field_errors }}
+            {% include "create_burial_location_form.html" %}
+        {% endwith %}
+    </div>
+</div>
 
 {% if user.profile.is_ugh %}
-    {{ form.opf.errors }}
-    <p>{{ form.opf.label_tag }} {{ form.opf }}<span class="helptext">{{ form.opf.help_text }}</span></p>
+    <h2>
+        {% trans "Заявитель" %}
+        {% if form.instance.applicant_organization %}
+            {{ form.instance.applicant_organization }}
+        {% elif form.applicant_form.instance %}
+            {{ form.applicant_form.instance }}
+        {% else %}
+        {% endif %}
+    </h2>
+    <a href="#" onclick="$('#cont_applicant').slideToggle(); return false">{% trans "развернуть" %}</a>
+    <div id="cont_applicant" style="display: none">
+        {{ form.opf.errors }}
+        <p>{{ form.opf.label_tag }} {{ form.opf }}<span class="helptext">{{ form.opf.help_text }}</span></p>
 
-    {{ form.applicant_organization.errors }}
-    <p>{{ form.applicant_organization.label_tag }} {{ form.applicant_organization }}<span class="helptext">{{ form.applicant_organization.help_text }}</span></p>
+        <div id="applicant_form_org">
+            {{ form.applicant_organization.errors }}
+            <p>{{ form.applicant_organization.label_tag }} {{ form.applicant_organization }}<span class="helptext">{{ form.applicant_organization.help_text }}</span></p>
 
-    <p>
-        <a href="#add_loru" role="button" class="btn btn-loru" data-toggle="modal">
-            {% trans "добавить юрлицо" %}
-        </a>
-    </p>
+            <p>
+                <a href="#add_loru" role="button" class="btn btn-loru" data-toggle="modal">
+                    {% trans "добавить юрлицо" %}
+                </a>
+            </p>
 
-    {{ form.agent_director.errors }}
-    <p>{{ form.agent_director.label_tag }} {{ form.agent_director }}<span class="helptext">{{ form.agent_director.help_text }}</span></p>
+            {{ form.agent_director.errors }}
+            <p>{{ form.agent_director.label_tag }} {{ form.agent_director }}<span class="helptext">{{ form.agent_director.help_text }}</span></p>
 
-    {{ form.agent.errors }}
-    <p>{{ form.agent.label_tag }} {{ form.agent }}<span class="helptext">{{ form.agent.help_text }}</span></p>
+            {{ form.agent.errors }}
+            <p>{{ form.agent.label_tag }} {{ form.agent }}<span class="helptext">{{ form.agent.help_text }}</span></p>
 
-    <p>
-        <a href="#add_agent" role="button" class="btn btn-agent" data-toggle="modal">
-            {% trans "добавить агента" %}
-        </a>
-    </p>
+            <p>
+                <a href="#add_agent" role="button" class="btn btn-agent" data-toggle="modal">
+                    {% trans "добавить агента" %}
+                </a>
+            </p>
 
-    {{ form.dover.errors }}
-    <p>{{ form.dover.label_tag }} {{ form.dover }}<span class="helptext">{{ form.dover.help_text }}</span></p>
+            {{ form.dover.errors }}
+            <p>{{ form.dover.label_tag }} {{ form.dover }}<span class="helptext">{{ form.dover.help_text }}</span></p>
 
-    <p>
-        <a href="#add_dover" role="button" class="btn btn-dover" data-toggle="modal">
-            {% trans "добавить доверенность" %}
-        </a>
-    </p>
+            <p>
+                <a href="#add_dover" role="button" class="btn btn-dover" data-toggle="modal">
+                    {% trans "добавить доверенность" %}
+                </a>
+            </p>
+        </div>
+
+        <div id="applicant_form_person">
+            {{ form.applicant_form.as_p }}
+            <h3>{% trans "Адрес" %}</h3>
+            <div class="form_block">
+                {% with form.applicant_address_form as form %}
+                    {{ form.non_field_errors }}
+                    {% include "create_burial_location_form.html" %}
+                {% endwith %}
+            </div>
+            <h3>{% trans "Удостоверение личности" %}</h3>
+            <div class="form_block">
+                {{ form.applicant_id_form.as_p }}
+            </div>
+        </div>
+    </div>
 {% endif %}
+
