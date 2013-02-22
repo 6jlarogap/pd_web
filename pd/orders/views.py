@@ -121,6 +121,14 @@ class OrderEdit(LORURequiredMixin, UpdateView):
 
     def dispatch(self, request, *args, **kwargs):
         self.request = request
+
+        if not request.user.is_authenticated():
+            return redirect('/')
+        if not getattr(self.request.user, 'profile', None):
+            return redirect('/')
+        if not self.request.user.profile.is_loru():
+            return redirect('/')
+
         self.args = args
         self.kwargs = kwargs
         self.formset = OrderItemFormset(request=self.request, data=request.POST or None, instance=self.get_object())
