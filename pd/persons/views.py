@@ -4,7 +4,7 @@ from django.db.models.query_utils import Q
 from django.http import HttpResponse
 from django.views.generic.base import View
 
-from persons.models import DeadPerson
+from persons.models import DeadPerson, AlivePerson
 
 
 class AutocompleteFIO(View):
@@ -24,3 +24,21 @@ class AutocompleteFIO(View):
         return HttpResponse(json.dumps([{'value': unicode(c)} for c in persons[:20]]), mimetype='text/javascript')
 
 autocomplete_fio = AutocompleteFIO.as_view()
+
+class AutocompleteAlive(View):
+    def get(self, request, *args, **kwargs):
+        query = request.GET['query']
+
+        fio = [f.strip('.') for f in query.split(' ')]
+        q = Q()
+        if len(fio) > 2:
+            q &= Q(middle_name__icontains=fio[2])
+        if len(fio) > 1:
+            q &= Q(first_name__icontains=fio[1])
+        if len(fio) > 0:
+            q &= Q(last_name__icontains=fio[0])
+
+        persons = AlivePerson.objects.filter(q)
+        return HttpResponse(json.dumps([{'value': unicode(c)} for c in persons[:20]]), mimetype='text/javascript')
+
+autocomplete_alive = AutocompleteAlive.as_view()

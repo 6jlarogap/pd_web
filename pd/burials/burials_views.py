@@ -17,7 +17,7 @@ from django.views.generic.edit import CreateView
 from django.views.generic.list import ListView
 
 from burials.forms import BurialSearchForm, BurialForm, BurialCommitForm, BurialCloseForm
-from burials.forms import AddAgentForm, AddDoverForm, AddOrgForm
+from burials.forms import AddAgentForm, AddDoverForm, AddOrgForm, ExhumationForm
 from burials.models import Reason, Burial, Cemetery, Place
 from logs.models import write_log
 from orders.models import Order
@@ -64,15 +64,24 @@ class ArchiveMixin(BurialsListGenericMixin):
     def get_qs_filter(self):
         qs = Q(pk__isnull=True)
         if self.request.user.is_authenticated():
-            qs = Q(applicant_organization=self.request.user.profile.org) | Q(ugh=self.request.user.profile.org)
+            qs = Q(applicant_organization=self.request.user.profile.org) | \
+                 Q(ugh=self.request.user.profile.org) | \
+                 Q(cemetery__ugh=self.request.user.profile.org)
         return qs
 
-class ArchiveView(ArchiveMixin, TemplateView):
+class ArchiveView(ArchiveMixin, ListView):
     template_name = 'archive.html'
+    paginate_by = 20
+    context_object_name = 'burials'
 
     def get_context_data(self, **kwargs):
+        data = super(ArchiveView, self).get_context_data(**kwargs)
+        data['GET_PARAMS'] = u'&'.join([u'%s=%s' % (k,v) for k,v in self.request.GET.items() if k != 'page'])
+        return data
+
+    def get_queryset(self, **kwargs):
         qs = self.get_qs_filter()
-        return {'burials': Burial.objects.filter(qs).distinct().order_by('-pk')}
+        return Burial.objects.filter(qs).distinct().order_by('-pk')
 
 archive = ArchiveView.as_view()
 
@@ -219,6 +228,14 @@ class BurialsListView(ListView):
                 burials = burials.filter(Q(deadman__last_name='') | Q(deadman__last_name__isnull=True))
             if form.cleaned_data['no_responsible']:
                 burials = burials.filter(place__responsible__isnull=True)
+            if form.cleaned_data['source']:
+                burials = burials.filter(source_type=form.cleaned_data['source'])
+            if form.cleaned_data['status']:
+                burials = burials.filter(status=form.cleaned_data['status'])
+            if form.cleaned_data['applicant_org']:
+                burials = burials.filter(applicant_organization__name=form.cleaned_data['applicant_org'])
+            if form.cleaned_data['applicant_person']:
+                burials = burials.filter(applicant__last_name=form.cleaned_data['applicant_person'])
 
         return burials
 
@@ -410,7 +427,7 @@ class MakeNotificationView(ArchiveMixin, DetailView):
             obj=self.get_object(),
             template='reports/notification.html',
             context=RequestContext(self.request, context),
-            )
+        )
         return redirect('report_view', report.pk)
 
 make_notification = MakeNotificationView.as_view()
@@ -446,3 +463,38 @@ class GetCemeteryTimes(View):
         return HttpResponse(json.dumps({c.pk: data}), mimetype='application/json')
 
 cemetery_times = GetCemeteryTimes.as_view()
+
+class ExhumateView(ArchiveMixin, DetailView):
+    context_object_name = 'burial'
+    template_name = 'exhumate_burial.html'
+
+    def get_queryset(self):
+        qs = self.get_qs_filter()
+        return Burial.objects.filter(qs).distinct()
+
+    def get_form(self):
+        return ExhumationForm(data=self.request.POST or None)
+
+    def get_context_data(self, **kwargs):
+        data = super(ExhumateView, self).get_context_data(**kwargs)
+        data['form'] = self.get_form()
+        if data['form'].data:
+            data['form'].is_valid()
+        return data
+
+    def post(self, request, *args, **kwargs):
+        self.request = request
+        f = self.get_form()
+        if f.is_valid():
+            ex = f.save(commit=False)
+            ex.burial = self.get_object()
+            ex.place = ex.burial.place
+            ex.save()
+            write_log(self.request, self.get_object(), _(u'Захоронение эксшумировано'))
+            messages.success(request, _(u"Эксгумация успешна"))
+            return redirect('view_place', ex.place.pk)
+        else:
+            messages.error(request, _(u"Обнаружены ошибки"))
+            return self.get(request, *args, **kwargs)
+
+burial_exhumate = ExhumateView.as_view()

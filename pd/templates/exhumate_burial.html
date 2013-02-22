@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% load i18n %}
+
+{% block content %}
+    <h1>{% trans "Эксгумация" %}</h1>
+    <dl>
+        <dt>{% trans "Захоронение" %}</dt>
+        <dd>{{ burial }}</dd>
+        <dt>{% trans "Место" %}</dt>
+        <dd>{{ burial.place }}</dd>
+    </dl>
+    <form action="{{ request.path }}" method="POST" class="burial-form">
+        {% csrf_token %}
+        {{ form.as_p }}
+        {% block buttons %}
+            <p class="clear">
+                <input type="submit" class="btn btn-primary btn-commit-burial" value="{% trans "отправить" %}"/>
+            </p>
+        {% endblock buttons %}
+    </form>
+{% endblock %}

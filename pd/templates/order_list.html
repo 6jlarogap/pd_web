@@ -39,6 +39,8 @@
         {% endfor %}
     </table>
 
+    {% include "paginator.html" %}
+
     {% if user.profile.is_loru %}
         <p>
             <a class="btn" href="{% url order_create %}">{% trans "создать" %}</a>

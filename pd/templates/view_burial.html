@@ -130,6 +130,8 @@
                     <br/>
                     <input type="submit" class="btn" name="annulate" value="{% trans "аннулировать" %}">
                 {% endif %}
+            {% elif b.is_finished %}
+                <a href="{% url burial_exhumate b.pk %}" class="btn">{% trans "эксгумировать" %}</a>
             {% endif %}
         {% endif %}
         {% if user.profile.org == b.applicant_organization and b.is_edit and b.is_full %}

@@ -142,6 +142,7 @@ class Burial(models.Model):
     STATUS_APPROVED = 'approved'
     STATUS_CLOSED = 'closed'
     STATUS_ANNULATED = 'annulated'
+    STATUS_EXHUMATED = 'exhumated'
     STATUS_CHOICES = (
         (STATUS_BACKED, _(u"Отозвано")),
         (STATUS_DECLINED, _(u"Отклонено")),
@@ -150,6 +151,7 @@ class Burial(models.Model):
         (STATUS_APPROVED, _(u"Согласовано")),
         (STATUS_CLOSED, _(u"Закрыто")),
         (STATUS_ANNULATED, _(u"Аннулировано")),
+        (STATUS_EXHUMATED, _(u"Эксгумировано")),
     )
 
     BURIAL_NEW = 'common'
@@ -244,6 +246,9 @@ class Burial(models.Model):
     def is_finished(self):
         return self.is_closed() or self.is_annulated()
 
+    def is_exhumated(self):
+        return self.status == self.STATUS_EXHUMATED
+
     def is_ugh_only(self):
         return self.source_type == self.SOURCE_UGH
 
@@ -281,6 +286,13 @@ class Burial(models.Model):
 
     def can_print_notification(self):
         return self.is_approved() or self.is_closed()
+
+    @property
+    def exhumated(self):
+        try:
+            return self.exhumationrequest
+        except ExhumationRequest.DoesNotExist:
+            return
 
     @property
     def status_str(self):
@@ -383,3 +395,31 @@ class Reason(models.Model):
 
     def __unicode__(self):
         return u'%s' % self.pk
+
+class ExhumationRequest(models.Model):
+    burial = models.OneToOneField(Burial, editable=False)
+    place = models.ForeignKey(Place, editable=False)
+    plan_date = models.DateField(_(u"Дата"))
+    plan_time = models.TimeField(_(u"Время"))
+    applicant_person = models.ForeignKey('persons.AlivePerson', verbose_name=_(u"Заявитель-ФЛ"), blank=True, null=True,
+                                         related_name='applied_exhumations')
+    applicant_org = models.ForeignKey(Org, verbose_name=_(u"Заявитель-ЮЛ"), null=True, blank=True,
+                                      related_name='loru_exhumations', on_delete=models.PROTECT)
+
+    class Meta:
+        verbose_name = _(u"Запрос на эксгумацию")
+        verbose_name_plural = _(u"Запросы на эксгумацию")
+
+    def __unicode__(self):
+        return u'%s' % self.pk
+
+    def apply(self):
+        self.burial.place = None
+        self.burial.status == self.burial.STATUS_EXHUMATED
+        self.burial.save()
+
+def apply_exhumation(instance, created, **kwargs):
+    if created:
+        instance.apply()
+
+models.signals.post_save.connect(apply_exhumation, sender=ExhumationRequest)

@@ -38,6 +38,18 @@
                 <td>{{ b.fact_date|default:"" }}</td>
                 <td>
                     <a class="btn" href="{% url view_burial b.pk %}">{% trans "просмотр" %}</a>
+                    {% if user.profile.org == b.applicant_organization and b.is_full and b.is_edit %}
+                        <a class="btn" href="{% url edit_burial b.pk %}">{% trans "правка" %}</a>
+                    {% elif b.is_edit and b.is_ugh %}
+                        {% if user.profile.org == b.cemetery.ugh or user.profile.org == b.ugh %}
+                            <a class="btn" href="{% url edit_burial b.pk %}">{% trans "правка" %}</a>
+                        {% endif %}
+                    {% elif b.is_finished and user.profile.is_ugh %}
+                        <a class="btn" href="{% url edit_burial b.pk %}">{% trans "правка" %}</a>
+                    {% endif %}
+                    {% if b.place and user.profile.is_ugh %}
+                        <a class="btn" href="{% url view_place b.place.pk %}">{% trans "место" %}</a>
+                    {% endif %}
                 </td>
             </tr>
         {% endfor %}

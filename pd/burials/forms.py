@@ -10,14 +10,11 @@ from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
 from django.db.models.deletion import ProtectedError
 from django.forms.models import inlineformset_factory
-from django.utils.datastructures import SortedDict
-from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext_lazy as _
 from django.db.models.query_utils import Q
 
-from burials.models import Cemetery, Area, Burial, Place
+from burials.models import Cemetery, Area, Burial, Place, ExhumationRequest
 from geo.forms import LocationForm
-from logs.models import write_log
 from pd.forms import PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin
 from persons.forms import DeadPersonForm, DeathCertificateForm, AlivePersonForm, PersonIDForm
 from persons.models import DeathCertificate, PersonID
@@ -76,6 +73,8 @@ class PlaceEditForm(forms.ModelForm):
             else:
                 self.initial['places_count'] = 1
 
+EMPTY = (('', '--------'),)
+
 class BurialSearchForm(forms.Form):
     """
     Форма поиска на главной странице.
@@ -90,13 +89,17 @@ class BurialSearchForm(forms.Form):
     burial_date_to = forms.DateField(required=False, label=_(u"по"))
     account_number_from = forms.IntegerField(required=False, label=_(u"Уч. номер с"))
     account_number_to = forms.IntegerField(required=False, label=_(u"по"))
+    applicant_org = forms.CharField(required=False, max_length=30, label=_(u"Заявитель-ЮЛ"))
+    applicant_person = forms.CharField(required=False, max_length=30, label=_(u"Заявитель-ФЛ"))
     responsible = forms.CharField(required=False, max_length=30, label=_(u"Ответственный"))
-    operation = forms.ChoiceField(required=False, choices=Burial.BURIAL_TYPES, label=_(u"Услуга"))
+    operation = forms.ChoiceField(required=False, choices=EMPTY + Burial.BURIAL_TYPES, label=_(u"Услуга"))
     cemetery = forms.CharField(required=False, label=_(u"Кладбища"))
     area = forms.CharField(required=False, label=_(u"Участок"))
     row = forms.CharField(required=False, label=_(u"Ряд"))
     place = forms.CharField(required=False, label=_(u"Место"))
     no_responsible = forms.BooleanField(required=False, initial=False, label=_(u"Без отв."))
+    source = forms.TypedChoiceField(required=False, label=_(u"Тип"), choices=EMPTY + Burial.SOURCE_TYPES)
+    status = forms.TypedChoiceField(required=False, label=_(u"Статус"), choices=EMPTY + Burial.STATUS_CHOICES)
 
 class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, forms.ModelForm):
     opf = forms.ChoiceField(label=_(u'ОПФ'), choices=OPF_CHOICES, widget=forms.RadioSelect)
@@ -523,3 +526,13 @@ class AddOrgForm(forms.ModelForm):
                 raise forms.ValidationError(_(u"ИНН уже зарегистрирован"))
         return inn
 
+class ExhumationForm(forms.ModelForm):
+    class Meta:
+        model = ExhumationRequest
+
+    def clean(self):
+        if self.cleaned_data.get('applicant_org') and self.cleaned_data.get('applicant_person'):
+            raise forms.ValidationError(_(u'Необходимо указать только одного заявителя'))
+        if not self.cleaned_data.get('applicant_org') and not self.cleaned_data.get('applicant_person'):
+            raise forms.ValidationError(_(u'Необходимо указать заявителя'))
+        return self.cleaned_data

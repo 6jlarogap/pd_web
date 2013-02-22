@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
+import json
 from django.contrib import messages
 from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
+from django.http import HttpResponse
 from django.shortcuts import redirect, render
 from django.utils.translation import ugettext_lazy as _
 from django.views.generic.base import View
@@ -11,7 +13,7 @@ from django.views.generic.edit import UpdateView, CreateView
 
 from logs.models import write_log
 from users.forms import RegisterForm, LoruFormset, ProfileForm, UserDataForm, ChangePasswordForm
-from users.models import Profile
+from users.models import Profile, Org
 
 
 class LoginView(View):
@@ -195,3 +197,18 @@ class ChangePasswordForm(UpdateView):
 
 change_password = ChangePasswordForm.as_view()
 
+
+class AutocompleteOrg(View):
+    def get(self, request, *args, **kwargs):
+        query = request.GET['query']
+        orgs = Org.objects.filter(name__icontains=query)
+        if request.user.profile.is_loru():
+            orgs = orgs.filter(ugh_list__ugh__loru_list__loru=request.user.profile.org)
+        elif request.user.profile.is_ugh():
+            orgs = orgs.filter(ugh_list__ugh=request.user.profile.org)
+        else:
+            orgs = Org.objects.none()
+
+        return HttpResponse(json.dumps([{'value': c.name} for c in orgs[:20]]), mimetype='text/javascript')
+
+autocomplete_org = AutocompleteOrg.as_view()

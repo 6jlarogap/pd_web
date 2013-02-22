@@ -62,6 +62,8 @@
         {% endfor %}
     </table>
 
+    {% include "paginator.html" %}
+
     {% if user.profile.is_loru %}
         <p>
             <a class="btn" href="{% url create_burial %}">{% trans "создать захоронение" %}</a>

@@ -1,7 +1,7 @@
 import datetime
 import json
 from burials.forms import BurialCloseForm
-from burials.models import Cemetery, Burial, Place, Area
+from burials.models import Cemetery, Burial, Place, Area, ExhumationRequest
 from django.contrib.auth.models import User
 from django.http import HttpRequest
 from django.test.client import Client
@@ -571,3 +571,66 @@ class TestAJAX(TestCase):
         self.assertNotEqual(unicode(r.content.decode('utf-8')), u'')
         self.assertContains(r, p.place)
 
+class ExhumationTest(TestCase):
+    def setUp(self):
+        activate('ru')
+        self.client = Client()
+        self.ugh_client = Client()
+
+        self.ugh_user = User.objects.create_user(username='ugh', email='test@example.com', password='test')
+        self.ugh_org = Org.objects.create(type=Org.PROFILE_UGH, name='ugh')
+        Profile.objects.create(user=self.ugh_user, org=self.ugh_org)
+        self.ugh_client.login(username='ugh', password='test')
+
+        self.cemetery = Cemetery.objects.create(name='test cem', time_begin='12:00', time_end='17:00', ugh=self.ugh_org)
+        self.area = Area.objects.create(cemetery=self.cemetery, name='rest')
+        self.place = Place.objects.create(
+            cemetery=self.cemetery,
+            area=None,
+            row=None,
+            place='123',
+            responsible=None,
+        )
+        self.burial = Burial.objects.create(
+            cemetery=self.cemetery,
+            status=Burial.STATUS_CLOSED,
+            source_type=Burial.SOURCE_ARCHIVE,
+            place=self.place,
+            ugh=self.ugh_org,
+        )
+
+    def test_model(self):
+        now = datetime.datetime.now()
+        ex = ExhumationRequest(place=self.place, burial=self.burial, plan_date=now.date(), plan_time=now.time())
+        self.assertEqual(Burial.objects.get().place, self.place)
+        self.assertEqual(Burial.objects.get().exhumated, None)
+
+        ex.save()
+        self.assertEqual(Burial.objects.get().place, None)
+        self.assertEqual(Burial.objects.get().exhumated, ex)
+        self.assertEqual(Burial.objects.get().exhumated.place, self.place)
+        self.assertEqual(Burial.objects.get().status, Burial.STATUS_EXHUMATED)
+
+    def test_view(self):
+        self.assertEqual(ExhumationRequest.objects.count(), 0)
+
+        r = self.ugh_client.post('/burials/%s/exhumate/' % self.burial.pk, {
+            'plan_date': '01.01.2001', 'plan_time': '10:10',
+        })
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(ExhumationRequest.objects.count(), 0)
+        self.assertEqual(Burial.objects.get().place, self.place)
+        self.assertEqual(Burial.objects.get().exhumated, None)
+
+        r = self.ugh_client.post('/burials/%s/exhumate/' % self.burial.pk, {
+            'plan_date': '01.01.2001', 'plan_time': '10:10', 'applicant_org': self.ugh_org.pk
+        })
+        self.assertEqual(r.status_code, 302)
+        self.assertEqual(ExhumationRequest.objects.count(), 1)
+
+        self.assertEqual(Burial.objects.get().place, None)
+        self.assertEqual(Burial.objects.get().status, Burial.STATUS_EXHUMATED)
+        self.assertEqual(Burial.objects.get().exhumated, ExhumationRequest.objects.get())
+        self.assertEqual(Burial.objects.get().exhumated.place, self.place)
+        self.assertEqual(ExhumationRequest.objects.get().applicant_person, None)
+        self.assertEqual(ExhumationRequest.objects.get().applicant_org, self.ugh_org)

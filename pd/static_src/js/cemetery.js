@@ -27,6 +27,8 @@ function setup_address_autocompletes() {
     FIO_URL = '/autocomplete/fio/';
     CEMETERIES_URL = '/autocomplete/cemeteries/';
     AREAS_URL = '/autocomplete/areas/';
+    ALIVE_FIO_URL = '/autocomplete/alive/';
+    ORG_URL = '/autocomplete/org/';
 
     $('#id_instance_0').live('click', function(){
         var form = $(this).parents('.well');
@@ -37,6 +39,34 @@ function setup_address_autocompletes() {
     $('select[name*=fias_]').each(function() {
         if (!$(this).children('option[value!=""]').length) {
             $(this).closest('p').hide();
+        }
+    });
+
+    $('#mainform #id_applicant_org').attr('autocomplete', 'off').typeahead({
+        items: 100,
+        source: function (typeahead, query) {
+            if (query.length < 2) { return }
+            $.ajax({
+                url: CEMETERIES_URL + "?query=" + query,
+                dataType: 'json',
+                success: function(data) {
+                    typeahead.process(data);
+                }
+            });
+        }
+    });
+
+    $('#mainform #id_applicant_person').attr('autocomplete', 'off').typeahead({
+        items: 100,
+        source: function (typeahead, query) {
+            if (query.length < 2) { return }
+            $.ajax({
+                url: ALIVE_FIO_URL + "?query=" + query,
+                dataType: 'json',
+                success: function(data) {
+                    typeahead.process(data);
+                }
+            });
         }
     });
 
