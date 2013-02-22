@@ -211,3 +211,33 @@ class CommentView(BurialsListGenericMixin, DetailView):
         return redirect('view_burial', self.get_object().pk)
 
 burial_comment = CommentView.as_view()
+
+class AutocompleteCemeteries(View):
+    def get(self, request, *args, **kwargs):
+        query = request.GET['query']
+        cemeteries = Cemetery.objects.filter(name__startswith=query)
+        if request.user.profile.is_loru():
+            cemeteries = cemeteries.filter(ugh__loru_list__loru=request.user.profile.org)
+        elif request.user.profile.is_ugh():
+            cemeteries = cemeteries.filter(ugh=request.user.profile.org)
+        else:
+            cemeteries = Cemetery.objects.none()
+        return HttpResponse(json.dumps([{'value': c.name} for c in cemeteries[:20]]), mimetype='text/javascript')
+
+autocomplete_cemeteries = AutocompleteCemeteries.as_view()
+
+class AutocompleteAreas(View):
+    def get(self, request, *args, **kwargs):
+        query = request.GET['query']
+        areas = Area.objects.filter(name__startswith=query)
+        if request.user.profile.is_loru():
+            areas = areas.filter(cemetery__ugh__loru_list__loru=request.user.profile.org)
+        elif request.user.profile.is_ugh():
+            areas = areas.filter(cemetery__ugh=request.user.profile.org)
+        else:
+            areas = Area.objects.none()
+        return HttpResponse(json.dumps([{'value': c.name} for c in areas[:20]]), mimetype='text/javascript')
+
+autocomplete_areas = AutocompleteAreas.as_view()
+
+

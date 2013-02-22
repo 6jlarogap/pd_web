@@ -28,5 +28,7 @@ urlpatterns = patterns('burials.views',
     url(r'^manage/cemetery/(?P<pk>\d+)/edit/$', 'manage_cemeteries_edit', name='manage_cemeteries_edit'),
 
     url(r'^cemetery_times/', 'cemetery_times', name='cemetery_times'),
+    url(r'^autocomplete/cemeteries/', 'autocomplete_cemeteries', name='autocomplete_cemeteries'),
+    url(r'^autocomplete/areas/', 'autocomplete_areas', name='autocomplete_areas'),
 
 )

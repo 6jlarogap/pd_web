@@ -25,6 +25,8 @@ function setup_address_autocompletes() {
     STREET_URL = '/geo/autocomplete/street/';
     DOCS_SOURCE_URL = '/autocomplete/doc_source/';
     FIO_URL = '/autocomplete/fio/';
+    CEMETERIES_URL = '/autocomplete/cemeteries/';
+    AREAS_URL = '/autocomplete/areas/';
 
     $('#id_instance_0').live('click', function(){
         var form = $(this).parents('.well');
@@ -37,6 +39,38 @@ function setup_address_autocompletes() {
             $(this).closest('p').hide();
         }
     });
+
+    $('#mainform #id_cemetery').attr('autocomplete', 'off').typeahead({
+        items: 100,
+        source: function (typeahead, query) {
+            if (query.length < 2) { return }
+            $.ajax({
+                url: CEMETERIES_URL + "?query=" + query,
+                dataType: 'json',
+                success: function(data) {
+                    typeahead.process(data);
+                }
+            });
+        }
+    });
+
+    $('#mainform #id_area').attr('autocomplete', 'off').typeahead({
+        items: 100,
+        source: function (typeahead, query) {
+            if (query.length < 1) { return }
+            var input = $(this)[0].$element;
+            var cem = input.parents('#mainform').find('#id_cemetery').val() || '';
+            $.ajax({
+                url: AREAS_URL + "?query=" + query + '&cemetery=' + cem,
+                dataType: 'json',
+                success: function(data) {
+                    typeahead.process(data);
+                }
+            });
+        }
+    });
+
+
 
     $('#id_fio').attr('autocomplete', 'off').typeahead({
         items: 100,
