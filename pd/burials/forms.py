@@ -150,7 +150,7 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, forms.Mo
         data = self.data or None
         deadman = self.instance and self.instance.deadman
         self.old_place = self.instance and self.instance.get_place()
-        self.deadman_form = DeadPersonForm(data=data, prefix='deadman', instance=deadman)
+        self.deadman_form = DeadPersonForm(request=self.request, data=data, prefix='deadman', instance=deadman)
         deadman_addr = deadman and deadman.address
         self.deadman_address_form = LocationForm(data=data, prefix='deadman-address', instance=deadman_addr)
         try:

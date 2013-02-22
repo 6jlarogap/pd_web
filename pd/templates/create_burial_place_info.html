@@ -5,7 +5,13 @@
 
     <h3>{{ place }}</h3>
 
+    {% if user.profile.is_ugh %}
+        <p><a href="{% url view_place place.pk %}">{% trans "карточка" %}</a></p>
+    {% endif %}
+
     <dl>
+        <dt>{% trans "Могил" %}</dt>
+        <dd>{{ place.places_count }}</dd>
         {% if place.responsible %}
             <dt>{% trans "Ответственный" %}</dt>
             <dd>{{ place.responsible }}</dd>
@@ -15,7 +21,16 @@
     <h3>{% trans "Усопшие" %}</h3>
     <ul>
         {% for b in place.burial_set.all %}
-            <li>{{ b.get_burial_type_display }} &mdash; <a href="{% url view_burial b.pk %}">{{ b.deadman|default:"Неизвестный" }}</a></li>
+            <li>
+                {{ b.get_burial_type_display }} &mdash;
+                {% if user.profile.is_loru and b.is_full %}
+                    <a href="{% url view_burial b.pk %}">{{ b.deadman|default:"Неизвестный" }}</a>
+                {% elif user.profile.is_ugh and b.cemetery.ugh == user.profile.org %}
+                    <a href="{% url view_burial b.pk %}">{{ b.deadman|default:"Неизвестный" }}</a>
+                {% else %}
+                    {{ b.deadman|default:"Неизвестный" }}
+                {% endif %}
+            </li>
         {% endfor %}
     </ul>
 

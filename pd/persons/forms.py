@@ -12,11 +12,15 @@ class DeadPersonForm(ValidDataMixin, forms.ModelForm):
     class Meta:
         model = DeadPerson
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, request, *args, **kwargs):
         kwargs.setdefault('initial', {})
+        if request.user.profile.is_loru():
+            death_date = datetime.date.today()
+        else:
+            death_date = datetime.date.today() - datetime.timedelta(1)
         if not kwargs.get('instance'):
             kwargs['initial'].update({
-                'death_date': datetime.date.today() - datetime.timedelta(1),
+                'death_date': death_date,
             })
         super(DeadPersonForm, self).__init__(*args, **kwargs)
 
