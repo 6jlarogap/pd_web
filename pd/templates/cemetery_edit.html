@@ -8,6 +8,11 @@
         {% csrf_token %}
         {{ form.as_p }}
 
+        <h2>{% trans "Адрес" %}</h2>
+        {% with form.address_form as form %}
+            {% include "location_form.html" %}
+        {% endwith %}
+
         <h2>{% trans "Участки" %}</h2>
         {{ formset.management_form }}
         <table>

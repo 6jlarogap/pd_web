@@ -47,8 +47,7 @@
     <h3>{% trans "Адрес" %}</h3>
     <div class="form_block">
         {% with form.responsible_address_form as form %}
-            {{ form.non_field_errors }}
-            {% include "create_burial_location_form.html" %}
+            {% include "location_form.html" %}
         {% endwith %}
     </div>
 </div>
@@ -105,8 +104,7 @@
             <h3>{% trans "Адрес" %}</h3>
             <div class="form_block">
                 {% with form.applicant_address_form as form %}
-                    {{ form.non_field_errors }}
-                    {% include "create_burial_location_form.html" %}
+                    {% include "location_form.html" %}
                 {% endwith %}
             </div>
             <h3>{% trans "Удостоверение личности" %}</h3>

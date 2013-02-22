@@ -1,7 +1,7 @@
-.burial-form p.inline { display: inline-block; }
+p.inline { display: inline-block; }
 
-.burial-form input.hasDatepicker { width: 80px; }
-.burial-form input.hasTimepicker { width: 80px; }
+input.hasDatepicker { width: 80px; }
+input.hasTimepicker { width: 80px; }
 .burial-form #id_plan_time { width: 80px; }
 
 .burial-form #id_cemetery { width: 150px; }

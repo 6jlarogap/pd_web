@@ -30,8 +30,7 @@
             <h3>{% trans "Адрес" %}</h3>
             <div class="form_block">
                 {% with form.deadman_address_form as form %}
-                    {{ form.non_field_errors }}
-                    {% include "create_burial_location_form.html" %}
+                    {% include "location_form.html" %}
                 {% endwith %}
             </div>
             <h3>{% trans "Свидетельство о смерти" %}</h3>

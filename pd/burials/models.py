@@ -38,6 +38,8 @@ class Cemetery(models.Model):
     ugh = models.ForeignKey(Org, verbose_name=_(u"УГХ"), null=True, limit_choices_to={'type': Org.PROFILE_UGH},
                             on_delete=models.PROTECT)
 
+    address = models.ForeignKey('geo.Location', editable=False, null=True)
+
     class Meta:
         verbose_name = _(u"Кладбище")
         verbose_name_plural = _(u"Кладбища")

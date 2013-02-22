@@ -41,6 +41,22 @@ class CemeteryForm(BaseCemeteryForm):
         model = Cemetery
         exclude = ['ugh', ]
 
+    def __init__(self, *args, **kwargs):
+        super(CemeteryForm, self).__init__(*args, **kwargs)
+        address = self.instance and self.instance.address
+        self.address_form = LocationForm(data=self.data or None, instance=address, prefix='address')
+
+    def is_valid(self):
+        return super(CemeteryForm, self).is_valid() and self.address_form.is_valid()
+
+    def save(self, commit=True, *args, **kwargs):
+        obj = super(CemeteryForm, self).save(commit=False, *args, **kwargs)
+        if commit:
+            obj.address = self.address_form.save()
+            obj.save()
+        return obj
+
+
 class CemeteryAdminForm(BaseCemeteryForm):
     class Meta:
         model = Cemetery
