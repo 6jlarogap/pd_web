@@ -6,7 +6,8 @@
     <h1>{% trans "Заказы" %}</h1>
     <table class="table table-bordered">
         <tr>
-            <th>{% trans "Дата" %}</th>
+            <th>{% trans "Номер" %}</th>
+            <th>{% trans "Дата создания Заказа" %}</th>
             <th>{% trans "Заказчик" %}</th>
             <th>{% trans "Захоронение" %}</th>
             <th>{% trans "Позиций" %}</th>
@@ -15,6 +16,7 @@
         </tr>
         {% for c in object_list %}
             <tr>
+                <td>{{ c.pk }}</td>
                 <td>{{ c.dt }}</td>
                 <td>{{ c.customer }}</td>
                 <td>

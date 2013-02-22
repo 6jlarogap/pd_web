@@ -260,6 +260,7 @@ $(function() {
             $('.btn-org').closest('p').show();
 
             $('#id_agent_director').change();
+            $('input[name=payment][value=wire]').attr('checked', '1');
         } else {
             $('#applicant_form_org').hide();
             $('#applicant_form_person').show();
@@ -277,6 +278,7 @@ $(function() {
 
             $('input[name^=person]').closest('p').show();
             $('#id_org').closest('p').hide();
+            $('input[name=payment][value=cash]').attr('checked', '1');
         }
     });
     $('input[name=opf]').change();

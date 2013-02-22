@@ -34,6 +34,9 @@ class OrderForm(forms.ModelForm):
             self.initial['person_last_name'] = self.instance.person.last_name or u""
             self.initial['person_first_name'] = self.instance.person.first_name or u""
             self.initial['person_middle_name'] = self.instance.person.middle_name or u""
+            self.initial['opf'] = 'person'
+        else:
+            self.initial['opf'] = 'org'
 
         if self.data and self.data.get('opf') == 'person':
             self.fields['person_last_name'].required = True
@@ -103,5 +106,7 @@ class CatafalqueForm(forms.ModelForm):
         model = CatafalqueData
 
 class CoffinForm(forms.ModelForm):
+    size = forms.CharField(label=_(u'Размер'))
+
     class Meta:
         model = CoffinData
