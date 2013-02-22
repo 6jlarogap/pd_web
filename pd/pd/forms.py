@@ -151,7 +151,6 @@ class UnclearSelectDateWidget(SelectDateWidget):
                     if match:
                         year_val, month_val, day_val = [int(v) for v in match.groups()]
 
-        print 'year_val, month_val, day_val',year_val, month_val, day_val, value
         choices = [(i, i) for i in self.years]
         year_html = self.create_select(name, self.year_field, value, year_val, choices, {'class': 'date-year'})
         choices = zip(MONTHS.keys(), MONTHS.keys())

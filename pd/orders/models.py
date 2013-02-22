@@ -60,7 +60,7 @@ class Order(models.Model):
         verbose_name_plural = _(u"Заказы")
 
     def __unicode__(self):
-        return u'%s %s' % (self.loru, self.dt)
+        return u'%s - %s %s' % (self.pk, self.loru, self.dt)
 
     @property
     def customer(self):

@@ -331,6 +331,8 @@ class CreateBurial(CreateView):
                 messages.success(self.request, msg)
             return redirect('dashboard')
         else:
+            if b.order:
+                return redirect('order_edit', b.order.pk)
             return redirect('view_burial', b.pk)
 
     def get_action(self):
