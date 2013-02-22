@@ -51,15 +51,7 @@
         {% endif %}
 
         <p>
-            {% if form.instance.get_burial %}
-                <a class="btn" href="{% url edit_burial form.instance.get_burial.pk %}">
-                    {% trans "править захоронение" %}
-                </a>
-            {% else %}
-                <a class="btn" href="{% url create_burial %}?order={{ form.instance.pk }}">
-                    {% trans "добавить захоронение" %}
-                </a>
-            {% endif %}
+            <input type="submit" class="btn" value="{% trans "сохранить" %}" class="btn"/>
         </p>
     </form>
 

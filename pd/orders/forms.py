@@ -75,15 +75,21 @@ class OrderItemForm(forms.ModelForm):
             self.cleaned_data['quantity'] = 1
         return self.cleaned_data
 
-    def save(self, commit=True, *args, **kwargs):
-        if self.is_valid():
-            p = self.cleaned_data['product']
+class BaseOrderItemFormset(BaseInlineFormSet):
+    def __init__(self, request, *args, **kwargs):
+        super(BaseOrderItemFormset, self).__init__(*args, **kwargs)
+        for f in self.forms:
+            f.fields['product'].queryset = Product.objects.filter(loru=request.user.profile.org)
 
-            q = Q(product=p)
-            if p.ptype:
-                q |= Q(product__ptype=p.ptype)
-            same_product = OrderItem.objects.filter(q)
+    def get_same_product(self, form):
+        p = form.cleaned_data['product']
 
+        q = Q(product=p)
+        if p.ptype:
+            q |= Q(product__ptype=p.ptype)
+        same_product = OrderItem.objects.filter(q, order=self.instance)
+
+        if same_product.exists():
             if p.ptype:
                 same_product.update(quantity=1)
             try:
@@ -91,13 +97,11 @@ class OrderItemForm(forms.ModelForm):
             except IndexError:
                 pass
 
-            return super(OrderItemForm, self).save(commit=commit, *args, **kwargs)
-
-class BaseOrderItemFormset(BaseInlineFormSet):
-    def __init__(self, request, *args, **kwargs):
-        super(BaseOrderItemFormset, self).__init__(*args, **kwargs)
-        for f in self.forms:
-            f.fields['product'].queryset = Product.objects.filter(loru=request.user.profile.org)
+    def save_existing(self, form, instance, commit=True):
+        return self.get_same_product(form) or super(BaseOrderItemFormset, self).save_existing(form, instance, commit)
+    
+    def save_new(self, form, commit=True):
+        return self.get_same_product(form) or super(BaseOrderItemFormset, self).save_new(form, commit)
 
 OrderItemFormset = inlineformset_factory(Order, OrderItem, form=OrderItemForm, formset=BaseOrderItemFormset)
 
