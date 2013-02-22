@@ -92,7 +92,7 @@ class RequestsTest(TestCase):
 
         r = self.ugh_client.get('/?show=1')
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.context['burials'].count(), 0)
+        self.assertEqual(r.context['burials'].count(), 1)
 
     def test_actions(self):
         r = self.loru_client.post('/burials/create/', {
@@ -244,12 +244,13 @@ class RequestsTest(TestCase):
         r = self.loru_client.post('/burials/create/', {'cemetery': self.cemetery.pk, 'plan_date': '12.12.2013', 'grave_number': 1})
         self.assertEqual(r.status_code, 302)
         br = Burial.objects.all()[0]
+        self.assertEqual(Log.objects.all().count(), 1)
 
         r = self.loru_client.post('/burials/%s/comment/' % br.pk, {'comment': 'test'})
         self.assertEqual(r.status_code, 302)
 
-        self.assertEqual(Log.objects.all().count(), 1)
-        self.assertTrue('test' in Log.objects.get().msg)
+        self.assertEqual(Log.objects.all().count(), 2)
+        self.assertTrue('test' in Log.objects.get(pk=2).msg)
 
 class BurialsTest(TestCase):
     def setUp(self):

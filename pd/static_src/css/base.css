@@ -11,9 +11,9 @@
 .burial-form #id_place_number { width: 60px; }
 .burial-form #id_grave_number { width: 60px; }
 
-.burial-form [id$=_day] { width: 50px; }
-.burial-form [id$=_month] { width: 50px; }
-.burial-form [id$=_year] { width: 70px; }
+select[id$=_day] { width: 50px; }
+select[id$=_month] { width: 50px; }
+select[id$=_year] { width: 70px; }
 
 #id_house { width: 60px; }
 #id_building { width: 55px; }

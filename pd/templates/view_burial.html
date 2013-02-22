@@ -7,7 +7,7 @@
     <dl>
         <dt>{% trans "Статус" %}:</dt><dd>{{ b.status_str }}</dd>
         <dt>{% trans "Тип" %}:</dt><dd>{{ b.get_burial_type_display|default:"" }}</dd>
-        {% if b.order %}
+        {% if b.order and user.profile.is_loru %}
             <dt>{% trans "Заказ" %}:</dt>
             <dd>
                 {% if user.profile.is_loru and b.order.loru == user.profile.org %}
