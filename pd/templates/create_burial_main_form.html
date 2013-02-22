@@ -23,11 +23,21 @@
 
     <p id="place_info"></p>
 
-    {{ form.plan_date.errors }}
-    <p class="inline">{{ form.plan_date.label_tag }} {{ form.plan_date }}<span class="helptext">{{ form.plan_date.help_text }}</span></p>
+    {% if form.plan_date %}
+        {{ form.plan_date.errors }}
+        <p class="inline">{{ form.plan_date.label_tag }} {{ form.plan_date }}<span class="helptext">{{ form.plan_date.help_text }}</span></p>
+    {% endif %}
 
-    {{ form.plan_time.errors }}
-    <p class="inline">{{ form.plan_time.label_tag }} {{ form.plan_time }}<span class="helptext">{{ form.plan_time.help_text }}</span></p>
+    {% if form.plan_time %}
+        {{ form.plan_time.errors }}
+        <p class="inline">{{ form.plan_time.label_tag }} {{ form.plan_time }}<span class="helptext">{{ form.plan_time.help_text }}</span></p>
+    {% endif %}
+
+    {% if form.fact_date %}
+        {{ form.fact_date.errors }}
+        <p class="inline">{{ form.fact_date.label_tag }} {{ form.fact_date }}<span class="helptext">{{ form.fact_date.help_text }}</span></p>
+    {% endif %}
+
 </div>
 
 <h2>{% trans "Ответственный" %} {{ form.responsible_form.instance|default:"" }}</h2>

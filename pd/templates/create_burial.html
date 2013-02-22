@@ -16,6 +16,10 @@
         <input type="hidden" name="archive"  value="{{ request.REQUEST.archive }}" />
         <input type="hidden" name="place_id"  value="{{ request.REQUEST.place_id }}" />
 
+        {% if user.profile.is_ugh and form.instance.is_archive %}
+            <p>{% trans "Статус:" %} {{ form.instance.get_status_display }}</p>
+        {% endif %}
+
         {{ form.non_field_errors }}
         {% include "create_burial_main_form.html" %}
 
