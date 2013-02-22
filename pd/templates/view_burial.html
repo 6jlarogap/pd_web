@@ -39,18 +39,20 @@
                 {{ b.deadman.address|default:"" }}
             </dd>
         {% endif %}
-        <dt>{% trans "Кладбище" %}:</dt><dd>{{ b.cemetery|default:"" }}</dd>
+        {% if b.cemetery %}
+            <dt>{% trans "Кладбище" %}:</dt><dd>{{ b.cemetery|default:"" }}</dd>
+        {% endif %}
         <dt>{% trans "Место" %}:</dt><dd>
-            {% trans "Участок" %}: {{ b.area|default:"" }}<br/>
-            {% trans "Ряд" %}: {{ b.row|default:"" }}<br/>
-            {% trans "Место" %}: {{ b.place_number|default:"" }}<br/>
-            1 {{ b.place }} 2 {{ b.get_place }}
+            {% if b.area %}{% trans "Участок" %}: {{ b.area }}<br/>{% endif %}
+            {% if b.row %}{% trans "Ряд" %}: {{ b.row }}<br/>{% endif %}
+            {% if b.place_number %}{% trans "Место" %}: {{ b.place_number }}<br/>{% endif %}
+            {% if b.grave_number %}{% trans "Могила" %}: {{ b.grave_number }}<br/>{% endif %}
             {% if user.profile.is_ugh and b.place %}
                 <a href="{% url view_place b.place.pk %}" class="btn">{% trans "карточка" %}</a>
             {% endif %}
         </dd>
         {% if b.cemetery and b.is_approved %}
-            <dt>{% trans "Алгоритм расстановки мест" %}:</dt>
+            <dt>{% trans "Правило создания номера места" %}:</dt>
             <dd>
                 {{ b.cemetery.get_places_algo_display }}
             </dd>

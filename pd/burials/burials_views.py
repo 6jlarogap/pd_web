@@ -33,6 +33,7 @@ class BurialsListGenericMixin:
                 qs = Q(applicant_organization=self.request.user.profile.org)
             if self.request.user.profile.is_ugh():
                 qs = Q(applicant_organization__ugh_list__ugh=self.request.user.profile.org)
+                qs |= Q(ugh=self.request.user.profile.org)
         return qs
 
 class DashboardView(BurialsListGenericMixin, TemplateView):
