@@ -397,6 +397,7 @@ class Burial(models.Model):
         place.row = self.row
         place.place = self.place_number
         place.save()
+        self.responsible = None
         self.place = place
         self.save()
         return self
