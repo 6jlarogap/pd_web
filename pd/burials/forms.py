@@ -82,6 +82,14 @@ class BurialSearchForm(forms.Form):
     """
     Форма поиска на главной странице.
     """
+
+    PAGE_CHOICES = (
+        (10, 10),
+        (25, 25),
+        (50, 50),
+        (100, 100),
+    )
+
     fio = forms.CharField(required=False, max_length=100, label=_(u"ФИО"))
     no_last_name = forms.BooleanField(required=False, initial=False, label=_(u"Неизв."))
     birth_date_from = forms.DateField(required=False, label=_(u"Дата рожд. с"))
@@ -103,6 +111,8 @@ class BurialSearchForm(forms.Form):
     no_responsible = forms.BooleanField(required=False, initial=False, label=_(u"Без отв."))
     source = forms.TypedChoiceField(required=False, label=_(u"Тип"), choices=EMPTY + Burial.SOURCE_TYPES)
     status = forms.TypedChoiceField(required=False, label=_(u"Статус"), choices=EMPTY + Burial.STATUS_CHOICES)
+    exhumated = forms.BooleanField(required=False, initial=False, label=_(u"Только эксгумированные"))
+    per_page = forms.ChoiceField(label=_(u"На странице"), choices=PAGE_CHOICES, initial=25, required=False)
 
 class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, forms.ModelForm):
     opf = forms.ChoiceField(label=_(u'ОПФ'), choices=OPF_CHOICES, widget=forms.RadioSelect)

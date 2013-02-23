@@ -18,21 +18,51 @@
 
     <table class="table table-bordered table-striped">
         <tr>
-            <th>{% trans "Номер" %}</th>
-            <th>{% trans "Кладбище" %}</th>
-            <th>{% trans "Место" %}</th>
-            <th>{% trans "Усопший" %}</th>
-            <th>{% trans "Дата" %}</th>
+            <th>
+                {% if sort == '-pk' %}
+                    <a href="?{{ GET_PARAMS }}&sort=pk">{% trans "Номер" %}</a>
+                {% else %}
+                    <a href="?{{ GET_PARAMS }}&sort=-pk">{% trans "Номер" %}</a>
+                {% endif %}
+            </th>
+            <th>
+                {% if sort == 'cemetery' %}
+                    <a href="?{{ GET_PARAMS }}&sort=-cemetery">{% trans "Кладбище" %}</a>
+                {% else %}
+                    <a href="?{{ GET_PARAMS }}&sort=cemetery">{% trans "Кладбище" %}</a>
+                {% endif %}
+            </th>
+            <th>
+                {% if sort == 'place' %}
+                    <a href="?{{ GET_PARAMS }}&sort=-place">{% trans "Место" %}</a>
+                {% else %}
+                    <a href="?{{ GET_PARAMS }}&sort=place">{% trans "Место" %}</a>
+                {% endif %}
+            </th>
+            <th>
+                {% if sort == 'fio' %}
+                    <a href="?{{ GET_PARAMS }}&sort=-fio">{% trans "Усопший" %}</a>
+                {% else %}
+                    <a href="?{{ GET_PARAMS }}&sort=fio">{% trans "Усопший" %}</a>
+                {% endif %}
+            </th>
+            <th>
+                {% if sort == '-fact_date' %}
+                    <a href="?{{ GET_PARAMS }}&sort=fact_date">{% trans "Дата" %}</a>
+                {% else %}
+                    <a href="?{{ GET_PARAMS }}&sort=-fact_date">{% trans "Дата" %}</a>
+                {% endif %}
+            </th>
             <th></th>
         </tr>
         {% for b in burials %}
             <tr>
                 <td>{{ b.pk }}</td>
-                <td>{{ b.place.cemetery }}</td>
+                <td>{{ b.place.cemetery|default:b.cemetery|default:"" }}</td>
                 <td>
-                    {{ b.place.area|default:"" }}
-                    {{ b.place.row|default:"" }}
-                    {{ b.place.place|default:"" }}
+                    {{ b.place.area|default:b.area|default:"" }}
+                    {{ b.place.row|default:b.row|default:"" }}
+                    {{ b.place.place|default:b.place|default:"" }}
                 </td>
                 <td>{{ b.deadman|default:"" }}</td>
                 <td>{{ b.fact_date|default:"" }}</td>

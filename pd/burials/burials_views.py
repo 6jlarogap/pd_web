@@ -173,7 +173,6 @@ view_burial = BurialView.as_view()
 
 class BurialsListView(ListView):
     template_name = 'burial_list.html'
-    paginate_by = 20
     context_object_name = 'burials'
 
     def get_queryset(self):
@@ -236,16 +235,44 @@ class BurialsListView(ListView):
                 burials = burials.filter(applicant_organization__name=form.cleaned_data['applicant_org'])
             if form.cleaned_data['applicant_person']:
                 burials = burials.filter(applicant__last_name=form.cleaned_data['applicant_person'])
+            if form.cleaned_data.get('exhumated'):
+                burials = burials.filter(status=Burial.STATUS_EXHUMATED)
+            else:
+                burials = burials.exclude(status=Burial.STATUS_EXHUMATED)
+        else:
+            burials = burials.exclude(status=Burial.STATUS_EXHUMATED)
 
+        sort = self.request.GET.get('sort', '-pk')
+        SORT_FIELDS = {
+            'pk': 'pk',
+            '-pk': '-pk',
+            'cemetery': 'cemetery__name',
+            '-cemetery': '-cemetery__name',
+            'place': 'place_number',
+            '-place': '-place_number',
+            'fio': 'deadman__last_name',
+            '-fio': '-deadman__last_name',
+            'fact_date': 'fact_date',
+            '-fact_date': '-fact_date',
+        }
+        burials = burials.select_related().order_by(SORT_FIELDS[sort])
         return burials
+
+    def get_paginate_by(self, queryset):
+        try:
+            return int(self.request.GET.get('per_page'))
+        except (TypeError, ValueError):
+            return 25
 
     def get_form(self):
         return BurialSearchForm(data=self.request.GET or None)
 
     def get_context_data(self, **kwargs):
         data = super(BurialsListView, self).get_context_data(**kwargs)
-        get_for_paginator = dict([(k, v) for k,v in self.request.GET.items() if k != 'page'])
-        data.update(form=self.get_form(), GET_PARAMS=get_for_paginator)
+        DISPLAY_OPTIONS = ['page', 'sort']
+        get_for_paginator = u'&'.join([u'%s=%s' %  (k, v) for k,v in self.request.GET.items() if k not in DISPLAY_OPTIONS])
+        sort = self.request.GET.get('sort', '-pk')
+        data.update(form=self.get_form(), GET_PARAMS=get_for_paginator, sort=sort)
         return data
 
 burial_list = BurialsListView.as_view()
