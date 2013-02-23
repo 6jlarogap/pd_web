@@ -352,13 +352,28 @@ class BurialsTest(TestCase):
 
         r = self.ugh_client.get('/burials/')
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.context['burials'].count(), 20)
+        self.assertEqual(r.context['burials'].count(), 25)
 
         r = self.ugh_client.get('/burials/?page=2')
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.context['burials'].count(), 10)
+        self.assertEqual(r.context['burials'].count(), 5)
 
         r = self.ugh_client.get('/burials/?page=3')
+        self.assertEqual(r.status_code, 404)
+
+        r = self.ugh_client.get('/burials/?per_page=10')
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.context['burials'].count(), 10)
+
+        r = self.ugh_client.get('/burials/?per_page=10&page=2')
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.context['burials'].count(), 10)
+
+        r = self.ugh_client.get('/burials/?per_page=10&page=3')
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.context['burials'].count(), 10)
+
+        r = self.ugh_client.get('/burials/?per_page=10&page=4')
         self.assertEqual(r.status_code, 404)
 
     def test_place(self):
