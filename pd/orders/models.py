@@ -1,5 +1,6 @@
 # coding=utf-8
 from __builtin__ import property
+import datetime
 from burials.models import Burial
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
@@ -114,6 +115,12 @@ class Order(models.Model):
 
     burial = property(get_burial)
 
+    def get_catafalque_hours(self):
+        if not self.has_catafalque():
+            return
+        hrs = self.orderitem_set.filter(product__ptype=Product.PRODUCT_CATAFALQUE)[0].quantity
+        return datetime.time(hrs)
+
     def get_logs(self):
         ct = ContentType.objects.get_for_model(self)
         return Log.objects.filter(ct=ct, obj_id=self.pk).order_by('-pk')
@@ -149,7 +156,6 @@ class CatafalqueData(models.Model):
 
     route = models.TextField(_(u"Маршрут"))
     start_time = models.TimeField(_(u"Время подачи"))
-    duration_time = models.TimeField(_(u"Время работы"))
     start_place = models.TextField(_(u"Место подачи"), null=True)
     end_time = models.TimeField(_(u"Время отпуска клиентом"), null=True)
     cemetery_time = models.TimeField(_(u"Время заезда на кладбище"), null=True)

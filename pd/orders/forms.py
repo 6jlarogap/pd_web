@@ -71,7 +71,7 @@ class OrderItemForm(forms.ModelForm):
 
     def clean(self):
         p = self.cleaned_data['product']
-        if p and p.ptype:
+        if p and p.ptype and p.ptype != Product.PRODUCT_CATAFALQUE:
             self.cleaned_data['quantity'] = 1
         return self.cleaned_data
 
@@ -91,7 +91,10 @@ class BaseOrderItemFormset(BaseInlineFormSet):
 
         if same_product.exists():
             if p.ptype:
-                same_product.update(quantity=1)
+                if p.ptype == Product.PRODUCT_CATAFALQUE:
+                    same_product.update(quantity=form.cleaned_data['quantity'])
+                else:
+                    same_product.update(quantity=1)
             try:
                 return same_product[0]
             except IndexError:

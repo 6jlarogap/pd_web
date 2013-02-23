@@ -77,14 +77,14 @@
         <TD STYLE="border-left: 1px solid #000000" COLSPAN=2 HEIGHT=20 ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000">Заказчик</FONT>
         </TD>
         <TD STYLE="border-bottom: 1px solid #000000" COLSPAN=7 ALIGN=CENTER VALIGN=BOTTOM SDNUM="1033;0;@"><FONT
-                COLOR="#000000">{{ order.burial.full_customer_name }}</FONT></TD>
+                COLOR="#000000">{{ order.customer }}</FONT></TD>
     </TR>
     <TR>
         <TD STYLE="border-left: 1px solid #000000" COLSPAN=2 HEIGHT=20 ALIGN=LEFT VALIGN=TOP><FONT
                 COLOR="#000000">Адрес</FONT></TD>
         <TD STYLE="border-top: 1px solid #000000" COLSPAN=7 ALIGN=CENTER VALIGN=BOTTOM SDNUM="1033;0;@"><FONT
                 COLOR="#000000">
-            {{ order.burial.client_address|default:"" }}
+            {{ order.customer.address|default:"" }}
         </FONT></TD>
     </TR>
     <TR>
@@ -351,13 +351,13 @@
         <TD STYLE="border-left: 1px solid #000000" COLSPAN=2 HEIGHT=20 ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000">Заказчик</FONT>
         </TD>
         <TD STYLE="border-bottom: 1px solid #000000" COLSPAN=7 ALIGN=CENTER VALIGN=BOTTOM SDNUM="1033;0;@"><FONT
-                COLOR="#000000">{{ order.burial.full_customer_name }}</FONT></TD>
+                COLOR="#000000">{{ order.customer }}</FONT></TD>
     </TR>
     <TR>
         <TD STYLE="border-left: 1px solid #000000" COLSPAN=2 HEIGHT=20 ALIGN=LEFT VALIGN=TOP><FONT
                 COLOR="#000000">Адрес</FONT></TD>
         <TD STYLE="border-top: 1px solid #000000" COLSPAN=7 ALIGN=CENTER VALIGN=BOTTOM SDNUM="1033;0;@"><FONT
-                COLOR="#000000">{{ order.burial.client_address|default:"" }}</FONT></TD>
+                COLOR="#000000">{{ order.customer.address|default:"" }}</FONT></TD>
     </TR>
     <TR>
         <TD STYLE="border-left: 1px solid #000000" COLSPAN=3 HEIGHT=20 ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000">Фамилия,
@@ -535,7 +535,7 @@
                 COLOR="#000000">Все условия заказа подтверждаю______________________________________________</FONT></B>
         </TD>
         <TD COLSPAN=3 ALIGN=LEFT VALIGN=BOTTOM><FONT
-                COLOR="#000000">({{ order.burial.full_customer_name|default:"________________________________" }})</FONT></TD>
+                COLOR="#000000">({{ order.customer|default:"________________________________" }})</FONT></TD>
     </TR>
     <TR>
         <TD STYLE="border-left: 1px solid #000000" HEIGHT=19 ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000"><BR></FONT>
@@ -618,7 +618,7 @@
             представитель Исполнителя, _______________________________________________________________________________
             представитель Заказчика, - составили настоящий акт о том, что на &laquo;____&raquo; _________ 20___г.
             подтверждаем, что Исполнителем были выполнены качественно и в полном объеме работы согласно счета-заказа
-            № {{ order.burial.pk }} по захоронению
+            № {{ order.pk }} по захоронению
             умершего {{ order.burial.deadman }} на кладбище {{ order.burial.cemetery }}</FONT></TD>
     </TR>
     <TR>
@@ -769,7 +769,7 @@
             представитель Исполнителя, _______________________________________________________________________________
             представитель Заказчика, - составили настоящий акт о том, что на &laquo;____&raquo; _________ 20___г.
             подтверждаем, что Исполнителем были выполнены качественно и в полном объеме работы согласно счета-заказа
-            № {{ order.burial.pk }} по захоронению
+            № {{ order.pk }} по захоронению
             умершего {{ order.burial.deadman }} на кладбище {{ order.burial.cemetery }}</FONT></TD>
     </TR>
     <TR>
@@ -931,7 +931,7 @@
     </TR>
     <TR>
         <TD STYLE="border-left: 1px solid #000000" COLSPAN=9 HEIGHT=35 ALIGN=CENTER VALIGN=BOTTOM>
-            <B><I><FONT SIZE=5 COLOR="#000000">Наряд № {{ order.burial.pk }}/т
+            <B><I><FONT SIZE=5 COLOR="#000000">Наряд № {{ order.pk }}/т
             </FONT></I></B></TD>
     </TR>
     <TR>
@@ -985,7 +985,7 @@
         <TD STYLE="border-left: 1px solid #000000" COLSPAN=3 HEIGHT=20 ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000">Номер
             могилы</FONT></TD>
         <TD STYLE="border-top: 1px solid #000000; " COLSPAN=6 ALIGN=CENTER VALIGN=MIDDLE SDNUM="1033;0;@"><FONT
-                COLOR="#000000" STYLE="font-size: 170%">{{ order.burial.pk }}</FONT></TD>
+                COLOR="#000000" STYLE="font-size: 170%">{{ order.pk }}</FONT></TD>
         <TD ALIGN=LEFT VALIGN=MIDDLE><FONT COLOR="#000000"><BR></FONT></TD>
         <TD ALIGN=LEFT VALIGN=MIDDLE><FONT COLOR="#000000"><BR></FONT></TD>
         <TD ALIGN=LEFT VALIGN=MIDDLE><FONT COLOR="#000000"><BR></FONT></TD>
@@ -1102,7 +1102,7 @@
         </TR>
         <TR>
             <TD STYLE="border-left: 1px solid #000000" COLSPAN=9 HEIGHT=35 ALIGN=CENTER VALIGN=BOTTOM>
-                <B><I><FONT SIZE=5 COLOR="#000000">Наряд № {{ order.burial.pk }}/а
+                <B><I><FONT SIZE=5 COLOR="#000000">Наряд № {{ order.pk }}/а
                 </FONT></I></B></TD>
         </TR>
         <TR>
@@ -1145,7 +1145,7 @@
             <TD STYLE="border-left: 1px solid #000000" COLSPAN=3 HEIGHT=20 ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000">Маршрут</FONT>
             </TD>
             <TD STYLE="border-top: 1px solid #000000; " COLSPAN=6 ALIGN=CENTER VALIGN=MIDDLE SDNUM="1033;0;@"><FONT
-                    COLOR="#000000" STYLE="font-size: 170%">{{ catafalque_route|default:"" }}</FONT></TD>
+                    COLOR="#000000" STYLE="font-size: 170%">{{ order.get_catafalquedata.route|default:"" }}</FONT></TD>
             <TD ALIGN=LEFT VALIGN=MIDDLE><FONT COLOR="#000000"><BR></FONT></TD>
             <TD ALIGN=LEFT VALIGN=MIDDLE><FONT COLOR="#000000"><BR></FONT></TD>
             <TD ALIGN=LEFT VALIGN=MIDDLE><FONT COLOR="#000000"><BR></FONT></TD>
@@ -1155,7 +1155,9 @@
                 использования</FONT></TD>
             <TD STYLE="border-top: 1px solid #000000; " COLSPAN=6 ALIGN=CENTER VALIGN=MIDDLE SDNUM="1033;0;@"><FONT
                     COLOR="#000000" STYLE="font-size: 170%">
-                {{ order.get_catafalquedata.start_time }} / {{ order.get_catafalquedata.duration_time }}</FONT>
+                {{ order.get_catafalquedata.start_time|time:"H" }}ч {{ order.get_catafalquedata.start_time|time:"i" }}мин. /
+                {{ order.get_catafalque_hours|time:"H" }}ч {{ order.get_catafalque_hours|time:"i" }}мин.
+                </FONT>
             </TD>
             <TD ALIGN=LEFT VALIGN=MIDDLE><FONT COLOR="#000000"><BR></FONT></TD>
             <TD ALIGN=LEFT VALIGN=MIDDLE><FONT COLOR="#000000"><BR></FONT></TD>
@@ -1313,7 +1315,7 @@
         </TR>
         <TR>
             <TD STYLE="border-left: 1px solid #000000" COLSPAN=9 HEIGHT=35 ALIGN=CENTER VALIGN=BOTTOM>
-                <B><I><FONT SIZE=5 COLOR="#000000">Наряд № {{ order.burial.pk }}/г
+                <B><I><FONT SIZE=5 COLOR="#000000">Наряд № {{ order.pk }}/г
                 </FONT></I></B></TD>
         </TR>
         <TR>
@@ -1512,7 +1514,7 @@
         </TR>
         <TR>
             <TD STYLE="border-left: 1px solid #000000" COLSPAN=9 HEIGHT=35 ALIGN=CENTER VALIGN=BOTTOM>
-                <B><I><FONT SIZE=5 COLOR="#000000">Наряд № {{ order.burial.pk }}/м
+                <B><I><FONT SIZE=5 COLOR="#000000">Наряд № {{ order.pk }}/м
                 </FONT></I></B></TD>
         </TR>
         <TR>
@@ -1568,7 +1570,7 @@
             <TD STYLE="border-top: 1px solid #000000" ALIGN=RIGHT VALIGN=BOTTOM SDNUM="1033;0;@"><FONT
                     COLOR="#000000">№</FONT></TD>
             <TD STYLE="border-top: 1px solid #000000" ALIGN=center colspan="3" VALIGN=BOTTOM SDNUM="1033;0;@"><FONT
-                    COLOR="#000000" STYLE="font-size: 170%">{{ order.burial.pk }}</FONT></TD>
+                    COLOR="#000000" STYLE="font-size: 170%">{{ order.pk }}</FONT></TD>
             <TD ALIGN=LEFT VALIGN=MIDDLE><FONT COLOR="#000000"><BR></FONT></TD>
             <TD ALIGN=LEFT VALIGN=MIDDLE><FONT COLOR="#000000"><BR></FONT></TD>
             <TD ALIGN=LEFT VALIGN=MIDDLE><FONT COLOR="#000000"><BR></FONT></TD>
@@ -1625,7 +1627,7 @@
                     COLOR="#000000">Все условия заказа подтверждаю___________________________________________</FONT></B>
             </TD>
             <TD STYLE="" COLSPAN=3 ALIGN=LEFT VALIGN=BOTTOM><FONT
-                    COLOR="#000000">({{ order.burial.full_customer_name|default:"________________________________" }})</FONT>
+                    COLOR="#000000">({{ order.customer|default:"________________________________" }})</FONT>
             </TD>
             <TD ALIGN=LEFT VALIGN=MIDDLE><FONT COLOR="#000000"><BR></FONT></TD>
             <TD ALIGN=LEFT VALIGN=MIDDLE><FONT COLOR="#000000"><BR></FONT></TD>
