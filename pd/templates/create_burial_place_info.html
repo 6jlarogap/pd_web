@@ -11,7 +11,10 @@
 
     <dl>
         <dt>{% trans "Могил" %}</dt>
-        <dd>{{ place.places_count }}</dd>
+        <dd>
+            {{ place.get_places_count }}
+            ({% trans "свободно" %} {{ place.get_available_count }})
+        </dd>
         {% if place.responsible %}
             <dt>{% trans "Ответственный" %}</dt>
             <dd>{{ place.responsible }}</dd>
