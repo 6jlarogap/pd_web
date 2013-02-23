@@ -1,4 +1,5 @@
 # coding=utf-8
+import datetime
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
@@ -125,13 +126,34 @@ class Place(models.Model):
     def burial_count(self):
         return self.burial_set.all().count()
 
+    def set_next_number(self, **params):
+        other_places = Place.objects.filter(**params)
+        try:
+            self.place = int(other_places.order_by('-place')[0].place) + 1
+        except (ValueError, IndexError):
+            self.place = 1
+
+    def set_next_number_for_year(self, **params):
+        year = str(datetime.datetime.now().year)
+        other_places = Place.objects.filter(**params)
+        other_places = other_places.filter(place__startswith=year)
+        try:
+            self.place = int(other_places.order_by('-place')[0].place) + 1
+        except (ValueError, IndexError):
+            self.place = year + '0001'
+
     def save(self, *args, **kwargs):
-        if not self.place:
-            other_places = Place.objects.filter(cemetery=self.cemetery, area=self.area, row=self.row)
-            try:
-                self.place = int(other_places.order_by('-place')[0].place) + 1
-            except (ValueError, IndexError):
-                self.place = 1
+        if self.cemetery and not self.place:
+            if self.cemetery.places_algo == Cemetery.PLACE_MANUAL:
+                pass
+            elif self.cemetery.places_algo == Cemetery.PLACE_ROW:
+                self.set_next_number(cemetery=self.cemetery, area=self.area, row=self.row)
+            elif self.cemetery.places_algo == Cemetery.PLACE_AREA:
+                self.set_next_number(cemetery=self.cemetery, area=self.area)
+            elif self.cemetery.places_algo == Cemetery.PLACE_CEMETERY:
+                self.set_next_number(cemetery=self.cemetery)
+            elif self.cemetery.places_algo == Cemetery.PLACE_CEM_YEAR:
+                self.set_next_number_for_year(cemetery=self.cemetery)
         return super(Place, self).save(*args, **kwargs)
 
 class Burial(models.Model):

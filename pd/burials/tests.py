@@ -634,3 +634,151 @@ class ExhumationTest(TestCase):
         self.assertEqual(Burial.objects.get().exhumated.place, self.place)
         self.assertEqual(ExhumationRequest.objects.get().applicant_person, None)
         self.assertEqual(ExhumationRequest.objects.get().applicant_org, self.ugh_org)
+
+class TestPlaces(TestCase):
+    def setUp(self):
+        self.ugh_user = User.objects.create_user(username='ugh', email='test@example.com', password='test')
+        self.ugh_org = Org.objects.create(type=Org.PROFILE_UGH, name='ugh')
+        Profile.objects.create(user=self.ugh_user, org=self.ugh_org)
+
+        self.cemetery = Cemetery.objects.create(name='test cem', time_begin='12:00', time_end='17:00', ugh=self.ugh_org)
+        self.area = Area.objects.create(cemetery=self.cemetery, name='rest')
+
+    def test_manual(self):
+        self.cemetery.places_algo = Cemetery.PLACE_MANUAL
+        place = Place(
+            cemetery=self.cemetery,
+            area=self.area,
+            row='234',
+            place=None,
+            responsible=None,
+        )
+        self.assertEqual(place.place, None)
+
+        place.save()
+        self.assertEqual(place.place, None)
+
+    def test_cemetery(self):
+        self.cemetery.places_algo = Cemetery.PLACE_CEMETERY
+        old_place = Place.objects.create(
+            cemetery=self.cemetery,
+            area=self.area,
+            row='234',
+            place='123',
+            responsible=None,
+        )
+        place = Place(
+            cemetery=self.cemetery,
+            area=None,
+            row=None,
+            place=None,
+            responsible=None,
+        )
+        self.assertEqual(place.place, None)
+
+        place.save()
+        self.assertEqual(str(place.place), '124')
+
+    def test_area(self):
+        self.cemetery.places_algo = Cemetery.PLACE_AREA
+        old_place = Place.objects.create(
+            cemetery=self.cemetery,
+            area=self.area,
+            row='234',
+            place='123',
+            responsible=None,
+        )
+        wrong_place = Place.objects.create(
+            cemetery=self.cemetery,
+            area=None,
+            row='234',
+            place='245',
+            responsible=None,
+        )
+        place = Place(
+            cemetery=self.cemetery,
+            area=self.area,
+            row=None,
+            place=None,
+            responsible=None,
+        )
+        self.assertEqual(place.place, None)
+
+        place.save()
+        self.assertEqual(str(place.place), '124')
+
+    def test_row(self):
+        self.cemetery.places_algo = Cemetery.PLACE_ROW
+        old_place = Place.objects.create(
+            cemetery=self.cemetery,
+            area=self.area,
+            row='234',
+            place='123',
+            responsible=None,
+        )
+        wrong_place = Place.objects.create(
+            cemetery=self.cemetery,
+            area=self.area,
+            row=None,
+            place='245',
+            responsible=None,
+        )
+        more_wrong_place = Place.objects.create(
+            cemetery=self.cemetery,
+            area=None,
+            row='234',
+            place='345',
+            responsible=None,
+        )
+        place = Place(
+            cemetery=self.cemetery,
+            area=self.area,
+            row='234',
+            place=None,
+            responsible=None,
+        )
+        self.assertEqual(place.place, None)
+
+        place.save()
+        self.assertEqual(str(place.place), '124')
+
+    def test_k2(self):
+        self.cemetery.places_algo = Cemetery.PLACE_CEM_YEAR
+        place = Place(
+            cemetery=self.cemetery,
+            area=self.area,
+            row='234',
+            place=None,
+            responsible=None,
+        )
+        self.assertEqual(place.place, None)
+
+        place.save()
+        self.assertEqual(str(place.place), str(datetime.date.today().year) + '0001')
+
+        old_place = Place.objects.create(
+            cemetery=self.cemetery,
+            area=None,
+            row=None,
+            place=str(datetime.date.today().year) + '0123',
+            responsible=None,
+        )
+        more_wrong_place = Place.objects.create(
+            cemetery=self.cemetery,
+            area=self.area,
+            row='234',
+            place=str(datetime.date.today().year+1) + '0245',
+            responsible=None,
+        )
+        place = Place(
+            cemetery=self.cemetery,
+            area=self.area,
+            row='234',
+            place=None,
+            responsible=None,
+        )
+        self.assertEqual(place.place, None)
+
+        place.save()
+        self.assertEqual(str(place.place), str(datetime.date.today().year) + '0124')
+
