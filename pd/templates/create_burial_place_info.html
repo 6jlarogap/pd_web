@@ -39,9 +39,11 @@
 
     <script type="text/javascript">
         var options = '';
-        for (var i=1; i<={{ place.places_count }}; i++) {
+        var old_value = $('#id_grave_number').val();
+        for (var i=1; i<={{ place.get_places_count }}; i++) {
             options += '<option value="'+i+'">'+i+'</option>';
         }
         $('#id_grave_number').html(options);
+        $('#id_grave_number').val(old_value);
     </script>
 </div>
