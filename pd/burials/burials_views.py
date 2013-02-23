@@ -490,7 +490,7 @@ class ExhumateView(ArchiveMixin, DetailView):
             ex.burial = self.get_object()
             ex.place = ex.burial.place
             ex.save()
-            write_log(self.request, self.get_object(), _(u'Захоронение эксшумировано'))
+            write_log(self.request, self.get_object(), _(u'Захоронение эксгумировано'))
             messages.success(request, _(u"Эксгумация успешна"))
             return redirect('view_place', ex.place.pk)
         else:

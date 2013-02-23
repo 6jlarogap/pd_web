@@ -72,11 +72,14 @@ class CemeteryEdit(UGHRequiredMixin, UpdateView):
 
 manage_cemeteries_edit = CemeteryEdit.as_view()
 
-class PlaceView(UpdateView):
+class PlaceView(UGHRequiredMixin, UpdateView):
     template_name = 'view_place.html'
     context_object_name = 'place'
     model = Place
     form_class = PlaceEditForm
+
+    def get_queryset(self):
+        return Place.objects.filter(cemetery__ugh=self.request.user.profile.org).distinct()
 
     def get_success_url(self):
         messages.success(self.request, _(u"Данные обновлены"))
