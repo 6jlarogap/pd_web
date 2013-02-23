@@ -548,6 +548,21 @@ class ExhumationForm(forms.ModelForm):
     class Meta:
         model = ExhumationRequest
 
+    def __init__(self, request, burial, *args, **kwargs):
+        super(ExhumationForm, self).__init__(*args, **kwargs)
+        self.request = request
+        self.burial = burial
+
+        if burial.cemetery and burial.cemetery.time_slots:
+            choices = [('', '----------')] + burial.cemetery.get_time_choices(
+                date=burial.plan_date,
+                request=self.request,
+            )
+            self.fields['plan_time'].widget = forms.Select(choices=choices)
+        if self.instance.plan_time:
+            self.initial['plan_time'] = self.instance.plan_time.strftime('%H:%M')
+
+
     def clean(self):
         if self.cleaned_data.get('applicant_org') and self.cleaned_data.get('applicant_person'):
             raise forms.ValidationError(_(u'Необходимо указать только одного заявителя'))

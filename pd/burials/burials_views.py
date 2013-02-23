@@ -500,7 +500,7 @@ class ExhumateView(ArchiveMixin, DetailView):
         return Burial.objects.filter(qs).distinct()
 
     def get_form(self):
-        return ExhumationForm(data=self.request.POST or None)
+        return ExhumationForm(data=self.request.POST or None, request=self.request, burial=self.get_object())
 
     def get_context_data(self, **kwargs):
         data = super(ExhumateView, self).get_context_data(**kwargs)
