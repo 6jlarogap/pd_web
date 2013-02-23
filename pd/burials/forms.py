@@ -42,13 +42,16 @@ class CemeteryForm(BaseCemeteryForm):
         super(CemeteryForm, self).__init__(*args, **kwargs)
         address = self.instance and self.instance.address
         self.address_form = LocationForm(data=self.data or None, instance=address, prefix='address')
+        self.area_formset = AreaFormset(data=self.data or None, instance=self.instance)
 
     def is_valid(self):
-        return super(CemeteryForm, self).is_valid() and self.address_form.is_valid()
+        return super(CemeteryForm, self).is_valid() and self.address_form.is_valid() and self.area_formset.is_valid()
 
     def save(self, commit=True, *args, **kwargs):
         obj = super(CemeteryForm, self).save(commit=False, *args, **kwargs)
         if commit:
+            if obj.pk:
+                self.area_formset.save()
             obj.address = self.address_form.save()
             obj.save()
         return obj
@@ -181,7 +184,7 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, forms.Mo
         responsible = self.instance and self.instance.get_responsible()
         self.responsible_form = AlivePersonForm(data=data, prefix='responsible', instance=responsible)
         resp_addr = responsible and responsible.address
-        self.responsible_address_form =  LocationForm(data=data, prefix='responsible-address', instance=resp_addr)
+        self.responsible_address_form = LocationForm(data=data, prefix='responsible-address', instance=resp_addr)
 
         applicant = self.instance and self.instance.applicant
         self.applicant_form = AlivePersonForm(data=data, prefix='applicant', instance=applicant)

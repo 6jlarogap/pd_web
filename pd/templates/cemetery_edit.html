@@ -14,9 +14,9 @@
         {% endwith %}
 
         <h2>{% trans "Участки" %}</h2>
-        {{ formset.management_form }}
+        {{ form.area_formset.management_form }}
         <table>
-            {% for f in formset.forms %}
+            {% for f in form.area_formset.forms %}
                 {{ f.as_table }}
             {% endfor %}
         </table>

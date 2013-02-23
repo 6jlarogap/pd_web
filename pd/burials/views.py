@@ -60,23 +60,7 @@ class CemeteryEdit(UGHRequiredMixin, UpdateView):
     def get_queryset(self):
         return Cemetery.objects.filter(ugh=self.request.user.profile.org)
 
-    def dispatch(self, request, *args, **kwargs):
-        self.request = request
-        self.args = args
-        self.kwargs = kwargs
-        if request.user.profile.org and request.user.profile.is_ugh():
-            self.formset = AreaFormset(data=request.POST or None, instance=self.get_object())
-        else:
-            self.formset = AreaFormset()
-        return super(CemeteryEdit, self).dispatch(request, *args, **kwargs)
-
-    def get_context_data(self, **kwargs):
-        data = super(CemeteryEdit, self).get_context_data(**kwargs)
-        data['formset'] = self.formset
-        return data
-
     def form_valid(self, form):
-        self.formset.save()
         self.object = form.save()
         write_log(self.request, self.object, _(u'Кладбище изменено'))
         msg = _(u"<a href='%s'>Кладбище %s</a> изменено") % (
