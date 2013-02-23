@@ -127,8 +127,12 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, forms.Mo
             self.fields['plan_time'].widget = forms.Select(choices=choices)
         if self.instance.plan_time:
             self.initial['plan_time'] = self.instance.plan_time.strftime('%H:%M')
-        else:
-            self.fields['plan_date'].initial = datetime.date.today() + datetime.timedelta(1)
+
+        if not self.instance.plan_date:
+            date_diff = 1
+            if datetime.date.today().weekday() == 5 and request.user.profile.is_ugh():
+                date_diff = 2 # Saturday
+            self.fields['plan_date'].initial = datetime.date.today() + datetime.timedelta(date_diff)
 
         if self.instance.place_number and self.instance.get_place() and self.instance.grave_number:
             grave_choices = [(i,i) for i in range(1, self.instance.get_place().get_places_count()+1)]
