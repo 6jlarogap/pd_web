@@ -159,7 +159,7 @@ class OrdersTest(TestCase):
         self.assertEqual(o.has_catafalque(), True)
         self.assertEqual(o.get_catafalquedata(), None)
 
-        cd = CatafalqueData.objects.create(order=o, route='test', start_time='12:00', duration_time='1:00')
+        cd = CatafalqueData.objects.create(order=o, route='test', start_time='12:00')
         self.assertEqual(o.has_catafalque(), True)
         self.assertEqual(o.get_catafalquedata(), cd)
 
