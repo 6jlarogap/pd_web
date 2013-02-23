@@ -47,6 +47,7 @@
             {% if b.row %}{% trans "Ряд" %}: {{ b.row }}<br/>{% endif %}
             {% if b.place_number %}{% trans "Место" %}: {{ b.place_number }}<br/>{% endif %}
             {% if b.grave_number %}{% trans "Могила" %}: {{ b.grave_number }}<br/>{% endif %}
+            {% if b.get_place %}{% trans "Свободно" %}: {{ b.get_place.get_available_count }}<br/>{% endif %}
             {% if user.profile.is_ugh and b.place %}
                 <a href="{% url view_place b.place.pk %}" class="btn">{% trans "карточка" %}</a>
             {% endif %}
@@ -75,7 +76,13 @@
                 {{ b.applicant.personid|default:"" }}
             </dd>
         {% endif %}
-        <dt>{% trans "Дата" %}:</dt><dd>{{ b.plan_date|date:"d.m.Y"|default:"" }} {{ b.plan_time|time:"H:i"|default:"" }}</dd>
+        {% if b.plan_date and b.plan_time %}
+            <dt>{% trans "План. дата" %}:</dt>
+            <dd>{{ b.plan_date|date:"d.m.Y"|default:"" }} {{ b.plan_time|time:"H:i"|default:"" }}</dd>
+        {% endif %}
+        {% if b.fact_date %}
+            <dt>{% trans "Факт. дата" %}:</dt><dd>{{ b.fact_date|date:"d.m.Y"|default:"" }}</dd>
+        {% endif %}
     </dl>
     <form action="" method="POST">
         {% csrf_token %}

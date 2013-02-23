@@ -31,8 +31,9 @@
                 <a href="{% url create_burial %}" class="btn" onclick="alert('Не готово'); return false;">{% trans "открепить" %}</a>
             </dd>
         {% endif %}
-        <dt>{% trans "Могил всего" %}</dt>
-        <dd>{{ place.places_count }}</dd>
+        <dt>{% trans "Могил всего" %}</dt><dd>{{ place.places_count }}</dd>
+        <dt>{% trans "Свободно" %}</dt><dd>{{ place.get_available_count }}</dd>
+
     </dl>
     <a href="{% url create_burial %}?place_id={{ place.pk }}" class="btn">{% trans "добавить родственное" %}</a>
 
