@@ -478,6 +478,42 @@ $(function() {
         old_grave_value = $('#id_grave_number').val();
     });
 
+    $('input[id$=fias_address]').change(function() {
+        var street_input = $('input[id$=fias_street]');
+        street_input.val('');
+        $('#fias_street_info').hide();
+        var addr = $(this).val();
+        if (!addr) { return }
+        var geocoder = new google.maps.Geocoder();
+        geocoder.geocode( { 'address': addr}, function(results, status) {
+            if (status == google.maps.GeocoderStatus.OK) {
+                var address = results[0].address_components;
+                var country = '', region = '', city = '', street = '';
+                $(address).each(function() {
+                    if (this.types.indexOf("country") > -1) {
+                        country = this.long_name;
+                        $('input[id$=country_name]').val(country);
+                    }
+                    if (this.types.indexOf("administrative_area_level_1") > -1) { region = this.long_name; }
+                    if (this.types.indexOf("locality") > -1) { city = this.long_name; }
+                    if (this.types.indexOf("route") > -1) { street = this.long_name; }
+                });
+                var fias_url = '/geo/autocomplete/fias/?country='+country+'&region='+region+'&city='+city+'&street='+street;
+                $.getJSON(fias_url, function(data) {
+                    if (data.ok) {
+                        street_input.val(data.id);
+                        $('#fias_street_info').html(data.info);
+                        $('#fias_street_info').show();
+                    } else {
+                        alert("Адрес не найден в ФИАС");
+                    }
+                })
+            } else {
+                alert("Адрес неразборчив, вводите в виде: улица Свободы, Новороссийск, Краснодарский край")
+            }
+        })
+    });
+    $('input[id$=fias_address]').change();
 
     $('#paginator_select').live('change', function() {
         top.location.href = $(this).val();

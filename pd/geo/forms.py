@@ -16,13 +16,8 @@ class LocationForm(PartialFormMixin, forms.ModelForm):
     city_name = forms.CharField(label=_(u"Город"), required=False)
     street_name = forms.CharField(label=_(u"Улица"), required=False)
 
-    # fias_1 = forms.ModelChoiceField(queryset=FIAS_QS.filter(aolevel=1).order_by('offname'), required=False)
-    # fias_2 = forms.ModelChoiceField(queryset=FIAS_QS.none(), required=False)
-    # fias_3 = forms.ModelChoiceField(queryset=FIAS_QS.none(), required=False)
-    # fias_4 = forms.ModelChoiceField(queryset=FIAS_QS.none(), required=False)
-    # fias_5 = forms.ModelChoiceField(queryset=FIAS_QS.none(), required=False)
-    # fias_6 = forms.ModelChoiceField(queryset=FIAS_QS.none(), required=False)
-    # fias_7 = forms.ModelChoiceField(queryset=FIAS_QS.none(), required=False)
+    fias_address = forms.CharField(label=_(u"Адрес ФИАС"), required=False)
+    fias_street = forms.CharField(required=False, widget=forms.HiddenInput)
 
     class Meta:
         model = Location
@@ -43,21 +38,15 @@ class LocationForm(PartialFormMixin, forms.ModelForm):
                     if self.instance.street:
                         self.initial['street_name'] = self.instance.street.name
                 else:
-                    for i, fias_link in enumerate(self.instance.fias_parents.all()):
-                        self.initial['fias_%s' % (i+1)] = FIAS_QS.get(aoguid=fias_link.guid)
+                    fias_all = list(self.instance.fias_parents.all())
+                    self.initial['fias_address'] = ', '.join([f.name for f in fias_all])
+                    self.initial['fias_street'] = fias_all[-1].guid
 
-            for i in range(1, 7):
-                prefix = self.prefix and '%s-' % self.prefix or ''
-                init = self.initial.get('fias_%s' % i)
-                data = self.data.get('%sfias_%s' % (prefix, i)) or (init and init.aoguid)
-                if data:
-                    try:
-                        parent = FIAS_QS.get(aoguid=data)
-                    except DFiasAddrobj.DoesNotExist:
-                        break
-                    else:
-                        qs = FIAS_QS.filter(parentguid=parent.aoguid).order_by('offname')
-                        self.fields['fias_%s' % (i+1)].queryset = qs
+    def clean_fias_street(self):
+        try:
+            return DFiasAddrobj.objects.get(aoguid=self.cleaned_data['fias_street'])
+        except DFiasAddrobj.DoesNoptExist:
+            raise forms.ValidationError(_(u"Неверная ссылка"))
 
     def is_valid_data(self):
         return self.is_valid() and any(self.cleaned_data.values())
@@ -66,28 +55,28 @@ class LocationForm(PartialFormMixin, forms.ModelForm):
         if self.cleaned_data['country_name']:
             loc = super(LocationForm, self).save(commit=False, *args, **kwargs)
             loc.country, _tmp = Country.objects.get_or_create(name=self.cleaned_data['country_name'])
-            if not self.cleaned_data.get('fias_1'):
+            if not self.cleaned_data.get('fias_street'):
                 if self.cleaned_data['region_name']:
                     loc.region, _tmp = Region.objects.get_or_create(name=self.cleaned_data['region_name'], country=loc.country)
                     if self.cleaned_data['city_name']:
                         loc.city, _tmp = City.objects.get_or_create(name=self.cleaned_data['city_name'], region=loc.region)
                         if self.cleaned_data['street_name']:
                             loc.street, _tmp = Street.objects.get_or_create(name=self.cleaned_data['street_name'], city=loc.city)
+            else:
+                loc.region = None
+                loc.city = None
+                loc.street = None
             if commit:
                 loc.save()
 
                 loc.fias_parents.all().delete()
-                if self.cleaned_data.get('fias_1'):
-                    for fi in range(1, 8):
-                        f = 'fias_%s' % fi
-                        fd = self.cleaned_data.get(f)
-                        if fd:
-                            loc.fias_parents.create(
-                                guid=fd.aoguid,
-                                name=u'%s %s' % (fd.offname, fd.shortname),
-                                level=fd.aolevel,
-                            )
-                        else:
-                            break
+                fias = self.cleaned_data.get('fias_street')
+                while fias:
+                    loc.fias_parents.create(
+                        guid=fias.aoguid,
+                        name=u'%s %s' % (fias.offname, fias.shortname),
+                        level=fias.aolevel,
+                    )
+                    fias = fias.get_parent()
             return loc
 

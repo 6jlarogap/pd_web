@@ -1,6 +1,9 @@
+import json
+
 from django.http import HttpResponse
-from django.utils import simplejson as json
-from geo.models import Country, Street, City, Region
+
+from geo.models import Country, Street, City, Region, DFiasAddrobj
+
 
 def autocomplete_countries(request):
     query = request.GET['query']
@@ -52,3 +55,15 @@ def autocomplete_streets(request):
         'region': s.city.region.name,
         'country': s.city.region.country.name
     } for s in streets[:20]]), mimetype='text/javascript')
+
+def autocomplete_fias(request):
+    country = request.GET['country']
+    region = request.GET['region']
+    city = request.GET['city']
+    street = request.GET['street']
+
+    try:
+        sf = DFiasAddrobj.objects.get_streets(country, region, city, street)[0]
+        return HttpResponse(json.dumps({'ok': 1, 'id': sf.aoguid, 'info': u'%s' % sf }), mimetype='application/json')
+    except IndexError:
+        return HttpResponse(json.dumps({}), mimetype='application/json')

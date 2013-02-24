@@ -141,6 +141,50 @@ class LocationFIAS(models.Model):
     def __unicode__(self):
         return self.name
 
+class FiasManager(models.Manager):
+    def get_query_set(self):
+        return super(FiasManager, self).get_query_set().filter(actstatus=1).using('fias')
+
+    def clear_data(self, data, words):
+        data = data.lower()
+        for w in words:
+            data = data.replace(w.lower(), '')
+        return data.strip()
+
+    def get_streets(self, country, region, city, street):
+        TO_CLEAN = DFiasSocrbase.objects.all().values_list('socrname', flat=True)
+
+        clear_region = self.clear_data(region, TO_CLEAN)
+        fias_region = self.get(formalname=clear_region, aolevel=1)
+
+        clear_city = self.clear_data(city, TO_CLEAN)
+        areacode = '000'
+        citycode = '000'
+        placecode = '000'
+
+        try:
+            fias_city = self.get(formalname=clear_city, regioncode=fias_region.regioncode, ctarcode='000', placecode='000', streetcode='0000')
+            citycode = fias_city.citycode
+            areacode = fias_city.areacode
+        except DFiasAddrobj.DoesNotExist:
+            try:
+                fias_city = self.get(formalname=clear_city, regioncode=fias_region.regioncode, streetcode='0000')
+                placecode = fias_city.placecode
+                areacode = fias_city.areacode
+            except DFiasAddrobj.DoesNotExist:
+                pass
+            except DFiasAddrobj.MultipleObjectsReturned:
+                pass
+
+        clear_street = self.clear_data(street, TO_CLEAN)
+        fias_streets = self.filter(formalname=clear_street, regioncode=fias_region.regioncode, areacode=areacode, citycode=citycode, placecode=placecode).exclude(streetcode='0000')
+
+        for socr in DFiasSocrbase.objects.all():
+            if socr.socrname.lower() in street.lower():
+                fias_streets = fias_streets.filter(shortname=socr.scname)
+
+        return fias_streets
+
 class DFiasAddrobj(models.Model):
     """
     Импорт из ФИАС
@@ -181,8 +225,35 @@ class DFiasAddrobj(models.Model):
     enddate = models.DateField()
     normdoc = models.CharField(max_length=108)
 
+    objects = FiasManager()
+
     class Meta:
         db_table = u'd_fias_addrobj'
 
     def __unicode__(self):
-        return u'%s %s' % (self.offname, self.shortname)
+        parent = self.get_parent()
+        if parent:
+            return u'%s %s, %s' % (self.offname, self.shortname, parent)
+        else:
+            return u'%s %s' % (self.offname, self.shortname)
+
+    def get_parent(self):
+        if self.parentguid:
+            return DFiasAddrobj.objects.get(aoguid=self.parentguid, actstatus=1)
+        else:
+            return
+
+class FiasManagerLite(models.Manager):
+    def get_query_set(self):
+        return super(FiasManagerLite, self).get_query_set().using('fias')
+
+class DFiasSocrbase(models.Model):
+    level = models.IntegerField()
+    scname = models.CharField(max_length=30)
+    socrname = models.CharField(max_length=150)
+    kod_t_st = models.IntegerField(primary_key=True)
+
+    objects = FiasManagerLite()
+
+    class Meta:
+        db_table = u'd_fias_socrbase'

@@ -1,6 +1,13 @@
 <div class="form_block">
     {{ form.non_field_errors }}
 
+    {{ form.fias_address.errors }}
+    <p>{{ form.fias_address.label_tag }} {{ form.fias_address }}<span class="helptext">{{ form.fias_address.help_text }}</span></p>
+
+    {{ form.fias_street.errors }}
+    {{ form.fias_street }}
+    <p id="fias_street_info" class="well"></p>
+
     {{ form.country_name.errors }}
     <p class="inline">{{ form.country_name.label_tag }} {{ form.country_name }}<span class="helptext">{{ form.country_name.help_text }}</span></p>
 

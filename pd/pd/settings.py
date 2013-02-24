@@ -31,6 +31,14 @@ DATABASES = {
     }
 }
 
+TEST_FIAS = {
+    'ENGINE': 'django.db.backends.mysql',
+    'NAME': 'fias',                      # Or path to database file if using sqlite3.
+    'USER': '',                      # Not used with sqlite3.
+    'PASSWORD': '',                  # Not used with sqlite3.
+}
+
+
 TIME_ZONE = 'Europe/Moscow'
 
 LANGUAGE_CODE = 'ru'
