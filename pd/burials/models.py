@@ -218,7 +218,8 @@ class Burial(models.Model):
     cemetery = models.ForeignKey(Cemetery, verbose_name=_(u"Кладбище"), null=True, blank=True, on_delete=models.PROTECT)
     area = models.ForeignKey(Area, verbose_name=_(u"Участок"), blank=True, null=True)
     row = models.CharField(_(u"Ряд"), max_length=255, blank=True, null=True)
-    place_number = models.CharField(_(u"Номер места"), max_length=255, null=True, blank=True)
+    place_number = models.CharField(_(u"Номер места"), max_length=255, null=True, blank=True,
+                                    help_text=_(u"Если пусто - номер будет сгенерирован автоматически"))
     grave_number = models.PositiveSmallIntegerField(_(u"Могила"), max_length=255, default=1)
     responsible = models.ForeignKey('persons.AlivePerson', verbose_name=_(u"Ответственный"), blank=True, null=True,
                                     related_name='responsible_burials')
@@ -398,8 +399,10 @@ class Burial(models.Model):
         place.row = self.row
         place.place = self.place_number
         place.save()
+
         self.responsible = None
         self.place = place
+        self.place_number = place.place
         self.save()
         return self
 

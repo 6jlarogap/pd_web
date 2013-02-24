@@ -3,6 +3,11 @@
 {{ form.burial_type.errors }}
 <p>{{ form.burial_type.label_tag }} {{ form.burial_type }}<span class="helptext">{{ form.burial_type.help_text }}</span></p>
 
+{% if form.account_number %}
+    {{ form.account_number.errors }}
+    <p>{{ form.account_number.label_tag }} {{ form.account_number }}<span class="helptext">{{ form.account_number.help_text }}</span></p>
+{% endif %}
+
 <h2>{% trans "Место" %} {{ form.instance.get_place|default:"" }}</h2>
 <a href="#" onclick="$('#cont_place').slideToggle(); return false">{% trans "развернуть" %}</a>
 <div id="cont_place" style="display: none">

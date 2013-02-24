@@ -381,14 +381,20 @@ class BurialCommitForm(BurialForm):
                 self.fields[f].required = True
 
         bt = self.data['burial_type'] or (self.instance and self.instance.burial_type) or None
+        if self.data.get('cemetery'):
+            cemetery = Cemetery.objects.get(pk=self.data.get('cemetery'))
+        else:
+            cemetery = self.instance and self.instance.cemetery or None
         if bt not in Burial.NEW_BURIAL_TYPES:
-            self.fields['place_number'].required = True
+            if cemetery and cemetery.places_algo == Cemetery.PLACE_MANUAL:
+                self.fields['place_number'].required = True
 
         if self.instance.is_archive() and self.fields.get('fact_date'):
             self.fields['fact_date'].required = True
 
         if self.instance.is_finished():
-            self.fields['place_number'].required = True
+            if cemetery and cemetery.places_algo == Cemetery.PLACE_MANUAL:
+                self.fields['place_number'].required = True
 
         if self.instance and self.instance.is_ugh() and self.instance.applicant_organization:
             if not self.instance.is_archive():
@@ -495,6 +501,15 @@ class BurialCloseForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelForm):
         for f in self.fields:
             if f not in ['row', ]:
                 self.fields[f].required = True
+
+        if self.data.get('cemetery'):
+            cemetery = Cemetery.objects.get(pk=self.data.get('cemetery'))
+        else:
+            cemetery = self.instance.cemetery
+
+        if cemetery.places_algo != Cemetery.PLACE_MANUAL:
+            self.fields['place_number'].required = False
+
         self.fields['cemetery'].queryset = Cemetery.objects.filter(ugh=request.user.profile.org)
         self.forms = []
         self.request = request
