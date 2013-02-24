@@ -39,8 +39,9 @@ class LocationForm(PartialFormMixin, forms.ModelForm):
                         self.initial['street_name'] = self.instance.street.name
                 else:
                     fias_all = list(self.instance.fias_parents.all())
-                    self.initial['fias_address'] = ', '.join([f.name for f in fias_all])
-                    self.initial['fias_street'] = fias_all[-1].guid
+                    if fias_all:
+                        self.initial['fias_address'] = ', '.join([f.name for f in fias_all])
+                        self.initial['fias_street'] = fias_all[-1].guid
 
     def clean_fias_street(self):
         if self.cleaned_data.get('fias_street'):
