@@ -490,13 +490,25 @@ $(function() {
                 var address = results[0].address_components;
                 var country = '', region = '', city = '', street = '';
                 $(address).each(function() {
-                    if (this.types.indexOf("country") > -1) {
-                        country = this.long_name;
-                        $('input[id$=country_name]').val(country);
+                    if (this.types.indexOf("postal_code") > -1) { $('input[id$=post_index]').val(this.long_name); }
+                    if (this.types.indexOf("country") > -1) { country = this.long_name; $('input[id$=country_name]').val(country); }
+                    if (this.types.indexOf("administrative_area_level_1") > -1) { region = this.long_name; $('input[id$=region_name]').val(''); }
+                    if (this.types.indexOf("locality") > -1) { city = this.long_name; $('input[id$=city_name]').val(''); }
+                    if (this.types.indexOf("route") > -1) { street = this.long_name; $('input[id$=street_name]').val(''); }
+                    if (this.types.indexOf("street_number") > -1) {
+                        $('input[id$=house]').val(this.long_name);
+                        if (this.long_name.indexOf("корпус") > -1) {
+                            var bits = this.long_name.split(" корпус ");
+                            $('input[id$=house]').val(bits[0]);
+                            $('input[id$=block]').val(bits[1]);
+                        }
+                        if (this.long_name.indexOf("строение") > -1) {
+                            var bits = this.long_name.split(" строение ");
+                            $('input[id$=house]').val(bits[0]);
+                            $('input[id$=building]').val(bits[1]);
+                        }
                     }
-                    if (this.types.indexOf("administrative_area_level_1") > -1) { region = this.long_name; }
-                    if (this.types.indexOf("locality") > -1) { city = this.long_name; }
-                    if (this.types.indexOf("route") > -1) { street = this.long_name; }
+                    if (this.types.indexOf("subpremise") > -1) { $('input[id$=flat]').val(this.long_name); }
                 });
                 var fias_url = '/geo/autocomplete/fias/?country='+country+'&region='+region+'&city='+city+'&street='+street;
                 $.getJSON(fias_url, function(data) {

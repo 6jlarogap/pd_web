@@ -43,10 +43,13 @@ class LocationForm(PartialFormMixin, forms.ModelForm):
                     self.initial['fias_street'] = fias_all[-1].guid
 
     def clean_fias_street(self):
-        try:
-            return DFiasAddrobj.objects.get(aoguid=self.cleaned_data['fias_street'])
-        except DFiasAddrobj.DoesNoptExist:
-            raise forms.ValidationError(_(u"Неверная ссылка"))
+        if self.cleaned_data.get('fias_street'):
+            try:
+                return DFiasAddrobj.objects.get(aoguid=self.cleaned_data['fias_street'])
+            except DFiasAddrobj.DoesNotExist:
+                raise forms.ValidationError(_(u"Неверная ссылка"))
+        else:
+            return
 
     def is_valid_data(self):
         return self.is_valid() and any(self.cleaned_data.values())

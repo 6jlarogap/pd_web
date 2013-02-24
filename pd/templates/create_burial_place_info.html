@@ -25,6 +25,7 @@
     <ul>
         {% for b in place.burial_set.all %}
             <li>
+                {{ b.grave_number }} &mdash;
                 {{ b.get_burial_type_display }} &mdash;
                 {% if user.profile.is_loru and b.is_full %}
                     <a href="{% url view_burial b.pk %}">{{ b.deadman|default:"Неизвестный" }}</a>

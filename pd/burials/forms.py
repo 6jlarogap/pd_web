@@ -144,9 +144,11 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, forms.Mo
                 date_diff = 2 # Saturday
             self.fields['plan_date'].initial = datetime.date.today() + datetime.timedelta(date_diff)
 
+        places_count = 1
         if self.instance.place_number and self.instance.get_place() and self.instance.grave_number:
-            grave_choices = [(i,i) for i in range(1, self.instance.get_place().get_places_count()+1)]
-            self.fields['grave_number'].widget = forms.Select(choices=grave_choices)
+            places_count = self.instance.get_place().get_places_count()
+        grave_choices = [(i,i) for i in range(1, places_count+1)]
+        self.fields['grave_number'].widget = forms.Select(choices=grave_choices)
 
         if self.request.user.profile.is_loru():
             del self.fields['applicant_organization']
