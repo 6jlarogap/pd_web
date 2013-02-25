@@ -13,11 +13,30 @@
     <form action="{{ request.path }}" method="POST" class="burial-form">
         {% csrf_token %}
         <input id="id_cemetery" value="{{ burial.cemetery.pk }}" type="hidden" />
-        {{ form.as_p }}
+
+        {% if form.plan_date %}
+            {{ form.plan_date.errors }}
+            <p class="inline">{{ form.plan_date.label_tag }} {{ form.plan_date }}<span class="helptext">{{ form.plan_date.help_text }}</span></p>
+        {% endif %}
+
+        {% if form.plan_time %}
+            {{ form.plan_time.errors }}
+            <p class="inline">{{ form.plan_time.label_tag }} {{ form.plan_time }}<span class="helptext">{{ form.plan_time.help_text }}</span></p>
+        {% endif %}
+
+        {% include "applicant_form.html" %}
+
         {% block buttons %}
             <p class="clear">
                 <input type="submit" class="btn btn-primary btn-commit-burial" value="{% trans "отправить" %}"/>
             </p>
         {% endblock buttons %}
     </form>
+
+    <script type="text/javascript">
+        CEMETERY_AREAS = {{ form.cemetery_areas_json }};
+        CEMETERY_TIMES = {{ form.cemetery_times_json }};
+        AGENT_DOVER = {{ form.agent_dover_json }};
+        LORU_AGENTS = {{ form.loru_agents_json }};
+    </script>
 {% endblock %}

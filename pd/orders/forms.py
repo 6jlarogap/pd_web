@@ -9,6 +9,7 @@ from geo.forms import LocationForm
 
 from orders.models import Product, Order, OrderItem, CatafalqueData, CoffinData
 from burials.forms import OPF_CHOICES
+from pd.forms import ChildrenJSONMixin
 from persons.forms import AlivePersonForm, PersonIDForm
 from persons.models import AlivePerson, PersonID
 
@@ -18,7 +19,7 @@ class ProductForm(forms.ModelForm):
         model = Product
         exclude = ['loru', ]
 
-class OrderForm(forms.ModelForm):
+class OrderForm(ChildrenJSONMixin, forms.ModelForm):
     opf = forms.ChoiceField(label=_(u'ОПФ'), choices=OPF_CHOICES, widget=forms.RadioSelect, initial='person')
 
     class Meta:

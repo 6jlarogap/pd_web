@@ -561,7 +561,9 @@ class AddOrgForm(forms.ModelForm):
                 raise forms.ValidationError(_(u"ИНН уже зарегистрирован"))
         return inn
 
-class ExhumationForm(forms.ModelForm):
+class ExhumationForm(ChildrenJSONMixin, forms.ModelForm):
+    opf = forms.ChoiceField(label=_(u'ОПФ'), choices=OPF_CHOICES, widget=forms.RadioSelect, initial='person')
+
     class Meta:
         model = ExhumationRequest
 
@@ -569,6 +571,13 @@ class ExhumationForm(forms.ModelForm):
         super(ExhumationForm, self).__init__(*args, **kwargs)
         self.request = request
         self.burial = burial
+
+        self.fields.keyOrder.insert(0, self.fields.keyOrder.pop(-1))
+
+        if self.instance.applicant:
+            self.initial['opf'] = 'person'
+        else:
+            self.initial['opf'] = 'org'
 
         if burial.cemetery and burial.cemetery.time_slots:
             choices = [('', '----------')] + burial.cemetery.get_time_choices(
@@ -579,10 +588,58 @@ class ExhumationForm(forms.ModelForm):
         if self.instance.plan_time:
             self.initial['plan_time'] = self.instance.plan_time.strftime('%H:%M')
 
+        self.forms = self.construct_forms()
+
+    def is_valid(self):
+        return super(ExhumationForm, self).is_valid() and all([f.is_valid() for f in self.forms])
+
+    def construct_forms(self):
+        data = self.data or None
+        applicant = self.instance and self.instance.applicant
+        self.applicant_form = AlivePersonForm(data=data, prefix='applicant', instance=applicant)
+        applicant_addr = applicant and applicant.address
+        self.applicant_address_form = LocationForm(data=data, prefix='applicant-address', instance=applicant_addr)
+        try:
+            applicant_id = self.instance and self.instance.applicant and self.instance.applicant.personid
+        except PersonID.DoesNotExist:
+            applicant_id = None
+        self.applicant_id_form = PersonIDForm(data=data, prefix='applicant-pid', instance=applicant_id)
+
+        return [self.applicant_form, self.applicant_address_form, self.applicant_id_form]
 
     def clean(self):
-        if self.cleaned_data.get('applicant_org') and self.cleaned_data.get('applicant_person'):
+        if self.cleaned_data.get('applicant_organization') and self.cleaned_data.get('applicant'):
             raise forms.ValidationError(_(u'Необходимо указать только одного заявителя'))
-        if not self.cleaned_data.get('applicant_org') and not self.cleaned_data.get('applicant_person'):
+        if not self.cleaned_data.get('applicant_organization') and not self.cleaned_data.get('applicant'):
             raise forms.ValidationError(_(u'Необходимо указать заявителя'))
         return self.cleaned_data
+
+    def save(self, commit=True, *args, **kwargs):
+        self.instance = super(ExhumationForm, self).save(commit=False, *args, **kwargs)
+
+        self.instance.burial = self.burial
+        self.instance.place = self.burial.place
+
+        if self.cleaned_data.get('opf') == 'person' and self.applicant_form.is_valid_data():
+            applicant = self.applicant_form.save(commit=False)
+            if self.applicant_address_form.is_valid_data():
+                applicant.address = self.applicant_address_form.save()
+            applicant.save()
+
+            if self.applicant_id_form.is_valid_data():
+                pid = self.applicant_id_form.save(commit=False)
+                pid.person = applicant
+                pid.save()
+            self.instance.applicant = applicant
+            self.instance.applicant_organization = None
+        else:
+            try:
+                self.instance.applicant.delete()
+            except (AttributeError, ProtectedError):
+                pass
+            self.instance.applicant = None
+
+        self.instance.save()
+
+        return self.instance
+

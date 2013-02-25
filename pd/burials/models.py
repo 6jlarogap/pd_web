@@ -435,13 +435,16 @@ class Reason(models.Model):
 
 class ExhumationRequest(models.Model):
     burial = models.OneToOneField(Burial, editable=False)
-    place = models.ForeignKey(Place, editable=False)
+    place = models.ForeignKey(Place, editable=False, null=True)
     plan_date = models.DateField(_(u"Дата"))
     plan_time = models.TimeField(_(u"Время"))
-    applicant_person = models.ForeignKey('persons.AlivePerson', verbose_name=_(u"Заявитель-ФЛ"), blank=True, null=True,
-                                         related_name='applied_exhumations')
-    applicant_org = models.ForeignKey(Org, verbose_name=_(u"Заявитель-ЮЛ"), null=True, blank=True,
-                                      related_name='loru_exhumations', on_delete=models.PROTECT)
+    applicant = models.ForeignKey('persons.AlivePerson', verbose_name=_(u"Заказчик-ФЛ"), null=True, blank=True)
+    applicant_organization = models.ForeignKey(Org, verbose_name=_(u"Заказчик-ЮЛ"), null=True, blank=True)
+    agent_director = models.BooleanField(_(u"Директор-Агент"), default=False, blank=True)
+    agent = models.ForeignKey('users.Profile', verbose_name=_(u"Агент"), null=True, blank=True,
+                              limit_choices_to={'is_agent': True}, on_delete=models.PROTECT)
+    dover = models.ForeignKey('users.Dover', verbose_name=_(u"Доверенность"), null=True, blank=True,
+                              on_delete=models.PROTECT)
 
     class Meta:
         verbose_name = _(u"Запрос на эксгумацию")

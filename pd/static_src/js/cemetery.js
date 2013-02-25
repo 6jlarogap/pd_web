@@ -363,7 +363,7 @@ $(function() {
     });
     $('input[name=opf]').change();
 
-    $(':input:visible:first').focus();
+    $('form.burial-form :input:visible:first').focus();
 
     $('#id_agent_director').change(function() {
         if ($(this).is(':checked')) {

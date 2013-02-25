@@ -519,7 +519,10 @@ class ExhumateView(ArchiveMixin, DetailView):
             ex.save()
             write_log(self.request, self.get_object(), _(u'Захоронение эксгумировано'))
             messages.success(request, _(u"Эксгумация успешна"))
-            return redirect('view_place', ex.place.pk)
+            if ex.place:
+                return redirect('view_place', ex.place.pk)
+            else:
+                return redirect('view_burial', ex.burial.pk)
         else:
             messages.error(request, _(u"Обнаружены ошибки"))
             return self.get(request, *args, **kwargs)
