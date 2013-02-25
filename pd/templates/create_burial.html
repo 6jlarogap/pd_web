@@ -21,7 +21,6 @@
         {% endif %}
 
         {{ form.non_field_errors }}
-        {% include "create_burial_main_form.html" %}
 
         <h2>{% trans "Усопший" %} {{ form.deadman_form.instance|default:"" }}</h2>
         <a href="#" onclick="$('#cont_dead').slideToggle(); return false">{% trans "развернуть" %}</a>
@@ -36,6 +35,8 @@
             <h3>{% trans "Свидетельство о смерти" %}</h3>
             {{ form.dc_form.as_p }}
         </div>
+
+        {% include "create_burial_main_form.html" %}
 
         {% block buttons %}
             <p class="clear">
