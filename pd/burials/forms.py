@@ -507,7 +507,7 @@ class BurialCloseForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelForm):
         else:
             cemetery = self.instance.cemetery
 
-        if cemetery.places_algo != Cemetery.PLACE_MANUAL:
+        if cemetery and cemetery.places_algo != Cemetery.PLACE_MANUAL:
             self.fields['place_number'].required = False
 
         self.fields['cemetery'].queryset = Cemetery.objects.filter(ugh=request.user.profile.org)
