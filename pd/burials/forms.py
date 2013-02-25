@@ -208,7 +208,7 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, forms.Mo
 
         if self.request.user.profile.is_ugh() or self.instance.is_ugh_only():
             ugh = self.request.user.profile.org
-            loru_list = Org.objects.filter(type=Org.PROFILE_LORU, ugh_list__ugh=ugh)
+            loru_list = Org.objects.all()
             self.fields['applicant_organization'].queryset = loru_list
             self.fields['agent'].queryset = Profile.objects.filter(org__in=loru_list, is_agent=True)
             self.fields['dover'].queryset = Dover.objects.filter(agent__org__in=loru_list)
