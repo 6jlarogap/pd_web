@@ -21,8 +21,8 @@
 
         {% include "applicant_form.html" %}
 
-        {{ form.opf.errors }}
-        <p class="inline">{{ form.opf.label_tag }} {{ form.opf }}<span class="helptext">{{ form.opf.help_text }}</span></p>
+        {{ form.payment.errors }}
+        <p class="inline">{{ form.payment.label_tag }} {{ form.payment }}<span class="helptext">{{ form.payment.help_text }}</span></p>
 
         {% if form.instance.get_burial %}
             <p>
