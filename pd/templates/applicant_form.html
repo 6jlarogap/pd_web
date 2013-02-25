@@ -1,0 +1,66 @@
+{% load i18n %}
+
+<h2>
+    {% if 'order' in request.path %}
+        {% trans "Заказчик" %}
+    {% else %}
+        {% trans "Заявитель" %}
+    {% endif %}
+    {% if form.instance.applicant_organization %}
+        {{ form.instance.applicant_organization }}
+    {% elif form.applicant_form.instance %}
+        {{ form.applicant_form.instance }}
+    {% else %}
+    {% endif %}
+</h2>
+<a href="#" onclick="$('#cont_applicant').slideToggle(); return false">{% trans "развернуть" %}</a>
+<div id="cont_applicant" {% if form.instance.pk %}style="display: none"{% endif %}>
+    {{ form.opf.errors }}
+    <p>{{ form.opf.label_tag }} {{ form.opf }}<span class="helptext">{{ form.opf.help_text }}</span></p>
+
+    <div id="applicant_form_org">
+        {{ form.applicant_organization.errors }}
+        <p>{{ form.applicant_organization.label_tag }} {{ form.applicant_organization }}<span class="helptext">{{ form.applicant_organization.help_text }}</span></p>
+
+        <p>
+            <a href="#add_loru" role="button" class="btn btn-loru" data-toggle="modal">
+                {% trans "добавить юрлицо" %}
+            </a>
+        </p>
+
+        {{ form.agent_director.errors }}
+        <p>{{ form.agent_director.label_tag }} {{ form.agent_director }}<span class="helptext">{{ form.agent_director.help_text }}</span></p>
+
+        {{ form.agent.errors }}
+        <p>{{ form.agent.label_tag }} {{ form.agent }}<span class="helptext">{{ form.agent.help_text }}</span></p>
+
+        <p>
+            <a href="#add_agent" role="button" class="btn btn-agent" data-toggle="modal">
+                {% trans "добавить агента" %}
+            </a>
+        </p>
+
+        {{ form.dover.errors }}
+        <p>{{ form.dover.label_tag }} {{ form.dover }}<span class="helptext">{{ form.dover.help_text }}</span></p>
+
+        <p>
+            <a href="#add_dover" role="button" class="btn btn-dover" data-toggle="modal">
+                {% trans "добавить доверенность" %}
+            </a>
+        </p>
+    </div>
+
+    <div id="applicant_form_person">
+        {{ form.applicant_form.as_p }}
+        <h3>{% trans "Адрес" %}</h3>
+        <div class="form_block">
+            {% with form.applicant_address_form as form %}
+                {% include "location_form.html" %}
+            {% endwith %}
+        </div>
+        <h3>{% trans "Удостоверение личности" %}</h3>
+        <div class="form_block">
+            {{ form.applicant_id_form.as_p }}
+        </div>
+    </div>
+</div>

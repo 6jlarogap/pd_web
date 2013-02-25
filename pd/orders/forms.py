@@ -1,13 +1,16 @@
 # coding=utf-8
 from django import forms
+from django.db.models.deletion import ProtectedError
 from django.db.models.expressions import F
 from django.db.models.query_utils import Q
 from django.forms.models import inlineformset_factory, BaseInlineFormSet
 from django.utils.translation import ugettext as _
+from geo.forms import LocationForm
 
 from orders.models import Product, Order, OrderItem, CatafalqueData, CoffinData
 from burials.forms import OPF_CHOICES
-from persons.models import AlivePerson
+from persons.forms import AlivePersonForm, PersonIDForm
+from persons.models import AlivePerson, PersonID
 
 
 class ProductForm(forms.ModelForm):
@@ -18,48 +21,62 @@ class ProductForm(forms.ModelForm):
 class OrderForm(forms.ModelForm):
     opf = forms.ChoiceField(label=_(u'ОПФ'), choices=OPF_CHOICES, widget=forms.RadioSelect, initial='person')
 
-    person_last_name = forms.CharField(label=_(u"Фамилия"), required=False)
-    person_first_name = forms.CharField(label=_(u"Имя"), required=False)
-    person_middle_name = forms.CharField(label=_(u"Отчество"), required=False)
-
     class Meta:
         model = Order
-        exclude = ['loru', 'person' ]
+        exclude = ['loru', 'person', 'org', ]
 
     def __init__(self, *args, **kwargs):
         super(OrderForm, self).__init__(*args, **kwargs)
-        self.fields.keyOrder.insert(0, self.fields.keyOrder.pop(-4))
+        self.fields.keyOrder.insert(0, self.fields.keyOrder.pop(-1))
 
-        if self.instance.person:
-            self.initial['person_last_name'] = self.instance.person.last_name or u""
-            self.initial['person_first_name'] = self.instance.person.first_name or u""
-            self.initial['person_middle_name'] = self.instance.person.middle_name or u""
+        if self.instance.applicant:
             self.initial['opf'] = 'person'
         else:
             self.initial['opf'] = 'org'
 
-        if self.data and self.data.get('opf') == 'person':
-            self.fields['person_last_name'].required = True
-            self.fields['person_first_name'].required = True
-            self.fields['person_middle_name'].required = True
-
         self.fields['payment'].widget = forms.RadioSelect(choices=Order.PAYMENT_CHOICES)
+
+        self.forms = self.construct_forms()
+
+    def is_valid(self):
+        return super(OrderForm, self).is_valid() and all([f.is_valid() for f in self.forms])
+
+    def construct_forms(self):
+        data = self.data or None
+        applicant = self.instance and self.instance.applicant
+        self.applicant_form = AlivePersonForm(data=data, prefix='applicant', instance=applicant)
+        applicant_addr = applicant and applicant.address
+        self.applicant_address_form = LocationForm(data=data, prefix='applicant-address', instance=applicant_addr)
+        try:
+            applicant_id = self.instance and self.instance.applicant and self.instance.applicant.personid
+        except PersonID.DoesNotExist:
+            applicant_id = None
+        self.applicant_id_form = PersonIDForm(data=data, prefix='applicant-pid', instance=applicant_id)
+
+        return [self.applicant_form, self.applicant_address_form, self.applicant_id_form]
 
     def save(self, commit=True, *args, **kwargs):
         self.instance = super(OrderForm, self).save(*args, **kwargs)
 
-        if self.cleaned_data['opf'] == 'person':
-            person = self.instance.person or AlivePerson()
+        if self.cleaned_data.get('opf') == 'person' and self.applicant_form.is_valid_data():
+            applicant = self.applicant_form.save(commit=False)
+            if self.applicant_address_form.is_valid_data():
+                applicant.address = self.applicant_address_form.save()
+            applicant.save()
 
-            person.last_name = self.cleaned_data['person_last_name']
-            person.first_name = self.cleaned_data['person_first_name']
-            person.middle_name = self.cleaned_data['person_middle_name']
-            person.save()
-
-            self.instance.person = person
-            self.instance.org = None
+            if self.applicant_id_form.is_valid_data():
+                pid = self.applicant_id_form.save(commit=False)
+                pid.person = applicant
+                pid.save()
+            self.instance.applicant = applicant
+            self.instance.applicant_organization = None
         else:
-            self.instance.person = None
+            try:
+                self.instance.applicant.delete()
+            except (AttributeError, ProtectedError):
+                pass
+            self.instance.applicant = None
+
         self.instance.save()
 
         return self.instance

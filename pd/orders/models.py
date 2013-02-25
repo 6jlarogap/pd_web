@@ -52,8 +52,13 @@ class Order(models.Model):
 
     loru = models.ForeignKey(Org, limit_choices_to={'type': Org.PROFILE_LORU}, null=True, verbose_name=_(u"ЛОРУ"))
     payment = models.CharField(_(u"Тип платежа"), max_length=255, choices=PAYMENT_CHOICES, default=PAYMENT_CASH)
-    person = models.ForeignKey('persons.AlivePerson', verbose_name=_(u"Заказчик-ФЛ"), null=True, blank=True)
-    org = models.ForeignKey(Org, verbose_name=_(u"Заказчик-ЮЛ"), null=True, blank=True, related_name='org_orders')
+    applicant = models.ForeignKey('persons.AlivePerson', verbose_name=_(u"Заказчик-ФЛ"), null=True, blank=True)
+    applicant_organization = models.ForeignKey(Org, verbose_name=_(u"Заказчик-ЮЛ"), null=True, blank=True, related_name='org_orders')
+    agent_director = models.BooleanField(_(u"Директор-Агент"), default=False, blank=True)
+    agent = models.ForeignKey('users.Profile', verbose_name=_(u"Агент"), null=True, blank=True,
+                              limit_choices_to={'is_agent': True}, on_delete=models.PROTECT)
+    dover = models.ForeignKey('users.Dover', verbose_name=_(u"Доверенность"), null=True, blank=True,
+                              on_delete=models.PROTECT)
     dt = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -65,7 +70,7 @@ class Order(models.Model):
 
     @property
     def customer(self):
-        return self.person or self.org
+        return self.applicant or self.applicant_organization
 
     @property
     def total(self):

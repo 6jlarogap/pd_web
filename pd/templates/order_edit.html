@@ -18,7 +18,8 @@
     </p>
     <form action="" method="POST">
         {% csrf_token %}
-        {{ form.as_p }}
+
+        {% include "applicant_form.html" %}
 
         {% if form.instance.get_burial %}
             <p>

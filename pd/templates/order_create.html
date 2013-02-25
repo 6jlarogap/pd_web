@@ -6,12 +6,9 @@
     <h1>{% trans "Новый заказ" %}</h1>
     <form action="" method="POST">
         {% csrf_token %}
-        {{ form.as_p }}
-        <p>
-            <a href="#add_org" role="button" class="btn btn-org" data-toggle="modal">
-                {% trans "добавить юрлицо" %}
-            </a>
-        </p>
+
+        {% include "applicant_form.html" %}
+
         <p>
             <input type="submit" class="btn" value="{% trans "Создать" %}"/>
         </p>
