@@ -21,6 +21,9 @@
 
         {% include "applicant_form.html" %}
 
+        {{ form.opf.errors }}
+        <p class="inline">{{ form.opf.label_tag }} {{ form.opf }}<span class="helptext">{{ form.opf.help_text }}</span></p>
+
         {% if form.instance.get_burial %}
             <p>
                 <a href="{% url view_burial form.instance.get_burial.pk %}">
