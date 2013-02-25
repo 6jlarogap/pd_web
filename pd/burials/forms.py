@@ -132,7 +132,12 @@ class ResponsibleForm(AlivePersonForm):
 
     def __init__(self, *args, **kwargs):
         super(ResponsibleForm, self).__init__(*args, **kwargs)
-        self.fields.keyOrder.insert(0, self.fields.keyOrder.pop(-3))
+        if self.instance.pk:
+            del self.fields['take_from']
+        else:
+            self.fields.keyOrder.insert(0, self.fields.keyOrder.pop(-3))
+
+        self.initial.setdefault('take_from', self.WHERE_NEW)
 
     def clean(self):
         if self.cleaned_data.get('take_from') == self.WHERE_FROM_ORDER:
@@ -148,7 +153,9 @@ class ResponsibleForm(AlivePersonForm):
         return self.cleaned_data
 
     def save(self, *args, **kwargs):
-        if self.cleaned_data.get('take_from') == self.WHERE_FROM_ORDER:
+        if self.instance.pk:
+            return super(ResponsibleForm, self).save(*args, **kwargs)
+        elif self.cleaned_data.get('take_from') == self.WHERE_FROM_ORDER:
             return self.cleaned_data['order'].applicant
         elif self.cleaned_data.get('take_from') == self.WHERE_FROM_PLACE:
             return self.cleaned_data['place'].responsible

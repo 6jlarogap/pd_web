@@ -513,10 +513,7 @@ class ExhumateView(ArchiveMixin, DetailView):
         self.request = request
         f = self.get_form()
         if f.is_valid():
-            ex = f.save(commit=False)
-            ex.burial = self.get_object()
-            ex.place = ex.burial.place
-            ex.save()
+            ex = f.save()
             write_log(self.request, self.get_object(), _(u'Захоронение эксгумировано'))
             messages.success(request, _(u"Эксгумация успешна"))
             if ex.place:

@@ -454,6 +454,9 @@ class ExhumationRequest(models.Model):
         return u'%s' % self.pk
 
     def apply(self):
+        self.place = self.burial.place
+        self.save()
+
         self.burial.place = None
         self.burial.status = self.burial.STATUS_EXHUMATED
         self.burial.save()
