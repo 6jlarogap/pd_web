@@ -14,7 +14,7 @@
     {% endif %}
 </h2>
 <a href="#" onclick="$('#cont_applicant').slideToggle(); return false">{% trans "развернуть" %}</a>
-<div id="cont_applicant" {% if form.instance.pk %}style="display: none"{% endif %}>
+<div id="cont_applicant" {% if form.instance.pk or not 'order' in request.path %}style="display: none"{% endif %}>
     {{ form.opf.errors }}
     <p>{{ form.opf.label_tag }} {{ form.opf }}<span class="helptext">{{ form.opf.help_text }}</span></p>
 

@@ -474,6 +474,18 @@ $(function() {
     });
     $('#id_cemetery, #id_area, #id_row, #id_place_number').change();
 
+    $('input[name=responsible-take_from]').change(function() {
+        if ($('input[name=responsible-take_from]:checked').val() == 'new') {
+            $('input[name^=responsible-]:not([name=responsible-take_from])').closest('p').show();
+            $('#cont_responsible_address').show();
+        } else {
+            $('input[name^=responsible-]:not([name=responsible-take_from])').closest('p').hide();
+            $('#cont_responsible_address').hide();
+        }
+    });
+    $('input[name=responsible-take_from]').change();
+
+
     $('#id_grave_number').change(function() {
         old_grave_value = $('#id_grave_number').val();
     });

@@ -15,6 +15,7 @@ from django.db.models.query_utils import Q
 
 from burials.models import Cemetery, Area, Burial, Place, ExhumationRequest
 from geo.forms import LocationForm
+from orders.models import Order
 from pd.forms import PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin
 from persons.forms import DeadPersonForm, DeathCertificateForm, AlivePersonForm, PersonIDForm
 from persons.models import DeathCertificate, PersonID
@@ -114,6 +115,47 @@ class BurialSearchForm(forms.Form):
     exhumated = forms.BooleanField(required=False, initial=False, label=_(u"Только эксгумированные"))
     per_page = forms.ChoiceField(label=_(u"На странице"), choices=PAGE_CHOICES, initial=25, required=False)
 
+class ResponsibleForm(AlivePersonForm):
+    WHERE_FROM_PLACE = u'place'
+    WHERE_FROM_ORDER = u'order'
+    WHERE_NEW = u'new'
+    WHERE_CHOICES = (
+        (WHERE_FROM_PLACE, _(u'Существующий (из места)')),
+        (WHERE_FROM_ORDER, _(u'Заказчик (из Счет-Заказа)')),
+        (WHERE_NEW, _(u'Новый')),
+    )
+
+    take_from = forms.ChoiceField(label=_(u"Где берем Ответственного?"), choices=WHERE_CHOICES,
+                                  widget=forms.RadioSelect, required=True, initial=WHERE_NEW)
+    place = forms.ModelChoiceField(queryset=Place.objects.all(), widget=forms.HiddenInput, required=False)
+    order = forms.ModelChoiceField(queryset=Order.objects.all(), widget=forms.HiddenInput, required=False)
+
+    def __init__(self, *args, **kwargs):
+        super(ResponsibleForm, self).__init__(*args, **kwargs)
+        self.fields.keyOrder.insert(0, self.fields.keyOrder.pop(-3))
+
+    def clean(self):
+        if self.cleaned_data.get('take_from') == self.WHERE_FROM_ORDER:
+            if not self.cleaned_data.get('order'):
+                raise forms.ValidationError(_(u'Нет Заказа'))
+            if not self.cleaned_data.get('order').applicant:
+                raise forms.ValidationError(_(u'Нет Закачика-ФЛ'))
+        if self.cleaned_data.get('take_from') == self.WHERE_FROM_PLACE:
+            if not self.cleaned_data.get('place'):
+                raise forms.ValidationError(_(u'Нет Места'))
+            if not self.cleaned_data.get('place').responsible:
+                raise forms.ValidationError(_(u'Нет Ответственного у Места'))
+        return self.cleaned_data
+
+    def save(self, *args, **kwargs):
+        if self.cleaned_data.get('take_from') == self.WHERE_FROM_ORDER:
+            return self.cleaned_data['order'].applicant
+        elif self.cleaned_data.get('take_from') == self.WHERE_FROM_PLACE:
+            return self.cleaned_data['place'].responsible
+        else:
+            return super(ResponsibleForm, self).save(*args, **kwargs)
+
+
 class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, forms.ModelForm):
     opf = forms.ChoiceField(label=_(u'ОПФ'), choices=OPF_CHOICES, widget=forms.RadioSelect)
 
@@ -170,7 +212,6 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, forms.Mo
             else:
                 self.initial['opf'] = 'org'
 
-
         if self.request.user.profile.is_ugh() and self.request.REQUEST.get('archive'):
             del self.fields['plan_date']
             del self.fields['plan_time']
@@ -198,7 +239,8 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, forms.Mo
         self.dc_form = DeathCertificateForm(data=data, prefix='deadman-dc', instance=dc)
 
         responsible = self.instance and self.instance.get_responsible()
-        self.responsible_form = AlivePersonForm(data=data, prefix='responsible', instance=responsible)
+        self.responsible_form = ResponsibleForm(data=data, prefix='responsible', instance=responsible,
+                                                initial={'order': self.request.REQUEST.get('order')})
         resp_addr = responsible and responsible.address
         self.responsible_address_form = LocationForm(data=data, prefix='responsible-address', instance=resp_addr)
 
