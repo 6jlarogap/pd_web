@@ -199,7 +199,7 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, forms.Mo
             date_diff = 1
             if datetime.date.today().weekday() == 5 and request.user.profile.is_ugh():
                 date_diff = 2 # Saturday
-            self.fields['plan_date'].initial = datetime.date.today() + datetime.timedelta(date_diff)
+            self.initial['plan_date'] = datetime.date.today() + datetime.timedelta(date_diff)
 
         places_count = 1
         if self.instance.place_number and self.instance.get_place() and self.instance.grave_number:
