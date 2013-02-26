@@ -289,6 +289,7 @@ class CreateBurial(CreateView):
             'agent_dover_form': AddDoverForm(prefix='agent_dover'),
             'dover_form': AddDoverForm(prefix='dover'),
             'loru_form': AddOrgForm(prefix='loru'),
+            'order': self.get_order(),
         })
         return data
 
@@ -311,6 +312,13 @@ class CreateBurial(CreateView):
         data['request'] = self.request
         return data
 
+    def get_order(self):
+        b = self.get_object()
+        if self.request.REQUEST.get('order') and not b:
+            return Order.objects.get(pk=self.request.REQUEST.get('order'), loru=self.request.user.profile.org)
+        if b and b.pk and b.order:
+            return b.order
+
     def dispatch(self, request, *args, **kwargs):
         self.request = request
         self.args = args
@@ -320,11 +328,9 @@ class CreateBurial(CreateView):
             messages.error(request, _(u"У Вас нет прав создавать захоронения вручную"))
             return redirect('/')
 
-        b = self.get_object()
-        if request.REQUEST.get('order') and not b:
-            order = Order.objects.get(pk=request.REQUEST.get('order'), loru=request.user.profile.org)
-            if order.get_burial():
-                return redirect('edit_burial', order.get_burial().pk)
+        order = self.get_order()
+        if order and order.get_burial() and order.get_burial() != self.get_object():
+            return redirect('edit_burial', order.get_burial().pk)
 
         return super(CreateBurial, self).dispatch(request, *args, **kwargs)
 
@@ -377,6 +383,7 @@ class CreateBurial(CreateView):
             return redirect('dashboard')
         else:
             if b.order:
+                self.request.session['order_burial_saved'] = True
                 return redirect('order_edit', b.order.pk)
             return redirect('view_burial', b.pk)
 

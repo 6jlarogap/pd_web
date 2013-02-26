@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% load i18n %}
+
+{% block content %}
+    {% with order=order tab="services" %}
+        {% include "order_nav.html" %}
+    {% endwith %}
+    <form action="" method="POST">
+        {% csrf_token %}
+
+        {% if order.has_catafalque %}
+            <h2>{% trans "Катафалк" %}</h2>
+            {{ catafalque_form.as_p }}
+        {% endif %}
+
+        {% if order.has_coffin %}
+            <h2>{% trans "Гроб" %}</h2>
+            {{ coffin_form.as_p }}
+        {% endif %}
+
+        <p>
+            <input type="submit" class="btn" value="{% trans "сохранить" %}" class="btn"/>
+        </p>
+    </form>
+
+    <script type="text/javascript">
+        CEMETERY_AREAS = {{ form.cemetery_areas_json }};
+        CEMETERY_TIMES = {{ form.cemetery_times_json }};
+        AGENT_DOVER = {{ form.agent_dover_json }};
+        LORU_AGENTS = {{ form.loru_agents_json }};
+    </script>
+{% endblock %}

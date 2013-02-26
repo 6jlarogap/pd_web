@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% load i18n %}
+
+{% block content %}
+    {% with order=order tab="info" %}
+        {% include "order_nav.html" %}
+    {% endwith %}
+
+    <h2>{% trans "Комментарий" %}</h2>
+    <form action="{% url order_comment order.pk %}" method="POST">
+        {% csrf_token %}
+        {{ comment_form.as_p }}
+        <p>
+            <input type="submit" class="btn btn-primary" value="{% trans "добавить" %}" />
+        </p>
+    </form>
+
+    <h2>{% trans "Журнал" %}</h2>
+    <table class="table table-bordered">
+        <tr>
+            <th>{% trans "Дата" %}</th>
+            <th>{% trans "Пользователь" %}</th>
+            <th>{% trans "Действие" %}</th>
+        </tr>
+        {% for log in order.get_logs %}
+            <tr>
+                <td>{{ log.dt }}</td>
+                <td>{{ log.user.profile }} / {{ log.user.profile.org }}</td>
+                <td>{{ log.msg|linebreaksbr }}</td>
+            </tr>
+        {% endfor %}
+    </table>
+
+    {% if order.get_documents %}
+        <h2>{% trans "Документы" %}</h2>
+        <table class="table table-bordered">
+            <tr>
+                <th>{% trans "Дата" %}</th>
+                <th>{% trans "Пользователь" %}</th>
+                <th>{% trans "Описание" %}</th>
+                <th></th>
+            </tr>
+            {% for doc in order.get_documents %}
+                <tr>
+                    <td>{{ doc.dt }}</td>
+                    <td>{{ doc.user.profile }} / {{ doc.user.profile.org }}</td>
+                    <td>{{ doc.description }}</td>
+                    <td><a class="btn" href="{% url report_view doc.pk %}" target="_blank">{% trans "просмотр" %}</a></td>
+                </tr>
+            {% endfor %}
+        </table>
+    {% endif %}
+
+    <script type="text/javascript">
+        CEMETERY_AREAS = {{ form.cemetery_areas_json }};
+        CEMETERY_TIMES = {{ form.cemetery_times_json }};
+        AGENT_DOVER = {{ form.agent_dover_json }};
+        LORU_AGENTS = {{ form.loru_agents_json }};
+    </script>
+{% endblock %}

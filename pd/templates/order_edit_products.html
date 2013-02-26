@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% load i18n %}
+
+{% block content %}
+    {% with order=order tab="products" %}
+        {% include "order_nav.html" %}
+    {% endwith %}
+    <form action="" method="POST">
+        {% csrf_token %}
+
+        <h2>{% trans "Позиции" %}</h2>
+        {{ formset.management_form }}
+        <table>
+            {% for f in formset.forms %}
+                {{ f.as_table }}
+            {% endfor %}
+        </table>
+        <p>
+            <label for="id_total">{% trans "Итог" %}</label>
+            <input id="id_total" type="text" value="{{ order.total }}" />
+        </p>
+
+        <p>
+            <input type="submit" class="btn" value="{% trans "сохранить" %}" class="btn"/>
+        </p>
+    </form>
+
+    <script type="text/javascript">
+        CEMETERY_AREAS = {{ form.cemetery_areas_json }};
+        CEMETERY_TIMES = {{ form.cemetery_times_json }};
+        AGENT_DOVER = {{ form.agent_dover_json }};
+        LORU_AGENTS = {{ form.loru_agents_json }};
+    </script>
+{% endblock %}

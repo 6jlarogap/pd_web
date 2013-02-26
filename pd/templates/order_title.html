@@ -1,0 +1,11 @@
+{% load i18n %}
+
+<h1>{% trans "Заказ" %} {{ order }}</h1>
+<p>
+    <a href="{% url order_print order.pk %}" class="btn" target="_blank">{% trans "распечатать" %}</a>
+    {% if order.get_burial %}
+        <a href="{% url view_burial order.get_burial.pk %}" class="btn" target="_blank">
+            {% trans "карточка захоронения" %}
+        </a>
+    {% endif %}
+</p>

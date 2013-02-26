@@ -79,6 +79,9 @@ class Order(models.Model):
     def total_float(self):
         return float(self.total)
 
+    def has_burial(self):
+        return self.orderitem_set.filter(product__ptype=Product.PRODUCT_BURIAL).exists()
+
     def get_catafalquedata(self):
         try:
             return self.catafalquedata
@@ -106,6 +109,9 @@ class Order(models.Model):
 
     def has_loaders(self):
         return self.orderitem_set.filter(product__ptype=Product.PRODUCT_LOADERS).exists()
+
+    def has_services(self):
+        return self.has_diggers() or self.has_loaders() or self.has_sign()
 
     def get_documents(self):
         ct = ContentType.objects.get_for_model(self)
