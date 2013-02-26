@@ -380,6 +380,10 @@ class CreateBurial(CreateView):
                     b.get_status_display(),
                 )
                 messages.success(self.request, msg)
+
+            if b.order:
+                self.request.session['order_burial_saved'] = True
+                return redirect('order_edit', b.order.pk)
             return redirect('dashboard')
         else:
             if b.order:
