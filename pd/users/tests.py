@@ -1,6 +1,8 @@
 from django.contrib.auth.models import User, AnonymousUser
 from django.test import TestCase, Client
 from django.utils.translation import activate
+from django.conf import settings
+
 from users.models import Profile, Org
 
 
