@@ -10,11 +10,17 @@
         <a href="{% url order_products order.pk %}">{% trans "Товары" %}</a>
     </li>
     {% if order.get_burial %}
-        <li {% if tab == 'burial' %}class="active"{% endif %}>
-            <a href="{% url edit_burial order.get_burial.pk %}">
-                {% trans "Захоронение" %} ({{ order.get_burial }})
-            </a>
-        </li>
+        {% if order.get_burial.is_edit %}
+            <li {% if tab == 'burial' %}class="active"{% endif %}>
+                <a href="{% url edit_burial order.get_burial.pk %}">
+                    {% trans "Захоронение" %} ({{ order.get_burial }})
+                </a>
+            </li>
+        {% else %}
+            <li class="disabled">
+                <a href="javascript://">{% trans "Захоронение" %} ({{ order.get_burial }}) &mdash; {% trans "недоступно" %}</a>
+            </li>
+        {% endif %}
     {% elif order.has_burial %}
         <li {% if tab == 'burial' %}class="active"{% endif %}>
             <a href="{% url create_burial %}?order={{ order.pk }}">
