@@ -493,7 +493,9 @@ $(function() {
     $('input[id$=fias_address]').change(function() {
         var street_input = $('input[id$=fias_street]');
         street_input.val('');
-        $('#fias_street_info').hide();
+        var addr_input = $(this);
+        var form_block = addr_input.closest('.form_block');
+        form_block.find('#fias_street_info').hide();
         var addr = $(this).val();
         if (!addr) { return }
         var geocoder = new google.maps.Geocoder();
@@ -501,33 +503,35 @@ $(function() {
             if (status == google.maps.GeocoderStatus.OK) {
                 var address = results[0].address_components;
                 var country = '', region = '', city = '', street = '';
+                form_block.find('[id$=post_index], [id$=country_name], [id$=region_name], [id$=city_name]').val('');
+                form_block.find('[id$=street_name], [id$=house], [id$=block], [id$=building], [id$=flat]').val('');
                 $(address).each(function() {
-                    if (this.types.indexOf("postal_code") > -1) { $('input[id$=post_index]').val(this.long_name); }
-                    if (this.types.indexOf("country") > -1) { country = this.long_name; $('input[id$=country_name]').val(country); }
-                    if (this.types.indexOf("administrative_area_level_1") > -1) { region = this.long_name; $('input[id$=region_name]').val(''); }
-                    if (this.types.indexOf("locality") > -1) { city = this.long_name; $('input[id$=city_name]').val(''); }
-                    if (this.types.indexOf("route") > -1) { street = this.long_name; $('input[id$=street_name]').val(''); }
+                    if (this.types.indexOf("postal_code") > -1) { form_block.find('input[id$=post_index]').val(this.long_name); }
+                    if (this.types.indexOf("country") > -1) { country = this.long_name; form_block.find('input[id$=country_name]').val(country); }
+                    if (this.types.indexOf("administrative_area_level_1") > -1) { region = this.long_name; form_block.find('input[id$=region_name]').val(''); }
+                    if (this.types.indexOf("locality") > -1) { city = this.long_name; form_block.find('input[id$=city_name]').val(''); }
+                    if (this.types.indexOf("route") > -1) { street = this.long_name; form_block.find('input[id$=street_name]').val(''); }
                     if (this.types.indexOf("street_number") > -1) {
                         $('input[id$=house]').val(this.long_name);
                         if (this.long_name.indexOf("корпус") > -1) {
                             var bits = this.long_name.split(" корпус ");
-                            $('input[id$=house]').val(bits[0]);
-                            $('input[id$=block]').val(bits[1]);
+                            form_block.find('input[id$=house]').val(bits[0]);
+                            form_block.find('input[id$=block]').val(bits[1]);
                         }
                         if (this.long_name.indexOf("строение") > -1) {
                             var bits = this.long_name.split(" строение ");
-                            $('input[id$=house]').val(bits[0]);
-                            $('input[id$=building]').val(bits[1]);
+                            form_block.find('input[id$=house]').val(bits[0]);
+                            form_block.find('input[id$=building]').val(bits[1]);
                         }
                     }
-                    if (this.types.indexOf("subpremise") > -1) { $('input[id$=flat]').val(this.long_name); }
+                    if (this.types.indexOf("subpremise") > -1) { form_block.find('input[id$=flat]').val(this.long_name); }
                 });
                 var fias_url = '/geo/autocomplete/fias/?country='+country+'&region='+region+'&city='+city+'&street='+street;
                 $.getJSON(fias_url, function(data) {
                     if (data.ok) {
                         street_input.val(data.id);
-                        $('#fias_street_info').html(data.info);
-                        $('#fias_street_info').show();
+                        addr_input.closest('.form_block').find('#fias_street_info').html(data.info);
+                        addr_input.closest('.form_block').find('#fias_street_info').show();
                     } else {
                         alert("Адрес не найден в ФИАС");
                     }
