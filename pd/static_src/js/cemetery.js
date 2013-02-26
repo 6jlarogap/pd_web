@@ -470,6 +470,10 @@ $(function() {
             var data = $('#id_cemetery, #id_area, #id_row, #id_place_number').serialize();
             $('#place_info').load('/burials/get_place/?'+data)
             $('#id_grave_number').val(old_grave_value);
+        } else if ($('#id_cemetery').val() &&  $('#id_area').val()) {
+            var data = $('#id_cemetery, #id_area, #id_row, #id_place_number').serialize();
+            $('#place_info').load('/burials/get_place/?'+data)
+            $('#id_grave_number').val(old_grave_value);
         }
     });
     $('#id_cemetery, #id_area, #id_row, #id_place_number').change();

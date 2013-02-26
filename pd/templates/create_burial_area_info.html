@@ -1,0 +1,23 @@
+{% load i18n %}
+
+<div class="well">
+    <h2>{% trans "Участок найден" %}</h2>
+
+    <h3>{{ area }}</h3>
+
+    <dl>
+        <dt>{% trans "Могил" %}</dt>
+        <dd>
+            {{ area.places_count }}
+        </dd>
+    </dl>
+
+    <script type="text/javascript">
+        var options = '';
+        for (var i=1; i<={{ area.places_count|default:1 }}; i++) {
+            options += '<option value="'+i+'">'+i+'</option>';
+        }
+        $('#id_grave_number').html(options);
+        $('#id_grave_number').val(old_grave_value);
+    </script>
+</div>

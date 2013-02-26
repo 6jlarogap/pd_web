@@ -163,23 +163,38 @@ class GetPlaceView(View):
         return View.dispatch(self, request, *args, **kwargs)
 
     def get(self, request, *args, **kwargs):
-        places = Place.objects.all()
-        data = dict(
-            cemetery__pk=request.GET.get('cemetery') or None,
-            area__pk=request.GET.get('area') or None,
-            row=request.GET.get('row') or None,
-            place=request.GET.get('place_number') or None,
-        )
-        data = dict([(k,v) for k,v in data.items() if v])
+        if request.GET.get('place_number'):
+            places = Place.objects.all()
+            data = dict(
+                cemetery__pk=request.GET.get('cemetery') or None,
+                area__pk=request.GET.get('area') or None,
+                row=request.GET.get('row') or None,
+                place=request.GET.get('place_number') or None,
+            )
+            data = dict([(k,v) for k,v in data.items() if v])
 
-        try:
-            p = places.get(**data)
-        except Place.DoesNotExist:
-            return HttpResponse('')
-        except Place.MultipleObjectsReturned:
-            return HttpResponse('')
+            try:
+                p = places.get(**data)
+            except Place.DoesNotExist:
+                return HttpResponse('')
+            except Place.MultipleObjectsReturned:
+                return HttpResponse('')
+            else:
+                return render(request, 'create_burial_place_info.html', {'place': p})
         else:
-            return render(request, 'create_burial_place_info.html', {'place': p})
+            areas = Area.objects.all()
+            data = dict(
+                cemetery__pk=request.GET.get('cemetery') or None,
+                pk=request.GET.get('area') or None,
+            )
+            data = dict([(k,v) for k,v in data.items() if v])
+
+            try:
+                a = areas.get(**data)
+            except Place.DoesNotExist:
+                return HttpResponse('')
+            else:
+                return render(request, 'create_burial_area_info.html', {'area': a})
 
 get_place = GetPlaceView.as_view()
 
