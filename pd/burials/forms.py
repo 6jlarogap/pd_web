@@ -164,11 +164,19 @@ class ResponsibleForm(AlivePersonForm):
 
 
 class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, forms.ModelForm):
+    COFFIN = 'coffin'
+    URN = 'urn'
+    COFFIN_TYPES = (
+        (COFFIN, _(u"Гроб")),
+        (URN, _(u"Урна")),
+    )
+
+    coffin_type = forms.ChoiceField(label=_(u"Тип"), choices=COFFIN_TYPES, widget=forms.RadioSelect, required=False)
     opf = forms.ChoiceField(label=_(u'ОПФ'), choices=OPF_CHOICES, widget=forms.RadioSelect)
 
     class Meta:
         model = Burial
-        exclude = ['place', 'deadman', 'responsible', 'applicant', ]
+        exclude = ['place', 'deadman', 'responsible', 'applicant', 'burial_type', ]
 
     def __init__(self, request, *args, **kwargs):
         super(BurialForm, self).__init__(*args, **kwargs)
@@ -229,6 +237,11 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, forms.Mo
             if not self.instance.is_finished():
                 del self.fields['fact_date']
             del self.fields['account_number']
+
+        if self.instance and self.instance.burial_type == Burial.BURIAL_URN:
+            self.initial['coffin_type'] = self.URN
+        else:
+            self.initial['coffin_type'] = self.COFFIN
 
         self.forms = self.construct_forms()
 
@@ -387,6 +400,13 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, forms.Mo
                     pass
                 self.instance.applicant = None
 
+        if self.cleaned_data['coffin_type'] == self.URN:
+            self.instance.burial_type = Burial.BURIAL_URN
+        elif self.instance.place_number:
+            self.instance.burial_type = Burial.BURIAL_ADD
+        else:
+            self.instance.burial_type = Burial.BURIAL_NEW
+
         self.instance.save()
 
         if self.instance.is_closed():
@@ -426,17 +446,13 @@ class BurialCommitForm(BurialForm):
 
     def setup_required(self):
         for f in self.fields:
-            if f in ['burial_type', 'cemetery', 'area', 'plan_date', 'plan_time']:
+            if f in ['cemetery', 'area', 'plan_date', 'plan_time']:
                 self.fields[f].required = True
 
-        bt = self.data['burial_type'] or (self.instance and self.instance.burial_type) or None
         if self.data.get('cemetery'):
             cemetery = Cemetery.objects.get(pk=self.data.get('cemetery'))
         else:
             cemetery = self.instance and self.instance.cemetery or None
-        if bt not in Burial.NEW_BURIAL_TYPES:
-            if cemetery and cemetery.places_algo == Cemetery.PLACE_MANUAL:
-                self.fields['place_number'].required = True
 
         if self.instance.is_archive() and self.fields.get('fact_date'):
             self.fields['fact_date'].required = True
@@ -497,7 +513,7 @@ class BurialCommitForm(BurialForm):
                     self.applicant_id_form.fields[f].required = True
 
     def clean(self):
-        if self.cleaned_data.get('burial_type') not in Burial.NEW_BURIAL_TYPES:
+        if self.instance.burial_type not in Burial.NEW_BURIAL_TYPES:
             for f in [self.responsible_form, self.responsible_address_form]:
                 if f.is_valid() and any(f.cleaned_data.values()):
                     if not self.instance.get_place() or not self.instance.get_place().responsible or \

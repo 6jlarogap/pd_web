@@ -96,7 +96,7 @@ class RequestsTest(TestCase):
 
     def test_actions(self):
         r = self.loru_client.post('/burials/create/', {
-            'burial_type': 'common', 'opf': 'person', 'applicant-last_name': u'Petrov',
+            'coffin_type': 'coffin', 'opf': 'person', 'applicant-last_name': u'Petrov',
             'cemetery': self.cemetery.pk, 'area': self.area.pk, 'places_type': 'manual',
             'plan_date': '12.12.2013', 'plan_time': '12:00', 'grave_number': 1, 'responsible-take_from': 'new',
         })
@@ -149,7 +149,7 @@ class RequestsTest(TestCase):
 
     def test_back(self):
         r = self.loru_client.post('/burials/create/', {
-            'burial_type': 'common', 'opf': 'person', 'applicant-last_name': u'Petrov',
+            'coffin_type': 'coffin', 'opf': 'person', 'applicant-last_name': u'Petrov',
             'cemetery': self.cemetery.pk, 'area': self.area.pk, 'places_type': 'manual',
             'plan_date': '12.12.2013', 'plan_time': '12:00', 'grave_number': 1, 'responsible-take_from': 'new',
         })
@@ -286,7 +286,7 @@ class BurialsTest(TestCase):
             status=Burial.STATUS_CLOSED,
             deadman=DeadPerson.objects.create(
                 last_name=u'Ivanov',
-                )
+            )
         )
 
         r = self.ugh_client.get('/burials/')
@@ -403,7 +403,7 @@ class BurialsTest(TestCase):
         self.assertEquals(Burial.objects.all().count(), 0)
 
         r = self.ugh_client.post('/burials/create/', {
-            'burial_type': Burial.BURIAL_TYPES[0][0],
+            'coffin_type': 'coffin',
             'fact_date_day': 10, 'fact_date_month': 10, 'fact_date_year': 2010,
             'cemetery': self.cemetery.pk,
             'grave_number': 1,
@@ -457,7 +457,7 @@ class TestArchived(TestCase):
         self.assertEquals(Burial.objects.all().count(), 0)
 
         r = self.ugh_client.post('/burials/create/?archive=1', {
-            'burial_type': Burial.BURIAL_TYPES[0][0],
+            'coffin_type': 'coffin',
             'fact_date_day': 10, 'fact_date_month': 10, 'fact_date_year': 2010,
             'cemetery': self.cemetery.pk,
             'grave_number': 1,
