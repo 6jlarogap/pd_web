@@ -163,25 +163,18 @@ class GetPlaceView(View):
         return View.dispatch(self, request, *args, **kwargs)
 
     def get(self, request, *args, **kwargs):
-        if request.GET.get('place_number'):
-            places = Place.objects.all()
-            data = dict(
-                cemetery__pk=request.GET.get('cemetery') or None,
-                area__pk=request.GET.get('area') or None,
-                row=request.GET.get('row') or None,
-                place=request.GET.get('place_number') or None,
-            )
-            data = dict([(k,v) for k,v in data.items() if v])
+        places = Place.objects.all()
+        data = dict(
+            cemetery__pk=request.GET.get('cemetery') or None,
+            area__pk=request.GET.get('area') or None,
+            row=request.GET.get('row') or None,
+            place=request.GET.get('place_number') or None,
+        )
+        data = dict([(k,v) for k,v in data.items() if v])
 
-            try:
-                p = places.get(**data)
-            except Place.DoesNotExist:
-                return HttpResponse('')
-            except Place.MultipleObjectsReturned:
-                return HttpResponse('')
-            else:
-                return render(request, 'create_burial_place_info.html', {'place': p})
-        else:
+        try:
+            p = places.get(**data)
+        except Place.DoesNotExist:
             areas = Area.objects.all()
             data = dict(
                 cemetery__pk=request.GET.get('cemetery') or None,
@@ -191,10 +184,14 @@ class GetPlaceView(View):
 
             try:
                 a = areas.get(**data)
-            except Place.DoesNotExist:
+            except Area.DoesNotExist:
                 return HttpResponse('')
             else:
                 return render(request, 'create_burial_area_info.html', {'area': a})
+        except Place.MultipleObjectsReturned:
+            return HttpResponse('')
+        else:
+            return render(request, 'create_burial_place_info.html', {'place': p})
 
 get_place = GetPlaceView.as_view()
 
