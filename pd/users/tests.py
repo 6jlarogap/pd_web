@@ -7,6 +7,7 @@ from users.models import Profile, Org
 class LoginTest(TestCase):
     def setUp(self):
         activate('ru')
+        settings.DATABASES['fias'] = settings.TEST_FIAS
         self.user = User.objects.create_user(username='test', email='test@example.com', password='test')
         org = Org.objects.create(name='name', type=Org.PROFILE_LORU)
         Profile.objects.create(user=self.user, org=org)
@@ -34,6 +35,7 @@ class LoginTest(TestCase):
 class RegisterTest(TestCase):
     def setUp(self):
         activate('ru')
+        settings.DATABASES['fias'] = settings.TEST_FIAS
         self.client = Client()
 
     def test_loru(self):
@@ -77,6 +79,7 @@ class RegisterTest(TestCase):
 class ProfileTest(TestCase):
     def setUp(self):
         activate('ru')
+        settings.DATABASES['fias'] = settings.TEST_FIAS
         self.user = User.objects.create_user(username='test', email='test@example.com', password='test')
         self.client = Client()
 
@@ -111,6 +114,7 @@ class ProfileTest(TestCase):
 class EditDataTest(TestCase):
     def setUp(self):
         activate('ru')
+        settings.DATABASES['fias'] = settings.TEST_FIAS
         self.user = User.objects.create_user(username='test', email='test@example.com', password='test')
         self.client = Client()
 
