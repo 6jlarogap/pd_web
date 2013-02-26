@@ -516,7 +516,7 @@ $(function() {
                     if (this.types.indexOf("locality") > -1) { city = this.long_name; form_block.find('input[id$=city_name]').val(''); }
                     if (this.types.indexOf("route") > -1) { street = this.long_name; form_block.find('input[id$=street_name]').val(''); }
                     if (this.types.indexOf("street_number") > -1) {
-                        $('input[id$=house]').val(this.long_name);
+                        form_block.find('input[id$=house]').val(this.long_name);
                         if (this.long_name.indexOf("корпус") > -1) {
                             var bits = this.long_name.split(" корпус ");
                             form_block.find('input[id$=house]').val(bits[0]);
@@ -534,8 +534,8 @@ $(function() {
                 $.getJSON(fias_url, function(data) {
                     if (data.ok) {
                         street_input.val(data.id);
-                        addr_input.closest('.form_block').find('#fias_street_info').html(data.info);
-                        addr_input.closest('.form_block').find('#fias_street_info').show();
+                        form_block.find.find('#fias_street_info').html(data.info);
+                        form_block.find.find('#fias_street_info').show();
                     } else {
                         alert("Адрес не найден в ФИАС");
                     }
