@@ -21,7 +21,7 @@
             </table>
         {% endif %}
         <p>
-            <input type="submit" class="btn" value="{% trans "cохранить" %}"/>
+            <input type="submit" class="btn btn-primary" value="{% trans "cохранить" %}"/>
         </p>
 
         <h2>{% trans "Пользователи" %}</h2>
@@ -54,4 +54,7 @@
             <a href="{% url add_user %}" class="btn">{% trans "новый пользователь" %}</a>
         </p>
     </form>
+    <script type="text/javascript">
+        CEMETERY_AREAS = {{ form.cemetery_areas_json }};
+    </script>
 {% endblock %}

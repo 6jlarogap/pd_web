@@ -2,12 +2,21 @@
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
 
+from geo.models import DFiasAddrobj
+
+
 class Profile(models.Model):
 
     user = models.OneToOneField('auth.User', editable=False, null=True)
     org = models.ForeignKey('users.Org', null=True)
 
     is_agent = models.BooleanField(_(u"Агент"), default=False, blank=True)
+
+    cemetery = models.ForeignKey('burials.Cemetery', verbose_name=_(u"Кладбище"), blank=True, null=True)
+    area = models.ForeignKey('burials.Area', verbose_name=_(u"Участок"), blank=True, null=True)
+
+    country = models.ForeignKey('geo.Country', verbose_name=_(u"Страна"), blank=True, null=True)
+    region_fias = models.CharField(_(u"Регион"), blank=True, null=True, max_length=255)
 
     def __unicode__(self):
         return self.user and (self.user.get_full_name() or self.user.username) or u'%s' % self.pk
@@ -23,6 +32,10 @@ class Profile(models.Model):
 
     def full_name(self):
         return self.user.get_full_name()
+
+    def get_region(self):
+        if self.region_fias:
+            return DFiasAddrobj.objects.get(parentguid='', aoguid=self.region_fias)
 
 class Org(models.Model):
     PROFILE_ZAGS = 'zags'

@@ -3,6 +3,8 @@ from django import forms
 from django.contrib.auth.models import User
 from django.forms.models import inlineformset_factory, BaseInlineFormSet
 from django.utils.translation import ugettext_lazy as _
+from geo.models import DFiasAddrobj
+from pd.forms import ChildrenJSONMixin
 
 from users.models import Profile, ProfileLORU, Org
 
@@ -48,7 +50,11 @@ class BaseLoruFormset(BaseInlineFormSet):
 
 LoruFormset = inlineformset_factory(Org, ProfileLORU, fk_name='ugh', formset=BaseLoruFormset)
 
-class ProfileForm(forms.ModelForm):
+FIAS_REGIONS = DFiasAddrobj.objects.filter(parentguid='').order_by('formalname')
+
+class ProfileForm(ChildrenJSONMixin, forms.ModelForm):
+    region = forms.ModelChoiceField(label=_(u"Регион"), queryset=FIAS_REGIONS)
+
     org_type = forms.ChoiceField(label=_(u"Тип"), choices=Org.PROFILE_TYPES)
     org_name = forms.CharField(label=_(u"Краткое название организации"))
     org_full_name = forms.CharField(label=_(u"Полное название организации"), required=False)
@@ -58,7 +64,18 @@ class ProfileForm(forms.ModelForm):
 
     class Meta:
         model = Profile
-        exclude = ['org', 'is_agent']
+        exclude = ['org', 'is_agent', 'region_fias']
+
+    def __init__(self, *args, **kwargs):
+        super(ProfileForm, self).__init__(*args, **kwargs)
+        if self.instance.org:
+            for f in self.fields:
+                if f.startswith('org_'):
+                    self.initial.update({f: getattr(self.instance.org, f[4:])})
+            del self.fields['org_type']
+
+        if self.instance.region_fias:
+            self.initial['region'] = self.instance.get_region()
 
     def clean_org_inn(self):
         inn = self.cleaned_data['org_inn']
@@ -70,17 +87,10 @@ class ProfileForm(forms.ModelForm):
                 raise forms.ValidationError(_(u"ИНН уже зарегистрирован"))
         return inn
 
-
-    def __init__(self, *args, **kwargs):
-        super(ProfileForm, self).__init__(*args, **kwargs)
-        if self.instance.org:
-            for f in self.fields:
-                if f.startswith('org_'):
-                    self.initial.update({f: getattr(self.instance.org, f[4:])})
-            del self.fields['org_type']
-
     def save(self, commit=True, *args, **kwargs):
         obj = super(ProfileForm, self).save(commit=False, *args, **kwargs)
+        if self.cleaned_data['region']:
+            obj.region_fias = self.cleaned_data['region'].aoguid
         params = dict([(k[4:], v) for k,v in self.cleaned_data.items() if v and k.startswith('org_')])
         if not obj.org:
             obj.org, _created = Org.objects.get_or_create(**params)
