@@ -37,6 +37,14 @@
                 {{ b.deadman|default:"" }}
                 <br/>
                 {{ b.deadman.address|default:"" }}
+                {% if b.deadman.birth_date %}
+                    <br/>
+                    {{ b.deadman.birth_date }}
+                    {% if b.deadman.death_date %}
+                        &mdash;
+                        {{ b.deadman.death_date }}
+                    {% endif %}
+                {% endif %}
             </dd>
         {% endif %}
         {% if b.cemetery %}
