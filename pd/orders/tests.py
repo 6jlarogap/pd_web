@@ -91,21 +91,25 @@ class OrdersTest(TestCase):
     def test_edit(self):
         o = Order.objects.create(loru=self.loru_user.profile.org, applicant_organization=self.loru_org)
 
-        r = self.loru_client.get('/order/%s/edit/' % o.pk)
+        r = self.loru_client.get('/order/%s/applicant/' % o.pk)
         self.assertEqual(r.status_code, 200)
 
-        r = self.loru_client.post('/order/%s/edit/' % o.pk, {
+        r = self.loru_client.post('/order/%s/applicant/' % o.pk, {
             'applicant-last_name': 'Test', 'applicant-first_name': 'Test', 'applicant-middle_name': 'Test', 'org': '',
             'opf': 'person', 'payment': 'cash',
-            'orderitem_set-0-id': u'', 'orderitem_set-0-product': u'%s' % self.product.pk, 'orderitem_set-0-quantity': u'10',
-            'orderitem_set-1-id': u'', 'orderitem_set-1-product': u'', 'orderitem_set-1-quantity': u'1',
-            'orderitem_set-2-id': u'', 'orderitem_set-2-quantity': u'1', 'orderitem_set-2-product': u'',
-            'orderitem_set-INITIAL_FORMS': u'0', 'orderitem_set-MAX_NUM_FORMS': u'', 'orderitem_set-TOTAL_FORMS': u'3',
         })
         self.assertEqual(r.status_code, 302)
         self.assertEqual(Order.objects.get().loru, self.loru_user.profile.org)
         self.assertEqual(Order.objects.get().applicant.last_name, 'Test')
         self.assertEqual(Order.objects.get().applicant_organization, None)
+
+        r = self.loru_client.post('/order/%s/products/' % o.pk, {
+            'orderitem_set-0-id': u'', 'orderitem_set-0-product': u'%s' % self.product.pk, 'orderitem_set-0-quantity': u'10',
+            'orderitem_set-1-id': u'', 'orderitem_set-1-product': u'', 'orderitem_set-1-quantity': u'1',
+            'orderitem_set-2-id': u'', 'orderitem_set-2-quantity': u'1', 'orderitem_set-2-product': u'',
+            'orderitem_set-INITIAL_FORMS': u'0', 'orderitem_set-MAX_NUM_FORMS': u'', 'orderitem_set-TOTAL_FORMS': u'3',
+            })
+        self.assertEqual(r.status_code, 302)
         self.assertEqual(Order.objects.get().orderitem_set.all().count(), 1)
 
     def test_print(self):
@@ -132,9 +136,7 @@ class OrdersTest(TestCase):
         o = Order.objects.create(loru=self.loru_user.profile.org, applicant_organization=self.loru_org)
         self.assertEqual(Order.objects.get().orderitem_set.all().count(), 0)
 
-        r = self.loru_client.post('/order/%s/edit/' % o.pk, {
-            'person_last_name': 'Test', 'person_first_name': 'Test', 'person_middle_name': 'Test', 'org': '',
-            'opf': 'person', 'payment': 'cash',
+        r = self.loru_client.post('/order/%s/products/' % o.pk, {
             'orderitem_set-0-id': u'', 'orderitem_set-0-product': u'%s' % self.product.pk, 'orderitem_set-0-quantity': u'10',
             'orderitem_set-1-id': u'', 'orderitem_set-1-product': u'%s' % self.product_same.pk, 'orderitem_set-1-quantity': u'1',
             'orderitem_set-2-id': u'', 'orderitem_set-2-product': u'%s' % self.product_type.pk, 'orderitem_set-2-quantity': u'1',
