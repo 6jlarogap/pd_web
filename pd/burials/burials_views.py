@@ -179,7 +179,6 @@ class BurialsListView(ListView):
         if self.request.user.is_authenticated():
             burials = Burial.objects.filter(
                 Q(applicant_organization=self.request.user.profile.org) | Q(ugh=self.request.user.profile.org),
-                status=Burial.STATUS_CLOSED,
             ).order_by('-pk')
         else:
             burials = Burial.objects.none()
@@ -235,7 +234,8 @@ class BurialsListView(ListView):
                 burials = burials.filter(applicant_organization__name=form.cleaned_data['applicant_org'])
             if form.cleaned_data['applicant_person']:
                 burials = burials.filter(applicant__last_name=form.cleaned_data['applicant_person'])
-            if form.cleaned_data.get('exhumated'):
+
+            if form.cleaned_data.get('status') == Burial.STATUS_EXHUMATED:
                 burials = burials.filter(status=Burial.STATUS_EXHUMATED)
             else:
                 burials = burials.exclude(status=Burial.STATUS_EXHUMATED)
