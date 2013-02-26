@@ -8,6 +8,7 @@ from django import forms
 from django.contrib import messages
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
+from django.db.models.aggregates import Max
 from django.db.models.deletion import ProtectedError
 from django.forms.models import inlineformset_factory
 from django.utils.translation import ugettext_lazy as _
@@ -76,6 +77,13 @@ class PlaceEditForm(forms.ModelForm):
                 self.initial['places_count'] = self.instance.area.places_count
             else:
                 self.initial['places_count'] = 1
+
+    def clean_places_count(self):
+        burials = self.instance.burial_set.exclude(status=Burial.STATUS_EXHUMATED)
+        max_num = burials.aggregate(max=Max('grave_number')).get('max') or 1
+        if self.cleaned_data['places_count'] < max_num:
+            raise forms.ValidationError(_(u"Нельзя установить меньше %s, столько могил уже занято") % max_num)
+        return self.cleaned_data['places_count']
 
 EMPTY = (('', '--------'),)
 
