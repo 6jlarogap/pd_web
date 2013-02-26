@@ -49,6 +49,7 @@
     <h2>{% trans "Захоронения" %}</h2>
     <table class="table table-bordered">
         <tr>
+            <th>{% trans "Номер" %}</th>
             <th>{% trans "Могила" %}</th>
             <th>{% trans "Усопший" %}</th>
             <th>{% trans "Дата" %}</th>
@@ -56,6 +57,7 @@
         </tr>
         {% for b in place.burial_set.all %}
             <tr>
+                <td>{{ b.pk }}</td>
                 <td>{{ b.grave_number|default:"" }}</td>
                 <td>{{ b.deadman|default:"Неизвестный" }}</td>
                 <td>{{ b.fact_date|date:"d.m.Y"|default:"" }}</td>
@@ -74,6 +76,7 @@
     <h2>{% trans "Эксгумированные" %}</h2>
     <table class="table table-bordered">
         <tr>
+            <th>{% trans "Номер" %}</th>
             <th>{% trans "Могила" %}</th>
             <th>{% trans "Усопший" %}</th>
             <th>{% trans "Дата" %}</th>
@@ -82,6 +85,7 @@
         {% for ex in place.exhumationrequest_set.all %}
             {% with ex.burial as b %}
                 <tr>
+                    <td>{{ b.pk }}</td>
                     <td>{{ b.grave_number|default:"" }}</td>
                     <td>{{ b.deadman|default:"Неизвестный" }}</td>
                     <td>{{ b.fact_date|date:"d.m.Y"|default:"" }}</td>
