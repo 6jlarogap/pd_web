@@ -495,10 +495,11 @@ class BurialCommitForm(BurialForm):
         pass
 
     def setup_required_responsible_address(self):
-        if self.data.get('responsible-last_name'):
-            for f in self.responsible_address_form.fields:
-                if f in ['country_name', 'region_name', 'city_name', 'street_name', 'house']:
-                    self.responsible_address_form.fields[f].required = True
+        # if self.data.get('responsible-last_name'):
+        #     for f in self.responsible_address_form.fields:
+        #         if f in ['country_name', 'region_name', 'city_name', 'street_name', 'house']:
+        #             self.responsible_address_form.fields[f].required = True
+        pass
 
     def setup_required_applicant(self):
         pass
