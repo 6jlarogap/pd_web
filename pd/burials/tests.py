@@ -105,7 +105,7 @@ class RequestsTest(TestCase):
 
         r = self.loru_client.get('/burials/')
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.context['burials'].count(), 0)
+        self.assertEqual(r.context['burials'].count(), 1)
 
         r = self.ugh_client.get('/?show=1')
         self.assertEqual(r.context['burials'].count(), 0)
@@ -130,7 +130,7 @@ class RequestsTest(TestCase):
 
         r = self.loru_client.get('/burials/')
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.context['burials'].count(), 0)
+        self.assertEqual(r.context['burials'].count(), 1)
 
         r = self.ugh_client.post('/burials/%s/' % br.pk, {
             'complete': '1',

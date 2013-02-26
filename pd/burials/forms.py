@@ -120,7 +120,6 @@ class BurialSearchForm(forms.Form):
     no_responsible = forms.BooleanField(required=False, initial=False, label=_(u"Без отв."))
     source = forms.TypedChoiceField(required=False, label=_(u"Тип"), choices=EMPTY + Burial.SOURCE_TYPES)
     status = forms.TypedChoiceField(required=False, label=_(u"Статус"), choices=EMPTY + Burial.STATUS_CHOICES)
-    exhumated = forms.BooleanField(required=False, initial=False, label=_(u"Только эксгумированные"))
     per_page = forms.ChoiceField(label=_(u"На странице"), choices=PAGE_CHOICES, initial=25, required=False)
 
 class ResponsibleForm(AlivePersonForm):
