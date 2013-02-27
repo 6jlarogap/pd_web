@@ -46,5 +46,11 @@
         $('#id_grave_number').html(options);
         $('#id_grave_number').val(old_grave_value);
         $('#id_responsible-place').val({{ place.pk }});
+
+        var resp_id = '#id_responsible-take_from_';
+        $(resp_id+'0').closest('li').show();
+        if (!$(resp_id+'1').is(':checked') && !$(resp_id+'2').is(':checked')) {
+            $(resp_id+'0').attr('checked', 'checked');
+        }
     </script>
 </div>

@@ -125,10 +125,12 @@ class BurialSearchForm(forms.Form):
 class ResponsibleForm(AlivePersonForm):
     WHERE_FROM_PLACE = u'place'
     WHERE_FROM_ORDER = u'order'
+    WHERE_FROM_APPLICANT = u'applicant'
     WHERE_NEW = u'new'
     WHERE_CHOICES = (
         (WHERE_FROM_PLACE, _(u'Существующий (из места)')),
         (WHERE_FROM_ORDER, _(u'Заказчик (из Счет-Заказа)')),
+        (WHERE_FROM_APPLICANT, _(u'Заявитель')),
         (WHERE_NEW, _(u'Новый')),
     )
 
@@ -145,6 +147,20 @@ class ResponsibleForm(AlivePersonForm):
             self.fields.keyOrder.insert(0, self.fields.keyOrder.pop(-3))
 
         self.initial.setdefault('take_from', self.WHERE_NEW)
+
+    def set_loru_from(self):
+        if 'take_from' in self.fields:
+            all_choices = self.WHERE_CHOICES
+            new_choices = [c for c in all_choices if c[0] != self.WHERE_FROM_APPLICANT]
+            self.fields['take_from'].choices = new_choices
+            self.fields['take_from'].widget.choices = new_choices
+
+    def set_ugh_from(self):
+        if 'take_from' in self.fields:
+            all_choices = self.WHERE_CHOICES
+            new_choices = [c for c in all_choices if c[0] != self.WHERE_FROM_ORDER]
+            self.fields['take_from'].choices = new_choices
+            self.fields['take_from'].widget.choices = new_choices
 
     def clean(self):
         if self.cleaned_data.get('take_from') == self.WHERE_FROM_ORDER:
@@ -276,6 +292,11 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, forms.Mo
         resp_addr = responsible and responsible.address
         self.responsible_address_form = LocationForm(data=data, prefix='responsible-address', instance=resp_addr)
 
+        if self.request.user.profile.is_ugh():
+            self.responsible_form.set_ugh_from()
+        elif self.request.user.profile.is_loru():
+            self.responsible_form.set_loru_from()
+
         applicant = self.instance and self.instance.applicant
         self.applicant_form = AlivePersonForm(data=data, prefix='applicant', instance=applicant)
         applicant_addr = applicant and applicant.address
@@ -323,6 +344,11 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, forms.Mo
 
             if self.cleaned_data.get('agent_director'):
                 self.cleaned_data.update(agent=None, dover=None, )
+
+        if self.responsible_form.is_valid():
+            if self.responsible_form.cleaned_data.get('take_from') == ResponsibleForm.WHERE_FROM_APPLICANT:
+                if self.cleaned_data.get('opf') != 'person':
+                    raise forms.ValidationError(_(u"Невозможно указать Заявителя - Ответственного. Заявитель не ФЛ."))
 
         return self.cleaned_data
 
@@ -379,19 +405,6 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, forms.Mo
                 pass
             self.instance.deadman = None
 
-        if self.responsible_form.is_valid_data():
-            responsible = self.responsible_form.save(commit=False)
-            if self.responsible_address_form.is_valid_data():
-                responsible.address = self.responsible_address_form.save()
-            responsible.save()
-            self.instance.responsible = responsible
-        else:
-            try:
-                self.instance.responsible.delete()
-            except (AttributeError, ProtectedError):
-                pass
-            self.instance.responsible = None
-
         if self.request.user.profile.is_ugh():
             if self.cleaned_data.get('opf') == 'person' and self.applicant_form.is_valid_data():
                 applicant = self.applicant_form.save(commit=False)
@@ -411,6 +424,21 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, forms.Mo
                 except (AttributeError, ProtectedError):
                     pass
                 self.instance.applicant = None
+
+        if self.request.user.profile.is_ugh() and self.responsible_form.cleaned_data.get('take_from') == ResponsibleForm.WHERE_FROM_APPLICANT:
+            self.instance.responsible = self.instance.applicant
+        elif self.responsible_form.is_valid_data():
+            responsible = self.responsible_form.save(commit=False)
+            if self.responsible_address_form.is_valid_data():
+                responsible.address = self.responsible_address_form.save()
+            responsible.save()
+            self.instance.responsible = responsible
+        else:
+            try:
+                self.instance.responsible.delete()
+            except (AttributeError, ProtectedError):
+                pass
+            self.instance.responsible = None
 
         if self.cleaned_data['coffin_type'] == self.URN:
             self.instance.burial_type = Burial.BURIAL_URN

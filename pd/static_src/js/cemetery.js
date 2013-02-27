@@ -341,6 +341,8 @@ $(function() {
 
             $('#id_agent_director').change();
             $('input[name=payment][value=wire]').attr('checked', '1');
+
+            $('#id_applicant-last_name').val('');
         } else {
             $('#applicant_form_org').hide();
             $('#applicant_form_person').show();
@@ -359,6 +361,11 @@ $(function() {
             $('input[name^=person]').closest('p').show();
             $('#id_org').closest('p').hide();
             $('input[name=payment][value=cash]').attr('checked', '1');
+
+            $('#id_applicant_organization').val('');
+            $('#id_agent_director').val('');
+            $('#id_agent').val('');
+            $('#id_dover').val('');
         }
     });
     $('input[name=opf]').change();
@@ -465,7 +472,7 @@ $(function() {
 
     $('#id_cemetery, #id_area, #id_row, #id_place_number').change(function() {
         $('#id_grave_number').html('<option value="1">1</option>');
-
+        $('#id_responsible-take_from_0').removeAttr('checked').closest('li').hide();
         if ($('#id_cemetery').val() &&  $('#id_area').val() &&  $('#id_place_number').val()) {
             var data = $('#id_cemetery, #id_area, #id_row, #id_place_number').serialize();
             $('#place_info').load('/burials/get_place/?'+data)
@@ -541,7 +548,7 @@ $(function() {
                     }
                 })
             } else {
-                alert("Адрес неразборчив, вводите в виде: улица Свободы, Новороссийск, Краснодарский край")
+                alert("Адрес неразборчив, вводите в виде: улица Свободы, д.9, кв.11, Новороссийск, Краснодарский край")
             }
         })
     });
