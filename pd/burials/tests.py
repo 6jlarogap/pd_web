@@ -638,7 +638,7 @@ class ExhumationTest(TestCase):
         self.assertEqual(ExhumationRequest.objects.count(), 0)
 
         r = self.ugh_client.post('/burials/%s/exhumate/' % self.burial.pk, {
-            'plan_date': '01.01.2001', 'plan_time': '10:10',
+            'fact_date': '01.01.2001', 'plan_time': '10:10',
         })
         self.assertEqual(r.status_code, 200)
         self.assertEqual(ExhumationRequest.objects.count(), 0)
@@ -646,7 +646,7 @@ class ExhumationTest(TestCase):
         self.assertEqual(Burial.objects.get().exhumated, None)
 
         r = self.ugh_client.post('/burials/%s/exhumate/' % self.burial.pk, {
-            'plan_date': '01.01.2001', 'plan_time': '10:10', 'applicant_organization': self.ugh_org.pk, 'opf': 'org',
+            'fact_date': '01.01.2001', 'plan_time': '10:10', 'applicant_organization': self.ugh_org.pk, 'opf': 'org',
         })
         self.assertEqual(r.status_code, 302)
         self.assertEqual(ExhumationRequest.objects.count(), 1)
