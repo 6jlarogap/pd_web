@@ -233,9 +233,9 @@ class DFiasAddrobj(models.Model):
     def __unicode__(self):
         parent = self.get_parent()
         if parent:
-            return u'%s %s, %s' % (self.offname, self.shortname, parent)
+            return u'%s %s, %s' % (self.shortname, self.offname, parent)
         else:
-            return u'%s %s' % (self.offname, self.shortname)
+            return u'%s %s' % (self.shortname, self.offname, )
 
     def get_parent(self):
         if self.parentguid:

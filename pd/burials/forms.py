@@ -498,7 +498,9 @@ class BurialCommitForm(BurialForm):
                 self.fields[f].required = True
 
         if self.data.get('cemetery'):
-            cemetery = Cemetery.objects.get(pk=self.data.get('cemetery'))
+            cemetery = self.data.get('cemetery')
+            if not isinstance(cemetery, Cemetery):
+                cemetery = Cemetery.objects.get(pk=cemetery)
         else:
             cemetery = self.instance and self.instance.cemetery or None
 

@@ -1,3 +1,4 @@
+# coding=utf-8
 import json
 
 from django.http import HttpResponse
@@ -62,8 +63,19 @@ def autocomplete_fias(request):
     city = request.GET['city']
     street = request.GET['street']
 
+    additional = (
+        ('house', u'д.'),
+        ('block', u'к.'),
+        ('building', u'стр.'),
+        ('flat', u'кв.'),
+    )
+
     try:
         sf = DFiasAddrobj.objects.get_streets(country, region, city, street)[0]
-        return HttpResponse(json.dumps({'ok': 1, 'id': sf.aoguid, 'info': u'%s' % sf }), mimetype='application/json')
+        info = u'%s' % sf
+        for k,v in additional:
+            if request.GET.get(k):
+                info += ', %s %s' % (v, request.GET.get(k))
+        return HttpResponse(json.dumps({'ok': 1, 'id': sf.aoguid, 'info': info }), mimetype='application/json')
     except IndexError:
         return HttpResponse(json.dumps({}), mimetype='application/json')

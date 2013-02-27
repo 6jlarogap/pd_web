@@ -41,7 +41,18 @@
     <script type="text/javascript" src="{{ STATIC_URL }}js/bootstrap-typeahead-ajax.js"></script>
 
     <script type="text/javascript"
-            src="http://maps.googleapis.com/maps/api/js?key=AIzaSyCr1PI2Q-8hxtstv5kka-8w0xxuPUEHNDA&sensor=false">
+            src="http://maps.googleapis.com/maps/api/js?libraries=places&key=AIzaSyCr1PI2Q-8hxtstv5kka-8w0xxuPUEHNDA&sensor=false">
+    </script>
+
+    <script type="text/javascript">
+        {% if user.profile.lat and user.profile.lng %}
+            USER_DEFAULT_BOUNDS = new google.maps.LatLngBounds(
+                new google.maps.LatLng({{ user.profile.lat|add:1 }}, {{ user.profile.lng|add:-1 }}),
+                new google.maps.LatLng({{ user.profile.lat|add:-1 }}, {{ user.profile.lng|add:1 }})
+            );
+        {% else %}
+            USER_DEFAULT_BOUNDS = null;
+        {% endif %}
     </script>
 
     <script type="text/javascript" src="{{ STATIC_URL }}js/cemetery.js" defer="true"></script>

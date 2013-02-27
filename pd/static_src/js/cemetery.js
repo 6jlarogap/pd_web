@@ -30,6 +30,7 @@ function setup_address_autocompletes() {
     ALIVE_FIO_URL = '/autocomplete/alive/';
     ORG_URL = '/autocomplete/org/';
 
+
     $('#id_instance_0').live('click', function(){
         var form = $(this).parents('.well');
         form.find('.instance_alert').remove();
@@ -274,6 +275,7 @@ $(function() {
     if (!window.CEMETERY_TIMES) { CEMETERY_TIMES = {} }
     if (!window.AGENT_DOVER) { AGENT_DOVER = {} }
     if (!window.LORU_AGENTS) { LORU_AGENTS = {} }
+    if (!window.PLACE_TYPES) { PLACE_TYPES = {} }
 
     $('.btn-commit-burial').click(function() {
         if ($(this).attr('rel')) {
@@ -508,6 +510,28 @@ $(function() {
         old_grave_value = $('#id_grave_number').val();
     });
 
+    $('#id_country, #id_region').change(function() {
+        var geocoder = new google.maps.Geocoder();
+        var addr = $('#id_country [selected]').text() + ', ' + $('#id_region [selected]').text();
+        geocoder.geocode( { 'address': addr}, function(results, status) {
+            if (status == google.maps.GeocoderStatus.OK) {
+                $('#id_lat').val(results[0].geometry.location.lat());
+                $('#id_lng').val(results[0].geometry.location.lng());
+            }
+        });
+    });
+    $('#id_country, #id_region').change();
+    $('#id_lat, #id_lng').closest('p').hide();
+
+    var ac_options = {
+        bounds: USER_DEFAULT_BOUNDS,
+        types: ['geocode'],
+        componentRestrictions: {country: 'ru'}
+    };
+    $('input[id$=fias_address]').attr('autocomplete', 'off').css('width', '600px').each(function() {
+        var autocomplete = new google.maps.places.Autocomplete(this, ac_options );
+    });
+
     $('input[id$=fias_address]').change(function() {
         var street_input = $('input[id$=fias_street]');
         street_input.val('');
@@ -521,6 +545,7 @@ $(function() {
             if (status == google.maps.GeocoderStatus.OK) {
                 var address = results[0].address_components;
                 var country = '', region = '', city = '', street = '';
+                var house = '', building = '', block = '', flat = '';
                 form_block.find('[id$=post_index], [id$=country_name], [id$=region_name], [id$=city_name]').val('');
                 form_block.find('[id$=street_name], [id$=house], [id$=block], [id$=building], [id$=flat]').val('');
                 $(address).each(function() {
@@ -531,29 +556,40 @@ $(function() {
                     if (this.types.indexOf("route") > -1) { street = this.long_name; form_block.find('input[id$=street_name]').val(''); }
                     if (this.types.indexOf("street_number") > -1) {
                         form_block.find('input[id$=house]').val(this.long_name);
+                        house = this.long_name;
                         if (this.long_name.indexOf("корпус") > -1) {
                             var bits = this.long_name.split(" корпус ");
                             form_block.find('input[id$=house]').val(bits[0]);
                             form_block.find('input[id$=block]').val(bits[1]);
+                            house = bits[0];
+                            block = bits[1];
                         }
                         if (this.long_name.indexOf("строение") > -1) {
                             var bits = this.long_name.split(" строение ");
                             form_block.find('input[id$=house]').val(bits[0]);
                             form_block.find('input[id$=building]').val(bits[1]);
+                            house = bits[0];
+                            building = bits[1];
                         }
                     }
-                    if (this.types.indexOf("subpremise") > -1) { form_block.find('input[id$=flat]').val(this.long_name); }
+                    if (this.types.indexOf("subpremise") > -1) { flat = this.long_name; form_block.find('input[id$=flat]').val(this.long_name); }
                 });
-                var fias_url = '/geo/autocomplete/fias/?country='+country+'&region='+region+'&city='+city+'&street='+street;
-                $.getJSON(fias_url, function(data) {
-                    if (data.ok) {
-                        street_input.val(data.id);
-                        form_block.find.find('#fias_street_info').html(data.info);
-                        form_block.find.find('#fias_street_info').show();
-                    } else {
-                        alert("Адрес не найден в ФИАС");
-                    }
-                })
+
+                if (country) {
+                    var data = 'country=' + country + '&region=' + region + '&city=' + city + '&street=' + street +
+                        '&house=' + house + '&block=' + block + '&building=' + building + '&flat=' + flat;
+                    var fias_url = '/geo/autocomplete/fias/?'+data;
+                    $.getJSON(fias_url, function(data) {
+                        if (data.ok) {
+                            street_input.val(data.id);
+                            form_block.find('.fias_street_info').html(data.info);
+                            form_block.find('.fias_street_info').show();
+                            form_block.find('.full_address').hide();
+                        } else {
+                            alert("Адрес не найден в ФИАС");
+                        }
+                    })
+                }
             } else {
                 alert("Адрес неразборчив, вводите в виде: улица Свободы, д.9, кв.11, Новороссийск, Краснодарский край")
             }

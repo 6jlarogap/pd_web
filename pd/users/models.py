@@ -18,6 +18,9 @@ class Profile(models.Model):
     country = models.ForeignKey('geo.Country', verbose_name=_(u"Страна"), blank=True, null=True)
     region_fias = models.CharField(_(u"Регион"), blank=True, null=True, max_length=255)
 
+    lat = models.DecimalField(max_digits=30, decimal_places=27, blank=True, null=True)
+    lng = models.DecimalField(max_digits=30, decimal_places=27, blank=True, null=True)
+
     def __unicode__(self):
         return self.user and (self.user.get_full_name() or self.user.username) or u'%s' % self.pk
 
@@ -36,6 +39,11 @@ class Profile(models.Model):
     def get_region(self):
         if self.region_fias:
             return DFiasAddrobj.objects.get(parentguid='', aoguid=self.region_fias)
+
+    def get_coords(self):
+        if self.lat and self.lng:
+            return ','.join([self.lat, self.lng])
+        return ''
 
 class Org(models.Model):
     PROFILE_ZAGS = 'zags'
