@@ -540,6 +540,18 @@ $(function() {
         form_block.find('#fias_street_info').hide();
         var addr = $(this).val();
         if (!addr) { return }
+
+//        var geocoder = new YMaps.Geocoder(addr);
+//        YMaps.Events.observe(geocoder, geocoder.Events.Load, function () {
+//            if (this.length()) {
+//                alert("Найдено :" + this.length());
+//                map.addOverlay(this.get(0));
+//                map.panTo(this.get(0).getGeoPoint())
+//            } else {
+//                alert("Ничего не найдено");
+//            }
+//        })
+
         var geocoder = new google.maps.Geocoder();
         geocoder.geocode( { 'address': addr}, function(results, status) {
             if (status == google.maps.GeocoderStatus.OK) {

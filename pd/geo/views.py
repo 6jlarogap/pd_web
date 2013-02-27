@@ -72,10 +72,12 @@ def autocomplete_fias(request):
 
     try:
         sf = DFiasAddrobj.objects.get_streets(country, region, city, street)[0]
-        info = u'%s' % sf
+        info_bits = unicode(sf).split(',', 1)
+        info = ''
         for k,v in additional:
             if request.GET.get(k):
                 info += ', %s %s' % (v, request.GET.get(k))
+        info = info_bits[0] + info + ', ' + info_bits[1] + (country and (', %s' % country) or '')
         return HttpResponse(json.dumps({'ok': 1, 'id': sf.aoguid, 'info': info }), mimetype='application/json')
     except IndexError:
         return HttpResponse(json.dumps({}), mimetype='application/json')
