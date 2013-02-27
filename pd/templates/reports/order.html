@@ -99,7 +99,7 @@
         <TD STYLE="border-top: 1px solid #000000" ALIGN=RIGHT VALIGN=BOTTOM><FONT COLOR="#000000">Дата смерти</FONT>
         </TD>
         <TD STYLE="border-top: 1px solid #000000" COLSPAN=3 ALIGN=CENTER VALIGN=BOTTOM><FONT
-                COLOR="#000000">{{ order.burial.deadman.death_date|ru_strftime:"%d %B %Y"|safe }}</FONT></TD>
+                COLOR="#000000">{{ order.burial.deadman.death_date }}</FONT></TD>
     </TR>
     <TR>
         <TD STYLE="border-left: 1px solid #000000" COLSPAN=5 HEIGHT=20 ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000">Свидетельство
@@ -371,7 +371,7 @@
         <TD STYLE="border-top: 1px solid #000000" ALIGN=RIGHT VALIGN=BOTTOM><FONT COLOR="#000000">Дата смерти</FONT>
         </TD>
         <TD STYLE="border-top: 1px solid #000000" COLSPAN=3 ALIGN=CENTER VALIGN=BOTTOM><FONT
-                COLOR="#000000">{{ order.burial.deadman.death_date|ru_strftime:"%d %B %Y"|safe }}</FONT></TD>
+                COLOR="#000000">{{ order.burial.deadman.death_date }}</FONT></TD>
     </TR>
     <TR>
         <TD STYLE="border-left: 1px solid #000000" COLSPAN=5 HEIGHT=20 ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000">Свидетельство
@@ -985,7 +985,7 @@
         <TD STYLE="border-left: 1px solid #000000" COLSPAN=3 HEIGHT=20 ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000">Номер
             могилы</FONT></TD>
         <TD STYLE="border-top: 1px solid #000000; " COLSPAN=6 ALIGN=CENTER VALIGN=MIDDLE SDNUM="1033;0;@"><FONT
-                COLOR="#000000" STYLE="font-size: 170%">{{ order.pk }}</FONT></TD>
+                COLOR="#000000" STYLE="font-size: 170%">{{ order.burial.place.place|default:order.burial.place_number }}</FONT></TD>
         <TD ALIGN=LEFT VALIGN=MIDDLE><FONT COLOR="#000000"><BR></FONT></TD>
         <TD ALIGN=LEFT VALIGN=MIDDLE><FONT COLOR="#000000"><BR></FONT></TD>
         <TD ALIGN=LEFT VALIGN=MIDDLE><FONT COLOR="#000000"><BR></FONT></TD>
@@ -1566,11 +1566,11 @@
             <TD STYLE="border-left: 1px solid #000000" COLSPAN=2 HEIGHT=20 ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000">Могила </FONT>
             </TD>
             <TD STYLE="border-top: 1px solid #000000" ALIGN=center colspan="3" VALIGN=BOTTOM SDNUM="1033;0;@"><FONT
-                    COLOR="#000000" STYLE="font-size: 170%">{{ order.burial.place_number }}</FONT></TD>
+                    COLOR="#000000" STYLE="font-size: 170%"></FONT></TD>
             <TD STYLE="border-top: 1px solid #000000" ALIGN=RIGHT VALIGN=BOTTOM SDNUM="1033;0;@"><FONT
                     COLOR="#000000">№</FONT></TD>
             <TD STYLE="border-top: 1px solid #000000" ALIGN=center colspan="3" VALIGN=BOTTOM SDNUM="1033;0;@"><FONT
-                    COLOR="#000000" STYLE="font-size: 170%">{{ order.pk }}</FONT></TD>
+                    COLOR="#000000" STYLE="font-size: 170%">{{ order.burial.place.place|default:order.burial.place_number }}</FONT></TD>
             <TD ALIGN=LEFT VALIGN=MIDDLE><FONT COLOR="#000000"><BR></FONT></TD>
             <TD ALIGN=LEFT VALIGN=MIDDLE><FONT COLOR="#000000"><BR></FONT></TD>
             <TD ALIGN=LEFT VALIGN=MIDDLE><FONT COLOR="#000000"><BR></FONT></TD>
@@ -1579,7 +1579,7 @@
             <TD STYLE="border-left: 1px solid #000000" COLSPAN=2 HEIGHT=20 ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000">Участок
                 №</FONT></TD>
             <TD STYLE="border-top: 1px solid #000000" ALIGN=center colspan="3" VALIGN=BOTTOM SDNUM="1033;0;@"><FONT
-                    COLOR="#000000" STYLE="font-size: 170%">{{ order.burial.place.area }}</FONT></TD>
+                    COLOR="#000000" STYLE="font-size: 170%">{{ order.burial.area.name }}</FONT></TD>
             <TD ALIGN=RIGHT VALIGN=BOTTOM SDNUM="1033;0;@"><FONT COLOR="#000000">размер гроба</FONT></TD>
             <TD STYLE="border-top: 1px solid #000000" ALIGN=center VALIGN=BOTTOM SDNUM="1033;0;@" colspan=3><FONT
                     COLOR="#000000" STYLE="font-size: 170%">{{ order.get_coffindata.size|default:"" }}</FONT></TD>
