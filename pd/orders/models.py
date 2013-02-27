@@ -70,7 +70,14 @@ class Order(models.Model):
 
     @property
     def customer(self):
-        return self.applicant or self.applicant_organization
+        return self.applicant or (self.applicant_organization and self.get_formal_org()) or ''
+
+    def get_formal_org(self):
+        org = self.applicant_organization
+        if self.agent_director:
+            return _(u"%s, в лице директора %s") % (org, org.director)
+        else:
+            return _(u"%s, в лице %s, доверенность %s") % (org, self.agent, self.dover)
 
     @property
     def total(self):
