@@ -53,7 +53,7 @@ LoruFormset = inlineformset_factory(Org, ProfileLORU, fk_name='ugh', formset=Bas
 FIAS_REGIONS = DFiasAddrobj.objects.filter(parentguid='').order_by('formalname')
 
 class ProfileForm(ChildrenJSONMixin, forms.ModelForm):
-    region = forms.ModelChoiceField(label=_(u"Регион"), queryset=FIAS_REGIONS)
+    region = forms.ModelChoiceField(label=_(u"Регион"), queryset=FIAS_REGIONS, required=False)
 
     org_type = forms.ChoiceField(label=_(u"Тип"), choices=Org.PROFILE_TYPES)
     org_name = forms.CharField(label=_(u"Краткое название организации"))
