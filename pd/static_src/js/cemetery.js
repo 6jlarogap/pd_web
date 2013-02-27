@@ -482,6 +482,13 @@ $(function() {
             $('#place_info').load('/burials/get_place/?'+data)
             $('#id_grave_number').val(old_grave_value);
         }
+
+        var cemetery = $('#id_cemetery').val();
+        if (cemetery && PLACE_TYPES[cemetery] != 'manual') {
+            $('#id_place_number').siblings('.helptext').show();
+        } else {
+            $('#id_place_number').siblings('.helptext').hide();
+        }
     });
     $('#id_cemetery, #id_area, #id_row, #id_place_number').change();
 

@@ -436,8 +436,9 @@ class Reason(models.Model):
 class ExhumationRequest(models.Model):
     burial = models.OneToOneField(Burial, editable=False)
     place = models.ForeignKey(Place, editable=False, null=True)
-    plan_date = models.DateField(_(u"Дата"))
-    plan_time = models.TimeField(_(u"Время"))
+    plan_date = models.DateField(_(u"План. дата"), null=True, blank=True)
+    plan_time = models.TimeField(_(u"План. время"), null=True, blank=True)
+    fact_date = models.DateField(_(u"Факт. дата"), null=True)
     applicant = models.ForeignKey('persons.AlivePerson', verbose_name=_(u"Заказчик-ФЛ"), null=True, blank=True)
     applicant_organization = models.ForeignKey(Org, verbose_name=_(u"Заказчик-ЮЛ"), null=True, blank=True)
     agent_director = models.BooleanField(_(u"Директор-Агент"), default=False, blank=True)

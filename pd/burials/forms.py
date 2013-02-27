@@ -11,6 +11,7 @@ from django.core.urlresolvers import reverse
 from django.db.models.aggregates import Max
 from django.db.models.deletion import ProtectedError
 from django.forms.models import inlineformset_factory
+from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext_lazy as _
 from django.db.models.query_utils import Q
 
@@ -352,6 +353,13 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, forms.Mo
 
         return self.cleaned_data
 
+    def cemetery_placing_json(self):
+        parents = {}
+        if self.fields.get('cemetery'):
+            for c in self.fields['cemetery'].queryset:
+                parents[c.pk] = c.places_algo
+        return mark_safe(json.dumps(parents))
+
     def get_prefix(self, form):
         prefix = u''
         if form in [self.deadman_form, self.deadman_address_form, self.dc_form]:
@@ -668,6 +676,7 @@ class ExhumationForm(ChildrenJSONMixin, forms.ModelForm):
 
     class Meta:
         model = ExhumationRequest
+        exclude = ['plan_date', 'plan_time']
 
     def __init__(self, request, burial, *args, **kwargs):
         super(ExhumationForm, self).__init__(*args, **kwargs)
@@ -681,7 +690,7 @@ class ExhumationForm(ChildrenJSONMixin, forms.ModelForm):
         else:
             self.initial['opf'] = 'org'
 
-        if burial.cemetery and burial.cemetery.time_slots:
+        if burial.cemetery and burial.cemetery.time_slots and self.fields.get('plan_time'):
             choices = [('', '----------')] + burial.cemetery.get_time_choices(
                 date=burial.plan_date,
                 request=self.request,

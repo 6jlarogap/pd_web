@@ -14,6 +14,11 @@
         {% csrf_token %}
         <input id="id_cemetery" value="{{ burial.cemetery.pk }}" type="hidden" />
 
+        {% if form.fact_date %}
+            {{ form.fact_date.errors }}
+            <p class="inline">{{ form.fact_date.label_tag }} {{ form.fact_date }}<span class="helptext">{{ form.fact_date.help_text }}</span></p>
+        {% endif %}
+
         {% if form.plan_date %}
             {{ form.plan_date.errors }}
             <p class="inline">{{ form.plan_date.label_tag }} {{ form.plan_date }}<span class="helptext">{{ form.plan_date.help_text }}</span></p>
