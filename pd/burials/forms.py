@@ -308,7 +308,7 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, forms.Mo
         if self.request.user.profile.is_ugh():
             if self.cleaned_data.get('applicant_organization') and self.cleaned_data.get('agent'):
                 if self.cleaned_data['applicant_organization'] != self.cleaned_data['agent'].org:
-                    raise forms.ValidationError(_(u'Агент не от этого ЛОРУ'))
+                    raise forms.ValidationError(_(u'Агент не от этого ЮЛ'))
             if self.cleaned_data.get('agent') and self.cleaned_data.get('dover'):
                 if self.cleaned_data['agent'] != self.cleaned_data['dover'].agent:
                     raise forms.ValidationError(_(u'Доверенность не от этого Агента'))
@@ -319,7 +319,7 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, forms.Mo
                 raise forms.ValidationError(_(u'Нельзя указать Доверенность без Агента'))
 
             if self.cleaned_data.get('applicant_organization') and self.applicant_form.is_valid_data():
-                raise forms.ValidationError(_(u"Нужно указать только либо ЛОРУ, либо ФЛ-Заявителя"))
+                raise forms.ValidationError(_(u"Нужно указать только либо Заявителя-ЮЛ, либо Заявителя-ФЛ"))
 
             if self.cleaned_data.get('agent_director'):
                 self.cleaned_data.update(agent=None, dover=None, )
@@ -507,10 +507,6 @@ class BurialCommitForm(BurialForm):
         pass
 
     def setup_required_responsible_address(self):
-        # if self.data.get('responsible-last_name'):
-        #     for f in self.responsible_address_form.fields:
-        #         if f in ['country_name', 'region_name', 'city_name', 'street_name', 'house']:
-        #             self.responsible_address_form.fields[f].required = True
         pass
 
     def setup_required_applicant(self):
@@ -526,7 +522,7 @@ class BurialCommitForm(BurialForm):
                     self.applicant_id_form.fields[f].required = True
 
     def clean(self):
-        if self.instance.burial_type not in Burial.NEW_BURIAL_TYPES:
+        if self.instance.burial_type not in Burial.NEW_BURIAL_TYPES and self.responsible_form.is_valid_data():
             for f in [self.responsible_form, self.responsible_address_form]:
                 if f.is_valid() and any(f.cleaned_data.values()):
                     if not self.instance.get_place() or not self.instance.get_place().responsible or \
@@ -541,14 +537,14 @@ class BurialCommitForm(BurialForm):
             if not self.instance.is_archive():
                 if not self.cleaned_data.get('applicant_organization'):
                     if not self.applicant_form.is_valid_data():
-                        raise forms.ValidationError(_(u"Нужно указать ЛОРУ или ФЛ-Заявителя"))
+                        raise forms.ValidationError(_(u"Нужно указать либо Заявителя-ЮЛ, либо Заявителя-ФЛ"))
                 if self.cleaned_data.get('applicant_organization'):
                     if self.applicant_form.is_valid_data():
-                        raise forms.ValidationError(_(u"Нужно указать либо ЛОРУ, либо ФЛ-Заявителя"))
+                        raise forms.ValidationError(_(u"Нужно указать либо Заявителя-ЮЛ, либо Заявителя-ФЛ"))
 
                 if self.cleaned_data.get('opf') == 'person':
                     if not self.applicant_form.is_valid_data():
-                        raise forms.ValidationError(_(u"Нужно указать ФЛ-Заявителя"))
+                        raise forms.ValidationError(_(u"Нужно указать Заявителя-ФЛ"))
 
                 if self.cleaned_data.get('opf') == 'org':
                     if not self.cleaned_data.get('applicant_organization'):
