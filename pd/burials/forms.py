@@ -560,12 +560,6 @@ class BurialCommitForm(BurialForm):
                     self.applicant_id_form.fields[f].required = True
 
     def clean(self):
-        if self.instance.burial_type not in Burial.NEW_BURIAL_TYPES and self.responsible_form.is_valid_data():
-            for f in [self.responsible_form, self.responsible_address_form]:
-                if f.is_valid() and any(f.cleaned_data.values()):
-                    if not self.instance.get_place() or not self.instance.get_place().responsible or \
-                        self.responsible_form.cleaned_data['last_name'] != self.instance.get_place().responsible.last_name:
-                        raise forms.ValidationError(_(u"Для подзахоронений Ответственного быть не должно"))
         is_ugh = False
         if self.instance and self.instance.is_ugh():
             is_ugh = True
