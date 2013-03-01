@@ -185,13 +185,14 @@ def do_import_burials(csv_fileobj, user):
             try:
                 cemetery = Cemetery.objects.get(name=row[6])
             except Cemetery.DoesNotExist:
-                cemetery = Cemetery.objects.create(name=row[6], time_begin='10:00', time_end='17:00')
+                cemetery = Cemetery.objects.create(
+                    name=row[6], time_begin='10:00', time_end='17:00',
+                    creator=user, ugh=user.profile.org
+                )
             try:
                 b = Burial.objects.get(cemetery=cemetery, account_number=row[0])
             except Burial.DoesNotExist:
-                area = None
                 area, _created = Area.objects.get_or_create(name=row[7] or '', cemetery=cemetery)
-
 
                 place, _created = Place.objects.get_or_create(
                     cemetery=cemetery,
