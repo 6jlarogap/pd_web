@@ -15,6 +15,8 @@ urlpatterns += patterns('pd.views',
     url(r'^', include('orders.urls')),
     url(r'^', include('reports.urls')),
     url(r'^geo/', include('geo.urls')),
+    url(r'^import/', include('import_burials.urls')),
+    url(r'^import/', include('import_burials.urls')),
 )
 
 urlpatterns += patterns('',

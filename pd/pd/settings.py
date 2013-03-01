@@ -128,6 +128,7 @@ INSTALLED_APPS = (
     'orders',
     'logs',
     'reports',
+    'import_burials',
 )
 
 LOGGING = {
