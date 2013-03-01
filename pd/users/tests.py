@@ -92,7 +92,10 @@ class ProfileTest(TestCase):
         self.assertEqual(r.context['user'], self.user)
         self.assertNotIn('id="id_loru_list-1-loru"', r.content)
 
-        r = self.client.post('/profile/', {'org_type': Org.PROFILE_LORU, 'org_name': 'LORU', 'org_inn': '111', 'places_type': 'manual'})
+        r = self.client.post('/profile/', {
+            'org_type': Org.PROFILE_LORU, 'org_name': 'LORU', 'org_inn': '111', 'places_type': 'manual',
+            'bankaccount_set-TOTAL_FORMS': '1', 'bankaccount_set-INITIAL_FORMS': '0', 'bankaccount_set-MAX_NUM_FORMS': '',
+        })
         self.assertEqual(r.status_code, 302)
 
         profile = Profile.objects.get()
@@ -104,7 +107,10 @@ class ProfileTest(TestCase):
         profile.org = None
         profile.save()
 
-        r = self.client.post('/profile/', {'org_type': Org.PROFILE_UGH, 'org_name': 'UGH', 'org_inn': '222', 'places_type': 'manual'})
+        r = self.client.post('/profile/', {
+            'org_type': Org.PROFILE_UGH, 'org_name': 'UGH', 'org_inn': '222', 'places_type': 'manual',
+            'bankaccount_set-TOTAL_FORMS': '1', 'bankaccount_set-INITIAL_FORMS': '0', 'bankaccount_set-MAX_NUM_FORMS': '',
+        })
         self.assertEqual(r.status_code, 302)
 
         profile = Profile.objects.get()
@@ -123,7 +129,10 @@ class EditDataTest(TestCase):
         r = self.client.login(username='test', password='test')
         self.assertEquals(r, True)
 
-        r = self.client.post('/profile/', {'org_type': Org.PROFILE_LORU, 'org_name': 'LORU', 'org_inn': '111', 'places_type': 'manual'})
+        r = self.client.post('/profile/', {
+            'org_type': Org.PROFILE_LORU, 'org_name': 'LORU', 'org_inn': '111', 'places_type': 'manual',
+            'bankaccount_set-TOTAL_FORMS': '1', 'bankaccount_set-INITIAL_FORMS': '0', 'bankaccount_set-MAX_NUM_FORMS': '',
+        })
         self.assertEqual(r.status_code, 302)
 
     def test_data(self):
