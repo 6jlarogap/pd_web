@@ -6,7 +6,7 @@ from django.views.generic.base import TemplateView, View
 from django.utils.translation import ugettext_lazy as _
 
 from import_burials.forms import ImportCsvForm
-from import_burials.models import do_import_orgs
+from import_burials.models import do_import_orgs, do_import_burials
 
 
 class ImportFormsView(TemplateView):
@@ -30,6 +30,9 @@ import_orgs = transaction.commit_on_success(ImportOrgsView.as_view())
 
 class ImportBurialsView(View):
     def post(self, request, *args, **kwargs):
-        pass
+        do_import_burials(request.FILES['burials-csv'], user=request.user)
+        messages.success(request, _(u"Импорт успешен"))
+        return redirect('import_forms')
 
 import_burials = transaction.commit_on_success(ImportBurialsView.as_view())
+import_burials = ImportBurialsView.as_view()
