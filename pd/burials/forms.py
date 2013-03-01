@@ -164,7 +164,6 @@ class ResponsibleForm(AlivePersonForm):
             self.fields['take_from'].widget.choices = new_choices
 
     def clean(self):
-        print 'self.is_valid()', self.is_valid(), self.cleaned_data
         if self.cleaned_data.get('take_from') == self.WHERE_FROM_ORDER:
             if not self.cleaned_data.get('order'):
                 raise forms.ValidationError(_(u'Нет Заказа'))
