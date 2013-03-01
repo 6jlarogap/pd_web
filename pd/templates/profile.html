@@ -11,11 +11,26 @@
         {% endif %}
         {{ form.as_p }}
 
+        <h2>{% trans "Адрес" %}</h2>
+        <div class="form_block">
+            {% with form.address_form as form %}
+                {% include "location_form.html" %}
+            {% endwith %}
+        </div>
+
+        <h2>{% trans "Банковские счета" %}</h2>
+        {{ bank_formset.management_form }}
+        <table>
+            {% for f in bank_formset.forms %}
+                {{ f.as_table }}
+            {% endfor %}
+        </table>
+
         {% if form.instance.is_ugh %}
             <h2>{% trans "ЛОРУ" %}</h2>
-            {{ formset.management_form }}
+            {{ loru_formset.management_form }}
             <table>
-                {% for f in formset.forms %}
+                {% for f in loru_formset.forms %}
                     {{ f.as_table }}
                 {% endfor %}
             </table>

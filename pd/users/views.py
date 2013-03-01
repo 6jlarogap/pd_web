@@ -12,7 +12,7 @@ from django.views.generic.base import View
 from django.views.generic.edit import UpdateView, CreateView
 
 from logs.models import write_log
-from users.forms import RegisterForm, LoruFormset, ProfileForm, UserDataForm, ChangePasswordForm
+from users.forms import RegisterForm, LoruFormset, ProfileForm, UserDataForm, ChangePasswordForm, BankAccountFormset
 from users.models import Profile, Org
 
 
@@ -100,9 +100,10 @@ class ProfileView(UpdateView):
         if not request.user.is_authenticated():
             return redirect('/')
         if request.user.profile.org and request.user.profile.is_ugh():
-            self.formset = LoruFormset(data=request.POST or None, instance=request.user.profile.org)
+            self.loru_formset = LoruFormset(data=request.POST or None, instance=request.user.profile.org)
         else:
-            self.formset = LoruFormset()
+            self.loru_formset = LoruFormset()
+        self.bank_formset = BankAccountFormset(data=request.POST or None, instance=request.user.profile.org)
         return super(ProfileView, self).dispatch(request, *args, **kwargs)
 
     def get_object(self, queryset=None):
@@ -110,11 +111,13 @@ class ProfileView(UpdateView):
 
     def get_context_data(self, **kwargs):
         data = super(ProfileView, self).get_context_data(**kwargs)
-        data['formset'] = self.formset
+        data['loru_formset'] = self.loru_formset
+        data['bank_formset'] = self.bank_formset
         return data
 
     def form_valid(self, form):
-        self.formset.save()
+        self.bank_formset.save()
+        self.loru_formset.save()
         form.save()
         write_log(self.request, form.instance, _(u'Изменены данные ЛОРУ'))
         messages.success(self.request, _(u"Данные сохранены"))

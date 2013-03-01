@@ -3,6 +3,7 @@ from django.db import models
 from django.utils.translation import ugettext_lazy as _
 
 from geo.models import DFiasAddrobj
+from pd.utils import DigitsValidator, LengthValidator, NotEmptyValidator
 
 
 class Profile(models.Model):
@@ -59,8 +60,12 @@ class Org(models.Model):
     name = models.CharField(_(u"Название организации"), max_length=255, default='')
     full_name = models.CharField(_(u"Полное название"), max_length=255, default='')
     inn = models.CharField(_(u"ИНН"), max_length=255, default='')
+    kpp = models.CharField(_(u"КПП"), max_length=255, default='', blank=True)
+    ogrn = models.CharField(_(u"ОГРН/ОГРЮЛ"), max_length=255, default='', blank=True)
     director = models.CharField(_(u"Директор"), max_length=255, default='')
     email = models.EmailField(_(u"Email"), null=True, blank=True)
+    phones = models.TextField(_(u"Телефоны"), blank=True, null=True)
+    off_address = models.ForeignKey('geo.Location', verbose_name=_("Юр. адрес"), null=True, blank=True)
 
     class Meta:
         verbose_name = _(u'Организация')
@@ -68,6 +73,17 @@ class Org(models.Model):
 
     def __unicode__(self):
         return self.name
+
+class BankAccount(models.Model):
+    """
+    Банковские реквизиты
+    """
+    organization = models.ForeignKey(Org, verbose_name=u"Организация")
+    rs = models.CharField(u"Расчетный счет", max_length=20, validators=[DigitsValidator(), LengthValidator(20), ])
+    ks = models.CharField(u"Корреспондентский счет", max_length=20, blank=True, validators=[DigitsValidator(), LengthValidator(20), ])
+    bik = models.CharField(u"БИК", max_length=9, validators=[DigitsValidator(), LengthValidator(9), ])
+    bankname = models.CharField(u"Наименование банка", max_length=64, validators=[NotEmptyValidator(1), ])
+    ls = models.CharField(u"Л/с", max_length=11, blank=True, null=True, validators=[LengthValidator(11), ])
 
 class ProfileLORU(models.Model):
     ugh = models.ForeignKey(Org, related_name='loru_list', limit_choices_to={'type': Org.PROFILE_UGH}, verbose_name=_(u"УГХ"))

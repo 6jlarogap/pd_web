@@ -3,10 +3,11 @@ from django import forms
 from django.contrib.auth.models import User
 from django.forms.models import inlineformset_factory, BaseInlineFormSet
 from django.utils.translation import ugettext_lazy as _
+from geo.forms import LocationForm
 from geo.models import DFiasAddrobj
 from pd.forms import ChildrenJSONMixin
 
-from users.models import Profile, ProfileLORU, Org
+from users.models import Profile, ProfileLORU, Org, BankAccount
 
 
 class RegisterForm(forms.ModelForm):
@@ -50,6 +51,8 @@ class BaseLoruFormset(BaseInlineFormSet):
 
 LoruFormset = inlineformset_factory(Org, ProfileLORU, fk_name='ugh', formset=BaseLoruFormset)
 
+BankAccountFormset = inlineformset_factory(Org, BankAccount, formset=BaseLoruFormset)
+
 FIAS_REGIONS = DFiasAddrobj.objects.filter(parentguid='').order_by('formalname')
 
 class ProfileForm(ChildrenJSONMixin, forms.ModelForm):
@@ -59,8 +62,11 @@ class ProfileForm(ChildrenJSONMixin, forms.ModelForm):
     org_name = forms.CharField(label=_(u"Краткое название организации"))
     org_full_name = forms.CharField(label=_(u"Полное название организации"), required=False)
     org_inn = forms.CharField(label=_(u"ИНН организации"))
+    org_kpp = forms.CharField(label=_(u"КПП организации"))
+    org_ogrn = forms.CharField(label=_(u"ОГРН организации"))
     org_director = forms.CharField(label=_(u"Директор"), required=False)
     org_email = forms.EmailField(label=_(u"Email"), required=False)
+    org_phones = forms.CharField(label=_(u"Телефоны"), required=False)
 
     class Meta:
         model = Profile
@@ -76,6 +82,11 @@ class ProfileForm(ChildrenJSONMixin, forms.ModelForm):
 
         if self.instance.region_fias:
             self.initial['region'] = self.instance.get_region()
+
+        self.address_form = LocationForm(data=self.data or None, instance=self.instance.org and self.instance.org.off_address)
+
+    def is_valid(self):
+        return super(ProfileForm, self).is_valid() and self.address_form.is_valid()
 
     def clean_org_inn(self):
         inn = self.cleaned_data['org_inn']
@@ -96,6 +107,9 @@ class ProfileForm(ChildrenJSONMixin, forms.ModelForm):
             obj.org, _created = Org.objects.get_or_create(**params)
         else:
             Org.objects.filter(pk=obj.org.pk).update(**params)
+        if self.address_form.is_valid_data():
+            obj.org.off_address = self.address_form.save(commit=commit)
+            obj.org.save()
         if commit:
             obj.save()
         return obj
