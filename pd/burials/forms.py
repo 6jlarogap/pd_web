@@ -164,6 +164,7 @@ class ResponsibleForm(AlivePersonForm):
             self.fields['take_from'].widget.choices = new_choices
 
     def clean(self):
+        print 'self.is_valid()', self.is_valid(), self.cleaned_data
         if self.cleaned_data.get('take_from') == self.WHERE_FROM_ORDER:
             if not self.cleaned_data.get('order'):
                 raise forms.ValidationError(_(u'Нет Заказа'))
@@ -288,8 +289,9 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, forms.Mo
         self.dc_form = DeathCertificateForm(data=data, prefix='deadman-dc', instance=dc)
 
         responsible = self.instance and self.instance.get_responsible()
+        resp_initial = {'order': self.instance.order or self.request.REQUEST.get('order')}
         self.responsible_form = ResponsibleForm(data=data, prefix='responsible', instance=responsible,
-                                                initial={'order': self.instance.order or self.request.REQUEST.get('order')})
+                                                initial=resp_initial)
         resp_addr = responsible and responsible.address
         self.responsible_address_form = LocationForm(data=data, prefix='responsible-address', instance=resp_addr)
 
