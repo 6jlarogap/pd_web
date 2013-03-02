@@ -44,8 +44,12 @@
     </TR>
     <TR>
         <TD STYLE="border-left: 1px solid #000000" COLSPAN=9 HEIGHT=25 ALIGN=CENTER VALIGN=TOP><B>
-            <FONT SIZE=4 COLOR="#000000">{{ user.profile.org.off_address }}</FONT>
+            <FONT SIZE=4 COLOR="#000000">{{ user.profile.org.name }}</FONT>
         </B></TD>
+    </TR>
+    <TR>
+        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000" COLSPAN=9 WIDTH=906 HEIGHT=20
+            ALIGN=CENTER VALIGN=TOP><B><FONT COLOR="#000000">{{ user.profile.org.off_address }}</FONT></B></TD>
     </TR>
     <TR>
         <TD ALIGN=CENTER VALIGN=BOTTOM colspan=9><B><I><FONT SIZE=5 COLOR="#000000">
@@ -84,7 +88,7 @@
                 COLOR="#000000">Адрес</FONT></TD>
         <TD STYLE="border-top: 1px solid #000000" COLSPAN=7 ALIGN=CENTER VALIGN=BOTTOM SDNUM="1033;0;@"><FONT
                 COLOR="#000000">
-            {% if order.customer.address %}{{ order.customer.address }}{% else  %}{{ order.customer.off_address|default:"" }}{% endif %}
+            {% if order.customer.address %}{{ order.customer.address }}{% else %}{{ order.customer.off_address|default:"" }}{% endif %}
         </FONT></TD>
     </TR>
     <TR>
@@ -246,7 +250,7 @@
     <TR>
         <TD STYLE="border-left: 1px solid #000000" COLSPAN=9 HEIGHT=30 ALIGN=LEFT VALIGN=MIDDLE SDNUM="1033;0;@"><FONT
                 COLOR="#000000">5.1. Возврат денег за неиспользованный автокатафалк производится по заявлению заказчика
-            с приложением документов об оплате через кассу {{ org.name }}</FONT></TD>
+            с приложением документов об оплате через кассу {{ user.profile.org.name }}</FONT></TD>
     </TR>
     <TR>
         <TD STYLE="border-left: 1px solid #000000" COLSPAN=9 HEIGHT=30 ALIGN=LEFT VALIGN=MIDDLE SDNUM="1033;0;@"><FONT
@@ -314,12 +318,16 @@
     <TBODY>
     <TR>
         <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000" COLSPAN=9 WIDTH=906 HEIGHT=20
-            ALIGN=CENTER VALIGN=TOP><B><FONT COLOR="#000000">{{ org.name }}</FONT></B></TD>
+            ALIGN=CENTER VALIGN=TOP><B><FONT COLOR="#000000">{{ user.profile.org.full_name }}</FONT></B></TD>
     </TR>
     <TR>
-        <TD STYLE="border-left: 1px solid #000000" COLSPAN=9 HEIGHT=25 ALIGN=CENTER VALIGN=TOP><B><FONT SIZE=4
-                                                                                                        COLOR="#000000">Ритуальная
-            служба</FONT></B></TD>
+        <TD STYLE="border-left: 1px solid #000000" COLSPAN=9 HEIGHT=25 ALIGN=CENTER VALIGN=TOP><B>
+            <FONT SIZE=4 COLOR="#000000">{{ user.profile.org.name }}</FONT>
+        </B></TD>
+    </TR>
+    <TR>
+        <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000" COLSPAN=9 WIDTH=906 HEIGHT=20
+            ALIGN=CENTER VALIGN=TOP><B><FONT COLOR="#000000">{{ user.profile.org.off_address }}</FONT></B></TD>
     </TR>
     <TR>
         <TD STYLE="border-left: 1px solid #000000" COLSPAN=9 HEIGHT=35 ALIGN=CENTER VALIGN=BOTTOM>
@@ -345,7 +353,7 @@
         <TD ALIGN=LEFT VALIGN=MIDDLE><FONT COLOR="#000000"><BR></FONT></TD>
         <TD ALIGN=LEFT VALIGN=MIDDLE><FONT COLOR="#000000"><BR></FONT></TD>
         <TD ALIGN=LEFT VALIGN=MIDDLE><FONT COLOR="#000000"><BR></FONT></TD>
-        <TD COLSPAN=2 ALIGN=CENTER VALIGN=BOTTOM><FONT COLOR="#000000">Телефон {{ org.phone }}</FONT></TD>
+        <TD COLSPAN=2 ALIGN=CENTER VALIGN=BOTTOM><FONT COLOR="#000000">Телефон {{ user.profile.org.phones }}</FONT></TD>
     </TR>
     <TR>
         <TD STYLE="border-left: 1px solid #000000" COLSPAN=2 HEIGHT=20 ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000">Заказчик</FONT>
@@ -518,7 +526,7 @@
     <TR>
         <TD STYLE="border-left: 1px solid #000000" COLSPAN=9 HEIGHT=30 ALIGN=LEFT VALIGN=MIDDLE SDNUM="1033;0;@"><FONT
                 COLOR="#000000">5.1. Возврат денег за неиспользованный автокатафалк производится по заявлению заказчика
-            с приложением документов об оплате через кассу {{ org.name }}</FONT></TD>
+            с приложением документов об оплате через кассу {{ user.profile.org.name }}</FONT></TD>
     </TR>
     <TR>
         <TD STYLE="border-left: 1px solid #000000" COLSPAN=9 HEIGHT=30 ALIGN=LEFT VALIGN=MIDDLE SDNUM="1033;0;@"><FONT
@@ -595,7 +603,7 @@
     </TR>
     <TR>
         <TD STYLE="border-left: 1px solid #000000" COLSPAN=6 HEIGHT=20 ALIGN=LEFT VALIGN=TOP><FONT
-                COLOR="#000000">г. {{ org.location.street.city.name }}</FONT></TD>
+                COLOR="#000000">г. {{ user.profile.org.location.street.city.name }}</FONT></TD>
         <TD COLSPAN=3 ALIGN=LEFT VALIGN=BOTTOM><FONT COLOR="#000000">&laquo;____&raquo; _________ 20___г.</FONT></TD>
     </TR>
     <TR>
@@ -746,7 +754,7 @@
     </TR>
     <TR>
         <TD STYLE="border-left: 1px solid #000000" COLSPAN=6 HEIGHT=20 ALIGN=LEFT VALIGN=TOP><FONT
-                COLOR="#000000">г. {{ org.location.street.city.name }}</FONT></TD>
+                COLOR="#000000">г. {{ user.profile.org.location.street.city.name }}</FONT></TD>
         <TD COLSPAN=3 ALIGN=LEFT VALIGN=BOTTOM><FONT COLOR="#000000">&laquo;____&raquo; _________ 20___г.</FONT></TD>
     </TR>
     <TR>
@@ -916,15 +924,7 @@
     </TR>
     <TR>
         <TD STYLE="border-left: 1px solid #000000; " COLSPAN=9 HEIGHT=20 ALIGN=CENTER VALIGN=TOP><B><FONT
-                COLOR="#000000">{{ org.name }}</FONT></B></TD>
-        <TD ALIGN=LEFT VALIGN=MIDDLE><FONT COLOR="#000000"><BR></FONT></TD>
-        <TD ALIGN=LEFT VALIGN=MIDDLE><FONT COLOR="#000000"><BR></FONT></TD>
-        <TD ALIGN=LEFT VALIGN=MIDDLE><FONT COLOR="#000000"><BR></FONT></TD>
-    </TR>
-    <TR>
-        <TD STYLE="border-left: 1px solid #000000; " COLSPAN=9 HEIGHT=25 ALIGN=CENTER VALIGN=TOP><B><FONT SIZE=4
-                                                                                                          COLOR="#000000">Ритуальная
-            служба</FONT></B></TD>
+                COLOR="#000000">{{ user.profile.org.full_name }}</FONT></B></TD>
         <TD ALIGN=LEFT VALIGN=MIDDLE><FONT COLOR="#000000"><BR></FONT></TD>
         <TD ALIGN=LEFT VALIGN=MIDDLE><FONT COLOR="#000000"><BR></FONT></TD>
         <TD ALIGN=LEFT VALIGN=MIDDLE><FONT COLOR="#000000"><BR></FONT></TD>
@@ -941,7 +941,7 @@
         <TD ALIGN=LEFT VALIGN=BOTTOM><FONT COLOR="#000000"><BR></FONT></TD>
         <TD ALIGN=LEFT VALIGN=BOTTOM><FONT COLOR="#000000"><BR></FONT></TD>
         <TD ALIGN=LEFT VALIGN=BOTTOM><FONT COLOR="#000000"><BR></FONT></TD>
-        <TD STYLE="" COLSPAN=2 ALIGN=CENTER VALIGN=BOTTOM><FONT COLOR="#000000">Телефон {{ org.phone }}</FONT></TD>
+        <TD STYLE="" COLSPAN=2 ALIGN=CENTER VALIGN=BOTTOM><FONT COLOR="#000000">Телефон {{ user.profile.org.phones }}</FONT></TD>
         <TD ALIGN=LEFT VALIGN=MIDDLE><FONT COLOR="#000000"><BR></FONT></TD>
         <TD ALIGN=LEFT VALIGN=MIDDLE><FONT COLOR="#000000"><BR></FONT></TD>
         <TD ALIGN=LEFT VALIGN=MIDDLE><FONT COLOR="#000000"><BR></FONT></TD>
@@ -1087,15 +1087,7 @@
         </TR>
         <TR>
             <TD STYLE="border-left: 1px solid #000000; " COLSPAN=9 HEIGHT=20 ALIGN=CENTER VALIGN=TOP><B><FONT
-                    COLOR="#000000">{{ org.name }}</FONT></B></TD>
-            <TD ALIGN=LEFT VALIGN=MIDDLE><FONT COLOR="#000000"><BR></FONT></TD>
-            <TD ALIGN=LEFT VALIGN=MIDDLE><FONT COLOR="#000000"><BR></FONT></TD>
-            <TD ALIGN=LEFT VALIGN=MIDDLE><FONT COLOR="#000000"><BR></FONT></TD>
-        </TR>
-        <TR>
-            <TD STYLE="border-left: 1px solid #000000; " COLSPAN=9 HEIGHT=25 ALIGN=CENTER VALIGN=TOP><B><FONT SIZE=4
-                                                                                                              COLOR="#000000">Ритуальная
-                служба</FONT></B></TD>
+                    COLOR="#000000">{{ user.profile.org.full_name }}</FONT></B></TD>
             <TD ALIGN=LEFT VALIGN=MIDDLE><FONT COLOR="#000000"><BR></FONT></TD>
             <TD ALIGN=LEFT VALIGN=MIDDLE><FONT COLOR="#000000"><BR></FONT></TD>
             <TD ALIGN=LEFT VALIGN=MIDDLE><FONT COLOR="#000000"><BR></FONT></TD>
@@ -1112,7 +1104,7 @@
             <TD ALIGN=LEFT VALIGN=BOTTOM><FONT COLOR="#000000"><BR></FONT></TD>
             <TD ALIGN=LEFT VALIGN=BOTTOM><FONT COLOR="#000000"><BR></FONT></TD>
             <TD ALIGN=LEFT VALIGN=BOTTOM><FONT COLOR="#000000"><BR></FONT></TD>
-            <TD STYLE="" COLSPAN=2 ALIGN=CENTER VALIGN=BOTTOM><FONT COLOR="#000000">Телефон {{ org.phone }}</FONT></TD>
+            <TD STYLE="" COLSPAN=2 ALIGN=CENTER VALIGN=BOTTOM><FONT COLOR="#000000">Телефон {{ user.profile.org.phones }}</FONT></TD>
             <TD ALIGN=LEFT VALIGN=MIDDLE><FONT COLOR="#000000"><BR></FONT></TD>
             <TD ALIGN=LEFT VALIGN=MIDDLE><FONT COLOR="#000000"><BR></FONT></TD>
             <TD ALIGN=LEFT VALIGN=MIDDLE><FONT COLOR="#000000"><BR></FONT></TD>
@@ -1300,15 +1292,7 @@
         </TR>
         <TR>
             <TD STYLE="border-left: 1px solid #000000; " COLSPAN=9 HEIGHT=20 ALIGN=CENTER VALIGN=TOP><B><FONT
-                    COLOR="#000000">{{ org.name }}</FONT></B></TD>
-            <TD ALIGN=LEFT VALIGN=MIDDLE><FONT COLOR="#000000"><BR></FONT></TD>
-            <TD ALIGN=LEFT VALIGN=MIDDLE><FONT COLOR="#000000"><BR></FONT></TD>
-            <TD ALIGN=LEFT VALIGN=MIDDLE><FONT COLOR="#000000"><BR></FONT></TD>
-        </TR>
-        <TR>
-            <TD STYLE="border-left: 1px solid #000000; " COLSPAN=9 HEIGHT=25 ALIGN=CENTER VALIGN=TOP><B><FONT SIZE=4
-                                                                                                              COLOR="#000000">Ритуальная
-                служба</FONT></B></TD>
+                    COLOR="#000000">{{ user.profile.org.full_name }}</FONT></B></TD>
             <TD ALIGN=LEFT VALIGN=MIDDLE><FONT COLOR="#000000"><BR></FONT></TD>
             <TD ALIGN=LEFT VALIGN=MIDDLE><FONT COLOR="#000000"><BR></FONT></TD>
             <TD ALIGN=LEFT VALIGN=MIDDLE><FONT COLOR="#000000"><BR></FONT></TD>
@@ -1325,7 +1309,7 @@
             <TD ALIGN=LEFT VALIGN=BOTTOM><FONT COLOR="#000000"><BR></FONT></TD>
             <TD ALIGN=LEFT VALIGN=BOTTOM><FONT COLOR="#000000"><BR></FONT></TD>
             <TD ALIGN=LEFT VALIGN=BOTTOM><FONT COLOR="#000000"><BR></FONT></TD>
-            <TD STYLE="" COLSPAN=2 ALIGN=CENTER VALIGN=BOTTOM><FONT COLOR="#000000">Телефон {{ org.phone }}</FONT></TD>
+            <TD STYLE="" COLSPAN=2 ALIGN=CENTER VALIGN=BOTTOM><FONT COLOR="#000000">Телефон {{ user.profile.org.phones }}</FONT></TD>
             <TD ALIGN=LEFT VALIGN=MIDDLE><FONT COLOR="#000000"><BR></FONT></TD>
             <TD ALIGN=LEFT VALIGN=MIDDLE><FONT COLOR="#000000"><BR></FONT></TD>
             <TD ALIGN=LEFT VALIGN=MIDDLE><FONT COLOR="#000000"><BR></FONT></TD>
@@ -1499,15 +1483,7 @@
         </TR>
         <TR>
             <TD STYLE="border-left: 1px solid #000000; " COLSPAN=9 HEIGHT=20 ALIGN=CENTER VALIGN=TOP><B><FONT
-                    COLOR="#000000">{{ org.name }}</FONT></B></TD>
-            <TD ALIGN=LEFT VALIGN=MIDDLE><FONT COLOR="#000000"><BR></FONT></TD>
-            <TD ALIGN=LEFT VALIGN=MIDDLE><FONT COLOR="#000000"><BR></FONT></TD>
-            <TD ALIGN=LEFT VALIGN=MIDDLE><FONT COLOR="#000000"><BR></FONT></TD>
-        </TR>
-        <TR>
-            <TD STYLE="border-left: 1px solid #000000; " COLSPAN=9 HEIGHT=25 ALIGN=CENTER VALIGN=TOP><B><FONT SIZE=4
-                                                                                                              COLOR="#000000">Ритуальная
-                служба</FONT></B></TD>
+                    COLOR="#000000">{{ user.profile.org.full_name }}</FONT></B></TD>
             <TD ALIGN=LEFT VALIGN=MIDDLE><FONT COLOR="#000000"><BR></FONT></TD>
             <TD ALIGN=LEFT VALIGN=MIDDLE><FONT COLOR="#000000"><BR></FONT></TD>
             <TD ALIGN=LEFT VALIGN=MIDDLE><FONT COLOR="#000000"><BR></FONT></TD>
@@ -1524,7 +1500,7 @@
             <TD ALIGN=LEFT VALIGN=BOTTOM><FONT COLOR="#000000"><BR></FONT></TD>
             <TD ALIGN=LEFT VALIGN=BOTTOM><FONT COLOR="#000000"><BR></FONT></TD>
             <TD ALIGN=LEFT VALIGN=BOTTOM><FONT COLOR="#000000"><BR></FONT></TD>
-            <TD STYLE="" COLSPAN=2 ALIGN=CENTER VALIGN=BOTTOM><FONT COLOR="#000000">Телефон {{ org.phone }}</FONT></TD>
+            <TD STYLE="" COLSPAN=2 ALIGN=CENTER VALIGN=BOTTOM><FONT COLOR="#000000">Телефон {{ user.profile.org.phones }}</FONT></TD>
             <TD ALIGN=LEFT VALIGN=MIDDLE><FONT COLOR="#000000"><BR></FONT></TD>
             <TD ALIGN=LEFT VALIGN=MIDDLE><FONT COLOR="#000000"><BR></FONT></TD>
             <TD ALIGN=LEFT VALIGN=MIDDLE><FONT COLOR="#000000"><BR></FONT></TD>
