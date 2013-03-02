@@ -107,6 +107,9 @@ class ProfileForm(ChildrenJSONMixin, forms.ModelForm):
             obj.org, _created = Org.objects.get_or_create(**params)
         else:
             Org.objects.filter(pk=obj.org.pk).update(**params)
+
+        print Org.objects.filter(pk=obj.org.pk), params
+
         if self.address_form.is_valid_data():
             obj.org.off_address = self.address_form.save(commit=commit)
             obj.org.save()

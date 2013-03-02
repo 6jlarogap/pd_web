@@ -81,7 +81,10 @@ class ArchiveView(ArchiveMixin, ListView):
 
     def get_queryset(self, **kwargs):
         qs = self.get_qs_filter()
-        return Burial.objects.filter(qs).distinct().order_by('-pk')
+        return Burial.objects.filter(qs).distinct().order_by('-pk').select_related(
+            'ugh', 'place', 'place__cemetery', 'place__area', 'deadman', 'deadman__address', 'cemetery', 'area',
+            'applicant_organization', 'applicant', 'changed_by', 'changed_by__profile',
+            )
 
 archive = ArchiveView.as_view()
 
@@ -268,6 +271,10 @@ class BurialsListView(ListView):
         return BurialSearchForm(data=self.request.GET or None)
 
     def get_context_data(self, **kwargs):
+        kwargs['object_list'] = kwargs['object_list'].select_related(
+            'ugh', 'place', 'place__cemetery', 'place__area', 'deadman', 'deadman__address', 'cemetery', 'area',
+            'applicant_organization', 'applicant',
+        )
         data = super(BurialsListView, self).get_context_data(**kwargs)
         DISPLAY_OPTIONS = ['page', 'sort']
         get_for_paginator = u'&'.join([u'%s=%s' %  (k, v) for k,v in self.request.GET.items() if k not in DISPLAY_OPTIONS])
