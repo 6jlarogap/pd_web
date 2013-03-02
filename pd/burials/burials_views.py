@@ -84,7 +84,7 @@ class ArchiveView(ArchiveMixin, ListView):
         return Burial.objects.filter(qs).distinct().order_by('-pk').select_related(
             'ugh', 'place', 'place__cemetery', 'place__area', 'deadman', 'deadman__address', 'cemetery', 'area',
             'applicant_organization', 'applicant', 'changed_by', 'changed_by__profile',
-            )
+        )
 
 archive = ArchiveView.as_view()
 
