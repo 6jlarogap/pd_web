@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from django.db import models
+from django.db.models.query_utils import Q
 from django.utils.translation import ugettext as _
 
 import re
@@ -177,7 +178,10 @@ class FiasManager(models.Manager):
                 pass
 
         clear_street = self.clear_data(street, TO_CLEAN)
-        fias_streets = self.filter(formalname=clear_street, regioncode=fias_region.regioncode, areacode=areacode, citycode=citycode, placecode=placecode).exclude(streetcode='0000')
+        fias_streets = self.filter(
+            Q(formalname=clear_street) | Q(formalname=clear_street.replace('. ', '.')),
+            regioncode=fias_region.regioncode, areacode=areacode, citycode=citycode, placecode=placecode
+        ).exclude(streetcode='0000')
 
         for socr in DFiasSocrbase.objects.all():
             if socr.socrname.lower() in street.lower():
