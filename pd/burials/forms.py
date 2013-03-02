@@ -153,6 +153,17 @@ class ResponsibleForm(AlivePersonForm):
         if 'take_from' in self.fields:
             all_choices = self.WHERE_CHOICES
             new_choices = [c for c in all_choices if c[0] != self.WHERE_FROM_APPLICANT]
+
+            if self.initial.get('order'):
+                try:
+                    order = Order.objects.get(pk=self.initial['order'])
+                except Order.DoesNotExist:
+                    pass
+                else:
+                    if not order.applicant:
+                        new_choices = [c for c in new_choices if c[0] != self.WHERE_FROM_ORDER]
+
+
             self.fields['take_from'].choices = new_choices
             self.fields['take_from'].widget.choices = new_choices
 
