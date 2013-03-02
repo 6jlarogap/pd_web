@@ -187,7 +187,10 @@ class ResponsibleForm(AlivePersonForm):
             return super(ResponsibleForm, self).save(*args, **kwargs)
 
     def is_valid_data(self):
-        return self.is_valid() and (self.cleaned_data.get('last_name') or self.cleaned_data['take_from'] != self.WHERE_NEW)
+        if self.is_valid():
+            return self.cleaned_data.get('last_name') or self.cleaned_data.get('take_from') != self.WHERE_NEW
+        else:
+            return False
 
 class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, forms.ModelForm):
     COFFIN = 'coffin'
