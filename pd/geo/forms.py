@@ -40,7 +40,16 @@ class LocationForm(PartialFormMixin, forms.ModelForm):
                 else:
                     fias_all = list(self.instance.fias_parents.all())
                     if fias_all:
-                        self.initial['fias_address'] = ', '.join([f.name for f in fias_all])
+                        fias_addr = ', '.join([f.name for f in fias_all])
+                        if self.instance.house:
+                            fias_addr += ', д. %s' % self.instance.house
+                        if self.instance.block:
+                            fias_addr += ', к. %s' % self.instance.block
+                        if self.instance.building:
+                            fias_addr += ', стр. %s' % self.instance.building
+                        if self.instance.flat:
+                            fias_addr += ', кв. %s' % self.instance.flat
+                        self.initial['fias_address'] = fias_addr
                         self.initial['fias_street'] = fias_all[-1].guid
 
     def clean_fias_street(self):
