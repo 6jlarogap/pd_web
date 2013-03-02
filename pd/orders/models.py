@@ -124,14 +124,8 @@ class Order(models.Model):
         ct = ContentType.objects.get_for_model(self)
         return Report.objects.filter(content_type=ct, object_id=self.pk).order_by('-pk')
 
-    def get_burial(self):
-        bo = Burial.objects.filter(order=self)
-        try:
-            return bo[0]
-        except IndexError:
-            return None
-
-    burial = property(get_burial)
+    def item_count(self):
+        return self.orderitem_set.all().count()
 
     def get_catafalque_hours(self):
         if not self.has_catafalque():

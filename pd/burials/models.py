@@ -241,7 +241,7 @@ class Burial(models.Model):
                               limit_choices_to={'is_agent': True}, on_delete=models.PROTECT)
     dover = models.ForeignKey(Dover, verbose_name=_(u"Доверенность"), null=True, blank=True, on_delete=models.PROTECT)
 
-    order = models.ForeignKey('orders.Order', editable=False, null=True)
+    order = models.OneToOneField('orders.Order', editable=False, null=True)
 
     status = models.CharField(_(u"Статус"), max_length=255, choices=STATUS_CHOICES, default=STATUS_DRAFT, editable=False)
     changed = models.DateTimeField(_(u"Изменено"), editable=False, null=True)

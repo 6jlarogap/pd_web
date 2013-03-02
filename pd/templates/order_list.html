@@ -26,7 +26,7 @@
                         {{ c.burial.changed }}, {{ c.burial.changed_by }}
                     {% endif %}
                 </td>
-                <td>{{ c.orderitem_set.all.count }}</td>
+                <td>{{ c.item_count }}</td>
                 <td>{{ c.total }}</td>
                 <td>
                     {% if user.profile.org == c.loru %}

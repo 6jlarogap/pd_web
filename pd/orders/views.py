@@ -4,6 +4,8 @@ from burials.forms import AddOrgForm
 
 from django.contrib import messages
 from django.core.urlresolvers import reverse
+from django.db.models.aggregates import Count, Sum
+from django.db.models.expressions import F
 from django.shortcuts import redirect, render
 from django.template.context import RequestContext
 from django.views.generic.base import View
@@ -84,7 +86,9 @@ class OrderList(LORURequiredMixin, ListView):
     model = Order
 
     def get_queryset(self):
-        return Order.objects.filter(loru=self.request.user.profile.org)
+        return Order.objects.filter(loru=self.request.user.profile.org).select_related(
+            'burial', 'burial__changed_by', 'applicant_organization', 'applicant', 'loru',
+        ).annotate(item_count=Count('orderitem'))
 
 order_list = OrderList.as_view()
 
