@@ -336,7 +336,7 @@ class CreateBurial(CreateView):
             return redirect('/')
 
         order = self.get_order()
-        if order and order.burial and order.burial != self.get_object():
+        if order and order.get_burial() and order.get_burial() != self.get_object():
             return redirect('edit_burial', order.burial.pk)
 
         return super(CreateBurial, self).dispatch(request, *args, **kwargs)
