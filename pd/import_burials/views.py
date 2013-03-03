@@ -6,7 +6,7 @@ from django.views.generic.base import TemplateView, View
 from django.utils.translation import ugettext_lazy as _
 
 from import_burials.forms import ImportCsvForm
-from import_burials.models import do_import_orgs, do_import_burials
+from import_burials.models import do_import_orgs, do_import_burials, do_import_services, do_import_orders
 
 
 class ImportFormsView(TemplateView):
@@ -35,4 +35,31 @@ class ImportBurialsView(View):
         return redirect('import_forms')
 
 import_burials = transaction.commit_on_success(ImportBurialsView.as_view())
-import_burials = ImportBurialsView.as_view()
+
+class ImportKalugaView(TemplateView):
+    template_name = 'import_kaluga.html'
+
+    def get_context_data(self, **kwargs):
+        return {
+            'services_form': ImportCsvForm(prefix='services'),
+            'orders_form': ImportCsvForm(prefix='orders'),
+        }
+
+import_kaluga = ImportKalugaView.as_view()
+
+class ImportServicesView(View):
+    def post(self, request, *args, **kwargs):
+        do_import_services(request.FILES['services-csv'])
+        messages.success(request, _(u"Импорт успешен"))
+        return redirect('import_kaluga')
+
+import_services = transaction.commit_on_success(ImportServicesView.as_view())
+
+class ImportOrdersView(View):
+    def post(self, request, *args, **kwargs):
+        do_import_orders(request.FILES['orders-csv'])
+        messages.success(request, _(u"Импорт успешен"))
+        return redirect('import_kaluga')
+
+import_orders = transaction.commit_on_success(ImportOrdersView.as_view())
+

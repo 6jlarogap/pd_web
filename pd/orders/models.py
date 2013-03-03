@@ -86,6 +86,12 @@ class Order(models.Model):
     def total_float(self):
         return float(self.total)
 
+    def get_burial(self):
+        try:
+            return self.burial
+        except Burial.DoesNotExist:
+            return
+
     def has_burial(self):
         return self.orderitem_set.filter(product__ptype=Product.PRODUCT_BURIAL).exists()
 
@@ -156,8 +162,7 @@ class OrderItem(models.Model):
                 self.cost = self.product.price
             except Product.DoesNotExist:
                 pass
-            else:
-                return super(OrderItem, self).save(*args, **kwargs)
+        return super(OrderItem, self).save(*args, **kwargs)
 
     @property
     def total(self):

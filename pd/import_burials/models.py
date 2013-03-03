@@ -2,8 +2,11 @@
 import csv
 import cStringIO
 import datetime
+import gc
+import json
 import codecs
 from django.contrib.auth.models import User
+from django.db import transaction, connection
 from django.http import HttpRequest
 
 from django.utils.translation import ugettext as _
@@ -11,6 +14,7 @@ from django.utils.translation import ugettext as _
 from burials.models import Burial, ExhumationRequest, Cemetery, Area, Place
 from geo.models import Location, Country, LocationFIAS, DFiasAddrobj, Region, City, Street
 from logs.models import write_log
+from orders.models import Product, Order, OrderItem, CoffinData, CatafalqueData
 from pd.models import UnclearDate
 from persons.models import AlivePerson, DeadPerson
 from users.models import Org, Profile, Dover
@@ -181,6 +185,11 @@ def do_import_burials(csv_fileobj, user):
     }
     for i, row in enumerate(csvreader):
         if i > 0:
+            if i % 500:
+                transaction.commit()
+                gc.collect()
+                connection.queries = []
+
             row = map(lambda c: '' if c == 'None' else c, row)
             try:
                 cemetery = Cemetery.objects.get(name=row[6])
@@ -277,5 +286,109 @@ def do_import_burials(csv_fileobj, user):
                 if not area.name:
                     write_log(request, b, _(u'Участок не был указан'))
 
-                if row[64]:
-                    write_log(request, b, _(u'Комментарий: %s') % row[64])
+                if row[63]:
+                    write_log(request, b, _(u'Комментарий: %s') % row[63])
+
+def do_import_services(csv_fileobj):
+    csvreader = UnicodeReader(csv_fileobj)
+    try:
+        loru = Org.objects.get(inn='4028046796')
+    except Org.DoesNotExist:
+        loru = None
+    for i, row in enumerate(csvreader):
+        if i > 0:
+            row = map(lambda c: '' if c == 'None' else c, row)
+            try:
+                Product.objects.get(name=row[0])
+            except Product.DoesNotExist:
+                Product.objects.create(
+                    loru=loru,
+                    ptype=None,
+                    name=row[0],
+                    measure=row[2],
+                    price=row[3],
+                    default=row[1] == 'True',
+                )
+
+def do_import_orders(csv_fileobj):
+    csvreader = UnicodeReader(csv_fileobj)
+    try:
+        loru = Org.objects.get(inn='4028046796')
+    except Org.DoesNotExist:
+        loru = None
+    for i, row in enumerate(csvreader):
+        if i > 0:
+            row = map(lambda c: '' if c == 'None' else c, row)
+            all_data = json.loads(row[4])
+            print_data = all_data['print']
+            items_data = all_data['positions']
+
+            try:
+                o = Order.objects.get(burial__account_number=row[0], burial__deadman__last_name=row[1],
+                                      burial__deadman__first_name=row[2], burial__deadman__middle_name=row[3])
+            except Order.DoesNotExist:
+                try:
+                    b = Burial.objects.filter(account_number=row[0], deadman__last_name=row[1], deadman__first_name=row[2],
+                                           deadman__middle_name=row[3]).get()
+                except Burial.DoesNotExist:
+                    print 'Burial %s not found' % row[0]
+                    continue
+                o = Order.objects.create(
+                    loru=loru,
+                    payment=row[5],
+                    applicant=b.applicant,
+                    applicant_organization=b.applicant_organization != loru and b.applicant_organization or None,
+                    agent_director=b.agent_director,
+                    agent=b.agent,
+                    dover=b.dover,
+                    dt=datetime.datetime.now(),
+                )
+                b.order = o
+                if b.applicant_organization != loru:
+                    b.applicant_organization = loru
+                b.save()
+
+            for d in items_data:
+                if not d['active']:
+                    continue
+                try:
+                    OrderItem.objects.get(order=o, product__name=d.get('order_product') or d.get('service'))
+                except OrderItem.DoesNotExist:
+                    if d.get('order_product'):
+                        try:
+                            p = Product.objects.get(name=d['order_product'])
+                        except Product.DoesNotExist:
+                            print 'Product not found: %s' % d['order_product']
+                            p = Product.objects.create(loru=loru, name=d['order_product'], price=d['price'])
+                    elif d.get('service'):
+                        try:
+                            p = Product.objects.get(name=d['service'])
+                        except Product.DoesNotExist:
+                            print 'Product not found: %s' % d['service']
+                            p = Product.objects.create(loru=loru, name=d['service'], price=d['price'])
+
+                    OrderItem.objects.create(
+                        order=o,
+                        product=p,
+                        cost=d['price'],
+                        quantity=d['count'],
+                    )
+
+            if print_data.get('coffin_size'):
+                try:
+                    CoffinData.objects.get(order=o)
+                except CoffinData.DoesNotExist:
+                    CoffinData.objects.create(order=o, size=print_data['coffin_size'])
+
+            if print_data.get('catafalque_time') and print_data.get('catafalque_route'):
+                try:
+                    CatafalqueData.objects.get(order=o)
+                except CatafalqueData.DoesNotExist:
+                    CatafalqueData.objects.create(
+                        order=o,
+                        route=print_data['catafalque_route'],
+                        start_time=print_data['catafalque_time'],
+                        start_place=print_data.get('catafalque_start') or None,
+                        end_time=None,
+                        cemetery_time=None,
+                    )
