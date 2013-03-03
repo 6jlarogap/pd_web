@@ -7,10 +7,10 @@ from django.contrib.auth.models import User
 from django.test import TestCase, Client
 from django.utils.translation import activate
 from django.core.files.base import ContentFile
-from persons.models import DeadPerson
+from persons.models import DeadPerson, PersonID, DeathCertificate
 
 from users.models import Org, Profile, BankAccount
-from import_burials.models import do_import_orgs, do_import_burials, do_import_services, do_import_orders, do_import_banks
+from import_burials.models import do_import_orgs, do_import_burials, do_import_services, do_import_orders, do_import_banks, do_import_dcs, do_import_docs
 
 
 class FormsTest(TestCase):
@@ -189,5 +189,108 @@ class BankAccountTest(TestCase):
         r = self.ugh_client.post('/import/banks/', data={'banks-csv': open(self.csv_path)})
         self.assertEqual(r.status_code, 302)
         self.assertEqual(BankAccount.objects.all().count(), 1)
+
+
+class PassportsTest(TestCase):
+    def setUp(self):
+        activate('ru')
+        self.ugh_user = User.objects.create_user(username='ugh', email='test@example.com', password='test')
+        ugh_org = Org.objects.create(
+            type=Org.PROFILE_UGH, name='ugh'
+        )
+        Profile.objects.create(
+            user=self.ugh_user, org=ugh_org,
+            )
+        self.ugh_client = Client()
+        self.ugh_client.login(username='ugh', password='test')
+
+        self.csv_data = u"""Ф,И,О,Тип,Серия,Номер,Кем выдан,Когда выдан
+Копцев,Игорь,Вадимович,паспорт гражданина РФ,45 09,380942,ОТДЕЛЕНИЕМ ПО РАЙОНУ АЭРОПОРТ ОУФМС РОССИИ ПО Г. МОСКВА В САО ,2008-02-08
+Бутина,Валентина,Тимофеевна,паспорт гражданина РФ,2901,295080,ОВД ЛЕНИНСКОГО ОКРУГА,None"""
+        self.csv_path = os.tempnam()
+
+        f = open(self.csv_path, 'w')
+        f.write(self.csv_data.encode('utf-8'))
+        f.close()
+
+    def tearDown(self):
+        os.unlink(self.csv_path)
+
+    def test_import(self):
+        self.assertEqual(PersonID.objects.all().count(), 0)
+        do_import_docs(ContentFile(self.csv_data.encode('utf-8')))
+        self.assertEqual(PersonID.objects.all().count(), 2)
+
+    def test_view(self):
+        self.assertEqual(PersonID.objects.all().count(), 0)
+        r = self.ugh_client.post('/import/docs/', data={'docs-csv': open(self.csv_path)})
+        self.assertEqual(r.status_code, 302)
+        self.assertEqual(PersonID.objects.all().count(), 2)
+
+    def test_duplicate(self):
+        self.assertEqual(PersonID.objects.all().count(), 0)
+        r = self.ugh_client.post('/import/docs/', data={'docs-csv': open(self.csv_path)})
+        self.assertEqual(r.status_code, 302)
+        self.assertEqual(PersonID.objects.all().count(), 2)
+
+        self.assertEqual(PersonID.objects.all().count(), 2)
+        r = self.ugh_client.post('/import/docs/', data={'docs-csv': open(self.csv_path)})
+        self.assertEqual(r.status_code, 302)
+        self.assertEqual(PersonID.objects.all().count(), 2)
+
+class DeathCertsTest(TestCase):
+    def setUp(self):
+        activate('ru')
+        self.ugh_user = User.objects.create_user(username='ugh', email='test@example.com', password='test')
+        ugh_org = Org.objects.create(
+            type=Org.PROFILE_UGH, name='ugh'
+        )
+        Profile.objects.create(
+            user=self.ugh_user, org=ugh_org,
+            )
+        self.ugh_client = Client()
+        self.ugh_client.login(username='ugh', password='test')
+
+        self.csv_data = u"""Ф,И,О,Серия,Номер,Когда выдан,ЗАГС
+Конин,Виктор,Кузьмич,796967/101,1-НК,2013-01-08,Управление ЗАГС г. Калуги
+Минкина,Мария,Максимовна,796975/109,I-HK,2013-01-08,Управление ЗАГС г. Калуги
+Зубрилина,Людмила,Николаевна,796974/108,1-НК,2013-01-08,Управление ЗАГС г. Калуги
+Корначев,Михаил,Ильич,796976/110,I-HK,2013-01-08,Управление ЗАГС г. Калуги
+Лопатин,Захар,Никитович,796961/96,1-НК,2013-01-08,Управление ЗАГС г. Калуги
+Гришечкин,Афанасий,Афанасьевич,796960/95,1-НК,2013-01-08,Управление ЗАГС г. Калуги
+Потехина,Антонина,Афанасьевна,796971\105,1-НК,2013-01-06,Управление ЗАГС г. Калуги
+Чуриков,Евгений,Валентинович,796973/107,1-НК,2013-01-08,Управление ЗАГС г. Калуги"""
+        self.csv_path = os.tempnam()
+
+        f = open(self.csv_path, 'w')
+        f.write(self.csv_data.encode('utf-8'))
+        f.close()
+
+    def tearDown(self):
+        os.unlink(self.csv_path)
+
+    def test_import(self):
+        self.assertEqual(DeathCertificate.objects.all().count(), 0)
+        do_import_dcs(ContentFile(self.csv_data.encode('utf-8')))
+        self.assertEqual(DeathCertificate.objects.all().count(), 8)
+
+    def test_view(self):
+        self.assertEqual(DeathCertificate.objects.all().count(), 0)
+        r = self.ugh_client.post('/import/dcs/', data={'dcs-csv': open(self.csv_path)})
+        self.assertEqual(r.status_code, 302)
+        self.assertEqual(DeathCertificate.objects.all().count(), 8)
+
+    def test_duplicate(self):
+        self.assertEqual(DeathCertificate.objects.all().count(), 0)
+        r = self.ugh_client.post('/import/dcs/', data={'dcs-csv': open(self.csv_path)})
+        self.assertEqual(r.status_code, 302)
+        self.assertEqual(DeathCertificate.objects.all().count(), 8)
+
+        self.assertEqual(DeathCertificate.objects.all().count(), 8)
+        r = self.ugh_client.post('/import/dcs/', data={'dcs-csv': open(self.csv_path)})
+        self.assertEqual(r.status_code, 302)
+        self.assertEqual(DeathCertificate.objects.all().count(), 8)
+
+
 
 from big_data_tests import *

@@ -6,7 +6,7 @@ from django.views.generic.base import TemplateView, View
 from django.utils.translation import ugettext_lazy as _
 
 from import_burials.forms import ImportCsvForm
-from import_burials.models import do_import_orgs, do_import_burials, do_import_services, do_import_orders, do_import_banks
+from import_burials.models import do_import_orgs, do_import_burials, do_import_services, do_import_orders, do_import_banks, do_import_docs, do_import_dcs
 
 
 class ImportFormsView(TemplateView):
@@ -44,6 +44,8 @@ class ImportKalugaView(TemplateView):
             'services_form': ImportCsvForm(prefix='services'),
             'banks_form': ImportCsvForm(prefix='banks'),
             'orders_form': ImportCsvForm(prefix='orders'),
+            'docs_form': ImportCsvForm(prefix='docs'),
+            'dcs_form': ImportCsvForm(prefix='dcs'),
         }
 
 import_kaluga = ImportKalugaView.as_view()
@@ -71,4 +73,20 @@ class ImportOrdersView(View):
         return redirect('import_kaluga')
 
 import_orders = transaction.commit_on_success(ImportOrdersView.as_view())
+
+class ImportPersonDocsView(View):
+    def post(self, request, *args, **kwargs):
+        do_import_docs(request.FILES['docs-csv'])
+        messages.success(request, _(u"Импорт успешен"))
+        return redirect('import_kaluga')
+
+import_docs = transaction.commit_on_success(ImportPersonDocsView.as_view())
+
+class ImportDeathCertsView(View):
+    def post(self, request, *args, **kwargs):
+        do_import_dcs(request.FILES['dcs-csv'])
+        messages.success(request, _(u"Импорт успешен"))
+        return redirect('import_kaluga')
+
+import_dcs = transaction.commit_on_success(ImportDeathCertsView.as_view())
 

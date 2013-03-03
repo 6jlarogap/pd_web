@@ -11,4 +11,6 @@ urlpatterns = patterns('import_burials.views',
     url(r'^services/$', 'import_services', name='import_services'),
     url(r'^orders/$', 'import_orders', name='import_orders'),
     url(r'^banks/$', 'import_banks', name='import_banks'),
+    url(r'^docs/$', 'import_docs', name='import_docs'),
+    url(r'^dcs/$', 'import_dcs', name='import_dcs'),
 )

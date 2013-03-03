@@ -16,7 +16,7 @@ from geo.models import Location, Country, LocationFIAS, DFiasAddrobj, Region, Ci
 from logs.models import write_log
 from orders.models import Product, Order, OrderItem, CoffinData, CatafalqueData
 from pd.models import UnclearDate
-from persons.models import AlivePerson, DeadPerson
+from persons.models import AlivePerson, DeadPerson, PersonID, IDDocumentType, DocumentSource, DeathCertificate
 from users.models import Org, Profile, Dover, BankAccount
 
 
@@ -397,10 +397,42 @@ def do_import_banks(csv_fileobj):
     csvreader = UnicodeReader(csv_fileobj)
     for i, row in enumerate(csvreader):
         if i > 0:
+            row = map(lambda c: '' if c == 'None' else c, row)
             try:
                 BankAccount.objects.get(ls=row[6])
             except BankAccount.DoesNotExist:
                 BankAccount.objects.create(
                     organization=Org.objects.get_or_create(inn=row[0], full_name=row[1])[0],
                     rs=row[2],ks=row[3],bik=row[4],bankname=row[5],ls=row[6]
+                )
+
+def do_import_docs(csv_fileobj):
+    """Ф,И,О,Тип,Серия,Номер,Кем выдан,Когда выдан"""
+    csvreader = UnicodeReader(csv_fileobj)
+    for i, row in enumerate(csvreader):
+        if i > 0:
+            row = map(lambda c: '' if c == 'None' else c, row)
+            try:
+                PersonID.objects.get(person__last_name=row[0], person__first_name=row[1], series=row[4], number=row[5])
+            except PersonID.DoesNotExist:
+                id_type, _created = IDDocumentType.objects.get_or_create(name=row[3])
+                source, _created = DocumentSource.objects.get_or_create(name=row[6])
+                PersonID.objects.create(
+                    person=AlivePerson.objects.get_or_create(last_name=row[0], first_name=row[1], middle_name=row[2])[0],
+                    id_type=id_type, series=row[4], number=row[5], source=source, date=row[7] or None
+                )
+
+def do_import_dcs(csv_fileobj):
+    """Ф,И,О,Серия,Номер,Когда выдан,ЗАГС"""
+    csvreader = UnicodeReader(csv_fileobj)
+    for i, row in enumerate(csvreader):
+        if i > 0:
+            row = map(lambda c: '' if c == 'None' else c, row)
+            try:
+                DeathCertificate.objects.get(person__last_name=row[0], person__first_name=row[1], series=row[3], s_number=row[4])
+            except DeathCertificate.DoesNotExist:
+                zags, _created = Org.objects.get_or_create(name=row[6], type=Org.PROFILE_ZAGS)
+                DeathCertificate.objects.create(
+                    person=DeadPerson.objects.get_or_create(last_name=row[0], first_name=row[1], middle_name=row[2])[0],
+                    series=row[3], s_number=row[4], zags=zags, release_date=row[5]
                 )
