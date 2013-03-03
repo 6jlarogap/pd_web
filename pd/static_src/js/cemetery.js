@@ -542,7 +542,7 @@ $(function() {
         if (!addr) { return }
 
         var geocoder = new google.maps.Geocoder();
-        geocoder.geocode( { 'address': addr}, function(results, status) {
+        geocoder.geocode( { 'address': addr, 'language': 'ru' }, function(results, status) {
             if (status == google.maps.GeocoderStatus.OK) {
                 var address = results[0].address_components;
                 var country = '', region = '', city = '', street = '';
