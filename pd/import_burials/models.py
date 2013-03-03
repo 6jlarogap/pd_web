@@ -17,7 +17,7 @@ from logs.models import write_log
 from orders.models import Product, Order, OrderItem, CoffinData, CatafalqueData
 from pd.models import UnclearDate
 from persons.models import AlivePerson, DeadPerson
-from users.models import Org, Profile, Dover
+from users.models import Org, Profile, Dover, BankAccount
 
 
 class UTF8Recoder:
@@ -392,3 +392,15 @@ def do_import_orders(csv_fileobj):
                         end_time=None,
                         cemetery_time=None,
                     )
+
+def do_import_banks(csv_fileobj):
+    csvreader = UnicodeReader(csv_fileobj)
+    for i, row in enumerate(csvreader):
+        if i > 0:
+            try:
+                BankAccount.objects.get(ls=row[6])
+            except BankAccount.DoesNotExist:
+                BankAccount.objects.create(
+                    organization=Org.objects.get_or_create(inn=row[0], full_name=row[1])[0],
+                    rs=row[2],ks=row[3],bik=row[4],bankname=row[5],ls=row[6]
+                )

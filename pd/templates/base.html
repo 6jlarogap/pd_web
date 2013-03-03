@@ -121,6 +121,9 @@
                             <li{% if request.path|slice:"0:8" == '/import/' %} class="active"{% endif %}>
                                 <a href="{% url import_forms %}">{% trans "Импорт" %}</a>
                             </li>
+                            <li{% if request.path|slice:"0:15" == '/import/kaluga/' %} class="active"{% endif %}>
+                                <a href="{% url import_kaluga %}">{% trans "Импорт Калуга" %}</a>
+                            </li>
                             <li{% if request.path == '/burials/create/' and not request.GET.archive %} class="active"{% endif %}>
                                 <a href="{% url create_burial %}">{% trans "Создать захоронение" %}</a>
                             </li>

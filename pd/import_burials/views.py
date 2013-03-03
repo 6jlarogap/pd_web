@@ -6,7 +6,7 @@ from django.views.generic.base import TemplateView, View
 from django.utils.translation import ugettext_lazy as _
 
 from import_burials.forms import ImportCsvForm
-from import_burials.models import do_import_orgs, do_import_burials, do_import_services, do_import_orders
+from import_burials.models import do_import_orgs, do_import_burials, do_import_services, do_import_orders, do_import_banks
 
 
 class ImportFormsView(TemplateView):
@@ -42,10 +42,19 @@ class ImportKalugaView(TemplateView):
     def get_context_data(self, **kwargs):
         return {
             'services_form': ImportCsvForm(prefix='services'),
+            'banks_form': ImportCsvForm(prefix='banks'),
             'orders_form': ImportCsvForm(prefix='orders'),
         }
 
 import_kaluga = ImportKalugaView.as_view()
+
+class ImportBanksView(View):
+    def post(self, request, *args, **kwargs):
+        do_import_banks(request.FILES['banks-csv'])
+        messages.success(request, _(u"Импорт успешен"))
+        return redirect('import_kaluga')
+
+import_banks = transaction.commit_on_success(ImportBanksView.as_view())
 
 class ImportServicesView(View):
     def post(self, request, *args, **kwargs):

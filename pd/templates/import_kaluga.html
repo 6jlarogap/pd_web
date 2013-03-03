@@ -16,6 +16,17 @@
         </p>
     </form>
 
+    <h1>{% trans "Банковские данные" %}</h1>
+    <form action="{% url import_banks %}" method="POST" class="burial-form" enctype="multipart/form-data">
+        {% csrf_token %}
+
+        {{ banks_form.as_p }}
+
+        <p class="clear">
+            <input type="submit" class="btn btn-primary btn-commit-burial" value="{% trans "cохранить" %}"/>
+        </p>
+    </form>
+
     <h1>{% trans "Заказы" %}</h1>
     <form action="{% url import_orders %}" method="POST" class="burial-form" enctype="multipart/form-data">
         {% csrf_token %}
