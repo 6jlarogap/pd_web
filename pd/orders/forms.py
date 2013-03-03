@@ -37,6 +37,9 @@ class OrderForm(ChildrenJSONMixin, forms.ModelForm):
 
         self.fields['payment'].widget = forms.RadioSelect(choices=Order.PAYMENT_CHOICES)
 
+        self.fields['agent'].queryset = self.fields['agent'].queryset.select_related('user')
+        self.fields['dover'].queryset = self.fields['dover'].queryset.select_related('agent', 'agent__user')
+
         self.forms = self.construct_forms()
 
     def is_valid(self):

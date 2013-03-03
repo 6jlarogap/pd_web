@@ -17,12 +17,14 @@ from pd.models import UnclearDate
 
 
 class ChildrenJSONMixin:
-    def universal_children_json(self, parent, children_rel, filter_kw=None):
+    def universal_children_json(self, parent, children_rel, filter_kw=None, related=None):
         parents = {}
         filter_kw = filter_kw or {}
+        related = related or []
         if self.fields.get(parent):
             for c in self.fields[parent].queryset:
-                parents[c.pk] = [[a.pk, u'%s' % a] for a in getattr(c, children_rel).filter(**filter_kw)]
+                qs = getattr(c, children_rel).select_related(*related).filter(**filter_kw)
+                parents[c.pk] = [[a.pk, u'%s' % a] for a in qs]
         return mark_safe(json.dumps(parents))
 
     def cemetery_areas_json(self):
@@ -39,10 +41,10 @@ class ChildrenJSONMixin:
         return mark_safe(json.dumps(parents))
 
     def agent_dover_json(self):
-        return self.universal_children_json('agent', 'dover_set')
+        return self.universal_children_json('agent', 'dover_set', related=['agent', 'agent__user'])
 
     def loru_agents_json(self):
-        return self.universal_children_json('applicant_organization', 'profile_set', filter_kw={'is_agent': True})
+        return self.universal_children_json('applicant_organization', 'profile_set', filter_kw={'is_agent': True}, related=['user'])
 
 class LoggingFormMixin:
     def get_prefix(self, form):
