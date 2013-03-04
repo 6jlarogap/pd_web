@@ -77,7 +77,8 @@ class Order(models.Model):
         if self.agent_director:
             return _(u"%s, в лице директора %s") % (org, org.director)
         else:
-            return _(u"%s, в лице %s, доверенность %s") % (org, self.agent, self.dover)
+            params = (org, self.agent, self.dover.number)
+            return _(u"\"%s\", в лице агента %s, действующего на основании доверенности %s") % params
 
     @property
     def total(self):
