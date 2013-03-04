@@ -65,10 +65,10 @@
     {% include "create_burial_popups.html" %}
 
     <script type="text/javascript">
-        PLACE_TYPES = {{ form.cemetery_placing_json }};
-        CEMETERY_AREAS = {{ form.cemetery_areas_json }};
-        CEMETERY_TIMES = {{ form.cemetery_times_json }};
-        AGENT_DOVER = {{ form.agent_dover_json }};
-        LORU_AGENTS = {{ form.loru_agents_json }};
+        PLACE_TYPES = {{ form.cemetery_placing_json|default:"{}" }};
+        CEMETERY_AREAS = {{ form.cemetery_areas_json|default:"{}" }};
+        CEMETERY_TIMES = {{ form.cemetery_times_json|default:"{}" }};
+        AGENT_DOVER = {{ form.agent_dover_json|default:"{}" }};
+        LORU_AGENTS = {{ form.loru_agents_json|default:"{}" }};
     </script>
 {% endblock %}

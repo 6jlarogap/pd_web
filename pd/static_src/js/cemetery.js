@@ -277,6 +277,10 @@ $(function() {
     if (!window.LORU_AGENTS) { LORU_AGENTS = {} }
     if (!window.PLACE_TYPES) { PLACE_TYPES = {} }
 
+    $('.burial-form :input').live('keypress', function(e) {
+        console.log(e.keyCode);
+    });
+
     $('.btn-commit-burial').click(function() {
         if ($(this).attr('rel')) {
             $(this).closest('form').attr('action', $(this).attr('rel'));

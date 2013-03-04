@@ -37,7 +37,7 @@ class Product(models.Model):
         verbose_name_plural = _(u"Товары")
 
     def __unicode__(self):
-        return self.name
+        return u'%s (%s р.)' % (self.name, self.price)
 
     def is_burial(self):
         return self.ptype == self.PRODUCT_BURIAL
