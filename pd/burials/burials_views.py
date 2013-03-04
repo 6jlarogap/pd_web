@@ -257,8 +257,20 @@ class BurialsListView(ListView):
             '-fio': '-deadman__last_name',
             'fact_date': 'fact_date',
             '-fact_date': '-fact_date',
+            'type': 'source_type',
+            '-type': '-source_type',
+            'applicant': ['applicant__last_name', 'applicant_organization__name'],
+            '-applicant': ['-applicant__last_name', '-applicant_organization__name'],
+            'status': 'status',
+            '-status': '-status',
         }
-        burials = burials.select_related().order_by(SORT_FIELDS[sort])
+        s = SORT_FIELDS[sort]
+        if not isinstance(s, list):
+            s = [s]
+        burials = burials.select_related(
+            'ugh', 'place', 'place__cemetery', 'place__area', 'deadman', 'deadman__address', 'cemetery', 'area',
+            'applicant_organization', 'applicant', 'changed_by', 'changed_by__profile', 'cemetery__ugh', 'area__purpose'
+        ).order_by(*s)
         return burials
 
     def get_paginate_by(self, queryset):
@@ -271,10 +283,6 @@ class BurialsListView(ListView):
         return BurialSearchForm(data=self.request.GET or None)
 
     def get_context_data(self, **kwargs):
-        kwargs['object_list'] = kwargs['object_list'].select_related(
-            'ugh', 'place', 'place__cemetery', 'place__area', 'deadman', 'deadman__address', 'cemetery', 'area',
-            'applicant_organization', 'applicant',
-        )
         data = super(BurialsListView, self).get_context_data(**kwargs)
         DISPLAY_OPTIONS = ['page', 'sort']
         get_for_paginator = u'&'.join([u'%s=%s' %  (k, v) for k,v in self.request.GET.items() if k not in DISPLAY_OPTIONS])

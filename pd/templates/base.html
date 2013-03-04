@@ -79,6 +79,8 @@
                         <ul class="dropdown-menu">
                             {% if user.profile.is_ugh %}
                                 <li><a href="{% url manage_cemeteries %}">{% trans "Кладбища" %}</a></li>
+                                <li><a href="{% url import_forms %}">{% trans "Импорт" %}</a></li>
+                                <li><a href="{% url import_kaluga %}">{% trans "Импорт Калуга" %}</a></li>
                             {% endif %}
                             {% if user.profile.is_loru %}
                                 <li><a href="{% url manage_products %}">{% trans "Товары и услуги" %}</a></li>
@@ -95,35 +97,23 @@
                 <div class="nav-collapse">
                     <ul class="nav">
                         {% if user.profile.is_loru or user.profile.is_ugh %}
-                            <!-- <li{% if request.path == '/' %} class="active"{% endif %}>
-                                <a href="{% url dashboard %}">{% trans "К исполнению" %}</a>
-                            </li> -->
+                            <li{% if request.path == '/' %} class="active"{% endif %}>
+                                <a href="{% url dashboard %}">{% trans "Открытые" %}</a>
+                            </li>
 
                             <li{% if request.path == '/burials/' %} class="active"{% endif %}>
                                 <a href="{% url burial_list %}">{% trans "Захоронения" %}</a>
                             </li>
-                            <li{% if request.path == '/burials/archive/' %} class="active"{% endif %}>
-                                <a href="{% url archive %}">{% trans "Архив" %}</a>
-                            </li>
                         {% endif %}
                         {% if user.profile.is_loru %}
-                            <li{% if request.path == '/burials/create/' %} class="active"{% endif %}>
-                                <a href="{% url create_burial %}">{% trans "Создать захоронение" %}</a>
-                            </li>
                             <li{% if request.path == '/order/' %} class="active"{% endif %}>
-                                <a href="{% url order_list %}">{% trans "Счет-заказы" %}</a>
+                                <a href="{% url order_list %}">{% trans "Заказы" %}</a>
                             </li>
                             <li{% if request.path == '/order/create/' %} class="active"{% endif %}>
-                                <a href="{% url order_create %}">{% trans "Создать счет-заказ" %}</a>
+                                <a href="{% url order_create %}">{% trans "Создать Заказ" %}</a>
                             </li>
                         {% endif %}
                         {% if user.profile.is_ugh %}
-                            <li{% if request.path|slice:"0:8" == '/import/' %} class="active"{% endif %}>
-                                <a href="{% url import_forms %}">{% trans "Импорт" %}</a>
-                            </li>
-                            <li{% if request.path|slice:"0:15" == '/import/kaluga/' %} class="active"{% endif %}>
-                                <a href="{% url import_kaluga %}">{% trans "Импорт Калуга" %}</a>
-                            </li>
                             <li{% if request.path == '/burials/create/' and not request.GET.archive %} class="active"{% endif %}>
                                 <a href="{% url create_burial %}">{% trans "Создать захоронение" %}</a>
                             </li>
