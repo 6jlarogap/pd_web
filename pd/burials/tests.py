@@ -40,11 +40,11 @@ class RequestsTest(TestCase):
         self.doc_type = IDDocumentType.objects.create(name='Passport')
 
     def test_lists(self):
-        r = self.ugh_client.get('/?show=1')
+        r = self.ugh_client.get('/')
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r.context['burials'].count(), 0)
 
-        r = self.loru_client.get('/?show=1')
+        r = self.loru_client.get('/')
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r.context['burials'].count(), 0)
 
@@ -80,17 +80,17 @@ class RequestsTest(TestCase):
         br.status = Burial.STATUS_READY
         br.save()
 
-        r = self.ugh_client.get('/?show=1')
+        r = self.ugh_client.get('/')
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r.context['burials'].count(), 1)
 
-        r = self.loru_client.get('/?show=1')
+        r = self.loru_client.get('/')
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.context['burials'].count(), 0)
+        self.assertEqual(r.context['burials'].count(), 1)
 
         ProfileLORU.objects.all().delete()
 
-        r = self.ugh_client.get('/?show=1')
+        r = self.ugh_client.get('/')
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r.context['burials'].count(), 1)
 
@@ -107,26 +107,26 @@ class RequestsTest(TestCase):
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r.context['burials'].count(), 1)
 
-        r = self.ugh_client.get('/?show=1')
-        self.assertEqual(r.context['burials'].count(), 0)
-        r = self.loru_client.get('/?show=1')
+        r = self.ugh_client.get('/')
+        self.assertEqual(r.context['burials'].count(), 1)
+        r = self.loru_client.get('/')
         self.assertEqual(r.context['burials'].count(), 1)
 
         r = self.loru_client.post('/burials/%s/' % br.pk, {'ready': '1'}, follow=True)
 
-        r = self.ugh_client.get('/?show=1')
+        r = self.ugh_client.get('/')
         self.assertEqual(r.context['burials'].count(), 1)
         self.assertIn('loru', r.content)
 
-        r = self.loru_client.get('/?show=1')
-        self.assertEqual(r.context['burials'].count(), 0)
+        r = self.loru_client.get('/')
+        self.assertEqual(r.context['burials'].count(), 1)
 
         r = self.ugh_client.post('/burials/%s/' % br.pk, {'approve': '1'}, follow=True)
 
-        r = self.ugh_client.get('/?show=1')
+        r = self.ugh_client.get('/')
         self.assertEqual(r.context['burials'].count(), 1)
-        r = self.loru_client.get('/?show=1')
-        self.assertEqual(r.context['burials'].count(), 0)
+        r = self.loru_client.get('/')
+        self.assertEqual(r.context['burials'].count(), 1)
 
         r = self.loru_client.get('/burials/')
         self.assertEqual(r.status_code, 200)
@@ -138,9 +138,9 @@ class RequestsTest(TestCase):
             'place_number': '123', 'fact_date_day': 10, 'fact_date_month': 10, 'fact_date_year': 2010,
         }, follow=True)
 
-        r = self.ugh_client.get('/?show=1')
+        r = self.ugh_client.get('/')
         self.assertEqual(r.context['burials'].count(), 0)
-        r = self.loru_client.get('/?show=1')
+        r = self.loru_client.get('/')
         self.assertEqual(r.context['burials'].count(), 0)
 
         r = self.loru_client.get('/burials/')

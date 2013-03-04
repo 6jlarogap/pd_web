@@ -278,7 +278,10 @@ $(function() {
     if (!window.PLACE_TYPES) { PLACE_TYPES = {} }
 
     $('.burial-form :input').live('keypress', function(e) {
-        console.log(e.keyCode);
+        if (e.keyCode == 13) {
+            e.preventDefault();
+            return false;
+        };
     });
 
     $('.btn-commit-burial').click(function() {
