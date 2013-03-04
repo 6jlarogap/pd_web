@@ -246,10 +246,11 @@ def do_import_burials(csv_fileobj, user):
                         end=row[62],
                     )
 
+                plan_date = make_unc_date(row[2])
                 params = dict(
                     account_number=row[0],
                     burial_type=BURIAL_TYPES[row[1]],
-                    plan_date=make_unc_date(row[2]).strftime('%Y-%m-%d'),
+                    plan_date=plan_date and plan_date.strftime('%Y-%m-%d') or None,
                     fact_date=row[3],
                     plan_time=row[4] or None,
                     source_type=Burial.SOURCE_ARCHIVE,
