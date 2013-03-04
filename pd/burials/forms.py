@@ -22,6 +22,7 @@ from orders.models import Order
 from pd.forms import PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin
 from persons.forms import DeadPersonForm, DeathCertificateForm, AlivePersonForm, PersonIDForm
 from persons.models import DeathCertificate, PersonID
+from users.forms import OrgForm
 from users.models import Org, Profile, Dover
 
 
@@ -685,20 +686,10 @@ class AddDoverForm(forms.ModelForm):
         model = Dover
         exclude = ['agent', 'document', ]
 
-class AddOrgForm(forms.ModelForm):
+class AddOrgForm(OrgForm):
     class Meta:
         model = Org
-        exclude = ['type', ]
-
-    def clean_inn(self):
-        inn = self.cleaned_data['inn']
-        if inn:
-            orgs = Org.objects.filter(inn=inn)
-            if self.instance and self.instance.pk:
-                orgs = orgs.exclude(pk=self.instance.pk)
-            if orgs.exists():
-                raise forms.ValidationError(_(u"ИНН уже зарегистрирован"))
-        return inn
+        exclude = ['type', 'off_address', ]
 
 class ExhumationForm(ChildrenJSONMixin, forms.ModelForm):
     opf = forms.ChoiceField(label=_(u'ОПФ'), choices=OPF_CHOICES, widget=forms.RadioSelect, initial='person')

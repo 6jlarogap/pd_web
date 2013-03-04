@@ -1,6 +1,6 @@
 # coding=utf-8
 import datetime
-from burials.forms import AddOrgForm
+from burials.forms import AddOrgForm, AddAgentForm, AddDoverForm
 
 from django.contrib import messages
 from django.core.urlresolvers import reverse
@@ -104,6 +104,12 @@ class OrderCreate(LORURequiredMixin, CreateView):
     def get_context_data(self, **kwargs):
         data = super(OrderCreate, self).get_context_data(**kwargs)
         data['org_form'] = AddOrgForm(prefix='loru')
+        data.update({
+            'agent_form': AddAgentForm(prefix='agent'),
+            'agent_dover_form': AddDoverForm(prefix='agent_dover'),
+            'dover_form': AddDoverForm(prefix='dover'),
+            'loru_form': AddOrgForm(prefix='loru'),
+        })
         return data
 
     def form_valid(self, form):
@@ -131,6 +137,17 @@ class OrderEdit(LORURequiredMixin, UpdateView):
     def get_form_kwargs(self):
         data = super(OrderEdit, self).get_form_kwargs()
         data['request'] = self.request
+        return data
+
+    def get_context_data(self, **kwargs):
+        data = super(OrderEdit, self).get_context_data(**kwargs)
+        data.update({
+            'order': self.get_object(),
+            'agent_form': AddAgentForm(prefix='agent'),
+            'agent_dover_form': AddDoverForm(prefix='agent_dover'),
+            'dover_form': AddDoverForm(prefix='dover'),
+            'loru_form': AddOrgForm(prefix='loru'),
+        })
         return data
 
     def get(self, request, *args, **kwargs):

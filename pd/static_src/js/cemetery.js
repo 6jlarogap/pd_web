@@ -538,6 +538,7 @@ $(function() {
     $('input[id$=fias_address]').attr('autocomplete', 'off').css('width', '600px').each(function() {
         var autocomplete = new google.maps.places.Autocomplete(this, ac_options );
     });
+    $('.modal-body input[id$=fias_address]').css('width', '300px');
 
     $('input[id$=fias_address]').change(function() {
         var street_input = $('input[id$=fias_street]');

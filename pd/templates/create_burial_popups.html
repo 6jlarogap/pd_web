@@ -8,6 +8,10 @@
     <div class="modal-body">
         <form>
             {{ loru_form.as_p }}
+            <h2>{% trans "Адрес" %}</h2>
+            {% with loru_form.address_form as form %}
+                {% include "location_form.html" %}
+            {% endwith %}
         </form>
     </div>
     <div class="modal-footer">

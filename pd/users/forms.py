@@ -166,6 +166,16 @@ class OrgForm(forms.ModelForm):
     def is_valid(self):
         return super(OrgForm, self).is_valid() and self.address_form.is_valid()
 
+    def clean_inn(self):
+        inn = self.cleaned_data['inn']
+        if inn:
+            orgs = Org.objects.filter(inn=inn)
+            if self.instance and self.instance.pk:
+                orgs = orgs.exclude(pk=self.instance.pk)
+            if orgs.exists():
+                raise forms.ValidationError(_(u"ИНН уже зарегистрирован"))
+        return inn
+
     def save(self, commit=True):
         org = super(OrgForm, self).save(commit=False)
         if any(self.address_form.cleaned_data.values()):
