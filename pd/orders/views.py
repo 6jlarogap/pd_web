@@ -96,6 +96,11 @@ class OrderCreate(LORURequiredMixin, CreateView):
     template_name = 'order_create.html'
     form_class = OrderForm
 
+    def get_form_kwargs(self):
+        data = super(OrderCreate, self).get_form_kwargs()
+        data['request'] = self.request
+        return data
+
     def get_context_data(self, **kwargs):
         data = super(OrderCreate, self).get_context_data(**kwargs)
         data['org_form'] = AddOrgForm(prefix='loru')
@@ -122,6 +127,11 @@ order_create = OrderCreate.as_view()
 class OrderEdit(LORURequiredMixin, UpdateView):
     template_name = 'order_edit_applicant.html'
     form_class = OrderForm
+
+    def get_form_kwargs(self):
+        data = super(OrderEdit, self).get_form_kwargs()
+        data['request'] = self.request
+        return data
 
     def get(self, request, *args, **kwargs):
         self.request = request

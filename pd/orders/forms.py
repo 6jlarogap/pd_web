@@ -26,7 +26,8 @@ class OrderForm(ChildrenJSONMixin, forms.ModelForm):
         model = Order
         exclude = ['loru', 'person', 'org', ]
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, request, *args, **kwargs):
+        self.request = request
         super(OrderForm, self).__init__(*args, **kwargs)
         self.fields.keyOrder.insert(0, self.fields.keyOrder.pop(-1))
 
