@@ -13,12 +13,12 @@ from django.template.context import RequestContext
 from django.views.generic.base import TemplateView, View
 from django.utils.translation import ugettext_lazy as _
 from django.views.generic.detail import DetailView
-from django.views.generic.edit import CreateView
+from django.views.generic.edit import CreateView, DeleteView
 from django.views.generic.list import ListView
 
 from burials.forms import BurialSearchForm, BurialForm, BurialCommitForm, BurialCloseForm
 from burials.forms import AddAgentForm, AddDoverForm, AddOrgForm, ExhumationForm
-from burials.models import Reason, Burial, Cemetery, Place
+from burials.models import Reason, Burial, Cemetery, Place, ExhumationRequest
 from logs.models import write_log
 from orders.models import Order
 from pd.forms import CommentForm
@@ -546,3 +546,23 @@ class ExhumateView(ArchiveMixin, DetailView):
             return self.get(request, *args, **kwargs)
 
 burial_exhumate = ExhumateView.as_view()
+
+class CancelExhumationView(ArchiveMixin, DeleteView):
+    def delete(self, *args, **kwargs):
+        self.burial = self.get_object().burial
+        self.place = self.get_object().place or self.burial.get_place()
+        return super(CancelExhumationView, self).delete(*args, **kwargs)
+
+    def get_success_url(self):
+        write_log(self.request, self.burial, _(u'Эксгумация отменена'))
+        messages.success(self.request, _(u"Эксгумация успешна"))
+        if self.place.pk:
+            return reverse('view_place', args=[self.place.pk])
+        else:
+            return reverse('/')
+
+    def get_queryset(self):
+        qs = Q(burial__ugh=self.request.user.profile.org) | Q(burial__cemetery__ugh=self.request.user.profile.org)
+        return ExhumationRequest.objects.filter(qs).distinct()
+
+burial_cancel_exhumation = CancelExhumationView.as_view()

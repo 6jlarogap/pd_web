@@ -639,7 +639,7 @@ class ExhumationTest(TestCase):
 
         r = self.ugh_client.post('/burials/%s/exhumate/' % self.burial.pk, {
             'fact_date': '01.01.2001', 'plan_time': '10:10',
-        })
+            })
         self.assertEqual(r.status_code, 200)
         self.assertEqual(ExhumationRequest.objects.count(), 0)
         self.assertEqual(Burial.objects.get().place, self.place)
@@ -647,7 +647,7 @@ class ExhumationTest(TestCase):
 
         r = self.ugh_client.post('/burials/%s/exhumate/' % self.burial.pk, {
             'fact_date': '01.01.2001', 'plan_time': '10:10', 'applicant_organization': self.ugh_org.pk, 'opf': 'org',
-        })
+            })
         self.assertEqual(r.status_code, 302)
         self.assertEqual(ExhumationRequest.objects.count(), 1)
 
@@ -657,6 +657,24 @@ class ExhumationTest(TestCase):
         self.assertEqual(Burial.objects.get().exhumated.place, self.place)
         self.assertEqual(ExhumationRequest.objects.get().applicant, None)
         self.assertEqual(ExhumationRequest.objects.get().applicant_organization, self.ugh_org)
+
+    def test_cancel(self):
+        self.assertEqual(ExhumationRequest.objects.count(), 0)
+
+        r = self.ugh_client.post('/burials/%s/exhumate/' % self.burial.pk, {
+            'fact_date': '01.01.2001', 'plan_time': '10:10', 'applicant_organization': self.ugh_org.pk, 'opf': 'org',
+            })
+        self.assertEqual(r.status_code, 302)
+        self.assertEqual(ExhumationRequest.objects.count(), 1)
+        self.assertEqual(Log.objects.all().count(), 1)
+
+        ex = ExhumationRequest.objects.get()
+
+        r = self.ugh_client.post('/burials/%s/exhumate/cancel/' % ex.pk)
+        self.assertEqual(r.status_code, 302)
+        self.assertEqual(ExhumationRequest.objects.count(), 0)
+        self.assertEqual(ex.burial.status, Burial.STATUS_CLOSED)
+        self.assertEqual(Log.objects.all().count(), 2)
 
 class TestPlaces(TestCase):
     def setUp(self):

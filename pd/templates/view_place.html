@@ -91,6 +91,10 @@
                     <td>{{ b.fact_date|date:"d.m.Y"|default:"" }}</td>
                     <td>
                         <a class="btn" href="#" target="_blank">{% trans "справка" %}</a>
+                        <form action="{% url burial_cancel_exhumation ex.pk %}" method="POST">
+                            <input type="submit" class="btn" value="{% trans "отменить" %}" />
+                        </form>
+
                     </td>
                 </tr>
             {% endwith %}

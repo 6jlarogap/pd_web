@@ -459,8 +459,13 @@ class ExhumationRequest(models.Model):
         self.save()
 
         self.burial.place = None
-        self.burial.status = self.burial.STATUS_EXHUMATED
+        self.burial.status = Burial.STATUS_EXHUMATED
         self.burial.save()
+
+    def delete(self, using=None):
+        self.burial.status = Burial.STATUS_CLOSED
+        self.burial.save()
+        return super(ExhumationRequest, self).delete(using=using)
 
 def apply_exhumation(instance, created, **kwargs):
     if created:
