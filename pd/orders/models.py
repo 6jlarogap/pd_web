@@ -65,16 +65,22 @@ class Order(models.Model):
     class Meta:
         verbose_name = _(u"Заказ")
         verbose_name_plural = _(u"Заказы")
+        # unique_together = (
+        #     ('loru_number', 'loru'),
+        # )
 
     def __unicode__(self):
-        return u'%s - %s %s' % (self.pk, self.loru, self.dt)
+        return u'%s/%s - %s %s' % (self.loru_number or '', self.pk, self.loru, self.dt)
 
     def save(self, *args, **kwargs):
         if not self.loru_number and self.loru:
-            existing = Order.objects.filter(loru=self.loru).order_by('-loru_number')
+            existing = Order.objects.filter(loru=self.loru).exclude(loru_number__isnull=True).order_by('-loru_number')
+            if self.pk:
+                existing = existing.exclude(pk=self.pk)
             try:
-                self.loru_number = existing[0].loru_number + 1
-            except IndexError:
+                self.loru_number = int(existing[0].loru_number) + 1
+            except (IndexError, TypeError), e:
+                print 'e', e
                 self.loru_number = 1
         return super(Order, self).save(*args, **kwargs)
 
