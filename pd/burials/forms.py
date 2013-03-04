@@ -444,17 +444,20 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, forms.Mo
             self.instance.deadman = None
 
         if self.request.user.profile.is_ugh():
-            if self.cleaned_data.get('opf') == 'person' and self.applicant_form.is_valid_data():
-                applicant = self.applicant_form.save(commit=False)
-                if self.applicant_address_form.is_valid_data():
-                    applicant.address = self.applicant_address_form.save()
-                applicant.save()
+            if self.cleaned_data.get('opf') == 'person':
+                if self.applicant_form.is_valid_data():
+                    applicant = self.applicant_form.save(commit=False)
+                    if self.applicant_address_form.is_valid_data():
+                        applicant.address = self.applicant_address_form.save()
+                    applicant.save()
 
-                if self.applicant_id_form.is_valid_data():
-                    pid = self.applicant_id_form.save(commit=False)
-                    pid.person = applicant
-                    pid.save()
-                self.instance.applicant = applicant
+                    if self.applicant_id_form.is_valid_data():
+                        pid = self.applicant_id_form.save(commit=False)
+                        pid.person = applicant
+                        pid.save()
+                    self.instance.applicant = applicant
+                else:
+                    self.instance.applicant = None
                 self.instance.applicant_organization = None
             else:
                 try:
