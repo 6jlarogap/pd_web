@@ -51,6 +51,7 @@ class Order(models.Model):
     )
 
     loru = models.ForeignKey(Org, limit_choices_to={'type': Org.PROFILE_LORU}, null=True, verbose_name=_(u"ЛОРУ"))
+    loru_number = models.PositiveIntegerField(null=True, editable=False)
     payment = models.CharField(_(u"Тип платежа"), max_length=255, choices=PAYMENT_CHOICES, default=PAYMENT_CASH)
     applicant = models.ForeignKey('persons.AlivePerson', verbose_name=_(u"Заказчик-ФЛ"), null=True, blank=True)
     applicant_organization = models.ForeignKey(Org, verbose_name=_(u"Заказчик-ЮЛ"), null=True, blank=True, related_name='org_orders')
@@ -67,6 +68,15 @@ class Order(models.Model):
 
     def __unicode__(self):
         return u'%s - %s %s' % (self.pk, self.loru, self.dt)
+
+    def save(self, *args, **kwargs):
+        if not self.loru_number and self.loru:
+            existing = Order.objects.filter(loru=self.loru).order_by('-loru_number')
+            try:
+                self.loru_number = existing[0].loru_number + 1
+            except IndexError:
+                self.loru_number = 1
+        return super(Order, self).save(*args, **kwargs)
 
     @property
     def customer(self):

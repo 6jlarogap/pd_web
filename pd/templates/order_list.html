@@ -16,7 +16,7 @@
         </tr>
         {% for c in object_list %}
             <tr>
-                <td>{{ c.pk }}</td>
+                <td>{{ c.loru_number|default:"" }} / {{ c.pk }}</td>
                 <td>{{ c.dt }}</td>
                 <td>{{ c.customer }}</td>
                 <td>
