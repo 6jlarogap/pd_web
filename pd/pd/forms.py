@@ -11,24 +11,30 @@ from django.utils.translation import ugettext as _
 from django.utils.datastructures import SortedDict
 from django.utils.safestring import mark_safe
 
-from burials.models import Burial
+from burials.models import Burial, Area
 from logs.models import write_log
 from pd.models import UnclearDate
+from users.models import Profile, Dover
 
 
 class ChildrenJSONMixin:
-    def universal_children_json(self, parent, children_rel, filter_kw=None, related=None):
+    def universal_children_json(self, parent, ch_model, ch_rel, filter_kw=None, related=None):
         parents = {}
         filter_kw = filter_kw or {}
         related = related or []
         if self.fields.get(parent):
-            for c in self.fields[parent].queryset:
-                qs = getattr(c, children_rel).select_related(*related).filter(**filter_kw)
-                parents[c.pk] = [[a.pk, u'%s' % a] for a in qs]
+            parent_qs = self.fields[parent].queryset
+            ch_qs = ch_model.objects.filter(**filter_kw).filter(**{ch_rel+'__in': parent_qs})
+            ch_qs = ch_qs.select_related(ch_rel, *related)
+            for c in ch_qs:
+                p = getattr(c, ch_rel)
+                if not parents.get(p.pk):
+                    parents[p.pk] = []
+                parents[p.pk].append([c.pk, u'%s' % c])
         return mark_safe(json.dumps(parents))
 
     def cemetery_areas_json(self):
-        return self.universal_children_json('cemetery', 'area_set')
+        return self.universal_children_json('cemetery', Area, 'cemetery', related=['purpose'])
 
     def cemetery_times_json(self):
         parents = {}
@@ -41,10 +47,10 @@ class ChildrenJSONMixin:
         return mark_safe(json.dumps(parents))
 
     def agent_dover_json(self):
-        return self.universal_children_json('agent', 'dover_set', related=['agent', 'agent__user'])
+        return self.universal_children_json('agent', Dover, 'agent', related=['agent', 'agent__user'])
 
     def loru_agents_json(self):
-        return self.universal_children_json('applicant_organization', 'profile_set', filter_kw={'is_agent': True}, related=['user'])
+        return self.universal_children_json('applicant_organization', Profile, 'org', filter_kw={'is_agent': True}, related=['user'])
 
 class LoggingFormMixin:
     def get_prefix(self, form):

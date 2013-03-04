@@ -445,8 +445,11 @@ class EditBurialView(CreateBurial):
         return Burial.objects.filter(q2)
 
     def get_object(self):
+        if getattr(self, '_burial', None):
+            return self._burial
         try:
-            return self.get_queryset().get(pk=self.kwargs['pk'])
+            self._burial = self.get_queryset().get(pk=self.kwargs['pk'])
+            return self._burial
         except Burial.DoesNotExist:
             raise Http404
 

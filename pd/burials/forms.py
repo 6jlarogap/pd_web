@@ -192,9 +192,13 @@ class ResponsibleForm(AlivePersonForm):
         if self.instance.pk:
             return super(ResponsibleForm, self).save(*args, **kwargs)
         elif self.cleaned_data.get('take_from') == self.WHERE_FROM_ORDER:
-            return self.cleaned_data['order'].applicant
+            a = self.cleaned_data['order'].applicant
+            a.pk = None
+            return a
         elif self.cleaned_data.get('take_from') == self.WHERE_FROM_PLACE:
-            return self.cleaned_data['place'].responsible
+            a = self.cleaned_data['place'].responsible
+            a.pk = None
+            return a
         else:
             return super(ResponsibleForm, self).save(*args, **kwargs)
 
@@ -259,7 +263,7 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, forms.Mo
             ugh = self.request.user.profile.org
             loru_list = Org.objects.all()
             self.fields['applicant_organization'].queryset = loru_list
-            self.fields['agent'].queryset = Profile.objects.filter(org__in=loru_list, is_agent=True)
+            self.fields['agent'].queryset = Profile.objects.filter(org__in=loru_list, is_agent=True).select_related('user')
             self.fields['dover'].queryset = Dover.objects.filter(agent__org__in=loru_list)
 
             self.fields.keyOrder.insert(self.fields.keyOrder.index('applicant_organization'), self.fields.keyOrder.pop(-1))
@@ -288,6 +292,8 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, forms.Mo
             self.initial['cemetery'] = self.request.user.profile.cemetery
         if self.request.user.profile.area:
             self.initial['area'] = self.request.user.profile.area
+
+        self.fields['area'].queryset = self.fields['area'].queryset.select_related('purpose')
 
         self.forms = self.construct_forms()
 
