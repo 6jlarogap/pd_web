@@ -49,7 +49,10 @@
 
 </div>
 
-<h2>{% trans "Ответственный" %} {{ form.responsible_form.instance|default:"" }}</h2>
+<h2>
+    {% trans "Ответственный" %} {{ form.responsible_form.instance|default:"" }}
+    {{ form.responsible_form.instance.pk }}
+</h2>
 
 <a href="#" onclick="$('#cont_responsible').slideToggle(); return false">{% trans "развернуть" %}</a>
 <div id="cont_responsible" style="display: none">

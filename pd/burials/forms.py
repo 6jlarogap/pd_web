@@ -1,4 +1,5 @@
 # coding=utf-8
+import copy
 import datetime
 import json
 import random
@@ -192,12 +193,16 @@ class ResponsibleForm(AlivePersonForm):
         if self.instance.pk:
             return super(ResponsibleForm, self).save(*args, **kwargs)
         elif self.cleaned_data.get('take_from') == self.WHERE_FROM_ORDER:
-            a = self.cleaned_data['order'].applicant
-            a.pk = None
+            a = copy.deepcopy(self.cleaned_data['order'].applicant)
+            a.id = None
+            a.baseperson_ptr_id = None
+            a.save(force_insert=True)
             return a
         elif self.cleaned_data.get('take_from') == self.WHERE_FROM_PLACE:
-            a = self.cleaned_data['place'].responsible
-            a.pk = None
+            a = copy.deepcopy(self.cleaned_data['place'].responsible)
+            a.id = None
+            a.baseperson_ptr_id = None
+            a.save(force_insert=True)
             return a
         else:
             return super(ResponsibleForm, self).save(*args, **kwargs)
@@ -458,7 +463,11 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, forms.Mo
                 self.instance.applicant = None
 
         if self.request.user.profile.is_ugh() and self.responsible_form.cleaned_data.get('take_from') == ResponsibleForm.WHERE_FROM_APPLICANT:
-            self.instance.responsible = self.instance.applicant
+            resp = copy.deepcopy(self.instance.applicant)
+            resp.id = None
+            resp.baseperson_ptr_id = None
+            resp.save(force_insert=True)
+            self.instance.responsible = resp
         elif self.responsible_form.is_valid_data():
             responsible = self.responsible_form.save(commit=False)
             if self.responsible_address_form.is_valid_data():

@@ -12,6 +12,8 @@
         {{ form.applicant_form.instance }}
     {% else %}
     {% endif %}
+    {{ form.instance.applicant_organization.pk }}
+    {{ form.applicant_form.instance.pk }}
 </h2>
 <a href="#" onclick="$('#cont_applicant').slideToggle(); return false">{% trans "развернуть" %}</a>
 <div id="cont_applicant" {% if form.instance.pk or not 'order' in request.path %}style="display: none"{% endif %}>
