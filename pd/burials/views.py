@@ -98,6 +98,7 @@ class AddDoverView(UGHRequiredMixin, View):
             return HttpResponse(_(u'Данные невалидны'), mimetype='text/plain')
         if f.is_valid():
             dover = f.save(commit=False)
+            dover.target_org = request.user.profile.org
             dover.agent = agent
             dover.save()
             return HttpResponse(json.dumps({'pk': dover.pk, 'label': u'%s' % dover}), mimetype='application/json')

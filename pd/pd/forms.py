@@ -47,10 +47,12 @@ class ChildrenJSONMixin:
         return mark_safe(json.dumps(parents))
 
     def agent_dover_json(self):
-        return self.universal_children_json('agent', Dover, 'agent', related=['agent', 'agent__user'])
+        kw = {'target_org': self.request.user.profile.org}
+        return self.universal_children_json('agent', Dover, 'agent', filter_kw=kw, related=['agent', 'agent__user'])
 
     def loru_agents_json(self):
-        return self.universal_children_json('applicant_organization', Profile, 'org', filter_kw={'is_agent': True}, related=['user'])
+        kw = {'is_agent': True}
+        return self.universal_children_json('applicant_organization', Profile, 'org', filter_kw=kw, related=['user'])
 
 class LoggingFormMixin:
     def get_prefix(self, form):

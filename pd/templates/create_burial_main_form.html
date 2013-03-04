@@ -51,7 +51,6 @@
 
 <h2>
     {% trans "Ответственный" %} {{ form.responsible_form.instance|default:"" }}
-    {{ form.responsible_form.instance.pk }}
 </h2>
 
 <a href="#" onclick="$('#cont_responsible').slideToggle(); return false">{% trans "развернуть" %}</a>
