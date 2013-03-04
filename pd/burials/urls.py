@@ -24,6 +24,7 @@ urlpatterns = patterns('burials.views',
     url(r'^burials/$', 'burial_list', name='burial_list'),
 
     url(r'^places/(?P<pk>\d+)/$', 'view_place', name='view_place'),
+    url(r'^places/(?P<pk>\d+)/responsible/remove/$', 'rm_responsible', name='rm_responsible'),
 
     url(r'^manage/cemetery/$', 'manage_cemeteries', name='manage_cemeteries'),
     url(r'^manage/cemetery/create/$', 'manage_cemeteries_create', name='manage_cemeteries_create'),

@@ -153,6 +153,14 @@ class Place(models.Model):
         except (ValueError, IndexError):
             self.place = year + '0001'
 
+    def remove_responsible(self):
+        self.responsible = None
+        self.save()
+
+    def get_logs(self):
+        ct = ContentType.objects.get_for_model(self)
+        return Log.objects.filter(ct=ct, obj_id=self.pk).order_by('-pk')
+
     def save(self, *args, **kwargs):
         if self.cemetery and not self.place:
             if self.cemetery.places_algo == Cemetery.PLACE_MANUAL:
@@ -464,6 +472,7 @@ class ExhumationRequest(models.Model):
 
     def delete(self, using=None):
         self.burial.status = Burial.STATUS_CLOSED
+        self.burial.place = self.place
         self.burial.save()
         return super(ExhumationRequest, self).delete(using=using)
 

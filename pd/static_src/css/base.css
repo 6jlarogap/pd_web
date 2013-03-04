@@ -1,4 +1,5 @@
 p.inline { display: inline-block; }
+form.inline { display: inline-block; }
 
 input.hasDatepicker { width: 80px; }
 input.hasTimepicker { width: 80px; }

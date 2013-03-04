@@ -79,7 +79,8 @@ class PlaceView(UGHRequiredMixin, UpdateView):
     form_class = PlaceEditForm
 
     def get_queryset(self):
-        return Place.objects.filter(cemetery__ugh=self.request.user.profile.org).distinct()
+        org = self.request.user.profile.org
+        return Place.objects.filter(Q(burial__ugh=org) | Q(cemetery__ugh=org)).distinct()
 
     def get_success_url(self):
         messages.success(self.request, _(u"Данные обновлены"))

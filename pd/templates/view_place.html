@@ -28,7 +28,10 @@
                 {% if place.responsible.phones %}
                     ({% trans "тел." %} {{ place.responsible.phones }})
                 {% endif %}
-                <a href="{% url create_burial %}" class="btn" onclick="alert('Не готово'); return false;">{% trans "открепить" %}</a>
+                <form action="{% url rm_responsible place.pk %}" method="POST" class="inline">
+                    {% csrf_token %}
+                    <input type="submit" class="btn" value="{% trans "открепить" %}"/>
+                </form>
             </dd>
         {% endif %}
         <dt>{% trans "Могил всего" %}</dt><dd>{{ place.places_count }}</dd>
@@ -91,7 +94,8 @@
                     <td>{{ b.fact_date|date:"d.m.Y"|default:"" }}</td>
                     <td>
                         <a class="btn" href="#" target="_blank">{% trans "справка" %}</a>
-                        <form action="{% url burial_cancel_exhumation ex.pk %}" method="POST">
+                        <form action="{% url burial_cancel_exhumation ex.pk %}" method="POST" class="inline">
+                            {% csrf_token %}
                             <input type="submit" class="btn" value="{% trans "отменить" %}" />
                         </form>
 
@@ -100,4 +104,22 @@
             {% endwith %}
         {% endfor %}
     </table>
+
+    {% if place.get_logs %}
+        <h2>{% trans "Журнал" %}</h2>
+        <table class="table table-bordered">
+            <tr>
+                <th>{% trans "Дата" %}</th>
+                <th>{% trans "Пользователь" %}</th>
+                <th>{% trans "Действие" %}</th>
+            </tr>
+            {% for log in place.get_logs %}
+                <tr>
+                    <td>{{ log.dt }}</td>
+                    <td>{{ log.user.profile }} / {{ log.user.profile.org }}</td>
+                    <td>{{ log.msg|linebreaksbr }}</td>
+                </tr>
+            {% endfor %}
+        </table>
+    {% endif %}
 {% endblock %}
