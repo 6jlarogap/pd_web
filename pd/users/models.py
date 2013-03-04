@@ -65,7 +65,7 @@ class Org(models.Model):
     director = models.CharField(_(u"Директор"), max_length=255, default='')
     email = models.EmailField(_(u"Email"), null=True, blank=True)
     phones = models.TextField(_(u"Телефоны"), blank=True, null=True)
-    off_address = models.ForeignKey('geo.Location', verbose_name=_("Юр. адрес"), null=True, blank=True)
+    off_address = models.ForeignKey('geo.Location', verbose_name=_(u"Юр. адрес"), null=True, blank=True)
 
     class Meta:
         verbose_name = _(u'Организация')

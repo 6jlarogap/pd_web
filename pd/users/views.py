@@ -5,6 +5,7 @@ from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
+from django.db.models.aggregates import Count
 from django.http import HttpResponse
 from django.shortcuts import redirect, render
 from django.utils.translation import ugettext_lazy as _
@@ -12,7 +13,7 @@ from django.views.generic.base import View
 from django.views.generic.edit import UpdateView, CreateView
 
 from logs.models import write_log
-from users.forms import RegisterForm, LoruFormset, ProfileForm, UserDataForm, ChangePasswordForm, BankAccountFormset
+from users.forms import RegisterForm, LoruFormset, ProfileForm, UserDataForm, ChangePasswordForm, BankAccountFormset, OrgForm
 from users.models import Profile, Org
 
 
@@ -113,6 +114,7 @@ class ProfileView(UpdateView):
         data = super(ProfileView, self).get_context_data(**kwargs)
         data['loru_formset'] = self.loru_formset
         data['bank_formset'] = self.bank_formset
+        data['unowned_orgs'] = Org.objects.annotate(profiles=Count('profile')).filter(profiles=0)
         return data
 
     def form_valid(self, form):
@@ -178,6 +180,30 @@ class UserEditForm(UpdateView):
         return super(UserEditForm, self).dispatch(request, *args, **kwargs)
 
 edit_user = UserEditForm.as_view()
+
+class OrgEditForm(UpdateView):
+    template_name = 'edit_org.html'
+    model = Org
+    form_class = OrgForm
+
+    def get_queryset(self):
+        return Org.objects.annotate(profiles=Count('profile')).filter(profiles=0)
+
+    def get_success_url(self):
+        msg = _(u"<a href='%s'>Организация %s</a> изменена") % (
+            reverse('edit_org', args=[self.object.pk]),
+            self.object,
+        )
+        messages.success(self.request, msg)
+        write_log(self.request, self.object, _(u'Изменены данные оорганизации'))
+        return reverse('profile')
+
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_authenticated():
+            return redirect('/')
+        return super(OrgEditForm, self).dispatch(request, *args, **kwargs)
+
+edit_org = OrgEditForm.as_view()
 
 class ChangePasswordForm(UpdateView):
     template_name = 'change_password.html'

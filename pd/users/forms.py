@@ -154,3 +154,22 @@ class ChangePasswordForm(forms.ModelForm):
             self.instance.save()
         return self.instance
 
+class OrgForm(forms.ModelForm):
+    class Meta:
+        model = Org
+        exclude = ['off_address', ]
+
+    def __init__(self, *args, **kwargs):
+        super(OrgForm, self).__init__(*args, **kwargs)
+        self.address_form = LocationForm(data=self.data or None, prefix='address', instance=self.instance.off_address)
+
+    def is_valid(self):
+        return super(OrgForm, self).is_valid() and self.address_form.is_valid()
+
+    def save(self, commit=True):
+        org = super(OrgForm, self).save(commit=False)
+        if any(self.address_form.cleaned_data.values()):
+            org.off_address = self.address_form.save()
+        if commit:
+            org.save()
+        return org
