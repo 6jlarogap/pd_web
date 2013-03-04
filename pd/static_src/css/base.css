@@ -44,3 +44,6 @@ h2.buttons { margin-top: 1em; }
 span.move-left { position: relative; left: -20px; }
 
 ul.messages { list-style: none; }
+
+tr.burial_blue, tr.burial_blue:hover { background-color: #99ccff }
+tr.burial_green, tr.burial_green:hover { background-color: #62c462 }

@@ -548,7 +548,7 @@ $(function() {
                 var country = '', region = '', city = '', street = '';
                 var house = '', building = '', block = '', flat = '';
                 form_block.find('[id$=post_index], [id$=country_name], [id$=region_name], [id$=city_name]').val('');
-                form_block.find('[id$=street_name], [id$=house], [id$=block], [id$=building], [id$=flat]').val('');
+                form_block.find('[id$=street_name]').val('');
                 $(address).each(function() {
                     if (this.types.indexOf("postal_code") > -1) { form_block.find('input[id$=post_index]').val(this.long_name); }
                     if (this.types.indexOf("country") > -1) { country = this.long_name; form_block.find('input[id$=country_name]').val(country); }
@@ -595,7 +595,7 @@ $(function() {
                     })
                 }
             } else {
-                alert("Адрес неразборчив, вводите в виде: улица Свободы, д.9, кв.11, Новороссийск, Краснодарский край")
+                alert("Адрес неразборчив, вводите в виде: улица Свободы, Новороссийск, Краснодарский край")
             }
         })
     });

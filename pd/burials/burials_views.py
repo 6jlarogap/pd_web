@@ -41,22 +41,8 @@ class DashboardView(BurialsListGenericMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         qs = self.get_qs_filter()
-        try:
-            profile = self.request.user.profile
-        except AttributeError:
-            pass
-        else:
-            if profile.is_loru():
-                qs &= Q(status__in=[Burial.STATUS_DRAFT, Burial.STATUS_BACKED, Burial.STATUS_DECLINED])
-            if profile.is_ugh():
-                qs &= Q(status__in=[Burial.STATUS_READY, Burial.STATUS_APPROVED])
-        return {'burials': Burial.objects.filter(qs).distinct()}
-
-    def get(self, request, *args, **kwargs):
-        if not request.GET:
-            return redirect('archive')
-        else:
-            return super(DashboardView, self).get(request, *args, **kwargs)
+        ex_qs = Q(status__in=[Burial.STATUS_CLOSED, Burial.STATUS_ANNULATED, Burial.STATUS_EXHUMATED])
+        return {'burials': Burial.objects.filter(qs).exclude(ex_qs).distinct()}
 
 dashboard = DashboardView.as_view()
 
