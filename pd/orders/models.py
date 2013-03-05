@@ -71,7 +71,7 @@ class Order(models.Model):
         # )
 
     def __unicode__(self):
-        return u'%s/%s - %s %s' % (self.loru_number or '', self.pk, self.loru, self.dt)
+        return u'%s - %s %s' % (self.loru_number or self.pk, self.loru, self.dt)
 
     def save(self, *args, **kwargs):
         if not self.loru_number and self.loru:
