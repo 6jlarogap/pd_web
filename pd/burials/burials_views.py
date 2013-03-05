@@ -57,6 +57,8 @@ class DashboardView(BurialsListGenericMixin, TemplateView):
             '-fio': '-deadman__last_name',
             'fact_date': 'fact_date',
             '-fact_date': '-fact_date',
+            'plan_date': 'plan_date',
+            '-plan_date': '-plan_date',
             'type': 'source_type',
             '-type': '-source_type',
             'applicant': ['applicant__last_name', 'applicant_organization__name'],
