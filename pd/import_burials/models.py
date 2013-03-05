@@ -224,26 +224,26 @@ def do_import_burials(csv_fileobj, user):
                         print 'Org not found', row[55], row[56]
                         app_org = None
 
-                if row[57]:
-                    fm = u'%s %s' % (row[58] or '', row[59] or '')
+                if row[58]:
+                    fm = u'%s %s' % (row[59] or '', row[60] or '')
                     fm = fm.strip()[:30]
                     try:
                         agent = Profile.objects.get(
-                            user__last_name=row[57], user__first_name=fm, org=app_org, is_agent=True
+                            user__last_name=row[58], user__first_name=fm, org=app_org, is_agent=True
                         )
                     except Profile.DoesNotExist:
 
                         agent = Profile.objects.create(
                             user=User.objects.create(
-                                last_name=row[57], first_name=fm, username='imported_%s' % i,
+                                last_name=row[58], first_name=fm, username='imported_%s' % i,
                             ), org=app_org, is_agent=True
                         )
-                if agent and row[60]:
+                if agent and row[61]:
                     dover, _created = Dover.objects.get_or_create(
                         agent=agent,
-                        number=row[60],
-                        begin=row[61],
-                        end=row[62],
+                        number=row[61],
+                        begin=row[62],
+                        end=row[63],
                     )
 
                 plan_date = make_unc_date(row[2])
@@ -265,7 +265,7 @@ def do_import_burials(csv_fileobj, user):
                     applicant=import_alive_person(row[41:55]),
                     ugh=user.profile.org,
                     applicant_organization=app_org,
-                    agent_director=False,
+                    agent_director=row[57] == 'True',
                     agent=agent,
                     dover=dover,
                     order=None,
@@ -287,8 +287,8 @@ def do_import_burials(csv_fileobj, user):
                 if not area.name:
                     write_log(request, b, _(u'Участок не был указан'))
 
-                if row[63]:
-                    write_log(request, b, _(u'Комментарий: %s') % row[63])
+                if row[64]:
+                    write_log(request, b, _(u'Комментарий: %s') % row[64])
 
 def do_import_services(csv_fileobj):
     csvreader = UnicodeReader(csv_fileobj)
