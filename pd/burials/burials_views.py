@@ -108,7 +108,7 @@ class ArchiveView(ArchiveMixin, ListView):
 
 archive = ArchiveView.as_view()
 
-class BurialView(ArchiveMixin, DetailView):
+class BurialView(BurialsListGenericMixin, DetailView):
     template_name = 'view_burial.html'
     context_object_name = 'b'
 
