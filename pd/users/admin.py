@@ -15,7 +15,6 @@ class ProfileAdmin(admin.ModelAdmin):
     list_display = ['user', 'full_name', 'is_agent', ]
     list_filter = ['is_agent',]
     inlines = [AgentDoverInline, ]
-    readonly_fields = ['user', ]
 
 admin.site.register(Profile, ProfileAdmin)
 

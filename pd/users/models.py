@@ -8,7 +8,7 @@ from pd.utils import DigitsValidator, LengthValidator, NotEmptyValidator
 
 class Profile(models.Model):
 
-    user = models.OneToOneField('auth.User', editable=False, null=True)
+    user = models.OneToOneField('auth.User', null=True)
     org = models.ForeignKey('users.Org', null=True)
 
     is_agent = models.BooleanField(_(u"Агент"), default=False, blank=True)
