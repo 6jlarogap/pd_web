@@ -42,7 +42,39 @@ class DashboardView(BurialsListGenericMixin, TemplateView):
     def get_context_data(self, **kwargs):
         qs = self.get_qs_filter()
         ex_qs = Q(status__in=[Burial.STATUS_CLOSED, Burial.STATUS_ANNULATED, Burial.STATUS_EXHUMATED])
-        return {'burials': Burial.objects.filter(qs).exclude(ex_qs).distinct()}
+
+        sort = self.request.GET.get('sort', '-pk')
+        SORT_FIELDS = {
+            'pk': 'pk',
+            '-pk': '-pk',
+            'account_number': 'account_number',
+            '-account_number': '-account_number',
+            'cemetery': 'cemetery__name',
+            '-cemetery': '-cemetery__name',
+            'place': 'place_number',
+            '-place': '-place_number',
+            'fio': 'deadman__last_name',
+            '-fio': '-deadman__last_name',
+            'fact_date': 'fact_date',
+            '-fact_date': '-fact_date',
+            'type': 'source_type',
+            '-type': '-source_type',
+            'applicant': ['applicant__last_name', 'applicant_organization__name'],
+            '-applicant': ['-applicant__last_name', '-applicant_organization__name'],
+            'status': 'status',
+            '-status': '-status',
+        }
+        s = SORT_FIELDS[sort]
+        if not isinstance(s, list):
+            s = [s]
+        burials = Burial.objects.filter(qs).exclude(ex_qs).distinct().select_related(
+            'ugh', 'place', 'place__cemetery', 'place__area', 'deadman', 'deadman__address', 'cemetery', 'area',
+            'applicant_organization', 'applicant', 'changed_by', 'changed_by__profile', 'cemetery__ugh', 'area__purpose'
+        ).order_by(*s)
+        return {
+            'burials': burials,
+            'sort': sort,
+        }
 
 dashboard = DashboardView.as_view()
 
