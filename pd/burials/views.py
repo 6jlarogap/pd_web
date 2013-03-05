@@ -25,6 +25,13 @@ class UGHRequiredMixin:
             return redirect('/')
         return View.dispatch(self, request, *args, **kwargs)
 
+class LoginRequiredMixin:
+    def dispatch(self, request, *args, **kwargs):
+        self.request = request
+        if not request.user.is_authenticated():
+            return redirect('/')
+        return View.dispatch(self, request, *args, **kwargs)
+
 class CemeteryList(UGHRequiredMixin, ListView):
     template_name = 'cemetery_list.html'
     model = Cemetery
@@ -88,7 +95,7 @@ class PlaceView(UGHRequiredMixin, UpdateView):
 
 view_place = PlaceView.as_view()
 
-class AddDoverView(UGHRequiredMixin, View):
+class AddDoverView(LoginRequiredMixin, View):
     def post(self, request, *args, **kwargs):
         f = AddDoverForm(data=request.POST, prefix='dover')
         try:
@@ -109,7 +116,7 @@ class AddDoverView(UGHRequiredMixin, View):
 
 add_dover = csrf_exempt(AddDoverView.as_view())
 
-class AddAgentView(UGHRequiredMixin, View):
+class AddAgentView(LoginRequiredMixin, View):
     def post(self, request, *args, **kwargs):
         fa = AddAgentForm(data=request.POST, prefix='agent')
         fd = AddDoverForm(data=request.POST, prefix='agent_dover')
@@ -135,13 +142,7 @@ class AddAgentView(UGHRequiredMixin, View):
 
 add_agent = csrf_exempt(AddAgentView.as_view())
 
-class AddOrgView(View):
-    def dispatch(self, request, *args, **kwargs):
-        self.request = request
-        if not request.user.is_authenticated():
-            return redirect('/')
-        return View.dispatch(self, request, *args, **kwargs)
-
+class AddOrgView(LoginRequiredMixin, View):
     def post(self, request, *args, **kwargs):
         f = AddOrgForm(data=request.POST, prefix='loru')
         if f.is_valid():
