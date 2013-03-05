@@ -85,6 +85,12 @@ class OrderList(LORURequiredMixin, ListView):
     template_name = 'order_list.html'
     model = Order
 
+    def get_paginate_by(self, queryset):
+        try:
+            return int(self.request.GET.get('per_page'))
+        except (TypeError, ValueError):
+            return 25
+
     def get_queryset(self):
         orders = Order.objects.filter(loru=self.request.user.profile.org).select_related(
             'burial', 'burial__changed_by', 'applicant_organization', 'applicant', 'loru',
