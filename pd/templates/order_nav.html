@@ -21,7 +21,7 @@
                 <a href="javascript://">{% trans "Захоронение" %} ({{ order.get_burial }}) &mdash; {% trans "недоступно" %}</a>
             </li>
         {% endif %}
-    {% elif order.has_burial %}
+    {% else %}
         <li {% if tab == 'burial' %}class="active"{% endif %}>
             <a href="{% url create_burial %}?order={{ order.pk }}">
                 {% trans "Захоронение" %}
