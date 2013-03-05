@@ -359,13 +359,11 @@ def do_import_orders(csv_fileobj):
                         try:
                             p = Product.objects.get(name=d['order_product'])
                         except Product.DoesNotExist:
-                            print u'Product not found: %s' % d['order_product']
                             p = Product.objects.create(loru=loru, name=d['order_product'], price=d['price'])
                     elif d.get('service'):
                         try:
                             p = Product.objects.get(name=d['service'])
                         except Product.DoesNotExist:
-                            print u'Product not found: %s' % d['service']
                             p = Product.objects.create(loru=loru, name=d['service'], price=d['price'])
 
                     OrderItem.objects.create(
