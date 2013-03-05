@@ -24,7 +24,6 @@ class LocationForm(PartialFormMixin, forms.ModelForm):
         exclude = ['country', 'region', 'city', 'street', ]
 
     def __init__(self, *args, **kwargs):
-
         super(LocationForm, self).__init__(*args, **kwargs)
         self.initial = self.initial or {}
         if self.instance:
@@ -51,6 +50,8 @@ class LocationForm(PartialFormMixin, forms.ModelForm):
                             fias_addr += u', кв. %s' % self.instance.flat
                         self.initial['fias_address'] = fias_addr
                         self.initial['fias_street'] = fias_all[-1].guid
+
+        self.fields['info'].widget = forms.TextInput()
 
     def clean_fias_street(self):
         if self.cleaned_data.get('fias_street'):

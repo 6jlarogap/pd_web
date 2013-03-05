@@ -1,6 +1,10 @@
 p.inline { display: inline-block; }
 form.inline { display: inline-block; }
 
+fieldset p { display: inline-block; }
+
+#id_time_slots { height: 40px; }
+
 input.hasDatepicker { width: 80px; }
 input.hasTimepicker { width: 80px; }
 .burial-form #id_plan_time { width: 80px; }

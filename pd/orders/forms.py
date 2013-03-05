@@ -138,6 +138,10 @@ class CatafalqueForm(forms.ModelForm):
     class Meta:
         model = CatafalqueData
 
+    def __init__(self, *args, **kwargs):
+        super(CatafalqueForm, self).__init__(*args, **kwargs)
+        self.fields['start_place'].widget = forms.TextInput()
+
 class CoffinForm(forms.ModelForm):
     size = forms.CharField(label=_(u'Размер'))
 

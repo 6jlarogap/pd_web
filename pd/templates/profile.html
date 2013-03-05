@@ -9,7 +9,9 @@
         {% if form.instance.org %}
             <h2>{% trans "Организация" %}: {{ form.instance.org }} (<strong>{{ form.instance.org.get_type_display }}</strong>)</h2>
         {% endif %}
-        {{ form.as_p }}
+        <fieldset>
+            {{ form.as_p }}
+        </fieldset>
 
         <h2>{% trans "Адрес" %}</h2>
         <div class="form_block">
@@ -20,20 +22,20 @@
 
         <h2>{% trans "Банковские счета" %}</h2>
         {{ bank_formset.management_form }}
-        <table>
-            {% for f in bank_formset.forms %}
-                {{ f.as_table }}
-            {% endfor %}
-        </table>
+        {% for f in bank_formset.forms %}
+            <fieldset>
+                {{ f.as_p }}
+            </fieldset>
+        {% endfor %}
 
         {% if form.instance.is_ugh %}
             <h2>{% trans "ЛОРУ" %}</h2>
             {{ loru_formset.management_form }}
-            <table>
-                {% for f in loru_formset.forms %}
-                    {{ f.as_table }}
-                {% endfor %}
-            </table>
+            {% for f in loru_formset.forms %}
+                <fieldset>
+                    {{ f.as_p }}
+                </fieldset>
+            {% endfor %}
         {% endif %}
         <p>
             <input type="submit" class="btn btn-primary" value="{% trans "cохранить" %}"/>

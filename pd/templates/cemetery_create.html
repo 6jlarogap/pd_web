@@ -6,14 +6,16 @@
     <h1>{% trans "Новое кладбище" %}</h1>
     <form action="" method="POST">
         {% csrf_token %}
-        {{ form.as_p }}
+        <fieldset>
+            {{ form.as_p }}
+        </fieldset>
 
         <h2>{% trans "Адрес" %}</h2>
         {% with form.address_form as form %}
             {% include "location_form.html" %}
         {% endwith %}
         <p>
-            <input type="submit" class="btn" value="{% trans "Создать" %}"/>
+            <input type="submit" class="btn btn-primary" value="{% trans "Создать" %}"/>
         </p>
     </form>
 {% endblock %}

@@ -28,10 +28,9 @@ class Cemetery(models.Model):
     name = models.CharField(_(u"Название"), max_length=255)
     time_begin = models.TimeField(_(u"Начало работы"))
     time_end = models.TimeField(_(u"Окончание работы"))
+    places_algo = models.CharField(_(u"Расстановка номеров мест"), max_length=255, choices=PLACE_TYPES, default=PLACE_MANUAL)
     time_slots = models.TextField(_(u"Время для захоронения"), default='',
                                   help_text=_(u'В формате ЧЧ:ММ, по одному на строку'))
-
-    places_algo = models.CharField(_(u"Расстановка номеров мест"), max_length=255, choices=PLACE_TYPES, default=PLACE_MANUAL)
 
     creator = models.ForeignKey('auth.User', verbose_name=_(u"Владелец"), editable=False, null=True,
                                 on_delete=models.PROTECT)
