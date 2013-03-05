@@ -1,14 +1,14 @@
 # coding=utf-8
 from django import forms
 from django.db.models.deletion import ProtectedError
-from django.db.models.expressions import F
 from django.db.models.query_utils import Q
 from django.forms.models import inlineformset_factory, BaseInlineFormSet
 from django.utils.translation import ugettext as _
-from geo.forms import LocationForm
 
+from burials.models import Burial
+from geo.forms import LocationForm
 from orders.models import Product, Order, OrderItem, CatafalqueData, CoffinData
-from burials.forms import OPF_CHOICES
+from burials.forms import OPF_CHOICES, EMPTY
 from pd.forms import ChildrenJSONMixin
 from persons.forms import AlivePersonForm, PersonIDForm
 from persons.models import AlivePerson, PersonID
@@ -143,3 +143,38 @@ class CoffinForm(forms.ModelForm):
 
     class Meta:
         model = CoffinData
+
+class OrderSearchForm(forms.Form):
+    """
+    Форма поиска заказов
+    """
+
+    PAGE_CHOICES = (
+        (10, 10),
+        (25, 25),
+        (50, 50),
+        (100, 100),
+    )
+
+    fio = forms.CharField(required=False, max_length=100, label=_(u"ФИО"))
+    no_last_name = forms.BooleanField(required=False, initial=False, label=_(u"Неизв."))
+    birth_date_from = forms.DateField(required=False, label=_(u"Дата рожд. с"))
+    birth_date_to = forms.DateField(required=False, label=_(u"по"))
+    death_date_from = forms.DateField(required=False, label=_(u"Дата смерти с"))
+    death_date_to = forms.DateField(required=False, label=_(u"по"))
+    burial_date_from = forms.DateField(required=False, label=_(u"Дата захор. с"))
+    burial_date_to = forms.DateField(required=False, label=_(u"по"))
+    account_number_from = forms.IntegerField(required=False, label=_(u"Уч. номер с"))
+    account_number_to = forms.IntegerField(required=False, label=_(u"по"))
+    applicant_org = forms.CharField(required=False, max_length=30, label=_(u"Заявитель-ЮЛ"))
+    applicant_person = forms.CharField(required=False, max_length=30, label=_(u"Заявитель-ФЛ"))
+    responsible = forms.CharField(required=False, max_length=30, label=_(u"Ответственный"))
+    cemetery = forms.CharField(required=False, label=_(u"Кладбища"))
+    area = forms.CharField(required=False, label=_(u"Участок"))
+    row = forms.CharField(required=False, label=_(u"Ряд"))
+    place = forms.CharField(required=False, label=_(u"Место"))
+    no_responsible = forms.BooleanField(required=False, initial=False, label=_(u"Без отв."))
+    status = forms.TypedChoiceField(required=False, label=_(u"Статус"), choices=EMPTY + Burial.STATUS_CHOICES)
+    annulated = forms.BooleanField(required=False, initial=False, label=_(u"Аннулированы"))
+    per_page = forms.ChoiceField(label=_(u"На странице"), choices=PAGE_CHOICES, initial=25, required=False)
+

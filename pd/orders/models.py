@@ -60,6 +60,7 @@ class Order(models.Model):
                               limit_choices_to={'is_agent': True}, on_delete=models.PROTECT)
     dover = models.ForeignKey('users.Dover', verbose_name=_(u"Доверенность"), null=True, blank=True,
                               on_delete=models.PROTECT)
+    annulated = models.BooleanField(_(u'Аннулировано'), editable=False, default=False)
     dt = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -83,6 +84,18 @@ class Order(models.Model):
                 print 'e', e
                 self.loru_number = 1
         return super(Order, self).save(*args, **kwargs)
+
+    def annulate(self):
+        self.annulated = True
+        b = self.get_burial()
+        if b and b.status in [Burial.STATUS_READY, Burial.STATUS_APPROVED]:
+            b.status = Burial.STATUS_BACKED
+            b.save()
+        self.save()
+
+    def recover(self):
+        self.annulated = False
+        self.save()
 
     @property
     def customer(self):

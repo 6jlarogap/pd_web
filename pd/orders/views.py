@@ -1,11 +1,10 @@
 # coding=utf-8
 import datetime
-from burials.forms import AddOrgForm, AddAgentForm, AddDoverForm
 
 from django.contrib import messages
 from django.core.urlresolvers import reverse
 from django.db.models.aggregates import Count, Sum
-from django.db.models.expressions import F
+from django.db.models.query_utils import Q
 from django.shortcuts import redirect, render
 from django.template.context import RequestContext
 from django.views.generic.base import View
@@ -15,7 +14,8 @@ from django.views.generic.list import ListView
 from django.utils.translation import ugettext_lazy as _
 
 from logs.models import write_log
-from orders.forms import ProductForm, OrderForm, OrderItemFormset, CoffinForm, CatafalqueForm
+from burials.forms import AddOrgForm, AddAgentForm, AddDoverForm
+from orders.forms import ProductForm, OrderForm, OrderItemFormset, CoffinForm, CatafalqueForm, OrderSearchForm
 from orders.models import Product, Order, OrderItem
 from pd.forms import CommentForm
 from reports.models import make_report
@@ -86,9 +86,77 @@ class OrderList(LORURequiredMixin, ListView):
     model = Order
 
     def get_queryset(self):
-        return Order.objects.filter(loru=self.request.user.profile.org).select_related(
+        orders = Order.objects.filter(loru=self.request.user.profile.org).select_related(
             'burial', 'burial__changed_by', 'applicant_organization', 'applicant', 'loru',
         ).annotate(item_count=Count('orderitem'))
+
+        form = self.get_form()
+        if form.data and form.is_valid():
+            if form.cleaned_data['fio']:
+                fio = [f.strip('.') for f in form.cleaned_data['fio'].split(' ')]
+                q = Q()
+                if len(fio) > 2:
+                    q &= Q(burial__deadman__middle_name__icontains=fio[2])
+                if len(fio) > 1:
+                    q &= Q(burial__deadman__first_name__icontains=fio[1])
+                if len(fio) > 0:
+                    q &= Q(burial__deadman__last_name__icontains=fio[0])
+                orders = orders.filter(q)
+            if form.cleaned_data['birth_date_from']:
+                orders = orders.filter(burial__deadman__birth_date__gte=form.cleaned_data['birth_date_from'])
+            if form.cleaned_data['birth_date_to']:
+                orders = orders.filter(burial__deadman__birth_date__lte=form.cleaned_data['birth_date_to'])
+            if form.cleaned_data['death_date_from']:
+                orders = orders.filter(burial__deadman__death_date__gte=form.cleaned_data['death_date_from'])
+            if form.cleaned_data['death_date_to']:
+                orders = orders.filter(burial__deadman__death_date__lte=form.cleaned_data['death_date_to'])
+            if form.cleaned_data['burial_date_from']:
+                orders = orders.filter(burial__date_fact__gte=form.cleaned_data['burial_date_from'])
+            if form.cleaned_data['burial_date_to']:
+                orders = orders.filter(burial__date_fact__lte=form.cleaned_data['burial_date_to'])
+            if form.cleaned_data['account_number_from']:
+                orders = orders.filter(burial__account_number__gte=form.cleaned_data['account_number_from'])
+            if form.cleaned_data['account_number_to']:
+                orders = orders.filter(burial__account_number__lte=form.cleaned_data['account_number_to'])
+            if form.cleaned_data['responsible']:
+                orders = orders.filter(burial__place__responsible__last_name__icontains=form.cleaned_data['responsible'])
+            if form.cleaned_data['cemetery']:
+                orders = orders.filter(burial__place__cemetery__name__icontains=form.cleaned_data['cemetery'])
+            if form.cleaned_data['area']:
+                orders = orders.filter(burial__place__area__name__icontains=form.cleaned_data['area'])
+            if form.cleaned_data['row']:
+                orders = orders.filter(burial__place__row=form.cleaned_data['row'])
+            if form.cleaned_data['place']:
+                orders = orders.filter(burial__place__seat=form.cleaned_data['seat'])
+            if form.cleaned_data['no_last_name']:
+                orders = orders.filter(Q(burial__deadman__last_name='') | Q(burial__deadman__last_name__isnull=True))
+            if form.cleaned_data['no_responsible']:
+                orders = orders.filter(burial__place__responsible__isnull=True)
+            if form.cleaned_data['status']:
+                orders = orders.filter(burial__status=form.cleaned_data['status'])
+            if form.cleaned_data['applicant_org']:
+                orders = orders.filter(burial__applicant_organization__name=form.cleaned_data['applicant_org'])
+            if form.cleaned_data['applicant_person']:
+                orders = orders.filter(burial__applicant__last_name=form.cleaned_data['applicant_person'])
+            if form.cleaned_data['annulated']:
+                orders = orders.filter(annulated=True)
+            else:
+                orders = orders.exclude(annulated=True)
+        else:
+            orders = orders.exclude(annulated=True)
+
+        return orders
+
+    def get_form(self):
+        return OrderSearchForm(data=self.request.GET or None)
+
+    def get_context_data(self, **kwargs):
+        data = super(OrderList, self).get_context_data(**kwargs)
+        DISPLAY_OPTIONS = ['page', 'sort']
+        get_for_paginator = u'&'.join([u'%s=%s' %  (k, v) for k,v in self.request.GET.items() if k not in DISPLAY_OPTIONS])
+        sort = self.request.GET.get('sort', '-pk')
+        data.update(form=self.get_form(), GET_PARAMS=get_for_paginator, sort=sort)
+        return data
 
 order_list = OrderList.as_view()
 
@@ -332,3 +400,22 @@ class CommentView(LORURequiredMixin, DetailView):
         return redirect('order_edit', self.get_object().pk)
 
 order_comment = CommentView.as_view()
+
+class AnnulateOrder(LORURequiredMixin, DetailView):
+    def get_queryset(self):
+        return Order.objects.filter(loru=self.request.user.profile.org).distinct()
+
+    def post(self, request, *args, **kwargs):
+        o = self.get_object()
+        if request.GET.get('recover'):
+            o.recover()
+            messages.success(self.request, _(u'Заказ восстановлен'))
+            write_log(request, o, _(u'Заказ восстановлен'))
+        else:
+            o.annulate()
+            messages.success(self.request, _(u'Заказ аннулирован'))
+            write_log(request, o, _(u'Заказ аннулирован'))
+        return redirect('order_edit', o.pk)
+
+
+order_annulate = AnnulateOrder.as_view()

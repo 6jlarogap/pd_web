@@ -353,7 +353,7 @@ class Burial(models.Model):
         return self.applicant_organization and self.applicant_organization.name or ''
 
     def approve(self, user):
-        if not self.account_number:
+        if not self.account_number and not self.is_archive():
             ugh = self.ugh or user.profile.org
             algo = user.profile.numbers_algo
             cemetery = self.cemetery
