@@ -108,7 +108,7 @@ class ProfileTest(TestCase):
         profile.save()
 
         r = self.client.post('/profile/', {
-            'org_type': Org.PROFILE_UGH, 'org_name': 'UGH', 'org_inn': '222', 'places_type': 'manual',
+            'org_type': Org.PROFILE_UGH, 'org_name': 'UGH', 'org_inn': '222', 'places_type': 'manual', 'numbers_algo': '',
             'bankaccount_set-TOTAL_FORMS': '1', 'bankaccount_set-INITIAL_FORMS': '0', 'bankaccount_set-MAX_NUM_FORMS': '',
         })
         self.assertEqual(r.status_code, 302)

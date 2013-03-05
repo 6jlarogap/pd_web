@@ -21,7 +21,8 @@ class Profile(models.Model):
 
     is_agent = models.BooleanField(_(u"Агент"), default=False, blank=True)
 
-    numbers_algo = models.CharField(_(u"Заполнение номера захоронения"), max_length=255, choices=NUM_TYPES, default=NUM_EMPTY)
+    numbers_algo = models.CharField(_(u"Заполнение номера захоронения"), max_length=255, choices=NUM_TYPES,
+                                    default=NUM_EMPTY, blank=True)
 
     cemetery = models.ForeignKey('burials.Cemetery', verbose_name=_(u"Кладбище"), blank=True, null=True)
     area = models.ForeignKey('burials.Area', verbose_name=_(u"Участок"), blank=True, null=True)
