@@ -7,11 +7,21 @@ from pd.utils import DigitsValidator, LengthValidator, NotEmptyValidator
 
 
 class Profile(models.Model):
+    NUM_EMPTY = ''
+    NUM_YEAR_UGH = 'area'
+    NUM_YEAR_CEMETERY = 'row'
+    NUM_TYPES = (
+        (NUM_EMPTY, _(u'Оставить пустым')),
+        (NUM_YEAR_UGH, _(u'Год + порядковый (в пределах УГХ)')),
+        (NUM_YEAR_CEMETERY, _(u'Год + порядковый (в пределах кладбища)')),
+    )
 
     user = models.OneToOneField('auth.User', null=True)
     org = models.ForeignKey('users.Org', null=True)
 
     is_agent = models.BooleanField(_(u"Агент"), default=False, blank=True)
+
+    numbers_algo = models.CharField(_(u"Заполнение номера захоронения"), max_length=255, choices=NUM_TYPES, default=NUM_EMPTY)
 
     cemetery = models.ForeignKey('burials.Cemetery', verbose_name=_(u"Кладбище"), blank=True, null=True)
     area = models.ForeignKey('burials.Area', verbose_name=_(u"Участок"), blank=True, null=True)

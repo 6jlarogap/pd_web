@@ -5,6 +5,7 @@
 {% block content %}
     <h1>{{ b.get_source_type_display }} {% trans "захоронение" %} {{ b.pk }}</h1>
     <dl>
+        {% if b.account_number %}<dt>{% trans "Учетный номер" %}:</dt><dd>{{ b.account_number }}</dd>{% endif %}
         <dt>{% trans "Статус" %}:</dt><dd>{{ b.status_str }}</dd>
         {% if b.order and user.profile.is_loru %}
             <dt>{% trans "Заказ" %}:</dt>

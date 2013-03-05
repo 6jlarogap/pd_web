@@ -141,7 +141,7 @@ class Place(models.Model):
         other_places = Place.objects.filter(**params)
         try:
             self.place = int(other_places.order_by('-place')[0].place) + 1
-        except (ValueError, IndexError):
+        except (ValueError, IndexError, TypeError):
             self.place = 1
 
     def set_next_number_for_year(self, **params):
@@ -149,8 +149,11 @@ class Place(models.Model):
         other_places = Place.objects.filter(**params)
         other_places = other_places.filter(place__startswith=year)
         try:
-            self.place = int(other_places.order_by('-place')[0].place) + 1
-        except (ValueError, IndexError):
+            last_num = other_places.order_by('-place')[0].place
+            if not last_num.startswith(year):
+                last_num = None
+            self.place = int(last_num) + 1
+        except (ValueError, IndexError, TypeError):
             self.place = year + '0001'
 
     def remove_responsible(self):
@@ -348,6 +351,32 @@ class Burial(models.Model):
 
     def loru_name(self):
         return self.applicant_organization and self.applicant_organization.name or ''
+
+    def approve(self, user):
+        if not self.account_number:
+            ugh = self.ugh or user.profile.org
+            algo = user.profile.numbers_algo
+            cemetery = self.cemetery
+            year = str(datetime.datetime.now().year)
+            if algo in [Profile.NUM_YEAR_UGH, Profile.NUM_YEAR_CEMETERY]:
+                others = Burial.objects.none()
+                if algo == Profile.NUM_YEAR_UGH and ugh:
+                    others = Burial.objects.filter(ugh=ugh)
+                elif algo == Profile.NUM_YEAR_CEMETERY and cemetery:
+                    others = Burial.objects.filter(cemetery=cemetery)
+
+                if self.pk:
+                    others = others.exclude(pk=self.pk)
+
+                others = others.exclude(account_number__isnull=True).order_by('-account_number')
+                try:
+                    num = others[0].account_number
+                    if not num.startswith(year):
+                        num = None
+                    self.account_number = int(num) + 1
+                except (IndexError, ValueError, TypeError):
+                    self.account_number = year + '0001'
+            self.save()
 
     def get_place(self):
         if self.place:

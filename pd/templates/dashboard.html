@@ -7,6 +7,7 @@
     <table class="table table-bordered">
         <tr>
             <th>{% trans "Номер" %}</th>
+            <th>{% trans "Номер в книге" %}</th>
             {% if user.profile.is_ugh %}<th>{% trans "Заявитель" %}</th>{% endif %}
             <th>{% trans "Кладбище" %}</th>
             <th>{% trans "Место" %}</th>
@@ -22,6 +23,7 @@
                 {% if user.profile.is_loru and b.is_ready %}burial_blue{% endif %}
             ">
                 <td>{{ b.pk }}</td>
+                <td>{{ b.account_number|default:"" }}</td>
                 {% if user.profile.is_ugh %}<th>{{ b.loru_name }}</th>{% endif %}
                 <td>{{ b.cemetery|default:"" }} / {{ b.ugh_name|default:"" }}</td>
                 <td>{{ b.place_number|default:"" }}</td>

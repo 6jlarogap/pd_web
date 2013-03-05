@@ -9,6 +9,7 @@ from django import forms
 from django.contrib import messages
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
+from django.db import models
 from django.db.models.aggregates import Max
 from django.db.models.deletion import ProtectedError
 from django.forms.models import inlineformset_factory
@@ -284,9 +285,8 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, forms.Mo
         elif self.instance.is_archive():
             del self.fields['plan_date']
             del self.fields['plan_time']
-        else:
-            if not self.instance.is_finished():
-                del self.fields['fact_date']
+        elif not self.instance.is_finished():
+            del self.fields['fact_date']
             del self.fields['account_number']
 
         if self.instance and self.instance.burial_type == Burial.BURIAL_URN:
@@ -526,6 +526,8 @@ class BurialCommitForm(BurialForm):
         for f in form.fields:
             k = form.prefix and '%s-%s' % (form.prefix, f) or f
             v = form.initial.get(f) or None
+            if isinstance(v, models.Model):
+                v = v.pk
             data.update({k:v})
         return data
 

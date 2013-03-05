@@ -102,6 +102,7 @@ class BurialView(ArchiveMixin, DetailView):
         if request.POST.get('approve') and request.user.profile.is_ugh() and b.can_approve():
             if b.is_full():
                 b.status = Burial.STATUS_APPROVED
+                b.approve(self.request.user)
                 write_log(request, b, _(u'Захоронение согласовано'))
                 messages.success(request, _(u"<a href='%s'>Захоронение %s</a> согласовано") % (
                     reverse('view_burial', args=[b.pk]), b.pk,
@@ -235,6 +236,8 @@ class BurialsListView(ListView):
         SORT_FIELDS = {
             'pk': 'pk',
             '-pk': '-pk',
+            'account_number': 'account_number',
+            '-account_number': '-account_number',
             'cemetery': 'cemetery__name',
             '-cemetery': '-cemetery__name',
             'place': 'place_number',
@@ -361,6 +364,7 @@ class CreateBurial(CreateView):
 
             if action == 'approve' and self.request.user.profile.is_ugh() and b.can_approve() and b.is_ugh_only():
                 b.status = Burial.STATUS_APPROVED
+                b.approve(self.request.user)
                 write_log(self.request, b, _(u'Захоронение согласовано'))
                 messages.success(self.request, _(u"<a href='%s'>Захоронение %s</a> согласовано") % (
                     reverse('view_burial', args=[b.pk]), b.pk,

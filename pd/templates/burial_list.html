@@ -25,6 +25,13 @@
                     <a href="?{{ GET_PARAMS }}&sort=-pk">{% trans "Номер" %}</a>
                 {% endif %}
             </th>
+            <th>
+                {% if sort == 'account_number' %}
+                    <a href="?{{ GET_PARAMS }}&sort=-account_number">{% trans "Номер в книге" %}</a>
+                {% else %}
+                    <a href="?{{ GET_PARAMS }}&sort=account_number">{% trans "Номер в книге" %}</a>
+                {% endif %}
+            </th>
             {% if user.profile.is_ugh %}
                 <th>
                     {% if sort == 'type' %}
@@ -81,6 +88,7 @@
         {% for b in burials %}
             <tr>
                 <td>{{ b.pk }}</td>
+                <td>{{ b.account_number|default:"" }}</td>
                 {% if user.profile.is_ugh %}
                     <td>{{ b.get_source_type_display }}</td>
                     <td>
