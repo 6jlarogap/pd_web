@@ -357,6 +357,7 @@ def do_import_orders(csv_fileobj):
                 real_i += 1
 
                 b.order = o
+                b.source_type = Burial.SOURCE_FULL
                 if b.applicant_organization != loru:
                     b.applicant_organization = loru
                 b.save()
