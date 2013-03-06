@@ -183,6 +183,7 @@ def do_import_burials(csv_fileobj, user):
         u'Захоронение в существующ': Burial.BURIAL_OVER,
         u'Урна': Burial.BURIAL_URN,
     }
+    real_i = 0
     for i, row in enumerate(csvreader):
         if i > 0:
             if i % 500:
@@ -275,6 +276,8 @@ def do_import_burials(csv_fileobj, user):
                 )
                 b = Burial.objects.create(**params)
 
+                real_i += 1
+
                 if row[5]:
                     ExhumationRequest.objects.create(
                         burial=b,
@@ -289,6 +292,7 @@ def do_import_burials(csv_fileobj, user):
 
                 if row[64]:
                     write_log(request, b, _(u'Комментарий: %s') % row[64])
+    return real_i
 
 def do_import_services(csv_fileobj):
     csvreader = UnicodeReader(csv_fileobj)
@@ -317,6 +321,7 @@ def do_import_orders(csv_fileobj):
         loru = Org.objects.get(inn='4028046796')
     except Org.DoesNotExist:
         loru = None
+    real_i = 0
     for i, row in enumerate(csvreader):
         if i > 0:
             row = map(lambda c: '' if c == 'None' else c, row)
@@ -344,6 +349,9 @@ def do_import_orders(csv_fileobj):
                     dover=b.dover,
                     dt=datetime.datetime.now(),
                 )
+
+                real_i += 1
+
                 b.order = o
                 if b.applicant_organization != loru:
                     b.applicant_organization = loru
@@ -391,6 +399,7 @@ def do_import_orders(csv_fileobj):
                         end_time=None,
                         cemetery_time=None,
                     )
+    return real_i
 
 def do_import_banks(csv_fileobj):
     csvreader = UnicodeReader(csv_fileobj)
