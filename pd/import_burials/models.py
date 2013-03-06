@@ -184,6 +184,7 @@ def do_import_burials(csv_fileobj, user):
         u'Урна': Burial.BURIAL_URN,
     }
     real_i = 0
+    dupes_i = 0
     for i, row in enumerate(csvreader):
         if i > 0:
             if i % 500:
@@ -201,6 +202,7 @@ def do_import_burials(csv_fileobj, user):
                 )
             try:
                 b = Burial.objects.get(cemetery=cemetery, account_number=row[0])
+                dupes_i += 1
             except Burial.DoesNotExist:
                 area, _created = Area.objects.get_or_create(name=row[7] or '', cemetery=cemetery)
 
@@ -292,7 +294,7 @@ def do_import_burials(csv_fileobj, user):
 
                 if row[64]:
                     write_log(request, b, _(u'Комментарий: %s') % row[64])
-    return real_i
+    return real_i, dupes_i
 
 def do_import_services(csv_fileobj):
     csvreader = UnicodeReader(csv_fileobj)
@@ -322,6 +324,7 @@ def do_import_orders(csv_fileobj):
     except Org.DoesNotExist:
         loru = None
     real_i = 0
+    dupes_i = 0
     for i, row in enumerate(csvreader):
         if i > 0:
             row = map(lambda c: '' if c == 'None' else c, row)
@@ -332,6 +335,7 @@ def do_import_orders(csv_fileobj):
             try:
                 o = Order.objects.get(burial__account_number=row[0], burial__deadman__last_name=row[1],
                                       burial__deadman__first_name=row[2], burial__deadman__middle_name=row[3])
+                dupes_i += 1
             except Order.DoesNotExist:
                 try:
                     b = Burial.objects.filter(account_number=row[0], deadman__last_name=row[1], deadman__first_name=row[2],
@@ -399,7 +403,7 @@ def do_import_orders(csv_fileobj):
                         end_time=None,
                         cemetery_time=None,
                     )
-    return real_i
+    return real_i, dupes_i
 
 def do_import_banks(csv_fileobj):
     csvreader = UnicodeReader(csv_fileobj)

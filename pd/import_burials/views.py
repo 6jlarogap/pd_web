@@ -30,8 +30,8 @@ import_orgs = transaction.commit_on_success(ImportOrgsView.as_view())
 
 class ImportBurialsView(View):
     def post(self, request, *args, **kwargs):
-        real_i = do_import_burials(request.FILES['burials-csv'], user=request.user)
-        messages.success(request, _(u"Импорт успешен, %s записей") % real_i)
+        real_i, dupes_i = do_import_burials(request.FILES['burials-csv'], user=request.user)
+        messages.success(request, _(u"Импорт успешен, %s записей, игнорировано %s записей") % (real_i, dupes_i))
         return redirect('import_forms')
 
 import_burials = transaction.commit_on_success(ImportBurialsView.as_view())
@@ -68,8 +68,8 @@ import_services = transaction.commit_on_success(ImportServicesView.as_view())
 
 class ImportOrdersView(View):
     def post(self, request, *args, **kwargs):
-        real_i = do_import_orders(request.FILES['orders-csv'])
-        messages.success(request, _(u"Импорт успешен, %s записей") % real_i)
+        real_i, dupes_i = do_import_orders(request.FILES['orders-csv'])
+        messages.success(request, _(u"Импорт успешен, %s записей, игнорировано %s записей") % (real_i, dupes_i))
         return redirect('import_kaluga')
 
 import_orders = transaction.commit_on_success(ImportOrdersView.as_view())
