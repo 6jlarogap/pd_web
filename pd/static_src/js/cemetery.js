@@ -542,6 +542,10 @@ $(function() {
     };
     $('input[id$=fias_address]').attr('autocomplete', 'off').css('width', '600px').each(function() {
         var autocomplete = new google.maps.places.Autocomplete(this, ac_options );
+        var $input = $(this);
+        google.maps.event.addListener(autocomplete, 'place_changed', function () {
+            $input.change();
+        });
     });
     $('.modal-body input[id$=fias_address]').css('width', '300px');
 
