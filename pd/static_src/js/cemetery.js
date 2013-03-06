@@ -285,6 +285,10 @@ $(function() {
         }
     });
 
+    $('.burial-form,.order_form').find(':input').live('blur', function(e) {
+        $(this).change();
+    });
+
     $('.btn-commit-burial').click(function() {
         if ($(this).attr('rel')) {
             $(this).closest('form').attr('action', $(this).attr('rel'));
