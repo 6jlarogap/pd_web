@@ -13,12 +13,14 @@
         {% if order.get_burial.is_edit %}
             <li {% if tab == 'burial' %}class="active"{% endif %}>
                 <a href="{% url edit_burial order.get_burial.pk %}">
-                    {% trans "Захоронение" %} ({{ order.get_burial }})
+                    {% trans "Захоронение" %}: {{ order.get_burial.get_status_display }}
                 </a>
             </li>
         {% else %}
-            <li class="disabled">
-                <a href="javascript://">{% trans "Захоронение" %} ({{ order.get_burial }}) &mdash; {% trans "недоступно" %}</a>
+            <li>
+                <a href="{% url view_burial order.get_burial.pk %}">
+                    {% trans "Захоронение" %}: {{ order.get_burial.get_status_display }}
+                </a>
             </li>
         {% endif %}
     {% else %}
