@@ -79,10 +79,4 @@
             </tr>
         {% endfor %}
     </table>
-
-    {% if user.profile.is_loru %}
-        <p>
-            <a class="btn" href="{% url create_burial %}">{% trans "создать захоронение" %}</a>
-        </p>
-    {% endif %}
 {% endblock %}
