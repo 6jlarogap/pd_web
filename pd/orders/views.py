@@ -92,6 +92,9 @@ class OrderList(LORURequiredMixin, ListView):
             return 25
 
     def get_queryset(self):
+        if not self.request.GET:
+            return Order.objects.none()
+
         orders = Order.objects.filter(loru=self.request.user.profile.org).select_related(
             'burial', 'burial__changed_by', 'applicant_organization', 'applicant', 'loru',
         ).annotate(item_count=Count('orderitem'))

@@ -200,6 +200,9 @@ class BurialsListView(ListView):
     context_object_name = 'burials'
 
     def get_queryset(self):
+        if not self.request.GET:
+            return Burial.objects.none()
+
         if self.request.user.is_authenticated():
             burials = Burial.objects.filter(
                 Q(applicant_organization=self.request.user.profile.org) | Q(ugh=self.request.user.profile.org),
