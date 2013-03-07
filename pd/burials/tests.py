@@ -103,7 +103,7 @@ class RequestsTest(TestCase):
         self.assertEqual(r.status_code, 302)
         br = Burial.objects.get()
 
-        r = self.loru_client.get('/burials/')
+        r = self.loru_client.get('/burials/?test=1')
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r.context['burials'].count(), 1)
 
@@ -128,7 +128,7 @@ class RequestsTest(TestCase):
         r = self.loru_client.get('/')
         self.assertEqual(r.context['burials'].count(), 1)
 
-        r = self.loru_client.get('/burials/')
+        r = self.loru_client.get('/burials/?test=1')
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r.context['burials'].count(), 1)
 
@@ -143,7 +143,7 @@ class RequestsTest(TestCase):
         r = self.loru_client.get('/')
         self.assertEqual(r.context['burials'].count(), 0)
 
-        r = self.loru_client.get('/burials/')
+        r = self.loru_client.get('/burials/?test=1')
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r.context['burials'].count(), 1)
 
@@ -270,7 +270,7 @@ class BurialsTest(TestCase):
         self.doc_type = IDDocumentType.objects.create(name='Passport')
 
     def test_search(self):
-        r = self.ugh_client.get('/burials/')
+        r = self.ugh_client.get('/burials/?test=1')
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r.context['burials'].count(), 0)
 
@@ -289,7 +289,7 @@ class BurialsTest(TestCase):
             )
         )
 
-        r = self.ugh_client.get('/burials/')
+        r = self.ugh_client.get('/burials/?test=1')
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r.context['burials'].count(), 1)
 
@@ -352,7 +352,7 @@ class BurialsTest(TestCase):
         for i in range(30):
             Burial.objects.create(**params)
 
-        r = self.ugh_client.get('/burials/')
+        r = self.ugh_client.get('/burials/?test=1')
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r.context['burials'].count(), 25)
 
