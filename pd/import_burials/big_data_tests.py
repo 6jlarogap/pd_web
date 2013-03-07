@@ -54,6 +54,9 @@ class BurialsTest(TestCase):
         do_import_burials(ContentFile(self.csv_data.encode('utf-8')), user=self.ugh_user)
         self.assertEqual(Burial.objects.all().count(), 13)
 
+        for b in Burial.objects.all():
+            self.assertEqual(b.responsible, b.place.responsible)
+
     def test_view(self):
         self.assertEqual(Burial.objects.all().count(), 0)
         r = self.ugh_client.post('/import/burials/', data={'burials-csv': open(self.csv_path)})

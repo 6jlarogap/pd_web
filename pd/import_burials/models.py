@@ -213,6 +213,12 @@ def do_import_burials(csv_fileobj, user):
                     place=row[9],
                     places_count=row[10],
                 )
+
+                responsible = import_alive_person(data=row[12:26])
+                if responsible:
+                    place.responsible = responsible
+                    place.save()
+
                 agent = None
                 app_org = None
                 dover = None
@@ -262,7 +268,7 @@ def do_import_burials(csv_fileobj, user):
                     area=area,
                     row=row[9],
                     place_number=row[10],
-                    responsible=import_alive_person(data=row[12:26]),
+                    responsible=responsible,
                     grave_number=row[26] or 1,
                     deadman=import_dead_person(row[27:41]),
                     applicant=import_alive_person(row[41:55]),
