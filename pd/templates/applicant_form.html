@@ -27,11 +27,9 @@
                 {% trans "добавить юрлицо" %}
             </a>
         </p>
-        <br/>
 
         {{ form.agent_director.errors }}
-        <p>{{ form.agent_director.label_tag }} {{ form.agent_director }}<span class="helptext">{{ form.agent_director.help_text }}</span></p>
-        <br/>
+        <p class="inline">{{ form.agent_director.label_tag }} {{ form.agent_director }}<span class="helptext">{{ form.agent_director.help_text }}</span></p>
 
         {{ form.agent.errors }}
         <p class="inline">{{ form.agent.label_tag }} {{ form.agent }}<span class="helptext">{{ form.agent.help_text }}</span></p>
@@ -41,7 +39,6 @@
                 {% trans "добавить агента" %}
             </a>
         </p>
-        <br/>
 
         {{ form.dover.errors }}
         <p class="inline">{{ form.dover.label_tag }} {{ form.dover }}<span class="helptext">{{ form.dover.help_text }}</span></p>
