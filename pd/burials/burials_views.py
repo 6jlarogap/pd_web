@@ -16,7 +16,7 @@ from django.views.generic.detail import DetailView
 from django.views.generic.edit import CreateView, DeleteView
 from django.views.generic.list import ListView
 
-from burials.forms import BurialSearchForm, BurialForm, BurialCommitForm, BurialCloseForm
+from burials.forms import BurialSearchForm, BurialForm, BurialCommitForm, BurialCloseForm, AddDocTypeForm
 from burials.forms import AddAgentForm, AddDoverForm, AddOrgForm, ExhumationForm
 from burials.models import Reason, Burial, Cemetery, Place, ExhumationRequest
 from logs.models import write_log
@@ -330,6 +330,7 @@ class CreateBurial(CreateView):
             'agent_dover_form': AddDoverForm(prefix='agent_dover'),
             'dover_form': AddDoverForm(prefix='dover'),
             'loru_form': AddOrgForm(prefix='loru'),
+            'doc_type_form': AddDocTypeForm(prefix='doctype'),
             'order': self.get_order(),
         })
         return data

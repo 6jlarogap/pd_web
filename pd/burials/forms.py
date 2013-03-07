@@ -4,6 +4,7 @@ import datetime
 import json
 import random
 import string
+from xml.dom.minidom import DocumentType
 
 from django import forms
 from django.contrib import messages
@@ -22,7 +23,7 @@ from geo.forms import LocationForm
 from orders.models import Order
 from pd.forms import PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin
 from persons.forms import DeadPersonForm, DeathCertificateForm, AlivePersonForm, PersonIDForm
-from persons.models import DeathCertificate, PersonID
+from persons.models import DeathCertificate, PersonID, IDDocumentType
 from users.forms import OrgForm
 from users.models import Org, Profile, Dover
 
@@ -695,6 +696,10 @@ class AddOrgForm(OrgForm):
     class Meta:
         model = Org
         exclude = ['type', 'off_address', ]
+
+class AddDocTypeForm(forms.ModelForm):
+    class Meta:
+        model = IDDocumentType
 
 class ExhumationForm(ChildrenJSONMixin, forms.ModelForm):
     opf = forms.ChoiceField(label=_(u'ОПФ'), choices=OPF_CHOICES, widget=forms.RadioSelect, initial='person')

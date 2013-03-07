@@ -428,6 +428,20 @@ $(function() {
         })
     });
 
+    $('#add_doctype').find('.btn-primary').click(function() {
+        var data = $('#add_doctype form').serialize();
+        $.post('/burials/add_doctype/', data, function(data){
+            if (data.pk) {
+                $('#id_applicant-pid-id_type').append('<option value="'+data.pk+'">'+data.label+'</option>');
+                $('#id_applicant-pid-id_type').val(data.pk);
+                $('#add_doctype').modal('hide');
+                $('#add_doctype form :input').val('');
+            } else {
+                alert(data);
+            }
+        })
+    });
+
     $('#add_dover').find('.btn-primary').click(function() {
         var agent_pk = $('#id_agent').val();
         if (!agent_pk) {

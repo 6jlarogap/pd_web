@@ -563,6 +563,17 @@ class TestAJAX(TestCase):
         self.assertEqual(json.loads(r.content)['pk'], 1)
         self.assertEqual(Dover.objects.all().count(), 1)
 
+    def test_add_doctype(self):
+        data = {
+            'doctype-name': 'Passport',
+        }
+        self.assertEqual(IDDocumentType.objects.all().count(), 0)
+
+        r = self.ugh_client.post('/burials/add_doctype/', data)
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(json.loads(r.content)['pk'], 1)
+        self.assertEqual(IDDocumentType.objects.all().count(), 1)
+
     def test_add_loru(self):
         data = {
             'loru-name': '123',

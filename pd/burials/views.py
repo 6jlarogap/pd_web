@@ -114,7 +114,7 @@ class AddDoverView(LoginRequiredMixin, View):
             errors = '\n'.join([u'%s: %s' % (k,v[0]) for k,v in f.errors.items()])
             return HttpResponse(_(u'Данные невалидны: %s') % errors, mimetype='text/plain')
 
-add_dover = csrf_exempt(AddDoverView.as_view())
+add_dover = AddDoverView.as_view()
 
 class AddAgentView(LoginRequiredMixin, View):
     def post(self, request, *args, **kwargs):
@@ -140,7 +140,7 @@ class AddAgentView(LoginRequiredMixin, View):
             errors = '\n'.join([u'%s: %s' % (k,v[0]) for k,v in fa.errors.items()] + [u'%s: %s' % kv for kv in fd.errors.items()])
             return HttpResponse(_(u'Данные невалидны: %s') % errors, mimetype='text/plain')
 
-add_agent = csrf_exempt(AddAgentView.as_view())
+add_agent = AddAgentView.as_view()
 
 class AddOrgView(LoginRequiredMixin, View):
     def post(self, request, *args, **kwargs):
@@ -156,7 +156,19 @@ class AddOrgView(LoginRequiredMixin, View):
             errors = '\n'.join([u'%s: %s' % (k,v[0]) for k,v in f.errors.items()])
             return HttpResponse(_(u'Данные невалидны: %s') % errors, mimetype='text/plain')
 
-add_org = csrf_exempt(AddOrgView.as_view())
+add_org = AddOrgView.as_view()
+
+class AddDocTypeView(LoginRequiredMixin, View):
+    def post(self, request, *args, **kwargs):
+        f = AddDocTypeForm(data=request.POST, prefix='doctype')
+        if f.is_valid():
+            dt = f.save()
+            return HttpResponse(json.dumps({'pk': dt.pk, 'label': u'%s' % dt}), mimetype='application/json')
+        else:
+            errors = '\n'.join([u'%s: %s' % (k,v[0]) for k,v in f.errors.items()])
+            return HttpResponse(_(u'Данные невалидны: %s') % errors, mimetype='text/plain')
+
+add_doctype = AddDocTypeView.as_view()
 
 class GetPlaceView(View):
     def dispatch(self, request, *args, **kwargs):

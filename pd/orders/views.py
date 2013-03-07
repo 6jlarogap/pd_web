@@ -14,7 +14,7 @@ from django.views.generic.list import ListView
 from django.utils.translation import ugettext_lazy as _
 
 from logs.models import write_log
-from burials.forms import AddOrgForm, AddAgentForm, AddDoverForm
+from burials.forms import AddOrgForm, AddAgentForm, AddDoverForm, AddDocTypeForm
 from orders.forms import ProductForm, OrderForm, OrderItemFormset, CoffinForm, CatafalqueForm, OrderSearchForm
 from orders.models import Product, Order, OrderItem
 from pd.forms import CommentForm
@@ -186,6 +186,7 @@ class OrderCreate(LORURequiredMixin, CreateView):
             'agent_dover_form': AddDoverForm(prefix='agent_dover'),
             'dover_form': AddDoverForm(prefix='dover'),
             'loru_form': AddOrgForm(prefix='loru'),
+            'doc_type_form': AddDocTypeForm(prefix='doctype'),
         })
         return data
 

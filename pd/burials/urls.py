@@ -9,6 +9,7 @@ urlpatterns = patterns('burials.views',
     url(r'^burials/add_agent/$', 'add_agent', name='add_agent'),
     url(r'^burials/add_dover/$', 'add_dover', name='add_dover'),
     url(r'^burials/add_org/$', 'add_org', name='add_org'),
+    url(r'^burials/add_doctype/$', 'add_doctype', name='add_doctype'),
 
     url(r'^burials/archive/$', 'archive', name='archive'),
     url(r'^burials/create/$', 'create_burial', name='create_burial'),
