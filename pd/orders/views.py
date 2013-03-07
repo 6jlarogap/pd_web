@@ -125,15 +125,15 @@ class OrderList(LORURequiredMixin, ListView):
             if form.cleaned_data['account_number_to']:
                 orders = orders.filter(burial__account_number__lte=form.cleaned_data['account_number_to'])
             if form.cleaned_data['responsible']:
-                orders = orders.filter(burial__place__responsible__last_name__icontains=form.cleaned_data['responsible'])
+                orders = orders.filter(burial__responsible__last_name__icontains=form.cleaned_data['responsible'])
             if form.cleaned_data['cemetery']:
-                orders = orders.filter(burial__place__cemetery__name__icontains=form.cleaned_data['cemetery'])
+                orders = orders.filter(burial__cemetery__name__icontains=form.cleaned_data['cemetery'])
             if form.cleaned_data['area']:
-                orders = orders.filter(burial__place__area__name__icontains=form.cleaned_data['area'])
+                orders = orders.filter(burial__area__name__icontains=form.cleaned_data['area'])
             if form.cleaned_data['row']:
-                orders = orders.filter(burial__place__row=form.cleaned_data['row'])
+                orders = orders.filter(burial__row=form.cleaned_data['row'])
             if form.cleaned_data['place']:
-                orders = orders.filter(burial__place__seat=form.cleaned_data['seat'])
+                orders = orders.filter(burial__place=form.cleaned_data['place'])
             if form.cleaned_data['no_last_name']:
                 orders = orders.filter(Q(burial__deadman__last_name='') | Q(burial__deadman__last_name__isnull=True))
             if form.cleaned_data['no_responsible']:
