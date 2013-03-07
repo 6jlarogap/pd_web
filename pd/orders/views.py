@@ -194,8 +194,8 @@ class OrderCreate(LORURequiredMixin, CreateView):
         for p in Product.objects.filter(loru=self.request.user.profile.org, default=True):
             OrderItem.objects.create(order=self.object, product=p)
 
-        write_log(self.request, self.object, _(u'Заказ создан'))
-        msg = _(u"<a href='%s'>Заказ %s</a> создан") % (
+        write_log(self.request, self.object, _(u'Заказ сохранен'))
+        msg = _(u"<a href='%s'>Заказ %s</a> сохранен") % (
             reverse('order_edit', args=[self.object.pk]),
             self.object.pk,
         )
@@ -238,8 +238,8 @@ class OrderEdit(LORURequiredMixin, UpdateView):
     def form_valid(self, form):
         self.object = form.save()
 
-        write_log(self.request, self.object, _(u'Заказ изменен'))
-        msg = _(u"<a href='%s'>Заказ %s</a> изменен") % (
+        write_log(self.request, self.object, _(u'Заказ сохранен'))
+        msg = _(u"<a href='%s'>Заказ %s</a> сохранен") % (
             reverse('order_edit', args=[self.object.pk]),
             self.object.pk,
         )
@@ -274,8 +274,8 @@ class OrderEditProducts(LORURequiredMixin, View):
 
             self.object = self.get_object()
 
-            write_log(self.request, self.object, _(u'Заказ изменен'))
-            msg = _(u"<a href='%s'>Заказ %s</a> изменен") % (
+            write_log(self.request, self.object, _(u'Заказ сохранен'))
+            msg = _(u"<a href='%s'>Заказ %s</a> сохранен") % (
                 reverse('order_edit', args=[self.object.pk]),
                 self.object.pk,
             )
@@ -346,8 +346,8 @@ class OrderEditServices(OrderEditProducts):
                 coffin.order = self.object
                 coffin.save()
 
-            write_log(self.request, self.object, _(u'Заказ изменен'))
-            msg = _(u"<a href='%s'>Заказ %s</a> изменен") % (
+            write_log(self.request, self.object, _(u'Заказ сохранен'))
+            msg = _(u"<a href='%s'>Заказ %s</a> сохранен") % (
                 reverse('order_edit', args=[self.object.pk]),
                 self.object.pk,
             )
