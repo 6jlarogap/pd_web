@@ -49,6 +49,10 @@ class AlivePersonForm(ValidDataMixin, forms.ModelForm):
     class Meta:
         model = AlivePerson
 
+    def __init__(self, *args, **kwargs):
+        super(AlivePersonForm, self).__init__(*args, **kwargs)
+        self.fields['phones'].widget = forms.TextInput()
+
     def is_valid_data(self):
         return self.is_valid() and self.cleaned_data.get('last_name') # last name should be present
 

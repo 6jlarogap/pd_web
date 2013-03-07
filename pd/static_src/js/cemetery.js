@@ -285,6 +285,8 @@ $(function() {
         }
     });
 
+    $('input[name$=last_name], input[name$=first_name], input[name$=middle_name]').parents('p').addClass('inline');
+
     $('.burial-form,.order_form').find(':input').live('blur', function(e) {
         $(this).change();
     });
