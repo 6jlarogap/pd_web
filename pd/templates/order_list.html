@@ -4,19 +4,23 @@
 
 {% block content %}
     <h1>{% trans "Заказы" %}</h1>
-    <div class="row-fluid">
+    <div class="row-fluid no-print">
         <div class="span12">
             <div class="row-fluid">
                 <form id="mainform" class="form-horizontal" method="get" action="">
                     {{ form.as_p }}
 
-                    <p class="buttons"><input type="submit" value="Искать" class="btn btn-primary" /></p>
+                    <p class="buttons">
+                        <input type="submit" value="искать" class="btn btn-primary" />
+                        <input type="submit" value="распечатать все" class="btn" name="print" />
+                    </p>
+
                 </form>
             </div>
         </div>
     </div>
 
-    <p>{% trans "Найдено:" %} {{ paginator.count }}</p>
+    <p>{% trans "Найдено:" %} {{ paginator.count|default:object_list.count }}</p>
 
     <table class="table table-bordered">
         <tr>
@@ -26,7 +30,7 @@
             <th>{% trans "Захоронение" %}</th>
             <th>{% trans "Позиций" %}</th>
             <th>{% trans "Стоимость" %}</th>
-            <th></th>
+            <th class="no-print"></th>
         </tr>
         {% for c in object_list %}
             <tr>
@@ -42,7 +46,7 @@
                 </td>
                 <td>{{ c.item_count }}</td>
                 <td>{{ c.total }}</td>
-                <td>
+                <td class="no-print">
                     {% if user.profile.org == c.loru %}
                         <a href="{% url order_edit c.pk %}" class="btn">{% trans "править" %}</a>
                     {% endif %}
@@ -55,9 +59,9 @@
 
     {% include "paginator.html" %}
 
-    {% if user.profile.is_loru %}
-        <p>
-            <a class="btn" href="{% url order_create %}">{% trans "создать" %}</a>
-        </p>
+    {% if request.GET.print %}
+        <script type="text/javascript">
+            window.print();
+        </script>
     {% endif %}
 {% endblock %}

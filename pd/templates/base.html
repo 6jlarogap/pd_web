@@ -24,6 +24,7 @@
     <link type="text/css" href="{{ STATIC_URL }}css/jquery-ui-timepicker.css" rel="stylesheet" />
 
     <link href="{{ STATIC_URL }}css/base.css" rel="stylesheet">
+    <link href="{{ STATIC_URL }}css/print.css" rel="stylesheet" media="print">
 
     <!-- Le HTML5 shim, for IE6-8 support of HTML5 elements -->
     <!--[if lt IE 9]>
@@ -64,7 +65,7 @@
     {% block scripts %}{% endblock %}
 </head>
 <body>
-    <div class="navbar navbar-fixed-top">
+    <div class="navbar navbar-fixed-top no-print">
         <div class="navbar-inner">
             <div class="container-fluid">
                 <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
@@ -136,7 +137,7 @@
 
     <div class="container-fluid">
         {% if messages %}
-            <ul class="messages">
+            <ul class="messages no-print">
                 {% for m in messages %}
                     <li class="alert alert-{{ m.tags }}">{{ m|safe }}</li>
                 {% endfor %}

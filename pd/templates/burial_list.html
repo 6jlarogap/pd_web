@@ -4,19 +4,22 @@
 
 {% block content %}
     <h1>{% trans "Захоронения" %}</h1>
-    <div class="row-fluid">
+    <div class="row-fluid no-print">
         <div class="span12">
             <div class="row-fluid">
                 <form id="mainform" class="form-horizontal" method="get" action="">
                     {{ form.as_p }}
 
-                    <p class="buttons"><input type="submit" value="Искать" class="btn btn-primary" /></p>
+                    <p class="buttons">
+                        <input type="submit" value="искать" class="btn btn-primary" />
+                        <input type="submit" value="распечатать все" class="btn" name="print" />
+                    </p>
                 </form>
             </div>
         </div>
     </div>
 
-    <p>{% trans "Найдено:" %} {{ paginator.count }}</p>
+    <p>{% trans "Найдено:" %} {{ paginator.count|default:object_list.count }}</p>
 
     <table class="table table-bordered table-striped">
         <tr>
@@ -85,7 +88,7 @@
                     <a href="?{{ GET_PARAMS }}&sort=status">{% trans "Статус" %}</a>
                 {% endif %}
             </th>
-            <th></th>
+            <th class="no-print"></th>
         </tr>
         {% for b in burials %}
             <tr>
@@ -116,7 +119,7 @@
                     <br/>
                     {{ b.changed_by.profile|default:"" }}
                 </th>
-                <td>
+                <td class="no-print">
                     <a class="btn" href="{% url view_burial b.pk %}">{% trans "просмотр" %}</a>
                     {% if user.profile.org == b.applicant_organization and b.is_full and b.is_edit %}
                         <a class="btn" href="{% url edit_burial b.pk %}">{% trans "правка" %}</a>
@@ -133,4 +136,10 @@
     </table>
 
     {% include "paginator.html" %}
+
+    {% if request.GET.print %}
+        <script type="text/javascript">
+            window.print();
+        </script>
+    {% endif %}
 {% endblock %}

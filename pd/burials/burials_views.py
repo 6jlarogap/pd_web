@@ -300,6 +300,8 @@ class BurialsListView(ListView):
         return burials
 
     def get_paginate_by(self, queryset):
+        if self.request.GET.get('print'):
+            return None
         try:
             return int(self.request.GET.get('per_page'))
         except (TypeError, ValueError):

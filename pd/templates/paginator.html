@@ -1,6 +1,6 @@
 {% load i18n %}
 
-<div class="pagination">
+<div class="pagination no-print">
     <ul>
         {% if page_obj.has_previous %}
             <li><a href="?{{ GET_PARAMS }}&page={{ page_obj.previous_page_number }}">{% trans "предыдущая" %}</a></li>
