@@ -75,6 +75,8 @@ class Order(models.Model):
         return u'%s - %s %s' % (self.loru_number or self.pk, self.loru, self.dt)
 
     def save(self, *args, **kwargs):
+        if not self.cost:
+            self.cost = 0
         if not self.loru_number and self.loru:
             existing = Order.objects.filter(loru=self.loru).exclude(loru_number__isnull=True).order_by('-loru_number')
             if self.pk:
@@ -178,7 +180,7 @@ class OrderItem(models.Model):
     order = models.ForeignKey(Order, editable=False)
     product = models.ForeignKey(Product, verbose_name=_(u"Товар"))
     quantity = models.DecimalField(_(u"Кол-во"), max_digits=20, decimal_places=2, default=1)
-    cost = models.DecimalField(_(u"Цена"), max_digits=20, decimal_places=2, editable=False, default=0)
+    cost = models.DecimalField(_(u"Цена"), max_digits=20, decimal_places=2, editable=False)
 
     class Meta:
         verbose_name = _(u"Позиция")
