@@ -15,6 +15,7 @@ from django.utils.translation import ugettext_lazy as _
 
 from logs.models import write_log
 from burials.forms import AddOrgForm, AddAgentForm, AddDoverForm, AddDocTypeForm
+from burials.models import Burial
 from orders.forms import ProductForm, OrderForm, OrderItemFormset, CoffinForm, CatafalqueForm, OrderSearchForm
 from orders.models import Product, Order, OrderItem
 from pd.forms import CommentForm
@@ -97,6 +98,9 @@ class OrderList(LORURequiredMixin, ListView):
         if not self.request.GET:
             return Order.objects.none()
 
+        return self.filtered_orders()
+
+    def filtered_orders(self):
         orders = Order.objects.filter(loru=self.request.user.profile.org).select_related(
             'burial', 'burial__changed_by', 'applicant_organization', 'applicant', 'loru',
         ).annotate(item_count=Count('orderitem'))
@@ -149,12 +153,48 @@ class OrderList(LORURequiredMixin, ListView):
                 orders = orders.filter(burial__applicant_organization__name=form.cleaned_data['applicant_org'])
             if form.cleaned_data['applicant_person']:
                 orders = orders.filter(burial__applicant__last_name=form.cleaned_data['applicant_person'])
+            if form.cleaned_data['order_num_from']:
+                orders = orders.filter(loru_number__gte=form.cleaned_data['order_num_from'])
+            if form.cleaned_data['order_num_to']:
+                orders = orders.filter(loru_number__lte=form.cleaned_data['order_num_to'])
+            if form.cleaned_data['order_cost_from']:
+                orders = orders.filter(cost__gte=form.cleaned_data['order_cost_from'])
+            if form.cleaned_data['order_cost_to']:
+                orders = orders.filter(cost__lte=form.cleaned_data['order_cost_to'])
             if form.cleaned_data['annulated']:
                 orders = orders.filter(annulated=True)
             else:
                 orders = orders.exclude(annulated=True)
         else:
             orders = orders.exclude(annulated=True)
+
+        sort = self.request.GET.get('sort', '-order_date')
+        SORT_FIELDS = {
+            'order_date': 'dt',
+            '-order_date': '-dt',
+            'account_number': 'burial__account_number',
+            '-account_number': '-burial__account_number',
+            'deadman': 'burial__deadman__last_name',
+            '-deadman': '-burial__deadman__last_name',
+            'plan_date': 'burial__plan_date',
+            '-plan_date': '-burial__plan_date',
+            'place': 'burial__place',
+            '-place': '-burial__place',
+            'cemetery': 'burial__cemetery',
+            '-cemetery': '-burial__cemetery',
+            'burial': 'burial__pk',
+            '-burial': '-burial__pk',
+            'applicant': ['applicant', 'applicant_organization'],
+            '-applicant': ['-applicant', '-applicant_organization'],
+            'order_num': 'loru_number',
+            '-order_num': '-loru_number',
+            'cost': 'cost',
+            '-cost': '-cost',
+        }
+        s = SORT_FIELDS[sort]
+        if not isinstance(s, list):
+            s = [s]
+        orders = orders.order_by(*s)
 
         return orders
 
@@ -165,11 +205,22 @@ class OrderList(LORURequiredMixin, ListView):
         data = super(OrderList, self).get_context_data(**kwargs)
         DISPLAY_OPTIONS = ['page', 'sort']
         get_for_paginator = u'&'.join([u'%s=%s' %  (k, v) for k,v in self.request.GET.items() if k not in DISPLAY_OPTIONS])
-        sort = self.request.GET.get('sort', '-pk')
+        sort = self.request.GET.get('sort', '-order_date')
         data.update(form=self.get_form(), GET_PARAMS=get_for_paginator, sort=sort)
         return data
 
 order_list = OrderList.as_view()
+
+class OrderDashboard(OrderList):
+    template_name = 'order_dashboard.html'
+
+    def get_queryset(self):
+        src_qs = self.filtered_orders()
+        ex_q = Q(burial__status__in=[Burial.STATUS_CLOSED, Burial.STATUS_ANNULATED, Burial.STATUS_EXHUMATED])
+        inc_q = Q(applicant_organization=self.request.user.profile.org, burial__source_type=Burial.SOURCE_FULL)
+        return src_qs.filter(inc_q).exclude(ex_q)
+
+order_dashboard = OrderDashboard.as_view()
 
 class OrderCreate(LORURequiredMixin, CreateView):
     template_name = 'order_create.html'

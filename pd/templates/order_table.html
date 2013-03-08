@@ -1,0 +1,108 @@
+{% load i18n %}
+<table class="table table-bordered">
+    <tr>
+        <th>
+            {% if sort == 'account_number' %}
+                <a href="?{{ GET_PARAMS }}&sort=-account_number">{% trans "Номер в книге" %}</a>
+            {% else %}
+                <a href="?{{ GET_PARAMS }}&sort=account_number">{% trans "Номер в книге" %}</a>
+            {% endif %}
+        </th>
+        <th>
+            {% if sort == 'deadman' %}
+                <a href="?{{ GET_PARAMS }}&sort=-deadman">{% trans "Усопший" %}</a>
+            {% else %}
+                <a href="?{{ GET_PARAMS }}&sort=deadman">{% trans "Усопший" %}</a>
+            {% endif %}
+        </th>
+        <th>
+            {% if sort == 'plan_date' %}
+                <a href="?{{ GET_PARAMS }}&sort=-plan_date">{% trans "Дата захоронения" %}</a>
+            {% else %}
+                <a href="?{{ GET_PARAMS }}&sort=plan_date">{% trans "Дата захоронения" %}</a>
+            {% endif %}
+        </th>
+        <th>
+            {% if sort == 'place' %}
+                <a href="?{{ GET_PARAMS }}&sort=-place">{% trans "Место" %}</a>
+            {% else %}
+                <a href="?{{ GET_PARAMS }}&sort=place">{% trans "Место" %}</a>
+            {% endif %}
+        </th>
+        <th>
+            {% if sort == 'cemetery' %}
+                <a href="?{{ GET_PARAMS }}&sort=-cemetery">{% trans "Кладбище" %}</a>
+            {% else %}
+                <a href="?{{ GET_PARAMS }}&sort=cemetery">{% trans "Кладбище" %}</a>
+            {% endif %}
+        </th>
+        <th>
+            {% if sort == 'burial' %}
+                <a href="?{{ GET_PARAMS }}&sort=-burial">{% trans "Захоронение" %}</a>
+            {% else %}
+                <a href="?{{ GET_PARAMS }}&sort=burial">{% trans "Захоронение" %}</a>
+            {% endif %}
+        </th>
+        <th>
+            {% if sort == 'applicant' %}
+                <a href="?{{ GET_PARAMS }}&sort=-applicant">{% trans "Заказчик" %}</a>
+            {% else %}
+                <a href="?{{ GET_PARAMS }}&sort=applicant">{% trans "Заказчик" %}</a>
+            {% endif %}
+        </th>
+        <th>
+            {% if sort == 'order_num' %}
+                <a href="?{{ GET_PARAMS }}&sort=-order_num">{% trans "Номер заказа" %}</a>
+            {% else %}
+                <a href="?{{ GET_PARAMS }}&sort=order_num">{% trans "Номер заказа" %}</a>
+            {% endif %}
+        </th>
+        <th>
+            {% if sort == 'cost' %}
+                <a href="?{{ GET_PARAMS }}&sort=-cost">{% trans "Сумма" %}</a>
+            {% else %}
+                <a href="?{{ GET_PARAMS }}&sort=cost">{% trans "Сумма" %}</a>
+            {% endif %}
+        </th>
+        <th>
+            {% if sort == 'order_date' %}
+                <a href="?{{ GET_PARAMS }}&sort=-order_date">{% trans "Дата заказа" %}</a>
+            {% else %}
+                <a href="?{{ GET_PARAMS }}&sort=order_date">{% trans "Дата заказа" %}</a>
+            {% endif %}
+        </th>
+        <th class="no-print"></th>
+    </tr>
+    {% for c in object_list %}
+        <tr class="
+            {% if user.profile.is_ugh and c.get_burial.can_finish %}burial_green{% endif %}
+            {% if user.profile.is_ugh and c.get_burial.can_approve %}burial_blue{% endif %}
+            {% if user.profile.is_loru and c.get_burial.is_approved %}burial_green{% endif %}
+            {% if user.profile.is_loru and c.get_burial.is_ready %}burial_blue{% endif %}
+        ">
+            <td>{{ c.get_burial.account_number|default:"" }}</td>
+            <td>{{ c.get_burial.deadman|default:"" }}</td>
+            <td>{{ c.get_burial.plan_date|default:"" }}</td>
+            <td>{{ c.get_burial.place|default:"" }} {% if c.get_burial.responsible %}{% trans "отв" %}{% endif %}</td>
+            <td>{{ c.get_burial.cemetery|default:"" }} / {{ c.get_burial.ugh|default:"" }}</td>
+            <td>{{ c.get_burial.pk|default:"" }}</td>
+            <td>
+                {% if c.applicant %}
+                    ФЛ {{ c.applicant|default:"" }}
+                {% elif c.applicant_organization %}
+                    ЮЛ {{ c.applicant_organization|default:"" }}
+                {% endif %}
+            </td>
+            <td>{{ c.loru_number|default:"" }}</td>
+            <td>{{ c.total|floatformat:2|default:"" }}</td>
+            <td>{{ c.dt|default:"" }}</td>
+            <td class="no-print">
+                {% if user.profile.org == c.loru %}
+                    <a href="{% url order_edit c.pk %}" class="btn">{% trans "править" %}</a>
+                {% endif %}
+                <a href="{% url order_print c.pk %}" class="btn" target="_blank">{% trans "счет-заказ" %}</a>
+                <a href="{% url order_contract c.pk %}" class="btn" target="_blank">{% trans "контракт" %}</a>
+            </td>
+        </tr>
+    {% endfor %}
+</table>

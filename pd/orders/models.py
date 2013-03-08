@@ -61,6 +61,7 @@ class Order(models.Model):
     dover = models.ForeignKey('users.Dover', verbose_name=_(u"Доверенность"), null=True, blank=True,
                               on_delete=models.PROTECT)
     annulated = models.BooleanField(_(u'Аннулировано'), editable=False, default=False)
+    cost = models.DecimalField(_(u"Цена"), max_digits=20, decimal_places=2, editable=False)
     dt = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -111,7 +112,7 @@ class Order(models.Model):
 
     @property
     def total(self):
-        return sum([i.total for i in self.orderitem_set.all()], 0)
+        return self.cost
 
     def total_float(self):
         return float(self.total)
@@ -211,3 +212,8 @@ class CoffinData(models.Model):
     order = models.OneToOneField('orders.Order', editable=False)
 
     size = models.TextField(_(u"Размер"))
+
+def recount_cost(instance, **kwargs):
+    instance.order.cost = sum([i.total for i in instance.order.orderitem_set.all()], 0)
+    instance.order.save()
+models.signals.post_save.connect(recount_cost, sender=OrderItem)

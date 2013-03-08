@@ -1,0 +1,8 @@
+{% extends "base.html" %}
+
+{% load i18n %}
+
+{% block content %}
+    <h1>{% trans "Заказы" %}</h1>
+    {% include "order_table.html" %}
+{% endblock %}
