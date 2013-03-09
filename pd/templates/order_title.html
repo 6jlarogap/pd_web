@@ -5,11 +5,6 @@
     {% if not order.annulated %}
         <a href="{% url order_print order.pk %}" class="btn" target="_blank">{% trans "распечатать" %}</a>
     {% endif %}
-    {% if order.get_burial %}
-        <a href="{% url view_burial order.get_burial.pk %}" class="btn" target="_blank">
-            {% trans "карточка захоронения" %}
-        </a>
-    {% endif %}
 </p>
 {% if not order.is_finished %}
     {% if order.annulated %}

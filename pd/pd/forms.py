@@ -69,9 +69,9 @@ class LoggingFormMixin:
                     old_value = obj and getattr(obj, f, None) or form.initial.get(f) or ''
                     new_value = form.cleaned_data.get(f) or ''
 
-                    if isinstance(old_value, datetime.date):
+                    if isinstance(old_value, datetime.date) or isinstance(old_value, UnclearDate):
                         old_value = old_value.strftime('%d.%m.%Y')
-                    if isinstance(new_value, datetime.date):
+                    if isinstance(new_value, datetime.date) or isinstance(new_value, UnclearDate):
                         new_value = new_value.strftime('%d.%m.%Y')
                     if isinstance(old_value, datetime.time):
                         old_value = old_value.strftime('%H:%M')

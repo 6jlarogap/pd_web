@@ -31,7 +31,7 @@ class DeadPersonForm(ValidDataMixin, forms.ModelForm):
         return self.is_valid() and len([k for k,v in self.cleaned_data.items() if v]) > 1 # more than just death date
 
 class PersonIDForm(ValidDataMixin, forms.ModelForm):
-    source = forms.CharField(label=_(u'Кем выдан'), required=True)
+    source = forms.CharField(label=_(u'Кем выдан'), required=False)
 
     class Meta:
         model = PersonID
