@@ -20,7 +20,7 @@ class LogsTest(TestCase):
         self.doc_type = IDDocumentType.objects.create(name='Passport')
 
     def test_basic(self):
-        r = self.client.get('/?show=1')
+        r = self.client.get('/order/dashboard/?show=1')
         self.assertEqual(Log.objects.all().count(), 0)
 
         req = r.context['request']

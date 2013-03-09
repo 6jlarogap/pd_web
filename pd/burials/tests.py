@@ -44,7 +44,7 @@ class RequestsTest(TestCase):
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r.context['burials'].count(), 0)
 
-        r = self.loru_client.get('/')
+        r = self.loru_client.get('/order/dashboard/')
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r.context['burials'].count(), 0)
 
@@ -84,7 +84,7 @@ class RequestsTest(TestCase):
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r.context['burials'].count(), 1)
 
-        r = self.loru_client.get('/')
+        r = self.loru_client.get('/order/dashboard/')
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r.context['burials'].count(), 1)
 
@@ -109,7 +109,7 @@ class RequestsTest(TestCase):
 
         r = self.ugh_client.get('/')
         self.assertEqual(r.context['burials'].count(), 1)
-        r = self.loru_client.get('/')
+        r = self.loru_client.get('/order/dashboard/')
         self.assertEqual(r.context['burials'].count(), 1)
 
         r = self.loru_client.post('/burials/%s/' % br.pk, {'ready': '1'}, follow=True)
@@ -118,14 +118,14 @@ class RequestsTest(TestCase):
         self.assertEqual(r.context['burials'].count(), 1)
         self.assertIn('loru', r.content)
 
-        r = self.loru_client.get('/')
+        r = self.loru_client.get('/order/dashboard/')
         self.assertEqual(r.context['burials'].count(), 1)
 
         r = self.ugh_client.post('/burials/%s/' % br.pk, {'approve': '1'}, follow=True)
 
         r = self.ugh_client.get('/')
         self.assertEqual(r.context['burials'].count(), 1)
-        r = self.loru_client.get('/')
+        r = self.loru_client.get('/order/dashboard/')
         self.assertEqual(r.context['burials'].count(), 1)
 
         r = self.loru_client.get('/burials/?test=1')
@@ -140,7 +140,7 @@ class RequestsTest(TestCase):
 
         r = self.ugh_client.get('/')
         self.assertEqual(r.context['burials'].count(), 0)
-        r = self.loru_client.get('/')
+        r = self.loru_client.get('/order/dashboard/')
         self.assertEqual(r.context['burials'].count(), 0)
 
         r = self.loru_client.get('/burials/?test=1')
@@ -597,7 +597,7 @@ class TestAJAX(TestCase):
         params = (self.cemetery.pk, area.pk, '123', )
 
         r = self.ugh_client.get('/burials/get_place/?cemetery=%s&area=%s&row=&place_number=%s' % params)
-        self.assertNotEqual(r.content, u'')
+        self.assertEqual(r.content, u'')
 
         p = Place.objects.create(cemetery=self.cemetery, area=area, place='123')
 

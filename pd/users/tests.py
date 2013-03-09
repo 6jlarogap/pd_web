@@ -19,7 +19,7 @@ class LoginTest(TestCase):
         self.client.get('/login/')
         r = self.client.post('/login/', dict(username='test', password='test'))
         self.assertEqual(r.status_code, 302)
-        r = self.client.get('/?show=1')
+        r = self.client.get('/order/dashboard/?show=1')
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r.context['user'], self.user)
 
@@ -31,7 +31,7 @@ class LoginTest(TestCase):
 
         r = self.client.get('/logout/')
         self.assertEqual(r.status_code, 302)
-        r = self.client.get('/?show=1')
+        r = self.client.get('/order/dashboard/?show=1')
         self.assertIsInstance(r.context['user'], AnonymousUser)
 
 class RegisterTest(TestCase):
@@ -52,7 +52,7 @@ class RegisterTest(TestCase):
         profile = u.profile
         profile.org = org
         profile.save()
-        r = self.client.get('/?show=1')
+        r = self.client.get('/order/dashboard/?show=1')
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r.context['user'].is_authenticated(), True)
         self.assertEqual(r.context['user'].profile.is_loru(), True)
