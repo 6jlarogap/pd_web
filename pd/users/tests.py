@@ -25,13 +25,13 @@ class LoginTest(TestCase):
 
     def test_logout(self):
         self.client.login(username='test', password='test')
-        r = self.client.get('/?show=1')
+        r = self.client.get('/order/dashboard/?show=1')
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r.context['user'], self.user)
 
         r = self.client.get('/logout/')
         self.assertEqual(r.status_code, 302)
-        r = self.client.get('/order/dashboard/?show=1')
+        r = self.client.get('/?show=1')
         self.assertIsInstance(r.context['user'], AnonymousUser)
 
 class RegisterTest(TestCase):

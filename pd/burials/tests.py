@@ -86,7 +86,7 @@ class RequestsTest(TestCase):
 
         r = self.loru_client.get('/order/dashboard/')
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.context['burials'].count(), 1)
+        self.assertEqual(r.context['object_list'].count(), 0)
 
         ProfileLORU.objects.all().delete()
 
@@ -110,7 +110,7 @@ class RequestsTest(TestCase):
         r = self.ugh_client.get('/')
         self.assertEqual(r.context['burials'].count(), 1)
         r = self.loru_client.get('/order/dashboard/')
-        self.assertEqual(r.context['burials'].count(), 1)
+        self.assertEqual(r.context['object_list'].count(), 0)
 
         r = self.loru_client.post('/burials/%s/' % br.pk, {'ready': '1'}, follow=True)
 
@@ -119,14 +119,14 @@ class RequestsTest(TestCase):
         self.assertIn('loru', r.content)
 
         r = self.loru_client.get('/order/dashboard/')
-        self.assertEqual(r.context['burials'].count(), 1)
+        self.assertEqual(r.context['object_list'].count(), 0)
 
         r = self.ugh_client.post('/burials/%s/' % br.pk, {'approve': '1'}, follow=True)
 
         r = self.ugh_client.get('/')
         self.assertEqual(r.context['burials'].count(), 1)
         r = self.loru_client.get('/order/dashboard/')
-        self.assertEqual(r.context['burials'].count(), 1)
+        self.assertEqual(r.context['object_list'].count(), 0)
 
         r = self.loru_client.get('/burials/?test=1')
         self.assertEqual(r.status_code, 200)
@@ -141,7 +141,7 @@ class RequestsTest(TestCase):
         r = self.ugh_client.get('/')
         self.assertEqual(r.context['burials'].count(), 0)
         r = self.loru_client.get('/order/dashboard/')
-        self.assertEqual(r.context['burials'].count(), 0)
+        self.assertEqual(r.context['object_list'].count(), 0)
 
         r = self.loru_client.get('/burials/?test=1')
         self.assertEqual(r.status_code, 200)

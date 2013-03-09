@@ -84,7 +84,6 @@ class Order(models.Model):
             try:
                 self.loru_number = int(existing[0].loru_number) + 1
             except (IndexError, TypeError), e:
-                print 'e', e
                 self.loru_number = 1
         return super(Order, self).save(*args, **kwargs)
 
