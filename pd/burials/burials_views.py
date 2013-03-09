@@ -336,7 +336,7 @@ class CreateBurial(CreateView):
             'agent_form': AddAgentForm(prefix='agent'),
             'agent_dover_form': AddDoverForm(prefix='agent_dover'),
             'dover_form': AddDoverForm(prefix='dover'),
-            'loru_form': AddOrgForm(prefix='loru'),
+            'loru_form': AddOrgForm(request=self.request, prefix='loru'),
             'doc_type_form': AddDocTypeForm(prefix='doctype'),
             'order': self.get_order(),
         })

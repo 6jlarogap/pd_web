@@ -185,5 +185,5 @@ class OrgForm(LoggingFormMixin, forms.ModelForm):
             org.off_address = self.address_form.save()
         if commit:
             org.save()
-            self.put_log_data()
+            self.put_log_data(msg=_(u'Данные сохранены'))
         return org

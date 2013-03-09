@@ -144,11 +144,12 @@ add_agent = AddAgentView.as_view()
 
 class AddOrgView(LoginRequiredMixin, View):
     def post(self, request, *args, **kwargs):
-        f = AddOrgForm(data=request.POST, prefix='loru')
+        f = AddOrgForm(request=self.request, data=request.POST, prefix='loru')
         if f.is_valid():
             loru = f.save(commit=False)
             loru.type = Org.PROFILE_LORU
             loru.save()
+            f.put_log_data(msg=_(u'Данные сохранены'))
             if request.user.profile.is_ugh():
                 loru.ugh_list.create(ugh=request.user.profile.org)
             return HttpResponse(json.dumps({'pk': loru.pk, 'label': u'%s' % loru}), mimetype='application/json')
@@ -187,14 +188,21 @@ class GetPlaceView(View):
         )
         data = dict([(k,v) for k,v in data.items() if v])
 
-        try:
-            p = places.get(**data)
-        except Place.DoesNotExist:
+        if request.GET.get('place_number'):
+            try:
+                p = places.get(**data)
+            except Place.DoesNotExist:
+                return HttpResponse('')
+            except Place.MultipleObjectsReturned:
+                return HttpResponse('')
+            else:
+                return render(request, 'create_burial_place_info.html', {'place': p})
+        else:
             areas = Area.objects.all()
             data = dict(
                 cemetery__pk=request.GET.get('cemetery') or None,
                 pk=request.GET.get('area') or None,
-            )
+                )
             data = dict([(k,v) for k,v in data.items() if v])
 
             try:
@@ -203,10 +211,6 @@ class GetPlaceView(View):
                 return HttpResponse('')
             else:
                 return render(request, 'create_burial_area_info.html', {'area': a})
-        except Place.MultipleObjectsReturned:
-            return HttpResponse('')
-        else:
-            return render(request, 'create_burial_place_info.html', {'place': p})
 
 get_place = GetPlaceView.as_view()
 
