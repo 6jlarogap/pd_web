@@ -180,7 +180,7 @@ class OrderSearchForm(forms.Form):
     no_responsible = forms.BooleanField(required=False, initial=False, label=_(u"Без отв."))
     status = forms.TypedChoiceField(required=False, label=_(u"Статус"), choices=EMPTY + Burial.STATUS_CHOICES)
     annulated = forms.BooleanField(required=False, initial=False, label=_(u"Аннулированы"))
-    order_num_from = forms.IntegerField(required=False, label=_(u"Номер с"))
+    order_num_from = forms.IntegerField(required=False, label=_(u"Номер Заказа с"))
     order_num_to = forms.IntegerField(required=False, label=_(u"по"))
     order_cost_from = forms.IntegerField(required=False, label=_(u"Стоимость с"))
     order_cost_to = forms.IntegerField(required=False, label=_(u"по"))
