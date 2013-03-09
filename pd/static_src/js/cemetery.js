@@ -29,12 +29,27 @@ function setup_address_autocompletes() {
     AREAS_URL = '/autocomplete/areas/';
     ALIVE_FIO_URL = '/autocomplete/alive/';
     ORG_URL = '/autocomplete/org/';
+    DOCSOURCE_URL = '/autocomplete/docsources/';
 
 
     $('#id_instance_0').live('click', function(){
         var form = $(this).parents('.well');
         form.find('.instance_alert').remove();
         form.prepend('<p class="instance_alert alert">Очистите поля ФИО для нового поиска</p>')
+    });
+
+    $('#id_applicant-pid-source').attr('autocomplete', 'off').typeahead({
+        items: 100,
+        source: function (typeahead, query) {
+            if (query.length < 2) { return }
+            $.ajax({
+                url: DOCSOURCE_URL + "?query=" + query,
+                dataType: 'json',
+                success: function(data) {
+                    typeahead.process(data);
+                }
+            });
+        }
     });
 
     $('select[name*=fias_]').each(function() {

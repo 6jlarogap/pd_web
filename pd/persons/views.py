@@ -4,7 +4,7 @@ from django.db.models.query_utils import Q
 from django.http import HttpResponse
 from django.views.generic.base import View
 
-from persons.models import DeadPerson, AlivePerson
+from persons.models import DeadPerson, AlivePerson, DocumentSource
 
 
 class AutocompleteFIO(View):
@@ -42,3 +42,11 @@ class AutocompleteAlive(View):
         return HttpResponse(json.dumps([{'value': unicode(c)} for c in persons[:20]]), mimetype='text/javascript')
 
 autocomplete_alive = AutocompleteAlive.as_view()
+
+class AutocompleteDocSources(View):
+    def get(self, request, *args, **kwargs):
+        query = request.GET['query']
+        dcs = DocumentSource.objects.filter(name__icontains=query)
+        return HttpResponse(json.dumps([{'value': unicode(c)} for c in dcs[:20]]), mimetype='text/javascript')
+
+autocomplete_docsources = AutocompleteDocSources.as_view()

@@ -1,8 +1,11 @@
+# coding=utf-8
 import datetime
 
 from django import forms
+from django.utils.translation import ugettext as _
 
-from persons.models import DeadPerson, PersonID, DeathCertificate, AlivePerson
+from persons.models import DeadPerson, PersonID, DeathCertificate, AlivePerson, DocumentSource
+
 
 class ValidDataMixin:
     def is_valid_data(self):
@@ -28,9 +31,15 @@ class DeadPersonForm(ValidDataMixin, forms.ModelForm):
         return self.is_valid() and len([k for k,v in self.cleaned_data.items() if v]) > 1 # more than just death date
 
 class PersonIDForm(ValidDataMixin, forms.ModelForm):
+    source = forms.CharField(label=_(u'Кем выдан'), required=True)
+
     class Meta:
         model = PersonID
-        exclude = ['person', ]
+        exclude = ['person', 'source']
+
+    def clean_source(self):
+        src, _created = DocumentSource.objects.get_or_create(name=self.cleaned_data['source'])
+        return src
 
 class DeathCertificateForm(ValidDataMixin, forms.ModelForm):
     class Meta:
