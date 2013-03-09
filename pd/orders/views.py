@@ -203,7 +203,7 @@ class OrderList(LORURequiredMixin, ListView):
 
     def get_context_data(self, **kwargs):
         data = super(OrderList, self).get_context_data(**kwargs)
-        DISPLAY_OPTIONS = ['page', 'sort']
+        DISPLAY_OPTIONS = ['page']
         get_for_paginator = u'&'.join([u'%s=%s' %  (k, v) for k,v in self.request.GET.items() if k not in DISPLAY_OPTIONS])
         sort = self.request.GET.get('sort', '-order_date')
         data.update(form=self.get_form(), GET_PARAMS=get_for_paginator, sort=sort)
