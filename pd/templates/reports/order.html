@@ -995,7 +995,7 @@
             состоятся </FONT></TD>
         <TD STYLE="border-top: 1px solid #000000" ALIGN=LEFT VALIGN=TOP colspan="6"><FONT COLOR="#000000"
                                                                                           STYLE="font-size: 170%">
-            {{ order.burial.plan_date|ru_strftime:"&laquo;%d&raquo; %B %Y"|safe }}г.
+            {{ order.burial.plan_date|date:"%d.%m.%Y" }}г.
             в {{ order.burial.plan_time|time:"H" }}ч {{ order.burial.plan_time|time:"i" }}мин. на
             кладбище: {{ order.burial.cemetery }} <br/> <br/> <br/></FONT></TD>
     </TR>
@@ -1159,7 +1159,7 @@
             <TD STYLE="border-left: 1px solid #000000" COLSPAN=3 HEIGHT=20 ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000">Похороны
                 состоятся </FONT></TD>
             <TD STYLE="border-top: 1px solid #000000" ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000"
-                                                                                  STYLE="font-size: 170%"> {{ order.burial.plan_date|ru_strftime:"&laquo;%d&raquo; %B %Y"|safe }}г. </FONT>
+                                                                                  STYLE="font-size: 170%"> {{ order.burial.plan_date|date:"%d.%m.%Y"|safe }}г. </FONT>
             </TD>
             <TD STYLE="border-top: 1px solid #000000" ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000">в</FONT></TD>
             <TD STYLE="border-top: 1px solid #000000" ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000"
@@ -1361,7 +1361,7 @@
             <TD STYLE="border-left: 1px solid #000000" COLSPAN=3 HEIGHT=20 ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000">Похороны
                 состоятся </FONT></TD>
             <TD STYLE="border-top: 1px solid #000000" ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000"
-                                                                                  STYLE="font-size: 170%"> {{ order.burial.plan_date|ru_strftime:"&laquo;%d&raquo; %B %Y"|safe }}г. </FONT>
+                                                                                  STYLE="font-size: 170%"> {{ order.burial.plan_date|date:"%d.%m.%Y"|safe }}г. </FONT>
             </TD>
             <TD STYLE="border-top: 1px solid #000000" ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000">в</FONT></TD>
             <TD STYLE="border-top: 1px solid #000000" ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000"
@@ -1584,7 +1584,7 @@
             <TD STYLE="border-left: 1px solid #000000" COLSPAN=3 HEIGHT=20 ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000">Похороны
                 состоятся </FONT></TD>
             <TD STYLE="border-top: 1px solid #000000" ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000"
-                                                                                  STYLE="font-size: 170%"> {{ order.burial.plan_date|ru_strftime:"&laquo;%d&raquo; %B %Y"|safe }}г. </FONT>
+                                                                                  STYLE="font-size: 170%"> {{ order.burial.plan_date|date:"%d.%m.%Y"|safe }}г. </FONT>
             </TD>
             <TD STYLE="border-top: 1px solid #000000" ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000">в</FONT></TD>
             <TD ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000"
