@@ -186,6 +186,11 @@ class OrgEditForm(UpdateView):
     model = Org
     form_class = OrgForm
 
+    def get_form_kwargs(self):
+        data = super(OrgEditForm, self).get_form_kwargs()
+        data['request'] = self.request
+        return data
+
     def get_queryset(self):
         return Org.objects.annotate(profiles=Count('profile')).filter(profiles=0)
 
@@ -195,7 +200,6 @@ class OrgEditForm(UpdateView):
             self.object,
         )
         messages.success(self.request, msg)
-        write_log(self.request, self.object, _(u'Изменены данные оорганизации'))
         return reverse('profile')
 
     def dispatch(self, request, *args, **kwargs):

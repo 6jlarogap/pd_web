@@ -566,6 +566,14 @@ $(function() {
     $('#id_country, #id_region').change();
     $('#id_lat, #id_lng').closest('p').hide();
 
+    $('input[id$=fias_address]').find(':input').live('keypress', function(e) {
+        if (e.keyCode == 13) {
+            e.preventDefault();
+            $(this).change();
+            return false;
+        }
+    });
+
     var ac_options = {
         bounds: USER_DEFAULT_BOUNDS,
         types: ['geocode'],
@@ -589,125 +597,54 @@ $(function() {
         var addr = $(this).val();
         if (!addr) { return }
 
-        var geocoder = new YMaps.Geocoder(addr, {'prefLang': 'ru'});
-        YMaps.Events.observe(geocoder, geocoder.Events.Load, function () {
-            if (this.length()) {
+        var geocoder = new google.maps.Geocoder();
+        geocoder.geocode( { 'address': addr, 'language': 'ru' }, function(results, status) {
+            if (status == google.maps.GeocoderStatus.OK) {
                 var country = '', region = '', city = '', street = '';
                 var house = '', building = '', block = '', flat = '';
                 form_block.find('[id$=post_index], [id$=country_name], [id$=region_name], [id$=city_name]').val('');
                 form_block.find('[id$=street_name]').val('');
 
-                var obj = this._objects[0].AddressDetails;
-                if (obj.Country) {
-                    country = obj.Country.CountryName;
-                    form_block.find('input[id$=country_name]').val(country);
-                    if (obj.Country.AdministrativeArea) {
-                        region = obj.Country.AdministrativeArea.AdministrativeAreaName;
-                        if (obj.Country.AdministrativeArea.Locality) {
-                            city = obj.Country.AdministrativeArea.Locality.LocalityName;
-                            if (obj.Country.AdministrativeArea.Locality.Thoroughfare) {
-                                street = obj.Country.AdministrativeArea.Locality.Thoroughfare.ThoroughfareName;
-                            }
+                var address = results[0].address_components;
+                $(address).each(function() {
+                    if (this.types.indexOf("postal_code") > -1) { form_block.find('input[id$=post_index]').val(this.long_name); }
+                    if (this.types.indexOf("country") > -1) { country = this.long_name; form_block.find('input[id$=country_name]').val(country); }
+                    if (this.types.indexOf("administrative_area_level_1") > -1) { region = this.long_name; form_block.find('input[id$=region_name]').val(''); }
+                    if (this.types.indexOf("locality") > -1) { city = this.long_name; form_block.find('input[id$=city_name]').val(''); }
+                    if (this.types.indexOf("route") > -1) { street = this.long_name; form_block.find('input[id$=street_name]').val(''); }
+                    if (this.types.indexOf("street_number") > -1) {
+                        form_block.find('input[id$=house]').val(this.long_name);
+                        house = this.long_name;
+                        if (this.long_name.indexOf("корпус") > -1) {
+                            var bits = this.long_name.split(" корпус ");
+                            form_block.find('input[id$=house]').val(bits[0]);
+                            form_block.find('input[id$=block]').val(bits[1]);
+                            house = bits[0];
+                            block = bits[1];
+                        }
+                        if (this.long_name.indexOf("строение") > -1) {
+                            var bits = this.long_name.split(" строение ");
+                            form_block.find('input[id$=house]').val(bits[0]);
+                            form_block.find('input[id$=building]').val(bits[1]);
+                            house = bits[0];
+                            building = bits[1];
                         }
                     }
-
-
-                    if (country) {
-                        var data = 'country=' + country + '&region=' + region + '&city=' + city + '&street=' + street +
-                            '&house=' + house + '&block=' + block + '&building=' + building + '&flat=' + flat;
-                        var fias_url = '/geo/autocomplete/fias/?'+data;
-                        $.getJSON(fias_url, function(data) {
-                            if (data.ok) {
-                                street_input.val(data.id);
-                                form_block.find('.fias_street_info').html(data.info);
-                                form_block.find('.fias_street_info').show();
-                                form_block.find('.full_address').hide();
-                            } else {
-                                street_input.val('');
-                                form_block.find('.fias_street_info').html('');
-                                form_block.find('.fias_street_info').hide();
-                                form_block.find('.full_address').show();
-
-                                form_block.find('input[id$=region_name]').val(region);
-                                form_block.find('input[id$=city_name]').val(city);
-                                form_block.find('input[id$=street_name]').val(street);
-                            }
-                        })
+                    if (this.types.indexOf("subpremise") > -1) {
+                        flat = this.long_name;
+                        form_block.find('input[id$=flat]').val(this.long_name);
                     }
+                });
+
+                if (country) {
+                    form_block.find('input[id$=region_name]').val(region);
+                    form_block.find('input[id$=city_name]').val(city);
+                    form_block.find('input[id$=street_name]').val(street);
                 }
             } else {
-                alert("Адрес неразборчив, вводите в виде: улица Свободы, Новороссийск, Краснодарский край");
+                alert("Адрес неразборчив, вводите в виде: улица Свободы, Новороссийск, Краснодарский край")
             }
         })
-        YMaps.Events.observe(geocoder, geocoder.Events.Fault, function (geocoder, errorMessage) {
-            alert("Произошла ошибка: " + errorMessage)
-        });
-
-//        var geocoder = new google.maps.Geocoder();
-//        geocoder.geocode( { 'address': addr, 'language': 'ru' }, function(results, status) {
-//            if (status == google.maps.GeocoderStatus.OK) {
-//                var country = '', region = '', city = '', street = '';
-//                var house = '', building = '', block = '', flat = '';
-//                form_block.find('[id$=post_index], [id$=country_name], [id$=region_name], [id$=city_name]').val('');
-//                form_block.find('[id$=street_name]').val('');
-//
-//                var address = results[0].address_components;
-//                $(address).each(function() {
-//                    if (this.types.indexOf("postal_code") > -1) { form_block.find('input[id$=post_index]').val(this.long_name); }
-//                    if (this.types.indexOf("country") > -1) { country = this.long_name; form_block.find('input[id$=country_name]').val(country); }
-//                    if (this.types.indexOf("administrative_area_level_1") > -1) { region = this.long_name; form_block.find('input[id$=region_name]').val(''); }
-//                    if (this.types.indexOf("locality") > -1) { city = this.long_name; form_block.find('input[id$=city_name]').val(''); }
-//                    if (this.types.indexOf("route") > -1) { street = this.long_name; form_block.find('input[id$=street_name]').val(''); }
-//                    if (this.types.indexOf("street_number") > -1) {
-//                        form_block.find('input[id$=house]').val(this.long_name);
-//                        house = this.long_name;
-//                        if (this.long_name.indexOf("корпус") > -1) {
-//                            var bits = this.long_name.split(" корпус ");
-//                            form_block.find('input[id$=house]').val(bits[0]);
-//                            form_block.find('input[id$=block]').val(bits[1]);
-//                            house = bits[0];
-//                            block = bits[1];
-//                        }
-//                        if (this.long_name.indexOf("строение") > -1) {
-//                            var bits = this.long_name.split(" строение ");
-//                            form_block.find('input[id$=house]').val(bits[0]);
-//                            form_block.find('input[id$=building]').val(bits[1]);
-//                            house = bits[0];
-//                            building = bits[1];
-//                        }
-//                    }
-//                    if (this.types.indexOf("subpremise") > -1) {
-//                        flat = this.long_name;
-//                        form_block.find('input[id$=flat]').val(this.long_name);
-//                    }
-//                });
-//
-//                if (country) {
-//                    var data = 'country=' + country + '&region=' + region + '&city=' + city + '&street=' + street +
-//                        '&house=' + house + '&block=' + block + '&building=' + building + '&flat=' + flat;
-//                    var fias_url = '/geo/autocomplete/fias/?'+data;
-//                    $.getJSON(fias_url, function(data) {
-//                        if (data.ok) {
-//                            street_input.val(data.id);
-//                            form_block.find('.fias_street_info').html(data.info);
-//                            form_block.find('.fias_street_info').show();
-//                            form_block.find('.full_address').hide();
-//                        } else {
-//                            street_input.val('');
-//                            form_block.find('.fias_street_info').html('');
-//                            form_block.find('.fias_street_info').hide();
-//                            form_block.find('.full_address').show();
-//
-//                            form_block.find('input[id$=region_name]').val(region);
-//                            form_block.find('input[id$=city_name]').val(city);
-//                            form_block.find('input[id$=street_name]').val(street);
-//                        }
-//                    })
-//                }
-//            } else {
-//                alert("Адрес неразборчив, вводите в виде: улица Свободы, Новороссийск, Краснодарский край")
-//            }
-//        })
     });
     $('input[id$=fias_address]').change();
 

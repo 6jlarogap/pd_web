@@ -5,7 +5,7 @@ from django.forms.models import inlineformset_factory, BaseInlineFormSet
 from django.utils.translation import ugettext_lazy as _
 from geo.forms import LocationForm
 from geo.models import DFiasAddrobj
-from pd.forms import ChildrenJSONMixin
+from pd.forms import ChildrenJSONMixin, LoggingFormMixin
 
 from users.models import Profile, ProfileLORU, Org, BankAccount
 
@@ -154,14 +154,16 @@ class ChangePasswordForm(forms.ModelForm):
             self.instance.save()
         return self.instance
 
-class OrgForm(forms.ModelForm):
+class OrgForm(LoggingFormMixin, forms.ModelForm):
     class Meta:
         model = Org
         exclude = ['off_address', ]
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, request, *args, **kwargs):
+        self.request = request
         super(OrgForm, self).__init__(*args, **kwargs)
         self.address_form = LocationForm(data=self.data or None, prefix='address', instance=self.instance.off_address)
+        self.forms = [self.address_form, ]
 
     def is_valid(self):
         return super(OrgForm, self).is_valid() and self.address_form.is_valid()
@@ -177,9 +179,11 @@ class OrgForm(forms.ModelForm):
         return inn
 
     def save(self, commit=True):
+        self.collect_log_data()
         org = super(OrgForm, self).save(commit=False)
         if any(self.address_form.cleaned_data.values()):
             org.off_address = self.address_form.save()
         if commit:
             org.save()
+            self.put_log_data()
         return org
