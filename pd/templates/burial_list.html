@@ -107,6 +107,7 @@
                 <td>{{ b.cemetery }} / {{ b.ugh_name }}</td>
                 <td>
                     {{ b.place|default:"" }} {% if b.responsible %}{% trans "отв" %}{% endif %}
+                    {% if b.grave_number %}{% trans "мог." %} {{ b.grave_number }}{% endif %}
                 </td>
                 <td>{{ b.deadman|default:"" }}</td>
                 <td>{{ b.plan_date|date:"d.m.Y"|default:"" }} {{ b.plan_time|time:"H:i"|default:"" }}</td>

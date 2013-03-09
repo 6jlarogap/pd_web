@@ -106,7 +106,10 @@
                 <td>{{ c.get_burial.account_number|default:"" }}</td>
                 <td>{{ c.get_burial.deadman|default:"" }}</td>
                 <td>{{ c.get_burial.plan_date|default:"" }}</td>
-                <td>{{ c.get_burial.place|default:"" }} {% if c.get_burial.responsible %}{% trans "отв" %}{% endif %}</td>
+                <td>
+                    {{ c.get_burial.place|default:"" }} {% if c.get_burial.responsible %}{% trans "отв" %}{% endif %}
+                    {% if c.get_burial.grave_number %}{% trans "мог." %} {{ c.get_burial.grave_number }}{% endif %}
+                </td>
                 <td>{{ c.get_burial.cemetery|default:"" }} / {{ c.get_burial.ugh|default:"" }}</td>
                 <td>{{ c.get_burial.pk|default:"" }}</td>
                 <td>
