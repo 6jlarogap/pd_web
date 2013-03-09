@@ -46,7 +46,7 @@ class RequestsTest(TestCase):
 
         r = self.loru_client.get('/order/dashboard/')
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.context['burials'].count(), 0)
+        self.assertEqual(r.context['object_list'].count(), 0)
 
     def test_create(self):
         r = self.ugh_client.get('/burials/create/')
