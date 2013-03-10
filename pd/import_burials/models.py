@@ -255,6 +255,11 @@ def do_import_burials(csv_fileobj, user):
                         end=row[63],
                     )
 
+                try:
+                    changed_dt = row[63].split(' ', 2)[2].rsplit(':', 1)[0]
+                except:
+                    changed_dt = datetime.datetime.now()
+
                 plan_date = make_unc_date(row[2])
                 params = dict(
                     account_number=row[0],
@@ -279,7 +284,7 @@ def do_import_burials(csv_fileobj, user):
                     dover=dover,
                     order=None,
                     status=Burial.STATUS_CLOSED,
-                    changed=datetime.datetime.now(),
+                    changed=changed_dt,
                     changed_by=user,
                 )
                 b = Burial.objects.create(**params)
@@ -298,8 +303,8 @@ def do_import_burials(csv_fileobj, user):
                 if not area.name:
                     write_log(request, b, _(u'Участок не был указан'))
 
-                if row[64]:
-                    write_log(request, b, _(u'Комментарий: %s') % row[64])
+                if row[63]:
+                    write_log(request, b, _(u'Комментарий: %s') % row[63])
     return real_i, dupes_i
 
 def do_import_services(csv_fileobj):
@@ -357,7 +362,7 @@ def do_import_orders(csv_fileobj):
                     agent_director=b.agent_director,
                     agent=b.agent,
                     dover=b.dover,
-                    dt=datetime.datetime.now(),
+                    dt=b.changed,
                 )
 
                 real_i += 1
