@@ -143,10 +143,6 @@ class DocumentSource(models.Model):
     def __unicode__(self):
         return self.name
 
-    def save(self, *args, **kwargs):
-        self.name = self.name.upper()
-        super(DocumentSource, self).save(*args, **kwargs)
-
 class PersonID(models.Model):
     """
     Удостоверение личности
