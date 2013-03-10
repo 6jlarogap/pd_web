@@ -198,19 +198,7 @@ class GetPlaceView(View):
             else:
                 return render(request, 'create_burial_place_info.html', {'place': p})
         else:
-            areas = Area.objects.all()
-            data = dict(
-                cemetery__pk=request.GET.get('cemetery') or None,
-                pk=request.GET.get('area') or None,
-                )
-            data = dict([(k,v) for k,v in data.items() if v])
-
-            try:
-                a = areas.get(**data)
-            except Area.DoesNotExist:
-                return HttpResponse('')
-            else:
-                return render(request, 'create_burial_area_info.html', {'area': a})
+            return HttpResponse('')
 
 get_place = GetPlaceView.as_view()
 
