@@ -82,7 +82,7 @@ class LoggingFormMixin:
                         old_value = dict(form.fields[f].choices).get(old_value, old_value)
                         new_value = dict(form.fields[f].choices).get(new_value, new_value)
 
-                    if old_value != new_value:
+                    if old_value != new_value and form.fields[f].label:
                         self.changed_list.append((u'%s%s' % (prefix, form.fields[f].label), old_value, new_value))
 
     def put_log_data(self, msg=_(u'Захоронение сохранено')):
