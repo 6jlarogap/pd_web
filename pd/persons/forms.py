@@ -35,11 +35,18 @@ class PersonIDForm(ValidDataMixin, forms.ModelForm):
 
     class Meta:
         model = PersonID
-        exclude = ['person', 'source']
+        exclude = ['person', ]
 
     def clean_source(self):
         src, _created = DocumentSource.objects.get_or_create(name=self.cleaned_data['source'])
         return src
+
+    def __init__(self, *args, **kwargs):
+        super(PersonIDForm, self).__init__(*args, **kwargs)
+        if self.initial and self.initial.get('source') and isinstance(self.initial.get('source'), DocumentSource):
+            self.initial['source'] = self.initial.get('source').name
+        if self.instance and self.instance.source and isinstance(self.instance.source, DocumentSource):
+            self.initial.update({'source': self.instance.source.name})
 
 class DeathCertificateForm(ValidDataMixin, forms.ModelForm):
     class Meta:
