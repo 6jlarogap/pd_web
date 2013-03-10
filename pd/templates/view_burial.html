@@ -10,6 +10,7 @@
     {% endif %}
 
     <h1>{{ b.get_source_type_display }} {% trans "захоронение" %} {{ b.pk }}</h1>
+    {{ b.order.customer }} | {{ b.order.applicant }} | {{ b.order.applicant_organization }}
     <dl>
         {% if b.account_number %}<dt>{% trans "Учетный номер" %}:</dt><dd>{{ b.account_number }}</dd>{% endif %}
         <dt>{% trans "Статус" %}:</dt><dd>{{ b.status_str }}</dd>
@@ -37,8 +38,12 @@
             {% elif b.agent_director %}
                 <dt>{% trans "Агент" %}:</dt><dd>{% trans "Директор" %}</dd>
             {% endif %}
-            {% if b.order.customer and user.profile.is_ugh %}
-                {% trans "от лица" %} {{ b.order.customer }}
+            {% if user.profile.is_ugh %}
+                {% if b.order.applicant %}
+                    <dt>{% trans "от лица" %}</dt><dd>{% trans "ФЛ" %} {{ b.order.applicant }}</dd>
+                {% elif b.order.applicant_organization %}
+                    <dt>{% trans "от лица" %}</dt><dd>{% trans "ЮЛ" %} {{ b.order.applicant_organization }} {{ b.order.agent.person|default:"" }}</dd>
+                {% endif %}
             {% endif %}
         {% endif %}
         {% if b.deadman  %}

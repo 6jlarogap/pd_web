@@ -101,6 +101,7 @@ class Order(models.Model):
 
     @property
     def customer(self):
+        print 'customer', self.applicant, self.applicant_organization and self.get_formal_org()
         return self.applicant or (self.applicant_organization and self.get_formal_org()) or ''
 
     def get_formal_org(self):
