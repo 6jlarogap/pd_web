@@ -21,6 +21,6 @@ admin.site.register(Profile, ProfileAdmin)
 class OrgAdmin(admin.ModelAdmin):
     inlines = [ProfileLORUInline, ]
     list_display = ['name', 'type']
-    raw_id_fields = ['off_address', ]
+    readonly_fields =  ['off_address', ]
 
 admin.site.register(Org, OrgAdmin)
