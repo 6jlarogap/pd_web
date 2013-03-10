@@ -116,7 +116,7 @@
                     {% if c.applicant %}
                         ФЛ {{ c.applicant|default:"" }}
                     {% elif c.applicant_organization %}
-                        ЮЛ {{ c.applicant_organization|default:"" }}
+                        ЮЛ {{ c.applicant_organization|default:"" }} {{ c.agent|default:"" }}
                     {% endif %}
                 </td>
                 <td>{{ c.loru_number|default:"" }}</td>
