@@ -37,6 +37,9 @@
             {% elif b.agent_director %}
                 <dt>{% trans "Агент" %}:</dt><dd>{% trans "Директор" %}</dd>
             {% endif %}
+            {% if b.order.customer %}
+                {% trans "от лица" %} {{ b.order.customer }}
+            {% endif %}
         {% endif %}
         {% if b.deadman %}
             <dt>{% trans "Усопший" %}:</dt>
