@@ -3,6 +3,12 @@
 {% load i18n %}
 
 {% block content %}
+    {% if b.order and user.profile.is_loru %}
+        {% with order=b.order tab="burial" %}
+            {% include "order_nav.html" %}
+        {% endwith %}
+    {% endif %}
+
     <h1>{{ b.get_source_type_display }} {% trans "захоронение" %} {{ b.pk }}</h1>
     <dl>
         {% if b.account_number %}<dt>{% trans "Учетный номер" %}:</dt><dd>{{ b.account_number }}</dd>{% endif %}
