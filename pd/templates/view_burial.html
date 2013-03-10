@@ -17,9 +17,9 @@
             <dt>{% trans "Заказ" %}:</dt>
             <dd>
                 {% if user.profile.is_loru and b.order.loru == user.profile.org %}
-                    <a href="{% url order_edit b.order.pk %}">{{ b.order.pk }}</a>
+                    <a href="{% url order_edit b.order.pk %}">{{ b.order.loru_number }}</a>
                 {% else %}
-                    {{ b.order.pk }}
+                    {{ b.order.loru_number }}
                 {% endif %}
             </dd>
         {% endif %}
