@@ -142,7 +142,7 @@ class OrderList(LORURequiredMixin, ListView):
             if form.cleaned_data['row']:
                 orders = orders.filter(burial__row=form.cleaned_data['row'])
             if form.cleaned_data['place']:
-                orders = orders.filter(burial__place=form.cleaned_data['place'])
+                orders = orders.filter(burial__place_number=form.cleaned_data['place'])
             if form.cleaned_data['no_last_name']:
                 orders = orders.filter(Q(burial__deadman__last_name='') | Q(burial__deadman__last_name__isnull=True))
             if form.cleaned_data['no_responsible']:
