@@ -105,7 +105,7 @@ class OrderList(LORURequiredMixin, ListView):
             'burial', 'burial__ugh', 'burial__cemetery', 'burial__area', 'burial__responsible', 'burial__responsible',
             'burial__changed_by', 'burial__deadman', 'applicant_organization', 'applicant', 'loru',
             'agent', 'agent__person', 'agent__org',
-            ).annotate(item_count=Count('orderitem'))
+        ).annotate(item_count=Count('orderitem'))
 
         form = self.get_form()
         if form.data and form.is_valid():
