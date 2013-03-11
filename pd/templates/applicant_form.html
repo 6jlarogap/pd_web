@@ -19,36 +19,39 @@
 
     <div id="applicant_form_org">
         {{ form.applicant_organization.errors }}
-        <p class="inline">{{ form.applicant_organization.label_tag }} {{ form.applicant_organization }}<span class="helptext">{{ form.applicant_organization.help_text }}</span></p>
-
-        <p class="inline">
-            <a href="#add_loru" role="button" class="btn btn-loru" data-toggle="modal">
-                {% trans "добавить юрлицо" %}
-            </a>
-        </p>
-
-        {{ form.agent_director.errors }}
-        <p class="inline">{{ form.agent_director.label_tag }} {{ form.agent_director }}<span class="helptext">{{ form.agent_director.help_text }}</span></p>
+        <div class="inline">
+            {{ form.applicant_organization.label_tag }} {{ form.applicant_organization }}<span class="helptext">{{ form.applicant_organization.help_text }}</span>
+            <p class="inline">
+                <a href="#add_loru" role="button" class="btn btn-loru" data-toggle="modal">
+                    {% trans "добавить юрлицо" %}
+                </a>
+            </p>
+        </div>
 
         <h2>{% trans "Агент" %}</h2>
 
-        {{ form.agent.errors }}
-        <p class="inline">{{ form.agent.label_tag }} {{ form.agent }}<span class="helptext">{{ form.agent.help_text }}</span></p>
+        {{ form.agent_director.errors }}
+        <p>{{ form.agent_director.label_tag }} {{ form.agent_director }}<span class="helptext">{{ form.agent_director.help_text }}</span></p>
 
-        <p class="inline">
-            <a href="#add_agent" role="button" class="btn btn-agent" data-toggle="modal">
-                {% trans "добавить агента" %}
-            </a>
-        </p>
+        {{ form.agent.errors }}
+        <div class="inline">
+            {{ form.agent.label_tag }} {{ form.agent }}<span class="helptext">{{ form.agent.help_text }}</span>
+            <p>
+                <a href="#add_agent" role="button" class="btn btn-agent" data-toggle="modal">
+                    {% trans "добавить агента" %}
+                </a>
+            </p>
+        </div>
 
         {{ form.dover.errors }}
-        <p class="inline">{{ form.dover.label_tag }} {{ form.dover }}<span class="helptext">{{ form.dover.help_text }}</span></p>
-
-        <p class="inline">
-            <a href="#add_dover" role="button" class="btn btn-dover" data-toggle="modal">
-                {% trans "добавить доверенность" %}
-            </a>
-        </p>
+        <div class="inline">
+            {{ form.dover.label_tag }} {{ form.dover }}<span class="helptext">{{ form.dover.help_text }}</span>
+            <p>
+                <a href="#add_dover" role="button" class="btn btn-dover" data-toggle="modal">
+                    {% trans "добавить доверенность" %}
+                </a>
+            </p>
+        </div>
         <br/>
     </div>
 

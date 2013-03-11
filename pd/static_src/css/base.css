@@ -1,5 +1,7 @@
-p.inline { display: inline-block; }
-form.inline { display: inline-block; }
+.inline {
+    display: inline-block;
+    vertical-align: top;
+}
 
 fieldset p { display: inline-block; }
 
