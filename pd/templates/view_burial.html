@@ -125,20 +125,7 @@
             {% endif %}
         {% endif %}
         {% if user.profile.is_ugh %}
-            {% if b.can_approve %}
-                <input type="submit" class="btn" name="approve" value="{% trans "согласовать" %}">
-                {% if b.can_decline %}
-                    <br/><br/>
-                    <label>{% trans "Причина" %}</label>
-                    <select name="reason_typical">
-                        <option value=""></option>
-                        {% for r in reason_typical_decline %}<option value="{{ r.text }}">{{ r.name }}</option>{% endfor %}
-                    </select>
-                    <textarea name="reason" rows="5" cols="30"></textarea>
-                    <br/>
-                    <input type="submit" class="btn" name="decline" value="{% trans "отклонить" %}">
-                {% endif %}
-            {% elif b.can_finish %}
+            {% if b.can_finish %}
                 {% if not b.is_archive %}
                     {{ close_form.as_p }}
                     <script type="text/javascript">

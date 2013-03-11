@@ -158,7 +158,7 @@ class BurialView(BurialsListGenericMixin, DetailView):
             close_form = self.get_close_form()
             if close_form.is_valid():
                 b = close_form.save()
-                if b.is_archive():
+                if b.is_ugh():
                     return redirect(reverse('edit_burial', args=[b.pk]) + '?action=complete')
                 else:
                     b.status = Burial.STATUS_CLOSED
@@ -417,7 +417,7 @@ class CreateBurial(CreateView):
                     reverse('view_burial', args=[b.pk]), b.pk,
                 ))
 
-            if action == 'complete' and self.request.user.profile.is_ugh() and b.can_finish() and b.is_archive():
+            if action == 'complete' and self.request.user.profile.is_ugh() and b.can_finish() and b.is_ugh():
                 b.status = Burial.STATUS_CLOSED
                 write_log(self.request, b, _(u'Захоронение закрыто'))
                 messages.success(self.request, _(u"<a href='%s'>Захоронение %s</a> закрыто") % (

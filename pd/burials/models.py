@@ -305,18 +305,17 @@ class Burial(models.Model):
         return self.is_ugh_only() or self.is_archive()
 
     def can_approve(self):
-        if self.is_archive():
+        if self.is_ugh():
             return False
         elif self.is_full():
             return self.is_ready()
-        else:
-            return self.is_draft()
+        return False
 
     def can_finish(self):
-        if self.is_archive():
-            return self.is_draft()
-        else:
+        if self.is_full():
             return self.is_approved()
+        else:
+            return self.is_draft()
 
     def can_annulate(self):
         return self.can_finish() and not self.is_archive()
