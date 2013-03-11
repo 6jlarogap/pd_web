@@ -168,7 +168,7 @@ class OrderSearchForm(forms.Form):
     death_date_to = forms.DateField(required=False, label=_(u"по"))
     burial_date_from = forms.DateField(required=False, label=_(u"Дата захор. с"))
     burial_date_to = forms.DateField(required=False, label=_(u"по"))
-    account_number_from = forms.IntegerField(required=False, label=_(u"Рег. № с"))
+    account_number_from = forms.IntegerField(required=False, label=_(u"Номер заказа с"))
     account_number_to = forms.IntegerField(required=False, label=_(u"по"))
     applicant_org = forms.CharField(required=False, max_length=30, label=_(u"Заявитель-ЮЛ"))
     applicant_person = forms.CharField(required=False, max_length=30, label=_(u"Заявитель-ФЛ"))

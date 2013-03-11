@@ -132,9 +132,9 @@ class OrderList(LORURequiredMixin, ListView):
             if form.cleaned_data['burial_date_to']:
                 orders = orders.filter(burial__plan_date__lte=form.cleaned_data['burial_date_to'])
             if form.cleaned_data['account_number_from']:
-                orders = orders.filter(burial__account_number__gte=form.cleaned_data['account_number_from'])
+                orders = orders.filter(loru_number__gte=form.cleaned_data['account_number_from'])
             if form.cleaned_data['account_number_to']:
-                orders = orders.filter(burial__account_number__lte=form.cleaned_data['account_number_to'])
+                orders = orders.filter(loru_number__lte=form.cleaned_data['account_number_to'])
             if form.cleaned_data['responsible']:
                 orders = orders.filter(burial__responsible__last_name__icontains=form.cleaned_data['responsible'])
             if form.cleaned_data['cemetery']:
