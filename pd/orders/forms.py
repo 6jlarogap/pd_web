@@ -12,6 +12,7 @@ from burials.forms import OPF_CHOICES, EMPTY
 from pd.forms import ChildrenJSONMixin
 from persons.forms import AlivePersonForm, PersonIDForm
 from persons.models import AlivePerson, PersonID
+from users.models import Org
 
 
 class ProductForm(forms.ModelForm):

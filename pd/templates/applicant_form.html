@@ -25,7 +25,51 @@
                 <a href="#add_loru" role="button" class="btn btn-loru" data-toggle="modal">
                     {% trans "добавить юрлицо" %}
                 </a>
+                <a href="#" class="btn btn-edit-org" target="_blank">
+                    {% trans "править" %}
+                </a>
             </p>
+            <script type="text/javascript">
+                $(function() {
+                    var ORGS_LIST = [{% for org in form.fields.applicant_organization.queryset %}"{{ org.name|escapejs }}"{% if not forloop.last %},{% endif %}{% endfor %}];
+                    var ORGS_INACTIVE = [{% for org in form.fields.applicant_organization.queryset %}{% if not org.profile_set.all.exists %}"{{ org.pk }}",{% endif %}{% endfor %} null];
+                    $('select[name$=applicant_organization]').attr('autocomplete', 'off').change(function() {
+                        if (ORGS_INACTIVE.indexOf($(this).val()) > -1) {
+                            $('.btn-edit-org').attr('href', '/org/'+$(this).val()+'/edit/').show();
+                        } else {
+                            $('.btn-edit-org').hide();
+                        }
+                    }).each(function() {
+                        var sel_input = $(this);
+                        var ac_input = $('<input type="text">');
+                        ac_input.val(sel_input.find('option:selected').text());
+                        ac_input.insertAfter(sel_input);
+                        sel_input.hide();
+                        ac_input.typeahead({
+                            items: 100,
+                            source: ORGS_LIST,
+                            onselect: function() {
+                                ac_input.change();
+                            }
+                        }).change(function() {
+                            var item = $(this).val();
+                            var processed = false;
+                            sel_input.find('option').each(function() {
+                                if ($(this).text() == item) {
+                                    sel_input.val($(this).attr('value'));
+                                    sel_input.change();
+                                    processed = true;
+                                }
+                            });
+                            if (!processed) {
+                                alert("Указана несуществующая организация");
+                                ac_input.val(sel_input.find('option:selected').text());
+                            }
+                        });
+                    });
+                    $('input[name$=applicant_organization]').change();
+                });
+            </script>
         </div>
 
         <h2>{% trans "Агент" %}</h2>
