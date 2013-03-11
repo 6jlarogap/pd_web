@@ -183,6 +183,8 @@ class BurialView(BurialsListGenericMixin, DetailView):
                 b.get_status_display(),
             )
             messages.success(request, msg)
+        if request.POST.get('back'):
+            return redirect('edit_burial', pk=b.pk)
         return redirect('dashboard')
 
     def get_close_form(self):
