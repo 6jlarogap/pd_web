@@ -247,13 +247,14 @@ def do_import_burials(csv_fileobj, user):
                                 last_name=row[58], first_name=fm, username='imported_%s' % i,
                             ), org=app_org, is_agent=True
                         )
-                if agent and row[61]:
-                    dover, _created = Dover.objects.get_or_create(
-                        agent=agent,
-                        number=row[61],
-                        begin=row[62],
-                        end=row[63],
-                    )
+
+                    if agent and row[61]:
+                        dover, _created = Dover.objects.get_or_create(
+                            agent=agent,
+                            number=row[61],
+                            begin=row[62],
+                            end=row[63],
+                        )
 
                 try:
                     changed_dt = row[63].split(' ', 2)[2].rsplit(':', 1)[0]
@@ -303,8 +304,8 @@ def do_import_burials(csv_fileobj, user):
                 if not area.name:
                     write_log(request, b, _(u'Участок не был указан'))
 
-                if row[63]:
-                    write_log(request, b, _(u'Комментарий: %s') % row[63])
+                if row[64]:
+                    write_log(request, b, _(u'Комментарий: %s') % row[64])
     return real_i, dupes_i
 
 def do_import_services(csv_fileobj):
@@ -372,6 +373,10 @@ def do_import_orders(csv_fileobj):
                 if b.applicant_organization != loru:
                     b.applicant_organization = loru
                 b.save()
+            else:
+                b = o.get_burial()
+                if b:
+                    Order.objects.filter(pk=o.pk).update(agent_director=b.agent_director, agent=b.agent, dover=b.dover)
 
             for d in items_data:
                 if not d['active']:
