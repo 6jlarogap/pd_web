@@ -181,12 +181,11 @@ class GetPlaceView(View):
     def get(self, request, *args, **kwargs):
         places = Place.objects.all()
         data = dict(
-            cemetery__pk=request.GET.get('cemetery') or '',
-            area__pk=request.GET.get('area') or '',
-            row=request.GET.get('row') or '',
-            place=request.GET.get('place_number') or '',
+            cemetery__pk=request.GET.get('cemetery') or None,
+            area__pk=request.GET.get('area') or None,
+            row=request.GET.get('row') or None,
+            place=request.GET.get('place_number') or None,
         )
-        data = dict([(k,v) for k,v in data.items() if v])
 
         if request.GET.get('place_number'):
             try:
