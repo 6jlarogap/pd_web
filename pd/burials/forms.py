@@ -142,7 +142,7 @@ class ResponsibleForm(AlivePersonForm):
     take_from = forms.ChoiceField(label=_(u"Где берем Ответственного?"), choices=WHERE_CHOICES,
                                   widget=forms.RadioSelect, required=True, initial=WHERE_NEW)
     place = forms.ModelChoiceField(queryset=Place.objects.all(), widget=forms.HiddenInput, required=False)
-    order = forms.ModelChoiceField(queryset=Order.objects.all(), widget=forms.HiddenInput, required=False)
+    order = forms.ModelChoiceField(queryset=Order.objects.all().select_related('loru'), widget=forms.HiddenInput, required=False)
 
     def __init__(self, *args, **kwargs):
         super(ResponsibleForm, self).__init__(*args, **kwargs)
