@@ -13,7 +13,7 @@ from django.core.urlresolvers import reverse
 from django.db import models
 from django.db.models.aggregates import Max
 from django.db.models.deletion import ProtectedError
-from django.forms.models import inlineformset_factory
+from django.forms.models import inlineformset_factory, BaseInlineFormSet
 from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext_lazy as _
 from django.db.models.query_utils import Q
@@ -68,7 +68,15 @@ class CemeteryAdminForm(BaseCemeteryForm):
     class Meta:
         model = Cemetery
 
-AreaFormset = inlineformset_factory(Cemetery, Area, can_delete=False)
+class BaseAreaFormset(BaseInlineFormSet):
+    def clean(self):
+        for df in self.deleted_forms:
+            if df.instance:
+                if df.instance.burial_set.exists():
+                    msg = _(u'Участок %s с <a href="/burials/?area=%s" target="_blank">Захоронениями</a> удалить нельзя, обратитесь в <a href="#">службу поддержки</a>')
+                    raise forms.ValidationError(mark_safe(msg % (df.instance.name, df.instance.name)))
+
+AreaFormset = inlineformset_factory(Cemetery, Area, formset=BaseAreaFormset, can_delete=True)
 
 class PlaceEditForm(forms.ModelForm):
     class Meta:

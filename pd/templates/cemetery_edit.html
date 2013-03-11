@@ -17,6 +17,7 @@
 
         <h2>{% trans "Участки" %}</h2>
         {{ form.area_formset.management_form }}
+        {{ form.area_formset.non_form_errors }}
         {% for f in form.area_formset.forms %}
             <fieldset>
                 {{ f.as_p }}
