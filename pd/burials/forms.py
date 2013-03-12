@@ -70,7 +70,7 @@ class CemeteryAdminForm(BaseCemeteryForm):
 
 class BaseAreaFormset(BaseInlineFormSet):
     def clean(self):
-        for df in self.deleted_forms:
+        for df in getattr(self, deleted_forms, []):
             if df.instance:
                 if df.instance.burial_set.exists():
                     msg = _(u'Участок %s с <a href="/burials/?area=%s" target="_blank">Захоронениями</a> удалить нельзя, обратитесь в <a href="#">службу поддержки</a>')
