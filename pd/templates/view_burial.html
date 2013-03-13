@@ -11,9 +11,9 @@
 
     <h1>{{ b.get_source_type_display }} {% trans "захоронение" %} {{ b.pk }}</h1>
     <dl>
-        {% if b.account_number %}<dt>{% trans "Учетный номер" %}:</dt><dd>{{ b.account_number }}</dd>{% endif %}
+        <dt>{% trans "Учетный номер" %}:</dt><dd>{{ b.account_number|default:"не указан" }}</dd>
         <dt>{% trans "Статус" %}:</dt><dd>{{ b.status_str }}</dd>
-        {% if b.order and user.profile.is_loru %}
+        {% if user.profile.is_loru %}
             <dt>{% trans "Заказ" %}:</dt>
             <dd>
                 {% if user.profile.is_loru and b.order.loru == user.profile.org %}
@@ -27,43 +27,35 @@
         {% if b.ugh %}
             <dt>{% trans "УГХ" %}:</dt><dd>{{ b.ugh }}</dd>
         {% endif %}
-        {% if b.applicant_organization %}
-            <dt>{% trans "Заявитель-ЮЛ" %}:</dt><dd><a href="">{{ b.applicant_organization }}</a></dd>
-            {% if b.agent %}
-                <dt>{% trans "Агент" %}:</dt><dd>{{ b.agent }}</dd>
-                {% if b.dover %}
-                    <dt>{% trans "Доверенность" %}:</dt><dd>{{ b.dover }}</dd>
-                {% endif %}
-            {% elif b.agent_director %}
-                <dt>{% trans "Агент" %}:</dt><dd>{% trans "Директор" %}</dd>
-            {% endif %}
-            {% if user.profile.is_ugh %}
-                {% if b.order.applicant %}
-                    <dt>{% trans "от лица" %}</dt><dd>{% trans "ФЛ" %} {{ b.order.applicant }}</dd>
-                {% elif b.order.applicant_organization %}
-                    <dt>{% trans "от лица" %}</dt><dd>{% trans "ЮЛ" %} {{ b.order.applicant_organization }} {{ b.order.agent.person|default:"" }}</dd>
-                {% endif %}
+        <dt>{% trans "Заявитель-ЮЛ" %}:</dt><dd><a href="">{{ b.applicant_organization|default:"не указано" }}</a></dd>
+        {% if b.agent %}
+            <dt>{% trans "Агент" %}:</dt><dd>{{ b.agent|default:"не указан" }}</dd>
+            <dt>{% trans "Доверенность" %}:</dt><dd>{{ b.dover|default:"не указана" }}</dd>
+        {% elif b.agent_director %}
+            <dt>{% trans "Агент" %}:</dt><dd>{% trans "Директор" %}</dd>
+        {% endif %}
+        {% if user.profile.is_ugh %}
+            {% if b.order.applicant %}
+                <dt>{% trans "от лица" %}</dt><dd>{% trans "ФЛ" %} {{ b.order.applicant }}</dd>
+            {% elif b.order.applicant_organization %}
+                <dt>{% trans "от лица" %}</dt><dd>{% trans "ЮЛ" %} {{ b.order.applicant_organization }} {{ b.order.agent.person|default:"" }}</dd>
             {% endif %}
         {% endif %}
-        {% if b.deadman  %}
-            <dt>{% trans "Усопший" %}:</dt>
-            <dd>
-                {{ b.deadman|default:"" }}
+        <dt>{% trans "Усопший" %}:</dt>
+        <dd>
+            {{ b.deadman|default:"не указан" }}
+            <br/>
+            {{ b.deadman.address|default:"" }}
+            {% if b.deadman.birth_date %}
                 <br/>
-                {{ b.deadman.address|default:"" }}
-                {% if b.deadman.birth_date %}
-                    <br/>
-                    {{ b.deadman.birth_date }}
-                    {% if b.deadman.death_date %}
-                        &mdash;
-                        {{ b.deadman.death_date }}
-                    {% endif %}
+                {{ b.deadman.birth_date }}
+                {% if b.deadman.death_date %}
+                    &mdash;
+                    {{ b.deadman.death_date }}
                 {% endif %}
-            </dd>
-        {% endif %}
-        {% if b.cemetery %}
-            <dt>{% trans "Кладбище" %}:</dt><dd>{{ b.cemetery|default:"" }}</dd>
-        {% endif %}
+            {% endif %}
+        </dd>
+        <dt>{% trans "Кладбище" %}:</dt><dd>{{ b.cemetery|default:"не указан" }}</dd>
         <dt>{% trans "Место" %}:</dt><dd>
             {% if b.area %}{% trans "Участок" %}: {{ b.area }}<br/>{% endif %}
             {% if b.row %}{% trans "Ряд" %}: {{ b.row }}<br/>{% endif %}
@@ -74,37 +66,27 @@
                 <a href="{% url view_place b.place.pk %}" class="btn">{% trans "карточка" %}</a>
             {% endif %}
         </dd>
-        {% if b.cemetery and b.is_approved %}
-            <dt>{% trans "Правило создания номера места" %}:</dt>
-            <dd>
-                {{ b.cemetery.get_places_algo_display }}
-            </dd>
-        {% endif %}
-        {% if b.get_responsible %}
-            <dt>{% trans "Ответственный" %}:</dt>
-            <dd>
-                {{ b.get_responsible }}
-                <br/>
-                {{ b.get_responsible.address|default:"" }}
-            </dd>
-        {% endif %}
-        {% if b.applicant %}
-            <dt>{% trans "Заявитель" %}:</dt>
-            <dd>
-                {{ b.applicant|default:"" }}
-                <br/>
-                {{ b.applicant.address|default:"" }}
-                <br/>
-                {{ b.applicant.personid|default:"" }}
-            </dd>
-        {% endif %}
-        {% if b.plan_date and b.plan_time %}
-            <dt>{% trans "План. дата" %}:</dt>
-            <dd>{{ b.plan_date|date:"d.m.Y"|default:"" }} {{ b.plan_time|time:"H:i"|default:"" }}</dd>
-        {% endif %}
-        {% if b.fact_date %}
-            <dt>{% trans "Факт. дата" %}:</dt><dd>{{ b.fact_date|date:"d.m.Y"|default:"" }}</dd>
-        {% endif %}
+        <dt>{% trans "Правило создания номера места" %}:</dt>
+        <dd>
+            {{ b.cemetery.get_places_algo_display|default:"не указано" }}
+        </dd>
+        <dt>{% trans "Ответственный" %}:</dt>
+        <dd>
+            {{ b.get_responsible|default:"не указан" }}
+            <br/>
+            {{ b.get_responsible.address|default:"" }}
+        </dd>
+        <dt>{% trans "Заявитель" %}:</dt>
+        <dd>
+            {{ b.applicant|default:"не указан" }}
+            <br/>
+            {{ b.applicant.address|default:"" }}
+            <br/>
+            {{ b.applicant.personid|default:"" }}
+        </dd>
+        <dt>{% trans "План. дата и время" %}:</dt>
+        <dd>{{ b.plan_date|date:"d.m.Y"|default:"не указан" }} {{ b.plan_time|time:"H:i"|default:"не указан" }}</dd>
+        <dt>{% trans "Факт. дата" %}:</dt><dd>{{ b.fact_date|date:"d.m.Y"|default:"не указан" }}</dd>
     </dl>
     <form action="" method="POST">
         {% csrf_token %}

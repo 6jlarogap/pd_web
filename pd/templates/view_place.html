@@ -5,35 +5,25 @@
 {% block content %}
     <h1>{{ place }}</h1>
     <dl>
-        {% if place.cemetery %}
-            <dt>{% trans "Кладбище" %}</dt>
-            <dd>{{ place.cemetery }}</dd>
-        {% endif %}
-        {% if place.area %}
-            <dt>{% trans "Участок" %}</dt>
-            <dd>{{ place.area }}</dd>
-        {% endif %}
-        {% if place.row %}
-            <dt>{% trans "Ряд" %}</dt>
-            <dd>{{ place.row }}</dd>
-        {% endif %}
-        {% if place.seat %}
-            <dt>{% trans "Место" %}</dt>
-            <dd>{{ place.seat }}</dd>
-        {% endif %}
-        {% if place.responsible %}
-            <dt>{% trans "Ответственный" %}</dt>
-            <dd>
-                {{ place.responsible }}
-                {% if place.responsible.phones %}
-                    ({% trans "тел." %} {{ place.responsible.phones }})
-                {% endif %}
-                <form action="{% url rm_responsible place.pk %}" method="POST" class="inline">
-                    {% csrf_token %}
-                    <input type="submit" class="btn" value="{% trans "открепить" %}"/>
-                </form>
-            </dd>
-        {% endif %}
+        <dt>{% trans "Кладбище" %}</dt>
+        <dd>{{ place.cemetery|default:"не указано" }}</dd>
+        <dt>{% trans "Участок" %}</dt>
+        <dd>{{ place.area|default:"не указан" }}</dd>
+        <dt>{% trans "Ряд" %}</dt>
+        <dd>{{ place.row|default:"не указан" }}</dd>
+        <dt>{% trans "Место" %}</dt>
+        <dd>{{ place.seat|default:"не указано" }}</dd>
+        <dt>{% trans "Ответственный" %}</dt>
+        <dd>
+            {{ place.responsible|default:"не указано" }}
+            {% if place.responsible.phones %}
+                ({% trans "тел." %} {{ place.responsible.phones }})
+            {% endif %}
+            <form action="{% url rm_responsible place.pk %}" method="POST" class="inline">
+                {% csrf_token %}
+                <input type="submit" class="btn" value="{% trans "открепить" %}"/>
+            </form>
+        </dd>
         <dt>{% trans "Могил всего" %}</dt><dd>{{ place.places_count }}</dd>
         <dt>{% trans "Свободно" %}</dt><dd>{{ place.get_available_count }}</dd>
 
