@@ -443,6 +443,16 @@ class Burial(models.Model):
     def __unicode__(self):
         return u'%s' % self.pk
 
+    def combined_date(self):
+        if self.fact_date:
+            return self.fact_date.strftime('%d.%m.%Y')
+        elif self.plan_date or self.plan_time:
+            pd = self.plan_date and self.plan_date.strftime('%d.%m.%Y') or ''
+            pt = self.plan_time and self.plan_time.strftime('%H:%M') or ''
+            return u'%s %s' % (pd, pt)
+        else:
+            return ''
+
 class Reason(models.Model):
     TYPE_BACK = 'back'
     TYPE_DECLINE = 'decline'

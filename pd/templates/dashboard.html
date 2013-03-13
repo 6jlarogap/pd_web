@@ -94,7 +94,7 @@
                 {% if user.profile.is_ugh %}<th>{{ b.loru_name }}</th>{% endif %}
                 <td>{{ b.cemetery|default:"" }} / {{ b.ugh_name|default:"" }}</td>
                 <td>{{ b.place_number|default:"" }}</td>
-                <td>{{ b.plan_date|default:"" }} {{ b.plan_time|default:"" }}</td>
+                <td>{{ b.combined_date }}</td>
                 <th>{{ b.get_status_display|default:"" }}</th>
                 <td>
                     <a class="btn" href="{% url view_burial b.pk %}">{% trans "просмотр" %}</a>
