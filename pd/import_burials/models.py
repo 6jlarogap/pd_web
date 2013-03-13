@@ -11,7 +11,7 @@ from django.http import HttpRequest
 
 from django.utils.translation import ugettext as _
 
-from burials.models import Burial, ExhumationRequest, Cemetery, Area, Place
+from burials.models import Burial, ExhumationRequest, Cemetery, Area, Place, AreaPurpose
 from geo.models import Location, Country, LocationFIAS, DFiasAddrobj, Region, City, Street
 from logs.models import write_log
 from orders.models import Product, Order, OrderItem, CoffinData, CatafalqueData
@@ -204,7 +204,15 @@ def do_import_burials(csv_fileobj, user):
                 b = Burial.objects.get(cemetery=cemetery, account_number=row[0])
                 dupes_i += 1
             except Burial.DoesNotExist:
-                area, _created = Area.objects.get_or_create(name=row[7] or '', cemetery=cemetery)
+                area, _created = Area.objects.get_or_create(
+                    name=row[7] or '',
+                    cemetery=cemetery
+                )
+
+                area.availability = Area.AVAILABILITY_OPEN
+                area.purpose, _created = AreaPurpose.objects.get_or_create(name='общественный')
+                area.places_count = 2
+                area.save()
 
                 place, _created = Place.objects.get_or_create(
                     cemetery=cemetery,
