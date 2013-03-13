@@ -42,7 +42,9 @@
                     }).each(function() {
                         var sel_input = $(this);
                         var ac_input = $('<input type="text">');
-                        ac_input.val(sel_input.find('option:selected').text());
+                        if (sel_input.find('option:selected').attr('value')) {
+                            ac_input.val(sel_input.find('option:selected').text());
+                        }
                         ac_input.insertAfter(sel_input);
                         sel_input.hide();
                         ac_input.typeahead({
