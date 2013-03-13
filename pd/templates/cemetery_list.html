@@ -23,6 +23,7 @@
                 <td>
                     {% if user.profile.org == c.ugh %}
                         <a href="{% url manage_cemeteries_edit c.pk %}" class="btn">{% trans "править" %}</a>
+                        <a href="{% url manage_cemeteries_merge c.pk %}" class="btn">{% trans "объединить участки" %}</a>
                     {% endif %}
                 </td>
             </tr>

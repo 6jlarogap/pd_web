@@ -3,7 +3,7 @@
 from django.contrib import messages
 from django.core.urlresolvers import reverse
 from django.db.models.query_utils import Q
-from django.shortcuts import redirect, render
+from django.shortcuts import redirect, render, get_object_or_404
 from django.views.decorators.csrf import csrf_exempt
 from django.views.generic.base import View
 from django.utils.translation import ugettext as _
@@ -11,7 +11,7 @@ from django.views.generic.detail import DetailView
 from django.views.generic.edit import CreateView, UpdateView
 from django.views.generic.list import ListView
 
-from burials.forms import CemeteryForm, AreaFormset, PlaceEditForm, AddOrgForm
+from burials.forms import CemeteryForm, AreaFormset, PlaceEditForm, AddOrgForm, AreaMergeForm
 from burials.models import Cemetery, Place, Area
 from burials.burials_views import *
 from logs.models import write_log
@@ -78,6 +78,41 @@ class CemeteryEdit(UGHRequiredMixin, UpdateView):
         return redirect('manage_cemeteries')
 
 manage_cemeteries_edit = CemeteryEdit.as_view()
+
+class CemeteryMerge(UGHRequiredMixin, TemplateView):
+    template_name = 'cemetery_merge.html'
+
+    def get_object(self):
+        return get_object_or_404(Cemetery, ugh=self.request.user.profile.org, pk=self.kwargs['pk'])
+
+    def get_form(self):
+        return AreaMergeForm(data=self.request.POST or None, cemetery=self.get_object())
+
+    def get_context_data(self, **kwargs):
+        return {
+            'cemetery': self.get_object(),
+            'form': self.get_form(),
+        }
+
+    def post(self, request, *args, **kwargs):
+        self.request = request
+        self.args = args
+        self.kwargs = kwargs
+        
+        form = self.get_form()
+        self.object = self.get_object()
+        if form.is_valid():
+            form.save()
+            write_log(self.request, self.object, _(u'Участки объединены'))
+            msg = _(u"Участки <a href='%s'>кладбища %s</a> изменены") % (
+                reverse('manage_cemeteries_edit', args=[self.object.pk]),
+                self.object.name,
+            )
+            messages.success(self.request, msg)
+            return redirect('manage_cemeteries_edit', self.get_object().pk)
+        return self.get(request, *args, **kwargs)
+
+manage_cemeteries_merge = CemeteryMerge.as_view()
 
 class PlaceView(UGHRequiredMixin, UpdateView):
     template_name = 'view_place.html'

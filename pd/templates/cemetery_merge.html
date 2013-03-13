@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% load i18n %}
+
+{% block content %}
+    <h1>{% trans "Кладбище" %} {{ burial }}</h1>
+    <form action="" method="POST">
+        {% csrf_token %}
+        <fieldset>
+            {{ form.as_p }}
+        </fieldset>
+        <p>
+            <input type="submit" class="btn" value="{% trans "cохранить" %}" class="btn btn-primary"/>
+        </p>
+    </form>
+{% endblock %}
