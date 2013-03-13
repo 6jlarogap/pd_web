@@ -518,14 +518,29 @@ $(function() {
     $('#id_cemetery, #id_area, #id_row, #id_place_number').change(function() {
         $('#id_grave_number').html('<option value="1">1</option>');
         $('#id_responsible-take_from_0').removeAttr('checked').closest('li').hide();
-        if ($('#id_cemetery').val() &&  $('#id_area').val() &&  $('#id_place_number').val()) {
-            var data = $('#id_cemetery, #id_area, #id_row, #id_place_number').serialize();
-            $('#place_info').load('/burials/get_place/?'+data)
+
+        var data = $('#id_cemetery, #id_area, #id_row, #id_place_number').serialize();
+        if ($('#id_cemetery').val() &&  $('#id_area').val()) {
+            if ($('#id_place_number').val()) {
+                $('#place_info').load('/burials/get_place/?'+data)
+            }
             $('#id_grave_number').val(old_grave_value);
-        } else if ($('#id_cemetery').val() &&  $('#id_area').val()) {
-            var data = $('#id_cemetery, #id_area, #id_row, #id_place_number').serialize();
-            $('#place_info').load('/burials/get_place/?'+data)
-            $('#id_grave_number').val(old_grave_value);
+            $.getJSON('/burials/get_graves_number/?'+data, function(data) {
+                var count = data.places || 1;
+                var options = '';
+                for (var i=1; i<=count; i++) {
+                    options += '<option value="'+i+'">'+i+'</option>';
+                }
+                $('#id_grave_number').html(options);
+                $('#id_grave_number').val(old_grave_value);
+                $('#id_responsible-place').val(data.place_pk || "");
+
+                var resp_id = '#id_responsible-take_from_';
+                $(resp_id+'0').closest('li').show();
+                if (!$(resp_id+'1').is(':checked') && !$(resp_id+'2').is(':checked')) {
+                    $(resp_id+'0').attr('checked', 'checked');
+                }
+            })
         }
 
         var cemetery = $('#id_cemetery').val();
