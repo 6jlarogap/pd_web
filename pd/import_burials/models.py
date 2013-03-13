@@ -249,10 +249,9 @@ def do_import_burials(csv_fileobj, user):
                             user__last_name=row[58], user__first_name=fm, org=app_org, is_agent=True
                         )
                     except Profile.DoesNotExist:
-
                         agent = Profile.objects.create(
                             user=User.objects.create(
-                                last_name=row[58], first_name=fm, username='imported_%s' % i,
+                                last_name=row[58], first_name=fm, username='imported_%s' % i, is_active=False,
                             ), org=app_org, is_agent=True
                         )
 
