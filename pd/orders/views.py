@@ -303,7 +303,7 @@ class OrderEdit(LORURequiredMixin, UpdateView):
             self.object.pk,
         )
         messages.success(self.request, msg)
-        return redirect('order_products', self.object.pk)
+        return redirect('.')
 
 order_edit = OrderEdit.as_view()
 
@@ -339,10 +339,7 @@ class OrderEditProducts(LORURequiredMixin, View):
                 self.object.pk,
             )
             messages.success(self.request, msg)
-            if self.object.get_burial():
-                return redirect(reverse('edit_burial', args=[self.object.get_burial().pk]))
-            else:
-                return redirect(reverse('create_burial', args=[]) + '?order=%s' % self.object.pk)
+            return redirect('.')
         else:
             messages.error(self.request, _(u"Обнаружены ошибки"))
             return self.get(request, *args, **kwargs)
@@ -410,7 +407,7 @@ class OrderEditServices(OrderEditProducts):
                 self.object.pk,
             )
             messages.success(self.request, msg)
-            return redirect('order_info', self.object.pk)
+            return redirect('.')
         else:
             messages.error(self.request, _(u"Обнаружены ошибки"))
             return self.get(request, *args, **kwargs)

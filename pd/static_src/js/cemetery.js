@@ -302,8 +302,21 @@ $(function() {
 
     $('input[name$=last_name], input[name$=first_name], input[name$=middle_name]').parents('p').addClass('inline');
 
-    $('.burial-form,.order_form').find(':input').live('blur', function(e) {
+    $('.burial-form,.order_form, .main-form').find(':input').live('blur', function(e) {
         $(this).change();
+    });
+
+    var SOMETHING_CHANGED = false
+    $('.main-form :input').change(function() {
+        SOMETHING_CHANGED = true;
+    });
+
+    $('.main-form .btn-next').click(function() {
+        if (SOMETHING_CHANGED) {
+            return confirm('Есть несохраненные изменения. Действительно уйти?')
+        } else {
+            return true;
+        }
     });
 
     $('.btn-commit-burial').click(function() {

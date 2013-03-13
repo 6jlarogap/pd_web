@@ -16,7 +16,7 @@
             {% trans "Новое захоронение" %}
         {% endif %}
     </h1>{% endblock form_title %}
-    <form action="{{ request.path }}" method="POST" class="burial-form">
+    <form action="{{ request.path }}" method="POST" class="burial-form main-form">
         {% csrf_token %}
         <input type="hidden" name="order"  value="{{ request.REQUEST.order }}" />
         <input type="hidden" name="archive"  value="{{ request.REQUEST.archive }}" />
@@ -63,11 +63,18 @@
         {% block buttons %}
             <p class="clear">
                 <input type="submit" class="btn btn-primary btn-commit-burial" value="{% trans "cохранить" %}"/>
-                {% if not b.is_finished %}
+                {% if not b.is_finished and not user.profile.is_loru %}
                     {% if user.profile.is_ugh and not b.is_full %}
                         <input type="submit" class="btn btn-commit-burial" name="complete" value="{% trans "cохранить и закрыть" %}"/>
                     {% else %}
                         <input type="submit" class="btn btn-commit-burial" name="ready" value="{% trans "cохранить и отправить на согласование" %}"/>
+                    {% endif %}
+                {% endif %}
+                {% if user.profile.is_loru %}
+                    {% if b.order %}
+                        <a href="{% url order_services b.order.pk %}" class="btn btn-next">{% trans "далее" %}</a>
+                    {% elif self.request.REQUEST.order %}
+                        <a href="{% url order_services self.request.REQUEST.order %}" class="btn btn-next">{% trans "далее" %}</a>
                     {% endif %}
                 {% endif %}
             </p>
