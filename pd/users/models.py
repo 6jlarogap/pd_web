@@ -91,6 +91,9 @@ class Org(models.Model):
         ct = ContentType.objects.get_for_model(self)
         return Log.objects.filter(ct=ct, obj_id=self.pk).order_by('-pk')
 
+    def is_inactive(self):
+        return not self.profile_set.filter(user__is_active=True).exists()
+
 class BankAccount(models.Model):
     """
     Банковские реквизиты

@@ -32,7 +32,7 @@
             <script type="text/javascript">
                 $(function() {
                     var ORGS_LIST = [{% for org in form.fields.applicant_organization.queryset %}"{{ org.name|escapejs }}"{% if not forloop.last %},{% endif %}{% endfor %}];
-                    var ORGS_INACTIVE = [{% for org in form.fields.applicant_organization.queryset %}{% if not org.profile_set.all.exists %}"{{ org.pk }}",{% endif %}{% endfor %} null];
+                    var ORGS_INACTIVE = [{% for org in form.fields.applicant_organization.queryset %}{% if org.is_inactive %}"{{ org.pk }}",{% endif %}{% endfor %} null];
                     $('select[name$=applicant_organization]').attr('autocomplete', 'off').change(function() {
                         if (ORGS_INACTIVE.indexOf($(this).val()) > -1) {
                             $('.btn-edit-org').attr('href', '/org/'+$(this).val()+'/edit/').show();
