@@ -68,30 +68,6 @@
             {% endfor %}
         </table>
 
-        {% if unowned_orgs %}
-        <h2>{% trans "Неактивные организации" %}</h2>
-        <table class="table table-bordered">
-            <tr>
-                <th>{% trans "Краткое" %}</th>
-                <th>{% trans "Полное название" %}</th>
-                <th>{% trans "ИНН" %}</th>
-                <th>{% trans "Тип" %}</th>
-                <th></th>
-            </tr>
-            {% for o in unowned_orgs %}
-                <tr>
-                    <td>{{ o.name }}</td>
-                    <td>{{ o.full_name }}</td>
-                    <td>{{ o.inn }}</td>
-                    <td>{{ o.get_type_display }}</td>
-                    <td>
-                        <a href="{% url edit_org o.pk %}" class="btn">править данные</a>
-                    </td>
-                </tr>
-            {% endfor %}
-        </table>
-        {% endif %}
-
         <p>
             <a href="{% url add_user %}" class="btn">{% trans "новый пользователь" %}</a>
         </p>
