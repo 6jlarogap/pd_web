@@ -434,7 +434,7 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, forms.Mo
                 else:
                     self.instance.source_type = Burial.SOURCE_UGH
 
-        if self.deadman_form.is_valid_data():
+        if self.deadman_form.is_valid():
             deadman = self.deadman_form.save(commit=False)
             if self.deadman_address_form.is_valid_data():
                 deadman.address = self.deadman_address_form.save()
@@ -456,11 +456,11 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, forms.Mo
             if self.cleaned_data.get('opf') == 'person':
                 if self.applicant_form.is_valid_data():
                     applicant = self.applicant_form.save(commit=False)
-                    if self.applicant_address_form.is_valid_data():
+                    if self.applicant_address_form.is_valid():
                         applicant.address = self.applicant_address_form.save()
                     applicant.save()
 
-                    if self.applicant_id_form.is_valid_data():
+                    if self.applicant_id_form.is_valid():
                         pid = self.applicant_id_form.save(commit=False)
                         pid.person = applicant
                         pid.save()
@@ -481,9 +481,9 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, forms.Mo
             resp.baseperson_ptr_id = None
             resp.save(force_insert=True)
             self.instance.responsible = resp
-        elif self.responsible_form.is_valid_data():
+        elif self.responsible_form.is_valid():
             responsible = self.responsible_form.save(commit=False)
-            if self.responsible_address_form.is_valid_data():
+            if self.responsible_address_form.is_valid():
                 responsible.address = self.responsible_address_form.save()
             responsible.save()
             self.instance.responsible = responsible
