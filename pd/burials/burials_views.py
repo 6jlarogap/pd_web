@@ -249,9 +249,9 @@ class BurialsListView(ListView):
             if form.cleaned_data['responsible']:
                 burials = burials.filter(place__responsible__last_name__icontains=form.cleaned_data['responsible'])
             if form.cleaned_data['cemetery']:
-                burials = burials.filter(cemetery__name__icontains=form.cleaned_data['cemetery'])
+                burials = burials.filter(cemetery__name=form.cleaned_data['cemetery'])
             if form.cleaned_data['area']:
-                burials = burials.filter(area__name__icontains=form.cleaned_data['area'])
+                burials = burials.filter(area__name=form.cleaned_data['area'])
             if form.cleaned_data['row']:
                 burials = burials.filter(row=form.cleaned_data['row'])
             if form.cleaned_data['place']:

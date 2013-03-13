@@ -98,7 +98,7 @@ class CemeteryMerge(UGHRequiredMixin, TemplateView):
         self.request = request
         self.args = args
         self.kwargs = kwargs
-        
+
         form = self.get_form()
         self.object = self.get_object()
         if form.is_valid():

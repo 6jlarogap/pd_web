@@ -138,9 +138,9 @@ class OrderList(LORURequiredMixin, ListView):
             if form.cleaned_data['responsible']:
                 orders = orders.filter(burial__responsible__last_name__icontains=form.cleaned_data['responsible'])
             if form.cleaned_data['cemetery']:
-                orders = orders.filter(burial__cemetery__name__icontains=form.cleaned_data['cemetery'])
+                orders = orders.filter(burial__cemetery__name=form.cleaned_data['cemetery'])
             if form.cleaned_data['area']:
-                orders = orders.filter(burial__area__name__icontains=form.cleaned_data['area'])
+                orders = orders.filter(burial__area__name=form.cleaned_data['area'])
             if form.cleaned_data['row']:
                 orders = orders.filter(burial__row=form.cleaned_data['row'])
             if form.cleaned_data['place']:
