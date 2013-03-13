@@ -72,7 +72,7 @@ class Order(models.Model):
         # )
 
     def __unicode__(self):
-        return u'%s - %s %s' % (self.loru_number or self.pk, self.loru, self.dt)
+        return u'%s от %s' % (self.loru_number or _(u"б/н"), self.dt.strftime('%d.%m.%Y %H:%M'))
 
     def save(self, *args, **kwargs):
         if not self.cost:
