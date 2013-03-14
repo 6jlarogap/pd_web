@@ -1,4 +1,5 @@
 # coding=utf-8
+import copy
 import csv
 import cStringIO
 import datetime
@@ -362,6 +363,14 @@ def do_import_orders(csv_fileobj):
                 except Burial.DoesNotExist:
                     print 'Burial %s not found' % row[0]
                     continue
+
+                dover = None
+                if b.dover:
+                    dover = copy.deepcopy(b.dover)
+                    dover.id = None
+                    dover.target_org = loru
+                    dover.save(force_insert=True)
+
                 o = Order.objects.create(
                     loru=loru,
                     payment=row[5],
@@ -369,7 +378,7 @@ def do_import_orders(csv_fileobj):
                     applicant_organization=b.applicant_organization != loru and b.applicant_organization or None,
                     agent_director=b.agent_director,
                     agent=b.agent,
-                    dover=b.dover,
+                    dover=dover,
                     dt=b.changed,
                 )
 

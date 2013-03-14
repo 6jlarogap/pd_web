@@ -4,7 +4,6 @@ import datetime
 import json
 import random
 import string
-from xml.dom.minidom import DocumentType
 
 from django import forms
 from django.contrib import messages
