@@ -152,9 +152,9 @@ class OrderList(LORURequiredMixin, ListView):
             if form.cleaned_data['status']:
                 orders = orders.filter(burial__status=form.cleaned_data['status'])
             if form.cleaned_data['applicant_org']:
-                orders = orders.filter(burial__applicant_organization__name=form.cleaned_data['applicant_org'])
+                orders = orders.filter(applicant_organization__name=form.cleaned_data['applicant_org'])
             if form.cleaned_data['applicant_person']:
-                orders = orders.filter(burial__applicant__last_name=form.cleaned_data['applicant_person'])
+                orders = orders.filter(applicant__last_name=form.cleaned_data['applicant_person'])
             if form.cleaned_data['order_num_from']:
                 orders = orders.filter(loru_number__gte=form.cleaned_data['order_num_from'])
             if form.cleaned_data['order_num_to']:
