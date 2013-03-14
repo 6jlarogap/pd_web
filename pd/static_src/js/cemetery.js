@@ -418,13 +418,11 @@ $(function() {
 
     $('#id_agent_director').change(function() {
         if ($(this).is(':checked')) {
-            $('#id_dover').closest('p').hide();
-            $('#id_agent').closest('p').hide();
-            $('.btn-dover').closest('p').hide();
-            $('.btn-agent').closest('p').hide();
+            $('#id_dover').closest('div').hide();
+            $('#id_agent').closest('div').hide();
         } else {
-            $('#id_dover').closest('p').show();
-            $('#id_agent').closest('p').show();
+            $('#id_dover').closest('div').show();
+            $('#id_agent').closest('div').show();
             $('#id_applicant_organization').change();
         }
     });
