@@ -355,6 +355,18 @@ def do_import_orders(csv_fileobj):
             try:
                 o = Order.objects.get(burial__account_number=row[0], burial__deadman__last_name=row[1],
                                       burial__deadman__first_name=row[2], burial__deadman__middle_name=row[3])
+
+                dover = None
+                b = o.get_burial()
+                if b and b.dover:
+                    dover = copy.deepcopy(b.dover)
+                    dover.id = None
+                    dover.target_org = loru
+                    dover.save(force_insert=True)
+
+                    o.dover = dover
+                    o.save()
+
                 dupes_i += 1
             except Order.DoesNotExist:
                 try:
