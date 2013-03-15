@@ -496,7 +496,7 @@ class EditBurialView(BurialsListGenericMixin, CreateBurial):
         if getattr(self, '_burial', None):
             return self._burial
         try:
-            self._burial = self.get_queryset().get(pk=self.kwargs['pk'])
+            self._burial = self.get_queryset().distinct().get(pk=self.kwargs['pk'])
             return self._burial
         except Burial.DoesNotExist:
             raise Http404
