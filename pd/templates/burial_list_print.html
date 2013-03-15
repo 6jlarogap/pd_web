@@ -2,6 +2,23 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="ru" lang="ru">
 
 {% load i18n %}
+
+<head>
+    <title>{% trans "Все захоронения" %}</title>
+    <!-- Le styles -->
+    <link rel="stylesheet" href="{{ STATIC_URL }}less/bootstrap.css" type="text/css" />
+    <link type="text/css" href="{{ STATIC_URL }}css/custom-theme/jquery-ui-1.8.16.custom.css" rel="stylesheet" />
+    <link type="text/css" href="{{ STATIC_URL }}css/jquery-ui-timepicker.css" rel="stylesheet" />
+
+    <link href="{{ STATIC_URL }}css/base.css" rel="stylesheet">
+    <link href="{{ STATIC_URL }}css/print.css" rel="stylesheet" media="print">
+
+    <!-- Le HTML5 shim, for IE6-8 support of HTML5 elements -->
+    <!--[if lt IE 9]>
+        <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+</head>
+
 <body>
     <table class="table table-bordered table-striped">
         <tr>
