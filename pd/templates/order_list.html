@@ -8,12 +8,122 @@
         <div class="span12">
             <div class="row-fluid">
                 <form id="mainform" class="form-horizontal" method="get" action="">
-                    {{ form.as_p }}
+                    <fieldset>
 
-                    <p class="buttons">
+                    <p>
+                        <label for="id_order_num_from">{{form.order_num_from.label}}</label>
+                        {{form.order_num_from}}
+                    </p>
+                    <p>
+                        <label for="id_order_num_to">{{form.order_num_to.label}}</label>
+                        {{form.order_num_to}}
+                    </p>
+                    <p>
+                        <label for="id_order_cost_from">{{form.order_cost_from.label}}</label>
+                        {{form.order_cost_from}}
+                    </p>
+                    <p>
+                        <label for="id_order_cost_to">{{form.order_cost_to.label}}</label>
+                        {{form.order_cost_to}}
+                    </p>
+                    </fieldset>
+                    <fieldset>
+                        <p>
+                            <label for="id_order_cost_from">{{form.order_cost_from.label}}</label>
+                            {{form.order_cost_from}}
+                        </p>
+                        <p>
+                            <label for="id_order_cost_to">{{form.order_cost_to.label}}</label>
+                            {{form.order_cost_to}}
+                        </p>
+                    </fieldset>
+                    <fieldset>
+                        <p>
+                            <label for="id_fio">{{form.fio.label}}</label>
+                            {{form.fio}}
+                        </p>
+                        <p class="inline">
+                            <label for="id_no_last_name">{{form.no_last_name.label}}</label>
+                            {{form.no_last_name}}
+                        </p>
+                        <p>
+                            <label for="id_birth_date_from">{{form.birth_date_from.label}}</label>
+                            {{form.birth_date_from}}
+                        </p>
+                        <p>
+                            <label for="id_birth_date_to">{{form.birth_date_to.label}}</label>
+                            {{form.birth_date_to}}
+                        </p>
+                        <p>
+                            <label for="id_death_date_from">{{form.death_date_from.label}}</label>
+                            {{form.death_date_from}}
+                        </p>
+                        <p>
+                            <label for="id_death_date_to">{{form.death_date_to.label}}</label>
+                            {{form.burial_date_to}}
+                        </p>
+                        <p>
+                            <label for="id_burial_date_from">{{form.burial_date_from.label}}</label>
+                            {{form.burial_date_from}}
+                        </p>
+                        <p>
+                            <label for="id_burial_date_to">{{form.burial_date_to.label}}</label>
+                            {{form.burial_date_to}}
+                        </p>
+                    </fieldset>
+                    <fieldset>
+                        <p>
+                            <label for="id_responsible">{{form.responsible.label}}</label>
+                            {{form.responsible}}
+                        </p>
+                        <p>
+                            <label for="id_cemetery">{{form.cemetery.label}}</label>
+                            {{form.cemetery}}
+                        </p>
+                        <p>
+                            <label for="id_area">{{form.area.label}}</label>
+                            {{form.area}}
+                        </p>
+                        <p>
+                            <label for="id_row">{{form.row.label}}</label>
+                            {{form.row}}
+                        </p>
+                    </fieldset>
+                    <fieldset>
+                        <p>
+                            <label for="id_place">{{form.place.label}}</label>
+                            {{form.place}}
+                        </p>
+                        <p class="inline">
+                            <label for="id_no_responsible">{{form.no_responsible.label}}</label>
+                            {{form.no_responsible}}
+                        </p>
+                        <p>
+                            <label for="id_status">{{form.status.label}}</label>
+                            {{form.status}}
+                        </p>
+                        <p>
+                            <label for="id_annulated">{{form.annulated.label}}</label>
+                            {{form.annulated}}
+                        </p>
+                        <p>
+                            <label for="id_order_num_from">{{form.order_num_from.label}}</label>
+                            {{form.order_num_from}}
+                        </p>
+                        <p>
+                            <label for="id_order_num_to">{{form.order_num_to.label}}</label>
+                            {{form.order_num_to}}
+                        </p>
+                    </fieldset>
+                    <div class="control-group">
+                        <p>
+                            <label for="id_per_page">{{form.per_page.label}}</label>
+                            {{form.per_page}}
+                        </p>
                         <input type="submit" value="искать" class="btn btn-primary" />
                         <input type="submit" value="распечатать все" class="btn" name="print" />
-                    </p>
+
+                    </div>
 
                 </form>
             </div>
