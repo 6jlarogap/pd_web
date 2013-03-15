@@ -306,6 +306,11 @@ class BurialsListView(ListView):
         ).order_by(*s)
         return burials
 
+    def get_template_names(self):
+        if self.request.GET.get('print'):
+            return 'burial_list_print.html'
+        return super(BurialsListView, self).get_template_names()
+
     def get_paginate_by(self, queryset):
         if self.request.GET.get('print'):
             return None

@@ -258,6 +258,7 @@ def do_import_burials(csv_fileobj, user):
 
                     if agent and row[61]:
                         dover, _created = Dover.objects.get_or_create(
+                            target_org=user.profile.org,
                             agent=agent,
                             number=row[61],
                             begin=row[62],
@@ -358,7 +359,7 @@ def do_import_orders(csv_fileobj):
 
                 dover = None
                 b = o.get_burial()
-                if b and b.dover:
+                if b and b.dover and (o.dover is None or o.dover == b.dover):
                     dover = copy.deepcopy(b.dover)
                     dover.id = None
                     dover.target_org = loru
