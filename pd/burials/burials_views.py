@@ -255,7 +255,7 @@ class BurialsListView(ListView):
             if form.cleaned_data['row']:
                 burials = burials.filter(row=form.cleaned_data['row'])
             if form.cleaned_data['place']:
-                burials = burials.filter(place=form.cleaned_data['place'])
+                burials = burials.filter(place_number=form.cleaned_data['place'])
             if form.cleaned_data['no_last_name']:
                 burials = burials.filter(Q(deadman__last_name='') | Q(deadman__last_name__isnull=True))
             if form.cleaned_data['no_responsible']:
