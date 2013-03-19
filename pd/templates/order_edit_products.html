@@ -8,8 +8,8 @@
     {% endwith %}
     <form action="" method="POST" class="main-form">
         {% csrf_token %}
+        <legend>{% trans "Позиции" %}</legend>
 
-        <h2>{% trans "Позиции" %}</h2>
         {{ formset.management_form }}
         <table>
             {% for f in formset.forms %}
@@ -32,9 +32,9 @@
     </form>
 
     <script type="text/javascript">
-        CEMETERY_AREAS = {{ form.cemetery_areas_json }};
-        CEMETERY_TIMES = {{ form.cemetery_times_json }};
-        AGENT_DOVER = {{ form.agent_dover_json }};
-        LORU_AGENTS = {{ form.loru_agents_json }};
+        CEMETERY_AREAS = {{ form.cemetery_areas_json|default:"{}" }};
+        CEMETERY_TIMES = {{ form.cemetery_times_json|default:"{}" }};
+        AGENT_DOVER = {{ form.agent_dover_json|default:"{}" }};
+        LORU_AGENTS = {{ form.loru_agents_json|default:"{}" }};
     </script>
 {% endblock %}
