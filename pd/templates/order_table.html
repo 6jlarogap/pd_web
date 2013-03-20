@@ -104,13 +104,7 @@
             <td>{{ c.get_burial.deadman|default:"" }}</td>
             <td>{{ c.get_burial.combined_date }}</td>
             <td>
-                {% if c.get_burial.cemetery %}{% trans "Кл." %} {{ c.get_burial.cemetery|default:"" }}<br/>{% endif %}
-                {% if c.get_burial.area %}{% trans "Уч." %} {{ c.get_burial.area.name|default:"" }}<br/>{% endif %}
-                {% if c.get_burial.row %}{% trans "ряд" %} {{ c.get_burial.row }},{% endif %}
-                {% if c.get_burial.place_number %}{% trans "место" %} {{ c.get_burial.place_number }},{% endif %}
-                {% if c.get_burial.grave_number %}{% trans "могила" %} {{ c.get_burial.grave_number }}{% endif %}
-                <br/>
-                {% if c.get_burial.responsible %}{% trans "Отв." %} {{ c.get_burial.responsible }}<br/>{% endif %}
+                {% with burial=c.get_burial %}{% include "burial_place.html" %}{% endwith %}
             </td>
             <td>{{ c.get_burial.cemetery|default:"" }} / {{ c.get_burial.ugh|default:"" }}</td>
             <td>{{ c.get_burial.pk|default:"" }}</td>

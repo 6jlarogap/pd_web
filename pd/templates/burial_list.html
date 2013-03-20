@@ -124,8 +124,7 @@
                 {% endif %}
                 <td>{{ b.cemetery }} / {{ b.ugh_name }}</td>
                 <td>
-                    {{ b.place|default:"" }} {% if b.responsible %}{% trans "отв" %}{% endif %}
-                    {% if b.grave_number %}{% trans "мог." %} {{ b.grave_number }}{% endif %}
+                    {% with burial=b %}{% include "burial_place.html" %}{% endwith %}
                 </td>
                 <td>{{ b.deadman|default:"" }}</td>
                 <td>{{ b.combined_date }}</td>

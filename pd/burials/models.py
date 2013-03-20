@@ -350,31 +350,34 @@ class Burial(models.Model):
     def loru_name(self):
         return self.applicant_organization and self.applicant_organization.name or ''
 
+    def set_account_number(self, user):
+        ugh = self.ugh or user.profile.org
+        algo = user.profile.numbers_algo
+        cemetery = self.cemetery
+        year = str(datetime.datetime.now().year)
+        if algo in [Profile.NUM_YEAR_UGH, Profile.NUM_YEAR_CEMETERY]:
+            others = Burial.objects.none()
+            if algo == Profile.NUM_YEAR_UGH and ugh:
+                others = Burial.objects.filter(ugh=ugh)
+            elif algo == Profile.NUM_YEAR_CEMETERY and cemetery:
+                others = Burial.objects.filter(cemetery=cemetery)
+
+            if self.pk:
+                others = others.exclude(pk=self.pk)
+
+            others = others.exclude(account_number__isnull=True).order_by('-account_number')
+            try:
+                num = others[0].account_number
+                if not num.startswith(year):
+                    num = None
+                self.account_number = int(num) + 1
+            except (IndexError, ValueError, TypeError):
+                self.account_number = year + '0001'
+        self.save()
+
     def approve(self, user):
         if not self.account_number and not self.is_archive():
-            ugh = self.ugh or user.profile.org
-            algo = user.profile.numbers_algo
-            cemetery = self.cemetery
-            year = str(datetime.datetime.now().year)
-            if algo in [Profile.NUM_YEAR_UGH, Profile.NUM_YEAR_CEMETERY]:
-                others = Burial.objects.none()
-                if algo == Profile.NUM_YEAR_UGH and ugh:
-                    others = Burial.objects.filter(ugh=ugh)
-                elif algo == Profile.NUM_YEAR_CEMETERY and cemetery:
-                    others = Burial.objects.filter(cemetery=cemetery)
-
-                if self.pk:
-                    others = others.exclude(pk=self.pk)
-
-                others = others.exclude(account_number__isnull=True).order_by('-account_number')
-                try:
-                    num = others[0].account_number
-                    if not num.startswith(year):
-                        num = None
-                    self.account_number = int(num) + 1
-                except (IndexError, ValueError, TypeError):
-                    self.account_number = year + '0001'
-            self.save()
+            self.set_account_number(user)
 
     def get_place(self):
         if self.place:
@@ -433,6 +436,9 @@ class Burial(models.Model):
         place.row = self.row
         place.place = self.place_number
         place.save()
+
+        if not self.account_number:
+            self.set_account_number(user=self.changed_by)
 
         self.responsible = None
         self.place = place

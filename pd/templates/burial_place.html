@@ -1,0 +1,9 @@
+{% load i18n %}
+
+{% if burial.cemetery %}{% trans "Кл." %} {{ burial.cemetery|default:"" }}<br/>{% endif %}
+{% if burial.area %}{% trans "Уч." %} {{ burial.area.name|default:"" }}<br/>{% endif %}
+{% if burial.row %}{% trans "ряд" %} {{ burial.row }},{% endif %}
+{% if burial.place_number %}{% trans "место" %} {{ burial.place_number }},{% endif %}
+{% if burial.grave_number %}{% trans "могила" %} {{ burial.grave_number }}{% endif %}
+<br/>
+{% if burial.responsible %}{% trans "Отв." %} {{ burial.responsible }}<br/>{% endif %}

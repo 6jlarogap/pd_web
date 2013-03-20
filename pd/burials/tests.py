@@ -599,7 +599,7 @@ class TestAJAX(TestCase):
         r = self.ugh_client.get('/burials/get_place/?cemetery=%s&area=%s&row=&place_number=%s' % params)
         self.assertEqual(r.content, u'')
 
-        p = Place.objects.create(cemetery=self.cemetery, area=area, place='123')
+        p, _created = Place.objects.get_or_create(cemetery=self.cemetery, area=area, row='', place='123')
 
         r = self.ugh_client.get('/burials/get_place/?cemetery=%s&area=%s&row=&place_number=%s' % params)
         self.assertNotEqual(unicode(r.content.decode('utf-8')), u'')

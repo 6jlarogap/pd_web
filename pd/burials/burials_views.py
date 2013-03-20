@@ -441,7 +441,7 @@ class CreateBurial(CreateView):
             if b.order:
                 self.request.session['order_burial_saved'] = True
                 if b.is_edit():
-                    return redirect('.')
+                    return redirect('edit_burial', b.pk)
                 else:
                     return redirect('view_burial', b.pk)
             return redirect('dashboard')

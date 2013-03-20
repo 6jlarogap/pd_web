@@ -220,7 +220,7 @@ class GetPlaceView(View):
             area__pk=request.GET.get('area') or None,
             row=request.GET.get('row') or '',
             place=request.GET.get('place_number') or '',
-            )
+        )
 
         if request.GET.get('place_number'):
             try:

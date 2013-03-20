@@ -93,7 +93,7 @@
                 <td>{{ b.account_number|default:"" }}</td>
                 {% if user.profile.is_ugh %}<th>{{ b.loru_name }}</th>{% endif %}
                 <td>{{ b.cemetery|default:"" }} / {{ b.ugh_name|default:"" }}</td>
-                <td>{{ b.place_number|default:"" }}</td>
+                <td>{% with burial=b %}{% include "burial_place.html" %}{% endwith %}</td>
                 <td>{{ b.combined_date }}</td>
                 <th>{{ b.get_status_display|default:"" }}</th>
                 <td>
