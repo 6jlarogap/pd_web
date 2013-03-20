@@ -95,6 +95,12 @@
                     $('input[name$=applicant_organization]').change();
                 };
                 $(function() {
+                    $("#cont_applicant ul").each(function(index,element){
+                        $(this).addClass("unstyled");
+                    });
+                    $("form.order_form ul").each(function(index,element){
+                        $(this).addClass("unstyled");
+                    });
                     updateOrganizationsSelect();
 
                 });
@@ -144,7 +150,7 @@
                 <span class="helptext">{{ form.applicant_id_form.id_type.help_text }}</span>
             </p>
             <p class="inline">
-                <a href="#add_doctype" role="button" class="btn" data-toggle="modal">
+                <a href="#add_doctype" role="button" class="btn" data-toggle="modal" id="add_doctype_href">
                     {% trans "добавить тип" %}
                 </a>
             </p>

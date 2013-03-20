@@ -53,3 +53,4 @@ ul.messages { list-style: none; }
 
 tr.burial_blue, tr.burial_blue:hover { background-color: #99ccff }
 tr.burial_green, tr.burial_green:hover { background-color: #62c462 }
+#add_doctype_href {margin-top: 22px;}
