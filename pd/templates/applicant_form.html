@@ -30,8 +30,9 @@
                 </a>
             </p>
             <script type="text/javascript">
-                $(function() {
-                    var ORGS_LIST = [{% for org in form.fields.applicant_organization.queryset %}"{{ org.name|escapejs }}"{% if not forloop.last %},{% endif %}{% endfor %}];
+                var updateOrganizationsSelect = function(){
+
+                    //var ORGS_LIST = [{% for org in form.fields.applicant_organization.queryset %}"{{ org.name|escapejs }}"{% if not forloop.last %},{% endif %}{% endfor %}];
                     var ORGS_INACTIVE = [{% for org in form.fields.applicant_organization.queryset %}{% if org.is_inactive %}"{{ org.pk }}",{% endif %}{% endfor %} null];
                     $('select[name$=applicant_organization]').attr('autocomplete', 'off').change(function() {
                         if (ORGS_INACTIVE.indexOf($(this).val()) > -1) {
@@ -40,36 +41,62 @@
                             $('.btn-edit-org').hide();
                         }
                     }).each(function() {
-                        var sel_input = $(this);
-                        var ac_input = $('<input type="text">');
-                        if (sel_input.find('option:selected').attr('value')) {
-                            ac_input.val(sel_input.find('option:selected').text());
-                        }
-                        ac_input.insertAfter(sel_input);
-                        sel_input.hide();
-                        ac_input.typeahead({
-                            items: 100,
-                            source: ORGS_LIST,
-                            onselect: function() {
-                                ac_input.change();
-                            }
-                        }).change(function() {
-                            var item = $(this).val();
-                            var processed = false;
-                            sel_input.find('option').each(function() {
-                                if ($(this).text() == item) {
-                                    sel_input.val($(this).attr('value'));
-                                    sel_input.change();
-                                    processed = true;
+                                var sel_input = $(this);
+                                var ac_input = $('<input type="text">');
+                                if (sel_input.find('option:selected').attr('value')) {
+                                    ac_input.val(sel_input.find('option:selected').text());
                                 }
+                                if($("#applicant_form_org div.inline input").length == 0) {
+                                    ac_input.insertAfter(sel_input);
+                                }
+                                sel_input.hide();
+                                var ORGS_LIST  = [];
+                                $.each(sel_input.find("option"),function(index,option){
+                                    var orgName = $(this).text();
+                                    var dashed = false;
+                                    if(orgName.match(/-*/).length!=0){
+                                        if(orgName.match(/-*/)[0].length == orgName.length){
+                                            dashed = true;
+                                        }
+                                    }
+                                    if($.trim(orgName).length!=0 && !dashed){
+                                        ORGS_LIST.push(orgName);
+                                    }
+
+
+                                });
+                                ac_input.typeahead({
+                                    items: 100,
+                                    source: ORGS_LIST,
+                                    onselect: function() {
+                                        ac_input.change();
+                                    },
+                                    highlighter : function(item){
+                                     return item.replace(new RegExp('(' + escapeRegExp(this.query) + ')', 'ig'), function ($1, match) {
+                                         return '<strong>' + match + '</strong>'
+                                     })
+                                    }
+                                }).change(function() {
+                                            var item = $(this).val();
+                                            var processed = false;
+                                            sel_input.find('option').each(function() {
+                                                if ($(this).text() == item) {
+                                                    sel_input.val($(this).attr('value'));
+                                                    sel_input.change();
+                                                    processed = true;
+                                                }
+                                            });
+                                            if (!processed) {
+                                                alert("Указана несуществующая организация");
+                                                ac_input.val(sel_input.find('option:selected').text());
+                                            }
+                                        });
                             });
-                            if (!processed) {
-                                alert("Указана несуществующая организация");
-                                ac_input.val(sel_input.find('option:selected').text());
-                            }
-                        });
-                    });
                     $('input[name$=applicant_organization]').change();
+                };
+                $(function() {
+                    updateOrganizationsSelect();
+
                 });
             </script>
         </div>

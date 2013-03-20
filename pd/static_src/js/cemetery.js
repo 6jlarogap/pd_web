@@ -494,14 +494,17 @@ $(function() {
 
     $('#add_loru').find('.btn-primary').click(function() {
         var data = $('#add_loru form').serialize();
+        //TODO validation on client!
         $.post('/burials/add_org/', data, function(data){
             if (data.pk) {
                 var select = $('#id_applicant_organization');
-                select.append('<option value="'+data.pk+'">'+data.label+'</option>');
-                select.val(data.pk);
+                select.append('<option value="'+data.pk+'" selected="selected">'+data.label+'</option>');
+                //select.val(data.pk);
                 $('#add_loru').modal('hide');
                 $('#add_loru form :input').val('');
+                $("#applicant_form_org div.inline input").val(data.label);
                 select.change();
+                updateOrganizationsSelect();
             } else {
                 alert(data);
             }
