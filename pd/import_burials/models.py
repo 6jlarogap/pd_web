@@ -176,8 +176,13 @@ def import_dead_person(data):
 
         return dp
 
+@transaction.commit_on_success
 def do_import_burials(csv_fileobj, user):
     csvreader = UnicodeReader(csv_fileobj)
+    try:
+        loru = Org.objects.get(inn='4028046796')
+    except Org.DoesNotExist:
+        loru = None
     BURIAL_TYPES = {
         u'Захоронение': Burial.BURIAL_NEW,
         u'Подзахоронение к существ': Burial.BURIAL_ADD,
@@ -188,10 +193,11 @@ def do_import_burials(csv_fileobj, user):
     dupes_i = 0
     for i, row in enumerate(csvreader):
         if i > 0:
-            if i % 500:
+            if i % 100 == 0:
                 transaction.commit()
                 gc.collect()
                 connection.queries = []
+                print 'Processed', i
 
             row = map(lambda c: '' if c == 'None' else c, row)
             try:
@@ -277,7 +283,7 @@ def do_import_burials(csv_fileobj, user):
                     plan_date=plan_date and plan_date.strftime('%Y-%m-%d') or None,
                     fact_date=row[3],
                     plan_time=row[4] or None,
-                    source_type=Burial.SOURCE_ARCHIVE,
+                    source_type=Burial.SOURCE_TRANSFERRED,
                     place=place,
                     cemetery=cemetery,
                     area=area,
@@ -292,7 +298,7 @@ def do_import_burials(csv_fileobj, user):
                     agent_director=row[57] == 'True',
                     agent=agent,
                     dover=dover,
-                    order=None,
+                    order=Order.objects.create(loru=loru),
                     status=Burial.STATUS_CLOSED,
                     changed=changed_dt,
                     changed_by=user,
@@ -338,6 +344,7 @@ def do_import_services(csv_fileobj):
                     default=row[1] == 'True',
                 )
 
+@transaction.commit_on_success
 def do_import_orders(csv_fileobj):
     csvreader = UnicodeReader(csv_fileobj)
     try:
@@ -348,6 +355,12 @@ def do_import_orders(csv_fileobj):
     dupes_i = 0
     for i, row in enumerate(csvreader):
         if i > 0:
+            if i % 100 == 0:
+                transaction.commit()
+                gc.collect()
+                connection.queries = []
+                print 'Processed', i
+
             row = map(lambda c: '' if c == 'None' else c, row)
             all_data = json.loads(row[4])
             print_data = all_data['print']
@@ -398,7 +411,6 @@ def do_import_orders(csv_fileobj):
                 real_i += 1
 
                 b.order = o
-                b.source_type = Burial.SOURCE_FULL
                 if b.applicant_organization != loru:
                     b.applicant_organization = loru
                 b.save()

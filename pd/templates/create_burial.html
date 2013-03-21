@@ -40,7 +40,13 @@
                 {% endif %}
                 {% if user.profile.is_loru %}
                     {% if b.is_edit or not b.pk %}
-                        <input type="submit" class="btn btn-commit-burial" name="ready" value="{% trans "cохранить и отправить на согласование" %}"/>
+                        {% if b.is_transferred %}
+                            {% if not b.is_finished %}
+                                <input type="submit" class="btn btn-commit-burial" name="complete" value="{% trans "cохранить и закрыть" %}"/>
+                            {% endif %}
+                        {% else %}
+                            <input type="submit" class="btn btn-commit-burial" name="ready" value="{% trans "cохранить и отправить на согласование" %}"/>
+                        {% endif %}
                     {% elif b.is_ready %}
                         <input type="submit" class="btn btn-commit-burial" name="back" value="{% trans "отозвать" %}"/>
                     {% endif %}

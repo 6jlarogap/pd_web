@@ -30,7 +30,9 @@ class BurialsListGenericMixin:
         qs = Q(pk__isnull=True)
         if self.request.user.is_authenticated():
             if self.request.user.profile.is_loru():
-                qs = Q(applicant_organization=self.request.user.profile.org, source_type=Burial.SOURCE_FULL)
+                loru = self.request.user.profile.org
+                qs = Q(applicant_organization=loru) | Q(order__loru=loru)
+                qs = qs & Q(source_type__in=[Burial.SOURCE_FULL, Burial.SOURCE_TRANSFERRED])
             if self.request.user.profile.is_ugh():
                 qs = Q(applicant_organization__ugh_list__ugh=self.request.user.profile.org)
                 qs |= Q(ugh=self.request.user.profile.org)
@@ -487,9 +489,11 @@ class EditBurialView(BurialsListGenericMixin, CreateBurial):
         q = self.get_qs_filter()
 
         if self.request.user.profile.is_loru():
-            q2 = q & Q(status__in=[Burial.STATUS_DRAFT, Burial.STATUS_DECLINED, Burial.STATUS_BACKED])
+            q3 = Q(status__in=[Burial.STATUS_DRAFT, Burial.STATUS_DECLINED, Burial.STATUS_BACKED])
+            q3 |= Q(source_type__in=[Burial.SOURCE_TRANSFERRED])
+            q2 = q & q3
         elif self.request.user.profile.is_ugh():
-            q3 = Q(source_type__in=[Burial.SOURCE_UGH, Burial.SOURCE_ARCHIVE])
+            q3 = Q(source_type__in=[Burial.SOURCE_UGH, Burial.SOURCE_ARCHIVE, Burial.SOURCE_TRANSFERRED])
             q3 |= Q(status__in=[Burial.STATUS_CLOSED, Burial.STATUS_ANNULATED])
             q2 = q & q3
         else:

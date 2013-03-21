@@ -214,10 +214,12 @@ class Burial(models.Model):
     SOURCE_FULL = 'full'
     SOURCE_UGH = 'ugh'
     SOURCE_ARCHIVE = 'archive'
+    SOURCE_TRANSFERRED = 'transferred'
     SOURCE_TYPES = (
         (SOURCE_FULL, _(u"Электронное")),
         (SOURCE_UGH, _(u"Ручное")),
         (SOURCE_ARCHIVE, _(u"Архивное")),
+        (SOURCE_TRANSFERRED, _(u"Перенесенное")),
     )
 
     burial_type = models.CharField(_(u"Тип захоронения"), max_length=255, null=True, blank=True, choices=BURIAL_TYPES)
@@ -297,6 +299,12 @@ class Burial(models.Model):
 
     def is_full(self):
         return self.source_type == self.SOURCE_FULL
+
+    def is_transferred(self):
+        return self.source_type == self.SOURCE_TRANSFERRED
+
+    def is_full_or_transferred(self):
+        return self.is_full() or self.is_transferred()
 
     def is_archive(self):
         return self.source_type == self.SOURCE_ARCHIVE
