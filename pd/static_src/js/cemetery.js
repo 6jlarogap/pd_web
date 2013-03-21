@@ -499,12 +499,12 @@ $(function() {
             if (data.pk) {
                 var select = $('#id_applicant_organization');
                 select.append('<option value="'+data.pk+'" selected="selected">'+data.label+'</option>');
-                //select.val(data.pk);
+                select.val(data.pk);
                 $('#add_loru').modal('hide');
                 $('#add_loru form :input').val('');
                 $("#applicant_form_org div.inline input").val(data.label);
+                $("#applicant_form_org div.inline input").data('typeahead').source.push(data.label);
                 select.change();
-                updateOrganizationsSelect();
             } else {
                 alert(data);
             }
