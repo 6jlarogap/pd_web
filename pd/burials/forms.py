@@ -634,6 +634,17 @@ class BurialCommitForm(BurialForm):
                         if not self.cleaned_data.get('agent') or not self.cleaned_data.get('dover'):
                             msg = _(u"Нужно указать Агента и Доверенность или указать, что Агент - Директор")
                             raise forms.ValidationError(msg)
+                if  not self.instance.is_closed():
+                    if not self.cleaned_data.get('agent_director'):
+                        dover_begin_date = self.cleaned_data.get('dover').begin
+                        dover_end_date = self.cleaned_data.get('dover').end
+                        today = datetime.datetime.today()
+                        if dover_begin_date > today.date():
+                            msg = _(u"Дата выдачи доверенности не может быть раньше текущей даты")
+                            raise forms.ValidationError(msg)
+                        if dover_end_date < today.date() :
+                            msg = _(u"Срок действия доверенности не может быть меньше текущей даты")
+                            raise forms.ValidationError(msg)
 
         if self.deadman_form.is_valid_data():
             deadman_birth_date = self.deadman_form.cleaned_data.get("birth_date").d
@@ -644,7 +655,7 @@ class BurialCommitForm(BurialForm):
                     raise forms.ValidationError(msg)
                 from_death_150_years = datetime.datetime(deadman_birth_date.year - 150,  deadman_birth_date.month, deadman_birth_date.day).date()
                 if deadman_birth_date < from_death_150_years :
-                    msg = _(u"Дата смерти не может быть раньше даты рождения")
+                    msg = _(u"Не верно указаны даты жизни")
                     raise forms.ValidationError(msg)
         else:
             msg = _(u"Необходимо указать не только дату смерти")
@@ -732,11 +743,11 @@ class AddDoverForm(forms.ModelForm):
         begin_date = cleaned_data['begin']
         end_date  = cleaned_data['end']
         if begin_date > end_date:
-            msg = (u"Дата начала доверенности не может быть раньше даты окончания доверенности")
+            msg = _(u"Дата начала доверенности не может быть раньше даты окончания доверенности")
             raise forms.ValidationError(msg)
         today = datetime.datetime.today()
         if today > end_date:
-            msg = (u"Дата начала окончания доверенности не может быть раньше текущей даты")
+            msg = _(u"Дата начала окончания доверенности не может быть раньше текущей даты")
             raise forms.ValidationError(msg)
         return cleaned_data
 
