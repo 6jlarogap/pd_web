@@ -635,6 +635,32 @@ class BurialCommitForm(BurialForm):
                             msg = _(u"Нужно указать Агента и Доверенность или указать, что Агент - Директор")
                             raise forms.ValidationError(msg)
 
+        if self.deadman_form.is_valid_data():
+            deadman_birth_date = self.deadman_form.cleaned_data.get("birth_date").d
+            deadman_death_date = self.deadman_form.cleaned_data.get("death_date").d
+            if deadman_birth_date and deadman_death_date:
+                if  deadman_birth_date > deadman_death_date:
+                    msg = _(u"Дата смерти не может быть раньше даты рождения")
+                    raise forms.ValidationError(msg)
+                from_death_150_years = datetime.datetime(deadman_birth_date.year - 150,  deadman_birth_date.month, deadman_birth_date.day).date()
+                if deadman_birth_date < from_death_150_years :
+                    msg = _(u"Дата смерти не может быть раньше даты рождения")
+                    raise forms.ValidationError(msg)
+        else:
+            msg = _(u"Необходимо указать не только дату смерти")
+            raise forms.ValidationError(msg)
+
+        if self.dc_form.is_valid():
+            death_certificate_release_date = self.dc_form.cleaned_data.get('release_date')
+            if deadman_birth_date and death_certificate_release_date:
+                if deadman_birth_date > death_certificate_release_date:
+                    msg = _(u"Дата выдачи свидетельства о смерти не может быть раньше даты рождения")
+                    raise forms.ValidationError(msg)
+            if deadman_death_date and death_certificate_release_date:
+                if deadman_death_date> death_certificate_release_date:
+                    msg = _(u"Дата выдачи свидетельства о смерти не может быть раньше даты смерти")
+                    raise forms.ValidationError(msg)
+
         return self.cleaned_data
 
     def mock_data(self):
@@ -700,6 +726,19 @@ class AddDoverForm(forms.ModelForm):
     class Meta:
         model = Dover
         exclude = ['agent', 'document', ]
+
+    def clean(self):
+        cleaned_data = super(AddDoverForm, self).clean()
+        begin_date = cleaned_data['begin']
+        end_date  = cleaned_data['end']
+        if begin_date > end_date:
+            msg = (u"Дата начала доверенности не может быть раньше даты окончания доверенности")
+            raise forms.ValidationError(msg)
+        today = datetime.datetime.today()
+        if today > end_date:
+            msg = (u"Дата начала окончания доверенности не может быть раньше текущей даты")
+            raise forms.ValidationError(msg)
+        return cleaned_data
 
 class AddOrgForm(OrgForm):
     class Meta:
