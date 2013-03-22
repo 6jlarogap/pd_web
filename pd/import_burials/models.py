@@ -386,7 +386,7 @@ def do_import_orders(csv_fileobj):
                 o.agent_director = b.agent_director
                 o.agent = b.agent
                 o.dover = dover
-                o.dt = b.changed
+                o.dt = b.changed or o.dt or datetime.datetime.now()
                 o.save()
 
                 dupes_i += 1
