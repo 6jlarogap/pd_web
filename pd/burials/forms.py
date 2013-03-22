@@ -302,6 +302,12 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, forms.Mo
         else:
             self.initial['coffin_type'] = self.COFFIN
 
+        if self.instance and self.instance.is_finished() and self.instance.place:
+            self.instance.cemetery = self.instance.place.cemetery
+            self.instance.area = self.instance.place.area
+            self.instance.row = self.instance.place.row
+            self.instance.place_number = self.instance.place.place
+
         if not self.instance or not self.instance.cemetery:
             if self.request.user.profile.cemetery:
                 self.initial['cemetery'] = self.request.user.profile.cemetery
