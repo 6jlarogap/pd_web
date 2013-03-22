@@ -378,8 +378,16 @@ def do_import_orders(csv_fileobj):
                     dover.target_org = loru
                     dover.save(force_insert=True)
 
-                    o.dover = dover
-                    o.save()
+                o.dover = dover
+                o.loru = loru
+                o.payment = row[5]
+                o.applicant = b.applicant
+                o.applicant_organization = b.applicant_organization != loru and b.applicant_organization or None
+                o.agent_director = b.agent_director
+                o.agent = b.agent
+                o.dover = dover
+                o.dt = b.changed,
+                o.save()
 
                 dupes_i += 1
             except Order.DoesNotExist:
