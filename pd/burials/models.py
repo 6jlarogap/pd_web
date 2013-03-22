@@ -448,6 +448,9 @@ class Burial(models.Model):
         if not self.account_number:
             self.set_account_number(user=self.changed_by)
 
+        if not self.fact_date:
+            self.fact_date = self.plan_date
+
         self.responsible = None
         self.place = place
         self.place_number = place.place

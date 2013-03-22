@@ -202,7 +202,7 @@ class BurialView(BurialsListGenericMixin, DetailView):
             'reason_typical_annulate': Reason.objects.filter(reason_type=Reason.TYPE_ANNULATE),
             'close_form': self.get_close_form(),
             'comment_form': CommentForm(),
-            'is_accessible': self.request.user.profile.org in b.order.loru.get_loru_list(),
+            'is_accessible': b.order and self.request.user.profile.org in b.order.loru.get_loru_list(),
         }
 
 view_burial = BurialView.as_view()
@@ -429,6 +429,8 @@ class CreateBurial(CreateView):
 
             if action == 'complete' and self.request.user.profile.is_ugh() and b.can_finish() and b.is_ugh():
                 b.status = Burial.STATUS_CLOSED
+                b.changed_by = self.request.user
+                b.close()
                 write_log(self.request, b, _(u'Захоронение закрыто'))
                 messages.success(self.request, _(u"<a href='%s'>Захоронение %s</a> закрыто") % (
                     reverse('view_burial', args=[b.pk]), b.pk,
