@@ -653,6 +653,34 @@ class BurialCommitForm(BurialForm):
                         if dover_end_date < today.date() :
                             msg = _(u"Срок действия доверенности не может быть меньше текущей даты")
                             raise forms.ValidationError(msg)
+            if self.cleaned_data.get('opf') == 'person':
+                burial_date = self.cleaned_data.get('plan_date')
+                document_date = self.applicant_id_form.cleaned_data.get('date')
+                if burial_date and document_date:
+                    check_date = datetime.datetime(burial_date.year - 75, burial_date.month, burial_date.day)
+                    if document_date < check_date:
+                        msg = _(u"Не верно указан номер документа")
+                        raise  forms.ValidationError(msg)
+            if self.cleaned_data.get('account_number') and self.cleaned_data.get('fact_date'):
+                acc_number = self.cleaned_data.get('account_number')
+                fact_date  = self.cleaned_data.get('fact_date')
+                if len(acc_number) < 4 or int(acc_number[:4]) != fact_date.year:
+                    msg = _(u"Не верный номер в книге учета")
+                    raise forms.ValidationError(msg)
+
+        cemetery = self.cleaned_data.get('cemetery')
+        today = datetime.datetime.today()
+        plan_date = self.cleaned_data.get('plan_date')
+        if today > plan_date:
+            msg = _(u"Плановая дата захоронения не может быть раньше текущей даты")
+            raise  forms.ValidationError(msg)
+
+        if cemetery:
+            if cemetery and cemetery.places_algo == Cemetery.PLACE_MANUAL:
+                place_number = self.cleaned_data.get('place_number')
+                if len(place_number) < 4  or int(place_number[:4]) > today.year():
+                    raise forms.ValidationError(_(u"Неверно указан номер места"))
+
 
         deadman_birth_date = None
         deadman_death_date = None
@@ -668,6 +696,18 @@ class BurialCommitForm(BurialForm):
                 if deadman_birth_date < from_death_150_years :
                     msg = _(u"Не верно указаны даты жизни")
                     raise forms.ValidationError(msg)
+
+            if plan_date and deadman_birth_date:
+                if deadman_birth_date > plan_date:
+                    msg = _(u"Дата рождения не может быть позже даты захоронения")
+                    raise forms.ValidationError(msg)
+            if plan_date and deadman_death_date:
+                if deadman_death_date > plan_date:
+                    msg = _(u"Дата смерти не может быть позже даты захоронения")
+                    raise forms.ValidationError(msg)
+        else:
+            msg = _(u"Необходимо указать не только дату смерти")
+            raise forms.ValidationError(msg)
 
         if self.dc_form.is_valid():
             death_certificate_release_date = self.dc_form.cleaned_data.get('release_date')
@@ -822,6 +862,11 @@ class ExhumationForm(ChildrenJSONMixin, forms.ModelForm):
             raise forms.ValidationError(_(u'Необходимо указать только одного заявителя'))
         if not self.cleaned_data.get('applicant_organization') and not self.cleaned_data.get('applicant'):
             raise forms.ValidationError(_(u'Необходимо указать заявителя'))
+        exhumation_date = self.cleaned_data.get('fact_date')
+        burial_date = self.burial.fact_date
+        if burial_date and exhumation_date:
+            if burial_date > exhumation_date:
+                raise forms.ValidationError(_(u"Дата эксгумации не может быть раньше даты захоронения"))
         return self.cleaned_data
 
     def save(self, commit=True, *args, **kwargs):
