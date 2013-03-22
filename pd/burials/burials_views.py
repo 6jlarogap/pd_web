@@ -35,6 +35,7 @@ class BurialsListGenericMixin:
                 qs = qs & Q(source_type__in=[Burial.SOURCE_FULL, Burial.SOURCE_TRANSFERRED])
             if self.request.user.profile.is_ugh():
                 qs = Q(applicant_organization__ugh_list__ugh=self.request.user.profile.org)
+                qs |= Q(order__loru__ugh_list__ugh=self.request.user.profile.org)
                 qs |= Q(ugh=self.request.user.profile.org)
         return qs
 
@@ -193,13 +194,15 @@ class BurialView(BurialsListGenericMixin, DetailView):
         return BurialCloseForm(request=self.request, data=self.request.POST or None, instance=self.get_object())
 
     def get_context_data(self, **kwargs):
+        b = self.get_object()
         return {
-            'b': self.get_object(),
+            'b': b,
             'reason_typical_back': Reason.objects.filter(reason_type=Reason.TYPE_BACK),
             'reason_typical_decline': Reason.objects.filter(reason_type=Reason.TYPE_DECLINE),
             'reason_typical_annulate': Reason.objects.filter(reason_type=Reason.TYPE_ANNULATE),
             'close_form': self.get_close_form(),
             'comment_form': CommentForm(),
+            'is_accessible': self.request.user.profile.org in b.order.loru.get_loru_list(),
         }
 
 view_burial = BurialView.as_view()
