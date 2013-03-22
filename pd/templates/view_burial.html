@@ -128,16 +128,37 @@
                     <br/>
                     <input type="submit" class="btn" name="annulate" value="{% trans "аннулировать" %}">
                 {% endif %}
+            {% elif b.can_approve %}
+                {{ approve_form.as_p }}
+                <script type="text/javascript">
+                    CEMETERY_AREAS = {{ close_form.cemetery_areas_json|default:"{}" }};
+                    AGENT_DOVER = {{ close_form.agent_dover_json|default:"{}"  }};
+                    LORU_AGENTS = {{ close_form.loru_agents_json|default:"{}"  }};
+                </script>
+                <input type="submit" class="btn" name="approve" value="{% trans "одобрить" %}">
+                {% if b.can_decline %}
+                    <br/><br/>
+                    <label>{% trans "Причина" %}</label>
+                    <select name="reason_typical">
+                        <option value=""></option>
+                        {% for r in reason_typical_decline %}<option value="{{ r.text }}">{{ r.name }}</option>{% endfor %}
+                    </select>
+                    <textarea name="reason" rows="5" cols="30"></textarea>
+                    <br/>
+                    <input type="submit" class="btn" name="decline" value="{% trans "отказать" %}">
+                {% endif %}
             {% elif b.is_finished %}
                 <a href="{% url burial_exhumate b.pk %}" class="btn">{% trans "эксгумировать" %}</a>
             {% endif %}
         {% endif %}
-        {% if user.profile.org == b.applicant_organization and b.is_edit and b.is_full %}
+        {% if user.profile.org == b.applicant_organization and b.is_edit and b.is_full_or_transferred %}
             <a class="btn" href="{% url edit_burial b.pk %}">{% trans "правка" %}</a>
-        {% elif user.profile.org == b.ugh and b.is_edit and b.is_ugh %}
-            <a class="btn" href="{% url edit_burial b.pk %}">{% trans "правка" %}</a>
-        {% elif user.profile.org == b.ugh and b.is_closed %}
-            <a class="btn" href="{% url edit_burial b.pk %}">{% trans "правка" %}</a>
+        {% elif user.profile.org == b.ugh or is_accessible %}
+            {% if b.is_edit and b.is_ugh %}
+                <a class="btn" href="{% url edit_burial b.pk %}">{% trans "правка" %}</a>
+            {% elif b.is_closed %}
+                <a class="btn" href="{% url edit_burial b.pk %}">{% trans "правка" %}</a>
+            {% endif %}
         {% endif %}
         {% if b.can_print_notification %}
             <a class="btn" href="{% url make_notification b.pk %}" target="_blank">{% trans "уведомление" %}</a>

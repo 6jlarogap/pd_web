@@ -94,6 +94,9 @@ class Org(models.Model):
     def is_inactive(self):
         return not self.profile_set.filter(user__is_active=True).exists()
 
+    def get_loru_list(self):
+        return [ul.loru for ul in self.loru_list.all()]
+
 class BankAccount(models.Model):
     """
     Банковские реквизиты

@@ -30,9 +30,12 @@ class BurialsListGenericMixin:
         qs = Q(pk__isnull=True)
         if self.request.user.is_authenticated():
             if self.request.user.profile.is_loru():
-                qs = Q(applicant_organization=self.request.user.profile.org, source_type=Burial.SOURCE_FULL)
+                loru = self.request.user.profile.org
+                qs = Q(applicant_organization=loru) | Q(order__loru=loru)
+                qs = qs & Q(source_type__in=[Burial.SOURCE_FULL, Burial.SOURCE_TRANSFERRED])
             if self.request.user.profile.is_ugh():
                 qs = Q(applicant_organization__ugh_list__ugh=self.request.user.profile.org)
+                qs |= Q(order__loru__ugh_list__ugh=self.request.user.profile.org)
                 qs |= Q(ugh=self.request.user.profile.org)
         return qs
 
@@ -136,6 +139,7 @@ class BurialView(BurialsListGenericMixin, DetailView):
             messages.success(request, _(u"<a href='%s'>Захоронение %s</a> отозвано") % (
                 reverse('view_burial', args=[b.pk]), b.pk,
             ))
+
         if request.POST.get('ready') and b.is_edit() and b.is_full():
             return redirect(reverse('edit_burial', args=[b.pk]) + '?action=ready')
         if request.POST.get('approve') and request.user.profile.is_ugh() and b.can_approve():
@@ -191,13 +195,15 @@ class BurialView(BurialsListGenericMixin, DetailView):
         return BurialCloseForm(request=self.request, data=self.request.POST or None, instance=self.get_object())
 
     def get_context_data(self, **kwargs):
+        b = self.get_object()
         return {
-            'b': self.get_object(),
+            'b': b,
             'reason_typical_back': Reason.objects.filter(reason_type=Reason.TYPE_BACK),
             'reason_typical_decline': Reason.objects.filter(reason_type=Reason.TYPE_DECLINE),
             'reason_typical_annulate': Reason.objects.filter(reason_type=Reason.TYPE_ANNULATE),
             'close_form': self.get_close_form(),
             'comment_form': CommentForm(),
+            'is_accessible': b.order and self.request.user.profile.org in b.order.loru.get_loru_list(),
         }
 
 view_burial = BurialView.as_view()
@@ -424,6 +430,8 @@ class CreateBurial(CreateView):
 
             if action == 'complete' and self.request.user.profile.is_ugh() and b.can_finish() and b.is_ugh():
                 b.status = Burial.STATUS_CLOSED
+                b.changed_by = self.request.user
+                b.close()
                 write_log(self.request, b, _(u'Захоронение закрыто'))
                 messages.success(self.request, _(u"<a href='%s'>Захоронение %s</a> закрыто") % (
                     reverse('view_burial', args=[b.pk]), b.pk,
@@ -487,9 +495,11 @@ class EditBurialView(BurialsListGenericMixin, CreateBurial):
         q = self.get_qs_filter()
 
         if self.request.user.profile.is_loru():
-            q2 = q & Q(status__in=[Burial.STATUS_DRAFT, Burial.STATUS_DECLINED, Burial.STATUS_BACKED])
+            q3 = Q(status__in=[Burial.STATUS_DRAFT, Burial.STATUS_DECLINED, Burial.STATUS_BACKED])
+            q3 |= Q(source_type__in=[Burial.SOURCE_TRANSFERRED])
+            q2 = q & q3
         elif self.request.user.profile.is_ugh():
-            q3 = Q(source_type__in=[Burial.SOURCE_UGH, Burial.SOURCE_ARCHIVE])
+            q3 = Q(source_type__in=[Burial.SOURCE_UGH, Burial.SOURCE_ARCHIVE, Burial.SOURCE_TRANSFERRED])
             q3 |= Q(status__in=[Burial.STATUS_CLOSED, Burial.STATUS_ANNULATED])
             q2 = q & q3
         else:

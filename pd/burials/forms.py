@@ -309,6 +309,14 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, forms.Mo
             if self.request.user.profile.area:
                 self.initial['area'] = self.request.user.profile.area
 
+        if self.instance and self.instance.is_finished() and self.instance.place:
+            self.initial.update(
+                cemetery=self.instance.place.cemetery,
+                area=self.instance.place.area,
+                row=self.instance.place.row,
+                place_number=self.instance.place.place,
+            )
+
         self.fields['area'].queryset = self.fields['area'].queryset.select_related('purpose')
 
         self.forms = self.construct_forms()
@@ -674,17 +682,21 @@ class BurialCommitForm(BurialForm):
                     raise forms.ValidationError(_(u"Неверно указан номер места"))
 
 
+        deadman_birth_date = None
+        deadman_death_date = None
+
         if self.deadman_form.is_valid_data():
             deadman_birth_date = self.deadman_form.cleaned_data.get("birth_date").d
             deadman_death_date = self.deadman_form.cleaned_data.get("death_date").d
             if deadman_birth_date and deadman_death_date:
-                if  deadman_birth_date > deadman_death_date:
+                if deadman_birth_date > deadman_death_date:
                     msg = _(u"Дата смерти не может быть раньше даты рождения")
                     raise forms.ValidationError(msg)
                 from_death_150_years = datetime.datetime(deadman_birth_date.year - 150,  deadman_birth_date.month, deadman_birth_date.day).date()
                 if deadman_birth_date < from_death_150_years :
                     msg = _(u"Не верно указаны даты жизни")
                     raise forms.ValidationError(msg)
+
             if plan_date and deadman_birth_date:
                 if deadman_birth_date > plan_date:
                     msg = _(u"Дата рождения не может быть позже даты захоронения")
@@ -776,12 +788,14 @@ class AddDoverForm(forms.ModelForm):
 
     def clean(self):
         cleaned_data = super(AddDoverForm, self).clean()
+
         begin_date = cleaned_data['begin']
         end_date  = cleaned_data['end']
         if begin_date > end_date:
             msg = _(u"Дата начала доверенности не может быть раньше даты окончания доверенности")
             raise forms.ValidationError(msg)
-        today = datetime.datetime.today()
+
+        today = datetime.date.today()
         if today > end_date:
             msg = _(u"Дата начала окончания доверенности не может быть раньше текущей даты")
             raise forms.ValidationError(msg)
