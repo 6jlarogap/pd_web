@@ -264,7 +264,7 @@ function updateAreas() {
 }
 
 function updateDover() {
-    // updateAnything($('#id_agent'), $('#id_dover'), AGENT_DOVER);
+    updateAnything($('#id_agent'), $('#id_dover'), AGENT_DOVER);
 }
 
 function updateAgents() {

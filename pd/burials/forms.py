@@ -643,7 +643,7 @@ class BurialCommitForm(BurialForm):
                             msg = _(u"Нужно указать Агента и Доверенность или указать, что Агент - Директор")
                             raise forms.ValidationError(msg)
                 if  not self.instance.is_closed():
-                    if not self.cleaned_data.get('agent_director'):
+                    if self.cleaned_data.get('dover'):
                         dover_begin_date = self.cleaned_data.get('dover').begin
                         dover_end_date = self.cleaned_data.get('dover').end
                         today = datetime.datetime.today()
