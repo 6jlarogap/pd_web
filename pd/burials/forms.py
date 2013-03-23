@@ -669,14 +669,14 @@ class BurialCommitForm(BurialForm):
                     raise forms.ValidationError(msg)
 
         cemetery = self.cleaned_data.get('cemetery')
-        today = datetime.datetime.today()
+        today = datetime.date.today()
         plan_date = self.cleaned_data.get('plan_date')
         if today > plan_date:
             msg = _(u"Плановая дата захоронения не может быть раньше текущей даты")
             raise  forms.ValidationError(msg)
 
         if cemetery:
-            if cemetery and cemetery.places_algo == Cemetery.PLACE_MANUAL:
+            if cemetery and cemetery.places_algo == Cemetery.PLACE_CEM_YEAR:
                 place_number = self.cleaned_data.get('place_number')
                 if len(place_number) < 4  or int(place_number[:4]) > today.year():
                     raise forms.ValidationError(_(u"Неверно указан номер места"))
@@ -705,9 +705,6 @@ class BurialCommitForm(BurialForm):
                 if deadman_death_date > plan_date:
                     msg = _(u"Дата смерти не может быть позже даты захоронения")
                     raise forms.ValidationError(msg)
-        else:
-            msg = _(u"Необходимо указать не только дату смерти")
-            raise forms.ValidationError(msg)
 
         if self.dc_form.is_valid():
             death_certificate_release_date = self.dc_form.cleaned_data.get('release_date')
