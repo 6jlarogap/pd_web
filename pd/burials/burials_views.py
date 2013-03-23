@@ -456,7 +456,10 @@ class CreateBurial(CreateView):
         else:
             if b.order:
                 self.request.session['order_burial_saved'] = True
-                return redirect('.')
+                if b.is_edit():
+                    return redirect('edit_burial', b.pk)
+                else:
+                    return redirect('view_burial', b.pk)
             return redirect('view_burial', b.pk)
 
     def get_action(self):
