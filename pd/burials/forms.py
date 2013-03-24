@@ -672,7 +672,7 @@ class BurialCommitForm(BurialForm):
         cemetery = self.cleaned_data.get('cemetery')
         today = datetime.date.today()
         plan_date = self.cleaned_data.get('plan_date')
-        if today > plan_date:
+        if today > plan_date and not self.instance.is_finished():
             msg = _(u"Плановая дата захоронения не может быть раньше текущей даты")
             raise  forms.ValidationError(msg)
 
