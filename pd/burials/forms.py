@@ -657,7 +657,7 @@ class BurialCommitForm(BurialForm):
                         if dover_end_date < today.date() :
                             msg = _(u"Срок действия доверенности не может быть меньше текущей даты")
                             raise forms.ValidationError(msg)
-            if self.cleaned_data.get('opf') == 'person':
+            if self.cleaned_data.get('opf') == 'person' and self.applicant_id_form.is_valid():
                 burial_date = self.cleaned_data.get('plan_date')
                 document_date = self.applicant_id_form.cleaned_data.get('date')
                 if burial_date and document_date:
