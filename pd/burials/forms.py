@@ -664,7 +664,7 @@ class BurialCommitForm(BurialForm):
                     check_date = datetime.datetime(burial_date.year - 75, burial_date.month, burial_date.day)
                     if document_date < check_date:
                         msg = _(u"Не верно указан номер документа")
-                        raise  forms.ValidationError(msg)
+                        raise forms.ValidationError(msg)
             if self.cleaned_data.get('account_number') and self.cleaned_data.get('fact_date'):
                 acc_number = self.cleaned_data.get('account_number')
                 fact_date  = self.cleaned_data.get('fact_date')
@@ -678,7 +678,7 @@ class BurialCommitForm(BurialForm):
         if today > plan_date and not self.instance.is_finished():
             if not self.instance.is_archive() and not self.request.REQUEST.get('archive'):
                 msg = _(u"Плановая дата захоронения не может быть раньше текущей даты")
-                raise  forms.ValidationError(msg)
+                raise forms.ValidationError(msg)
 
         if cemetery:
             if cemetery and cemetery.places_algo == Cemetery.PLACE_CEM_YEAR:
@@ -686,7 +686,6 @@ class BurialCommitForm(BurialForm):
                 if place_number:
                     if len(place_number) < 4  or int(place_number[:4]) > today.year():
                         raise forms.ValidationError(_(u"Неверно указан номер места"))
-
 
         deadman_birth_date = None
         deadman_death_date = None
