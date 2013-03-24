@@ -673,8 +673,9 @@ class BurialCommitForm(BurialForm):
         today = datetime.date.today()
         plan_date = self.cleaned_data.get('plan_date')
         if today > plan_date and not self.instance.is_finished():
-            msg = _(u"Плановая дата захоронения не может быть раньше текущей даты")
-            raise  forms.ValidationError(msg)
+            if not self.instance.is_archive() and not self.request.REQUEST.get('archive'):
+                msg = _(u"Плановая дата захоронения не может быть раньше текущей даты")
+                raise  forms.ValidationError(msg)
 
         if cemetery:
             if cemetery and cemetery.places_algo == Cemetery.PLACE_CEM_YEAR:
@@ -698,6 +699,10 @@ class BurialCommitForm(BurialForm):
                 if deadman_birth_date < from_death_150_years :
                     msg = _(u"Не верно указаны даты жизни")
                     raise forms.ValidationError(msg)
+
+            if deadman_death_date and deadman_death_date > today:
+                msg = _(u"Неверная дата смерти")
+                raise forms.ValidationError(msg)
 
             if plan_date and deadman_birth_date:
                 if deadman_birth_date > plan_date:
