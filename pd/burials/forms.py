@@ -59,10 +59,10 @@ class CemeteryForm(BaseCemeteryForm):
 
     def save(self, commit=True, *args, **kwargs):
         obj = super(CemeteryForm, self).save(commit=False, *args, **kwargs)
+        if obj.pk and self.area_formset:
+            self.area_formset.save()
+        obj.address = self.address_form.save()
         if commit:
-            if obj.pk and self.area_formset:
-                self.area_formset.save()
-            obj.address = self.address_form.save()
             obj.save()
         return obj
 
