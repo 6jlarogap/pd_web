@@ -49,15 +49,18 @@ class CemeteryForm(BaseCemeteryForm):
         address = self.instance and self.instance.address
         self.address_form = LocationForm(data=self.data or None, instance=address, prefix='address')
         self.address_form.fields['country_name'].required = True
-        self.area_formset = AreaFormset(data=self.data or None, instance=self.instance)
+        if self.instance and self.instance.pk:
+            self.area_formset = AreaFormset(data=self.data or None, instance=self.instance)
+        else:
+            self.area_formset = None
 
     def is_valid(self):
-        return super(CemeteryForm, self).is_valid() and self.address_form.is_valid_data() and self.area_formset.is_valid()
+        return super(CemeteryForm, self).is_valid() and self.address_form.is_valid_data() and (not self.area_formset or self.area_formset.is_valid())
 
     def save(self, commit=True, *args, **kwargs):
         obj = super(CemeteryForm, self).save(commit=False, *args, **kwargs)
         if commit:
-            if obj.pk:
+            if obj.pk and self.area_formset:
                 self.area_formset.save()
             obj.address = self.address_form.save()
             obj.save()
