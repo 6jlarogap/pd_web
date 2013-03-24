@@ -661,7 +661,7 @@ class BurialCommitForm(BurialForm):
                 burial_date = self.cleaned_data.get('plan_date')
                 document_date = self.applicant_id_form.cleaned_data.get('date')
                 if burial_date and document_date:
-                    check_date = datetime.datetime(burial_date.year - 75, burial_date.month, burial_date.day).date
+                    check_date = datetime.datetime(burial_date.year - 75, burial_date.month, burial_date.day).date()
                     if document_date < check_date:
                         msg = _(u"Не верно указан номер документа")
                         raise forms.ValidationError(msg)
@@ -675,7 +675,7 @@ class BurialCommitForm(BurialForm):
         cemetery = self.cleaned_data.get('cemetery')
         today = datetime.date.today()
         plan_date = self.cleaned_data.get('plan_date')
-        if today > plan_date and not self.instance.is_finished():
+        if plan_date and today > plan_date and not self.instance.is_finished():
             if not self.instance.is_archive() and not self.request.REQUEST.get('archive'):
                 msg = _(u"Плановая дата захоронения не может быть раньше текущей даты")
                 raise forms.ValidationError(msg)
@@ -871,7 +871,7 @@ class ExhumationForm(ChildrenJSONMixin, forms.ModelForm):
         exhumation_date = self.cleaned_data.get('fact_date')
         burial_date = self.burial.fact_date
         if burial_date and exhumation_date:
-            if burial_date > exhumation_date:
+            if burial_date.d > exhumation_date:
                 raise forms.ValidationError(_(u"Дата эксгумации не может быть раньше даты захоронения"))
         return self.cleaned_data
 
