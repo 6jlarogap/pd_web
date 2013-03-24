@@ -367,8 +367,8 @@ def do_import_orders(csv_fileobj):
             items_data = all_data['positions']
 
             try:
-                o = Order.objects.get(burial__account_number=row[0], burial__deadman__last_name=row[1],
-                                      burial__deadman__first_name=row[2], burial__deadman__middle_name=row[3])
+                o = Order.objects.filter(burial__account_number=row[0], burial__deadman__last_name=row[1],
+                                         burial__deadman__first_name=row[2], burial__deadman__middle_name=row[3])[0]
 
                 dover = None
                 b = o.get_burial()
@@ -390,11 +390,11 @@ def do_import_orders(csv_fileobj):
                 o.save()
 
                 dupes_i += 1
-            except Order.DoesNotExist:
+            except IndexError:
                 try:
                     b = Burial.objects.filter(account_number=row[0], deadman__last_name=row[1], deadman__first_name=row[2],
-                                           deadman__middle_name=row[3]).get()
-                except Burial.DoesNotExist:
+                                              deadman__middle_name=row[3])[0]
+                except IndexError:
                     print 'Burial %s not found' % row[0]
                     continue
 
