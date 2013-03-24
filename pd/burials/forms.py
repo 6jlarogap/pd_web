@@ -661,7 +661,7 @@ class BurialCommitForm(BurialForm):
                 burial_date = self.cleaned_data.get('plan_date')
                 document_date = self.applicant_id_form.cleaned_data.get('date')
                 if burial_date and document_date:
-                    check_date = datetime.datetime(burial_date.year - 75, burial_date.month, burial_date.day)
+                    check_date = datetime.datetime(burial_date.year - 75, burial_date.month, burial_date.day).date
                     if document_date < check_date:
                         msg = _(u"Не верно указан номер документа")
                         raise forms.ValidationError(msg)
