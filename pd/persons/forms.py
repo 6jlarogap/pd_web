@@ -48,6 +48,14 @@ class PersonIDForm(ValidDataMixin, forms.ModelForm):
         if self.instance and self.instance.source and isinstance(self.instance.source, DocumentSource):
             self.initial.update({'source': self.instance.source.name})
 
+    def clean_date(self):
+        today = datetime.date.today()
+        release_date = self.cleaned_data.get('date')
+        if release_date > today:
+            msg = _(u'Неверная дата выдачи')
+            raise forms.ValidationError(msg)
+        return release_date
+
 class DeathCertificateForm(ValidDataMixin, forms.ModelForm):
     class Meta:
         model = DeathCertificate
@@ -60,6 +68,14 @@ class DeathCertificateForm(ValidDataMixin, forms.ModelForm):
                 'release_date': datetime.date.today(),
             })
         super(DeathCertificateForm, self).__init__(*args, **kwargs)
+
+    def clean_release_date(self):
+        today = datetime.date.today()
+        release_date = self.cleaned_data.get('release_date')
+        if release_date > today:
+            msg = _(u'Неверная дата выдачи')
+            raise forms.ValidationError(msg)
+        return release_date
 
 class AlivePersonForm(ValidDataMixin, forms.ModelForm):
     class Meta:
