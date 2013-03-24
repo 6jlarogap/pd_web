@@ -51,7 +51,7 @@ class PersonIDForm(ValidDataMixin, forms.ModelForm):
     def clean_date(self):
         today = datetime.date.today()
         release_date = self.cleaned_data.get('date')
-        if release_date > today:
+        if release_date and release_date > today:
             msg = _(u'Неверная дата выдачи')
             raise forms.ValidationError(msg)
         return release_date
@@ -72,7 +72,7 @@ class DeathCertificateForm(ValidDataMixin, forms.ModelForm):
     def clean_release_date(self):
         today = datetime.date.today()
         release_date = self.cleaned_data.get('release_date')
-        if release_date > today:
+        if release_date and release_date > today:
             msg = _(u'Неверная дата выдачи')
             raise forms.ValidationError(msg)
         return release_date

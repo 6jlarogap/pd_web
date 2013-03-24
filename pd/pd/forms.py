@@ -154,7 +154,7 @@ class UnclearSelectDateWidget(SelectDateWidget):
                         #     v = datetime.datetime.strptime(value, input_format)
                         # would be clearer, but datetime.strptime was added in
                         # Python 2.5
-                        v = datetime.datetime(*(datetime.datetime.strptime(value, input_format)[0:6]))
+                        v = datetime.datetime.strptime(value, input_format)
                         year_val, month_val, day_val = v.year, v.month, v.day
                     except ValueError:
                         pass
