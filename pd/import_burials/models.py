@@ -207,8 +207,17 @@ def do_import_burials(csv_fileobj, user):
                     name=row[6], time_begin='10:00', time_end='17:00',
                     creator=user, ugh=user.profile.org
                 )
+
+            try:
+                changed_dt = row[64].split(' ', 2)[2].rsplit(':', 1)[0]
+            except:
+                changed_dt = datetime.datetime.now()
+
             try:
                 b = Burial.objects.get(cemetery=cemetery, account_number=row[0])
+                if b.changed != changed_dt:
+                    b.changed = changed_dt
+                    b.save()
                 dupes_i += 1
             except Burial.DoesNotExist:
                 area, _created = Area.objects.get_or_create(
@@ -270,11 +279,6 @@ def do_import_burials(csv_fileobj, user):
                             begin=row[62],
                             end=row[63],
                         )
-
-                try:
-                    changed_dt = row[63].split(' ', 2)[2].rsplit(':', 1)[0]
-                except:
-                    changed_dt = datetime.datetime.now()
 
                 plan_date = make_unc_date(row[2])
                 params = dict(
@@ -386,7 +390,7 @@ def do_import_orders(csv_fileobj):
                 o.agent_director = b.agent_director
                 o.agent = b.agent
                 o.dover = dover
-                o.dt = b.changed or o.dt or datetime.datetime.now()
+                o.dt = o.dt or (b.changed and b.changed - datetime.timedelta(1)) or datetime.datetime.now()
                 o.save()
 
                 dupes_i += 1
