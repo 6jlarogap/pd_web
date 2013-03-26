@@ -61,13 +61,11 @@ function setup_address_autocompletes() {
     $('#mainform #id_applicant_org').attr('autocomplete', 'off').typeahead({
         items: 100,
         source: function (typeahead, query) {
-            console.log("111", query)
             if (query.length < 2) { return }
             $.ajax({
                 url: ORG_URL + "?query=" + query,
                 dataType: 'json',
                 success: function(data) {
-                    console.log("!!!!", data);
                     typeahead.process(data);
                 }
             });
