@@ -220,7 +220,6 @@ class OrderList(LORURequiredMixin, ListView):
         predicates = zip(search_by, values)
         query = [Q(p) for p in predicates]
         q = reduce(operator.and_, query)
-        print "!", q
         return queryset.filter(q)
 
 order_list = OrderList.as_view()
