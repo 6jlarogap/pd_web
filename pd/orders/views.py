@@ -110,15 +110,8 @@ class OrderList(LORURequiredMixin, ListView):
         form = self.get_form()
         if form.data and form.is_valid():
             if form.cleaned_data['fio']:
-                fio = [f.strip('.') for f in form.cleaned_data['fio'].split(' ')]
-                q = Q()
-                if len(fio) > 2:
-                    q &= Q(burial__deadman__middle_name__icontains=fio[2])
-                if len(fio) > 1:
-                    q &= Q(burial__deadman__first_name__icontains=fio[1])
-                if len(fio) > 0:
-                    q &= Q(burial__deadman__last_name__icontains=fio[0])
-                orders = orders.filter(q)
+                search_by =  ['burial__deadman__last_name__icontains', 'burial__deadman__first_name__icontains', 'burial__deadman__middle_name__icontains']
+                orders = self.filter_by_name(queryset=orders, search_by=search_by, name_string=form.cleaned_data['fio'])
             if form.cleaned_data['birth_date_from']:
                 orders = orders.filter(burial__deadman__birth_date__gte=form.cleaned_data['birth_date_from'])
             if form.cleaned_data['birth_date_to']:
@@ -151,10 +144,6 @@ class OrderList(LORURequiredMixin, ListView):
                 orders = orders.filter(burial__place__responsible__isnull=True)
             if form.cleaned_data['status']:
                 orders = orders.filter(burial__status=form.cleaned_data['status'])
-            if form.cleaned_data['applicant_org']:
-                orders = orders.filter(applicant_organization__name=form.cleaned_data['applicant_org'])
-            if form.cleaned_data['applicant_person']:
-                orders = orders.filter(applicant__last_name=form.cleaned_data['applicant_person'])
             if form.cleaned_data['order_num_from']:
                 orders = orders.filter(loru_number__gte=form.cleaned_data['order_num_from'])
             if form.cleaned_data['order_num_to']:
@@ -169,6 +158,16 @@ class OrderList(LORURequiredMixin, ListView):
                 orders = orders.filter(burial__id__gte = form.cleaned_data['burial_num_from'])
             if form.cleaned_data['burial_num_to']:
                 orders = orders.filter(burial__id__lte = form.cleaned_data['burial_num_to'])
+            if form.cleaned_data['applicant_org']:
+                orders = orders.filter(applicant_organization__name__iexact=form.cleaned_data['applicant_org'])
+            if form.cleaned_data['applicant_person']:
+                search_by =  ['applicant__last_name__icontains','applicant__first_name__icontains','applicant__middle_name__icontains']
+                orders = self.filter_by_name(queryset=orders, search_by=search_by, name_string=form.cleaned_data['applicant_person'])
+            if form.cleaned_data['reg_number_from']:
+                orders = orders.filter(burial__account_number__gte = form.cleaned_data['reg_number_from'])
+            if form.cleaned_data['reg_number_to']:
+                orders = orders.filter(burial__account_number__lte= form.cleaned_data['reg_number_to'])
+
             else:
                 orders = orders.exclude(annulated=True)
         else:
@@ -214,6 +213,14 @@ class OrderList(LORURequiredMixin, ListView):
         sort = self.request.GET.get('sort', '-order_date')
         data.update(form=self.get_form(), GET_PARAMS=get_for_paginator, sort=sort)
         return data
+
+    def filter_by_name(self, queryset, search_by, name_string):
+        import operator
+        values = [f.strip('.') for f in name_string.split(' ')]
+        predicates = zip(search_by, values)
+        query = [Q(p) for p in predicates]
+        q = reduce(operator.and_, query)
+        return queryset.filter(q)
 
 order_list = OrderList.as_view()
 
