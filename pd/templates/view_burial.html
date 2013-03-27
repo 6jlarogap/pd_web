@@ -14,7 +14,7 @@
         <dt>{% trans "Учетный номер" %}:</dt><dd>{{ b.account_number|default:"не указан" }}</dd>
         <dt>{% trans "Статус" %}:</dt><dd>{{ b.status_str }}</dd>
         {% if b.status == 'exhumated' %}
-            <form action="{% url burial_cancel_exhumation b.pk %}" method="POST" class="inline">
+            <form action="{% url burial_cancel_exhumation b.exhumationrequest.pk %}" method="POST" class="inline">
                 {% csrf_token %}
                 <input type="submit" class="btn" value="{% trans "Отменить эксгумацию" %}" />
             </form>
