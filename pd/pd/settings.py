@@ -83,6 +83,7 @@ MIDDLEWARE_CLASSES = (
     'django.contrib.messages.middleware.MessageMiddleware',
     'debug_toolbar.middleware.DebugToolbarMiddleware',
     'users.middleware.ProfileMiddleware',
+    'pd.middleware.LoginRequiredMiddleware'
 )
 
 TEMPLATE_CONTEXT_PROCESSORS = (
