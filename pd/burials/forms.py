@@ -627,7 +627,7 @@ class BurialCommitForm(BurialForm):
         if (not self.instance or not self.instance.pk) and self.request.user.profile.is_ugh():
             is_ugh = True
         if is_ugh:
-            if not self.instance.is_archive():
+            if not self.instance.is_archive() and not self.instance.is_transferred():
                 if not self.cleaned_data.get('applicant_organization'):
                     if not self.applicant_form.is_valid_data():
                         raise forms.ValidationError(_(u"Нужно указать либо Заявителя-ЮЛ, либо Заявителя-ФЛ"))
@@ -691,8 +691,12 @@ class BurialCommitForm(BurialForm):
         deadman_death_date = None
 
         if self.deadman_form.is_valid_data():
-            deadman_birth_date = self.deadman_form.cleaned_data.get("birth_date").d
-            deadman_death_date = self.deadman_form.cleaned_data.get("death_date").d
+            deadman_birth_date = self.deadman_form.cleaned_data.get("birth_date")
+            if deadman_birth_date:
+                deadman_birth_date = deadman_birth_date.d
+            deadman_death_date = self.deadman_form.cleaned_data.get("death_date")
+            if deadman_death_date:
+                deadman_death_date = deadman_death_date.d
             if deadman_birth_date and deadman_death_date:
                 if deadman_birth_date > deadman_death_date:
                     msg = _(u"Дата смерти не может быть раньше даты рождения")
