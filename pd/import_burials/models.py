@@ -201,7 +201,7 @@ def do_import_burials(csv_fileobj, user):
     dupes_i = 0
     for i, row in enumerate(csvreader):
         if i > 0:
-            if i % 100 == 0:
+            if i % 400 == 0:
                 transaction.commit()
                 gc.collect()
                 connection.queries = []
