@@ -657,7 +657,8 @@ class BurialCommitForm(BurialForm):
                         if dover_end_date < today.date() :
                             msg = _(u"Срок действия доверенности не может быть меньше текущей даты")
                             raise forms.ValidationError(msg)
-            if self.cleaned_data.get('opf') == 'person' and self.applicant_id_form.is_valid():
+
+            if self.cleaned_data.get('opf') == 'person' and self.applicant_id_form.is_valid() and not self.instance.is_archive() and not self.instance.is_transferred():
                 burial_date = self.cleaned_data.get('plan_date')
                 document_date = self.applicant_id_form.cleaned_data.get('date')
                 if burial_date and document_date:
@@ -665,6 +666,7 @@ class BurialCommitForm(BurialForm):
                     if document_date < check_date:
                         msg = _(u"Не верно указан номер документа")
                         raise forms.ValidationError(msg)
+
             if self.cleaned_data.get('account_number') and self.cleaned_data.get('fact_date'):
                 acc_number = self.cleaned_data.get('account_number')
                 fact_date  = self.cleaned_data.get('fact_date')
@@ -709,26 +711,27 @@ class BurialCommitForm(BurialForm):
             if deadman_death_date and deadman_death_date > today:
                 msg = _(u"Неверная дата смерти")
                 raise forms.ValidationError(msg)
+            if not self.instance.is_archive() and not self.instance.is_transferred():
+                if plan_date and deadman_birth_date:
+                    if deadman_birth_date > plan_date:
+                        msg = _(u"Дата рождения не может быть позже даты захоронения")
+                        raise forms.ValidationError(msg)
+                if plan_date and deadman_death_date:
+                    if deadman_death_date > plan_date:
+                        msg = _(u"Дата смерти не может быть позже даты захоронения")
+                        raise forms.ValidationError(msg)
 
-            if plan_date and deadman_birth_date:
-                if deadman_birth_date > plan_date:
-                    msg = _(u"Дата рождения не может быть позже даты захоронения")
-                    raise forms.ValidationError(msg)
-            if plan_date and deadman_death_date:
-                if deadman_death_date > plan_date:
-                    msg = _(u"Дата смерти не может быть позже даты захоронения")
-                    raise forms.ValidationError(msg)
-
-        if self.dc_form.is_valid():
-            death_certificate_release_date = self.dc_form.cleaned_data.get('release_date')
-            if deadman_birth_date and death_certificate_release_date:
-                if deadman_birth_date > death_certificate_release_date:
-                    msg = _(u"Дата выдачи свидетельства о смерти не может быть раньше даты рождения")
-                    raise forms.ValidationError(msg)
-            if deadman_death_date and death_certificate_release_date:
-                if deadman_death_date> death_certificate_release_date:
-                    msg = _(u"Дата выдачи свидетельства о смерти не может быть раньше даты смерти")
-                    raise forms.ValidationError(msg)
+        if not self.instance.is_archive() and not self.instance.is_transferred():
+            if self.dc_form.is_valid():
+                death_certificate_release_date = self.dc_form.cleaned_data.get('release_date')
+                if deadman_birth_date and death_certificate_release_date:
+                    if deadman_birth_date > death_certificate_release_date:
+                        msg = _(u"Дата выдачи свидетельства о смерти не может быть раньше даты рождения")
+                        raise forms.ValidationError(msg)
+                if deadman_death_date and death_certificate_release_date:
+                    if deadman_death_date> death_certificate_release_date:
+                        msg = _(u"Дата выдачи свидетельства о смерти не может быть раньше даты смерти")
+                        raise forms.ValidationError(msg)
 
         return self.cleaned_data
 
