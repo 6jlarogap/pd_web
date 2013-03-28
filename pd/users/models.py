@@ -54,10 +54,10 @@ class Profile(models.Model):
         name = ""
         if self.user_last_name and self.user_first_name:
             name = u"{0} {1}".format(self.user_last_name, self.user_first_name)
-        if self.user_middle_name:
-            name = u" {2}".format(self.user_middle_name)
-        if not name :
-            return self.user.get_full_name()
+            if self.user_middle_name:
+                name = u"{0} {1}".format(name, self.user_middle_name)
+        if not name:
+            name = self.user.get_full_name()
         return name
 
     def get_region(self):
