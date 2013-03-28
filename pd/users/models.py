@@ -39,7 +39,7 @@ class Profile(models.Model):
     lng = models.DecimalField(max_digits=30, decimal_places=27, blank=True, null=True)
 
     def __unicode__(self):
-        return self.user and (self.full_name() or self.user.get_full_name() or self.user.username) or u'%s' % self.pk
+        return self.user and (self.full_name() or self.user.username) or u'%s' % self.pk
 
     def is_loru(self):
         return self.org and self.org.type == Org.PROFILE_LORU
@@ -51,7 +51,14 @@ class Profile(models.Model):
         return self.is_ugh() or self.is_loru()
 
     def full_name(self):
-        return u"{0} {1} {2}".format(self.user_last_name, self.user_first_name, self.user_middle_name)
+        name = ""
+        if self.user_last_name and self.user_first_name:
+            name = u"{0} {1}".format(self.user_last_name, self.user_first_name)
+            if self.user_middle_name:
+                name = u"{0} {1}".format(name, self.user_middle_name)
+        if not name:
+            name = self.user.get_full_name()
+        return name
 
     def get_region(self):
         if self.region_fias:
