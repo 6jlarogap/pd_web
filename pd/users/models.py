@@ -62,7 +62,6 @@ class Profile(models.Model):
             return ','.join([self.lat, self.lng])
         return ''
 
-
 class Org(models.Model):
     PROFILE_ZAGS = 'zags'
     PROFILE_LORU = 'loru'
