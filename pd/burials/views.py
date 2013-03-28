@@ -162,8 +162,7 @@ class AddAgentView(LoginRequiredMixin, View):
         except KeyError:
             return HttpResponse(_(u'Данные невалидны'), mimetype='text/plain')
         if fa.is_valid() and fd.is_valid():
-            user = fa.save(loru=loru)
-            agent, _created = Profile.objects.get_or_create(user=user, org = loru, is_agent=True)
+            agent = fa.save(loru=loru)
             dover = fd.save(commit=False)
             dover.agent = agent
             dover.save()

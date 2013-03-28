@@ -19,6 +19,9 @@ class Profile(models.Model):
     )
 
     user = models.OneToOneField('auth.User', null=True)
+    user_first_name = models.CharField(_(u"Имя"), max_length=255, null=True, blank=True)
+    user_middle_name = models.CharField(_(u"Отчество"), max_length=255, null=True, blank=True)
+    user_last_name = models.CharField(_(u"Фамилия"), max_length=255, null=True, blank=True)
     org = models.ForeignKey('users.Org', null=True)
 
     is_agent = models.BooleanField(_(u"Агент"), default=False, blank=True)
@@ -36,7 +39,7 @@ class Profile(models.Model):
     lng = models.DecimalField(max_digits=30, decimal_places=27, blank=True, null=True)
 
     def __unicode__(self):
-        return self.user and (self.user.get_full_name() or self.user.username) or u'%s' % self.pk
+        return self.user and (self.full_name() or self.user.get_full_name() or self.user.username) or u'%s' % self.pk
 
     def is_loru(self):
         return self.org and self.org.type == Org.PROFILE_LORU
@@ -48,7 +51,7 @@ class Profile(models.Model):
         return self.is_ugh() or self.is_loru()
 
     def full_name(self):
-        return self.user.get_full_name()
+        return u"{0} {1} {2}".format(self.user_last_name, self.user_first_name, self.user_middle_name)
 
     def get_region(self):
         if self.region_fias:
@@ -58,6 +61,7 @@ class Profile(models.Model):
         if self.lat and self.lng:
             return ','.join([self.lat, self.lng])
         return ''
+
 
 class Org(models.Model):
     PROFILE_ZAGS = 'zags'

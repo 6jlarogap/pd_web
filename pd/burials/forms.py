@@ -775,8 +775,8 @@ class BurialCloseForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelForm):
 
 class AddAgentForm(forms.ModelForm):
     class Meta:
-        model = User
-        fields = ['first_name', 'last_name', ]
+        model = Profile
+        fields = ['user_last_name','user_first_name', 'user_middle_name', ]
 
     def random_string(self):
         chars = string.ascii_uppercase + string.ascii_lowercase + string.digits
@@ -784,15 +784,18 @@ class AddAgentForm(forms.ModelForm):
 
     def save(self, commit=True, *args, **kwargs):
         loru = kwargs.pop('loru')
-        user = super(AddAgentForm, self).save(commit=False, *args, **kwargs)
-        user.is_active = False
-        user.email = loru.email or ''
-        user.username = loru.email
-        while not user.username or User.objects.filter(username=user.username).exists():
-            user.username = self.random_string()
+        profile = super(AddAgentForm, self).save(commit=False, *args, **kwargs)
+        profile.org = loru
+        profile.is_agent=True
+        profile.user = User()
+        profile.user.is_active = False
+        profile.user.email = loru.email or ''
+        profile.user.username = loru.email
+        while not profile.user.username or User.objects.filter(username=profile.user.username).exists():
+            profile.user.username = self.random_string()
         if commit:
-            user.save()
-        return user
+            profile.save()
+        return profile
 
 class AddDoverForm(forms.ModelForm):
     class Meta:
