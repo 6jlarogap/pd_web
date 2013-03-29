@@ -3,7 +3,7 @@
 {% load i18n %}
 
 {% block content %}
-    <h1>{% trans "Кладбище" %} {{ burial }}</h1>
+    <h2>{% trans "Кладбище:" %} </h2><h1>{{ cemetery }}</h1>
     <form action="" method="POST">
         {% csrf_token %}
         <fieldset>
