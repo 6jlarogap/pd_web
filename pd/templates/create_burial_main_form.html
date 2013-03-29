@@ -3,9 +3,39 @@
 {% if user.profile.is_ugh %}
     {% include "applicant_form.html" %}
 {% endif %}
+<script type="text/javascript">
+    $(document).ready(function(){
+       $("form.burial-form.main-form ul").each(function(element){
+          $(this).addClass('unstyled');
+       });
+       $("input[name='burial_container']").change(function(){
 
+          if($(this).val() == 'container_bio'){
+             if(!$("#cont_dead").is(":hidden")){
+                 $("#cont_dead").slideToggle();
+             }
+             if(!$("#cont_place").is(":hidden")){
+                $("#cont_place").slideToggle();
+             }
+          }else{
+              if($("#cont_dead").is(":hidden")){
+                  $("#cont_dead").slideToggle();
+              }
+              if($("#cont_place").is(":hidden")){
+                  $("#cont_place").slideToggle();
+              }
+          }
+
+       });
+
+    });
+</script>
+{{ form.coffin_type.errors }}
+<div id="burial_container">
+    <h2>{{ form.burial_container.label}}</h2>
+    <p>{{ form.burial_container }}<span class="helptext">{{ form.burial_container.help_text }}</span></p>
+</div>
 <h2>{% trans "Усопший" %} {{ form.deadman_form.instance|default:"" }}</h2>
-<a href="#" onclick="$('#cont_dead').slideToggle(); return false">{% trans "развернуть" %}</a>
 <div id="cont_dead" style="{% if form.instance.pk %}display: none{% endif %}">
     {{ form.deadman_form.last_name.errors }}
     <p class="inline">{{ form.deadman_form.last_name.label_tag }} {{ form.deadman_form.last_name }}<span class="helptext">{{ form.deadman_form.last_name.help_text }}</span></p>
@@ -34,16 +64,12 @@
     {{ form.dc_form.as_p }}
 </div>
 
-{{ form.coffin_type.errors }}
-<p>{{ form.coffin_type.label_tag }} {{ form.coffin_type }}<span class="helptext">{{ form.coffin_type.help_text }}</span></p>
-
 {% if form.account_number %}
     {{ form.account_number.errors }}
     <p>{{ form.account_number.label_tag }} {{ form.account_number }}<span class="helptext">{{ form.account_number.help_text }}</span></p>
 {% endif %}
 
 <h2>{% trans "Место" %} {{ form.instance.get_place|default:"" }}</h2>
-<a href="#" onclick="$('#cont_place').slideToggle(); return false">{% trans "развернуть" %}</a>
 <div id="cont_place" style="{% if form.instance.pk %}display: none{% endif %}">
     {{ form.cemetery.errors }}
     <p class="inline">{{ form.cemetery.label_tag }} {{ form.cemetery }}<span class="helptext">{{ form.cemetery.help_text }}</span></p>
@@ -83,7 +109,7 @@
     {% trans "Ответственный" %} {{ form.responsible_form.instance|default:"" }}
 </h2>
 
-<a href="#" onclick="$('#cont_responsible').slideToggle(); return false">{% trans "развернуть" %}</a>
+<a href="#" onclick="$('#cont_responsible').slideToggle(); return false" class="slider" data-id="cont_responsible">{% trans "развернуть" %}</a>
 <div id="cont_responsible" style="display: none">
     {{ form.responsible_form.as_p }}
     <div id="cont_responsible_address">
