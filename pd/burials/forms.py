@@ -627,7 +627,7 @@ class BurialCommitForm(BurialForm):
         if (not self.instance or not self.instance.pk) and self.request.user.profile.is_ugh():
             is_ugh = True
         if is_ugh:
-            if not self.instance.is_archive():
+            if not self.instance.is_archive() and not self.instance.is_transferred():
                 if not self.cleaned_data.get('applicant_organization'):
                     if not self.applicant_form.is_valid_data():
                         raise forms.ValidationError(_(u"Нужно указать либо Заявителя-ЮЛ, либо Заявителя-ФЛ"))
@@ -657,7 +657,8 @@ class BurialCommitForm(BurialForm):
                         if dover_end_date < today.date() :
                             msg = _(u"Срок действия доверенности не может быть меньше текущей даты")
                             raise forms.ValidationError(msg)
-            if self.cleaned_data.get('opf') == 'person' and self.applicant_id_form.is_valid():
+
+            if self.cleaned_data.get('opf') == 'person' and self.applicant_id_form.is_valid() and not self.instance.is_archive() and not self.instance.is_transferred():
                 burial_date = self.cleaned_data.get('plan_date')
                 document_date = self.applicant_id_form.cleaned_data.get('date')
                 if burial_date and document_date:
@@ -665,6 +666,7 @@ class BurialCommitForm(BurialForm):
                     if document_date < check_date:
                         msg = _(u"Не верно указан номер документа")
                         raise forms.ValidationError(msg)
+
             if self.cleaned_data.get('account_number') and self.cleaned_data.get('fact_date'):
                 acc_number = self.cleaned_data.get('account_number')
                 fact_date  = self.cleaned_data.get('fact_date')
@@ -691,8 +693,12 @@ class BurialCommitForm(BurialForm):
         deadman_death_date = None
 
         if self.deadman_form.is_valid_data():
-            deadman_birth_date = self.deadman_form.cleaned_data.get("birth_date").d
-            deadman_death_date = self.deadman_form.cleaned_data.get("death_date").d
+            deadman_birth_date = self.deadman_form.cleaned_data.get("birth_date")
+            if deadman_birth_date:
+                deadman_birth_date = deadman_birth_date.d
+            deadman_death_date = self.deadman_form.cleaned_data.get("death_date")
+            if deadman_death_date:
+                deadman_death_date = deadman_death_date.d
             if deadman_birth_date and deadman_death_date:
                 if deadman_birth_date > deadman_death_date:
                     msg = _(u"Дата смерти не может быть раньше даты рождения")
@@ -705,26 +711,27 @@ class BurialCommitForm(BurialForm):
             if deadman_death_date and deadman_death_date > today:
                 msg = _(u"Неверная дата смерти")
                 raise forms.ValidationError(msg)
+            if not self.instance.is_archive() and not self.instance.is_transferred():
+                if plan_date and deadman_birth_date:
+                    if deadman_birth_date > plan_date:
+                        msg = _(u"Дата рождения не может быть позже даты захоронения")
+                        raise forms.ValidationError(msg)
+                if plan_date and deadman_death_date:
+                    if deadman_death_date > plan_date:
+                        msg = _(u"Дата смерти не может быть позже даты захоронения")
+                        raise forms.ValidationError(msg)
 
-            if plan_date and deadman_birth_date:
-                if deadman_birth_date > plan_date:
-                    msg = _(u"Дата рождения не может быть позже даты захоронения")
-                    raise forms.ValidationError(msg)
-            if plan_date and deadman_death_date:
-                if deadman_death_date > plan_date:
-                    msg = _(u"Дата смерти не может быть позже даты захоронения")
-                    raise forms.ValidationError(msg)
-
-        if self.dc_form.is_valid():
-            death_certificate_release_date = self.dc_form.cleaned_data.get('release_date')
-            if deadman_birth_date and death_certificate_release_date:
-                if deadman_birth_date > death_certificate_release_date:
-                    msg = _(u"Дата выдачи свидетельства о смерти не может быть раньше даты рождения")
-                    raise forms.ValidationError(msg)
-            if deadman_death_date and death_certificate_release_date:
-                if deadman_death_date> death_certificate_release_date:
-                    msg = _(u"Дата выдачи свидетельства о смерти не может быть раньше даты смерти")
-                    raise forms.ValidationError(msg)
+        if not self.instance.is_archive() and not self.instance.is_transferred():
+            if self.dc_form.is_valid():
+                death_certificate_release_date = self.dc_form.cleaned_data.get('release_date')
+                if deadman_birth_date and death_certificate_release_date:
+                    if deadman_birth_date > death_certificate_release_date:
+                        msg = _(u"Дата выдачи свидетельства о смерти не может быть раньше даты рождения")
+                        raise forms.ValidationError(msg)
+                if deadman_death_date and death_certificate_release_date:
+                    if deadman_death_date> death_certificate_release_date:
+                        msg = _(u"Дата выдачи свидетельства о смерти не может быть раньше даты смерти")
+                        raise forms.ValidationError(msg)
 
         return self.cleaned_data
 
@@ -768,8 +775,8 @@ class BurialCloseForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelForm):
 
 class AddAgentForm(forms.ModelForm):
     class Meta:
-        model = User
-        fields = ['first_name', 'last_name', ]
+        model = Profile
+        fields = ['user_last_name','user_first_name', 'user_middle_name', ]
 
     def random_string(self):
         chars = string.ascii_uppercase + string.ascii_lowercase + string.digits
@@ -777,15 +784,18 @@ class AddAgentForm(forms.ModelForm):
 
     def save(self, commit=True, *args, **kwargs):
         loru = kwargs.pop('loru')
-        user = super(AddAgentForm, self).save(commit=False, *args, **kwargs)
-        user.is_active = False
-        user.email = loru.email or ''
-        user.username = loru.email
-        while not user.username or User.objects.filter(username=user.username).exists():
-            user.username = self.random_string()
+        profile = super(AddAgentForm, self).save(commit=False, *args, **kwargs)
+        profile.org = loru
+        profile.is_agent=True
+        profile.user = User()
+        profile.user.is_active = False
+        profile.user.email = loru.email or ''
+        profile.user.username = loru.email
+        while not profile.user.username or User.objects.filter(username=profile.user.username).exists():
+            profile.user.username = self.random_string()
         if commit:
-            user.save()
-        return user
+            profile.save()
+        return profile
 
 class AddDoverForm(forms.ModelForm):
     class Meta:

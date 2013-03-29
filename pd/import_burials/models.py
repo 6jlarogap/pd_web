@@ -133,7 +133,7 @@ def make_unc_date(d):
             pd_bits = d.split('-')
         else:
             pd_bits.reverse()
-        pd_bits = map(int, pd_bits)
+        pd_bits = [b.isdigit() and int(b) or None for b in pd_bits]
         return UnclearDate(*pd_bits)
     return None
 
@@ -160,15 +160,23 @@ def import_dead_person(data):
     f,i,o = data[:3]
     if not any([f,i,o]):
         return None
+
+    birth_dt = make_unc_date(data[3])
+    death_dt = make_unc_date(data[4])
+
     try:
-        return DeadPerson.objects.get(last_name=f, first_name=i, middle_name=o)
+        dp = DeadPerson.objects.get(last_name=f, first_name=i, middle_name=o)
+        dp.birth_date = birth_dt
+        dp.death_date = death_dt
+        dp.save()
+        return dp
     except DeadPerson.DoesNotExist:
         dp = DeadPerson.objects.create(
             last_name=f,
             first_name=i,
             middle_name=o,
-            birth_date=make_unc_date(data[3]),
-            death_date=make_unc_date(data[4]),
+            birth_date=birth_dt,
+            death_date=death_dt,
         )
         if data[5]:
             dp.address = import_location(data[5:13])
@@ -193,7 +201,7 @@ def do_import_burials(csv_fileobj, user):
     dupes_i = 0
     for i, row in enumerate(csvreader):
         if i > 0:
-            if i % 100 == 0:
+            if i % 400 == 0:
                 transaction.commit()
                 gc.collect()
                 connection.queries = []
@@ -210,14 +218,18 @@ def do_import_burials(csv_fileobj, user):
 
             try:
                 changed_dt = row[64].split(' ', 2)[2].rsplit(':', 1)[0]
-            except:
+            except Exception, e:
+                print 'Error parsing', row[64], e
                 changed_dt = datetime.datetime.now()
 
             try:
                 b = Burial.objects.get(cemetery=cemetery, account_number=row[0])
                 if b.changed != changed_dt:
                     b.changed = changed_dt
-                    b.save()
+                if not b.applicant and not b.applicant_organization:
+                    b.applicant = import_alive_person(row[41:55])
+                b.deadman = import_dead_person(row[27:41])
+                b.save()
                 dupes_i += 1
             except Burial.DoesNotExist:
                 area, _created = Area.objects.get_or_create(
@@ -281,6 +293,7 @@ def do_import_burials(csv_fileobj, user):
                         )
 
                 plan_date = make_unc_date(row[2])
+
                 params = dict(
                     account_number=row[0],
                     burial_type=BURIAL_TYPES[row[1]],
@@ -390,7 +403,7 @@ def do_import_orders(csv_fileobj):
                 o.agent_director = b.agent_director
                 o.agent = b.agent
                 o.dover = dover
-                o.dt = o.dt or (b.changed and b.changed - datetime.timedelta(1)) or datetime.datetime.now()
+                o.dt = b.changed and b.changed - datetime.timedelta(1) or o.dt or datetime.datetime.now()
                 o.save()
 
                 dupes_i += 1

@@ -621,11 +621,11 @@ class CancelExhumationView(ArchiveMixin, DeleteView):
 
     def get_success_url(self):
         write_log(self.request, self.burial, _(u'Эксгумация отменена'))
-        messages.success(self.request, _(u"Эксгумация успешна"))
-        if self.place.pk:
+        messages.success(self.request, _(u"Эксгумация отменена"))
+        if self.place and self.place.pk:
             return reverse('view_place', args=[self.place.pk])
         else:
-            return reverse('/')
+            return reverse('dashboard')
 
     def get_queryset(self):
         qs = Q(burial__ugh=self.request.user.profile.org) | Q(burial__cemetery__ugh=self.request.user.profile.org)

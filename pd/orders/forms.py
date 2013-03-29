@@ -188,4 +188,6 @@ class OrderSearchForm(forms.Form):
     per_page = forms.ChoiceField(label=_(u"На странице"), choices=PAGE_CHOICES, initial=25, required=False)
     burial_num_from = forms.IntegerField(required=False, label=_(u"Номер Захоронения с"))
     burial_num_to = forms.IntegerField(required=False, label=_(u"по"))
+    reg_number_from = forms.IntegerField(required=False, label=_(u"Рег № с"))
+    reg_number_to = forms.IntegerField(required=False, label=_(u" по "))
 

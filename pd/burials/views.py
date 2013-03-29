@@ -162,8 +162,7 @@ class AddAgentView(LoginRequiredMixin, View):
         except KeyError:
             return HttpResponse(_(u'Данные невалидны'), mimetype='text/plain')
         if fa.is_valid() and fd.is_valid():
-            user = fa.save(loru=loru)
-            agent, _created = Profile.objects.get_or_create(user=user, org = loru, is_agent=True)
+            agent = fa.save(loru=loru)
             dover = fd.save(commit=False)
             dover.agent = agent
             dover.save()
@@ -292,7 +291,7 @@ burial_comment = CommentView.as_view()
 class AutocompleteCemeteries(View):
     def get(self, request, *args, **kwargs):
         query = request.GET['query']
-        cemeteries = Cemetery.objects.filter(name__startswith=query)
+        cemeteries = Cemetery.objects.filter(name__icontains=query)
         if request.user.profile.is_loru():
             cemeteries = cemeteries.filter(ugh__loru_list__loru=request.user.profile.org)
         elif request.user.profile.is_ugh():
@@ -306,7 +305,7 @@ autocomplete_cemeteries = AutocompleteCemeteries.as_view()
 class AutocompleteAreas(View):
     def get(self, request, *args, **kwargs):
         query = request.GET['query']
-        areas = Area.objects.filter(name__startswith=query)
+        areas = Area.objects.filter(name__icontains=query)
         if request.user.profile.is_loru():
             areas = areas.filter(cemetery__ugh__loru_list__loru=request.user.profile.org)
         elif request.user.profile.is_ugh():

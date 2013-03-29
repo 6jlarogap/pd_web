@@ -4,7 +4,7 @@
 
 from fabric.api import *
 
-env.hosts = ['youmemory.org']
+env.hosts = ['ilvar@youmemory.org']
 
 def sshagent_run(cmd):
     """
