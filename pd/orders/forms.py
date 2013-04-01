@@ -190,4 +190,5 @@ class OrderSearchForm(forms.Form):
     burial_num_to = forms.IntegerField(required=False, label=_(u"по"))
     reg_number_from = forms.IntegerField(required=False, label=_(u"Рег № с"))
     reg_number_to = forms.IntegerField(required=False, label=_(u" по "))
+    burial_container = forms.TypedChoiceField(required=False, label=_(u"Тип захоронения"), choices=EMPTY + Burial.BURIAL_CONTAINERS)
 

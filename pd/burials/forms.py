@@ -137,6 +137,7 @@ class BurialSearchForm(forms.Form):
     source = forms.TypedChoiceField(required=False, label=_(u"Тип"), choices=EMPTY + Burial.SOURCE_TYPES)
     status = forms.TypedChoiceField(required=False, label=_(u"Статус"), choices=EMPTY + Burial.STATUS_CHOICES)
     per_page = forms.ChoiceField(label=_(u"На странице"), choices=PAGE_CHOICES, initial=25, required=False)
+    burial_container = forms.TypedChoiceField(required=False, label=_(u"Тип захоронения"), choices=EMPTY + Burial.BURIAL_CONTAINERS)
 
 class ResponsibleForm(AlivePersonForm):
     WHERE_FROM_PLACE = u'place'
@@ -230,12 +231,8 @@ class ResponsibleForm(AlivePersonForm):
 class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, forms.ModelForm):
     COFFIN = 'coffin'
     URN = 'urn'
-    COFFIN_TYPES = (
-        (COFFIN, _(u"Гроб")),
-        (URN, _(u"Урна")),
-    )
 
-    coffin_type = forms.ChoiceField(label=_(u"Тип"), choices=COFFIN_TYPES, widget=forms.RadioSelect, required=False)
+    burial_container = forms.ChoiceField(label=_(u"Тип захоронения"), choices=Burial.BURIAL_CONTAINERS, widget=forms.RadioSelect,  required=False)
     opf = forms.ChoiceField(label=_(u'ОПФ'), choices=OPF_CHOICES, widget=forms.RadioSelect)
 
     class Meta:
@@ -301,10 +298,10 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, forms.Mo
             del self.fields['fact_date']
             del self.fields['account_number']
 
-        if self.instance and self.instance.burial_type == Burial.BURIAL_URN:
-            self.initial['coffin_type'] = self.URN
+        if self.instance:
+            self.initial['burial_container'] = self.instance.burial_container
         else:
-            self.initial['coffin_type'] = self.COFFIN
+            self.initial['burial_container'] = Burial.CONTAINER_COFFIN
 
         if not self.instance or not self.instance.cemetery:
             if self.request.user.profile.cemetery:
@@ -507,7 +504,7 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, forms.Mo
                 pass
             self.instance.responsible = None
 
-        if self.cleaned_data['coffin_type'] == self.URN:
+        if self.cleaned_data['burial_container'] == Burial.CONTAINER_URN:
             self.instance.burial_type = Burial.BURIAL_URN
         elif self.instance.place_number:
             self.instance.burial_type = Burial.BURIAL_ADD
@@ -709,7 +706,7 @@ class BurialCommitForm(BurialForm):
                     raise forms.ValidationError(msg)
 
             if deadman_death_date and deadman_death_date > today:
-                msg = _(u"Неверная дата смерти")
+                msg = _(u"Дата смерти не может быть позже сегодняшней")
                 raise forms.ValidationError(msg)
             if not self.instance.is_archive() and not self.instance.is_transferred():
                 if plan_date and deadman_birth_date:

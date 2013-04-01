@@ -274,6 +274,8 @@ class BurialsListView(ListView):
                 burials = burials.filter(applicant_organization__name=form.cleaned_data['applicant_org'])
             if form.cleaned_data['applicant_person']:
                 burials = burials.filter(applicant__last_name=form.cleaned_data['applicant_person'])
+            if form.cleaned_data['burial_container']:
+                burials = burials.filter(burial_container=form.cleaned_data['burial_container'])
 
             if form.cleaned_data.get('status') == Burial.STATUS_EXHUMATED:
                 burials = burials.filter(status=Burial.STATUS_EXHUMATED)

@@ -221,8 +221,20 @@ class Burial(models.Model):
         (SOURCE_ARCHIVE, _(u"Архивное")),
         (SOURCE_TRANSFERRED, _(u"Перенесенное")),
     )
+    CONTAINER_COFFIN = 'container_coffin'
+    CONTAINER_URN = 'container_urn'
+    CONTAINER_ASH = 'container_ash'
+    CONTAINER_BIO = 'container_bio'
+
+    BURIAL_CONTAINERS = (
+        (CONTAINER_COFFIN, _(u"Гроб")),
+        (CONTAINER_URN, _(u"Урна")),
+        (CONTAINER_ASH, _(u"Прах")),
+        (CONTAINER_BIO, _(u"Биоотходы")),
+    )
 
     burial_type = models.CharField(_(u"Тип захоронения"), max_length=255, null=True, blank=True, choices=BURIAL_TYPES)
+    burial_container = models.CharField(_(u"Тип контенера"), max_length=255, null=True, blank=True, choices=BURIAL_CONTAINERS, default=CONTAINER_COFFIN)
     source_type = models.CharField(_(u"Источник"), max_length=255, null=True, editable=False, choices=SOURCE_TYPES)
     account_number = models.CharField(_(u"№ в книге учета"), max_length=255, null=True, blank=True)
 
