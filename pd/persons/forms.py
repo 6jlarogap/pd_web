@@ -63,7 +63,8 @@ class DeathCertificateForm(ValidDataMixin, forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         kwargs.setdefault('initial', {})
-        if not kwargs.get('instance'):
+        instance = kwargs.get('instance')
+        if not instance or not instance.person:
             kwargs['initial'].update({
                 'release_date': datetime.date.today(),
             })

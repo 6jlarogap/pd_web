@@ -333,6 +333,8 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, forms.Mo
             dc = self.instance and self.instance.deadman and self.instance.deadman.deathcertificate
         except DeathCertificate.DoesNotExist:
             dc = None
+        if not dc and deadman:
+            dc = DeathCertificate(person=deadman)
         self.dc_form = DeathCertificateForm(data=data, prefix='deadman-dc', instance=dc)
 
         responsible = self.instance and self.instance.get_responsible()
