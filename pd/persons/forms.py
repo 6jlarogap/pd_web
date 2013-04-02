@@ -63,13 +63,11 @@ class DeathCertificateForm(ValidDataMixin, forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         kwargs.setdefault('initial', {})
-        kwargs.setdefault('deadman', None)
-        if not kwargs.get('instance') and not kwargs.get('deadman'):
+        instance = kwargs.get('instance')
+        if not instance or not instance.person:
             kwargs['initial'].update({
                 'release_date': datetime.date.today(),
             })
-        # To avoid: [forms.ModelForm] __init__() got an unexpected keyword argument
-        del kwargs['deadman']
         super(DeathCertificateForm, self).__init__(*args, **kwargs)
 
     def clean_release_date(self):

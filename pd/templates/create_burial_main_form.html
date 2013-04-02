@@ -37,7 +37,8 @@
     <p>{{ form.burial_container }}<span class="helptext">{{ form.burial_container.help_text }}</span></p>
 </div>
 <h2>{% trans "Усопший" %} {{ form.deadman_form.instance|default:"" }}</h2>
-<div id="cont_dead" style="{% if not form.instance.pk %}display: none{% endif %}">
+<!-- <div id="cont_dead" style="{% if form.instance.pk %}display: none{% endif %}"> -->
+<div id="cont_dead">
     {{ form.deadman_form.last_name.errors }}
     <p class="inline">{{ form.deadman_form.last_name.label_tag }} {{ form.deadman_form.last_name }}<span class="helptext">{{ form.deadman_form.last_name.help_text }}</span></p>
 
