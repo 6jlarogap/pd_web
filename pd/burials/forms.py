@@ -288,10 +288,10 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, forms.Mo
             else:
                 self.initial['opf'] = 'org'
 
-        if self.request.user.profile.is_ugh() and self.request.REQUEST.get('archive') or self.instance.is_transferred():
+        if self.request.user.profile.is_ugh() and self.request.REQUEST.get('archive'):
             del self.fields['plan_date']
             del self.fields['plan_time']
-        elif self.instance.is_archive():
+        elif self.instance.is_archive() or self.instance.is_transferred():
             del self.fields['plan_date']
             del self.fields['plan_time']
         elif not self.instance.is_finished():
@@ -401,6 +401,7 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, forms.Mo
             if self.responsible_form.cleaned_data.get('take_from') == ResponsibleForm.WHERE_FROM_APPLICANT:
                 if self.cleaned_data.get('opf') != 'person':
                     raise forms.ValidationError(_(u"Невозможно указать Заявителя - Ответственного. Заявитель не ФЛ."))
+
         return self.cleaned_data
 
     def cemetery_placing_json(self):
