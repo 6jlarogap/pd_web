@@ -291,7 +291,7 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, forms.Mo
         if self.request.user.profile.is_ugh() and self.request.REQUEST.get('archive'):
             del self.fields['plan_date']
             del self.fields['plan_time']
-        elif self.instance.is_archive():
+        elif self.instance.is_archive() or self.instance.is_transferred():
             del self.fields['plan_date']
             del self.fields['plan_time']
         elif not self.instance.is_finished():
@@ -882,6 +882,10 @@ class ExhumationForm(ChildrenJSONMixin, forms.ModelForm):
         if burial_date and exhumation_date:
             if burial_date.d > exhumation_date:
                 raise forms.ValidationError(_(u"Дата эксгумации не может быть раньше даты захоронения"))
+        if self.cleaned_data.get('opf') == 'org' and \
+                not self.cleaned_data.get('agent_director') and \
+                not (self.cleaned_data.get('agent') and self.cleaned_data.get('dover')):
+            raise forms.ValidationError(_(u'Нет данных об агенте и/или доверенности для заявителя-ЮЛ'))
         return self.cleaned_data
 
     def save(self, commit=True, *args, **kwargs):

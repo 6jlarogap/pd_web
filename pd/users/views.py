@@ -191,8 +191,8 @@ class OrgEditForm(UpdateView):
         data['request'] = self.request
         return data
 
-    def get_queryset(self):
-        return Org.objects.annotate(profiles=Count('profile')).filter(profiles=0)
+    #def get_queryset(self):
+        #return Org.objects.annotate(profiles=Count('profile')).filter(profiles=0)
 
     def get_success_url(self):
         msg = _(u"<a href='%s'>Организация %s</a> изменена") % (

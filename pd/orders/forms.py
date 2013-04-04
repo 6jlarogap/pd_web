@@ -47,6 +47,13 @@ class OrderForm(ChildrenJSONMixin, forms.ModelForm):
     def is_valid(self):
         return super(OrderForm, self).is_valid() and all([f.is_valid() for f in self.forms])
 
+    def clean(self):
+        if self.cleaned_data.get('opf') == 'org' and \
+                not self.cleaned_data.get('agent_director') and \
+                not (self.cleaned_data.get('agent') and self.cleaned_data.get('dover')):
+            raise forms.ValidationError(_(u'Нет данных об агенте и/или доверенности для заказчика-ЮЛ'))
+        return self.cleaned_data
+            
     def construct_forms(self):
         data = self.data or None
         applicant = self.instance and self.instance.applicant

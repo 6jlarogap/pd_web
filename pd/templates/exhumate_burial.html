@@ -4,6 +4,7 @@
 
 {% block content %}
     <h1>{% trans "Эксгумация" %}</h1>
+    {{ form.non_field_errors }}
     <dl>
         <dt>{% trans "Захоронение" %}</dt>
         <dd>{{ burial }}</dd>
