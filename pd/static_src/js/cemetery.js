@@ -416,7 +416,6 @@ $(function() {
             if (!$(resp_id+'0').is(':checked') && !$(resp_id+'2').is(':checked')) {
                 $(resp_id+'1').attr('checked', 'checked');
             }
-            $(resp_id+'1').show();    
         }
     });
     $('input[name=opf]').change();
