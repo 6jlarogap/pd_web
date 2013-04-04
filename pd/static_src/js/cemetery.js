@@ -369,6 +369,8 @@ $(function() {
     $('#id_plan_date').change();
 
     $('input[name=opf]').change(function() {
+        var resp_id = '#id_responsible-take_from_';
+        $(resp_id+'1').removeAttr('checked').closest('li').hide();
         if ($('input[name=opf]:checked').val() == 'org') {
             $('#applicant_form_org').show();
             $('#applicant_form_person').hide();
@@ -410,6 +412,11 @@ $(function() {
             $('#id_agent_director').val('');
             $('#id_agent').val('');
             $('#id_dover').val('');
+            $(resp_id+'1').closest('li').show();
+            if (!$(resp_id+'0').is(':checked') && !$(resp_id+'2').is(':checked')) {
+                $(resp_id+'1').attr('checked', 'checked');
+            }
+            $(resp_id+'1').show();    
         }
     });
     $('input[name=opf]').change();
