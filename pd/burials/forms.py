@@ -882,6 +882,10 @@ class ExhumationForm(ChildrenJSONMixin, forms.ModelForm):
         if burial_date and exhumation_date:
             if burial_date.d > exhumation_date:
                 raise forms.ValidationError(_(u"Дата эксгумации не может быть раньше даты захоронения"))
+        if self.cleaned_data.get('opf') == 'org' and \
+                not self.cleaned_data.get('agent_director') and \
+                not (self.cleaned_data.get('agent') and self.cleaned_data.get('dover')):
+            raise forms.ValidationError(_(u'Нет данных об агенте и доверенности для юридического лица'))
         return self.cleaned_data
 
     def save(self, commit=True, *args, **kwargs):

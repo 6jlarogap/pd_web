@@ -49,9 +49,9 @@ class OrderForm(ChildrenJSONMixin, forms.ModelForm):
 
     def clean(self):
         if self.cleaned_data.get('opf') == 'org' and \
-           not self.cleaned_data.get('agent_director') and \
-           not (self.cleaned_data.get('agent') and self.cleaned_data.get('dover')):
-                raise forms.ValidationError(_(u'Ошибка: нет данных об агенте и доверенности для юридического лица'))
+                not self.cleaned_data.get('agent_director') and \
+                not (self.cleaned_data.get('agent') and self.cleaned_data.get('dover')):
+            raise forms.ValidationError(_(u'Нет данных об агенте и доверенности для юридического лица'))
         return self.cleaned_data
             
     def construct_forms(self):
