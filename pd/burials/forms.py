@@ -885,7 +885,7 @@ class ExhumationForm(ChildrenJSONMixin, forms.ModelForm):
         if self.cleaned_data.get('opf') == 'org' and \
                 not self.cleaned_data.get('agent_director') and \
                 not (self.cleaned_data.get('agent') and self.cleaned_data.get('dover')):
-            raise forms.ValidationError(_(u'Нет данных об агенте и доверенности для юридического лица'))
+            raise forms.ValidationError(_(u'Нет данных об агенте и/или доверенности для заявителя-ЮЛ'))
         return self.cleaned_data
 
     def save(self, commit=True, *args, **kwargs):
