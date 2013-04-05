@@ -5,7 +5,7 @@
 {% block content %}
     <h1>{% trans "Данные организации" %} {{ object }}</h1>
     {% if user.profile.is_loru and not form.instance.is_inactive %}
-        <h2><span style="color:red">У вас нет прав для редактирования данных активированной организации</span></h2>
+        <h2><span style="color:red">У Вас нет прав для редактирования данных активированной организации</span></h2>
     {% else %}
         <form action="" method="POST">
             {% csrf_token %}
