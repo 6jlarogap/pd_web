@@ -4,35 +4,39 @@
 
 {% block content %}
     <h1>{% trans "Данные организации" %} {{ object }}</h1>
-    <form action="" method="POST">
-        {% csrf_token %}
-        {{ form.as_p }}
+    {% if user.profile.is_loru and not form.instance.is_inactive %}
+        <h2><span style="color:red">У вас нет прав для редактирования данных активированной организации</span></h2>
+    {% else %}
+        <form action="" method="POST">
+            {% csrf_token %}
+            {{ form.as_p }}
 
-        <h2>{% trans "Адрес" %}</h2>
-        {% with form.address_form as form %}
-            {% include "location_form.html" %}
-        {% endwith %}
+            <h2>{% trans "Адрес" %}</h2>
+            {% with form.address_form as form %}
+                {% include "location_form.html" %}
+            {% endwith %}
 
-        <p>
-            <input type="submit" class="btn btn-primary" value="{% trans "cохранить" %}"/>
-        </p>
-    </form>
+            <p>
+                <input type="submit" class="btn btn-primary" value="{% trans "cохранить" %}"/>
+            </p>
+        </form>
 
-    {% if object.get_logs %}
-        <h2>{% trans "Журнал" %}</h2>
-        <table class="table table-bordered">
-            <tr>
-                <th>{% trans "Дата" %}</th>
-                <th>{% trans "Пользователь" %}</th>
-                <th>{% trans "Действие" %}</th>
-            </tr>
-            {% for log in object.get_logs %}
+        {% if object.get_logs %}
+            <h2>{% trans "Журнал" %}</h2>
+            <table class="table table-bordered">
                 <tr>
-                    <td>{{ log.dt }}</td>
-                    <td>{{ log.user.profile }} / {{ log.user.profile.org }}</td>
-                    <td>{{ log.msg|linebreaksbr }}</td>
+                    <th>{% trans "Дата" %}</th>
+                    <th>{% trans "Пользователь" %}</th>
+                    <th>{% trans "Действие" %}</th>
                 </tr>
-            {% endfor %}
-        </table>
+                {% for log in object.get_logs %}
+                    <tr>
+                        <td>{{ log.dt }}</td>
+                        <td>{{ log.user.profile }} / {{ log.user.profile.org }}</td>
+                        <td>{{ log.msg|linebreaksbr }}</td>
+                    </tr>
+                {% endfor %}
+            </table>
+        {% endif %}
     {% endif %}
 {% endblock %}
