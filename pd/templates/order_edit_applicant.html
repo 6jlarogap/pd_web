@@ -9,6 +9,8 @@
     <form action="" method="POST" class="main-form">
         {% csrf_token %}
 
+        {{ form.non_field_errors }}
+
         {% include "applicant_form.html" %}
 
         {{ form.payment.errors }}

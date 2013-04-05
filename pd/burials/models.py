@@ -256,7 +256,7 @@ class Burial(models.Model):
 
     applicant = models.ForeignKey('persons.AlivePerson', verbose_name=_(u"Заявитель"), blank=True, null=True,
                                   related_name='applied_burials')
-    ugh = models.ForeignKey(Org, verbose_name=_(u"ЛОРУ"), null=True, editable=False, related_name='ugh_created',
+    ugh = models.ForeignKey(Org, verbose_name=_(u"УГХ"), null=True, editable=False, related_name='ugh_created',
                             limit_choices_to={'type': Org.PROFILE_UGH}, on_delete=models.PROTECT)
     applicant_organization = models.ForeignKey(Org, verbose_name=_(u"Заявитель-ЮЛ"), null=True, blank=True,
                                                related_name='loru_created', on_delete=models.PROTECT)
