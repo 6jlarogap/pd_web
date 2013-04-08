@@ -790,10 +790,16 @@ class AddAgentForm(forms.ModelForm):
         profile.user.is_active = False
         profile.user.email = loru.email or ''
         profile.user.username = loru.email
+        # Это предварительно. Надо еще проверить, чтоб не пусто было в Ф, И, О.
+        # Основная проблема ниже
+        profile.user.last_name = profile.user_last_name
+        profile.user.first_name = profile.user_first_name + ' ' + profile.user_middle_name
         while not profile.user.username or User.objects.filter(username=profile.user.username).exists():
             profile.user.username = self.random_string()
         if commit:
             profile.save()
+            # Но в таблицу auth_user ничего не добавляется,
+            # а в таблице profile указатель user_id (в auth_user) Null
         return profile
 
 class AddDoverForm(forms.ModelForm):
