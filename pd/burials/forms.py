@@ -781,6 +781,18 @@ class AddAgentForm(forms.ModelForm):
         chars = string.ascii_uppercase + string.ascii_lowercase + string.digits
         return ''.join(random.choice(chars) for x in range(10))
 
+    def clean(self):
+        cleaned_data = super(AddAgentForm, self).clean()
+        if not cleaned_data['user_last_name'].strip():
+            msg = _(u"Не заполнена фамилия")
+            raise forms.ValidationError(msg)
+
+        if cleaned_data['user_middle_name'].strip() and \
+           not cleaned_data['user_first_name'].strip():
+            msg = _(u"Не заполнено имя при имеющемся отчестве")
+            raise forms.ValidationError(msg)
+        return cleaned_data
+
     def save(self, commit=True, *args, **kwargs):
         loru = kwargs.pop('loru')
         profile = super(AddAgentForm, self).save(commit=False, *args, **kwargs)
@@ -791,7 +803,9 @@ class AddAgentForm(forms.ModelForm):
         user.email = loru.email or ''
         user.username = loru.email
         user.last_name = profile.user_last_name
-        user.first_name = profile.user_first_name + ' ' + profile.user_middle_name
+        user.first_name = profile.user_first_name
+        if profile.user_middle_name:
+            user.first_name = user.first_name + ' ' + profile.user_middle_name
         while not user.username or User.objects.filter(username=user.username).exists():
             user.username = self.random_string()
         if commit:
@@ -818,6 +832,7 @@ class AddDoverForm(forms.ModelForm):
         if today > end_date:
             msg = _(u"Дата окончания доверенности не может быть раньше текущей даты")
             raise forms.ValidationError(msg)
+
         return cleaned_data
 
 class AddOrgForm(OrgForm):

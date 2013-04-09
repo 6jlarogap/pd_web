@@ -146,8 +146,11 @@ class AddDoverView(LoginRequiredMixin, View):
             dover.save()
             return HttpResponse(json.dumps({'pk': dover.pk, 'label': u'%s' % dover}), mimetype='application/json')
         else:
+            err_str = _(u'Ошибка: %s')
             errors = '\n'.join([u'%s' % v[0] for v in f.errors.values()])
-            return HttpResponse(_(u'Ошибка: %s') % errors, mimetype='text/plain')
+            if "\n" in errors:
+                err_str = _(u'Ошибки:\n%s')
+            return HttpResponse(err_str % errors, mimetype='text/plain')
 
 add_dover = AddDoverView.as_view()
 
@@ -171,8 +174,12 @@ class AddAgentView(LoginRequiredMixin, View):
                 'dover_pk': dover.pk, 'dover_label': u'%s' % dover
             }), mimetype='application/json')
         else:
-            errors = '\n'.join([u'%s: %s' % (k,v[0]) for k,v in fa.errors.items()] + [u'%s: %s' % kv for kv in fd.errors.items()])
-            return HttpResponse(_(u'Данные невалидны: %s') % errors, mimetype='text/plain')
+            err_str = _(u'Ошибка: %s')
+            errors = '\n'.join([u'%s' % v[0] for k,v in fa.errors.items()] + \
+                               [u'%s' % v[0] for k,v in fd.errors.items()])
+            if "\n" in errors:
+                err_str = _(u'Ошибки:\n%s')
+            return HttpResponse(err_str % errors, mimetype='text/plain')
 
 add_agent = AddAgentView.as_view()
 
