@@ -824,6 +824,7 @@ class AddDoverForm(forms.ModelForm):
 
         begin_date = cleaned_data['begin']
         end_date  = cleaned_data['end']
+        number = cleaned_data['number']
         if begin_date > end_date:
             msg = _(u"Дата начала доверенности не может быть раньше даты окончания доверенности")
             raise forms.ValidationError(msg)
@@ -833,6 +834,10 @@ class AddDoverForm(forms.ModelForm):
             msg = _(u"Дата окончания доверенности не может быть раньше текущей даты")
             raise forms.ValidationError(msg)
 
+        if not number.strip():
+            msg = _(u"Пустое поле номера")
+            raise forms.ValidationError(msg)
+        
         return cleaned_data
 
 class AddOrgForm(OrgForm):
