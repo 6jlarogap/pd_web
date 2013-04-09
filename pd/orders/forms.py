@@ -102,11 +102,20 @@ class OrderItemForm(forms.ModelForm):
     class Meta:
         model = OrderItem
         exclude=['price']
+        
+    def __init__(self, *args, **kwargs):
+        super(OrderItemForm, self).__init__(*args, **kwargs)
 
+    #def clean(self):
+        #p = self.cleaned_data['product']
+        #if p and p.ptype and p.ptype != Product.PRODUCT_CATAFALQUE:
+            #self.cleaned_data['quantity'] = 1
+        #return self.cleaned_data
+        
     def clean(self):
-        p = self.cleaned_data['product']
-        if p and p.ptype and p.ptype != Product.PRODUCT_CATAFALQUE:
-            self.cleaned_data['quantity'] = 1
+        for f in self.formset:
+            if (f is not self) and f['product'].value() == self['product'].value():
+                raise forms.ValidationError(_(u'Два или более одинаковых товаров/услуг'))
         return self.cleaned_data
 
 class BaseOrderItemFormset(BaseInlineFormSet):
@@ -114,31 +123,32 @@ class BaseOrderItemFormset(BaseInlineFormSet):
         super(BaseOrderItemFormset, self).__init__(*args, **kwargs)
         for f in self.forms:
             f.fields['product'].queryset = Product.objects.filter(loru=request.user.profile.org)
+            f.formset = self
+            
+    #def get_same_product(self, form):
+        #p = form.cleaned_data['product']
 
-    def get_same_product(self, form):
-        p = form.cleaned_data['product']
+        #q = Q(product=p)
+        #if p.ptype:
+            #q |= Q(product__ptype=p.ptype)
+        #same_product = OrderItem.objects.filter(q, order=self.instance)
 
-        q = Q(product=p)
-        if p.ptype:
-            q |= Q(product__ptype=p.ptype)
-        same_product = OrderItem.objects.filter(q, order=self.instance)
+        #if same_product.exists():
+            #if p.ptype:
+                #if p.ptype == Product.PRODUCT_CATAFALQUE:
+                    #same_product.update(quantity=form.cleaned_data['quantity'])
+                #else:
+                    #same_product.update(quantity=1)
+            #try:
+                #return same_product[0]
+            #except IndexError:
+                #pass
 
-        if same_product.exists():
-            if p.ptype:
-                if p.ptype == Product.PRODUCT_CATAFALQUE:
-                    same_product.update(quantity=form.cleaned_data['quantity'])
-                else:
-                    same_product.update(quantity=1)
-            try:
-                return same_product[0]
-            except IndexError:
-                pass
-
-    def save_existing(self, form, instance, commit=True):
-        return self.get_same_product(form) or super(BaseOrderItemFormset, self).save_existing(form, instance, commit)
+    #def save_existing(self, form, instance, commit=True):
+        #return self.get_same_product(form) or super(BaseOrderItemFormset, self).save_existing(form, instance, commit)
     
-    def save_new(self, form, commit=True):
-        return self.get_same_product(form) or super(BaseOrderItemFormset, self).save_new(form, commit)
+    #def save_new(self, form, commit=True):
+        #return self.get_same_product(form) or super(BaseOrderItemFormset, self).save_new(form, commit)
 
 OrderItemFormset = inlineformset_factory(Order, OrderItem, form=OrderItemForm, formset=BaseOrderItemFormset)
 
