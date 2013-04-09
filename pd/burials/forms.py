@@ -786,20 +786,18 @@ class AddAgentForm(forms.ModelForm):
         profile = super(AddAgentForm, self).save(commit=False, *args, **kwargs)
         profile.org = loru
         profile.is_agent=True
-        profile.user = User()
-        profile.user.is_active = False
-        profile.user.email = loru.email or ''
-        profile.user.username = loru.email
-        # Это предварительно. Надо еще проверить, чтоб не пусто было в Ф, И, О.
-        # Основная проблема ниже
-        profile.user.last_name = profile.user_last_name
-        profile.user.first_name = profile.user_first_name + ' ' + profile.user_middle_name
-        while not profile.user.username or User.objects.filter(username=profile.user.username).exists():
-            profile.user.username = self.random_string()
+        user = User()
+        user.is_active = False
+        user.email = loru.email or ''
+        user.username = loru.email
+        user.last_name = profile.user_last_name
+        user.first_name = profile.user_first_name + ' ' + profile.user_middle_name
+        while not user.username or User.objects.filter(username=user.username).exists():
+            user.username = self.random_string()
         if commit:
+            user.save() 
+            profile.user = user 
             profile.save()
-            # Но в таблицу auth_user ничего не добавляется,
-            # а в таблице profile указатель user_id (в auth_user) Null
         return profile
 
 class AddDoverForm(forms.ModelForm):
@@ -818,7 +816,7 @@ class AddDoverForm(forms.ModelForm):
 
         today = datetime.date.today()
         if today > end_date:
-            msg = _(u"Дата начала окончания доверенности не может быть раньше текущей даты")
+            msg = _(u"Дата окончания доверенности не может быть раньше текущей даты")
             raise forms.ValidationError(msg)
         return cleaned_data
 
