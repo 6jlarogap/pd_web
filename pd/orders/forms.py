@@ -115,7 +115,7 @@ class OrderItemForm(forms.ModelForm):
     def clean(self):
         for f in self.formset:
             if (f is not self) and f['product'].value() == self['product'].value():
-                raise forms.ValidationError(_(u'Два или более одинаковых товаров/услуг'))
+                raise forms.ValidationError(_(u'Нельзя добавить два или более одинаковых товаров/услуг'))
         return self.cleaned_data
 
 class BaseOrderItemFormset(BaseInlineFormSet):
