@@ -596,10 +596,13 @@ class BurialCommitForm(BurialForm):
         pass
 
     def setup_required_deadman_dc(self):
+        if self.instance.is_archive() or self.instance.is_transferred():
+            return
         if self.data.get('deadman-last_name'):
             if any([True for k,v in self.data.items() if v and k.startswith(self.dc_form.prefix)]):
                 for f in self.dc_form.fields:
-                    self.dc_form.fields[f].required = True
+                    if f != 'series':
+                        self.dc_form.fields[f].required = True
 
     def setup_required_responsible(self):
         pass
