@@ -9,6 +9,7 @@ import codecs
 from django.contrib.auth.models import User
 from django.db import transaction, connection
 from django.http import HttpRequest
+from django.core.exceptions import ValidationError
 
 from django.utils.translation import ugettext as _
 
@@ -158,7 +159,7 @@ def import_alive_person(data):
 
 def import_dead_person(data):
     f,i,o = data[:3]
-    if not any([f,i,o]):
+    if not any([f,i,o]) or f.lower() == u'биоотходы':
         return None
 
     birth_dt = make_unc_date(data[3])
@@ -242,12 +243,22 @@ def do_import_burials(csv_fileobj, user):
                 area.places_count = 2
                 area.save()
 
+                # places_count, неудачное название поля в place, лучше было бы graves_count
+                #
+                places_count=row[10] or 1
+                grave_number=row[26]
+                if not grave_number:
+                    grave_number = 1
+                    if BURIAL_TYPES[row[1]] == Burial.BURIAL_ADD:
+                        places_count = int(places_count) + 1
+                        grave_number = places_count
+
                 place, _created = Place.objects.get_or_create(
                     cemetery=cemetery,
                     area=area,
                     row=row[8],
                     place=row[9],
-                    places_count=row[10],
+                    places_count=places_count,
                 )
 
                 responsible = import_alive_person(data=row[12:26])
@@ -294,8 +305,10 @@ def do_import_burials(csv_fileobj, user):
 
                 plan_date = make_unc_date(row[2])
                 burial_container = Burial.CONTAINER_COFFIN
-                if BURIAL_TYPES[row[1]] == Burial.BURIAL_URN:
-                    burial_container = Burial.CONTAINER_COFFIN
+                if row[27].lower() == u'биоотходы':
+                    burial_container = Burial.CONTAINER_BIO
+                elif BURIAL_TYPES[row[1]] == Burial.BURIAL_URN:
+                    burial_container = Burial.CONTAINER_URN
                 params = dict(
                     account_number=row[0],
                     burial_type=BURIAL_TYPES[row[1]],
@@ -310,7 +323,7 @@ def do_import_burials(csv_fileobj, user):
                     row=row[8],
                     place_number=row[9],
                     responsible=responsible,
-                    grave_number=row[26] or 1,
+                    grave_number=grave_number,
                     deadman=import_dead_person(row[27:41]),
                     applicant=import_alive_person(row[41:55]),
                     ugh=user.profile.org,
@@ -341,6 +354,9 @@ def do_import_burials(csv_fileobj, user):
 
                 if row[64]:
                     write_log(request, b, _(u'Комментарий: %s') % row[64])
+
+                write_log(request, b, _(u'Тип до импорта: %s') % row[1])
+
     return real_i, dupes_i
 
 def do_import_services(csv_fileobj):
@@ -522,6 +538,8 @@ def do_import_docs(csv_fileobj):
 
 def do_import_dcs(csv_fileobj):
     """Ф,И,О,Серия,Номер,Когда выдан,ЗАГС"""
+    real_i = 0
+    dupes_i = 0
     csvreader = UnicodeReader(csv_fileobj)
     for i, row in enumerate(csvreader):
         if i > 0:
@@ -530,7 +548,23 @@ def do_import_dcs(csv_fileobj):
                 DeathCertificate.objects.get(person__last_name=row[0], person__first_name=row[1], series=row[3], s_number=row[4])
             except DeathCertificate.DoesNotExist:
                 zags, _created = Org.objects.get_or_create(name=row[6], type=Org.PROFILE_ZAGS)
-                DeathCertificate.objects.create(
-                    person=DeadPerson.objects.get_or_create(last_name=row[0], first_name=row[1], middle_name=row[2])[0],
-                    series=row[3], s_number=row[4], zags=zags, release_date=row[5]
-                )
+                person=DeadPerson.objects.get_or_create(last_name=row[0], first_name=row[1], middle_name=row[2])
+                #
+                # Чтобы избежать:
+                #  duplicate key value violates unique constraint "persons_deathcertificate_person_id_key"
+                # (Один человек не может иметь два СоС)
+                # Если такое database исключение возникает, то как ни прячь его за try, except,
+                # последний commit, вслед за этой функцией, не возникает
+                #
+                if DeathCertificate.objects.filter(person=person[0]):
+                    dupes_i += 1
+                else:
+                    try:
+                        DeathCertificate.objects.create(
+                            person=person[0],
+                            series=row[3], s_number=row[4], zags=zags, release_date=row[5]
+                        )
+                        real_i += 1
+                    except ValidationError:             # дата пустая или неверная
+                        dupes_i += 1
+    return real_i, dupes_i
