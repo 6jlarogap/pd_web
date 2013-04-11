@@ -218,3 +218,4 @@ def recount_cost(instance, **kwargs):
     instance.order.cost = sum([i.total for i in instance.order.orderitem_set.all()], 0)
     instance.order.save()
 models.signals.post_save.connect(recount_cost, sender=OrderItem)
+models.signals.post_delete.connect(recount_cost, sender=OrderItem)

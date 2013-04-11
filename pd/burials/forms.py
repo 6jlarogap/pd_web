@@ -335,7 +335,7 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, forms.Mo
             dc = None
         if not dc and deadman:
             dc = DeathCertificate(person=deadman)
-        self.dc_form = DeathCertificateForm(data=data, prefix='deadman-dc', instance=dc)
+        self.dc_form = DeathCertificateForm(self.request, data=data, prefix='deadman-dc', instance=dc)
 
         responsible = self.instance and self.instance.get_responsible()
         resp_initial = {'order': self.instance.order or self.request.REQUEST.get('order')}
@@ -596,10 +596,24 @@ class BurialCommitForm(BurialForm):
         pass
 
     def setup_required_deadman_dc(self):
+        #
+        # Установка обязательности полей свидетельства о смерти (СоС)
+        # при закрытии захоронения.
+        # - если захоронение архивное или перенесенное, то проверка обязательности
+        #   не производится, т.е. можно заполнить или все поля СоС, или некоторые,
+        #   или не заполнять СоС вообще;
+        # - для остальных захоронений обязательность полей СоС имеет смысл
+        #   только если усопший известен, т.е. если заполнено поле фамилии в форме;
+        #   * в этом случае проверяется, заполнено ли хотя бы одно из полей СоС.
+        #     Если заполнено, то обязательны все поля СоС, кроме серии.
+        #
+        if self.instance.is_archive() or self.instance.is_transferred():
+            return
         if self.data.get('deadman-last_name'):
             if any([True for k,v in self.data.items() if v and k.startswith(self.dc_form.prefix)]):
                 for f in self.dc_form.fields:
-                    self.dc_form.fields[f].required = True
+                    if f != 'series':
+                        self.dc_form.fields[f].required = True
 
     def setup_required_responsible(self):
         pass
@@ -781,18 +795,36 @@ class AddAgentForm(forms.ModelForm):
         chars = string.ascii_uppercase + string.ascii_lowercase + string.digits
         return ''.join(random.choice(chars) for x in range(10))
 
+    def clean(self):
+        cleaned_data = super(AddAgentForm, self).clean()
+        if not cleaned_data['user_last_name'].strip():
+            msg = _(u"Не заполнена фамилия")
+            raise forms.ValidationError(msg)
+
+        if cleaned_data['user_middle_name'].strip() and \
+           not cleaned_data['user_first_name'].strip():
+            msg = _(u"Не заполнено имя при имеющемся отчестве")
+            raise forms.ValidationError(msg)
+        return cleaned_data
+
     def save(self, commit=True, *args, **kwargs):
         loru = kwargs.pop('loru')
         profile = super(AddAgentForm, self).save(commit=False, *args, **kwargs)
         profile.org = loru
         profile.is_agent=True
-        profile.user = User()
-        profile.user.is_active = False
-        profile.user.email = loru.email or ''
-        profile.user.username = loru.email
-        while not profile.user.username or User.objects.filter(username=profile.user.username).exists():
-            profile.user.username = self.random_string()
+        user = User()
+        user.is_active = False
+        user.email = loru.email or ''
+        user.username = loru.email
+        user.last_name = profile.user_last_name
+        user.first_name = profile.user_first_name
+        if profile.user_middle_name:
+            user.first_name = user.first_name + ' ' + profile.user_middle_name
+        while not user.username or User.objects.filter(username=user.username).exists():
+            user.username = self.random_string()
         if commit:
+            user.save() 
+            profile.user = user 
             profile.save()
         return profile
 
@@ -806,14 +838,20 @@ class AddDoverForm(forms.ModelForm):
 
         begin_date = cleaned_data['begin']
         end_date  = cleaned_data['end']
+        number = cleaned_data['number']
         if begin_date > end_date:
             msg = _(u"Дата начала доверенности не может быть раньше даты окончания доверенности")
             raise forms.ValidationError(msg)
 
         today = datetime.date.today()
         if today > end_date:
-            msg = _(u"Дата начала окончания доверенности не может быть раньше текущей даты")
+            msg = _(u"Дата окончания доверенности не может быть раньше текущей даты")
             raise forms.ValidationError(msg)
+
+        if not number.strip():
+            msg = _(u"Пустое поле номера")
+            raise forms.ValidationError(msg)
+        
         return cleaned_data
 
 class AddOrgForm(OrgForm):
