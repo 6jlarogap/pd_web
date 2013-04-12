@@ -246,12 +246,20 @@ def do_import_burials(csv_fileobj, user):
                 # places_count, неудачное название поля в place, лучше было бы graves_count
                 #
                 places_count=row[10] or 1
+                # Burial.grave_id в kaluga_new:
+                #   - null:     всего одна могила, с номером 1
+                #   - 0:        1-я могила, но есть еще могилы в этом месте
+                #   - 1:        2-я могила, но есть еще могилы в этом месте,
+                #               по крайней мере есть 1-я
+                #   и т.д.
                 grave_number=row[26]
                 if not grave_number:
                     grave_number = 1
-                    if BURIAL_TYPES[row[1]] == Burial.BURIAL_ADD:
-                        places_count = int(places_count) + 1
-                        grave_number = places_count
+                    #if BURIAL_TYPES[row[1]] == Burial.BURIAL_ADD:
+                        #places_count = int(places_count) + 1
+                        #grave_number = places_count
+                else:
+                    grave_number = int(grave_number) + 1
 
                 place, _created = Place.objects.get_or_create(
                     cemetery=cemetery,
