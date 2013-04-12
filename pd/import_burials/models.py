@@ -243,9 +243,6 @@ def do_import_burials(csv_fileobj, user):
                 area.places_count = 2
                 area.save()
 
-                # places_count, неудачное название поля в place, лучше было бы graves_count
-                #
-                places_count=row[10] or 1
                 # Burial.grave_id в kaluga_new:
                 #   - null:     всего одна могила, с номером 1
                 #   - 0:        1-я могила, но есть еще могилы в этом месте
@@ -253,11 +250,8 @@ def do_import_burials(csv_fileobj, user):
                 #               по крайней мере есть 1-я
                 #   и т.д.
                 grave_number=row[26]
-                if not grave_number:
+                if grave_number:
                     grave_number = 1
-                    #if BURIAL_TYPES[row[1]] == Burial.BURIAL_ADD:
-                        #places_count = int(places_count) + 1
-                        #grave_number = places_count
                 else:
                     grave_number = int(grave_number) + 1
 
@@ -266,7 +260,9 @@ def do_import_burials(csv_fileobj, user):
                     area=area,
                     row=row[8],
                     place=row[9],
-                    places_count=places_count,
+                    # places_count, неудачное название поля в place, лучше было бы graves_count
+                    #
+                    places_count=row[10] or 1,
                 )
 
                 responsible = import_alive_person(data=row[12:26])
