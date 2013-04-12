@@ -243,7 +243,7 @@ def do_import_burials(csv_fileobj, user):
                 area.places_count = 2
                 area.save()
 
-                # Burial.grave_id в kaluga_new:
+                # row[26], Burial.grave_id в kaluga_new:
                 #   - null:     всего одна могила, с номером 1
                 #   - 0:        1-я могила, но есть еще могилы в этом месте
                 #   - 1:        2-я могила, но есть еще могилы в этом месте,
@@ -251,9 +251,9 @@ def do_import_burials(csv_fileobj, user):
                 #   и т.д.
                 grave_number=row[26]
                 if grave_number:
-                    grave_number = 1
-                else:
                     grave_number = int(grave_number) + 1
+                else:
+                    grave_number = 1
 
                 place, _created = Place.objects.get_or_create(
                     cemetery=cemetery,
