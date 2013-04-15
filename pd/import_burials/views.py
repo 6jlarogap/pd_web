@@ -84,8 +84,8 @@ import_docs = transaction.commit_on_success(ImportPersonDocsView.as_view())
 
 class ImportDeathCertsView(View):
     def post(self, request, *args, **kwargs):
-        do_import_dcs(request.FILES['dcs-csv'])
-        messages.success(request, _(u"Импорт успешен"))
+        real_i, dupes_i = do_import_dcs(request.FILES['dcs-csv'])
+        messages.success(request, _(u"Импорт успешен, %s записей, игнорировано %s записей") % (real_i, dupes_i))
         return redirect('import_kaluga')
 
 import_dcs = transaction.commit_on_success(ImportDeathCertsView.as_view())
