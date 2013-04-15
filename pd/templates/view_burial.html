@@ -61,6 +61,15 @@
                 {% endif %}
             {% endif %}
         </dd>
+        <dt>{% trans "Свидетельство о смерти" %}:</dt>
+            {% if b.deadman.deathcertificate %}
+                <dd>Номер: {{ b.deadman.deathcertificate.s_number }}</dd>
+                <dd>Серия: {{ b.deadman.deathcertificate.series }}</dd>
+                <dd>Дата: {{ b.deadman.deathcertificate.release_date }}</dd>
+                <dd>Выдано: {{ b.deadman.deathcertificate.zags }}</dd>
+            {% else %}
+                <dd>Нет</dd>
+            {% endif %}
         <dt>{% trans "Кладбище" %}:</dt><dd>{{ b.cemetery|default:"не указан" }}</dd>
         <dt>{% trans "Место" %}:</dt><dd>
             {% if b.area %}{% trans "Участок" %}: {{ b.area }}<br/>{% endif %}
