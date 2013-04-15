@@ -571,7 +571,7 @@ def do_import_dcs(csv_fileobj):
                     try:
                         DeathCertificate.objects.create(
                             person=person,
-                            series=row[3], s_number=row[4], zags=zags, release_date=row[5]
+                            series=row[4], s_number=row[3], zags=zags, release_date=row[5]
                         )
                         real_i += 1
                     except ValidationError:             # дата пустая или неверная
