@@ -552,20 +552,25 @@ def do_import_dcs(csv_fileobj):
                 DeathCertificate.objects.get(person__last_name=row[0], person__first_name=row[1], series=row[3], s_number=row[4])
             except DeathCertificate.DoesNotExist:
                 zags, _created = Org.objects.get_or_create(name=row[6], type=Org.PROFILE_ZAGS)
-                person=DeadPerson.objects.get_or_create(last_name=row[0], first_name=row[1], middle_name=row[2])
-                #
-                # Чтобы избежать:
-                #  duplicate key value violates unique constraint "persons_deathcertificate_person_id_key"
-                # (Один человек не может иметь два СоС)
-                # Если такое database исключение возникает, то как ни прячь его за try, except,
-                # последний commit, вслед за этой функцией, не возникает
-                #
-                if DeathCertificate.objects.filter(person=person[0]):
+                try:
+                    person=DeadPerson.objects.get(last_name=row[0], first_name=row[1], middle_name=row[2])
+                except DeadPerson.MultipleObjectsReturned:
+                    print 'Duplicate dead person(s) for a death certificate:'
+                    print row
+                    dupes_i += 1
+                except DeadPerson.DoesNotExist:
+                    print 'Dead person not found for a death certificate:'
+                    print row
                     dupes_i += 1
                 else:
+                    if DeathCertificate.objects.filter(person=person):
+                        print 'Dead person already exists in the death certificate table:'
+                        print ",".join(row)
+                        dupes_i += 1
+                        continue
                     try:
                         DeathCertificate.objects.create(
-                            person=person[0],
+                            person=person,
                             series=row[3], s_number=row[4], zags=zags, release_date=row[5]
                         )
                         real_i += 1
