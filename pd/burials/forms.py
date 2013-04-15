@@ -607,7 +607,7 @@ class BurialCommitForm(BurialForm):
         #   * в этом случае проверяется, заполнено ли хотя бы одно из полей СоС.
         #     Если заполнено, то обязательны все поля СоС, кроме серии.
         #
-        if self.instance.is_archive() or self.instance.is_transferred():
+        if self.instance.is_archive() or self.request.REQUEST.get('archive') or self.instance.is_transferred():
             return
         if self.data.get('deadman-last_name'):
             if any([True for k,v in self.data.items() if v and k.startswith(self.dc_form.prefix)]):
