@@ -556,11 +556,11 @@ def do_import_dcs(csv_fileobj):
                     person=DeadPerson.objects.get(last_name=row[0], first_name=row[1], middle_name=row[2])
                 except DeadPerson.MultipleObjectsReturned:
                     print 'Duplicate dead person(s) for a death certificate:'
-                    print row
+                    print ",".join(row)
                     dupes_i += 1
                 except DeadPerson.DoesNotExist:
                     print 'Dead person not found for a death certificate:'
-                    print row
+                    print ",".join(row)
                     dupes_i += 1
                 else:
                     if DeathCertificate.objects.filter(person=person):
