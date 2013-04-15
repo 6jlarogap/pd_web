@@ -10,7 +10,7 @@
     {% endif %}
 
     {% block form_title %}<h1>
-        {% if request.GET.archive %}
+        {% if request.REQUEST.archive %}
             {% trans "Архивное захоронение" %}
         {% else %}
             {% trans "Новое захоронение" %}

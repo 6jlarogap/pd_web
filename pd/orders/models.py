@@ -179,7 +179,7 @@ class OrderItem(models.Model):
     order = models.ForeignKey(Order, editable=False)
     product = models.ForeignKey(Product, verbose_name=_(u"Товар"))
     quantity = models.DecimalField(_(u"Кол-во"), max_digits=20, decimal_places=2, default=1)
-    cost = models.DecimalField(_(u"Цена"), max_digits=20, decimal_places=2, editable=False)
+    cost = models.DecimalField(_(u"Цена"), max_digits=20, decimal_places=2, editable=True)
 
     class Meta:
         verbose_name = _(u"Позиция")

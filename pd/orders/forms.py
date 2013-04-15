@@ -101,10 +101,11 @@ class OrderForm(ChildrenJSONMixin, forms.ModelForm):
 class OrderItemForm(forms.ModelForm):
     class Meta:
         model = OrderItem
-        exclude=['price']
+        fields = ('product', 'cost', 'quantity',)
         
     def __init__(self, *args, **kwargs):
         super(OrderItemForm, self).__init__(*args, **kwargs)
+        self.fields['cost'].required = False
 
     #def clean(self):
         #p = self.cleaned_data['product']
