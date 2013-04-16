@@ -91,17 +91,22 @@
             <br/>
             {{ b.get_responsible.address|default:"" }}
         </dd>
-        <dt>{% trans "Заявитель" %}:</dt>
+        <dt>{% trans "Заказчик" %}:</dt>
         <dd>
-            {{ b.applicant|default:"не указан" }}
-            <br/>
-            {{ b.applicant.address|default:"" }}
-            <br/>
-            {{ b.applicant.personid|default:"" }}
+            {% if b.order %}
+                {% if b.order.applicant_organization %}
+                    ЮЛ: {{ b.order.applicant_organization }}
+                {% else %}
+                    ФЛ: {{ b.order.applicant }} <br />
+                    Адрес: {{ b.order.applicant.address|default:"не указан" }}
+                {% endif %}
+            {% else %}
+                Не указан
+            {% endif %}
         </dd>
         <dt>{% trans "План. дата и время" %}:</dt>
-        <dd>{{ b.plan_date|date:"d.m.Y"|default:"не указан" }} {{ b.plan_time|time:"H:i"|default:"не указан" }}</dd>
-        <dt>{% trans "Факт. дата" %}:</dt><dd>{{ b.fact_date|date:"d.m.Y"|default:"не указан" }}</dd>
+        <dd>{{ b.plan_date|date:"d.m.Y"|default:"не указана" }} {{ b.plan_time|time:"H:i"|default:"Время не указано" }}</dd>
+        <dt>{% trans "Факт. дата" %}:</dt><dd>{{ b.fact_date|date:"d.m.Y"|default:"не указана" }}</dd>
     </dl>
     <form action="" method="POST">
         {% csrf_token %}
