@@ -684,7 +684,7 @@ class BurialCommitForm(BurialForm):
                 acc_number = self.cleaned_data.get('account_number')
                 fact_date  = self.cleaned_data.get('fact_date')
                 if len(acc_number) < 4 or int(acc_number[:4]) != fact_date.year:
-                    msg = _(u"Не верный номер в книге учета")
+                    msg = _(u"Номер в книге учета должен быть: ГГГГнн...н (год фактической даты, номер)")
                     raise forms.ValidationError(msg)
 
         cemetery = self.cleaned_data.get('cemetery')
