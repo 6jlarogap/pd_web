@@ -700,7 +700,7 @@ class BurialCommitForm(BurialForm):
                 place_number = self.cleaned_data.get('place_number')
                 if place_number:
                     if len(place_number) < 4 or int(place_number[:4]) > today.year:
-                        raise forms.ValidationError(_(u"Неверно указан номер места"))
+                        raise forms.ValidationError(_(u"Номер места должен быть: ГГГГмм...м (год не больше текущего, место)"))
 
         deadman_birth_date = None
         deadman_death_date = None
