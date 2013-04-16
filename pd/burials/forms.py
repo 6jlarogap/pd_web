@@ -50,7 +50,7 @@ class CemeteryForm(BaseCemeteryForm):
         self.address_form = LocationForm(data=self.data or None, instance=address, prefix='address')
         self.address_form.fields['country_name'].required = True
         if self.instance and self.instance.pk:
-            self.area_formset = AreaFormset(data=self.data or None, instance=self.instance)
+            self.area_formset = AreaFormset(data=self.data or None, instance=self.instance, queryset=Area.objects.order_by('name'))
         else:
             self.area_formset = None
 
@@ -684,7 +684,7 @@ class BurialCommitForm(BurialForm):
                 acc_number = self.cleaned_data.get('account_number')
                 fact_date  = self.cleaned_data.get('fact_date')
                 if len(acc_number) < 4 or int(acc_number[:4]) != fact_date.year:
-                    msg = _(u"Не верный номер в книге учета")
+                    msg = _(u"Номер в книге учета должен быть: ГГГГнн...н (год фактической даты, номер)")
                     raise forms.ValidationError(msg)
 
         cemetery = self.cleaned_data.get('cemetery')
@@ -700,7 +700,7 @@ class BurialCommitForm(BurialForm):
                 place_number = self.cleaned_data.get('place_number')
                 if place_number:
                     if len(place_number) < 4 or int(place_number[:4]) > today.year:
-                        raise forms.ValidationError(_(u"Неверно указан номер места"))
+                        raise forms.ValidationError(_(u"Номер места должен быть: ГГГГмм...м (год не больше текущего, место)"))
 
         deadman_birth_date = None
         deadman_death_date = None
@@ -923,7 +923,7 @@ class ExhumationForm(ChildrenJSONMixin, forms.ModelForm):
         if self.cleaned_data.get('opf') == 'org' and \
                 not self.cleaned_data.get('agent_director') and \
                 not (self.cleaned_data.get('agent') and self.cleaned_data.get('dover')):
-            raise forms.ValidationError(_(u'Нет данных об агенте и/или доверенности для заявителя-ЮЛ'))
+            raise forms.ValidationError(_(u'Нет данных об агенте и/или доверенности для заявителя-ЮЛ. Изменения не сохранены'))
         return self.cleaned_data
 
     def save(self, commit=True, *args, **kwargs):
