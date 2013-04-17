@@ -402,23 +402,32 @@ def do_import_orders(csv_fileobj):
                 print 'Processed', i
 
             row = map(lambda c: '' if c == 'None' else c, row)
-            all_data = json.loads(row[4])
-            print_data = all_data['print']
-            items_data = all_data['positions']
+            
+            all_data = {}
+            if row[4]:
+                all_data = json.loads(row[4])
+                print_data = all_data['print']
+                items_data = all_data['positions']
+            else:
+                all_data = {}
+                print_data = {}
+                items_data = {}
 
             try:
-                o = Order.objects.filter(burial__account_number=row[0], burial__deadman__last_name=row[1],
-                                         burial__deadman__first_name=row[2], burial__deadman__middle_name=row[3])[0]
+                if row[1].lower() == u'биоотходы':
+                    o = Order.objects.filter(burial__account_number=row[0], burial__deadman__isnull=True)[0]
+                else:
+                    o = Order.objects.filter(burial__account_number=row[0], burial__deadman__last_name=row[1],
+                                            burial__deadman__first_name=row[2], burial__deadman__middle_name=row[3])[0]
 
-                dover = None
                 b = o.get_burial()
-                if b and b.dover and (o.dover is None or o.dover == b.dover):
+                dover = b.dover
+                if b.dover and (o.dover is None or o.dover == b.dover):
                     dover = copy.deepcopy(b.dover)
                     dover.id = None
                     dover.target_org = loru
                     dover.save(force_insert=True)
 
-                o.dover = dover
                 o.loru = loru
                 o.payment = row[5]
                 o.applicant = b.applicant
@@ -429,43 +438,16 @@ def do_import_orders(csv_fileobj):
                 o.dt = b.changed and b.changed - datetime.timedelta(1) or o.dt or datetime.datetime.now()
                 o.save()
 
-                dupes_i += 1
-            except IndexError:
-                try:
-                    b = Burial.objects.filter(account_number=row[0], deadman__last_name=row[1], deadman__first_name=row[2],
-                                              deadman__middle_name=row[3])[0]
-                except IndexError:
-                    print 'Burial %s not found' % row[0]
-                    continue
-
-                dover = None
-                if b.dover:
-                    dover = copy.deepcopy(b.dover)
-                    dover.id = None
-                    dover.target_org = loru
-                    dover.save(force_insert=True)
-
-                o = Order.objects.create(
-                    loru=loru,
-                    payment=row[5],
-                    applicant=b.applicant,
-                    applicant_organization=b.applicant_organization != loru and b.applicant_organization or None,
-                    agent_director=b.agent_director,
-                    agent=b.agent,
-                    dover=dover,
-                    dt=b.changed,
-                )
-
                 real_i += 1
-
-                b.order = o
-                if b.applicant_organization != loru:
-                    b.applicant_organization = loru
-                b.save()
-            else:
-                b = o.get_burial()
-                if b:
-                    Order.objects.filter(pk=o.pk).update(agent_director=b.agent_director, agent=b.agent, dover=b.dover)
+            except IndexError:
+                print 'Order not found:'
+                print ','.join(row[:4])
+                dupes_i += 1
+                continue
+            #else:
+                #b = o.get_burial()
+                #if b:                                                                                    # !!!! ?????
+                    #Order.objects.filter(pk=o.pk).update(agent_director=b.agent_director, agent=b.agent, dover=b.dover)
 
             for d in items_data:
                 if not d['active']:
@@ -491,13 +473,13 @@ def do_import_orders(csv_fileobj):
                         quantity=d['count'],
                     )
 
-            if print_data.get('coffin_size'):
+            if print_data and print_data.get('coffin_size'):
                 try:
                     CoffinData.objects.get(order=o)
                 except CoffinData.DoesNotExist:
                     CoffinData.objects.create(order=o, size=print_data['coffin_size'])
 
-            if print_data.get('catafalque_time') and print_data.get('catafalque_route'):
+            if print_data and print_data.get('catafalque_time') and print_data.get('catafalque_route'):
                 try:
                     CatafalqueData.objects.get(order=o)
                 except CatafalqueData.DoesNotExist:
