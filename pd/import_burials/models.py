@@ -402,9 +402,16 @@ def do_import_orders(csv_fileobj):
                 print 'Processed', i
 
             row = map(lambda c: '' if c == 'None' else c, row)
-            all_data = json.loads(row[4])
-            print_data = all_data['print']
-            items_data = all_data['positions']
+            
+            all_data = {}
+            if row[4]:
+                all_data = json.loads(row[4])
+                print_data = all_data['print']
+                items_data = all_data['positions']
+            else:
+                all_data = {}
+                print_data = {}
+                items_data = {}
 
             try:
                 o = Order.objects.filter(burial__account_number=row[0], burial__deadman__last_name=row[1],
@@ -491,13 +498,13 @@ def do_import_orders(csv_fileobj):
                         quantity=d['count'],
                     )
 
-            if print_data.get('coffin_size'):
+            if print_data and print_data.get('coffin_size'):
                 try:
                     CoffinData.objects.get(order=o)
                 except CoffinData.DoesNotExist:
                     CoffinData.objects.create(order=o, size=print_data['coffin_size'])
 
-            if print_data.get('catafalque_time') and print_data.get('catafalque_route'):
+            if print_data and print_data.get('catafalque_time') and print_data.get('catafalque_route'):
                 try:
                     CatafalqueData.objects.get(order=o)
                 except CatafalqueData.DoesNotExist:
