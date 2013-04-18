@@ -78,7 +78,6 @@ class AreaPurpose(models.Model):
     def __unicode__(self):
         return self.name
 
-
 class Area(models.Model):
     AVAILABILITY_OPEN = 'open'
     AVAILABILITY_OLD = 'old_only'
