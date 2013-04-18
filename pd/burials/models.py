@@ -29,7 +29,7 @@ class Cemetery(models.Model):
     time_begin = models.TimeField(_(u"Начало работы"))
     time_end = models.TimeField(_(u"Окончание работы"))
     places_algo = models.CharField(_(u"Расстановка номеров мест"), max_length=255, choices=PLACE_TYPES, default=PLACE_MANUAL)
-    time_slots = models.TextField(_(u"Время для захоронения"), default='',
+    time_slots = models.TextField(_(u"Время для захоронения"), default='', blank=True,
                                   help_text=_(u'В формате ЧЧ:ММ, по одному на строку'))
 
     creator = models.ForeignKey('auth.User', verbose_name=_(u"Владелец"), editable=False, null=True,
@@ -78,6 +78,7 @@ class AreaPurpose(models.Model):
     def __unicode__(self):
         return self.name
 
+
 class Area(models.Model):
     AVAILABILITY_OPEN = 'open'
     AVAILABILITY_OLD = 'old_only'
@@ -90,7 +91,7 @@ class Area(models.Model):
     )
 
     cemetery = models.ForeignKey(Cemetery, verbose_name=_(u"Кладбище"), on_delete=models.PROTECT)
-    name = models.CharField(_(u"Название"), max_length=255)
+    name = models.CharField(_(u"Название"), max_length=255, blank=True)
     availability = models.CharField(_(u"Открытость"), max_length=32, choices=AVAILABILITY_CHOICES, null=True)
     purpose = models.ForeignKey(AreaPurpose, verbose_name=_(u"Назначение"), null=True, on_delete=models.PROTECT)
     places_count = models.PositiveIntegerField(_(u"Кол-во могил"), default=1)
@@ -105,6 +106,11 @@ class Area(models.Model):
             self.get_availability_display() or _(u"откр.неизв"), self.purpose or _(u"назн. неизв"),
             self.places_count
         )
+
+    def save(self, *args, **kwargs):
+        if not self.name.strip():
+            self.name=''
+        return super(Area, self).save(*args, **kwargs)
 
 class Place(models.Model):
     cemetery = models.ForeignKey(Cemetery, verbose_name=_(u"Кладбище"), on_delete=models.PROTECT)
