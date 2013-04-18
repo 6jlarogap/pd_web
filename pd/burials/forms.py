@@ -961,8 +961,8 @@ class AreaMergeForm(forms.Form):
 
     def __init__(self, cemetery, *args, **kwargs):
         super(AreaMergeForm, self).__init__(*args, **kwargs)
-        self.fields['correct'].queryset = Area.objects.filter(cemetery=cemetery)
-        self.fields['incorrect'].queryset = Area.objects.filter(cemetery=cemetery)
+        self.fields['correct'].queryset = Area.objects.filter(cemetery=cemetery).order_by('name')
+        self.fields['incorrect'].queryset = Area.objects.filter(cemetery=cemetery).order_by('name')
 
     def save(self):
         if self.cleaned_data['incorrect'] != self.cleaned_data['correct']:
