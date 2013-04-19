@@ -412,6 +412,7 @@ class CreateBurial(CreateView):
 
         action = self.get_action()
         if action:
+            return_to_view = 0
             old_status = b.status
 
             if action == 'ready' and self.request.user.profile.is_loru() and b.is_edit() and b.is_full():
@@ -438,6 +439,7 @@ class CreateBurial(CreateView):
                 messages.success(self.request, _(u"<a href='%s'>Захоронение %s</a> закрыто") % (
                     reverse('view_burial', args=[b.pk]), b.pk,
                 ))
+                return_to_view = 1
 
             if old_status != b.status:
                 b.save()
@@ -454,7 +456,11 @@ class CreateBurial(CreateView):
                     return redirect('edit_burial', b.pk)
                 else:
                     return redirect('view_burial', b.pk)
-            return redirect('dashboard')
+                    
+            if return_to_view:
+                return redirect('view_burial', b.pk)
+            else:
+                return redirect('dashboard')
         else:
             if b.order:
                 self.request.session['order_burial_saved'] = True
