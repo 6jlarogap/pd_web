@@ -357,7 +357,8 @@ def do_import_burials(csv_fileobj, user):
                     write_log(request, b, _(u'Участок не был указан'))
 
                 if row[64]:
-                    write_log(request, b, _(u'Комментарий: %s') % row[64])
+                    #write_log(request, b, _(u'Комментарий: %s') % row[64])
+                    write_log(request, b, row[64])
 
                 write_log(request, b, _(u'Тип до импорта: %s') % row[1])
 
