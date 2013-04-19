@@ -81,7 +81,7 @@
                 <a href="{% url view_place b.place.pk %}" class="btn">{% trans "карточка" %}</a>
             {% endif %}
         </dd>
-        <dt>{% trans "Номер места будет создан по следующему правилу" %}:</dt>
+        <dt>{% trans "Номер места создан по следующему правилу" %}:</dt>
         <dd>
             {{ b.cemetery.get_places_algo_display|default:"не указано" }}
         </dd>
