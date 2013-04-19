@@ -54,7 +54,7 @@ class CemeteryForm(BaseCemeteryForm):
             self.area_formset = None
 
     def is_valid(self):
-        return super(CemeteryForm, self).is_valid() and (not self.area_formset or self.area_formset.is_valid())
+        return super(CemeteryForm, self).is_valid() and self.address_form.is_valid() and (not self.area_formset or self.area_formset.is_valid())
 
     def save(self, commit=True, *args, **kwargs):
         obj = super(CemeteryForm, self).save(commit=False, *args, **kwargs)
