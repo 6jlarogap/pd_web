@@ -48,6 +48,7 @@ class CemeteryForm(BaseCemeteryForm):
         super(CemeteryForm, self).__init__(*args, **kwargs)
         address = self.instance and self.instance.address
         self.address_form = LocationForm(data=self.data or None, instance=address, prefix='address')
+        #self.address_form.fields['country_name'].required = True
         if self.instance and self.instance.pk:
             self.area_formset = AreaFormset(data=self.data or None, instance=self.instance, queryset=Area.objects.order_by('name'))
         else:
