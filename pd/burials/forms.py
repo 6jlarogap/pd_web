@@ -285,7 +285,7 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, forms.Mo
             self.fields['dover'].queryset = Dover.objects.filter(agent__org__in=loru_list)
 
             self.fields.keyOrder.insert(self.fields.keyOrder.index('applicant_organization'), self.fields.keyOrder.pop(-1))
-            if self.instance.pk and self.instance.applicant and self.instance.is_ugh():
+            if self.instance.pk and self.instance.applicant # and self.instance.is_ugh(): # только ручное или архивное ?
                 self.initial['opf'] = 'person'
             else:
                 self.initial['opf'] = 'org'
