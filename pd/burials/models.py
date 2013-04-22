@@ -346,10 +346,11 @@ class Burial(models.Model):
             return False
         if self.is_full():
             return self.is_closed() or self.is_exhumated()
-        # Для   - архивных
-        #       - перенесенных
-        #       - ручных (черновиков или закрытых, но других пока нет)
-        return True
+        if self.is_ugh_only():
+            return self.is_closed() or self.is_draft() or self.is_exhumated()
+        if self.is_transferred() or self.archive():
+            return True
+        return False
 
     def can_deannulate(self):
         if not self.annulated:
