@@ -138,6 +138,7 @@ class BurialSearchForm(forms.Form):
     no_responsible = forms.BooleanField(required=False, initial=False, label=_(u"Без отв."))
     source = forms.TypedChoiceField(required=False, label=_(u"Тип"), choices=EMPTY + Burial.SOURCE_TYPES)
     status = forms.TypedChoiceField(required=False, label=_(u"Статус"), choices=EMPTY + Burial.STATUS_CHOICES)
+    annulated = forms.BooleanField(required=False, initial=False, label=_(u"Аннулировано"))
     per_page = forms.ChoiceField(label=_(u"На странице"), choices=PAGE_CHOICES, initial=25, required=False)
     burial_container = forms.TypedChoiceField(required=False, label=_(u"Тип захоронения"), choices=EMPTY + Burial.BURIAL_CONTAINERS)
 
@@ -239,7 +240,7 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, forms.Mo
 
     class Meta:
         model = Burial
-        exclude = ['place', 'deadman', 'responsible', 'applicant', 'burial_type', ]
+        exclude = ['place', 'deadman', 'responsible', 'applicant', 'burial_type', 'annulated', ]
 
     def __init__(self, request, *args, **kwargs):
         super(BurialForm, self).__init__(*args, **kwargs)

@@ -10,6 +10,7 @@
     {% endif %}
 
     <h1>{{ b.get_source_type_display }} {% trans "захоронение" %} {{ b.pk }}</h1>
+    <h3>{% if b.annulated %} <span style="color:red">{% trans "АННУЛИРОВАНО" %}</span> {% endif %}</h3>
     <dl>
         <dt>{% trans "Учетный номер" %}:</dt><dd>{{ b.account_number|default:"не указан" }}</dd>
         <dt>{% trans "Статус" %}:</dt><dd>{{ b.status_str }}</dd>
@@ -127,6 +128,20 @@
             {% endif %}
         {% endif %}
         {% if user.profile.is_ugh %}
+            {% if b.can_deannulate %}
+                <input type="submit" class="btn" name="deannulate" value="{% trans "де-аннулировать" %}">
+            {% endif %}
+            {% if b.can_annulate %}
+                <br/><br/>
+                <label>{% trans "Причина" %}</label>
+                <select name="reason_typical">
+                    <option value=""></option>
+                    {% for r in reason_typical_annulate %}<option value="{{ r.text }}">{{ r.name }}</option>{% endfor %}
+                </select>
+                <textarea name="reason" rows="5" cols="30"></textarea>
+                <br/>
+                <input type="submit" class="btn" name="annulate" value="{% trans "аннулировать" %}">
+            {% endif %}
             {% if b.can_finish %}
                 {% if not b.is_archive %}
                     {{ close_form.as_p }}
@@ -136,17 +151,6 @@
                         LORU_AGENTS = {{ close_form.loru_agents_json|default:"{}"  }};
                     </script>
                     <input type="submit" class="btn" name="complete" value="{% trans "закрыть" %}">
-                {% endif %}
-                {% if b.can_annulate %}
-                    <br/><br/>
-                    <label>{% trans "Причина" %}</label>
-                    <select name="reason_typical">
-                        <option value=""></option>
-                        {% for r in reason_typical_annulate %}<option value="{{ r.text }}">{{ r.name }}</option>{% endfor %}
-                    </select>
-                    <textarea name="reason" rows="5" cols="30"></textarea>
-                    <br/>
-                    <input type="submit" class="btn" name="annulate" value="{% trans "аннулировать" %}">
                 {% endif %}
             {% elif b.can_approve %}
                 {{ approve_form.as_p }}

@@ -22,6 +22,10 @@
         <input type="hidden" name="archive"  value="{{ request.REQUEST.archive }}" />
         <input type="hidden" name="place_id"  value="{{ request.REQUEST.place_id }}" />
 
+        {% if form.instance.annulated %}
+            <h3>{% if b.annulated %} <span style="color:red">{% trans "АННУЛИРОВАНО" %}</span> {% endif %}</h3>
+        {% endif %}
+
         {% if user.profile.is_ugh and form.instance.is_archive %}
             <p>{% trans "Статус:" %} {{ form.instance.get_status_display }}</p>
         {% endif %}
@@ -33,27 +37,29 @@
         {% block buttons %}
             <p class="clear">
                 <input type="submit" class="btn btn-primary btn-commit-burial" value="{% trans "cохранить" %}"/>
-                {% if not b.is_finished %}
-                    {% if user.profile.is_ugh and not b.is_full %}
-                        <input type="submit" class="btn btn-commit-burial" name="complete" value="{% trans "cохранить и закрыть" %}"/>
-                    {% endif %}
-                {% endif %}
-                {% if user.profile.is_loru %}
-                    {% if b.is_edit or not b.pk %}
-                        {% if b.is_transferred %}
-                            {% if not b.is_finished %}
-                                <input type="submit" class="btn btn-commit-burial" name="complete" value="{% trans "cохранить и закрыть" %}"/>
-                            {% endif %}
-                        {% else %}
-                            <input type="submit" class="btn btn-commit-burial" name="ready" value="{% trans "cохранить и отправить на согласование" %}"/>
+                {% if not b.annulated %}
+                    {% if not b.is_finished %}
+                        {% if user.profile.is_ugh and not b.is_full %}
+                            <input type="submit" class="btn btn-commit-burial" name="complete" value="{% trans "cохранить и закрыть" %}"/>
                         {% endif %}
-                    {% elif b.is_ready %}
-                        <input type="submit" class="btn btn-commit-burial" name="back" value="{% trans "отозвать" %}"/>
                     {% endif %}
-                    {% if b.order %}
-                        <a href="{% url order_services b.order.pk %}" class="btn btn-next">{% trans "далее" %}</a>
-                    {% elif self.request.REQUEST.order %}
-                        <a href="{% url order_services self.request.REQUEST.order %}" class="btn btn-next">{% trans "далее" %}</a>
+                    {% if user.profile.is_loru %}
+                        {% if b.is_edit or not b.pk %}
+                            {% if b.is_transferred %}
+                                {% if not b.is_finished %}
+                                    <input type="submit" class="btn btn-commit-burial" name="complete" value="{% trans "cохранить и закрыть" %}"/>
+                                {% endif %}
+                            {% else %}
+                                <input type="submit" class="btn btn-commit-burial" name="ready" value="{% trans "cохранить и отправить на согласование" %}"/>
+                            {% endif %}
+                        {% elif b.is_ready %}
+                            <input type="submit" class="btn btn-commit-burial" name="back" value="{% trans "отозвать" %}"/>
+                        {% endif %}
+                        {% if b.order %}
+                            <a href="{% url order_services b.order.pk %}" class="btn btn-next">{% trans "далее" %}</a>
+                        {% elif self.request.REQUEST.order %}
+                            <a href="{% url order_services self.request.REQUEST.order %}" class="btn btn-next">{% trans "далее" %}</a>
+                        {% endif %}
                     {% endif %}
                 {% endif %}
             </p>

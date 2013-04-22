@@ -131,6 +131,10 @@
                 <th>
                     {{ b.status_str|default:"" }}
                     <br/>
+                    {% if b.annulated %}
+                    АННУЛИРОВАНО
+                    <br/>
+                    {% endif %}
                     {{ b.status_dt|default:"" }}
                     <br/>
                     {{ b.changed_by.profile|default:"" }}
