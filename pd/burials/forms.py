@@ -689,13 +689,18 @@ class BurialCommitForm(BurialForm):
                     msg = _(u"Номер в книге учета должен быть: ГГГГнн...н (год фактической даты, номер)")
                     raise forms.ValidationError(msg)
 
-        else: # not is_ugh:
-            if self.request.REQUEST.get('ready'):
-                area = self.cleaned_data.get('area')
-                place_number = self.cleaned_data.get('place_number')
-                if not place_number.strip() and area.availability == Area.AVAILABILITY_CLOSED:
-                    msg = _(u"Не указано место для закрытого участка. Нельзя отправлять на согласование")
-                    raise forms.ValidationError(msg)
+        place_number = self.cleaned_data.get('place_number')
+        area = self.cleaned_data.get('area')
+        if not place_number.strip() and (self.instance.is_archive() or self.request.REQUEST.get('archive')):
+            msg = _(u"Нельзя закрывать архивное захоронение без указания номера места")
+            raise forms.ValidationError(msg)
+        elif not place_number.strip() and area.availability == Area.AVAILABILITY_CLOSED:
+            if is_ugh:
+                msg = _(u"Не указано место для закрытого участка. Нельзя закрывать захоронение")
+                raise forms.ValidationError(msg)
+            elif self.request.REQUEST.get('ready'):
+                msg = _(u"Не указано место для закрытого участка. Нельзя отправлять на согласование")
+                raise forms.ValidationError(msg)
 
         cemetery = self.cleaned_data.get('cemetery')
         today = datetime.date.today()
