@@ -515,7 +515,7 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, forms.Mo
             self.instance.burial_type = Burial.BURIAL_ADD
         else:
             self.instance.burial_type = Burial.BURIAL_NEW
-            
+
         self.instance.save()
 
         if self.instance.is_closed():
