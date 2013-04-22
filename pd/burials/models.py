@@ -189,7 +189,6 @@ class Burial(models.Model):
     STATUS_READY = 'ready'
     STATUS_APPROVED = 'approved'
     STATUS_CLOSED = 'closed'
-    STATUS_ANNULATED = 'annulated'
     STATUS_EXHUMATED = 'exhumated'
     STATUS_CHOICES = (
         (STATUS_BACKED, _(u"Отозвано")),
@@ -198,7 +197,6 @@ class Burial(models.Model):
         (STATUS_READY, _(u"На согласовании")),
         (STATUS_APPROVED, _(u"Согласовано")),
         (STATUS_CLOSED, _(u"Закрыто")),
-        (STATUS_ANNULATED, _(u"Аннулировано")),
         (STATUS_EXHUMATED, _(u"Эксгумировано")),
     )
 
@@ -276,6 +274,7 @@ class Burial(models.Model):
     changed = models.DateTimeField(_(u"Изменено"), editable=False, null=True)
     changed_by = models.ForeignKey('auth.User', editable=False, null=True, related_name='changed_requests',
                                    on_delete=models.PROTECT)
+    annulated = models.BooleanField(_(u"Аннулировано"), default=False, blank=True)
 
     class Meta:
         verbose_name = _(u"Захоронение")
@@ -303,7 +302,7 @@ class Burial(models.Model):
         return self.status == self.STATUS_DECLINED
 
     def is_annulated(self):
-        return self.status == self.STATUS_ANNULATED
+        return self.annulated
 
     def is_finished(self):
         return self.is_closed() or self.is_annulated()
@@ -343,7 +342,19 @@ class Burial(models.Model):
             return self.is_draft()
 
     def can_annulate(self):
-        return self.can_finish() and not self.is_archive()
+        if self.annulated:
+            return False
+        if self.is_full():
+            return self.is_closed() or self.is_exhumated()
+        # Для   - архивных
+        #       - перенесенных
+        #       - ручных (черновиков или закрытых, но других пока нет)
+        return True
+
+    def can_deannulate(self):
+        if not self.annulated:
+            return False
+        return True
 
     def can_back(self):
         return self.is_full() and not self.is_edit() and not self.is_finished()

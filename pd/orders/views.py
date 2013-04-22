@@ -230,7 +230,8 @@ class OrderDashboard(OrderList):
 
     def get_queryset(self):
         src_qs = self.filtered_orders()
-        ex_q = Q(burial__status__in=[Burial.STATUS_CLOSED, Burial.STATUS_ANNULATED, Burial.STATUS_EXHUMATED])
+        ex_q = Q(burial__status__in=[Burial.STATUS_CLOSED, Burial.STATUS_EXHUMATED])
+        ex_q |= Q(burial__annulated=True)
         inc_q = Q(loru=self.request.user.profile.org, burial__source_type=Burial.SOURCE_FULL)
         return src_qs.filter(inc_q).exclude(ex_q)
 

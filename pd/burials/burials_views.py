@@ -49,7 +49,8 @@ class DashboardView(BurialsListGenericMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         qs = self.get_qs_filter()
-        ex_qs = Q(status__in=[Burial.STATUS_CLOSED, Burial.STATUS_ANNULATED, Burial.STATUS_EXHUMATED])
+        ex_qs = Q(status__in=[Burial.STATUS_CLOSED, Burial.STATUS_EXHUMATED])
+        ex_qs |= Q(annulated=True)
 
         sort = self.request.GET.get('sort', '-pk')
         SORT_FIELDS = {
@@ -132,6 +133,7 @@ class BurialView(BurialsListGenericMixin, DetailView):
         b.changed = datetime.datetime.now()
         b.changed_by = request.user
         old_status = b.status
+        old_annulated = b.annulated
         reason = request.POST.get('reason') or request.POST.get('reason_typical')
         if request.POST.get('back') and request.user.profile.is_loru() and b.can_back():
             b.status = Burial.STATUS_BACKED
@@ -174,12 +176,18 @@ class BurialView(BurialsListGenericMixin, DetailView):
             else:
                 return self.get(request, *args, **kwargs)
         if request.POST.get('annulate') and request.user.profile.is_ugh() and b.can_annulate():
-            b.status = Burial.STATUS_ANNULATED
+            b.annulated = True
             write_log(request, b, _(u'Захоронение аннулировано'), reason)
             messages.success(request, _(u"<a href='%s'>Захоронение %s</a> аннулировано") % (
                 reverse('view_burial', args=[b.pk]), b.pk,
             ))
-        if old_status != b.status:
+        if request.POST.get('deannulate') and request.user.profile.is_ugh() and b.can_deannulate():
+            b.annulated = False
+            write_log(request, b, _(u'Захоронение восстановлено после аннулирования'), reason)
+            messages.success(request, _(u"<a href='%s'>Захоронение %s</a> восстановлено после аннулирования") % (
+                reverse('view_burial', args=[b.pk]), b.pk,
+            ))
+        if old_status != b.status or old_annulated != b.annulated:
             b.save()
         else:
             msg = _(u"Выполнить операцию не удалось: <a href='%s'>захоронение в статусе \"%s\"") % (
@@ -276,6 +284,10 @@ class BurialsListView(ListView):
                 burials = burials.filter(applicant__last_name=form.cleaned_data['applicant_person'])
             if form.cleaned_data['burial_container']:
                 burials = burials.filter(burial_container=form.cleaned_data['burial_container'])
+            if form.cleaned_data['annulated']:
+                burials = burials.filter(annulated=True)
+            else:
+                burials = burials.filter(annulated=False)
 
             if form.cleaned_data.get('status') == Burial.STATUS_EXHUMATED:
                 burials = burials.filter(status=Burial.STATUS_EXHUMATED)
@@ -511,7 +523,8 @@ class EditBurialView(BurialsListGenericMixin, CreateBurial):
             q2 = q & q3
         elif self.request.user.profile.is_ugh():
             q3 = Q(source_type__in=[Burial.SOURCE_UGH, Burial.SOURCE_ARCHIVE, Burial.SOURCE_TRANSFERRED])
-            q3 |= Q(status__in=[Burial.STATUS_CLOSED, Burial.STATUS_ANNULATED])
+            q3 |= Q(status__in=[Burial.STATUS_CLOSED, ])
+            q3 |= Q(annulated=True)
             q2 = q & q3
         else:
             return Burial.objects.none()
