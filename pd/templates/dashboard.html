@@ -84,10 +84,9 @@
         </tr>
         {% for b in burials %}
             <tr class="
-                {% if user.profile.is_ugh and b.can_finish %}burial_green{% endif %}
-                {% if user.profile.is_ugh and b.can_approve %}burial_blue{% endif %}
-                {% if user.profile.is_loru and b.is_approved %}burial_green{% endif %}
-                {% if user.profile.is_loru and b.is_ready %}burial_blue{% endif %}
+                {% if b.is_ready %}burial_blue{% endif %}
+                {% if b.is_approved %}burial_green{% endif %}
+                {% if b.is_declined or b.is_backed %}burial_red{% endif %}
             ">
                 <td>{{ b.pk }}</td>
                 <td>{{ b.account_number|default:"" }}</td>
