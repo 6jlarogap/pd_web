@@ -715,7 +715,7 @@ class BurialCommitForm(BurialForm):
             if cemetery and cemetery.places_algo == Cemetery.PLACE_CEM_YEAR:
                 place_number = self.cleaned_data.get('place_number')
                 if place_number:
-                    if len(place_number) < 5 or int(place_number[:4]) > today.year:
+                    if len(place_number) < 5 or int(place_number[:4]) > today.year or not int(place_number[:4]):
                         raise forms.ValidationError(_(u"Номер места должен быть: ГГГГмм...м (год не больше текущего, место)"))
 
         deadman_birth_date = None
