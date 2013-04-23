@@ -134,6 +134,7 @@ class BurialView(BurialsListGenericMixin, DetailView):
         b.changed_by = request.user
         old_status = b.status
         old_annulated = b.annulated
+        redirect_to_view = False
         reason = request.POST.get('reason') or request.POST.get('reason_typical')
         if request.POST.get('back') and request.user.profile.is_loru() and b.can_back():
             b.status = Burial.STATUS_BACKED
@@ -181,12 +182,14 @@ class BurialView(BurialsListGenericMixin, DetailView):
             messages.success(request, _(u"<a href='%s'>Захоронение %s</a> аннулировано") % (
                 reverse('view_burial', args=[b.pk]), b.pk,
             ))
+            redirect_to_view = True
         if request.POST.get('deannulate') and request.user.profile.is_ugh() and b.can_deannulate():
             b.annulated = False
             write_log(request, b, _(u'Захоронение восстановлено после аннулирования'), reason)
             messages.success(request, _(u"<a href='%s'>Захоронение %s</a> восстановлено после аннулирования") % (
                 reverse('view_burial', args=[b.pk]), b.pk,
             ))
+            redirect_to_view = True
         if old_status != b.status or old_annulated != b.annulated:
             b.save()
         else:
@@ -197,6 +200,8 @@ class BurialView(BurialsListGenericMixin, DetailView):
             messages.success(request, msg)
         if request.POST.get('back'):
             return redirect('edit_burial', pk=b.pk)
+        elif redirect_to_view:
+            return redirect('view_burial', b.pk)
         return redirect('dashboard')
 
     def get_close_form(self):
@@ -424,7 +429,7 @@ class CreateBurial(CreateView):
 
         action = self.get_action()
         if action:
-            return_to_view = 0
+            redirect_to_view = False
             old_status = b.status
 
             if action == 'ready' and self.request.user.profile.is_loru() and b.is_edit() and b.is_full():
@@ -451,7 +456,7 @@ class CreateBurial(CreateView):
                 messages.success(self.request, _(u"<a href='%s'>Захоронение %s</a> закрыто") % (
                     reverse('view_burial', args=[b.pk]), b.pk,
                 ))
-                return_to_view = 1
+                redirect_to_view = True
 
             if old_status != b.status:
                 b.save()
@@ -469,7 +474,7 @@ class CreateBurial(CreateView):
                 else:
                     return redirect('view_burial', b.pk)
                     
-            if return_to_view:
+            if redirect_to_view:
                 return redirect('view_burial', b.pk)
             else:
                 return redirect('dashboard')
