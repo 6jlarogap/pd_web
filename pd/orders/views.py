@@ -169,8 +169,6 @@ class OrderList(LORURequiredMixin, ListView):
                 orders = orders.filter(burial__account_number__lte= form.cleaned_data['reg_number_to'])
             if form.cleaned_data['burial_container']:
                 orders = orders.filter(burial__burial_container=form.cleaned_data['burial_container'])
-            else:
-                orders = orders.exclude(annulated=True)
         else:
             orders = orders.exclude(annulated=True)
 
