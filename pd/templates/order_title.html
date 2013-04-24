@@ -6,7 +6,8 @@
         <a href="{% url order_print order.pk %}" class="btn" target="_blank">{% trans "распечатать" %}</a>
     {% endif %}
 </p>
-{% if not order.is_finished %}
+<!-- == if not order.is_finished == : нет такого метода, свойства, поля у order -->
+{% if order.get_burial.is_edit %} <!-- захоронение: черновик, отозвано, отклонено -->
     {% if order.annulated %}
         <form action="{% url order_annulate order.pk %}?recover=1" method="POST" class="inline">
             {% csrf_token %}
@@ -15,10 +16,12 @@
     {% else %}
         <form action="{% url order_annulate order.pk %}" method="POST" class="inline">
             {% csrf_token %}
-            <input type="submit" class="btn btn-danger"
-                    {% if order.get_burial.is_approved %}
-                   onclick="return confirm('{% trans "Заявка согласована, при аннулировании Заказа она будет отозвана! Аннулировать?" %}');"
-                    {% endif %} value="{% trans "аннулировать" %}" />
+            <!-- <input type="submit" class="btn btn-danger"
+                    == if order.get_burial.is_approved ==
+                   onclick="return confirm('== trans "Заявка согласована, при аннулировании Заказа она будет отозвана! Аннулировать?" ==');"
+                    == endif == value="== trans "аннулировать" ==" />
+            -->
+            <input type="submit" class="btn btn-danger" value="{% trans "аннулировать" %}" />
         </form>
     {% endif %}
 {% endif %}
