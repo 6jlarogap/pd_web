@@ -154,6 +154,8 @@ class OrderList(LORURequiredMixin, ListView):
                 orders = orders.filter(cost__lte=form.cleaned_data['order_cost_to'])
             if form.cleaned_data['annulated']:
                 orders = orders.filter(annulated=True)
+            else:
+                orders = orders.filter(annulated=False)
             if form.cleaned_data['burial_num_from']:
                 orders = orders.filter(burial__id__gte = form.cleaned_data['burial_num_from'])
             if form.cleaned_data['burial_num_to']:
