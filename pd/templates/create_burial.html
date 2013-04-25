@@ -48,7 +48,7 @@
                             {% if b.order and not b.order.annulated %}
                                 <input type="submit" class="btn btn-commit-burial" name="ready" value="{% trans "cохранить и отправить на согласование" %}"/>
                             {% endif %}
-                        {% elif b.is_ready %}
+                        {% elif b.can_back %}
                             <input type="submit" class="btn btn-commit-burial" name="back" value="{% trans "отозвать" %}"/>
                         {% endif %}
                         {% if b.order %}
