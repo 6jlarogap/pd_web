@@ -50,7 +50,9 @@
                                     <input type="submit" class="btn btn-commit-burial" name="complete" value="{% trans "cохранить и закрыть" %}"/>
                                 {% endif %}
                             {% else %}
-                                <input type="submit" class="btn btn-commit-burial" name="ready" value="{% trans "cохранить и отправить на согласование" %}"/>
+                                {% if b.order and not b.order.annulated %}
+                                    <input type="submit" class="btn btn-commit-burial" name="ready" value="{% trans "cохранить и отправить на согласование" %}"/>
+                                {% endif %}
                             {% endif %}
                         {% elif b.is_ready %}
                             <input type="submit" class="btn btn-commit-burial" name="back" value="{% trans "отозвать" %}"/>
