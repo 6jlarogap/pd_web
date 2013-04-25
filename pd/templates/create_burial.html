@@ -44,15 +44,9 @@
                         {% endif %}
                     {% endif %}
                     {% if user.profile.is_loru %}
-                        {% if b.is_edit or not b.pk %}
-                            {% if b.is_transferred %}
-                                {% if not b.is_finished %}
-                                    <input type="submit" class="btn btn-commit-burial" name="complete" value="{% trans "cохранить и закрыть" %}"/>
-                                {% endif %}
-                            {% else %}
-                                {% if b.order and not b.order.annulated %}
-                                    <input type="submit" class="btn btn-commit-burial" name="ready" value="{% trans "cохранить и отправить на согласование" %}"/>
-                                {% endif %}
+                        {% if b.is_edit or not b.pk %}  <!-- захоронение: черновик, отклонено, отозвано или только формируется -->
+                            {% if b.order and not b.order.annulated %}
+                                <input type="submit" class="btn btn-commit-burial" name="ready" value="{% trans "cохранить и отправить на согласование" %}"/>
                             {% endif %}
                         {% elif b.is_ready %}
                             <input type="submit" class="btn btn-commit-burial" name="back" value="{% trans "отозвать" %}"/>
