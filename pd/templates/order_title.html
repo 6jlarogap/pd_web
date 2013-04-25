@@ -7,7 +7,7 @@
     {% endif %}
 </p>
 <!-- == if not order.is_finished == : нет такого метода, свойства, поля у order -->
-{% if order.get_burial.is_edit %} <!-- захоронение: черновик, отозвано, отклонено -->
+{% if not order.get_burial or order.get_burial.is_edit %} <!-- захоронение: нет пока в заказе или черновик, отозвано, отклонено -->
     {% if order.annulated %}
         <form action="{% url order_annulate order.pk %}?recover=1" method="POST" class="inline">
             {% csrf_token %}
