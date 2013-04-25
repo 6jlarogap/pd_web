@@ -552,7 +552,7 @@ class EditBurialView(BurialsListGenericMixin, CreateBurial):
 
 edit_burial = EditBurialView.as_view()
 
-class MakeNotificationView(ArchiveMixin, DetailView):
+class MakeNotificationView(BurialsListGenericMixin, DetailView):
     context_object_name = 'burial'
 
     def get_queryset(self):
@@ -572,7 +572,7 @@ class MakeNotificationView(ArchiveMixin, DetailView):
 
 make_notification = MakeNotificationView.as_view()
 
-class MakeSpravka(ArchiveMixin, DetailView):
+class MakeSpravka(BurialsListGenericMixin, DetailView):
     context_object_name = 'burial'
 
     def get_queryset(self):
