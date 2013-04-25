@@ -328,6 +328,10 @@ class Burial(models.Model):
     def is_ugh(self):
         return self.is_ugh_only() or self.is_archive()
 
+    # При этих условиях прячем документы от loru
+    def hide_documents(self):
+        return self.is_declined() or self.is_draft() or self.is_backed() or self.is_ready()
+
     def can_approve(self):
         if self.is_ugh():
             return False

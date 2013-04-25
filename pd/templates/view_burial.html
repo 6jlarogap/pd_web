@@ -213,11 +213,7 @@
                 <th>{% trans "Дата" %}</th>
                 <th>{% trans "Пользователь" %}</th>
                 <th>{% trans "Описание" %}</th>
-                {% if user.profile.is_loru %}
-                    {% if b.is_declined or b.is_draft or b.is_backed or b.is_ready %}
-                    {% else %}
-                        <th></th>
-                    {% endif %}
+                {% if user.profile.is_loru and b.hide_documents %}
                 {% else %}
                     <th></th>
                 {% endif %}
@@ -227,11 +223,7 @@
                     <td>{{ doc.dt }}</td>
                     <td>{{ doc.user.profile }} / {{ doc.user.profile.org }}</td>
                     <td>{{ doc.description }}</td>
-                    {% if user.profile.is_loru %}
-                        {% if b.is_declined or b.is_draft or b.is_backed or b.is_ready %}
-                        {% else %}
-                            <td><a class="btn" href="{% url report_view doc.pk %}" target="_blank">{% trans "просмотр" %}</a></td>
-                        {% endif %}
+                    {% if user.profile.is_loru and b.hide_documents %}
                     {% else %}
                         <td><a class="btn" href="{% url report_view doc.pk %}" target="_blank">{% trans "просмотр" %}</a></td>
                     {% endif %}
