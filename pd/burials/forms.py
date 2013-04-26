@@ -696,7 +696,7 @@ class BurialCommitForm(BurialForm):
         if not place_number.strip() and (self.instance.is_archive() or self.request.REQUEST.get('archive')):
             msg = _(u"Нельзя закрывать архивное захоронение без указания номера места")
             raise forms.ValidationError(msg)
-        elif not place_number.strip() and area.availability == Area.AVAILABILITY_CLOSED:
+        elif not place_number.strip() and area and area.availability == Area.AVAILABILITY_CLOSED:
             if is_ugh:
                 msg = _(u"Не указано место для закрытого участка. Нельзя закрывать захоронение")
                 raise forms.ValidationError(msg)
