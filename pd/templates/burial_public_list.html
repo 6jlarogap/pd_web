@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+
+{% load i18n %}
+
+{% block content %}
+    <h1>{% trans "Захоронения" %}</h1>
+    <div class="row-fluid no-print">
+        <div class="span12">
+            <div class="row-fluid">
+                <form id="mainform" class="form-horizontal" method="get" action="">
+                    {{ form.as_p }}
+
+                    <p class="buttons">
+                        <input type="submit" value="искать" class="btn btn-primary" />
+                    </p>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <p>{% trans "Найдено:" %} {{ paginator.count|default:object_list.count }}</p>
+
+    <table class="table table-bordered table-striped">
+        <tr>
+            <th>
+                {% if sort == '-pk' %}
+                    {% if sort == '-pk' %}<i class="icon icon-arrow-down"></i>{% endif %}
+                    <a href="?{{ GET_PARAMS }}&sort=pk">{% trans "Номер" %}</a>
+                {% else %}
+                    {% if sort == 'pk' %}<i class="icon icon-arrow-up"></i>{% endif %}
+                    <a href="?{{ GET_PARAMS }}&sort=-pk">{% trans "Номер" %}</a>
+                {% endif %}
+            </th>
+            <th>
+                {% if sort == 'account_number' %}
+                    {% if sort == 'account_number' %}<i class="icon icon-arrow-up"></i>{% endif %}
+                    <a href="?{{ GET_PARAMS }}&sort=-account_number">{% trans "Номер в книге" %}</a>
+                {% else %}
+                    {% if sort == '-account_number' %}<i class="icon icon-arrow-down"></i>{% endif %}
+                    <a href="?{{ GET_PARAMS }}&sort=account_number">{% trans "Номер в книге" %}</a>
+                {% endif %}
+            </th>
+            <th>
+                {% if sort == 'cemetery' %}
+                    {% if sort == 'cemetery' %}<i class="icon icon-arrow-up"></i>{% endif %}
+                    <a href="?{{ GET_PARAMS }}&sort=-cemetery">{% trans "Кладбище" %}</a>
+                {% else %}
+                    {% if sort == '-cemetery' %}<i class="icon icon-arrow-down"></i>{% endif %}
+                    <a href="?{{ GET_PARAMS }}&sort=cemetery">{% trans "Кладбище" %}</a>
+                {% endif %}
+            </th>
+            <th>
+                {% if sort == 'place' %}
+                    {% if sort == 'place' %}<i class="icon icon-arrow-up"></i>{% endif %}
+                    <a href="?{{ GET_PARAMS }}&sort=-place">{% trans "Место" %}</a>
+                {% else %}
+                    {% if sort == '-place' %}<i class="icon icon-arrow-down"></i>{% endif %}
+                    <a href="?{{ GET_PARAMS }}&sort=place">{% trans "Место" %}</a>
+                {% endif %}
+            </th>
+            <th>
+                {% if sort == 'fio' %}
+                    {% if sort == 'fio' %}<i class="icon icon-arrow-up"></i>{% endif %}
+                    <a href="?{{ GET_PARAMS }}&sort=-fio">{% trans "Усопший" %}</a>
+                {% else %}
+                    {% if sort == '-fio' %}<i class="icon icon-arrow-down"></i>{% endif %}
+                    <a href="?{{ GET_PARAMS }}&sort=fio">{% trans "Усопший" %}</a>
+                {% endif %}
+            </th>
+            <th>
+                {% if sort == '-fact_date' %}
+                    {% if sort == '-fact_date' %}<i class="icon icon-arrow-down"></i>{% endif %}
+                    <a href="?{{ GET_PARAMS }}&sort=fact_date">{% trans "Дата" %}</a>
+                {% else %}
+                    {% if sort == 'fact_date' %}<i class="icon icon-arrow-up"></i>{% endif %}
+                    <a href="?{{ GET_PARAMS }}&sort=-fact_date">{% trans "Дата" %}</a>
+                {% endif %}
+            </th>
+        </tr>
+        {% for b in burials %}
+            <tr>
+                <td>{{ b.pk }}</td>
+                <td>{{ b.account_number|default:"" }}</td>
+                <td>{{ b.cemetery }} / {{ b.ugh_name }}</td>
+                <td>
+                    {% if b.cemetery %}{% trans "Кл." %} {{ b.cemetery|default:"" }}<br/>{% endif %}
+                    {% if b.area %}{% trans "Уч." %} {{ b.area.name|default:"" }}<br/>{% endif %}
+                    {% if b.row %}{% trans "ряд" %} {{ b.row }},{% endif %}
+                    {% if b.place_number %}{% trans "место" %} {{ b.place_number }},{% endif %}
+                    {% if b.grave_number %}{% trans "могила" %} {{ b.grave_number }}{% endif %}
+                </td>
+                <td>{{ b.deadman|default:"" }}</td>
+                <td>{{ b.combined_date }}</td>
+            </tr>
+        {% endfor %}
+    </table>
+
+    {% include "paginator.html" %}
+
+    {% if request.GET.print %}
+        <script type="text/javascript">
+            window.print();
+        </script>
+    {% endif %}
+{% endblock %}
