@@ -211,7 +211,7 @@
         </p>
     </form>
 
-    {% if b.get_documents %}
+    {% if user.profile.is_ugh and b.get_documents %}
         <h2>{% trans "Документы" %}</h2>
         <table class="table table-bordered">
             <tr>
