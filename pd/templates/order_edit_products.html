@@ -11,11 +11,40 @@
         <legend>{% trans "Позиции" %}</legend>
 
         {{ formset.management_form }}
-        <table>
+        <table class="table table-striped">
+        <thead>
+            <tr>
+              <th>#</th>
+              <th>{% trans "Товар" %}</th>
+              <th>{% trans "Цена" %}</th>
+              <th>{% trans "Количество" %}</th>
+              <th>{% trans "Управление" %}</th>
+            </tr>
+        </thead>
+        <tbody>
             {% for f in formset.forms %}
-                {{ f.as_table }}
+            <tr id="{{ f.prefix }}-row" class="dynamic-form">
+              <td>{{ forloop.counter }}
+                {% if f.errors %}
+                    {% for field, error in f.errors.items %}
+                        {{ error }}                        
+                    {% endfor %}
+                {% endif %}
+              </td>
+              <td>{{ f.product }}</td>
+              <td>{{ f.cost }}</td>
+              <td>{{ f.quantity }}</td>
+              <input type="hidden" name="{{ f.prefix }}-id" id="id_{{ f.prefix }}-id" value="{{ forloop.counter }}">
+              <td>
+                <span{% if not forloop.last %} class="hidden"{% endif %}>
+                    <a id="remove-{{ f.prefix }}-row" href="javascript:void(0)" class="delete-row">{% trans "Удалить" %}</a>
+                </span>
+              </td>
+            </tr>
             {% endfor %}
+        </tbody>
         </table>
+        <p><a href="javascript:void(0)" class="add-row">{% trans "Добавить" %}</a></p>
         <p>
             <label for="id_total">{% trans "Итог" %}</label>
             <input id="id_total" type="text" value="{{ order.total }}" />
@@ -40,5 +69,15 @@
         CEMETERY_TIMES = {{ form.cemetery_times_json|default:"{}" }};
         AGENT_DOVER = {{ form.agent_dover_json|default:"{}" }};
         LORU_AGENTS = {{ form.loru_agents_json|default:"{}" }};
+
+        $(function () {
+            $('.add-row').click(function() {
+                return addForm(this, 'orderitem_set');
+            });
+            $('.delete-row').click(function() {
+                return deleteForm(this, 'orderitem_set');
+            })
+        })
+</script>
     </script>
 {% endblock %}
