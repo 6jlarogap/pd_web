@@ -151,7 +151,7 @@ class BaseOrderItemFormset(BaseInlineFormSet):
     #def save_new(self, form, commit=True):
         #return self.get_same_product(form) or super(BaseOrderItemFormset, self).save_new(form, commit)
 
-OrderItemFormset = inlineformset_factory(Order, OrderItem, form=OrderItemForm, formset=BaseOrderItemFormset)
+OrderItemFormset = inlineformset_factory(Order, OrderItem, form=OrderItemForm, formset=BaseOrderItemFormset, extra=0)
 
 class CatafalqueForm(forms.ModelForm):
     class Meta:
