@@ -367,13 +367,17 @@ class Burial(models.Model):
     def can_decline(self):
         return self.is_full() and self.is_ready()
 
-    # условия печати уведомлений для ugh. Для лору - печать лишь при согласованном
+    # условия печати уведомлений для ugh.
     def can_print_notification(self):
         return self.is_approved() or self.is_closed()
 
+    # условия печати уведомлений для loru.
+    def can_loru_print_notification(self):
+        return self.is_approved()
+
     # условия печати справок, справки может выдавать лишь УГХ
     def can_print_reference(self):
-        return self.is_transferred() or self.is_archive() or self.is_closed()
+        return self.is_closed()
 
     @property
     def exhumated(self):

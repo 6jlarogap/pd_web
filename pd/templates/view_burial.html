@@ -184,7 +184,7 @@
                 <a class="btn" href="{% url edit_burial b.pk %}">{% trans "правка" %}</a>
             {% endif %}
         {% endif %}
-        {% if user.profile.is_loru and b.is_approved %}
+        {% if user.profile.is_loru and b.can_loru_print_notification %}
             <a class="btn" href="{% url make_notification b.pk %}" target="_blank">{% trans "уведомление" %}</a>
         {% endif %}
         {% if user.profile.is_ugh and b.can_print_notification %}
@@ -211,47 +211,27 @@
         </p>
     </form>
 
-    {% if user.profile.is_loru and b.get_documents_for_loru %}
+    {% if b.get_documents %}
         <h2>{% trans "Документы" %}</h2>
         <table class="table table-bordered">
             <tr>
                 <th>{% trans "Дата" %}</th>
                 <th>{% trans "Пользователь" %}</th>
                 <th>{% trans "Описание" %}</th>
-                {% if b.hide_documents %}
+                {% if user.profile.is_loru and b.hide_documents %}
                 {% else %}
                     <th></th>
                 {% endif %}
-            </tr>
-            {% for doc in b.get_documents_for_loru %}
-                <tr>
-                    <td>{{ doc.dt }}</td>
-                    <td>{{ doc.user.profile }} / {{ doc.user.profile.org }}</td>
-                    <td>{{ doc.description }}</td>
-                    {% if b.hide_documents %}
-                    {% else %}
-                        <td><a class="btn" href="{% url report_view doc.pk %}" target="_blank">{% trans "просмотр" %}</a></td>
-                    {% endif %}
-                </tr>
-            {% endfor %}
-        </table>
-    {% endif %}
-
-    {% if user.profile.is_ugh and b.get_documents %}
-        <h2>{% trans "Документы" %}</h2>
-        <table class="table table-bordered">
-            <tr>
-                <th>{% trans "Дата" %}</th>
-                <th>{% trans "Пользователь" %}</th>
-                <th>{% trans "Описание" %}</th>
-                <th></th>
             </tr>
             {% for doc in b.get_documents %}
                 <tr>
                     <td>{{ doc.dt }}</td>
                     <td>{{ doc.user.profile }} / {{ doc.user.profile.org }}</td>
                     <td>{{ doc.description }}</td>
-                    <td><a class="btn" href="{% url report_view doc.pk %}" target="_blank">{% trans "просмотр" %}</a></td>
+                    {% if user.profile.is_loru and b.hide_documents %}
+                    {% else %}
+                        <td><a class="btn" href="{% url report_view doc.pk %}" target="_blank">{% trans "просмотр" %}</a></td>
+                    {% endif %}
                 </tr>
             {% endfor %}
         </table>
