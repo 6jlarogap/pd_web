@@ -232,6 +232,33 @@ class ResponsibleForm(AlivePersonForm):
         else:
             return False
 
+class BurialPublicListForm(forms.Form):
+    """
+    Форма поиска захоронений для ЛОРУ, не только среди своих заказов
+    """
+
+    PAGE_CHOICES = (
+        (10, 10),
+        (25, 25),
+        (50, 50),
+        (100, 100),
+    )
+
+    fio = forms.CharField(required=False, max_length=100, label=_(u"ФИО"))
+    birth_date_from = forms.DateField(required=False, label=_(u"Дата рожд. с"))
+    birth_date_to = forms.DateField(required=False, label=_(u"по"))
+    death_date_from = forms.DateField(required=False, label=_(u"Дата смерти с"))
+    death_date_to = forms.DateField(required=False, label=_(u"по"))
+    burial_date_from = forms.DateField(required=False, label=_(u"Дата захор. с"))
+    burial_date_to = forms.DateField(required=False, label=_(u"по"))
+    account_number_from = forms.IntegerField(required=False, label=_(u"Рег. № с"))
+    account_number_to = forms.IntegerField(required=False, label=_(u"по"))
+    cemetery = forms.CharField(required=False, label=_(u"Кладбища"))
+    area = forms.CharField(required=False, label=_(u"Участок"))
+    row = forms.CharField(required=False, label=_(u"Ряд"))
+    place = forms.CharField(required=False, label=_(u"Место"))
+    per_page = forms.ChoiceField(label=_(u"На странице"), choices=PAGE_CHOICES, initial=25, required=False)
+
 class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, forms.ModelForm):
     COFFIN = 'coffin'
     URN = 'urn'

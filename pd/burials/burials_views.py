@@ -16,7 +16,7 @@ from django.views.generic.detail import DetailView
 from django.views.generic.edit import CreateView, DeleteView
 from django.views.generic.list import ListView
 
-from burials.forms import BurialSearchForm, BurialForm, BurialCommitForm, BurialCloseForm, AddDocTypeForm
+from burials.forms import BurialSearchForm, BurialPublicListForm, BurialForm, BurialCommitForm, BurialCloseForm, AddDocTypeForm
 from burials.forms import AddAgentForm, AddDoverForm, AddOrgForm, ExhumationForm
 from burials.models import Reason, Burial, Cemetery, Place, ExhumationRequest
 from logs.models import write_log
@@ -356,6 +356,103 @@ class BurialsListView(ListView):
         return data
 
 burial_list = BurialsListView.as_view()
+
+# Поиск захоронения для ЛОРУ
+#
+class BurialsPublicListView(ListView):
+    template_name = 'burial_public_list.html'
+    context_object_name = 'burials'
+
+    def get_queryset(self):
+        if not self.request.GET:
+            return Burial.objects.none()
+
+        if self.request.user.is_authenticated() and self.request.user.profile.is_loru():
+            burials = Burial.objects.filter(
+                Q(ugh__loru_list__loru=self.request.user.profile.org) &
+                Q(annulated=False) &
+                Q(status__in=[Burial.STATUS_EXHUMATED, Burial.STATUS_CLOSED, ])
+            ).order_by('-pk')
+        else:
+            burials = Burial.objects.none()
+        form = self.get_form()
+        if form.data and form.is_valid():
+            if form.cleaned_data['fio']:
+                fio = [f.strip('.') for f in form.cleaned_data['fio'].split(' ')]
+                q = Q()
+                if len(fio) > 2:
+                    q &= Q(deadman__middle_name__icontains=fio[2])
+                if len(fio) > 1:
+                    q &= Q(deadman__first_name__icontains=fio[1])
+                if len(fio) > 0:
+                    q &= Q(deadman__last_name__icontains=fio[0])
+                burials = burials.filter(q)
+            if form.cleaned_data['birth_date_from']:
+                burials = burials.filter(deadman__birth_date__gte=form.cleaned_data['birth_date_from'])
+            if form.cleaned_data['birth_date_to']:
+                burials = burials.filter(deadman__birth_date__lte=form.cleaned_data['birth_date_to'])
+            if form.cleaned_data['death_date_from']:
+                burials = burials.filter(deadman__death_date__gte=form.cleaned_data['death_date_from'])
+            if form.cleaned_data['death_date_to']:
+                burials = burials.filter(deadman__death_date__lte=form.cleaned_data['death_date_to'])
+            if form.cleaned_data['burial_date_from']:
+                burials = burials.filter(fact_date__gte=form.cleaned_data['burial_date_from'])
+            if form.cleaned_data['burial_date_to']:
+                burials = burials.filter(fact_date__lte=form.cleaned_data['burial_date_to'])
+            if form.cleaned_data['account_number_from']:
+                burials = burials.filter(account_number__gte=form.cleaned_data['account_number_from'])
+            if form.cleaned_data['account_number_to']:
+                burials = burials.filter(account_number__lte=form.cleaned_data['account_number_to'])
+            if form.cleaned_data['cemetery']:
+                burials = burials.filter(cemetery__name=form.cleaned_data['cemetery'])
+            if form.cleaned_data['area']:
+                burials = burials.filter(area__name=form.cleaned_data['area'])
+            if form.cleaned_data['row']:
+                burials = burials.filter(row=form.cleaned_data['row'])
+            if form.cleaned_data['place']:
+                burials = burials.filter(place_number=form.cleaned_data['place'])
+
+        sort = self.request.GET.get('sort', '-pk')
+        SORT_FIELDS = {
+            'pk': 'pk',
+            '-pk': '-pk',
+            'account_number': 'account_number',
+            '-account_number': '-account_number',
+            'cemetery': 'cemetery__name',
+            '-cemetery': '-cemetery__name',
+            'place': 'place_number',
+            '-place': '-place_number',
+            'fio': 'deadman__last_name',
+            '-fio': '-deadman__last_name',
+            'fact_date': 'fact_date',
+            '-fact_date': '-fact_date',
+        }
+        s = SORT_FIELDS[sort]
+        if not isinstance(s, list):
+            s = [s]
+        burials = burials.select_related(
+            'ugh', 'place', 'place__cemetery', 'place__area', 'deadman', 'cemetery', 'area',
+        ).order_by(*s)
+        return burials
+
+    def get_paginate_by(self, queryset):
+        try:
+            return int(self.request.GET.get('per_page'))
+        except (TypeError, ValueError):
+            return 25
+
+    def get_form(self):
+        return BurialPublicListForm(data=self.request.GET or None)
+
+    def get_context_data(self, **kwargs):
+        data = super(BurialsPublicListView, self).get_context_data(**kwargs)
+        DISPLAY_OPTIONS = ['page', 'print']
+        get_for_paginator = u'&'.join([u'%s=%s' %  (k, v) for k,v in self.request.GET.items() if k not in DISPLAY_OPTIONS])
+        sort = self.request.GET.get('sort', '-pk')
+        data.update(form=self.get_form(), GET_PARAMS=get_for_paginator, sort=sort)
+        return data
+
+burial_public_list = BurialsPublicListView.as_view()
 
 class CreateBurial(CreateView):
     template_name = 'create_burial.html'
