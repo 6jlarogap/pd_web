@@ -113,7 +113,7 @@
                         {% endif %}
                         {% if user.profile.is_loru %}
                             <li{% if request.path == '/burials/search/' %} class="active"{% endif %}>
-                                <a href="{% url burial_search_list %}">{% trans "Захоронения" %}</a>
+                                <a href="{% url burial_public_list %}">{% trans "Захоронения" %}</a>
                             </li>
                         {% endif %}
                         {% if user.profile.is_ugh %}

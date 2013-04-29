@@ -232,7 +232,7 @@ class ResponsibleForm(AlivePersonForm):
         else:
             return False
 
-class BurialSearchListForm(forms.Form):
+class BurialPublicListForm(forms.Form):
     """
     Форма поиска захоронений для ЛОРУ, не только среди своих заказов
     """
@@ -253,13 +253,11 @@ class BurialSearchListForm(forms.Form):
     burial_date_to = forms.DateField(required=False, label=_(u"по"))
     account_number_from = forms.IntegerField(required=False, label=_(u"Рег. № с"))
     account_number_to = forms.IntegerField(required=False, label=_(u"по"))
-    operation = forms.ChoiceField(required=False, choices=EMPTY + Burial.BURIAL_TYPES, label=_(u"Услуга"))
     cemetery = forms.CharField(required=False, label=_(u"Кладбища"))
     area = forms.CharField(required=False, label=_(u"Участок"))
     row = forms.CharField(required=False, label=_(u"Ряд"))
     place = forms.CharField(required=False, label=_(u"Место"))
     per_page = forms.ChoiceField(label=_(u"На странице"), choices=PAGE_CHOICES, initial=25, required=False)
-    burial_container = forms.TypedChoiceField(required=False, label=_(u"Тип захоронения"), choices=EMPTY + Burial.BURIAL_CONTAINERS)
 
 class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, forms.ModelForm):
     COFFIN = 'coffin'

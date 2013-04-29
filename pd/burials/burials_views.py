@@ -16,7 +16,7 @@ from django.views.generic.detail import DetailView
 from django.views.generic.edit import CreateView, DeleteView
 from django.views.generic.list import ListView
 
-from burials.forms import BurialSearchForm, BurialSearchListForm, BurialForm, BurialCommitForm, BurialCloseForm, AddDocTypeForm
+from burials.forms import BurialSearchForm, BurialPublicListForm, BurialForm, BurialCommitForm, BurialCloseForm, AddDocTypeForm
 from burials.forms import AddAgentForm, AddDoverForm, AddOrgForm, ExhumationForm
 from burials.models import Reason, Burial, Cemetery, Place, ExhumationRequest
 from logs.models import write_log
@@ -359,8 +359,8 @@ burial_list = BurialsListView.as_view()
 
 # Поиск захоронения для ЛОРУ
 #
-class BurialsSearchListView(ListView):
-    template_name = 'burial_search_list.html'
+class BurialsPublicListView(ListView):
+    template_name = 'burial_public_list.html'
     context_object_name = 'burials'
 
     def get_queryset(self):
@@ -377,8 +377,6 @@ class BurialsSearchListView(ListView):
             burials = Burial.objects.none()
         form = self.get_form()
         if form.data and form.is_valid():
-            if form.cleaned_data['operation']:
-                burials = burials.filter(burial_type=form.cleaned_data['operation'])
             if form.cleaned_data['fio']:
                 fio = [f.strip('.') for f in form.cleaned_data['fio'].split(' ')]
                 q = Q()
@@ -413,8 +411,6 @@ class BurialsSearchListView(ListView):
                 burials = burials.filter(row=form.cleaned_data['row'])
             if form.cleaned_data['place']:
                 burials = burials.filter(place_number=form.cleaned_data['place'])
-            if form.cleaned_data['burial_container']:
-                burials = burials.filter(burial_container=form.cleaned_data['burial_container'])
 
         sort = self.request.GET.get('sort', '-pk')
         SORT_FIELDS = {
@@ -446,17 +442,17 @@ class BurialsSearchListView(ListView):
             return 25
 
     def get_form(self):
-        return BurialSearchListForm(data=self.request.GET or None)
+        return BurialPublicListForm(data=self.request.GET or None)
 
     def get_context_data(self, **kwargs):
-        data = super(BurialsSearchListView, self).get_context_data(**kwargs)
+        data = super(BurialsPublicListView, self).get_context_data(**kwargs)
         DISPLAY_OPTIONS = ['page', 'print']
         get_for_paginator = u'&'.join([u'%s=%s' %  (k, v) for k,v in self.request.GET.items() if k not in DISPLAY_OPTIONS])
         sort = self.request.GET.get('sort', '-pk')
         data.update(form=self.get_form(), GET_PARAMS=get_for_paginator, sort=sort)
         return data
 
-burial_search_list = BurialsSearchListView.as_view()
+burial_public_list = BurialsPublicListView.as_view()
 
 class CreateBurial(CreateView):
     template_name = 'create_burial.html'
