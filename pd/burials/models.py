@@ -367,8 +367,13 @@ class Burial(models.Model):
     def can_decline(self):
         return self.is_full() and self.is_ready()
 
+    # условия печати уведомлений для ugh. Для лору - печать лишь при согласованном
     def can_print_notification(self):
         return self.is_approved() or self.is_closed()
+
+    # условия печати справок, справки может выдавать лишь УГХ
+    def can_print_reference(self):
+        return self.is_transferred() or self.is_archive() or self.is_closed()
 
     @property
     def exhumated(self):
@@ -448,6 +453,11 @@ class Burial(models.Model):
     def get_documents(self):
         ct = ContentType.objects.get_for_model(self)
         return Report.objects.filter(content_type=ct, object_id=self.pk).order_by('-pk')
+
+    # В списке документов у лору не показываем уведомлений
+    def get_documents_for_loru(self):
+        ct = ContentType.objects.get_for_model(self)
+        return Report.objects.filter(content_type=ct, object_id=self.pk).exclude(description='Уведомление').order_by('-pk')
 
     def approved_dt(self):
         return self.changed
