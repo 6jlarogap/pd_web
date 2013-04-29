@@ -458,11 +458,6 @@ class Burial(models.Model):
         ct = ContentType.objects.get_for_model(self)
         return Report.objects.filter(content_type=ct, object_id=self.pk).order_by('-pk')
 
-    # В списке документов у лору не показываем уведомлений
-    def get_documents_for_loru(self):
-        ct = ContentType.objects.get_for_model(self)
-        return Report.objects.filter(content_type=ct, object_id=self.pk).exclude(description='Уведомление').order_by('-pk')
-
     def approved_dt(self):
         return self.changed
 
