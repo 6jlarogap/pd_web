@@ -218,20 +218,14 @@
                 <th>{% trans "Дата" %}</th>
                 <th>{% trans "Пользователь" %}</th>
                 <th>{% trans "Описание" %}</th>
-                {% if user.profile.is_loru and b.hide_documents %}
-                {% else %}
-                    <th></th>
-                {% endif %}
+                <th></th>
             </tr>
             {% for doc in b.get_documents %}
                 <tr>
                     <td>{{ doc.dt }}</td>
                     <td>{{ doc.user.profile }} / {{ doc.user.profile.org }}</td>
                     <td>{{ doc.description }}</td>
-                    {% if user.profile.is_loru and b.hide_documents %}
-                    {% else %}
-                        <td><a class="btn" href="{% url report_view doc.pk %}" target="_blank">{% trans "просмотр" %}</a></td>
-                    {% endif %}
+                    <td><a class="btn" href="{% url report_view doc.pk %}" target="_blank">{% trans "просмотр" %}</a></td>
                 </tr>
             {% endfor %}
         </table>
