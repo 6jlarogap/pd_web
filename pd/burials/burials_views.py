@@ -8,7 +8,7 @@ from django.core.urlresolvers import reverse
 from django.db import transaction
 from django.db.models.query_utils import Q
 from django.http import Http404, HttpResponse
-from django.shortcuts import redirect
+from django.shortcuts import redirect, render_to_response
 from django.template.context import RequestContext
 from django.views.generic.base import TemplateView, View
 from django.utils.translation import ugettext_lazy as _
@@ -561,14 +561,17 @@ class MakeNotificationView(BurialsListGenericMixin, DetailView):
 
     def render_to_response(self, context, **response_kwargs):
         context['now'] = datetime.datetime.now()
-        report = make_report(
-            user=self.request.user,
-            msg=_(u"Уведомление"),
-            obj=self.get_object(),
-            template='reports/notification.html',
-            context=RequestContext(self.request, context),
-        )
-        return redirect('report_view', report.pk)
+        template = 'reports/notification.html'
+        if self.request.user.profile.is_ugh():
+            report = make_report(
+                user=self.request.user,
+                msg=_(u"Уведомление"),
+                obj=self.get_object(),
+                template=template,
+                context=RequestContext(self.request, context),
+            )
+        context['user'] = self.request.user
+        return render_to_response(template, context)
 
 make_notification = MakeNotificationView.as_view()
 
