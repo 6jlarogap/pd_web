@@ -111,6 +111,11 @@
                                 <a href="{% url order_create %}">{% trans "Создать Заказ" %}</a>
                             </li>
                         {% endif %}
+                        {% if user.profile.is_loru %}
+                            <li{% if request.path == '/burials/search/' %} class="active"{% endif %}>
+                                <a href="{% url burial_search_list %}">{% trans "Захоронения" %}</a>
+                            </li>
+                        {% endif %}
                         {% if user.profile.is_ugh %}
                             <li{% if request.path == '/burials/' %} class="active"{% endif %}>
                                 <a href="{% url burial_list %}">{% trans "Захоронения" %}</a>
