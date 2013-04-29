@@ -31,12 +31,12 @@
                     {% endfor %}
                 {% endif %}
               </td>
-              <td>{{ f.product }}</td>
+              <td class="product_type">{{ f.product }}</td>
               <td>{{ f.cost }}</td>
               <td>{{ f.quantity }}</td>
               <input type="hidden" name="{{ f.prefix }}-id" id="id_{{ f.prefix }}-id" value="{{ forloop.counter }}">
               <td>
-                <span{% if not forloop.last %} class="hidden"{% endif %}>
+                <span>
                     <a id="remove-{{ f.prefix }}-row" href="javascript:void(0)" class="delete-row">{% trans "Удалить" %}</a>
                 </span>
               </td>
@@ -76,7 +76,14 @@
             });
             $('.delete-row').click(function() {
                 return deleteForm(this, 'orderitem_set');
-            })
+            });
+            $('.product_type select').change(function() {
+                var textval = $(":selected",this).html();
+                cost = textval.match(/(\d+) р/g)[0].match(/\d+/)[0];
+                el_id = $(this).attr('id').match(/\d+/);
+                $('#id_orderitem_set-' + el_id + '-cost').attr('value', cost);
+                $('#id_orderitem_set-' + el_id + '-quantity').attr('value', 1);
+            });
         })
 </script>
     </script>
