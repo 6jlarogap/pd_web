@@ -79,10 +79,10 @@
             });
             $('.product_type select').change(function() {
                 var textval = $(":selected",this).html();
-                cost = textval.match(/(\d+) р/g)[0].match(/\d+/)[0];
+                cost = /\((.*?) р.\)/.exec(textval)[1];
                 el_id = $(this).attr('id').match(/\d+/);
                 $('#id_orderitem_set-' + el_id + '-cost').attr('value', cost);
-                $('#id_orderitem_set-' + el_id + '-quantity').attr('value', 1);
+                $('#id_orderitem_set-' + el_id + '-quantity').attr('value', '1.00');
             });
         })
 </script>
