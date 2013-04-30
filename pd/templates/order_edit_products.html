@@ -18,6 +18,7 @@
               <th>{% trans "Товар" %}</th>
               <th>{% trans "Цена" %}</th>
               <th>{% trans "Количество" %}</th>
+              <th>{% trans "Сумма" %}</th>
               <th>{% trans "Управление" %}</th>
             </tr>
         </thead>
@@ -32,8 +33,9 @@
                 {% endif %}
               </td>
               <td class="product_type">{{ f.product }}</td>
-              <td>{{ f.cost }}</td>
-              <td>{{ f.quantity }}</td>
+              <td class="product_cost">{{ f.cost }}</td>
+              <td class="product_quantity">{{ f.quantity }}</td>
+              <td class="amount"><input type="text" name="" value=""></td>
               {{ f.id }}
               <td>
                 <span>
@@ -71,6 +73,13 @@
         LORU_AGENTS = {{ form.loru_agents_json|default:"{}" }};
 
         $(function () {
+            $('.dynamic-form').each(function() {
+                updateAmountForm($(this));
+            });
+            $(".dynamic-form input[type='text'], .dynamic-form select").change( function() {
+                updateAmountForm($(this).closest('tr'));
+            });
+
             $('.add-row').click(function() {
                 return addForm(this, 'orderitem_set');
             });
@@ -79,10 +88,11 @@
             });
             $('.product_type select').change(function() {
                 var textval = $(":selected",this).html();
-                cost = /\((.*?) р.\)/.exec(textval)[1];
+                cost = /\((\d+.*?) р.\)/.exec(textval)[1];
                 el_id = $(this).attr('id').match(/\d+/);
                 $('#id_orderitem_set-' + el_id + '-cost').attr('value', cost);
                 $('#id_orderitem_set-' + el_id + '-quantity').attr('value', '1.00');
+                updateAmountForm($(this).parents('tr'));
             });
         })
 </script>
