@@ -45,12 +45,23 @@ var escapeRegExp;
 }());
 
 
-function updateElementIndex(el, prefix, ndx) {
-    var id_regex = new RegExp('(' + prefix + '-\\d+)');
-    var replacement = prefix + '-' + ndx;
-    if ($(el).attr("for")) $(el).attr("for", $(el).attr("for").replace(id_regex, replacement));
-    if (el.id) el.id = el.id.replace(id_regex, replacement);
-    if (el.name) el.name = el.name.replace(id_regex, replacement);
+function updateElementIndex(el, prefix, ndx, is_new_form) {
+    is_new_form = typeof is_new_form !== 'undefined' ? is_new_form : false;
+    row = $(el).attr('id', prefix + '-' + ndx + '-row');
+    row.children('td:first').html(ndx + 1);
+    product_field_name = prefix + '-' + ndx + '-product';
+    row.children('td:first').next().children().attr('name', product_field_name).attr('id', 'id_' + product_field_name);
+    cost_field_name = prefix + '-' + ndx + '-cost';
+    row.children('td:first').next().next().children().attr('name', cost_field_name).attr('id', 'id_' + cost_field_name);
+    quantity_field_name = prefix + '-' + ndx + '-quantity';
+    row.children('td:first').next().next().next().children().attr('name', quantity_field_name).attr('id', 'id_' + quantity_field_name);
+    id_field_name = prefix + '-' + ndx + '-id';
+    row.find('input[type=hidden]').attr('name', id_field_name).attr('id', 'id_' + id_field_name).attr('value', '');
+    if (is_new_form) {
+        $('#id_'+ product_field_name).val('');
+        $('#id_' + cost_field_name).attr('value', '');
+        $('#id_' + quantity_field_name).attr('value', '');
+    }
 }
 
 function addForm(btn, prefix) {
@@ -59,10 +70,8 @@ function addForm(btn, prefix) {
     $(row).find('.selectArea').remove();
     $(row).find('.outtaHere').removeClass('outtaHere');
     $(row).attr('id', prefix + '-' + formCount + '-row').insertAfter($('.dynamic-form:last')).children('.hidden').removeClass('hidden');
-    prev_count_form = formCount - 1;
-    $('#' + prefix + '-' + prev_count_form + '-row td:last span').addClass('hidden');
-    $(row).children().not(':last').children().each(function() {
-        updateElementIndex(this, prefix, formCount);
+    $(row).each(function() {
+        updateElementIndex(this, prefix, formCount, true);
         $(this).val('');
     });
     $(row).find('.delete-row').click(function() {
@@ -70,7 +79,6 @@ function addForm(btn, prefix) {
     });
     $('#id_' + prefix + '-TOTAL_FORMS').val(formCount + 1);
     $('#' + prefix + '-' + formCount + '-row td:first').html(formCount + 1);
-    $('#' + prefix + '-' + formCount + '-row td:last span').removeClass('hidden');
     return false;
 }
 
@@ -79,12 +87,16 @@ function deleteForm(btn, prefix) {
     var forms = $('.dynamic-form');
     $('#id_' + prefix + '-TOTAL_FORMS').val(forms.length);
     for (var i=0, formCount=forms.length; i<formCount; i++) {
-        $(forms.get(i)).children().not(':last').children().each(function() {
+        $(forms.get(i)).each(function() {
             updateElementIndex(this, prefix, i);
         });
     }
-    prev_count_form = forms.length - 1;
-    if (prev_count_form != 0)
-        $('#' + prefix + '-' + prev_count_form + '-row td:last span').removeClass('hidden');
     return false;
+}
+
+function updateAmountForm(el) {
+    var cost = el.find('.product_cost input').val();
+    var quantity = el.find('.product_quantity input').val();
+    var amount = cost * quantity;
+    el.find('.amount input').val(amount.toFixed(2));
 }
