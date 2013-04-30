@@ -78,6 +78,7 @@
             });
             $(".dynamic-form input[type='text'], .dynamic-form select").change( function() {
                 updateAmountForm($(this).closest('tr'));
+                updateTotalForm();
             });
 
             $('.add-row').click(function() {
@@ -93,6 +94,7 @@
                 $('#id_orderitem_set-' + el_id + '-cost').attr('value', cost);
                 $('#id_orderitem_set-' + el_id + '-quantity').attr('value', '1.00');
                 updateAmountForm($(this).parents('tr'));
+                updateTotalForm();
             });
         })
 </script>
