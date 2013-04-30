@@ -79,7 +79,7 @@
             });
             $('.product_type select').change(function() {
                 var textval = $(":selected",this).html();
-                cost = /\((\d+.*?) р.\)/.exec(textval)[1]
+                cost = /\((\d+.*?) р.\)/.exec(textval)[1];
                 el_id = $(this).attr('id').match(/\d+/);
                 $('#id_orderitem_set-' + el_id + '-cost').attr('value', cost);
                 $('#id_orderitem_set-' + el_id + '-quantity').attr('value', '1.00');
