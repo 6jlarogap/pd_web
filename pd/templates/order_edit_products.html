@@ -34,7 +34,7 @@
               <td class="product_type">{{ f.product }}</td>
               <td>{{ f.cost }}</td>
               <td>{{ f.quantity }}</td>
-              <input type="hidden" name="{{ f.prefix }}-id" id="id_{{ f.prefix }}-id" value="{{ forloop.counter }}">
+              {{ f.id }}
               <td>
                 <span>
                     <a id="remove-{{ f.prefix }}-row" href="javascript:void(0)" class="delete-row">{% trans "Удалить" %}</a>
@@ -79,10 +79,10 @@
             });
             $('.product_type select').change(function() {
                 var textval = $(":selected",this).html();
-                cost = textval.match(/(\d+) р/g)[0].match(/\d+/)[0];
+                cost = /\((.*?) р.\)/.exec(textval)[1];
                 el_id = $(this).attr('id').match(/\d+/);
                 $('#id_orderitem_set-' + el_id + '-cost').attr('value', cost);
-                $('#id_orderitem_set-' + el_id + '-quantity').attr('value', 1);
+                $('#id_orderitem_set-' + el_id + '-quantity').attr('value', '1.00');
             });
         })
 </script>

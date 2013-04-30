@@ -56,7 +56,7 @@ function updateElementIndex(el, prefix, ndx, is_new_form) {
     quantity_field_name = prefix + '-' + ndx + '-quantity';
     row.children('td:first').next().next().next().children().attr('name', quantity_field_name).attr('id', 'id_' + quantity_field_name);
     id_field_name = prefix + '-' + ndx + '-id';
-    row.find('input[type=hidden]').attr('name', id_field_name).attr('id', 'id_' + id_field_name).attr('value', ndx + 1);
+    row.find('input[type=hidden]').attr('name', id_field_name).attr('id', 'id_' + id_field_name)//.attr('value', ndx + 1);
     if (is_new_form) {
         $('#id_'+ product_field_name).val('');
         $('#id_' + cost_field_name).attr('value', '');
