@@ -8,7 +8,6 @@
     {% endwith %}
     <form action="" method="POST" class="main-form">
         {% csrf_token %}
-        <legend>{% trans "Позиции" %}</legend>
 
         {{ formset.management_form }}
         <table class="table table-striped">
