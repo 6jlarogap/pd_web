@@ -100,3 +100,11 @@ function updateAmountForm(el) {
     var amount = cost * quantity;
     el.find('.amount input').val(amount.toFixed(2));
 }
+
+function updateTotalForm() {
+    var total = 0;
+    $('.amount input').each(function() {
+        total += parseFloat($(this).val());
+    });
+    $('#id_total').val(total);
+}
