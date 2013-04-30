@@ -34,7 +34,7 @@
               <td class="product_type">{{ f.product }}</td>
               <td>{{ f.cost }}</td>
               <td>{{ f.quantity }}</td>
-              <input type="hidden" name="{{ f.prefix }}-id" id="id_{{ f.prefix }}-id" value="{{ forloop.counter }}">
+              {{ f.id }}
               <td>
                 <span>
                     <a id="remove-{{ f.prefix }}-row" href="javascript:void(0)" class="delete-row">{% trans "Удалить" %}</a>
