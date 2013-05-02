@@ -70,10 +70,10 @@
             <th>
                 {% if sort == '-fact_date' %}
                     {% if sort == '-fact_date' %}<i class="icon icon-arrow-down"></i>{% endif %}
-                    <a href="?{{ GET_PARAMS }}&sort=fact_date">{% trans "Дата" %}</a>
+                    <a href="?{{ GET_PARAMS }}&sort=fact_date">{% trans "Дата захоронения" %}</a>
                 {% else %}
                     {% if sort == 'fact_date' %}<i class="icon icon-arrow-up"></i>{% endif %}
-                    <a href="?{{ GET_PARAMS }}&sort=-fact_date">{% trans "Дата" %}</a>
+                    <a href="?{{ GET_PARAMS }}&sort=-fact_date">{% trans "Дата захоронения" %}</a>
                 {% endif %}
             </th>
         </tr>
@@ -82,13 +82,7 @@
                 <td>{{ b.pk }}</td>
                 <td>{{ b.account_number|default:"" }}</td>
                 <td>{{ b.cemetery }} / {{ b.ugh_name }}</td>
-                <td>
-                    {% if b.cemetery %}{% trans "Кл." %} {{ b.cemetery|default:"" }}<br/>{% endif %}
-                    {% if b.area %}{% trans "Уч." %} {{ b.area.name|default:"" }}<br/>{% endif %}
-                    {% if b.row %}{% trans "ряд" %} {{ b.row }},{% endif %}
-                    {% if b.place_number %}{% trans "место" %} {{ b.place_number }},{% endif %}
-                    {% if b.grave_number %}{% trans "могила" %} {{ b.grave_number }}{% endif %}
-                </td>
+                <td>{% with burial=b %}{% include "burial_place.html" %}{% endwith %}</td>
                 <td>{{ b.deadman|default:"" }}</td>
                 <td>{{ b.combined_date }}</td>
             </tr>
