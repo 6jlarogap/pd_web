@@ -426,6 +426,8 @@ class BurialsPublicListView(ListView):
             '-fio': '-deadman__last_name',
             'fact_date': 'fact_date',
             '-fact_date': '-fact_date',
+            'status': 'status',
+            '-status': '-status',
         }
         s = SORT_FIELDS[sort]
         if not isinstance(s, list):
