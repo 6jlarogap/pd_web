@@ -76,6 +76,15 @@
                     <a href="?{{ GET_PARAMS }}&sort=-fact_date">{% trans "Дата захоронения" %}</a>
                 {% endif %}
             </th>
+            <th>
+                {% if sort == 'status' %}
+                    {% if sort == 'status' %}<i class="icon icon-arrow-up"></i>{% endif %}
+                    <a href="?{{ GET_PARAMS }}&sort=-status">{% trans "Статус" %}</a>
+                {% else %}
+                    {% if sort == '-status' %}<i class="icon icon-arrow-down"></i>{% endif %}
+                    <a href="?{{ GET_PARAMS }}&sort=status">{% trans "Статус" %}</a>
+                {% endif %}
+            </th>
         </tr>
         {% for b in burials %}
             <tr>
@@ -85,6 +94,9 @@
                 <td>{% with burial=b %}{% include "burial_place.html" %}{% endwith %}</td>
                 <td>{{ b.deadman|default:"" }}</td>
                 <td>{{ b.combined_date }}</td>
+                <td>
+                    {{ b.status_str|default:"" }}
+                </td>
             </tr>
         {% endfor %}
     </table>
