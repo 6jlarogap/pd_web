@@ -253,11 +253,16 @@ class BurialPublicListForm(forms.Form):
     burial_date_to = forms.DateField(required=False, label=_(u"по"))
     account_number_from = forms.IntegerField(required=False, label=_(u"Рег. № с"))
     account_number_to = forms.IntegerField(required=False, label=_(u"по"))
-    cemetery = forms.CharField(required=False, label=_(u"Кладбища"))
+    cemetery = forms.CharField(required=False, label=_(u"Кладбище"))
     area = forms.CharField(required=False, label=_(u"Участок"))
     row = forms.CharField(required=False, label=_(u"Ряд"))
     place = forms.CharField(required=False, label=_(u"Место"))
     per_page = forms.ChoiceField(label=_(u"На странице"), choices=PAGE_CHOICES, initial=25, required=False)
+
+    def __init__(self, *args, **kwargs):
+        super(BurialPublicListForm, self).__init__(*args, **kwargs)
+        self.fields['fio'].required = True
+        self.fields['cemetery'].required = True
 
 class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, forms.ModelForm):
     COFFIN = 'coffin'
