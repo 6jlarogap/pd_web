@@ -92,10 +92,10 @@
                 <td>{{ b.account_number|default:"" }}</td>
                 <td>{{ b.cemetery }} / {{ b.ugh_name }}</td>
                 <td>
-                    {% if burial.area %}{% trans "Уч." %} {{ burial.area.name|default:"" }}<br/>{% endif %}
-                    {% if burial.row %}{% trans "ряд" %} {{ burial.row }},{% endif %}
-                    {% if burial.place_number %}{% trans "место" %} {{ burial.place_number }},{% endif %}
-                    {% if burial.grave_number %}{% trans "могила" %} {{ burial.grave_number }}{% endif %}
+                    {% if b.area %}{% trans "Уч." %} {{ b.area.name|default:"" }}<br/>{% endif %}
+                    {% if b.row %}{% trans "ряд" %} {{ b.row }},{% endif %}
+                    {% if b.place_number %}{% trans "место" %} {{ b.place_number }},{% endif %}
+                    {% if b.grave_number %}{% trans "могила" %} {{ b.grave_number }}{% endif %}
                 </td>
                 <td>{{ b.deadman|default:"" }}</td>
                 <td>{{ b.combined_date }}</td>
