@@ -48,8 +48,7 @@ function updateProductId() {
     var initial_forms = $('#id_orderitem_set-INITIAL_FORMS').val();
     $('.dynamic-form input[type=hidden]').each(function(index) {
         var val = (index +1 <= initial_forms) ? index + 1 : '';
-        console.log(val);
-        $(this).val(val);
+        $(this).val('');
     });
 }
 

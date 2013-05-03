@@ -72,6 +72,9 @@
         LORU_AGENTS = {{ form.loru_agents_json|default:"{}" }};
 
         $(function () {
+            $('#id_orderitem_set-INITIAL_FORMS').attr('value', 0);
+            updateProductId();
+            
             $('.dynamic-form').each(function() {
                 updateAmountForm($(this));
             });
@@ -96,6 +99,5 @@
                 updateTotalForm();
             });
         })
-</script>
     </script>
 {% endblock %}

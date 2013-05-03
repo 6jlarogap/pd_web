@@ -340,15 +340,15 @@ class OrderEditProducts(LORURequiredMixin, View):
 
     def post(self, request, *args, **kwargs):
         self.request = request
+
+        self.object = self.get_object()
+        for orderitem in self.object.orderitem_set.all():
+            orderitem.delete()
+            
         formset = self.get_formset()
         if formset.is_valid():
             formset.save()
-            self.object = self.get_object()
 
-            # Remove unused orderitem
-            order_item_fill = len(formset.forms)
-            for orderitem in self.object.orderitem_set.all()[order_item_fill:]:
-                orderitem.delete()
 
             write_log(self.request, self.object, _(u'Заказ сохранен'))
             msg = _(u"<a href='%s'>Заказ %s</a> сохранен") % (
