@@ -8,7 +8,6 @@
     {% endwith %}
     <form action="" method="POST" class="main-form">
         {% csrf_token %}
-        <legend>{% trans "Позиции" %}</legend>
 
         {{ formset.management_form }}
         <table class="table table-striped">
@@ -49,7 +48,7 @@
         <p><a href="javascript:void(0)" class="add-row">{% trans "Добавить" %}</a></p>
         <p>
             <label for="id_total">{% trans "Итог" %}</label>
-            <input id="id_total" type="text" value="{{ order.total }}" />
+            <input id="id_total" type="text" value="{{ order.total }}" readonly/>
         </p>
 
         <p>
@@ -73,6 +72,9 @@
         LORU_AGENTS = {{ form.loru_agents_json|default:"{}" }};
 
         $(function () {
+            $('#id_orderitem_set-INITIAL_FORMS').attr('value', 0);
+            updateProductId();
+            
             $('.dynamic-form').each(function() {
                 updateAmountForm($(this));
             });
@@ -97,6 +99,5 @@
                 updateTotalForm();
             });
         })
-</script>
     </script>
 {% endblock %}

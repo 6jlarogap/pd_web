@@ -44,6 +44,14 @@ var escapeRegExp;
     // test escapeRegExp("/path/to/res?search=this.that")
 }());
 
+function updateProductId() {
+    var initial_forms = $('#id_orderitem_set-INITIAL_FORMS').val();
+    $('.dynamic-form input[type=hidden]').each(function(index) {
+        var val = (index +1 <= initial_forms) ? index + 1 : '';
+        $(this).val('');
+    });
+}
+
 
 function updateElementIndex(el, prefix, ndx, is_new_form) {
     is_new_form = typeof is_new_form !== 'undefined' ? is_new_form : false;
@@ -56,7 +64,7 @@ function updateElementIndex(el, prefix, ndx, is_new_form) {
     quantity_field_name = prefix + '-' + ndx + '-quantity';
     row.children('td:first').next().next().next().children().attr('name', quantity_field_name).attr('id', 'id_' + quantity_field_name);
     id_field_name = prefix + '-' + ndx + '-id';
-    row.find('input[type=hidden]').attr('name', id_field_name).attr('id', 'id_' + id_field_name).attr('value', '');
+    row.find('input[type=hidden]').attr('name', id_field_name).attr('id', 'id_' + id_field_name).attr('id', 'id_' + id_field_name);
     if (is_new_form) {
         $('#id_'+ product_field_name).val('');
         $('#id_' + cost_field_name).attr('value', '');
@@ -79,6 +87,7 @@ function addForm(btn, prefix) {
     });
     $('#id_' + prefix + '-TOTAL_FORMS').val(formCount + 1);
     $('#' + prefix + '-' + formCount + '-row td:first').html(formCount + 1);
+    updateProductId();
     return false;
 }
 
@@ -91,6 +100,7 @@ function deleteForm(btn, prefix) {
             updateElementIndex(this, prefix, i);
         });
     }
+    updateProductId();
     return false;
 }
 
