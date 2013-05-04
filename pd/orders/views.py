@@ -1,10 +1,12 @@
 # coding=utf-8
 import datetime
+import json
 
 from django.contrib import messages
 from django.core.urlresolvers import reverse
 from django.db.models.aggregates import Count, Sum
 from django.db.models.query_utils import Q
+from django.http import HttpResponse
 from django.shortcuts import redirect, render
 from django.template.context import RequestContext
 from django.views.generic.base import View
@@ -12,6 +14,8 @@ from django.views.generic.detail import DetailView
 from django.views.generic.edit import CreateView, UpdateView
 from django.views.generic.list import ListView
 from django.utils.translation import ugettext_lazy as _
+from django.views.decorators.csrf import csrf_protect, csrf_exempt
+from django.shortcuts import get_object_or_404
 
 from logs.models import write_log
 from burials.forms import AddOrgForm, AddAgentForm, AddDoverForm, AddDocTypeForm
@@ -320,6 +324,14 @@ class OrderEdit(LORURequiredMixin, UpdateView):
 
 order_edit = OrderEdit.as_view()
 
+class AjaxProductPrice(LORURequiredMixin, View):
+    def get(self, request, *args, **kwargs):
+        id = request.GET.get('id')
+        product = get_object_or_404(Product, pk=id)
+        return HttpResponse(json.dumps({'price': float(product.price)}), mimetype='application/json')
+
+ajax_product_price = AjaxProductPrice.as_view()
+
 class OrderEditProducts(LORURequiredMixin, View):
     template_name = 'order_edit_products.html'
 
@@ -340,13 +352,13 @@ class OrderEditProducts(LORURequiredMixin, View):
 
     def post(self, request, *args, **kwargs):
         self.request = request
-
-        self.object = self.get_object()
-        for orderitem in self.object.orderitem_set.all():
-            orderitem.delete()
             
         formset = self.get_formset()
         if formset.is_valid():
+            self.object = self.get_object()
+            for orderitem in self.object.orderitem_set.all():
+                orderitem.delete()
+            
             formset.save()
 
 

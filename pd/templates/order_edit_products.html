@@ -89,14 +89,27 @@
             $('.delete-row').click(function() {
                 return deleteForm(this, 'orderitem_set');
             });
-            $('.product_type select').change(function() {
-                var textval = $(":selected",this).html();
-                cost = /\((\d+.*?) р.\)/.exec(textval)[1];
-                el_id = $(this).attr('id').match(/\d+/);
-                $('#id_orderitem_set-' + el_id + '-cost').attr('value', cost);
-                $('#id_orderitem_set-' + el_id + '-quantity').attr('value', '1.00');
-                updateAmountForm($(this).parents('tr'));
-                updateTotalForm();
+            $('.product_type select').change(function(e) {
+                var el_id = $(this).attr('id').match(/\d+/)[0];
+
+                var toggleButton = function() {
+                }
+
+                $.ajax({
+                    type: "GET",
+                    url: "/order/product/ajax_get_product_price/", 
+                    data: {'id': $(this).val()}, 
+                    success: function(data) {
+                        $('#id_orderitem_set-' + el_id + '-cost').attr('value', data.price);
+                        $('#id_orderitem_set-' + el_id + '-quantity').attr('value', '1.00');
+                        $('#id_orderitem_set-' + el_id + '-cost').focus();
+                        updateAmountForm($(this));
+                        updateTotalForm();
+                    },
+                    async: true
+                });
+
+                              
             });
         })
     </script>
