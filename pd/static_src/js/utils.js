@@ -69,6 +69,7 @@ function updateElementIndex(el, prefix, ndx, is_new_form) {
         $('#id_'+ product_field_name).val('');
         $('#id_' + cost_field_name).attr('value', '');
         $('#id_' + quantity_field_name).attr('value', '');
+        $(el).find('td.amount input[type=text]').attr('value', '');
     }
 }
 
@@ -101,20 +102,25 @@ function deleteForm(btn, prefix) {
         });
     }
     updateProductId();
+    updateTotalForm();
     return false;
 }
 
 function updateAmountForm(el) {
     var cost = el.find('.product_cost input').val();
     var quantity = el.find('.product_quantity input').val();
-    var amount = cost * quantity;
-    el.find('.amount input').val(amount.toFixed(2));
+    console.log(cost, quantity);
+    if (cost && quantity) {
+        var amount = cost * quantity;
+        el.find('.amount input').val(amount.toFixed(2));
+    }
 }
 
 function updateTotalForm() {
     var total = 0;
     $('.amount input').each(function() {
-        total += parseFloat($(this).val());
+        if ($(this).val())
+            total += parseFloat($(this).val());
     });
     $('#id_total').val(total);
 }
