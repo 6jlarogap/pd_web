@@ -310,6 +310,9 @@ $(function() {
     $('.main-form :input').change(function() {
         SOMETHING_CHANGED = true;
     });
+    $('.add-row, .delete-row').click(function() {
+        SOMETHING_CHANGED = true;
+    });
 
     $('.main-form .btn-next').click(function() {
         if (SOMETHING_CHANGED) {
