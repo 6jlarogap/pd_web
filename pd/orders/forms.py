@@ -99,6 +99,7 @@ class OrderForm(ChildrenJSONMixin, forms.ModelForm):
         return self.instance
 
 class OrderItemForm(forms.ModelForm):
+
     class Meta:
         model = OrderItem
         fields = ('product', 'cost', 'quantity',)

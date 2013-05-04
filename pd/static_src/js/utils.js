@@ -109,7 +109,6 @@ function deleteForm(btn, prefix) {
 function updateAmountForm(el) {
     var cost = el.find('.product_cost input').val();
     var quantity = el.find('.product_quantity input').val();
-    console.log(cost, quantity);
     if (cost && quantity) {
         var amount = cost * quantity;
         el.find('.amount input').val(amount.toFixed(2));
