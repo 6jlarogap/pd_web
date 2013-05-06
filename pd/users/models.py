@@ -60,6 +60,21 @@ class Profile(models.Model):
             name = self.user.get_full_name()
         return name
 
+    def last_name_initials(self):
+        """
+        Фамилия И.О.
+        """
+        name = ""
+        if self.user_last_name and self.user_first_name:
+            name = u"{0} {1}.".format(self.user_last_name, self.user_first_name[0])
+            if self.user_middle_name:
+                name = u"{0}{1}.".format(name, self.user_middle_name[0])
+        if not name:
+            name = self.user.last_name
+            if name and self.user.first_name:
+                name = u"{0} {1}.".format(name, self.user.first_name[0])
+        return self.user and (name or self.user.username) or u'%s' % self.pk
+
     def get_region(self):
         if self.region_fias:
             return DFiasAddrobj.objects.get(parentguid='', aoguid=self.region_fias)

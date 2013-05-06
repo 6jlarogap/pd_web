@@ -73,7 +73,7 @@
                 <div class="btn-group pull-right dropdown" id="auth_menu">
                     {% if user.is_authenticated %}
                         <a class="btn dropdown-toggle" data-toggle="dropdown" href="#auth_menu">
-                            <i class="icon-user"></i> {{ user.profile }}
+                            <i class="icon-user"></i> {{ user.profile.last_name_initials }}
                             {% if user.profile.org %}[{{ user.profile.org }}]{% endif %}
                             <span class="caret"></span>
                         </a>
