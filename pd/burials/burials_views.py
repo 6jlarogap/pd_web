@@ -381,11 +381,11 @@ class BurialsPublicListView(ListView):
                 fio = [f.strip('.') for f in form.cleaned_data['fio'].split(' ')]
                 q = Q()
                 if len(fio) > 2:
-                    q &= Q(deadman__middle_name__icontains=fio[2])
+                    q &= Q(deadman__middle_name__istartswith=fio[2])
                 if len(fio) > 1:
-                    q &= Q(deadman__first_name__icontains=fio[1])
+                    q &= Q(deadman__first_name__istartswith=fio[1])
                 if len(fio) > 0:
-                    q &= Q(deadman__last_name__icontains=fio[0])
+                    q &= Q(deadman__last_name__istartswith=fio[0])
                 burials = burials.filter(q)
             if form.cleaned_data['birth_date_from']:
                 burials = burials.filter(deadman__birth_date__gte=form.cleaned_data['birth_date_from'])
@@ -673,6 +673,27 @@ class MakeNotificationView(BurialsListGenericMixin, DetailView):
         return render_to_response(template, context)
 
 make_notification = MakeNotificationView.as_view()
+
+class MakeExhumateReport(BurialsListGenericMixin, DetailView):
+    context_object_name = 'burial'
+
+    def get_queryset(self):
+        qs = self.get_qs_filter()
+        return Burial.objects.filter(qs).distinct()
+
+    def render_to_response(self, context, **response_kwargs):
+        context['user'] = self.request.user
+        template = 'simple_message.html'
+        if self.request.user.is_authenticated() and self.request.user.profile.is_ugh():
+            if self.get_object().exhumated:
+                template = 'reports/exhumate.html'
+            else:
+                context['message'] = _(u"Захоронение не эксгумировано")
+        else:
+            context['message'] = _(u"Нет доступа")
+        return render_to_response(template, context)
+
+make_exhumate_report = MakeExhumateReport.as_view()
 
 class MakeSpravka(BurialsListGenericMixin, DetailView):
     context_object_name = 'burial'
