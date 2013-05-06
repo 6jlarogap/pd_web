@@ -8,7 +8,6 @@
     {% endwith %}
     <form action="" method="POST" class="main-form">
         {% csrf_token %}
-        <legend>{% trans "Позиции" %}</legend>
 
         {{ formset.management_form }}
         <table class="table table-striped">
@@ -49,7 +48,7 @@
         <p><a href="javascript:void(0)" class="add-row">{% trans "Добавить" %}</a></p>
         <p>
             <label for="id_total">{% trans "Итог" %}</label>
-            <input id="id_total" type="text" value="{{ order.total }}" />
+            <input id="id_total" type="text" value="{{ order.total }}" readonly/>
         </p>
 
         <p>
@@ -73,6 +72,9 @@
         LORU_AGENTS = {{ form.loru_agents_json|default:"{}" }};
 
         $(function () {
+            $('#id_orderitem_set-INITIAL_FORMS').attr('value', 0);
+            updateProductId();
+            
             $('.dynamic-form').each(function() {
                 updateAmountForm($(this));
             });
@@ -87,16 +89,28 @@
             $('.delete-row').click(function() {
                 return deleteForm(this, 'orderitem_set');
             });
-            $('.product_type select').change(function() {
-                var textval = $(":selected",this).html();
-                cost = /\((\d+.*?) р.\)/.exec(textval)[1];
-                el_id = $(this).attr('id').match(/\d+/);
-                $('#id_orderitem_set-' + el_id + '-cost').attr('value', cost);
-                $('#id_orderitem_set-' + el_id + '-quantity').attr('value', '1.00');
-                updateAmountForm($(this).parents('tr'));
-                updateTotalForm();
+            $('.product_type select').change(function(e) {
+                var el_id = $(this).attr('id').match(/\d+/)[0];
+
+                var toggleButton = function() {
+                }
+
+                $.ajax({
+                    type: "GET",
+                    url: "/order/product/ajax_get_product_price/", 
+                    data: {'id': $(this).val()}, 
+                    success: function(data) {
+                        $('#id_orderitem_set-' + el_id + '-cost').attr('value', data.price);
+                        $('#id_orderitem_set-' + el_id + '-quantity').attr('value', '1.00');
+                        $('#id_orderitem_set-' + el_id + '-cost').focus();
+                        updateAmountForm($(this));
+                        updateTotalForm();
+                    },
+                    async: true
+                });
+
+                              
             });
         })
-</script>
     </script>
 {% endblock %}
