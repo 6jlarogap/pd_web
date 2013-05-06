@@ -381,11 +381,11 @@ class BurialsPublicListView(ListView):
                 fio = [f.strip('.') for f in form.cleaned_data['fio'].split(' ')]
                 q = Q()
                 if len(fio) > 2:
-                    q &= Q(deadman__middle_name__icontains=fio[2])
+                    q &= Q(deadman__middle_name__istartswith=fio[2])
                 if len(fio) > 1:
-                    q &= Q(deadman__first_name__icontains=fio[1])
+                    q &= Q(deadman__first_name__istartswith=fio[1])
                 if len(fio) > 0:
-                    q &= Q(deadman__last_name__icontains=fio[0])
+                    q &= Q(deadman__last_name__istartswith=fio[0])
                 burials = burials.filter(q)
             if form.cleaned_data['birth_date_from']:
                 burials = burials.filter(deadman__birth_date__gte=form.cleaned_data['birth_date_from'])
