@@ -674,6 +674,27 @@ class MakeNotificationView(BurialsListGenericMixin, DetailView):
 
 make_notification = MakeNotificationView.as_view()
 
+class MakeExhumateReport(BurialsListGenericMixin, DetailView):
+    context_object_name = 'burial'
+
+    def get_queryset(self):
+        qs = self.get_qs_filter()
+        return Burial.objects.filter(qs).distinct()
+
+    def render_to_response(self, context, **response_kwargs):
+        context['user'] = self.request.user
+        template = 'simple_message.html'
+        if self.request.user.is_authenticated() and self.request.user.profile.is_ugh():
+            if self.get_object().exhumated:
+                template = 'reports/exhumate.html'
+            else:
+                context['message'] = _(u"Захоронение не эксгумировано")
+        else:
+            context['message'] = _(u"Нет доступа")
+        return render_to_response(template, context)
+
+make_exhumate_report = MakeExhumateReport.as_view()
+
 class MakeSpravka(BurialsListGenericMixin, DetailView):
     context_object_name = 'burial'
 
