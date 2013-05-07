@@ -746,9 +746,6 @@ class BurialCommitForm(BurialForm):
                     if not re.match(r'^\d{4}.+',place_number) or int(place_number[:4]) > today.year or not int(place_number[:4]):
                         raise forms.ValidationError(_(u"Номер места должен быть: ГГГГмм...м (год не больше текущего, место)"))
 
-        if not self.cleaned_data.get(self.dc_form.prefix+'s_number'):
-            raise forms.ValidationError(_(u"Не заполнен номер свидетельства о смерти"))
-
         deadman_birth_date = None
         deadman_death_date = None
 
