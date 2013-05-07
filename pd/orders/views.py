@@ -114,7 +114,7 @@ class OrderList(LORURequiredMixin, ListView):
         form = self.get_form()
         if form.data and form.is_valid():
             if form.cleaned_data['fio']:
-                search_by =  ['burial__deadman__last_name__icontains', 'burial__deadman__first_name__icontains', 'burial__deadman__middle_name__icontains']
+                search_by =  ['burial__deadman__last_name__istartswith', 'burial__deadman__first_name__istartswith', 'burial__deadman__middle_name__istartswith']
                 orders = self.filter_by_name(queryset=orders, search_by=search_by, name_string=form.cleaned_data['fio'])
             if form.cleaned_data['birth_date_from']:
                 orders = orders.filter(burial__deadman__birth_date__gte=form.cleaned_data['birth_date_from'])
