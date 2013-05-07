@@ -49,7 +49,7 @@ class OrderForm(ChildrenJSONMixin, forms.ModelForm):
 
     def clean(self):
         if self.cleaned_data.get('opf') == 'org' and \
-                not self.cleaned_data.get('agent_director') and \
+                not self.cleaned_data.get('agent_director') or \
                 not (self.cleaned_data.get('agent') and self.cleaned_data.get('dover')):
             raise forms.ValidationError(_(u'Нет данных об агенте и/или доверенности для заявителя-ЮЛ. Изменения не сохранены'))
         return self.cleaned_data
