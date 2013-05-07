@@ -194,8 +194,12 @@
         {% if user.profile.is_ugh and b.can_print_notification %}
             <a class="btn" href="{% url make_notification b.pk %}" target="_blank">{% trans "уведомление" %}</a>
         {% endif %}
-        {% if user.profile.is_ugh and b.can_print_reference %}
-            <a class="btn" href="{% url make_spravka b.pk %}" target="_blank">{% trans "справка" %}</a>
+        {% if user.profile.is_ugh %}
+            {% if b.can_print_reference %}
+                <a class="btn" href="{% url make_spravka b.pk %}" target="_blank">{% trans "справка" %}</a>
+            {% elif b.exhumated %}
+                <a class="btn" href="{% url make_exhumate_report b.pk %}" target="_blank">{% trans "справка" %}</a>
+            {% endif %}
         {% endif %}
 
         {% if user.profile.is_loru %}
