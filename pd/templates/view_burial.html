@@ -67,7 +67,7 @@
                 <dd>Номер: {{ b.deadman.deathcertificate.s_number }}</dd>
                 <dd>Серия: {{ b.deadman.deathcertificate.series }}</dd>
                 <dd>Дата: {{ b.deadman.deathcertificate.release_date }}</dd>
-                <dd>Выдано: {{ b.deadman.deathcertificate.zags }}</dd>
+                <dd>Выдано: {{ b.deadman.deathcertificate.zags|default_if_none:"" }}</dd>
             {% else %}
                 <dd>Нет</dd>
             {% endif %}
