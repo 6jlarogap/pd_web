@@ -348,7 +348,7 @@ class Burial(models.Model):
             return self.is_closed() or self.is_exhumated()
         if self.is_ugh_only():
             return self.is_closed() or self.is_draft() or self.is_exhumated()
-        if self.is_transferred() or self.archive():
+        if self.is_transferred() or self.is_archive():
             return True
         return False
 

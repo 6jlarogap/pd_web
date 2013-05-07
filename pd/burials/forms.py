@@ -488,7 +488,7 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, forms.Mo
                 deadman.address = self.deadman_address_form.save()
             deadman.save()
 
-            if self.dc_form.is_valid_data():
+            if self.dc_form.is_valid():
                 dc = self.dc_form.save(commit=False)
                 dc.person = deadman
                 dc.save()
@@ -638,18 +638,13 @@ class BurialCommitForm(BurialForm):
         # - если захоронение архивное или перенесенное, то проверка обязательности
         #   не производится, т.е. можно заполнить или все поля СоС, или некоторые,
         #   или не заполнять СоС вообще;
-        # - для остальных захоронений обязательность полей СоС имеет смысл
-        #   только если усопший известен, т.е. если заполнено поле фамилии в форме;
-        #   * в этом случае проверяется, заполнено ли хотя бы одно из полей СоС.
-        #     Если заполнено, то обязательны все поля СоС, кроме серии.
+        # - для остальных захоронений обязательны все поля СоС, кроме серии.
         #
         if self.instance.is_archive() or self.request.REQUEST.get('archive') or self.instance.is_transferred():
             return
-        if self.data.get('deadman-last_name'):
-            if any([True for k,v in self.data.items() if v and k.startswith(self.dc_form.prefix)]):
-                for f in self.dc_form.fields:
-                    if f != 'series':
-                        self.dc_form.fields[f].required = True
+        for f in self.dc_form.fields:
+            if f != 'series':
+                self.dc_form.fields[f].required = True
 
     def setup_required_responsible(self):
         pass
