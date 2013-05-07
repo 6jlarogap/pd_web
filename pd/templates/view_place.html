@@ -86,7 +86,7 @@
                         <a class="btn" href="{% url make_exhumate_report b.pk %}" target="_blank">{% trans "справка" %}</a>
                         <form action="{% url burial_cancel_exhumation ex.pk %}" method="POST" class="inline">
                             {% csrf_token %}
-                            <input type="submit" class="btn" value="{% trans "отменить" %}" />
+                            <input type="submit" class="btn" value="{% trans "Отменить эксгумацию" %}" />
                         </form>
 
                     </td>
