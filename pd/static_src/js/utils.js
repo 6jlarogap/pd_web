@@ -121,5 +121,5 @@ function updateTotalForm() {
         if ($(this).val())
             total += parseFloat($(this).val());
     });
-    $('#id_total').val(total);
+    $('#id_total').val(total.toFixed(2));
 }
