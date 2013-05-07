@@ -204,7 +204,7 @@
 
     </form>
 
-    {% if b.status == 'exhumated' %}
+    {% if user.profile.is_ugh and b.status == 'exhumated' %}
         <form action="{% url burial_cancel_exhumation b.exhumationrequest.pk %}" method="POST" class="inline" style="display: inline;">
             {% csrf_token %}
             <input type="submit" class="btn" value="{% trans "Отменить эксгумацию" %}" />
