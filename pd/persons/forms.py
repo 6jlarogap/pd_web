@@ -7,6 +7,14 @@ from django.utils.translation import ugettext as _
 from persons.models import DeadPerson, PersonID, DeathCertificate, AlivePerson, DocumentSource
 
 
+class StrippedStringsMixin(object):
+    
+   def clean(self):
+       for field in self.cleaned_data:
+           if isinstance(self.cleaned_data[field], basestring):
+               self.cleaned_data[field] = self.cleaned_data[field].strip()
+       return self.cleaned_data
+
 class ValidDataMixin:
     def is_valid_data(self):
         return self.is_valid() and any(self.cleaned_data.values())
@@ -56,7 +64,7 @@ class PersonIDForm(ValidDataMixin, forms.ModelForm):
             raise forms.ValidationError(msg)
         return release_date
 
-class DeathCertificateForm(ValidDataMixin, forms.ModelForm):
+class DeathCertificateForm(ValidDataMixin, StrippedStringsMixin, forms.ModelForm):
     class Meta:
         model = DeathCertificate
         exclude = ['person', ]
@@ -78,7 +86,7 @@ class DeathCertificateForm(ValidDataMixin, forms.ModelForm):
             raise forms.ValidationError(msg)
         return release_date
 
-class AlivePersonForm(ValidDataMixin, forms.ModelForm):
+class AlivePersonForm(ValidDataMixin, StrippedStringsMixin, forms.ModelForm):
     class Meta:
         model = AlivePerson
 
@@ -88,4 +96,3 @@ class AlivePersonForm(ValidDataMixin, forms.ModelForm):
 
     def is_valid_data(self):
         return self.is_valid() and self.cleaned_data.get('last_name') # last name should be present
-

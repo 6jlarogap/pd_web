@@ -428,7 +428,7 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, forms.Mo
                 raise forms.ValidationError(_(u'Нельзя указать Доверенность без Агента'))
 
             if self.cleaned_data.get('applicant_organization') and self.applicant_form.is_valid_data():
-                raise forms.ValidationError(_(u"Нужно указать только либо Заявителя-ЮЛ, либо Заявителя-ФЛ"))
+                raise forms.ValidationError(_(u"Нужно указать либо Заявителя-ЮЛ, либо Заявителя-ФЛ"))
 
             if self.cleaned_data.get('agent_director'):
                 self.cleaned_data.update(agent=None, dover=None, )
@@ -718,7 +718,7 @@ class BurialCommitForm(BurialForm):
                     msg = _(u"Номер в книге учета должен быть: ГГГГнн...н (год фактической даты, номер)")
                     raise forms.ValidationError(msg)
 
-        place_number = self.cleaned_data.get('place_number')
+        place_number = self.cleaned_data.get('place_number') or ''
         area = self.cleaned_data.get('area')
         if not place_number.strip() and (self.instance.is_archive() or self.request.REQUEST.get('archive')):
             msg = _(u"Нельзя закрывать архивное захоронение без указания номера места")
@@ -745,6 +745,9 @@ class BurialCommitForm(BurialForm):
                 if place_number:
                     if not re.match(r'^\d{4}.+',place_number) or int(place_number[:4]) > today.year or not int(place_number[:4]):
                         raise forms.ValidationError(_(u"Номер места должен быть: ГГГГмм...м (год не больше текущего, место)"))
+
+        if not self.cleaned_data.get(self.dc_form.prefix+'s_number'):
+            raise forms.ValidationError(_(u"Не заполнен номер свидетельства о смерти"))
 
         deadman_birth_date = None
         deadman_death_date = None

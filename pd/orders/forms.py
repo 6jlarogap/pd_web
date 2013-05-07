@@ -48,10 +48,13 @@ class OrderForm(ChildrenJSONMixin, forms.ModelForm):
         return super(OrderForm, self).is_valid() and all([f.is_valid() for f in self.forms])
 
     def clean(self):
-        if self.cleaned_data.get('opf') == 'org' and \
-                (not self.cleaned_data.get('agent_director') or \
-                 not (self.cleaned_data.get('agent') and self.cleaned_data.get('dover'))):
-            raise forms.ValidationError(_(u'Нет данных об агенте и/или доверенности для заявителя-ЮЛ. Изменения не сохранены'))
+        if self.cleaned_data.get('opf') == 'org':
+            if not (self.cleaned_data.get('agent_director') or \
+                    self.cleaned_data.get('agent') and self.cleaned_data.get('dover')):
+                raise forms.ValidationError(_(u'Нет данных об агенте и/или доверенности для заявителя-ЮЛ. Изменения не сохранены'))
+        else:
+            if not self.applicant_form.is_valid_data():
+                raise forms.ValidationError(_(u"Нужно указать Заявителя-ФЛ"))
         return self.cleaned_data
             
     def construct_forms(self):
