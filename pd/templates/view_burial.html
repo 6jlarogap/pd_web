@@ -36,6 +36,7 @@
             {% elif b.agent_director %}
                 <dt>{% trans "Агент" %}:</dt><dd>{% trans "Директор" %}</dd>
             {% endif %}
+            <!-- скрываем от лору то что он может глянуть у себя на вкладке "Заказчик" -->
             {% if user.profile.is_ugh %}
                 {% if b.order.applicant %}
                     <dt>{% trans "от лица" %}</dt><dd>{% trans "ФЛ" %} {{ b.order.applicant }}</dd>
