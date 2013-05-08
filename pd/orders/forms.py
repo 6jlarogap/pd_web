@@ -68,6 +68,7 @@ class OrderForm(ChildrenJSONMixin, forms.ModelForm):
         except PersonID.DoesNotExist:
             applicant_id = None
         self.applicant_id_form = PersonIDForm(data=data, prefix='applicant-pid', instance=applicant_id)
+        # id_type, series and number are required in the form definition
 
         return [self.applicant_form, self.applicant_address_form, self.applicant_id_form]
 

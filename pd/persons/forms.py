@@ -78,6 +78,13 @@ class PersonIDForm(ValidDataMixin, forms.ModelForm):
             raise forms.ValidationError(msg)
         return number
 
+    def clean_id_type(self):
+        id_type = self.cleaned_data.get('id_type')
+        if not id_type:
+            msg = _(u'Не указан тип документа')
+            raise forms.ValidationError(msg)
+        return id_type
+
 class DeathCertificateForm(ValidDataMixin, StrippedStringsMixin, forms.ModelForm):
     class Meta:
         model = DeathCertificate
