@@ -48,6 +48,9 @@
                 <dd>{{ b.applicant }}</dd>
                 <dd>{% trans "Адрес:" %} {{ b.applicant.address|default:"не указан" }}</dd>
                 <dd>{% trans "Документ:" %} {{ b.applicant.personid|default:"не указан" }}</dd>
+        {% else %}
+            <dt>{% trans "Заявитель" %}:</dt>
+                <dd>не указан</dd>
         {% endif %}
         <dt>{% trans "Усопший" %}:</dt>
         <dd>

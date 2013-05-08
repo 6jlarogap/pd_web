@@ -663,8 +663,10 @@ class BurialCommitForm(BurialForm):
         pass
 
     def setup_required_applicant_id(self):
-        # id_type, series and number are required in the form definition
-        pass
+        if self.data.get('applicant-last_name'):
+            for f in self.applicant_id_form.fields:
+                if f in ['id_type', 'series', 'number',]:
+                    self.applicant_id_form.fields[f].required = True
 
     def clean(self):
         is_ugh = False

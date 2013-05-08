@@ -38,7 +38,7 @@ class DeadPersonForm(ValidDataMixin, forms.ModelForm):
     def is_valid_data(self):
         return self.is_valid() and len([k for k,v in self.cleaned_data.items() if v]) > 1 # more than just death date
 
-class PersonIDForm(ValidDataMixin, forms.ModelForm):
+class PersonIDForm(ValidDataMixin, StrippedStringsMixin, forms.ModelForm):
     source = forms.CharField(label=_(u'Кем выдан'), required=False)
 
     class Meta:
@@ -63,27 +63,6 @@ class PersonIDForm(ValidDataMixin, forms.ModelForm):
             msg = _(u'Неверная дата выдачи')
             raise forms.ValidationError(msg)
         return release_date
-
-    def clean_series(self):
-        series = self.cleaned_data.get('series').strip()
-        if not series:
-            msg = _(u'Пустое поле серии документа')
-            raise forms.ValidationError(msg)
-        return series
-
-    def clean_number(self):
-        number = self.cleaned_data.get('number').strip()
-        if not number:
-            msg = _(u'Пустое поле номера документа')
-            raise forms.ValidationError(msg)
-        return number
-
-    def clean_id_type(self):
-        id_type = self.cleaned_data.get('id_type')
-        if not id_type:
-            msg = _(u'Не указан тип документа')
-            raise forms.ValidationError(msg)
-        return id_type
 
 class DeathCertificateForm(ValidDataMixin, StrippedStringsMixin, forms.ModelForm):
     class Meta:
