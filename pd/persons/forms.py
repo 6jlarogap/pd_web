@@ -64,6 +64,20 @@ class PersonIDForm(ValidDataMixin, forms.ModelForm):
             raise forms.ValidationError(msg)
         return release_date
 
+    def clean_series(self):
+        series = self.cleaned_data.get('series').strip()
+        if not series:
+            msg = _(u'Пустое поле серии документа')
+            raise forms.ValidationError(msg)
+        return series
+
+    def clean_number(self):
+        number = self.cleaned_data.get('number').strip()
+        if not number:
+            msg = _(u'Пустое поле номера документа')
+            raise forms.ValidationError(msg)
+        return number
+
 class DeathCertificateForm(ValidDataMixin, StrippedStringsMixin, forms.ModelForm):
     class Meta:
         model = DeathCertificate
