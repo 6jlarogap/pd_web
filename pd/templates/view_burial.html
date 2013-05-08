@@ -28,19 +28,30 @@
         {% if b.ugh %}
             <dt>{% trans "УГХ" %}:</dt><dd>{{ b.ugh }}</dd>
         {% endif %}
-        <dt>{% trans "Заявитель-ЮЛ" %}:</dt><dd><a href="">{{ b.applicant_organization|default:"не указано" }}</a></dd>
-        {% if b.agent %}
-            <dt>{% trans "Агент" %}:</dt><dd>{{ b.agent|default:"не указан" }}</dd>
-            <dt>{% trans "Доверенность" %}:</dt><dd>{{ b.dover|default:"не указана" }}</dd>
-        {% elif b.agent_director %}
-            <dt>{% trans "Агент" %}:</dt><dd>{% trans "Директор" %}</dd>
-        {% endif %}
-        {% if user.profile.is_ugh %}
-            {% if b.order.applicant %}
-                <dt>{% trans "от лица" %}</dt><dd>{% trans "ФЛ" %} {{ b.order.applicant }}</dd>
-            {% elif b.order.applicant_organization %}
-                <dt>{% trans "от лица" %}</dt><dd>{% trans "ЮЛ" %} {{ b.order.applicant_organization }} {{ b.order.agent.person|default:"" }}</dd>
+        {% if b.applicant_organization %}
+            <dt>{% trans "Заявитель-ЮЛ" %}:</dt><dd>{{ b.applicant_organization|default:"не указано" }}</dd>
+            {% if b.agent %}
+                <dt>{% trans "Агент" %}:</dt><dd>{{ b.agent|default:"не указан" }}</dd>
+                <dt>{% trans "Доверенность" %}:</dt><dd>{{ b.dover|default:"не указана" }}</dd>
+            {% elif b.agent_director %}
+                <dt>{% trans "Агент" %}:</dt><dd>{% trans "Директор" %}</dd>
             {% endif %}
+            <!-- скрываем от лору то что он может глянуть у себя на вкладке "Заказчик" -->
+            {% if user.profile.is_ugh %}
+                {% if b.order.applicant %}
+                    <dt>{% trans "от лица" %}</dt><dd>{% trans "ФЛ" %} {{ b.order.applicant }}</dd>
+                {% elif b.order.applicant_organization %}
+                    <dt>{% trans "от лица" %}</dt><dd>{% trans "ЮЛ" %} {{ b.order.applicant_organization }} {{ b.order.agent.person|default:"" }}</dd>
+                {% endif %}
+            {% endif %}
+        {% elif b.applicant %}
+            <dt>{% trans "Заявитель-ФЛ" %}:</dt>
+                <dd>{{ b.applicant }}</dd>
+                <dd>{% trans "Адрес:" %} {{ b.applicant.address|default:"не указан" }}</dd>
+                <dd>{% trans "Документ:" %} {{ b.applicant.personid|default:"не указан" }}</dd>
+        {% else %}
+            <dt>{% trans "Заявитель" %}:</dt>
+                <dd>не указан</dd>
         {% endif %}
         <dt>{% trans "Усопший" %}:</dt>
         <dd>

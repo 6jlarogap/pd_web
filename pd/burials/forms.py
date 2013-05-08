@@ -449,8 +449,12 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, forms.Mo
 
     def get_prefix(self, form):
         prefix = u''
-        if form in [self.deadman_form, self.deadman_address_form, self.dc_form]:
+        if form is self.deadman_form:
             prefix = _(u"Усопший ")
+        if form is self.deadman_address_form:
+            prefix = _(u"Усопший, адрес ")
+        if form is self.dc_form:
+            prefix = _(u"Усопший, СоС, ")
         if form in [self.responsible_form, self.responsible_address_form]:
             prefix = _(u"Ответственный ")
         if form in [self.applicant_form, self.applicant_address_form, self.applicant_id_form]:
@@ -671,7 +675,7 @@ class BurialCommitForm(BurialForm):
         if (not self.instance or not self.instance.pk) and self.request.user.profile.is_ugh():
             is_ugh = True
         if is_ugh:
-            if not self.instance.is_archive() and not self.instance.is_transferred():
+            if not self.instance.is_archive() and not self.instance.is_transferred() and not self.request.REQUEST.get('archive'):
                 if not self.cleaned_data.get('applicant_organization'):
                     if not self.applicant_form.is_valid_data():
                         raise forms.ValidationError(_(u"Нужно указать либо Заявителя-ЮЛ, либо Заявителя-ФЛ"))
@@ -682,6 +686,15 @@ class BurialCommitForm(BurialForm):
                 if self.cleaned_data.get('opf') == 'person':
                     if not self.applicant_form.is_valid_data():
                         raise forms.ValidationError(_(u"Нужно указать Заявителя-ФЛ"))
+
+                if self.dc_form.is_valid() and not self.dc_form.cleaned_data.get("s_number"):
+                    raise forms.ValidationError(_(u"Не заполнен номер свидетельства о смерти"))
+                
+                if self.cleaned_data.get('opf') == 'person':
+                    if self.applicant_id_form.is_valid():
+                        for field in ['series', 'number', ]:
+                            if not self.applicant_id_form.cleaned_data.get(field):
+                                raise forms.ValidationError(_(u"Не указаны серия и/или номер документа заявителя"))
 
                 if self.cleaned_data.get('opf') == 'org':
                     if not self.cleaned_data.get('applicant_organization'):
@@ -745,9 +758,6 @@ class BurialCommitForm(BurialForm):
                 if place_number:
                     if not re.match(r'^\d{4}.+',place_number) or int(place_number[:4]) > today.year or not int(place_number[:4]):
                         raise forms.ValidationError(_(u"Номер места должен быть: ГГГГмм...м (год не больше текущего, место)"))
-
-        if self.dc_form.is_valid() and not self.dc_form.cleaned_data.get("s_number"):
-            raise forms.ValidationError(_(u"Не заполнен номер свидетельства о смерти"))
 
         deadman_birth_date = None
         deadman_death_date = None
