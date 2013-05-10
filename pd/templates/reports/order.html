@@ -994,23 +994,47 @@
         <TD ALIGN=LEFT VALIGN=MIDDLE><FONT COLOR="#000000"><BR></FONT></TD>
     </TR>
     <TR>
-        <TD STYLE="border-left: 1px solid #000000" COLSPAN=3 HEIGHT=20 ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000">Номер
-            могилы</FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000; " COLSPAN=6 ALIGN=CENTER VALIGN=MIDDLE SDNUM="1033;0;@"><FONT
-                COLOR="#000000" STYLE="font-size: 170%">{{ order.burial.place.place|default:order.burial.place_number|default_if_none:"" }}</FONT></TD>
-        <TD ALIGN=LEFT VALIGN=MIDDLE><FONT COLOR="#000000"><BR></FONT></TD>
-        <TD ALIGN=LEFT VALIGN=MIDDLE><FONT COLOR="#000000"><BR></FONT></TD>
-        <TD ALIGN=LEFT VALIGN=MIDDLE><FONT COLOR="#000000"><BR></FONT></TD>
-    </TR>
-    <TR>
         <TD STYLE="border-left: 1px solid #000000" COLSPAN=3 HEIGHT=20 ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000">Похороны
             состоятся </FONT></TD>
-        <TD STYLE="border-top: 1px solid #000000" ALIGN=LEFT VALIGN=TOP colspan="6"><FONT COLOR="#000000"
-                                                                                          STYLE="font-size: 170%">
-            {{ order.burial.plan_date|date:"d.m.Y" }}г.
-            в {{ order.burial.plan_time|time:"H" }}ч {{ order.burial.plan_time|time:"i" }}мин. на
-            кладбище: {{ order.burial.cemetery|default_if_none:"" }} <br/> <br/> <br/></FONT></TD>
+        <TD STYLE="border-top: 1px solid #000000" ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000"
+                                                                                STYLE="font-size: 170%"> {{ order.burial.plan_date|date:"d.m.Y"|safe }}г. </FONT>
+        </TD>
+        <TD STYLE="border-top: 1px solid #000000" ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000">в</FONT></TD>
+        <TD STYLE="border-top: 1px solid #000000" ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000"
+                                                                                STYLE="font-size: 170%">{{ order.burial.plan_time|time:"H" }}ч {{ order.burial.plan_time|time:"i" }}мин. </FONT>
+        </TD>
+        <TD STYLE="border-top: 1px solid #000000" ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000">на кладбище:</FONT>
+        </TD>
+        <TD STYLE="border-top: 1px solid #000000; " COLSPAN=2 ALIGN=CENTER VALIGN=TOP><FONT COLOR="#000000"
+                                                                                            STYLE="font-size: 170%">{{ order.burial.cemetery|default_if_none:"" }}</FONT>
+        </TD>
+        <TD ALIGN=LEFT VALIGN=MIDDLE><FONT COLOR="#000000"><BR></FONT></TD>
+        <TD ALIGN=LEFT VALIGN=MIDDLE><FONT COLOR="#000000"><BR></FONT></TD>
+        <TD ALIGN=LEFT VALIGN=MIDDLE><FONT COLOR="#000000"><BR></FONT></TD>
     </TR>
+    {% if order.burial.is_approved %}
+        <TR>
+        <TD STYLE="border-left: 1px solid #000000" COLSPAN=3 HEIGHT=20 ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000"></FONT></TD>
+        <TD COLSPAN="2" STYLE="1px solid #000000" ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000">
+            Участок: {% if order.burial.area.name %}{{ order.burial.area.name}}{% else %}(без названия){% endif %}</FONT>
+        </TD>
+        <TD COLSPAN="1" STYLE="1px solid #000000" ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000">
+            Ряд: {{ order.burial.row|default_if_none:"" }}</FONT>
+        </TD>
+        {%if order.burial.get_place %}
+            <TD COLSPAN="2" STYLE="1px solid #000000" ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000">
+                Место: {{ order.burial.place.place|default:order.burial.place_number|default_if_none:"" }}</FONT>
+            </TD>
+            <TD COLSPAN="2" STYLE="1px solid #000000" ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000">
+                Могила: {{ order.burial.grave_number|default_if_none:"" }}</FONT>
+            </TD>
+        {% else %}
+            <TD STYLE="1px solid #000000" ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000"></FONT>
+            <TD COLSPAN="2" STYLE="1px solid #000000" ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000">
+                Место: новое</FONT>
+        {% endif %}
+        </TR>
+    {% endif %}
     <TR>
         <TD STYLE="border-left: 1px solid #000000" COLSPAN=6 HEIGHT=20 ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000">Заказ
             принял ____________________________________________________________</FONT></TD>
@@ -1186,6 +1210,29 @@
             <TD ALIGN=LEFT VALIGN=MIDDLE><FONT COLOR="#000000"><BR></FONT></TD>
             <TD ALIGN=LEFT VALIGN=MIDDLE><FONT COLOR="#000000"><BR></FONT></TD>
         </TR>
+        {% if order.burial.is_approved %}
+            <TR>
+            <TD STYLE="border-left: 1px solid #000000" COLSPAN=3 HEIGHT=20 ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000"></FONT></TD>
+            <TD COLSPAN="2" STYLE="1px solid #000000" ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000">
+                Участок: {% if order.burial.area.name %}{{ order.burial.area.name}}{% else %}(без названия){% endif %}</FONT>
+            </TD>
+            <TD COLSPAN="1" STYLE="1px solid #000000" ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000">
+                Ряд: {{ order.burial.row|default_if_none:"" }}</FONT>
+            </TD>
+            {%if order.burial.get_place %}
+                <TD COLSPAN="2" STYLE="1px solid #000000" ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000">
+                    Место: {{ order.burial.place.place|default:order.burial.place_number|default_if_none:"" }}</FONT>
+                </TD>
+                <TD COLSPAN="2" STYLE="1px solid #000000" ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000">
+                    Могила: {{ order.burial.grave_number|default_if_none:"" }}</FONT>
+                </TD>
+            {% else %}
+                <TD STYLE="1px solid #000000" ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000"></FONT>
+                <TD COLSPAN="2" STYLE="1px solid #000000" ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000">
+                    Место: новое</FONT>
+            {% endif %}
+            </TR>
+        {% endif %}
         {% if dop_info %}
             <TR>
                 <TD ALIGN=LEFT VALIGN=TOP COLSPAN="10" STYLE="font-size: 170%"><FONT
