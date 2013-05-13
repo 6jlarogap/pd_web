@@ -1031,7 +1031,7 @@
         {% else %}
             <TD STYLE="1px solid #000000" ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000"></FONT>
             <TD COLSPAN="2" STYLE="1px solid #000000" ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000">
-                Место: новое</FONT>
+                Рег. № {{ order.burial.account_number|default_if_none:"" }}</FONT>
         {% endif %}
         </TR>
     {% endif %}
@@ -1229,7 +1229,7 @@
             {% else %}
                 <TD STYLE="1px solid #000000" ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000"></FONT>
                 <TD COLSPAN="2" STYLE="1px solid #000000" ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000">
-                    Место: новое</FONT>
+                    Рег. № {{ order.burial.account_number|default_if_none:"" }}</FONT>
             {% endif %}
             </TR>
         {% endif %}
