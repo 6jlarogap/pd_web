@@ -2,6 +2,10 @@
 
 {% load i18n %}
 
+{% block meta_extra %}
+<meta http-equiv="refresh" content="180" > 
+{% endblock %}
+
 {% block content %}
     <h1>{% trans "Заказы" %}</h1>
     {% include "order_table.html" %}
