@@ -450,6 +450,26 @@ class Burial(models.Model):
         ct = ContentType.objects.get_for_model(self)
         return Log.objects.filter(ct=ct, obj_id=self.pk).order_by('-pk')
 
+    def get_last_decline_reason(self):
+        """
+        Получить причину последнего отказа в захоронении, если в этом захоронении отказано
+        
+        Если причина не указана, возвращаем None
+        """
+        if not self.is_declined():
+            return None
+        ct = ContentType.objects.get_for_model(self)
+        msg_declined = u"Захоронение отклонено"
+        try:
+            logrec = Log.objects.filter(ct=ct, obj_id=self.pk, msg__startswith=msg_declined).order_by('-pk')[0]
+        except IndexError:
+            return None
+        reason = logrec.msg[len(msg_declined):]
+        if reason and reason[0] == ":":
+            reason = reason[1:]
+        reason = reason.strip()
+        return reason if reason else None
+
     def get_documents(self):
         ct = ContentType.objects.get_for_model(self)
         return Report.objects.filter(content_type=ct, object_id=self.pk).order_by('-pk')

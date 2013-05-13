@@ -106,7 +106,14 @@
                 {% with burial=c.get_burial %}{% include "burial_place.html" %}{% endwith %}
             </td>
             <td>{{ c.get_burial.cemetery|default:"" }} / {{ c.get_burial.ugh|default:"" }}</td>
-            <td>{{ c.get_burial.pk|default:"" }}</td>
+            <td>{{ c.get_burial.pk|default:"" }}
+                {% if c.get_burial %}
+                    <br />{{ c.get_burial.status_str }}
+                    {% if c.get_burial.is_declined %}
+                        <br />Причина: {{ c.get_burial.get_last_decline_reason|default_if_none:"не указана" }}
+                    {% endif %}
+                {% endif %}
+            </td>
             <td>
                 {% if c.applicant %}
                     ФЛ {{ c.applicant|default:"" }}
