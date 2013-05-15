@@ -16,12 +16,14 @@ class Cemetery(models.Model):
     PLACE_AREA = 'area'
     PLACE_ROW = 'row'
     PLACE_CEM_YEAR = 'cem_year'
+    PLACE_BURIAL_ACCOUNT_NUMBER = 'burial_account_number'
     PLACE_MANUAL = 'manual'
     PLACE_TYPES = (
         (PLACE_CEMETERY, _(u'По кладбищу')),
         (PLACE_AREA, _(u'По участку')),
         (PLACE_ROW, _(u'По ряду')),
         (PLACE_CEM_YEAR, _(u'Кладбище + год')),
+        (PLACE_BURIAL_ACCOUNT_NUMBER, _(u'По рег. номеру захоронения')),
         (PLACE_MANUAL, _(u'Ручное')),
     )
 
@@ -171,6 +173,8 @@ class Place(models.Model):
     def save(self, *args, **kwargs):
         if self.cemetery and not self.place:
             if self.cemetery.places_algo == Cemetery.PLACE_MANUAL:
+                pass
+            elif self.cemetery.places_algo == Cemetery.PLACE_BURIAL_ACCOUNT_NUMBER:
                 pass
             elif self.cemetery.places_algo == Cemetery.PLACE_ROW:
                 self.set_next_number(cemetery=self.cemetery, area=self.area, row=self.row)
@@ -497,14 +501,16 @@ class Burial(models.Model):
             if not place.responsible:
                 place.responsible = self.get_responsible() # just update responsible
 
+        if not self.account_number:
+            self.set_account_number(user=self.changed_by)
+
         place.cemetery = self.cemetery
         place.area = self.area
         place.row = self.row
+        if self.cemetery and self.cemetery.places_algo == Cemetery.PLACE_BURIAL_ACCOUNT_NUMBER and not self.place_number:
+           self.place_number = self.account_number
         place.place = self.place_number
         place.save()
-
-        if not self.account_number:
-            self.set_account_number(user=self.changed_by)
 
         if not self.fact_date:
             self.fact_date = self.plan_date
