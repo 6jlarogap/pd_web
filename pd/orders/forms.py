@@ -7,7 +7,7 @@ from django.utils.translation import ugettext as _
 
 from burials.models import Burial
 from geo.forms import LocationForm
-from orders.models import Product, Order, OrderItem, CatafalqueData, CoffinData
+from orders.models import Product, Order, OrderItem, CatafalqueData, CoffinData, AddInfoData
 from burials.forms import OPF_CHOICES, EMPTY
 from pd.forms import ChildrenJSONMixin
 from persons.forms import AlivePersonForm, PersonIDForm
@@ -164,6 +164,10 @@ class CatafalqueForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super(CatafalqueForm, self).__init__(*args, **kwargs)
         self.fields['start_place'].widget = forms.TextInput()
+
+class AddInfoForm(forms.ModelForm):
+    class Meta:
+        model = AddInfoData
 
 class CoffinForm(forms.ModelForm):
     size = forms.CharField(label=_(u'Размер'))

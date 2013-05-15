@@ -20,7 +20,7 @@ from django.shortcuts import get_object_or_404
 from logs.models import write_log
 from burials.forms import AddOrgForm, AddAgentForm, AddDoverForm, AddDocTypeForm
 from burials.models import Burial
-from orders.forms import ProductForm, OrderForm, OrderItemFormset, CoffinForm, CatafalqueForm, OrderSearchForm
+from orders.forms import ProductForm, OrderForm, OrderItemFormset, CoffinForm, CatafalqueForm, AddInfoForm, OrderSearchForm
 from orders.models import Product, Order, OrderItem
 from pd.forms import CommentForm
 from reports.models import make_report
@@ -400,6 +400,9 @@ class OrderEditServices(OrderEditProducts):
     def get_catafalque_form(self):
         return CatafalqueForm(data=self.request.POST or None, instance=self.get_object().get_catafalquedata())
 
+    def get_add_info_form(self):
+        return AddInfoForm(data=self.request.POST or None, instance=self.get_object().get_addinfodata())
+
     def get_coffin_form(self):
         return CoffinForm(data=self.request.POST or None, instance=self.get_object().get_coffindata())
 
@@ -407,6 +410,8 @@ class OrderEditServices(OrderEditProducts):
         data = {'order': self.get_object()}
         if self.get_object().has_catafalque():
             data.update({'catafalque_form': self.get_catafalque_form()})
+        if self.get_object().has_catafalque() or self.get_object().has_coffin():
+            data.update({'add_info_form': self.get_add_info_form()})
         if self.get_object().has_coffin():
             data.update({'coffin_form': self.get_coffin_form()})
         return data
@@ -414,16 +419,23 @@ class OrderEditServices(OrderEditProducts):
     def post(self, request, *args, **kwargs):
         self.request = request
         self.catafalque_form = self.get_catafalque_form()
+        self.add_info_form = self.get_add_info_form()
         self.coffin_form = self.get_coffin_form()
         catafalque_ok = not self.get_object().has_catafalque() or self.catafalque_form.is_valid()
+        add_info_ok = not (self.get_object().has_coffin() or self.get_object().has_catafalque()) or self.add_info_form.is_valid()
         coffin_ok = not self.get_object().has_coffin() or self.coffin_form.is_valid()
-        if catafalque_ok and coffin_ok:
+        if catafalque_ok and add_info_ok and coffin_ok:
             self.object = self.get_object()
 
             if self.catafalque_form.is_valid():
                 cat = self.catafalque_form.save(commit=False)
                 cat.order = self.object
                 cat.save()
+
+            if self.add_info_form.is_valid():
+                add_info = self.add_info_form.save(commit=False)
+                add_info.order = self.object
+                add_info.save()
 
             if self.coffin_form.is_valid():
                 coffin = self.coffin_form.save(commit=False)
