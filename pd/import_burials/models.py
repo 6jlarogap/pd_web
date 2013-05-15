@@ -214,7 +214,8 @@ def do_import_burials(csv_fileobj, user):
             except Cemetery.DoesNotExist:
                 cemetery = Cemetery.objects.create(
                     name=row[6], time_begin='10:00', time_end='17:00',
-                    creator=user, ugh=user.profile.org
+                    creator=user, ugh=user.profile.org,
+                    places_algo=Cemetery.PLACE_BURIAL_ACCOUNT_NUMBER
                 )
 
             try:
