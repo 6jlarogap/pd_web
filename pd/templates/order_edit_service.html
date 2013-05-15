@@ -14,6 +14,11 @@
             {{ catafalque_form.as_p }}
         {% endif %}
 
+        {% if order.has_coffin or order.has_catafalque %}
+            <h2>{% trans "Доп. инфо" %}</h2>
+            {{ add_info_form.as_p }}
+        {% endif %}
+
         {% if order.has_coffin %}
             <h2>{% trans "Гроб" %}</h2>
             {{ coffin_form.as_p }}

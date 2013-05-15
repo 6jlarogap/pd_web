@@ -136,6 +136,12 @@ class Order(models.Model):
     def has_catafalque(self):
         return self.orderitem_set.filter(product__ptype=Product.PRODUCT_CATAFALQUE).exists()
 
+    def get_addinfodata(self):
+        try:
+            return self.addinfodata
+        except AddInfoData.DoesNotExist:
+            return
+
     def get_coffindata(self):
         try:
             return self.coffindata
@@ -209,9 +215,12 @@ class CatafalqueData(models.Model):
     end_time = models.TimeField(_(u"Время отпуска клиентом"), null=True)
     cemetery_time = models.TimeField(_(u"Время заезда на кладбище"), null=True)
 
+class AddInfoData(models.Model):
+    order = models.OneToOneField('orders.Order', editable=False)
+    add_info = models.TextField(_(u"Доп.инфо"), blank=True)
+
 class CoffinData(models.Model):
     order = models.OneToOneField('orders.Order', editable=False)
-
     size = models.TextField(_(u"Размер"))
 
 def recount_cost(instance, **kwargs):
