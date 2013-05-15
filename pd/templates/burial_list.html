@@ -130,11 +130,15 @@
                 <td>{{ b.combined_date }}</td>
                 <th>
                     {{ b.status_str|default:"" }}
-                    <br/>
-                    {% if b.annulated %}
-                    <span style="color:red">АННУЛИРОВАНО</span>
-                    <br/>
+                    {% if b.is_declined %}
+                        <br />
+                        Причина: {{ b.get_last_decline_reason|default_if_none:"не указана" }}
                     {% endif %}
+                    {% if b.annulated %}
+                        <br />
+                        <span style="color:red">АННУЛИРОВАНО</span>
+                    {% endif %}
+                    <br/>
                     {{ b.status_dt|default:"" }}
                     <br/>
                     {{ b.changed_by.profile|default:"" }}
