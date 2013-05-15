@@ -99,7 +99,12 @@
                 <td>{% with burial=b %}{% include "burial_place.html" %}{% endwith %}</td>
                 <td>{{ b.deadman|default:""  }}</td>
                 <td>{{ b.combined_date }}</td>
-                <th>{{ b.get_status_display|default:"" }}</th>
+                <th>{{ b.get_status_display|default:"" }}
+                {% if b.is_declined %}
+                    <br />
+                    Причина: {{ b.get_last_decline_reason|default_if_none:"не указана" }}
+                {% endif %}
+                </th>
                 <td>
                     <a class="btn" href="{% url view_burial b.pk %}">{% trans "просмотр" %}</a>
                 </td>
