@@ -1680,6 +1680,29 @@
             <TD ALIGN=LEFT VALIGN=MIDDLE><FONT COLOR="#000000"><BR></FONT></TD>
             <TD ALIGN=LEFT VALIGN=MIDDLE><FONT COLOR="#000000"><BR></FONT></TD>
         </TR>
+        {% if order.burial.is_approved %}
+            <TR>
+            <TD STYLE="border-left: 1px solid #000000" COLSPAN=3 HEIGHT=20 ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000"></FONT></TD>
+            <TD COLSPAN="2" STYLE="1px solid #000000" ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000">
+                Участок: {% if order.burial.area.name %}{{ order.burial.area.name}}{% else %}(без названия){% endif %}</FONT>
+            </TD>
+            <TD COLSPAN="1" STYLE="1px solid #000000" ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000">
+                Ряд: {{ order.burial.row|default_if_none:"" }}</FONT>
+            </TD>
+            {%if order.burial.get_place %}
+                <TD COLSPAN="2" STYLE="1px solid #000000" ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000">
+                    Место: {{ order.burial.place.place|default:order.burial.place_number|default_if_none:"" }}</FONT>
+                </TD>
+                <TD COLSPAN="2" STYLE="1px solid #000000" ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000">
+                    Могила: {{ order.burial.grave_number|default_if_none:"" }}</FONT>
+                </TD>
+            {% else %}
+                <TD STYLE="1px solid #000000" ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000">Место: новое</FONT>
+                <TD COLSPAN="2" STYLE="1px solid #000000" ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000">
+                    Рег. № захоронения: {{ order.burial.account_number|default_if_none:"" }}</FONT>
+            {% endif %}
+            </TR>
+        {% endif %}
         <TR>
             <TD STYLE="border-left: 1px solid #000000" COLSPAN=6 HEIGHT=20 ALIGN=LEFT VALIGN=BOTTOM><B><FONT
                     COLOR="#000000">Все условия заказа подтверждаю___________________________________________</FONT></B>
@@ -1697,7 +1720,7 @@
             <TD ALIGN=LEFT VALIGN=BOTTOM><FONT COLOR="#000000"><BR></FONT></TD>
             <TD ALIGN=LEFT VALIGN=BOTTOM><FONT COLOR="#000000"><BR></FONT></TD>
             <TD COLSPAN=3 ALIGN=CENTER VALIGN=TOP><FONT SIZE=1 COLOR="#000000">(подпись заказчика)</FONT></TD>
-            <TD STYLE="" COLSPAN=3 ALIGN=CENTER VALIGN=TOP><FONT SIZE=1 COLOR="#000000">(расшифровка подписи)</FONT>
+            <TD STYLE="" COLSPAN=3 ALIGN=CENTER VALIGN=TOP><FONT SIZE=1 COLOR="#000000"></FONT>
             </TD>
             <TD ALIGN=LEFT VALIGN=MIDDLE><FONT COLOR="#000000"><BR></FONT></TD>
             <TD ALIGN=LEFT VALIGN=MIDDLE><FONT COLOR="#000000"><BR></FONT></TD>
