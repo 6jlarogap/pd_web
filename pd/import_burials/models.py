@@ -16,7 +16,7 @@ from django.utils.translation import ugettext as _
 from burials.models import Burial, ExhumationRequest, Cemetery, Area, Place, AreaPurpose
 from geo.models import Location, Country, LocationFIAS, DFiasAddrobj, Region, City, Street
 from logs.models import write_log
-from orders.models import Product, Order, OrderItem, CoffinData, CatafalqueData
+from orders.models import Product, Order, OrderItem, CoffinData, CatafalqueData, AddInfoData
 from pd.models import UnclearDate
 from persons.models import AlivePerson, DeadPerson, PersonID, IDDocumentType, DocumentSource, DeathCertificate
 from users.models import Org, Profile, Dover, BankAccount
@@ -358,8 +358,13 @@ def do_import_burials(csv_fileobj, user):
                     write_log(request, b, _(u'Участок не был указан'))
 
                 if row[64]:
-                    #write_log(request, b, _(u'Комментарий: %s') % row[64])
-                    write_log(request, b, row[64])
+                    # В файле импорта: Создано: %s %s' % (b.creator, b.added)
+                    # В журнал должно уйти: Создано: %s' % (b.creator, )
+                    try:
+                        created_by = ' '.join(row[64].split(' ')[0:2])
+                    except:
+                        created_by = row[64]
+                    write_log(request, b, created_by)
 
                 write_log(request, b, _(u'Тип до импорта: %s') % row[1])
 
@@ -480,6 +485,12 @@ def do_import_orders(csv_fileobj):
                     CoffinData.objects.get(order=o)
                 except CoffinData.DoesNotExist:
                     CoffinData.objects.create(order=o, size=print_data['coffin_size'])
+
+            if print_data and print_data.get('add_info'):
+                try:
+                    AddInfoData.objects.get(order=o)
+                except AddInfoData.DoesNotExist:
+                    AddInfoData.objects.create(order=o, add_info=print_data['add_info'])
 
             if print_data and print_data.get('catafalque_time') and print_data.get('catafalque_route'):
                 try:
