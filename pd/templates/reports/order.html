@@ -1233,10 +1233,11 @@
             {% endif %}
             </TR>
         {% endif %}
-        {% if dop_info %}
+        {% if order.addinfodata.add_info %}
             <TR>
+                <TD STYLE="border-left: 1px solid #000000" COLSPAN=3 HEIGHT=20 ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000"></FONT></TD>
                 <TD ALIGN=LEFT VALIGN=TOP COLSPAN="10" STYLE="font-size: 170%"><FONT
-                        COLOR="#000000">{{ dop_info|linebreaksbr|default_if_none:"" }}</FONT></TD>
+                        COLOR="#000000">{{ order.addinfodata.add_info|linebreaksbr }}</FONT></TD>
             </TR>
         {% endif %}
         <TR>
@@ -1458,10 +1459,11 @@
             {% endif %}
             </TR>
         {% endif %}
-        {% if dop_info %}
+        {% if order.addinfodata.add_info %}
             <TR>
+                <TD STYLE="border-left: 1px solid #000000" COLSPAN=3 HEIGHT=20 ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000"></FONT></TD>
                 <TD ALIGN=LEFT VALIGN=TOP COLSPAN="10" STYLE="font-size: 170%"><FONT
-                        COLOR="#000000">{{ dop_info|linebreaksbr|default_if_none:"" }}</FONT></TD>
+                        COLOR="#000000">{{ order.addinfodata.add_info|linebreaksbr }}</FONT></TD>
             </TR>
         {% endif %}
         <TR>
