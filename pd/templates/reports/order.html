@@ -1015,23 +1015,23 @@
     {% if order.burial.is_approved %}
         <TR>
         <TD STYLE="border-left: 1px solid #000000" COLSPAN=3 HEIGHT=20 ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000"></FONT></TD>
-        <TD COLSPAN="2" STYLE="1px solid #000000" ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000">
+        <TD COLSPAN="2" STYLE="1px solid #000000" ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000" STYLE="font-size: 140%">
             Участок: {% if order.burial.area.name %}{{ order.burial.area.name}}{% else %}(без названия){% endif %}</FONT>
         </TD>
-        <TD COLSPAN="1" STYLE="1px solid #000000" ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000">
+        <TD COLSPAN="1" STYLE="1px solid #000000" ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000" STYLE="font-size: 140%">
             Ряд: {{ order.burial.row|default_if_none:"" }}</FONT>
         </TD>
         {%if order.burial.get_place %}
-            <TD COLSPAN="2" STYLE="1px solid #000000" ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000">
+            <TD COLSPAN="2" STYLE="1px solid #000000" ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000" STYLE="font-size: 140%">
                 Место: {{ order.burial.place.place|default:order.burial.place_number|default_if_none:"" }}</FONT>
             </TD>
-            <TD COLSPAN="2" STYLE="1px solid #000000" ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000">
+            <TD COLSPAN="2" STYLE="1px solid #000000" ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000" STYLE="font-size: 140%">
                 Могила: {{ order.burial.grave_number|default_if_none:"" }}</FONT>
             </TD>
         {% else %}
-            <TD STYLE="1px solid #000000" ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000">Место: новое</FONT>
-            <TD COLSPAN="2" STYLE="1px solid #000000" ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000">
-                Рег. № захоронения: {{ order.burial.account_number|default_if_none:"" }}</FONT>
+            <TD STYLE="1px solid #000000" ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000" STYLE="font-size: 140%">Место:<br /> новое</FONT>
+            <TD COLSPAN="2" STYLE="1px solid #000000" ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000" STYLE="font-size: 140%">
+                Рег. № захоронения:<br /> {{ order.burial.account_number|default_if_none:"" }}</FONT>
         {% endif %}
         </TR>
     {% endif %}
@@ -1213,23 +1213,23 @@
         {% if order.burial.is_approved %}
             <TR>
             <TD STYLE="border-left: 1px solid #000000" COLSPAN=3 HEIGHT=20 ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000"></FONT></TD>
-            <TD COLSPAN="2" STYLE="1px solid #000000" ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000">
+            <TD COLSPAN="2" STYLE="1px solid #000000" ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000" STYLE="font-size: 140%">
                 Участок: {% if order.burial.area.name %}{{ order.burial.area.name}}{% else %}(без названия){% endif %}</FONT>
             </TD>
-            <TD COLSPAN="1" STYLE="1px solid #000000" ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000">
+            <TD COLSPAN="1" STYLE="1px solid #000000" ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000" STYLE="font-size: 140%">
                 Ряд: {{ order.burial.row|default_if_none:"" }}</FONT>
             </TD>
             {%if order.burial.get_place %}
-                <TD COLSPAN="2" STYLE="1px solid #000000" ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000">
+                <TD COLSPAN="2" STYLE="1px solid #000000" ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000" STYLE="font-size: 140%">
                     Место: {{ order.burial.place.place|default:order.burial.place_number|default_if_none:"" }}</FONT>
                 </TD>
-                <TD COLSPAN="2" STYLE="1px solid #000000" ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000">
+                <TD COLSPAN="2" STYLE="1px solid #000000" ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000" STYLE="font-size: 140%">
                     Могила: {{ order.burial.grave_number|default_if_none:"" }}</FONT>
                 </TD>
             {% else %}
-                <TD STYLE="1px solid #000000" ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000">Место: новое</FONT>
-                <TD COLSPAN="2" STYLE="1px solid #000000" ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000">
-                    Рег. № захоронения: {{ order.burial.account_number|default_if_none:"" }}</FONT>
+                <TD STYLE="1px solid #000000" ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000" STYLE="font-size: 140%">Место:<br /> новое</FONT>
+                <TD COLSPAN="2" STYLE="1px solid #000000" ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000" STYLE="font-size: 140%">
+                    Рег. № захоронения:<br /> {{ order.burial.account_number|default_if_none:"" }}</FONT>
             {% endif %}
             </TR>
         {% endif %}
@@ -1439,23 +1439,23 @@
         {% if order.burial.is_approved %}
             <TR>
             <TD STYLE="border-left: 1px solid #000000" COLSPAN=3 HEIGHT=20 ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000"></FONT></TD>
-            <TD COLSPAN="2" STYLE="1px solid #000000" ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000">
+            <TD COLSPAN="2" STYLE="1px solid #000000" ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000" STYLE="font-size: 140%">
                 Участок: {% if order.burial.area.name %}{{ order.burial.area.name}}{% else %}(без названия){% endif %}</FONT>
             </TD>
-            <TD COLSPAN="1" STYLE="1px solid #000000" ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000">
+            <TD COLSPAN="1" STYLE="1px solid #000000" ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000" STYLE="font-size: 140%">
                 Ряд: {{ order.burial.row|default_if_none:"" }}</FONT>
             </TD>
             {%if order.burial.get_place %}
-                <TD COLSPAN="2" STYLE="1px solid #000000" ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000">
+                <TD COLSPAN="2" STYLE="1px solid #000000" ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000" STYLE="font-size: 140%">
                     Место: {{ order.burial.place.place|default:order.burial.place_number|default_if_none:"" }}</FONT>
                 </TD>
-                <TD COLSPAN="2" STYLE="1px solid #000000" ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000">
+                <TD COLSPAN="2" STYLE="1px solid #000000" ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000" STYLE="font-size: 140%">
                     Могила: {{ order.burial.grave_number|default_if_none:"" }}</FONT>
                 </TD>
             {% else %}
-                <TD STYLE="1px solid #000000" ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000">Место: новое</FONT>
-                <TD COLSPAN="2" STYLE="1px solid #000000" ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000">
-                    Рег. № захоронения: {{ order.burial.account_number|default_if_none:"" }}</FONT>
+                <TD STYLE="1px solid #000000" ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000" STYLE="font-size: 140%">Место:<br /> новое</FONT>
+                <TD COLSPAN="2" STYLE="1px solid #000000" ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000" STYLE="font-size: 140%">
+                    Рег. № захоронения:<br /> {{ order.burial.account_number|default_if_none:"" }}</FONT>
             {% endif %}
             </TR>
         {% endif %}
@@ -1668,23 +1668,23 @@
         {% if order.burial.is_approved %}
             <TR>
             <TD STYLE="border-left: 1px solid #000000" COLSPAN=3 HEIGHT=20 ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000"></FONT></TD>
-            <TD COLSPAN="2" STYLE="1px solid #000000" ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000">
+            <TD COLSPAN="2" STYLE="1px solid #000000" ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000" STYLE="font-size: 140%">
                 Участок: {% if order.burial.area.name %}{{ order.burial.area.name}}{% else %}(без названия){% endif %}</FONT>
             </TD>
-            <TD COLSPAN="1" STYLE="1px solid #000000" ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000">
+            <TD COLSPAN="1" STYLE="1px solid #000000" ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000" STYLE="font-size: 140%">
                 Ряд: {{ order.burial.row|default_if_none:"" }}</FONT>
             </TD>
             {%if order.burial.get_place %}
-                <TD COLSPAN="2" STYLE="1px solid #000000" ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000">
+                <TD COLSPAN="2" STYLE="1px solid #000000" ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000" STYLE="font-size: 140%">
                     Место: {{ order.burial.place.place|default:order.burial.place_number|default_if_none:"" }}</FONT>
                 </TD>
-                <TD COLSPAN="2" STYLE="1px solid #000000" ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000">
+                <TD COLSPAN="2" STYLE="1px solid #000000" ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000" STYLE="font-size: 140%">
                     Могила: {{ order.burial.grave_number|default_if_none:"" }}</FONT>
                 </TD>
             {% else %}
-                <TD STYLE="1px solid #000000" ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000">Место: новое</FONT>
-                <TD COLSPAN="2" STYLE="1px solid #000000" ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000">
-                    Рег. № захоронения: {{ order.burial.account_number|default_if_none:"" }}</FONT>
+                <TD STYLE="1px solid #000000" ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000" STYLE="font-size: 140%">Место:<br /> новое</FONT>
+                <TD COLSPAN="2" STYLE="1px solid #000000" ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000" STYLE="font-size: 140%">
+                    Рег. № захоронения:<br /> {{ order.burial.account_number|default_if_none:"" }}</FONT>
             {% endif %}
             </TR>
         {% endif %}
