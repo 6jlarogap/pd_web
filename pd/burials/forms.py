@@ -398,7 +398,7 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, forms.Mo
         self.applicant_id_form = PersonIDForm(data=data, prefix='applicant-pid', instance=applicant_id)
 
         if self.request.user.profile.is_loru():
-            return [self.deadman_form, self.deadman_address_form, self.dc_form, self.ofiles_form, 
+            return [self.deadman_form, self.deadman_address_form, self.dc_form, self.bfiles_form, 
                     self.responsible_form, self.responsible_address_form]
         else:
             return [self.deadman_form, self.deadman_address_form, self.dc_form, self.bfiles_form, 
