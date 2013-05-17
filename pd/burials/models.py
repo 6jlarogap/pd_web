@@ -537,6 +537,15 @@ class Burial(models.Model):
         else:
             return ''
 
+    def order_applicant(self):
+        result = None
+        if self.order:
+            if self.order.applicant_organization:
+                result = self.order.applicant_organization
+            elif self.order.applicant:
+                result = self.order.applicant
+        return result
+
 def burial_file(instance, filename):
     fname = u'.'.join(map(pytils.translit.slugify, filename.rsplit('.', 1)))
     return os.path.join('bfiles', str(instance.burial.pk), fname)

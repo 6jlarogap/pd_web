@@ -207,6 +207,29 @@ span.annotation_style_by_filter {
     font-weight: normal;
 }
 
+.ce14a {
+    padding: 0.028in;
+    font-family: Arial Cyr;
+    border-bottom-width: 0, 0109cm;
+    border-bottom-style: none;
+    border-bottom-color: #3c3c3c;
+    background-color: transparent;
+    border-left-style: none;
+    border-right-width: 0, 0321cm;
+    border-right-style: solid;
+    border-right-color: #3c3c3c;
+    border-top-style: none;
+    vertical-align: top;
+    text-align: right;
+    margin-left: 0in;
+    writing-mode: page;
+    font-size: 11pt;
+    font-style: normal;
+    text-shadow: none;
+    text-decoration: none ! important;
+    font-weight: normal;
+}
+
 .ce15 {
     padding: 0.028in;
     font-family: Arial Cyr;
@@ -368,6 +391,27 @@ span.annotation_style_by_filter {
     font-weight: normal;
 }
 
+.ce21a {
+    padding: 0.028in;
+    font-family: Arial;
+    border-bottom-width: 0, 0321cm;
+    border-bottom-style: solid;
+    border-bottom-color: #3c3c3c;
+    background-color: transparent;
+    border-left-style: none;
+    border-right-style: none;
+    border-top-style: none;
+    vertical-align: top;
+    text-align: center ! important;
+    margin-left: 0in;
+    writing-mode: page;
+    font-size: 12pt;
+    font-style: normal;
+    text-shadow: none;
+    text-decoration: none ! important;
+    font-weight: normal;
+}
+
 .ce22 {
     padding: 0.028in;
     font-family: Arial;
@@ -513,6 +557,27 @@ span.annotation_style_by_filter {
     margin-left: 0in;
     writing-mode: page;
     font-size: 18pt;
+    font-style: italic;
+    text-shadow: none;
+    text-decoration: none ! important;
+    font-weight: bold;
+}
+
+.ce3a {
+    padding: 0.028in;
+    font-family: Arial;
+    border-bottom-style: none;
+    background-color: transparent;
+    border-left-width: 0, 0321cm;
+    border-left-style: solid;
+    border-left-color: #3c3c3c;
+    border-right-style: none;
+    border-top-style: none;
+    vertical-align: middle;
+    text-align: center ! important;
+    margin-left: 0in;
+    writing-mode: page;
+    font-size: 15pt;
     font-style: italic;
     text-shadow: none;
     text-decoration: none ! important;
@@ -839,6 +904,10 @@ ODF styles with no properties representable as CSS
     <td colspan="9" style="text-align:left;width:1.6752in; border-right-width: 0, 0321cm; border-right-style: solid; border-right-color: #3c3c3c; " class="ce3"><p>Уведомление</p></td>
     <td style="text-align:left;width:0.7984in; " class="Default"> </td>
 </tr>
+<tr class="ro3">
+    <td colspan="9" style="text-align:left;width:1.6752in; border-right-width: 0, 0321cm; border-right-style: solid; border-right-color: #3c3c3c; " class="ce3a"><p>о регистрации умершего</p></td>
+    <td style="text-align:left;width:0.7984in; " class="Default"> </td>
+</tr>
 <tr class="ro4">
     <td colspan="3" style="text-align:left;width:1.6752in; " class="ce4"> </td>
     <td style="text-align:left;width:0.6547in; " class="ce20"> </td>
@@ -850,31 +919,28 @@ ODF styles with no properties representable as CSS
     <td style="text-align:left;width:0.7984in; " class="ce35"> </td>
 </tr>
 <tr class="ro5">
-    <td style="text-align:left;width:1.6752in; " class="ce5"><p>Захоронение </p></td>
-    <td colspan="8" style="text-align:left;width:0.6173in; " class="ce14">{{ burial.deadman|default:"" }}</td>
+    <td colspan="3" style="text-align:left;width:1.6752in; " class="ce5"><p></p></td>
+    <td colspan="6" style="text-align:right;width:0.6173in; " class="ce14a">{{ burial.order_applicant|default_if_none:"(не указан)" }}&nbsp;&nbsp;</td>
+    <td style="text-align:left;width:0.7984in; " class="Default"> </td>
+</tr>
+<tr class="ro4">
+    <td colspan="3" style="text-align:left;width:1.6752in; " class="ce4"> </td>
+    <td style="text-align:left;width:0.6547in; " class="ce20"> </td>
+    <td style="text-align:left;width:1.4484in; " class="ce22"> </td>
+    <td style="text-align:left;width:1.0457in; " class="ce22"> </td>
+    <td style="text-align:left;width:0.8189in; " class="ce22"> </td>
+    <td style="text-align:left;width:0.9193in; " class="ce22"> </td>
+    <td style="text-align:left;width:1.1965in; " class="ce34"> </td>
+    <td style="text-align:left;width:0.7984in; " class="ce35"> </td>
+</tr>
+<tr class="ro5">
+    <td colspan="3" style="text-align:left;width:1.6752in; " class="ce5"><p>Захоронение умершего</p></td>
+    <td colspan="6" style="text-align:left;width:0.6173in; " class="ce14">{{ burial.deadman|default:"" }}</td>
     <td style="text-align:left;width:0.7984in; " class="Default"> </td>
 </tr>
 <tr class="ro5">
-    <td style="text-align:left;width:1.6752in; " class="ce5"><p>на кладбище</p></td>
-    <td colspan="4" style="text-align:left;width:0.6173in; " class="ce15">{{ burial.cemetery }}</td>
-    <td style="text-align:left;width:1.0457in; " class="ce26"><p>участок №</p></td>
-    <td style="text-align:left;width:0.8189in; " class="ce19">{{ burial.area.name }}</td>
-    <td style="text-align:left;width:0.9193in; " class="ce26"><p>место №</p></td>
-    <td style="text-align:left;width:1.1965in; " class="ce14">{{ burial.place_number }}</td>
-    <td style="text-align:left;width:0.7984in; " class="Default"> </td>
-</tr>
-<tr class="ro5">
-    <td style="text-align:left;width:1.6752in; " class="ce5"><p></p></td>
-    <td colspan="6"></td>
-    <td style="text-align:right;width:0.9193in; " class="ce23"><p>могила №</p></td>
-    <td style="text-align:left;width:1.1965in; " class="ce14">{{ burial.grave_number }}</td>
-    <td style="text-align:left;width:0.7984in; " class="Default"> </td>
-</tr>
-<tr class="ro5">
-    <td style="text-align:left;width:1.6752in; " class="ce5"><p>зарегистрировано</p></td>
-    <td colspan="3" style="text-align:left;width:0.6173in; " class="ce21">{{ burial.approved_dt|date:"d.m.Y" }}</td>
-    <td style="text-align:left;width:1.4484in; " class="ce23"><p> за учетным №</p></td>
-    <td colspan="4" style="text-align:left;width:1.0457in; " class="ce14">{{ burial.account_number }}</td>
+    <td colspan="4" style="text-align:left;width:1.6752in; " class="ce5"><p>Последнее место регистрации умершего</p></td>
+    <td colspan="5" style="text-align:left;width:0.6173in; " class="ce14">{{ burial.deadman.address|default:"" }}</td>
     <td style="text-align:left;width:0.7984in; " class="Default"> </td>
 </tr>
 <tr class="ro5">
@@ -886,9 +952,23 @@ ODF styles with no properties representable as CSS
 </tr>
 <tr class="ro5">
     <td style="text-align:left;width:1.6752in; " class="ce5"><p>дата захоронения</p></td>
-    <td colspan="3" style="text-align:left;width:0.6173in; " class="ce21">{{ burial.plan_date|date:"d.m.Y" }}</td>
+    <td colspan="3" style="text-align:left;width:0.6173in; " class="ce21a">{{ burial.plan_date|date:"d.m.Y" }}</td>
     <td style="text-align:left;width:1.4484in; " class="ce23" colspan="2"><p>время захоронения</p></td>
     <td colspan="3" style="text-align:left;width:1.0457in; " class="ce14">{{ burial.plan_time|time:"H:i" }}</td>
+    <td style="text-align:left;width:0.7984in; " class="Default"> </td>
+</tr>
+<tr class="ro5">
+    <td style="text-align:left;width:1.6752in; " class="ce5"><p>на кладбище</p></td>
+    <td colspan="4" style="text-align:left;width:0.6173in; " class="ce21a">{{ burial.cemetery }}</td>
+    <td style="text-align:left;width:1.4484in; " class="ce23"><p></p></td>
+    <td colspan="3" style="text-align:left;width:1.0457in; " class="ce14">Участок № {{ burial.area.name|default:"(без номера)"}},<br />могила № {{ burial.place_number|default:"(не указан)" }}</td>
+    <td style="text-align:left;width:0.7984in; " class="Default"> </td>
+</tr>
+<tr class="ro5">
+    <td style="text-align:left;width:1.6752in; " class="ce5"><p><b>Регистрационный номер</b></p></td>
+    <td colspan="3" style="text-align:left;width:0.6173in; " class="ce21a"><b>{{ burial.account_number }}</b></td>
+    <td style="text-align:left;width:1.4484in; " class="ce23" colspan="2"><p></p></td>
+    <td colspan="3" style="text-align:left;width:1.0457in; " class="ce28"></td>
     <td style="text-align:left;width:0.7984in; " class="Default"> </td>
 </tr>
 <tr class="ro5">
@@ -899,9 +979,9 @@ ODF styles with no properties representable as CSS
     <td style="text-align:left;width:0.7984in; " class="Default"> </td>
 </tr>
 <tr class="ro6">
-    <td style="text-align:left;width:1.6752in; " class="ce7"><p>Регистратор</p></td>
-    <td colspan="5" style="text-align:left;width:0.6173in; " class="ce17"> </td>
-    <td colspan="3" style="text-align:left;width:0.8189in; " class="ce28"><p>({{ user.profile}})</p></td>
+    <td colspan="3" style="text-align:left;width:1.6752in; " class="ce7"><p>Старший инспектор сектора технического обеспечения УГХ</p></td>
+    <td colspan="2" style="text-align:left;width:0.6173in; " class="ce17"> </td>
+    <td colspan="4" style="text-align:left;width:0.8189in; " class="ce28"><p></p></td>
     <td style="text-align:left;width:0.7984in; " class="Default"> </td>
 </tr>
 <tr class="ro7">
@@ -952,6 +1032,10 @@ ODF styles with no properties representable as CSS
     <td colspan="9" style="text-align:left;width:1.6752in; border-right-width: 0, 0321cm; border-right-style: solid; border-right-color: #3c3c3c; " class="ce3"><p>Уведомление</p></td>
     <td style="text-align:left;width:0.7984in; " class="Default"> </td>
 </tr>
+<tr class="ro3">
+    <td colspan="9" style="text-align:left;width:1.6752in; border-right-width: 0, 0321cm; border-right-style: solid; border-right-color: #3c3c3c; " class="ce3a"><p>о регистрации умершего</p></td>
+    <td style="text-align:left;width:0.7984in; " class="Default"> </td>
+</tr>
 <tr class="ro4">
     <td colspan="3" style="text-align:left;width:1.6752in; " class="ce4"> </td>
     <td style="text-align:left;width:0.6547in; " class="ce20"> </td>
@@ -963,30 +1047,28 @@ ODF styles with no properties representable as CSS
     <td style="text-align:left;width:0.7984in; " class="ce35"> </td>
 </tr>
 <tr class="ro5">
-    <td style="text-align:left;width:1.6752in; " class="ce5"><p>Захоронение </p></td>
-    <td colspan="8" style="text-align:left;width:0.6173in; " class="ce14">{{ burial.deadman|default:"" }}</td>
+    <td colspan="3" style="text-align:left;width:1.6752in; " class="ce5"><p></p></td>
+    <td colspan="6" style="text-align:right;width:0.6173in; " class="ce14a">{{ burial.order_applicant|default_if_none:"(не указан)" }}&nbsp;&nbsp;</td>
+    <td style="text-align:left;width:0.7984in; " class="Default"> </td>
+</tr>
+<tr class="ro4">
+    <td colspan="3" style="text-align:left;width:1.6752in; " class="ce4"> </td>
+    <td style="text-align:left;width:0.6547in; " class="ce20"> </td>
+    <td style="text-align:left;width:1.4484in; " class="ce22"> </td>
+    <td style="text-align:left;width:1.0457in; " class="ce22"> </td>
+    <td style="text-align:left;width:0.8189in; " class="ce22"> </td>
+    <td style="text-align:left;width:0.9193in; " class="ce22"> </td>
+    <td style="text-align:left;width:1.1965in; " class="ce34"> </td>
+    <td style="text-align:left;width:0.7984in; " class="ce35"> </td>
+</tr>
+<tr class="ro5">
+    <td colspan="3" style="text-align:left;width:1.6752in; " class="ce5"><p>Захоронение умершего</p></td>
+    <td colspan="6" style="text-align:left;width:0.6173in; " class="ce14">{{ burial.deadman|default:"" }}</td>
     <td style="text-align:left;width:0.7984in; " class="Default"> </td>
 </tr>
 <tr class="ro5">
-    <td style="text-align:left;width:1.6752in; " class="ce5"><p>на кладбище</p></td>
-    <td colspan="4" style="text-align:left;width:0.6173in; " class="ce15">{{ burial.cemetery }}</td>
-    <td style="text-align:left;width:1.0457in; " class="ce26"><p>участок №</p></td>
-    <td style="text-align:left;width:0.8189in; " class="ce19">{{ burial.area.name }}</td>
-    <td style="text-align:left;width:0.9193in; " class="ce26"><p>место №</p></td>
-    <td style="text-align:left;width:1.1965in; " class="ce14">{{ burial.place_number }}</td>
-    <td style="text-align:left;width:0.7984in; " class="Default"> </td>
-</tr>
-<tr class="ro5">
-    <td style="text-align:left;width:1.6752in; " class="ce5"><p></p></td>
-    <td colspan="6"></td>
-    <td style="text-align:right;width:0.9193in; " class="ce23"><p>могила №</p></td>
-    <td style="text-align:left;width:1.1965in; " class="ce14">{{ burial.grave_number }}</td>
-    <td style="text-align:left;width:0.7984in; " class="Default"> </td>
-<tr class="ro5">
-    <td style="text-align:left;width:1.6752in; " class="ce5"><p>зарегистрировано</p></td>
-    <td colspan="3" style="text-align:left;width:0.6173in; " class="ce21">{{ burial.approved_dt|date:"d.m.Y" }}</td>
-    <td style="text-align:left;width:1.4484in; " class="ce23"><p> за учетным №</p></td>
-    <td colspan="4" style="text-align:left;width:1.0457in; " class="ce14">{{ burial.account_number }}</td>
+    <td colspan="4" style="text-align:left;width:1.6752in; " class="ce5"><p>Последнее место регистрации умершего</p></td>
+    <td colspan="5" style="text-align:left;width:0.6173in; " class="ce14">{{ burial.deadman.address|default:"" }}</td>
     <td style="text-align:left;width:0.7984in; " class="Default"> </td>
 </tr>
 <tr class="ro5">
@@ -998,12 +1080,25 @@ ODF styles with no properties representable as CSS
 </tr>
 <tr class="ro5">
     <td style="text-align:left;width:1.6752in; " class="ce5"><p>дата захоронения</p></td>
-    <td colspan="3" style="text-align:left;width:0.6173in; " class="ce21">{{ burial.plan_date|date:"d.m.Y" }}</td>
+    <td colspan="3" style="text-align:left;width:0.6173in; " class="ce21a">{{ burial.plan_date|date:"d.m.Y" }}</td>
     <td style="text-align:left;width:1.4484in; " class="ce23" colspan="2"><p>время захоронения</p></td>
     <td colspan="3" style="text-align:left;width:1.0457in; " class="ce14">{{ burial.plan_time|time:"H:i" }}</td>
     <td style="text-align:left;width:0.7984in; " class="Default"> </td>
 </tr>
 <tr class="ro5">
+    <td style="text-align:left;width:1.6752in; " class="ce5"><p>на кладбище</p></td>
+    <td colspan="4" style="text-align:left;width:0.6173in; " class="ce21a">{{ burial.cemetery }}</td>
+    <td style="text-align:left;width:1.4484in; " class="ce23"><p></p></td>
+    <td colspan="3" style="text-align:left;width:1.0457in; " class="ce14">Участок № {{ burial.area.name|default:"(без номера)"}},<br />могила № {{ burial.place_number|default:"(не указан)" }}</td>
+    <td style="text-align:left;width:0.7984in; " class="Default"> </td>
+</tr>
+<tr class="ro5">
+    <td style="text-align:left;width:1.6752in; " class="ce5"><p><b>Регистрационный номер</b></p></td>
+    <td colspan="3" style="text-align:left;width:0.6173in; " class="ce21a"><b>{{ burial.account_number }}</b></td>
+    <td style="text-align:left;width:1.4484in; " class="ce23" colspan="2"><p></p></td>
+    <td colspan="3" style="text-align:left;width:1.0457in; " class="ce28"></td>
+    <td style="text-align:left;width:0.7984in; " class="Default"> </td>
+</tr><tr class="ro5">
     <td style="text-align:left;width:1.6752in; " class="ce6"> </td>
     <td colspan="3" style="text-align:left;width:0.6173in; " class="ce16"> </td>
     <td style="text-align:left;width:1.4484in; " class="ce24"> </td>
@@ -1011,9 +1106,9 @@ ODF styles with no properties representable as CSS
     <td style="text-align:left;width:0.7984in; " class="Default"> </td>
 </tr>
 <tr class="ro6">
-    <td style="text-align:left;width:1.6752in; " class="ce7"><p>Регистратор</p></td>
-    <td colspan="5" style="text-align:left;width:0.6173in; " class="ce17"> </td>
-    <td colspan="3" style="text-align:left;width:0.8189in; " class="ce28"><p>({{ user.profile }})</p></td>
+    <td colspan="3" style="text-align:left;width:1.6752in; " class="ce7"><p>Старший инспектор сектора технического обеспечения УГХ</p></td>
+    <td colspan="2" style="text-align:left;width:0.6173in; " class="ce17"> </td>
+    <td colspan="4" style="text-align:left;width:0.8189in; " class="ce28"><p></p></td>
     <td style="text-align:left;width:0.7984in; " class="Default"> </td>
 </tr>
 <tr class="ro7">
@@ -1023,7 +1118,7 @@ ODF styles with no properties representable as CSS
     <td colspan="3" style="text-align:left;width:0.6547in; " class="ce21"><p>(подпись)</p></td>
     <td colspan="3" style="text-align:left;width:0.8189in; " class="ce29"><p>(расшифровка подписи)</p></td>
     <td style="text-align:left;width:0.7984in; " class="ce36"> </td>
-</tr>
+
 <tr class="ro8">
     <td style="text-align:left;width:1.6752in; " class="ce9"> </td>
     <td style="text-align:left;width:0.6173in; " class="ce9"> </td>

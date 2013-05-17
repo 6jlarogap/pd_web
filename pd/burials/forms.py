@@ -557,7 +557,7 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, forms.Mo
 
         self.instance.save()
 
-        if self.bfiles_form.is_valid():
+        if self.bfiles_form.is_valid() and self.request.FILES.get('bfile'):
             original_name=self.request.FILES.get('bfile').name
             saved_file = self.bfiles_form.save(burial=self.instance, user=self.request.user,
                                   original_name=original_name)
