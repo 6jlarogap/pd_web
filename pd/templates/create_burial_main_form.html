@@ -64,6 +64,8 @@
     </div>
     <h3>{% trans "Свидетельство о смерти" %}</h3>
     {{ form.dc_form.as_p }}
+    <h3>{% trans "Файлы" %}</h3>
+    {{ form.ofiles_form.as_p }}
 </div>
 
 <h2>{% trans "Место" %} {{ form.instance.get_place|default:"" }}</h2>

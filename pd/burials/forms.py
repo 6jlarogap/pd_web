@@ -18,7 +18,7 @@ from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext_lazy as _
 from django.db.models.query_utils import Q
 
-from burials.models import Cemetery, Area, Burial, Place, ExhumationRequest
+from burials.models import Cemetery, Area, Burial, Place, ExhumationRequest, BurialFiles
 from geo.forms import LocationForm
 from orders.models import Order
 from pd.forms import PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin
@@ -365,6 +365,7 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, forms.Mo
         self.deadman_form = DeadPersonForm(request=self.request, data=data, prefix='deadman', instance=deadman)
         deadman_addr = deadman and deadman.address
         self.deadman_address_form = LocationForm(data=data, prefix='deadman-address', instance=deadman_addr)
+        self.ofiles_form = BurialFilesForm(data=self.request.POST or None, files=self.request.FILES or None)
         try:
             dc = self.instance and self.instance.deadman and self.instance.deadman.deathcertificate
         except DeathCertificate.DoesNotExist:
@@ -396,10 +397,10 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, forms.Mo
         self.applicant_id_form = PersonIDForm(data=data, prefix='applicant-pid', instance=applicant_id)
 
         if self.request.user.profile.is_loru():
-            return [self.deadman_form, self.deadman_address_form, self.dc_form,
+            return [self.deadman_form, self.deadman_address_form, self.dc_form, self.ofiles_form, 
                     self.responsible_form, self.responsible_address_form]
         else:
-            return [self.deadman_form, self.deadman_address_form, self.dc_form,
+            return [self.deadman_form, self.deadman_address_form, self.dc_form, self.ofiles_form, 
                     self.responsible_form, self.responsible_address_form,
                     self.applicant_form, self.applicant_address_form, self.applicant_id_form]
 
@@ -553,7 +554,10 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, forms.Mo
         else:
             self.instance.burial_type = Burial.BURIAL_NEW
 
-        self.instance.save()
+            self.instance.save()
+
+        if self.ofiles_form.is_valid():
+            self.ofiles_form.save(burial=self.instance)
 
         if self.instance.is_closed():
             self.instance.close(old_place=self.old_place)
@@ -572,6 +576,19 @@ class PlaceForm(forms.ModelForm):
     class Meta:
         model = Place
         exclude = ['responsible', ]
+
+class BurialFilesForm(forms.ModelForm):
+    class Meta:
+        model = BurialFiles
+        exclude = ['burial', 'date_of_creation', ]
+
+    def save(self, burial=None, user=None, commit=True, *args, **kwargs):
+        burial_file = super(BurialFilesForm, self).save(commit=False, *args, **kwargs)
+        burial_file.burial = burial
+        if commit:
+            burial_file.save()
+        return burial_file
+
 
 class BurialCommitForm(BurialForm):
     def __init__(self, *args, **kwargs):

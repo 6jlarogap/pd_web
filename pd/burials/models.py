@@ -534,6 +534,22 @@ class Burial(models.Model):
         else:
             return ''
 
+class BurialFiles(models.Model):
+    """
+    Файлы, связанные с захоронением
+    """
+    burial = models.ForeignKey(Burial)
+    ofile = models.FileField(u"Файл", upload_to="ofiles", blank=True)
+    comment = models.CharField(u"Описание", max_length=96, blank=True)
+    date_of_creation = models.DateTimeField(auto_now_add=True)
+
+    def delete(self):
+        if self.ofile != "":
+            if os.path.exists(self.ofile.path):
+                os.remove(self.ofile.path)
+            self.ofile = ""
+        super(BurialFiles, self).delete()
+
 class Reason(models.Model):
     TYPE_BACK = 'back'
     TYPE_DECLINE = 'decline'
