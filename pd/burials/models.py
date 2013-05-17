@@ -5,6 +5,9 @@ from django.db import models
 from django.utils.translation import ugettext_lazy as _
 from pd.models import UnclearDateModelField
 
+import os
+import pytils
+
 from persons.models import DeadPerson
 from reports.models import Report
 from users.models import Org, Profile, Dover
@@ -534,13 +537,20 @@ class Burial(models.Model):
         else:
             return ''
 
+def burial_file(instance, filename):
+    fname = u'.'.join(map(pytils.translit.slugify, filename.rsplit('.', 1)))
+    return os.path.join('bfiles', str(instance.burial.pk), fname)
+
 class BurialFiles(models.Model):
     """
     Файлы, связанные с захоронением
     """
     burial = models.ForeignKey(Burial)
-    ofile = models.FileField(u"Файл", upload_to="ofiles", blank=True)
+    bfile = models.FileField(u"Файл", upload_to=burial_file, blank=True)
     comment = models.CharField(u"Описание", max_length=96, blank=True)
+    original_name = models.CharField(max_length=255, editable=False)
+    creator = models.ForeignKey('auth.User', verbose_name=_(u"Владелец"), editable=False, null=True,
+                                on_delete=models.PROTECT)
     date_of_creation = models.DateTimeField(auto_now_add=True)
 
     def delete(self):

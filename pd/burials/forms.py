@@ -26,6 +26,7 @@ from persons.forms import DeadPersonForm, DeathCertificateForm, AlivePersonForm,
 from persons.models import DeathCertificate, PersonID, IDDocumentType
 from users.forms import OrgForm
 from users.models import Org, Profile, Dover
+from logs.models import write_log
 
 
 OPF_CHOICES = (('person', _(u'ФЛ')), ('org', _(u'ЮЛ')))
@@ -365,7 +366,7 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, forms.Mo
         self.deadman_form = DeadPersonForm(request=self.request, data=data, prefix='deadman', instance=deadman)
         deadman_addr = deadman and deadman.address
         self.deadman_address_form = LocationForm(data=data, prefix='deadman-address', instance=deadman_addr)
-        self.ofiles_form = BurialFilesForm(data=self.request.POST or None, files=self.request.FILES or None)
+        self.bfiles_form = BurialFilesForm(data=self.request.POST or None, files=self.request.FILES or None)
         try:
             dc = self.instance and self.instance.deadman and self.instance.deadman.deathcertificate
         except DeathCertificate.DoesNotExist:
@@ -400,7 +401,7 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, forms.Mo
             return [self.deadman_form, self.deadman_address_form, self.dc_form, self.ofiles_form, 
                     self.responsible_form, self.responsible_address_form]
         else:
-            return [self.deadman_form, self.deadman_address_form, self.dc_form, self.ofiles_form, 
+            return [self.deadman_form, self.deadman_address_form, self.dc_form, self.bfiles_form, 
                     self.responsible_form, self.responsible_address_form,
                     self.applicant_form, self.applicant_address_form, self.applicant_id_form]
 
@@ -554,10 +555,13 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, forms.Mo
         else:
             self.instance.burial_type = Burial.BURIAL_NEW
 
-            self.instance.save()
+        self.instance.save()
 
-        if self.ofiles_form.is_valid():
-            self.ofiles_form.save(burial=self.instance)
+        if self.bfiles_form.is_valid():
+            original_name=self.request.FILES.get('bfile').name
+            saved_file = self.bfiles_form.save(burial=self.instance, user=self.request.user,
+                                  original_name=original_name)
+            write_log(request, self.instance, _(u'Добавлен файл'), "%s, %s"% (saved_file.comment, original_name, ))
 
         if self.instance.is_closed():
             self.instance.close(old_place=self.old_place)
@@ -582,12 +586,14 @@ class BurialFilesForm(forms.ModelForm):
         model = BurialFiles
         exclude = ['burial', 'date_of_creation', ]
 
-    def save(self, burial=None, user=None, commit=True, *args, **kwargs):
-        burial_file = super(BurialFilesForm, self).save(commit=False, *args, **kwargs)
-        burial_file.burial = burial
+    def save(self, burial=None, user=None, original_name=None, commit=True, *args, **kwargs):
+        burial_file_rec = super(BurialFilesForm, self).save(commit=False, *args, **kwargs)
+        burial_file_rec.burial = burial
+        burial_file_rec.creator = user
+        burial_file_rec.original_name = original_name
         if commit:
-            burial_file.save()
-        return burial_file
+            burial_file_rec.save()
+        return burial_file_rec
 
 
 class BurialCommitForm(BurialForm):

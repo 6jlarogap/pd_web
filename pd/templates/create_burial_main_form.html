@@ -64,8 +64,6 @@
     </div>
     <h3>{% trans "Свидетельство о смерти" %}</h3>
     {{ form.dc_form.as_p }}
-    <h3>{% trans "Файлы" %}</h3>
-    {{ form.ofiles_form.as_p }}
 </div>
 
 <h2>{% trans "Место" %} {{ form.instance.get_place|default:"" }}</h2>
@@ -122,4 +120,20 @@
     </div>
 </div>
 
-
+<br />
+<h2>{% trans "Файлы" %}</h2>
+{% for f in b.burialfiles_set.all %}
+    <b>{{ forloop.counter }} &nbsp; {{ f.ofile.name }}</b>
+    <a href="/media/{{ f.bfile }}">открыть</a>
+    <!-- <a href="/burialfile/delete/{{ b.pk }}/{{ f.pk }}/">удалить</a>
+    <br />
+    -->
+    <small>Описание:</small> <b>{{ f.comment|default:"(без описания)" }}</b>
+    <br />
+    <!-- <a href="/burialfilecomment/{{ f.pk }}/" target="_self">редактировать комментарий</a>
+    <br />
+    -->
+    <small><i>{{ f.creator.profile.org }} / {{ f.creator }}</i>, {{ f.date_of_creation }}</small><br /><br />
+{%  endfor %}
+<h4>{% trans "Новый:" %}</h4>
+{{ form.bfiles_form.as_p }}
