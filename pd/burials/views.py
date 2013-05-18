@@ -12,7 +12,7 @@ from django.views.generic.edit import CreateView, UpdateView
 from django.views.generic.list import ListView
 
 from burials.forms import CemeteryForm, AreaFormset, PlaceEditForm, AddOrgForm, AreaMergeForm
-from burials.models import Cemetery, Place, Area
+from burials.models import Cemetery, Place, Area, BurialFiles
 from burials.burials_views import *
 from logs.models import write_log
 from users.models import Profile, Org
@@ -323,4 +323,13 @@ class AutocompleteAreas(View):
 
 autocomplete_areas = AutocompleteAreas.as_view()
 
+class DeleteBurialfile(LoginRequiredMixin, View):
+    def get(self, request, *args, **kwargs):
+        try:
+            burial_file = BurialFiles.objects.get(pk=kwargs['pk'])
+        except BurialFiles.DoesNotExist:
+            return redirect('/')        # foolproof
+        burial_file.delete()
+        return redirect('edit_burial', burial_file.burial.pk)
 
+delete_burialfile = DeleteBurialfile.as_view()

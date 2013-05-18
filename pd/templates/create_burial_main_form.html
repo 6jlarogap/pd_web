@@ -125,12 +125,10 @@
 {% for f in b.burialfiles_set.all %}
     <b>{{ forloop.counter }} &nbsp; {{ f.ofile.name }}</b>
     <a href="/media/{{ f.bfile }}">открыть</a>
-    <!-- <a href="/burialfile/delete/{{ b.pk }}/{{ f.pk }}/">удалить</a>
-    <br />
-    -->
+    <a href="/burialfiles/{{ f.pk }}/delete/">удалить</a>&nbsp; &nbsp; 
     <small>Описание:</small> <b>{{ f.comment|default:"(без описания)" }}</b>
     <br />
-    <!-- <a href="/burialfilecomment/{{ f.pk }}/" target="_self">редактировать комментарий</a>
+    <!-- <a href="/burialfiles/{{ f.pk }}/editcomment/" target="_self">редактировать комментарий</a>
     <br />
     -->
     <small><i>{{ f.creator.profile.org }} / {{ f.creator }}</i>, {{ f.date_of_creation }}</small><br /><br />
