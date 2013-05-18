@@ -117,6 +117,13 @@
         <dt>{% trans "План. дата и время" %}:</dt>
         <dd>{{ b.plan_date|date:"d.m.Y"|default:"не указана" }} {{ b.plan_time|time:"H:i"|default:"Время не указано" }}</dd>
         <dt>{% trans "Факт. дата" %}:</dt><dd>{{ b.fact_date|date:"d.m.Y"|default:"не указана" }}</dd>
+        <dt>{% trans "Файлы" %}:</dt>
+        {% for f in b.burialfiles_set.all %}
+            <dd>{{ forloop.counter }}. &nbsp;
+            <a href="/media/{{ f.bfile }}">{{ f.comment|default:"(без описания)" }}</a></dd>
+        {% empty %}
+            <dd>отсутствуют</dd>
+        {% endfor %}
     </dl>
     <form action="" method="POST">
         {% csrf_token %}
