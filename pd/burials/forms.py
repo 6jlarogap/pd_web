@@ -585,17 +585,22 @@ class BurialFilesForm(forms.ModelForm):
     class Meta:
         model = BurialFiles
         exclude = ['burial', 'date_of_creation', ]
-        
+
+    MAX_UPLOAD_SIZE_MB = 2
+
     def clean_comment(self):
         self.cleaned_data['comment'] = self.cleaned_data['comment'].strip()
         return self.cleaned_data['comment']
 
     def clean(self):
-        comment = self.cleaned_data['comment']
-        bfile = self.cleaned_data['bfile']
+        cleaned_data = super(BurialFilesForm, self).clean()
+        comment = cleaned_data['comment']
+        bfile = cleaned_data['bfile']
         if comment and not bfile or not comment and bfile:
             raise forms.ValidationError(_(u'Надо задавать и файл, и описание; или ни файл, ни описание'))
-        return self.cleaned_data
+        if bfile and bfile.size > self.MAX_UPLOAD_SIZE_MB * 2**20:
+            raise forms.ValidationError(_(u'Превышен максимальный размер файла') + u", %s Мб." % self.MAX_UPLOAD_SIZE_MB)
+        return cleaned_data
 
     def save(self, burial=None, user=None, original_name=None, commit=True, *args, **kwargs):
         burial_file_rec = super(BurialFilesForm, self).save(commit=False, *args, **kwargs)
