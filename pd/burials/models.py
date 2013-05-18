@@ -558,15 +558,15 @@ class BurialFiles(models.Model):
     bfile = models.FileField(u"Файл", upload_to=burial_file, blank=True)
     comment = models.CharField(u"Описание", max_length=96, blank=True)
     original_name = models.CharField(max_length=255, editable=False)
-    creator = models.ForeignKey('auth.User', verbose_name=_(u"Владелец"), editable=False, null=True,
+    creator = models.ForeignKey('auth.User', verbose_name=_(u"Создатель"), editable=False, null=True,
                                 on_delete=models.PROTECT)
     date_of_creation = models.DateTimeField(auto_now_add=True)
 
     def delete(self):
-        if self.ofile != "":
-            if os.path.exists(self.ofile.path):
-                os.remove(self.ofile.path)
-            self.ofile = ""
+        if self.bfile != "":
+            if os.path.exists(self.bfile.path):
+                os.remove(self.bfile.path)
+            self.bfile = ""
         super(BurialFiles, self).delete()
 
 class Reason(models.Model):
