@@ -585,6 +585,17 @@ class BurialFilesForm(forms.ModelForm):
     class Meta:
         model = BurialFiles
         exclude = ['burial', 'date_of_creation', ]
+        
+    def clean_comment(self):
+        self.cleaned_data['comment'] = self.cleaned_data['comment'].strip()
+        return self.cleaned_data['comment']
+
+    def clean(self):
+        comment = self.cleaned_data['comment']
+        bfile = self.cleaned_data['bfile']
+        if comment and not bfile or not comment and bfile:
+            raise forms.ValidationError(_(u'Надо задавать и файл, и описание; или ни файл, ни описание'))
+        return self.cleaned_data
 
     def save(self, burial=None, user=None, original_name=None, commit=True, *args, **kwargs):
         burial_file_rec = super(BurialFilesForm, self).save(commit=False, *args, **kwargs)
