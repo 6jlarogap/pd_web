@@ -316,7 +316,7 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, forms.Mo
             ugh = self.request.user.profile.org
             loru_list = Org.objects.all()
             self.fields['applicant_organization'].queryset = loru_list
-            self.fields['applicant_organization'].inactive_queryset = loru_list.filter(profile__user__is_active=False)
+            self.fields['applicant_organization'].inactive_queryset = loru_list.filter(Q(profile__user__is_active=False) | Q(profile=None))
             self.fields['agent'].queryset = Profile.objects.filter(org__in=loru_list, is_agent=True).select_related('user')
             self.fields['dover'].queryset = Dover.objects.filter(agent__org__in=loru_list)
 
