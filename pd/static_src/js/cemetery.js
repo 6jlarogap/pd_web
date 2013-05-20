@@ -506,6 +506,7 @@ $(function() {
         //TODO validation on client!
         $.post('/burials/add_org/', data, function(data){
             if (data.pk) {
+                ORGS_INACTIVE.push(data.pk.toString())
                 var select = $('#id_applicant_organization');
                 select.append('<option value="'+data.pk+'" selected="selected">'+data.label+'</option>');
                 select.val(data.pk);
