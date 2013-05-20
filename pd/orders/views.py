@@ -105,11 +105,7 @@ class OrderList(LORURequiredMixin, ListView):
         return self.filtered_orders()
 
     def filtered_orders(self):
-        orders = Order.objects.filter(loru=self.request.user.profile.org).select_related(
-            'burial', 'burial__ugh', 'burial__cemetery', 'burial__area', 'burial__responsible', 'burial__responsible',
-            'burial__changed_by', 'burial__deadman', 'applicant_organization', 'applicant', 'loru',
-            'agent', 'agent__person', 'agent__org',
-        ).annotate(item_count=Count('orderitem'))
+        orders = Order.objects.filter(loru=self.request.user.profile.org).annotate(item_count=Count('orderitem'))
 
         form = self.get_form()
         if form.data and form.is_valid():
@@ -178,6 +174,13 @@ class OrderList(LORURequiredMixin, ListView):
         else:
             orders = orders.exclude(annulated=True)
 
+        orders_count = orders.count()
+        orders = orders.select_related(
+            'burial', 'burial__ugh', 'burial__cemetery', 'burial__area', 'burial__responsible', 'burial__responsible',
+            'burial__changed_by', 'burial__deadman', 'applicant_organization', 'applicant', 'loru',
+            'agent', 'agent__person', 'agent__org',
+        )
+
         sort = self.request.GET.get('sort', '-order_date')
         SORT_FIELDS = {
             'order_date': 'dt',
@@ -206,10 +209,16 @@ class OrderList(LORURequiredMixin, ListView):
             s = [s]
         orders = orders.order_by(*s)
 
+        orders.count = lambda: orders_count
         return orders
 
     def get_form(self):
         return OrderSearchForm(data=self.request.GET or None)
+
+    def get_paginator(self, queryset, per_page, orphans=0, allow_empty_first_page=True):
+        paginator = super(OrderList, self).get_paginator(queryset, per_page, orphans, allow_empty_first_page)
+        paginator._count = queryset.count()
+        return paginator
 
     def get_context_data(self, **kwargs):
         data = super(OrderList, self).get_context_data(**kwargs)
@@ -234,10 +243,15 @@ class OrderDashboard(OrderList):
 
     def get_queryset(self):
         src_qs = self.filtered_orders()
+        orders_count = src_qs.count()
+
         ex_q = Q(burial__status__in=[Burial.STATUS_CLOSED, Burial.STATUS_EXHUMATED])
         ex_q |= Q(burial__annulated=True)
         inc_q = Q(loru=self.request.user.profile.org, burial__source_type=Burial.SOURCE_FULL)
-        return src_qs.filter(inc_q).exclude(ex_q)
+
+        qs = src_qs.filter(inc_q).exclude(ex_q)
+        qs.count = lambda: orders_count
+        return qs
 
 order_dashboard = OrderDashboard.as_view()
 

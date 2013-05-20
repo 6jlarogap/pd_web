@@ -86,29 +86,31 @@
             </th>
             <th class="no-print"></th>
         </tr>
-        {% for b in burials %}
-            <tr class="
-                {% if b.is_ready %}burial_blue{% endif %}
-                {% if b.is_approved %}burial_green{% endif %}
-                {% if b.is_declined or b.is_backed %}burial_red{% endif %}
-            ">
-                <td>{{ b.pk }}</td>
-                <td>{{ b.account_number|default:"" }}</td>
-                {% if user.profile.is_ugh %}<th>{{ b.loru_name }}</th>{% endif %}
-                <td>{{ b.cemetery|default:"" }} / {{ b.ugh_name|default:"" }}</td>
-                <td>{% with burial=b %}{% include "burial_place.html" %}{% endwith %}</td>
-                <td>{{ b.deadman|default:""  }}</td>
-                <td>{{ b.combined_date }}</td>
-                <th>{{ b.get_status_display|default:"" }}
-                {% if b.is_declined %}
-                    <br />
-                    Причина: {{ b.get_last_decline_reason|default_if_none:"не указана" }}
-                {% endif %}
-                </th>
-                <td>
-                    <a class="btn" href="{% url view_burial b.pk %}">{% trans "просмотр" %}</a>
-                </td>
-            </tr>
-        {% endfor %}
+        {% if burials.count %}
+            {% for b in burials %}
+                <tr class="
+                    {% if b.is_ready %}burial_blue{% endif %}
+                    {% if b.is_approved %}burial_green{% endif %}
+                    {% if b.is_declined or b.is_backed %}burial_red{% endif %}
+                ">
+                    <td>{{ b.pk }}</td>
+                    <td>{{ b.account_number|default:"" }}</td>
+                    {% if user.profile.is_ugh %}<th>{{ b.loru_name }}</th>{% endif %}
+                    <td>{{ b.cemetery|default:"" }} / {{ b.ugh_name|default:"" }}</td>
+                    <td>{% with burial=b %}{% include "burial_place.html" %}{% endwith %}</td>
+                    <td>{{ b.deadman|default:""  }}</td>
+                    <td>{{ b.combined_date }}</td>
+                    <th>{{ b.get_status_display|default:"" }}
+                    {% if b.is_declined %}
+                        <br />
+                        Причина: {{ b.get_last_decline_reason|default_if_none:"не указана" }}
+                    {% endif %}
+                    </th>
+                    <td>
+                        <a class="btn" href="{% url view_burial b.pk %}">{% trans "просмотр" %}</a>
+                    </td>
+                </tr>
+            {% endfor %}
+        {% endif %}
     </table>
 {% endblock %}

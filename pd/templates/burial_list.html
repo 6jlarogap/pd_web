@@ -19,7 +19,7 @@
         </div>
     </div>
 
-    <p>{% trans "Найдено:" %} {{ paginator.count|default:object_list.count }}</p>
+    <p>{% trans "Найдено:" %} {{ paginator.count|default:0 }}</p>
 
     <table class="table table-bordered table-striped">
         <tr>
