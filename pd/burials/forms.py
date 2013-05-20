@@ -964,7 +964,7 @@ class AddDoverForm(forms.ModelForm):
 class AddOrgForm(OrgForm):
     class Meta:
         model = Org
-        exclude = ['type', 'off_address', ]
+        exclude = ['off_address', ]
 
 class AddDocTypeForm(forms.ModelForm):
     class Meta:
