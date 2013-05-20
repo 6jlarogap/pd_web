@@ -10,7 +10,7 @@ class Log(models.Model):
     """
     user = models.ForeignKey('auth.User', null=True, editable=False, verbose_name=_(u"Пользователь"))
     ct = models.ForeignKey('contenttypes.ContentType', null=True, editable=False, verbose_name=_(u"Тип"))
-    obj_id = models.PositiveIntegerField(null=True, editable=False, verbose_name=_(u"ID объекта"))
+    obj_id = models.PositiveIntegerField(null=True, editable=False, verbose_name=_(u"ID объекта"), db_index=True)
     obj = generic.GenericForeignKey(ct_field='ct', fk_field='obj_id')
     dt = models.DateTimeField(auto_now_add=True, verbose_name=_(u"Время"))
     msg = models.TextField(editable=False, verbose_name=_(u"Описание"))

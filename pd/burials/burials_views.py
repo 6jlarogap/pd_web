@@ -78,10 +78,14 @@ class DashboardView(BurialsListGenericMixin, TemplateView):
         s = SORT_FIELDS[sort]
         if not isinstance(s, list):
             s = [s]
-        burials = Burial.objects.filter(qs).exclude(ex_qs).distinct().select_related(
+
+        burials_clean = Burial.objects.filter(qs).exclude(ex_qs).distinct()
+        burials_count = burials_clean.count()
+        burials = burials_clean.select_related(
             'ugh', 'place', 'place__cemetery', 'place__area', 'deadman', 'deadman__address', 'cemetery', 'area',
             'applicant_organization', 'applicant', 'changed_by', 'changed_by__profile', 'cemetery__ugh', 'area__purpose'
         ).order_by(*s)
+        burials.count = lambda: burials_count
         return {
             'burials': burials,
             'sort': sort,
@@ -123,7 +127,9 @@ class BurialView(BurialsListGenericMixin, DetailView):
 
     def get_queryset(self):
         qs = self.get_qs_filter()
-        return Burial.objects.filter(qs).distinct()
+        burials = Burial.objects.filter(qs)
+        burials = burials.select_related('cemetery', 'order', 'applicant_organization', 'ugh', 'deadman', 'deadman__address')
+        return burials
 
     def post(self, request, *args, **kwargs):
         if not request.user.is_authenticated():
@@ -209,6 +215,11 @@ class BurialView(BurialsListGenericMixin, DetailView):
 
     def get_close_form(self):
         return BurialCloseForm(request=self.request, data=self.request.POST or None, instance=self.get_object())
+
+    def get_object(self, queryset=None):
+        if not hasattr(self, '_object'):
+            self._object = super(BurialView, self).get_object(queryset=queryset)
+        return self._object
 
     def get_context_data(self, **kwargs):
         b = self.get_object()
@@ -328,10 +339,14 @@ class BurialsListView(ListView):
         s = SORT_FIELDS[sort]
         if not isinstance(s, list):
             s = [s]
+
+        burials_count = burials.count()
         burials = burials.select_related(
             'ugh', 'place', 'place__cemetery', 'place__area', 'deadman', 'deadman__address', 'cemetery', 'area',
-            'applicant_organization', 'applicant', 'changed_by', 'changed_by__profile', 'cemetery__ugh', 'area__purpose'
+            'applicant_organization', 'applicant', 'changed_by', 'changed_by__profile', 'cemetery__ugh',
+            'area__purpose', 'responsible',
         ).order_by(*s)
+        burials.count = lambda: burials_count
         return burials
 
     def get_template_names(self):
