@@ -612,6 +612,16 @@ class BurialFilesForm(forms.ModelForm):
             burial_file_rec.save()
         return burial_file_rec
 
+class BurialfileCommentEditForm(forms.ModelForm):
+    class Meta:
+        model = BurialFiles
+        fields = ['comment', ]
+
+    def clean_comment(self):
+        self.cleaned_data['comment'] = self.cleaned_data['comment'].strip()
+        if not self.cleaned_data['comment']:
+            raise forms.ValidationError(_(u'Описание не может быть пустым'))
+        return self.cleaned_data['comment']
 
 class BurialCommitForm(BurialForm):
     def __init__(self, *args, **kwargs):

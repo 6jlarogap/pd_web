@@ -11,7 +11,7 @@ from django.views.generic.detail import DetailView
 from django.views.generic.edit import CreateView, UpdateView
 from django.views.generic.list import ListView
 
-from burials.forms import CemeteryForm, AreaFormset, PlaceEditForm, AddOrgForm, AreaMergeForm
+from burials.forms import CemeteryForm, AreaFormset, PlaceEditForm, AddOrgForm, AreaMergeForm, BurialfileCommentEditForm
 from burials.models import Cemetery, Place, Area, BurialFiles
 from burials.burials_views import *
 from logs.models import write_log
@@ -333,3 +333,21 @@ class DeleteBurialfile(LoginRequiredMixin, View):
         return redirect('edit_burial', burial_file.burial.pk)
 
 delete_burialfile = DeleteBurialfile.as_view()
+
+class BurialfileCommentEdit(LoginRequiredMixin, UpdateView):
+    template_name = 'edit_burialfile_comment.html'
+    form_class = BurialfileCommentEditForm
+
+    def get_object(self):
+        return get_object_or_404(BurialFiles, pk=self.kwargs['pk'])
+
+    def post(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        form = self.get_form(self.get_form_class())
+        if form.is_valid():
+            form.save()
+            return redirect('edit_burial', self.get_object().burial.pk)
+        context = self.get_context_data(object=self.object, form=form)
+        return self.render_to_response(context)
+
+edit_burialfile_comment = BurialfileCommentEdit.as_view()
