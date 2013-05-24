@@ -965,6 +965,21 @@ class AddOrgForm(OrgForm):
     class Meta:
         model = Org
         exclude = ['off_address', ]
+    
+    def __init__(self, request, *args, **kwargs):
+        super(AddOrgForm, self).__init__(request, *args, **kwargs)
+        choices = []
+        for profile_type in Org.PROFILE_TYPES:
+            if request.user.profile.is_ugh():
+                if profile_type[0] in (Org.PROFILE_LORU, Org.PROFILE_ZAGS, Org.PROFILE_COMPANY, ):
+                    choices.append(profile_type)
+            elif request.user.profile.is_loru():
+                if profile_type[0] in (Org.PROFILE_ZAGS, Org.PROFILE_COMPANY, ):
+                    choices.append(profile_type)
+            else:
+                if profile_type[0] in (Org.PROFILE_ZAGS, ):
+                    choices.append(profile_type)
+        self.fields['type'] = forms.fields.TypedChoiceField(choices=choices)
 
 class AddDocTypeForm(forms.ModelForm):
     class Meta:
