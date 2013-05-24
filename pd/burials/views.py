@@ -195,7 +195,7 @@ class AddOrgView(LoginRequiredMixin, View):
             return HttpResponse(json.dumps({'pk': new_org.pk, 'label': u'%s' % new_org}), mimetype='application/json')
         else:
             errors = '\n'.join([u'%s: %s' % (k,v[0]) for k,v in f.errors.items()])
-            return HttpResponse(_(u'Ошибки\n: %s') % errors, mimetype='text/plain')
+            return HttpResponse(_(u'Ошибки:\n %s') % errors, mimetype='text/plain')
 
 add_org = AddOrgView.as_view()
 
