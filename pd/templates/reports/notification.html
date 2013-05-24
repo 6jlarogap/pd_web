@@ -223,7 +223,7 @@ span.annotation_style_by_filter {
     text-align: right;
     margin-left: 0in;
     writing-mode: page;
-    font-size: 11pt;
+    font-size: 12pt;
     font-style: normal;
     text-shadow: none;
     text-decoration: none ! important;
@@ -920,7 +920,15 @@ ODF styles with no properties representable as CSS
 </tr>
 <tr class="ro5">
     <td colspan="3" style="text-align:left;width:1.6752in; " class="ce5"><p></p></td>
-    <td colspan="6" style="text-align:right;width:0.6173in; " class="ce14a">{{ burial.order_applicant|default_if_none:"(не указан)" }}&nbsp;&nbsp;</td>
+    <td colspan="6" style="text-align:right;width:0.6173in; " class="ce14a">
+    {% if burial.applicant_organization %}
+        {{ burial.applicant_organization }}
+    {% elif burial.applicant %}
+        {{ burial.applicant }}
+    {% else %}
+        (не указан)
+    {% endif %}
+    &nbsp;&nbsp;</td>
     <td style="text-align:left;width:0.7984in; " class="Default"> </td>
 </tr>
 <tr class="ro4">
@@ -961,7 +969,7 @@ ODF styles with no properties representable as CSS
     <td style="text-align:left;width:1.6752in; " class="ce5"><p>на кладбище</p></td>
     <td colspan="4" style="text-align:left;width:0.6173in; " class="ce21a">{{ burial.cemetery }}</td>
     <td style="text-align:left;width:1.4484in; " class="ce23"><p></p></td>
-    <td colspan="3" style="text-align:left;width:1.0457in; " class="ce14">Участок № {{ burial.area.name|default:"(без номера)"}},<br />могила № {{ burial.place_number|default:"(не указан)" }}</td>
+    <td colspan="3" style="text-align:left;width:1.0457in; " class="ce14">Участок № {{ burial.area.name|default:"(без номера)"}},<br />могила № {{ burial.place_number_guess|default:"(не указан)" }}</td>
     <td style="text-align:left;width:0.7984in; " class="Default"> </td>
 </tr>
 <tr class="ro5">
@@ -1048,7 +1056,15 @@ ODF styles with no properties representable as CSS
 </tr>
 <tr class="ro5">
     <td colspan="3" style="text-align:left;width:1.6752in; " class="ce5"><p></p></td>
-    <td colspan="6" style="text-align:right;width:0.6173in; " class="ce14a">{{ burial.order_applicant|default_if_none:"(не указан)" }}&nbsp;&nbsp;</td>
+    <td colspan="6" style="text-align:right;width:0.6173in; " class="ce14a">
+    {% if burial.applicant_organization %}
+        {{ burial.applicant_organization }}
+    {% elif burial.applicant %}
+        {{ burial.applicant }}
+    {% else %}
+        (не указан)
+    {% endif %}
+    &nbsp;&nbsp;</td>
     <td style="text-align:left;width:0.7984in; " class="Default"> </td>
 </tr>
 <tr class="ro4">
@@ -1089,7 +1105,7 @@ ODF styles with no properties representable as CSS
     <td style="text-align:left;width:1.6752in; " class="ce5"><p>на кладбище</p></td>
     <td colspan="4" style="text-align:left;width:0.6173in; " class="ce21a">{{ burial.cemetery }}</td>
     <td style="text-align:left;width:1.4484in; " class="ce23"><p></p></td>
-    <td colspan="3" style="text-align:left;width:1.0457in; " class="ce14">Участок № {{ burial.area.name|default:"(без номера)"}},<br />могила № {{ burial.place_number|default:"(не указан)" }}</td>
+    <td colspan="3" style="text-align:left;width:1.0457in; " class="ce14">Участок № {{ burial.area.name|default:"(без номера)"}},<br />могила № {{ burial.place_number_guess|default:"(не указан)" }}</td>
     <td style="text-align:left;width:0.7984in; " class="Default"> </td>
 </tr>
 <tr class="ro5">
