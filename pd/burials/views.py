@@ -187,8 +187,7 @@ class AddOrgView(LoginRequiredMixin, View):
     def post(self, request, *args, **kwargs):
         f = AddOrgForm(request=self.request, data=request.POST, prefix='loru')
         if f.is_valid():
-            new_org = f.save(commit=False)
-            new_org.save()
+            new_org = f.save()
             f.put_log_data(msg=_(u'Данные сохранены'))
             if request.user.profile.is_ugh() and new_org.type == Org.PROFILE_LORU:
                 new_org.ugh_list.create(ugh=request.user.profile.org)
