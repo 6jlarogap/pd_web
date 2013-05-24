@@ -88,10 +88,12 @@ class Org(models.Model):
     PROFILE_ZAGS = 'zags'
     PROFILE_LORU = 'loru'
     PROFILE_UGH = 'ugh'
+    PROFILE_COMPANY = 'company'
     PROFILE_TYPES = (
+        (PROFILE_COMPANY, _(u"Юрлицо")),
+        (PROFILE_ZAGS, _(u"ЗАГС")),
         (PROFILE_LORU, _(u"ЛОРУ")),
         (PROFILE_UGH, _(u"УГХ")),
-        (PROFILE_ZAGS, _(u"ЗАГС")),
     )
 
     type = models.CharField(_(u"Тип"), max_length=255, choices=PROFILE_TYPES)

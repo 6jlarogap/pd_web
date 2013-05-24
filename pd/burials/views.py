@@ -187,16 +187,15 @@ class AddOrgView(LoginRequiredMixin, View):
     def post(self, request, *args, **kwargs):
         f = AddOrgForm(request=self.request, data=request.POST, prefix='loru')
         if f.is_valid():
-            loru = f.save(commit=False)
-            loru.type = Org.PROFILE_LORU
-            loru.save()
+            new_org = f.save(commit=False)
+            new_org.save()
             f.put_log_data(msg=_(u'Данные сохранены'))
-            if request.user.profile.is_ugh():
-                loru.ugh_list.create(ugh=request.user.profile.org)
-            return HttpResponse(json.dumps({'pk': loru.pk, 'label': u'%s' % loru}), mimetype='application/json')
+            if request.user.profile.is_ugh() and new_org.type == Org.PROFILE_LORU:
+                new_org.ugh_list.create(ugh=request.user.profile.org)
+            return HttpResponse(json.dumps({'pk': new_org.pk, 'label': u'%s' % new_org}), mimetype='application/json')
         else:
             errors = '\n'.join([u'%s: %s' % (k,v[0]) for k,v in f.errors.items()])
-            return HttpResponse(_(u'Данные невалидны: %s') % errors, mimetype='text/plain')
+            return HttpResponse(_(u'Ошибки\n: %s') % errors, mimetype='text/plain')
 
 add_org = AddOrgView.as_view()
 
