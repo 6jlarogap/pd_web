@@ -546,6 +546,24 @@ class Burial(models.Model):
                 result = self.order.applicant
         return result
 
+    def place_number_guess(self):
+        """
+        Номер места, если еще не записан
+        
+        Когда захоронение согласовано, для кладбищ с авто нумерацией мест
+        номер места еще может быть не сформирован. Но если это кладбище
+        имеет алгоритм авто расстановки мест "По рег. номеру захоронения",
+        то будущий номер места известен: номер захоронения,
+        что и просит указать заказчик в уведомлении о захоронении.
+        """
+        result = self.place_number
+        if not result and \
+            self.cemetery and \
+            self.cemetery.places_algo == Cemetery.PLACE_BURIAL_ACCOUNT_NUMBER and \
+            self.account_number:
+           result = self.account_number
+        return result
+    
 def burial_file(instance, filename):
     fname = u'.'.join(map(pytils.translit.slugify, filename.rsplit('.', 1)))
     return os.path.join('bfiles', str(instance.burial.pk), fname)
