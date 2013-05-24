@@ -973,8 +973,11 @@ class AddOrgForm(OrgForm):
             if request.user.profile.is_ugh():
                 if profile_type[0] in (Org.PROFILE_LORU, Org.PROFILE_ZAGS, Org.PROFILE_COMPANY, ):
                     choices.append(profile_type)
-            else:
+            elif request.user.profile.is_loru():
                 if profile_type[0] in (Org.PROFILE_ZAGS, Org.PROFILE_COMPANY, ):
+                    choices.append(profile_type)
+            else:
+                if profile_type[0] in (Org.PROFILE_ZAGS, ):
                     choices.append(profile_type)
         self.fields['type'] = forms.fields.TypedChoiceField(choices=choices)
 
