@@ -982,6 +982,19 @@ class AddOrgForm(OrgForm):
         label = self.fields['type'].label
         self.fields['type'] = forms.fields.TypedChoiceField(choices=choices)
         self.fields['type'].label = label
+        for field in ('name', 'full_name', 'inn', 'director', ):
+            self.fields[field].required = False
+
+    def clean(self):
+        cleaned_data = super(AddOrgForm, self).clean()
+        errors = []
+        for field in ('name', 'full_name', 'inn', 'director', ):
+            if not cleaned_data[field].strip():
+                errors.append(u"%s : обязательное поле" % unicode(self.fields[field].label))
+        if errors:
+            raise forms.ValidationError("\n".join(errors))
+        return cleaned_data
+
 
 class AddDocTypeForm(forms.ModelForm):
     class Meta:

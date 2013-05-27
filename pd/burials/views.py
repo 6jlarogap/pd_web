@@ -193,8 +193,11 @@ class AddOrgView(LoginRequiredMixin, View):
                 new_org.ugh_list.create(ugh=request.user.profile.org)
             return HttpResponse(json.dumps({'pk': new_org.pk, 'label': u'%s' % new_org}), mimetype='application/json')
         else:
-            errors = '\n'.join([u'%s: %s' % (k,v[0]) for k,v in f.errors.items()])
-            return HttpResponse(_(u'Ошибки:\n %s') % errors, mimetype='text/plain')
+            err_str = _(u'Ошибка: %s')
+            errors = '\n'.join([u'%s' % v[0] for k,v in f.errors.items()])
+            if "\n" in errors:
+                err_str = _(u'Ошибки:\n%s')
+            return HttpResponse(err_str % errors, mimetype='text/plain')
 
 add_org = AddOrgView.as_view()
 
