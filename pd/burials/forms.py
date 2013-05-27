@@ -979,7 +979,9 @@ class AddOrgForm(OrgForm):
             else:
                 if profile_type[0] in (Org.PROFILE_ZAGS, ):
                     choices.append(profile_type)
+        label = self.fields['type'].label
         self.fields['type'] = forms.fields.TypedChoiceField(choices=choices)
+        self.fields['type'].label = label
 
 class AddDocTypeForm(forms.ModelForm):
     class Meta:
