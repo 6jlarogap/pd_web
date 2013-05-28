@@ -989,7 +989,10 @@ class AddOrgForm(OrgForm):
         cleaned_data = super(AddOrgForm, self).clean()
         errors = []
         for field in ('name', 'full_name', 'inn', 'director', ):
-            if not cleaned_data[field].strip():
+            # Нюанс django: Если clean_FIELD raises an exception,
+            # то FIELD не будет в cleaned_data, а здесь вызывается
+            # clean_inn родительского класса (OrgForm)
+            if field in cleaned_data and not cleaned_data[field].strip():
                 errors.append(u"%s : обязательное поле" % unicode(self.fields[field].label))
         if errors:
             raise forms.ValidationError("\n".join(errors))
