@@ -566,6 +566,17 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, forms.Mo
         else:
             self.instance.burial_type = Burial.BURIAL_NEW
 
+        if self.instance.is_closed() and \
+            (self.cleaned_data['cemetery'] != self.old_place.cemetery or \
+             self.cleaned_data['area'] != self.old_place.area or \
+             self.cleaned_data['row'] != self.old_place.row or \
+             self.cleaned_data['place_number'] != self.old_place.place):
+            place, created = Place.objects.get_or_create(cemetery=self.cleaned_data['cemetery'],
+                                                         area=self.cleaned_data['area'],
+                                                         row=self.cleaned_data['row'],
+                                                         place=self.cleaned_data['place_number'])
+            self.instance.place=place
+            
         self.instance.save()
 
         if self.bfiles_form.is_valid() and self.request.FILES.get('bfile'):
