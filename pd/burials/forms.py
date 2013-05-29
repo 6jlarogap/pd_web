@@ -399,12 +399,22 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, forms.Mo
         self.applicant_id_form = PersonIDForm(data=data, prefix='applicant-pid', instance=applicant_id)
 
         if self.request.user.profile.is_loru():
-            return [self.deadman_form, self.deadman_address_form, self.dc_form, self.bfiles_form, 
+            forms = [self.deadman_form, self.deadman_address_form, self.dc_form,
                     self.responsible_form, self.responsible_address_form]
         else:
-            return [self.deadman_form, self.deadman_address_form, self.dc_form, self.bfiles_form, 
+            forms = [self.deadman_form, self.deadman_address_form, self.dc_form,
                     self.responsible_form, self.responsible_address_form,
                     self.applicant_form, self.applicant_address_form, self.applicant_id_form]
+        
+        # При ?action=.... метод is_valid() формы добавления файла, self.bfiles_form, возвращает
+        # False.
+        # Впрочем, форма добавления файла не требуется, если редактирование захоронения
+        # вызывается не для правки его пользователем, а из просмотра захоронения,
+        # с параметром ?action=.... "в строке браузера", чтоб сразу закрыть (complete)
+        #
+        if not self.request.REQUEST.get('action'):
+            forms.append(self.bfiles_form)
+        return forms
 
     def is_valid(self):
         return super(BurialForm, self).is_valid() and all([f.is_valid() for f in self.forms])
