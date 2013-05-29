@@ -499,7 +499,7 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, forms.Mo
                 else:
                     self.instance.source_type = Burial.SOURCE_UGH
 
-        if self.deadman_form.is_valid():
+        if self.deadman_form.is_valid() and self.instance.burial_container != Burial.CONTAINER_BIO:
             deadman = self.deadman_form.save(commit=False)
             if self.deadman_address_form.is_valid_data():
                 deadman.address = self.deadman_address_form.save()
