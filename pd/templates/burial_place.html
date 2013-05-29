@@ -5,4 +5,4 @@
 {% if burial.place_number %}{% trans "место" %} {{ burial.place_number }},{% endif %}
 {% if burial.grave_number %}{% trans "могила" %} {{ burial.grave_number }}{% endif %}
 <br/>
-{% if burial.responsible %}{% trans "Отв." %} {{ burial.responsible }}<br/>{% endif %}
+{% if burial.get_responsible %}{% trans "Отв." %} {{ burial.get_responsible }}<br/>{% endif %}
