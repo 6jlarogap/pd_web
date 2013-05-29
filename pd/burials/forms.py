@@ -406,12 +406,11 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, forms.Mo
                     self.responsible_form, self.responsible_address_form,
                     self.applicant_form, self.applicant_address_form, self.applicant_id_form]
         
-        # Форма добавления нового файла не требуется, если редактирование захоронения
-        # вызывается не для правки его пользователем, а из просмотра захоронения,
-        # с параметром ?action=.... "в строке браузера", чтоб сразу закрыть (complete),
-        # одобрить (approve) и т.д. 
-        # Более того, при ?action=.... метод is_valid() форма добавления файла возвращает
+        # При ?action=.... метод is_valid() формы добавления файла, self.bfiles_form, возвращает
         # False.
+        # Впрочем, форма добавления файла не требуется, если редактирование захоронения
+        # вызывается не для правки его пользователем, а из просмотра захоронения,
+        # с параметром ?action=.... "в строке браузера", чтоб сразу закрыть (complete)
         #
         if not self.request.REQUEST.get('action'):
             forms.append(self.bfiles_form)
