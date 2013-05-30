@@ -207,6 +207,10 @@ class ResponsibleForm(AlivePersonForm):
                 raise forms.ValidationError(_(u'Нет Места'))
             if not self.cleaned_data.get('place').responsible:
                 raise forms.ValidationError(_(u'Нет Ответственного у Места'))
+        if self.cleaned_data.get('middle_name').strip() and not self.cleaned_data.get('first_name').strip():
+            raise forms.ValidationError(_(u'Указано отчество ответственного, надо указывать имя'))
+        if self.cleaned_data.get('first_name').strip() and not self.cleaned_data.get('last_name').strip():
+            raise forms.ValidationError(_(u'Указано имя ответственного, надо указывать фамилию'))
         return self.cleaned_data
 
     def save(self, *args, **kwargs):
@@ -547,17 +551,20 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, forms.Mo
             resp.save(force_insert=True)
             self.instance.responsible = resp
         elif self.responsible_form.is_valid():
-            responsible = self.responsible_form.save(commit=False)
-            if self.responsible_address_form.is_valid():
-                responsible.address = self.responsible_address_form.save()
-            responsible.save()
-            self.instance.responsible = responsible
-        else:
-            try:
-                self.instance.responsible.delete()
-            except (AttributeError, ProtectedError):
-                pass
-            self.instance.responsible = None
+            if self.responsible_form.cleaned_data.get('last_name').strip():
+                responsible = self.responsible_form.save(commit=False)
+                if self.responsible_address_form.is_valid():
+                    responsible.address = self.responsible_address_form.save()
+                responsible.save()
+                self.instance.responsible = responsible
+        #else:
+            # not форма is_valid(): до этого не дойдет
+            else:
+                try:
+                    self.instance.responsible.delete()
+                except (AttributeError, ProtectedError):
+                    pass
+                self.instance.responsible = None
 
         if self.cleaned_data['burial_container'] == Burial.CONTAINER_URN:
             self.instance.burial_type = Burial.BURIAL_URN
@@ -575,6 +582,7 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, forms.Mo
                                                          area=self.cleaned_data['area'],
                                                          row=self.cleaned_data['row'],
                                                          place=self.cleaned_data['place_number'])
+            place.responsible = self.instance.responsible
             self.instance.place=place
             
         self.instance.save()
@@ -596,6 +604,7 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, forms.Mo
         )
         messages.success(self.request, msg)
 
+        s = self.instance.responsible
         return self.instance
 
 class PlaceForm(forms.ModelForm):

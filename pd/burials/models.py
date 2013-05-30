@@ -500,9 +500,14 @@ class Burial(models.Model):
                     pass # do not touch anything
                 else: # from new
                     old_place.delete() # deleting old
-        else:
-            if not place.responsible:
-                place.responsible = self.get_responsible() # just update responsible
+        #else:
+            #if not place.responsible:
+                #place.responsible = self.get_responsible() # just update responsible
+                
+        # Эта функция вызывается исключительно из формы, после save() которой
+        # все актуальные данные по responsible находятся в self.responsible
+        #
+        place.responsible = self.responsible
 
         if not self.account_number:
             self.set_account_number(user=self.changed_by)
