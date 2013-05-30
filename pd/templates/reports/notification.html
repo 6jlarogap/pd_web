@@ -989,7 +989,20 @@ ODF styles with no properties representable as CSS
 <tr class="ro6">
     <td colspan="3" style="text-align:left;width:1.6752in; " class="ce7"><p>Старший инспектор сектора технического обеспечения УГХ</p></td>
     <td colspan="2" style="text-align:left;width:0.6173in; " class="ce17"> </td>
-    <td colspan="4" style="text-align:center;width:0.8189in; " class="ce28"><p>{{ user.profile }}</p></td>
+    <td colspan="4" style="text-align:center;width:0.8189in; " class="ce28">
+        <p>
+        {% if user.profile.is_ugh %}
+            {{ user.profile }}
+        {% elif user.profile.is_loru %}
+            {{ burial.changed_by.profile }}
+        {% else %}
+            <!-- ЛОРУ может печатать только одобренные.
+                Последним, кто вносил правку в одобренное зх,
+                является работник УГХ, кто последний одобрил.
+            -->
+        {% endif %}
+        </p>
+   </td>
     <td style="text-align:left;width:0.7984in; " class="Default"> </td>
 </tr>
 <tr class="ro7">

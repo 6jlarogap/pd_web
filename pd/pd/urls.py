@@ -20,8 +20,8 @@ urlpatterns += patterns('pd.views',
     url(r'^import/', include('import_burials.urls')),
 )
 
-# Для добавления административных функций (http://.../admin)
-# добавить параметр ADMIN_ENABLED  в pd/local_settings.py
+# Для включения административных функций (http://.../admin)
+# добавить параметр ADMIN_ENABLED  в pd/local_settings.py (!)
 # и установить его в True
 #
 if 'ADMIN_ENABLED' in dir(settings) and settings.ADMIN_ENABLED:
