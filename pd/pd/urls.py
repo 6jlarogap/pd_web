@@ -20,11 +20,16 @@ urlpatterns += patterns('pd.views',
     url(r'^import/', include('import_burials.urls')),
 )
 
-urlpatterns += patterns('',
-    url(r'^admin/jsi18n/', 'django.views.i18n.javascript_catalog'),
-    url(r'^admin/doc/', include('django.contrib.admindocs.urls')),
-    url(r'^admin/', include(admin.site.urls)),
-)
+# Для включения административных функций (http://.../admin)
+# добавить параметр ADMIN_ENABLED  в pd/local_settings.py (!)
+# и установить его в True
+#
+if 'ADMIN_ENABLED' in dir(settings) and settings.ADMIN_ENABLED:
+    urlpatterns += patterns('',
+        url(r'^admin/jsi18n/', 'django.views.i18n.javascript_catalog'),
+        url(r'^admin/doc/', include('django.contrib.admindocs.urls')),
+        url(r'^admin/', include(admin.site.urls)),
+    )
 
 if settings.DEBUG:
     urlpatterns += patterns('',
