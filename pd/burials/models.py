@@ -518,10 +518,6 @@ class Burial(models.Model):
             #      неизменившегося места не затрется, как хочет угх, если
             #      не сделать:
             elif not self.responsible:
-                try:
-                    place.responsible.delete()
-                except (AttributeError, ProtectedError):
-                    pass
                 place.responsible = None
 
         if not self.account_number:
