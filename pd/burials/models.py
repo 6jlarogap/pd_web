@@ -2,6 +2,7 @@
 import datetime
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
+from django.db.models.deletion import ProtectedError
 from django.utils.translation import ugettext_lazy as _
 from pd.models import UnclearDateModelField
 
@@ -517,7 +518,19 @@ class Burial(models.Model):
             #      неизменившегося места не затрется, как хочет угх, если
             #      не сделать:
             elif not self.responsible:
+                # Только так удалишь:
+                #    поле Place.responsible: on_delete=models.PROTECT
+                responsible = place.responsible
                 place.responsible = None
+                place.save()
+                try:
+                    responsible.delete()
+                except (AttributeError, ProtectedError):
+                    pass
+                try:
+                    responsible.address.delete()
+                except (AttributeError, ProtectedError):
+                    pass
 
         if not self.account_number:
             self.set_account_number(user=self.changed_by)

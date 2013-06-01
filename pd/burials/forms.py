@@ -565,6 +565,10 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, forms.Mo
                 self.instance.responsible.delete()
             except (AttributeError, ProtectedError):
                 pass
+            try:
+                self.instance.responsible.address.delete()
+            except (AttributeError, ProtectedError):
+                pass
             self.instance.responsible = None
 
         if self.cleaned_data['burial_container'] == Burial.CONTAINER_URN:
