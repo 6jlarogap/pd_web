@@ -2,7 +2,6 @@
 import datetime
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
-from django.db.models.deletion import ProtectedError
 from django.utils.translation import ugettext_lazy as _
 from pd.models import UnclearDateModelField
 
