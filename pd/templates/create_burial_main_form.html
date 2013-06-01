@@ -107,10 +107,8 @@
     {% trans "Ответственный" %} {{ form.responsible_form.instance|default:"" }}
 </h2>
 
-{% if not form.responsible_form.errors %}
 <a href="#" onclick="$('#cont_responsible').slideToggle(); return false" class="slider" data-id="cont_responsible">{% trans "развернуть" %}</a>
-{% endif %}
-<div id="cont_responsible" style="{% if not form.responsible_form.errors %}display: none{% endif %}">
+<div id="cont_responsible" style="display: none">
     {{ form.responsible_form.as_p }}
     <div id="cont_responsible_address">
         <h3>{% trans "Адрес" %}</h3>

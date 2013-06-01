@@ -207,10 +207,6 @@ class ResponsibleForm(AlivePersonForm):
                 raise forms.ValidationError(_(u'Нет Места'))
             if not self.cleaned_data.get('place').responsible:
                 raise forms.ValidationError(_(u'Нет Ответственного у Места'))
-        if self.cleaned_data.get('middle_name').strip() and not self.cleaned_data.get('first_name').strip():
-            raise forms.ValidationError(_(u'Указано отчество ответственного, надо указывать имя'))
-        if self.cleaned_data.get('first_name').strip() and not self.cleaned_data.get('last_name').strip():
-            raise forms.ValidationError(_(u'Указано имя ответственного, надо указывать фамилию'))
         return self.cleaned_data
 
     def save(self, *args, **kwargs):
@@ -544,6 +540,7 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, forms.Mo
                     pass
                 self.instance.applicant = None
 
+        remove_responsible = False
         if self.request.user.profile.is_ugh() and self.responsible_form.cleaned_data.get('take_from') == ResponsibleForm.WHERE_FROM_APPLICANT:
             resp = copy.deepcopy(self.instance.applicant)
             resp.id = None
@@ -551,20 +548,24 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, forms.Mo
             resp.save(force_insert=True)
             self.instance.responsible = resp
         elif self.responsible_form.is_valid():
-            if self.responsible_form.cleaned_data.get('last_name').strip():
+            if self.responsible_form.cleaned_data.get('last_name').strip() or \
+               self.responsible_form.cleaned_data.get('first_name').strip() or \
+               self.responsible_form.cleaned_data.get('middle_name').strip():
                 responsible = self.responsible_form.save(commit=False)
                 if self.responsible_address_form.is_valid():
                     responsible.address = self.responsible_address_form.save()
                 responsible.save()
                 self.instance.responsible = responsible
-        #else:
-            # not форма is_valid(): до этого не дойдет
             else:
-                try:
-                    self.instance.responsible.delete()
-                except (AttributeError, ProtectedError):
-                    pass
-                self.instance.responsible = None
+                remove_responsible = True
+        else:
+            remove_responsible = True
+        if remove_responsible:
+            try:
+                self.instance.responsible.delete()
+            except (AttributeError, ProtectedError):
+                pass
+            self.instance.responsible = None
 
         if self.cleaned_data['burial_container'] == Burial.CONTAINER_URN:
             self.instance.burial_type = Burial.BURIAL_URN
@@ -582,7 +583,6 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, forms.Mo
                                                          area=self.cleaned_data['area'],
                                                          row=self.cleaned_data['row'],
                                                          place=self.cleaned_data['place_number'])
-            place.responsible = self.instance.responsible
             self.instance.place=place
             
         self.instance.save()
@@ -604,7 +604,6 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, forms.Mo
         )
         messages.success(self.request, msg)
 
-        s = self.instance.responsible
         return self.instance
 
 class PlaceForm(forms.ModelForm):
@@ -882,6 +881,32 @@ class BurialCommitForm(BurialForm):
                     if deadman_death_date> death_certificate_release_date:
                         msg = _(u"Дата выдачи свидетельства о смерти не может быть раньше даты смерти")
                         raise forms.ValidationError(msg)
+
+        if self.responsible_form.is_valid():
+            r_last_name = self.responsible_form.cleaned_data.get('last_name').strip()
+            r_first_name = self.responsible_form.cleaned_data.get('first_name').strip()
+            r_middle_name = self.responsible_form.cleaned_data.get('middle_name').strip()
+            msg = ''
+            if r_last_name:
+                # Ф (+) И (-) О (-) : OK
+                # Ф (+) И (-) О (+) : Bad :
+                if not r_first_name and r_middle_name:
+                    msg = _(u"Ответственный: не указано имя при указанном отчестве")
+                # Ф (+) И (+) О (-) : OK
+                # Ф (+) И (+) О (+) : OK
+            else:
+                # Ф (-) И (-) О (-) : OK
+                # Ф (-) И (-) О (+) : Bad :
+                if not r_first_name and r_middle_name:
+                    msg = _(u"Ответственный: не указаны фамилия и имя при указанном отчестве")
+                # Ф (-) И (+) О (-) : Bad
+                elif r_first_name and not r_middle_name:
+                    msg = _(u"Ответственный: не указана фамилия при указанном имени")
+                # Ф (-) И (+) О (+) : Bad
+                elif r_first_name and r_middle_name:
+                    msg = _(u"Ответственный: не указана фамилия при указанных имени и отчестве")
+            if msg:
+                raise forms.ValidationError(msg)
 
         return self.cleaned_data
 
