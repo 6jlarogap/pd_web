@@ -175,7 +175,8 @@ class Order(models.Model):
         if not self.has_catafalque():
             return
         hrs = self.orderitem_set.filter(product__ptype=Product.PRODUCT_CATAFALQUE)[0].quantity
-        return datetime.time(hrs)
+        minutes = int(round(hrs * 60))
+        return dict(hour=minutes // 60, minute=minutes % 60)
 
     def get_logs(self):
         ct = ContentType.objects.get_for_model(self)
