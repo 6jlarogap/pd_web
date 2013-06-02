@@ -1184,7 +1184,7 @@
             <TD STYLE="border-top: 1px solid #000000; " COLSPAN=6 ALIGN=CENTER VALIGN=MIDDLE SDNUM="1033;0;@"><FONT
                     COLOR="#000000" STYLE="font-size: 170%">
                 {{ order.get_catafalquedata.start_time|time:"H" }}ч {{ order.get_catafalquedata.start_time|time:"i" }}мин. /
-                {{ order.get_catafalque_hours|time:"H" }}ч {{ order.get_catafalque_hours|time:"i" }}мин.
+                {{ order.get_catafalque_hours.hour }}ч {{ order.get_catafalque_hours.minute }}мин.
                 </FONT>
             </TD>
             <TD ALIGN=LEFT VALIGN=MIDDLE><FONT COLOR="#000000"><BR></FONT></TD>
