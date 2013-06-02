@@ -2,6 +2,7 @@
 import datetime
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
+from django.db.models.deletion import ProtectedError
 from django.utils.translation import ugettext_lazy as _
 from pd.models import UnclearDateModelField
 
@@ -503,6 +504,33 @@ class Burial(models.Model):
         else:
             if not place.responsible:
                 place.responsible = self.get_responsible() # just update responsible
+            # Здесь учитываем ситуацию:
+            # * Правится закрытое соединение, в неизменившемся (!) месте
+            #   которого был ответственный, ибо:
+            #      сформирован place, а он формируется только в закрытом зх.
+            #      Тем более мы здесь в уже закрытом зх, что у place 
+            #      (и у old_place == place) есть ответственный
+            # * В этом неизменившемся месте угх затирает ответственного
+            #   уже ранее закрытого захоронения:
+            #      self.responsible становится None средствами формы, 
+            #      self.get_responsible() вернет ответственного из места,
+            #      а там он может быть не пустой, в итоге ответственный
+            #      неизменившегося места не затрется, как хочет угх, если
+            #      не сделать:
+            elif not self.responsible:
+                # Только так удалишь:
+                #    поле Place.responsible: on_delete=models.PROTECT
+                responsible = place.responsible
+                place.responsible = None
+                place.save()
+                try:
+                    responsible.delete()
+                except (AttributeError, ProtectedError):
+                    pass
+                try:
+                    responsible.address.delete()
+                except (AttributeError, ProtectedError):
+                    pass
 
         if not self.account_number:
             self.set_account_number(user=self.changed_by)
