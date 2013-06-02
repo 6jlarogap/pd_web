@@ -830,7 +830,7 @@ class BurialCommitForm(BurialForm):
                 msg = _(u"Не указано место для закрытого участка. Нельзя отправлять на согласование")
                 raise forms.ValidationError(msg)
 
-        if not self.cleaned_data.get('account_number') and (self.instance.is_archive() or self.request.REQUEST.get('archive')):
+        if not self.cleaned_data.get('account_number').strip() and (self.instance.is_archive() or self.request.REQUEST.get('archive')):
             msg = _(u"Нельзя закрывать архивное захоронение без указания его номера в книге учета")
             raise forms.ValidationError(msg)
 
