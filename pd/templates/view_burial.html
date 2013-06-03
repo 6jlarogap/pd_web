@@ -91,15 +91,24 @@
                 {% endif %}
             {% endif %}
         </dd>
-        <dt>{% trans "Номер места создан по следующему правилу" %}:</dt>
+        <dt>{% trans "Номер места создается по следующему правилу" %}:</dt>
         <dd>
             {{ b.cemetery.get_places_algo_display|default:"не указано" }}
         </dd>
         <dt>{% trans "Ответственный" %}:</dt>
         <dd>
-            {{ b.get_responsible|default:"не указан" }}
-            <br/>
-            {{ b.get_responsible.address|default:"" }}
+            {% if user.profile.is_ugh or not b.is_closed %}
+                {{ b.get_responsible|default:"не указан" }}
+                {% if b.get_responsible.address %}
+                     <br />{{ b.get_responsible.address }}
+                 {% endif %}
+            {% else %}
+                {% if b.get_responsible %}
+                    имеется
+                {% else %}
+                    не указан
+                {% endif %}
+            {% endif %}
         </dd>
         <dt>{% trans "Заказчик" %}:</dt>
         <dd>
@@ -111,7 +120,7 @@
                     Адрес: {{ b.order.applicant.address|default:"не указан" }}
                 {% endif %}
             {% else %}
-                Не указан
+                не указан
             {% endif %}
         </dd>
         <dt>{% trans "План. дата и время" %}:</dt>
