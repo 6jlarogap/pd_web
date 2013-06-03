@@ -327,7 +327,7 @@ def do_import_burials(csv_fileobj, user):
                     area=area,
                     row=row[8],
                     place_number=row[9],
-                    responsible=responsible,
+                    responsible=None,       # ! так в закрытых захоронениях
                     grave_number=grave_number,
                     deadman=import_dead_person(row[27:41]),
                     applicant=import_alive_person(row[41:55]),
