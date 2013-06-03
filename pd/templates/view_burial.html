@@ -56,8 +56,10 @@
         <dt>{% trans "Усопший" %}:</dt>
         <dd>
             {{ b.deadman|default:"не указан" }}
-            <br/>
-            {{ b.deadman.address|default:"" }}
+            {% if  b.deadman.address %}
+                <br/>
+                {{ b.deadman.address }}
+            {% endif %}
             {% if b.deadman.birth_date %}
                 <br/>
                 {{ b.deadman.birth_date }}
@@ -69,10 +71,10 @@
         </dd>
         <dt>{% trans "Свидетельство о смерти" %}:</dt>
             {% if b.deadman.deathcertificate %}
-                <dd>Номер: {{ b.deadman.deathcertificate.s_number }}</dd>
-                <dd>Серия: {{ b.deadman.deathcertificate.series }}</dd>
-                <dd>Дата: {{ b.deadman.deathcertificate.release_date|default_if_none:"" }}</dd>
-                <dd>Выдано: {{ b.deadman.deathcertificate.zags|default_if_none:"" }}</dd>
+                <dd>{% trans "Номер" %}: {{ b.deadman.deathcertificate.s_number }}</dd>
+                <dd>{% trans "Серия" %}: {{ b.deadman.deathcertificate.series }}</dd>
+                <dd>{% trans "Дата" %}: {{ b.deadman.deathcertificate.release_date|default_if_none:"" }}</dd>
+                <dd>{% trans "Выдано" %}: {{ b.deadman.deathcertificate.zags|default_if_none:"" }}</dd>
             {% else %}
                 <dd>Нет</dd>
             {% endif %}
@@ -91,27 +93,36 @@
                 {% endif %}
             {% endif %}
         </dd>
-        <dt>{% trans "Номер места создан по следующему правилу" %}:</dt>
+        <dt>{% trans "Правило создания номера места" %}:</dt>
         <dd>
             {{ b.cemetery.get_places_algo_display|default:"не указано" }}
         </dd>
         <dt>{% trans "Ответственный" %}:</dt>
         <dd>
-            {{ b.get_responsible|default:"не указан" }}
-            <br/>
-            {{ b.get_responsible.address|default:"" }}
+            {% if user.profile.is_ugh or not b.is_closed %}
+                {{ b.get_responsible|default:"не указан" }}
+                {% if b.get_responsible.address %}
+                     <br />{{ b.get_responsible.address }}
+                 {% endif %}
+            {% else %}
+                {% if b.get_responsible %}
+                    {% trans "имеется" %}
+                {% else %}
+                    {% trans "не указан" %}
+                {% endif %}
+            {% endif %}
         </dd>
         <dt>{% trans "Заказчик" %}:</dt>
         <dd>
             {% if b.order %}
                 {% if b.order.applicant_organization %}
-                    ЮЛ: {{ b.order.applicant_organization }}
+                    {% trans "ЮЛ" %}: {{ b.order.applicant_organization }}
                 {% else %}
-                    ФЛ: {{ b.order.applicant }} <br />
-                    Адрес: {{ b.order.applicant.address|default:"не указан" }}
+                    {% trans "ФЛ" %}: {{ b.order.applicant }} <br />
+                    {% trans "Адрес" %}: {{ b.order.applicant.address|default:"не указан" }}
                 {% endif %}
             {% else %}
-                Не указан
+                {% trans "не указан" %}
             {% endif %}
         </dd>
         <dt>{% trans "План. дата и время" %}:</dt>
@@ -122,7 +133,7 @@
             <dd>{{ forloop.counter }}. &nbsp;
             <a href="/media/{{ f.bfile }}">{{ f.comment|default:"(без описания)" }}</a></dd>
         {% empty %}
-            <dd>отсутствуют</dd>
+            <dd>{% trans "отсутствуют" %}</dd>
         {% endfor %}
     </dl>
     <form action="" method="POST">
