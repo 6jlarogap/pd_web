@@ -313,7 +313,8 @@ autocomplete_cemeteries = AutocompleteCemeteries.as_view()
 class AutocompleteAreas(View):
     def get(self, request, *args, **kwargs):
         query = request.GET['query']
-        areas = Area.objects.filter(name__icontains=query)
+        cemetery = request.GET['cemetery']
+        areas = Area.objects.filter(cemetery__name=cemetery, name__icontains=query)
         if request.user.profile.is_loru():
             areas = areas.filter(cemetery__ugh__loru_list__loru=request.user.profile.org)
         elif request.user.profile.is_ugh():
