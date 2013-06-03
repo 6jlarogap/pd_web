@@ -234,11 +234,9 @@ change_password = ChangePasswordForm.as_view()
 class AutocompleteOrg(View):
     def get(self, request, *args, **kwargs):
         query = request.GET['query']
-        orgs = Org.objects.filter(name__icontains=query)
-        if request.user.profile.is_loru():
-            orgs = orgs.filter(ugh_list__ugh__loru_list__loru=request.user.profile.org)
-        elif request.user.profile.is_ugh():
-            orgs = orgs.filter(ugh_list__ugh=request.user.profile.org)
+        if request.user.profile.is_loru() or \
+           request.user.profile.is_ugh():
+            orgs = Org.objects.filter(name__icontains=query)
         else:
             orgs = Org.objects.none()
 
