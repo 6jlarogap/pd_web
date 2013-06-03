@@ -807,12 +807,21 @@ class BurialCommitForm(BurialForm):
                         msg = _(u"Не верно указан номер документа")
                         raise forms.ValidationError(msg)
 
-            if self.cleaned_data.get('account_number') and self.cleaned_data.get('fact_date'):
+            if self.request.user.profile.numbers_algo in (Profile.NUM_YEAR_UGH, Profile.NUM_YEAR_CEMETERY) and \
+               self.cleaned_data.get('account_number') and self.cleaned_data.get('fact_date'):
                 acc_number = self.cleaned_data.get('account_number')
                 fact_date  = self.cleaned_data.get('fact_date')
-                if len(acc_number) < 4 or int(acc_number[:4]) != fact_date.year:
-                    msg = _(u"Номер в книге учета должен быть: ГГГГнн...н (год фактической даты, номер)")
+                msg = _(u"Номер в книге учета должен быть: ГГГГнн...н (год фактической даты, номер)")
+                try:
+                    if len(acc_number) < 4 or int(acc_number[:4]) != fact_date.year:
+                        raise forms.ValidationError(msg)
+                except ValueError:
                     raise forms.ValidationError(msg)
+
+            if (self.instance.is_archive() or self.request.REQUEST.get('archive')) and \
+               not self.cleaned_data.get('account_number').strip():
+                msg = _(u"Нельзя закрывать архивное захоронение без указания его номера в книге учета")
+                raise forms.ValidationError(msg)
 
         place_number = self.cleaned_data.get('place_number') or ''
         area = self.cleaned_data.get('area')
