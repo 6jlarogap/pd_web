@@ -117,9 +117,11 @@
             {% if b.order %}
                 {% if b.order.applicant_organization %}
                     {% trans "ЮЛ" %}: {{ b.order.applicant_organization }}
-                {% else %}
+                {% elif b.order.applicant %}
                     {% trans "ФЛ" %}: {{ b.order.applicant }} <br />
                     {% trans "Адрес" %}: {{ b.order.applicant.address|default:"не указан" }}
+                {% else %}
+                    {% trans "не указан" %}
                 {% endif %}
             {% else %}
                 {% trans "не указан" %}
