@@ -50,6 +50,11 @@ class ChildrenJSONMixin:
         kw = {'target_org': self.request.user.profile.org}
         return self.universal_children_json('agent', Dover, 'agent', filter_kw=kw, related=['agent', 'agent__user'])
 
+    def actual_dover_list(self):
+        today = datetime.date.today()
+        actual_dover_ids = Dover.objects.filter(begin__lte=today, end__gte=today).values_list('id', flat=True)
+        return mark_safe(json.dumps(actual_dover_ids))
+
     def loru_agents_json(self):
         kw = {'is_agent': True}
         return self.universal_children_json('applicant_organization', Profile, 'org', filter_kw=kw, related=['user'])
