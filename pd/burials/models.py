@@ -129,6 +129,7 @@ class Place(models.Model):
     class Meta:
         verbose_name = _(u"Место")
         verbose_name_plural = _(u"Место")
+        unique_together = ('cemetery', 'area', 'row', 'place',)
 
     def __unicode__(self):
         return _(u'Кл. %s, уч. %s, ряд %s, место %s') % (self.cemetery, self.area and self.area.name or '', self.row, self.place)
