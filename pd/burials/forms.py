@@ -921,6 +921,32 @@ class BurialCommitForm(BurialForm):
             if msg:
                 raise forms.ValidationError(msg)
 
+            if self.request.REQUEST.get('ready') and self.dc_form.is_valid():
+                death_date = self.deadman_form.cleaned_data.get('death_date')
+                last_name = self.deadman_form.cleaned_data.get('last_name').strip()
+                s_number = self.dc_form.cleaned_data.get('s_number').strip()
+                if death_date and last_name and s_number:
+                    first_name = self.deadman_form.cleaned_data.get('first_name').strip()
+                    middle_name = self.deadman_form.cleaned_data.get('middle_name').strip()
+                    query = Burial.objects.filter(
+                                Q(status=Burial.STATUS_CLOSED) | Q(status=Burial.STATUS_APPROVED),
+                            )
+                    query = query.filter(
+                                deadman__last_name=last_name,
+                                deadman__first_name=first_name,
+                                deadman__middle_name=middle_name,
+                                deadman__deathcertificate__s_number=s_number,
+                                deadman__death_date__year=death_date.year,
+                                deadman__death_date__month=death_date.month,
+                                deadman__death_date__day=death_date.day,
+                            )
+                    if self.instance.pk:
+                        query = query.exclude(pk=self.instance.pk)
+                    if query:
+                        raise forms.ValidationError(
+                                _(u"Такой усопший уже есть (ФИО, дата смерти, свидетельство). Нельзя согласовывать")
+                              )
+                
         return self.cleaned_data
 
     def mock_data(self):
