@@ -52,8 +52,10 @@ class ChildrenJSONMixin:
 
     def actual_dover_list(self):
         today = datetime.date.today()
-        actual_dover_ids = Dover.objects.filter(begin__lte=today, end__gte=today).values_list('id', flat=True)
-        return mark_safe(json.dumps(actual_dover_ids))
+        actual_dover_ids = Dover.objects.filter(begin__lte=today, end__gte=today)
+        actual_dover_ids = actual_dover_ids.filter(target_org=self.request.user.profile.org)
+        actual_dover_ids = actual_dover_ids.values_list('id', flat=True)
+        return actual_dover_ids
 
     def loru_agents_json(self):
         kw = {'is_agent': True}
