@@ -487,8 +487,6 @@ class Burial(models.Model):
         return self.changed
 
     def close(self, old_place=None):
-        bur_status=Burial.objects.get(pk=self.pk).status
-        print bur_status
         if not self.account_number:
             self.set_account_number(user=self.changed_by)
 
@@ -541,14 +539,10 @@ class Burial(models.Model):
                 except (AttributeError, ProtectedError):
                     pass
 
-        bur_status=Burial.objects.get(pk=self.pk).status
-        print bur_status
         place.cemetery = self.cemetery
         place.area = self.area
         place.row = self.row
         place.place = self.place_number
-        bur_status=Burial.objects.get(pk=self.pk).status
-        gdgdggd
         place.save()
 
         if not self.fact_date:
