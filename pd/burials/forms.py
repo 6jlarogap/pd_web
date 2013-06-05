@@ -579,6 +579,7 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, forms.Mo
             self.instance.burial_type = Burial.BURIAL_NEW
 
         if self.instance.is_closed() and \
+            self.old_place and \
             (self.cleaned_data['cemetery'] != self.old_place.cemetery or \
              self.cleaned_data['area'] != self.old_place.area or \
              self.cleaned_data['row'] != self.old_place.row or \
@@ -929,7 +930,9 @@ class BurialCommitForm(BurialForm):
                     first_name = self.deadman_form.cleaned_data.get('first_name').strip()
                     middle_name = self.deadman_form.cleaned_data.get('middle_name').strip()
                     query = Burial.objects.filter(
-                                Q(status=Burial.STATUS_CLOSED) | Q(status=Burial.STATUS_APPROVED),
+                                Q(ugh__loru_list__loru=self.request.user.profile.org) & \
+                                Q(annulated=False) & \
+                                Q(status__in = (Burial.STATUS_CLOSED, Burial.STATUS_APPROVED,))
                             )
                     query = query.filter(
                                 deadman__last_name=last_name,

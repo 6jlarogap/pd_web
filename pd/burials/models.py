@@ -428,11 +428,11 @@ class Burial(models.Model):
                 self.account_number = int(num) + 1
             except (IndexError, ValueError, TypeError):
                 self.account_number = year + '0001'
-        self.save()
 
     def approve(self, user):
         if not self.account_number and not self.is_archive():
             self.set_account_number(user)
+            self.save()
 
     def get_place(self):
         if self.place:
@@ -487,6 +487,12 @@ class Burial(models.Model):
         return self.changed
 
     def close(self, old_place=None):
+        if not self.account_number:
+            self.set_account_number(user=self.changed_by)
+
+        if self.cemetery and self.cemetery.places_algo == Cemetery.PLACE_BURIAL_ACCOUNT_NUMBER and not self.place_number:
+           self.place_number = self.account_number
+
         place = self.get_place() or Place(
             places_count=self.area and self.area.places_count or 1,
         )
@@ -533,14 +539,9 @@ class Burial(models.Model):
                 except (AttributeError, ProtectedError):
                     pass
 
-        if not self.account_number:
-            self.set_account_number(user=self.changed_by)
-
         place.cemetery = self.cemetery
         place.area = self.area
         place.row = self.row
-        if self.cemetery and self.cemetery.places_algo == Cemetery.PLACE_BURIAL_ACCOUNT_NUMBER and not self.place_number:
-           self.place_number = self.account_number
         place.place = self.place_number
         place.save()
 

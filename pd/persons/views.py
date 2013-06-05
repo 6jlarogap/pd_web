@@ -20,7 +20,7 @@ class AutocompleteFIO(View):
         if len(fio) > 0:
             q &= Q(last_name__icontains=fio[0])
 
-        persons = DeadPerson.objects.filter(q)
+        persons = DeadPerson.objects.filter(q).distinct('last_name', 'first_name', 'middle_name')
         return HttpResponse(json.dumps([{'value': unicode(c)} for c in persons[:20]]), mimetype='text/javascript')
 
 autocomplete_fio = AutocompleteFIO.as_view()
@@ -38,7 +38,7 @@ class AutocompleteAlive(View):
         if len(fio) > 0:
             q &= Q(last_name__icontains=fio[0])
 
-        persons = AlivePerson.objects.filter(q)
+        persons = AlivePerson.objects.filter(q).distinct('last_name', 'first_name', 'middle_name')
         return HttpResponse(json.dumps([{'value': unicode(c)} for c in persons[:20]]), mimetype='text/javascript')
 
 autocomplete_alive = AutocompleteAlive.as_view()
