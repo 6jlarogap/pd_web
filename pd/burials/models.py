@@ -536,26 +536,22 @@ class Burial(models.Model):
         if not self.account_number:
             self.set_account_number(user=self.changed_by)
 
-        #place.cemetery = self.cemetery
-        #place.area = self.area
-        #place.row = self.row
         if self.cemetery and self.cemetery.places_algo == Cemetery.PLACE_BURIAL_ACCOUNT_NUMBER and not self.place_number:
            self.place_number = self.account_number
-        #place.place = self.place_number
-        #place.save()
-        # cemetery, area, row, place are unique_together
-        p_responsible = place.responsible
-        place, created = Place.objects.get_or_create(
+        if place.pk:
+            place.cemetery = self.cemetery
+            place.area = self.area
+            place.row = self.row
+            place.place = self.place_number
+            place.save()
+        else
+            place, created = Place.objects.get_or_create(
                             cemetery=self.cemetery,
                             area=self.area,
                             row=self.row,
                             place=self.place_number,
                             defaults={'responsible': place.responsible, 'places_count': place.places_count}
                          )
-        if not created:
-            #place.places_count : здесь не меняли в имеющемся захоронении
-            place.responsible = p_responsible
-            place.save()
 
         if not self.fact_date:
             self.fact_date = self.plan_date
