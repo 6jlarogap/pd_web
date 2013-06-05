@@ -579,6 +579,7 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, forms.Mo
             self.instance.burial_type = Burial.BURIAL_NEW
 
         if self.instance.is_closed() and \
+            self.old_place and \
             (self.cleaned_data['cemetery'] != self.old_place.cemetery or \
              self.cleaned_data['area'] != self.old_place.area or \
              self.cleaned_data['row'] != self.old_place.row or \
