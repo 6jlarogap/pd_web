@@ -543,10 +543,8 @@ class Burial(models.Model):
         place.area = self.area
         place.row = self.row
         place.place = self.place_number
-        if self.pk:
-            bur_status=Burials.object.get(pk=self.pk).status
-            print bur_status
-            gdgdggd
+        bur_status=Burial.objects.get(pk=self.pk).status
+        gdgdggd
         place.save()
 
         if not self.fact_date:
