@@ -428,11 +428,11 @@ class Burial(models.Model):
                 self.account_number = int(num) + 1
             except (IndexError, ValueError, TypeError):
                 self.account_number = year + '0001'
-        self.save()
 
     def approve(self, user):
         if not self.account_number and not self.is_archive():
             self.set_account_number(user)
+            self.save()
 
     def get_place(self):
         if self.place:
