@@ -569,6 +569,9 @@ class CreateBurial(CreateView):
             if action == 'complete' and self.request.user.profile.is_ugh() and b.can_finish() and b.is_ugh():
                 b.status = Burial.STATUS_CLOSED
                 b.changed_by = self.request.user
+                if b.pk:
+                    bur_status=Burials.object.get(pk=b.pk).status
+                    print bur_status
                 b.close()
                 write_log(self.request, b, _(u'Захоронение закрыто'))
                 messages.success(self.request, _(u"<a href='%s'>Захоронение %s</a> закрыто") % (
