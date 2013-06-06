@@ -135,7 +135,7 @@ class Place(models.Model):
         return _(u'Кл. %s, уч. %s, ряд %s, место %s') % (self.cemetery, self.area and self.area.name or '', self.row, self.place)
 
     def burial_count(self):
-        return self.burial_set.exclude(status=Burial.STATUS_EXHUMATED).count()
+        return self.burial_set.exclude(status=Burial.STATUS_EXHUMATED).distinct('grave_number').count()
 
     def get_places_count(self):
         if self.places_count is not None:
