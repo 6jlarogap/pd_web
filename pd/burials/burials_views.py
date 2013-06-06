@@ -145,6 +145,7 @@ class BurialView(BurialsListGenericMixin, DetailView):
         reason = request.POST.get('reason') or request.POST.get('reason_typical')
         if request.POST.get('back') and request.user.profile.is_loru() and b.can_back():
             b.status = Burial.STATUS_BACKED
+            b.account_number = None
             write_log(request, b, _(u'Захоронение отозвано'), reason)
             messages.success(request, _(u"<a href='%s'>Захоронение %s</a> отозвано") % (
                 reverse('view_burial', args=[b.pk]), b.pk,
@@ -164,6 +165,7 @@ class BurialView(BurialsListGenericMixin, DetailView):
                 return redirect(reverse('edit_burial', args=[b.pk]) + '?action=approve')
         if request.POST.get('decline') and request.user.profile.is_ugh() and b.can_decline():
             b.status = Burial.STATUS_DECLINED
+            b.account_number = None
             msg_declined = u'Захоронение отклонено'
             write_log(request, b, msg_declined, reason)
             if b.order:
