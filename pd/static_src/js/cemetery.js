@@ -72,7 +72,7 @@ function setup_address_autocompletes() {
         }
     });
 
-    $('#mainform #id_applicant_person').attr('autocomplete', 'off').typeahead({
+    $('#mainform #id_applicant_person, #mainform #id_responsible').attr('autocomplete', 'off').typeahead({
         items: 100,
         source: function (typeahead, query) {
             if (query.length < 2) { return }
