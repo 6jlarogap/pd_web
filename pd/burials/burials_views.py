@@ -283,18 +283,15 @@ class BurialsListView(ListView):
             if form.cleaned_data['responsible']:
                 fio = [f.strip('.') for f in form.cleaned_data['responsible'].split(' ')]
                 q1r = Q(responsible__isnull=False)
-                if len(fio) > 2:
-                    q1r &= Q(responsible__middle_name__icontains=fio[2])
-                if len(fio) > 1:
-                    q1r &= Q(responsible__first_name__icontains=fio[1])
-                if len(fio) > 0:
-                    q1r &= Q(responsible__last_name__icontains=fio[0])
                 q2r = Q(place__isnull=False)
                 if len(fio) > 2:
+                    q1r &= Q(responsible__middle_name__icontains=fio[2])
                     q2r &= Q(place__responsible__middle_name__icontains=fio[2])
                 if len(fio) > 1:
+                    q1r &= Q(responsible__first_name__icontains=fio[1])
                     q2r &= Q(place__responsible__first_name__icontains=fio[1])
                 if len(fio) > 0:
+                    q1r &= Q(responsible__last_name__icontains=fio[0])
                     q2r &= Q(place__responsible__last_name__icontains=fio[0])
                 qr = Q(q1r | q2r)
                 burials = burials.filter(qr)

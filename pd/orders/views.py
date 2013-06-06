@@ -129,7 +129,20 @@ class OrderList(LORURequiredMixin, ListView):
             if form.cleaned_data['account_number_to']:
                 orders = orders.filter(loru_number__lte=form.cleaned_data['account_number_to'])
             if form.cleaned_data['responsible']:
-                orders = orders.filter(burial__responsible__last_name__icontains=form.cleaned_data['responsible'])
+                fio = [f.strip('.') for f in form.cleaned_data['responsible'].split(' ')]
+                q1r = Q(burial__responsible__isnull=False)
+                q2r = Q(burial__place__isnull=False)
+                if len(fio) > 2:
+                    q1r &= Q(burial__responsible__middle_name__icontains=fio[2])
+                    q2r &= Q(burial__place__responsible__middle_name__icontains=fio[2])
+                if len(fio) > 1:
+                    q1r &= Q(burial__responsible__first_name__icontains=fio[1])
+                    q2r &= Q(burial__place__responsible__first_name__icontains=fio[1])
+                if len(fio) > 0:
+                    q1r &= Q(burial__responsible__last_name__icontains=fio[0])
+                    q2r &= Q(burial__place__responsible__last_name__icontains=fio[0])
+                qr = Q(q1r | q2r)
+                orders = orders.filter(qr)
             if form.cleaned_data['cemetery']:
                 orders = orders.filter(burial__cemetery__name=form.cleaned_data['cemetery'])
             if form.cleaned_data['area']:
