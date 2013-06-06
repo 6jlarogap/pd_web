@@ -9,6 +9,7 @@ urlpatterns = patterns('users.views',
 
     url(r'^register/', 'uregister', name='uregister'),
     url(r'^profile/', 'profile', name='profile'),
+    url(r'^loru/', 'loru_registry', name='loru_registry'),
 
     url(r'^user/(?P<pk>\d+)/edit/', 'edit_user', name='edit_user'),
     url(r'^user/(?P<pk>\d+)/password/', 'change_password', name='change_password'),

@@ -17,7 +17,6 @@ urlpatterns += patterns('pd.views',
     url(r'^', include('mobile.urls')),
     url(r'^geo/', include('geo.urls')),
     url(r'^import/', include('import_burials.urls')),
-    url(r'^import/', include('import_burials.urls')),
 )
 
 # Для включения административных функций (http://.../admin)
