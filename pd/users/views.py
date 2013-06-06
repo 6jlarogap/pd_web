@@ -116,7 +116,7 @@ class LoruRegistryView(View):
         if formset.is_valid():
             formset.save()
             messages.success(self.request, _(u"Данные сохранены"))
-            write_log(self.request, formset.instance, _(u'Изменены данные ЛОРУ'))
+            write_log(self.request, self.request.user.profile, _(u'Изменены данные ЛОРУ'))
             return redirect(self.get_success_url())
         else:
             messages.error(self.request, _(u"Обнаружены ошибки"))
@@ -158,7 +158,7 @@ class ProfileView(UpdateView):
     def form_valid(self, form):
         self.bank_formset.save()
         form.save()
-        write_log(self.request, form.instance, _(u'Изменены данные ЛОРУ'))
+        write_log(self.request, form.instance, _(u'Изменены данные организации'))
         messages.success(self.request, _(u"Данные сохранены"))
         return redirect(self.get_success_url())
 
