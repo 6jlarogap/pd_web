@@ -299,6 +299,9 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, forms.Mo
                 date_diff = 2 # Saturday
             self.initial['plan_date'] = datetime.date.today() + datetime.timedelta(date_diff)
 
+        # Отсутствие выбора будет в выпадающем списке не "---", а ""
+        self.fields['applicant_organization'].empty_label = ''
+        
         places_count = 1
         if self.instance.place_number and self.instance.get_place() and self.instance.grave_number:
             places_count = self.instance.get_place().get_places_count()
