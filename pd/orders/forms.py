@@ -42,6 +42,9 @@ class OrderForm(ChildrenJSONMixin, forms.ModelForm):
         self.fields['agent'].queryset = self.fields['agent'].queryset.select_related('user')
         self.fields['dover'].queryset = self.fields['dover'].queryset.select_related('agent', 'agent__user')
 
+        # Отсутствие выбора будет в выпадающем списке не "---", а ""
+        self.fields['applicant_organization'].empty_label = ''
+        
         self.forms = self.construct_forms()
 
     def is_valid(self):
