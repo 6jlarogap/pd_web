@@ -12,6 +12,7 @@ from django.utils.translation import ugettext_lazy as _
 from django.views.generic.base import View
 from django.views.generic.edit import UpdateView, CreateView
 
+from burials.views import UGHRequiredMixin
 from logs.models import write_log
 from users.forms import RegisterForm, LoruFormset, ProfileForm, UserDataForm, ChangePasswordForm, BankAccountFormset, OrgForm
 from users.models import Profile, Org
@@ -85,7 +86,7 @@ class RegisterView(View):
 
 uregister = RegisterView.as_view()
 
-class LoruRegistryView(View):
+class LoruRegistryView(UGHRequiredMixin, View):
     """
     Редактирование реестра ЛОРУ у этого УГХ
     """
@@ -104,19 +105,12 @@ class LoruRegistryView(View):
             'user': self.request.user,
         }
 
-    def dispatch(self, request, *args, **kwargs):
-        self.request = request
-        if request.user.is_authenticated() and \
-           request.user.profile.is_ugh():
-           return super(LoruRegistryView, self).dispatch(request, *args, **kwargs)
-        return redirect('/')
-        
     def post(self, request, *args, **kwargs):
         formset = self.get_formset()
         if formset.is_valid():
             formset.save()
             messages.success(self.request, _(u"Данные сохранены"))
-            write_log(self.request, self.request.user.profile, _(u'Изменены данные ЛОРУ'))
+            write_log(self.request, self.request.user.profile, _(u'Изменены данные реестра ЛОРУ'))
             return redirect(self.get_success_url())
         else:
             messages.error(self.request, _(u"Обнаружены ошибки"))

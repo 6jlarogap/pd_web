@@ -81,7 +81,7 @@
                         <ul class="dropdown-menu">
                             {% if user.profile.is_ugh %}
                                 <li><a href="{% url manage_cemeteries %}">{% trans "Кладбища" %}</a></li>
-                                <li><a href="{% url loru_registry %}">{% trans "ЛОРУ" %}</a></li>
+                                <li><a href="{% url loru_registry %}">{% trans "Реестр ЛОРУ" %}</a></li>
                             {% endif %}
                             {% if user.profile.is_loru %}
                                 <li><a href="{% url manage_products %}">{% trans "Товары и услуги" %}</a></li>
