@@ -14,11 +14,11 @@ class AutocompleteFIO(View):
         fio = [f.strip('.') for f in query.split(' ')]
         q = Q()
         if len(fio) > 2:
-            q &= Q(middle_name__icontains=fio[2])
+            q &= Q(middle_name__istartswith=fio[2])
         if len(fio) > 1:
-            q &= Q(first_name__icontains=fio[1])
+            q &= Q(first_name__istartswith=fio[1])
         if len(fio) > 0:
-            q &= Q(last_name__icontains=fio[0])
+            q &= Q(last_name__istartswith=fio[0])
 
         persons = DeadPerson.objects.filter(q).distinct('last_name', 'first_name', 'middle_name')
         return HttpResponse(json.dumps([{'value': unicode(c)} for c in persons[:20]]), mimetype='text/javascript')
@@ -32,11 +32,11 @@ class AutocompleteAlive(View):
         fio = [f.strip('.') for f in query.split(' ')]
         q = Q()
         if len(fio) > 2:
-            q &= Q(middle_name__icontains=fio[2])
+            q &= Q(middle_name__istartswith=fio[2])
         if len(fio) > 1:
-            q &= Q(first_name__icontains=fio[1])
+            q &= Q(first_name__istartswith=fio[1])
         if len(fio) > 0:
-            q &= Q(last_name__icontains=fio[0])
+            q &= Q(last_name__istartswith=fio[0])
 
         persons = AlivePerson.objects.filter(q).distinct('last_name', 'first_name', 'middle_name')
         return HttpResponse(json.dumps([{'value': unicode(c)} for c in persons[:20]]), mimetype='text/javascript')
