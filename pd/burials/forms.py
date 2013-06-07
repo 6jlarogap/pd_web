@@ -298,7 +298,7 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, forms.Mo
             if datetime.date.today().weekday() == 5 and request.user.profile.is_ugh():
                 date_diff = 2 # Saturday
             self.initial['plan_date'] = datetime.date.today() + datetime.timedelta(date_diff)
-        
+
         # Отсутствие выбора будет в выпадающем списке не "---", а ""
         self.fields['applicant_organization'].empty_label = ''
         
