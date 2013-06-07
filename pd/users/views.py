@@ -12,6 +12,7 @@ from django.utils.translation import ugettext_lazy as _
 from django.views.generic.base import View
 from django.views.generic.edit import UpdateView, CreateView
 
+from burials.views import UGHRequiredMixin
 from logs.models import write_log
 from users.forms import RegisterForm, LoruFormset, ProfileForm, UserDataForm, ChangePasswordForm, BankAccountFormset, OrgForm
 from users.models import Profile, Org
@@ -85,6 +86,41 @@ class RegisterView(View):
 
 uregister = RegisterView.as_view()
 
+class LoruRegistryView(UGHRequiredMixin, View):
+    """
+    Редактирование реестра ЛОРУ у этого УГХ
+    """
+
+    template_name = 'loru_registry.html'
+
+    def get_success_url(self):
+        return reverse('loru_registry')
+
+    def get_formset(self):
+        return LoruFormset(data=self.request.POST or None, instance=self.request.user.profile.org)
+
+    def get_context_data(self, **kwargs):
+        return {
+            'formset': self.get_formset(),
+            'user': self.request.user,
+        }
+
+    def post(self, request, *args, **kwargs):
+        formset = self.get_formset()
+        if formset.is_valid():
+            formset.save()
+            messages.success(self.request, _(u"Данные сохранены"))
+            write_log(self.request, self.request.user.profile, _(u'Изменены данные реестра ЛОРУ'))
+            return redirect(self.get_success_url())
+        else:
+            messages.error(self.request, _(u"Обнаружены ошибки"))
+            return self.get(request, *args, **kwargs)
+            
+    def get(self, request, *args, **kwargs):
+        return render(request, self.template_name, self.get_context_data())
+
+loru_registry = LoruRegistryView.as_view()
+
 class ProfileView(UpdateView):
     """
     Редактирование профиля
@@ -98,30 +134,25 @@ class ProfileView(UpdateView):
         return reverse('profile')
 
     def dispatch(self, request, *args, **kwargs):
-        if not request.user.is_authenticated():
-            return redirect('/')
-        if request.user.profile.org and request.user.profile.is_ugh():
-            self.loru_formset = LoruFormset(data=request.POST or None, instance=request.user.profile.org)
-        else:
-            self.loru_formset = LoruFormset()
-        self.bank_formset = BankAccountFormset(data=request.POST or None, instance=request.user.profile.org)
-        return super(ProfileView, self).dispatch(request, *args, **kwargs)
+        self.request = request
+        if request.user.is_authenticated():
+           self.bank_formset = BankAccountFormset(data=request.POST or None, instance=request.user.profile.org)
+           return super(ProfileView, self).dispatch(request, *args, **kwargs)
+        return redirect('/')
 
     def get_object(self, queryset=None):
         return self.request.user.profile
 
     def get_context_data(self, **kwargs):
         data = super(ProfileView, self).get_context_data(**kwargs)
-        data['loru_formset'] = self.loru_formset
         data['bank_formset'] = self.bank_formset
         data['unowned_orgs'] = Org.objects.annotate(profiles=Count('profile')).filter(profiles=0)
         return data
 
     def form_valid(self, form):
         self.bank_formset.save()
-        self.loru_formset.save()
         form.save()
-        write_log(self.request, form.instance, _(u'Изменены данные ЛОРУ'))
+        write_log(self.request, form.instance, _(u'Изменены данные организации и/или пользователя'))
         messages.success(self.request, _(u"Данные сохранены"))
         return redirect(self.get_success_url())
 
