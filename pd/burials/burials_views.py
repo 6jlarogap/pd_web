@@ -152,7 +152,7 @@ class BurialView(BurialsListGenericMixin, DetailView):
                 reverse('view_burial', args=[b.pk]), b.pk,
             ))
             redirect_to_edit = True
-            
+
         if request.POST.get('ready') and b.is_edit() and b.is_full():
             return redirect(reverse('edit_burial', args=[b.pk]) + '?action=ready')
         if request.POST.get('approve') and request.user.profile.is_ugh() and b.can_approve():
