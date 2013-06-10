@@ -362,21 +362,13 @@ class Burial(models.Model):
         return False
 
     def can_ugh_deannulate(self):
-        if not self.annulated:
-            return False
-        return self.is_full() and not self.is_edit()
+        return self.annulated and self.is_full() and not self.is_edit()
 
     def can_loru_annulate(self):
-        if self.annulated:
-            return False
-        return self.is_full() and self.is_edit()
+        return not self.annulated and self.is_full() and self.is_edit()
 
     def can_loru_deannulate(self):
-        if not self.annulated:
-            return False
-        if self.is_full():
-            return self.is_draft() or self.is_declined() or self.is_backed()
-        return True
+        return self.annulated and self.is_full() and self.is_edit()
 
     def can_back(self):
         return self.is_full() and not self.is_edit() and not self.is_finished()
