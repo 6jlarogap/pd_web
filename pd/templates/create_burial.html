@@ -46,8 +46,8 @@
                     {% if user.profile.is_loru %}
                         {% if not b.pk %}
                             <input type="submit" class="btn btn-commit-burial" name="ready" value="{% trans "cохранить и отправить на согласование" %}"/>
-                        <!-- захоронение is_edit: черновик, отклонено, отозвано -->
-                        {% elif b.is_edit and b.order and not b.order.annulated and b.can_loru_annulate %}
+                        <!-- захоронение: can_loru_annulate: not annulated and is_edit: черновик, отклонено, отозвано -->
+                        {% elif b.can_loru_annulate and b.order and not b.order.annulated %}
                             <input type="submit" class="btn btn-commit-burial" name="ready" value="{% trans "cохранить и отправить на согласование" %}"/>
                             <input type="submit" class="btn btn-commit-burial" name="annulate" value="{% trans "аннулировать" %}"/>
                         {% elif b.can_back %}
