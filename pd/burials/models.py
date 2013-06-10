@@ -361,11 +361,14 @@ class Burial(models.Model):
             return True
         return False
 
-    def can_ugh_deannulate(self):
-        return self.annulated and self.is_full() and not self.is_edit()
-
     def can_loru_annulate(self):
         return not self.annulated and self.is_full() and self.is_edit()
+
+    # УГХ может де-аннулировать всё аннулированное, кроме того что может
+    # аннулировать лишь ЛОРУ
+    #
+    def can_ugh_deannulate(self):
+        return self.annulated and not (self.is_full() and self.is_edit())
 
     def can_loru_deannulate(self):
         return self.annulated and self.is_full() and self.is_edit()
