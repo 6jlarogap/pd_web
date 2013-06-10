@@ -723,19 +723,7 @@ class BurialCommitForm(BurialForm):
         pass
 
     def setup_required_deadman_dc(self):
-        #
-        # Установка обязательности полей свидетельства о смерти (СоС)
-        # при закрытии захоронения.
-        # - если захоронение архивное или перенесенное, то проверка обязательности
-        #   не производится, т.е. можно заполнить или все поля СоС, или некоторые,
-        #   или не заполнять СоС вообще;
-        # - для остальных захоронений обязательны все поля СоС, кроме серии.
-        #
-        if self.instance.is_archive() or self.request.REQUEST.get('archive') or self.instance.is_transferred():
-            return
-        for f in self.dc_form.fields:
-            if f != 'series':
-                self.dc_form.fields[f].required = True
+        pass
 
     def setup_required_responsible(self):
         pass
@@ -774,9 +762,6 @@ class BurialCommitForm(BurialForm):
                     if not self.applicant_form.is_valid_data():
                         raise forms.ValidationError(_(u"Нужно указать Заявителя-ФЛ"))
 
-                if self.dc_form.is_valid() and not self.dc_form.cleaned_data.get("s_number"):
-                    raise forms.ValidationError(_(u"Не заполнен номер свидетельства о смерти"))
-                
                 if self.cleaned_data.get('opf') == 'person':
                     if self.applicant_id_form.is_valid():
                         for field in ['series', 'number', ]:
@@ -826,6 +811,17 @@ class BurialCommitForm(BurialForm):
                not self.cleaned_data.get('account_number').strip():
                 msg = _(u"Нельзя закрывать архивное захоронение без указания его номера в книге учета")
                 raise forms.ValidationError(msg)
+
+        if self.dc_form.is_valid() and \
+           not (self.instance.is_archive() or self.request.REQUEST.get('archive') or \
+                self.instance.is_transferred() or \
+                self.cleaned_data.get('burial_container') == Burial.CONTAINER_BIO):
+            if not self.dc_form.cleaned_data.get("s_number").strip():
+                raise forms.ValidationError(_(u"Не заполнен номер свидетельства о смерти"))
+            if not self.dc_form.cleaned_data.get("release_date"):
+                raise forms.ValidationError(_(u"Не указана дата свидетельства о смерти"))
+            if not self.dc_form.cleaned_data.get("zags"):
+                raise forms.ValidationError(_(u"Не указан ЗАГС, выдавший свидетельство о смерти"))
 
         place_number = self.cleaned_data.get('place_number') or ''
         area = self.cleaned_data.get('area')
