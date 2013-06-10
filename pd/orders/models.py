@@ -90,9 +90,13 @@ class Order(models.Model):
     def annulate(self):
         self.annulated = True
         b = self.get_burial()
-        if b and b.status in [Burial.STATUS_READY, Burial.STATUS_APPROVED]:
-            b.status = Burial.STATUS_BACKED
-            b.save()
+        if b:
+            if b.status in [Burial.STATUS_READY, Burial.STATUS_APPROVED]:
+                b.status = Burial.STATUS_BACKED
+                b.save()
+            if b.can_loru_annulate():
+                b.annulated = True
+                b.save()
         self.save()
 
     def recover(self):
