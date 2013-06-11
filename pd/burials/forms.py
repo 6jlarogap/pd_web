@@ -836,6 +836,9 @@ class BurialCommitForm(BurialForm):
                 msg = _(u"Не указано место для закрытого участка. Нельзя отправлять на согласование")
                 raise forms.ValidationError(msg)
 
+        if self.instance.is_closed() and not place_number.strip():
+            raise forms.ValidationError(_(u"Не указан номер места закрытого захоронения"))
+
         cemetery = self.cleaned_data.get('cemetery')
         today = datetime.date.today()
         plan_date = self.cleaned_data.get('plan_date')
