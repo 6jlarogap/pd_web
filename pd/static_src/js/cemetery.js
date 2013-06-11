@@ -28,6 +28,8 @@ function setup_address_autocompletes() {
     CEMETERIES_URL = '/autocomplete/cemeteries/';
     AREAS_URL = '/autocomplete/areas/';
     ALIVE_FIO_URL = '/autocomplete/alive/';
+    FIRST_NAME_URL = '/autocomplete/firstname/';
+    MIDDLE_NAME_URL = '/autocomplete/middlename/';
     ORG_URL = '/autocomplete/org/';
     DOCSOURCE_URL = '/autocomplete/docsources/';
 
@@ -124,6 +126,34 @@ function setup_address_autocompletes() {
             if (query.length < 2) { return }
             $.ajax({
                 url: FIO_URL + "?query=" + query,
+                dataType: 'json',
+                success: function(data) {
+                    typeahead.process(data);
+                }
+            });
+        }
+    });
+
+    $('#id_applicant-first_name, #id_deadman-first_name, #id_responsible-first_name').attr('autocomplete', 'off').typeahead({
+        items: 100,
+        source: function (typeahead, query) {
+            if (query.length < 2) { return }
+            $.ajax({
+                url: FIRST_NAME_URL + "?query=" + query,
+                dataType: 'json',
+                success: function(data) {
+                    typeahead.process(data);
+                }
+            });
+        }
+    });
+
+    $('#id_applicant-middle_name, #id_deadman-middle_name, #id_responsible-middle_name').attr('autocomplete', 'off').typeahead({
+        items: 100,
+        source: function (typeahead, query) {
+            if (query.length < 2) { return }
+            $.ajax({
+                url: MIDDLE_NAME_URL + "?query=" + query,
                 dataType: 'json',
                 success: function(data) {
                     typeahead.process(data);
