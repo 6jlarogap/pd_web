@@ -48,7 +48,7 @@
             <th>{% trans "Дата" %}</th>
             <th></th>
         </tr>
-        {% for b in place.burial_set.all %}
+        {% for b in place.burials_available %}
             <tr>
                 <td>{{ b.pk }}</td>
                 <td>{{ b.grave_number|default:"" }}</td>
