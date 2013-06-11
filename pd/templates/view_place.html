@@ -79,7 +79,7 @@
             <th>{% trans "Дата" %}</th>
             <th></th>
         </tr>
-        {% for ex in place.exhumationrequest_set.all %}
+        {% for ex in place.exhumated_available %}
             {% with ex.burial as b %}
                 <tr>
                     <td>{{ b.pk }}</td>

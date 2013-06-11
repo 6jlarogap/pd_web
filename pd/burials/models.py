@@ -139,6 +139,11 @@ class Place(models.Model):
         q_ex = Q(status=Burial.STATUS_EXHUMATED) | Q(annulated=True)
         return self.burial_set.exclude(q_ex)
 
+    def exhumated_available(self):
+        q_in = Q(status=Burial.STATUS_EXHUMATED)
+        q_ex = Q(annulated=True)
+        return self.burial_set.filter(q_in).exclude(q_ex)
+
     def burial_count(self):
         return self.burials_available().distinct('grave_number').count()
 
