@@ -505,7 +505,14 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, forms.Mo
         if self.deadman_form.is_valid() and self.instance.burial_container != Burial.CONTAINER_BIO:
             deadman = self.deadman_form.save(commit=False)
             if self.deadman_address_form.is_valid_data():
+                # Хотя бы одно поле из адреса заполнено
                 deadman.address = self.deadman_address_form.save()
+            else:
+                try:
+                    deadman.address.delete()
+                except (AttributeError, ProtectedError):
+                    pass
+                deadman.address = None
             deadman.save()
 
             if self.dc_form.is_valid():
@@ -516,6 +523,10 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, forms.Mo
         else:
             try:
                 self.instance.deadman.delete()
+            except (AttributeError, ProtectedError):
+                pass
+            try:
+                self.instance.deadman.address.delete()
             except (AttributeError, ProtectedError):
                 pass
             self.instance.deadman = None
@@ -824,6 +835,9 @@ class BurialCommitForm(BurialForm):
             elif self.request.REQUEST.get('ready'):
                 msg = _(u"Не указано место для закрытого участка. Нельзя отправлять на согласование")
                 raise forms.ValidationError(msg)
+
+        if self.instance.is_closed() and not place_number.strip():
+            raise forms.ValidationError(_(u"Не указан номер места закрытого захоронения"))
 
         cemetery = self.cleaned_data.get('cemetery')
         today = datetime.date.today()
