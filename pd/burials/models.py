@@ -342,6 +342,9 @@ class Burial(models.Model):
     def is_ugh(self):
         return self.is_ugh_only() or self.is_archive()
 
+    def is_bio(self):
+        return self.burial_container == self.CONTAINER_BIO
+
     def can_approve(self):
         if self.is_ugh():
             return False
