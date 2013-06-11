@@ -79,22 +79,24 @@
             <th>{% trans "Дата" %}</th>
             <th></th>
         </tr>
-        {% for ex in place.exhumated_available %}
+        {% for ex in place.exhumationrequest_set.all %}
             {% with ex.burial as b %}
-                <tr>
-                    <td>{{ b.pk }}</td>
-                    <td>{{ b.grave_number|default:"" }}</td>
-                    <td>{% if b.is_bio %}{% trans "Биоотходы" %}{% else %}{{ b.deadman|default:"Неизвестный" }}{% endif %}</td>
-                    <td>{{ b.fact_date|date:"d.m.Y"|default:"" }}</td>
-                    <td>
-                        <a class="btn" href="{% url make_exhumate_report b.pk %}" target="_blank">{% trans "справка" %}</a>
-                        <form action="{% url burial_cancel_exhumation ex.pk %}" method="POST" class="inline">
-                            {% csrf_token %}
-                            <input type="submit" class="btn" value="{% trans "Отменить эксгумацию" %}" />
-                        </form>
+                {% if not b.annulated %}
+                    <tr>
+                        <td>{{ b.pk }}</td>
+                        <td>{{ b.grave_number|default:"" }}</td>
+                        <td>{% if b.is_bio %}{% trans "Биоотходы" %}{% else %}{{ b.deadman|default:"Неизвестный" }}{% endif %}</td>
+                        <td>{{ b.fact_date|date:"d.m.Y"|default:"" }}</td>
+                        <td>
+                            <a class="btn" href="{% url make_exhumate_report b.pk %}" target="_blank">{% trans "справка" %}</a>
+                            <form action="{% url burial_cancel_exhumation ex.pk %}" method="POST" class="inline">
+                                {% csrf_token %}
+                                <input type="submit" class="btn" value="{% trans "Отменить эксгумацию" %}" />
+                            </form>
 
-                    </td>
-                </tr>
+                        </td>
+                    </tr>
+                {% endif %}
             {% endwith %}
         {% endfor %}
     </table>
