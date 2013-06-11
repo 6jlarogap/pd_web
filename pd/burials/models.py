@@ -4,6 +4,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.db.models.deletion import ProtectedError
 from django.utils.translation import ugettext_lazy as _
+from django.db.models.query_utils import Q
 from pd.models import UnclearDateModelField
 
 import os
@@ -134,8 +135,12 @@ class Place(models.Model):
     def __unicode__(self):
         return _(u'Кл. %s, уч. %s, ряд %s, место %s') % (self.cemetery, self.area and self.area.name or '', self.row, self.place)
 
+    def burials_available(self):
+        q_ex = Q(status=Burial.STATUS_EXHUMATED) | Q(annulated=True)
+        return self.burial_set.exclude(q_ex)
+
     def burial_count(self):
-        return self.burial_set.exclude(status=Burial.STATUS_EXHUMATED).distinct('grave_number').count()
+        return self.burials_available().distinct('grave_number').count()
 
     def get_places_count(self):
         if self.places_count is not None:
@@ -336,6 +341,9 @@ class Burial(models.Model):
 
     def is_ugh(self):
         return self.is_ugh_only() or self.is_archive()
+
+    def is_bio(self):
+        return self.burial_container == self.CONTAINER_BIO
 
     def can_approve(self):
         if self.is_ugh():
