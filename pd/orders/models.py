@@ -93,8 +93,9 @@ class Order(models.Model):
         if b:
             if b.status in [Burial.STATUS_READY, Burial.STATUS_APPROVED]:
                 b.status = Burial.STATUS_BACKED
+                b.account_number = None
                 b.save()
-            if b.can_loru_annulate():
+            elif b.can_loru_annulate():
                 b.annulated = True
                 b.save()
         self.save()
