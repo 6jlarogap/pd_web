@@ -10,7 +10,14 @@
         <a href="{% url order_products order.pk %}">{% trans "Товары" %}</a>
     </li>
     {% if order.get_burial %}
-        {% if order.get_burial.is_edit %}
+        {% if order.get_burial.annulated %}
+            <li {% if tab == 'burial' %}class="active"{% endif %}>
+                <a href="{% url view_burial order.get_burial.pk %}">
+                    {% trans "Захоронение" %}: {{ order.get_burial.get_status_display }}
+                    {% if order.get_burial.annulated %}<br />{% trans "Аннулировано" %}{% endif %}
+                </a>
+            </li>
+        {% elif order.get_burial.is_edit %}
             <li {% if tab == 'burial' %}class="active"{% endif %}>
                 <a href="{% url edit_burial order.get_burial.pk %}">
                     {% trans "Захоронение" %}: {{ order.get_burial.get_status_display }}

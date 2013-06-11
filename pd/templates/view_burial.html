@@ -156,11 +156,19 @@
                 <input type="submit" class="btn" name="back" value="{% trans "отозвать" %}">
             {% endif %}
         {% endif %}
-        {% if user.profile.is_ugh %}
-            {% if b.can_deannulate %}
+        {% if user.profile.is_loru %}
+            {% if b.can_loru_deannulate %}
                 <input type="submit" class="btn" name="deannulate" value="{% trans "де-аннулировать" %}">
             {% endif %}
-            {% if b.can_annulate %}
+            {% if b.can_loru_annulate %}
+                <input type="submit" class="btn" name="annulate" value="{% trans "аннулировать" %}">
+            {% endif %}
+        {% endif %}
+        {% if user.profile.is_ugh %}
+            {% if b.can_ugh_deannulate %}
+                <input type="submit" class="btn" name="deannulate" value="{% trans "де-аннулировать" %}">
+            {% endif %}
+            {% if b.can_ugh_annulate %}
                 <br/><br/>
                 <label>{% trans "Причина" %}</label>
                 <select name="reason_typical">
@@ -204,7 +212,7 @@
                 <a href="{% url burial_exhumate b.pk %}" class="btn">{% trans "эксгумировать" %}</a>
             {% endif %}
         {% endif %}
-        {% if user.profile.org == b.applicant_organization and b.is_edit and b.is_full_or_transferred %}
+        {% if user.profile.org == b.applicant_organization and b.is_edit and b.is_full_or_transferred and not b.annulated %}
             <a class="btn" href="{% url edit_burial b.pk %}">{% trans "правка" %}</a>
         {% elif user.profile.org == b.ugh or is_accessible %}
             {% if b.is_edit and b.is_ugh %}

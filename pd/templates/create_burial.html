@@ -52,6 +52,9 @@
                         {% elif b.can_back %}
                             <input type="submit" class="btn btn-commit-burial" name="back" value="{% trans "отозвать" %}"/>
                         {% endif %}
+                        {% if b.can_loru_annulate %}
+                            <input type="submit" class="btn btn-commit-burial" name="annulate" value="{% trans "аннулировать" %}"/>
+                        {% endif %}
                         {% if b.order %}
                             <a href="{% url order_services b.order.pk %}" class="btn btn-next">{% trans "далее" %}</a>
                         {% elif self.request.REQUEST.order %}

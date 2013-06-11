@@ -142,6 +142,7 @@ class BurialView(BurialsListGenericMixin, DetailView):
         old_status = b.status
         old_annulated = b.annulated
         redirect_to_view = False
+        redirect_to_edit = False
         reason = request.POST.get('reason') or request.POST.get('reason_typical')
         if request.POST.get('back') and request.user.profile.is_loru() and b.can_back():
             b.status = Burial.STATUS_BACKED
@@ -150,6 +151,7 @@ class BurialView(BurialsListGenericMixin, DetailView):
             messages.success(request, _(u"<a href='%s'>Захоронение %s</a> отозвано") % (
                 reverse('view_burial', args=[b.pk]), b.pk,
             ))
+            redirect_to_edit = True
 
         if request.POST.get('ready') and b.is_edit() and b.is_full():
             return redirect(reverse('edit_burial', args=[b.pk]) + '?action=ready')
@@ -188,20 +190,28 @@ class BurialView(BurialsListGenericMixin, DetailView):
                     ))
             else:
                 return self.get(request, *args, **kwargs)
-        if request.POST.get('annulate') and request.user.profile.is_ugh() and b.can_annulate():
+        if request.POST.get('annulate') and \
+            (request.user.profile.is_ugh() and b.can_ugh_annulate() or \
+             request.user.profile.is_loru() and b.can_loru_annulate() \
+            ):
             b.annulated = True
             write_log(request, b, _(u'Захоронение аннулировано'), reason)
             messages.success(request, _(u"<a href='%s'>Захоронение %s</a> аннулировано") % (
                 reverse('view_burial', args=[b.pk]), b.pk,
             ))
             redirect_to_view = True
-        if request.POST.get('deannulate') and request.user.profile.is_ugh() and b.can_deannulate():
+
+        if request.POST.get('deannulate') and \
+           (request.user.profile.is_ugh() and b.can_ugh_deannulate() or \
+            request.user.profile.is_loru() and b.can_loru_deannulate()
+           ):
             b.annulated = False
-            write_log(request, b, _(u'Захоронение восстановлено после аннулирования'), reason)
+            write_log(request, b, _(u'Захоронение восстановлено после аннулирования'))
             messages.success(request, _(u"<a href='%s'>Захоронение %s</a> восстановлено после аннулирования") % (
                 reverse('view_burial', args=[b.pk]), b.pk,
             ))
-            redirect_to_view = True
+            redirect_to_view = request.user.profile.is_ugh()
+            redirect_to_edit = request.user.profile.is_loru()
         if old_status != b.status or old_annulated != b.annulated:
             b.save()
         else:
@@ -210,10 +220,11 @@ class BurialView(BurialsListGenericMixin, DetailView):
                 b.get_status_display(),
             )
             messages.success(request, msg)
-        if request.POST.get('back'):
-            return redirect('edit_burial', pk=b.pk)
-        elif redirect_to_view:
+            
+        if redirect_to_view:
             return redirect('view_burial', b.pk)
+        elif redirect_to_edit:
+            return redirect('edit_burial', pk=b.pk)
         return redirect('dashboard')
 
     def get_close_form(self):
@@ -572,11 +583,20 @@ class CreateBurial(CreateView):
         if action:
             redirect_to_view = False
             old_status = b.status
+            old_annulated = b.annulated
 
             if action == 'ready' and self.request.user.profile.is_loru() and b.is_edit() and b.is_full():
                 b.status = Burial.STATUS_READY
                 write_log(self.request, b, _(u'Захоронение отправлено на согласование'))
                 msg = _(u"<a href='%s'>Захоронение %s</a> отправлено на согласование") % (
+                    reverse('view_burial', args=[b.pk]), b.pk,
+                )
+                messages.success(self.request, msg)
+
+            if action == 'annulate' and self.request.user.profile.is_loru() and b.can_loru_annulate():
+                b.annulated = True
+                write_log(self.request, b, _(u'Захоронение аннулировано'))
+                msg = _(u"<a href='%s'>Захоронение %s</a> аннулировано") % (
                     reverse('view_burial', args=[b.pk]), b.pk,
                 )
                 messages.success(self.request, msg)
@@ -599,7 +619,7 @@ class CreateBurial(CreateView):
                 ))
                 redirect_to_view = True
 
-            if old_status != b.status:
+            if old_status != b.status or old_annulated != b.annulated:
                 b.save()
             else:
                 msg = _(u"Выполнить операцию не удалось: <a href='%s'>захоронение</a> в статусе \"%s\"") % (
@@ -610,11 +630,10 @@ class CreateBurial(CreateView):
 
             if b.order:
                 self.request.session['order_burial_saved'] = True
-                if b.is_edit():
+                if b.is_edit() and not b.annulated:
                     return redirect('edit_burial', b.pk)
                 else:
                     return redirect('view_burial', b.pk)
-                    
             if redirect_to_view:
                 return redirect('view_burial', b.pk)
             else:
@@ -636,10 +655,13 @@ class CreateBurial(CreateView):
             action = 'ready'
         if self.request.REQUEST.get('complete'):
             action = 'complete'
+        if self.request.REQUEST.get('annulate'):
+            action = 'annulate'
         return action
 
     def get_form_class(self):
-        if self.get_action():
+        action =  self.get_action()
+        if action and action != 'annulate':
             return BurialCommitForm
         elif self.get_object() and self.get_object().is_finished() and self.request.user.profile.is_ugh():
             return BurialCommitForm
@@ -664,13 +686,12 @@ class EditBurialView(BurialsListGenericMixin, CreateBurial):
         q = self.get_qs_filter()
 
         if self.request.user.profile.is_loru():
-            q3 = Q(status__in=[Burial.STATUS_DRAFT, Burial.STATUS_DECLINED, Burial.STATUS_BACKED])
+            q3 = Q(status__in=[Burial.STATUS_DRAFT, Burial.STATUS_DECLINED, Burial.STATUS_BACKED], annulated=False)
             q3 |= Q(source_type__in=[Burial.SOURCE_TRANSFERRED])
             q2 = q & q3
         elif self.request.user.profile.is_ugh():
             q3 = Q(source_type__in=[Burial.SOURCE_UGH, Burial.SOURCE_ARCHIVE, Burial.SOURCE_TRANSFERRED])
             q3 |= Q(status__in=[Burial.STATUS_CLOSED, ])
-            q3 |= Q(annulated=True)
             q2 = q & q3
         else:
             return Burial.objects.none()
