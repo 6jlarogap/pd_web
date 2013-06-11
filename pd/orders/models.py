@@ -91,12 +91,15 @@ class Order(models.Model):
         self.annulated = True
         b = self.get_burial()
         if b:
+            save_burial = False
+            if b.can_loru_annulate():
+                b.annulated = True
+                save_burial = True
             if b.status in [Burial.STATUS_READY, Burial.STATUS_APPROVED]:
                 b.status = Burial.STATUS_BACKED
                 b.account_number = None
-                b.save()
-            elif b.can_loru_annulate():
-                b.annulated = True
+                save_burial = True
+            if  save_burial:
                 b.save()
         self.save()
 
