@@ -140,7 +140,7 @@
     </dl>
     <form action="" method="POST">
         {% csrf_token %}
-        {% if user.profile.is_loru and b.is_full %}
+        {% if user.profile.is_loru and b.is_full and not b.annulated %}
             {% if b.is_edit %}
                 <input type="submit" class="btn" name="ready" value="{% trans "отправить на согласование" %}">
             {% elif b.can_back %}
