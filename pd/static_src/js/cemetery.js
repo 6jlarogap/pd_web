@@ -574,7 +574,7 @@ $(function() {
 
     old_grave_value = $('#id_grave_number').val();
 
-    $('#id_cemetery, #id_area, #id_row, #id_place_number').change(function() {
+    $('#cont_place #id_cemetery, #cont_place #id_area, #cont_place #id_row, #cont_place #id_place_number').change(function() {
         $('#id_grave_number').html('<option value="1">1</option>');
         $('#id_responsible-take_from_0').removeAttr('checked').closest('li').hide();
 
