@@ -34,6 +34,14 @@
 
        });
 
+    {% if form.instance.pk and form.instance.is_bio %}
+        if(!$("#cont_dead").is(":hidden")){
+            $("#cont_dead").slideToggle();
+        }
+        if(!$("#cont_responsible_all").is(":hidden")){
+            $("#cont_responsible_all").slideToggle();
+        }
+    {% endif %}
     });
 </script>
 {{ form.coffin_type.errors }}
