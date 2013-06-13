@@ -34,9 +34,6 @@
 
        });
 
-       {% if form.instance.pk %}
-       $("input[name='burial_container']").change();
-       {% endif %}
     });
 </script>
 {{ form.coffin_type.errors }}
