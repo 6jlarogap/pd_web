@@ -716,7 +716,7 @@ $(function() {
                     form_block.find('input[id$=street_name]').val(street);
                 }
             } else {
-                alert("Адрес неразборчив (status="+status+"), вводите в виде: улица ..., город, область_край")
+                alert("Ошибка адреса, status="+status)
             }
         })
     });
