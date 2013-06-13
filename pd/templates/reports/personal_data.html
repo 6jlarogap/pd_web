@@ -1,0 +1,268 @@
+<TABLE FRAME=VOID ALIGN=LEFT CELLSPACING=0 COLS=10 RULES=NONE BORDER=0>
+    <COLGROUP>
+        <COL WIDTH=90>
+        <COL WIDTH=90>
+        <COL WIDTH=90>
+        <COL WIDTH=90>
+        <COL WIDTH=90>
+        <COL WIDTH=90>
+        <COL WIDTH=90>
+        <COL WIDTH=90>
+        <COL WIDTH=90>
+        <COL WIDTH=100>
+    </COLGROUP>
+    <TBODY>
+    <TR>
+        <TD COLSPAN=10 ALIGN=CENTER VALIGN=TOP STYLE="font-size: 140%">
+            <B>
+            СОГЛАСИЕ НА ОБРАБОТКУ ПЕРСОНАЛЬНЫХ ДАННЫХ
+            </B>
+        </TD>
+    </TR>
+    <TR HEIGHT=10>
+    </TR>
+    <TR>
+        <TD COLSPAN=10 ALIGN=LEFT VALIGN=CENTER>
+            Представитель субъекта персональных данных (наследник либо иное лицо,
+            дающее согласие на обработку персональных данных субъекта,
+            если такое согласие не было дано субъектом персональных данных при его жизни):
+        </TD>
+    </TR>
+    <TR>
+        <TD COLSPAN=10 ALIGN=LEFT VALIGN=CENTER STYLE="font-size: 140%">
+            <b>{{ order.applicant|default_if_none:"_______________________________________________________________________________________________________________" }}</b>
+        </TD>
+    </TR>
+    <TR>
+        <TD COLSPAN=10 ALIGN=LEFT VALIGN=TOP HEIGHT=15 STYLE="font-size: 80%">
+            <I>(Фамилия, Имя, Отчество полностью)</I>
+        </TD>
+    </TR>
+    <TR>
+        <TD COLSPAN=4 ALIGN=LEFT VALIGN=CENTER>
+            <b>{{ order.applicant.personid.id_type|default:"_______________________" }}</b>
+        </TD>
+        <TD COLSPAN=1 ALIGN=CENTER VALIGN=CENTER>
+            серия
+        </TD>
+        <TD COLSPAN=1 ALIGN=LEFT VALIGN=CENTER>
+            <b>{{ order.applicant.personid.series|default:"_____________" }}</b>
+        </TD>
+        <TD COLSPAN=1 ALIGN=CENTER VALIGN=CENTER>
+            №
+        </TD>
+        <TD COLSPAN=1 ALIGN=CENTER VALIGN=CENTER>
+            <b>{{ order.applicant.personid.number|default:"_____________" }}</b>
+        </TD>
+        <TD COLSPAN=1 ALIGN=CENTER VALIGN=CENTER>
+            Выдан
+        </TD>
+        <TD COLSPAN=1 ALIGN=LEFT VALIGN=CENTER>
+        {% if order.applicant.personid.date %}
+            <b>{{ order.applicant.personid.date|date:"d.m.Y"|safe }}г.</b>
+        {% else %}
+            ______________
+        {% endif %}
+        </TD>
+    </TR>
+    <TR>
+        <TD COLSPAN=10 ALIGN=LEFT VALIGN=TOP HEIGHT=15 STYLE="font-size: 80%">
+            <I>(вид основного документа, удостоверяющий личность)</I>
+        </TD>
+    </TR>
+    <TR>
+        <TD COLSPAN=10 ALIGN=LEFT VALIGN=CENTER>
+            <b>{{ order.applicant.personid.source|default:"_________________________________________________________________________________" }}</b>
+        </TD>
+    </TR>
+    <TR>
+        <TD COLSPAN=10 ALIGN=LEFT VALIGN=TOP HEIGHT=15 STYLE="font-size: 80%">
+            <I>(когда и кем выдан, код подразделения)</I>
+        </TD>
+    </TR>
+    <TR>
+        <TD COLSPAN=3 ALIGN=LEFT VALIGN=CENTER>
+            проживающий(ая) по адресу
+        </TD>
+        <TD COLSPAN=7 ALIGN=CENTER VALIGN=CENTER>
+            <b>{{ order.applicant.address|default_if_none:"_________________________________________________________________________________" }}</b>
+        </TD>
+    </TR>
+    <TR>
+        <TD COLSPAN=10 ALIGN=LEFT VALIGN=CENTER>
+            действующий от имени субъекта персональных данных.
+        </TD>
+    </TR>
+    <TR HEIGHT=10>
+    </TR>
+    <TR>
+        <TD COLSPAN=10 ALIGN=LEFT VALIGN=CENTER>
+            <B>Данные умершего гражданина, как субъекта персональных данных</B>
+            (данные предоставляет представитель  субъекта персональных данных):
+        </TD>
+    </TR>
+    <TR>
+        <TD COLSPAN=10 ALIGN=LEFT VALIGN=CENTER STYLE="font-size: 140%">
+        <b>{{ order.burial.deadman|default_if_none:"________________________________________________________________________________________________________" }}</b>
+            
+        </TD>
+    </TR>
+    <TR>
+        <TD COLSPAN=10 ALIGN=LEFT VALIGN=TOP HEIGHT=15 STYLE="font-size: 80%">
+            <I>(Фамилия, Имя, Отчество полностью)</I>
+        </TD>
+    </TR>
+    <TR>
+        <TD COLSPAN=2 ALIGN=LEFT VALIGN=CENTER>
+            Дата рождения
+        </TD>
+        <TD COLSPAN=3 ALIGN=CENTER VALIGN=CENTER>
+        <b>{{ order.burial.deadman.birth_date|default_if_none:"___________________________" }}</b>
+        </TD>
+        <TD COLSPAN=2 ALIGN=LEFT VALIGN=CENTER>
+            Дата смерти
+        </TD>
+        <TD COLSPAN=3 ALIGN=CENTER VALIGN=CENTER>
+        <b>{{ order.burial.deadman.death_date|default_if_none:"___________________________" }}</b>
+        </TD>
+    </TR>
+    <TR>
+        <TD COLSPAN=3 ALIGN=LEFT VALIGN=CENTER>
+            Адрес места жительства:
+        </TD>
+        <TD COLSPAN=7 ALIGN=CENTER VALIGN=CENTER>
+            <b>{{ order.burial.deadman.address|default_if_none:"_________________________________________________________________________________" }}</b>
+        </TD>
+    </TR>
+    {% if order.burial.deadman.deathcertificate %}
+        <TR>
+            <TD COLSPAN=3 ALIGN=LEFT VALIGN=CENTER>
+                Свидетельство о смерти:
+            </TD>
+            <TD COLSPAN=1 ALIGN=CENTER VALIGN=CENTER>
+                №
+            </TD>
+            <TD COLSPAN=1 ALIGN=LEFT VALIGN=CENTER>
+            <b>{{ order.burial.deadman.deathcertificate.s_number|default:"______________" }}</b>
+            </TD>
+            <TD COLSPAN=1 ALIGN=CENTER VALIGN=CENTER>
+                cерия
+            </TD>
+            <TD COLSPAN=1 ALIGN=LEFT VALIGN=CENTER>
+            <b>{{ order.burial.deadman.deathcertificate.series|default:"______________" }}</b>
+            </TD>
+            <TD COLSPAN=2 ALIGN=CENTER VALIGN=CENTER>
+                дата выдачи
+            </TD>
+            <TD COLSPAN=1 ALIGN=LEFT VALIGN=CENTER>
+            <b>{{ order.burial.deadman.deathcertificate.release_date|default_if_none:"______________" }}</b>
+            </TD>
+        </TR>
+        <TR>
+            <TD COLSPAN=4 ALIGN=LEFT VALIGN=CENTER>
+                кем выдано
+            </TD>
+            <TD COLSPAN=6 ALIGN=LEFT VALIGN=CENTER>
+                <b>{{ order.burial.deadman.deathcertificate.zags|default_if_none:"______________" }}</b>
+            </TD>
+        </TR>
+    {% endif %}
+    <TR HEIGHT=10>
+    </TR>
+    <TR>
+        <TD COLSPAN=10 ALIGN=LEFT VALIGN=CENTER>
+        <B>принимаю решение о предоставлении моих персональных данных,
+        а также персональных данных умершего и даю согласие на
+        их обработку свободно, своей волей и в своем интересе.</B><BR />
+        Наименование и адрес оператора, получающего согласие субъекта персональных данных:
+        </TD>
+    </TR>
+        <TD COLSPAN=10 ALIGN=LEFT VALIGN=CENTER STYLE="font-size: 140%">
+            <b>{{ user.profile.org.full_name }}</b>,
+            ИНН: {{ user.profile.org.inn }}{% if user.profile.org.off_address %},
+                {% if user.profile.org.off_address.post_index %}
+                    {{ user.profile.org.off_address.post_index }},
+                {% endif %}
+                {{ user.profile.org.off_address }}
+            {% endif %}
+        </TD>
+    </TR>
+    <TR>
+        <TD COLSPAN=10 ALIGN=LEFT VALIGN=CENTER>
+        <B>Со следующей целью обработки персональных данных</B>:
+            выполнения условий счет-заказа, регистрации захоронения.<BR />
+        <B>Перечень персональных данных, на обработку которых дается согласие
+            представителя субъекта персональных данных:</B><BR />
+        <B>-данные представителя</B>: фамилия, имя, отчество, удостоверение личности:
+            а) вид документа;
+            б) серия и номер документа;
+            в) орган, выдавший документ: - наименование; - код;
+            г) дата выдачи документа; адрес места жительства, номера телефонов.<BR />
+        <B>-данные умершего гражданина</B>: фамилия, имя, отчество; дата рождения;
+            дата смерти, адрес места жительства. Данные свидетельства о смерти:
+            а) серия и номер; б) орган, выдавший документ; г) дата выдачи документа.<BR />
+        <B>Наименование и адрес лица, осуществляющего обработку персональных данных
+        по поручению оператора поручитель Оператора)</B>:
+        ООО «Интеграция возможностей», ИНН:7725676913, адрес: г. Москва, ул. Речников, д 7 корп.1.<BR />
+        <B>Перечень действий с персональными данными, на совершение которых дается согласие,
+            общее описание используемых оператором способов обработки персональных данных:</B><BR />
+            Обработка вышеуказанных персональных данных будет осуществляться
+            путем смешанной обработки персональных данных: сбор, запись, систематизация,
+            накопление, хранение, уточнение (обновление), извлечение, использование,
+            передача (предоставление доступа третьим лицам, деятельность которых
+            связана с регистрацией захоронений и/или исполнением Счет-заказа),
+            обезличивание, блокирование, удаление из баз данных,
+            уничтожение персональных данных, а также передача персональных данных умершего в виде:
+            фамилии, имени, отчества (при наличии), даты рождения и даты смерти;
+            включая распространение, предоставление доступа посредством:
+            а) нанесения или обозначения иным образом на надгробии (могиле)
+            б) публикация в информационных системах (базах данных) и/или в сети интернет 
+            на портале (веб сайтах), принадлежащих поручителю оператора.<BR />
+        <B>Настоящее согласие субъекта персональных данных действует бессрочно.</B><BR />
+            В порядке предусмотренным действующим законодательством РФ,
+            согласие может быть отозвано субъектом персональных данных
+            путем письменного обращения к оператору, получающему согласие субъекта персональных данных.<BR />
+            На основании письменного обращения законных представителей субъекта персональных данных
+            с требованием о прекращении обработки его персональных данных оператор прекратит обработку
+            таких персональных данных в течение 5 (пяти) рабочих дней,
+            о чем будет направлено письменное уведомление субъекту персональных данных
+            в течение 15 (пятнадцати) рабочих дней.
+        </TD>
+    </TR>
+    <TR HEIGHT=10>
+    </TR>
+    <TR>
+        <TD COLSPAN=10 ALIGN=LEFT VALIGN=CENTER>
+        <B>Подпись представителя субъекта персональных данных:</B>
+        </TD>
+    </TR>
+    <TR HEIGHT=10>
+    </TR>
+    <TR>
+        <TD COLSPAN=5 ALIGN=LEFT VALIGN=CENTER STYLE="font-size: 140%">
+        <b>{{ order.applicant|default_if_none:"____________________________________________________" }}</b>
+        </TD>
+        <TD COLSPAN=2 ALIGN=CENTER VALIGN=CENTER>
+            _____________________
+        </TD>
+        <TD COLSPAN=2 ALIGN=CENTER VALIGN=CENTER>
+            _____________________
+        </TD>
+        <TD COLSPAN=1 ALIGN=LEFT VALIGN=CENTER>
+            {{ now.year }}г.
+        </TD>
+    </TR>
+    <TR>
+        <TD COLSPAN=5 ALIGN=LEFT VALIGN=TOP HEIGHT=15 STYLE="font-size: 80%">
+            <I>(Фамилия, Имя, Отчество полностью)</I>
+        </TD>
+        <TD COLSPAN=2 ALIGN=CENTER VALIGN=TOP HEIGHT=15 STYLE="font-size: 80%">
+            <I>Подпись</I>
+        </TD>
+        <TD COLSPAN=3 ALIGN=CENTER VALIGN=TOP HEIGHT=15 STYLE="font-size: 80%">
+            <I>Дата</I>
+        </TD>
+    </TR>
+</TBODY>
+</TABLE>
+<div style="page-break-after: always;">&nbsp;</div>
