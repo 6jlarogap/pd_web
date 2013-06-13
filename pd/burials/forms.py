@@ -1051,6 +1051,10 @@ class AddDoverForm(forms.ModelForm):
     def clean(self):
         cleaned_data = super(AddDoverForm, self).clean()
         
+        # Всплывающая форма. Если какое-то из обязательных полей не задано, то не будет,
+        # как в "обычной" форме у поля сообщения "Обязательное поле". Просто не будет
+        # никакой реакции. И имя незаполненного или неверно заполненного поля не будет в
+        # cleaned_data.
         errors = []
         for field in ('begin', 'end', 'number', ):
             if field not in cleaned_data or \
