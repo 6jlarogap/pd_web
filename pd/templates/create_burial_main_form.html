@@ -19,16 +19,24 @@
              if(!$("#cont_dead").is(":hidden")){
                  $("#cont_dead").slideToggle();
              }
+             if(!$("#cont_responsible_all").is(":hidden")){
+                 $("#cont_responsible_all").slideToggle();
+             }
 
           }else{
               if($("#cont_dead").is(":hidden")){
                   $("#cont_dead").slideToggle();
               }
-             
+              if($("#cont_responsible_all").is(":hidden")){
+                  $("#cont_responsible_all").slideToggle();
+              }
           }
 
        });
 
+       {% if form.instance.pk %}
+       $("input[name='burial_container']").change();
+       {% endif %}
     });
 </script>
 {{ form.coffin_type.errors }}
@@ -36,34 +44,34 @@
     <h2>{{ form.burial_container.label}}</h2>
     <p>{{ form.burial_container }}<span class="helptext">{{ form.burial_container.help_text }}</span></p>
 </div>
-<h2>{% trans "Усопший" %} {{ form.deadman_form.instance|default:"" }}</h2>
 <!-- <div id="cont_dead" style="{% if form.instance.pk %}display: none{% endif %}"> -->
 <div id="cont_dead">
-    {{ form.deadman_form.last_name.errors }}
-    <p class="inline">{{ form.deadman_form.last_name.label_tag }} {{ form.deadman_form.last_name }}<span class="helptext">{{ form.deadman_form.last_name.help_text }}</span></p>
+    <h2>{% trans "Усопший" %} {{ form.deadman_form.instance|default:"" }}</h2>
+        {{ form.deadman_form.last_name.errors }}
+        <p class="inline">{{ form.deadman_form.last_name.label_tag }} {{ form.deadman_form.last_name }}<span class="helptext">{{ form.deadman_form.last_name.help_text }}</span></p>
 
-    {{ form.deadman_form.first_name.errors }}
-    <p class="inline">{{ form.deadman_form.first_name.label_tag }} {{ form.deadman_form.first_name }}<span class="helptext">{{ form.deadman_form.first_name.help_text }}</span></p>
+        {{ form.deadman_form.first_name.errors }}
+        <p class="inline">{{ form.deadman_form.first_name.label_tag }} {{ form.deadman_form.first_name }}<span class="helptext">{{ form.deadman_form.first_name.help_text }}</span></p>
 
-    {{ form.deadman_form.cemetery.errors }}
-    <p class="inline">{{ form.deadman_form.middle_name.label_tag }} {{ form.deadman_form.middle_name }}<span class="helptext">{{ form.deadman_form.middle_name.help_text }}</span></p>
+        {{ form.deadman_form.cemetery.errors }}
+        <p class="inline">{{ form.deadman_form.middle_name.label_tag }} {{ form.deadman_form.middle_name }}<span class="helptext">{{ form.deadman_form.middle_name.help_text }}</span></p>
 
-    <br/>
+        <br/>
 
-    {{ form.deadman_form.birth_date.errors }}
-    <p class="inline">{{ form.deadman_form.birth_date.label_tag }} {{ form.deadman_form.birth_date }}<span class="helptext">{{ form.deadman_form.birth_date.help_text }}</span></p>
+        {{ form.deadman_form.birth_date.errors }}
+        <p class="inline">{{ form.deadman_form.birth_date.label_tag }} {{ form.deadman_form.birth_date }}<span class="helptext">{{ form.deadman_form.birth_date.help_text }}</span></p>
 
-    {{ form.deadman_form.death_date.errors }}
-    <p class="inline">{{ form.deadman_form.death_date.label_tag }} {{ form.deadman_form.death_date }}<span class="helptext">{{ form.deadman_form.death_date.help_text }}</span></p>
+        {{ form.deadman_form.death_date.errors }}
+        <p class="inline">{{ form.deadman_form.death_date.label_tag }} {{ form.deadman_form.death_date }}<span class="helptext">{{ form.deadman_form.death_date.help_text }}</span></p>
 
-    <h3>{% trans "Адрес" %}</h3>
-    <div class="form_block">
-        {% with form.deadman_address_form as form %}
-            {% include "location_form.html" %}
-        {% endwith %}
-    </div>
-    <h3>{% trans "Свидетельство о смерти" %}</h3>
-    {{ form.dc_form.as_p }}
+        <h3>{% trans "Адрес" %}</h3>
+        <div class="form_block">
+            {% with form.deadman_address_form as form %}
+                {% include "location_form.html" %}
+            {% endwith %}
+        </div>
+        <h3>{% trans "Свидетельство о смерти" %}</h3>
+        {{ form.dc_form.as_p }}
 </div>
 
 <h2>{% trans "Место" %} {{ form.instance.get_place|default:"" }}</h2>
@@ -103,19 +111,21 @@
 
 </div>
 
-<h2>
-    {% trans "Ответственный" %} {{ form.responsible_form.instance|default:"" }}
-</h2>
+<div id="cont_responsible_all">
+    <h2>
+        {% trans "Ответственный" %} {{ form.responsible_form.instance|default:"" }}
+    </h2>
 
-<a href="#" onclick="$('#cont_responsible').slideToggle(); return false" class="slider" data-id="cont_responsible">{% trans "развернуть" %}</a>
-<div id="cont_responsible" style="display: none">
-    {{ form.responsible_form.as_p }}
-    <div id="cont_responsible_address">
-        <h3>{% trans "Адрес" %}</h3>
-        <div class="form_block">
-            {% with form.responsible_address_form as form %}
-                {% include "location_form.html" %}
-            {% endwith %}
+    <a href="#" onclick="$('#cont_responsible').slideToggle(); return false" class="slider" data-id="cont_responsible">{% trans "развернуть" %}</a>
+    <div id="cont_responsible" style="display: none">
+        {{ form.responsible_form.as_p }}
+        <div id="cont_responsible_address">
+            <h3>{% trans "Адрес" %}</h3>
+            <div class="form_block">
+                {% with form.responsible_address_form as form %}
+                    {% include "location_form.html" %}
+                {% endwith %}
+            </div>
         </div>
     </div>
 </div>

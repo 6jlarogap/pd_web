@@ -215,6 +215,7 @@
             COLSPAN=8 ALIGN=RIGHT VALIGN=BOTTOM SDNUM="1033;0;@"><FONT COLOR="#000000">
             {% if order.total_float %}{{ order.total_float|rubles|capfirst }}{% endif %}</FONT></TD>
     </TR>
+{% ifequal user.profile.org.inn '4028046796' %}
     <TR>
         <TD STYLE="border-top: 1px solid #000000" COLSPAN=9 ALIGN=LEFT VALIGN=TOP SDNUM="1033;0;@"><B><FONT
                 COLOR="#000000">
@@ -227,6 +228,7 @@
             Согласие на обработку персональных данных, содержащихся в настоящем счете-заказе,
             действует до даты подачи запроса об отзыве настоящего согласия.</FONT></B></TD>
     </TR>
+{% endifequal %}
     <TR>
         <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000" HEIGHT=19 ALIGN=CENTER VALIGN=TOP
             SDNUM="1033;0;@"><FONT COLOR="#000000">*</FONT></TD>
@@ -1748,6 +1750,10 @@
     </TABLE>
     <div style="page-break-after: always;">&nbsp;</div>
 {% endif %}
+
+{% ifnotequal user.profile.org.inn '4028046796' %}
+    {% include "reports/personal_data.html" %}
+{% endifnotequal %}
 
 {% if print_now %}
     <script type="text/javascript">

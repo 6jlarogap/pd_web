@@ -138,7 +138,7 @@ class AddDoverView(LoginRequiredMixin, View):
         except Profile.DoesNotExist:
             return HttpResponse(_(u'Агент не существует'), mimetype='text/plain')
         except KeyError:
-            return HttpResponse(_(u'Данные невалидны'), mimetype='text/plain')
+            return HttpResponse(_(u'Ошибка'), mimetype='text/plain')
         if f.is_valid():
             dover = f.save(commit=False)
             dover.target_org = request.user.profile.org
@@ -147,7 +147,7 @@ class AddDoverView(LoginRequiredMixin, View):
             return HttpResponse(json.dumps({'pk': dover.pk, 'label': u'%s' % dover}), mimetype='application/json')
         else:
             err_str = _(u'Ошибка: %s')
-            errors = '\n'.join([u'%s' % v[0] for v in f.errors.values()])
+            errors = '\n'.join([u'%s' % v[0] for k,v in f.errors.items() if k == '__all__'])
             if "\n" in errors:
                 err_str = _(u'Ошибки:\n%s')
             return HttpResponse(err_str % errors, mimetype='text/plain')
@@ -163,7 +163,7 @@ class AddAgentView(LoginRequiredMixin, View):
         except Org.DoesNotExist:
             return HttpResponse(_(u'ЛОРУ не существует'), mimetype='text/plain')
         except KeyError:
-            return HttpResponse(_(u'Данные невалидны'), mimetype='text/plain')
+            return HttpResponse(_(u'Ошибка'), mimetype='text/plain')
         if fa.is_valid() and fd.is_valid():
             agent = fa.save(loru=loru)
             dover = fd.save(commit=False)
@@ -209,7 +209,7 @@ class AddDocTypeView(LoginRequiredMixin, View):
             return HttpResponse(json.dumps({'pk': dt.pk, 'label': u'%s' % dt}), mimetype='application/json')
         else:
             errors = '\n'.join([u'%s: %s' % (k,v[0]) for k,v in f.errors.items()])
-            return HttpResponse(_(u'Данные невалидны: %s') % errors, mimetype='text/plain')
+            return HttpResponse(_(u'Ошибки: %s') % errors, mimetype='text/plain')
 
 add_doctype = AddDocTypeView.as_view()
 
