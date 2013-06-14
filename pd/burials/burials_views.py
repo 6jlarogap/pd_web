@@ -425,7 +425,7 @@ class BurialsPublicListView(ListView):
                 Q(ugh__loru_list__loru=self.request.user.profile.org) &
                 Q(annulated=False) &
                 Q(status__in=[Burial.STATUS_EXHUMATED, Burial.STATUS_CLOSED, ])
-            ).order_by('-pk')
+            ).exclude(burial_container=Burial.CONTAINER_BIO).order_by('-pk')
         else:
             burials = Burial.objects.none()
         form = self.get_form()
