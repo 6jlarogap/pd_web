@@ -126,7 +126,7 @@
                 <td>
                     {% with burial=b %}{% include "burial_place.html" %}{% endwith %}
                 </td>
-                <td>{{ b.deadman|default:"" }}</td>
+                <td>{% if b.is_bio %}{% trans "биоотходы" %}{% else %}{{ b.deadman|default:"" }}{% endif %}</td>
                 <td>{{ b.combined_date }}</td>
                 <th>
                     {{ b.status_str|default:"" }}
