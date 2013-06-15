@@ -125,8 +125,6 @@ class UserProfileForm(ChildrenJSONMixin, forms.ModelForm):
         obj = super(UserProfileForm, self).save(commit=False, *args, **kwargs)
         if self.cleaned_data['region']:
             obj.region_fias = self.cleaned_data['region'].aoguid
-        if self.address_form.is_valid_data():
-            Org.objects.filter(pk=obj.org.pk).update(off_address=self.address_form.save(commit=commit))
         if commit:
             obj.save()
         return obj
