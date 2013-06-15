@@ -123,7 +123,8 @@ loru_registry = LoruRegistryView.as_view()
 
 class ProfileView(LoginRequiredMixin, UpdateView):
     """
-    Редактирование профиля, применяется только при вводе начальной страницы
+    Редактирование профиля, заодно организации,
+    применяется только при вводе начальной страницы
     """
 
     template_name = 'profile.html'
@@ -146,7 +147,7 @@ profile = ProfileView.as_view()
 
 class UserProfileView(LoginRequiredMixin, UpdateView):
     """
-    Редактирование профиля, применяется только при вводе начальной страницы
+    Редактирование профиля
     """
 
     template_name = 'userprofile.html'
@@ -161,7 +162,7 @@ class UserProfileView(LoginRequiredMixin, UpdateView):
 
     def form_valid(self, form):
         form.save()
-        write_log(self.request, form.instance, _(u'Изменены данные организации и/или пользователя'))
+        write_log(self.request, form.instance, _(u'Изменены данные организации'))
         messages.success(self.request, _(u"Данные сохранены"))
         return redirect(self.get_success_url())
 
@@ -233,10 +234,6 @@ class OrgEditView(LoginRequiredMixin, UpdateView):
 
     #def get_queryset(self):
         #return Org.objects.annotate(profiles=Count('profile')).filter(profiles=0)
-
-    def get_form(self, form_class):
-        self.form = super(OrgEditView, self).get_form(self.form_class)
-        return self.form
 
     def get_context_data(self, **kwargs):
         data = super(OrgEditView, self).get_context_data(**kwargs)

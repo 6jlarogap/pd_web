@@ -121,26 +121,10 @@ class UserProfileForm(ChildrenJSONMixin, forms.ModelForm):
     def is_valid(self):
         return super(UserProfileForm, self).is_valid() and self.address_form.is_valid()
 
-    def clean_org_inn(self):
-        inn = self.cleaned_data['org_inn']
-        if inn:
-            orgs = Org.objects.filter(inn=inn)
-            if self.instance and self.instance.org:
-                orgs = orgs.exclude(pk=self.instance.org.pk)
-            if orgs.exists():
-                raise forms.ValidationError(_(u"ИНН уже зарегистрирован"))
-        return inn
-
     def save(self, commit=True, *args, **kwargs):
         obj = super(UserProfileForm, self).save(commit=False, *args, **kwargs)
         if self.cleaned_data['region']:
             obj.region_fias = self.cleaned_data['region'].aoguid
-        params = dict([(k[4:], v) for k,v in self.cleaned_data.items() if v and k.startswith('org_')])
-        if not obj.org:
-            obj.org, _created = Org.objects.get_or_create(**params)
-        else:
-            Org.objects.filter(pk=obj.org.pk).update(**params)
-
         if self.address_form.is_valid_data():
             Org.objects.filter(pk=obj.org.pk).update(off_address=self.address_form.save(commit=commit))
         if commit:
