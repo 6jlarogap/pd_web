@@ -12,9 +12,9 @@ from django.utils.translation import ugettext_lazy as _
 from django.views.generic.base import View
 from django.views.generic.edit import UpdateView, CreateView
 
-from burials.views import UGHRequiredMixin
+from burials.views import UGHRequiredMixin, LoginRequiredMixin
 from logs.models import write_log
-from users.forms import RegisterForm, LoruFormset, ProfileForm, UserDataForm, ChangePasswordForm, BankAccountFormset, OrgForm
+from users.forms import RegisterForm, LoruFormset, ProfileForm, UserProfileForm, UserDataForm, ChangePasswordForm, BankAccountFormset, OrgForm
 from users.models import Profile, Org
 
 
@@ -121,9 +121,9 @@ class LoruRegistryView(UGHRequiredMixin, View):
 
 loru_registry = LoruRegistryView.as_view()
 
-class ProfileView(UpdateView):
+class ProfileView(LoginRequiredMixin, UpdateView):
     """
-    Редактирование профиля
+    Редактирование профиля, применяется только при вводе начальной страницы
     """
 
     template_name = 'profile.html'
@@ -133,30 +133,39 @@ class ProfileView(UpdateView):
     def get_success_url(self):
         return reverse('profile')
 
-    def dispatch(self, request, *args, **kwargs):
-        self.request = request
-        if request.user.is_authenticated():
-           self.bank_formset = BankAccountFormset(data=request.POST or None, instance=request.user.profile.org)
-           return super(ProfileView, self).dispatch(request, *args, **kwargs)
-        return redirect('/')
+    def get_object(self, queryset=None):
+        return self.request.user.profile
+
+    def form_valid(self, form):
+        form.save()
+        write_log(self.request, form.instance, _(u'Изменены данные организации'))
+        messages.success(self.request, _(u"Данные сохранены"))
+        return redirect(self.get_success_url())
+
+profile = ProfileView.as_view()
+
+class UserProfileView(LoginRequiredMixin, UpdateView):
+    """
+    Редактирование профиля, применяется только при вводе начальной страницы
+    """
+
+    template_name = 'userprofile.html'
+    model = Profile
+    form_class = UserProfileForm
+
+    def get_success_url(self):
+        return reverse('profile')
 
     def get_object(self, queryset=None):
         return self.request.user.profile
 
-    def get_context_data(self, **kwargs):
-        data = super(ProfileView, self).get_context_data(**kwargs)
-        data['bank_formset'] = self.bank_formset
-        data['unowned_orgs'] = Org.objects.annotate(profiles=Count('profile')).filter(profiles=0)
-        return data
-
     def form_valid(self, form):
-        self.bank_formset.save()
         form.save()
         write_log(self.request, form.instance, _(u'Изменены данные организации и/или пользователя'))
         messages.success(self.request, _(u"Данные сохранены"))
         return redirect(self.get_success_url())
 
-profile = ProfileView.as_view()
+user_profile = UserProfileView.as_view()
 
 class UserAddForm(CreateView):
     template_name = 'add_user.html'
@@ -212,18 +221,27 @@ class UserEditForm(UpdateView):
 
 edit_user = UserEditForm.as_view()
 
-class OrgEditForm(UpdateView):
+class OrgEditView(LoginRequiredMixin, UpdateView):
     template_name = 'edit_org.html'
     model = Org
     form_class = OrgForm
 
     def get_form_kwargs(self):
-        data = super(OrgEditForm, self).get_form_kwargs()
+        data = super(OrgEditView, self).get_form_kwargs()
         data['request'] = self.request
         return data
 
     #def get_queryset(self):
         #return Org.objects.annotate(profiles=Count('profile')).filter(profiles=0)
+
+    def get_form(self, form_class):
+        self.form = super(OrgEditView, self).get_form(self.form_class)
+        return self.form
+
+    def get_context_data(self, **kwargs):
+        data = super(OrgEditView, self).get_context_data(**kwargs)
+        data['is_my_org'] = self.request.user.profile.org.pk == self.object.pk
+        return data
 
     def get_success_url(self):
         msg = _(u"<a href='%s'>Организация %s</a> изменена") % (
@@ -231,14 +249,13 @@ class OrgEditForm(UpdateView):
             self.object,
         )
         messages.success(self.request, msg)
-        return reverse('profile')
+        return reverse('edit_org', args=[self.object.pk])
+        
+    def form_invalid(self, form, *args, **kwargs):
+        messages.error(self.request, _(u'Обнаружены ошибки, их необходимо исправить'))
+        return super(OrgEditView, self).form_invalid(form, *args, **kwargs)
 
-    def dispatch(self, request, *args, **kwargs):
-        if not request.user.is_authenticated():
-            return redirect('/')
-        return super(OrgEditForm, self).dispatch(request, *args, **kwargs)
-
-edit_org = OrgEditForm.as_view()
+edit_org = OrgEditView.as_view()
 
 class ChangePasswordForm(UpdateView):
     template_name = 'change_password.html'

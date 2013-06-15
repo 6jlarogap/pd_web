@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% load i18n %}
+
+{% block content %}
+    <form action="" method="POST">
+        {% csrf_token %}
+        {% if form.instance.org %}
+            <h3>{% trans "Пользователь" %}</h3><h2>{{ user.profile.user.username }}</h2>
+        {% endif %}
+        <fieldset>
+            {{ form.as_p }}
+        </fieldset>
+
+        <p>
+            <input type="submit" class="btn btn-primary" value="{% trans "cохранить" %}"/>
+        </p>
+
+        <h2>{% trans "Пользователи" %}</h2>
+        <table class="table table-bordered">
+            <tr>
+                <th>{% trans "Имя пользователя" %}</th>
+                <th>{% trans "Email" %}</th>
+                <th>{% trans "Фамилия" %}</th>
+                <th>{% trans "Имя" %}</th>
+                {% if user.profile.is_loru %}<th>{% trans "Агент" %}</th>{% endif %}
+                <th>{% trans "Активен" %}</th>
+                <th></th>
+            </tr>
+            {% for p in user.profile.org.profile_set.all %}
+                <tr>
+                    <td>{{ p.user.username }}</td>
+                    <td>{{ p.user.email }}</td>
+                    <td>{{ p.user.last_name }}</td>
+                    <td>{{ p.user.first_name }}</td>
+                    {% if user.profile.is_loru %}<td>{{ p.is_agent|yesno }}</td>{% endif %}
+                    <td>{{ p.user.is_active|yesno }}</td>
+                    <td>
+                        <a href="{% url change_password p.user.pk %}" class="btn">сменить пароль</a>
+                        <a href="{% url edit_user p.user.pk %}" class="btn">править данные</a>
+                    </td>
+                </tr>
+            {% endfor %}
+        </table>
+
+        <p>
+            <a href="{% url add_user %}" class="btn">{% trans "новый пользователь" %}</a>
+        </p>
+    </form>
+    <script type="text/javascript">
+        CEMETERY_AREAS = {{ form.cemetery_areas_json|default:"{}"  }};
+    </script>
+{% endblock %}

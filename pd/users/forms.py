@@ -83,11 +83,6 @@ class ProfileForm(ChildrenJSONMixin, forms.ModelForm):
         if self.instance.region_fias:
             self.initial['region'] = self.instance.get_region()
 
-        self.address_form = LocationForm(data=self.data or None, instance=self.instance.org and self.instance.org.off_address)
-
-    def is_valid(self):
-        return super(ProfileForm, self).is_valid() and self.address_form.is_valid()
-
     def clean_org_inn(self):
         inn = self.cleaned_data['org_inn']
         if inn:
@@ -100,6 +95,44 @@ class ProfileForm(ChildrenJSONMixin, forms.ModelForm):
 
     def save(self, commit=True, *args, **kwargs):
         obj = super(ProfileForm, self).save(commit=False, *args, **kwargs)
+        if self.cleaned_data['region']:
+            obj.region_fias = self.cleaned_data['region'].aoguid
+        params = dict([(k[4:], v) for k,v in self.cleaned_data.items() if v and k.startswith('org_')])
+        if not obj.org:
+            obj.org, _created = Org.objects.get_or_create(**params)
+        else:
+            Org.objects.filter(pk=obj.org.pk).update(**params)
+        if commit:
+            obj.save()
+        return obj
+
+class UserProfileForm(ChildrenJSONMixin, forms.ModelForm):
+    region = forms.ModelChoiceField(label=_(u"Регион"), queryset=FIAS_REGIONS, required=False)
+
+    class Meta:
+        model = Profile
+        exclude = ['org', 'is_agent', 'region_fias', 'user']
+
+    def __init__(self, *args, **kwargs):
+        super(UserProfileForm, self).__init__(*args, **kwargs)
+        if self.instance.region_fias:
+            self.initial['region'] = self.instance.get_region()
+
+    def is_valid(self):
+        return super(UserProfileForm, self).is_valid() and self.address_form.is_valid()
+
+    def clean_org_inn(self):
+        inn = self.cleaned_data['org_inn']
+        if inn:
+            orgs = Org.objects.filter(inn=inn)
+            if self.instance and self.instance.org:
+                orgs = orgs.exclude(pk=self.instance.org.pk)
+            if orgs.exists():
+                raise forms.ValidationError(_(u"ИНН уже зарегистрирован"))
+        return inn
+
+    def save(self, commit=True, *args, **kwargs):
+        obj = super(UserProfileForm, self).save(commit=False, *args, **kwargs)
         if self.cleaned_data['region']:
             obj.region_fias = self.cleaned_data['region'].aoguid
         params = dict([(k[4:], v) for k,v in self.cleaned_data.items() if v and k.startswith('org_')])
@@ -154,19 +187,11 @@ class ChangePasswordForm(forms.ModelForm):
             self.instance.save()
         return self.instance
 
-class OrgForm(LoggingFormMixin, forms.ModelForm):
-    class Meta:
-        model = Org
-        exclude = ['off_address', ]
+class BaseOrgForm(LoggingFormMixin, forms.ModelForm):
 
     def __init__(self, request, *args, **kwargs):
         self.request = request
-        super(OrgForm, self).__init__(*args, **kwargs)
-        self.address_form = LocationForm(data=self.data or None, prefix='address', instance=self.instance.off_address)
-        self.forms = [self.address_form, ]
-
-    def is_valid(self):
-        return super(OrgForm, self).is_valid() and self.address_form.is_valid()
+        super(BaseOrgForm, self).__init__(*args, **kwargs)
 
     def clean_inn(self):
         inn = self.cleaned_data['inn']
@@ -178,12 +203,38 @@ class OrgForm(LoggingFormMixin, forms.ModelForm):
                 raise forms.ValidationError(_(u"ИНН уже зарегистрирован"))
         return inn
 
+class OrgForm(BaseOrgForm):
+    class Meta:
+        model = Org
+        exclude = ['off_address', ]
+
+    def __init__(self, request, *args, **kwargs):
+        super(OrgForm, self).__init__(request, *args, **kwargs)
+        self.address_form = LocationForm(data=self.data or None, prefix='address', instance=self.instance.off_address)
+        self.forms = [self.address_form, ]
+        self.bank_formset = BankAccountFormset(data=request.POST or None, instance=request.user.profile.org)
+        if self.request.user.profile.org.pk == self.instance.pk:
+            choices = []
+            for profile_type in Org.PROFILE_TYPES:
+                if profile_type[0] == self.instance.type:
+                    choices.append(profile_type)
+                    break
+            label = self.fields['type'].label
+            self.fields['type'] = forms.fields.TypedChoiceField(choices=choices)
+            self.fields['type'].label = label
+
+    def is_valid(self):
+        return super(OrgForm, self).is_valid() and \
+                    self.address_form.is_valid() and \
+                    self.bank_formset.is_valid()
+
     def save(self, commit=True):
         self.collect_log_data()
         org = super(OrgForm, self).save(commit=False)
+        self.bank_formset.save()
         if any(self.address_form.cleaned_data.values()):
             org.off_address = self.address_form.save()
         if commit:
             org.save()
-            self.put_log_data(msg=_(u'Данные сохранены'))
+            self.put_log_data(msg=_(u'Изменены данные организации'))
         return org
