@@ -139,7 +139,7 @@ class ProfileView(LoginRequiredMixin, UpdateView):
 
     def form_valid(self, form):
         form.save()
-        write_log(self.request, form.instance, _(u'Изменены данные организации'))
+        write_log(self.request, form.instance, _(u'Изменены данные организации и пользователя'))
         messages.success(self.request, _(u"Данные сохранены"))
         return redirect(self.get_success_url())
 
@@ -162,7 +162,7 @@ class UserProfileView(LoginRequiredMixin, UpdateView):
 
     def form_valid(self, form):
         form.save()
-        write_log(self.request, form.instance, _(u'Изменены данные организации'))
+        write_log(self.request, form.instance, _(u'Изменены данные пользователя'))
         messages.success(self.request, _(u"Данные сохранены"))
         return redirect(self.get_success_url())
 
