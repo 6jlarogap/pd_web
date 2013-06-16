@@ -213,7 +213,7 @@ class UserEditForm(UpdateView):
         )
         messages.success(self.request, msg)
         write_log(self.request, self.object, _(u'Изменены данные пользователя'))
-        return reverse('user_profile')
+        return reverse('edit_org', args=[self.object.profile.org.pk])
 
     def dispatch(self, request, *args, **kwargs):
         if not request.user.is_authenticated():
