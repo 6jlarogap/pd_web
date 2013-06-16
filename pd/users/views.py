@@ -266,7 +266,7 @@ class ChangePasswordForm(UpdateView):
         )
         messages.success(self.request, msg)
         write_log(self.request, self.object, _(u'Пароль изменен'))
-        return reverse('profile')
+        return reverse('edit_org', args=[self.object.profile.org.pk])
 
     def dispatch(self, request, *args, **kwargs):
         if not request.user.is_authenticated():
