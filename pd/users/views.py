@@ -124,7 +124,7 @@ loru_registry = LoruRegistryView.as_view()
 class ProfileView(LoginRequiredMixin, UpdateView):
     """
     Редактирование профиля, заодно организации,
-    применяется только при вводе начальной страницы
+    применяется только при вводе начальной организации
     """
 
     template_name = 'profile.html'
