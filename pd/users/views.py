@@ -155,7 +155,7 @@ class UserProfileView(LoginRequiredMixin, UpdateView):
     form_class = UserProfileForm
 
     def get_success_url(self):
-        return reverse('profile')
+        return reverse('user_profile')
 
     def get_object(self, queryset=None):
         return self.request.user.profile
@@ -187,7 +187,7 @@ class UserAddForm(CreateView):
         return redirect(self.get_success_url())
 
     def get_success_url(self):
-        return reverse('profile')
+        return reverse('user_profile')
 
     def dispatch(self, request, *args, **kwargs):
         if not request.user.is_authenticated():
@@ -213,7 +213,7 @@ class UserEditForm(UpdateView):
         )
         messages.success(self.request, msg)
         write_log(self.request, self.object, _(u'Изменены данные пользователя'))
-        return reverse('profile')
+        return reverse('user_profile')
 
     def dispatch(self, request, *args, **kwargs):
         if not request.user.is_authenticated():

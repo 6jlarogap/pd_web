@@ -118,9 +118,6 @@ class UserProfileForm(ChildrenJSONMixin, forms.ModelForm):
         if self.instance.region_fias:
             self.initial['region'] = self.instance.get_region()
 
-    def is_valid(self):
-        return super(UserProfileForm, self).is_valid() and self.address_form.is_valid()
-
     def save(self, commit=True, *args, **kwargs):
         obj = super(UserProfileForm, self).save(commit=False, *args, **kwargs)
         if self.cleaned_data['region']:
