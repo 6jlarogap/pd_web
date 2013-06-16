@@ -187,7 +187,7 @@ class UserAddForm(CreateView):
         return redirect(self.get_success_url())
 
     def get_success_url(self):
-        return reverse('user_profile')
+        return reverse('edit_org', args=[self.object.profile.org.pk])
 
     def dispatch(self, request, *args, **kwargs):
         if not request.user.is_authenticated():

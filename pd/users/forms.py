@@ -171,6 +171,8 @@ class BaseOrgForm(LoggingFormMixin, forms.ModelForm):
     def __init__(self, request, *args, **kwargs):
         self.request = request
         super(BaseOrgForm, self).__init__(*args, **kwargs)
+        # требуется для self.collect_log_data():
+        self.forms = []
 
     def clean_inn(self):
         inn = self.cleaned_data['inn']
