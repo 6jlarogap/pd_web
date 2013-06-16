@@ -327,7 +327,7 @@ $(function() {
     if (!window.LORU_AGENTS) { LORU_AGENTS = {} }
     if (!window.PLACE_TYPES) { PLACE_TYPES = {} }
 
-    $('.burial-form,.order_form').find(':input').live('keypress', function(e) {
+    $('.burial-form,.order_form,.edit_org-form').find(':input').live('keypress', function(e) {
         if (e.keyCode == 13) {
             e.preventDefault();
             $(this).change();
