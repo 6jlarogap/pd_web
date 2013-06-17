@@ -99,7 +99,7 @@ class PlaceEditForm(forms.ModelForm):
                 self.initial['places_count'] = 1
 
     def clean_places_count(self):
-        burials = self.burials_available()
+        burials = self.instance.burials_available()
         max_num = burials.aggregate(max=Max('grave_number')).get('max') or 1
         if self.cleaned_data['places_count'] < max_num:
             raise forms.ValidationError(_(u"Нельзя установить меньше %s, столько могил уже занято") % max_num)
