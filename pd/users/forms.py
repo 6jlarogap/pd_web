@@ -51,7 +51,7 @@ class BaseLoruFormset(BaseInlineFormSet):
 
 LoruFormset = inlineformset_factory(Org, ProfileLORU, fk_name='ugh', formset=BaseLoruFormset)
 
-BankAccountFormset = inlineformset_factory(Org, BankAccount, formset=BaseLoruFormset)
+BankAccountFormset = inlineformset_factory(Org, BankAccount, formset=BaseLoruFormset, extra=2)
 
 FIAS_REGIONS = DFiasAddrobj.objects.filter(parentguid='').order_by('formalname')
 
