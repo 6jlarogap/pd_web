@@ -540,7 +540,6 @@ class CreateBurial(CreateView):
                     row=place.row,
                     place_number=place.place,
                     responsible=place.responsible,
-                    # burial_type=Burial.BURIAL_ADD,
                 )
         data['request'] = self.request
         return data
