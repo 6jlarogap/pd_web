@@ -132,17 +132,17 @@ class BurialSearchForm(forms.Form):
     applicant_org = forms.CharField(required=False, max_length=30, label=_(u"Заявитель-ЮЛ"))
     applicant_person = forms.CharField(required=False, max_length=30, label=_(u"Заявитель-ФЛ"))
     responsible = forms.CharField(required=False, max_length=30, label=_(u"Ответственный"))
-    operation = forms.ChoiceField(required=False, choices=EMPTY + Burial.BURIAL_TYPES, label=_(u"Услуга"))
+    operation = forms.ChoiceField(required=False, choices=EMPTY + Burial.BURIAL_TYPES, label=_(u"Вид захоронения"))
+    burial_container = forms.TypedChoiceField(required=False, label=_(u"Тип захоронения"), choices=EMPTY + Burial.BURIAL_CONTAINERS)
     cemetery = forms.CharField(required=False, label=_(u"Кладбища"))
     area = forms.CharField(required=False, label=_(u"Участок"))
     row = forms.CharField(required=False, label=_(u"Ряд"))
     place = forms.CharField(required=False, label=_(u"Место"))
     no_responsible = forms.BooleanField(required=False, initial=False, label=_(u"Без отв."))
-    source = forms.TypedChoiceField(required=False, label=_(u"Тип"), choices=EMPTY + Burial.SOURCE_TYPES)
+    source = forms.TypedChoiceField(required=False, label=_(u"Источник"), choices=EMPTY + Burial.SOURCE_TYPES)
     status = forms.TypedChoiceField(required=False, label=_(u"Статус"), choices=EMPTY + Burial.STATUS_CHOICES)
     annulated = forms.BooleanField(required=False, initial=False, label=_(u"Аннулировано"))
     per_page = forms.ChoiceField(label=_(u"На странице"), choices=PAGE_CHOICES, initial=25, required=False)
-    burial_container = forms.TypedChoiceField(required=False, label=_(u"Тип захоронения"), choices=EMPTY + Burial.BURIAL_CONTAINERS)
 
 class ResponsibleForm(AlivePersonForm):
     WHERE_FROM_PLACE = u'place'
@@ -270,11 +270,12 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, forms.Mo
     URN = 'urn'
 
     burial_container = forms.ChoiceField(label=_(u"Тип захоронения"), choices=Burial.BURIAL_CONTAINERS, widget=forms.RadioSelect,  required=False)
+    burial_type = forms.ChoiceField(label=_(u"Вид захоронения"), choices=Burial.BURIAL_TYPES, widget=forms.RadioSelect,  required=False)
     opf = forms.ChoiceField(label=_(u'ОПФ'), choices=OPF_CHOICES, widget=forms.RadioSelect)
 
     class Meta:
         model = Burial
-        exclude = ['place', 'deadman', 'responsible', 'applicant', 'burial_type', 'annulated', ]
+        exclude = ['place', 'deadman', 'responsible', 'applicant', 'annulated', ]
 
     def __init__(self, request, *args, **kwargs):
         super(BurialForm, self).__init__(*args, **kwargs)
@@ -341,8 +342,10 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, forms.Mo
 
         if self.instance:
             self.initial['burial_container'] = self.instance.burial_container
+            self.initial['burial_type'] = self.instance.burial_type
         else:
             self.initial['burial_container'] = Burial.CONTAINER_COFFIN
+            self.initial['burial_type'] = self.instance.Burial.BURIAL_NEW
 
         if not self.instance or not self.instance.cemetery:
             if self.request.user.profile.cemetery:
@@ -584,13 +587,6 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, forms.Mo
             except (AttributeError, ProtectedError):
                 pass
             self.instance.responsible = None
-
-        if self.cleaned_data['burial_container'] == Burial.CONTAINER_URN:
-            self.instance.burial_type = Burial.BURIAL_URN
-        elif self.instance.place_number:
-            self.instance.burial_type = Burial.BURIAL_ADD
-        else:
-            self.instance.burial_type = Burial.BURIAL_NEW
 
         if self.instance.is_closed() and \
             self.old_place and \
