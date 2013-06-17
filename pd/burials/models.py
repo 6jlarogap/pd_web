@@ -217,13 +217,11 @@ class Burial(models.Model):
     BURIAL_NEW = 'common'
     BURIAL_ADD = 'additional'
     BURIAL_OVER = 'overlap'
-    BURIAL_URN = 'urn'
 
     BURIAL_TYPES = (
-        (BURIAL_NEW, _(u'Захоронение')),
+        (BURIAL_NEW, _(u'Новое захоронение')),
         (BURIAL_ADD, _(u'Подзахоронение')),
         (BURIAL_OVER, _(u'Захоронение в существующую')),
-        (BURIAL_URN, _(u'Урна')),
     )
 
     NEW_BURIAL_TYPES = ['common', 'urn']
@@ -250,8 +248,8 @@ class Burial(models.Model):
         (CONTAINER_BIO, _(u"Биоотходы")),
     )
 
-    burial_type = models.CharField(_(u"Тип захоронения"), max_length=255, null=True, blank=True, choices=BURIAL_TYPES)
-    burial_container = models.CharField(_(u"Тип контенера"), max_length=255, null=True, blank=True, choices=BURIAL_CONTAINERS, default=CONTAINER_COFFIN)
+    burial_type = models.CharField(_(u"Вид захоронения"), max_length=255, null=True, blank=True, choices=BURIAL_TYPES, default=BURIAL_NEW)
+    burial_container = models.CharField(_(u"Тип захоронения"), max_length=255, null=True, blank=True, choices=BURIAL_CONTAINERS, default=CONTAINER_COFFIN)
     source_type = models.CharField(_(u"Источник"), max_length=255, null=True, editable=False, choices=SOURCE_TYPES)
     account_number = models.CharField(_(u"№ в книге учета"), max_length=255, null=True, blank=True)
 
