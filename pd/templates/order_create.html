@@ -4,7 +4,7 @@
 
 {% block content %}
     <h1>{% trans "Новый заказ" %}</h1>
-    <form action="" method="POST" class="order_form">
+    <form action="" method="POST" class="order_form with-address-form">
         {% csrf_token %}
 
         {{ form.non_field_errors }}

@@ -24,7 +24,7 @@ from orders.models import Order
 from pd.forms import PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin
 from persons.forms import DeadPersonForm, DeathCertificateForm, AlivePersonForm, PersonIDForm
 from persons.models import DeathCertificate, PersonID, IDDocumentType
-from users.forms import OrgForm
+from users.forms import BaseOrgForm
 from users.models import Org, Profile, Dover
 from logs.models import write_log
 
@@ -99,7 +99,7 @@ class PlaceEditForm(forms.ModelForm):
                 self.initial['places_count'] = 1
 
     def clean_places_count(self):
-        burials = self.burials_available()
+        burials = self.instance.burials_available()
         max_num = burials.aggregate(max=Max('grave_number')).get('max') or 1
         if self.cleaned_data['places_count'] < max_num:
             raise forms.ValidationError(_(u"Нельзя установить меньше %s, столько могил уже занято") % max_num)
@@ -1081,7 +1081,7 @@ class AddDoverForm(forms.ModelForm):
         
         return cleaned_data
 
-class AddOrgForm(OrgForm):
+class AddOrgForm(BaseOrgForm):
     class Meta:
         model = Org
         exclude = ['off_address', ]
@@ -1118,6 +1118,13 @@ class AddOrgForm(OrgForm):
             raise forms.ValidationError("\n".join(errors))
         return cleaned_data
 
+    def save(self, commit=True):
+        self.collect_log_data()
+        org = super(AddOrgForm, self).save(commit=False)
+        if commit:
+            org.save()
+            self.put_log_data(msg=_(u'Добавлена организация'))
+        return org
 
 class AddDocTypeForm(forms.ModelForm):
     class Meta:

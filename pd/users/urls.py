@@ -10,6 +10,7 @@ urlpatterns = patterns('users.views',
     url(r'^register/', 'uregister', name='uregister'),
     url(r'^profile/', 'profile', name='profile'),
     url(r'^loruregistry/', 'loru_registry', name='loru_registry'),
+    url(r'^userprofile/', 'user_profile', name='user_profile'),
 
     url(r'^user/(?P<pk>\d+)/edit/', 'edit_user', name='edit_user'),
     url(r'^user/(?P<pk>\d+)/password/', 'change_password', name='change_password'),

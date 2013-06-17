@@ -83,10 +83,15 @@
                                 <li><a href="{% url manage_cemeteries %}">{% trans "Кладбища" %}</a></li>
                                 <li><a href="{% url loru_registry %}">{% trans "Реестр ЛОРУ" %}</a></li>
                             {% endif %}
+                            {% if user.profile.org.pk %}
+                                <li><a href="{% url edit_org user.profile.org.pk %}">{% trans "Организация" %}</a></li>
+                            {% endif %}
+                            {% if user.profile.pk %}
+                                <li><a href="{% url user_profile %}">{% trans "Пользователь" %}</a></li>
+                            {% endif %}
                             {% if user.profile.is_loru %}
                                 <li><a href="{% url manage_products %}">{% trans "Товары и услуги" %}</a></li>
                             {% endif %}
-                            <li><a href="{% url profile %}">{% trans "Профиль" %}</a></li>
                             <li class="divider"></li>
                             <li><a href="{% url ulogout %}">{% trans "Выйти" %}</a></li>
                         </ul>

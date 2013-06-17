@@ -385,7 +385,7 @@ class Burial(models.Model):
         return self.is_full() and not self.is_edit() and not self.is_finished()
 
     def can_decline(self):
-        return self.is_full() and self.is_ready()
+        return self.is_full() and (self.is_ready() or self.is_approved())
 
     # условия печати уведомлений для ugh.
     def can_print_notification(self):
