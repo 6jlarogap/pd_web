@@ -586,6 +586,7 @@ $(function() {
             $('#id_grave_number').val(old_grave_value);
             $.getJSON('/burials/get_graves_number/?'+data, function(data) {
                 var count = data.places || 1;
+                count = Math.max(parseInt(old_grave_value), count);
                 var options = '';
                 for (var i=1; i<=count; i++) {
                     options += '<option value="'+i+'">'+i+'</option>';
