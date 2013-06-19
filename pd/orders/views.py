@@ -174,7 +174,7 @@ class OrderList(LORURequiredMixin, ListView):
             if form.cleaned_data['burial_num_to']:
                 orders = orders.filter(burial__id__lte = form.cleaned_data['burial_num_to'])
             if form.cleaned_data['applicant_org']:
-                orders = orders.filter(applicant_organization__name__iexact=form.cleaned_data['applicant_org'])
+                orders = orders.filter(applicant_organization__name__istartswith=form.cleaned_data['applicant_org'])
             if form.cleaned_data['applicant_person']:
                 search_by =  ['applicant__last_name__istartswith','applicant__first_name__istartswith','applicant__middle_name__istartswith']
                 orders = self.filter_by_name(queryset=orders, search_by=search_by, name_string=form.cleaned_data['applicant_person'])

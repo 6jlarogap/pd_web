@@ -325,7 +325,7 @@ class BurialsListView(ListView):
             if form.cleaned_data['status']:
                 burials = burials.filter(status=form.cleaned_data['status'])
             if form.cleaned_data['applicant_org']:
-                burials = burials.filter(applicant_organization__name=form.cleaned_data['applicant_org'])
+                burials = burials.filter(applicant_organization__name__istartswith=form.cleaned_data['applicant_org'])
             if form.cleaned_data['applicant_person']:
                 fio = [f.strip('.') for f in form.cleaned_data['applicant_person'].split(' ')]
                 qa = Q()
