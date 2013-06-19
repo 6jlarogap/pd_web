@@ -100,7 +100,7 @@ class Area(models.Model):
     name = models.CharField(_(u"Название"), max_length=255, blank=True)
     availability = models.CharField(_(u"Открытость"), max_length=32, choices=AVAILABILITY_CHOICES, null=True)
     purpose = models.ForeignKey(AreaPurpose, verbose_name=_(u"Назначение"), null=True, on_delete=models.PROTECT)
-    places_count = models.PositiveIntegerField(_(u"Кол-во могил"), default=1)
+    places_count = models.PositiveIntegerField(_(u"Кол-во могил в месте"), default=1)
 
     class Meta:
         verbose_name = _(u"Участок")
