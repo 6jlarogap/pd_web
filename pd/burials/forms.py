@@ -80,7 +80,7 @@ class BaseAreaFormset(BaseInlineFormSet):
         for df in getattr(self, 'deleted_forms', []):
             if df.instance:
                 if df.instance.burial_set.exists():
-                    msg = _(u'Участок %s с <a href="/burials/?area=%s" target="_blank">Захоронениями</a> удалить нельзя, обратитесь в <a href="#">службу поддержки</a>')
+                    msg = _(u'Участок %s с <a href="/burials/?area=%s" target="_blank">захоронениями</a> удалить нельзя')
                     raise forms.ValidationError(mark_safe(msg % (df.instance.name, df.instance.name)))
 
 AreaFormset = inlineformset_factory(Cemetery, Area, formset=BaseAreaFormset, can_delete=True)
