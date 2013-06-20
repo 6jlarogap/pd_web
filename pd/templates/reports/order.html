@@ -95,7 +95,7 @@
         <TD STYLE="border-left: 1px solid #000000" COLSPAN=3 HEIGHT=20 ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000">Фамилия,
             имя, отчество умершего</FONT></TD>
         <TD STYLE="border-top: 1px solid #000000" COLSPAN=6 ALIGN=CENTER VALIGN=MIDDLE SDNUM="1033;0;@"><FONT
-                COLOR="#000000">{{ order.burial.deadman|default_if_none:"" }}</FONT></TD>
+                COLOR="#000000">{{ order.burial.deadman_or_bio }}</FONT></TD>
     </TR>
     <TR>
         <TD STYLE="border-left: 1px solid #000000" COLSPAN=5 HEIGHT=20 ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000">Возраст {{ order.burial.deadman.birth_date|date:"Y" }}</FONT>
@@ -385,7 +385,7 @@
         <TD STYLE="border-left: 1px solid #000000" COLSPAN=3 HEIGHT=20 ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000">Фамилия,
             имя, отчество умершего</FONT></TD>
         <TD STYLE="border-top: 1px solid #000000" COLSPAN=6 ALIGN=CENTER VALIGN=MIDDLE SDNUM="1033;0;@"><FONT
-                COLOR="#000000">{{ order.burial.deadman|default_if_none:"" }}</FONT></TD>
+                COLOR="#000000">{{ order.burial.deadman_or_bio }}</FONT></TD>
     </TR>
     <TR>
         <TD STYLE="border-left: 1px solid #000000" COLSPAN=5 HEIGHT=20 ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000">Возраст {{ order.burial.deadman.birth_date|date:"Y" }}</FONT>
@@ -641,7 +641,7 @@
             представитель Заказчика, - составили настоящий акт о том, что на &laquo;____&raquo; _________ 20___г.
             подтверждаем, что Исполнителем были выполнены качественно и в полном объеме работы согласно счета-заказа
             № {{ order.loru_number }} по захоронению
-            умершего {{ order.burial.deadman|default_if_none:"" }} на кладбище {{ order.burial.cemetery|default_if_none:"" }}</FONT></TD>
+            умершего {{ order.burial.deadman_or_bio }} на кладбище {{ order.burial.cemetery|default_if_none:"" }}</FONT></TD>
     </TR>
     <TR>
         <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000"
@@ -792,7 +792,7 @@
             представитель Заказчика, - составили настоящий акт о том, что на &laquo;____&raquo; _________ 20___г.
             подтверждаем, что Исполнителем были выполнены качественно и в полном объеме работы согласно счета-заказа
             № {{ order.loru_number }} по захоронению
-            умершего {{ order.burial.deadman|default_if_none:"" }} на кладбище {{ order.burial.cemetery|default_if_none:"" }}</FONT></TD>
+            умершего {{ order.burial.deadman_or_bio }} на кладбище {{ order.burial.cemetery|default_if_none:"" }}</FONT></TD>
     </TR>
     <TR>
         <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000"
@@ -979,7 +979,7 @@
         <TD STYLE="border-left: 1px solid #000000" COLSPAN=3 HEIGHT=20 ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000">Фамилия,
             имя, отчество умершего</FONT></TD>
         <TD STYLE="border-bottom: 1px solid #000000; " COLSPAN=6 ALIGN=CENTER VALIGN=MIDDLE SDNUM="1033;0;@"><FONT
-                COLOR="#000000" STYLE="font-size: 170%">{{ order.burial.deadman|default_if_none:"" }}</FONT></TD>
+                COLOR="#000000" STYLE="font-size: 170%">{{ order.burial.deadman_or_bio }}</FONT></TD>
         <TD ALIGN=LEFT VALIGN=MIDDLE><FONT COLOR="#000000"><BR></FONT></TD>
         <TD ALIGN=LEFT VALIGN=MIDDLE><FONT COLOR="#000000"><BR></FONT></TD>
         <TD ALIGN=LEFT VALIGN=MIDDLE><FONT COLOR="#000000"><BR></FONT></TD>
@@ -1166,7 +1166,7 @@
             <TD STYLE="border-left: 1px solid #000000" COLSPAN=3 HEIGHT=20 ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000">Фамилия,
                 имя, отчество умершего</FONT></TD>
             <TD STYLE="border-bottom: 1px solid #000000; " COLSPAN=6 ALIGN=CENTER VALIGN=MIDDLE SDNUM="1033;0;@"><FONT
-                    COLOR="#000000" STYLE="font-size: 170%">{{ order.burial.deadman|default_if_none:"" }}</FONT></TD>
+                    COLOR="#000000" STYLE="font-size: 170%">{{ order.burial.deadman_or_bio }}</FONT></TD>
             <TD ALIGN=LEFT VALIGN=MIDDLE><FONT COLOR="#000000"><BR></FONT></TD>
             <TD ALIGN=LEFT VALIGN=MIDDLE><FONT COLOR="#000000"><BR></FONT></TD>
             <TD ALIGN=LEFT VALIGN=MIDDLE><FONT COLOR="#000000"><BR></FONT></TD>
@@ -1395,7 +1395,7 @@
             <TD STYLE="border-left: 1px solid #000000" COLSPAN=3 HEIGHT=20 ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000">Фамилия,
                 имя, отчество умершего</FONT></TD>
             <TD STYLE="border-bottom: 1px solid #000000; " COLSPAN=6 ALIGN=CENTER VALIGN=MIDDLE SDNUM="1033;0;@"><FONT
-                    COLOR="#000000" STYLE="font-size: 170%">{{ order.burial.deadman|default_if_none:"" }}</FONT></TD>
+                    COLOR="#000000" STYLE="font-size: 170%">{{ order.burial.deadman_or_bio }}</FONT></TD>
             <TD ALIGN=LEFT VALIGN=MIDDLE><FONT COLOR="#000000"><BR></FONT></TD>
             <TD ALIGN=LEFT VALIGN=MIDDLE><FONT COLOR="#000000"><BR></FONT></TD>
             <TD ALIGN=LEFT VALIGN=MIDDLE><FONT COLOR="#000000"><BR></FONT></TD>
@@ -1610,7 +1610,7 @@
             <TD STYLE="border-left: 1px solid #000000" COLSPAN=3 HEIGHT=20 ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000">Фамилия,
                 имя, отчество умершего</FONT></TD>
             <TD STYLE="border-bottom: 1px solid #000000; " COLSPAN=6 ALIGN=CENTER VALIGN=MIDDLE SDNUM="1033;0;@"><FONT
-                    COLOR="#000000" STYLE="font-size: 170%">{{ order.burial.deadman|default_if_none:"" }}</FONT></TD>
+                    COLOR="#000000" STYLE="font-size: 170%">{{ order.burial.deadman_or_bio }}</FONT></TD>
             <TD ALIGN=LEFT VALIGN=MIDDLE><FONT COLOR="#000000"><BR></FONT></TD>
             <TD ALIGN=LEFT VALIGN=MIDDLE><FONT COLOR="#000000"><BR></FONT></TD>
             <TD ALIGN=LEFT VALIGN=MIDDLE><FONT COLOR="#000000"><BR></FONT></TD>
