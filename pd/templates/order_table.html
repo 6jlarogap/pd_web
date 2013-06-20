@@ -101,12 +101,7 @@
                     {% if c.get_burial.is_declined or c.get_burial.is_backed %}burial_red{% endif %}
             ">
                 <td>{{ c.get_burial.account_number|default:"" }}</td>
-                <td>{% if c.get_burial.is_bio %}
-                        {% trans "биоотходы" %}
-                    {% else %}
-                        {{ c.get_burial.deadman|default:"" }}
-                    {% endif %}
-                </td>
+                <td>{{ c.get_burial.deadman_or_bio }}</td>
                 <td>{{ c.get_burial.combined_date }}</td>
                 <td>
                     {% with burial=c.get_burial %}{% include "burial_place.html" %}{% endwith %}

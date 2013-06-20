@@ -567,6 +567,16 @@ class Burial(models.Model):
         self.save()
         return self
 
+    def deadman_or_bio(self):
+        """
+        Для печати: во многих местах надо отражать или ФИО, или 'биоотходы'
+        """
+        if self.is_bio():
+            return _(u'биоотходы')
+        if not self.deadman:
+            return _(u'Неизвестный')
+        return self.deadman
+
     def __unicode__(self):
         return u'%s' % self.pk
 
