@@ -304,13 +304,12 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, forms.Mo
         self.fields['applicant_organization'].empty_label = ''
         
         places_count = 1
-        if self.instance.place_number and self.instance.grave_number:
-            if self.instance.get_place():
-                places_count = self.instance.get_place().get_places_count()
-            elif self.instance.area:
-                # Вдруг уменьшат параметры участка так, что номер могилы в захоронении
-                # окажется больше числа могил в участке для нового места
-                places_count = max(self.instance.area.places_count, self.instance.grave_number)
+        if self.instance.place_number and self.instance.get_place():
+            places_count = self.instance.get_place().get_places_count()
+        elif self.instance.area:
+            # Вдруг уменьшат параметры участка так, что номер могилы в захоронении
+            # окажется больше числа могил в участке для нового места
+            places_count = max(self.instance.area.places_count, self.instance.grave_number or 1)
         grave_choices = [(i,i) for i in range(1, places_count+1)]
         self.fields['grave_number'].widget = forms.Select(choices=grave_choices)
 
