@@ -24,17 +24,19 @@
     <h3>{% trans "Усопшие" %}</h3>
     <ul>
         {% for b in place.burial_set.all %}
-            <li>
-                {{ b.grave_number }} &mdash;
-                {{ b.get_burial_type_display }} &mdash;
-                {% if user.profile.is_loru and b.is_full %}
-                    <a href="{% url view_burial b.pk %}">{{ b.deadman|default:"Неизвестный" }}</a>
-                {% elif user.profile.is_ugh and b.cemetery.ugh == user.profile.org %}
-                    <a href="{% url view_burial b.pk %}">{{ b.deadman|default:"Неизвестный" }}</a>
-                {% else %}
-                    {{ b.deadman|default:"Неизвестный" }}
-                {% endif %}
-            </li>
+            {% if not b.annulated %}
+                <li>
+                    {{ b.grave_number }} &mdash;
+                    {{ b.get_burial_type_display }} &mdash;
+                    {% if user.profile.is_loru and b.is_full %}
+                        <a href="{% url view_burial b.pk %}">{{ b.deadman_or_bio }}</a>
+                    {% elif user.profile.is_ugh and b.cemetery.ugh == user.profile.org %}
+                        <a href="{% url view_burial b.pk %}">{{ b.deadman_or_bio }}</a>
+                    {% else %}
+                        {{ b.deadman_or_bio }}
+                    {% endif %}
+                </li>
+            {% endif %}
         {% endfor %}
     </ul>
 </div>
