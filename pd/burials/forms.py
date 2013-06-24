@@ -1222,8 +1222,6 @@ class ExhumationForm(ChildrenJSONMixin, forms.ModelForm):
 
         return self.instance
 
-# Нижний комментарий
-
 class AreaMergeForm(forms.Form):
     correct = forms.ModelChoiceField(queryset=Area.objects.none(), required=True, label=_(u"Правильный"))
     incorrect = forms.ModelChoiceField(queryset=Area.objects.none(), required=True, label=_(u"Неправильный"))
