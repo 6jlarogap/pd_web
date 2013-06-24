@@ -575,7 +575,6 @@ $(function() {
     old_grave_value = $('#id_grave_number').val();
 
     $('#cont_place #id_cemetery, #cont_place #id_area, #cont_place #id_row, #cont_place #id_place_number').change(function() {
-        $('#id_grave_number').html('<option value="1">1</option>');
         $('#id_responsible-take_from_0').removeAttr('checked').closest('li').hide();
 
         var data = $('#id_cemetery, #id_area, #id_row, #id_place_number').serialize();
@@ -583,16 +582,17 @@ $(function() {
             if ($('#id_place_number').val()) {
                 $('#place_info').load('/burials/get_place/?'+data)
             }
-            $('#id_grave_number').val(old_grave_value);
             $.getJSON('/burials/get_graves_number/?'+data, function(data) {
                 var count = data.places || 1;
                 count = Math.max(parseInt(old_grave_value), count);
-                var options = '';
-                for (var i=1; i<=count; i++) {
-                    options += '<option value="'+i+'">'+i+'</option>';
+                if (count != $('#id_grave_number').find('option').length) {
+                    var options = '';
+                    for (var i=1; i<=count; i++) {
+                        var selected = i == old_grave_value ? ' selected="selected"' : '';
+                        options += '<option value="'+i+'"'+selected+'>'+i+'</option>';
+                    }
+                    $('#id_grave_number').html(options);
                 }
-                $('#id_grave_number').html(options);
-                $('#id_grave_number').val(old_grave_value);
                 $('#id_responsible-place').val(data.place_pk || "");
 
                 var resp_id = '#id_responsible-take_from_';
