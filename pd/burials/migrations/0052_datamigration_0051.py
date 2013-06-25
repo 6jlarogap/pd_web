@@ -50,11 +50,10 @@ class Migration(DataMigration):
                     PersonId = orm['persons.PersonId']
                     try:
                         personid = PersonId.objects.get(person=order.applicant)
-                        if personid:
-                            personid = copy.deepcopy(personid)
-                            personid.id = None
-                            personid.person = applicant
-                            personid.save(force_insert=True)
+                        personid = copy.deepcopy(personid)
+                        personid.id = None
+                        personid.person = applicant
+                        personid.save(force_insert=True)
                     except PersonId.DoesNotExist:
                         pass
 
