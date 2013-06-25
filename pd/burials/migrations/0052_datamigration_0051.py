@@ -19,10 +19,6 @@ class Migration(DataMigration):
         for burial in orm['burials.Burial'].objects.all():
             order = burial.order
             if order:
-                applicant_organization = order.applicant_organization
-                agent_director = order.agent_director
-                agent = order.agent
-                dover = order.dover
                 applicant = order.applicant
                 if applicant:
                     address = applicant.address
@@ -61,10 +57,10 @@ class Migration(DataMigration):
                 # .DatabaseError: multiple assignments to same column "fact_date_no_month"
                 orm['burials.Burial'].objects.filter(pk=burial.pk).update(
                     loru=order.loru,
-                    applicant_organization = applicant_organization,
-                    agent_director = agent_director,
-                    agent = agent,
-                    dover = dover,
+                    applicant_organization = order.applicant_organization,
+                    agent_director = order.agent_director,
+                    agent = order.agent,
+                    dover = order.dover,
                     applicant = applicant,
                 )
                 orm['orders.Order'].objects.filter(pk=burial.order_id).update(burial=burial)
