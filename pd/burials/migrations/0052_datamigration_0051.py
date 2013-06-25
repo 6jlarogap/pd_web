@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import datetime
+import copy
 from south.db import db
 from south.v2 import DataMigration
 from django.db import models
@@ -14,13 +15,60 @@ class Migration(DataMigration):
     def forwards(self, orm):
         "Write your forwards methods here."
         # Note: Remember to use orm['appname.ModelName'] rather than "from appname.models..."
-        for b in orm['burials.Burial'].objects.all():
-            if b.order:
-                # Так победили:
+
+        for burial in orm['burials.Burial'].objects.all():
+            order = burial.order
+            if order:
+                applicant_organization = order.applicant_organization
+                agent_director = order.agent_director
+                agent = order.agent
+                dover = order.dover
+                applicant = order.applicant
+                if applicant:
+                    address = applicant.address
+                    if address:
+                        address = copy.deepcopy(address)
+                        address.id = None
+                        address.save(force_insert=True)
+
+                    applicant = copy.deepcopy(applicant)
+                    applicant.id = None
+                    applicant.baseperson_ptr_id = None
+                    applicant.address = address
+                    applicant.save(force_insert=True)
+
+                    # Следующие модели здесь были добавлены в models вручную:
+                    # - persons.DocumentSource
+                    # - persons.IDDocumentType
+                    # - persons.PersonId
+                    # из последнией миграции в приложении persons.
+                    #
+                    # Другой (автоматический) способ получения в словаре models
+                    # и структуры заказов/захоронений, и структуры persons.PersonId,
+                    # не был найден.
+                    #
+                    PersonId = orm['persons.PersonId']
+                    try:
+                        personid = PersonId.objects.get(person=order.applicant)
+                        if personid:
+                            personid = copy.deepcopy(personid)
+                            personid.id = None
+                            personid.person = applicant
+                            personid.save(force_insert=True)
+                    except PersonId.DoesNotExist:
+                        pass
+
+                # Так победили (сохранением отдельных полей в burial):
                 # .DatabaseError: multiple assignments to same column "fact_date_no_month"
-                # А заодно и быстрее только одно поле обновлять
-                orm['burials.Burial'].objects.filter(pk=b.pk).update(loru=b.order.loru)
-                orm['orders.Order'].objects.filter(pk=b.order_id).update(burial=b)
+                orm['burials.Burial'].objects.filter(pk=burial.pk).update(
+                    loru=order.loru,
+                    applicant_organization = applicant_organization,
+                    agent_director = agent_director,
+                    agent = agent,
+                    dover = dover,
+                    applicant = applicant,
+                )
+                orm['orders.Order'].objects.filter(pk=burial.order_id).update(burial=burial)
 
     def backwards(self, orm):
         "Write your backwards methods here."
@@ -281,6 +329,26 @@ class Migration(DataMigration):
             'user_first_name': ('django.db.models.fields.CharField', [], {'max_length': '255', 'null': 'True', 'blank': 'True'}),
             'user_last_name': ('django.db.models.fields.CharField', [], {'max_length': '255', 'null': 'True', 'blank': 'True'}),
             'user_middle_name': ('django.db.models.fields.CharField', [], {'max_length': '255', 'null': 'True', 'blank': 'True'})
+        },
+        'persons.documentsource': {
+            'Meta': {'object_name': 'DocumentSource'},
+            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'name': ('django.db.models.fields.CharField', [], {'unique': 'True', 'max_length': '255'})
+        },
+        'persons.iddocumenttype': {
+            'Meta': {'object_name': 'IDDocumentType'},
+            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'name': ('django.db.models.fields.CharField', [], {'max_length': '255'})
+        },
+        'persons.personid': {
+            'Meta': {'object_name': 'PersonID'},
+            'date': ('django.db.models.fields.DateField', [], {'null': 'True', 'blank': 'True'}),
+            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'id_type': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['persons.IDDocumentType']", 'null': 'True', 'blank': 'True'}),
+            'number': ('django.db.models.fields.CharField', [], {'max_length': '255', 'null': 'True', 'blank': 'True'}),
+            'person': ('django.db.models.fields.related.OneToOneField', [], {'to': "orm['persons.BasePerson']", 'unique': 'True'}),
+            'series': ('django.db.models.fields.CharField', [], {'max_length': '255', 'null': 'True', 'blank': 'True'}),
+            'source': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['persons.DocumentSource']", 'null': 'True', 'blank': 'True'})
         }
     }
 
