@@ -387,7 +387,7 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, forms.Mo
         self.dc_form = DeathCertificateForm(self.request, data=data, prefix='deadman-dc', instance=dc)
 
         responsible = self.instance and self.instance.get_responsible()
-        resp_initial = {'order': self.instance.order or self.request.REQUEST.get('order')}
+        resp_initial = {'order': self.request.REQUEST.get('order')}
         self.responsible_form = ResponsibleForm(data=data, prefix='responsible', instance=responsible,
                                                 initial=resp_initial)
         resp_addr = responsible and responsible.address

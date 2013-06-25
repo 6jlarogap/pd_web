@@ -3,8 +3,8 @@
 {% load i18n %}
 
 {% block content %}
-    {% if b.order and user.profile.is_loru %}
-        {% with order=b.order tab="burial" %}
+    {% if order and user.profile.is_loru %}
+        {% with order=order tab="burial" %}
             {% include "order_nav.html" %}
         {% endwith %}
     {% endif %}
@@ -36,14 +36,6 @@
                 <dt>{% trans "Доверенность" %}:</dt><dd>{{ b.dover|default:"не указана" }}</dd>
             {% elif b.agent_director %}
                 <dt>{% trans "Агент" %}:</dt><dd>{% trans "Директор" %}</dd>
-            {% endif %}
-            <!-- скрываем от лору то что он может глянуть у себя на вкладке "Заказчик" -->
-            {% if user.profile.is_ugh %}
-                {% if b.order.applicant %}
-                    <dt>{% trans "от лица" %}</dt><dd>{% trans "ФЛ" %} {{ b.order.applicant }}</dd>
-                {% elif b.order.applicant_organization %}
-                    <dt>{% trans "от лица" %}</dt><dd>{% trans "ЮЛ" %} {{ b.order.applicant_organization }} {{ b.order.agent.person|default:"" }}</dd>
-                {% endif %}
             {% endif %}
         {% elif b.applicant %}
             <dt>{% trans "Заявитель-ФЛ" %}:</dt>
@@ -111,21 +103,6 @@
                 {% else %}
                     {% trans "не указан" %}
                 {% endif %}
-            {% endif %}
-        </dd>
-        <dt>{% trans "Заказчик" %}:</dt>
-        <dd>
-            {% if b.order %}
-                {% if b.order.applicant_organization %}
-                    {% trans "ЮЛ" %}: {{ b.order.applicant_organization }}
-                {% elif b.order.applicant %}
-                    {% trans "ФЛ" %}: {{ b.order.applicant }} <br />
-                    {% trans "Адрес" %}: {{ b.order.applicant.address|default:"не указан" }}
-                {% else %}
-                    {% trans "не указан" %}
-                {% endif %}
-            {% else %}
-                {% trans "не указан" %}
             {% endif %}
         </dd>
         <dt>{% trans "План. дата и время" %}:</dt>

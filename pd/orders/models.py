@@ -90,7 +90,7 @@ class Order(models.Model):
 
     def annulate(self):
         self.annulated = True
-        b = self.get_burial()
+        b = self.burial
         if b:
             save_burial = False
             if b.status in [Burial.STATUS_READY, Burial.STATUS_APPROVED]:
@@ -126,12 +126,6 @@ class Order(models.Model):
 
     def total_float(self):
         return float(self.total)
-
-    def get_burial(self):
-        try:
-            return self.burial
-        except Burial.DoesNotExist:
-            return
 
     def has_burial(self):
         return self.orderitem_set.filter(product__ptype=Product.PRODUCT_BURIAL).exists()

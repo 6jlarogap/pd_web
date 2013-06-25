@@ -541,7 +541,7 @@ class AnnulateOrder(LORURequiredMixin, DetailView):
             messages.success(self.request, _(u'Заказ восстановлен'))
             write_log(request, o, _(u'Заказ восстановлен'))
         else:
-            b = o.get_burial()
+            b = o.burial
             old_annulated = b.annulated if b else None
             o.annulate()
             messages.success(self.request, _(u'Заказ аннулирован'))
