@@ -5,9 +5,7 @@
     <p>{{ form.account_number.label_tag }} {{ form.account_number }}<span class="helptext">{{ form.account_number.help_text }}</span></p>
 {% endif %}
 
-{% if user.profile.is_ugh %}
     {% include "applicant_form.html" %}
-{% endif %}
 <script type="text/javascript">
     $(document).ready(function(){
        $("form.burial-form.main-form ul").each(function(element){

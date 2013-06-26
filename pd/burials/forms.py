@@ -173,7 +173,8 @@ class ResponsibleForm(AlivePersonForm):
     def set_loru_from(self):
         if 'take_from' in self.fields:
             all_choices = self.WHERE_CHOICES
-            new_choices = [c for c in all_choices if c[0] != self.WHERE_FROM_APPLICANT]
+            new_choices = all_choices
+            # new_choices = [c for c in all_choices if c[0] != self.WHERE_FROM_APPLICANT]
 
             if self.initial.get('order'):
                 order = self.initial.get('order')
@@ -313,26 +314,17 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, forms.Mo
         grave_choices = [(i,i) for i in range(1, places_count+1)]
         self.fields['grave_number'].widget = forms.Select(choices=grave_choices)
 
-        if self.request.user.profile.is_loru():
-            del self.fields['applicant_organization']
-            del self.fields['agent']
-            del self.fields['agent_director']
-            del self.fields['dover']
-            del self.fields['opf']
+        loru_list = Org.objects.all()
+        self.fields['applicant_organization'].queryset = loru_list
+        self.fields['applicant_organization'].inactive_queryset = loru_list.filter(Q(profile__user__is_active=False) | Q(profile=None))
+        self.fields['agent'].queryset = Profile.objects.filter(org__in=loru_list, is_agent=True).select_related('user')
+        self.fields['dover'].queryset = Dover.objects.filter(agent__org__in=loru_list)
 
-        if self.request.user.profile.is_ugh() or self.instance.is_ugh_only():
-            ugh = self.request.user.profile.org
-            loru_list = Org.objects.all()
-            self.fields['applicant_organization'].queryset = loru_list
-            self.fields['applicant_organization'].inactive_queryset = loru_list.filter(Q(profile__user__is_active=False) | Q(profile=None))
-            self.fields['agent'].queryset = Profile.objects.filter(org__in=loru_list, is_agent=True).select_related('user')
-            self.fields['dover'].queryset = Dover.objects.filter(agent__org__in=loru_list)
-
-            self.fields.keyOrder.insert(self.fields.keyOrder.index('applicant_organization'), self.fields.keyOrder.pop(-1))
-            if self.instance.pk and self.instance.applicant: # and self.instance.is_ugh(): # только ручное или архивное ?
-                self.initial['opf'] = 'person'
-            else:
-                self.initial['opf'] = 'org'
+        self.fields.keyOrder.insert(self.fields.keyOrder.index('applicant_organization'), self.fields.keyOrder.pop(-1))
+        if self.instance.pk and self.instance.applicant: # and self.instance.is_ugh(): # только ручное или архивное ?
+            self.initial['opf'] = 'person'
+        else:
+            self.initial['opf'] = 'org'
 
         if self.request.user.profile.is_ugh() and self.request.REQUEST.get('archive'):
             del self.fields['plan_date']
@@ -393,10 +385,22 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, forms.Mo
         resp_addr = responsible and responsible.address
         self.responsible_address_form = LocationForm(data=data, prefix='responsible-address', instance=resp_addr)
 
-        if self.request.user.profile.is_ugh():
-            self.responsible_form.set_ugh_from()
-        elif self.request.user.profile.is_loru():
-            self.responsible_form.set_loru_from()
+        #if self.request.user.profile.is_ugh():
+            #self.responsible_form.set_ugh_from()
+        #elif self.request.user.profile.is_loru():
+            #self.responsible_form.set_loru_from()
+        # TODO: в прежнем варианте, когда лору не правил заявителя,
+        #       в списке, откуда брать отвественного, всегда были
+        #       3 алтернативы:
+        #       - из места
+        #       - заявитель (для угх), заказчик (для лору)
+        #       - новый
+        #       И на эти 3 альтернативы настроены js сценарии
+        #       Сейчас же появляется случай из 4 вариантов,
+        #       лору может выбрать еще и заказчика.
+        #       Чтобы пока не ломать сложившиеся js сценарии,
+        #       лору может выбирать, как и угх
+        self.responsible_form.set_ugh_from()
 
         applicant = self.instance and self.instance.applicant
         self.applicant_form = AlivePersonForm(data=data, prefix='applicant', instance=applicant)
@@ -408,13 +412,9 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, forms.Mo
             applicant_id = None
         self.applicant_id_form = PersonIDForm(data=data, prefix='applicant-pid', instance=applicant_id)
 
-        if self.request.user.profile.is_loru():
-            forms = [self.deadman_form, self.deadman_address_form, self.dc_form,
-                    self.responsible_form, self.responsible_address_form]
-        else:
-            forms = [self.deadman_form, self.deadman_address_form, self.dc_form,
-                    self.responsible_form, self.responsible_address_form,
-                    self.applicant_form, self.applicant_address_form, self.applicant_id_form]
+        forms = [self.deadman_form, self.deadman_address_form, self.dc_form,
+                self.responsible_form, self.responsible_address_form,
+                self.applicant_form, self.applicant_address_form, self.applicant_id_form]
         
         # При ?action=.... метод is_valid() формы добавления файла, self.bfiles_form, возвращает
         # False.
