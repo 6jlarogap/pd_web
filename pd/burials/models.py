@@ -196,6 +196,16 @@ class Place(models.Model):
                 self.set_next_number_for_year(cemetery=self.cemetery)
         return super(Place, self).save(*args, **kwargs)
 
+class Grave(models.Model):
+
+    place = models.ForeignKey(Place, verbose_name=_(u"Место"))
+    name = models.CharField(_(u"Номер"), max_length=10)
+
+class GravePhoto(models.Model):
+
+    grave = models.ForeignKey(Grave, verbose_name=_(u"Место"))
+    photo = models.FileField(u"Фото", upload_to='photos')
+    
 class Burial(models.Model):
     STATUS_BACKED = 'backed'
     STATUS_DECLINED = 'declined'
@@ -259,6 +269,7 @@ class Burial(models.Model):
     row = models.CharField(_(u"Ряд"), max_length=255, blank=True, null=True)
     place_number = models.CharField(_(u"Номер места"), max_length=255, null=True, blank=True,
                                     help_text=_(u"Если пусто - номер будет сгенерирован автоматически"))
+    grave = models.ForeignKey(Grave, verbose_name=_(u"Могила"), null=True, blank=True, on_delete=models.PROTECT)
     grave_number = models.PositiveSmallIntegerField(_(u"Могила"), max_length=255, default=1)
     responsible = models.ForeignKey('persons.AlivePerson', verbose_name=_(u"Ответственный"), blank=True, null=True,
                                     related_name='responsible_burials')

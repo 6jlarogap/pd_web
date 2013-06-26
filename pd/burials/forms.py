@@ -379,7 +379,8 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, forms.Mo
         self.dc_form = DeathCertificateForm(self.request, data=data, prefix='deadman-dc', instance=dc)
 
         responsible = self.instance and self.instance.get_responsible()
-        resp_initial = {'order': self.request.REQUEST.get('order')}
+        order_pk = self.request.REQUEST.get('order')
+        resp_initial = {'order': order_pk}
         self.responsible_form = ResponsibleForm(data=data, prefix='responsible', instance=responsible,
                                                 initial=resp_initial)
         resp_addr = responsible and responsible.address
@@ -403,6 +404,13 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, forms.Mo
         self.responsible_form.set_ugh_from()
 
         applicant = self.instance and self.instance.applicant
+        #if not applicant and self.request.user.profile.is_loru() and order_pk:
+            #try:
+                #order = Order.objects.get(pk=order_pk, loru=self.request.user.profile.org)
+            #except Order.DoesNotExist:
+                #pass
+            #if order:
+
         self.applicant_form = AlivePersonForm(data=data, prefix='applicant', instance=applicant)
         applicant_addr = applicant and applicant.address
         self.applicant_address_form =  LocationForm(data=data, prefix='applicant-address', instance=applicant_addr)
