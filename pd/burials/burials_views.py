@@ -28,7 +28,7 @@ class BurialGetOrderMixin:
     """
     Правка, просмотр захоронений пользователем-ЛОРУ производится
     по URL с параметром <order=<номер заказа>. Здесь:
-    получение этого номера.
+    получение объекта заказа, соответствующего этому номеру.
     """
     def get_order(self):
         order = None
@@ -586,10 +586,14 @@ class CreateBurial(BurialGetOrderMixin, CreateView):
             messages.error(request, _(u"У Вас нет прав создавать захоронения вручную"))
             return redirect('/')
 
-        # Из старого кода (с burial::order). Непонятно.
+        # Из старого кода (с burial::order)
         #order = self.get_order()
         #if order and order.get_burial() and order.get_burial() != self.get_object():
             #return redirect('edit_burial', order.burial.pk)
+        if self.request.user.profile.is_loru():
+            order = self.get_order()
+            if order and order.burial and order.burial != self.get_object():
+                return redirect(reverse('edit_burial', args=[order.burial.pk]) + '?order=%s' % order.pk)
 
         return super(CreateBurial, self).dispatch(request, *args, **kwargs)
 
