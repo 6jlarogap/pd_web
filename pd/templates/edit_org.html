@@ -7,7 +7,7 @@
     {% if not is_my_org and user.profile.is_loru and not form.instance.is_inactive %}
         <h2><span style="color:red">У Вас нет прав для редактирования данных активированной организации</span></h2>
     {% else %}
-        <form action="" method="POST" class="with-address-form">
+        <form action="" method="POST">
             {% csrf_token %}
             {{ form.as_p }}
 
