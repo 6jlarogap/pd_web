@@ -53,7 +53,8 @@ class Order(models.Model):
     loru = models.ForeignKey(Org, limit_choices_to={'type': Org.PROFILE_LORU}, null=True, verbose_name=_(u"ЛОРУ"))
     loru_number = models.PositiveIntegerField(null=True, editable=False)
     payment = models.CharField(_(u"Тип платежа"), max_length=255, choices=PAYMENT_CHOICES, default=PAYMENT_CASH)
-    applicant = models.ForeignKey('persons.AlivePerson', verbose_name=_(u"Заказчик-ФЛ"), null=True, blank=True)
+    applicant = models.ForeignKey('persons.AlivePerson', verbose_name=_(u"Заказчик-ФЛ"), null=True,blank=True,
+                                  on_delete=models.PROTECT)
     applicant_organization = models.ForeignKey(Org, verbose_name=_(u"Заказчик-ЮЛ"), null=True, blank=True, related_name='org_orders')
     agent_director = models.BooleanField(_(u"Директор-Агент"), default=False, blank=True)
     agent = models.ForeignKey('users.Profile', verbose_name=_(u"Агент"), null=True, blank=True,

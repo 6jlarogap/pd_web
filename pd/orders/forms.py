@@ -25,7 +25,7 @@ class OrderForm(ChildrenJSONMixin, forms.ModelForm):
 
     class Meta:
         model = Order
-        exclude = ['loru', 'person', 'org', ]
+        exclude = ['loru', 'applicant', 'org', ]
 
     def __init__(self, request, *args, **kwargs):
         self.request = request
@@ -75,7 +75,7 @@ class OrderForm(ChildrenJSONMixin, forms.ModelForm):
         return [self.applicant_form, self.applicant_address_form, self.applicant_id_form]
 
     def save(self, commit=True, *args, **kwargs):
-        self.instance = super(OrderForm, self).save(*args, **kwargs)
+        self.instance = super(OrderForm, self).save(commit=False)
 
         if self.cleaned_data.get('opf') == 'person':
             if self.applicant_form.is_valid_data():
@@ -91,14 +91,15 @@ class OrderForm(ChildrenJSONMixin, forms.ModelForm):
                 self.instance.applicant = applicant
             else:
                 self.instance.applicant = None
-
             self.instance.applicant_organization = None
-        else:
-            try:
-                self.instance.applicant.delete()
-            except (AttributeError, ProtectedError):
-                pass
+        elif self.instance.applicant:
+            applicant = self.instance.applicant
             self.instance.applicant = None
+            self.instance.save()
+            try:
+                applicant.delete()
+            except (ProtectedError):
+                pass
 
         self.instance.save()
 

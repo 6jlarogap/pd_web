@@ -606,9 +606,6 @@ class CreateBurial(BurialGetOrderMixin, CreateView):
             # Такое здесь, уже на коммите, возможно при фокусах в адресной строке браузера ???
             if not order:
                 raise Http404
-            if not order.burial: # or order.burial.pk != b.bk Может ли быть такое ???
-                order.burial = b
-                order.save()
             order_parm = '?order=%s' % order.pk
 
         action = self.get_action()

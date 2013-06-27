@@ -281,7 +281,7 @@ class Burial(models.Model):
     deadman = models.ForeignKey(DeadPerson, verbose_name=_(u"Усопший"), null=True, editable=False)
 
     applicant = models.ForeignKey('persons.AlivePerson', verbose_name=_(u"Заявитель"), blank=True, null=True,
-                                  related_name='applied_burials')
+                                  related_name='applied_burials', on_delete=models.PROTECT)
     ugh = models.ForeignKey(Org, verbose_name=_(u"УГХ"), null=True, editable=False, related_name='ugh_created',
                             limit_choices_to={'type': Org.PROFILE_UGH}, on_delete=models.PROTECT)
     loru = models.ForeignKey(Org, verbose_name=_(u"ЛОРУ"), null=True, editable=False, 

@@ -261,6 +261,11 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, forms.Mo
                 date_diff = 2 # Saturday
             self.initial['plan_date'] = datetime.date.today() + datetime.timedelta(date_diff)
 
+        self.order = None
+        order_pk = self.request.REQUEST.get('order')
+        if self.request.user.profile.is_loru() and order_pk:
+            self.order = Order.objects.get(pk=order_pk, loru=self.request.user.profile.org)
+
         # Отсутствие выбора будет в выпадающем списке не "---", а ""
         self.fields['applicant_organization'].empty_label = ''
         
@@ -281,7 +286,7 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, forms.Mo
         self.fields['dover'].queryset = Dover.objects.filter(agent__org__in=loru_list)
 
         self.fields.keyOrder.insert(self.fields.keyOrder.index('applicant_organization'), self.fields.keyOrder.pop(-1))
-        if self.instance.pk and self.instance.applicant: # and self.instance.is_ugh(): # только ручное или архивное ?
+        if self.instance.pk and self.instance.applicant:
             self.initial['opf'] = 'person'
         else:
             self.initial['opf'] = 'org'
@@ -339,20 +344,19 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, forms.Mo
         self.dc_form = DeathCertificateForm(self.request, data=data, prefix='deadman-dc', instance=dc)
 
         responsible = self.instance and self.instance.get_responsible()
-        order_pk = self.request.REQUEST.get('order')
         self.responsible_form = ResponsibleForm(data=data, prefix='responsible', instance=responsible)
         resp_addr = responsible and responsible.address
         self.responsible_address_form = LocationForm(data=data, prefix='responsible-address', instance=resp_addr)
 
         applicant = self.instance and self.instance.applicant
-        #if not applicant and self.request.user.profile.is_loru() and order_pk:
-            #try:
-                #order = Order.objects.get(pk=order_pk, loru=self.request.user.profile.org)
-            #except Order.DoesNotExist:
-                #pass
-            #if order:
+        applicant_form_initial = {}
+        if not self.instance.pk and self.order:
+            if self.order.applicant:
+                self.initial['opf'] = 'person'
+                for f in AlivePersonForm.base_fields.keys():
+                    applicant_form_initial[f] = getattr(self.order.applicant, f)
 
-        self.applicant_form = AlivePersonForm(data=data, prefix='applicant', instance=applicant)
+        self.applicant_form = AlivePersonForm(data=data, prefix='applicant', instance=applicant, initial=applicant_form_initial)
         applicant_addr = applicant and applicant.address
         self.applicant_address_form =  LocationForm(data=data, prefix='applicant-address', instance=applicant_addr)
         try:
@@ -448,9 +452,11 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, forms.Mo
             elif self.instance.cemetery:
                 self.instance.ugh = self.instance.cemetery.ugh
 
+        if not self.instance.loru and request.user.profile.is_loru():
+            self.instance.loru = request.user.profile.org
+
         if not self.instance.pk:
             if self.request.user.profile.is_loru():
-                self.instance.applicant_organization = self.request.user.profile.org
                 self.instance.source_type = Burial.SOURCE_FULL
             elif self.request.user.profile.is_ugh():
                 if self.request.REQUEST.get('archive'):
@@ -487,28 +493,28 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, forms.Mo
                 pass
             self.instance.deadman = None
 
-        if self.request.user.profile.is_ugh():
-            if self.cleaned_data.get('opf') == 'person':
-                if self.applicant_form.is_valid_data():
-                    applicant = self.applicant_form.save(commit=False)
-                    if self.applicant_address_form.is_valid():
-                        applicant.address = self.applicant_address_form.save()
-                    applicant.save()
+        if self.cleaned_data.get('opf') == 'person' and self.applicant_form.is_valid_data():
+            applicant = self.applicant_form.save(commit=False)
+            if self.applicant_address_form.is_valid_data():
+                applicant.address = self.applicant_address_form.save()
+            applicant.save()
 
-                    if self.applicant_id_form.is_valid():
-                        pid = self.applicant_id_form.save(commit=False)
-                        pid.person = applicant
-                        pid.save()
-                    self.instance.applicant = applicant
-                else:
-                    self.instance.applicant = None
-                self.instance.applicant_organization = None
+            if self.applicant_id_form.is_valid_data():
+                pid = self.applicant_id_form.save(commit=False)
+                pid.person = applicant
+                pid.save()
+                self.instance.applicant = applicant
             else:
-                try:
-                    self.instance.applicant.delete()
-                except (AttributeError, ProtectedError):
-                    pass
                 self.instance.applicant = None
+            self.instance.applicant_organization = None
+        elif self.instance.applicant:
+            applicant = self.instance.applicant
+            self.instance.applicant = None
+            self.instance.save()
+            try:
+                applicant.delete()
+            except (ProtectedError):
+                pass
 
         remove_responsible = False
         if self.request.user.profile.is_ugh() and self.responsible_form.cleaned_data.get('take_from') == ResponsibleForm.WHERE_FROM_APPLICANT:
@@ -552,8 +558,11 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, forms.Mo
                                                          row=self.cleaned_data['row'],
                                                          place=self.cleaned_data['place_number'])
             self.instance.place=place
-            
+        
         self.instance.save()
+        if self.order:
+            self.order.burial = self.instance
+            self.order.save()
 
         if self.bfiles_form.is_valid() and self.request.FILES.get('bfile'):
             original_name=self.request.FILES.get('bfile').name
@@ -566,8 +575,10 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, forms.Mo
 
         self.put_log_data()
 
+        order_parm = '?order=%s' % self.order.pk if self.order else ''
+        url = 'view_burial' if request.user.profile.is_ugh() else 'edit_burial'
         msg = _(u"<a href='%s'>Захоронение %s</a> сохранено") % (
-            reverse('view_burial', args=[self.instance.pk]),
+            reverse(url, args=[self.instance.pk]) + order_parm,
             self.instance.pk,
         )
         messages.success(self.request, msg)

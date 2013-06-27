@@ -47,7 +47,7 @@
                         {% if not b.pk %}
                             <input type="submit" class="btn btn-commit-burial" name="ready" value="{% trans "cохранить и отправить на согласование" %}"/>
                         <!-- захоронение is_edit: черновик, отклонено, отозвано -->
-                        {% elif b.is_edit and b.order and not b.order.annulated %}
+                        {% elif b.is_edit and order and not order.annulated %}
                             <input type="submit" class="btn btn-commit-burial" name="ready" value="{% trans "cохранить и отправить на согласование" %}"/>
                         {% elif b.can_back %}
                             <input type="submit" class="btn btn-commit-burial" name="back" value="{% trans "отозвать" %}"/>
