@@ -146,12 +146,10 @@ class BurialSearchForm(forms.Form):
 
 class ResponsibleForm(AlivePersonForm):
     WHERE_FROM_PLACE = u'place'
-    WHERE_FROM_ORDER = u'order'
     WHERE_FROM_APPLICANT = u'applicant'
     WHERE_NEW = u'new'
     WHERE_CHOICES = (
         (WHERE_FROM_PLACE, _(u'Существующий (из места)')),
-        (WHERE_FROM_ORDER, _(u'Заказчик (из Счет-Заказа)')),
         (WHERE_FROM_APPLICANT, _(u'Заявитель')),
         (WHERE_NEW, _(u'Новый')),
     )
@@ -170,39 +168,7 @@ class ResponsibleForm(AlivePersonForm):
 
         self.initial.setdefault('take_from', self.WHERE_NEW)
 
-    def set_loru_from(self):
-        if 'take_from' in self.fields:
-            all_choices = self.WHERE_CHOICES
-            new_choices = all_choices
-            # new_choices = [c for c in all_choices if c[0] != self.WHERE_FROM_APPLICANT]
-
-            if self.initial.get('order'):
-                order = self.initial.get('order')
-                if not isinstance(order, Order):
-                    try:
-                        order = Order.objects.get(pk=self.initial['order'])
-                    except Order.DoesNotExist:
-                        order = None
-
-                if order and not order.applicant:
-                    new_choices = [c for c in new_choices if c[0] != self.WHERE_FROM_ORDER]
-
-            self.fields['take_from'].choices = new_choices
-            self.fields['take_from'].widget.choices = new_choices
-
-    def set_ugh_from(self):
-        if 'take_from' in self.fields:
-            all_choices = self.WHERE_CHOICES
-            new_choices = [c for c in all_choices if c[0] != self.WHERE_FROM_ORDER]
-            self.fields['take_from'].choices = new_choices
-            self.fields['take_from'].widget.choices = new_choices
-
     def clean(self):
-        if self.cleaned_data.get('take_from') == self.WHERE_FROM_ORDER:
-            if not self.cleaned_data.get('order'):
-                raise forms.ValidationError(_(u'Нет Заказа'))
-            if not self.cleaned_data.get('order').applicant:
-                raise forms.ValidationError(_(u'Нет Закачика-ФЛ'))
         if self.cleaned_data.get('take_from') == self.WHERE_FROM_PLACE:
             if not self.cleaned_data.get('place'):
                 raise forms.ValidationError(_(u'Нет Места'))
@@ -213,12 +179,6 @@ class ResponsibleForm(AlivePersonForm):
     def save(self, *args, **kwargs):
         if self.instance.pk:
             return super(ResponsibleForm, self).save(*args, **kwargs)
-        elif self.cleaned_data.get('take_from') == self.WHERE_FROM_ORDER:
-            a = copy.deepcopy(self.cleaned_data['order'].applicant)
-            a.id = None
-            a.baseperson_ptr_id = None
-            a.save(force_insert=True)
-            return a
         elif self.cleaned_data.get('take_from') == self.WHERE_FROM_PLACE:
             a = copy.deepcopy(self.cleaned_data['place'].responsible)
             a.id = None
@@ -380,28 +340,9 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, forms.Mo
 
         responsible = self.instance and self.instance.get_responsible()
         order_pk = self.request.REQUEST.get('order')
-        resp_initial = {'order': order_pk}
-        self.responsible_form = ResponsibleForm(data=data, prefix='responsible', instance=responsible,
-                                                initial=resp_initial)
+        self.responsible_form = ResponsibleForm(data=data, prefix='responsible', instance=responsible)
         resp_addr = responsible and responsible.address
         self.responsible_address_form = LocationForm(data=data, prefix='responsible-address', instance=resp_addr)
-
-        #if self.request.user.profile.is_ugh():
-            #self.responsible_form.set_ugh_from()
-        #elif self.request.user.profile.is_loru():
-            #self.responsible_form.set_loru_from()
-        # TODO: в прежнем варианте, когда лору не правил заявителя,
-        #       в списке, откуда брать отвественного, всегда были
-        #       3 алтернативы:
-        #       - из места
-        #       - заявитель (для угх), заказчик (для лору)
-        #       - новый
-        #       И на эти 3 альтернативы настроены js сценарии
-        #       Сейчас же появляется случай из 4 вариантов,
-        #       лору может выбрать еще и заказчика.
-        #       Чтобы пока не ломать сложившиеся js сценарии,
-        #       лору может выбирать, как и угх
-        self.responsible_form.set_ugh_from()
 
         applicant = self.instance and self.instance.applicant
         #if not applicant and self.request.user.profile.is_loru() and order_pk:
