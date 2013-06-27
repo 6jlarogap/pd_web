@@ -586,10 +586,6 @@ class CreateBurial(BurialGetOrderMixin, CreateView):
             messages.error(request, _(u"У Вас нет прав создавать захоронения вручную"))
             return redirect('/')
 
-        # Из старого кода (с burial::order)
-        #order = self.get_order()
-        #if order and order.get_burial() and order.get_burial() != self.get_object():
-            #return redirect('edit_burial', order.burial.pk)
         if self.request.user.profile.is_loru():
             order = self.get_order()
             if order and order.burial and order.burial != self.get_object():
