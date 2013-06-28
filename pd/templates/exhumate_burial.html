@@ -39,6 +39,8 @@
         {% endblock buttons %}
     </form>
 
+    {% include "create_burial_popups.html" %}
+
     <script type="text/javascript">
         CEMETERY_AREAS = {{ form.cemetery_areas_json|default:"{}"  }};
         CEMETERY_TIMES = {{ form.cemetery_times_json|default:"{}" }};

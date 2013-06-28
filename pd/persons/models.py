@@ -12,23 +12,24 @@ from users.models import Org
 
 class SafeDeleteMixin(object):
     
-    def safe_delete(self, field, instance):
+    def safe_delete(self, field_name, instance):
         """
         Безопасно удалить что-то из записи таблицы
         
-        field       - поле, строка (!)
+        field       - строка (!) имени поля
         instance    - запись в таблице
         Поле устанавливается в null, запись сохраняется, потом
         удаляется то, на что указывало поле.
         Типичный пример - удаление заявителя, заказчика, покойника.
         """
-        try:
-            field_to_delete = getattr(instance, field)
-            setattr(instance, field, None)
+        field_to_delete = getattr(instance, field_name)
+        if field_to_delete:
+            setattr(instance, field_name, None)
             instance.save()
-            field_to_delete.delete()
-        except AttributeError:
-            pass
+            try:
+                field_to_delete.delete()
+            except ProtectedError:
+                pass
 
 class IDDocumentType(models.Model):
     name = models.CharField(_(u"Тип документа"), max_length=255)

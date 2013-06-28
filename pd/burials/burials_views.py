@@ -868,6 +868,12 @@ class ExhumateView(ArchiveMixin, DetailView):
         data['form'] = self.get_form()
         if data['form'].data:
             data['form'].is_valid()
+        data.update({
+            'agent_form': AddAgentForm(prefix='agent'),
+            'agent_dover_form': AddDoverForm(prefix='agent_dover'),
+            'dover_form': AddDoverForm(prefix='dover'),
+            'loru_form': AddOrgForm(request=self.request, prefix='loru'),
+        })
         return data
 
     def post(self, request, *args, **kwargs):
