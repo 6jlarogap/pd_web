@@ -4,7 +4,7 @@
 
 {% block content %}
     <h1>{% trans "Новое кладбище" %}</h1>
-    <form action="" method="POST" class="with-address-form">
+    <form action="" method="POST">
         {% csrf_token %}
         <fieldset>
             {{ form.as_p }}
