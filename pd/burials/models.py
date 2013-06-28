@@ -10,7 +10,7 @@ from pd.models import UnclearDateModelField
 import os
 import pytils
 
-from persons.models import DeadPerson
+from persons.models import DeadPerson, SafeDeleteMixin
 from reports.models import Report
 from users.models import Org, Profile, Dover
 from logs.models import Log
@@ -118,7 +118,7 @@ class Area(models.Model):
             self.name=''
         return super(Area, self).save(*args, **kwargs)
 
-class Place(models.Model):
+class Place(SafeDeleteMixin, models.Model):
     cemetery = models.ForeignKey(Cemetery, verbose_name=_(u"Кладбище"), on_delete=models.PROTECT)
     area = models.ForeignKey(Area, verbose_name=_(u"Участок"), blank=True, null=True)
     row = models.CharField(_(u"Ряд"), max_length=255, blank=True, null=True)
@@ -173,8 +173,7 @@ class Place(models.Model):
             self.place = year + '0001'
 
     def remove_responsible(self):
-        self.responsible = None
-        self.save()
+        self.safe_delete('responsible', self)
 
     def get_logs(self):
         ct = ContentType.objects.get_for_model(self)
@@ -272,7 +271,7 @@ class Burial(models.Model):
     grave = models.ForeignKey(Grave, verbose_name=_(u"Могила"), null=True, blank=True, on_delete=models.PROTECT)
     grave_number = models.PositiveSmallIntegerField(_(u"Могила"), max_length=255, default=1)
     responsible = models.ForeignKey('persons.AlivePerson', verbose_name=_(u"Ответственный"), blank=True, null=True,
-                                    related_name='responsible_burials')
+                                    related_name='responsible_burials', on_delete=models.PROTECT)
 
     plan_date = models.DateField(_(u"План. дата"), null=True, blank=True)
     plan_time = models.TimeField(_(u"План. время"), null=True, blank=True)

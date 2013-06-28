@@ -2,12 +2,33 @@
 
 from django.db import models
 from django.utils.translation import ugettext as _
+from django.db.models.deletion import ProtectedError
 
 import datetime
 from geo.models import Location
 from pd.models import UnclearDate, UnclearDateModelField
 from users.models import Org
 
+
+class SafeDeleteMixin(object):
+    
+    def safe_delete(self, field, instance):
+        """
+        Безопасно удалить что-то из записи таблицы
+        
+        field       - поле, строка (!)
+        instance    - запись в таблице
+        Поле устанавливается в null, запись сохраняется, потом
+        удаляется то, на что указывало поле.
+        Типичный пример - удаление заявителя, заказчика, покойника.
+        """
+        try:
+            field_to_delete = getattr(instance, field)
+            setattr(instance, field, None)
+            instance.save()
+            field_to_delete.delete()
+        except AttributeError:
+            pass
 
 class IDDocumentType(models.Model):
     name = models.CharField(_(u"Тип документа"), max_length=255)
@@ -63,6 +84,24 @@ class BasePerson(models.Model):
     def full_name_complete(self):
         fio = u"%s %s %s" % (self.last_name, self.first_name, self.middle_name)
         return fio.strip() or _(u"Неизвестный")
+
+    def delete(self):
+        try:
+            self.personid.delete()
+        except (AttributeError, PersonID.DoesNotExist, ProtectedError):
+            pass
+        address = self.address
+        if address:
+            self.address = None
+            self.save()
+            try:
+                address.delete()
+            except ProtectedError:
+                pass
+        try:
+            super(BasePerson, self).delete()
+        except ProtectedError:
+            pass
 
     class Meta:
         ordering = ['last_name', 'first_name', 'middle_name', ]

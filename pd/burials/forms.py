@@ -23,7 +23,7 @@ from geo.forms import LocationForm
 from orders.models import Order
 from pd.forms import PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin
 from persons.forms import DeadPersonForm, DeathCertificateForm, AlivePersonForm, PersonIDForm
-from persons.models import DeathCertificate, PersonID, IDDocumentType
+from persons.models import DeathCertificate, PersonID, IDDocumentType, SafeDeleteMixin
 from users.forms import BaseOrgForm
 from users.models import Org, Profile, Dover
 from logs.models import write_log
@@ -226,7 +226,7 @@ class BurialPublicListForm(forms.Form):
         self.fields['fio'].required = True
         self.fields['cemetery'].required = True
 
-class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, forms.ModelForm):
+class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDeleteMixin, forms.ModelForm):
     COFFIN = 'coffin'
     URN = 'urn'
 
@@ -540,15 +540,7 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, forms.Mo
         else:
             remove_responsible = True
         if remove_responsible:
-            try:
-                self.instance.responsible.delete()
-            except (AttributeError, ProtectedError):
-                pass
-            try:
-                self.instance.responsible.address.delete()
-            except (AttributeError, ProtectedError):
-                pass
-            self.instance.responsible = None
+            self.safe_delete('responsible', self.instance)
 
         if self.instance.is_closed() and \
             self.old_place and \

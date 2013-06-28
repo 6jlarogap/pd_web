@@ -11,7 +11,7 @@ from orders.models import Product, Order, OrderItem, CatafalqueData, CoffinData,
 from burials.forms import OPF_CHOICES, EMPTY
 from pd.forms import ChildrenJSONMixin
 from persons.forms import AlivePersonForm, PersonIDForm
-from persons.models import AlivePerson, PersonID
+from persons.models import AlivePerson, PersonID, SafeDeleteMixin
 from users.models import Org
 
 
@@ -20,7 +20,7 @@ class ProductForm(forms.ModelForm):
         model = Product
         exclude = ['loru', ]
 
-class OrderForm(ChildrenJSONMixin, forms.ModelForm):
+class OrderForm(ChildrenJSONMixin, SafeDeleteMixin, forms.ModelForm):
     opf = forms.ChoiceField(label=_(u'ОПФ'), choices=OPF_CHOICES, widget=forms.RadioSelect, initial='person')
 
     class Meta:
@@ -76,7 +76,7 @@ class OrderForm(ChildrenJSONMixin, forms.ModelForm):
 
     def save(self, commit=True, *args, **kwargs):
         self.instance = super(OrderForm, self).save(commit=False)
-
+        
         if self.cleaned_data.get('opf') == 'person':
             if self.applicant_form.is_valid_data():
                 applicant = self.applicant_form.save(commit=False)
@@ -92,14 +92,8 @@ class OrderForm(ChildrenJSONMixin, forms.ModelForm):
             else:
                 self.instance.applicant = None
             self.instance.applicant_organization = None
-        elif self.instance.applicant:
-            applicant = self.instance.applicant
-            self.instance.applicant = None
-            self.instance.save()
-            try:
-                applicant.delete()
-            except (ProtectedError):
-                pass
+        else:
+            self.safe_delete('applicant', self.instance)
 
         self.instance.save()
 
