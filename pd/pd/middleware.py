@@ -3,9 +3,11 @@ from django.conf import settings
 import re
 
 EXEMPT_URLS = [re.compile(re.escape(settings.LOGIN_URL.lstrip('/')), flags=re.I)]
+login_exempt_urls = 'favicon.ico'
 if hasattr(settings, 'LOGIN_EXEMPT_URLS'):
-    EXEMPT_URLS += [re.compile(re.escape(expr.lstrip('/')), flags=re.I) \
-                        for expr in settings.LOGIN_EXEMPT_URLS.split()]
+    login_exempt_urls += ' ' + settings.LOGIN_EXEMPT_URLS
+EXEMPT_URLS += [re.compile(re.escape(expr.lstrip('/')), flags=re.I) \
+                    for expr in login_exempt_urls.split()]
 
 class LoginRequiredMiddleware:
 

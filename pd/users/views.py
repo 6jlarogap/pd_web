@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
 import json
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
 from django.db.models.aggregates import Count
-from django.http import HttpResponse
+from django.http import HttpResponse, Http404
 from django.shortcuts import redirect, render
 from django.utils.translation import ugettext_lazy as _
 from django.views.generic.base import View
@@ -64,9 +65,12 @@ class RegisterView(View):
     Регистрация
     """
     def dispatch(self, request, *args, **kwargs):
-        if request.user.is_authenticated():
-            return redirect('/')
-        return super(RegisterView, self).dispatch(request, *args, **kwargs)
+        if request.user.is_authenticated() and \
+           request.user.profile and \
+           request.user.profile.org.inn == settings.SUPERVISOR_ORG_INN and \
+           hasattr(settings, 'SUPERVISOR_ORG_INN'):
+            return super(RegisterView, self).dispatch(request, *args, **kwargs)
+        raise Http404
 
     def post(self, request, *args, **kwargs):
         form = RegisterForm(data=request.POST)
