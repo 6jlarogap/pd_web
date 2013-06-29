@@ -4,7 +4,8 @@ import re
 
 EXEMPT_URLS = [re.compile(re.escape(settings.LOGIN_URL.lstrip('/')), flags=re.I)]
 if hasattr(settings, 'LOGIN_EXEMPT_URLS'):
-    EXEMPT_URLS += [re.compile(re.escape(expr), flags=re.I) for expr in settings.LOGIN_EXEMPT_URLS.split()]
+    EXEMPT_URLS += [re.compile(re.escape(expr.lstrip('/')), flags=re.I) \
+                        for expr in settings.LOGIN_EXEMPT_URLS.split()]
 
 class LoginRequiredMiddleware:
 

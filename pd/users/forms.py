@@ -3,9 +3,11 @@ from django import forms
 from django.contrib.auth.models import User
 from django.forms.models import inlineformset_factory, BaseInlineFormSet
 from django.utils.translation import ugettext_lazy as _
+from django.db.models.query_utils import Q
 from geo.forms import LocationForm
 from geo.models import DFiasAddrobj
 from pd.forms import ChildrenJSONMixin, LoggingFormMixin
+from burials.models import Cemetery
 
 from users.models import Profile, ProfileLORU, Org, BankAccount
 
@@ -70,7 +72,7 @@ class ProfileForm(ChildrenJSONMixin, forms.ModelForm):
 
     class Meta:
         model = Profile
-        exclude = ['org', 'is_agent', 'region_fias', 'user']
+        exclude = ['org', 'is_agent', 'region_fias', 'user', 'cemetery', 'area', 'numbers_algo']
 
     def __init__(self, *args, **kwargs):
         super(ProfileForm, self).__init__(*args, **kwargs)
@@ -115,6 +117,11 @@ class UserProfileForm(ChildrenJSONMixin, forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super(UserProfileForm, self).__init__(*args, **kwargs)
+        self.fields['cemetery'].queryset = Cemetery.objects.filter(
+            Q(ugh__isnull=True) |
+            Q(ugh__loru_list__loru=self.instance.org) |
+            Q(ugh=self.instance.org)
+        ).distinct()    
         if self.instance.region_fias:
             self.initial['region'] = self.instance.get_region()
 
