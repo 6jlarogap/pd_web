@@ -88,21 +88,18 @@ class BasePerson(models.Model):
 
     def delete(self):
         try:
-            self.personid.delete()
-        except (AttributeError, PersonID.DoesNotExist, ProtectedError):
-            pass
-        address = self.address
-        if address:
-            self.address = None
-            self.save()
-            try:
-                address.delete()
-            except ProtectedError:
-                pass
-        try:
             super(BasePerson, self).delete()
         except ProtectedError:
             pass
+        else:
+            try:
+                self.personid.delete()
+            except (AttributeError, PersonID.DoesNotExist, ProtectedError):
+                pass
+            try:
+                self.address.delete()
+            except (AttributeError, ProtectedError):
+                pass
 
     class Meta:
         ordering = ['last_name', 'first_name', 'middle_name', ]
