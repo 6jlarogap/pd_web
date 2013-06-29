@@ -186,6 +186,24 @@ DEBUG_TOOLBAR_CONFIG = {'INTERCEPT_REDIRECTS': False}
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 SESSION_SAVE_EVERY_REQUEST = True
 
+# Необязательные параметры
+#
+# Давать ли доступ к Django Admin,
+# по умолчанию - не давать
+#
+# ADMIN_ENABLED = False
+#
+# URL-пути, которые не требуют регистрации,
+# строка из путей с пробельными разделителями,
+# по умолчанию: нет таких путей.
+#
+# LOGIN_EXEMPT_URLS = "/here /go/to/there"
+#
+# Имеет право регистировать нового пользователя
+# только таковой с организации с этим ИНН
+#
+# SUPERVISOR_ORG_INN = 'строка'
+
 try:
     from local_settings import *
 except ImportError:

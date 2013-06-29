@@ -3,9 +3,11 @@ from django import forms
 from django.contrib.auth.models import User
 from django.forms.models import inlineformset_factory, BaseInlineFormSet
 from django.utils.translation import ugettext_lazy as _
+from django.db.models.query_utils import Q
 from geo.forms import LocationForm
 from geo.models import DFiasAddrobj
 from pd.forms import ChildrenJSONMixin, LoggingFormMixin
+from burials.models import Cemetery
 
 from users.models import Profile, ProfileLORU, Org, BankAccount
 
@@ -13,7 +15,7 @@ from users.models import Profile, ProfileLORU, Org, BankAccount
 class RegisterForm(forms.ModelForm):
     class Meta:
         model = User
-        fields = ['username', 'email', 'first_name', 'last_name',]
+        fields = ['username', 'email']
 
     username = forms.SlugField(label=_(u"Логин"))
     password1 = forms.CharField(label=_(u"Пароль"), widget=forms.PasswordInput())
@@ -35,8 +37,6 @@ class RegisterForm(forms.ModelForm):
             self.cleaned_data['email'],
             self.cleaned_data['password1']
         )
-        user.first_name = self.cleaned_data['first_name']
-        user.last_name = self.cleaned_data['last_name']
         user.is_active = True
         user.save()
         Profile.objects.create(user=user)
@@ -56,7 +56,6 @@ BankAccountFormset = inlineformset_factory(Org, BankAccount, formset=BaseLoruFor
 FIAS_REGIONS = DFiasAddrobj.objects.filter(parentguid='').order_by('formalname')
 
 class ProfileForm(ChildrenJSONMixin, forms.ModelForm):
-    region = forms.ModelChoiceField(label=_(u"Регион"), queryset=FIAS_REGIONS, required=False)
 
     org_type = forms.ChoiceField(label=_(u"Тип"), choices=Org.PROFILE_TYPES)
     org_name = forms.CharField(label=_(u"Краткое название организации"))
@@ -70,7 +69,7 @@ class ProfileForm(ChildrenJSONMixin, forms.ModelForm):
 
     class Meta:
         model = Profile
-        exclude = ['org', 'is_agent', 'region_fias', 'user']
+        exclude = ['org', 'is_agent', 'region_fias', 'user', 'country', 'cemetery', 'area', 'numbers_algo']
 
     def __init__(self, *args, **kwargs):
         super(ProfileForm, self).__init__(*args, **kwargs)
@@ -79,9 +78,6 @@ class ProfileForm(ChildrenJSONMixin, forms.ModelForm):
                 if f.startswith('org_'):
                     self.initial.update({f: getattr(self.instance.org, f[4:])})
             del self.fields['org_type']
-
-        if self.instance.region_fias:
-            self.initial['region'] = self.instance.get_region()
 
     def clean_org_inn(self):
         inn = self.cleaned_data['org_inn']
@@ -95,8 +91,6 @@ class ProfileForm(ChildrenJSONMixin, forms.ModelForm):
 
     def save(self, commit=True, *args, **kwargs):
         obj = super(ProfileForm, self).save(commit=False, *args, **kwargs)
-        if self.cleaned_data['region']:
-            obj.region_fias = self.cleaned_data['region'].aoguid
         params = dict([(k[4:], v) for k,v in self.cleaned_data.items() if v and k.startswith('org_')])
         if not obj.org:
             obj.org, _created = Org.objects.get_or_create(**params)
@@ -115,6 +109,11 @@ class UserProfileForm(ChildrenJSONMixin, forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super(UserProfileForm, self).__init__(*args, **kwargs)
+        self.fields['cemetery'].queryset = Cemetery.objects.filter(
+            Q(ugh__isnull=True) |
+            Q(ugh__loru_list__loru=self.instance.org) |
+            Q(ugh=self.instance.org)
+        ).distinct()    
         if self.instance.region_fias:
             self.initial['region'] = self.instance.get_region()
 
