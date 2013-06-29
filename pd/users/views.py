@@ -67,8 +67,8 @@ class RegisterView(View):
     def dispatch(self, request, *args, **kwargs):
         if request.user.is_authenticated() and \
            request.user.profile and \
-           request.user.profile.org.inn == settings.SUPERVISOR_ORG_INN and \
-           hasattr(settings, 'SUPERVISOR_ORG_INN'):
+           hasattr(settings, 'SUPERVISOR_ORG_INN') and \
+           request.user.profile.org.inn == settings.SUPERVISOR_ORG_INN:
             return super(RegisterView, self).dispatch(request, *args, **kwargs)
         raise Http404
 
