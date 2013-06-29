@@ -15,7 +15,7 @@ from users.models import Profile, ProfileLORU, Org, BankAccount
 class RegisterForm(forms.ModelForm):
     class Meta:
         model = User
-        fields = ['username', 'email', 'first_name', 'last_name',]
+        fields = ['username', 'email']
 
     username = forms.SlugField(label=_(u"Логин"))
     password1 = forms.CharField(label=_(u"Пароль"), widget=forms.PasswordInput())
@@ -37,8 +37,6 @@ class RegisterForm(forms.ModelForm):
             self.cleaned_data['email'],
             self.cleaned_data['password1']
         )
-        user.first_name = self.cleaned_data['first_name']
-        user.last_name = self.cleaned_data['last_name']
         user.is_active = True
         user.save()
         Profile.objects.create(user=user)
