@@ -11,6 +11,6 @@ class LoginRequiredMiddleware:
     def process_request(self, request):
         if not request.user.is_authenticated():
             path = request.path_info.lstrip('/')
-            next = '' if not path or EXEMPT_URLS[0].match(path) else '?next='+request.build_absolute_uri()
             if not any(m.match(path) for m in EXEMPT_URLS):
+                next = '' if not path or EXEMPT_URLS[0].match(path) else '?next='+request.build_absolute_uri()
                 return HttpResponseRedirect(settings.LOGIN_URL+next)
