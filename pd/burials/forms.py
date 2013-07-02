@@ -134,7 +134,7 @@ class BurialSearchForm(forms.Form):
     responsible = forms.CharField(required=False, max_length=40, label=_(u"Ответственный"))
     operation = forms.ChoiceField(required=False, choices=EMPTY + Burial.BURIAL_TYPES, label=_(u"Вид захоронения"))
     burial_container = forms.TypedChoiceField(required=False, label=_(u"Тип захоронения"), choices=EMPTY + Burial.BURIAL_CONTAINERS)
-    cemetery = forms.CharField(required=False, label=_(u"Кладбища"))
+    cemetery = forms.CharField(required=False, label=_(u"Кладбище"))
     area = forms.CharField(required=False, label=_(u"Участок"))
     row = forms.CharField(required=False, label=_(u"Ряд"))
     place = forms.CharField(required=False, label=_(u"Место"))
@@ -358,6 +358,12 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
                 self.initial['opf'] = 'person'
                 for f in AlivePersonForm.base_fields.keys():
                     applicant_form_initial[f] = getattr(self.order.applicant, f)
+            elif self.order.applicant_organization:
+                for f in ('applicant_organization', 'agent_director', ):
+                    self.initial[f] = getattr(self.order, f)
+                if not self.order.agent_director:
+                    for f in ('agent', 'dover', ):
+                        self.initial[f] = getattr(self.order, f)
 
         self.applicant_form = AlivePersonForm(data=data, prefix='applicant', instance=applicant, initial=applicant_form_initial)
         applicant_addr = applicant and applicant.address
@@ -1067,7 +1073,7 @@ class AddDocTypeForm(forms.ModelForm):
     class Meta:
         model = IDDocumentType
 
-class ExhumationForm(ChildrenJSONMixin, forms.ModelForm):
+class ExhumationForm(ChildrenJSONMixin, SafeDeleteMixin, forms.ModelForm):
     opf = forms.ChoiceField(label=_(u'ОПФ'), choices=OPF_CHOICES, widget=forms.RadioSelect, initial='person')
 
     class Meta:

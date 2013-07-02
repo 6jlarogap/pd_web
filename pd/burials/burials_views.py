@@ -166,9 +166,6 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
         order_parm = ''
         if self.request.user.profile.is_loru():
             order = self.get_order()
-            # Такое здесь, уже на коммите, возможно при фокусах в адресной строке браузера ???
-            if not order:
-                raise Http404
             order_parm = '?order=%s' % order.pk
 
         b.changed = datetime.datetime.now()
@@ -590,6 +587,8 @@ class CreateBurial(BurialGetOrderMixin, CreateView):
             order = self.get_order()
             if order and order.burial and order.burial != self.get_object():
                 return redirect(reverse('edit_burial', args=[order.burial.pk]) + '?order=%s' % order.pk)
+            if not order and 'create' in request.path_info.lower():
+                raise Http404
 
         return super(CreateBurial, self).dispatch(request, *args, **kwargs)
 
@@ -603,9 +602,6 @@ class CreateBurial(BurialGetOrderMixin, CreateView):
         order_parm = ''
         if self.request.user.profile.is_loru():
             order = self.get_order()
-            # Такое здесь, уже на коммите, возможно при фокусах в адресной строке браузера ???
-            if not order:
-                raise Http404
             order_parm = '?order=%s' % order.pk
 
         action = self.get_action()

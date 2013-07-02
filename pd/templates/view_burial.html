@@ -14,16 +14,6 @@
     <dl>
         <dt>{% trans "Учетный номер" %}:</dt><dd>{{ b.account_number|default:"не указан" }}</dd>
         <dt>{% trans "Статус" %}:</dt><dd>{{ b.status_str }}</dd>
-        {% if user.profile.is_loru %}
-            <dt>{% trans "Заказ" %}:</dt>
-            <dd>
-                {% if user.profile.is_loru and b.order.loru == user.profile.org %}
-                    <a href="{% url order_edit b.order.pk %}">{{ b.order.loru_number }}</a>
-                {% else %}
-                    {{ b.order.loru_number }}
-                {% endif %}
-            </dd>
-        {% endif %}
         <dt>{% trans "Тип" %}:</dt><dd>{{ b.get_burial_container_display|default:"" }}</dd>
         <dt>{% trans "Вид" %}:</dt><dd>{{ b.get_burial_type_display|default:"" }}</dd>
         {% if b.ugh %}
@@ -186,7 +176,7 @@
                 <br/>
                 <input type="submit" class="btn" name="decline" value="{% trans "отказать" %}">
             {% endif %}
-            {% if b.is_finished %}
+            {% if b.is_finished and not b.annulated %}
                 <a href="{% url burial_exhumate b.pk %}" class="btn">{% trans "эксгумировать" %}</a>
             {% endif %}
         {% endif %}
