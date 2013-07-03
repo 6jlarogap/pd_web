@@ -180,11 +180,24 @@ class ResponsibleForm(AlivePersonForm):
         if self.instance.pk:
             return super(ResponsibleForm, self).save(*args, **kwargs)
         elif self.cleaned_data.get('take_from') == self.WHERE_FROM_PLACE:
-            a = copy.deepcopy(self.cleaned_data['place'].responsible)
-            a.id = None
-            a.baseperson_ptr_id = None
-            a.save(force_insert=True)
-            return a
+            resp_addr = None
+            if self.cleaned_data['place'].responsible.address:
+                resp_addr = copy.deepcopy(self.cleaned_data['place'].responsible.address)
+                resp_addr.id = None
+                resp_addr.save(force_insert=True)
+            resp = copy.deepcopy(self.cleaned_data['place'].responsible)
+            resp.id = None
+            resp.baseperson_ptr_id = None
+            resp.address = resp_addr
+            resp.save(force_insert=True)
+            try:
+                resp_pid = copy.deepcopy(self.cleaned_data['place'].responsible.personid)
+                resp_pid.id = None
+                resp_pid.person = resp
+                resp_pid.save(force_insert=True)
+            except PersonID.DoesNotExist:
+                pass
+            return resp
         else:
             return super(ResponsibleForm, self).save(*args, **kwargs)
 
