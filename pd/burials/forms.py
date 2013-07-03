@@ -508,7 +508,7 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
             self.safe_delete('applicant', self.instance)
 
         remove_responsible = False
-        if self.request.user.profile.is_ugh() and self.responsible_form.cleaned_data.get('take_from') == ResponsibleForm.WHERE_FROM_APPLICANT:
+        if self.responsible_form.cleaned_data.get('take_from') == ResponsibleForm.WHERE_FROM_APPLICANT:
             resp_addr = None
             if self.instance.applicant.address:
                 resp_addr = copy.deepcopy(self.instance.applicant.address)
