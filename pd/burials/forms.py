@@ -353,19 +353,49 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
 
         applicant = self.instance and self.instance.applicant
         applicant_form_initial = {}
+        applicant_address_form_initial = {}
+        applicant_id_form_initial = {}
         if not self.instance.pk and self.order and self.order.applicant:
             self.initial['opf'] = 'person'
             for f in AlivePersonForm.base_fields.keys():
                 applicant_form_initial[f] = getattr(self.order.applicant, f)
+            cust_address = self.order.applicant.address
+            if cust_address:
+                if cust_address.country:
+                    applicant_address_form_initial['country_name'] = cust_address.country.name
+                if cust_address.country:
+                    applicant_address_form_initial['region_name'] = cust_address.region.name
+                if cust_address.country:
+                    applicant_address_form_initial['city_name'] = cust_address.city.name
+                if cust_address.street:
+                    applicant_address_form_initial['street_name'] = cust_address.street.name
+                for f in ('post_index', 'house', 'block', 'building', 'flat', 'info', ):
+                    applicant_address_form_initial[f] = getattr(cust_address, f)
+            try:
+                cust_personid = self.order.applicant.personid
+            except PersonID.DoesNotExist:
+                cust_personid = None
+            if cust_personid:
+                for f in PersonIDForm.base_fields.keys():
+                    applicant_id_form_initial[f] = getattr(cust_personid, f)
 
-        self.applicant_form = AlivePersonForm(data=data, prefix='applicant', instance=applicant, initial=applicant_form_initial)
+        self.applicant_form = AlivePersonForm(data=data, prefix='applicant',
+                                              instance=applicant,
+                                              initial=applicant_form_initial,
+                                             )
         applicant_addr = applicant and applicant.address
-        self.applicant_address_form =  LocationForm(data=data, prefix='applicant-address', instance=applicant_addr)
+        self.applicant_address_form =  LocationForm(data=data, prefix='applicant-address',
+                                                    instance=applicant_addr,
+                                                    initial=applicant_address_form_initial,
+                                                   )
         try:
             applicant_id = self.instance and self.instance.applicant and self.instance.applicant.personid
         except PersonID.DoesNotExist:
             applicant_id = None
-        self.applicant_id_form = PersonIDForm(data=data, prefix='applicant-pid', instance=applicant_id)
+        self.applicant_id_form = PersonIDForm(data=data, prefix='applicant-pid',
+                                              instance=applicant_id,
+                                              initial=applicant_id_form_initial
+                                             )
 
         forms = [self.deadman_form, self.deadman_address_form, self.dc_form,
                 self.responsible_form, self.responsible_address_form,
