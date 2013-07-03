@@ -353,17 +353,10 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
 
         applicant = self.instance and self.instance.applicant
         applicant_form_initial = {}
-        if not self.instance.pk and self.order:
-            if self.order.applicant:
-                self.initial['opf'] = 'person'
-                for f in AlivePersonForm.base_fields.keys():
-                    applicant_form_initial[f] = getattr(self.order.applicant, f)
-            elif self.order.applicant_organization:
-                for f in ('applicant_organization', 'agent_director', ):
-                    self.initial[f] = getattr(self.order, f)
-                if not self.order.agent_director:
-                    for f in ('agent', 'dover', ):
-                        self.initial[f] = getattr(self.order, f)
+        if not self.instance.pk and self.order and self.order.applicant:
+            self.initial['opf'] = 'person'
+            for f in AlivePersonForm.base_fields.keys():
+                applicant_form_initial[f] = getattr(self.order.applicant, f)
 
         self.applicant_form = AlivePersonForm(data=data, prefix='applicant', instance=applicant, initial=applicant_form_initial)
         applicant_addr = applicant and applicant.address
