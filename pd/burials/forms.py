@@ -574,8 +574,8 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, forms.Mo
             resp = copy.deepcopy(self.instance.applicant)
             resp.id = None
             resp.baseperson_ptr_id = None
-            resp.save(force_insert=True)
             resp.address = resp_addr
+            resp.save(force_insert=True)
             self.instance.responsible = resp
         elif self.responsible_form.is_valid():
             if self.responsible_form.cleaned_data.get('last_name').strip() or \
