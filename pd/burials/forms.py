@@ -566,10 +566,16 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, forms.Mo
 
         remove_responsible = False
         if self.request.user.profile.is_ugh() and self.responsible_form.cleaned_data.get('take_from') == ResponsibleForm.WHERE_FROM_APPLICANT:
+            resp_addr = None
+            if self.instance.applicant.address:
+                resp_addr = copy.deepcopy(self.instance.applicant.address)
+                resp_addr.id = None
+                resp_addr.save(force_insert=True)
             resp = copy.deepcopy(self.instance.applicant)
             resp.id = None
             resp.baseperson_ptr_id = None
             resp.save(force_insert=True)
+            resp.address = resp_addr
             self.instance.responsible = resp
         elif self.responsible_form.is_valid():
             if self.responsible_form.cleaned_data.get('last_name').strip() or \
