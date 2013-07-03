@@ -580,12 +580,11 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, forms.Mo
             resp.save(force_insert=True)
             self.instance.responsible = resp
             try:
-                personid = PersonId.objects.get(person=resp)
-                personid = copy.deepcopy(personid)
-                personid.id = None
-                personid.person = resp
-                personid.save(force_insert=True)
-            except PersonId.DoesNotExist:
+                resp_pid = copy.deepcopy(self.instance.applicant.personid)
+                resp_pid.id = None
+                resp_pid.person = resp
+                resp_pid.save(force_insert=True)
+            except PersonID.DoesNotExist:
                 pass
         elif self.responsible_form.is_valid():
             if self.responsible_form.cleaned_data.get('last_name').strip() or \
