@@ -520,12 +520,19 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
             resp.address = resp_addr
             resp.save(force_insert=True)
             self.instance.responsible = resp
+            try:
+                resp_pid = copy.deepcopy(self.instance.applicant.personid)
+                resp_pid.id = None
+                resp_pid.person = resp
+                resp_pid.save(force_insert=True)
+            except PersonID.DoesNotExist:
+                pass
         elif self.responsible_form.is_valid():
             if self.responsible_form.cleaned_data.get('last_name').strip() or \
                self.responsible_form.cleaned_data.get('first_name').strip() or \
                self.responsible_form.cleaned_data.get('middle_name').strip():
                 responsible = self.responsible_form.save(commit=False)
-                if self.responsible_address_form.is_valid():
+                if self.responsible_address_form.is_valid_data():
                     responsible.address = self.responsible_address_form.save()
                 responsible.save()
                 self.instance.responsible = responsible
