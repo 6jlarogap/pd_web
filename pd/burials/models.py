@@ -180,6 +180,13 @@ class Place(SafeDeleteMixin, models.Model):
         ct = ContentType.objects.get_for_model(self)
         return Log.objects.filter(ct=ct, obj_id=self.pk).order_by('-pk')
 
+    def bio_only(self):
+        """
+        В месте только биоотходы
+        """
+        burials_available = self.burials_available()
+        return burials_available and all([ b.is_bio() for b in burials_available ])
+
     def save(self, *args, **kwargs):
         if self.cemetery and not self.place:
             if self.cemetery.places_algo == Cemetery.PLACE_MANUAL:

@@ -32,7 +32,9 @@
         <dt>{% trans "Свободно" %}</dt><dd>{{ place.get_available_count }}</dd>
 
     </dl>
-    <a href="{% url create_burial %}?place_id={{ place.pk }}" class="btn">{% trans "добавить родственное" %}</a>
+    {% if not place.bio_only %}
+        <a href="{% url create_burial %}?place_id={{ place.pk }}" class="btn">{% trans "добавить родственное" %}</a>
+    {% endif %}
 
     <h2>{% trans "Данные" %}</h2>
     <form action="" method="POST">
