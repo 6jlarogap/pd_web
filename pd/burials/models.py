@@ -544,7 +544,10 @@ class Burial(SafeDeleteMixin, models.Model):
                     # TODO: ответить на вопрос? А сработает ли это когда-нибудь? Без ProtectedError ?
                     #       если в месте есть захоронения, то на него есть ссылки из таблицы Burial.
                     #       Всегда будет ProtectedError.
-                    old_place.delete() # deleting old
+                    try:
+                        old_place.delete() # deleting old
+                    except (AttributeError, ProtectedError):
+                        pass
         else:
             if not place.responsible:
                 place.responsible = self.get_responsible() # just update responsible
