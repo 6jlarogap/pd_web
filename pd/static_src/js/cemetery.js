@@ -600,7 +600,7 @@ $(function() {
                 }
                 $('#id_responsible-place').val(data.place_pk || "");
 
-                if (place_html) {
+                if (place_html && (place_html.indexOf("place_has_responsible") >= 0)) {
                     var resp_id = '#id_responsible-take_from_';
                     $(resp_id+'0').closest('li').show();
                     // 0 - из места
