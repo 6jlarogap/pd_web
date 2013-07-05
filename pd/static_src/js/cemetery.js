@@ -820,6 +820,21 @@ function updateInnerForm() {
     }, 100);
 }
 
+function contShowHide(obj, a, c_expand, c_collapse){
+    // Свернуть, развернуть:
+    // obj,         строка для селектора, объект для свертки
+    // a,           строка для селектора, адресная ссылка свертки, развертки
+    // c_expand,    строка (или даже html-код) для показа, если надо развернуть
+    // c_collapse,  строка (или даже html-код) для показа, если надо свернуть
+    if($(a).html() == c_expand){
+        $(a).html(c_collapse)
+    }else{
+        $(a).html(c_expand)
+    }
+    $(obj).slideToggle();
+    return false;
+}
+
 $(function() {
     updateControls();
     setup_address_autocompletes();

@@ -124,7 +124,8 @@
         {% trans "Ответственный" %} {{ form.responsible_form.instance|default:"" }}
     </h2>
 
-    <a href="#" onclick="$('#cont_responsible').slideToggle(); return false" class="slider" data-id="cont_responsible">{% trans "развернуть" %}</a>
+<a href="#" onclick="return contShowHide('#cont_responsible', '#a_cont_responsible', '{% trans 'развернуть' %}', '{% trans 'свернуть' %}');"
+    class="slider" data-id="cont_responsible" id="a_cont_responsible">{% trans "развернуть" %}</a>
     <div id="cont_responsible" style="display: none">
         {{ form.responsible_form.as_p }}
         <div id="cont_responsible_address">
