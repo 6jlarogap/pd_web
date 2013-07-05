@@ -572,7 +572,8 @@ $(function() {
         })
     });
 
-    old_grave_value = $('#id_grave_number').val();
+    var old_grave_value = $('#id_grave_number').val();
+    var place_html = ''
 
     $('#cont_place #id_cemetery, #cont_place #id_area, #cont_place #id_row, #cont_place #id_place_number').change(function() {
         $('#id_responsible-take_from_0').removeAttr('checked').closest('li').hide();
@@ -580,7 +581,11 @@ $(function() {
         var data = $('#id_cemetery, #id_area, #id_row, #id_place_number').serialize();
         if ($('#id_cemetery').val() &&  $('#id_area').val()) {
             if ($('#id_place_number').val()) {
-                $('#place_info').load('/burials/get_place/?'+data)
+                // $('#place_info').load('/burials/get_place/?'+data)
+                $.get('/burials/get_place/?'+data, function (data) {
+                    place_html = data;
+                    $('#place_info').html(place_html);
+                });
             }
             $.getJSON('/burials/get_graves_number/?'+data, function(data) {
                 var count = data.places || 1;
@@ -595,10 +600,15 @@ $(function() {
                 }
                 $('#id_responsible-place').val(data.place_pk || "");
 
-                var resp_id = '#id_responsible-take_from_';
-                $(resp_id+'0').closest('li').show();
-                if (!$(resp_id+'1').is(':checked') && !$(resp_id+'2').is(':checked')) {
-                    $(resp_id+'0').attr('checked', 'checked');
+                if (place_html) {
+                    var resp_id = '#id_responsible-take_from_';
+                    $(resp_id+'0').closest('li').show();
+                    // 0 - из места
+                    // 1 - заявитель
+                    // 2 - новый ответственный
+                    if (!$(resp_id+'1').is(':checked') && !$(resp_id+'2').is(':checked')) {
+                        $(resp_id+'0').attr('checked', 'checked');
+                    }
                 }
             })
         }
