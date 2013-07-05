@@ -541,12 +541,9 @@ class Burial(SafeDeleteMixin, models.Model):
                 if not old_place or not old_place.pk or not old_place.burial_count(): # and FROM old and populated
                     pass # do not touch anything
                 else: # from new
-<<<<<<< HEAD
                     # TODO: ответить на вопрос? А сработает ли это когда-нибудь? Без ProtectedError ?
                     #       если в месте есть захоронения, то на него есть ссылки из таблицы Burial.
                     #       Всегда будет ProtectedError.
-=======
->>>>>>> remotes/suprune20/pd_web/master
                     try:
                         old_place.delete() # deleting old
                     except (AttributeError, ProtectedError):
