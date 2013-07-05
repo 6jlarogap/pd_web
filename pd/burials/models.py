@@ -527,7 +527,10 @@ class Burial(models.Model):
                 if not old_place or not old_place.pk or not old_place.burial_count(): # and FROM old and populated
                     pass # do not touch anything
                 else: # from new
-                    old_place.delete() # deleting old
+                    try:
+                        old_place.delete() # deleting old
+                    except (AttributeError, ProtectedError):
+                        pass
         else:
             if not place.responsible:
                 place.responsible = self.get_responsible() # just update responsible
