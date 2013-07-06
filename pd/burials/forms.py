@@ -591,7 +591,8 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
             place, created = Place.objects.get_or_create(cemetery=self.cleaned_data['cemetery'],
                                                          area=self.cleaned_data['area'],
                                                          row=self.cleaned_data['row'],
-                                                         place=self.cleaned_data['place_number'])
+                                                         place=self.cleaned_data['place_number'],
+                                defaults={'places_count': self.cleaned_data['area'].places_count or 1})
             self.instance.place=place
         
         self.instance.save()
