@@ -12,9 +12,10 @@ class ProfileLORUInline(admin.TabularInline):
     fk_name = 'ugh'
 
 class ProfileAdmin(admin.ModelAdmin):
-    list_display = ['user', 'full_name', 'is_agent', ]
+    list_display = ['user', 'full_name', 'org', 'is_agent', ]
     list_filter = ['is_agent',]
     inlines = [AgentDoverInline, ]
+    search_fields = ['org__name']
 
 admin.site.register(Profile, ProfileAdmin)
 
@@ -22,5 +23,6 @@ class OrgAdmin(admin.ModelAdmin):
     inlines = [ProfileLORUInline, ]
     list_display = ['name', 'type']
     readonly_fields =  ['off_address', ]
+    search_fields = ['name']
 
 admin.site.register(Org, OrgAdmin)
