@@ -15,7 +15,7 @@ class ProfileAdmin(admin.ModelAdmin):
     list_display = ['user', 'full_name', 'org', 'is_agent', ]
     list_filter = ['is_agent',]
     inlines = [AgentDoverInline, ]
-    search_fields = ['user__username', 'org__name']
+    search_fields = ['user__username', 'user_last_name', 'org__name']
 
 admin.site.register(Profile, ProfileAdmin)
 
