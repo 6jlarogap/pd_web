@@ -22,7 +22,7 @@ from burials.models import Cemetery, Area, Burial, Place, ExhumationRequest, Bur
 from geo.forms import LocationForm
 from orders.models import Order
 from pd.forms import PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin
-from persons.forms import DeadPersonForm, DeathCertificateForm, AlivePersonForm, PersonIDForm
+from persons.forms import DeadPersonForm, DeathCertificateForm, AlivePersonForm, PersonIDForm, StrippedStringsMixin
 from persons.models import DeathCertificate, PersonID, IDDocumentType
 from users.forms import BaseOrgForm
 from users.models import Org, Profile, Dover
@@ -265,7 +265,7 @@ class BurialPublicListForm(forms.Form):
         self.fields['fio'].required = True
         self.fields['cemetery'].required = True
 
-class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, forms.ModelForm):
+class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, StrippedStringsMixin, forms.ModelForm):
     COFFIN = 'coffin'
     URN = 'urn'
 
@@ -436,6 +436,9 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, forms.Mo
         return self.cleaned_data['plan_time'] or None
 
     def clean(self):
+        
+        StrippedStringsMixin.clean(self)
+        
         if self.cleaned_data.get('cemetery') and self.cleaned_data.get('area'):
             if self.cleaned_data['cemetery'] != self.cleaned_data['area'].cemetery:
                 raise forms.ValidationError(_(u'Участок не от этого кладбища'))
@@ -771,6 +774,9 @@ class BurialCommitForm(BurialForm):
                     self.applicant_id_form.fields[f].required = True
 
     def clean(self):
+
+        StrippedStringsMixin.clean(self)
+
         is_ugh = False
         if self.instance and self.instance.is_ugh():
             is_ugh = True
