@@ -22,13 +22,8 @@ from burials.models import Cemetery, Area, Burial, Place, ExhumationRequest, Bur
 from geo.forms import LocationForm
 from orders.models import Order
 from pd.forms import PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin
-<<<<<<< HEAD
-from persons.forms import DeadPersonForm, DeathCertificateForm, AlivePersonForm, PersonIDForm
-from persons.models import DeathCertificate, PersonID, IDDocumentType, SafeDeleteMixin
-=======
 from persons.forms import DeadPersonForm, DeathCertificateForm, AlivePersonForm, PersonIDForm, StrippedStringsMixin
-from persons.models import DeathCertificate, PersonID, IDDocumentType
->>>>>>> remotes/suprune20/pd_web/master
+from persons.models import DeathCertificate, PersonID, IDDocumentType, SafeDeleteMixin
 from users.forms import BaseOrgForm
 from users.models import Org, Profile, Dover
 from logs.models import write_log
@@ -244,11 +239,7 @@ class BurialPublicListForm(forms.Form):
         self.fields['fio'].required = True
         self.fields['cemetery'].required = True
 
-<<<<<<< HEAD
-class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDeleteMixin, forms.ModelForm):
-=======
-class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, StrippedStringsMixin, forms.ModelForm):
->>>>>>> remotes/suprune20/pd_web/master
+class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDeleteMixin, StrippedStringsMixin, forms.ModelForm):
     COFFIN = 'coffin'
     URN = 'urn'
 
