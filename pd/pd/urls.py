@@ -1,6 +1,7 @@
 # coding: utf-8
 
 from django.conf.urls import patterns, include, url
+from django.views.generic.base import RedirectView
 from django.conf import settings
 
 from django.contrib import admin
@@ -9,6 +10,8 @@ admin.autodiscover()
 urlpatterns = patterns('')
 
 urlpatterns += patterns('pd.views',
+    url(r'^favicon\.ico$',
+        RedirectView.as_view(url='{}img/favicon16x16.ico'.format(settings.STATIC_URL))),
     url(r'^', include('users.urls')),
     url(r'^', include('burials.urls')),
     url(r'^', include('persons.urls')),
