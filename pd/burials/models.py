@@ -50,6 +50,7 @@ class Cemetery(models.Model):
     class Meta:
         verbose_name = _(u"Кладбище")
         verbose_name_plural = _(u"Кладбища")
+        ordering = ['name']
 
     def __unicode__(self):
         return self.name
@@ -105,6 +106,7 @@ class Area(models.Model):
     class Meta:
         verbose_name = _(u"Участок")
         verbose_name_plural = _(u"Участки")
+        ordering = ['name']
 
     def __unicode__(self):
         return _(u'%s (%s, %s, %s могил)') % (
