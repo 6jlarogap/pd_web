@@ -572,13 +572,13 @@ $(function() {
         })
     });
 
-    var old_grave_value = $('#id_grave_number').val();
+    old_grave_value = $('#id_grave_number').val();
+    place_html = ''
 
     $('#cont_place #id_cemetery, #cont_place #id_area, #cont_place #id_row, #cont_place #id_place_number').change(function() {
         $('#id_responsible-take_from_0').removeAttr('checked').closest('li').hide();
 
         var data = $('#id_cemetery, #id_area, #id_row, #id_place_number').serialize();
-        var place_html = ''
         if ($('#id_cemetery').val() &&  $('#id_area').val()) {
             if ($('#id_place_number').val()) {
                 // $('#place_info').load('/burials/get_place/?'+data)
@@ -738,7 +738,7 @@ $(function() {
     // то, что найдет по содержимому строки поиска по адресу. А заодно затираем.
     // Нужен будет новый поиск, начнет с "чистого листа".
     // $('input[id$=fias_address]').change();
-    $('input[id$=fias_address]').val();
+    $('input[id$=fias_address]').val('');
 
     $('#paginator_select').live('change', function() {
         top.location.href = $(this).val('');
