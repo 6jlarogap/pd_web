@@ -52,7 +52,7 @@ class CemeteryForm(BaseCemeteryForm):
         self.address_form = LocationForm(data=self.data or None, instance=address, prefix='address')
         #self.address_form.fields['country_name'].required = True
         if self.instance and self.instance.pk:
-            self.area_formset = AreaFormset(data=self.data or None, instance=self.instance, queryset=Area.objects.order_by('name'))
+            self.area_formset = AreaFormset(data=self.data or None, instance=self.instance)
         else:
             self.area_formset = None
 
@@ -1251,8 +1251,8 @@ class AreaMergeForm(forms.Form):
 
     def __init__(self, cemetery, *args, **kwargs):
         super(AreaMergeForm, self).__init__(*args, **kwargs)
-        self.fields['correct'].queryset = Area.objects.filter(cemetery=cemetery).order_by('name')
-        self.fields['incorrect'].queryset = Area.objects.filter(cemetery=cemetery).order_by('name')
+        self.fields['correct'].queryset = Area.objects.filter(cemetery=cemetery)
+        self.fields['incorrect'].queryset = Area.objects.filter(cemetery=cemetery)
 
     def save(self):
         if self.cleaned_data['incorrect'] != self.cleaned_data['correct']:
