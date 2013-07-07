@@ -573,6 +573,7 @@ $(function() {
     });
 
     old_grave_value = $('#id_grave_number').val();
+    place_html = ''
 
     $('#cont_place #id_cemetery, #cont_place #id_area, #cont_place #id_row, #cont_place #id_place_number').change(function() {
         $('#id_responsible-take_from_0').removeAttr('checked').closest('li').hide();
@@ -580,7 +581,11 @@ $(function() {
         var data = $('#id_cemetery, #id_area, #id_row, #id_place_number').serialize();
         if ($('#id_cemetery').val() &&  $('#id_area').val()) {
             if ($('#id_place_number').val()) {
-                $('#place_info').load('/burials/get_place/?'+data)
+                // $('#place_info').load('/burials/get_place/?'+data)
+                $.get('/burials/get_place/?'+data, function (data) {
+                    place_html = data;
+                    $('#place_info').html(place_html);
+                });
             }
             $.getJSON('/burials/get_graves_number/?'+data, function(data) {
                 var count = data.places || 1;
@@ -595,14 +600,22 @@ $(function() {
                 }
                 $('#id_responsible-place').val(data.place_pk || "");
 
-                var resp_id = '#id_responsible-take_from_';
-                $(resp_id+'0').closest('li').show();
-                if (!$(resp_id+'1').is(':checked') && !$(resp_id+'2').is(':checked')) {
-                    $(resp_id+'0').attr('checked', 'checked');
+                if (place_html.indexOf("place_has_responsible") >= 0) {
+                    var resp_id = '#id_responsible-take_from_';
+                    $(resp_id+'0').closest('li').show();
+                    // 0 - из места
+                    // 1 - заявитель
+                    // 2 - новый ответственный
+                    if (!$(resp_id+'1').is(':checked') && !$(resp_id+'2').is(':checked')) {
+                        $(resp_id+'0').attr('checked', 'checked');
+                    }
                 }
             })
         }
-
+        if (place_html == '') {
+            $('#place_info').html(place_html);
+        }
+        
         var cemetery = $('#id_cemetery').val();
         if (cemetery && PLACE_TYPES[cemetery] != 'manual') {
             $('#id_place_number').siblings('.helptext').show();
@@ -721,7 +734,11 @@ $(function() {
             }
         })
     });
-    $('input[id$=fias_address]').change();
+    // Начальная загрузка страницы. Не делаем change, иначе загонит в страну, ..., улицу
+    // то, что найдет по содержимому строки поиска по адресу. А заодно затираем.
+    // Нужен будет новый поиск, начнет с "чистого листа".
+    // $('input[id$=fias_address]').change();
+    $('input[id$=fias_address]').val('');
 
     $('#paginator_select').live('change', function() {
         top.location.href = $(this).val();
@@ -808,6 +825,21 @@ function updateInnerForm() {
     setTimeout(function() {
         $('#id_customer-agent_director').change();
     }, 100);
+}
+
+function contShowHide(obj, a, c_expand, c_collapse){
+    // Свернуть, развернуть:
+    // obj,         строка для селектора, объект для свертки
+    // a,           строка для селектора, адресная ссылка свертки, развертки
+    // c_expand,    строка (или даже html-код) для показа, если надо развернуть
+    // c_collapse,  строка (или даже html-код) для показа, если надо свернуть
+    if($(a).html() == c_expand){
+        $(a).html(c_collapse)
+    }else{
+        $(a).html(c_expand)
+    }
+    $(obj).slideToggle();
+    return false;
 }
 
 $(function() {

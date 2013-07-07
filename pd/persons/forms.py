@@ -19,7 +19,7 @@ class ValidDataMixin:
     def is_valid_data(self):
         return self.is_valid() and any(self.cleaned_data.values())
 
-class DeadPersonForm(ValidDataMixin, forms.ModelForm):
+class DeadPersonForm(ValidDataMixin, StrippedStringsMixin, forms.ModelForm):
     class Meta:
         model = DeadPerson
 

@@ -22,7 +22,7 @@ from burials.models import Cemetery, Area, Burial, Place, ExhumationRequest, Bur
 from geo.forms import LocationForm
 from orders.models import Order
 from pd.forms import PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin
-from persons.forms import DeadPersonForm, DeathCertificateForm, AlivePersonForm, PersonIDForm
+from persons.forms import DeadPersonForm, DeathCertificateForm, AlivePersonForm, PersonIDForm, StrippedStringsMixin
 from persons.models import DeathCertificate, PersonID, IDDocumentType
 from users.forms import BaseOrgForm
 from users.models import Org, Profile, Dover
@@ -52,7 +52,7 @@ class CemeteryForm(BaseCemeteryForm):
         self.address_form = LocationForm(data=self.data or None, instance=address, prefix='address')
         #self.address_form.fields['country_name'].required = True
         if self.instance and self.instance.pk:
-            self.area_formset = AreaFormset(data=self.data or None, instance=self.instance, queryset=Area.objects.order_by('name'))
+            self.area_formset = AreaFormset(data=self.data or None, instance=self.instance)
         else:
             self.area_formset = None
 
@@ -265,7 +265,7 @@ class BurialPublicListForm(forms.Form):
         self.fields['fio'].required = True
         self.fields['cemetery'].required = True
 
-class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, forms.ModelForm):
+class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, StrippedStringsMixin, forms.ModelForm):
     COFFIN = 'coffin'
     URN = 'urn'
 
@@ -436,6 +436,9 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, forms.Mo
         return self.cleaned_data['plan_time'] or None
 
     def clean(self):
+        
+        StrippedStringsMixin.clean(self)
+        
         if self.cleaned_data.get('cemetery') and self.cleaned_data.get('area'):
             if self.cleaned_data['cemetery'] != self.cleaned_data['area'].cemetery:
                 raise forms.ValidationError(_(u'Участок не от этого кладбища'))
@@ -566,17 +569,30 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, forms.Mo
 
         remove_responsible = False
         if self.request.user.profile.is_ugh() and self.responsible_form.cleaned_data.get('take_from') == ResponsibleForm.WHERE_FROM_APPLICANT:
+            resp_addr = None
+            if self.instance.applicant.address:
+                resp_addr = copy.deepcopy(self.instance.applicant.address)
+                resp_addr.id = None
+                resp_addr.save(force_insert=True)
             resp = copy.deepcopy(self.instance.applicant)
             resp.id = None
             resp.baseperson_ptr_id = None
+            resp.address = resp_addr
             resp.save(force_insert=True)
             self.instance.responsible = resp
+            try:
+                resp_pid = copy.deepcopy(self.instance.applicant.personid)
+                resp_pid.id = None
+                resp_pid.person = resp
+                resp_pid.save(force_insert=True)
+            except PersonID.DoesNotExist:
+                pass
         elif self.responsible_form.is_valid():
             if self.responsible_form.cleaned_data.get('last_name').strip() or \
                self.responsible_form.cleaned_data.get('first_name').strip() or \
                self.responsible_form.cleaned_data.get('middle_name').strip():
                 responsible = self.responsible_form.save(commit=False)
-                if self.responsible_address_form.is_valid():
+                if self.responsible_address_form.is_valid_data():
                     responsible.address = self.responsible_address_form.save()
                 responsible.save()
                 self.instance.responsible = responsible
@@ -604,7 +620,8 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, forms.Mo
             place, created = Place.objects.get_or_create(cemetery=self.cleaned_data['cemetery'],
                                                          area=self.cleaned_data['area'],
                                                          row=self.cleaned_data['row'],
-                                                         place=self.cleaned_data['place_number'])
+                                                         place=self.cleaned_data['place_number'],
+                                defaults={'places_count': self.cleaned_data['area'].places_count or 1})
             self.instance.place=place
             
         self.instance.save()
@@ -758,6 +775,9 @@ class BurialCommitForm(BurialForm):
                     self.applicant_id_form.fields[f].required = True
 
     def clean(self):
+
+        StrippedStringsMixin.clean(self)
+
         is_ugh = False
         if self.instance and self.instance.is_ugh():
             is_ugh = True
@@ -1231,8 +1251,8 @@ class AreaMergeForm(forms.Form):
 
     def __init__(self, cemetery, *args, **kwargs):
         super(AreaMergeForm, self).__init__(*args, **kwargs)
-        self.fields['correct'].queryset = Area.objects.filter(cemetery=cemetery).order_by('name')
-        self.fields['incorrect'].queryset = Area.objects.filter(cemetery=cemetery).order_by('name')
+        self.fields['correct'].queryset = Area.objects.filter(cemetery=cemetery)
+        self.fields['incorrect'].queryset = Area.objects.filter(cemetery=cemetery)
 
     def save(self):
         if self.cleaned_data['incorrect'] != self.cleaned_data['correct']:

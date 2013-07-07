@@ -16,8 +16,10 @@
             ({% trans "свободно" %} {{ place.get_available_count }})
         </dd>
         {% if place.responsible %}
-            <dt>{% trans "Ответственный" %}</dt>
-            <dd>{{ place.responsible }}</dd>
+            <div id="place_has_responsible">
+                <dt>{% trans "Ответственный" %}</dt>
+                <dd>{{ place.responsible }}</dd>
+            </div>
         {% endif %}
     </dl>
 

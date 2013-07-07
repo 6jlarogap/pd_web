@@ -50,6 +50,7 @@ class Cemetery(models.Model):
     class Meta:
         verbose_name = _(u"Кладбище")
         verbose_name_plural = _(u"Кладбища")
+        ordering = ['name']
 
     def __unicode__(self):
         return self.name
@@ -105,6 +106,7 @@ class Area(models.Model):
     class Meta:
         verbose_name = _(u"Участок")
         verbose_name_plural = _(u"Участки")
+        ordering = ['name']
 
     def __unicode__(self):
         return _(u'%s (%s, %s, %s могил)') % (
@@ -179,6 +181,13 @@ class Place(models.Model):
     def get_logs(self):
         ct = ContentType.objects.get_for_model(self)
         return Log.objects.filter(ct=ct, obj_id=self.pk).order_by('-pk')
+
+    def bio_only(self):
+        """
+        В месте только биоотходы
+        """
+        burials_available = self.burials_available()
+        return burials_available and all([ b.is_bio() for b in burials_available ])
 
     def save(self, *args, **kwargs):
         if self.cemetery and not self.place:
@@ -520,7 +529,13 @@ class Burial(models.Model):
                 if not old_place or not old_place.pk or not old_place.burial_count(): # and FROM old and populated
                     pass # do not touch anything
                 else: # from new
-                    old_place.delete() # deleting old
+                    # TODO: ответить на вопрос? А сработает ли это когда-нибудь? Без ProtectedError ?
+                    #       если в месте есть захоронения, то на него есть ссылки из таблицы Burial.
+                    #       Всегда будет ProtectedError.
+                    try:
+                        old_place.delete() # deleting old
+                    except (AttributeError, ProtectedError):
+                        pass
         else:
             if not place.responsible:
                 place.responsible = self.get_responsible() # just update responsible
