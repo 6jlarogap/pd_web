@@ -741,7 +741,7 @@ $(function() {
     $('input[id$=fias_address]').val('');
 
     $('#paginator_select').live('change', function() {
-        top.location.href = $(this).val('');
+        top.location.href = $(this).val();
     });
 
     $('input.autocomplete[name$=city_name]').live('change', function() {
