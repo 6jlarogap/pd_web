@@ -734,7 +734,11 @@ $(function() {
             }
         })
     });
-    $('input[id$=fias_address]').change();
+    // Начальная загрузка страницы. Не делаем change, иначе загонит в страну, ..., улицу
+    // то, что найдет по содержимому строки поиска по адресу. А заодно затираем.
+    // Нужен будет новый поиск, начнет с "чистого листа".
+    // $('input[id$=fias_address]').change();
+    $('input[id$=fias_address]').val();
 
     $('#paginator_select').live('change', function() {
         top.location.href = $(this).val();
