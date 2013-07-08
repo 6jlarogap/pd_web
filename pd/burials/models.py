@@ -527,7 +527,11 @@ class Burial(models.Model):
                 place.responsible = self.get_responsible() # update responsible
             else: # move TO existing
                 if not old_place or not old_place.pk or not old_place.burial_count(): # and FROM old and populated
-                    pass # do not touch anything
+                    # Первое закрытие. Загоняем в существуюшее место
+                    # Если ничего не ввели в ответственном, то оставляем прежнего в месте
+                    # Иначе заменяем
+                    if self.responsible:
+                        place.responsible = self.responsible
                 else: # from new
                     # TODO: ответить на вопрос? А сработает ли это когда-нибудь? Без ProtectedError ?
                     #       если в месте есть захоронения, то на него есть ссылки из таблицы Burial.
