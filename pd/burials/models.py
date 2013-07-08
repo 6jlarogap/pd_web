@@ -541,7 +541,11 @@ class Burial(SafeDeleteMixin, models.Model):
             else: # move TO existing
                 # TODO: понять, зачем нужно затирать старое место, да еще в котором есть могилы ?
                 if not old_place or not old_place.pk or not old_place.burial_count(): # and FROM old and populated
-                    pass # do not touch anything
+                    # Первое закрытие. Загоняем в существуюшее место
+                    # Если ничего не ввели в ответственном, то оставляем прежнего в месте
+                    # Иначе заменяем
+                    if self.responsible:
+                        place.responsible = self.responsible
                 else: # from new
                     # TODO: ответить на вопрос? А сработает ли это когда-нибудь? Без ProtectedError ?
                     #       если в месте есть захоронения, то на него есть ссылки из таблицы Burial.
