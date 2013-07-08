@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import copy
 from django.db import models
 from django.utils.translation import ugettext as _
 from django.db.models.deletion import ProtectedError
@@ -100,6 +101,29 @@ class BasePerson(models.Model):
                 self.address.delete()
             except (AttributeError, ProtectedError):
                 pass
+
+    def deep_copy(self):
+        new_person_addr = None
+        if self.address:
+            new_person_addr = copy.deepcopy(self.address)
+            new_person_addr.id = None
+            new_person_addr.save(force_insert=True)
+        new_person = copy.deepcopy(self)
+        new_person.id = None
+        try:
+            new_person.baseperson_ptr_id = None
+        except AttributeError:
+            pass
+        new_person.address = new_person_addr
+        new_person.save(force_insert=True)
+        try:
+            new_person_pid = copy.deepcopy(self.personid)
+            new_person_pid.id = None
+            new_person_pid.person = new_person
+            new_person_pid.save(force_insert=True)
+        except PersonID.DoesNotExist:
+            pass
+        return new_person
 
     class Meta:
         ordering = ['last_name', 'first_name', 'middle_name', ]
