@@ -53,7 +53,8 @@ class Order(models.Model):
     loru = models.ForeignKey(Org, limit_choices_to={'type': Org.PROFILE_LORU}, null=True, verbose_name=_(u"ЛОРУ"))
     loru_number = models.PositiveIntegerField(null=True, editable=False)
     payment = models.CharField(_(u"Тип платежа"), max_length=255, choices=PAYMENT_CHOICES, default=PAYMENT_CASH)
-    applicant = models.ForeignKey('persons.AlivePerson', verbose_name=_(u"Заказчик-ФЛ"), null=True, blank=True)
+    applicant = models.ForeignKey('persons.AlivePerson', verbose_name=_(u"Заказчик-ФЛ"), null=True, blank=True,
+                                  on_delete=models.PROTECT)
     applicant_organization = models.ForeignKey(Org, verbose_name=_(u"Заказчик-ЮЛ"), null=True, blank=True, related_name='org_orders')
     agent_director = models.BooleanField(_(u"Директор-Агент"), default=False, blank=True)
     agent = models.ForeignKey('users.Profile', verbose_name=_(u"Агент"), null=True, blank=True,
@@ -63,6 +64,7 @@ class Order(models.Model):
     annulated = models.BooleanField(_(u'Аннулировано'), editable=False, default=False)
     cost = models.DecimalField(_(u"Цена"), max_digits=20, decimal_places=2, editable=False)
     dt = models.DateTimeField(auto_now_add=True)
+    burial = models.ForeignKey(Burial, related_name='burial_orders', editable=False, null=True)
 
     class Meta:
         verbose_name = _(u"Заказ")
@@ -89,7 +91,7 @@ class Order(models.Model):
 
     def annulate(self):
         self.annulated = True
-        b = self.get_burial()
+        b = self.burial
         if b:
             save_burial = False
             if b.status in [Burial.STATUS_READY, Burial.STATUS_APPROVED]:
@@ -125,12 +127,6 @@ class Order(models.Model):
 
     def total_float(self):
         return float(self.total)
-
-    def get_burial(self):
-        try:
-            return self.burial
-        except Burial.DoesNotExist:
-            return
 
     def has_burial(self):
         return self.orderitem_set.filter(product__ptype=Product.PRODUCT_BURIAL).exists()

@@ -249,18 +249,18 @@
             </tr>
             {% for c in object_list %}
                 <tr class="
-                    {% if c.get_burial.is_ready %}burial_blue{% endif %}
-                    {% if c.get_burial.is_approved %}burial_green{% endif %}
-                    {% if c.get_burial.is_declined or c.get_burial.is_backed %}burial_red{% endif %}
+                    {% if c.burial.is_ready %}burial_blue{% endif %}
+                    {% if c.burial.is_approved %}burial_green{% endif %}
+                    {% if c.burial.is_declined or c.burial.is_backed %}burial_red{% endif %}
                 ">
-                    <td>{{ c.get_burial.account_number|default:"" }}</td>
-                    <td>{{ c.get_burial.deadman_or_bio }}</td>
-                    <td>{{ c.get_burial.combined_date }}</td>
+                    <td>{{ c.burial.account_number|default:"" }}</td>
+                    <td>{{ c.burial.deadman_or_bio }}</td>
+                    <td>{{ c.burial.combined_date }}</td>
                     <td>
-                        {% with burial=c.get_burial %}{% include "burial_place.html" %}{% endwith %}
+                        {% with burial=c.burial %}{% include "burial_place.html" %}{% endwith %}
                     </td>
-                    <td>{{ c.get_burial.cemetery|default:"" }} / {{ c.get_burial.ugh|default:"" }}</td>
-                    <td>{{ c.get_burial.pk|default:"" }}</td>
+                    <td>{{ c.burial.cemetery|default:"" }} / {{ c.burial.ugh|default:"" }}</td>
+                    <td>{{ c.burial.pk|default:"" }}</td>
                     <td>
                         {% if c.applicant %}
                             ФЛ {{ c.applicant|default:"" }}

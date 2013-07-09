@@ -53,11 +53,11 @@
 
         <p>
             <input type="submit" class="btn" value="{% trans "сохранить" %}" class="btn"/>
-            {% if order.get_burial %}
-                {% if order.get_burial.is_edit %}
-                    <a href="{% url edit_burial order.get_burial.pk %}" class="btn btn-next">{% trans "далее" %}</a>
+            {% if order.burial %}
+                {% if order.burial.is_edit %}
+                    <a href="{% url edit_burial order.burial.pk %}?order={{ order.pk }}" class="btn btn-next">{% trans "далее" %}</a>
                 {% else %}
-                    <a href="{% url view_burial order.get_burial.pk %}" class="btn btn-next">{% trans "далее" %}</a>
+                    <a href="{% url view_burial order.burial.pk %}?order={{ order.pk }}" class="btn btn-next">{% trans "далее" %}</a>
                 {% endif %}
             {% else %}
                 <a href="{% url create_burial %}?order={{ order.pk }}" class="btn btn-next">{% trans "далее" %}</a>

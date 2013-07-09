@@ -23,8 +23,7 @@ class AreaPurposeAdmin(admin.ModelAdmin):
 admin.site.register(AreaPurpose, AreaPurposeAdmin)
 
 class BurialAdmin(admin.ModelAdmin):
-    readonly_fields = ['order']
-    list_display = ['id', 'order', 'status', 'burial_type', 'source_type', ]
+    list_display = ['id', 'status', 'burial_type', 'source_type', ]
 
 admin.site.register(Burial, BurialAdmin)
 

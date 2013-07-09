@@ -1,5 +1,4 @@
 # coding=utf-8
-import copy
 import datetime
 import json
 import random
@@ -23,7 +22,7 @@ from geo.forms import LocationForm
 from orders.models import Order
 from pd.forms import PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin
 from persons.forms import DeadPersonForm, DeathCertificateForm, AlivePersonForm, PersonIDForm, StrippedStringsMixin
-from persons.models import DeathCertificate, PersonID, IDDocumentType
+from persons.models import DeathCertificate, PersonID, IDDocumentType, SafeDeleteMixin
 from users.forms import BaseOrgForm
 from users.models import Org, Profile, Dover
 from logs.models import write_log
@@ -134,7 +133,7 @@ class BurialSearchForm(forms.Form):
     responsible = forms.CharField(required=False, max_length=40, label=_(u"Ответственный"))
     operation = forms.ChoiceField(required=False, choices=EMPTY + Burial.BURIAL_TYPES, label=_(u"Вид захоронения"))
     burial_container = forms.TypedChoiceField(required=False, label=_(u"Тип захоронения"), choices=EMPTY + Burial.BURIAL_CONTAINERS)
-    cemetery = forms.CharField(required=False, label=_(u"Кладбища"))
+    cemetery = forms.CharField(required=False, label=_(u"Кладбище"))
     area = forms.CharField(required=False, label=_(u"Участок"))
     row = forms.CharField(required=False, label=_(u"Ряд"))
     place = forms.CharField(required=False, label=_(u"Место"))
@@ -146,12 +145,10 @@ class BurialSearchForm(forms.Form):
 
 class ResponsibleForm(AlivePersonForm):
     WHERE_FROM_PLACE = u'place'
-    WHERE_FROM_ORDER = u'order'
     WHERE_FROM_APPLICANT = u'applicant'
     WHERE_NEW = u'new'
     WHERE_CHOICES = (
         (WHERE_FROM_PLACE, _(u'Существующий (из места)')),
-        (WHERE_FROM_ORDER, _(u'Заказчик (из Счет-Заказа)')),
         (WHERE_FROM_APPLICANT, _(u'Заявитель')),
         (WHERE_NEW, _(u'Новый')),
     )
@@ -170,38 +167,7 @@ class ResponsibleForm(AlivePersonForm):
 
         self.initial.setdefault('take_from', self.WHERE_NEW)
 
-    def set_loru_from(self):
-        if 'take_from' in self.fields:
-            all_choices = self.WHERE_CHOICES
-            new_choices = [c for c in all_choices if c[0] != self.WHERE_FROM_APPLICANT]
-
-            if self.initial.get('order'):
-                order = self.initial.get('order')
-                if not isinstance(order, Order):
-                    try:
-                        order = Order.objects.get(pk=self.initial['order'])
-                    except Order.DoesNotExist:
-                        order = None
-
-                if order and not order.applicant:
-                    new_choices = [c for c in new_choices if c[0] != self.WHERE_FROM_ORDER]
-
-            self.fields['take_from'].choices = new_choices
-            self.fields['take_from'].widget.choices = new_choices
-
-    def set_ugh_from(self):
-        if 'take_from' in self.fields:
-            all_choices = self.WHERE_CHOICES
-            new_choices = [c for c in all_choices if c[0] != self.WHERE_FROM_ORDER]
-            self.fields['take_from'].choices = new_choices
-            self.fields['take_from'].widget.choices = new_choices
-
     def clean(self):
-        if self.cleaned_data.get('take_from') == self.WHERE_FROM_ORDER:
-            if not self.cleaned_data.get('order'):
-                raise forms.ValidationError(_(u'Нет Заказа'))
-            if not self.cleaned_data.get('order').applicant:
-                raise forms.ValidationError(_(u'Нет Закачика-ФЛ'))
         if self.cleaned_data.get('take_from') == self.WHERE_FROM_PLACE:
             if not self.cleaned_data.get('place'):
                 raise forms.ValidationError(_(u'Нет Места'))
@@ -212,18 +178,8 @@ class ResponsibleForm(AlivePersonForm):
     def save(self, *args, **kwargs):
         if self.instance.pk:
             return super(ResponsibleForm, self).save(*args, **kwargs)
-        elif self.cleaned_data.get('take_from') == self.WHERE_FROM_ORDER:
-            a = copy.deepcopy(self.cleaned_data['order'].applicant)
-            a.id = None
-            a.baseperson_ptr_id = None
-            a.save(force_insert=True)
-            return a
         elif self.cleaned_data.get('take_from') == self.WHERE_FROM_PLACE:
-            a = copy.deepcopy(self.cleaned_data['place'].responsible)
-            a.id = None
-            a.baseperson_ptr_id = None
-            a.save(force_insert=True)
-            return a
+            return self.cleaned_data['place'].responsible.deep_copy()
         else:
             return super(ResponsibleForm, self).save(*args, **kwargs)
 
@@ -265,7 +221,7 @@ class BurialPublicListForm(forms.Form):
         self.fields['fio'].required = True
         self.fields['cemetery'].required = True
 
-class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, StrippedStringsMixin, forms.ModelForm):
+class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDeleteMixin, StrippedStringsMixin, forms.ModelForm):
     COFFIN = 'coffin'
     URN = 'urn'
 
@@ -300,6 +256,11 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, Stripped
                 date_diff = 2 # Saturday
             self.initial['plan_date'] = datetime.date.today() + datetime.timedelta(date_diff)
 
+        self.order = None
+        order_pk = self.request.REQUEST.get('order')
+        if self.request.user.profile.is_loru() and order_pk:
+            self.order = Order.objects.get(pk=order_pk, loru=self.request.user.profile.org)
+
         # Отсутствие выбора будет в выпадающем списке не "---", а ""
         self.fields['applicant_organization'].empty_label = ''
         
@@ -316,26 +277,17 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, Stripped
         grave_choices = [(i,i) for i in range(1, places_count+1)]
         self.fields['grave_number'].widget = forms.Select(choices=grave_choices)
 
-        if self.request.user.profile.is_loru():
-            del self.fields['applicant_organization']
-            del self.fields['agent']
-            del self.fields['agent_director']
-            del self.fields['dover']
-            del self.fields['opf']
+        loru_list = Org.objects.all()
+        self.fields['applicant_organization'].queryset = loru_list
+        self.fields['applicant_organization'].inactive_queryset = loru_list.filter(Q(profile__user__is_active=False) | Q(profile=None))
+        self.fields['agent'].queryset = Profile.objects.filter(org__in=loru_list, is_agent=True).select_related('user')
+        self.fields['dover'].queryset = Dover.objects.filter(agent__org__in=loru_list)
 
-        if self.request.user.profile.is_ugh() or self.instance.is_ugh_only():
-            ugh = self.request.user.profile.org
-            loru_list = Org.objects.all()
-            self.fields['applicant_organization'].queryset = loru_list
-            self.fields['applicant_organization'].inactive_queryset = loru_list.filter(Q(profile__user__is_active=False) | Q(profile=None))
-            self.fields['agent'].queryset = Profile.objects.filter(org__in=loru_list, is_agent=True).select_related('user')
-            self.fields['dover'].queryset = Dover.objects.filter(agent__org__in=loru_list)
-
-            self.fields.keyOrder.insert(self.fields.keyOrder.index('applicant_organization'), self.fields.keyOrder.pop(-1))
-            if self.instance.pk and self.instance.applicant: # and self.instance.is_ugh(): # только ручное или архивное ?
-                self.initial['opf'] = 'person'
-            else:
-                self.initial['opf'] = 'org'
+        self.fields.keyOrder.insert(self.fields.keyOrder.index('applicant_organization'), self.fields.keyOrder.pop(-1))
+        if self.instance.pk and self.instance.applicant:
+            self.initial['opf'] = 'person'
+        else:
+            self.initial['opf'] = 'org'
 
         if self.request.user.profile.is_ugh() and self.request.REQUEST.get('archive'):
             del self.fields['plan_date']
@@ -390,34 +342,59 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, Stripped
         self.dc_form = DeathCertificateForm(self.request, data=data, prefix='deadman-dc', instance=dc)
 
         responsible = self.instance and self.instance.get_responsible()
-        resp_initial = {'order': self.instance.order or self.request.REQUEST.get('order')}
-        self.responsible_form = ResponsibleForm(data=data, prefix='responsible', instance=responsible,
-                                                initial=resp_initial)
+        self.responsible_form = ResponsibleForm(data=data, prefix='responsible', instance=responsible)
         resp_addr = responsible and responsible.address
         self.responsible_address_form = LocationForm(data=data, prefix='responsible-address', instance=resp_addr)
 
-        if self.request.user.profile.is_ugh():
-            self.responsible_form.set_ugh_from()
-        elif self.request.user.profile.is_loru():
-            self.responsible_form.set_loru_from()
-
         applicant = self.instance and self.instance.applicant
-        self.applicant_form = AlivePersonForm(data=data, prefix='applicant', instance=applicant)
+        applicant_form_initial = {}
+        applicant_address_form_initial = {}
+        applicant_id_form_initial = {}
+        if not self.instance.pk and self.order and self.order.applicant:
+            self.initial['opf'] = 'person'
+            for f in AlivePersonForm.base_fields.keys():
+                applicant_form_initial[f] = getattr(self.order.applicant, f)
+            cust_address = self.order.applicant.address
+            if cust_address:
+                if cust_address.country:
+                    applicant_address_form_initial['country_name'] = cust_address.country.name
+                if cust_address.country:
+                    applicant_address_form_initial['region_name'] = cust_address.region.name
+                if cust_address.country:
+                    applicant_address_form_initial['city_name'] = cust_address.city.name
+                if cust_address.street:
+                    applicant_address_form_initial['street_name'] = cust_address.street.name
+                for f in ('post_index', 'house', 'block', 'building', 'flat', 'info', ):
+                    applicant_address_form_initial[f] = getattr(cust_address, f)
+            try:
+                cust_personid = self.order.applicant.personid
+            except PersonID.DoesNotExist:
+                cust_personid = None
+            if cust_personid:
+                for f in PersonIDForm.base_fields.keys():
+                    applicant_id_form_initial[f] = getattr(cust_personid, f)
+
+        self.applicant_form = AlivePersonForm(data=data, prefix='applicant',
+                                              instance=applicant,
+                                              initial=applicant_form_initial,
+                                             )
         applicant_addr = applicant and applicant.address
-        self.applicant_address_form =  LocationForm(data=data, prefix='applicant-address', instance=applicant_addr)
+        self.applicant_address_form =  LocationForm(data=data, prefix='applicant-address',
+                                                    instance=applicant_addr,
+                                                    initial=applicant_address_form_initial,
+                                                   )
         try:
             applicant_id = self.instance and self.instance.applicant and self.instance.applicant.personid
         except PersonID.DoesNotExist:
             applicant_id = None
-        self.applicant_id_form = PersonIDForm(data=data, prefix='applicant-pid', instance=applicant_id)
+        self.applicant_id_form = PersonIDForm(data=data, prefix='applicant-pid',
+                                              instance=applicant_id,
+                                              initial=applicant_id_form_initial
+                                             )
 
-        if self.request.user.profile.is_loru():
-            forms = [self.deadman_form, self.deadman_address_form, self.dc_form,
-                    self.responsible_form, self.responsible_address_form]
-        else:
-            forms = [self.deadman_form, self.deadman_address_form, self.dc_form,
-                    self.responsible_form, self.responsible_address_form,
-                    self.applicant_form, self.applicant_address_form, self.applicant_id_form]
+        forms = [self.deadman_form, self.deadman_address_form, self.dc_form,
+                self.responsible_form, self.responsible_address_form,
+                self.applicant_form, self.applicant_address_form, self.applicant_id_form]
         
         # При ?action=.... метод is_valid() формы добавления файла, self.bfiles_form, возвращает
         # False.
@@ -505,9 +482,11 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, Stripped
             elif self.instance.cemetery:
                 self.instance.ugh = self.instance.cemetery.ugh
 
+        if not self.instance.loru and request.user.profile.is_loru():
+            self.instance.loru = request.user.profile.org
+
         if not self.instance.pk:
             if self.request.user.profile.is_loru():
-                self.instance.applicant_organization = self.request.user.profile.org
                 self.instance.source_type = Burial.SOURCE_FULL
             elif self.request.user.profile.is_ugh():
                 if self.request.REQUEST.get('archive'):
@@ -521,11 +500,7 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, Stripped
                 # Хотя бы одно поле из адреса заполнено
                 deadman.address = self.deadman_address_form.save()
             else:
-                try:
-                    deadman.address.delete()
-                except (AttributeError, ProtectedError):
-                    pass
-                deadman.address = None
+                self.safe_delete('address', deadman)
             deadman.save()
 
             if self.dc_form.is_valid():
@@ -534,59 +509,28 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, Stripped
                 dc.save()
             self.instance.deadman = deadman
         else:
-            try:
-                self.instance.deadman.delete()
-            except (AttributeError, ProtectedError):
-                pass
-            try:
-                self.instance.deadman.address.delete()
-            except (AttributeError, ProtectedError):
-                pass
-            self.instance.deadman = None
+            self.safe_delete('deadman', self.instance)
 
-        if self.request.user.profile.is_ugh():
-            if self.cleaned_data.get('opf') == 'person':
-                if self.applicant_form.is_valid_data():
-                    applicant = self.applicant_form.save(commit=False)
-                    if self.applicant_address_form.is_valid():
-                        applicant.address = self.applicant_address_form.save()
-                    applicant.save()
+        if self.cleaned_data.get('opf') == 'person' and self.applicant_form.is_valid_data():
+            applicant = self.applicant_form.save(commit=False)
+            if self.applicant_address_form.is_valid_data():
+                applicant.address = self.applicant_address_form.save()
+            applicant.save()
 
-                    if self.applicant_id_form.is_valid():
-                        pid = self.applicant_id_form.save(commit=False)
-                        pid.person = applicant
-                        pid.save()
-                    self.instance.applicant = applicant
-                else:
-                    self.instance.applicant = None
-                self.instance.applicant_organization = None
+            if self.applicant_id_form.is_valid_data():
+                pid = self.applicant_id_form.save(commit=False)
+                pid.person = applicant
+                pid.save()
+                self.instance.applicant = applicant
             else:
-                try:
-                    self.instance.applicant.delete()
-                except (AttributeError, ProtectedError):
-                    pass
                 self.instance.applicant = None
+            self.instance.applicant_organization = None
+        else:
+            self.safe_delete('applicant', self.instance)
 
         remove_responsible = False
-        if self.request.user.profile.is_ugh() and self.responsible_form.cleaned_data.get('take_from') == ResponsibleForm.WHERE_FROM_APPLICANT:
-            resp_addr = None
-            if self.instance.applicant.address:
-                resp_addr = copy.deepcopy(self.instance.applicant.address)
-                resp_addr.id = None
-                resp_addr.save(force_insert=True)
-            resp = copy.deepcopy(self.instance.applicant)
-            resp.id = None
-            resp.baseperson_ptr_id = None
-            resp.address = resp_addr
-            resp.save(force_insert=True)
-            self.instance.responsible = resp
-            try:
-                resp_pid = copy.deepcopy(self.instance.applicant.personid)
-                resp_pid.id = None
-                resp_pid.person = resp
-                resp_pid.save(force_insert=True)
-            except PersonID.DoesNotExist:
-                pass
+        if self.responsible_form.cleaned_data.get('take_from') == ResponsibleForm.WHERE_FROM_APPLICANT:
+            self.instance.responsible = self.instance.applicant.deep_copy()
         elif self.responsible_form.is_valid():
             if self.responsible_form.cleaned_data.get('last_name').strip() or \
                self.responsible_form.cleaned_data.get('first_name').strip() or \
@@ -601,15 +545,7 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, Stripped
         else:
             remove_responsible = True
         if remove_responsible:
-            try:
-                self.instance.responsible.delete()
-            except (AttributeError, ProtectedError):
-                pass
-            try:
-                self.instance.responsible.address.delete()
-            except (AttributeError, ProtectedError):
-                pass
-            self.instance.responsible = None
+            self.safe_delete('responsible', self.instance)
 
         if self.instance.is_closed() and \
             self.old_place and \
@@ -623,8 +559,11 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, Stripped
                                                          place=self.cleaned_data['place_number'],
                                 defaults={'places_count': self.cleaned_data['area'].places_count or 1})
             self.instance.place=place
-            
+        
         self.instance.save()
+        if self.order:
+            self.order.burial = self.instance
+            self.order.save()
 
         if self.bfiles_form.is_valid() and self.request.FILES.get('bfile'):
             original_name=self.request.FILES.get('bfile').name
@@ -637,8 +576,10 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, Stripped
 
         self.put_log_data()
 
+        order_parm = '?order=%s' % self.order.pk if self.order else ''
+        url = 'view_burial' if request.user.profile.is_ugh() else 'edit_burial'
         msg = _(u"<a href='%s'>Захоронение %s</a> сохранено") % (
-            reverse('view_burial', args=[self.instance.pk]),
+            reverse(url, args=[self.instance.pk]) + order_parm,
             self.instance.pk,
         )
         messages.success(self.request, msg)
@@ -1153,7 +1094,7 @@ class AddDocTypeForm(forms.ModelForm):
     class Meta:
         model = IDDocumentType
 
-class ExhumationForm(ChildrenJSONMixin, forms.ModelForm):
+class ExhumationForm(ChildrenJSONMixin, SafeDeleteMixin, forms.ModelForm):
     opf = forms.ChoiceField(label=_(u'ОПФ'), choices=OPF_CHOICES, widget=forms.RadioSelect, initial='person')
 
     class Meta:
@@ -1181,6 +1122,9 @@ class ExhumationForm(ChildrenJSONMixin, forms.ModelForm):
         if self.instance.plan_time:
             self.initial['plan_time'] = self.instance.plan_time.strftime('%H:%M')
 
+        # Отсутствие выбора будет в выпадающем списке не "---", а ""
+        self.fields['applicant_organization'].empty_label = ''
+
         self.forms = self.construct_forms()
 
     def is_valid(self):
@@ -1201,19 +1145,18 @@ class ExhumationForm(ChildrenJSONMixin, forms.ModelForm):
         return [self.applicant_form, self.applicant_address_form, self.applicant_id_form]
 
     def clean(self):
-        if self.cleaned_data.get('applicant_organization') and self.cleaned_data.get('applicant'):
-            raise forms.ValidationError(_(u'Необходимо указать только одного заявителя'))
-        if not self.cleaned_data.get('applicant_organization') and not self.cleaned_data.get('applicant'):
-            raise forms.ValidationError(_(u'Необходимо указать заявителя'))
         exhumation_date = self.cleaned_data.get('fact_date')
         burial_date = self.burial.fact_date
         if burial_date and exhumation_date:
             if burial_date.d > exhumation_date:
                 raise forms.ValidationError(_(u"Дата эксгумации не может быть раньше даты захоронения"))
-        if self.cleaned_data.get('opf') == 'org' and \
-                not self.cleaned_data.get('agent_director') and \
-                not (self.cleaned_data.get('agent') and self.cleaned_data.get('dover')):
-            raise forms.ValidationError(_(u'Нет данных об агенте и/или доверенности для заявителя-ЮЛ. Изменения не сохранены'))
+        if self.cleaned_data.get('opf') == 'org':
+            if not (self.cleaned_data.get('agent_director') or \
+                    self.cleaned_data.get('agent') and self.cleaned_data.get('dover')):
+                raise forms.ValidationError(_(u'Нет данных об агенте и/или доверенности для заявителя-ЮЛ. Изменения не сохранены'))
+        else:
+            if not self.applicant_form.is_valid_data():
+                raise forms.ValidationError(_(u"Нужно указать Заявителя-ФЛ"))
         return self.cleaned_data
 
     def save(self, commit=True, *args, **kwargs):
@@ -1235,11 +1178,7 @@ class ExhumationForm(ChildrenJSONMixin, forms.ModelForm):
             self.instance.applicant = applicant
             self.instance.applicant_organization = None
         else:
-            try:
-                self.instance.applicant.delete()
-            except (AttributeError, ProtectedError):
-                pass
-            self.instance.applicant = None
+            self.safe_delete('applicant', self.instance)
 
         self.instance.save()
 

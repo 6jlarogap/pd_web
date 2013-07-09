@@ -10,7 +10,7 @@ from pd.models import UnclearDateModelField
 import os
 import pytils
 
-from persons.models import DeadPerson
+from persons.models import DeadPerson, SafeDeleteMixin
 from reports.models import Report
 from users.models import Org, Profile, Dover
 from logs.models import Log
@@ -120,9 +120,10 @@ class Area(models.Model):
             self.name=''
         return super(Area, self).save(*args, **kwargs)
 
-class Place(models.Model):
+class Place(SafeDeleteMixin, models.Model):
     cemetery = models.ForeignKey(Cemetery, verbose_name=_(u"Кладбище"), on_delete=models.PROTECT)
-    area = models.ForeignKey(Area, verbose_name=_(u"Участок"), blank=True, null=True)
+    area = models.ForeignKey(Area, verbose_name=_(u"Участок"), blank=True, null=True,
+                             on_delete=models.PROTECT)
     row = models.CharField(_(u"Ряд"), max_length=255, blank=True, null=True)
     place = models.CharField(_(u"Место"), max_length=255, blank=True, null=True)
     places_count = models.PositiveIntegerField(_(u"Кол-во могил"), null=True)
@@ -175,8 +176,7 @@ class Place(models.Model):
             self.place = year + '0001'
 
     def remove_responsible(self):
-        self.responsible = None
-        self.save()
+        self.safe_delete('responsible', self)
 
     def get_logs(self):
         ct = ContentType.objects.get_for_model(self)
@@ -205,7 +205,17 @@ class Place(models.Model):
                 self.set_next_number_for_year(cemetery=self.cemetery)
         return super(Place, self).save(*args, **kwargs)
 
-class Burial(models.Model):
+class Grave(models.Model):
+
+    place = models.ForeignKey(Place, verbose_name=_(u"Место"))
+    name = models.CharField(_(u"Номер"), max_length=10)
+
+class GravePhoto(models.Model):
+
+    grave = models.ForeignKey(Grave, verbose_name=_(u"Место"))
+    photo = models.FileField(u"Фото", upload_to='photos')
+    
+class Burial(SafeDeleteMixin, models.Model):
     STATUS_BACKED = 'backed'
     STATUS_DECLINED = 'declined'
     STATUS_DRAFT = 'draft'
@@ -264,32 +274,35 @@ class Burial(models.Model):
 
     place = models.ForeignKey(Place, verbose_name=_(u"Место"), null=True, blank=True, on_delete=models.PROTECT)
     cemetery = models.ForeignKey(Cemetery, verbose_name=_(u"Кладбище"), null=True, blank=True, on_delete=models.PROTECT)
-    area = models.ForeignKey(Area, verbose_name=_(u"Участок"), blank=True, null=True)
+    area = models.ForeignKey(Area, verbose_name=_(u"Участок"), blank=True, null=True,
+                                                  on_delete=models.PROTECT)
     row = models.CharField(_(u"Ряд"), max_length=255, blank=True, null=True)
     place_number = models.CharField(_(u"Номер места"), max_length=255, null=True, blank=True,
                                     help_text=_(u"Если пусто - номер будет сгенерирован автоматически"))
+    grave = models.ForeignKey(Grave, verbose_name=_(u"Могила"), null=True, blank=True, on_delete=models.PROTECT)
     grave_number = models.PositiveSmallIntegerField(_(u"Могила"), max_length=255, default=1)
     responsible = models.ForeignKey('persons.AlivePerson', verbose_name=_(u"Ответственный"), blank=True, null=True,
-                                    related_name='responsible_burials')
+                                    related_name='responsible_burials', on_delete=models.PROTECT)
 
     plan_date = models.DateField(_(u"План. дата"), null=True, blank=True)
     plan_time = models.TimeField(_(u"План. время"), null=True, blank=True)
     fact_date = UnclearDateModelField(_(u"Факт. дата"), null=True, blank=True)
 
-    deadman = models.ForeignKey(DeadPerson, verbose_name=_(u"Усопший"), null=True, editable=False)
+    deadman = models.ForeignKey(DeadPerson, verbose_name=_(u"Усопший"), null=True, editable=False,
+                                on_delete=models.PROTECT)
 
     applicant = models.ForeignKey('persons.AlivePerson', verbose_name=_(u"Заявитель"), blank=True, null=True,
-                                  related_name='applied_burials')
+                                  related_name='applied_burials', on_delete=models.PROTECT)
     ugh = models.ForeignKey(Org, verbose_name=_(u"УГХ"), null=True, editable=False, related_name='ugh_created',
                             limit_choices_to={'type': Org.PROFILE_UGH}, on_delete=models.PROTECT)
+    loru = models.ForeignKey(Org, verbose_name=_(u"ЛОРУ"), null=True, editable=False, 
+                             limit_choices_to={'type': Org.PROFILE_LORU}, on_delete=models.PROTECT)
     applicant_organization = models.ForeignKey(Org, verbose_name=_(u"Заявитель-ЮЛ"), null=True, blank=True,
                                                related_name='loru_created', on_delete=models.PROTECT)
     agent_director = models.BooleanField(_(u"Директор-Агент"), default=False, blank=True)
     agent = models.ForeignKey(Profile, verbose_name=_(u"Агент"), null=True, blank=True,
                               limit_choices_to={'is_agent': True}, on_delete=models.PROTECT)
     dover = models.ForeignKey(Dover, verbose_name=_(u"Доверенность"), null=True, blank=True, on_delete=models.PROTECT)
-
-    order = models.OneToOneField('orders.Order', editable=False, null=True)
 
     status = models.CharField(_(u"Статус"), max_length=255, choices=STATUS_CHOICES, default=STATUS_DRAFT, editable=False)
     changed = models.DateTimeField(_(u"Изменено"), editable=False, null=True)
@@ -421,6 +434,9 @@ class Burial(models.Model):
     def status_dt(self):
         return self.changed
 
+    def get_orders(self, loru):
+        return self.burial_orders.filter(loru=loru)
+
     def ugh_name(self):
         return self.cemetery and self.cemetery.ugh and self.cemetery.ugh.name or ''
 
@@ -526,8 +542,13 @@ class Burial(models.Model):
                     pass
                 place.responsible = self.get_responsible() # update responsible
             else: # move TO existing
+                # TODO: понять, зачем нужно затирать старое место, да еще в котором есть могилы ?
                 if not old_place or not old_place.pk or not old_place.burial_count(): # and FROM old and populated
-                    pass # do not touch anything
+                    # Первое закрытие. Загоняем в существуюшее место
+                    # Если ничего не ввели в ответственном, то оставляем прежнего в месте
+                    # Иначе заменяем
+                    if self.responsible:
+                        place.responsible = self.responsible
                 else: # from new
                     # TODO: ответить на вопрос? А сработает ли это когда-нибудь? Без ProtectedError ?
                     #       если в месте есть захоронения, то на него есть ссылки из таблицы Burial.
@@ -553,19 +574,7 @@ class Burial(models.Model):
             #      неизменившегося места не затрется, как хочет угх, если
             #      не сделать:
             elif not self.responsible:
-                # Только так удалишь:
-                #    поле Place.responsible: on_delete=models.PROTECT
-                responsible = place.responsible
-                place.responsible = None
-                place.save()
-                try:
-                    responsible.delete()
-                except (AttributeError, ProtectedError):
-                    pass
-                try:
-                    responsible.address.delete()
-                except (AttributeError, ProtectedError):
-                    pass
+                self.safe_delete('responsible', place)
 
         place.cemetery = self.cemetery
         place.area = self.area
@@ -680,14 +689,16 @@ class Reason(models.Model):
     def __unicode__(self):
         return u'%s' % self.pk
 
-class ExhumationRequest(models.Model):
+class ExhumationRequest(SafeDeleteMixin, models.Model):
     burial = models.OneToOneField(Burial, editable=False)
     place = models.ForeignKey(Place, editable=False, null=True)
     plan_date = models.DateField(_(u"План. дата"), null=True, blank=True)
     plan_time = models.TimeField(_(u"План. время"), null=True, blank=True)
     fact_date = models.DateField(_(u"Факт. дата"), null=True)
-    applicant = models.ForeignKey('persons.AlivePerson', verbose_name=_(u"Заказчик-ФЛ"), null=True, blank=True)
-    applicant_organization = models.ForeignKey(Org, verbose_name=_(u"Заказчик-ЮЛ"), null=True, blank=True)
+    applicant = models.ForeignKey('persons.AlivePerson', verbose_name=_(u"Заказчик-ФЛ"), null=True, blank=True,
+                                  on_delete=models.PROTECT)
+    applicant_organization = models.ForeignKey(Org, verbose_name=_(u"Заказчик-ЮЛ"), null=True, blank=True,
+                                  on_delete=models.PROTECT)
     agent_director = models.BooleanField(_(u"Директор-Агент"), default=False, blank=True)
     agent = models.ForeignKey('users.Profile', verbose_name=_(u"Агент"), null=True, blank=True,
                               limit_choices_to={'is_agent': True}, on_delete=models.PROTECT)
@@ -713,6 +724,7 @@ class ExhumationRequest(models.Model):
         self.burial.status = Burial.STATUS_CLOSED
         self.burial.place = self.place
         self.burial.save()
+        self.safe_delete('applicant', self)
         return super(ExhumationRequest, self).delete(using=using)
 
 def apply_exhumation(instance, created, **kwargs):

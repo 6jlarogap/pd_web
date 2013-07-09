@@ -9,24 +9,24 @@
     <li {% if tab == 'products' %}class="active"{% endif %}>
         <a href="{% url order_products order.pk %}">{% trans "Товары" %}</a>
     </li>
-    {% if order.get_burial %}
-        {% if order.get_burial.annulated %}
+    {% if order.burial %}
+        {% if order.burial.annulated %}
             <li {% if tab == 'burial' %}class="active"{% endif %}>
-                <a href="{% url view_burial order.get_burial.pk %}">
-                    {% trans "Захоронение" %}: {{ order.get_burial.get_status_display }}
-                    {% if order.get_burial.annulated %}<br />{% trans "Аннулировано" %}{% endif %}
+                <a href="{% url view_burial order.burial.pk %}?order={{ order.pk }}">
+                    {% trans "Захоронение" %}: {{ order.burial.get_status_display }}
+                    {% if order.burial.annulated %}<br />{% trans "Аннулировано" %}{% endif %}
                 </a>
             </li>
-        {% elif order.get_burial.is_edit %}
+        {% elif order.burial.is_edit %}
             <li {% if tab == 'burial' %}class="active"{% endif %}>
-                <a href="{% url edit_burial order.get_burial.pk %}">
-                    {% trans "Захоронение" %}: {{ order.get_burial.get_status_display }}
+                <a href="{% url edit_burial order.burial.pk %}?order={{ order.pk }}">
+                    {% trans "Захоронение" %}: {{ order.burial.get_status_display }}
                 </a>
             </li>
         {% else %}
             <li {% if tab == 'burial' %}class="active"{% endif %}>
-                <a href="{% url view_burial order.get_burial.pk %}">
-                    {% trans "Захоронение" %}: {{ order.get_burial.get_status_display }}
+                <a href="{% url view_burial order.burial.pk %}?order={{ order.pk }}">
+                    {% trans "Захоронение" %}: {{ order.burial.get_status_display }}
                 </a>
             </li>
         {% endif %}
