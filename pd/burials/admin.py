@@ -1,5 +1,7 @@
 from django.contrib import admin
 
+# This is test sync from pd_web.
+
 from burials.models import Cemetery, Burial, Reason, Area, Place, AreaPurpose, ExhumationRequest
 from burials.forms import CemeteryAdminForm
 
