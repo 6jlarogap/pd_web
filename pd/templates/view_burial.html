@@ -14,6 +14,14 @@
     <dl>
         <dt>{% trans "Учетный номер" %}:</dt><dd>{{ b.account_number|default:"не указан" }}</dd>
         <dt>{% trans "Статус" %}:</dt><dd>{{ b.status_str }}</dd>
+        {% if orders %}
+            <dt>{% trans "Заказ(ы)" %}:</dt>
+            {% for o in orders %}
+            <dd>
+                <a href="{% url order_edit o.pk %}">{{ o.loru_number }}</a>
+            </dd>
+            {% endfor %}
+        {% endif %}
         <dt>{% trans "Тип" %}:</dt><dd>{{ b.get_burial_container_display|default:"" }}</dd>
         <dt>{% trans "Вид" %}:</dt><dd>{{ b.get_burial_type_display|default:"" }}</dd>
         {% if b.ugh %}

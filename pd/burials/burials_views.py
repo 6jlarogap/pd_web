@@ -266,6 +266,7 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
 
     def get_context_data(self, **kwargs):
         b = self.get_object()
+        b.get_orders(loru=self.request.user.profile.org)
         return {
             'b': b,
             'reason_typical_back': Reason.objects.filter(reason_type=Reason.TYPE_BACK),
@@ -275,6 +276,7 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
             'comment_form': CommentForm(),
             'is_accessible': b.loru and self.request.user.profile.org in b.loru.get_loru_list(),
             'order': self.get_order(),
+            'orders': b.get_orders(loru=self.request.user.profile.org) if self.request.user.profile.is_loru() else [],
         }
 
 view_burial = BurialView.as_view()

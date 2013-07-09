@@ -434,6 +434,12 @@ class Burial(SafeDeleteMixin, models.Model):
     def status_dt(self):
         return self.changed
 
+    def get_orders(self, loru=None):
+        if loru:
+            return self.burial_orders.filter(loru=loru)
+        else:
+            return self.burial_orders.all()
+
     def ugh_name(self):
         return self.cemetery and self.cemetery.ugh and self.cemetery.ugh.name or ''
 
