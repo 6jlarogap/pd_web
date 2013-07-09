@@ -266,7 +266,6 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
 
     def get_context_data(self, **kwargs):
         b = self.get_object()
-        b.get_orders(loru=self.request.user.profile.org)
         return {
             'b': b,
             'reason_typical_back': Reason.objects.filter(reason_type=Reason.TYPE_BACK),
