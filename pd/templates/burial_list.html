@@ -115,10 +115,10 @@
                 {% if user.profile.is_ugh %}
                     <td>{{ b.get_source_type_display }}</td>
                     <td>
-                        {% if b.applicant %}
+                        {% if b.applicant_organization %}
+                            {{ b.applicant_organization }}
+                        {% elif b.applicant %}
                             {{ b.applicant }}
-                        {% else %}
-                            {{ b.loru_name }}
                         {% endif %}
                     </td>
                 {% endif %}

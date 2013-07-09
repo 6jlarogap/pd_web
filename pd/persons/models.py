@@ -1,13 +1,36 @@
 # -*- coding: utf-8 -*-
 
+import copy
 from django.db import models
 from django.utils.translation import ugettext as _
+from django.db.models.deletion import ProtectedError
 
 import datetime
 from geo.models import Location
 from pd.models import UnclearDate, UnclearDateModelField
 from users.models import Org
 
+
+class SafeDeleteMixin(object):
+    
+    def safe_delete(self, field_name, instance):
+        """
+        Безопасно удалить что-то из записи таблицы
+        
+        field       - строка (!) имени поля
+        instance    - запись в таблице
+        Поле устанавливается в null, запись сохраняется, потом
+        удаляется то, на что указывало поле.
+        Типичный пример - удаление заявителя, заказчика, покойника.
+        """
+        field_to_delete = getattr(instance, field_name)
+        if field_to_delete:
+            setattr(instance, field_name, None)
+            instance.save()
+            try:
+                field_to_delete.delete()
+            except ProtectedError:
+                pass
 
 class IDDocumentType(models.Model):
     name = models.CharField(_(u"Тип документа"), max_length=255)
@@ -63,6 +86,44 @@ class BasePerson(models.Model):
     def full_name_complete(self):
         fio = u"%s %s %s" % (self.last_name, self.first_name, self.middle_name)
         return fio.strip() or _(u"Неизвестный")
+
+    def delete(self):
+        try:
+            super(BasePerson, self).delete()
+        except ProtectedError:
+            pass
+        else:
+            try:
+                self.personid.delete()
+            except (AttributeError, PersonID.DoesNotExist, ProtectedError):
+                pass
+            try:
+                self.address.delete()
+            except (AttributeError, ProtectedError):
+                pass
+
+    def deep_copy(self):
+        new_person_addr = None
+        if self.address:
+            new_person_addr = copy.deepcopy(self.address)
+            new_person_addr.id = None
+            new_person_addr.save(force_insert=True)
+        new_person = copy.deepcopy(self)
+        new_person.id = None
+        try:
+            new_person.baseperson_ptr_id = None
+        except AttributeError:
+            pass
+        new_person.address = new_person_addr
+        new_person.save(force_insert=True)
+        try:
+            new_person_pid = copy.deepcopy(self.personid)
+            new_person_pid.id = None
+            new_person_pid.person = new_person
+            new_person_pid.save(force_insert=True)
+        except PersonID.DoesNotExist:
+            pass
+        return new_person
 
     class Meta:
         ordering = ['last_name', 'first_name', 'middle_name', ]

@@ -6,7 +6,6 @@ from django.utils.translation import ugettext as _
 
 from persons.models import DeadPerson, PersonID, DeathCertificate, AlivePerson, DocumentSource
 
-
 class StrippedStringsMixin(object):
     
    def clean(self):

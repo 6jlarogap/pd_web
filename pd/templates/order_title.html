@@ -16,7 +16,7 @@
     <form action="{% url order_annulate order.pk %}" method="POST" class="inline">
         {% csrf_token %}
         <!-- <input type="submit" class="btn btn-danger"
-                == if order.get_burial.is_approved ==
+                == if order.burial.is_approved ==
                 onclick="return confirm('== trans "Заявка согласована, при аннулировании Заказа она будет отозвана! Аннулировать?" ==');"
                 == endif == value="== trans "аннулировать" ==" />
         -->
