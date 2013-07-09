@@ -1,7 +1,11 @@
 {% load i18n %}
 
 <h2>
-    {% trans "Заявитель" %}
+    {% if 'order' in request.path %}
+        {% trans "Заказчик" %}
+    {% else %}
+        {% trans "Заявитель" %}
+    {% endif %}
     {% if form.instance.applicant_organization %}
         {{ form.instance.applicant_organization }}
     {% elif form.applicant_form.instance %}
