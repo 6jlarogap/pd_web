@@ -229,7 +229,7 @@ class UserEditView(LoginRequiredMixin, UpdateView):
                      _(u'активный') if self.object.is_active else _(u'неактивный'),
                    )
             write_log(self.request, self.object.profile.org, msg)
-        write_log(self.request, self.object, _(u'Изменены данные пользователя'))
+            write_log(self.request, self.object, msg)
         return redirect(self.get_success_url())
         
 edit_user = UserEditView.as_view()
