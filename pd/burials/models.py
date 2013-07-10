@@ -445,6 +445,7 @@ class Burial(SafeDeleteMixin, models.Model):
 
     def set_account_number(self, user):
         ugh = self.ugh or user.profile.org
+        cemetery = self.cemetery
         if user.profile.is_ugh():
             algo = ugh.numbers_algo
         else:
