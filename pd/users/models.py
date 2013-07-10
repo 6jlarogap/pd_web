@@ -104,7 +104,7 @@ class Org(models.Model):
     phones = models.TextField(_(u"Телефоны"), blank=True, null=True)
     off_address = models.ForeignKey('geo.Location', verbose_name=_(u"Юр. адрес"), null=True, blank=True)
     numbers_algo = models.CharField(_(u"Заполнение номера захоронения"), max_length=255, choices=NUM_TYPES,
-                                    default=NUM_YEAR_CEMETERY, blank=True)
+                                    default=NUM_EMPTY, blank=True)
 
     class Meta:
         verbose_name = _(u'Организация')
