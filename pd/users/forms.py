@@ -5,7 +5,7 @@ from django.forms.models import inlineformset_factory, BaseInlineFormSet
 from django.utils.translation import ugettext_lazy as _
 from django.db.models.query_utils import Q
 from geo.forms import LocationForm
-from geo.models import DFiasAddrobj
+# from geo.models import DFiasAddrobj
 from pd.forms import ChildrenJSONMixin, LoggingFormMixin
 from burials.models import Cemetery
 
@@ -53,7 +53,7 @@ LoruFormset = inlineformset_factory(Org, ProfileLORU, fk_name='ugh', formset=Bas
 
 BankAccountFormset = inlineformset_factory(Org, BankAccount, formset=BaseLoruFormset, extra=2)
 
-FIAS_REGIONS = DFiasAddrobj.objects.filter(parentguid='').order_by('formalname')
+# FIAS_REGIONS = DFiasAddrobj.objects.filter(parentguid='').order_by('formalname')
 
 class ProfileForm(ChildrenJSONMixin, forms.ModelForm):
 
@@ -101,11 +101,11 @@ class ProfileForm(ChildrenJSONMixin, forms.ModelForm):
         return obj
 
 class UserProfileForm(ChildrenJSONMixin, forms.ModelForm):
-    region = forms.ModelChoiceField(label=_(u"Регион"), queryset=FIAS_REGIONS, required=False)
+    # region = forms.ModelChoiceField(label=_(u"Регион"), queryset=FIAS_REGIONS, required=False)
 
     class Meta:
         model = Profile
-        exclude = ['org', 'is_agent', 'region_fias', 'user']
+        exclude = ['org', 'is_agent', 'region_fias', 'country', 'user']
 
     def __init__(self, *args, **kwargs):
         super(UserProfileForm, self).__init__(*args, **kwargs)
@@ -114,23 +114,23 @@ class UserProfileForm(ChildrenJSONMixin, forms.ModelForm):
             Q(ugh__loru_list__loru=self.instance.org) |
             Q(ugh=self.instance.org)
         ).distinct()    
-        if self.instance.region_fias:
-            self.initial['region'] = self.instance.get_region()
+        #if self.instance.region_fias:
+            #self.initial['region'] = self.instance.get_region()
 
-    def save(self, commit=True, *args, **kwargs):
-        obj = super(UserProfileForm, self).save(commit=False, *args, **kwargs)
-        if self.cleaned_data['region']:
-            obj.region_fias = self.cleaned_data['region'].aoguid
-        if commit:
-            obj.save()
-        return obj
+    #def save(self, commit=True, *args, **kwargs):
+        #obj = super(UserProfileForm, self).save(commit=False, *args, **kwargs)
+        #if self.cleaned_data['region']:
+            #obj.region_fias = self.cleaned_data['region'].aoguid
+        #if commit:
+            #obj.save()
+        #return obj
 
 class UserDataForm(forms.ModelForm):
     is_agent = forms.BooleanField(label=_(u"Агент"), required=False)
 
     class Meta:
         model = User
-        fields = ['username', 'email', 'first_name', 'last_name', 'is_active' ,]
+        fields = ['username', 'email', 'is_active' ,]
 
     def __init__(self, *args, **kwargs):
         super(UserDataForm, self).__init__(*args, **kwargs)
