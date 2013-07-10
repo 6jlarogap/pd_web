@@ -205,7 +205,7 @@ class UserAddForm(CreateView):
 
 add_user = UserAddForm.as_view()
 
-class UserEditForm(UpdateView):
+class UserEditView(LoginRequiredMixin, UpdateView):
     template_name = 'edit_user.html'
     model = User
     form_class = UserDataForm
@@ -216,15 +216,23 @@ class UserEditForm(UpdateView):
             self.object.username,
         )
         messages.success(self.request, msg)
-        write_log(self.request, self.object, _(u'Изменены данные пользователя'))
         return reverse('edit_org', args=[self.object.profile.org.pk])
 
-    def dispatch(self, request, *args, **kwargs):
-        if not request.user.is_authenticated():
-            return redirect('/')
-        return super(UserEditForm, self).dispatch(request, *args, **kwargs)
-
-edit_user = UserEditForm.as_view()
+    def form_valid(self, form):
+        form.save()
+        if 'is_active' in form.changed_data:
+            msg = _(u'%s (%s) изменил(а) статус %s (%s) на %s') % \
+                    (self.request.user.profile.last_name_initials(),
+                     self.request.user.username,
+                     self.object.profile.last_name_initials(),
+                     self.object.username,
+                     _(u'активный') if self.object.is_active else _(u'неактивный'),
+                   )
+            write_log(self.request, self.object.profile.org, msg)
+        write_log(self.request, self.object, _(u'Изменены данные пользователя'))
+        return redirect(self.get_success_url())
+        
+edit_user = UserEditView.as_view()
 
 class OrgEditView(LoginRequiredMixin, UpdateView):
     template_name = 'edit_org.html'
@@ -269,10 +277,10 @@ class ChangePasswordView(LoginRequiredMixin, UpdateView):
             self.object.username,
         )
         messages.success(self.request, msg)
-        msg = _(u'%s (%s) изменил(а) пароль %s (%s)') % (self.request.user.username,
-                                                         self.request.user.profile.last_name_initials(),
-                                                         self.object.username,
+        msg = _(u'%s (%s) изменил(а) пароль %s (%s)') % (self.request.user.profile.last_name_initials(),
+                                                         self.request.user.username,
                                                          self.object.profile.last_name_initials(),
+                                                         self.object.username,
                                                         )
         write_log(self.request, self.object, msg)
         write_log(self.request, self.object.profile.org, msg)
