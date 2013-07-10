@@ -451,7 +451,6 @@ class Burial(SafeDeleteMixin, models.Model):
         else:
             algo = Org.NUM_EMPTY
         
-        year = str(datetime.datetime.now().year)
         if algo in [Org.NUM_YEAR_UGH, Org.NUM_YEAR_CEMETERY]:
             others = Burial.objects.none()
             if algo == Org.NUM_YEAR_UGH and ugh:
@@ -463,6 +462,7 @@ class Burial(SafeDeleteMixin, models.Model):
                 others = others.exclude(pk=self.pk)
 
             others = others.exclude(account_number__isnull=True).order_by('-account_number')
+            year = str(datetime.datetime.now().year)
             try:
                 num = others[0].account_number
                 if not num.startswith(year):
