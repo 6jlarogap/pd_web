@@ -1,23 +1,31 @@
 # -*- coding: utf-8 -*-
 import datetime
 from south.db import db
-from south.v2 import DataMigration
+from south.v2 import SchemaMigration
 from django.db import models
 
-class Migration(DataMigration):
 
-    depends_on = (
-        ("users", "0020_auto__del_field_profile_numbers_algo__add_field_org_numbers_algo"),
-    )
+class Migration(SchemaMigration):
 
     def forwards(self, orm):
-        "Write your forwards methods here."
-        # Note: Remember to use orm['appname.ModelName'] rather than "from appname.models..."
-        
-        orm['users.Org'].objects.filter(type='ugh').update(numbers_algo='year_cemetery')
+        # Deleting field 'Profile.numbers_algo'
+        db.delete_column('users_profile', 'numbers_algo')
+
+        # Adding field 'Org.numbers_algo'
+        db.add_column('users_org', 'numbers_algo',
+                      self.gf('django.db.models.fields.CharField')(default='', max_length=255, blank=True),
+                      keep_default=False)
+
 
     def backwards(self, orm):
-        "Write your backwards methods here."
+        # Adding field 'Profile.numbers_algo'
+        db.add_column('users_profile', 'numbers_algo',
+                      self.gf('django.db.models.fields.CharField')(default='', max_length=255, blank=True),
+                      keep_default=False)
+
+        # Deleting field 'Org.numbers_algo'
+        db.delete_column('users_org', 'numbers_algo')
+
 
     models = {
         'auth.group': {
@@ -182,4 +190,3 @@ class Migration(DataMigration):
     }
 
     complete_apps = ['users']
-    symmetrical = True
