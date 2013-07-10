@@ -771,7 +771,7 @@ class BurialCommitForm(BurialForm):
                         msg = _(u"Не верно указан номер документа")
                         raise forms.ValidationError(msg)
 
-            if self.request.user.profile.numbers_algo in (Profile.NUM_YEAR_UGH, Profile.NUM_YEAR_CEMETERY) and \
+            if self.request.user.profile.org.numbers_algo in (Org.NUM_YEAR_UGH, Org.NUM_YEAR_CEMETERY) and \
                self.cleaned_data.get('account_number') and self.cleaned_data.get('fact_date'):
                 acc_number = self.cleaned_data.get('account_number')
                 fact_date  = self.cleaned_data.get('fact_date')

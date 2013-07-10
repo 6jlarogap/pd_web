@@ -69,7 +69,7 @@ class ProfileForm(ChildrenJSONMixin, forms.ModelForm):
 
     class Meta:
         model = Profile
-        exclude = ['org', 'is_agent', 'region_fias', 'user', 'country', 'cemetery', 'area', 'numbers_algo']
+        exclude = ['org', 'is_agent', 'region_fias', 'user', 'country', 'cemetery', 'area', ]
 
     def __init__(self, *args, **kwargs):
         super(ProfileForm, self).__init__(*args, **kwargs)
@@ -193,6 +193,8 @@ class OrgForm(BaseOrgForm):
         self.address_form = LocationForm(data=self.data or None, prefix='address', instance=self.instance.off_address)
         self.forms = [self.address_form, ]
         self.bank_formset = BankAccountFormset(data=request.POST or None, instance=request.user.profile.org)
+        if not self.request.user.profile.is_ugh():
+            del self.fields['numbers_algo']
         if self.request.user.profile.org.pk == self.instance.pk:
             choices = []
             for profile_type in Org.PROFILE_TYPES:

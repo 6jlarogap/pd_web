@@ -444,15 +444,23 @@ class Burial(SafeDeleteMixin, models.Model):
         return self.applicant_organization and self.applicant_organization.name or ''
 
     def set_account_number(self, user):
-        ugh = self.ugh or user.profile.org
-        algo = user.profile.numbers_algo
+        ugh = None
         cemetery = self.cemetery
+        if user.profile.is_ugh():
+            ugh = user.profile.org
+        elif user.profile.is_loru() and self.cemetery:
+            ugh = self.cemetery.ugh
+        if ugh:
+            algo = ugh.numbers_algo
+        else:
+            algo = Org.NUM_EMPTY
+        
         year = str(datetime.datetime.now().year)
-        if algo in [Profile.NUM_YEAR_UGH, Profile.NUM_YEAR_CEMETERY]:
+        if algo in [Org.NUM_YEAR_UGH, Org.NUM_YEAR_CEMETERY]:
             others = Burial.objects.none()
-            if algo == Profile.NUM_YEAR_UGH and ugh:
+            if algo == Org.NUM_YEAR_UGH:
                 others = Burial.objects.filter(ugh=ugh)
-            elif algo == Profile.NUM_YEAR_CEMETERY and cemetery:
+            elif algo == Org.NUM_YEAR_CEMETERY and cemetery:
                 others = Burial.objects.filter(cemetery=cemetery)
 
             if self.pk:
