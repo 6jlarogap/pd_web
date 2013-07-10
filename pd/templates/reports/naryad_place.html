@@ -4,20 +4,26 @@
         <TD COLSPAN="2" STYLE="1px solid #000000" ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000" STYLE="font-size: 140%">
             Участок: {% if order.burial.area.name %}{{ order.burial.area.name}}{% else %}(без названия){% endif %}</FONT>
         </TD>
-        <TD COLSPAN="1" STYLE="1px solid #000000" ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000" STYLE="font-size: 140%">
+        <TD STYLE="1px solid #000000" ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000" STYLE="font-size: 140%">
             Ряд: {{ order.burial.row|default_if_none:"" }}</FONT>
         </TD>
         {% if order.burial.place_number %}
-            <TD COLSPAN="2" STYLE="1px solid #000000" ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000" STYLE="font-size: 140%">
+            <TD STYLE="1px solid #000000" ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000" STYLE="font-size: 140%">
                 Место: {{ order.burial.place.place|default:order.burial.place_number|default_if_none:"" }}</FONT>
             </TD>
             <TD COLSPAN="2" STYLE="1px solid #000000" ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000" STYLE="font-size: 140%">
-                Могила: {{ order.burial.grave_number|default_if_none:"" }}</FONT>
+                Могила: {{ order.burial.grave_number|default_if_none:"" }}
+                {% if order.burial.account_number %}
+                    <br />Рег. № захоронения:<br />{{ order.burial.account_number }}
+                {% endif %}
+                </FONT>
             </TD>
         {% else %}
             <TD STYLE="1px solid #000000" ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000" STYLE="font-size: 140%">Место:<br /> новое</FONT>
-            <TD COLSPAN="2" STYLE="1px solid #000000" ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000" STYLE="font-size: 140%">
-                Рег. № захоронения:<br /> {{ order.burial.account_number|default_if_none:"" }}</FONT>
+            {% if order.burial.account_number %}
+                <TD COLSPAN="2" STYLE="1px solid #000000" ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000" STYLE="font-size: 140%">
+                    Рег. № захоронения:<br /> {{ order.burial.account_number }}</FONT>
+            {% endif %}
         {% endif %}
     </TR>
     {% endif %}
