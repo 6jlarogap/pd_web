@@ -258,7 +258,7 @@ class OrgEditView(LoginRequiredMixin, UpdateView):
 
 edit_org = OrgEditView.as_view()
 
-class ChangePasswordForm(UpdateView):
+class ChangePasswordView(LoginRequiredMixin, UpdateView):
     template_name = 'change_password.html'
     model = User
     form_class = ChangePasswordForm
@@ -269,15 +269,16 @@ class ChangePasswordForm(UpdateView):
             self.object.username,
         )
         messages.success(self.request, msg)
-        write_log(self.request, self.object, _(u'Пароль изменен'))
+        msg = _(u'%s (%s) изменил(а) пароль %s (%s)') % (self.request.user.username,
+                                                         self.request.user.profile.last_name_initials(),
+                                                         self.object.username,
+                                                         self.object.profile.last_name_initials(),
+                                                        )
+        write_log(self.request, self.object, msg)
+        write_log(self.request, self.object.profile.org, msg)
         return reverse('edit_org', args=[self.object.profile.org.pk])
 
-    def dispatch(self, request, *args, **kwargs):
-        if not request.user.is_authenticated():
-            return redirect('/')
-        return super(ChangePasswordForm, self).dispatch(request, *args, **kwargs)
-
-change_password = ChangePasswordForm.as_view()
+change_password = ChangePasswordView.as_view()
 
 
 class AutocompleteOrg(View):
