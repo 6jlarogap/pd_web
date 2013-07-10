@@ -5,7 +5,7 @@ from django.forms.models import inlineformset_factory, BaseInlineFormSet
 from django.utils.translation import ugettext_lazy as _
 from django.db.models.query_utils import Q
 from geo.forms import LocationForm
-from geo.models import DFiasAddrobj
+# from geo.models import DFiasAddrobj
 from pd.forms import ChildrenJSONMixin, LoggingFormMixin
 from burials.models import Cemetery
 
@@ -53,7 +53,7 @@ LoruFormset = inlineformset_factory(Org, ProfileLORU, fk_name='ugh', formset=Bas
 
 BankAccountFormset = inlineformset_factory(Org, BankAccount, formset=BaseLoruFormset, extra=2)
 
-FIAS_REGIONS = DFiasAddrobj.objects.filter(parentguid='').order_by('formalname')
+# FIAS_REGIONS = DFiasAddrobj.objects.filter(parentguid='').order_by('formalname')
 
 class ProfileForm(ChildrenJSONMixin, forms.ModelForm):
 
