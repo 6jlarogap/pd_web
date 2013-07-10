@@ -1048,7 +1048,7 @@ class AddDoverForm(forms.ModelForm):
 class AddOrgForm(BaseOrgForm):
     class Meta:
         model = Org
-        exclude = ['off_address', ]
+        exclude = ['off_address', 'numbers_algo', ]
     
     def __init__(self, request, *args, **kwargs):
         super(AddOrgForm, self).__init__(request, *args, **kwargs)
