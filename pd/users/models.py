@@ -74,8 +74,8 @@ class Profile(models.Model):
 
 class Org(models.Model):
     NUM_EMPTY = ''
-    NUM_YEAR_UGH = 'ugh'
-    NUM_YEAR_CEMETERY = 'cemetery'
+    NUM_YEAR_UGH = 'year_ugh'
+    NUM_YEAR_CEMETERY = 'year_cemetery'
     NUM_TYPES = (
         (NUM_EMPTY, _(u'Оставить пустым')),
         (NUM_YEAR_UGH, _(u'Год + порядковый (в пределах УГХ)')),
