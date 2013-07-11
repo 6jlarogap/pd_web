@@ -453,20 +453,19 @@ class Burial(SafeDeleteMixin, models.Model):
         
         if algo in [Org.NUM_YEAR_UGH, Org.NUM_YEAR_CEMETERY]:
             others = Burial.objects.none()
+            year = str(datetime.datetime.now().year)
+            an_regex = r'^%s\d+$' % year
             if algo == Org.NUM_YEAR_UGH and ugh:
-                others = Burial.objects.filter(ugh=ugh)
+                others = Burial.objects.filter(ugh=ugh, account_number__regex=an_regex)
             elif algo == Org.NUM_YEAR_CEMETERY and cemetery:
-                others = Burial.objects.filter(cemetery=cemetery)
+                others = Burial.objects.filter(cemetery=cemetery, account_number__regex=an_regex)
 
             if self.pk:
                 others = others.exclude(pk=self.pk)
 
-            others = others.exclude(account_number__isnull=True).order_by('-account_number')
-            year = str(datetime.datetime.now().year)
+            others = others.order_by('-account_number')
             try:
                 num = others[0].account_number
-                if not num.startswith(year):
-                    num = None
                 self.account_number = int(num) + 1
             except (IndexError, ValueError, TypeError):
                 self.account_number = year + '0001'
