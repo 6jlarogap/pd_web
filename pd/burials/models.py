@@ -158,6 +158,7 @@ class Place(SafeDeleteMixin, models.Model):
 
     def set_next_number(self, **params):
         other_places = Place.objects.filter(**params)
+        other_places = other_places.filter(place__regex=r'^\d+$')
         try:
             self.place = int(other_places.order_by('-place')[0].place) + 1
         except (ValueError, IndexError, TypeError):
@@ -166,11 +167,9 @@ class Place(SafeDeleteMixin, models.Model):
     def set_next_number_for_year(self, **params):
         year = str(datetime.datetime.now().year)
         other_places = Place.objects.filter(**params)
-        other_places = other_places.filter(place__startswith=year)
+        other_places = other_places.filter(place__regex=r'^%s\d+$' % year)
         try:
             last_num = other_places.order_by('-place')[0].place
-            if not last_num.startswith(year):
-                last_num = None
             self.place = int(last_num) + 1
         except (ValueError, IndexError, TypeError):
             self.place = year + '0001'
