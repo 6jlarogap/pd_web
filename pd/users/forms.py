@@ -155,7 +155,7 @@ class ChangePasswordForm(forms.ModelForm):
     password2 = forms.CharField(label=_(u"Пароль (повторите)"), widget=forms.PasswordInput())
 
     def clean(self):
-        if self.cleaned_data['password1'] != self.cleaned_data['password2']:
+        if self.is_valid() and self.cleaned_data['password1'] != self.cleaned_data['password2']:
             raise forms.ValidationError(_(u"Пароли не совпадают"))
         return self.cleaned_data
 
