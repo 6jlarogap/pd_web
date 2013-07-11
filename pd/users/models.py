@@ -9,15 +9,6 @@ from pd.utils import DigitsValidator, LengthValidator, NotEmptyValidator
 
 
 class Profile(models.Model):
-    NUM_EMPTY = ''
-    NUM_YEAR_UGH = 'area'
-    NUM_YEAR_CEMETERY = 'row'
-    NUM_TYPES = (
-        (NUM_EMPTY, _(u'Оставить пустым')),
-        (NUM_YEAR_UGH, _(u'Год + порядковый (в пределах УГХ)')),
-        (NUM_YEAR_CEMETERY, _(u'Год + порядковый (в пределах кладбища)')),
-    )
-
     user = models.OneToOneField('auth.User', null=True)
     user_first_name = models.CharField(_(u"Имя"), max_length=255, null=True, blank=True)
     user_middle_name = models.CharField(_(u"Отчество"), max_length=255, null=True, blank=True)
@@ -25,9 +16,6 @@ class Profile(models.Model):
     org = models.ForeignKey('users.Org', null=True)
 
     is_agent = models.BooleanField(_(u"Агент"), default=False, blank=True)
-
-    numbers_algo = models.CharField(_(u"Заполнение номера захоронения"), max_length=255, choices=NUM_TYPES,
-                                    default=NUM_EMPTY, blank=True)
 
     cemetery = models.ForeignKey('burials.Cemetery', verbose_name=_(u"Кладбище"), blank=True, null=True)
     area = models.ForeignKey('burials.Area', verbose_name=_(u"Участок"), blank=True, null=True)
@@ -85,6 +73,15 @@ class Profile(models.Model):
         return ''
 
 class Org(models.Model):
+    NUM_EMPTY = ''
+    NUM_YEAR_UGH = 'year_ugh'
+    NUM_YEAR_CEMETERY = 'year_cemetery'
+    NUM_TYPES = (
+        (NUM_EMPTY, _(u'Оставить пустым')),
+        (NUM_YEAR_UGH, _(u'Год + порядковый (в пределах УГХ)')),
+        (NUM_YEAR_CEMETERY, _(u'Год + порядковый (в пределах кладбища)')),
+    )
+
     PROFILE_ZAGS = 'zags'
     PROFILE_LORU = 'loru'
     PROFILE_UGH = 'ugh'
@@ -106,6 +103,8 @@ class Org(models.Model):
     email = models.EmailField(_(u"Email"), null=True, blank=True)
     phones = models.TextField(_(u"Телефоны"), blank=True, null=True)
     off_address = models.ForeignKey('geo.Location', verbose_name=_(u"Юр. адрес"), null=True, blank=True)
+    numbers_algo = models.CharField(_(u"Заполнение номера захоронения"), max_length=255, choices=NUM_TYPES,
+                                    default=NUM_EMPTY, blank=True)
 
     class Meta:
         verbose_name = _(u'Организация')
