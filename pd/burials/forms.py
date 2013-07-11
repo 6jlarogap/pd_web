@@ -201,7 +201,7 @@ class BurialPublicListForm(forms.Form):
         (100, 100),
     )
 
-    fio = forms.CharField(required=False, max_length=100, label=_(u"ФИО"))
+    fio = forms.CharField(required=True, max_length=100, label=_(u"ФИО"))
     birth_date_from = forms.DateField(required=False, label=_(u"Дата рожд. с"))
     birth_date_to = forms.DateField(required=False, label=_(u"по"))
     death_date_from = forms.DateField(required=False, label=_(u"Дата смерти с"))
@@ -210,16 +210,11 @@ class BurialPublicListForm(forms.Form):
     burial_date_to = forms.DateField(required=False, label=_(u"по"))
     account_number_from = forms.IntegerField(required=False, label=_(u"Рег. № с"))
     account_number_to = forms.IntegerField(required=False, label=_(u"по"))
-    cemetery = forms.CharField(required=False, label=_(u"Кладбище"))
+    cemetery = forms.CharField(required=True, label=_(u"Кладбище"))
     area = forms.CharField(required=False, label=_(u"Участок"))
     row = forms.CharField(required=False, label=_(u"Ряд"))
     place = forms.CharField(required=False, label=_(u"Место"))
     per_page = forms.ChoiceField(label=_(u"На странице"), choices=PAGE_CHOICES, initial=25, required=False)
-
-    def __init__(self, *args, **kwargs):
-        super(BurialPublicListForm, self).__init__(*args, **kwargs)
-        self.fields['fio'].required = True
-        self.fields['cemetery'].required = True
 
 class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDeleteMixin, StrippedStringsMixin, forms.ModelForm):
     COFFIN = 'coffin'
