@@ -102,8 +102,34 @@ def shuffle_fields(model, fields, tries=10):
             m.objects.filter(pk=rec.pk).update(**kwargs_update)
         print message.format(i, query_count, failed_tries_count)
 
+@transaction.commit_on_success
+def set_pwds_as_names():
+    """Установить у всех пользователей пароли, как имена регистрации"""
+
+    message = " {0} passwords of total {1} set"
+    print u"Setting passwords as usernames"
+
+    m = get_model("auth", "User")
+    query = m.objects.all()
+    query_count = query.count()
+    i = 0
+    for user in query:
+        i += 1
+        if not i % 200:
+            transaction.commit()
+            print message.format(i, query_count)
+        user.set_password(user.username)
+        user.save()
+    print message.format(i, query_count)
+
 # --------------------------------------------------------------------
 
+set_pwds_as_names()
+
+shuffle_fields('auth.User',
+               ('first_name:clear', 'last_name:clear',
+                'email:clear', )
+)
 shuffle_fields('burials.Cemetery',
                ('name', 'address:null', )
 )
@@ -111,10 +137,6 @@ shuffle_fields('users.Profile',
                ('user_first_name', 'user_middle_name',
                 'user_last_name',
                )
-)
-shuffle_fields('auth.User',
-               ('first_name', 'last_name',
-                'email:clear', )
 )
 shuffle_fields('users.Org',
                ('name', 'full_name', 'inn',
