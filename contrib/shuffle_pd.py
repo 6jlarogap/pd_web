@@ -1,14 +1,20 @@
 # coding=utf-8
 #
-# shuffle_pd.py,        перетасовать персональные данные
+# shuffle_pd.py,         shuffle personal data
+#                       (перетасовать персональные данные)
 #
 # Запуск из ./manage.py shell :
 #  execfile('/path/to/this/file.py')
 
-import random
 from django.db import transaction
 from django.db.models import get_model
 from django.db.models.query_utils import Q
+
+try:
+    from random import SystemRandom
+    random = SystemRandom()
+except ImportError:
+    import random
 
 @transaction.commit_on_success
 def shuffle_fields(model, fields, tries=10):
@@ -23,7 +29,13 @@ def shuffle_fields(model, fields, tries=10):
                  таблице-модели.
                * Или таким: 'email:clear', тогда там ставится
                  пустая строка, это для символьных not null-
-                 полей. Иначе...
+                 полей.
+               * Или таким: 'name:index:Нач строка '
+                 Тогда каждая запись в этом поле меняется на 
+                 'Нач строка 1', 'Нач строка 2', где 1, 2 -
+                 содержимое первичного ключа соответствующих
+                 строк.
+                 Иначе...
     Проходим по таблице модели model, по полям fields,
     выбираем оттуда только непустые значения соответствующего
     поля (not null, и если поле символьное, еще != '').
@@ -43,7 +55,7 @@ def shuffle_fields(model, fields, tries=10):
     
     for f in fields:
         try:
-            f, action = f.split(":")
+            f, action = f.split(":", 1)
         except ValueError:
             action = ''
         print u" field: '{0}'".format(f)
@@ -57,6 +69,10 @@ def shuffle_fields(model, fields, tries=10):
             kwargs_update = { f: '',}
             m.objects.all().update(**kwargs_update)
             continue
+        elif action.lower().startswith('index:'):
+            index = action[6:]
+            action = 'index'
+            print u" - setting the field values as '{0}<number>'".format(index)
         elif not action:
             pass
         else:
@@ -81,6 +97,7 @@ def shuffle_fields(model, fields, tries=10):
 
         failed_tries_count = 0
         i = 0
+        random.seed()
         for rec in query:
             i += 1
             if not i % 200:
@@ -88,16 +105,18 @@ def shuffle_fields(model, fields, tries=10):
                 random.seed()
                 print message.format(i, query_count, failed_tries_count)
 
-            val = rec.__dict__[f_id]
-            for tries_ in range(tries):
-                r = random.randrange(distincts.count())
-                val_new = distincts[r].__dict__[f_id]
-                if val_new != val:
-                    break
-                random.seed()
+            if action == 'index':
+                val_new = index + str(rec.pk)
             else:
-                failed_tries_count += 1
-                continue
+                val = rec.__dict__[f_id]
+                for tries_ in range(tries):
+                    r = random.randrange(distincts.count())
+                    val_new = distincts[r].__dict__[f_id]
+                    if val_new != val:
+                        break
+                else:
+                    failed_tries_count += 1
+                    continue
             kwargs_update = { f: val_new,}
             m.objects.filter(pk=rec.pk).update(**kwargs_update)
         print message.format(i, query_count, failed_tries_count)
@@ -131,7 +150,7 @@ shuffle_fields('auth.User',
                 'email:clear', )
 )
 shuffle_fields('burials.Cemetery',
-               ('name', 'address:null', )
+               (u'name:index:Кладбище ', 'address:null', )
 )
 shuffle_fields('users.Profile',
                ('user_first_name', 'user_middle_name',
@@ -139,7 +158,9 @@ shuffle_fields('users.Profile',
                )
 )
 shuffle_fields('users.Org',
-               ('name', 'full_name', 'inn',
+               (u'name:index:Организация ',
+                u'full_name:index:Организация ',
+                'inn:index:00000', 
                 'director', 'email:clear', 'phones:clear',
                 'off_address:null',
                )
