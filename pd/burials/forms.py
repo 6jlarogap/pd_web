@@ -87,22 +87,22 @@ AreaFormset = inlineformset_factory(Cemetery, Area, formset=BaseAreaFormset, can
 class PlaceEditForm(forms.ModelForm):
     class Meta:
         model = Place
-        fields = ['places_count']
+#        fields = ['places_count']
 
-    def __init__(self, *args, **kwargs):
-        super(PlaceEditForm, self).__init__(*args, **kwargs)
-        if not self.instance.places_count:
-            if self.instance.area:
-                self.initial['places_count'] = self.instance.area.places_count
-            else:
-                self.initial['places_count'] = 1
+#    def __init__(self, *args, **kwargs):
+#        super(PlaceEditForm, self).__init__(*args, **kwargs)
+#        if not self.instance.places_count:
+#            if self.instance.area:
+#                self.initial['places_count'] = self.instance.area.places_count
+#            else:
+#                self.initial['places_count'] = 1
 
-    def clean_places_count(self):
-        burials = self.instance.burials_available()
-        max_num = burials.aggregate(max=Max('grave_number')).get('max') or 1
-        if self.cleaned_data['places_count'] < max_num:
-            raise forms.ValidationError(_(u"Нельзя установить меньше %s, столько могил уже занято") % max_num)
-        return self.cleaned_data['places_count']
+#    def clean_places_count(self):
+#        burials = self.instance.burials_available()
+#        max_num = burials.aggregate(max=Max('grave_number')).get('max') or 1
+#        if self.cleaned_data['places_count'] < max_num:
+#            raise forms.ValidationError(_(u"Нельзя установить меньше %s, столько могил уже занято") % max_num)
+#        return self.cleaned_data['places_count']
 
 EMPTY = (('', '--------'),)
 

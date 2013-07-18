@@ -145,12 +145,7 @@ class Place(SafeDeleteMixin, models.Model):
         return self.burials_available().distinct('grave_number').count()
 
     def get_places_count(self):
-        if self.places_count is not None:
-            return self.places_count
-        elif self.area and self.area.places_count is not None:
-            return self.area.places_count
-        else:
-            return 1
+        return self.grave_set.all().count()
 
     def get_available_count(self):
         return max(0, self.get_places_count() - self.burial_count())
@@ -213,7 +208,7 @@ def photo_file(instance, filename):
     fname = u'.'.join(map(pytils.translit.slugify, filename.rsplit('.', 1)))
     d = datetime.date.today()
     return os.path.join('photos',
-                        "{0:d}-{1:02d}-{2:02d}".format(d.year, d.month, d.day),
+                        "{0:d}/{1:02d}/{2:02d}".format(d.year, d.month, d.day),
                          fname)
 
 class Photo(models.Model):
