@@ -10,6 +10,12 @@ from pd.models import UnclearDateModelField
 import os
 import pytils
 
+try:
+    from random import SystemRandom
+    random = SystemRandom()
+except ImportError:
+    import random
+
 from persons.models import DeadPerson, SafeDeleteMixin
 from reports.models import Report
 from users.models import Org, Profile, Dover
@@ -126,6 +132,7 @@ class Place(SafeDeleteMixin, models.Model):
                              on_delete=models.PROTECT)
     row = models.CharField(_(u"Ряд"), max_length=255, blank=True, null=True)
     place = models.CharField(_(u"Место"), max_length=255, blank=True, null=True)
+    # Будет удалено в следующей миграции
     places_count = models.PositiveIntegerField(_(u"Кол-во могил"), null=True)
     responsible = models.ForeignKey('persons.AlivePerson', verbose_name=_(u"Ответственный"), blank=True, null=True,
                                     on_delete=models.PROTECT)
@@ -207,12 +214,29 @@ class Place(SafeDeleteMixin, models.Model):
 class Grave(models.Model):
 
     place = models.ForeignKey(Place, verbose_name=_(u"Место"))
-    name = models.CharField(_(u"Номер"), max_length=10)
+    # Имя поля -- как в burial, чтобы меньше было путаницы:
+    grave_number = models.PositiveSmallIntegerField(_(u"Номер"), default=1)
 
+def photo_file(instance, filename):
+    fname = u'.'.join(map(pytils.translit.slugify, filename.rsplit('.', 1)))
+    dir_ = hex(random.randrange(256))[2:].lower()
+    subdir_ = hex(random.randrange(256))[2:].lower()
+    return os.path.join('photos', dir_, subdir_, fname)
+
+class Photo(models.Model):
+
+    photo = models.FileField(u"Фото", upload_to=photo_file)
+    comment = models.TextField(verbose_name=_(u"Описание"))
+    
 class GravePhoto(models.Model):
 
-    grave = models.ForeignKey(Grave, verbose_name=_(u"Место"))
-    photo = models.FileField(u"Фото", upload_to='photos')
+    grave = models.ForeignKey(Grave, verbose_name=_(u"Могила"))
+    photo = models.ForeignKey(Photo, verbose_name=_(u"Фото"))
+    
+class PlacePhoto(models.Model):
+
+    place = models.ForeignKey(Place, verbose_name=_(u"Могила"))
+    photo = models.ForeignKey(Photo, verbose_name=_(u"Фото"))
     
 class Burial(SafeDeleteMixin, models.Model):
     STATUS_BACKED = 'backed'
