@@ -15,6 +15,9 @@ class Migration(DataMigration):
         # т.е. закрытых и эксгумированных, сущности могил
 
         graves = orm['burials.Grave'].objects
+        burials = orm['burials.Burial'].objects
+        places = orm['burials.Place'].objects
+        
         # На этапе этой миграции не может быть каких-то могил в базе.
         # Модель Grave была внесена, но не использовалась.
         #
@@ -22,32 +25,34 @@ class Migration(DataMigration):
 
         # Делаем сущности могил в количестве, указанном в месте:
         #
-        count = 0
-        for place in orm['burials.Place'].objects.all():
+        count1 = 0
+        for place in places.all():
             if place.places_count is None:
                 place.places_count = place.area.places_count or 1
+                place.save()
             for n in range(1, place.places_count + 1):
                 graves.create(place=place, grave_number=n,)
-                count += 1
-        print '*** %s graves created according to Place.graves_count' % count
+                count1 += 1
 
-        # Вдруг оказались захоронения, в которых указали grave_number
-        # больше, чем число могил в месте:
+        # Назначаем эти сущности захоронениям:
         #
-        count = 0
-        for burial in orm['burials.Burial'].objects.filter(\
-                place__isnull=False, 
-                place__places_count__isnull=False,
-            ):
-            # К сожалению, не удалось заставить F() работать в миграции...
+        count2 = 0
+        for burial in burials.filter(place__isnull=False):
+            # Вдруг оказались захоронения, в которых указали grave_number
+            # больше, чем число могил в месте? :
+            #
             if burial.grave_number > burial.place.places_count:
                 for n in range(1, burial.grave_number + 1):
                     grave, created = graves.get_or_create(place=burial.place,
                                                           grave_number=n,
                     )
                     if created:
-                        count += 1
-        print '*** %s graves created if grave_number > Place.graves_count' % count
+                        count2 += 1
+            grave = graves.get(place=burial.place, grave_number=burial.grave_number)
+            burials.filter(pk=burial.pk).update(grave=grave)
+
+        print '*** %s graves created according to Place.graves_count' % count1
+        print '*** %s graves created if grave_number > Place.graves_count' % count2
 
     def backwards(self, orm):
         "Write your backwards methods here."
