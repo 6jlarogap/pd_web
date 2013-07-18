@@ -223,7 +223,7 @@ def photo_file(instance, filename):
 
 class Photo(models.Model):
     photo = models.FileField(u"Фото", upload_to=photo_file)
-    comment = models.TextField(verbose_name=_(u"Описание"))
+    comment = models.TextField(verbose_name=_(u"Описание"), blank=True, null=True)
     
 class GravePhoto(models.Model):
     grave = models.ForeignKey(Grave, verbose_name=_(u"Могила"))
