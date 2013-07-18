@@ -132,8 +132,6 @@ class Place(SafeDeleteMixin, models.Model):
                              on_delete=models.PROTECT)
     row = models.CharField(_(u"Ряд"), max_length=255, blank=True, null=True)
     place = models.CharField(_(u"Место"), max_length=255, blank=True, null=True)
-    # Будет удалено в следующей миграции
-    places_count = models.PositiveIntegerField(_(u"Кол-во могил"), null=True)
     responsible = models.ForeignKey('persons.AlivePerson', verbose_name=_(u"Ответственный"), blank=True, null=True,
                                     on_delete=models.PROTECT)
 
@@ -213,7 +211,6 @@ class Place(SafeDeleteMixin, models.Model):
 
 class Grave(models.Model):
     place = models.ForeignKey(Place, verbose_name=_(u"Место"))
-    # Имя поля -- как в burial, чтобы меньше было путаницы:
     grave_number = models.PositiveSmallIntegerField(_(u"Номер"), default=1)
 
 def photo_file(instance, filename):
@@ -228,10 +225,6 @@ class Photo(models.Model):
     
 class GravePhoto(models.Model):
     grave = models.ForeignKey(Grave, verbose_name=_(u"Могила"))
-    photo = models.ForeignKey(Photo, verbose_name=_(u"Фото"))
-    
-class PlacePhoto(models.Model):
-    place = models.ForeignKey(Place, verbose_name=_(u"Могила"))
     photo = models.ForeignKey(Photo, verbose_name=_(u"Фото"))
     
 class Burial(SafeDeleteMixin, models.Model):
