@@ -224,17 +224,14 @@ def photo_file(instance, filename):
     return os.path.join('photos', dir_, subdir_, fname)
 
 class Photo(models.Model):
-
     photo = models.FileField(u"Фото", upload_to=photo_file)
     comment = models.TextField(verbose_name=_(u"Описание"))
     
 class GravePhoto(models.Model):
-
     grave = models.ForeignKey(Grave, verbose_name=_(u"Могила"))
     photo = models.ForeignKey(Photo, verbose_name=_(u"Фото"))
     
 class PlacePhoto(models.Model):
-
     place = models.ForeignKey(Place, verbose_name=_(u"Могила"))
     photo = models.ForeignKey(Photo, verbose_name=_(u"Фото"))
     
