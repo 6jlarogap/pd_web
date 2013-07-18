@@ -145,7 +145,7 @@ class Place(SafeDeleteMixin, models.Model):
         return self.burials_available().distinct('grave_number').count()
 
     def get_places_count(self):
-        return self.grave_set.all().count()
+        return self.grave_set.count()
 
     def get_available_count(self):
         return max(0, self.get_places_count() - self.burial_count())
