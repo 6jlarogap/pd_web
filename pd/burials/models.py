@@ -10,12 +10,6 @@ from pd.models import UnclearDateModelField
 import os
 import pytils
 
-try:
-    from random import SystemRandom
-    random = SystemRandom()
-except ImportError:
-    import random
-
 from persons.models import DeadPerson, SafeDeleteMixin
 from reports.models import Report
 from users.models import Org, Profile, Dover
@@ -217,9 +211,10 @@ class Grave(models.Model):
 
 def photo_file(instance, filename):
     fname = u'.'.join(map(pytils.translit.slugify, filename.rsplit('.', 1)))
-    dir_ = hex(random.randrange(256))[2:].lower()
-    subdir_ = hex(random.randrange(256))[2:].lower()
-    return os.path.join('photos', dir_, subdir_, fname)
+    d = datetime.date.today()
+    return os.path.join('photos',
+                        "{0:d}-{1:02d}-{2:02d}".format(d.year, d.month, d.day),
+                         fname)
 
 class Photo(models.Model):
     photo = models.FileField(u"Фото", upload_to=photo_file)
