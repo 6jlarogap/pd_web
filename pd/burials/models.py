@@ -212,6 +212,8 @@ class Place(SafeDeleteMixin, models.Model):
 class Grave(models.Model):
     place = models.ForeignKey(Place, verbose_name=_(u"Место"))
     grave_number = models.PositiveSmallIntegerField(_(u"Номер"), default=1)
+    lat = models.FloatField(_(u"Широта"), blank=True, null=True)
+    lng = models.FloatField(_(u"Долгота"), blank=True, null=True)
 
 def photo_file(instance, filename):
     fname = u'.'.join(map(pytils.translit.slugify, filename.rsplit('.', 1)))
