@@ -212,7 +212,6 @@ class Place(SafeDeleteMixin, models.Model):
         return super(Place, self).save(*args, **kwargs)
 
 class Grave(models.Model):
-
     place = models.ForeignKey(Place, verbose_name=_(u"Место"))
     # Имя поля -- как в burial, чтобы меньше было путаницы:
     grave_number = models.PositiveSmallIntegerField(_(u"Номер"), default=1)
