@@ -663,9 +663,9 @@ def files_upload_to(instance, filename):
     fname = u'.'.join(map(pytils.translit.slugify, filename.rsplit('.', 1)))
     if isinstance(instance, BurialFiles):
         return os.path.join('bfiles', str(instance.burial.pk), fname)
-    if isinstance(instance, PlaceStatusFiles):
+    elif isinstance(instance, PlaceStatusFiles):
         return os.path.join('place-status-files', str(instance.placestatus.pk), fname)
-    if isinstance(instance, Photo):
+    elif isinstance(instance, Photo):
         d = datetime.date.today()
         return os.path.join('photos',
                             "{0:d}/{1:02d}/{2:02d}".format(d.year, d.month, d.day),
