@@ -198,29 +198,38 @@ class Place(SafeDeleteMixin, models.Model):
                 self.set_next_number_for_year(cemetery=self.cemetery)
         return super(Place, self).save(*args, **kwargs)
 
+class PlaceStatus(models.Model):
+    PS_ACTUAL = 'actual'
+    PS_FOUND_UNOWNED = 'found-unowned'
+    PS_SIGNED = 'signed'
+    PS_RELATIVES_REJECTED = 'relatives-rejected'
+    PS_ACCEPTED_UNOWNED = 'accepted-unowned'
+    PS_RECOVERING = 'recovering'
+    PS_RECOVERED = 'recovered'
+    PS_OTHER = 'other'
+    PS_TYPES = (
+        (PS_ACTUAL, _(u'Действующее место')),
+        (PS_FOUND_UNOWNED, _(u'Обнаружено бесхозяйным')),
+        (PS_SIGNED, _(u'Установлена табличка')),
+        (PS_RELATIVES_REJECTED, _(u'Отказ родственников в признании бесхозяйным')),
+        (PS_ACCEPTED_UNOWNED, _(u'Признано бесхозяйным')),
+        (PS_RECOVERING, _(u'Готовится к повторному использованию')),
+        (PS_RECOVERED, _(u'Готово к повторному использованию')),
+        (PS_OTHER, _(u'Другой статус места')),
+    )
+    place = models.ForeignKey(Place, verbose_name=_(u"Место"))
+    status = models.CharField(_(u"Статус"), max_length=40, choices=PS_TYPES, default=PS_ACTUAL)
+    comment = models.TextField(verbose_name=_(u"Примечание"), blank=True, null=True)
+    creator = models.ForeignKey('auth.User', verbose_name=_(u"Создатель"), editable=False,
+                                on_delete=models.PROTECT)
+    date_of_creation = models.DateTimeField(auto_now_add=True)
+    
 class Grave(models.Model):
     place = models.ForeignKey(Place, verbose_name=_(u"Место"))
     grave_number = models.PositiveSmallIntegerField(_(u"Номер"), default=1)
     lat = models.FloatField(_(u"Широта"), blank=True, null=True)
     lng = models.FloatField(_(u"Долгота"), blank=True, null=True)
 
-def photo_file(instance, filename):
-    fname = u'.'.join(map(pytils.translit.slugify, filename.rsplit('.', 1)))
-    d = datetime.date.today()
-    return os.path.join('photos',
-                        "{0:d}/{1:02d}/{2:02d}".format(d.year, d.month, d.day),
-                         fname)
-
-class Photo(models.Model):
-    photo = models.FileField(u"Фото", upload_to=photo_file)
-    comment = models.TextField(verbose_name=_(u"Описание"), blank=True, null=True)
-    lat = models.FloatField(_(u"Широта"), blank=True, null=True)
-    lng = models.FloatField(_(u"Долгота"), blank=True, null=True)
-    
-class GravePhoto(models.Model):
-    grave = models.ForeignKey(Grave, verbose_name=_(u"Могила"))
-    photo = models.ForeignKey(Photo, verbose_name=_(u"Фото"))
-    
 class Burial(SafeDeleteMixin, models.Model):
     STATUS_BACKED = 'backed'
     STATUS_DECLINED = 'declined'
@@ -650,16 +659,28 @@ class Burial(SafeDeleteMixin, models.Model):
            result = self.account_number
         return result
     
-def burial_file(instance, filename):
+def files_upload_to(instance, filename):
     fname = u'.'.join(map(pytils.translit.slugify, filename.rsplit('.', 1)))
-    return os.path.join('bfiles', str(instance.burial.pk), fname)
+    if isinstance(instance, BurialFiles):
+        return os.path.join('bfiles', str(instance.burial.pk), fname)
+    if isinstance(instance, PlaceStatus):
+        return os.path.join('place-status-files', str(instance.placestatus.pk), fname)
+    if isinstance(instance, Photo):
+        d = datetime.date.today()
+        return os.path.join('photos',
+                            "{0:d}/{1:02d}/{2:02d}".format(d.year, d.month, d.day),
+                             fname)
+    else:
+        return os.path.join('files', fname)
 
-class BurialFiles(models.Model):
+class Files(models.Model):
     """
-    Файлы, связанные с захоронением
+    Базовый класс для файлов
     """
-    burial = models.ForeignKey(Burial)
-    bfile = models.FileField(u"Файл", upload_to=burial_file, blank=True)
+    class Meta:
+        abstract = True
+        
+    bfile = models.FileField(u"Файл", upload_to=files_upload_to, blank=True)
     comment = models.CharField(u"Описание", max_length=96, blank=True)
     original_name = models.CharField(max_length=255, editable=False)
     creator = models.ForeignKey('auth.User', verbose_name=_(u"Создатель"), editable=False, null=True,
@@ -671,8 +692,28 @@ class BurialFiles(models.Model):
             if os.path.exists(self.bfile.path):
                 os.remove(self.bfile.path)
             self.bfile = ""
-        super(BurialFiles, self).delete()
+        super(Files, self).delete()
 
+class BurialFiles(Files):
+    """
+    Файлы, связанные с захоронением
+    """
+    burial = models.ForeignKey(Burial)
+
+class PlaceStatusFiles(Files):
+    """
+    Файлы, связанные со статусом места
+    """
+    placestatus = models.ForeignKey(PlaceStatus)
+
+class Photo(Files):
+    lat = models.FloatField(_(u"Широта"), blank=True, null=True)
+    lng = models.FloatField(_(u"Долгота"), blank=True, null=True)
+    
+class GravePhoto(models.Model):
+    grave = models.ForeignKey(Grave, verbose_name=_(u"Могила"))
+    photo = models.ForeignKey(Photo, verbose_name=_(u"Фото"))
+    
 class Reason(models.Model):
     TYPE_BACK = 'back'
     TYPE_DECLINE = 'decline'
