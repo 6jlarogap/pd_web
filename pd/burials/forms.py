@@ -561,10 +561,10 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
             self.order.save()
 
         if self.bfiles_form.is_valid() and self.request.FILES.get('bfile'):
-            original_name=self.request.FILES.get('bfile').name
-            saved_file = self.bfiles_form.save(burial=self.instance, user=self.request.user,
-                                  original_name=original_name)
-            write_log(request, self.instance, _(u'Добавлен файл'), "%s, %s"% (saved_file.comment, original_name, ))
+            saved_file = self.bfiles_form.save(burial=self.instance, user=self.request.user)
+            write_log(request, self.instance,
+                     _(u'Добавлен файл'), "%s, %s" % (saved_file.comment, saved_file.original_name,)
+            )
 
         if self.instance.is_closed():
             self.instance.close(old_place=self.old_place)
@@ -607,11 +607,10 @@ class BurialFilesForm(forms.ModelForm):
             raise forms.ValidationError(_(u'Превышен максимальный размер файла') + u", %s Мб." % self.MAX_UPLOAD_SIZE_MB)
         return cleaned_data
 
-    def save(self, burial=None, user=None, original_name=None, commit=True, *args, **kwargs):
+    def save(self, burial=None, user=None, commit=True, *args, **kwargs):
         burial_file_rec = super(BurialFilesForm, self).save(commit=False, *args, **kwargs)
         burial_file_rec.burial = burial
         burial_file_rec.creator = user
-        burial_file_rec.original_name = original_name
         if commit:
             burial_file_rec.save()
         return burial_file_rec

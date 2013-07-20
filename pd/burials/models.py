@@ -202,7 +202,7 @@ class PlaceStatus(models.Model):
     PS_ACTUAL = 'actual'
     PS_FOUND_UNOWNED = 'found-unowned'
     PS_SIGNED = 'signed'
-    PS_RELATIVES_REJECTED = 'relatives-rejected'
+    PS_RESPONSIBLE_REJECTED = 'responsible-rejected'
     PS_ACCEPTED_UNOWNED = 'accepted-unowned'
     PS_RECOVERING = 'recovering'
     PS_RECOVERED = 'recovered'
@@ -211,7 +211,7 @@ class PlaceStatus(models.Model):
         (PS_ACTUAL, _(u'Действующее место')),
         (PS_FOUND_UNOWNED, _(u'Обнаружено бесхозяйным')),
         (PS_SIGNED, _(u'Установлена табличка')),
-        (PS_RELATIVES_REJECTED, _(u'Отказ родственников в признании бесхозяйным')),
+        (PS_RESPONSIBLE_REJECTED, _(u'Отказ ответственного от места')),
         (PS_ACCEPTED_UNOWNED, _(u'Признано бесхозяйным')),
         (PS_RECOVERING, _(u'Готовится к повторному использованию')),
         (PS_RECOVERED, _(u'Готово к повторному использованию')),
@@ -660,6 +660,7 @@ class Burial(SafeDeleteMixin, models.Model):
         return result
     
 def files_upload_to(instance, filename):
+    instance.original_name = filename
     fname = u'.'.join(map(pytils.translit.slugify, filename.rsplit('.', 1)))
     if isinstance(instance, BurialFiles):
         return os.path.join('bfiles', str(instance.burial.pk), fname)
