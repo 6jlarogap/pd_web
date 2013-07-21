@@ -31,9 +31,7 @@ from django.http import Http404
 class MobileGetCemetery(LoginRequiredMixin, View):
     def get(self, request, *args, **kwargs):        
         user = request.user
-        profile = Profile.objects.filter(user__id = user.id)[0]
-        org = Org.objects.filter(pk = profile.org.id)[0]
-        listCemetery = Cemetery.objects.filter(ugh__id = org.id).order_by('id')
+        listCemetery = Cemetery.objects.filter(ugh = user.profile.org).order_by('id')
         data = serializers.serialize("json", listCemetery, fields=('name'))
         return HttpResponse(data, mimetype='application/json')      
         
@@ -43,12 +41,10 @@ class MobileGetArea(LoginRequiredMixin, View):
     def get(self, request, *args, **kwargs):
         argCemeteryId = request.GET.get('cemeteryId', None)
         user = request.user
-        profile = Profile.objects.filter(user__id = user.id)[0]
-        org = Org.objects.filter(pk = profile.org.id)[0]
         if argCemeteryId :
-            listArea = Area.objects.filter(cemetery__ugh__id = org.id).filter(cemetery_id = argCemeteryId).order_by('cemetery', 'id')
+            listArea = Area.objects.filter(cemetery__ugh = user.profile.org).filter(cemetery_id = argCemeteryId).order_by('cemetery', 'id')
         else :
-            listArea = Area.objects.filter(cemetery__ugh__id = org.id).order_by('cemetery', 'id')
+            listArea = Area.objects.filter(cemetery__ugh = user.profile.org).order_by('cemetery', 'id')
         data = serializers.serialize("json", listArea, fields=('cemetery','name'))
         return HttpResponse(data, mimetype='application/json')
                 
@@ -58,12 +54,10 @@ class MobileGetPlace(LoginRequiredMixin, View):
     def get(self, request, *args, **kwargs):
         argAreaId = request.GET.get('areaId', None)
         user = request.user
-        profile = Profile.objects.filter(user__id = user.id)[0]
-        org = Org.objects.filter(pk = profile.org.id)[0]
         if argAreaId :
-            listPlace = Place.objects.filter(cemetery__ugh__id = org.id).filter(area_id = argAreaId).order_by('cemetery', 'area', 'id')
+            listPlace = Place.objects.filter(cemetery__ugh = user.profile.org).filter(area_id = argAreaId).order_by('cemetery', 'area', 'id')
         else :
-            listPlace = Place.objects.filter(cemetery__ugh__id = org.id).order_by('cemetery', 'area', 'id')        
+            listPlace = Place.objects.filter(cemetery__ugh = user.profile.org).order_by('cemetery', 'area', 'id')        
         data = serializers.serialize("json", listPlace, fields=('cemetery','area','row','place'))       
         return HttpResponse(data, mimetype='application/json')
         
@@ -73,12 +67,10 @@ class MobileGetGrave(LoginRequiredMixin, View):
     def get(self, request, *args, **kwargs):
         argPlaceId = request.GET.get('placeId', None)
         user = request.user
-        profile = Profile.objects.filter(user__id = user.id)[0]
-        org = Org.objects.filter(pk = profile.org.id)[0]
         if argPlaceId :
-            listGrave = Grave.objects.all().filter(place__cemetery__ugh__id = org.id).filter(place_id = argPlaceId).order_by('id')
+            listGrave = Grave.objects.all().filter(place__cemetery__ugh = user.profile.org).filter(place_id = argPlaceId).order_by('id')
         else :
-            listGrave = Grave.objects.all().filter(place__cemetery__ugh__id = org.id).order_by('id')
+            listGrave = Grave.objects.all().filter(place__cemetery__ugh = user.profile.org).order_by('id')
         data = serializers.serialize("json", listGrave, fields=('place','grave_number'))
         return HttpResponse(data, mimetype='application/json')
         
