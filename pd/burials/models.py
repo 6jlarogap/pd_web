@@ -33,8 +33,8 @@ class Cemetery(models.Model):
     )
 
     name = models.CharField(_(u"Название"), max_length=255)
-    time_begin = models.TimeField(_(u"Начало работы"))
-    time_end = models.TimeField(_(u"Окончание работы"))
+    time_begin = models.TimeField(_(u"Начало работы"), null=True, blank=True)
+    time_end = models.TimeField(_(u"Окончание работы"), null=True, blank=True)
     places_algo = models.CharField(_(u"Расстановка номеров мест"), max_length=255, choices=PLACE_TYPES, default=PLACE_MANUAL)
     time_slots = models.TextField(_(u"Время для захоронения"), default='', blank=True,
                                   help_text=_(u'В формате ЧЧ:ММ, по одному на строку'))
