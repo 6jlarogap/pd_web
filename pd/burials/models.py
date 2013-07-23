@@ -142,7 +142,7 @@ class Place(SafeDeleteMixin, models.Model):
         return self.burial_set.exclude(q_ex)
 
     def burial_count(self):
-        return self.burials_available().distinct('grave_number').count()
+        return self.burials_available().distinct('grave').count()
 
     def get_places_count(self):
         return self.grave_set.count()
@@ -197,6 +197,12 @@ class Place(SafeDeleteMixin, models.Model):
             elif self.cemetery.places_algo == Cemetery.PLACE_CEM_YEAR:
                 self.set_next_number_for_year(cemetery=self.cemetery)
         return super(Place, self).save(*args, **kwargs)
+
+    def create_graves(self, places_count=None):
+        if not places_count:
+            places_count = self.area and self.area.places_count or 1
+        for n in range(1, places_count + 1):
+            Grave.objects.create(place=self, grave_number=n,)
 
 class PlaceStatus(models.Model):
     PS_ACTUAL = 'actual'
@@ -549,15 +555,18 @@ class Burial(SafeDeleteMixin, models.Model):
         if self.cemetery and self.cemetery.places_algo == Cemetery.PLACE_BURIAL_ACCOUNT_NUMBER and not self.place_number:
            self.place_number = self.account_number
 
-        place = self.get_place() or Place(
-            places_count=self.area and self.area.places_count or 1,
-        )
+        place = self.get_place() or Place()
         if place != old_place:
             if not place.pk or not place.burial_count(): # move TO new
-                if old_place and (not old_place.pk or not old_place.burial_count()): # and FROM new
-                    place = old_place # edit OLD
-                else: # from OLD and POPULATED (or non-existing at all)
-                    pass
+                ### if old_place and (not old_place.pk or not old_place.burial_count()): # and FROM new
+                    # TODO: ответить на вопрос? 
+                    #       А ведь сюда (не задали место, но при этом было существующее) никогда
+                    #       не придем. В вызывающей функции делается get_or_create места,
+                    #       если при правке закрытого (с местом) захоронения пользователь
+                    #       ввел другое место.
+                    ### place = old_place # edit OLD
+                ### else: # from OLD and POPULATED (or non-existing at all)
+                ###     pass
                 place.responsible = self.get_responsible() # update responsible
             else: # move TO existing
                 # TODO: понять, зачем нужно затирать старое место, да еще в котором есть могилы ?
@@ -567,14 +576,15 @@ class Burial(SafeDeleteMixin, models.Model):
                     # Иначе заменяем
                     if self.responsible:
                         place.responsible = self.responsible
-                else: # from new
+                ### else: # from new
                     # TODO: ответить на вопрос? А сработает ли это когда-нибудь? Без ProtectedError ?
                     #       если в месте есть захоронения, то на него есть ссылки из таблицы Burial.
                     #       Всегда будет ProtectedError.
-                    try:
-                        old_place.delete() # deleting old
-                    except (AttributeError, ProtectedError):
-                        pass
+                    #   !!! А вот могилы старого места затрутся ....
+                    ### try:
+                        ### old_place.delete() # deleting old
+                    ### except (AttributeError, ProtectedError):
+                        ### pass
         else:
             if not place.responsible:
                 place.responsible = self.get_responsible() # just update responsible
@@ -598,8 +608,18 @@ class Burial(SafeDeleteMixin, models.Model):
         place.area = self.area
         place.row = self.row
         place.place = self.place_number
+        new_place = not place.pk
         place.save()
-
+        if new_place:
+            places_count = place.area.places_count or 1
+            # fool-proof, чтоб не пропустили могилу с номером,
+            # бОльшим чем заложено для участка. Это должно проверяться
+            # в форме правки захоронения, но мало ли...
+            #
+            places_count = max(places_count, self.grave_number)
+            place.create_graves(places_count)
+        self.grave = Grave.objects.get(place=place, grave_number=self.grave_number)
+            
         if not self.fact_date:
             self.fact_date = self.plan_date
 
