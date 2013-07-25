@@ -651,7 +651,7 @@ class BurialCommitForm(BurialForm):
         self.fields['plan_date'].required = True
         if self.request.user.profile.is_ugh():
             self.fields['area'].required = True
-            if self.instance and self.instance.is_closed():
+            if self.instance and not self.instance.is_closed():
                 self.fields['plan_time'].required = True
 
         if self.data.get('cemetery'):
