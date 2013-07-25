@@ -10,7 +10,7 @@ from pd.models import UnclearDateModelField
 import os
 import pytils
 
-from persons.models import DeadPerson, SafeDeleteMixin
+from persons.models import DeadPerson, SafeDeleteMixin, DeathCertificate
 from reports.models import Report
 from users.models import Org, Profile, Dover
 from logs.models import Log
@@ -627,6 +627,18 @@ class Burial(SafeDeleteMixin, models.Model):
         self.place = place
         self.place_number = place.place
         self.save()
+
+        # Очистим "пустышку" свидетельства о смерти, где
+        # не все обязательные поля заполнены
+        #
+        if self.is_full():
+            try:
+                dc = self.deadman.deathcertificate
+                if not (dc.s_number and dc.release_date and dc.zags):
+                    dc.delete()
+            except (AttributeError, DeathCertificate.DoesNotExist, ProtectedError):
+                pass
+
         return self
 
     def deadman_or_bio(self):
