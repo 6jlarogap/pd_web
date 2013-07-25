@@ -651,7 +651,7 @@ class BurialCommitForm(BurialForm):
         self.fields['plan_date'].required = True
         if self.request.user.profile.is_ugh():
             self.fields['area'].required = True
-            if not (self.instance and self.instance.is_closed()):
+            if not self.instance.is_closed():
                 self.fields['plan_time'].required = True
 
         if self.data.get('cemetery'):
@@ -659,7 +659,7 @@ class BurialCommitForm(BurialForm):
             if not isinstance(cemetery, Cemetery):
                 cemetery = Cemetery.objects.get(pk=cemetery)
         else:
-            cemetery = self.instance and self.instance.cemetery or None
+            cemetery = self.instance.cemetery or None
 
         if self.instance.is_archive() and self.fields.get('fact_date'):
             self.fields['fact_date'].required = True
@@ -668,7 +668,7 @@ class BurialCommitForm(BurialForm):
             if cemetery and cemetery.places_algo == Cemetery.PLACE_MANUAL:
                 self.fields['place_number'].required = True
 
-        if self.instance and self.instance.is_ugh() and self.instance.applicant_organization:
+        if self.instance.is_ugh() and self.instance.applicant_organization:
             if not self.instance.is_archive():
                 for f in ['applicant_organization', 'agent', 'dover']:
                     self.fields[f].required = True
