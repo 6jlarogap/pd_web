@@ -154,7 +154,7 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
     def get_queryset(self):
         qs = self.get_qs_filter()
         burials = Burial.objects.filter(qs)
-        burials = burials.select_related('cemetery', 'applicant_organization', 'ugh', 'deadman', 'deadman__address')
+        burials = burials.select_related('cemetery', 'place', 'applicant_organization', 'ugh', 'deadman', 'deadman__address',)
         return burials
 
     def post(self, request, *args, **kwargs):

@@ -802,6 +802,23 @@ class BurialCommitForm(BurialForm):
                 msg = _(u"Не указано место для закрытого участка. Нельзя отправлять на согласование")
                 raise forms.ValidationError(msg)
 
+        cemetery = self.cleaned_data.get('cemetery') or None
+        row = self.cleaned_data.get('row') or ''
+        grave_number = self.cleaned_data.get('grave_number')
+        place = None
+        if cemetery and area and place_number:
+            try:
+                place = Place.objects.get(cemetery=cemetery, area=area, row=row, place=place_number)
+            except Place.DoesNotExist:
+                pass
+        if place:
+            if place.get_places_count() < grave_number:
+                msg = _(u"Номер могилы превышает максимальное количество в существующем месте")
+                raise forms.ValidationError(msg)
+        elif area and area.places_count  < grave_number:
+            msg = _(u"Номер могилы превышает количество могил в месте для участка")
+            raise forms.ValidationError(msg)
+
         if self.instance.is_closed() and not place_number.strip():
             raise forms.ValidationError(_(u"Не указан номер места закрытого захоронения"))
 
