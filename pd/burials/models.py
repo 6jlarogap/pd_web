@@ -198,11 +198,15 @@ class Place(SafeDeleteMixin, models.Model):
                 self.set_next_number_for_year(cemetery=self.cemetery)
         return super(Place, self).save(*args, **kwargs)
 
-    def create_graves(self, places_count=None):
-        if not places_count:
-            places_count = self.area and self.area.places_count or 1
+    def create_graves(self, places_count):
         for n in range(1, places_count + 1):
             Grave.objects.create(place=self, grave_number=n,)
+
+    def get_or_create_graves(self, places_count):
+        for n in range(places_count, 0, -1):
+            grave, created = Grave.objects.get_or_create(place=self, grave_number=n,)
+            if not created:
+                break
 
 class PlaceStatus(models.Model):
     PS_ACTUAL = 'actual'
