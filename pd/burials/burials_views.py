@@ -223,7 +223,7 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
             (request.user.profile.is_ugh() and b.can_ugh_annulate() or \
              request.user.profile.is_loru() and b.can_loru_annulate() \
             ):
-            b.place = None
+            b.grave = None
             b.annulated = True
             write_log(request, b, _(u'Захоронение аннулировано'), reason)
             messages.success(request, _(u"<a href='%s'>Захоронение %s</a> аннулировано") % (
@@ -235,13 +235,8 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
            (request.user.profile.is_ugh() and b.can_ugh_deannulate() or \
             request.user.profile.is_loru() and b.can_loru_deannulate()
            ):
-            if (b.is_closed() or b.is_exhumated()) and \
-               b.cemetery and b.area and b.place_number:
-                place, created = Place.objects.get_or_create(cemetery=b.cemetery, area=b.area,
-                                                             row=b.row, place=b.place_number,
-                                                             defaults = {'responsible': b.responsible})
-                place.get_or_create_graves(b.grave_number)
-                b.place = place
+            if (b.is_closed() or b.is_exhumated()):
+                b.grave = b.place.get_or_create_graves(b.grave_number)
             b.annulated = False
             write_log(request, b, _(u'Захоронение восстановлено после аннулирования'))
             messages.success(request, _(u"<a href='%s'>Захоронение %s</a> восстановлено после аннулирования") % (

@@ -202,11 +202,21 @@ class Place(SafeDeleteMixin, models.Model):
         for n in range(1, places_count + 1):
             Grave.objects.create(place=self, grave_number=n,)
 
-    def get_or_create_graves(self, places_count):
-        for n in range(places_count, 0, -1):
+    def get_or_create_graves(self, grave_number):
+        """
+        Создать могилы, если надо
+        
+        Применяется для аннулированного зх при его де-аннулировании.
+        Возвращаем указатель на могилу
+        """
+        result = None
+        for n in range(grave_number, 0, -1):
             grave, created = Grave.objects.get_or_create(place=self, grave_number=n,)
+            if n == grave_number:
+                result = grave
             if not created:
                 break
+        return result
 
 class PlaceStatus(models.Model):
     PS_ACTUAL = 'actual'
