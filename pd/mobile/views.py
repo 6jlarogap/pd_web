@@ -85,10 +85,9 @@ def mobile_upload_photo(request):
         try:
             grave = Grave.objects.get(id = graveId)            
             photo_content = ContentFile(request.FILES['photo'].read())
-            photo = Photo(lat = lat, lng = lng, comment = '', creator = request.user)
+            photo = GravePhoto(grave=grave, lat = lat, lng = lng, comment = '', creator = request.user)
             photo.save()
             photo.bfile.save(request.FILES['photo'].name, photo_content)            
-            grave.photos.add(photo)
             if lat and lat :
                 grave.lat = lat
                 grave.lng = lng
