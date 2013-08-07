@@ -198,9 +198,18 @@ class Place(SafeDeleteMixin, models.Model):
                 self.set_next_number_for_year(cemetery=self.cemetery)
         return super(Place, self).save(*args, **kwargs)
 
-    def create_graves(self, places_count):
+    def create_graves(self, places_count, grave_number):
+        """
+        Создать place_count могил для только что созданного place
+        
+        Возвращаем указатель на могилу c номером grave_number
+        """
+        result = None
         for n in range(1, places_count + 1):
-            Grave.objects.create(place=self, grave_number=n,)
+            grave = Grave.objects.create(place=self, grave_number=n,)
+            if n == grave_number:
+                result = grave
+        return result
 
     def get_or_create_graves(self, grave_number):
         """
@@ -583,7 +592,6 @@ class Burial(SafeDeleteMixin, models.Model):
                 ###     pass
                 place.responsible = self.get_responsible() # update responsible
             else: # move TO existing
-                # TODO: понять, зачем нужно затирать старое место, да еще в котором есть могилы ?
                 if not old_place or not old_place.pk or not old_place.burial_count(): # and FROM old and populated
                     # Первое закрытие. Загоняем в существуюшее место
                     # Если ничего не ввели в ответственном, то оставляем прежнего в месте
@@ -631,8 +639,9 @@ class Burial(SafeDeleteMixin, models.Model):
             # в форме правки захоронения, но мало ли...
             #
             places_count = max(places_count, self.grave_number)
-            place.create_graves(places_count)
-        self.grave = Grave.objects.get(place=place, grave_number=self.grave_number)
+            self.grave = place.create_graves(places_count, self.grave_number)
+        else:
+            self.grave = Grave.objects.get(place=place, grave_number=self.grave_number)
             
         if not self.fact_date:
             self.fact_date = self.plan_date

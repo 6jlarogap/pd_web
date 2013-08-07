@@ -554,11 +554,11 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
                                                          place=self.cleaned_data['place_number'],)
             self.instance.place=place
             if created:
-                place.create_graves(max(self.cleaned_data['area'].places_count or 1,
-                                        self.cleaned_data['grave_number'],)
+                self.grave = place.create_graves(max(self.cleaned_data['area'].places_count or 1,
+                                                     self.cleaned_data['grave_number'],
+                                                    ),
+                                                 self.cleaned_data['grave_number'],
                 )
-            # Пока не привязываем здесь могилу к захоронению. Это будет сделано ниже
-            # в self.instance.close(....)
 
         self.instance.save()
         if self.order:
