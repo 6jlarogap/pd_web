@@ -261,7 +261,7 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
         
         places_count = 1
         if self.instance.place_number and self.instance.get_place():
-            places_count = self.instance.get_place().get_places_count()
+            places_count = self.instance.get_place().get_graves_count()
         elif self.instance.area:
             places_count = self.instance.area.places_count
         # - Вдруг уменьшат параметры участка так, что номер могилы в захоронении
@@ -814,7 +814,7 @@ class BurialCommitForm(BurialForm):
             except Place.DoesNotExist:
                 pass
         if place:
-            if place.get_places_count() < grave_number:
+            if place.get_graves_count() < grave_number:
                 msg = _(u"Номер могилы превышает максимальное количество в существующем месте")
                 raise forms.ValidationError(msg)
         elif area and area.places_count  < grave_number:

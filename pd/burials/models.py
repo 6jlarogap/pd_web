@@ -144,11 +144,11 @@ class Place(SafeDeleteMixin, models.Model):
     def burial_count(self):
         return self.burials_available().distinct('grave').count()
 
-    def get_places_count(self):
+    def get_graves_count(self):
         return self.grave_set.count()
 
     def get_available_count(self):
-        return max(0, self.get_places_count() - self.burial_count())
+        return max(0, self.get_graves_count() - self.burial_count())
 
     def set_next_number(self, **params):
         other_places = Place.objects.filter(**params)
@@ -268,6 +268,10 @@ def files_upload_to(instance, filename):
     else:
         return os.path.join('files', fname)
 
+# Абстрактные классы Files, Photo находятся здесь, а не в "общих" pd.models.py
+# из-за функции upload_to=files_upload_to, в которой много ссылок на модели
+# из этого burials/models.py
+
 class Files(models.Model):
     """
     Базовый класс для файлов
@@ -300,6 +304,10 @@ class Photo(Files):
     lng = models.FloatField(_(u"Долгота"), blank=True, null=True)
     
 class Grave(models.Model):
+
+    class Meta:
+        unique_together = ('place', 'grave_number',)
+
     place = models.ForeignKey(Place, verbose_name=_(u"Место"))
     grave_number = models.PositiveSmallIntegerField(_(u"Номер"), default=1)
     lat = models.FloatField(_(u"Широта"), blank=True, null=True)
