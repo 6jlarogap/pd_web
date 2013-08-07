@@ -290,15 +290,26 @@ class Files(models.Model):
         super(Files, self).delete()
 
 class Photo(Files):
+    """
+    Базовый класс для фото
+    """
+    class Meta:
+        abstract = True
+
     lat = models.FloatField(_(u"Широта"), blank=True, null=True)
     lng = models.FloatField(_(u"Долгота"), blank=True, null=True)
     
 class Grave(models.Model):
     place = models.ForeignKey(Place, verbose_name=_(u"Место"))
     grave_number = models.PositiveSmallIntegerField(_(u"Номер"), default=1)
-    photos = models.ManyToManyField(Photo, null = True)
     lat = models.FloatField(_(u"Широта"), blank=True, null=True)
     lng = models.FloatField(_(u"Долгота"), blank=True, null=True)
+
+class GravePhoto(Photo):
+    """
+    Файлы, связанные с захоронением
+    """
+    grave = models.ForeignKey(Grave)
 
 class Burial(SafeDeleteMixin, models.Model):
     STATUS_BACKED = 'backed'
