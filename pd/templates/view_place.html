@@ -28,7 +28,7 @@
                 {% trans "не указан" %}
             {% endif %}
         </dd>
-        <dt>{% trans "Могил всего" %}</dt><dd>{{ place.places_count }}</dd>
+        <dt>{% trans "Могил всего" %}</dt><dd>{{ place.get_places_count }}</dd>
         <dt>{% trans "Свободно" %}</dt><dd>{{ place.get_available_count }}</dd>
 
     </dl>

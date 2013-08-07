@@ -87,22 +87,22 @@ AreaFormset = inlineformset_factory(Cemetery, Area, formset=BaseAreaFormset, can
 class PlaceEditForm(forms.ModelForm):
     class Meta:
         model = Place
-        fields = ['places_count']
+#        fields = ['places_count']
 
-    def __init__(self, *args, **kwargs):
-        super(PlaceEditForm, self).__init__(*args, **kwargs)
-        if not self.instance.places_count:
-            if self.instance.area:
-                self.initial['places_count'] = self.instance.area.places_count
-            else:
-                self.initial['places_count'] = 1
+#    def __init__(self, *args, **kwargs):
+#        super(PlaceEditForm, self).__init__(*args, **kwargs)
+#        if not self.instance.places_count:
+#            if self.instance.area:
+#                self.initial['places_count'] = self.instance.area.places_count
+#            else:
+#                self.initial['places_count'] = 1
 
-    def clean_places_count(self):
-        burials = self.instance.burials_available()
-        max_num = burials.aggregate(max=Max('grave_number')).get('max') or 1
-        if self.cleaned_data['places_count'] < max_num:
-            raise forms.ValidationError(_(u"Нельзя установить меньше %s, столько могил уже занято") % max_num)
-        return self.cleaned_data['places_count']
+#    def clean_places_count(self):
+#        burials = self.instance.burials_available()
+#        max_num = burials.aggregate(max=Max('grave_number')).get('max') or 1
+#        if self.cleaned_data['places_count'] < max_num:
+#            raise forms.ValidationError(_(u"Нельзя установить меньше %s, столько могил уже занято") % max_num)
+#        return self.cleaned_data['places_count']
 
 EMPTY = (('', '--------'),)
 
@@ -551,20 +551,25 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
             place, created = Place.objects.get_or_create(cemetery=self.cleaned_data['cemetery'],
                                                          area=self.cleaned_data['area'],
                                                          row=self.cleaned_data['row'],
-                                                         place=self.cleaned_data['place_number'],
-                                defaults={'places_count': self.cleaned_data['area'].places_count or 1})
+                                                         place=self.cleaned_data['place_number'],)
             self.instance.place=place
-        
+            if created:
+                self.grave = place.create_graves(max(self.cleaned_data['area'].places_count or 1,
+                                                     self.cleaned_data['grave_number'],
+                                                    ),
+                                                 self.cleaned_data['grave_number'],
+                )
+
         self.instance.save()
         if self.order:
             self.order.burial = self.instance
             self.order.save()
 
         if self.bfiles_form.is_valid() and self.request.FILES.get('bfile'):
-            original_name=self.request.FILES.get('bfile').name
-            saved_file = self.bfiles_form.save(burial=self.instance, user=self.request.user,
-                                  original_name=original_name)
-            write_log(request, self.instance, _(u'Добавлен файл'), "%s, %s"% (saved_file.comment, original_name, ))
+            saved_file = self.bfiles_form.save(burial=self.instance, user=self.request.user)
+            write_log(request, self.instance,
+                     _(u'Добавлен файл'), "%s, %s" % (saved_file.comment, saved_file.original_name,)
+            )
 
         if self.instance.is_closed():
             self.instance.close(old_place=self.old_place)
@@ -607,11 +612,10 @@ class BurialFilesForm(forms.ModelForm):
             raise forms.ValidationError(_(u'Превышен максимальный размер файла') + u", %s Мб." % self.MAX_UPLOAD_SIZE_MB)
         return cleaned_data
 
-    def save(self, burial=None, user=None, original_name=None, commit=True, *args, **kwargs):
+    def save(self, burial=None, user=None, commit=True, *args, **kwargs):
         burial_file_rec = super(BurialFilesForm, self).save(commit=False, *args, **kwargs)
         burial_file_rec.burial = burial
         burial_file_rec.creator = user
-        burial_file_rec.original_name = original_name
         if commit:
             burial_file_rec.save()
         return burial_file_rec
@@ -797,6 +801,23 @@ class BurialCommitForm(BurialForm):
             elif self.request.REQUEST.get('ready'):
                 msg = _(u"Не указано место для закрытого участка. Нельзя отправлять на согласование")
                 raise forms.ValidationError(msg)
+
+        cemetery = self.cleaned_data.get('cemetery')
+        row = self.cleaned_data.get('row')
+        grave_number = self.cleaned_data.get('grave_number')
+        place = None
+        if cemetery and area and place_number:
+            try:
+                place = Place.objects.get(cemetery=cemetery, area=area, row=row, place=place_number)
+            except Place.DoesNotExist:
+                pass
+        if place:
+            if place.get_places_count() < grave_number:
+                msg = _(u"Номер могилы превышает максимальное количество в существующем месте")
+                raise forms.ValidationError(msg)
+        elif area and area.places_count  < grave_number:
+            msg = _(u"Номер могилы превышает количество могил в месте для участка")
+            raise forms.ValidationError(msg)
 
         if self.instance.is_closed() and not place_number.strip():
             raise forms.ValidationError(_(u"Не указан номер места закрытого захоронения"))
