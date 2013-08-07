@@ -17,7 +17,6 @@ from burials.models import Cemetery
 from burials.models import Area
 from burials.models import Place
 from burials.models import Grave
-from burials.models import GravePhoto
 from burials.models import Photo
 from users.models import Profile
 from users.models import Org
@@ -89,8 +88,7 @@ def mobile_upload_photo(request):
             photo = Photo(lat = lat, lng = lng, comment = '', creator = request.user)
             photo.save()
             photo.bfile.save(request.FILES['photo'].name, photo_content)            
-            gravePhoto = GravePhoto(grave = grave, photo = photo)
-            gravePhoto.save()
+            grave.photos.add(photo)
             if lat and lat :
                 grave.lat = lat
                 grave.lng = lng
