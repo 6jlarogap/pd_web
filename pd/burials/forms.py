@@ -559,6 +559,8 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
                                                     ),
                                                  self.cleaned_data['grave_number'],
                 )
+            # Пока не привязываем здесь могилу к захоронению, если место существует.
+            # Это будет сделано ниже в self.instance.close(....)
 
         self.instance.save()
         if self.order:
