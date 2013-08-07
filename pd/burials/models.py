@@ -10,7 +10,7 @@ from pd.models import UnclearDateModelField
 import os
 import pytils
 
-from persons.models import DeadPerson, SafeDeleteMixin
+from persons.models import DeadPerson, SafeDeleteMixin, DeathCertificate
 from reports.models import Report
 from users.models import Org, Profile, Dover
 from logs.models import Log
@@ -33,8 +33,8 @@ class Cemetery(models.Model):
     )
 
     name = models.CharField(_(u"Название"), max_length=255)
-    time_begin = models.TimeField(_(u"Начало работы"))
-    time_end = models.TimeField(_(u"Окончание работы"))
+    time_begin = models.TimeField(_(u"Начало работы"), null=True, blank=True)
+    time_end = models.TimeField(_(u"Окончание работы"), null=True, blank=True)
     places_algo = models.CharField(_(u"Расстановка номеров мест"), max_length=255, choices=PLACE_TYPES, default=PLACE_MANUAL)
     time_slots = models.TextField(_(u"Время для захоронения"), default='', blank=True,
                                   help_text=_(u'В формате ЧЧ:ММ, по одному на строку'))
@@ -142,7 +142,7 @@ class Place(SafeDeleteMixin, models.Model):
         return self.burial_set.exclude(q_ex)
 
     def burial_count(self):
-        return self.burials_available().distinct('grave_number').count()
+        return self.burials_available().distinct('grave').count()
 
     def get_places_count(self):
         return self.grave_set.count()
@@ -198,6 +198,35 @@ class Place(SafeDeleteMixin, models.Model):
                 self.set_next_number_for_year(cemetery=self.cemetery)
         return super(Place, self).save(*args, **kwargs)
 
+    def create_graves(self, places_count, grave_number):
+        """
+        Создать place_count могил для только что созданного place
+        
+        Возвращаем указатель на могилу c номером grave_number
+        """
+        result = None
+        for n in range(1, places_count + 1):
+            grave = Grave.objects.create(place=self, grave_number=n,)
+            if n == grave_number:
+                result = grave
+        return result
+
+    def get_or_create_graves(self, grave_number):
+        """
+        Создать могилы, если надо
+        
+        Применяется для аннулированного зх при его де-аннулировании.
+        Возвращаем указатель на могилу
+        """
+        result = None
+        for n in range(grave_number, 0, -1):
+            grave, created = Grave.objects.get_or_create(place=self, grave_number=n,)
+            if n == grave_number:
+                result = grave
+            if not created:
+                break
+        return result
+
 class PlaceStatus(models.Model):
     PS_ACTUAL = 'actual'
     PS_FOUND_UNOWNED = 'found-unowned'
@@ -224,9 +253,50 @@ class PlaceStatus(models.Model):
                                 on_delete=models.PROTECT)
     date_of_creation = models.DateTimeField(auto_now_add=True)
     
+def files_upload_to(instance, filename):
+    instance.original_name = filename
+    fname = u'.'.join(map(pytils.translit.slugify, filename.rsplit('.', 1)))
+    if isinstance(instance, BurialFiles):
+        return os.path.join('bfiles', str(instance.burial.pk), fname)
+    elif isinstance(instance, PlaceStatusFiles):
+        return os.path.join('place-status-files', str(instance.placestatus.pk), fname)
+    elif isinstance(instance, Photo):
+        d = datetime.date.today()
+        return os.path.join('photos',
+                            "{0:d}/{1:02d}/{2:02d}".format(d.year, d.month, d.day),
+                             fname)
+    else:
+        return os.path.join('files', fname)
+
+class Files(models.Model):
+    """
+    Базовый класс для файлов
+    """
+    class Meta:
+        abstract = True
+        
+    bfile = models.FileField(u"Файл", upload_to=files_upload_to, blank=True)
+    comment = models.CharField(u"Описание", max_length=96, blank=True)
+    original_name = models.CharField(max_length=255, editable=False)
+    creator = models.ForeignKey('auth.User', verbose_name=_(u"Создатель"), editable=False, null=True,
+                                on_delete=models.PROTECT)
+    date_of_creation = models.DateTimeField(auto_now_add=True)
+
+    def delete(self):
+        if self.bfile != "":
+            if os.path.exists(self.bfile.path):
+                os.remove(self.bfile.path)
+            self.bfile = ""
+        super(Files, self).delete()
+
+class Photo(Files):
+    lat = models.FloatField(_(u"Широта"), blank=True, null=True)
+    lng = models.FloatField(_(u"Долгота"), blank=True, null=True)
+    
 class Grave(models.Model):
     place = models.ForeignKey(Place, verbose_name=_(u"Место"))
     grave_number = models.PositiveSmallIntegerField(_(u"Номер"), default=1)
+    photos = models.ManyToManyField(Photo, null = True)
     lat = models.FloatField(_(u"Широта"), blank=True, null=True)
     lng = models.FloatField(_(u"Долгота"), blank=True, null=True)
 
@@ -549,32 +619,35 @@ class Burial(SafeDeleteMixin, models.Model):
         if self.cemetery and self.cemetery.places_algo == Cemetery.PLACE_BURIAL_ACCOUNT_NUMBER and not self.place_number:
            self.place_number = self.account_number
 
-        place = self.get_place() or Place(
-            places_count=self.area and self.area.places_count or 1,
-        )
+        place = self.get_place() or Place()
         if place != old_place:
             if not place.pk or not place.burial_count(): # move TO new
-                if old_place and (not old_place.pk or not old_place.burial_count()): # and FROM new
-                    place = old_place # edit OLD
-                else: # from OLD and POPULATED (or non-existing at all)
-                    pass
+                ### if old_place and (not old_place.pk or not old_place.burial_count()): # and FROM new
+                    # TODO: ответить на вопрос? 
+                    #       А ведь сюда (не задали место, но при этом было существующее) никогда
+                    #       не придем. В вызывающей функции делается get_or_create места,
+                    #       если при правке закрытого (с местом) захоронения пользователь
+                    #       ввел другое место.
+                    ### place = old_place # edit OLD
+                ### else: # from OLD and POPULATED (or non-existing at all)
+                ###     pass
                 place.responsible = self.get_responsible() # update responsible
             else: # move TO existing
-                # TODO: понять, зачем нужно затирать старое место, да еще в котором есть могилы ?
                 if not old_place or not old_place.pk or not old_place.burial_count(): # and FROM old and populated
                     # Первое закрытие. Загоняем в существуюшее место
                     # Если ничего не ввели в ответственном, то оставляем прежнего в месте
                     # Иначе заменяем
                     if self.responsible:
                         place.responsible = self.responsible
-                else: # from new
+                ### else: # from new
                     # TODO: ответить на вопрос? А сработает ли это когда-нибудь? Без ProtectedError ?
                     #       если в месте есть захоронения, то на него есть ссылки из таблицы Burial.
                     #       Всегда будет ProtectedError.
-                    try:
-                        old_place.delete() # deleting old
-                    except (AttributeError, ProtectedError):
-                        pass
+                    #   !!! А вот могилы старого места затрутся ....
+                    ### try:
+                        ### old_place.delete() # deleting old
+                    ### except (AttributeError, ProtectedError):
+                        ### pass
         else:
             if not place.responsible:
                 place.responsible = self.get_responsible() # just update responsible
@@ -598,8 +671,19 @@ class Burial(SafeDeleteMixin, models.Model):
         place.area = self.area
         place.row = self.row
         place.place = self.place_number
+        new_place = not place.pk
         place.save()
-
+        if new_place:
+            places_count = place.area.places_count or 1
+            # fool-proof, чтоб не пропустили могилу с номером,
+            # бОльшим чем заложено для участка. Это должно проверяться
+            # в форме правки захоронения, но мало ли...
+            #
+            places_count = max(places_count, self.grave_number)
+            self.grave = place.create_graves(places_count, self.grave_number)
+        else:
+            self.grave = Grave.objects.get(place=place, grave_number=self.grave_number)
+            
         if not self.fact_date:
             self.fact_date = self.plan_date
 
@@ -607,6 +691,18 @@ class Burial(SafeDeleteMixin, models.Model):
         self.place = place
         self.place_number = place.place
         self.save()
+
+        # Очистим "пустышку" свидетельства о смерти, где
+        # не все обязательные поля заполнены
+        #
+        if self.is_full():
+            try:
+                dc = self.deadman.deathcertificate
+                if not (dc.s_number and dc.release_date and dc.zags):
+                    dc.delete()
+            except (AttributeError, DeathCertificate.DoesNotExist, ProtectedError):
+                pass
+
         return self
 
     def deadman_or_bio(self):
@@ -659,42 +755,6 @@ class Burial(SafeDeleteMixin, models.Model):
            result = self.account_number
         return result
     
-def files_upload_to(instance, filename):
-    instance.original_name = filename
-    fname = u'.'.join(map(pytils.translit.slugify, filename.rsplit('.', 1)))
-    if isinstance(instance, BurialFiles):
-        return os.path.join('bfiles', str(instance.burial.pk), fname)
-    elif isinstance(instance, PlaceStatusFiles):
-        return os.path.join('place-status-files', str(instance.placestatus.pk), fname)
-    elif isinstance(instance, Photo):
-        d = datetime.date.today()
-        return os.path.join('photos',
-                            "{0:d}/{1:02d}/{2:02d}".format(d.year, d.month, d.day),
-                             fname)
-    else:
-        return os.path.join('files', fname)
-
-class Files(models.Model):
-    """
-    Базовый класс для файлов
-    """
-    class Meta:
-        abstract = True
-        
-    bfile = models.FileField(u"Файл", upload_to=files_upload_to, blank=True)
-    comment = models.CharField(u"Описание", max_length=96, blank=True)
-    original_name = models.CharField(max_length=255, editable=False)
-    creator = models.ForeignKey('auth.User', verbose_name=_(u"Создатель"), editable=False, null=True,
-                                on_delete=models.PROTECT)
-    date_of_creation = models.DateTimeField(auto_now_add=True)
-
-    def delete(self):
-        if self.bfile != "":
-            if os.path.exists(self.bfile.path):
-                os.remove(self.bfile.path)
-            self.bfile = ""
-        super(Files, self).delete()
-
 class BurialFiles(Files):
     """
     Файлы, связанные с захоронением
@@ -707,14 +767,6 @@ class PlaceStatusFiles(Files):
     """
     placestatus = models.ForeignKey(PlaceStatus)
 
-class Photo(Files):
-    lat = models.FloatField(_(u"Широта"), blank=True, null=True)
-    lng = models.FloatField(_(u"Долгота"), blank=True, null=True)
-    
-class GravePhoto(models.Model):
-    grave = models.ForeignKey(Grave, verbose_name=_(u"Могила"))
-    photo = models.ForeignKey(Photo, verbose_name=_(u"Фото"))
-    
 class Reason(models.Model):
     TYPE_BACK = 'back'
     TYPE_DECLINE = 'decline'

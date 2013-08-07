@@ -551,10 +551,15 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
             place, created = Place.objects.get_or_create(cemetery=self.cleaned_data['cemetery'],
                                                          area=self.cleaned_data['area'],
                                                          row=self.cleaned_data['row'],
-                                                         place=self.cleaned_data['place_number'],
-                                defaults={'places_count': self.cleaned_data['area'].places_count or 1})
+                                                         place=self.cleaned_data['place_number'],)
             self.instance.place=place
-        
+            if created:
+                self.grave = place.create_graves(max(self.cleaned_data['area'].places_count or 1,
+                                                     self.cleaned_data['grave_number'],
+                                                    ),
+                                                 self.cleaned_data['grave_number'],
+                )
+
         self.instance.save()
         if self.order:
             self.order.burial = self.instance
@@ -646,16 +651,19 @@ class BurialCommitForm(BurialForm):
         return data
 
     def setup_required(self):
-        for f in self.fields:
-            if f in ['cemetery', 'area', 'plan_date', 'plan_time']:
-                self.fields[f].required = True
+        self.fields['cemetery'].required = True
+        self.fields['plan_date'].required = True
+        if self.request.user.profile.is_ugh():
+            self.fields['area'].required = True
+            if not self.instance.is_closed():
+                self.fields['plan_time'].required = True
 
         if self.data.get('cemetery'):
             cemetery = self.data.get('cemetery')
             if not isinstance(cemetery, Cemetery):
                 cemetery = Cemetery.objects.get(pk=cemetery)
         else:
-            cemetery = self.instance and self.instance.cemetery or None
+            cemetery = self.instance.cemetery or None
 
         if self.instance.is_archive() and self.fields.get('fact_date'):
             self.fields['fact_date'].required = True
@@ -664,7 +672,7 @@ class BurialCommitForm(BurialForm):
             if cemetery and cemetery.places_algo == Cemetery.PLACE_MANUAL:
                 self.fields['place_number'].required = True
 
-        if self.instance and self.instance.is_ugh() and self.instance.applicant_organization:
+        if self.instance.is_ugh() and self.instance.applicant_organization:
             if not self.instance.is_archive():
                 for f in ['applicant_organization', 'agent', 'dover']:
                     self.fields[f].required = True
@@ -794,6 +802,23 @@ class BurialCommitForm(BurialForm):
                 msg = _(u"Не указано место для закрытого участка. Нельзя отправлять на согласование")
                 raise forms.ValidationError(msg)
 
+        cemetery = self.cleaned_data.get('cemetery')
+        row = self.cleaned_data.get('row')
+        grave_number = self.cleaned_data.get('grave_number')
+        place = None
+        if cemetery and area and place_number:
+            try:
+                place = Place.objects.get(cemetery=cemetery, area=area, row=row, place=place_number)
+            except Place.DoesNotExist:
+                pass
+        if place:
+            if place.get_places_count() < grave_number:
+                msg = _(u"Номер могилы превышает максимальное количество в существующем месте")
+                raise forms.ValidationError(msg)
+        elif area and area.places_count  < grave_number:
+            msg = _(u"Номер могилы превышает количество могил в месте для участка")
+            raise forms.ValidationError(msg)
+
         if self.instance.is_closed() and not place_number.strip():
             raise forms.ValidationError(_(u"Не указан номер места закрытого захоронения"))
 
@@ -847,6 +872,8 @@ class BurialCommitForm(BurialForm):
         if self.dc_form.is_valid() and \
            not (self.instance.is_archive() or self.request.REQUEST.get('archive') or \
                 self.instance.is_transferred() or \
+                self.request.user.profile.is_loru() or \
+                self.instance.is_closed() and self.instance.is_full() or \
                 self.cleaned_data.get('burial_container') == Burial.CONTAINER_BIO \
                ):
             death_certificate_release_date = self.dc_form.cleaned_data.get('release_date')
@@ -952,6 +979,12 @@ class BurialCloseForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelForm):
         self.fields['cemetery'].queryset = Cemetery.objects.filter(ugh=request.user.profile.org)
         self.forms = []
         self.request = request
+
+    def is_valid(self):
+        is_valid = super(BurialCloseForm, self).is_valid()
+        if not is_valid:
+            messages.error(self.request, _(u'Обнаружены ошибки, их необходимо исправить'))
+        return is_valid
 
     def save(self, **kwargs):
         self.collect_log_data()
