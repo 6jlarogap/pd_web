@@ -260,9 +260,9 @@ def files_upload_to(instance, filename):
         return os.path.join('bfiles', str(instance.burial.pk), fname)
     elif isinstance(instance, PlaceStatusFiles):
         return os.path.join('place-status-files', str(instance.placestatus.pk), fname)
-    elif isinstance(instance, Photo):
+    elif isinstance(instance, GravePhoto):
         d = datetime.date.today()
-        return os.path.join('photos',
+        return os.path.join('grave-photos',
                             "{0:d}/{1:02d}/{2:02d}".format(d.year, d.month, d.day),
                              fname)
     else:
@@ -290,15 +290,26 @@ class Files(models.Model):
         super(Files, self).delete()
 
 class Photo(Files):
+    """
+    Базовый класс для фото
+    """
+    class Meta:
+        abstract = True
+
     lat = models.FloatField(_(u"Широта"), blank=True, null=True)
     lng = models.FloatField(_(u"Долгота"), blank=True, null=True)
     
 class Grave(models.Model):
     place = models.ForeignKey(Place, verbose_name=_(u"Место"))
     grave_number = models.PositiveSmallIntegerField(_(u"Номер"), default=1)
-    photos = models.ManyToManyField(Photo, null = True)
     lat = models.FloatField(_(u"Широта"), blank=True, null=True)
     lng = models.FloatField(_(u"Долгота"), blank=True, null=True)
+
+class GravePhoto(Photo):
+    """
+    Файлы, связанные с захоронением
+    """
+    grave = models.ForeignKey(Grave)
 
 class Burial(SafeDeleteMixin, models.Model):
     STATUS_BACKED = 'backed'
@@ -681,8 +692,10 @@ class Burial(SafeDeleteMixin, models.Model):
             #
             places_count = max(places_count, self.grave_number)
             self.grave = place.create_graves(places_count, self.grave_number)
-        else:
+        elif not self.is_annulated():
             self.grave = Grave.objects.get(place=place, grave_number=self.grave_number)
+        if self.is_annulated():
+            self.grave = None
             
         if not self.fact_date:
             self.fact_date = self.plan_date

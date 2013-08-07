@@ -154,7 +154,7 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
     def get_queryset(self):
         qs = self.get_qs_filter()
         burials = Burial.objects.filter(qs)
-        burials = burials.select_related('cemetery', 'place', 'applicant_organization', 'ugh', 'deadman', 'deadman__address',)
+        burials = burials.select_related('cemetery', 'place', 'grave', 'applicant_organization', 'ugh', 'deadman', 'deadman__address',)
         return burials
 
     def post(self, request, *args, **kwargs):
@@ -235,7 +235,7 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
            (request.user.profile.is_ugh() and b.can_ugh_deannulate() or \
             request.user.profile.is_loru() and b.can_loru_deannulate()
            ):
-            if (b.is_closed() or b.is_exhumated()):
+            if b.place:
                 b.grave = b.place.get_or_create_graves(b.grave_number)
             b.annulated = False
             write_log(request, b, _(u'Захоронение восстановлено после аннулирования'))
