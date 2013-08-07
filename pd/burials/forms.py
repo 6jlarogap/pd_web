@@ -562,7 +562,6 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
             # Пока не привязываем здесь могилу к захоронению, если место существует.
             # Это будет сделано ниже в self.instance.close(....)
 
-
         self.instance.save()
         if self.order:
             self.order.burial = self.instance
