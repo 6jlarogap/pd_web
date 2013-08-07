@@ -17,7 +17,7 @@ from burials.models import Cemetery
 from burials.models import Area
 from burials.models import Place
 from burials.models import Grave
-from burials.models import Photo
+from burials.models import GravePhoto
 from users.models import Profile
 from users.models import Org
 from django.core import serializers
