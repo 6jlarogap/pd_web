@@ -253,9 +253,50 @@ class PlaceStatus(models.Model):
                                 on_delete=models.PROTECT)
     date_of_creation = models.DateTimeField(auto_now_add=True)
     
+def files_upload_to(instance, filename):
+    instance.original_name = filename
+    fname = u'.'.join(map(pytils.translit.slugify, filename.rsplit('.', 1)))
+    if isinstance(instance, BurialFiles):
+        return os.path.join('bfiles', str(instance.burial.pk), fname)
+    elif isinstance(instance, PlaceStatusFiles):
+        return os.path.join('place-status-files', str(instance.placestatus.pk), fname)
+    elif isinstance(instance, Photo):
+        d = datetime.date.today()
+        return os.path.join('photos',
+                            "{0:d}/{1:02d}/{2:02d}".format(d.year, d.month, d.day),
+                             fname)
+    else:
+        return os.path.join('files', fname)
+
+class Files(models.Model):
+    """
+    Базовый класс для файлов
+    """
+    class Meta:
+        abstract = True
+        
+    bfile = models.FileField(u"Файл", upload_to=files_upload_to, blank=True)
+    comment = models.CharField(u"Описание", max_length=96, blank=True)
+    original_name = models.CharField(max_length=255, editable=False)
+    creator = models.ForeignKey('auth.User', verbose_name=_(u"Создатель"), editable=False, null=True,
+                                on_delete=models.PROTECT)
+    date_of_creation = models.DateTimeField(auto_now_add=True)
+
+    def delete(self):
+        if self.bfile != "":
+            if os.path.exists(self.bfile.path):
+                os.remove(self.bfile.path)
+            self.bfile = ""
+        super(Files, self).delete()
+
+class Photo(Files):
+    lat = models.FloatField(_(u"Широта"), blank=True, null=True)
+    lng = models.FloatField(_(u"Долгота"), blank=True, null=True)
+    
 class Grave(models.Model):
     place = models.ForeignKey(Place, verbose_name=_(u"Место"))
     grave_number = models.PositiveSmallIntegerField(_(u"Номер"), default=1)
+    photos = models.ManyToManyField(Photo, null = True)
     lat = models.FloatField(_(u"Широта"), blank=True, null=True)
     lng = models.FloatField(_(u"Долгота"), blank=True, null=True)
 
@@ -714,42 +755,6 @@ class Burial(SafeDeleteMixin, models.Model):
            result = self.account_number
         return result
     
-def files_upload_to(instance, filename):
-    instance.original_name = filename
-    fname = u'.'.join(map(pytils.translit.slugify, filename.rsplit('.', 1)))
-    if isinstance(instance, BurialFiles):
-        return os.path.join('bfiles', str(instance.burial.pk), fname)
-    elif isinstance(instance, PlaceStatusFiles):
-        return os.path.join('place-status-files', str(instance.placestatus.pk), fname)
-    elif isinstance(instance, Photo):
-        d = datetime.date.today()
-        return os.path.join('photos',
-                            "{0:d}/{1:02d}/{2:02d}".format(d.year, d.month, d.day),
-                             fname)
-    else:
-        return os.path.join('files', fname)
-
-class Files(models.Model):
-    """
-    Базовый класс для файлов
-    """
-    class Meta:
-        abstract = True
-        
-    bfile = models.FileField(u"Файл", upload_to=files_upload_to, blank=True)
-    comment = models.CharField(u"Описание", max_length=96, blank=True)
-    original_name = models.CharField(max_length=255, editable=False)
-    creator = models.ForeignKey('auth.User', verbose_name=_(u"Создатель"), editable=False, null=True,
-                                on_delete=models.PROTECT)
-    date_of_creation = models.DateTimeField(auto_now_add=True)
-
-    def delete(self):
-        if self.bfile != "":
-            if os.path.exists(self.bfile.path):
-                os.remove(self.bfile.path)
-            self.bfile = ""
-        super(Files, self).delete()
-
 class BurialFiles(Files):
     """
     Файлы, связанные с захоронением
@@ -762,14 +767,6 @@ class PlaceStatusFiles(Files):
     """
     placestatus = models.ForeignKey(PlaceStatus)
 
-class Photo(Files):
-    lat = models.FloatField(_(u"Широта"), blank=True, null=True)
-    lng = models.FloatField(_(u"Долгота"), blank=True, null=True)
-    
-class GravePhoto(models.Model):
-    grave = models.ForeignKey(Grave, verbose_name=_(u"Могила"))
-    photo = models.ForeignKey(Photo, verbose_name=_(u"Фото"))
-    
 class Reason(models.Model):
     TYPE_BACK = 'back'
     TYPE_DECLINE = 'decline'
