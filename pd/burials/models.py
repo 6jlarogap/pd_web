@@ -681,8 +681,10 @@ class Burial(SafeDeleteMixin, models.Model):
             #
             places_count = max(places_count, self.grave_number)
             self.grave = place.create_graves(places_count, self.grave_number)
-        else:
+        elif not self.is_annulated():
             self.grave = Grave.objects.get(place=place, grave_number=self.grave_number)
+        if self.is_annulated():
+            self.grave = None
             
         if not self.fact_date:
             self.fact_date = self.plan_date
