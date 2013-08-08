@@ -267,7 +267,7 @@ class GetGravesNumberView(View):
             except Place.MultipleObjectsReturned:
                 return HttpResponse('')
             else:
-                return HttpResponse('{"place_pk": %s, "places": %s}' % (p.pk, p.places_count), mimetype='application/json')
+                return HttpResponse('{"place_pk": %s, "places": %s}' % (p.pk, p.get_graves_count()), mimetype='application/json')
 
         try:
             a = Area.objects.get(cemetery__pk=request.GET.get('cemetery') or None, pk=request.GET.get('area') or None)

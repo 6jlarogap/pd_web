@@ -28,7 +28,7 @@
                 {% trans "не указан" %}
             {% endif %}
         </dd>
-        <dt>{% trans "Могил всего" %}</dt><dd>{{ place.places_count }}</dd>
+        <dt>{% trans "Могил всего" %}</dt><dd>{{ place.get_graves_count }}</dd>
         <dt>{% trans "Свободно" %}</dt><dd>{{ place.get_available_count }}</dd>
 
     </dl>
@@ -36,14 +36,16 @@
         <a href="{% url create_burial %}?place_id={{ place.pk }}" class="btn">{% trans "добавить родственное" %}</a>
     {% endif %}
 
+    <!--
     <h2>{% trans "Данные" %}</h2>
     <form action="" method="POST">
         {% csrf_token %}
-        {{ form.as_p }}
+         << form.as_p >>
         <p>
             <input type="submit" class="btn btn-primary btn-commit-burial" value="{% trans "cохранить" %}"/>
         </p>
     </form>
+    -->
 
     <h2>{% trans "Захоронения" %}</h2>
     <table class="table table-bordered">

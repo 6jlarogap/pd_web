@@ -12,7 +12,7 @@
     <dl>
         <dt>{% trans "Могил" %}</dt>
         <dd>
-            {{ place.get_places_count }}
+            {{ place.get_graves_count }}
             ({% trans "свободно" %} {{ place.get_available_count }})
         </dd>
         {% if place.responsible %}
@@ -28,7 +28,7 @@
         {% for b in place.burial_set.all %}
             {% if not b.annulated %}
                 <li>
-                    {{ b.grave_number }} &mdash;
+                    {{ b.grave.grave_number }} &mdash;
                     {{ b.get_burial_type_display }} &mdash;
                     {% if user.profile.is_loru and b.is_full %}
                         <a href="{% url view_burial b.pk %}">{{ b.deadman_or_bio }}</a>

@@ -135,7 +135,6 @@
         <td class="no-print">
             <a class="btn" href="{% url view_burial b.pk %}">{% trans "просмотр" %}</a>
             {% if not dashboard %}
-                <a class="btn" href="{% url view_burial b.pk %}">{% trans "просмотр" %}</a>
                 {% if user.profile.org == b.applicant_organization and b.is_full and b.is_edit %}
                     <a class="btn" href="{% url edit_burial b.pk %}">{% trans "правка" %}</a>
                 {% elif b.is_edit and b.is_ugh %}
