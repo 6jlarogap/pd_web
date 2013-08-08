@@ -654,8 +654,10 @@ class BurialCommitForm(BurialForm):
 
     def setup_required(self):
         for f in self.fields:
-            if f in ['cemetery', 'area', 'plan_date', 'plan_time']:
+            if f in ['cemetery', 'plan_date', 'plan_time',]:
                 self.fields[f].required = True
+        if self.request.user.profile.is_ugh():
+            self.fields['area'].required = True
 
         if self.data.get('cemetery'):
             cemetery = self.data.get('cemetery')
