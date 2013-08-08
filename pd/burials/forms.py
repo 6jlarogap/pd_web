@@ -653,6 +653,10 @@ class BurialCommitForm(BurialForm):
         return data
 
     def setup_required(self):
+        for f in self.fields:
+            if f in ['cemetery', 'area', 'plan_date', 'plan_time']:
+                self.fields[f].required = True
+
         self.fields['cemetery'].required = True
         self.fields['plan_date'].required = True
         if self.request.user.profile.is_ugh():
@@ -874,8 +878,6 @@ class BurialCommitForm(BurialForm):
         if self.dc_form.is_valid() and \
            not (self.instance.is_archive() or self.request.REQUEST.get('archive') or \
                 self.instance.is_transferred() or \
-                self.request.user.profile.is_loru() or \
-                self.instance.is_closed() and self.instance.is_full() or \
                 self.cleaned_data.get('burial_container') == Burial.CONTAINER_BIO \
                ):
             death_certificate_release_date = self.dc_form.cleaned_data.get('release_date')
