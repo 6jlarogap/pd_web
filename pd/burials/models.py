@@ -385,7 +385,7 @@ class Burial(SafeDeleteMixin, models.Model):
                                     help_text=_(u"Если пусто - номер будет сгенерирован автоматически"))
     grave = models.ForeignKey(Grave, verbose_name=_(u"Могила"), null=True, blank=True, on_delete=models.PROTECT)
     grave_number = models.PositiveSmallIntegerField(_(u"Могила"), default=1)
-    desired_graves_count = models.PositiveSmallIntegerField(_(u"Запрошенное число могил в месте"), default=1)
+    desired_graves_count = models.PositiveSmallIntegerField(_(u"Желаемое число могил в месте"), default=1)
     responsible = models.ForeignKey('persons.AlivePerson', verbose_name=_(u"Ответственный"), blank=True, null=True,
                                     related_name='responsible_burials', on_delete=models.PROTECT)
 
