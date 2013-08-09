@@ -71,7 +71,12 @@
             {% endif %}
         <dt>{% trans "Кладбище" %}:</dt><dd>{{ b.cemetery|default:"не указан" }}</dd>
         <dt>{% trans "Место" %}:</dt><dd>
-            {% if b.area %}{% trans "Участок" %}: {{ b.area }}<br/>{% endif %}
+            {% if b.area %}
+                {% trans "Участок" %}: {{ b.area }}<br/>
+            {% elif b.is_ready %}
+                <span style="color:red"><b><big>{% trans "Участок не указан" %}.</big></b></span>
+                {% trans "Запрошено место на число могил: " %}{{ b.desired_graves_count }}<br/>
+            {% endif %}
             {% if b.row %}{% trans "Ряд" %}: {{ b.row }}<br/>{% endif %}
             {% if b.place_number %}{% trans "Место" %}: {{ b.place_number }}<br/>{% endif %}
             {% if b.grave_number %}{% trans "Могила" %}: {{ b.grave_number }}<br/>{% endif %}

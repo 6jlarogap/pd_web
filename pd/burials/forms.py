@@ -272,6 +272,13 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
         grave_choices = [(i,i) for i in range(1, places_count+1)]
         self.fields['grave_number'].widget = forms.Select(choices=grave_choices)
 
+        if self.request.user.profile.is_loru():
+            max_grave_number = self.fields['cemetery'].queryset.aggregate(m=Max('area__places_count'))['m']
+            max_grave_choices = [(i,i) for i in range(1, max_grave_number+1)]
+            self.fields['desired_graves_count'].widget = forms.Select(choices=max_grave_choices)
+        else:
+            del self.fields['desired_graves_count']
+        
         loru_list = Org.objects.all()
         self.fields['applicant_organization'].queryset = loru_list
         self.fields['applicant_organization'].inactive_queryset = loru_list.filter(Q(profile__user__is_active=False) | Q(profile=None))
