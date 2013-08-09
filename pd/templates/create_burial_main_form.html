@@ -86,7 +86,7 @@
 <!-- <div id="cont_place" style="{% if form.instance.pk %}display: none{% endif %}"> -->
 <div id="cont_place">
     {% if user.profile.is_loru %}
-    {{ form.desired_graves_count.errors }}
+        {{ form.desired_graves_count.errors }}
         <p>{{ form.desired_graves_count.label_tag }} {{ form.desired_graves_count }}<span class="helptext">{{ form.desired_graves_count.help_text }}</span></p>
     {% endif %}
 
