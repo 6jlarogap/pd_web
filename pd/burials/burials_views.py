@@ -16,7 +16,7 @@ from django.views.generic.detail import DetailView
 from django.views.generic.edit import CreateView, DeleteView
 from django.views.generic.list import ListView
 
-from burials.forms import BurialSearchForm, BurialPublicListForm, BurialForm, BurialCommitForm, BurialCloseForm, AddDocTypeForm
+from burials.forms import BurialSearchForm, BurialPublicListForm, BurialForm, BurialCommitForm, BurialApproveCloseForm, AddDocTypeForm
 from burials.forms import AddAgentForm, AddDoverForm, AddOrgForm, ExhumationForm
 from burials.models import Reason, Burial, Cemetery, Place, ExhumationRequest
 from logs.models import write_log
@@ -186,16 +186,21 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
 
         if request.POST.get('ready') and b.is_edit() and b.is_full():
             return redirect(reverse('edit_burial', args=[b.pk]) + '?action=ready')
+
         if request.POST.get('approve') and request.user.profile.is_ugh() and b.can_approve():
-            if b.is_full():
-                b.status = Burial.STATUS_APPROVED
-                b.approve(self.request.user)
-                write_log(request, b, _(u'Захоронение согласовано'))
-                messages.success(request, _(u"<a href='%s'>Захоронение %s</a> согласовано") % (
-                    reverse('view_burial', args=[b.pk]), b.pk,
-                ))
-            else:
-                return redirect(reverse('edit_burial', args=[b.pk]) + '?action=approve')
+            if not b.area:
+                approve_close_form = self.get_approve_close_form()
+                if approve_close_form.is_valid():
+                    b = approve_close_form.save()
+                else:
+                    return self.get(request, *args, **kwargs)
+            b.status = Burial.STATUS_APPROVED
+            b.approve(self.request.user)
+            write_log(request, b, _(u'Захоронение согласовано'))
+            messages.success(request, _(u"<a href='%s'>Захоронение %s</a> согласовано") % (
+                reverse('view_burial', args=[b.pk]), b.pk,
+            ))
+
         if request.POST.get('decline') and request.user.profile.is_ugh() and b.can_decline():
             b.status = Burial.STATUS_DECLINED
             b.account_number = None
@@ -205,9 +210,9 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
                 reverse('view_burial', args=[b.pk]), b.pk,
             ))
         if request.POST.get('complete') and request.user.profile.is_ugh() and b.can_finish():
-            close_form = self.get_close_form()
-            if close_form.is_valid():
-                b = close_form.save()
+            approve_close_form = self.get_approve_close_form()
+            if approve_close_form.is_valid():
+                b = approve_close_form.save()
                 if b.is_ugh():
                     return redirect(reverse('edit_burial', args=[b.pk]) + '?action=complete')
                 else:
@@ -259,8 +264,8 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
             return redirect(reverse('edit_burial', args=[b.pk]) + order_parm)
         return redirect('dashboard')
 
-    def get_close_form(self):
-        return BurialCloseForm(request=self.request, data=self.request.POST or None, instance=self.get_object())
+    def get_approve_close_form(self):
+        return BurialApproveCloseForm(request=self.request, data=self.request.POST or None, instance=self.get_object())
 
     def get_object(self, queryset=None):
         if not hasattr(self, '_object'):
@@ -274,7 +279,7 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
             'reason_typical_back': Reason.objects.filter(reason_type=Reason.TYPE_BACK),
             'reason_typical_decline': Reason.objects.filter(reason_type=Reason.TYPE_DECLINE),
             'reason_typical_annulate': Reason.objects.filter(reason_type=Reason.TYPE_ANNULATE),
-            'close_form': self.get_close_form(),
+            'approve_close_form': self.get_approve_close_form(),
             'comment_form': CommentForm(),
             'is_accessible': b.loru and self.request.user.profile.org in b.loru.get_loru_list(),
             'order': self.get_order(),
