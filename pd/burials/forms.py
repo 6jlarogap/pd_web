@@ -963,7 +963,7 @@ class BurialCommitForm(BurialForm):
 
 class BurialApproveCloseForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelForm):
     """
-    Формируется при одобрении и закрытии электронного захоронения
+    Формируется при одобрении или закрытии электронного захоронения
     """
     class Meta:
         model = Burial
@@ -1001,6 +1001,9 @@ class BurialApproveCloseForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelFor
             self.fields['cemetery'].queryset = Cemetery.objects.filter(cemetery_qs).distinct()
 
     def clean_area(self):
+        """
+        Проверка одобрения захоронения только в открытый участок.
+        """
         if self.instance.is_ready() and self.cleaned_data['area'].availability != Area.AVAILABILITY_OPEN:
             raise forms.ValidationError(_(u'Можно предлагать лишь открытый участок кладбища'))
         return self.cleaned_data['area']
