@@ -160,21 +160,17 @@
                 <br/>
                 <input type="submit" class="btn" name="annulate" value="{% trans "аннулировать" %}">
             {% endif %}
-            {% if b.can_finish and not b.is_archive %}
-                {{ close_form.as_p }}
-                <script type="text/javascript">
-                    CEMETERY_AREAS = {{ close_form.cemetery_areas_json|default:"{}" }};
-                    AGENT_DOVER = {{ close_form.agent_dover_json|default:"{}"  }};
-                    LORU_AGENTS = {{ close_form.loru_agents_json|default:"{}"  }};
-                </script>
-                <input type="submit" class="btn" name="complete" value="{% trans "закрыть" %}">
+            {% if b.can_inspect %}
+                <input type="submit" class="btn" name="inspect" value="{% trans "отправить на обследование" %}">
             {% endif %}
             {% if b.can_approve %}
-                {{ approve_form.as_p }}
+                {% if not b.area %}
+                    {{ approve_close_form.as_p }}
+                {% endif %}
                 <script type="text/javascript">
-                    CEMETERY_AREAS = {{ close_form.cemetery_areas_json|default:"{}" }};
-                    AGENT_DOVER = {{ close_form.agent_dover_json|default:"{}"  }};
-                    LORU_AGENTS = {{ close_form.loru_agents_json|default:"{}"  }};
+                    CEMETERY_AREAS = {{ approve_close_form.cemetery_areas_json|default:"{}" }};
+                    AGENT_DOVER = {{ approve_close_form.agent_dover_json|default:"{}"  }};
+                    LORU_AGENTS = {{ approve_close_form.loru_agents_json|default:"{}"  }};
                 </script>
                 <input type="submit" class="btn" name="approve" value="{% trans "одобрить" %}">
             {% endif %}
@@ -188,6 +184,15 @@
                 <textarea name="reason" rows="5" cols="30"></textarea>
                 <br/>
                 <input type="submit" class="btn" name="decline" value="{% trans "отказать" %}">
+            {% endif %}
+            {% if b.can_finish and not b.is_archive %}
+                {{ approve_close_form.as_p }}
+                <script type="text/javascript">
+                    CEMETERY_AREAS = {{ approve_close_form.cemetery_areas_json|default:"{}" }};
+                    AGENT_DOVER = {{ approve_close_form.agent_dover_json|default:"{}"  }};
+                    LORU_AGENTS = {{ approve_close_form.loru_agents_json|default:"{}"  }};
+                </script>
+                <input type="submit" class="btn" name="complete" value="{% trans "закрыть" %}">
             {% endif %}
             {% if b.is_finished and not b.annulated %}
                 <a href="{% url burial_exhumate b.pk %}" class="btn">{% trans "эксгумировать" %}</a>
