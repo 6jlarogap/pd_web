@@ -799,6 +799,7 @@ class BurialCommitForm(BurialForm):
 
         place_number = self.cleaned_data.get('place_number') or ''
         area = self.cleaned_data.get('area')
+        row = self.cleaned_data.get('row')
         if not place_number.strip() and (self.instance.is_archive() or self.request.REQUEST.get('archive')):
             msg = _(u"Нельзя закрывать архивное захоронение без указания номера места")
             raise forms.ValidationError(msg)
@@ -809,9 +810,11 @@ class BurialCommitForm(BurialForm):
             elif self.request.REQUEST.get('ready'):
                 msg = _(u"Не указано место для закрытого участка. Нельзя отправлять на согласование")
                 raise forms.ValidationError(msg)
+        elif (row.strip() or place_number.strip()) and not area:
+            msg = _(u"Указан ряд и/или место, но не указан участок")
+            raise forms.ValidationError(msg)
 
         cemetery = self.cleaned_data.get('cemetery')
-        row = self.cleaned_data.get('row')
         grave_number = self.cleaned_data.get('grave_number')
         place = None
         if cemetery and area and place_number:
