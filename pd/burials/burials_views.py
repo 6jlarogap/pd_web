@@ -189,7 +189,6 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
 
         if request.POST.get('inspect') and request.user.profile.is_ugh() and b.can_inspect():
             b.status = Burial.STATUS_INSPECTING
-            b.approve(self.request.user)
             write_log(request, b, _(u'Захоронение отправлено на обследование'))
             messages.success(request, _(u"<a href='%s'>Захоронение %s</a> отправлено на обследование") % (
                 reverse('view_burial', args=[b.pk]), b.pk,
