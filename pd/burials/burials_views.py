@@ -187,6 +187,14 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
         if request.POST.get('ready') and b.is_edit() and b.is_full():
             return redirect(reverse('edit_burial', args=[b.pk]) + '?action=ready')
 
+        if request.POST.get('inspect') and request.user.profile.is_ugh() and b.can_inspect():
+            b.status = Burial.STATUS_INSPECTING
+            b.approve(self.request.user)
+            write_log(request, b, _(u'Захоронение отправлено на обследование'))
+            messages.success(request, _(u"<a href='%s'>Захоронение %s</a> отправлено на обследование") % (
+                reverse('view_burial', args=[b.pk]), b.pk,
+            ))
+
         if request.POST.get('approve') and request.user.profile.is_ugh() and b.can_approve():
             if not b.area:
                 approve_close_form = self.get_approve_close_form()

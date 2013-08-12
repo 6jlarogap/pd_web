@@ -980,7 +980,7 @@ class BurialApproveCloseForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelFor
         else:
             cemetery = self.instance.cemetery
 
-        if self.instance.is_approved():
+        if self.instance.can_finish():
             # Закрытие
             if not self.instance.fact_date:
                 self.initial['fact_date'] = self.instance.plan_date
@@ -991,7 +991,7 @@ class BurialApproveCloseForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelFor
                 self.fields['place_number'].required = False
             self.fields['cemetery'].queryset = Cemetery.objects.filter(cemetery_qs)
 
-        elif self.instance.is_ready():
+        elif self.instance.can_approve():
             # Одобрение
             for f in ['row', 'place_number', 'fact_date', ]:
                 del self.fields[f]
