@@ -811,7 +811,7 @@ class BurialCommitForm(BurialForm):
                 msg = _(u"Не указано место для закрытого участка. Нельзя отправлять на согласование")
                 raise forms.ValidationError(msg)
         elif row.strip() or place_number.strip() and not area:
-            msg = _(u"Указано ряд и/или место, но не указан участок")
+            msg = _(u"Указан ряд и/или место, но не указан участок")
             raise forms.ValidationError(msg)
 
         cemetery = self.cleaned_data.get('cemetery')
