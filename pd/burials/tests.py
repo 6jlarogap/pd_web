@@ -1,6 +1,6 @@
 import datetime
 import json
-from burials.forms import BurialCloseForm
+from burials.forms import BurialApproveCloseForm
 from burials.models import Cemetery, Burial, Place, Area, ExhumationRequest
 from django.contrib.auth.models import User
 from django.http import HttpRequest
@@ -499,7 +499,7 @@ class TestForms(TestCase):
     def test_children(self):
         request = HttpRequest()
         request.user = self.ugh_user
-        f = BurialCloseForm(request)
+        f = BurialApproveCloseForm(request)
         self.assertEqual(f.cemetery_areas_json(), "{}")
         self.assertEqual(f.agent_dover_json(), "{}")
         self.assertEqual(f.loru_agents_json(), "{}")
