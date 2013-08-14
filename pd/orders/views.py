@@ -573,11 +573,11 @@ class OrderBurialView(LORURequiredMixin, View):
                 return redirect(reverse('edit_burial', args=[order.burial.pk]) + '?order=%s' % order.pk)
             else:
                 return redirect(reverse('view_burial', args=[order.burial.pk]) + '?order=%s' % order.pk)
-        data = {
+        context_data = {
             'order': order,
             'user': self.request.user,
             'form': OrderBurialForm()
         }
-        return render(request, self.template_name, data)
+        return render(request, self.template_name, context_data)
 
 order_burial = OrderBurialView.as_view()
