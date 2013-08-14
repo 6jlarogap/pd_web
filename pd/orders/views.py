@@ -570,9 +570,9 @@ class OrderBurialView(LORURequiredMixin, View):
         burial = order.burial
         if burial:
             if burial.is_edit() and not burial.annulated:
-                return redirect(reverse('edit_burial', args=[order.burial.pk]) + '?order=%s' % order.pk)
+                return redirect(reverse('edit_burial', args=[burial.pk]) + '?order=%s' % order.pk)
             else:
-                return redirect(reverse('view_burial', args=[order.burial.pk]) + '?order=%s' % order.pk)
+                return redirect(reverse('view_burial', args=[burial.pk]) + '?order=%s' % order.pk)
         context_data = {
             'order': order,
             'user': self.request.user,
