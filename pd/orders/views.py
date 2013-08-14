@@ -20,7 +20,8 @@ from django.shortcuts import get_object_or_404
 from logs.models import write_log
 from burials.forms import AddOrgForm, AddAgentForm, AddDoverForm, AddDocTypeForm
 from burials.models import Burial
-from orders.forms import ProductForm, OrderForm, OrderItemFormset, CoffinForm, CatafalqueForm, AddInfoForm, OrderSearchForm, OrderBurialForm
+from orders.forms import ProductForm, OrderForm, OrderItemFormset, CoffinForm, CatafalqueForm, \
+                         AddInfoForm, OrderSearchForm, OrderBurialForm
 from orders.models import Product, Order, OrderItem
 from pd.forms import CommentForm
 from reports.models import make_report
@@ -549,7 +550,6 @@ class AnnulateOrder(LORURequiredMixin, DetailView):
             if b and b.annulated and not old_annulated:
                 write_log(request, b, _(u'Захоронение аннулировано'))
         return redirect('order_edit', o.pk)
-
 
 order_annulate = AnnulateOrder.as_view()
 
