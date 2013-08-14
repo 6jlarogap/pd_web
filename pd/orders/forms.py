@@ -216,3 +216,12 @@ class OrderSearchForm(forms.Form):
     reg_number_to = forms.IntegerField(required=False, label=_(u" по "))
     burial_container = forms.TypedChoiceField(required=False, label=_(u"Тип захоронения"), choices=EMPTY + Burial.BURIAL_CONTAINERS)
 
+class OrderBurialForm(forms.Form):
+    """
+    Форма создания или привязки захоронения к заказу
+    """
+    
+    NB_CHOICES = (('new', _(u'Новое захоронение')), ('bind', _(u'Существующее')))
+
+    new_or_bind = forms.ChoiceField(label='', choices=NB_CHOICES, widget=forms.RadioSelect, initial='new')
+    burial2order = forms.IntegerField(required=False, label=_(u"Номер захоронения"))

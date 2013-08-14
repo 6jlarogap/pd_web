@@ -458,6 +458,15 @@ $(function() {
     });
     $('input[name=opf]').change();
 
+    $('input[name=new_or_bind]').change(function() {
+        if ($('input[name=new_or_bind]:checked').val() == 'new') {
+            $('input[name=burial2order]').closest('p').hide();
+        } else {
+            $('input[name=burial2order]').closest('p').show();
+        }
+    });
+    $('input[name=new_or_bind]').change();
+
     $('form.burial-form :input:visible:first').focus();
 
     $('#id_agent_director').change(function() {

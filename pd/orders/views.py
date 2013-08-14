@@ -6,7 +6,7 @@ from django.contrib import messages
 from django.core.urlresolvers import reverse
 from django.db.models.aggregates import Count, Sum
 from django.db.models.query_utils import Q
-from django.http import HttpResponse
+from django.http import HttpResponse, Http404
 from django.shortcuts import redirect, render
 from django.template.context import RequestContext
 from django.views.generic.base import View
@@ -20,7 +20,7 @@ from django.shortcuts import get_object_or_404
 from logs.models import write_log
 from burials.forms import AddOrgForm, AddAgentForm, AddDoverForm, AddDocTypeForm
 from burials.models import Burial
-from orders.forms import ProductForm, OrderForm, OrderItemFormset, CoffinForm, CatafalqueForm, AddInfoForm, OrderSearchForm
+from orders.forms import ProductForm, OrderForm, OrderItemFormset, CoffinForm, CatafalqueForm, AddInfoForm, OrderSearchForm, OrderBurialForm
 from orders.models import Product, Order, OrderItem
 from pd.forms import CommentForm
 from reports.models import make_report
@@ -552,3 +552,32 @@ class AnnulateOrder(LORURequiredMixin, DetailView):
 
 
 order_annulate = AnnulateOrder.as_view()
+
+class OrderBurialView(LORURequiredMixin, View):
+    """
+    Cоздание или привязка захоронения к заказу
+    """
+    template_name = 'order_burial.html'
+    
+    def get(self, request, *args, **kwargs):
+        try:
+            order = Order.objects.filter(loru=self.request.user.profile.org) \
+                    .get(pk=self.kwargs['pk'])
+        except Order.DoesNotExist:
+            raise Http404
+        # Захоронение может и существовать у этого заказа:
+        #   гонки или ввод url из адресной строки
+        burial = order.burial
+        if burial:
+            if burial.is_edit() and not burial.annulated:
+                return redirect(reverse('edit_burial', args=[order.burial.pk]) + '?order=%s' % order.pk)
+            else:
+                return redirect(reverse('view_burial', args=[order.burial.pk]) + '?order=%s' % order.pk)
+        data = {
+            'order': order,
+            'user': self.request.user,
+            'form': OrderBurialForm()
+        }
+        return render(request, self.template_name, data)
+
+order_burial = OrderBurialView.as_view()
