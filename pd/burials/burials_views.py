@@ -614,7 +614,8 @@ class CreateBurial(BurialGetOrderMixin, CreateView):
 
     def form_valid(self, form, *args, **kwargs):
         b = form.save()
-
+        
+        order = None
         order_parm = ''
         if self.request.user.profile.is_loru():
             order = self.get_order()
@@ -662,7 +663,7 @@ class CreateBurial(BurialGetOrderMixin, CreateView):
 
             if old_status != b.status or old_annulated != b.annulated:
                 b.save()
-            else:
+            elif action != 'unbind':
                 msg = _(u"Выполнить операцию не удалось: <a href='%s'>захоронение</a> в статусе \"%s\"") % (
                     reverse('view_burial', args=[b.pk]) + order_parm,
                     b.get_status_display(),
@@ -670,11 +671,14 @@ class CreateBurial(BurialGetOrderMixin, CreateView):
                 messages.success(self.request, msg)
 
             if self.request.user.profile.is_loru():
-                self.request.session['order_burial_saved'] = True
-                if b.is_edit() and not b.annulated:
-                    return redirect(reverse('edit_burial', args=[b.pk]) + order_parm)
+                if action == 'unbind' and order:
+                    return redirect(reverse('order_burial', args=[order.pk]))
                 else:
-                    return redirect(reverse('view_burial', args=[b.pk]) + order_parm)
+                    self.request.session['order_burial_saved'] = True
+                    if b.is_edit() and not b.annulated:
+                        return redirect(reverse('edit_burial', args=[b.pk]) + order_parm)
+                    else:
+                        redirect_to_view = True
 
             if redirect_to_view:
                 return redirect(reverse('view_burial', args=[b.pk]) + order_parm)
@@ -699,11 +703,13 @@ class CreateBurial(BurialGetOrderMixin, CreateView):
             action = 'complete'
         if self.request.REQUEST.get('annulate'):
             action = 'annulate'
+        if self.request.REQUEST.get('unbind'):
+            action = 'unbind'
         return action
 
     def get_form_class(self):
         action =  self.get_action()
-        if action and action != 'annulate':
+        if action and action not in ('annulate', 'unbind',):
             return BurialCommitForm
         elif self.get_object() and self.get_object().is_finished() and self.request.user.profile.is_ugh():
             return BurialCommitForm
