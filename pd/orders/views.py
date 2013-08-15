@@ -584,7 +584,7 @@ class OrderBurialView(LORURequiredMixin, UpdateView):
         # - форма привязала к этому заказу захоронение
         if order.burial:
             write_log(self.request, self.object, _(u'Заказ: прикреплено захоронение %s') % order.burial.pk)
-            msg = _(u"<a href='%s'>Заказ %s</a> сохранен") % (
+            msg = _(u"<a href='%s'>Заказ %s</a>: прикреплено захоронение") % (
                 reverse('order_edit', args=[self.object.pk]),
                 self.object.pk,
             )
