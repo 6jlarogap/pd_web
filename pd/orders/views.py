@@ -569,10 +569,13 @@ class OrderBurialView(LORURequiredMixin, View):
             raise Http404
         
     def get_context_data(self, **kwargs):
+        order = self.get_object()
+        user = self.request.user
         return {
-            'order': self.get_object(),
-            'user': self.request.user,
-            'form': OrderBurialForm(self.request.POST or None)
+            'order': order,
+            'user': user,
+            'form': OrderBurialForm(self.request.POST or None,
+                                    initial={'nb_order': order.pk, 'nb_org': user.profile.org.pk})
         }
 
     def get(self, request, *args, **kwargs):
@@ -586,4 +589,8 @@ class OrderBurialView(LORURequiredMixin, View):
                 return redirect(reverse('view_burial', args=[burial.pk]) + '?order=%s' % order.pk)
         return render(request, self.template_name, context_data)
 
+    def post(self, request, *args, **kwargs):
+        context_data = self.get_context_data()
+        return render(request, self.template_name, context_data)
+        
 order_burial = OrderBurialView.as_view()

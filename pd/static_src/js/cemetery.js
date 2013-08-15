@@ -458,14 +458,14 @@ $(function() {
     });
     $('input[name=opf]').change();
 
-    $('input[name=new_or_bind]').change(function() {
-        if ($('input[name=new_or_bind]:checked').val() == 'new') {
-            $('input[name=burial2order]').closest('p').hide();
+    $('input[name=nb_choice]').change(function() {
+        if ($('input[name=nb_choice]:checked').val() == 'new') {
+            $('input[name=nb_burial]').closest('p').hide();
         } else {
-            $('input[name=burial2order]').closest('p').show();
+            $('input[name=nb_burial]').closest('p').show();
         }
     });
-    $('input[name=new_or_bind]').change();
+    $('input[name=nb_choice]').change();
 
     $('form.burial-form :input:visible:first').focus();
 

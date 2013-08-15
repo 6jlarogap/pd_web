@@ -223,5 +223,26 @@ class OrderBurialForm(forms.Form):
     
     NB_CHOICES = (('new', _(u'Новое захоронение')), ('bind', _(u'Существующее')))
 
-    new_or_bind = forms.ChoiceField(label='', choices=NB_CHOICES, widget=forms.RadioSelect, initial='new')
-    burial2order = forms.IntegerField(required=False, label=_(u"Номер захоронения"))
+    nb_choice = forms.ChoiceField(label='', choices=NB_CHOICES, widget=forms.RadioSelect, initial='new')
+    nb_burial = forms.IntegerField(required=False, label=_(u"Номер захоронения"))
+    nb_order = forms.IntegerField(required=False, widget=forms.HiddenInput)
+    nb_org = forms.IntegerField(required=False, widget=forms.HiddenInput)
+    
+    def clean(self):
+        cd = self.cleaned_data
+        if self.is_valid():
+            if cd['nb_choice'] == 'bind':
+                if not cd['nb_burial']:
+                    raise forms.ValidationError(_(u'Задайте номер захоронения'))
+                try:
+                    burial = Burial.objects.get(pk=cd['nb_burial'])
+                    org = Org.objects.get(pk=cd['nb_org'])
+                    if not Burial.objects.filter(ugh__loru_list__loru=org).exists():
+                        raise forms.ValidationError(_(u'Это захоронение недоступно вашей организации'))
+                    order = Order.objects.get(pk=cd['nb_order'])
+                    order.burial = burial
+                    order.save()
+                except Burial.DoesNotExist:
+                    raise forms.ValidationError(_(u'Нет такого захоронения'))
+        return cd
+
