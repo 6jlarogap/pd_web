@@ -628,7 +628,7 @@ class CreateBurial(BurialGetOrderMixin, CreateView):
 
     def form_valid(self, form, *args, **kwargs):
         b = form.save()
-        
+
         order = None
         order_parm = ''
         if self.request.user.profile.is_loru():

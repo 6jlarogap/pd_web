@@ -579,9 +579,8 @@ class OrderBurialView(LORURequiredMixin, UpdateView):
         return super(OrderBurialView, self).get(request, *args, **kwargs)
         
     def form_valid(self, form):
-        # - создаем новое зх в этом заказе
-        # - форма привязала к этому заказу захоронение
         if self.object.burial:
+            # - форма привязала к этому заказу захоронение
             write_log(self.request, self.object.burial, _(u'Захоронение прикреплено к заказу %s') % self.object.pk)
             write_log(self.request, self.object, _(u'Заказ: прикреплено захоронение %s') % self.object.burial.pk)
             msg = _(u"<a href='%s'>Заказ %s</a>: прикреплено захоронение") % (
@@ -590,6 +589,7 @@ class OrderBurialView(LORURequiredMixin, UpdateView):
             )
             messages.success(self.request, msg)
             return redirect('.')
+        # - форма отдала "Создать новое захоронение"
         return redirect(reverse('create_burial') + '?order=%s' % self.object.pk)
 
 order_burial = OrderBurialView.as_view()
