@@ -243,7 +243,7 @@ class OrderBurialForm(forms.ModelForm):
                     burial = Burial.objects.get(pk=cd['nb_burial'])
                     if burial.is_full() and burial.loru == self.request.user.profile.org:
                         pass
-                    elif (burial.is_exhumated or burial.is_closed()) and \
+                    elif (burial.is_closed() or burial.is_exhumated()) and \
                          not burial.is_bio() and \
                          not burial.is_annulated() and \
                          burial.ugh and \

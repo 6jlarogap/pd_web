@@ -163,6 +163,7 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
 
         b = self.get_object()
         
+        order = None
         order_parm = ''
         if self.request.user.profile.is_loru():
             order = self.get_order()
@@ -183,6 +184,17 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
                 reverse('view_burial', args=[b.pk]) + order_parm, b.pk,
             ))
             redirect_to_edit = True
+
+        if request.POST.get('unbind') and not b.is_edit() and b.is_full() and order:
+            order.burial = None
+            order.save()
+            write_log(self.request, b, _(u'Захоронение откреплено от заказа %s') % order.pk)
+            write_log(self.request, order, _(u'Заказ: откреплено захоронение %s') % b.pk)
+            msg = _(u"<a href='%s'>Заказ %s</a>: откреплено захоронение") % (
+                reverse('order_burial', args=[order.pk]),
+                order.pk,
+            )
+            messages.success(self.request, msg)
 
         if request.POST.get('ready') and b.is_edit() and b.is_full():
             return redirect(reverse('edit_burial', args=[b.pk]) + '?action=ready')
@@ -258,6 +270,8 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
             redirect_to_edit = request.user.profile.is_loru()
         if old_status != b.status or old_annulated != b.annulated:
             b.save()
+        elif request.POST.get('unbind') and order:
+            return redirect(reverse('order_burial', args=[order.pk]))
         else:
             msg = _(u"Выполнить операцию не удалось: <a href='%s'>захоронение в статусе \"%s\"") % (
                 reverse('view_burial', args=[b.pk]) + order_parm,
@@ -627,7 +641,7 @@ class CreateBurial(BurialGetOrderMixin, CreateView):
             old_status = b.status
             old_annulated = b.annulated
 
-            if action == 'unbind' and self.request.user.profile.is_loru() and b.is_edit() and b.is_full() and order:
+            if action == 'unbind' and b.is_edit() and b.is_full() and order:
                 order.burial = None
                 order.save()
                 write_log(self.request, b, _(u'Захоронение откреплено от заказа %s') % order.pk)

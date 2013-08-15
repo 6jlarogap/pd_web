@@ -18,9 +18,6 @@
     </h1>{% endblock form_title %}
     <form action="{{ request.path }}" method="POST" enctype="multipart/form-data" class="burial-form main-form">
         {% csrf_token %}
-        {% if user.profile.is_loru and b.is_edit and not b.annulated and order and not order.annulated %}
-            <p><p><input type="submit" class="btn-danger" name="unbind" value="{% trans "открепить от заказа" %}"/><p>
-        {% endif %}
         
         <input type="hidden" name="order"  value="{{ request.REQUEST.order }}" />
         <input type="hidden" name="archive"  value="{{ request.REQUEST.archive }}" />
@@ -51,8 +48,9 @@
                         {% if not b.pk %}
                             <input type="submit" class="btn btn-commit-burial" name="ready" value="{% trans "cохранить и отправить на согласование" %}"/>
                         <!-- захоронение is_edit: черновик, отклонено, отозвано -->
-                        {% elif b.is_edit and order and not order.annulated %}
+                        {% elif b.is_edit and not b.annulated and order and not order.annulated %}
                             <input type="submit" class="btn btn-commit-burial" name="ready" value="{% trans "cохранить и отправить на согласование" %}"/>
+                            <input type="submit" class="btn btn-danger" name="unbind" value="{% trans "сохранить и открепить от заказа" %}"/>
                         {% elif b.can_back %}
                             <input type="submit" class="btn btn-commit-burial" name="back" value="{% trans "отозвать" %}"/>
                         {% endif %}
