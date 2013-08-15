@@ -558,26 +558,32 @@ class OrderBurialView(LORURequiredMixin, View):
     Cоздание или привязка захоронения к заказу
     """
     template_name = 'order_burial.html'
-    
-    def get(self, request, *args, **kwargs):
+
+    def get_queryset(self):
+        return Order.objects.filter(loru=self.request.user.profile.org).distinct()
+
+    def get_object(self):
         try:
-            order = Order.objects.filter(loru=self.request.user.profile.org) \
-                    .get(pk=self.kwargs['pk'])
+            return self.get_queryset().get(pk=self.kwargs['pk'])
         except Order.DoesNotExist:
             raise Http404
-        # Захоронение может и существовать у этого заказа:
-        #   гонки или ввод url из адресной строки
+        
+    def get_context_data(self, **kwargs):
+        return {
+            'order': self.get_object(),
+            'user': self.request.user,
+            'form': OrderBurialForm(self.request.POST or None)
+        }
+
+    def get(self, request, *args, **kwargs):
+        context_data = self.get_context_data()
+        order = context_data['order']
         burial = order.burial
         if burial:
             if burial.is_edit() and not burial.annulated:
                 return redirect(reverse('edit_burial', args=[burial.pk]) + '?order=%s' % order.pk)
             else:
                 return redirect(reverse('view_burial', args=[burial.pk]) + '?order=%s' % order.pk)
-        context_data = {
-            'order': order,
-            'user': self.request.user,
-            'form': OrderBurialForm()
-        }
         return render(request, self.template_name, context_data)
 
 order_burial = OrderBurialView.as_view()
