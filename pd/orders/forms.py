@@ -216,18 +216,23 @@ class OrderSearchForm(forms.Form):
     reg_number_to = forms.IntegerField(required=False, label=_(u" по "))
     burial_container = forms.TypedChoiceField(required=False, label=_(u"Тип захоронения"), choices=EMPTY + Burial.BURIAL_CONTAINERS)
 
-class OrderBurialForm(forms.Form):
+class OrderBurialForm(forms.ModelForm):
     """
     Форма создания или привязки захоронения к заказу
     """
-    
-    NB_CHOICES = (('new', _(u'Новое захоронение')), ('bind', _(u'Существующее')))
+    class Meta:
+        model = Order
+        fields = ()
 
+    NB_CHOICES = (('new', _(u'Новое захоронение')), ('bind', _(u'Существующее')))
+    
     nb_choice = forms.ChoiceField(label='', choices=NB_CHOICES, widget=forms.RadioSelect, initial='new')
     nb_burial = forms.IntegerField(required=False, label=_(u"Номер захоронения"))
-    nb_order = forms.IntegerField(required=False, widget=forms.HiddenInput)
-    nb_org = forms.IntegerField(required=False, widget=forms.HiddenInput)
     
+    def __init__(self, request, *args, **kwargs):
+        self.request = request
+        super(OrderBurialForm, self).__init__(*args, **kwargs)
+
     def clean(self):
         cd = self.cleaned_data
         if self.is_valid():
@@ -236,12 +241,10 @@ class OrderBurialForm(forms.Form):
                     raise forms.ValidationError(_(u'Задайте номер захоронения'))
                 try:
                     burial = Burial.objects.get(pk=cd['nb_burial'])
-                    org = Org.objects.get(pk=cd['nb_org'])
-                    if not Burial.objects.filter(ugh__loru_list__loru=org).exists():
+                    if not Burial.objects.filter(ugh__loru_list__loru=self.request.user.profile.org).exists():
                         raise forms.ValidationError(_(u'Это захоронение недоступно вашей организации'))
-                    order = Order.objects.get(pk=cd['nb_order'])
-                    order.burial = burial
-                    order.save()
+                    self.instance.burial = burial
+                    self.instance.save()
                 except Burial.DoesNotExist:
                     raise forms.ValidationError(_(u'Нет такого захоронения'))
         return cd

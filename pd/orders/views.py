@@ -553,44 +553,43 @@ class AnnulateOrder(LORURequiredMixin, DetailView):
 
 order_annulate = AnnulateOrder.as_view()
 
-class OrderBurialView(LORURequiredMixin, View):
+class OrderBurialView(LORURequiredMixin, UpdateView):
     """
     Cоздание или привязка захоронения к заказу
     """
     template_name = 'order_burial.html'
+    form_class = OrderBurialForm
 
     def get_queryset(self):
-        return Order.objects.filter(loru=self.request.user.profile.org).distinct()
+        return Order.objects.filter(loru=self.request.user.profile.org)
 
-    def get_object(self):
-        try:
-            return self.get_queryset().get(pk=self.kwargs['pk'])
-        except Order.DoesNotExist:
-            raise Http404
-        
-    def get_context_data(self, **kwargs):
-        order = self.get_object()
-        user = self.request.user
-        return {
-            'order': order,
-            'user': user,
-            'form': OrderBurialForm(self.request.POST or None,
-                                    initial={'nb_order': order.pk, 'nb_org': user.profile.org.pk})
-        }
+    def get_form_kwargs(self):
+        data = super(OrderBurialView, self).get_form_kwargs()
+        data['request'] = self.request
+        return data
 
     def get(self, request, *args, **kwargs):
-        context_data = self.get_context_data()
-        order = context_data['order']
+        order = self.get_object()
         burial = order.burial
         if burial:
             if burial.is_edit() and not burial.annulated:
                 return redirect(reverse('edit_burial', args=[burial.pk]) + '?order=%s' % order.pk)
             else:
                 return redirect(reverse('view_burial', args=[burial.pk]) + '?order=%s' % order.pk)
-        return render(request, self.template_name, context_data)
-
-    def post(self, request, *args, **kwargs):
-        context_data = self.get_context_data()
-        return render(request, self.template_name, context_data)
+        return super(OrderBurialView, self).get(request, *args, **kwargs)
         
+    def form_valid(self, form):
+        order = self.get_object()
+        # - создаем новое зх в этом заказе
+        # - форма привязала к этому заказу захоронение
+        if order.burial:
+            write_log(self.request, self.object, _(u'Заказ: прикреплено захоронение %s') % order.burial.pk)
+            msg = _(u"<a href='%s'>Заказ %s</a> сохранен") % (
+                reverse('order_edit', args=[self.object.pk]),
+                self.object.pk,
+            )
+            messages.success(self.request, msg)
+            return redirect('.')
+        return redirect(reverse('create_burial') + '?order=%s' % order.pk)
+
 order_burial = OrderBurialView.as_view()
