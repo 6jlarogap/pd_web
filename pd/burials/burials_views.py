@@ -627,6 +627,17 @@ class CreateBurial(BurialGetOrderMixin, CreateView):
             old_status = b.status
             old_annulated = b.annulated
 
+            if action == 'unbind' and self.request.user.profile.is_loru() and b.is_edit() and b.is_full() and order:
+                order.burial = None
+                order.save()
+                write_log(self.request, b, _(u'Захоронение откреплено от заказа %s') % order.pk)
+                write_log(self.request, order, _(u'Заказ: откреплено захоронение %s') % b.pk)
+                msg = _(u"<a href='%s'>Заказ %s</a>: откреплено захоронение") % (
+                    reverse('order_burial', args=[order.pk]),
+                    order.pk,
+                )
+                messages.success(self.request, msg)
+
             if action == 'ready' and self.request.user.profile.is_loru() and b.is_edit() and b.is_full():
                 b.status = Burial.STATUS_READY
                 write_log(self.request, b, _(u'Захоронение отправлено на согласование'))
