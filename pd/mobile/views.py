@@ -95,7 +95,7 @@ class MobileGetBurial(LoginRequiredMixin, View):
             listBurial = Burial.objects.all().filter(grave__place__cemetery__ugh = user.profile.org).order_by('id')
         listPerson = BasePerson.objects.raw(query)
         all_objects = list(listBurial) + list(listPerson)
-        data = serializers.serialize("json", all_objects, fields=('fact_date','deadman', 'first_name', 'last_name', 'middle_name'))
+        data = serializers.serialize("json", all_objects, fields=('grave', 'fact_date', 'deadman', 'first_name', 'last_name', 'middle_name'))
         return HttpResponse(data, mimetype='application/json')
         
 mobile_get_burial = MobileGetBurial.as_view()
