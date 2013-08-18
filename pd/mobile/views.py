@@ -60,25 +60,15 @@ class MobileGetPlace(LoginRequiredMixin, View):
         user = request.user
         if argAreaId :
             listPlace = Place.objects.filter(cemetery__ugh = user.profile.org).filter(area_id = argAreaId).order_by('cemetery', 'area', 'id')
+            listPlaceStatus = PlaceStatus.objects.filter(place__cemetery__ugh = user.profile.org).filter(place__area_id = argAreaId).filter(status = PlaceStatus.PS_FOUND_UNOWNED).order_by('place', 'id')
         else :
-            listPlace = Place.objects.filter(cemetery__ugh = user.profile.org).order_by('cemetery', 'area', 'id')        
-        data = serializers.serialize("json", listPlace, fields=('cemetery','area','row','place'))       
+            listPlace = Place.objects.filter(cemetery__ugh = user.profile.org).order_by('cemetery', 'area', 'id')
+            listPlaceStatus = PlaceStatus.objects.filter(place__cemetery__ugh = user.profile.org).filter(status = PlaceStatus.PS_FOUND_UNOWNED).order_by('place', 'id')
+        all_objects = list(listPlace) + list(listPlaceStatus)
+        data = serializers.serialize("json", all_objects, fields=('cemetery','area','row','place','status'))       
         return HttpResponse(data, mimetype='application/json')
         
 mobile_get_place = MobileGetPlace.as_view()
-
-class MobileGetPlaceStatus(LoginRequiredMixin, View):
-    def get(self, request, *args, **kwargs):        
-        argAreaId = request.GET.get('areaId', None)
-        user = request.user
-        if argAreaId :
-            listPlaceStatus = PlaceStatus.objects.filter(place__cemetery__ugh = user.profile.org).filter(place__area_id = argAreaId).filter(status = PlaceStatus.PS_FOUND_UNOWNED).order_by('place', 'id')
-        else :
-            listPlaceStatus = PlaceStatus.objects.filter(place__cemetery__ugh = user.profile.org).filter(status = PlaceStatus.PS_FOUND_UNOWNED).order_by('place', 'id')        
-        data = serializers.serialize("json", listPlaceStatus, fields=('place','status'))
-        return HttpResponse(data, mimetype='application/json')
-        
-mobile_get_placestatus = MobileGetPlaceStatus.as_view()
 
 class MobileGetGrave(LoginRequiredMixin, View):
     def get(self, request, *args, **kwargs):
