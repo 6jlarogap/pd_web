@@ -105,8 +105,7 @@ class PlaceEditForm(forms.ModelForm):
             deleted_ = 0
             for grave_number in range(graves_count, new_graves_count, -1):
                 try:
-                    grave = Grave.objects.filter(place=self.instance, grave_number=grave_number)[0]
-                    grave.delete()
+                    Grave.objects.filter(place=self.instance, grave_number=grave_number)[0].delete()
                 except (IndexError, ProtectedError):
                     break
                 deleted_ += 1 
