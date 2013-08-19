@@ -111,7 +111,7 @@ class PlaceEditForm(forms.ModelForm):
                 deleted_ += 1 
             if deleted_ < graves_count - new_graves_count:
                 if deleted_ == 0:
-                    raise forms.ValidationError(_(u"Не удалось удалить могилы из места, заняты или удалены ранее"))
+                    raise forms.ValidationError(_(u"Не удалось удалить могилы из места, могилы заняты или удалены ранее"))
                 else:
                     raise forms.ValidationError(_(u"Удалены лишь %s могил, остальные заняты или удалены ранее") % deleted_)
         elif new_graves_count > graves_count:
