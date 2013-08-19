@@ -163,6 +163,7 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
 
         b = self.get_object()
         
+        order = None
         order_parm = ''
         if self.request.user.profile.is_loru():
             order = self.get_order()
@@ -183,6 +184,17 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
                 reverse('view_burial', args=[b.pk]) + order_parm, b.pk,
             ))
             redirect_to_edit = True
+
+        if request.POST.get('unbind') and not b.is_edit() and b.is_full() and order:
+            order.burial = None
+            order.save()
+            write_log(self.request, b, _(u'Захоронение откреплено от заказа %s') % order.pk)
+            write_log(self.request, order, _(u'Заказ: откреплено захоронение %s') % b.pk)
+            msg = _(u"<a href='%s'>Заказ %s</a>: откреплено захоронение") % (
+                reverse('order_burial', args=[order.pk]),
+                order.pk,
+            )
+            messages.success(self.request, msg)
 
         if request.POST.get('ready') and b.is_edit() and b.is_full():
             return redirect(reverse('edit_burial', args=[b.pk]) + '?action=ready')
@@ -258,6 +270,8 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
             redirect_to_edit = request.user.profile.is_loru()
         if old_status != b.status or old_annulated != b.annulated:
             b.save()
+        elif request.POST.get('unbind') and order:
+            return redirect(reverse('order_burial', args=[order.pk]))
         else:
             msg = _(u"Выполнить операцию не удалось: <a href='%s'>захоронение в статусе \"%s\"") % (
                 reverse('view_burial', args=[b.pk]) + order_parm,
@@ -615,6 +629,7 @@ class CreateBurial(BurialGetOrderMixin, CreateView):
     def form_valid(self, form, *args, **kwargs):
         b = form.save()
 
+        order = None
         order_parm = ''
         if self.request.user.profile.is_loru():
             order = self.get_order()
@@ -625,6 +640,17 @@ class CreateBurial(BurialGetOrderMixin, CreateView):
             redirect_to_view = False
             old_status = b.status
             old_annulated = b.annulated
+
+            if action == 'unbind' and b.is_edit() and b.is_full() and order:
+                order.burial = None
+                order.save()
+                write_log(self.request, b, _(u'Захоронение откреплено от заказа %s') % order.pk)
+                write_log(self.request, order, _(u'Заказ: откреплено захоронение %s') % b.pk)
+                msg = _(u"<a href='%s'>Заказ %s</a>: откреплено захоронение") % (
+                    reverse('order_burial', args=[order.pk]),
+                    order.pk,
+                )
+                messages.success(self.request, msg)
 
             if action == 'ready' and self.request.user.profile.is_loru() and b.is_edit() and b.is_full():
                 b.status = Burial.STATUS_READY
@@ -662,7 +688,7 @@ class CreateBurial(BurialGetOrderMixin, CreateView):
 
             if old_status != b.status or old_annulated != b.annulated:
                 b.save()
-            else:
+            elif action != 'unbind':
                 msg = _(u"Выполнить операцию не удалось: <a href='%s'>захоронение</a> в статусе \"%s\"") % (
                     reverse('view_burial', args=[b.pk]) + order_parm,
                     b.get_status_display(),
@@ -670,11 +696,14 @@ class CreateBurial(BurialGetOrderMixin, CreateView):
                 messages.success(self.request, msg)
 
             if self.request.user.profile.is_loru():
-                self.request.session['order_burial_saved'] = True
-                if b.is_edit() and not b.annulated:
-                    return redirect(reverse('edit_burial', args=[b.pk]) + order_parm)
+                if action == 'unbind' and order:
+                    return redirect(reverse('order_burial', args=[order.pk]))
                 else:
-                    return redirect(reverse('view_burial', args=[b.pk]) + order_parm)
+                    self.request.session['order_burial_saved'] = True
+                    if b.is_edit() and not b.annulated:
+                        return redirect(reverse('edit_burial', args=[b.pk]) + order_parm)
+                    else:
+                        redirect_to_view = True
 
             if redirect_to_view:
                 return redirect(reverse('view_burial', args=[b.pk]) + order_parm)
@@ -699,11 +728,13 @@ class CreateBurial(BurialGetOrderMixin, CreateView):
             action = 'complete'
         if self.request.REQUEST.get('annulate'):
             action = 'annulate'
+        if self.request.REQUEST.get('unbind'):
+            action = 'unbind'
         return action
 
     def get_form_class(self):
         action =  self.get_action()
-        if action and action != 'annulate':
+        if action and action not in ('annulate', 'unbind',):
             return BurialCommitForm
         elif self.get_object() and self.get_object().is_finished() and self.request.user.profile.is_ugh():
             return BurialCommitForm
