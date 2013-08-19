@@ -164,7 +164,7 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
         order_parm = ''
         if self.request.user.profile.is_loru():
             order = self.get_order()
-            order_parm = '?order=%s' % order.pk
+            order_parm = '?order=%s' % order.pk if order else ''
 
         b.changed = datetime.datetime.now()
         b.changed_by = request.user
@@ -628,7 +628,7 @@ class CreateBurial(BurialGetOrderMixin, CreateView):
         order_parm = ''
         if self.request.user.profile.is_loru():
             order = self.get_order()
-            order_parm = '?order=%s' % order.pk
+            order_parm = '?order=%s' % order.pk if order else ''
 
         action = self.get_action()
         if action:
