@@ -139,6 +139,11 @@
         </th>
         {% if user.profile.is_loru %}
             <td>
+            {% for order in b.burial_orders.all %}
+                {% if b.loru and b.loru.pk == order.loru.pk %}
+                    <a href="{% url order_edit order.pk %}">{{ order.loru_number }}</a><br />
+                {% endif %}
+            {% endfor %}
             </td>
         {% endif %}
         <td class="no-print">
