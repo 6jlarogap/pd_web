@@ -57,8 +57,8 @@ class DashboardView(BurialsListGenericMixin, TemplateView):
     template_name = 'dashboard.html'
 
     def get(self, request, *args, **kwargs):
-        if request.user.is_authenticated() and request.user.profile.is_loru():
-            return redirect('order_dashboard')
+        #if request.user.is_authenticated() and request.user.profile.is_loru():
+            #return redirect('order_dashboard')
         return super(DashboardView, self).get(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
@@ -146,9 +146,6 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
         self.kwargs = kwargs
         order = self.get_order()
         b = self.get_object()
-        # Помешаем вставлять абы что в адресную строку браузера
-        if request.user.profile.is_loru() and not (order and b and order.burial == b):
-            raise Http404
         return super(BurialView, self).dispatch(request, *args, **kwargs)
 
     def get_queryset(self):
@@ -617,8 +614,6 @@ class CreateBurial(BurialGetOrderMixin, CreateView):
             order = self.get_order()
             if order and order.burial and order.burial != self.get_object():
                 return redirect(reverse('edit_burial', args=[order.burial.pk]) + '?order=%s' % order.pk)
-            if not order and 'create' in request.path_info.lower():
-                raise Http404
 
         return super(CreateBurial, self).dispatch(request, *args, **kwargs)
 
@@ -762,7 +757,7 @@ class EditBurialView(BurialsListGenericMixin, CreateBurial):
         # Помешаем вставлять абы что в адресную строку браузера
         order = self.get_order()
         b = self.get_object()
-        if request.user.profile.is_loru() and not (order and b and order.burial == b):
+        if request.user.profile.is_loru() and order and b and order.burial != b:
             raise Http404
         return super(EditBurialView, self).dispatch(request, *args, **kwargs)
 
