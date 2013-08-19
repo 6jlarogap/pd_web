@@ -17,7 +17,7 @@ from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext_lazy as _
 from django.db.models.query_utils import Q
 
-from burials.models import Cemetery, Area, Burial, Place, ExhumationRequest, BurialFiles
+from burials.models import Cemetery, Area, Burial, Place, ExhumationRequest, BurialFiles, Grave
 from geo.forms import LocationForm
 from orders.models import Order
 from pd.forms import PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin
@@ -87,22 +87,36 @@ AreaFormset = inlineformset_factory(Cemetery, Area, formset=BaseAreaFormset, can
 class PlaceEditForm(forms.ModelForm):
     class Meta:
         model = Place
-#        fields = ['places_count']
+        fields = ()
 
-#    def __init__(self, *args, **kwargs):
-#        super(PlaceEditForm, self).__init__(*args, **kwargs)
-#        if not self.instance.places_count:
-#            if self.instance.area:
-#                self.initial['places_count'] = self.instance.area.places_count
-#            else:
-#                self.initial['places_count'] = 1
+    new_graves_count = forms.IntegerField(required=True, label=_(u"Кол-во могил в месте"))
 
-#    def clean_places_count(self):
-#        burials = self.instance.burials_available()
-#        max_num = burials.aggregate(max=Max('grave_number')).get('max') or 1
-#        if self.cleaned_data['places_count'] < max_num:
-#            raise forms.ValidationError(_(u"Нельзя установить меньше %s, столько могил уже занято") % max_num)
-#        return self.cleaned_data['places_count']
+    def __init__(self, *args, **kwargs):
+        super(PlaceEditForm, self).__init__(*args, **kwargs)
+        self.initial['new_graves_count'] = self.instance.get_graves_count()
+
+    def clean_new_graves_count(self):
+        new_graves_count = self.cleaned_data['new_graves_count']
+        graves_count = self.instance.get_graves_count()
+        max_num = self.instance.burial_count()
+        if new_graves_count < max_num:
+            raise forms.ValidationError(_(u"Нельзя установить меньше %s, столько могил уже занято") % max_num)
+        elif new_graves_count < graves_count:
+            deleted_ = 0
+            for grave_number in range(graves_count, new_graves_count, -1):
+                try:
+                    Grave.objects.filter(place=self.instance, grave_number=grave_number)[0].delete()
+                except (IndexError, ProtectedError):
+                    break
+                deleted_ += 1 
+            if deleted_ < graves_count - new_graves_count:
+                if deleted_ == 0:
+                    raise forms.ValidationError(_(u"Не удалось удалить могилы из места, заняты или удалены ранее"))
+                else:
+                    raise forms.ValidationError(_(u"Удалены лишь %s могил, остальные заняты или удалены ранее") % deleted_)
+        elif new_graves_count > graves_count:
+            self.instance.get_or_create_graves(new_graves_count)
+        return new_graves_count
 
 EMPTY = (('', '--------'),)
 
