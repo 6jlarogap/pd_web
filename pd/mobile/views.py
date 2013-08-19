@@ -16,11 +16,16 @@ from django.utils import simplejson
 from burials.models import Cemetery
 from burials.models import Area
 from burials.models import Place
+from burials.models import PlaceStatus
 from burials.models import Grave
 from burials.models import GravePhoto
+from burials.models import Burial
+from persons.models import DeadPerson
+from persons.models import BasePerson
 from users.models import Profile
 from users.models import Org
 from django.core import serializers
+from django.db import transaction
 
 from cStringIO import StringIO
 from django.utils.dateparse import parse_datetime
@@ -55,9 +60,12 @@ class MobileGetPlace(LoginRequiredMixin, View):
         user = request.user
         if argAreaId :
             listPlace = Place.objects.filter(cemetery__ugh = user.profile.org).filter(area_id = argAreaId).order_by('cemetery', 'area', 'id')
+            listPlaceStatus = PlaceStatus.objects.filter(place__cemetery__ugh = user.profile.org).filter(place__area_id = argAreaId).filter(status = PlaceStatus.PS_FOUND_UNOWNED).order_by('place', 'id')
         else :
-            listPlace = Place.objects.filter(cemetery__ugh = user.profile.org).order_by('cemetery', 'area', 'id')        
-        data = serializers.serialize("json", listPlace, fields=('cemetery','area','row','place'))       
+            listPlace = Place.objects.filter(cemetery__ugh = user.profile.org).order_by('cemetery', 'area', 'id')
+            listPlaceStatus = PlaceStatus.objects.filter(place__cemetery__ugh = user.profile.org).filter(status = PlaceStatus.PS_FOUND_UNOWNED).order_by('place', 'id')
+        all_objects = list(listPlace) + list(listPlaceStatus)
+        data = serializers.serialize("json", all_objects, fields=('cemetery','area','row','place','status'))       
         return HttpResponse(data, mimetype='application/json')
         
 mobile_get_place = MobileGetPlace.as_view()
@@ -74,6 +82,23 @@ class MobileGetGrave(LoginRequiredMixin, View):
         return HttpResponse(data, mimetype='application/json')
         
 mobile_get_grave = MobileGetGrave.as_view()
+
+class MobileGetBurial(LoginRequiredMixin, View):
+    def get(self, request, *args, **kwargs):
+        argGraveId = request.GET.get('graveId', None)
+        user = request.user
+        query = 'select bp.* from persons_baseperson bp inner join persons_deadperson dp on dp.baseperson_ptr_id = bp.id inner join burials_burial b on b.deadman_id = bp.id inner join burials_grave g on b.grave_id = g.id inner join burials_place p on g.place_id = p.id inner join burials_cemetery c on p.cemetery_id = c.id inner join users_org org on c.ugh_id = org.id where org.id = %d' % request.user.profile.org.pk
+        if argGraveId :
+            listBurial = Burial.objects.all().filter(grave__place__cemetery__ugh = user.profile.org).filter(grave_id = argGraveId).order_by('id')
+            query = query + ' and g.id = %s' % argGraveId
+        else :
+            listBurial = Burial.objects.all().filter(grave__place__cemetery__ugh = user.profile.org).order_by('id')
+        listPerson = BasePerson.objects.raw(query)
+        all_objects = list(listBurial) + list(listPerson)
+        data = serializers.serialize("json", all_objects, fields=('grave', 'fact_date', 'deadman', 'first_name', 'last_name', 'middle_name'))
+        return HttpResponse(data, mimetype='application/json')
+        
+mobile_get_burial = MobileGetBurial.as_view()
 
 @csrf_exempt
 def mobile_upload_photo(request):
@@ -100,128 +125,107 @@ def mobile_upload_photo(request):
     return render_to_response('mobile_upload_photo.html', {'message': _(u"Загрузите фотографию к могиле:")})
     
 @csrf_exempt
-def mobile_upload_cemetery(request):
-    listInsertedCemetery = []
-    user = request.user
-    profile = Profile.objects.filter(user__id = user.id)[0]
-    org = Org.objects.filter(pk = profile.org.id)[0]
-    const_begin_datetime = parse_datetime("2012-02-21 10:00:00")
-    const_end_datetime = parse_datetime("2012-02-21 17:00:00")
-    const_begin_time = const_begin_datetime.time()
-    const_end_time = const_end_datetime.time()
+def mobile_upload_cemetery(request):    
+    org = request.user.profile.org    
     if request.method == 'POST':
-        result = "OK"
-        listCemetery = []
-        listDeserializedCemetery = serializers.deserialize("json", request.FILES['cemeteryjson'])
-        for deserialized_object in listDeserializedCemetery :
-            listCemetery.append(deserialized_object.object)
-        for cem in listCemetery :
-            if cem.pk > 0 :
-                try:
-                    prevCem = Cemetery.objects.get(pk = cem.pk)
-                    if prevCem.name != cem.name :
-                        prevCem.name = cem.name
-                        prevCem.save()
-                except Cemetery.DoesNotExist:
-                    prevCem = None
-            else :
-                cem.id = None
-                cem.time_begin = const_begin_time
-                cem.time_end = const_end_time
-                cem.creator = user
-                cem.ugh = org
-                cem.save()
-                listInsertedCemetery.append(cem)
-        data = serializers.serialize("json", listInsertedCemetery, fields=('cemetery','name'))
+        listInsertedCemetery = []
+        cemeteryId = int(request.POST['cemeteryId'])
+        cemeteryName = request.POST['cemeteryName']
+        try:
+            prevCem = Cemetery.objects.get(pk = cemeteryId)
+            if prevCem.name != cemeteryName :
+                prevCem.name = cemeteryName
+                prevCem.save()
+        except Cemetery.DoesNotExist:
+            prevCem = None
+            cem = Cemetery(name = cemeteryName, creator = request.user, ugh = org)
+            cem.save()
+            listInsertedCemetery.append(cem)
+        data = serializers.serialize("json", listInsertedCemetery, fields=('name'))
         return HttpResponse(data, mimetype='application/json')
-    return render_to_response('mobile_upload_cemetery.html', {'message': _(u"Загрузите список кладбищ(json):")})
+    return render_to_response('mobile_upload_cemetery.html', {'message': _(u"Загрузите название кладбища:")})
     
 @csrf_exempt
-def mobile_upload_area(request):
-    listInsertedArea = []
-    user = request.user
-    profile = Profile.objects.filter(user__id = user.id)[0]
-    org = Org.objects.filter(pk = profile.org.id)[0]
+def mobile_upload_area(request):    
     if request.method == 'POST':
-        listArea = []
-        listDeserializedArea = serializers.deserialize("json", request.FILES['areajson'])
-        for deserialized_object in listDeserializedArea :
-            listArea.append(deserialized_object.object)
-        for area in listArea :
-            if area.pk > 0 :
-                try:
-                    prevArea = Area.objects.get(pk = area.pk)
-                    if prevArea.name != area.name :
-                        prevArea.name = area.name
-                        prevArea.save()
-                except Area.DoesNotExist:
-                    prevArea = None
-            else :
-                area.id = None
-                area.save()
-                listInsertedArea.append(area)
+        listInsertedArea = []
+        areaName = request.POST['areaName']
+        areaId = int(request.POST['areaId'])
+        cemeteryId = int(request.POST['cemeteryId'])
+        try:
+            cemetery = Cemetery.objects.get(pk = cemeteryId)
+            prevArea = Area.objects.get(pk = areaId)
+            if prevArea.name != areaName or prevArea.cemetery != cemetery :
+                prevArea.name = areaName
+                prevArea.cemetery = cemetery                
+                prevArea.save()
+        except Cemetery.DoesNotExist:
+            raise Http404
+        except Area.DoesNotExist:
+            prevArea = None
+            area = Area(cemetery = cemetery, name = areaName)            
+            area.save()
+            listInsertedArea.append(area)
         data = serializers.serialize("json", listInsertedArea, fields=('cemetery','name'))
         return HttpResponse(data, mimetype='application/json')        
-    return render_to_response('mobile_upload_area.html', {'message': _(u"Загрузите список участков(json):")})
+    return render_to_response('mobile_upload_area.html', {'message': _(u"Загрузите название участка:")})
+
 
 @csrf_exempt
 def mobile_upload_place(request):
-    listInsertedPlace = []
-    user = request.user
-    profile = Profile.objects.filter(user__id = user.id)[0]
-    org = Org.objects.filter(pk = profile.org.id)[0]
     if request.method == 'POST':
-        listPlace = []
-        listDeserializedPlace = serializers.deserialize("json", request.FILES['placejson'])
-        for deserialized_object in listDeserializedPlace :
-            listPlace.append(deserialized_object.object)
-        for place in listPlace :
-            if place.pk > 0 :
-                try:
-                    prevPlace = Place.objects.get(pk = place.pk)
-                    if prevPlace.place != place.place or prevPlace.row != place.row :
-                        prevPlace.place = place.place
-                        prevPlace.row = place.row
-                        prevPlace.save()
-                except Place.DoesNotExist:
-                    prevPlace = None
-            else :
-                try :
-                    place.id = None
-                    place.save()
-                    listInsertedPlace.append(place)
-                except Exception as e:
-                    filteredPlaces = Place.objects.filter(cemetery=place.cemetery.pk).filter(area=place.area.pk).filter(row=place.row).filter(place=place.place)
-                    if filteredPlaces :
-                        listInsertedPlace.append(filteredPlaces[0])                        
+        rowName = request.POST['rowName']
+        placeName = request.POST['placeName']
+        areaId = int(request.POST['areaId'])
+        placeId = int(request.POST['placeId'])
+        psFoundUnowned = int(request.POST['psFoundUnowned'])
+        listInsertedPlace = []
+        try:
+            area = Area.objects.get(pk = areaId)
+            prevPlace = Place.objects.get(pk = placeId)
+            if prevPlace.place != placeName or prevPlace.row != rowName or prevPlace.area != area:
+                prevPlace.place = placeName
+                prevPlace.row = rowName
+                prevPlace.area = area
+                prevPlace.cemetery = area.cemetery
+                prevPlace.save()                
+            place = prevPlace    
+        except Area.DoesNotExist:
+            raise Http404
+        except Place.DoesNotExist:
+            prevPlace = None
+            place = Place(cemetery = area.cemetery, area = area, place = placeName, row = rowName)  
+            place.save()
+            listInsertedPlace.append(place)        
+        if psFoundUnowned == 1:
+            obj, created = PlaceStatus.objects.get_or_create(place = place, status = PlaceStatus.PS_FOUND_UNOWNED, defaults={'creator': request.user})
+        else:
+            PlaceStatus.objects.filter(place = place).filter(status = PlaceStatus.PS_FOUND_UNOWNED).delete()          
         data = serializers.serialize("json", listInsertedPlace, fields=('cemetery','area','row','place'))
         return HttpResponse(data, mimetype='application/json')
-    return render_to_response('mobile_upload_place.html', {'message': _(u"Загрузите список мест(json):")})
+    return render_to_response('mobile_upload_place.html', {'message': _(u"Загрузите название места:")})
     
 @csrf_exempt
-def mobile_upload_grave(request):
-    listInsertedGrave = []
-    user = request.user
-    profile = Profile.objects.filter(user__id = user.id)[0]
-    org = Org.objects.filter(pk = profile.org.id)[0]
+def mobile_upload_grave(request):    
     if request.method == 'POST':
-        listGrave = []
-        listDeserializedGrave = serializers.deserialize("json", request.FILES['gravejson'])
-        for deserialized_object in listDeserializedGrave :
-            listGrave.append(deserialized_object.object)
-        for grave in listGrave :
-            if grave.pk > 0 :
-                try:
-                    prevGrave = Grave.objects.get(pk = grave.pk)
-                    if prevGrave.grave_number != grave.grave_number :
-                        prevGrave.grave_number = grave.grave_number
-                        prevGrave.save()
-                except Grave.DoesNotExist:
-                    prevGrave = None
-            else :
-                grave.id = None
-                grave.save()
-                listInsertedGrave.append(grave)
+        graveName = request.POST['graveName']
+        graveId = int(request.POST['graveId'])
+        placeId = int(request.POST['placeId'])
+        listInsertedGrave = []
+        try:
+            place = Place.objects.get(pk = placeId)
+            prevGrave = Grave.objects.get(pk = graveId)
+            if prevGrave.grave_number != graveName or prevGrave.place != place:
+                prevGrave.grave_number = graveName
+                prevGrave.place = place
+                prevGrave.save()
+        except Place.DoesNotExist:
+            raise Http404            
+        except Grave.DoesNotExist:
+            prevGrave = None
+            grave = Grave(place = place, grave_number = graveName)
+            grave.save()
+            listInsertedGrave.append(grave)
         data = serializers.serialize("json", listInsertedGrave, fields=('place','grave_number'))
         return HttpResponse(data, mimetype='application/json')
-    return render_to_response('mobile_upload_grave.html', {'message': _(u"Загрузите список могил(json):")})
+    return render_to_response('mobile_upload_grave.html', {'message': _(u"Загрузите название могилы:")})
