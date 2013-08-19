@@ -324,6 +324,7 @@ class Burial(SafeDeleteMixin, models.Model):
     STATUS_DECLINED = 'declined'
     STATUS_DRAFT = 'draft'
     STATUS_READY = 'ready'
+    STATUS_INSPECTING = 'inspecting'
     STATUS_APPROVED = 'approved'
     STATUS_CLOSED = 'closed'
     STATUS_EXHUMATED = 'exhumated'
@@ -332,6 +333,7 @@ class Burial(SafeDeleteMixin, models.Model):
         (STATUS_DECLINED, _(u"Отклонено")),
         (STATUS_DRAFT, _(u"Черновик")),
         (STATUS_READY, _(u"На согласовании")),
+        (STATUS_INSPECTING, _(u"На обследовании")),
         (STATUS_APPROVED, _(u"Согласовано")),
         (STATUS_CLOSED, _(u"Закрыто")),
         (STATUS_EXHUMATED, _(u"Эксгумировано")),
@@ -384,7 +386,8 @@ class Burial(SafeDeleteMixin, models.Model):
     place_number = models.CharField(_(u"Номер места"), max_length=255, null=True, blank=True,
                                     help_text=_(u"Если пусто - номер будет сгенерирован автоматически"))
     grave = models.ForeignKey(Grave, verbose_name=_(u"Могила"), null=True, blank=True, on_delete=models.PROTECT)
-    grave_number = models.PositiveSmallIntegerField(_(u"Могила"), max_length=255, default=1)
+    grave_number = models.PositiveSmallIntegerField(_(u"Могила"), default=1)
+    desired_graves_count = models.PositiveSmallIntegerField(_(u"Желаемое число могил в месте"), default=1)
     responsible = models.ForeignKey('persons.AlivePerson', verbose_name=_(u"Ответственный"), blank=True, null=True,
                                     related_name='responsible_burials', on_delete=models.PROTECT)
 
@@ -426,6 +429,9 @@ class Burial(SafeDeleteMixin, models.Model):
 
     def is_ready(self):
         return self.status == self.STATUS_READY
+
+    def is_inspecting(self):
+        return self.status == self.STATUS_INSPECTING
 
     def is_approved(self):
         return self.status == self.STATUS_APPROVED
@@ -473,7 +479,15 @@ class Burial(SafeDeleteMixin, models.Model):
         if self.is_ugh():
             return False
         elif self.is_full():
-            return self.is_ready()
+            return self.is_ready() or self.is_inspecting()
+        return False
+
+    def can_inspect(self):
+        if self.is_ugh():
+            return False
+        elif self.is_full():
+            return self.is_ready() and self.get_place() and \
+                   self.burial_type in (self.BURIAL_ADD, self.BURIAL_OVER, )
         return False
 
     def can_finish(self):
@@ -509,7 +523,7 @@ class Burial(SafeDeleteMixin, models.Model):
         return self.is_full() and not self.is_edit() and not self.is_finished()
 
     def can_decline(self):
-        return self.is_full() and (self.is_ready() or self.is_approved())
+        return self.is_full() and (self.is_ready() or self.is_inspecting() or self.is_approved())
 
     # условия печати уведомлений для ugh.
     def can_print_notification(self):

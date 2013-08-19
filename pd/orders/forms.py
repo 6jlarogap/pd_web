@@ -12,7 +12,7 @@ from burials.forms import OPF_CHOICES, EMPTY
 from pd.forms import ChildrenJSONMixin
 from persons.forms import AlivePersonForm, PersonIDForm
 from persons.models import AlivePerson, PersonID, SafeDeleteMixin
-from users.models import Org
+from users.models import Org, ProfileLORU
 
 
 class ProductForm(forms.ModelForm):
@@ -215,4 +215,46 @@ class OrderSearchForm(forms.Form):
     reg_number_from = forms.IntegerField(required=False, label=_(u"Рег № с"))
     reg_number_to = forms.IntegerField(required=False, label=_(u" по "))
     burial_container = forms.TypedChoiceField(required=False, label=_(u"Тип захоронения"), choices=EMPTY + Burial.BURIAL_CONTAINERS)
+
+class OrderBurialForm(forms.ModelForm):
+    """
+    Форма создания или привязки захоронения к заказу
+    """
+    class Meta:
+        model = Order
+        fields = ()
+
+    NB_CHOICES = (('new', _(u'Новое захоронение')), ('bind', _(u'Существующее')))
+    
+    nb_choice = forms.ChoiceField(label='', choices=NB_CHOICES, widget=forms.RadioSelect, initial='new')
+    nb_burial = forms.IntegerField(required=False, label=_(u"Номер захоронения"))
+    
+    def __init__(self, request, *args, **kwargs):
+        self.request = request
+        super(OrderBurialForm, self).__init__(*args, **kwargs)
+
+    def clean(self):
+        cd = self.cleaned_data
+        if self.is_valid():
+            if cd['nb_choice'] == 'bind':
+                if not cd['nb_burial']:
+                    raise forms.ValidationError(_(u'Задайте номер захоронения'))
+                try:
+                    burial = Burial.objects.get(pk=cd['nb_burial'])
+                    if burial.is_full() and burial.loru == self.request.user.profile.org:
+                        pass
+                    elif (burial.is_closed() or burial.is_exhumated()) and \
+                         not burial.is_bio() and \
+                         not burial.is_annulated() and \
+                         burial.ugh and \
+                         ProfileLORU.objects.filter(ugh=burial.ugh,
+                                                    loru=self.request.user.profile.org).exists():
+                        pass
+                    else:
+                        raise forms.ValidationError(_(u'Это захоронение недоступно вашей организации'))
+                    self.instance.burial = burial
+                    self.instance.save()
+                except Burial.DoesNotExist:
+                    raise forms.ValidationError(_(u'Нет такого захоронения'))
+        return cd
 

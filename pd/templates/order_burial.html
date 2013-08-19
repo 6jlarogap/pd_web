@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% load i18n %}
+
+{% block content %}
+    {% if order and user.profile.is_loru %}
+        {% with order=order tab="burial" %}
+            {% include "order_nav.html" %}
+        {% endwith %}
+    {% endif %}
+    
+    <h3><span style="color:red">{% trans "К заказу не привязано захоронение" %}</span></h3>
+    <form action="" method="POST" class="main-form">
+    {% csrf_token %}
+    <style>
+        ul { list-style: none; margin: 0; }
+    </style>
+    {{ form.as_p }}
+    <p>
+    <input type="submit" class="btn" value="{% trans "выбрать" %}" class="btn"/>
+
+{% endblock %}

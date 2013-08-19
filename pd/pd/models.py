@@ -120,6 +120,6 @@ class UnclearDateModelField(models.DateField):
     
     def value_to_string(self, obj):
         value = self._get_val_from_obj(obj)        
-        return value.d.strftime('%Y-%m-%d')     
+        return value.strftime('%Y-%m-%d')     
 
 add_introspection_rules([], ['^pd\.models\.UnclearDateModelField'])
