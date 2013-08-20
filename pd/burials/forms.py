@@ -845,12 +845,13 @@ class BurialCommitForm(BurialForm):
                 msg = _(u"Номер могилы превышает количество могил в месте для участка")
                 raise forms.ValidationError(msg)
             burial_type = self.cleaned_data.get('burial_type')
-            burial_type_str = burial_type
             if burial_type in (Burial.BURIAL_ADD, Burial.BURIAL_OVER,):
                 for k, v in Burial.BURIAL_TYPES:
                     if k == burial_type:
                         burial_type_str = v
                         break
+                else:
+                    burial_type_str = burial_type
                 msg = _(u"%s возможно только в существующее место") % burial_type_str
                 raise forms.ValidationError(msg)
 
