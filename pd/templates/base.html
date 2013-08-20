@@ -112,6 +112,9 @@
                             </li>
                         {% endif %}
                         {% if user.profile.is_loru %}
+                            <li{% if request.path == '/burials/search/' %} class="active"{% endif %}>
+                                <a href="{% url burial_public_list %}">{% trans "Захоронения" %}</a>
+                            </li>
                             <li{% if request.path == '/burials/create/'  %} class="active"{% endif %}>
                                 <a href="{% url create_burial %}">{% trans "Создать захоронение" %}</a>
                             </li>
@@ -121,11 +124,6 @@
 
                             <li{% if request.path == '/order/create/' %} class="active"{% endif %}>
                                 <a href="{% url order_create %}">{% trans "Создать Заказ" %}</a>
-                            </li>
-                        {% endif %}
-                        {% if user.profile.is_loru %}
-                            <li{% if request.path == '/burials/search/' %} class="active"{% endif %}>
-                                <a href="{% url burial_public_list %}">{% trans "Захоронения" %}</a>
                             </li>
                         {% endif %}
                         {% if user.profile.is_ugh %}
