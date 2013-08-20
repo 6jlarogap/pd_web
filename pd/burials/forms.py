@@ -840,9 +840,19 @@ class BurialCommitForm(BurialForm):
             if place.get_graves_count() < grave_number:
                 msg = _(u"Номер могилы превышает максимальное количество в существующем месте")
                 raise forms.ValidationError(msg)
-        elif area and area.places_count  < grave_number:
-            msg = _(u"Номер могилы превышает количество могил в месте для участка")
-            raise forms.ValidationError(msg)
+        else:
+            if area and area.places_count  < grave_number:
+                msg = _(u"Номер могилы превышает количество могил в месте для участка")
+                raise forms.ValidationError(msg)
+            burial_type = self.cleaned_data.get('burial_type')
+            burial_type_str = burial_type
+            if burial_type in (Burial.BURIAL_ADD, Burial.BURIAL_OVER,):
+                for k, v in Burial.BURIAL_TYPES:
+                    if k == burial_type:
+                        burial_type_str = v
+                        break
+                msg = _(u"%s возможно только в существующее место") % burial_type_str
+                raise forms.ValidationError(msg)
 
         if self.instance.is_closed() and not place_number.strip():
             raise forms.ValidationError(_(u"Не указан номер места закрытого захоронения"))
