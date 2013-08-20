@@ -99,6 +99,12 @@
                     <td>{{ b.combined_date }}</td>
                     <td>
                         {{ b.status_str|default:"" }}
+                        {% if b.annulated %}
+                            <br />
+                            <span style="color:red">{% trans "АННУЛИРОВАНО" %}</span>
+                            <br />
+                            <a class="btn" href="{% url view_burial b.pk %}">{% trans "просмотр" %}</a>
+                        {% endif %}
                     </td>
                 </tr>
             {% endfor %}
