@@ -479,10 +479,21 @@ class BurialsPublicListView(ListView):
 
         if self.request.user.is_authenticated() and self.request.user.profile.is_loru():
             burials = Burial.objects.filter(
-                Q(ugh__loru_list__loru=self.request.user.profile.org) &
-                Q(annulated=False) &
-                Q(status__in=[Burial.STATUS_EXHUMATED, Burial.STATUS_CLOSED, ])
-            ).exclude(burial_container=Burial.CONTAINER_BIO).order_by('-pk')
+                Q(
+                  (
+                   Q(ugh__loru_list__loru=self.request.user.profile.org) &
+                   Q(annulated=False) &
+                   Q(status__in=[Burial.STATUS_EXHUMATED, Burial.STATUS_CLOSED, ]) &
+                   ~Q(burial_container=Burial.CONTAINER_BIO)
+                  )
+                  |
+                  (
+                   Q(annulated=True) &
+                   Q(loru = self.request.user.profile.org) & 
+                   Q(status__in=[Burial.STATUS_BACKED, Burial.STATUS_DRAFT, Burial.STATUS_DECLINED, ])
+                  )
+                 )
+                 ).order_by('-pk').distinct()
         else:
             burials = Burial.objects.none()
         form = self.get_form()
@@ -521,6 +532,10 @@ class BurialsPublicListView(ListView):
                 burials = burials.filter(row=form.cleaned_data['row'])
             if form.cleaned_data['place']:
                 burials = burials.filter(place_number=form.cleaned_data['place'])
+            if form.cleaned_data['annulated']:
+                burials = burials.filter(annulated=True)
+            else:
+                burials = burials.filter(annulated=False)
 
         sort = self.request.GET.get('sort', '-pk')
         SORT_FIELDS = {
