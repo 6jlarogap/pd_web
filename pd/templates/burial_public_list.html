@@ -86,6 +86,9 @@
                         <a href="?{{ GET_PARAMS }}&sort=status">{% trans "Статус" %}</a>
                     {% endif %}
                 </th>
+                <th>
+                    {% trans "Заказ(ы)" %}
+                </th>
             </tr>
             {% for b in burials %}
                 <tr>
@@ -105,6 +108,16 @@
                             <br />
                             <a class="btn" href="{% url view_burial b.pk %}">{% trans "просмотр" %}</a>
                         {% endif %}
+                    </td>
+                    <td>
+                        {% for order in b.burial_orders.all %}
+                            {% if b.loru and b.loru == user.profile.org %}
+                                <a href="{% url order_edit order.pk %}">{{ order.loru_number }}</a><br />
+                            {% endif %}
+                        {% endfor %}
+                        <br />
+                        <a href="{% url order_create %}?burial={{ b.pk }}">{% trans "создать заказ" %}</a>
+                        </td>
                     </td>
                 </tr>
             {% endfor %}
