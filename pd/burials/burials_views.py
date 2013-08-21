@@ -280,6 +280,7 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
                 b.get_status_display(),
             )
             messages.success(request, msg)
+            return redirect('dashboard')
             
         if redirect_to_view:
             return redirect(reverse('view_burial', args=[b.pk]) + order_parm)
@@ -710,6 +711,7 @@ class CreateBurial(BurialGetOrderMixin, CreateView):
                     b.get_status_display(),
                 )
                 messages.success(self.request, msg)
+                return redirect('dashboard')
 
             if self.request.user.profile.is_loru():
                 if action == 'unbind' and order:
