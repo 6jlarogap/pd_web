@@ -12,7 +12,7 @@ from burials.forms import OPF_CHOICES, EMPTY
 from pd.forms import ChildrenJSONMixin
 from persons.forms import AlivePersonForm, PersonIDForm
 from persons.models import AlivePerson, PersonID, SafeDeleteMixin
-from users.models import Org, ProfileLORU
+from users.models import Org
 
 
 class ProductForm(forms.ModelForm):
@@ -241,16 +241,7 @@ class OrderBurialForm(forms.ModelForm):
                     raise forms.ValidationError(_(u'Задайте номер захоронения'))
                 try:
                     burial = Burial.objects.get(pk=cd['nb_burial'])
-                    if burial.is_full() and burial.loru == self.request.user.profile.org:
-                        pass
-                    elif (burial.is_closed() or burial.is_exhumated() or burial.is_approved()) and \
-                         not burial.is_bio() and \
-                         not burial.is_annulated() and \
-                         burial.ugh and \
-                         ProfileLORU.objects.filter(ugh=burial.ugh,
-                                                    loru=self.request.user.profile.org).exists():
-                        pass
-                    else:
+                    if not burial.can_bind_to_order(self.request.user.profile.org):
                         raise forms.ValidationError(_(u'Это захоронение недоступно вашей организации'))
                     self.instance.burial = burial
                     self.instance.save()
