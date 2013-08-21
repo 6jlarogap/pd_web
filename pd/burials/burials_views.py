@@ -153,7 +153,12 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
 
     def get_queryset(self):
         qs = self.get_qs_filter()
-        burials = Burial.objects.filter(qs)
+        # Это может вернуть несколько записей
+        # одного и того же захоронения, из-за условий поиска
+        # Q(loru=loru) | Q(ugh__loru_list__loru=loru),
+        # которые могут соответствовать одному захоронению,
+        # поэтому distinct()
+        burials = Burial.objects.filter(qs).distinct()
         burials = burials.select_related('cemetery', 'place', 'grave', 'applicant_organization', 'ugh', 'deadman', 'deadman__address',)
         return burials
 
@@ -290,10 +295,7 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
 
     def get_object(self, queryset=None):
         if not hasattr(self, '_object'):
-            if queryset:
-                self._object = super(BurialView, self).get_object(queryset=queryset)
-            else:
-                self._object = self.get_queryset().filter(pk=self.kwargs['pk'])[0]
+            self._object = super(BurialView, self).get_object(queryset=queryset)
         return self._object
 
     def get_context_data(self, **kwargs):
@@ -783,7 +785,12 @@ class EditBurialView(BurialsListGenericMixin, CreateBurial):
         else:
             return Burial.objects.none()
 
-        return Burial.objects.filter(q2)
+        # self.get_qs_filter() может вернуть несколько записей
+        # одного и того же захоронения, из-за условий поиска
+        # Q(loru=loru) | Q(ugh__loru_list__loru=loru),
+        # которые могут соответствовать одному захоронению,
+        # поэтому distinct()
+        return Burial.objects.filter(q2).distinct()
 
     def get_object(self):
         if getattr(self, '_burial', None):
