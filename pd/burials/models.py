@@ -790,7 +790,7 @@ class Burial(SafeDeleteMixin, models.Model):
            result = self.account_number
         return result
 
-    def can_bound_to_order(self, org):
+    def can_bind_to_order(self, org):
         """
         Может ли лору из организации org прикрепить это захоронение к заказу
         """

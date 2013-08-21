@@ -241,7 +241,7 @@ class OrderBurialForm(forms.ModelForm):
                     raise forms.ValidationError(_(u'Задайте номер захоронения'))
                 try:
                     burial = Burial.objects.get(pk=cd['nb_burial'])
-                    if not burial.can_bound_to_order(self.request.user.profile.org):
+                    if not burial.can_bind_to_order(self.request.user.profile.org):
                         raise forms.ValidationError(_(u'Это захоронение недоступно вашей организации'))
                     self.instance.burial = burial
                     self.instance.save()
