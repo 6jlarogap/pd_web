@@ -794,17 +794,15 @@ class Burial(SafeDeleteMixin, models.Model):
         """
         Может ли лору из организации org прикрепить это захоронение к заказу
         """
-        result = True
+        result = False
         if self.is_full() and self.loru == org:
-            pass
+            result = True
         elif (self.is_closed() or self.is_exhumated() or self.is_approved()) and \
                 not self.is_bio() and \
                 not self.is_annulated() and \
                 self.ugh and \
                 ProfileLORU.objects.filter(ugh=self.ugh,loru=org).exists():
-            pass
-        else:
-            result =False
+            result = True
         return result
 
 class BurialFiles(Files):
