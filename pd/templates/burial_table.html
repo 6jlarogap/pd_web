@@ -28,16 +28,16 @@
                 <a href="?{{ GET_PARAMS }}&sort=source">{% trans "Источник" %}</a>
             {% endif %}
         </th>
-        <th>
-            {% if sort == 'applicant' %}
-                {% if sort == 'applicant' %}<i class="icon icon-arrow-up"></i>{% endif %}
-                <a href="?{{ GET_PARAMS }}&sort=-applicant">{% trans "Заявитель" %}</a>
-            {% else %}
-                {% if sort == '-applicant' %}<i class="icon icon-arrow-down"></i>{% endif %}
-                <a href="?{{ GET_PARAMS }}&sort=applicant">{% trans "Заявитель" %}</a>
-            {% endif %}
-        </th>
     {% endif %}
+    <th>
+        {% if sort == 'applicant' %}
+            {% if sort == 'applicant' %}<i class="icon icon-arrow-up"></i>{% endif %}
+            <a href="?{{ GET_PARAMS }}&sort=-applicant">{% trans "Заявитель" %}</a>
+        {% else %}
+            {% if sort == '-applicant' %}<i class="icon icon-arrow-down"></i>{% endif %}
+            <a href="?{{ GET_PARAMS }}&sort=applicant">{% trans "Заявитель" %}</a>
+        {% endif %}
+    </th>
     <th>
         {% if sort == 'cemetery' %}
             {% if sort == 'cemetery' %}<i class="icon icon-arrow-up"></i>{% endif %}
@@ -83,6 +83,11 @@
             <a href="?{{ GET_PARAMS }}&sort=status">{% trans "Статус" %}</a>
         {% endif %}
     </th>
+    {% if user.profile.is_loru %}
+        <th>
+            {% trans "Заказ(ы)" %}
+        </th>
+    {% endif %}
     <th class="no-print"></th>
 </tr>
 {% for b in burials %}
@@ -103,14 +108,14 @@
                     <br /> ({{ b.loru }})
                 {% endif %}
             </td>
-            <td>
-                {% if b.applicant_organization %}
-                    {{ b.applicant_organization }}
-                {% elif b.applicant %}
-                    {{ b.applicant }}
-                {% endif %}
-            </td>
         {% endif %}
+        <td>
+            {% if b.applicant_organization %}
+                {{ b.applicant_organization }}
+            {% elif b.applicant %}
+                {{ b.applicant }}
+            {% endif %}
+        </td>
         <td>{{ b.cemetery }} / {{ b.ugh_name }}</td>
         <td>
             {% with burial=b %}{% include "burial_place.html" %}{% endwith %}
@@ -125,15 +130,28 @@
             {% endif %}
             {% if b.annulated %}
                 <br />
-                <span style="color:red">АННУЛИРОВАНО</span>
+                <span style="color:red">{% trans "АННУЛИРОВАНО" %}</span>
             {% endif %}
             <br/>
             {{ b.status_dt|default:"" }}
             <br/>
             {{ b.changed_by.profile|default:"" }}
         </th>
+        {% if user.profile.is_loru %}
+            <td>
+                {% with burial=b %}{% include "burial_orders.html" %}{% endwith %}
+            </td>
+        {% endif %}
         <td class="no-print">
-            <a class="btn" href="{% url view_burial b.pk %}">{% trans "просмотр" %}</a>
+            {% if user.profile.is_loru %}
+                {% if b.is_edit and b.is_full %}
+                    <a class="btn" href="{% url edit_burial b.pk %}">{% trans "правка" %}</a>
+                {% else %}
+                    <a class="btn" href="{% url view_burial b.pk %}">{% trans "просмотр" %}</a>
+                {% endif %}
+            {% else %}
+                <a class="btn" href="{% url view_burial b.pk %}">{% trans "просмотр" %}</a>
+            {% endif %}
             {% if not dashboard %}
                 {% if user.profile.org == b.applicant_organization and b.is_full and b.is_edit %}
                     <a class="btn" href="{% url edit_burial b.pk %}">{% trans "правка" %}</a>

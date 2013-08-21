@@ -86,6 +86,9 @@
                         <a href="?{{ GET_PARAMS }}&sort=status">{% trans "Статус" %}</a>
                     {% endif %}
                 </th>
+                <th>
+                    {% trans "Заказ(ы)" %}
+                </th>
             </tr>
             {% for b in burials %}
                 <tr>
@@ -99,6 +102,16 @@
                     <td>{{ b.combined_date }}</td>
                     <td>
                         {{ b.status_str|default:"" }}
+                        {% if b.annulated %}
+                            <br />
+                            <span style="color:red">{% trans "АННУЛИРОВАНО" %}</span>
+                            <br />
+                            <a class="btn" href="{% url view_burial b.pk %}">{% trans "просмотр" %}</a>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% with burial=b %}{% include "burial_orders.html" %}{% endwith %}
+                        </td>
                     </td>
                 </tr>
             {% endfor %}

@@ -56,11 +56,6 @@ class BurialsListGenericMixin:
 class DashboardView(BurialsListGenericMixin, TemplateView):
     template_name = 'dashboard.html'
 
-    def get(self, request, *args, **kwargs):
-        if request.user.is_authenticated() and request.user.profile.is_loru():
-            return redirect('order_dashboard')
-        return super(DashboardView, self).get(request, *args, **kwargs)
-
     def get_context_data(self, **kwargs):
         qs = self.get_qs_filter()
         ex_qs = Q(status__in=[Burial.STATUS_CLOSED, Burial.STATUS_EXHUMATED])
@@ -146,9 +141,6 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
         self.kwargs = kwargs
         order = self.get_order()
         b = self.get_object()
-        # Помешаем вставлять абы что в адресную строку браузера
-        if request.user.profile.is_loru() and not (order and b and order.burial == b):
-            raise Http404
         return super(BurialView, self).dispatch(request, *args, **kwargs)
 
     def get_queryset(self):
@@ -172,7 +164,7 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
         order_parm = ''
         if self.request.user.profile.is_loru():
             order = self.get_order()
-            order_parm = '?order=%s' % order.pk
+            order_parm = '?order=%s' % order.pk if order else ''
 
         b.changed = datetime.datetime.now()
         b.changed_by = request.user
@@ -283,6 +275,7 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
                 b.get_status_display(),
             )
             messages.success(request, msg)
+            return redirect('dashboard')
             
         if redirect_to_view:
             return redirect(reverse('view_burial', args=[b.pk]) + order_parm)
@@ -487,10 +480,22 @@ class BurialsPublicListView(ListView):
 
         if self.request.user.is_authenticated() and self.request.user.profile.is_loru():
             burials = Burial.objects.filter(
-                Q(ugh__loru_list__loru=self.request.user.profile.org) &
-                Q(annulated=False) &
-                Q(status__in=[Burial.STATUS_EXHUMATED, Burial.STATUS_CLOSED, ])
-            ).exclude(burial_container=Burial.CONTAINER_BIO).order_by('-pk')
+                Q(
+                  (
+                   Q(ugh__loru_list__loru=self.request.user.profile.org) &
+                   Q(annulated=False) &
+                   Q(status__in=[Burial.STATUS_EXHUMATED, Burial.STATUS_CLOSED, Burial.STATUS_APPROVED, ]) &
+                   ~Q(burial_container=Burial.CONTAINER_BIO)
+                  )
+                  |
+                  (
+                   Q(annulated=True) &
+                   Q(loru = self.request.user.profile.org) & 
+                   Q(source_type=Burial.SOURCE_FULL) & 
+                   Q(status__in=[Burial.STATUS_BACKED, Burial.STATUS_DRAFT, Burial.STATUS_DECLINED, ])
+                  )
+                 )
+                 ).order_by('-pk').distinct()
         else:
             burials = Burial.objects.none()
         form = self.get_form()
@@ -529,6 +534,10 @@ class BurialsPublicListView(ListView):
                 burials = burials.filter(row=form.cleaned_data['row'])
             if form.cleaned_data['place']:
                 burials = burials.filter(place_number=form.cleaned_data['place'])
+            if form.cleaned_data['annulated']:
+                burials = burials.filter(annulated=True)
+            else:
+                burials = burials.filter(annulated=False)
 
         sort = self.request.GET.get('sort', '-pk')
         SORT_FIELDS = {
@@ -622,8 +631,6 @@ class CreateBurial(BurialGetOrderMixin, CreateView):
             order = self.get_order()
             if order and order.burial and order.burial != self.get_object():
                 return redirect(reverse('edit_burial', args=[order.burial.pk]) + '?order=%s' % order.pk)
-            if not order and 'create' in request.path_info.lower():
-                raise Http404
 
         return super(CreateBurial, self).dispatch(request, *args, **kwargs)
 
@@ -638,7 +645,7 @@ class CreateBurial(BurialGetOrderMixin, CreateView):
         order_parm = ''
         if self.request.user.profile.is_loru():
             order = self.get_order()
-            order_parm = '?order=%s' % order.pk
+            order_parm = '?order=%s' % order.pk if order else ''
 
         action = self.get_action()
         if action:
@@ -699,6 +706,7 @@ class CreateBurial(BurialGetOrderMixin, CreateView):
                     b.get_status_display(),
                 )
                 messages.success(self.request, msg)
+                return redirect('dashboard')
 
             if self.request.user.profile.is_loru():
                 if action == 'unbind' and order:
@@ -767,7 +775,7 @@ class EditBurialView(BurialsListGenericMixin, CreateBurial):
         # Помешаем вставлять абы что в адресную строку браузера
         order = self.get_order()
         b = self.get_object()
-        if request.user.profile.is_loru() and not (order and b and order.burial == b):
+        if request.user.profile.is_loru() and order and b and order.burial != b:
             raise Http404
         return super(EditBurialView, self).dispatch(request, *args, **kwargs)
 

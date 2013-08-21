@@ -8,7 +8,6 @@
             {% include "order_nav.html" %}
         {% endwith %}
     {% endif %}
-
     {% block form_title %}<h1>
         {% if request.REQUEST.archive %}
             {% trans "Архивное захоронение" %}
@@ -47,9 +46,11 @@
                         {% if not b.pk %}
                             <input type="submit" class="btn btn-commit-burial" name="ready" value="{% trans "cохранить и отправить на согласование" %}"/>
                         <!-- захоронение is_edit: черновик, отклонено, отозвано -->
-                        {% elif b.is_edit and not b.annulated and order and not order.annulated %}
+                        {% elif b.is_edit and not b.annulated %}
                             <input type="submit" class="btn btn-commit-burial" name="ready" value="{% trans "cохранить и отправить на согласование" %}"/>
-                            <input type="submit" class="btn btn-danger" name="unbind" value="{% trans "сохранить и открепить от заказа" %}"/>
+                             {% if order and not order.annulated %}
+                                <input type="submit" class="btn btn-danger" name="unbind" value="{% trans "сохранить и открепить от заказа" %}"/>
+                            {% endif %}
                         {% elif b.can_back %}
                             <input type="submit" class="btn btn-commit-burial" name="back" value="{% trans "отозвать" %}"/>
                         {% endif %}
