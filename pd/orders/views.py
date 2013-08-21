@@ -273,6 +273,22 @@ class OrderCreate(LORURequiredMixin, CreateView):
     template_name = 'order_create.html'
     form_class = OrderForm
 
+    def dispatch(self, request, *args, **kwargs):
+        self.request = request
+        self.burial = None
+        if self.is_loru(request):
+            burial_pk = self.request.REQUEST.get('burial')
+            if burial_pk:
+                try:
+                    self.burial = Burial.objects.get(pk=burial_pk)
+                    if not self.burial.can_bind_to_order(self.request.user.profile.org):
+                        raise Http404
+                except Burial.DoesNotExist:
+                    raise Http404
+            return View.dispatch(self, request, *args, **kwargs)
+        else:
+            redirect('/')
+        
     def get_form_kwargs(self):
         data = super(OrderCreate, self).get_form_kwargs()
         data['request'] = self.request
@@ -293,6 +309,8 @@ class OrderCreate(LORURequiredMixin, CreateView):
     def form_valid(self, form):
         self.object = form.save(commit=False)
         self.object.loru = self.request.user.profile.org
+        if self.burial:
+            self.object.burial = self.burial
         self.object.save()
 
         for p in Product.objects.filter(loru=self.request.user.profile.org, default=True):
