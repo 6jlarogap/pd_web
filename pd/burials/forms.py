@@ -228,7 +228,7 @@ class BurialPublicListForm(forms.Form):
     area = forms.CharField(required=False, label=_(u"Участок"))
     row = forms.CharField(required=False, label=_(u"Ряд"))
     place = forms.CharField(required=False, label=_(u"Место"))
-    annulated = forms.BooleanField(required=False, initial=False, label=_(u"Аннулировано в этой организации"))
+    annulated = forms.BooleanField(required=False, initial=False, label=_(u"Аннулировано"))
     per_page = forms.ChoiceField(label=_(u"На странице"), choices=PAGE_CHOICES, initial=25, required=False)
     
     def clean(self):
