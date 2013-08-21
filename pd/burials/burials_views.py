@@ -290,7 +290,10 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
 
     def get_object(self, queryset=None):
         if not hasattr(self, '_object'):
-            self._object = super(BurialView, self).get_object(queryset=queryset)
+            if queryset:
+                self._object = super(BurialView, self).get_object(queryset=queryset)
+            else:
+                self._object = self.get_queryset().filter(pk=self.kwargs['pk'])[0]
         return self._object
 
     def get_context_data(self, **kwargs):

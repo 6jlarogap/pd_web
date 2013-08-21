@@ -12,7 +12,7 @@ import pytils
 
 from persons.models import DeadPerson, SafeDeleteMixin, DeathCertificate
 from reports.models import Report
-from users.models import Org, Profile, Dover
+from users.models import Org, Profile, Dover, ProfileLORU
 from logs.models import Log
 
 
@@ -789,7 +789,24 @@ class Burial(SafeDeleteMixin, models.Model):
             self.account_number:
            result = self.account_number
         return result
-    
+
+    def can_bound_to_order(self, org):
+        """
+        Может ли лору из организации org прикрепить это захоронение к заказу
+        """
+        result = True
+        if self.is_full() and self.loru == org:
+            pass
+        elif (self.is_closed() or self.is_exhumated() or self.is_approved()) and \
+                not self.is_bio() and \
+                not self.is_annulated() and \
+                self.ugh and \
+                ProfileLORU.objects.filter(ugh=self.ugh,loru=org).exists():
+            pass
+        else:
+            result =False
+        return result
+
 class BurialFiles(Files):
     """
     Файлы, связанные с захоронением
