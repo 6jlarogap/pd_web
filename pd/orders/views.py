@@ -252,23 +252,6 @@ class OrderList(LORURequiredMixin, ListView):
 
 order_list = OrderList.as_view()
 
-class OrderDashboard(OrderList):
-    template_name = 'order_dashboard.html'
-
-    def get_queryset(self):
-        src_qs = self.filtered_orders()
-        orders_count = src_qs.count()
-
-        ex_q = Q(burial__status__in=[Burial.STATUS_CLOSED, Burial.STATUS_EXHUMATED])
-        ex_q |= Q(burial__annulated=True)
-        inc_q = Q(loru=self.request.user.profile.org, burial__source_type=Burial.SOURCE_FULL)
-
-        qs = src_qs.filter(inc_q).exclude(ex_q)
-        qs.count = lambda: orders_count
-        return qs
-
-order_dashboard = OrderDashboard.as_view()
-
 class OrderCreate(LORURequiredMixin, CreateView):
     template_name = 'order_create.html'
     form_class = OrderForm
