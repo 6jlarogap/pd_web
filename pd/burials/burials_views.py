@@ -56,6 +56,11 @@ class BurialsListGenericMixin:
 class DashboardView(BurialsListGenericMixin, TemplateView):
     template_name = 'dashboard.html'
 
+    def get(self, request, *args, **kwargs):
+        #if request.user.is_authenticated() and request.user.profile.is_loru():
+            #return redirect('order_dashboard')
+        return super(DashboardView, self).get(request, *args, **kwargs)
+
     def get_context_data(self, **kwargs):
         qs = self.get_qs_filter()
         ex_qs = Q(status__in=[Burial.STATUS_CLOSED, Burial.STATUS_EXHUMATED])
@@ -483,13 +488,14 @@ class BurialsPublicListView(ListView):
                   (
                    Q(ugh__loru_list__loru=self.request.user.profile.org) &
                    Q(annulated=False) &
-                   Q(status__in=[Burial.STATUS_EXHUMATED, Burial.STATUS_CLOSED, ]) &
+                   Q(status__in=[Burial.STATUS_EXHUMATED, Burial.STATUS_CLOSED, Burial.STATUS_APPROVED, ]) &
                    ~Q(burial_container=Burial.CONTAINER_BIO)
                   )
                   |
                   (
                    Q(annulated=True) &
                    Q(loru = self.request.user.profile.org) & 
+                   Q(source_type=Burial.SOURCE_FULL) & 
                    Q(status__in=[Burial.STATUS_BACKED, Burial.STATUS_DRAFT, Burial.STATUS_DECLINED, ])
                   )
                  )
