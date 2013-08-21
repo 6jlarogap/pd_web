@@ -140,14 +140,16 @@
         {% if user.profile.is_loru %}
             <td>
             {% for order in b.burial_orders.all %}
-                {% if b.loru and b.loru.pk == order.loru.pk %}
+                {% if b.loru and b.loru == user.profile.org %}
                     <a href="{% url order_edit order.pk %}">{{ order.loru_number }}</a><br />
                 {% endif %}
             {% endfor %}
+            <br />
+            <a href="{% url order_create %}?burial={{ b.pk }}">{% trans "создать заказ" %}</a>
             </td>
         {% endif %}
         <td class="no-print">
-            {% if user.profile.is_loru and dashboard %}
+            {% if user.profile.is_loru %}
                 {% if b.is_edit and b.is_full %}
                     <a class="btn" href="{% url edit_burial b.pk %}">{% trans "правка" %}</a>
                 {% else %}
