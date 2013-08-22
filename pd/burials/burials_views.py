@@ -40,6 +40,13 @@ class BurialGetOrderMixin:
         return order
 
 class BurialsListGenericMixin:
+    """
+    Здесь фильтр для поиска всех захоронений, которые может видеть лору или угх
+    
+    В потомках этого класса уточняется, что относительно этого фильтра можно
+    править, что видеть в открытых и т.п.
+    """
+
     def get_qs_filter(self):
         qs = Q(pk__isnull=True)
         if self.request.user.is_authenticated():
@@ -55,6 +62,14 @@ class BurialsListGenericMixin:
 
 class DashboardView(BurialsListGenericMixin, TemplateView):
     template_name = 'dashboard.html'
+
+    def get_qs_filter(self):
+      if self.request.user.is_authenticated() and self.request.user.profile.is_loru():
+          # лору в открытых может видеть только свои (а не других лору) захоронения
+          qs = Q(loru=self.request.user.profile.org)
+      else:
+        qs = super(DashboardView, self).get_qs_filter()
+      return qs
 
     def get_context_data(self, **kwargs):
         qs = self.get_qs_filter()
