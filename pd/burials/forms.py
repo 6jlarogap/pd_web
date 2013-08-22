@@ -865,7 +865,9 @@ class BurialCommitForm(BurialForm):
         if self.instance.is_closed() and not place_number.strip():
             raise forms.ValidationError(_(u"Не указан номер места закрытого захоронения"))
 
-        cemetery = self.cleaned_data.get('cemetery')
+        if cemetery and area and cemetery.places_algo == Cemetery.PLACE_ROW and not row.strip():
+            raise forms.ValidationError(_(u"На кладбище с нумерацией мест по ряду не указан номер ряда"))
+
         today = datetime.date.today()
         plan_date = self.cleaned_data.get('plan_date')
         if plan_date and today > plan_date and not self.instance.is_finished():
