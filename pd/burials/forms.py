@@ -1037,6 +1037,13 @@ class BurialApproveCloseForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelFor
             cemetery_qs &= Q(area__availability=Area.AVAILABILITY_OPEN)
             self.fields['cemetery'].queryset = Cemetery.objects.filter(cemetery_qs).distinct()
 
+    def clean(self):
+        if 'row' in self.fields and \
+           self.cleaned_data['cemetery'].places_algo == Cemetery.PLACE_ROW and \
+           not self.cleaned_data['row'].strip():
+            raise forms.ValidationError(_(u"На кладбище с нумерацией мест по ряду не указан номер ряда"))
+        return self.cleaned_data
+
     def clean_area(self):
         """
         Проверка одобрения захоронения только в открытый участок.
