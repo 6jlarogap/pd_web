@@ -96,6 +96,7 @@
             {% if b.is_ready %}burial_blue{% endif %}
             {% if b.is_approved %}burial_green{% endif %}
             {% if b.is_declined or b.is_backed %}burial_red{% endif %}
+            {% if b.is_inspecting %}burial_yellow{% endif %}
         ">
     {% else %}
         <tr>
