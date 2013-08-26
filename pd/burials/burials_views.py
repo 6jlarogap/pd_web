@@ -156,6 +156,11 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
         self.kwargs = kwargs
         order = self.get_order()
         b = self.get_object()
+        if request.user.profile.is_loru() and b and b.pk and b.is_full():
+            if b.loru and b.loru != request.user.profile.org and (b.is_edit() or b.is_ready()):
+                raise Http404
+            if order and order.burial != b:
+                raise Http404
         return super(BurialView, self).dispatch(request, *args, **kwargs)
 
     def get_queryset(self):
@@ -188,7 +193,7 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
         redirect_to_view = False
         redirect_to_edit = False
         reason = request.POST.get('reason') or request.POST.get('reason_typical')
-        if request.POST.get('back') and request.user.profile.is_loru() and b.can_back():
+        if request.POST.get('back') and request.user.profile.is_loru() and b.can_back() and b.loru == request.user.profile.org:
             b.status = Burial.STATUS_BACKED
             b.account_number = None
             write_log(request, b, _(u'Захоронение отозвано'), reason)
@@ -790,8 +795,11 @@ class EditBurialView(BurialsListGenericMixin, CreateBurial):
         # Помешаем вставлять абы что в адресную строку браузера
         order = self.get_order()
         b = self.get_object()
-        if request.user.profile.is_loru() and order and b and order.burial != b:
-            raise Http404
+        if request.user.profile.is_loru() and b and b.pk and b.is_full():
+            if b.loru and b.loru != request.user.profile.org:
+                raise Http404
+            if order and order.burial != b:
+                raise Http404
         return super(EditBurialView, self).dispatch(request, *args, **kwargs)
 
     def get_queryset(self):
