@@ -121,7 +121,7 @@
     </dl>
     <form action="" method="POST">
         {% csrf_token %}
-        {% if user.profile.is_loru and b.is_full and not b.annulated %}
+        {% if user.profile.is_loru and b.is_full and not b.annulated and b.loru == user.profile.org %}
             {% if b.is_edit %}
                 <input type="submit" class="btn" name="ready" value="{% trans "отправить на согласование" %}">
             {% elif b.can_back %}
@@ -141,10 +141,10 @@
             {% if not b.is_edit and not b.annulated and order and not order.annulated %}
                 <input type="submit" class="btn btn-danger" name="unbind" value="{% trans "открепить от заказа" %}">
             {% endif %}
-            {% if b.can_loru_deannulate %}
+            {% if b.can_loru_deannulate and b.loru == user.profile.org %}
                 <input type="submit" class="btn" name="deannulate" value="{% trans "де-аннулировать" %}">
             {% endif %}
-            {% if b.can_loru_annulate %}
+            {% if b.can_loru_annulate and b.loru == user.profile.org %}
                 <input type="submit" class="btn" name="annulate" value="{% trans "аннулировать" %}">
             {% endif %}
         {% endif %}
