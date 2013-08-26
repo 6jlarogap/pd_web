@@ -165,7 +165,7 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
                     raise Http404
                 if self.order and self.order.burial != b:
                     raise Http404
-                if b.is_edit() and not b.annulated:
+                if b.is_full() and b.is_edit() and not b.annulated:
                     return redirect(reverse('edit_burial', args=[b.pk]) + self.order_parm)
         return super(BurialView, self).dispatch(request, *args, **kwargs)
 
@@ -803,8 +803,9 @@ class EditBurialView(BurialsListGenericMixin, CreateBurial):
                 if order and order.burial != b:
                     raise Http404
                 order_parm = '?order=%s' % order.pk if order else ''
-                if not b.is_edit() or b.annulated:
-                    return redirect(reverse('view_burial', args=[b.pk]) + order_parm)
+                if b.is_full() and b.is_edit() and not b.annulated:
+                    return super(EditBurialView, self).dispatch(request, *args, **kwargs)
+                return redirect(reverse('view_burial', args=[b.pk]) + order_parm)
         return super(EditBurialView, self).dispatch(request, *args, **kwargs)
 
     def get_queryset(self):
