@@ -794,12 +794,12 @@ class EditBurialView(BurialsListGenericMixin, CreateBurial):
         self.request = request
         self.args = args
         self.kwargs = kwargs
-        order = self.get_order()
         if request.user.profile.is_loru():
             b = self.get_object()
             if b and b.pk and b.is_full():
                 if b.loru and b.loru != request.user.profile.org:
                     raise Http404
+                order = self.get_order()
                 if order and order.burial != b:
                     raise Http404
                 order_parm = '?order=%s' % order.pk if order else ''
