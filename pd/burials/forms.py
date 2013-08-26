@@ -275,7 +275,10 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
         self.order = None
         order_pk = self.request.REQUEST.get('order')
         if self.request.user.profile.is_loru() and order_pk:
-            self.order = Order.objects.get(pk=order_pk, loru=self.request.user.profile.org)
+            try:
+                self.order = Order.objects.get(pk=order_pk, loru=self.request.user.profile.org)
+            except Order.DoesNotExist:
+                pass
 
         # Отсутствие выбора будет в выпадающем списке не "---", а ""
         self.fields['applicant_organization'].empty_label = ''
