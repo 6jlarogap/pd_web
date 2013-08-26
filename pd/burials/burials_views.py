@@ -160,8 +160,8 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
             b = self.get_object()
             self.order = self.get_order()
             self.order_parm = '?order=%s' % self.order.pk if self.order else ''
-            if b and b.pk and b.is_full():
-                if b.loru and b.loru != request.user.profile.org and (b.is_edit() or b.is_ready()):
+            if b and b.pk:
+                if b.is_full() and b.loru and b.loru != request.user.profile.org and (b.is_edit() or b.is_ready()):
                     raise Http404
                 if self.order and self.order.burial != b:
                     raise Http404
@@ -796,8 +796,8 @@ class EditBurialView(BurialsListGenericMixin, CreateBurial):
         self.kwargs = kwargs
         if request.user.profile.is_loru():
             b = self.get_object()
-            if b and b.pk and b.is_full():
-                if b.loru and b.loru != request.user.profile.org:
+            if b and b.pk:
+                if b.is_full() and b.loru and b.loru != request.user.profile.org:
                     raise Http404
                 order = self.get_order()
                 if order and order.burial != b:
