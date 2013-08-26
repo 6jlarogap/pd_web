@@ -21,15 +21,13 @@ class Log(models.Model):
         """
         Показываем в таблице действий пользователей: что за объект + ссылка
         """
-        model = self.ct.model_class()._meta.object_name
+        model_name = self.ct.model_class()._meta.object_name
         obj_id = self.obj_id if self.obj_id else ''
-        if model == 'Burial':
-            ref = reverse('view_burial', args=[obj_id]) if obj_id else ''
+        if model_name == 'Burial':
+            ref = reverse('view_burial', args=[obj_id])
             result = _(u"Захоронение <a href='%s'>%s</a>") % (ref, obj_id, )
         else:
-            obj = model
-            ref = obj_id if obj_id else ''
-            result = u"%s %s" % (obj, ref,)
+            result = u"%s %s" % (model_name, obj_id,)
         return result
 
 def write_log(request, obj=None, msg='', reason=None, code=None):
