@@ -3,6 +3,7 @@ from django.contrib.contenttypes import generic
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
+from django.core.urlresolvers import reverse
 
 class Log(models.Model):
     """
@@ -15,6 +16,21 @@ class Log(models.Model):
     dt = models.DateTimeField(auto_now_add=True, verbose_name=_(u"Время"))
     msg = models.TextField(editable=False, verbose_name=_(u"Описание"))
     code = models.CharField(max_length=255, default='', editable=False, verbose_name=_(u"Спец. код"))
+    
+    def ct_display(self):
+        """
+        Показываем в таблице действий пользователей: что за объект + ссылка
+        """
+        model = self.ct.model_class()._meta.object_name
+        obj_id = self.obj_id if self.obj_id else ''
+        if model == 'Burial':
+            ref = reverse('view_burial', args=[obj_id]) if obj_id else ''
+            result = _(u"Захоронение <a href='%s'>%s</a>") % (ref, obj_id, )
+        else:
+            obj = model
+            ref = obj_id if obj_id else ''
+            result = u"%s %s" % (obj, ref,)
+        return result
 
 def write_log(request, obj=None, msg='', reason=None, code=None):
     if reason:
