@@ -154,13 +154,19 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
         self.request = request
         self.args = args
         self.kwargs = kwargs
-        order = self.get_order()
-        b = self.get_object()
-        if request.user.profile.is_loru() and b and b.pk and b.is_full():
-            if b.loru and b.loru != request.user.profile.org and (b.is_edit() or b.is_ready()):
-                raise Http404
-            if order and order.burial != b:
-                raise Http404
+        self.order = None
+        self.order_parm = ''
+        if request.user.profile.is_loru():
+            b = self.get_object()
+            self.order = self.get_order()
+            self.order_parm = '?order=%s' % self.order.pk if self.order else ''
+            if b and b.pk:
+                if b.is_full() and b.loru and b.loru != request.user.profile.org and (b.is_edit() or b.is_ready()):
+                    raise Http404
+                if self.order and self.order.burial != b:
+                    raise Http404
+                if b.is_full() and b.is_edit() and not b.annulated:
+                    return redirect(reverse('edit_burial', args=[b.pk]) + self.order_parm)
         return super(BurialView, self).dispatch(request, *args, **kwargs)
 
     def get_queryset(self):
@@ -179,12 +185,8 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
             return redirect('dashboard')
 
         b = self.get_object()
-        
-        order = None
-        order_parm = ''
-        if self.request.user.profile.is_loru():
-            order = self.get_order()
-            order_parm = '?order=%s' % order.pk if order else ''
+        order = self.order
+        order_parm = self.order_parm
 
         b.changed = datetime.datetime.now()
         b.changed_by = request.user
@@ -321,7 +323,7 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
             'approve_close_form': self.get_approve_close_form(),
             'comment_form': CommentForm(),
             'is_accessible': b.loru and self.request.user.profile.org in b.loru.get_loru_list(),
-            'order': self.get_order(),
+            'order': self.order,
             'orders': b.get_orders(loru=self.request.user.profile.org) if self.request.user.profile.is_loru() else [],
         }
 
@@ -792,23 +794,29 @@ class EditBurialView(BurialsListGenericMixin, CreateBurial):
         self.request = request
         self.args = args
         self.kwargs = kwargs
-        # Помешаем вставлять абы что в адресную строку браузера
-        order = self.get_order()
-        b = self.get_object()
-        if request.user.profile.is_loru() and b and b.pk and b.is_full():
-            if b.loru and b.loru != request.user.profile.org:
-                raise Http404
-            if order and order.burial != b:
-                raise Http404
+        if request.user.profile.is_loru():
+            b = self.get_object()
+            if b and b.pk:
+                if b.is_full() and b.loru and b.loru != request.user.profile.org:
+                    raise Http404
+                order = self.get_order()
+                if order and order.burial != b:
+                    raise Http404
+                order_parm = '?order=%s' % order.pk if order else ''
+                if b.is_full() and b.is_edit() and not b.annulated:
+                    return super(EditBurialView, self).dispatch(request, *args, **kwargs)
+                return redirect(reverse('view_burial', args=[b.pk]) + order_parm)
         return super(EditBurialView, self).dispatch(request, *args, **kwargs)
 
     def get_queryset(self):
         q = self.get_qs_filter()
 
         if self.request.user.profile.is_loru():
-            q3 = Q(status__in=[Burial.STATUS_DRAFT, Burial.STATUS_DECLINED, Burial.STATUS_BACKED], annulated=False)
-            q3 |= Q(source_type__in=[Burial.SOURCE_TRANSFERRED])
-            q2 = q & q3
+            # ... это проверяется в self.dispatch():
+            # q3 = Q(status__in=[Burial.STATUS_DRAFT, Burial.STATUS_DECLINED, Burial.STATUS_BACKED], annulated=False)
+            # ... это учтено в self.get_qs_filter():
+            # q3 |= Q(source_type__in=[Burial.SOURCE_TRANSFERRED])
+            q2 = q # & q3
         elif self.request.user.profile.is_ugh():
             q3 = Q(source_type__in=[Burial.SOURCE_UGH, Burial.SOURCE_ARCHIVE, Burial.SOURCE_TRANSFERRED])
             q3 |= Q(status__in=[Burial.STATUS_CLOSED, ])
