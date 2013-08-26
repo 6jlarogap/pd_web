@@ -275,7 +275,10 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
         self.order = None
         order_pk = self.request.REQUEST.get('order')
         if self.request.user.profile.is_loru() and order_pk:
-            self.order = Order.objects.get(pk=order_pk, loru=self.request.user.profile.org)
+            try:
+                self.order = Order.objects.get(pk=order_pk, loru=self.request.user.profile.org)
+            except Order.DoesNotExist:
+                pass
 
         # Отсутствие выбора будет в выпадающем списке не "---", а ""
         self.fields['applicant_organization'].empty_label = ''
@@ -851,16 +854,18 @@ class BurialCommitForm(BurialForm):
             if area and area.places_count  < grave_number:
                 msg = _(u"Номер могилы превышает количество могил в месте для участка")
                 raise forms.ValidationError(msg)
-            burial_type = self.cleaned_data.get('burial_type')
-            if burial_type in (Burial.BURIAL_ADD, Burial.BURIAL_OVER,):
-                for k, v in Burial.BURIAL_TYPES:
-                    if k == burial_type:
-                        burial_type_str = v
-                        break
-                else:
-                    burial_type_str = burial_type
-                msg = _(u"%s возможно только в существующее место") % burial_type_str
-                raise forms.ValidationError(msg)
+
+        burial_type = self.cleaned_data.get('burial_type')
+        if burial_type in (Burial.BURIAL_ADD, Burial.BURIAL_OVER,) and \
+           not (cemetery and area and place_number.strip()):
+            for k, v in Burial.BURIAL_TYPES:
+                if k == burial_type:
+                    burial_type_str = v
+                    break
+            else:
+                burial_type_str = burial_type
+            msg = _(u"%s возможно только c указанием кладбища, участка и места") % burial_type_str
+            raise forms.ValidationError(msg)
 
         if self.instance.is_closed() and not place_number.strip():
             raise forms.ValidationError(_(u"Не указан номер места закрытого захоронения"))
