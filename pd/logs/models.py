@@ -22,9 +22,13 @@ class Log(models.Model):
         Показываем в таблице действий пользователей: что за объект + ссылка
         """
 
+        # Делаем импорт здесь во избежание перекрестных ссылок
+        # между моделями приложений, которые все используют
+        # методы этого модуля
+ 
         from burials.models import Cemetery
         from orders.models import Order
- 
+        
         model_name = self.ct.model_class()._meta.object_name
         obj_id = self.obj_id if self.obj_id else ''
         if model_name == 'Burial':
