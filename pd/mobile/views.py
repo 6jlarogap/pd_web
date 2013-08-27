@@ -225,11 +225,25 @@ def mobile_upload_place(request):
             prevPlace = None
             place = Place(cemetery = area.cemetery, area = area, place = placeName, row = rowName)  
             place.save()
-            listInsertedPlace.append(place)        
-        if psFoundUnowned == 1:
-            obj, created = PlaceStatus.objects.get_or_create(place = place, status = PlaceStatus.PS_FOUND_UNOWNED, defaults={'creator': request.user})
+            listInsertedPlace.append(place)
+            
+        gueryGetPlaceStatus = 'select ps.* from burials_placestatus ps where ps.date_of_creation = (select max(ps2.date_of_creation) from burials_placestatus ps2 where ps2.place_id = ps.place_id) and ps.place_id = %d' % placeId
+        listPlaceStatus = PlaceStatus.objects.raw(gueryGetPlaceStatus)
+        if len(list(listPlaceStatus)) > 0 :
+            curPlaceStatus = listPlaceStatus[0]
+        if psFoundUnowned == 1 :
+            if curPlaceStatus :                
+                if curPlaceStatus.status != PlaceStatus.PS_FOUND_UNOWNED :
+                    PlaceStatus.objects.create(place = place, status = PlaceStatus.PS_FOUND_UNOWNED, creator = request.user)
+            else :
+                PlaceStatus.objects.create(place = place, status = PlaceStatus.PS_FOUND_UNOWNED, creator = request.user)
         else:
-            obj, created = PlaceStatus.objects.get_or_create(place = place, status = PlaceStatus.PS_ACTUAL, defaults={'creator': request.user})          
+            if curPlaceStatus :
+                if curPlaceStatus.status == PlaceStatus.PS_FOUND_UNOWNED :
+                    PlaceStatus.objects.create(place = place, status = PlaceStatus.PS_ACTUAL, creator = request.user)
+            else :
+                PlaceStatus.objects.create(place = place, status = PlaceStatus.PS_ACTUAL, creator = request.user)
+            
         data = serializers.serialize("json", listInsertedPlace, fields=('cemetery','area','row','place','oldplace'))
         return HttpResponse(data, mimetype='application/json')
     return render_to_response('mobile_upload_place.html', {'message': _(u"Загрузите название места:")})
