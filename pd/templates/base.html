@@ -90,10 +90,15 @@
                             {% endif %}
                             {% if user.profile.org.pk %}
                                 <li><a href="{% url edit_org user.profile.org.pk %}">{% trans "Организация" %}</a></li>
-                                <li><a href="{% url org_log %}">{% trans "Журнал" %}</a></li>
+                            {% endif %}
+                            {% if user.profile.pk %}
+                                <li><a href="{% url user_profile %}">{% trans "Пользователь" %}</a></li>
                             {% endif %}
                             {% if user.profile.is_loru %}
                                 <li><a href="{% url manage_products %}">{% trans "Товары и услуги" %}</a></li>
+                            {% endif %}
+                            {% if user.profile.org.pk %}
+                                <li><a href="{% url org_log %}">{% trans "Журнал" %}</a></li>
                             {% endif %}
                             <li class="divider"></li>
                             <li><a href="{% url ulogout %}">{% trans "Выйти" %}</a></li>
