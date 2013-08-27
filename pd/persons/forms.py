@@ -57,7 +57,7 @@ class DeadPersonForm(ValidDataMixin, StrippedStringsMixin, forms.ModelForm):
         return self.do_clean_date('death_date')
 
 class PersonIDForm(ValidDataMixin, StrippedStringsMixin, forms.ModelForm):
-    noidrequired = forms.BooleanField(label=_(u'Документ не обязателен'), required=False)
+    no_id_required = forms.BooleanField(label=_(u'Документ не обязателен'), required=False)
     source = forms.CharField(label=_(u'Кем выдан'), required=False)
 
     class Meta:

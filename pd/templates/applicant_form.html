@@ -126,8 +126,8 @@
             {{ form.applicant_id_form.id_type.errors }}
             {% if 'burial' in request.path %}    
                 <p>
-                    {{ form.applicant_id_form.noidrequired.label_tag }} {{ form.applicant_id_form.noidrequired }}
-                    <span class="helptext">{{ form.applicant_id_form.noidrequired.help_text }}</span>
+                    {{ form.applicant_id_form.no_id_required.label_tag }} {{ form.applicant_id_form.no_id_required }}
+                    <span class="helptext">{{ form.applicant_id_form.no_id_required.help_text }}</span>
                 </p>
             {% endif %}    
             <p class="inline">
