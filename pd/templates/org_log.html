@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% load i18n %}
+
+{% block content %}
+    <h1>{% trans "Журнал" %}</h1>
+    <div class="row-fluid no-print">
+        <div class="span12">
+            <div class="row-fluid">
+                <form id="mainform" class="form-horizontal" method="get" action="">
+                    {{ form.as_p }}
+
+                    <p class="buttons">
+                        <input type="submit" value="искать" class="btn btn-primary" />
+                    </p>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    {% if not form.errors %}
+        <p>{% trans "Найдено:" %} {{ paginator.count|default:object_list.count }}</p>
+
+        <table class="table table-bordered table-striped">
+        <tr>
+            <th>{% trans "Дата" %}</th>
+            <th>{% trans "Пользователь" %}</th>
+            <th>{% trans "Объект" %}</th>
+            <th>{% trans "Действие" %}</th>
+        </tr>
+        {% for log in logs %}
+            <tr>
+                <td>{{ log.dt }}</td>
+                <td>{{ log.user.username }} / {{ log.user.profile.last_name_initials }}</td>
+                <td>{% autoescape off %}{{ log.log_object_display }}{% endautoescape %}</td>
+                <td>{{ log.msg|linebreaksbr }}</td>
+            </tr>
+        {% endfor %}
+        </table>
+
+        {% include "paginator.html" %}
+    {% endif %}
+
+{% endblock %}

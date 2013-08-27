@@ -12,10 +12,12 @@ from django.shortcuts import redirect, render
 from django.utils.translation import ugettext_lazy as _
 from django.views.generic.base import View
 from django.views.generic.edit import UpdateView, CreateView
+from django.views.generic.list import ListView
 
 from burials.views import UGHRequiredMixin, LoginRequiredMixin
-from logs.models import write_log
-from users.forms import RegisterForm, LoruFormset, ProfileForm, UserProfileForm, UserDataForm, ChangePasswordForm, BankAccountFormset, OrgForm
+from logs.models import Log, write_log
+from users.forms import RegisterForm, LoruFormset, ProfileForm, UserProfileForm, \
+                        UserDataForm, ChangePasswordForm, BankAccountFormset, OrgForm, OrgLogForm
 from users.models import Profile, Org
 
 
@@ -33,6 +35,7 @@ class LoginView(View):
         if form.is_valid():
             user = form.get_user()
             login(request, user)
+            write_log(request, request.user.profile, _(u'Вход в систему'))
             next_url = request.GET.get("next", "/")
             if next_url == '/logout/':
                 next_url = '/'
@@ -54,6 +57,11 @@ class LogoutView(View):
         if not request.user.is_authenticated():
             return redirect('/')
 
+        try:
+            write_log(request, request.user.profile, _(u'Выход из системы'))
+        except AttributeError:
+            # Anonymous User может не иметь атрибута profile
+            pass
         logout(request)
         next_url = request.GET.get("next", "/")
         return redirect(next_url)
@@ -114,7 +122,7 @@ class LoruRegistryView(UGHRequiredMixin, View):
         if formset.is_valid():
             formset.save()
             messages.success(self.request, _(u"Данные сохранены"))
-            write_log(self.request, self.request.user.profile, _(u'Изменены данные реестра ЛОРУ'))
+            write_log(self.request, self.request.user.profile.org, _(u'Изменены данные реестра ЛОРУ'))
             return redirect(self.get_success_url())
         else:
             messages.error(self.request, _(u"Обнаружены ошибки"))
@@ -301,3 +309,52 @@ class AutocompleteOrg(View):
         return HttpResponse(json.dumps([{'value': c.name} for c in orgs[:20]]), mimetype='text/javascript')
 
 autocomplete_org = AutocompleteOrg.as_view()
+
+class OrgLogView(LoginRequiredMixin, ListView):
+    template_name = 'org_log.html'
+    context_object_name = 'logs'
+
+    def get_queryset(self):
+        sort = self.request.GET.get('sort', '-dt')
+        SORT_FIELDS = {
+            'dt': 'pk',
+            '-dt': '-pk',
+            'user': 'user__username',
+            '-user': '-user__username',
+        }
+        s = SORT_FIELDS[sort]
+        users = []
+        org=self.request.user.profile.org
+        for profile in Profile.objects.filter(org=org):
+            if profile.user:
+                users.append(profile.user)
+        # Такой поиск будет гораздо быстрее, чем по user__profile__org=org
+        logs = Log.objects.filter(user__in=users)
+        if not isinstance(s, list):
+            s = [s]
+        print s
+        logs = logs.select_related(
+            'user__profile',
+        ).order_by(*s)
+        
+        return logs
+
+    def get_paginate_by(self, queryset):
+        try:
+            return int(self.request.GET.get('per_page'))
+        except (TypeError, ValueError):
+            return 25
+
+    def get_form(self):
+        return OrgLogForm(data=self.request.GET or None)
+
+    def get_context_data(self, **kwargs):
+        data = super(OrgLogView, self).get_context_data(**kwargs)
+        DISPLAY_OPTIONS = ['page', 'print']
+        get_for_paginator = u'&'.join([u'%s=%s' %  (k, v) for k,v in self.request.GET.items() if k not in DISPLAY_OPTIONS])
+        sort = self.request.GET.get('sort', '-pk')
+        data.update(form=self.get_form(), GET_PARAMS=get_for_paginator, sort=sort)
+        return data
+
+org_log = OrgLogView.as_view()
+
