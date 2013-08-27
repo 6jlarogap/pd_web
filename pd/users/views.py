@@ -341,11 +341,9 @@ class OrgLogView(LoginRequiredMixin, ListView):
         if not isinstance(s, list):
             s = [s]
 
-        logs_count = logs.count()
         logs = logs.select_related(
             'user__profile',
         ).order_by(*s)
-        logs.count = lambda: logs_count
         return logs
 
     def get_paginate_by(self, queryset):
