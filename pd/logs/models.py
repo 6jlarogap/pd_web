@@ -41,7 +41,7 @@ class Log(models.Model):
             ref = reverse('manage_cemeteries_edit', args=[obj_id])
             try:
                 cemetery = Cemetery.objects.get(pk=obj_id).name
-            except Order.DoesNotExist:
+            except Cemetery.DoesNotExist:
                 cemetery = ''
             result = _(u"Кладбище <a href='%s'>%s</a>") % (ref, cemetery, )
         elif model_name == 'Org':
