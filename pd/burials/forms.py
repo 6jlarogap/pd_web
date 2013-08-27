@@ -744,7 +744,7 @@ class BurialCommitForm(BurialForm):
         pass
 
     def setup_required_applicant_id(self):
-        if self.data.get('applicant-last_name'):
+        if self.data.get('applicant-last_name') and not self.data.get('applicant-pid-noidrequired'):
             for f in self.applicant_id_form.fields:
                 if f in ['id_type', 'series', 'number',]:
                     self.applicant_id_form.fields[f].required = True
@@ -770,12 +770,6 @@ class BurialCommitForm(BurialForm):
                 if self.cleaned_data.get('opf') == 'person':
                     if not self.applicant_form.is_valid_data():
                         raise forms.ValidationError(_(u"Нужно указать Заявителя-ФЛ"))
-
-                if self.cleaned_data.get('opf') == 'person':
-                    if self.applicant_id_form.is_valid():
-                        for field in ['series', 'number', ]:
-                            if not self.applicant_id_form.cleaned_data.get(field):
-                                raise forms.ValidationError(_(u"Не указаны серия и/или номер документа заявителя"))
 
                 if self.cleaned_data.get('opf') == 'org':
                     if not self.cleaned_data.get('applicant_organization'):

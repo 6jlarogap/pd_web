@@ -124,6 +124,12 @@
         <h3>{% trans "Удостоверение личности" %}</h3>
         <div class="form_block">
             {{ form.applicant_id_form.id_type.errors }}
+            {% if 'burial' in request.path %}    
+                <p>
+                    {{ form.applicant_id_form.noidrequired.label_tag }} {{ form.applicant_id_form.noidrequired }}
+                    <span class="helptext">{{ form.applicant_id_form.noidrequired.help_text }}</span>
+                </p>
+            {% endif %}    
             <p class="inline">
                 {{ form.applicant_id_form.id_type.label_tag }} {{ form.applicant_id_form.id_type }}
                 <span class="helptext">{{ form.applicant_id_form.id_type.help_text }}</span>
