@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import json
+import datetime
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import login, logout, authenticate
@@ -35,7 +36,7 @@ class LoginView(View):
         if form.is_valid():
             user = form.get_user()
             login(request, user)
-            write_log(request, request.user.profile, _(u'Вход в систему'))
+            write_log(request, request.user, _(u'Вход в систему'))
             next_url = request.GET.get("next", "/")
             if next_url == '/logout/':
                 next_url = '/'
@@ -56,12 +57,7 @@ class LogoutView(View):
     def dispatch(self, request, *args, **kwargs):
         if not request.user.is_authenticated():
             return redirect('/')
-
-        try:
-            write_log(request, request.user.profile, _(u'Выход из системы'))
-        except AttributeError:
-            # Anonymous User может не иметь атрибута profile
-            pass
+        write_log(request, request.user, _(u'Выход из системы'))
         logout(request)
         next_url = request.GET.get("next", "/")
         return redirect(next_url)
@@ -86,6 +82,7 @@ class RegisterView(View):
             form.save()
             user = authenticate(username=form.cleaned_data['username'], password=form.cleaned_data['password1'])
             login(request, user)
+            write_log(request, request.user, _(u'Вход в систему'))
             messages.success(self.request, _(u"Все хорошо, регистрация успешна"))
             return redirect('dashboard')
         return self.get(request, *args, **kwargs)
@@ -315,6 +312,24 @@ class OrgLogView(LoginRequiredMixin, ListView):
     context_object_name = 'logs'
 
     def get_queryset(self):
+        if not self.request.GET:
+            return Log.objects.none()
+
+        org=self.request.user.profile.org
+        users = []
+        for profile in Profile.objects.filter(org=org):
+            if profile.user:
+                users.append(profile.user)
+        # Такой поиск будет гораздо быстрее, чем по user__profile__org=org
+        logs = Log.objects.filter(user__in=users)
+        form = self.get_form()
+
+        if form.data and form.is_valid():
+            if form.cleaned_data['log_date_from']:
+                logs = logs.filter(dt__gte=form.cleaned_data['log_date_from'])
+            if form.cleaned_data['log_date_to']:
+                logs = logs.filter(dt__lte=form.cleaned_data['log_date_to']+datetime.timedelta(days=1))
+
         sort = self.request.GET.get('sort', '-dt')
         SORT_FIELDS = {
             'dt': 'pk',
@@ -323,20 +338,14 @@ class OrgLogView(LoginRequiredMixin, ListView):
             '-user': '-user__username',
         }
         s = SORT_FIELDS[sort]
-        users = []
-        org=self.request.user.profile.org
-        for profile in Profile.objects.filter(org=org):
-            if profile.user:
-                users.append(profile.user)
-        # Такой поиск будет гораздо быстрее, чем по user__profile__org=org
-        logs = Log.objects.filter(user__in=users)
         if not isinstance(s, list):
             s = [s]
-        print s
+
+        logs_count = logs.count()
         logs = logs.select_related(
             'user__profile',
         ).order_by(*s)
-        
+        logs.count = lambda: logs_count
         return logs
 
     def get_paginate_by(self, queryset):
@@ -352,7 +361,7 @@ class OrgLogView(LoginRequiredMixin, ListView):
         data = super(OrgLogView, self).get_context_data(**kwargs)
         DISPLAY_OPTIONS = ['page', 'print']
         get_for_paginator = u'&'.join([u'%s=%s' %  (k, v) for k,v in self.request.GET.items() if k not in DISPLAY_OPTIONS])
-        sort = self.request.GET.get('sort', '-pk')
+        sort = self.request.GET.get('sort', '-dt')
         data.update(form=self.get_form(), GET_PARAMS=get_for_paginator, sort=sort)
         return data
 

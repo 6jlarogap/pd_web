@@ -23,8 +23,24 @@
 
         <table class="table table-bordered table-striped">
         <tr>
-            <th>{% trans "Дата" %}</th>
-            <th>{% trans "Пользователь" %}</th>
+            <th>
+                {% if sort == '-dt' %}
+                    {% if sort == '-dt' %}<i class="icon icon-arrow-down"></i>{% endif %}
+                    <a href="?{{ GET_PARAMS }}&sort=dt">{% trans "Дата" %}</a>
+                {% else %}
+                    {% if sort == 'dt' %}<i class="icon icon-arrow-up"></i>{% endif %}
+                    <a href="?{{ GET_PARAMS }}&sort=-dt">{% trans "Дата" %}</a>
+                {% endif %}
+            </th>
+            <th>
+                {% if sort == 'user' %}
+                    {% if sort == 'user' %}<i class="icon icon-arrow-up"></i>{% endif %}
+                    <a href="?{{ GET_PARAMS }}&sort=-user">{% trans "Пользователь" %}</a>
+                {% else %}
+                    {% if sort == '-user' %}<i class="icon icon-arrow-down"></i>{% endif %}
+                    <a href="?{{ GET_PARAMS }}&sort=user">{% trans "Пользователь" %}</a>
+                {% endif %}
+            </th>
             <th>{% trans "Объект" %}</th>
             <th>{% trans "Действие" %}</th>
         </tr>

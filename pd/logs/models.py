@@ -21,6 +21,10 @@ class Log(models.Model):
         """
         Показываем в таблице действий пользователей: что за объект + ссылка
         """
+
+        from burials.models import Cemetery
+        from orders.models import Order
+ 
         model_name = self.ct.model_class()._meta.object_name
         obj_id = self.obj_id if self.obj_id else ''
         if model_name == 'Burial':
@@ -28,22 +32,24 @@ class Log(models.Model):
             result = _(u"Захоронение <a href='%s'>%s</a>") % (ref, obj_id, )
         elif model_name == 'Order':
             ref = reverse('order_edit', args=[obj_id])
-            from orders.models import Order
             try:
                 loru_number = Order.objects.get(pk=obj_id).loru_number
             except Order.DoesNotExist:
                 loru_number = ''
             result = _(u"Заказ <a href='%s'>%s</a>") % (ref, loru_number, )
+        elif model_name == 'Cemetery':
+            ref = reverse('manage_cemeteries_edit', args=[obj_id])
+            try:
+                cemetery = Cemetery.objects.get(pk=obj_id).name
+            except Order.DoesNotExist:
+                cemetery = ''
+            result = _(u"Кладбище <a href='%s'>%s</a>") % (ref, cemetery, )
         elif model_name == 'Org':
             result = _(u"Организация")
         elif model_name == 'Profile':
-            ref = reverse('user_profile', args=[obj_id])
-            from users.models import Profile
-            try:
-                user_name = Profile.objects.get(pk=obj_id).user.username
-            except Profile.DoesNotExist:
-                user_name = ''
-            result = _(u"Пользователь <a href='%s'>%s</a>") % (ref, user_name)
+            result = ""
+        elif model_name == 'User':
+            result = ""
         else:
             result = u"%s %s" % (model_name, obj_id,)
         return result

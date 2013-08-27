@@ -230,4 +230,6 @@ class OrgLogForm(forms.Form):
         (100, 100),
     )
 
+    log_date_from = forms.DateField(required=False, label=_(u"С"))
+    log_date_to = forms.DateField(required=False, label=_(u"по"))
     per_page = forms.ChoiceField(label=_(u"На странице"), choices=PAGE_CHOICES, initial=25, required=False)
