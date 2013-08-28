@@ -74,7 +74,8 @@ class DashboardView(BurialsListGenericMixin, TemplateView):
     def get_context_data(self, **kwargs):
         qs = self.get_qs_filter()
         ex_qs = Q(status__in=[Burial.STATUS_CLOSED, Burial.STATUS_EXHUMATED])
-        ex_qs |= Q(source_type=Burial.SOURCE_FULL, status=Burial.STATUS_DRAFT)
+        if self.request.user.is_authenticated() and self.request.user.profile.is_ugh():
+            ex_qs |= Q(source_type=Burial.SOURCE_FULL, status=Burial.STATUS_DRAFT)
         ex_qs |= Q(annulated=True)
 
         sort = self.request.GET.get('sort', '-pk')
