@@ -327,7 +327,7 @@ $(function() {
     if (!window.LORU_AGENTS) { LORU_AGENTS = {} }
     if (!window.PLACE_TYPES) { PLACE_TYPES = {} }
     
-    $('#id_address-fias_address').live('keypress', function(e) {
+    $('input[id$=fias_address]').live('keypress', function(e) {
         if (e.keyCode == 13) {
             e.preventDefault();
             $(this).change();
@@ -661,14 +661,6 @@ $(function() {
     });
     $('#id_country, #id_region').change();
     $('#id_lat, #id_lng').closest('p').hide();
-
-    $('input[id$=fias_address]').find(':input').live('keypress', function(e) {
-        if (e.keyCode == 13) {
-            e.preventDefault();
-            $(this).change();
-            return false;
-        }
-    });
 
     var ac_options = {
         bounds: USER_DEFAULT_BOUNDS,
