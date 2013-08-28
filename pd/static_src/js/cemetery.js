@@ -703,33 +703,33 @@ $(function() {
 
                 var address = results[0].address_components;
                 $(address).each(function() {
-                    if (this.types.indexOf("postal_code") > -1) { form_block.find('input[id$=post_index]').val(this.long_name); }
+//                     if (this.types.indexOf("postal_code") > -1) { form_block.find('input[id$=post_index]').val(this.long_name); }
                     if (this.types.indexOf("country") > -1) { country = this.long_name; form_block.find('input[id$=country_name]').val(country); }
                     if (this.types.indexOf("administrative_area_level_1") > -1) { region = this.long_name; form_block.find('input[id$=region_name]').val(''); }
                     if (this.types.indexOf("locality") > -1) { city = this.long_name; form_block.find('input[id$=city_name]').val(''); }
                     if (this.types.indexOf("route") > -1) { street = this.long_name; form_block.find('input[id$=street_name]').val(''); }
-                    if (this.types.indexOf("street_number") > -1) {
-                        form_block.find('input[id$=house]').val(this.long_name);
-                        house = this.long_name;
-                        if (this.long_name.indexOf("корпус") > -1) {
-                            var bits = this.long_name.split(" корпус ");
-                            form_block.find('input[id$=house]').val(bits[0]);
-                            form_block.find('input[id$=block]').val(bits[1]);
-                            house = bits[0];
-                            block = bits[1];
-                        }
-                        if (this.long_name.indexOf("строение") > -1) {
-                            var bits = this.long_name.split(" строение ");
-                            form_block.find('input[id$=house]').val(bits[0]);
-                            form_block.find('input[id$=building]').val(bits[1]);
-                            house = bits[0];
-                            building = bits[1];
-                        }
-                    }
-                    if (this.types.indexOf("subpremise") > -1) {
-                        flat = this.long_name;
-                        form_block.find('input[id$=flat]').val(this.long_name);
-                    }
+//                     if (this.types.indexOf("street_number") > -1) {
+//                         form_block.find('input[id$=house]').val(this.long_name);
+//                         house = this.long_name;
+//                         if (this.long_name.indexOf("корпус") > -1) {
+//                             var bits = this.long_name.split(" корпус ");
+//                             form_block.find('input[id$=house]').val(bits[0]);
+//                             form_block.find('input[id$=block]').val(bits[1]);
+//                             house = bits[0];
+//                             block = bits[1];
+//                         }
+//                         if (this.long_name.indexOf("строение") > -1) {
+//                             var bits = this.long_name.split(" строение ");
+//                             form_block.find('input[id$=house]').val(bits[0]);
+//                             form_block.find('input[id$=building]').val(bits[1]);
+//                             house = bits[0];
+//                             building = bits[1];
+//                         }
+//                     }
+//                     if (this.types.indexOf("subpremise") > -1) {
+//                         flat = this.long_name;
+//                         form_block.find('input[id$=flat]').val(this.long_name);
+//                     }
                 });
 
                 if (country) {
