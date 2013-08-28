@@ -486,7 +486,8 @@ class Burial(SafeDeleteMixin, models.Model):
         if self.is_ugh():
             return False
         elif self.is_full():
-            return self.is_ready() and self.get_place() and \
+            return self.is_ready() and \
+                   self.cemetery and self.area and self.place_number and \
                    self.burial_type in (self.BURIAL_ADD, self.BURIAL_OVER, )
         return False
 
