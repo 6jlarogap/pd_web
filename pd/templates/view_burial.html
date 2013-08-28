@@ -39,7 +39,15 @@
             <dt>{% trans "Заявитель-ФЛ" %}:</dt>
                 <dd>{{ b.applicant }}</dd>
                 <dd>{% trans "Адрес:" %} {{ b.applicant.address|default:"не указан" }}</dd>
-                <dd>{% trans "Документ:" %} {{ b.applicant.personid|default:"не указан" }}</dd>
+                <dd>
+                    {% with pid=b.applicant.personid %}
+                        {% if pid and pid.id_type and pid.series and pid.number %}
+                            {% trans "Документ:" %} {{ pid }}
+                        {% else %}
+                        <big><b><span style="color:red">{% trans "Документ не заполнен" %}</span></b></big>
+                        {% endif %}
+                    {% endwith %}
+                 </dd>
         {% else %}
             <dt>{% trans "Заявитель" %}:</dt>
                 <dd>не указан</dd>
