@@ -327,7 +327,7 @@ $(function() {
     if (!window.LORU_AGENTS) { LORU_AGENTS = {} }
     if (!window.PLACE_TYPES) { PLACE_TYPES = {} }
     
-    $('#id_address-fias_address').live('keypress', function(e) {
+    $('input[id$=fias_address]').live('keypress', function(e) {
         if (e.keyCode == 13) {
             e.preventDefault();
             $(this).change();
