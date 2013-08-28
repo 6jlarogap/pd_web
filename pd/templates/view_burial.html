@@ -27,7 +27,7 @@
         {% if b.ugh %}
             <dt>{% trans "УГХ" %}:</dt><dd>{{ b.ugh }}</dd>
         {% endif %}
-        {% if b.applicant_organization %}
+        {% if b.applicant_organization and show_private_data %}
             <dt>{% trans "Заявитель-ЮЛ" %}:</dt><dd>{{ b.applicant_organization|default:"не указано" }}</dd>
             {% if b.agent %}
                 <dt>{% trans "Агент" %}:</dt><dd>{{ b.agent|default:"не указан" }}</dd>
@@ -35,7 +35,7 @@
             {% elif b.agent_director %}
                 <dt>{% trans "Агент" %}:</dt><dd>{% trans "Директор" %}</dd>
             {% endif %}
-        {% elif b.applicant %}
+        {% elif b.applicant and show_private_data %}
             <dt>{% trans "Заявитель-ФЛ" %}:</dt>
                 <dd>{{ b.applicant }}</dd>
                 <dd>{% trans "Адрес:" %} {{ b.applicant.address|default:"не указан" }}</dd>
@@ -48,7 +48,7 @@
                         {% endif %}
                     {% endwith %}
                  </dd>
-        {% else %}
+        {% elif show_private_data  %}
             <dt>{% trans "Заявитель" %}:</dt>
                 <dd>не указан</dd>
         {% endif %}
@@ -103,7 +103,7 @@
         </dd>
         <dt>{% trans "Ответственный" %}:</dt>
         <dd>
-            {% if user.profile.is_ugh or not b.is_closed %}
+            {% if show_private_data %}
                 {{ b.get_responsible|default:"не указан" }}
                 {% if b.get_responsible.address %}
                      <br />{{ b.get_responsible.address }}

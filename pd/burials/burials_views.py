@@ -326,6 +326,8 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
             'is_accessible': b.loru and self.request.user.profile.org in b.loru.get_loru_list(),
             'order': self.order,
             'orders': b.get_orders(loru=self.request.user.profile.org) if self.request.user.profile.is_loru() else [],
+            # Кому можно смотреть в захоронении ответственного и заявителя:
+            'show_private_data': self.request.user.profile.is_ugh() or b.loru and b.loru == self.request.user.profile.org,
         }
 
 view_burial = BurialView.as_view()
