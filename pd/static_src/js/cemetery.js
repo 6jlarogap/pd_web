@@ -662,14 +662,6 @@ $(function() {
     $('#id_country, #id_region').change();
     $('#id_lat, #id_lng').closest('p').hide();
 
-    $('input[id$=fias_address]').live('keypress', function(e) {
-        if (e.keyCode == 13) {
-            e.preventDefault();
-            $(this).change();
-            return false;
-        }
-    });
-
     var ac_options = {
         bounds: USER_DEFAULT_BOUNDS,
         types: ['geocode'],
