@@ -662,7 +662,7 @@ $(function() {
     $('#id_country, #id_region').change();
     $('#id_lat, #id_lng').closest('p').hide();
 
-    $('input[id$=fias_address]').find(':input').live('keypress', function(e) {
+    $('input[id$=fias_address]').live('keypress', function(e) {
         if (e.keyCode == 13) {
             e.preventDefault();
             $(this).change();
