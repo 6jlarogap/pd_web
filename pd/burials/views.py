@@ -167,6 +167,7 @@ class AddAgentView(LoginRequiredMixin, View):
         if fa.is_valid() and fd.is_valid():
             agent = fa.save(loru=loru)
             dover = fd.save(commit=False)
+            dover.target_org = request.user.profile.org
             dover.agent = agent
             dover.save()
             return HttpResponse(json.dumps({
