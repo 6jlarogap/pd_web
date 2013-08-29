@@ -523,7 +523,18 @@ class BurialsPublicListView(ListView):
                   #)
                  #)
                  #).order_by('-pk').distinct()
-                 Q(source_type=Burial.SOURCE_FULL, loru = self.request.user.profile.org)
+                  Q(source_type=Burial.SOURCE_FULL) & 
+                  Q(loru = self.request.user.profile.org) &
+                  (
+                   Q(annulated=False) &
+                   Q(status__in=[Burial.STATUS_EXHUMATED, Burial.STATUS_CLOSED, ]) &
+                   ~Q(burial_container=Burial.CONTAINER_BIO)
+                   )
+                   |
+                   (
+                    Q(annulated=True) &
+                    Q(status__in=[Burial.STATUS_BACKED, Burial.STATUS_DRAFT, Burial.STATUS_DECLINED, ])
+                   )
                  ).order_by('-pk').distinct()
         else:
             burials = Burial.objects.none()
