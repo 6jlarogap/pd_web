@@ -205,7 +205,7 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
             ))
             redirect_to_edit = True
 
-        if request.POST.get('unbind') and not b.is_edit() and order:
+        if request.POST.get('unbind') and order:
             order.burial = None
             order.save()
             write_log(self.request, b, _(u'Захоронение откреплено от заказа %s') % order.pk)
@@ -328,7 +328,8 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
             'orders': b.get_orders(loru=self.request.user.profile.org) if self.request.user.profile.is_loru() else [],
             # Кому можно смотреть в захоронении ответственного и заявителя:
             'show_private_data': self.request.user.profile.is_ugh() or \
-                                 b.is_full() and b.loru and b.loru == self.request.user.profile.org and not b.is_closed(),
+                                 b.is_full() and b.loru and b.loru == self.request.user.profile.org,
+            'place': b.get_place() if self.request.user.profile.is_ugh() else None,
         }
 
 view_burial = BurialView.as_view()
@@ -506,21 +507,33 @@ class BurialsPublicListView(ListView):
 
         if self.request.user.is_authenticated() and self.request.user.profile.is_loru():
             burials = Burial.objects.filter(
-                Q(
+                #Q(
+                  #(
+                   #Q(ugh__loru_list__loru=self.request.user.profile.org) &
+                   #Q(annulated=False) &
+                   #Q(status__in=[Burial.STATUS_EXHUMATED, Burial.STATUS_CLOSED, Burial.STATUS_APPROVED, ]) &
+                   #~Q(burial_container=Burial.CONTAINER_BIO)
+                  #)
+                  #|
+                  #(
+                   #Q(annulated=True) &
+                   #Q(loru = self.request.user.profile.org) & 
+                   #Q(source_type=Burial.SOURCE_FULL) & 
+                   #Q(status__in=[Burial.STATUS_BACKED, Burial.STATUS_DRAFT, Burial.STATUS_DECLINED, ])
+                  #)
+                 #)
+                 #).order_by('-pk').distinct()
+                  Q(source_type=Burial.SOURCE_FULL) & 
+                  Q(loru = self.request.user.profile.org) &
                   (
-                   Q(ugh__loru_list__loru=self.request.user.profile.org) &
                    Q(annulated=False) &
-                   Q(status__in=[Burial.STATUS_EXHUMATED, Burial.STATUS_CLOSED, Burial.STATUS_APPROVED, ]) &
-                   ~Q(burial_container=Burial.CONTAINER_BIO)
-                  )
-                  |
-                  (
-                   Q(annulated=True) &
-                   Q(loru = self.request.user.profile.org) & 
-                   Q(source_type=Burial.SOURCE_FULL) & 
-                   Q(status__in=[Burial.STATUS_BACKED, Burial.STATUS_DRAFT, Burial.STATUS_DECLINED, ])
-                  )
-                 )
+                   Q(status__in=[Burial.STATUS_EXHUMATED, Burial.STATUS_CLOSED, ])
+                   )
+                   |
+                   (
+                    Q(annulated=True) &
+                    Q(status__in=[Burial.STATUS_BACKED, Burial.STATUS_DRAFT, Burial.STATUS_DECLINED, ])
+                   )
                  ).order_by('-pk').distinct()
         else:
             burials = Burial.objects.none()
