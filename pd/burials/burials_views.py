@@ -205,7 +205,7 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
             ))
             redirect_to_edit = True
 
-        if request.POST.get('unbind') and not b.is_edit() and order:
+        if request.POST.get('unbind') and order:
             order.burial = None
             order.save()
             write_log(self.request, b, _(u'Захоронение откреплено от заказа %s') % order.pk)

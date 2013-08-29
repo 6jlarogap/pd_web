@@ -146,7 +146,7 @@
             {% endif %}
         {% endif %}
         {% if user.profile.is_loru %}
-            {% if not b.is_edit and not b.annulated and order and not order.annulated %}
+            {% if order %}
                 <input type="submit" class="btn btn-danger" name="unbind" value="{% trans "открепить от заказа" %}">
             {% endif %}
             {% if b.can_loru_deannulate and b.loru == user.profile.org %}
