@@ -1009,6 +1009,7 @@ class BurialApproveCloseForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelFor
         super(BurialApproveCloseForm, self).__init__(*args, **kwargs)
         self.forms = []
         self.request = request
+        self.dc_form = None
         cemetery_qs = Q(ugh=request.user.profile.org)
         
         if self.data.get('cemetery'):
@@ -1028,13 +1029,24 @@ class BurialApproveCloseForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelFor
             self.fields['cemetery'].queryset = Cemetery.objects.filter(cemetery_qs)
 
         elif self.instance.can_approve():
-            # Одобрение
-            for f in ['row', 'place_number', 'fact_date', ]:
-                del self.fields[f]
-            for f in ['cemetery', 'area', ]:
-                self.fields[f].required = True
-            cemetery_qs &= Q(area__availability=Area.AVAILABILITY_OPEN)
-            self.fields['cemetery'].queryset = Cemetery.objects.filter(cemetery_qs).distinct()
+            if request.user.profile.is_ugh() and not self.instance.area:
+                # Одобрение
+                for f in ['row', 'place_number', 'fact_date', ]:
+                    del self.fields[f]
+                for f in ['cemetery', 'area', ]:
+                    self.fields[f].required = True
+                cemetery_qs &= Q(area__availability=Area.AVAILABILITY_OPEN)
+                self.fields['cemetery'].queryset = Cemetery.objects.filter(cemetery_qs).distinct()
+            elif request.user.profile.is_loru():
+                for f in ['cemetery', 'area', 'row', 'place_number', 'fact_date', ]:
+                    del self.fields[f]
+            try:
+                dc = self.instance and self.instance.deadman and self.instance.deadman.deathcertificate
+            except DeathCertificate.DoesNotExist:
+                dc = None
+            if not dc and deadman:
+                dc = DeathCertificate(person=deadman)
+            self.dc_form = DeathCertificateForm(request, instance=dc)
 
     def clean(self):
         if 'row' in self.fields and \

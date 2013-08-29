@@ -146,6 +146,12 @@
             {% endif %}
         {% endif %}
         {% if user.profile.is_loru %}
+            {% if b.can_approve %}
+                {{ approve_close_form.as_p }}
+                <h3>{% trans "Свидетельство о смерти" %}</h3>
+                {{ approve_close_form.dc_form.as_p }}
+                <input type="submit" class="btn" name="save_dc" value="{% trans "Сохранить" %}">
+            {% endif %}
             {% if order %}
                 <input type="submit" class="btn btn-danger" name="unbind" value="{% trans "открепить от заказа" %}">
             {% endif %}
@@ -176,14 +182,20 @@
             {% endif %}
             {% if b.can_approve %}
                 {% if not b.area %}
+                    <h3>{% trans "Кладбище и участок" %}</h3>
                     {{ approve_close_form.as_p }}
+                    <script type="text/javascript">
+                        CEMETERY_AREAS = {{ approve_close_form.cemetery_areas_json|default:"{}" }};
+                        AGENT_DOVER = {{ approve_close_form.agent_dover_json|default:"{}"  }};
+                        LORU_AGENTS = {{ approve_close_form.loru_agents_json|default:"{}"  }};
+                    </script>
                 {% endif %}
-                <script type="text/javascript">
-                    CEMETERY_AREAS = {{ approve_close_form.cemetery_areas_json|default:"{}" }};
-                    AGENT_DOVER = {{ approve_close_form.agent_dover_json|default:"{}"  }};
-                    LORU_AGENTS = {{ approve_close_form.loru_agents_json|default:"{}"  }};
-                </script>
-                <input type="submit" class="btn" name="approve" value="{% trans "одобрить" %}">
+                <h3>{% trans "Свидетельство о смерти" %}</h3>
+                {{ approve_close_form.dc_form.as_p }}
+                {% if b.is_inspecting %}
+                    </p><input type="submit" class="btn" name="approve_inspect" value="{% trans "одобрить обследование" %}"></p>
+                {% endif %}
+                <input type="submit" class="btn" name="approve" value="{% trans "согласовать захоронение" %}">
             {% endif %}
             {% if b.can_decline %}
                 <br/><br/>
