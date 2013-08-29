@@ -293,12 +293,11 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
         elif request.POST.get('unbind') and order:
             return redirect(reverse('order_burial', args=[order.pk]))
         else:
-            msg = _(u"Выполнить операцию не удалось: <a href='%s'>захоронение в статусе \"%s\"") % (
+            msg = _(u"Выполнить операцию не удалось: <a href='%s'>захоронение</a> в статусе \"%s\"") % (
                 reverse('view_burial', args=[b.pk]) + order_parm,
                 b.get_status_display(),
             )
             messages.success(request, msg)
-            return redirect('dashboard')
             
         if redirect_to_view:
             return redirect(reverse('view_burial', args=[b.pk]) + order_parm)
