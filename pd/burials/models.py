@@ -796,14 +796,14 @@ class Burial(SafeDeleteMixin, models.Model):
         Может ли лору из организации org прикрепить это захоронение к заказу
         """
         result = False
-        if self.is_full() and self.loru == org:
+        if self.is_full() and self.loru == org and not self.is_annulated():
             result = True
-        elif (self.is_closed() or self.is_exhumated() or self.is_approved()) and \
-                not self.is_bio() and \
-                not self.is_annulated() and \
-                self.ugh and \
-                ProfileLORU.objects.filter(ugh=self.ugh,loru=org).exists():
-            result = True
+        #elif (self.is_closed() or self.is_exhumated() or self.is_approved()) and \
+                #not self.is_bio() and \
+                #not self.is_annulated() and \
+                #self.ugh and \
+                #ProfileLORU.objects.filter(ugh=self.ugh,loru=org).exists():
+            #result = True
         return result
 
 class BurialFiles(Files):

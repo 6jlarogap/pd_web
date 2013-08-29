@@ -94,7 +94,7 @@
                 <tr>
                     <td>{{ b.pk }}</td>
                     <td>{{ b.account_number|default:"" }}</td>
-                    <td>{{ b.cemetery }} / {{ b.ugh_name }}</td>
+                    <td>{% if b.cemetery %}{{ b.cemetery }} / {{ b.ugh_name }}{% endif %}</td>
                     <td>
                         {% with burial=b %}{% include "burial_place.html" %}{% endwith %}
                     </td>

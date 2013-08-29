@@ -117,7 +117,7 @@
                 {{ b.applicant }}
             {% endif %}
         </td>
-        <td>{{ b.cemetery }} / {{ b.ugh_name }}</td>
+        <td>{% if b.cemetery %}{{ b.cemetery }} / {{ b.ugh_name }}{% endif %}</td>
         <td>
             {% with burial=b %}{% include "burial_place.html" %}{% endwith %}
         </td>
