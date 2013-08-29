@@ -527,8 +527,7 @@ class BurialsPublicListView(ListView):
                   Q(loru = self.request.user.profile.org) &
                   (
                    Q(annulated=False) &
-                   Q(status__in=[Burial.STATUS_EXHUMATED, Burial.STATUS_CLOSED, ]) &
-                   ~Q(burial_container=Burial.CONTAINER_BIO)
+                   Q(status__in=[Burial.STATUS_EXHUMATED, Burial.STATUS_CLOSED, ])
                    )
                    |
                    (
