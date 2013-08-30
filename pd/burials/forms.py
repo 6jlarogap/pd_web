@@ -916,6 +916,7 @@ class BurialCommitForm(BurialForm):
         if self.dc_form.is_valid() and \
            not (self.instance.is_archive() or self.request.REQUEST.get('archive') or \
                 self.instance.is_transferred() or \
+                self.request.user.profile.is_loru() or \
                 self.cleaned_data.get('burial_container') == Burial.CONTAINER_BIO \
                ):
             death_certificate_release_date = self.dc_form.cleaned_data.get('release_date')
@@ -1060,7 +1061,6 @@ class BurialApproveCloseForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelFor
                 dc = None
             if not dc and deadman:
                 dc = DeathCertificate(person=deadman)
-            print request
             self.dc_form = DeathCertificateForm(request, data=self.request.POST or None, instance=dc)
             self.forms.append(self.dc_form)
 
@@ -1097,9 +1097,10 @@ class BurialApproveCloseForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelFor
             prefix = _(u"Усопший, СоС, ")
         return prefix
 
-    def save(self, **kwargs):
+    def save(self, commit=False, **kwargs):
         self.collect_log_data()
-        self.instance = super(BurialApproveCloseForm, self).save(**kwargs)
+        commit = bool(self.fields) or commit
+        self.instance = super(BurialApproveCloseForm, self).save(commit=commit, **kwargs)
         if self.dc_form:
             self.dc_form.save()
         self.put_log_data()

@@ -146,11 +146,11 @@
             {% endif %}
         {% endif %}
         {% if user.profile.is_loru %}
-            {% if b.can_approve %}
+            {% if b.can_approve and not b.is_bio %}
                 <br/><br/>
                 <h2>{% trans "Свидетельство о смерти" %}</h2>
                 {{ approve_close_form.dc_form.as_p }}
-                <input type="submit" class="btn btn-primary" name="save_dc" value="{% trans "Сохранить" %}">
+                <input type="submit" class="btn btn-primary" name="save-dc" value="{% trans "Сохранить" %}">
             {% endif %}
             {% if order %}
                 <input type="submit" class="btn btn-danger" name="unbind" value="{% trans "открепить от заказа" %}">
@@ -190,10 +190,12 @@
                         LORU_AGENTS = {{ approve_close_form.loru_agents_json|default:"{}"  }};
                     </script>
                 {% endif %}
-                <h2>{% trans "Свидетельство о смерти" %}</h2>
-                {{ approve_close_form.dc_form.as_p }}
+                {% if not b.is_bio %}
+                    <h2>{% trans "Свидетельство о смерти" %}</h2>
+                    {{ approve_close_form.dc_form.as_p }}
+                {% endif %}
                 {% if b.is_inspecting %}
-                    </p><input type="submit" class="btn" name="approve_inspect" value="{% trans "одобрить обследование" %}"></p>
+                    </p><input type="submit" class="btn" name="approve-inspect" value="{% trans "одобрить обследование" %}"></p>
                 {% endif %}
                 <input type="submit" class="btn" name="approve" value="{% trans "согласовать захоронение" %}">
             {% endif %}
