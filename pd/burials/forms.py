@@ -1010,6 +1010,7 @@ class BurialApproveCloseForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelFor
         self.forms = []
         self.request = request
         self.dc_form = None
+        self.forms =[]
         cemetery_qs = Q(ugh=request.user.profile.org)
         
         if self.data.get('cemetery'):
@@ -1061,6 +1062,7 @@ class BurialApproveCloseForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelFor
                 dc = DeathCertificate(person=deadman)
             print request
             self.dc_form = DeathCertificateForm(request, data=self.request.POST or None, instance=dc)
+            self.forms.append(self.dc_form)
 
             # если угх нажмет "Согласовать" или если лору нажмет "сохранить" (СоС),
             # то там должны быть заполнены необходимые поля
@@ -1084,16 +1086,22 @@ class BurialApproveCloseForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelFor
         return self.cleaned_data['area']
 
     def is_valid(self):
-        is_valid = super(BurialApproveCloseForm, self).is_valid()
-        if is_valid and self.dc_form:
-            is_valid = self.dc_form.is_valid()
+        is_valid = super(BurialApproveCloseForm, self).is_valid() and all([f.is_valid() for f in self.forms])
         if not is_valid:
             messages.error(self.request, _(u'Обнаружены ошибки, их необходимо исправить'))
         return is_valid
 
+    def get_prefix(self, form):
+        prefix = u''
+        if form is self.dc_form:
+            prefix = _(u"Усопший, СоС, ")
+        return prefix
+
     def save(self, **kwargs):
         self.collect_log_data()
         self.instance = super(BurialApproveCloseForm, self).save(**kwargs)
+        if self.dc_form:
+            self.dc_form.save()
         self.put_log_data()
         return self.instance
 
