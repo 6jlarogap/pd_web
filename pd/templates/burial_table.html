@@ -144,7 +144,7 @@
             </td>
         {% endif %}
         <td class="no-print">
-            {% if user.profile.is_loru  %}
+            {% if user.profile.is_loru %}
                 {% if b.is_full and b.is_edit and b.loru and b.loru == user.profile.org and not b.is_annulated %}
                     <a class="btn" href="{% url edit_burial b.pk %}">{% trans "правка" %}</a>
                 {% else %}
