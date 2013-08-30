@@ -145,22 +145,17 @@
         {% endif %}
         <td class="no-print">
             {% if user.profile.is_loru %}
-                {% if b.is_edit and b.is_full %}
+                <!-- Планируется, что лору будет видеть и зх других лору, а также зх от угх, -->
+                <!-- но редактировать может только свои зх -->
+                {% if b.is_full and b.is_edit and b.loru and b.loru == user.profile.org and not b.is_annulated %}
                     <a class="btn" href="{% url edit_burial b.pk %}">{% trans "правка" %}</a>
                 {% else %}
                     <a class="btn" href="{% url view_burial b.pk %}">{% trans "просмотр" %}</a>
                 {% endif %}
-            {% else %}
+            {% elif user.profile.is_ugh %}
                 <a class="btn" href="{% url view_burial b.pk %}">{% trans "просмотр" %}</a>
-            {% endif %}
-            {% if not dashboard %}
-                {% if user.profile.org == b.applicant_organization and b.is_full and b.is_edit %}
-                    <a class="btn" href="{% url edit_burial b.pk %}">{% trans "правка" %}</a>
-                {% elif b.is_edit and b.is_ugh %}
-                    {% if user.profile.org == b.cemetery.ugh or user.profile.org == b.ugh %}
-                        <a class="btn" href="{% url edit_burial b.pk %}">{% trans "правка" %}</a>
-                    {% endif %}
-                {% elif b.is_finished and user.profile.is_ugh %}
+                <!-- (Ручные, архивные), перенесенные, закрытые: -->
+                {% if b.is_ugh or b.is_transferred or b.is_closed %}
                     <a class="btn" href="{% url edit_burial b.pk %}">{% trans "правка" %}</a>
                 {% endif %}
             {% endif %}
