@@ -154,7 +154,7 @@
                 {% endif %}
             {% elif user.profile.is_ugh %}
                 <a class="btn" href="{% url view_burial b.pk %}">{% trans "просмотр" %}</a>
-                <!-- (Ручные, архивные), перенесенные, закрытые: так и в queryset in EditBurial -->
+                <!-- (Ручные, архивные), перенесенные, закрытые: -->
                 {% if b.is_ugh or b.is_transferred or b.is_closed %}
                     <a class="btn" href="{% url edit_burial b.pk %}">{% trans "правка" %}</a>
                 {% endif %}
