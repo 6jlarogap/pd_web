@@ -227,12 +227,11 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
             ))
 
         if request.POST.get('approve') and request.user.profile.is_ugh() and b.can_approve():
-            if not b.area:
-                approve_close_form = self.get_approve_close_form()
-                if approve_close_form.is_valid():
-                    b = approve_close_form.save()
-                else:
-                    return self.get(request, *args, **kwargs)
+            approve_close_form = self.get_approve_close_form()
+            if approve_close_form.is_valid():
+                b = approve_close_form.save()
+            else:
+                return self.get(request, *args, **kwargs)
             b.status = Burial.STATUS_APPROVED
             b.approve(self.request.user)
             write_log(request, b, _(u'Захоронение согласовано'))

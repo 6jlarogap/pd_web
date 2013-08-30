@@ -1022,31 +1022,51 @@ class BurialApproveCloseForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelFor
             if not self.instance.fact_date:
                 self.initial['fact_date'] = self.instance.plan_date
             for f in self.fields:
-                if f not in ['row', ]:
+                if f not in ('row', ):
                     self.fields[f].required = True
             if cemetery and cemetery.places_algo != Cemetery.PLACE_MANUAL:
                 self.fields['place_number'].required = False
             self.fields['cemetery'].queryset = Cemetery.objects.filter(cemetery_qs)
 
         elif self.instance.can_approve():
-            if request.user.profile.is_ugh() and not self.instance.area:
-                # Одобрение
-                for f in ['row', 'place_number', 'fact_date', ]:
-                    del self.fields[f]
-                for f in ['cemetery', 'area', ]:
-                    self.fields[f].required = True
-                cemetery_qs &= Q(area__availability=Area.AVAILABILITY_OPEN)
-                self.fields['cemetery'].queryset = Cemetery.objects.filter(cemetery_qs).distinct()
+            # отправленное на согласование или после этого отправленное на обследование в угх
+            # * может не быть задан участок, тогда в форме будет кладбище и участок
+            if request.user.profile.is_ugh():
+                if self.instance.area:
+                    for f in self.fields.keys():
+                        del self.fields[f]
+                else:
+                    for f in ('row', 'place_number', 'fact_date', ):
+                        del self.fields[f]
+                    for f in self.fields:
+                        if f in ('cemetery', 'area', ):
+                            self.fields[f].required = True
+                    cemetery_qs &= Q(area__availability=Area.AVAILABILITY_OPEN)
+                    self.fields['cemetery'].queryset = Cemetery.objects.filter(cemetery_qs).distinct()
+
             elif request.user.profile.is_loru():
-                for f in ['cemetery', 'area', 'row', 'place_number', 'fact_date', ]:
+                # лору в отправленном на согласовании или в место-обследуемом зх
+                # ничего править не может, кроме СоС, но это отдельная форма
+                # внутри этой формы
+                for f in self.fields.keys():
                     del self.fields[f]
+
+            # и лору, и угх в отправленном на согласовании или в место-обследуемом зх
+            # могут править СоС
             try:
                 dc = self.instance and self.instance.deadman and self.instance.deadman.deathcertificate
             except DeathCertificate.DoesNotExist:
                 dc = None
             if not dc and deadman:
                 dc = DeathCertificate(person=deadman)
-            self.dc_form = DeathCertificateForm(request, instance=dc)
+            print request
+            self.dc_form = DeathCertificateForm(request, data=self.request.POST or None, instance=dc)
+
+            # если угх нажмет "Согласовать" или если лору нажмет "сохранить" (СоС),
+            # то там должны быть заполнены необходимые поля
+            for f in self.dc_form.fields:
+                if f in ('s_number', 'release_date', 'zags',) :
+                    self.dc_form.fields[f].required = True
 
     def clean(self):
         if 'row' in self.fields and \
@@ -1065,6 +1085,8 @@ class BurialApproveCloseForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelFor
 
     def is_valid(self):
         is_valid = super(BurialApproveCloseForm, self).is_valid()
+        if is_valid and self.dc_form:
+            is_valid = self.dc_form.is_valid()
         if not is_valid:
             messages.error(self.request, _(u'Обнаружены ошибки, их необходимо исправить'))
         return is_valid
