@@ -145,6 +145,8 @@
         {% endif %}
         <td class="no-print">
             {% if user.profile.is_loru %}
+                <!-- Планируется, что лору будет видеть и зх других лору, а также зх от угх, -->
+                <!-- но редактировать может только свои зх -->
                 {% if b.is_full and b.is_edit and b.loru and b.loru == user.profile.org and not b.is_annulated %}
                     <a class="btn" href="{% url edit_burial b.pk %}">{% trans "правка" %}</a>
                 {% else %}
@@ -152,6 +154,7 @@
                 {% endif %}
             {% elif user.profile.is_ugh %}
                 <a class="btn" href="{% url view_burial b.pk %}">{% trans "просмотр" %}</a>
+                <!-- (Ручные, архивные), перенесенные, закрытые: -->
                 {% if b.is_ugh or b.is_transferred or b.is_closed %}
                     <a class="btn" href="{% url edit_burial b.pk %}">{% trans "правка" %}</a>
                 {% endif %}
