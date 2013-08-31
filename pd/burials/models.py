@@ -6,7 +6,6 @@ from django.db.models.deletion import ProtectedError
 from django.utils.translation import ugettext_lazy as _
 from django.db.models.query_utils import Q
 from pd.models import UnclearDateModelField
-from logs.models import write_log
 
 import os
 import pytils
