@@ -398,7 +398,12 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
                 cust_personid = None
             if cust_personid:
                 for f in PersonIDForm.base_fields.keys():
-                    applicant_id_form_initial[f] = getattr(cust_personid, f)
+                    try:
+                        applicant_id_form_initial[f] = getattr(cust_personid, f)
+                    except AttributeError:
+                        # Мало ли какие поля будут в форме в добавление к тем,
+                        # что из модели, на которой форма основана:
+                        pass
 
         self.applicant_form = AlivePersonForm(data=data, prefix='applicant',
                                               instance=applicant,
