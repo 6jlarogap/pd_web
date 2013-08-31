@@ -358,7 +358,7 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
         self.deadman_form = DeadPersonForm(request=self.request, data=data, prefix='deadman', instance=deadman)
         deadman_addr = deadman and deadman.address
         self.deadman_address_form = LocationForm(data=data, prefix='deadman-address', instance=deadman_addr)
-        self.bfiles_form = BurialFilesForm(data=self.request.POST or None, files=self.request.FILES or None)
+        self.bfiles_form = BurialFilesForm(data=data, files=self.request.FILES)
         try:
             dc = self.instance and self.instance.deadman and self.instance.deadman.deathcertificate
         except DeathCertificate.DoesNotExist:
@@ -425,16 +425,8 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
 
         forms = [self.deadman_form, self.deadman_address_form, self.dc_form,
                 self.responsible_form, self.responsible_address_form,
-                self.applicant_form, self.applicant_address_form, self.applicant_id_form]
-        
-        # При ?action=.... метод is_valid() формы добавления файла, self.bfiles_form, возвращает
-        # False.
-        # Впрочем, форма добавления файла не требуется, если редактирование захоронения
-        # вызывается не для правки его пользователем, а из просмотра захоронения,
-        # с параметром ?action=.... "в строке браузера", чтоб сразу закрыть (complete)
-        #
-        if not self.request.REQUEST.get('action'):
-            forms.append(self.bfiles_form)
+                self.applicant_form, self.applicant_address_form, self.applicant_id_form,
+                self.bfiles_form, ]
         return forms
 
     def is_valid(self):
