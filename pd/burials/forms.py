@@ -1032,8 +1032,7 @@ class BurialApproveCloseForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelFor
             # * может не быть задан участок, тогда в форме будет кладбище и участок
             if request.user.profile.is_ugh():
                 if self.instance.area:
-                    for f in self.fields.keys():
-                        del self.fields[f]
+                    self.fields.clear()
                 else:
                     for f in ('row', 'place_number', 'fact_date', ):
                         del self.fields[f]
@@ -1047,8 +1046,7 @@ class BurialApproveCloseForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelFor
                 # лору в отправленном на согласовании или в место-обследуемом зх
                 # ничего править не может, кроме СоС, но это отдельная форма
                 # внутри этой формы
-                for f in self.fields.keys():
-                    del self.fields[f]
+                self.fields.clear()
 
             # и лору, и угх в отправленном на согласовании или в место-обследуемом зх
             # могут править СоС
