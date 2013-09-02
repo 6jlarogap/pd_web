@@ -136,28 +136,29 @@
     </dl>
     <form action="" method="POST">
         {% csrf_token %}
-        {% if user.profile.is_loru and b.is_full and not b.annulated and b.loru == user.profile.org %}
-            {% if b.is_edit %}
-                <input type="submit" class="btn" name="ready" value="{% trans "отправить на согласование" %}">
-            {% elif b.can_back %}
-                {% if b.is_approved %}
-                    <label>{% trans "Причина" %}</label>
-                    <select name="reason_typical">
-                        <option value=""></option>
-                        {% for r in reason_typical_back %}<option value="{{ r.text }}">{{ r.name }}</option>{% endfor %}
-                    </select>
-                    <textarea name="reason" rows="5" cols="30"></textarea>
-                    <br/>
-                {% endif %}
-                <input type="submit" class="btn btn-danger" name="back" value="{% trans "отозвать" %}">
-            {% endif %}
-        {% endif %}
         {% if user.profile.is_loru %}
             {% if b.can_approve and not b.is_bio %}
                 <br/><br/>
                 <h2>{% trans "Свидетельство о смерти" %}</h2>
                 {{ approve_close_form.dc_form.as_p }}
-                <input type="submit" class="btn btn-primary" name="save-dc" value="{% trans "Сохранить" %}">
+                <input type="submit" class="btn btn-primary" name="save-dc" value="{% trans "cохранить" %}">
+            {% endif %}
+            {% if b.is_full and not b.annulated and b.loru == user.profile.org %}
+                {% if b.is_edit %}
+                    <input type="submit" class="btn" name="ready" value="{% trans "отправить на согласование" %}">
+                {% elif b.can_back %}
+                    {% if b.is_approved %}
+                        <label>{% trans "Причина" %}</label>
+                        <select name="reason_typical">
+                            <option value=""></option>
+                            {% for r in reason_typical_back %}<option value="{{ r.text }}">{{ r.name }}</option>{% endfor %}
+                        </select>
+                        <textarea name="reason" rows="5" cols="30"></textarea>
+                        <br/>
+                    {% endif %}
+                    <br/><br/>
+                    <p><input type="submit" class="btn btn-danger" name="back" value="{% trans "отозвать" %}"></p>
+                {% endif %}
             {% endif %}
             {% if order %}
                 <input type="submit" class="btn btn-danger" name="unbind" value="{% trans "открепить от заказа" %}">
