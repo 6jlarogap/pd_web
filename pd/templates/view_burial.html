@@ -149,7 +149,7 @@
                     <textarea name="reason" rows="5" cols="30"></textarea>
                     <br/>
                 {% endif %}
-                <input type="submit" class="btn" name="back" value="{% trans "отозвать" %}">
+                <input type="submit" class="btn btn-danger" name="back" value="{% trans "отозвать" %}">
             {% endif %}
         {% endif %}
         {% if user.profile.is_loru %}
@@ -203,7 +203,19 @@
             {% if b.is_inspecting %}
                 <input type="submit" class="btn" name="approve-inspect" value="{% trans "одобрить обследование" %}">
             {% endif %}
-            <input type="submit" class="btn" name="approve" value="{% trans "согласовать захоронение" %}">
+            {% if b.can_approve %}
+                <input type="submit" class="btn btn-primary" name="approve" value="{% trans "согласовать захоронение" %}">
+            {% endif %}
+            {% if b.can_finish and not b.is_archive %}
+                {{ approve_close_form.as_p }}
+                <script type="text/javascript">
+                    CEMETERY_AREAS = {{ approve_close_form.cemetery_areas_json|default:"{}" }};
+                </script>
+                <input type="submit" class="btn btn-primary" name="complete" value="{% trans "закрыть" %}">
+            {% endif %}
+            {% if b.is_finished and not b.annulated %}
+                <a href="{% url burial_exhumate b.pk %}" class="btn">{% trans "эксгумировать" %}</a>
+            {% endif %}
             {% if b.can_decline %}
                 <br/><br/>
                 <label>{% trans "Причина отказа" %}</label>
@@ -213,17 +225,7 @@
                 </select>
                 <textarea name="reason" rows="5" cols="30"></textarea>
                 <br/>
-                <input type="submit" class="btn" name="decline" value="{% trans "отказать" %}">
-            {% endif %}
-            {% if b.can_finish and not b.is_archive %}
-                {{ approve_close_form.as_p }}
-                <script type="text/javascript">
-                    CEMETERY_AREAS = {{ approve_close_form.cemetery_areas_json|default:"{}" }};
-                </script>
-                <input type="submit" class="btn" name="complete" value="{% trans "закрыть" %}">
-            {% endif %}
-            {% if b.is_finished and not b.annulated %}
-                <a href="{% url burial_exhumate b.pk %}" class="btn">{% trans "эксгумировать" %}</a>
+                <input type="submit" class="btn btn-danger" name="decline" value="{% trans "отказать" %}">
             {% endif %}
         {% endif %}
         {% if user.profile.org == b.applicant_organization and b.is_edit and b.is_full_or_transferred and not b.annulated %}
@@ -271,7 +273,7 @@
         {% csrf_token %}
         {{ comment_form.as_p }}
         <p>
-            <input type="submit" class="btn btn-primary" value="{% trans "добавить" %}" />
+            <input type="submit" class="btn" value="{% trans "добавить" %}" />
         </p>
     </form>
 
