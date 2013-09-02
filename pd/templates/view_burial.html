@@ -184,9 +184,6 @@
                 <br/>
                 <input type="submit" class="btn" name="annulate" value="{% trans "аннулировать" %}">
             {% endif %}
-            {% if b.can_inspect %}
-                <input type="submit" class="btn" name="inspect" value="{% trans "отправить на обследование" %}">
-            {% endif %}
             {% if b.can_approve %}
                 {% if not b.area %}
                     <h2>{% trans "Кладбище и участок" %}</h2>
@@ -199,14 +196,17 @@
                     <h2>{% trans "Свидетельство о смерти" %}</h2>
                     {{ approve_close_form.dc_form.as_p }}
                 {% endif %}
-                {% if b.is_inspecting %}
-                    <p><input type="submit" class="btn" name="approve-inspect" value="{% trans "одобрить обследование" %}"></p>
-                {% endif %}
-                <p><input type="submit" class="btn" name="approve" value="{% trans "согласовать захоронение" %}"></p>
             {% endif %}
+            {% if b.can_inspect %}
+                <input type="submit" class="btn" name="inspect" value="{% trans "отправить на обследование" %}">
+            {% endif %}
+            {% if b.is_inspecting %}
+                <input type="submit" class="btn" name="approve-inspect" value="{% trans "одобрить обследование" %}">
+            {% endif %}
+            <input type="submit" class="btn" name="approve" value="{% trans "согласовать захоронение" %}">
             {% if b.can_decline %}
                 <br/><br/>
-                <label>{% trans "Причина" %}</label>
+                <label>{% trans "Причина отказа" %}</label>
                 <select name="reason_typical">
                     <option value=""></option>
                     {% for r in reason_typical_decline %}<option value="{{ r.text }}">{{ r.name }}</option>{% endfor %}

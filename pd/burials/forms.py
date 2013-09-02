@@ -1031,6 +1031,7 @@ class BurialApproveCloseForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelFor
             # отправленное на согласование или после этого отправленное на обследование в угх
             # * может не быть задан участок, тогда в форме будет кладбище и участок
             if request.user.profile.is_ugh():
+                self.instance.area = Burial.objects.get(pk=self.instance.pk).area
                 if self.instance.area:
                     self.fields.clear()
                 else:

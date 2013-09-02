@@ -482,8 +482,7 @@ class Burial(SafeDeleteMixin, models.Model):
     def can_inspect(self):
         return self.is_full() and \
                self.is_ready() and \
-               self.cemetery and self.area and self.place_number and \
-               self.burial_type in (self.BURIAL_ADD, self.BURIAL_OVER, )
+               self.cemetery and self.area and self.place_number
 
     def can_approve_inspect(self):
         # одобрение обследования означает перевод захоронения
