@@ -226,7 +226,7 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
                 reverse('view_burial', args=[b.pk]), b.pk,
             ))
 
-        if request.POST.get('save-dc') and not b.is_bio() and b.can_approve():
+        if request.POST.get('save-dc') and request.user.profile.is_loru() and not b.is_bio() and b.can_approve():
             approve_close_form = self.get_approve_close_form()
             if approve_close_form.is_valid():
                 b = approve_close_form.save()
