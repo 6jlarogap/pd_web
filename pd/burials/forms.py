@@ -1021,7 +1021,7 @@ class BurialApproveCloseForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelFor
             if not self.instance.fact_date:
                 self.initial['fact_date'] = self.instance.plan_date
             for f in self.fields:
-                if f not in ('row', ):
+                if f not in ['row', ]:
                     self.fields[f].required = True
             if cemetery and cemetery.places_algo != Cemetery.PLACE_MANUAL:
                 self.fields['place_number'].required = False
