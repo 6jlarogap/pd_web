@@ -235,6 +235,7 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
             messages.success(request, _(u"<a href='%s'>Захоронение %s</a>: свидетельство о смерти сохранено") % (
                 reverse('view_burial', args=[b.pk]), b.pk,
             ))
+            redirect_to_view = True
 
         if request.POST.get('approve') and request.user.profile.is_ugh() and b.can_approve():
             approve_close_form = self.get_approve_close_form()
@@ -312,7 +313,7 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
         elif request.POST.get('unbind') and order:
             return redirect(reverse('order_burial', args=[order.pk]))
         elif request.POST.get('save-dc'):
-            redirect_to_view = True
+            pass
         else:
             msg = _(u"Выполнить операцию не удалось: <a href='%s'>захоронение</a> в статусе \"%s\"") % (
                 reverse('view_burial', args=[b.pk]) + order_parm,
