@@ -193,8 +193,6 @@
                     {{ approve_close_form.as_p }}
                     <script type="text/javascript">
                         CEMETERY_AREAS = {{ approve_close_form.cemetery_areas_json|default:"{}" }};
-                        AGENT_DOVER = {{ approve_close_form.agent_dover_json|default:"{}"  }};
-                        LORU_AGENTS = {{ approve_close_form.loru_agents_json|default:"{}"  }};
                     </script>
                 {% endif %}
                 {% if not b.is_bio %}
@@ -222,8 +220,6 @@
                 {{ approve_close_form.as_p }}
                 <script type="text/javascript">
                     CEMETERY_AREAS = {{ approve_close_form.cemetery_areas_json|default:"{}" }};
-                    AGENT_DOVER = {{ approve_close_form.agent_dover_json|default:"{}"  }};
-                    LORU_AGENTS = {{ approve_close_form.loru_agents_json|default:"{}"  }};
                 </script>
                 <input type="submit" class="btn" name="complete" value="{% trans "закрыть" %}">
             {% endif %}
