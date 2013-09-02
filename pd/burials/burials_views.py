@@ -226,7 +226,7 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
                 reverse('view_burial', args=[b.pk]), b.pk,
             ))
 
-        if request.POST.get('save-dc') and request.user.profile.is_loru() and b.can_approve():
+        if request.POST.get('save-dc') and not b.is_bio() and b.can_approve():
             approve_close_form = self.get_approve_close_form()
             if approve_close_form.is_valid():
                 b = approve_close_form.save()
@@ -248,7 +248,16 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
             messages.success(request, _(u"<a href='%s'>Захоронение %s</a> согласовано") % (
                 reverse('view_burial', args=[b.pk]), b.pk,
             ))
+            redirect_to_view = True
 
+        if request.POST.get('approve-inspect') and request.user.profile.is_ugh() and b.can_approve_inspect():
+            b.status = Burial.STATUS_READY
+            write_log(request, b, _(u'Обследование одобрено. Захоронение на согласовании'))
+            messages.success(request, _(u"Обследование одобрено. <a href='%s'>Захоронение %s</a> на согласовании") % (
+                reverse('view_burial', args=[b.pk]), b.pk,
+            ))
+            redirect_to_view = True
+            
         if request.POST.get('decline') and request.user.profile.is_ugh() and b.can_decline():
             b.status = Burial.STATUS_DECLINED
             b.account_number = None
@@ -257,6 +266,7 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
             messages.success(request, _(u"<a href='%s'>Захоронение %s</a> отклонено") % (
                 reverse('view_burial', args=[b.pk]), b.pk,
             ))
+
         if request.POST.get('complete') and request.user.profile.is_ugh() and b.can_finish():
             approve_close_form = self.get_approve_close_form()
             if approve_close_form.is_valid():

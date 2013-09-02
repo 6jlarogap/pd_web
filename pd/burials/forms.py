@@ -1052,20 +1052,21 @@ class BurialApproveCloseForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelFor
 
             # и лору, и угх в отправленном на согласовании или в место-обследуемом зх
             # могут править СоС
-            try:
-                dc = self.instance and self.instance.deadman and self.instance.deadman.deathcertificate
-            except DeathCertificate.DoesNotExist:
-                dc = None
-            if not dc and deadman:
-                dc = DeathCertificate(person=deadman)
-            self.dc_form = DeathCertificateForm(request, data=self.request.POST or None, instance=dc)
-            self.forms.append(self.dc_form)
+            if not self.instance.is_bio():
+                try:
+                    dc = self.instance and self.instance.deadman and self.instance.deadman.deathcertificate
+                except DeathCertificate.DoesNotExist:
+                    dc = None
+                if not dc and deadman:
+                    dc = DeathCertificate(person=deadman)
+                self.dc_form = DeathCertificateForm(request, data=self.request.POST or None, instance=dc)
+                self.forms.append(self.dc_form)
 
-            # если угх нажмет "Согласовать" или если лору нажмет "сохранить" (СоС),
-            # то там должны быть заполнены необходимые поля
-            for f in self.dc_form.fields:
-                if f in ('s_number', 'release_date', 'zags',) :
-                    self.dc_form.fields[f].required = True
+                # если угх нажмет "Согласовать" или если лору/угх нажмет "сохранить" (СоС),
+                # то там должны быть заполнены необходимые поля
+                for f in self.dc_form.fields:
+                    if f in ('s_number', 'release_date', 'zags',) :
+                        self.dc_form.fields[f].required = True
 
     def clean(self):
         if 'row' in self.fields and \

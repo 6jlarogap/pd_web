@@ -159,6 +159,9 @@
                     <a class="btn" href="{% url edit_burial b.pk %}">{% trans "правка" %}</a>
                 {% endif %}
             {% endif %}
+            {% if not b.is_bio and not b.dc_filled %}
+                <br/><span style="color:red"><b>{% trans "Нет СоС!" %}</b></span>
+            {% endif %}
         </td>
     </tr>
 {% endfor %}

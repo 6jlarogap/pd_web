@@ -68,15 +68,22 @@
                 {% endif %}
             {% endif %}
         </dd>
-        <dt>{% trans "Свидетельство о смерти" %}:</dt>
-            {% if b.deadman.deathcertificate %}
-                <dd>{% trans "Номер" %}: {{ b.deadman.deathcertificate.s_number }}</dd>
-                <dd>{% trans "Серия" %}: {{ b.deadman.deathcertificate.series }}</dd>
-                <dd>{% trans "Дата" %}: {{ b.deadman.deathcertificate.release_date|default_if_none:"" }}</dd>
-                <dd>{% trans "Выдано" %}: {{ b.deadman.deathcertificate.zags|default_if_none:"" }}</dd>
+        {% if not b.is_bio %}
+        <dt>
+            {% if b.dc_filled %}
+                {% trans "Свидетельство о смерти" %}:
             {% else %}
-                <dd>Нет</dd>
+                <span style="color:red"><b><big>{% trans "Свидетельство о смерти" %}:
+                                                {% trans "не заполнено!" %}</big></b></span>
             {% endif %}
+        <dt>
+            {% if b.deadman.deathcertificate %}
+                <dd>{% trans "Номер" %}*: {{ b.deadman.deathcertificate.s_number }}</dd>
+                <dd>{% trans "Серия" %}: {{ b.deadman.deathcertificate.series }}</dd>
+                <dd>{% trans "Выдано" %}*: {{ b.deadman.deathcertificate.zags|default_if_none:"" }}</dd>
+                <dd>{% trans "Дата" %}*: {{ b.deadman.deathcertificate.release_date|default_if_none:"" }}</dd>
+            {% endif %}
+        {% endif %}
         <dt>{% trans "Кладбище" %}:</dt><dd>{{ b.cemetery|default:"не указан" }}</dd>
         <dt>{% trans "Место" %}:</dt><dd>
             {% if b.area %}
@@ -193,11 +200,12 @@
                 {% if not b.is_bio %}
                     <h2>{% trans "Свидетельство о смерти" %}</h2>
                     {{ approve_close_form.dc_form.as_p }}
+                    <input type="submit" class="btn btn-primary" name="save-dc" value="{% trans "Сохранить СоС" %}"><br/><br/>
                 {% endif %}
                 {% if b.is_inspecting %}
-                    </p><input type="submit" class="btn" name="approve-inspect" value="{% trans "одобрить обследование" %}"></p>
+                    <p><input type="submit" class="btn" name="approve-inspect" value="{% trans "одобрить обследование" %}"></p>
                 {% endif %}
-                <input type="submit" class="btn" name="approve" value="{% trans "согласовать захоронение" %}">
+                <p><input type="submit" class="btn" name="approve" value="{% trans "согласовать захоронение" %}"></p>
             {% endif %}
             {% if b.can_decline %}
                 <br/><br/>

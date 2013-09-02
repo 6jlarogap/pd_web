@@ -477,19 +477,32 @@ class Burial(SafeDeleteMixin, models.Model):
         return self.burial_container == self.CONTAINER_BIO
 
     def can_approve(self):
-        if self.is_ugh():
-            return False
-        elif self.is_full():
-            return self.is_ready() or self.is_inspecting()
-        return False
+        return self.is_full() and (self.is_ready() or self.is_inspecting())
 
     def can_inspect(self):
-        if self.is_ugh():
-            return False
-        elif self.is_full():
-            return self.is_ready() and \
-                   self.cemetery and self.area and self.place_number and \
-                   self.burial_type in (self.BURIAL_ADD, self.BURIAL_OVER, )
+        return self.is_full() and \
+               self.is_ready() and \
+               self.cemetery and self.area and self.place_number and \
+               self.burial_type in (self.BURIAL_ADD, self.BURIAL_OVER, )
+
+    def can_approve_inspect(self):
+        # одобрение обследования означает перевод захоронения
+        # из статуса "Отправлено на обследование"
+        # в статус "На согласовании"
+        return self.is_full() and self.is_inspecting()
+
+    def dc_filled(self):
+        """
+        В захоронении заполнено свидетельство о смерти
+        """
+        
+        # ВНИМАНИЕ! СоС не надо заполнять для биоотходов, но для них
+        #           эта функция вернёт False.
+        try:
+            dc = self.deadman.deathcertificate
+            return dc.s_number and dc.release_date and dc.zags
+        except (AttributeError, DeathCertificate.DoesNotExist, ):
+            pass
         return False
 
     def can_finish(self):
