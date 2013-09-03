@@ -762,15 +762,7 @@ class BurialCommitForm(BurialForm):
                     raise forms.ValidationError(_(u"Нужно указать либо Заявителя-ЮЛ, либо Заявителя-ФЛ"))
 
             if self.cleaned_data.get('opf') == 'person':
-                if self.applicant_form.is_valid_data():
-                    burial_date = self.cleaned_data.get('plan_date')
-                    document_date = self.applicant_id_form.cleaned_data.get('date')
-                    if burial_date and document_date:
-                        check_date = datetime.datetime(burial_date.year - 75, burial_date.month, burial_date.day).date()
-                        if document_date < check_date:
-                            msg = _(u"Не верно указана дата документа")
-                            raise forms.ValidationError(msg)
-                else:
+                if not self.applicant_form.is_valid_data():
                     raise forms.ValidationError(_(u"Нужно указать Заявителя-ФЛ"))
 
             if self.cleaned_data.get('opf') == 'org':
