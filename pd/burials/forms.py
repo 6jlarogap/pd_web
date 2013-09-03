@@ -762,7 +762,15 @@ class BurialCommitForm(BurialForm):
                     raise forms.ValidationError(_(u"Нужно указать либо Заявителя-ЮЛ, либо Заявителя-ФЛ"))
 
             if self.cleaned_data.get('opf') == 'person':
-                if not self.applicant_form.is_valid_data():
+                if self.applicant_form.is_valid_data():
+                    burial_date = self.cleaned_data.get('plan_date')
+                    document_date = self.applicant_id_form.cleaned_data.get('date')
+                    if burial_date and document_date:
+                        check_date = datetime.datetime(burial_date.year - 75, burial_date.month, burial_date.day).date()
+                        if document_date < check_date:
+                            msg = _(u"Не верно указана дата документа")
+                            raise forms.ValidationError(msg)
+                else:
                     raise forms.ValidationError(_(u"Нужно указать Заявителя-ФЛ"))
 
             if self.cleaned_data.get('opf') == 'org':
@@ -782,15 +790,6 @@ class BurialCommitForm(BurialForm):
                         raise forms.ValidationError(msg)
                     if dover_end_date < today.date() :
                         msg = _(u"Срок действия доверенности не может быть меньше текущей даты")
-                        raise forms.ValidationError(msg)
-
-            if self.cleaned_data.get('opf') == 'person' and self.applicant_id_form.is_valid():
-                burial_date = self.cleaned_data.get('plan_date')
-                document_date = self.applicant_id_form.cleaned_data.get('date')
-                if burial_date and document_date:
-                    check_date = datetime.datetime(burial_date.year - 75, burial_date.month, burial_date.day).date()
-                    if document_date < check_date:
-                        msg = _(u"Не верно указана дата документа")
                         raise forms.ValidationError(msg)
 
         if self.request.user.profile.org.numbers_algo in (Org.NUM_YEAR_UGH, Org.NUM_YEAR_CEMETERY) and \
