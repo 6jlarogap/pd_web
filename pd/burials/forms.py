@@ -790,30 +790,30 @@ class BurialCommitForm(BurialForm):
                         msg = _(u"Срок действия доверенности не может быть меньше текущей даты")
                         raise forms.ValidationError(msg)
 
-            if self.cleaned_data.get('opf') == 'person' and self.applicant_id_form.is_valid() and not self.instance.is_archive() and not self.instance.is_transferred():
+            if self.cleaned_data.get('opf') == 'person' and self.applicant_id_form.is_valid():
                 burial_date = self.cleaned_data.get('plan_date')
                 document_date = self.applicant_id_form.cleaned_data.get('date')
                 if burial_date and document_date:
                     check_date = datetime.datetime(burial_date.year - 75, burial_date.month, burial_date.day).date()
                     if document_date < check_date:
-                        msg = _(u"Не верно указан номер документа")
+                        msg = _(u"Не верно указана дата документа")
                         raise forms.ValidationError(msg)
 
-            if self.request.user.profile.org.numbers_algo in (Org.NUM_YEAR_UGH, Org.NUM_YEAR_CEMETERY) and \
-               self.cleaned_data.get('account_number') and self.cleaned_data.get('fact_date'):
-                acc_number = self.cleaned_data.get('account_number')
-                fact_date  = self.cleaned_data.get('fact_date')
-                msg = _(u"Номер в книге учета должен быть: ГГГГнн...н (год фактической даты, номер)")
-                try:
-                    if len(acc_number) < 4 or int(acc_number[:4]) != fact_date.year:
-                        raise forms.ValidationError(msg)
-                except ValueError:
+        if self.request.user.profile.org.numbers_algo in (Org.NUM_YEAR_UGH, Org.NUM_YEAR_CEMETERY) and \
+            self.cleaned_data.get('account_number') and self.cleaned_data.get('fact_date'):
+            acc_number = self.cleaned_data.get('account_number')
+            fact_date  = self.cleaned_data.get('fact_date')
+            msg = _(u"Номер в книге учета должен быть: ГГГГнн...н (год фактической даты, номер)")
+            try:
+                if len(acc_number) < 4 or int(acc_number[:4]) != fact_date.year:
                     raise forms.ValidationError(msg)
-
-            if (self.instance.is_archive() or self.request.REQUEST.get('archive')) and \
-               not self.cleaned_data.get('account_number').strip():
-                msg = _(u"Нельзя закрывать архивное захоронение без указания его номера в книге учета")
+            except ValueError:
                 raise forms.ValidationError(msg)
+
+        if (self.instance.is_archive() or self.request.REQUEST.get('archive')) and \
+            not self.cleaned_data.get('account_number').strip():
+            msg = _(u"Нельзя закрывать архивное захоронение без указания его номера в книге учета")
+            raise forms.ValidationError(msg)
 
         place_number = self.cleaned_data.get('place_number') or ''
         area = self.cleaned_data.get('area')
