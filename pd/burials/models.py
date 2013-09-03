@@ -505,7 +505,12 @@ class Burial(SafeDeleteMixin, models.Model):
         return False
 
     def can_finish(self):
-        if self.is_full():
+        """
+        Условия закрытия захоронения
+        """
+        if self.is_annulated():
+            return False
+        elif self.is_full():
             return self.is_approved()
         else:
             return self.is_draft()
@@ -534,13 +539,14 @@ class Burial(SafeDeleteMixin, models.Model):
         return self.annulated and self.is_full() and self.is_edit()
 
     def can_back(self):
-        return self.is_full() and not self.is_edit() and not self.is_finished()
+        return self.is_full() and not self.is_annulated() and \
+               (self.is_ready() or self.is_approved() or self.is_inspecting())
 
-    def can_decline(self):
-        return self.is_full() and (self.is_ready() or self.is_inspecting() or self.is_approved())
+    can_decline = can_back
+        # УГХ может отклонить зх при тех же условиях, что ЛОРУ может отозвать
 
     # условия печати уведомлений для ugh.
-    def can_print_notification(self):
+    def can_ugh_print_notification(self):
         return self.is_approved() or self.is_closed()
 
     # условия печати уведомлений для loru.
