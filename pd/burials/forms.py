@@ -758,37 +758,37 @@ class BurialCommitForm(BurialForm):
             is_ugh = True
         if (not self.instance or not self.instance.pk) and self.request.user.profile.is_ugh():
             is_ugh = True
-        if is_ugh:
-            if not self.instance.is_archive() and not self.instance.is_transferred() and not self.request.REQUEST.get('archive'):
+
+        if not self.instance.is_archive() and not self.instance.is_transferred() and not self.request.REQUEST.get('archive'):
+            if not self.cleaned_data.get('applicant_organization'):
+                if not self.applicant_form.is_valid_data():
+                    raise forms.ValidationError(_(u"Нужно указать либо Заявителя-ЮЛ, либо Заявителя-ФЛ"))
+            if self.cleaned_data.get('applicant_organization'):
+                if self.applicant_form.is_valid_data():
+                    raise forms.ValidationError(_(u"Нужно указать либо Заявителя-ЮЛ, либо Заявителя-ФЛ"))
+
+            if self.cleaned_data.get('opf') == 'person':
+                if not self.applicant_form.is_valid_data():
+                    raise forms.ValidationError(_(u"Нужно указать Заявителя-ФЛ"))
+
+            if self.cleaned_data.get('opf') == 'org':
                 if not self.cleaned_data.get('applicant_organization'):
-                    if not self.applicant_form.is_valid_data():
-                        raise forms.ValidationError(_(u"Нужно указать либо Заявителя-ЮЛ, либо Заявителя-ФЛ"))
-                if self.cleaned_data.get('applicant_organization'):
-                    if self.applicant_form.is_valid_data():
-                        raise forms.ValidationError(_(u"Нужно указать либо Заявителя-ЮЛ, либо Заявителя-ФЛ"))
-
-                if self.cleaned_data.get('opf') == 'person':
-                    if not self.applicant_form.is_valid_data():
-                        raise forms.ValidationError(_(u"Нужно указать Заявителя-ФЛ"))
-
-                if self.cleaned_data.get('opf') == 'org':
-                    if not self.cleaned_data.get('applicant_organization'):
-                        raise forms.ValidationError(_(u"Нужно указать ЛОРУ"))
-                    if not self.cleaned_data.get('agent_director'):
-                        if not self.cleaned_data.get('agent') or not self.cleaned_data.get('dover'):
-                            msg = _(u"Нужно указать Агента и Доверенность или указать, что Агент - Директор")
-                            raise forms.ValidationError(msg)
-                if  not self.instance.is_closed():
-                    if self.cleaned_data.get('dover'):
-                        dover_begin_date = self.cleaned_data.get('dover').begin
-                        dover_end_date = self.cleaned_data.get('dover').end
-                        today = datetime.datetime.today()
-                        if dover_begin_date > today.date():
-                            msg = _(u"Дата выдачи доверенности не может быть раньше текущей даты")
-                            raise forms.ValidationError(msg)
-                        if dover_end_date < today.date() :
-                            msg = _(u"Срок действия доверенности не может быть меньше текущей даты")
-                            raise forms.ValidationError(msg)
+                    raise forms.ValidationError(_(u"Нужно указать Заявителя-ЮЛ"))
+                if not self.cleaned_data.get('agent_director'):
+                    if not self.cleaned_data.get('agent') or not self.cleaned_data.get('dover'):
+                        msg = _(u"Нужно указать Агента и Доверенность или указать, что Агент - Директор")
+                        raise forms.ValidationError(msg)
+            if  not self.instance.is_closed():
+                if self.cleaned_data.get('dover'):
+                    dover_begin_date = self.cleaned_data.get('dover').begin
+                    dover_end_date = self.cleaned_data.get('dover').end
+                    today = datetime.datetime.today()
+                    if dover_begin_date > today.date():
+                        msg = _(u"Дата выдачи доверенности не может быть раньше текущей даты")
+                        raise forms.ValidationError(msg)
+                    if dover_end_date < today.date() :
+                        msg = _(u"Срок действия доверенности не может быть меньше текущей даты")
+                        raise forms.ValidationError(msg)
 
             if self.cleaned_data.get('opf') == 'person' and self.applicant_id_form.is_valid() and not self.instance.is_archive() and not self.instance.is_transferred():
                 burial_date = self.cleaned_data.get('plan_date')
