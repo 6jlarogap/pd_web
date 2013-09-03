@@ -800,7 +800,7 @@ class BurialCommitForm(BurialForm):
 
         if is_ugh:
             if self.request.user.profile.org.numbers_algo in (Org.NUM_YEAR_UGH, Org.NUM_YEAR_CEMETERY) and \
-                self.cleaned_data.get('account_number') and self.cleaned_data.get('fact_date'):
+               self.cleaned_data.get('account_number') and self.cleaned_data.get('fact_date'):
                 acc_number = self.cleaned_data.get('account_number')
                 fact_date  = self.cleaned_data.get('fact_date')
                 msg = _(u"Номер в книге учета должен быть: ГГГГнн...н (год фактической даты, номер)")
@@ -811,7 +811,7 @@ class BurialCommitForm(BurialForm):
                     raise forms.ValidationError(msg)
 
             if (self.instance.is_archive() or self.request.REQUEST.get('archive')) and \
-                not self.cleaned_data.get('account_number').strip():
+               not self.cleaned_data.get('account_number').strip():
                 msg = _(u"Нельзя закрывать архивное захоронение без указания его номера в книге учета")
                 raise forms.ValidationError(msg)
 
