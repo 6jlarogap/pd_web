@@ -299,6 +299,7 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
         if self.request.user.profile.is_loru():
             max_grave_number = self.fields['cemetery'].queryset.aggregate(m=Max('area__places_count'))['m']
             if not max_grave_number:
+                # ЛОРУ может "не иметь" кладбищ, например, не быть приписан ни к какому УГХ
                 max_grave_number = 1
             max_grave_choices = [(i,i) for i in range(1, max_grave_number+1)]
             self.fields['desired_graves_count'].widget = forms.Select(choices=max_grave_choices)
@@ -915,6 +916,7 @@ class BurialCommitForm(BurialForm):
         if self.dc_form.is_valid() and \
            not (self.instance.is_archive() or self.request.REQUEST.get('archive') or \
                 self.instance.is_transferred() or \
+                self.request.user.profile.is_loru() or \
                 self.cleaned_data.get('burial_container') == Burial.CONTAINER_BIO \
                ):
             death_certificate_release_date = self.dc_form.cleaned_data.get('release_date')
@@ -1008,6 +1010,8 @@ class BurialApproveCloseForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelFor
         super(BurialApproveCloseForm, self).__init__(*args, **kwargs)
         self.forms = []
         self.request = request
+        self.dc_form = None
+        self.forms =[]
         cemetery_qs = Q(ugh=request.user.profile.org)
         
         if self.data.get('cemetery'):
@@ -1027,13 +1031,44 @@ class BurialApproveCloseForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelFor
             self.fields['cemetery'].queryset = Cemetery.objects.filter(cemetery_qs)
 
         elif self.instance.can_approve():
-            # Одобрение
-            for f in ['row', 'place_number', 'fact_date', ]:
-                del self.fields[f]
-            for f in ['cemetery', 'area', ]:
-                self.fields[f].required = True
-            cemetery_qs &= Q(area__availability=Area.AVAILABILITY_OPEN)
-            self.fields['cemetery'].queryset = Cemetery.objects.filter(cemetery_qs).distinct()
+            # отправленное на согласование или после этого отправленное на обследование в угх
+            # * может не быть задан участок, тогда в форме будет кладбище и участок
+            if request.user.profile.is_ugh():
+                self.instance.area = Burial.objects.get(pk=self.instance.pk).area
+                if self.instance.area:
+                    self.fields.clear()
+                else:
+                    for f in ('row', 'place_number', 'fact_date', ):
+                        del self.fields[f]
+                    for f in self.fields:
+                        if f in ('cemetery', 'area', ):
+                            self.fields[f].required = True
+                    cemetery_qs &= Q(area__availability=Area.AVAILABILITY_OPEN)
+                    self.fields['cemetery'].queryset = Cemetery.objects.filter(cemetery_qs).distinct()
+
+            elif request.user.profile.is_loru():
+                # лору в отправленном на согласовании или в место-обследуемом зх
+                # ничего править не может, кроме СоС, но это отдельная форма
+                # внутри этой формы
+                self.fields.clear()
+
+            # и лору, и угх в отправленном на согласовании или в место-обследуемом зх
+            # могут править СоС
+            if not self.instance.is_bio():
+                try:
+                    dc = self.instance and self.instance.deadman and self.instance.deadman.deathcertificate
+                except DeathCertificate.DoesNotExist:
+                    dc = None
+                if not dc and deadman:
+                    dc = DeathCertificate(person=deadman)
+                self.dc_form = DeathCertificateForm(request, data=self.request.POST or None, instance=dc)
+                self.forms.append(self.dc_form)
+
+                # если угх нажмет "Согласовать" или если лору/угх нажмет "сохранить" (СоС),
+                # то там должны быть заполнены необходимые поля
+                for f in self.dc_form.fields:
+                    if f in ('s_number', 'release_date', 'zags',) :
+                        self.dc_form.fields[f].required = True
 
     def clean(self):
         if 'row' in self.fields and \
@@ -1051,14 +1086,23 @@ class BurialApproveCloseForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelFor
         return self.cleaned_data['area']
 
     def is_valid(self):
-        is_valid = super(BurialApproveCloseForm, self).is_valid()
+        is_valid = super(BurialApproveCloseForm, self).is_valid() and all([f.is_valid() for f in self.forms])
         if not is_valid:
             messages.error(self.request, _(u'Обнаружены ошибки, их необходимо исправить'))
         return is_valid
 
-    def save(self, **kwargs):
+    def get_prefix(self, form):
+        prefix = u''
+        if form is self.dc_form:
+            prefix = _(u"Усопший, СоС, ")
+        return prefix
+
+    def save(self, commit=False, **kwargs):
         self.collect_log_data()
-        self.instance = super(BurialApproveCloseForm, self).save(**kwargs)
+        commit = bool(self.fields) or commit
+        self.instance = super(BurialApproveCloseForm, self).save(commit=commit, **kwargs)
+        if self.dc_form:
+            self.dc_form.save()
         self.put_log_data()
         return self.instance
 
