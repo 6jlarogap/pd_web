@@ -753,32 +753,26 @@ class BurialCommitForm(BurialForm):
 
         StrippedStringsMixin.clean(self)
 
-        is_ugh = False
-        if self.instance and self.instance.is_ugh():
-            is_ugh = True
-        if (not self.instance or not self.instance.pk) and self.request.user.profile.is_ugh():
-            is_ugh = True
-        if is_ugh:
-            if not self.instance.is_archive() and not self.instance.is_transferred() and not self.request.REQUEST.get('archive'):
+        if not self.instance.is_archive() and not self.instance.is_transferred() and not self.request.REQUEST.get('archive'):
+            if not self.cleaned_data.get('applicant_organization'):
+                if not self.applicant_form.is_valid_data():
+                    raise forms.ValidationError(_(u"Нужно указать либо Заявителя-ЮЛ, либо Заявителя-ФЛ"))
+            if self.cleaned_data.get('applicant_organization'):
+                if self.applicant_form.is_valid_data():
+                    raise forms.ValidationError(_(u"Нужно указать либо Заявителя-ЮЛ, либо Заявителя-ФЛ"))
+
+            if self.cleaned_data.get('opf') == 'person':
+                if not self.applicant_form.is_valid_data():
+                    raise forms.ValidationError(_(u"Нужно указать Заявителя-ФЛ"))
+
+            if self.cleaned_data.get('opf') == 'org':
                 if not self.cleaned_data.get('applicant_organization'):
-                    if not self.applicant_form.is_valid_data():
-                        raise forms.ValidationError(_(u"Нужно указать либо Заявителя-ЮЛ, либо Заявителя-ФЛ"))
-                if self.cleaned_data.get('applicant_organization'):
-                    if self.applicant_form.is_valid_data():
-                        raise forms.ValidationError(_(u"Нужно указать либо Заявителя-ЮЛ, либо Заявителя-ФЛ"))
-
-                if self.cleaned_data.get('opf') == 'person':
-                    if not self.applicant_form.is_valid_data():
-                        raise forms.ValidationError(_(u"Нужно указать Заявителя-ФЛ"))
-
-                if self.cleaned_data.get('opf') == 'org':
-                    if not self.cleaned_data.get('applicant_organization'):
-                        raise forms.ValidationError(_(u"Нужно указать ЛОРУ"))
-                    if not self.cleaned_data.get('agent_director'):
-                        if not self.cleaned_data.get('agent') or not self.cleaned_data.get('dover'):
-                            msg = _(u"Нужно указать Агента и Доверенность или указать, что Агент - Директор")
-                            raise forms.ValidationError(msg)
-                if  not self.instance.is_closed():
+                    raise forms.ValidationError(_(u"Нужно указать Заявителя-ЮЛ"))
+                if not self.cleaned_data.get('agent_director'):
+                    if not self.cleaned_data.get('agent') or not self.cleaned_data.get('dover'):
+                        msg = _(u"Нужно указать Агента и Доверенность или указать, что Агент - Директор")
+                        raise forms.ValidationError(msg)
+                if not self.instance.is_closed():
                     if self.cleaned_data.get('dover'):
                         dover_begin_date = self.cleaned_data.get('dover').begin
                         dover_end_date = self.cleaned_data.get('dover').end
@@ -790,15 +784,13 @@ class BurialCommitForm(BurialForm):
                             msg = _(u"Срок действия доверенности не может быть меньше текущей даты")
                             raise forms.ValidationError(msg)
 
-            if self.cleaned_data.get('opf') == 'person' and self.applicant_id_form.is_valid() and not self.instance.is_archive() and not self.instance.is_transferred():
-                burial_date = self.cleaned_data.get('plan_date')
-                document_date = self.applicant_id_form.cleaned_data.get('date')
-                if burial_date and document_date:
-                    check_date = datetime.datetime(burial_date.year - 75, burial_date.month, burial_date.day).date()
-                    if document_date < check_date:
-                        msg = _(u"Не верно указан номер документа")
-                        raise forms.ValidationError(msg)
+        is_ugh = False
+        if self.instance and self.instance.is_ugh():
+            is_ugh = True
+        if (not self.instance or not self.instance.pk) and self.request.user.profile.is_ugh():
+            is_ugh = True
 
+        if is_ugh:
             if self.request.user.profile.org.numbers_algo in (Org.NUM_YEAR_UGH, Org.NUM_YEAR_CEMETERY) and \
                self.cleaned_data.get('account_number') and self.cleaned_data.get('fact_date'):
                 acc_number = self.cleaned_data.get('account_number')
