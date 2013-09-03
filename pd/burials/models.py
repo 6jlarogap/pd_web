@@ -554,7 +554,7 @@ class Burial(SafeDeleteMixin, models.Model):
         return self.is_approved()
 
     # условия печати справок, справки может выдавать лишь УГХ
-    def can_print_reference(self):
+    def can_ugh_print_reference(self):
         return self.is_closed()
 
     @property
