@@ -753,12 +753,6 @@ class BurialCommitForm(BurialForm):
 
         StrippedStringsMixin.clean(self)
 
-        is_ugh = False
-        if self.instance and self.instance.is_ugh():
-            is_ugh = True
-        if (not self.instance or not self.instance.pk) and self.request.user.profile.is_ugh():
-            is_ugh = True
-
         if not self.instance.is_archive() and not self.instance.is_transferred() and not self.request.REQUEST.get('archive'):
             if not self.cleaned_data.get('applicant_organization'):
                 if not self.applicant_form.is_valid_data():
@@ -822,7 +816,7 @@ class BurialCommitForm(BurialForm):
             msg = _(u"Нельзя закрывать архивное захоронение без указания номера места")
             raise forms.ValidationError(msg)
         elif not place_number.strip() and area and area.availability == Area.AVAILABILITY_CLOSED:
-            if is_ugh:
+            if self.request.user.profile.is_ugh():
                 msg = _(u"Не указано место для закрытого участка. Нельзя закрывать захоронение")
                 raise forms.ValidationError(msg)
             elif self.request.REQUEST.get('ready'):
