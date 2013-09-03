@@ -792,21 +792,28 @@ class BurialCommitForm(BurialForm):
                         msg = _(u"Срок действия доверенности не может быть меньше текущей даты")
                         raise forms.ValidationError(msg)
 
-        if self.request.user.profile.org.numbers_algo in (Org.NUM_YEAR_UGH, Org.NUM_YEAR_CEMETERY) and \
-            self.cleaned_data.get('account_number') and self.cleaned_data.get('fact_date'):
-            acc_number = self.cleaned_data.get('account_number')
-            fact_date  = self.cleaned_data.get('fact_date')
-            msg = _(u"Номер в книге учета должен быть: ГГГГнн...н (год фактической даты, номер)")
-            try:
-                if len(acc_number) < 4 or int(acc_number[:4]) != fact_date.year:
-                    raise forms.ValidationError(msg)
-            except ValueError:
-                raise forms.ValidationError(msg)
+        is_ugh = False
+        if self.instance and self.instance.is_ugh():
+            is_ugh = True
+        if (not self.instance or not self.instance.pk) and self.request.user.profile.is_ugh():
+            is_ugh = True
 
-        if (self.instance.is_archive() or self.request.REQUEST.get('archive')) and \
-            not self.cleaned_data.get('account_number').strip():
-            msg = _(u"Нельзя закрывать архивное захоронение без указания его номера в книге учета")
-            raise forms.ValidationError(msg)
+        if is_ugh:
+            if self.request.user.profile.org.numbers_algo in (Org.NUM_YEAR_UGH, Org.NUM_YEAR_CEMETERY) and \
+                self.cleaned_data.get('account_number') and self.cleaned_data.get('fact_date'):
+                acc_number = self.cleaned_data.get('account_number')
+                fact_date  = self.cleaned_data.get('fact_date')
+                msg = _(u"Номер в книге учета должен быть: ГГГГнн...н (год фактической даты, номер)")
+                try:
+                    if len(acc_number) < 4 or int(acc_number[:4]) != fact_date.year:
+                        raise forms.ValidationError(msg)
+                except ValueError:
+                    raise forms.ValidationError(msg)
+
+            if (self.instance.is_archive() or self.request.REQUEST.get('archive')) and \
+                not self.cleaned_data.get('account_number').strip():
+                msg = _(u"Нельзя закрывать архивное захоронение без указания его номера в книге учета")
+                raise forms.ValidationError(msg)
 
         place_number = self.cleaned_data.get('place_number') or ''
         area = self.cleaned_data.get('area')
@@ -815,7 +822,7 @@ class BurialCommitForm(BurialForm):
             msg = _(u"Нельзя закрывать архивное захоронение без указания номера места")
             raise forms.ValidationError(msg)
         elif not place_number.strip() and area and area.availability == Area.AVAILABILITY_CLOSED:
-            if self.request.user.profile.is_ugh():
+            if is_ugh:
                 msg = _(u"Не указано место для закрытого участка. Нельзя закрывать захоронение")
                 raise forms.ValidationError(msg)
             elif self.request.REQUEST.get('ready'):
