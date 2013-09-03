@@ -298,6 +298,8 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
 
         if self.request.user.profile.is_loru():
             max_grave_number = self.fields['cemetery'].queryset.aggregate(m=Max('area__places_count'))['m']
+            if not max_grave_number:
+                max_grave_number = 1
             max_grave_choices = [(i,i) for i in range(1, max_grave_number+1)]
             self.fields['desired_graves_count'].widget = forms.Select(choices=max_grave_choices)
         else:
