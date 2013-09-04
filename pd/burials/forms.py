@@ -442,29 +442,28 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
         
         StrippedStringsMixin.clean(self)
         
+        # Все эти ошибки невозможны при правильной работе javascript- проверок,
+        # но пусть будет дополнительная страховка
+        #
         if self.cleaned_data.get('cemetery') and self.cleaned_data.get('area'):
             if self.cleaned_data['cemetery'] != self.cleaned_data['area'].cemetery:
                 raise forms.ValidationError(_(u'Участок не от этого кладбища'))
 
-        if self.request.user.profile.is_ugh():
-            if self.cleaned_data.get('applicant_organization') and self.cleaned_data.get('agent'):
-                if self.cleaned_data['applicant_organization'] != self.cleaned_data['agent'].org:
-                    raise forms.ValidationError(_(u'Агент не от этого ЮЛ'))
-            if self.cleaned_data.get('agent') and self.cleaned_data.get('dover'):
-                if self.cleaned_data['agent'] != self.cleaned_data['dover'].agent:
-                    raise forms.ValidationError(_(u'Доверенность не от этого Агента'))
+        if self.cleaned_data.get('applicant_organization') and self.cleaned_data.get('agent'):
+            if self.cleaned_data['applicant_organization'] != self.cleaned_data['agent'].org:
+                raise forms.ValidationError(_(u'Агент не от этого ЮЛ'))
+        if self.cleaned_data.get('agent') and self.cleaned_data.get('dover'):
+            if self.cleaned_data['agent'] != self.cleaned_data['dover'].agent:
+                raise forms.ValidationError(_(u'Доверенность не от этого Агента'))
 
-            if not self.cleaned_data.get('applicant_organization') and self.cleaned_data.get('agent'):
-                raise forms.ValidationError(_(u'Нельзя указать Агента без ЛОРУ'))
-            if not self.cleaned_data.get('agent') and self.cleaned_data.get('dover'):
-                raise forms.ValidationError(_(u'Нельзя указать Доверенность без Агента'))
+        if not self.cleaned_data.get('applicant_organization') and self.cleaned_data.get('agent'):
+            raise forms.ValidationError(_(u'Нельзя указать Агента без заявителя-ЮЛ'))
+        if not self.cleaned_data.get('agent') and self.cleaned_data.get('dover'):
+            raise forms.ValidationError(_(u'Нельзя указать Доверенность без Агента'))
 
-            if self.cleaned_data.get('applicant_organization') and self.applicant_form.is_valid_data():
-                raise forms.ValidationError(_(u"Нужно указать либо Заявителя-ЮЛ, либо Заявителя-ФЛ"))
-
-            if self.cleaned_data.get('agent_director'):
-                self.cleaned_data.update(agent=None, dover=None, )
-
+        if self.cleaned_data.get('applicant_organization') and self.applicant_form.is_valid_data():
+            raise forms.ValidationError(_(u"Нужно указать либо Заявителя-ЮЛ, либо Заявителя-ФЛ"))
+        
         if self.responsible_form.is_valid():
             if self.responsible_form.cleaned_data.get('take_from') == ResponsibleForm.WHERE_FROM_APPLICANT:
                 if self.cleaned_data.get('opf') != 'person':
@@ -498,6 +497,10 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
         self.collect_log_data()
 
         self.instance = super(BurialForm, self).save(commit=False)
+
+        if self.cleaned_data.get('agent_director'):
+            self.instance.agent = None
+            self.instance.dover = None
 
         self.instance.changed = datetime.datetime.now()
         self.instance.changed_by = request.user
@@ -772,17 +775,17 @@ class BurialCommitForm(BurialForm):
                     if not self.cleaned_data.get('agent') or not self.cleaned_data.get('dover'):
                         msg = _(u"Нужно указать Агента и Доверенность или указать, что Агент - Директор")
                         raise forms.ValidationError(msg)
-                if not self.instance.is_closed():
-                    if self.cleaned_data.get('dover'):
-                        dover_begin_date = self.cleaned_data.get('dover').begin
-                        dover_end_date = self.cleaned_data.get('dover').end
-                        today = datetime.datetime.today()
-                        if dover_begin_date > today.date():
-                            msg = _(u"Дата выдачи доверенности не может быть раньше текущей даты")
-                            raise forms.ValidationError(msg)
-                        if dover_end_date < today.date() :
-                            msg = _(u"Срок действия доверенности не может быть меньше текущей даты")
-                            raise forms.ValidationError(msg)
+                    if not self.instance.is_closed():
+                        if self.cleaned_data.get('dover'):
+                            dover_begin_date = self.cleaned_data.get('dover').begin
+                            dover_end_date = self.cleaned_data.get('dover').end
+                            today = datetime.datetime.today()
+                            if dover_begin_date > today.date():
+                                msg = _(u"Дата выдачи доверенности не может быть позже текущей даты")
+                                raise forms.ValidationError(msg)
+                            if dover_end_date < today.date() :
+                                msg = _(u"Срок действия доверенности не может быть меньше текущей даты")
+                                raise forms.ValidationError(msg)
 
         is_ugh = False
         if self.instance and self.instance.is_ugh():
