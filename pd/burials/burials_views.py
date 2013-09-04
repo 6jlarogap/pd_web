@@ -220,11 +220,17 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
             return redirect(reverse('edit_burial', args=[b.pk]) + '?action=ready')
 
         if request.POST.get('inspect') and request.user.profile.is_ugh() and b.can_inspect():
+            approve_close_form = self.get_approve_close_form()
+            if approve_close_form.is_valid():
+                b = approve_close_form.save()
+            else:
+                return self.get(request, *args, **kwargs)
             b.status = Burial.STATUS_INSPECTING
             write_log(request, b, _(u'Захоронение отправлено на обследование'))
             messages.success(request, _(u"<a href='%s'>Захоронение %s</a> отправлено на обследование") % (
                 reverse('view_burial', args=[b.pk]), b.pk,
             ))
+            redirect_to_view = True
 
         if request.POST.get('save-dc') and request.user.profile.is_loru() and not b.is_bio() and b.can_approve():
             approve_close_form = self.get_approve_close_form()
@@ -252,6 +258,11 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
             redirect_to_view = True
 
         if request.POST.get('approve-inspect') and request.user.profile.is_ugh() and b.can_approve_inspect():
+            approve_close_form = self.get_approve_close_form()
+            if approve_close_form.is_valid():
+                b = approve_close_form.save()
+            else:
+                return self.get(request, *args, **kwargs)
             b.status = Burial.STATUS_READY
             write_log(request, b, _(u'Обследование одобрено. Захоронение на согласовании'))
             messages.success(request, _(u"Обследование одобрено. <a href='%s'>Захоронение %s</a> на согласовании") % (
