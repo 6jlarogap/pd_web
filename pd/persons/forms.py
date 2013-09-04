@@ -108,7 +108,7 @@ class DeathCertificateForm(ValidDataMixin, StrippedStringsMixin, BaseModelFormMi
         return release_date
 
     def save(self, *args, **kwargs):
-        return self.basemodelform_save(self, *args, **kwargs)
+        return self.basemodelform_save(*args, **kwargs)
 
 class AlivePersonForm(ValidDataMixin, StrippedStringsMixin, forms.ModelForm):
     class Meta:
