@@ -248,23 +248,3 @@ class UnclearDateField(forms.DateField):
     def clean(self, value):
         return value
 
-class BaseModelForm(forms.ModelForm):
-    """
-    Базовая форма для базовой модели (с создателем, модификатором записей)
-    
-    Замена forms.ModelForm среди предков класса формы
-    ВНИМАНИЕ:
-        Форма.__init__() требует параметра request,
-        обычно получаемом во view, вызывающем форму,
-        в функции этого view: get_form_kwargs()
-    """
-    def __init__(self, request, *args, **kwargs):
-        self.request = request
-        super(BaseModelForm, self).__init__(*args, **kwargs)
-
-    def save(self, commit=True, *args, **kwargs):
-        obj = super(BaseModelForm, self).save(commit=False, *args, **kwargs)
-        obj.basemodel_presave(self.request.user)
-        if commit:
-            obj.save()
-        return obj

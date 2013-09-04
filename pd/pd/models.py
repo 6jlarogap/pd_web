@@ -132,16 +132,7 @@ class BaseModel(models.Model):
     class Meta:
         abstract = True
         
-    creator = models.ForeignKey('auth.User', verbose_name=_(u"Пользователь-создатель"), editable=False, null=True,
-                                related_name="%(app_label)s_%(class)s_creator_related", on_delete=models.PROTECT)
-    modifier = models.ForeignKey('auth.User', verbose_name=_(u"Изменил пользователь"), editable=False, null=True,
-                                related_name="%(app_label)s_%(class)s_modifier_related", on_delete=models.PROTECT)
     dt_created = models.DateTimeField(_(u"Дата/время создания"), auto_now_add=True)
     dt_modified = models.DateTimeField(_(u"Дата/время модификации"), auto_now=True)
-
-    def basemodel_presave(self, user):
-        if not self.pk:
-            self.creator = user
-        self.modifier = user
 
 add_introspection_rules([], ['^pd\.models\.UnclearDateModelField'])
