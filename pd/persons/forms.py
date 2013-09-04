@@ -89,6 +89,7 @@ class DeathCertificateForm(ValidDataMixin, StrippedStringsMixin, forms.ModelForm
         exclude = ['person', ]
 
     def __init__(self, request, *args, **kwargs):
+        self.request = request
         kwargs.setdefault('initial', {})
         instance = kwargs.get('instance')
         if (not instance or not instance.person) and not request.REQUEST.get('archive'):
@@ -104,6 +105,13 @@ class DeathCertificateForm(ValidDataMixin, StrippedStringsMixin, forms.ModelForm
             msg = _(u'Неверная дата выдачи')
             raise forms.ValidationError(msg)
         return release_date
+
+    def save(self, commit=True, *args, **kwargs):
+        obj = super(DeathCertificateForm, self).save(commit=False, *args, **kwargs)
+        obj.pre_save(self.request.user)
+        if commit:
+            obj.save()
+        return obj
 
 class AlivePersonForm(ValidDataMixin, StrippedStringsMixin, forms.ModelForm):
     class Meta:

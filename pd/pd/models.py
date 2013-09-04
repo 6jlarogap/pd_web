@@ -139,4 +139,9 @@ class BaseModel(models.Model):
     dt_created = models.DateTimeField(_(u"Дата/время создания"), auto_now_add=True)
     dt_modified = models.DateTimeField(_(u"Дата/время модификации"), auto_now=True)
 
+    def pre_save(self, user):
+        if not self.pk:
+            self.creator = user
+        self.modifier = user
+
 add_introspection_rules([], ['^pd\.models\.UnclearDateModelField'])

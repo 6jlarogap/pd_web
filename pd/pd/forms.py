@@ -247,4 +247,3 @@ class UnclearDateField(forms.DateField):
 
     def clean(self, value):
         return value
-
