@@ -499,7 +499,7 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
 
         self.instance = super(BurialForm, self).save(commit=False)
 
-        if request.POST.get('agent_director'):
+        if self.cleaned_data.get('agent_director'):
             self.instance.agent = None
             self.instance.dover = None
 
