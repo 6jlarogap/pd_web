@@ -248,3 +248,11 @@ class UnclearDateField(forms.DateField):
     def clean(self, value):
         return value
 
+class BaseModelFormMixin(object):
+    
+    def basemodelform_save(self, commit=True, *args, **kwargs):
+        obj = forms.ModelForm.save(self, commit=False, *args, **kwargs)
+        obj.basemodel_presave(self.request.user)
+        if commit:
+            obj.save()
+        return obj

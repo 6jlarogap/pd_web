@@ -6,6 +6,7 @@ from django.utils.translation import ugettext as _
 
 from persons.models import DeadPerson, PersonID, DeathCertificate, AlivePerson, DocumentSource
 from pd.models import UnclearDate
+from pd.forms import BaseModelFormMixin
 
 class StrippedStringsMixin(object):
     
@@ -83,7 +84,7 @@ class PersonIDForm(ValidDataMixin, StrippedStringsMixin, forms.ModelForm):
             raise forms.ValidationError(msg)
         return release_date
 
-class DeathCertificateForm(ValidDataMixin, StrippedStringsMixin, forms.ModelForm):
+class DeathCertificateForm(ValidDataMixin, StrippedStringsMixin, BaseModelFormMixin, forms.ModelForm):
     class Meta:
         model = DeathCertificate
         exclude = ['person', ]
@@ -106,12 +107,8 @@ class DeathCertificateForm(ValidDataMixin, StrippedStringsMixin, forms.ModelForm
             raise forms.ValidationError(msg)
         return release_date
 
-    def save(self, commit=True, *args, **kwargs):
-        obj = super(DeathCertificateForm, self).save(commit=False, *args, **kwargs)
-        obj.pre_save(self.request.user)
-        if commit:
-            obj.save()
-        return obj
+    def save(self, *args, **kwargs):
+        return self.basemodelform_save(self, *args, **kwargs)
 
 class AlivePersonForm(ValidDataMixin, StrippedStringsMixin, forms.ModelForm):
     class Meta:
