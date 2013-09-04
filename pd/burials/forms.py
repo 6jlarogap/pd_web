@@ -442,29 +442,28 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
         
         StrippedStringsMixin.clean(self)
         
+        # Все эти ошибки невозможны при правильной работе javascript- проверок,
+        # но пусть будет дополнительная страховка
+        #
         if self.cleaned_data.get('cemetery') and self.cleaned_data.get('area'):
             if self.cleaned_data['cemetery'] != self.cleaned_data['area'].cemetery:
                 raise forms.ValidationError(_(u'Участок не от этого кладбища'))
 
-        if self.request.user.profile.is_ugh():
-            if self.cleaned_data.get('applicant_organization') and self.cleaned_data.get('agent'):
-                if self.cleaned_data['applicant_organization'] != self.cleaned_data['agent'].org:
-                    raise forms.ValidationError(_(u'Агент не от этого ЮЛ'))
-            if self.cleaned_data.get('agent') and self.cleaned_data.get('dover'):
-                if self.cleaned_data['agent'] != self.cleaned_data['dover'].agent:
-                    raise forms.ValidationError(_(u'Доверенность не от этого Агента'))
+        if self.cleaned_data.get('applicant_organization') and self.cleaned_data.get('agent'):
+            if self.cleaned_data['applicant_organization'] != self.cleaned_data['agent'].org:
+                raise forms.ValidationError(_(u'Агент не от этого ЮЛ'))
+        if self.cleaned_data.get('agent') and self.cleaned_data.get('dover'):
+            if self.cleaned_data['agent'] != self.cleaned_data['dover'].agent:
+                raise forms.ValidationError(_(u'Доверенность не от этого Агента'))
 
-            if not self.cleaned_data.get('applicant_organization') and self.cleaned_data.get('agent'):
-                raise forms.ValidationError(_(u'Нельзя указать Агента без ЛОРУ'))
-            if not self.cleaned_data.get('agent') and self.cleaned_data.get('dover'):
-                raise forms.ValidationError(_(u'Нельзя указать Доверенность без Агента'))
+        if not self.cleaned_data.get('applicant_organization') and self.cleaned_data.get('agent'):
+            raise forms.ValidationError(_(u'Нельзя указать Агента без заявителя-ЮЛ'))
+        if not self.cleaned_data.get('agent') and self.cleaned_data.get('dover'):
+            raise forms.ValidationError(_(u'Нельзя указать Доверенность без Агента'))
 
-            if self.cleaned_data.get('applicant_organization') and self.applicant_form.is_valid_data():
-                raise forms.ValidationError(_(u"Нужно указать либо Заявителя-ЮЛ, либо Заявителя-ФЛ"))
-
-            if self.cleaned_data.get('agent_director'):
-                self.cleaned_data.update(agent=None, dover=None, )
-
+        if self.cleaned_data.get('applicant_organization') and self.applicant_form.is_valid_data():
+            raise forms.ValidationError(_(u"Нужно указать либо Заявителя-ЮЛ, либо Заявителя-ФЛ"))
+        
         if self.responsible_form.is_valid():
             if self.responsible_form.cleaned_data.get('take_from') == ResponsibleForm.WHERE_FROM_APPLICANT:
                 if self.cleaned_data.get('opf') != 'person':
