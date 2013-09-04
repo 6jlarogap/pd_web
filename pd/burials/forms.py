@@ -499,6 +499,10 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
 
         self.instance = super(BurialForm, self).save(commit=False)
 
+        if request.POST.get('agent_director'):
+            self.instance.agent = None
+            self.instance.dover = None
+
         self.instance.changed = datetime.datetime.now()
         self.instance.changed_by = request.user
 
@@ -772,17 +776,17 @@ class BurialCommitForm(BurialForm):
                     if not self.cleaned_data.get('agent') or not self.cleaned_data.get('dover'):
                         msg = _(u"Нужно указать Агента и Доверенность или указать, что Агент - Директор")
                         raise forms.ValidationError(msg)
-                if not self.instance.is_closed():
-                    if self.cleaned_data.get('dover'):
-                        dover_begin_date = self.cleaned_data.get('dover').begin
-                        dover_end_date = self.cleaned_data.get('dover').end
-                        today = datetime.datetime.today()
-                        if dover_begin_date > today.date():
-                            msg = _(u"Дата выдачи доверенности не может быть раньше текущей даты")
-                            raise forms.ValidationError(msg)
-                        if dover_end_date < today.date() :
-                            msg = _(u"Срок действия доверенности не может быть меньше текущей даты")
-                            raise forms.ValidationError(msg)
+                    if not self.instance.is_closed():
+                        if self.cleaned_data.get('dover'):
+                            dover_begin_date = self.cleaned_data.get('dover').begin
+                            dover_end_date = self.cleaned_data.get('dover').end
+                            today = datetime.datetime.today()
+                            if dover_begin_date > today.date():
+                                msg = _(u"Дата выдачи доверенности не может быть раньше текущей даты")
+                                raise forms.ValidationError(msg)
+                            if dover_end_date < today.date() :
+                                msg = _(u"Срок действия доверенности не может быть меньше текущей даты")
+                                raise forms.ValidationError(msg)
 
         is_ugh = False
         if self.instance and self.instance.is_ugh():
