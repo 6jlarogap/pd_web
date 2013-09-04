@@ -1059,11 +1059,15 @@ class BurialApproveCloseForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelFor
                 self.dc_form = DeathCertificateForm(request, data=self.request.POST or None, instance=dc)
                 self.forms.append(self.dc_form)
 
-                # если угх нажмет "Согласовать" или если лору/угх нажмет "сохранить" (СоС),
-                # то там должны быть заполнены необходимые поля
-                for f in self.dc_form.fields:
-                    if f in ('s_number', 'release_date', 'zags',) :
-                        self.dc_form.fields[f].required = True
+                # - если угх нажмет "Согласовать" или если лору/угх нажмет "сохранить" (СоС),
+                #   то там должны быть заполнены необходимые поля
+                # - если угх нажмет "Одобрить обследование" или "Отправить" на обследование",
+                #   то СоС должно сохраниться, даже если там не всё заполнено
+                if not request.POST.get('inspect') and \
+                   not request.POST.get('approve-inspect'):
+                    for f in self.dc_form.fields:
+                        if f in ('s_number', 'release_date', 'zags',) :
+                            self.dc_form.fields[f].required = True
 
     def clean(self):
         if 'row' in self.fields and \
