@@ -254,7 +254,7 @@ class BaseModelForm(forms.ModelForm):
     
     Замена forms.ModelForm среди предков класса формы
     ВНИМАНИЕ:
-        Инициализация формы требует параметра request,
+        Форма.__init__() требует параметра request,
         обычно получаемом во view, вызывающем форму,
         в функции этого view: get_form_kwargs()
     """
