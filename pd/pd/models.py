@@ -1,5 +1,8 @@
+# -*- coding: utf-8 -*-
+
 import datetime
 from django.db import models
+from django.utils.translation import ugettext as _
 from south.modelsinspector import add_introspection_rules
 
 
@@ -121,5 +124,19 @@ class UnclearDateModelField(models.DateField):
     def value_to_string(self, obj):
         value = self._get_val_from_obj(obj)        
         return value.strftime('%Y-%m-%d')     
+
+class BaseModel(models.Model):
+    """
+    Базовый класс для многих моделей
+    """
+    class Meta:
+        abstract = True
+        
+    creator = models.ForeignKey('auth.User', verbose_name=_(u"Пользователь-создатель"), editable=False, null=True,
+                                related_name="%(app_label)s_%(class)s_creator_related", on_delete=models.PROTECT)
+    modifier = models.ForeignKey('auth.User', verbose_name=_(u"Изменил пользователь"), editable=False, null=True,
+                                related_name="%(app_label)s_%(class)s_modifier_related", on_delete=models.PROTECT)
+    dt_created = models.DateTimeField(_(u"Дата/время создания"), auto_now_add=True)
+    dt_modified = models.DateTimeField(_(u"Дата/время модификации"), auto_now=True)
 
 add_introspection_rules([], ['^pd\.models\.UnclearDateModelField'])
