@@ -328,21 +328,15 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
             del self.fields['fact_date']
             del self.fields['account_number']
 
-        if self.instance:
-            self.initial['burial_container'] = self.instance.burial_container
-            self.initial['burial_type'] = self.instance.burial_type
-        else:
-            self.initial['burial_container'] = Burial.CONTAINER_COFFIN
-            self.initial['burial_type'] = self.instance.Burial.BURIAL_NEW
-
         if not self.instance.pk:
+            self.initial['burial_container'] = Burial.CONTAINER_COFFIN
+            self.initial['burial_type'] = Burial.BURIAL_NEW
             if self.request.user.profile.cemetery:
                 self.initial['cemetery'] = self.request.user.profile.cemetery
-        if not self.instance.pk:
             if self.request.user.profile.area:
                 self.initial['area'] = self.request.user.profile.area
 
-        if self.instance and self.instance.is_finished() and self.instance.place:
+        if self.instance.is_finished() and self.instance.place:
             self.initial.update(
                 cemetery=self.instance.place.cemetery,
                 area=self.instance.place.area,
