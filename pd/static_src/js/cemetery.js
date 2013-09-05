@@ -295,11 +295,13 @@ function updateAreas() {
 
 function updateDover() {
     updateAnything($('#id_agent'), $('#id_dover'), AGENT_DOVER);
-    $('#id_dover').find('option').each(function() {
-        if (ACTUAL_DOVER.indexOf(parseInt(this.value)) > -1) {
-            this.selected = 'selected';
-        }
-    });
+    if (!$('#id_dover').val()) {
+        $('#id_dover').find('option').each(function() {
+            if (ACTUAL_DOVER.indexOf(parseInt(this.value)) > -1) {
+                this.selected = 'selected';
+            }
+        });
+    }
 }
 
 function updateAgents() {
