@@ -257,7 +257,7 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
             Q(ugh__loru_list__loru=self.request.user.profile.org) |
             Q(ugh=self.request.user.profile.org)
         ).distinct()
-        if self.instance and self.instance.cemetery and self.instance.cemetery.time_slots:
+        if self.instance.cemetery and self.instance.cemetery.time_slots:
             choices = [('', '----------')] + self.instance.cemetery.get_time_choices(
                 date=self.instance.plan_date,
                 request=self.request,
@@ -335,10 +335,10 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
             self.initial['burial_container'] = Burial.CONTAINER_COFFIN
             self.initial['burial_type'] = self.instance.Burial.BURIAL_NEW
 
-        if not self.instance or not self.instance.cemetery:
+        if not self.instance.pk:
             if self.request.user.profile.cemetery:
                 self.initial['cemetery'] = self.request.user.profile.cemetery
-        if not self.instance or not self.instance.area:
+        if not self.instance.pk:
             if self.request.user.profile.area:
                 self.initial['area'] = self.request.user.profile.area
 
