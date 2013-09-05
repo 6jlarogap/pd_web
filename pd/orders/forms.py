@@ -94,6 +94,9 @@ class OrderForm(ChildrenJSONMixin, SafeDeleteMixin, forms.ModelForm):
             self.instance.applicant_organization = None
         else:
             self.safe_delete('applicant', self.instance)
+            if self.cleaned_data.get('agent_director'):
+                self.instance.agent = None
+                self.instance.dover = None
 
         self.instance.save()
 
