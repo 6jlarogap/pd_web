@@ -296,6 +296,12 @@ function updateAreas() {
 function updateDover() {
     updateAnything($('#id_agent'), $('#id_dover'), AGENT_DOVER);
     if (!$('#id_dover').val()) {
+        // Когда пользователь прыгает от одного агента к другому,
+        // ему предлагается из доверенностей соответствующего агента
+        // последняя из актуальных. Это нельзя делать при
+        // загрузке страницы зх (заказа...), в котором уже
+        // есть агент и доверенность, т.е. где в выпадающем
+        // списке доверенностей есть уже выбранное значение
         $('#id_dover').find('option').each(function() {
             if (ACTUAL_DOVER.indexOf(parseInt(this.value)) > -1) {
                 this.selected = 'selected';
