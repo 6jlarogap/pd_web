@@ -19,6 +19,7 @@ from django.views.generic.list import ListView
 from burials.forms import BurialSearchForm, BurialPublicListForm, BurialForm, BurialCommitForm, BurialApproveCloseForm, AddDocTypeForm
 from burials.forms import AddAgentForm, AddDoverForm, AddOrgForm, ExhumationForm
 from burials.models import Reason, Burial, Cemetery, Place, ExhumationRequest
+from persons.models import DeathCertificate
 from logs.models import write_log
 from orders.models import Order
 from pd.forms import CommentForm
@@ -186,6 +187,7 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
             return redirect('dashboard')
 
         b = self.get_object()
+        self.b = b
         order = self.order
         order_parm = self.order_parm
 
@@ -233,10 +235,8 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
             redirect_to_view = True
 
         if request.POST.get('save-dc') and request.user.profile.is_loru() and not b.is_bio() and b.can_approve():
-            approve_close_form = self.get_approve_close_form()
-            if approve_close_form.is_valid():
-                b = approve_close_form.save()
-            else:
+            b = self.approve_or_check_dc()
+            if not b:
                 return self.get(request, *args, **kwargs)
             messages.success(request, _(u"<a href='%s'>Захоронение %s</a>: свидетельство о смерти сохранено") % (
                 reverse('view_burial', args=[b.pk]), b.pk,
@@ -337,6 +337,28 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
         elif redirect_to_edit:
             return redirect(reverse('edit_burial', args=[b.pk]) + order_parm)
         return redirect('dashboard')
+
+    def approve_or_check_dc(self):
+        """
+        Одобрить зх или просто подправить СоС
+        
+        возвращает захоронение или None, если неверно в форме
+        """
+        burial = None
+        approve_close_form = self.get_approve_close_form()
+        if approve_close_form.is_valid():
+            dc_form = approve_close_form.dc_form
+            if dc_form and dc_form.changed_data:
+                timestamp_modified_really = int(DeathCertificate.objects.get(pk=dc_form.instance.pk).\
+                                                        dt_modified.strftime("%s"))
+                if timestamp_modified_really > dc_form.cleaned_data['dt_modified']:
+                    messages.error(self.request,
+                    _(u"<a href='%s'>Захоронение %s</a> было изменено другим пользователем. Страница обновлена") % (
+                        reverse('view_burial', args=[self.b.pk]), self.b.pk,
+                    ))
+                    return None
+            burial = approve_close_form.save()
+        return burial
 
     def get_approve_close_form(self):
         return BurialApproveCloseForm(request=self.request, data=self.request.POST or None, instance=self.get_object())

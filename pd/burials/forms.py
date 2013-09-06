@@ -1081,6 +1081,7 @@ class BurialApproveCloseForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelFor
     def is_valid(self):
         is_valid = super(BurialApproveCloseForm, self).is_valid() and all([f.is_valid() for f in self.forms])
         if not is_valid:
+            print self.non_field_errors()
             messages.error(self.request, _(u'Обнаружены ошибки, их необходимо исправить'))
         return is_valid
 
