@@ -1,10 +1,9 @@
 # coding=utf-8
-
 from django.shortcuts import render_to_response
 from django.views.generic.base import View
 from django.utils.translation import ugettext as _
 
-from burials.views import LoginRequiredMixin
+from burials.views import LoginRequiredMixin, UGHRequiredMixin
 
 from django.http import HttpResponseRedirect
 from django.shortcuts import render_to_response
@@ -31,99 +30,90 @@ from cStringIO import StringIO
 from django.utils.dateparse import parse_datetime
 from django.core.files.base import ContentFile
 from django.http import Http404
+from django.db.models import Q
 
-class MobileGetCemetery(LoginRequiredMixin, View):
-    def get(self, request, *args, **kwargs):        
-        user = request.user
-        listCemetery = Cemetery.objects.filter(ugh = user.profile.org).order_by('id')
+class MobileGetCemetery(UGHRequiredMixin, View):
+    def get(self, request, *args, **kwargs):
+        queryCemetery = Q(ugh = request.user.profile.org)
+        listCemetery = Cemetery.objects.filter(queryCemetery).order_by('id')
         data = serializers.serialize("json", listCemetery, fields=('name'))
         return HttpResponse(data, mimetype='application/json')      
         
 mobile_get_cemetery = MobileGetCemetery.as_view()
 
-class MobileGetArea(LoginRequiredMixin, View):
+class MobileGetArea(UGHRequiredMixin, View):
     def get(self, request, *args, **kwargs):
-        argCemeteryId = request.GET.get('cemeteryId', None)
-        user = request.user
+        argCemeteryId = request.GET.get('cemeteryId', None)        
+        queryArea = Q(cemetery__ugh = request.user.profile.org)
         if argCemeteryId :
-            listArea = Area.objects.filter(cemetery__ugh = user.profile.org).filter(cemetery_id = argCemeteryId).order_by('cemetery', 'id')
-        else :
-            listArea = Area.objects.filter(cemetery__ugh = user.profile.org).order_by('cemetery', 'id')
+            queryArea &= Q(cemetery__pk = argCemeteryId)
+        listArea = Place.objects.filter(queryArea).order_by('cemetery', 'id')
         data = serializers.serialize("json", listArea, fields=('cemetery','name'))
         return HttpResponse(data, mimetype='application/json')
                 
 mobile_get_area = MobileGetArea.as_view()
 
-class MobileGetPlace(LoginRequiredMixin, View):
+class MobileGetPlace(UGHRequiredMixin, View):
     def get(self, request, *args, **kwargs):
         argAreaId = request.GET.get('areaId', None)
         argCemeteryId = request.GET.get('cemeteryId', None)
-        user = request.user        
-        if argAreaId :            
-            if argCemeteryId :
-                listPlace = Place.objects.filter(cemetery__ugh = user.profile.org).filter(area_id = argAreaId).filter(cemetery_id = argCemeteryId).order_by('cemetery', 'area', 'id')
-            else :
-                listPlace = Place.objects.filter(cemetery__ugh = user.profile.org).filter(area_id = argAreaId).order_by('cemetery', 'area', 'id')
-        else :
-            if argCemeteryId :                
-                listPlace = Place.objects.filter(cemetery__ugh = user.profile.org).filter(cemetery_id = argCemeteryId).order_by('cemetery', 'area', 'id')
-            else :
-                listPlace = Place.objects.filter(cemetery__ugh = user.profile.org).order_by('cemetery', 'area', 'id')
         
+        queryPlace = Q(cemetery__ugh = request.user.profile.org)
+        if argCemeteryId :
+            queryPlace &= Q(cemetery__pk = argCemeteryId)
+        if argAreaId :
+            queryPlace &= Q(area__pk = argAreaId)
+        listPlace = Place.objects.filter(queryPlace).order_by('cemetery', 'area', 'id')
+                        
         queryPlaceStatus = 'select ps.* from burials_placestatus ps inner join burials_place p on ps.place_id = p.id inner join burials_cemetery c on p.cemetery_id = c.id inner join users_org org on c.ugh_id = org.id where org.id = %d and ps.date_of_creation = (select max(ps2.date_of_creation) from burials_placestatus ps2 where ps2.place_id = ps.place_id) ' % request.user.profile.org.pk
         if argAreaId :
             queryPlaceStatus = queryPlaceStatus + ' and p.area_id = %s'% argAreaId
         if argCemeteryId :
             queryPlaceStatus = queryPlaceStatus + ' and p.cemetery_id = %s'% argCemeteryId
-        listPlaceStatus = PlaceStatus.objects.raw(queryPlaceStatus)    
+        listPlaceStatus = PlaceStatus.objects.raw(queryPlaceStatus) 
+        
         all_objects = list(listPlace) + list(listPlaceStatus)
         data = serializers.serialize("json", all_objects, fields=('cemetery','area','row','place','oldplace','status'))     
         return HttpResponse(data, mimetype='application/json')
         
 mobile_get_place = MobileGetPlace.as_view()
 
-class MobileGetGrave(LoginRequiredMixin, View):
+class MobileGetGrave(UGHRequiredMixin, View):
     def get(self, request, *args, **kwargs):
         argPlaceId = request.GET.get('placeId', None)
         argCemeteryId = request.GET.get('cemeteryId', None)
-        user = request.user
+        
+        queryGrave = Q(place__cemetery__ugh = request.user.profile.org)
+        if argCemeteryId :
+            queryGrave &= Q(place__cemetery__pk = argCemeteryId)
         if argPlaceId :
-            if argCemeteryId :
-                listGrave = Grave.objects.all().filter(place__cemetery__ugh = user.profile.org).filter(place_id = argPlaceId).filter(place__cemetery_id = argCemeteryId).order_by('id')
-            else :
-                listGrave = Grave.objects.all().filter(place__cemetery__ugh = user.profile.org).filter(place_id = argPlaceId).order_by('id')
-        else :
-            if argCemeteryId :
-                listGrave = Grave.objects.all().filter(place__cemetery__ugh = user.profile.org).filter(place__cemetery_id = argCemeteryId).order_by('id')
-            else :
-                listGrave = Grave.objects.all().filter(place__cemetery__ugh = user.profile.org).order_by('id')
+            queryGrave &= Q(place__pk = argPlaceId)
+        listGrave = Grave.objects.filter(queryGrave).order_by('id')
+        
         data = serializers.serialize("json", listGrave, fields=('place','grave_number'))
         return HttpResponse(data, mimetype='application/json')
         
 mobile_get_grave = MobileGetGrave.as_view()
 
-class MobileGetBurial(LoginRequiredMixin, View):
+class MobileGetBurial(UGHRequiredMixin, View):
     def get(self, request, *args, **kwargs):
         argGraveId = request.GET.get('graveId', None)
         argCemeteryId = request.GET.get('cemeteryId', None)
-        user = request.user        
-        if argGraveId :            
-            if argCemeteryId :
-                listBurial = Burial.objects.all().filter(grave__place__cemetery__ugh = user.profile.org).filter(grave_id = argGraveId).filter(grave__place__cemetery_id = argCemeteryId).order_by('id')            
-            else :
-                listBurial = Burial.objects.all().filter(grave__place__cemetery__ugh = user.profile.org).filter(grave_id = argGraveId).order_by('id')            
-        else :
-            if argCemeteryId :                
-                listBurial = Burial.objects.all().filter(grave__place__cemetery__ugh = user.profile.org).filter(grave__place__cemetery_id = argCemeteryId).order_by('id')                
-            else :
-                listBurial = Burial.objects.all().filter(grave__place__cemetery__ugh = user.profile.org).order_by('id')
         
-        queryPerson = 'select bp.* from persons_baseperson bp inner join persons_deadperson dp on dp.baseperson_ptr_id = bp.id inner join burials_burial b on b.deadman_id = bp.id inner join burials_grave g on b.grave_id = g.id inner join burials_place p on g.place_id = p.id inner join burials_cemetery c on p.cemetery_id = c.id inner join users_org org on c.ugh_id = org.id where org.id = %d' % request.user.profile.org.pk
-        if argGraveId :
-            queryPerson = queryPerson + ' and g.id = %s' % argGraveId
+        queryBurial = Q(grave__place__cemetery__ugh = request.user.profile.org)
         if argCemeteryId :
-            queryPerson = queryPerson + ' and p.cemetery_id = %s' % argCemeteryId
-        listPerson = BasePerson.objects.raw(queryPerson)
+            queryBurial &= Q(grave__place__cemetery__pk = argCemeteryId)
+        if argGraveId :
+            queryBurial &= Q(grave__pk = argGraveId)
+        listBurial = Burial.objects.filter(queryBurial).order_by('id')
+
+        queryPerson = Q(deadperson__burial__cemetery__ugh=request.user.profile.org)
+        if argGraveId :
+            queryPerson &= Q(deadperson__burial__grave__pk=argGraveId) 
+        if argCemeteryId :
+            queryPerson &= Q(deadperson__burial__cemetery__pk=argCemeteryId)
+        listPerson = BasePerson.objects.filter(queryPerson)
+                
         all_objects = list(listBurial) + list(listPerson)
         data = serializers.serialize("json", all_objects, fields=('grave', 'fact_date', 'deadman', 'first_name', 'last_name', 'middle_name'))
         return HttpResponse(data, mimetype='application/json')
