@@ -30,7 +30,7 @@ from cStringIO import StringIO
 from django.utils.dateparse import parse_datetime
 from django.core.files.base import ContentFile
 from django.http import Http404
-from django.db.models import Q
+from django.db.models import Q, Min, Max
 
 class MobileGetCemetery(UGHRequiredMixin, View):
     def get(self, request, *args, **kwargs):
@@ -64,7 +64,7 @@ class MobileGetPlace(UGHRequiredMixin, View):
         if argAreaId :
             queryPlace &= Q(area__pk = argAreaId)
         listPlace = Place.objects.filter(queryPlace).order_by('cemetery', 'area', 'id')
-                        
+                                
         queryPlaceStatus = 'select ps.* from burials_placestatus ps inner join burials_place p on ps.place_id = p.id inner join burials_cemetery c on p.cemetery_id = c.id inner join users_org org on c.ugh_id = org.id where org.id = %d and ps.date_of_creation = (select max(ps2.date_of_creation) from burials_placestatus ps2 where ps2.place_id = ps.place_id) ' % request.user.profile.org.pk
         if argAreaId :
             queryPlaceStatus = queryPlaceStatus + ' and p.area_id = %s'% argAreaId
@@ -219,16 +219,16 @@ def mobile_upload_place(request):
             raise Http404
         except Place.DoesNotExist:
             prevPlace = None            
-            listFilterByName = Place.objects.filter(cemetery__ugh = user.profile.org).filter(area = area).filter(place = placeName).filter(row = rowName)
+            listFilterByName = Place.objects.filter(cemetery__ugh = user.profile.org, area = area, place = placeName, row = rowName)
             if len(list(listFilterByName)) > 0 :
                 prevPlace = listFilterByName[0]                
             else :
                 if (oldPlaceName or "") != "" :
-                    listFilterByOldName1 = Place.objects.filter(cemetery__ugh = user.profile.org).filter(area = area).filter(oldplace = oldPlaceName).filter(row = rowName)
+                    listFilterByOldName1 = Place.objects.filter(cemetery__ugh = user.profile.org, area = area, oldplace = oldPlaceName, row = rowName)
                     if len(list(listFilterByOldName1)) > 0 :
                         prevPlace = listFilterByOldName1[0]
                     else :
-                        listFilterByOldName2 = Place.objects.filter(cemetery__ugh = user.profile.org).filter(area = area).filter(place = oldPlaceName).filter(row = rowName)
+                        listFilterByOldName2 = Place.objects.filter(cemetery__ugh = user.profile.org, area = area, place = oldPlaceName, row = rowName)
                         if len(list(listFilterByOldName2)) > 0 :
                             prevPlace = listFilterByOldName2[0]
             if prevPlace :
@@ -243,12 +243,11 @@ def mobile_upload_place(request):
                 place = Place(cemetery = area.cemetery, area = area, place = placeName, row = rowName, oldplace = oldPlaceName)  
                 place.save()
             listPlaceForResponse.append(place)
-            
-        gueryGetPlaceStatus = 'select ps.* from burials_placestatus ps where ps.date_of_creation = (select max(ps2.date_of_creation) from burials_placestatus ps2 where ps2.place_id = ps.place_id) and ps.place_id = %d' % placeId
-        listPlaceStatus = PlaceStatus.objects.raw(gueryGetPlaceStatus)
-        curPlaceStatus = None
-        if len(list(listPlaceStatus)) > 0 :
-            curPlaceStatus = listPlaceStatus[0]
+               
+        try:
+            curPlaceStatus = PlaceStatus.objects.filter(place__cemetery__ugh=request.user.profile.org, place__pk = placeId ).order_by('-date_of_creation')[0]
+        except IndexError:
+            curPlaceStatus = None        
         if psFoundUnowned == 1 :
             if curPlaceStatus :                
                 if curPlaceStatus.status != PlaceStatus.PS_FOUND_UNOWNED :
