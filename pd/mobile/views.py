@@ -47,7 +47,7 @@ class MobileGetArea(UGHRequiredMixin, View):
         queryArea = Q(cemetery__ugh = request.user.profile.org)
         if argCemeteryId :
             queryArea &= Q(cemetery__pk = argCemeteryId)
-        listArea = Place.objects.filter(queryArea).order_by('cemetery', 'id')
+        listArea = Area.objects.filter(queryArea).order_by('cemetery', 'id')
         data = serializers.serialize("json", listArea, fields=('cemetery','name'))
         return HttpResponse(data, mimetype='application/json')
                 
