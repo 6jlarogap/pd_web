@@ -44,7 +44,12 @@
                         {% if pid and pid.id_type and pid.series and pid.number %}
                             {% trans "Документ:" %} {{ pid }}
                         {% else %}
-                        <big><b><span style="color:red">{% trans "Документ не заполнен" %}</span></b></big>
+                            <big><b><span style="color:red">
+                            {% trans "Документ не заполнен" %}
+                            {% if b.flag_no_applicant_doc_required %}
+                                ({% trans "необязателен" %})
+                            {% endif %}
+                            </span></b></big>
                         {% endif %}
                     {% endwith %}
                  </dd>
