@@ -345,7 +345,10 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
         """
         Одобрить зх или просто подправить СоС
         
-        возвращает захоронение или None, если неверно в форме
+        возвращает:
+        - burial, захоронение или None, если неверно в форме
+        - refresh, надо ли обноновлять страницу при конфликте одновременного
+                   редактирования СоС со строноны угх и лору
         """
         burial = None
         refresh = False

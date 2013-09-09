@@ -112,12 +112,6 @@ class DeathCertificateForm(ValidDataMixin, StrippedStringsMixin, BaseModelForm):
             raise forms.ValidationError(msg)
         return release_date
 
-    def save(self, commit=True, *args, **kwargs):
-        obj = super(DeathCertificateForm, self).save(commit=False, **kwargs)
-        if self.changed_data and commit:
-            obj.save()
-        return obj
-
 class AlivePersonForm(ValidDataMixin, StrippedStringsMixin, forms.ModelForm):
     class Meta:
         model = AlivePerson
