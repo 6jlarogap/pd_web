@@ -21,6 +21,7 @@ class Migration(DataMigration):
             # Надо заполнить чем-то правдоподобным дату/время создания зх.
             # Выбираем меньшее из:
             # - самого раннего упоминания о зх в журнале
+            # - поля fact_date из записи зх
             # - поля changed из записи зх
             # - текущая дата:   на тот невероятный случай, когда не будет времени
             #                   захоронения ни в журнале, ни в самом зх
@@ -31,7 +32,9 @@ class Migration(DataMigration):
                 except IndexError:
                     pass
             dt_changed_in_burial = b.changed if b.changed else dt_fake
-            dt_created = min(dt_from_logs, dt_changed_in_burial)
+            dt_fact_date_in_burial = datetime.datetime(b.fact_date.year, b.fact_date.month, b.fact_date.day) \
+                if b.fact_date else dt_fake
+            dt_created = min(dt_from_logs, dt_changed_in_burial, dt_fact_date_in_burial)
             Burial.objects.filter(pk=b.pk).update(                
                 dt_created=dt_created,
                 dt_modified=dt_changed_in_burial,
@@ -103,7 +106,8 @@ class Migration(DataMigration):
             'dover': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['users.Dover']", 'null': 'True', 'on_delete': 'models.PROTECT', 'blank': 'True'}),
             'dt_created': ('django.db.models.fields.DateTimeField', [], {'auto_now_add': 'True', 'blank': 'True'}),
             'dt_modified': ('django.db.models.fields.DateTimeField', [], {'auto_now': 'True', 'blank': 'True'}),
-            'fact_date': ('pd.models.UnclearDateModelField', [], {'null': 'True', 'blank': 'True'}),
+            'fact_date': ('django.db.models.fields.DateField', [], {'null': 'True', 'blank': 'True'}),
+            # 'fact_date': ('pd.models.UnclearDateModelField', [], {'null': 'True', 'blank': 'True'}),
             u'fact_date_no_day': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             u'fact_date_no_month': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'flag_no_applicant_doc_required': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
