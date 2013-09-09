@@ -7,7 +7,7 @@ from django.db.models.deletion import ProtectedError
 
 import datetime
 from geo.models import Location
-from pd.models import UnclearDate, UnclearDateModelField
+from pd.models import UnclearDate, UnclearDateModelField, BaseModel
 from users.models import Org
 
 
@@ -227,7 +227,7 @@ class PersonID(models.Model):
         self.series = self.series.upper()
         super(PersonID, self).save(*args, **kwargs)
 
-class DeathCertificate(models.Model):
+class DeathCertificate(BaseModel):
     """
     Свидетельство о смерти.
     """
