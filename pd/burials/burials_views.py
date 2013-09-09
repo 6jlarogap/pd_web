@@ -222,53 +222,56 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
             return redirect(reverse('edit_burial', args=[b.pk]) + '?action=ready')
 
         if request.POST.get('inspect') and request.user.profile.is_ugh() and b.can_inspect():
-            approve_close_form = self.get_approve_close_form()
-            if approve_close_form.is_valid():
-                b = approve_close_form.save()
-            else:
+            b, refresh = self.approve_or_check_dc()
+            if refresh:
+                return redirect(reverse('view_burial', args=[self.b.pk]) + order_parm)
+            elif not b:
                 return self.get(request, *args, **kwargs)
-            b.status = Burial.STATUS_INSPECTING
-            write_log(request, b, _(u'Захоронение отправлено на обследование'))
-            messages.success(request, _(u"<a href='%s'>Захоронение %s</a> отправлено на обследование") % (
-                reverse('view_burial', args=[b.pk]), b.pk,
-            ))
-            redirect_to_view = True
+            else:
+                b.status = Burial.STATUS_INSPECTING
+                write_log(request, b, _(u'Захоронение отправлено на обследование'))
+                messages.success(request, _(u"<a href='%s'>Захоронение %s</a> отправлено на обследование") % (
+                    reverse('view_burial', args=[b.pk]), b.pk,
+                ))
+                redirect_to_view = True
 
         if request.POST.get('save-dc') and request.user.profile.is_loru() and not b.is_bio() and b.can_approve():
-            b = self.approve_or_check_dc()
-            if not b:
+            b, refresh = self.approve_or_check_dc()
+            if refresh:
+                return redirect(reverse('view_burial', args=[self.b.pk]) + order_parm)
+            elif not b:
                 return self.get(request, *args, **kwargs)
-            messages.success(request, _(u"<a href='%s'>Захоронение %s</a>: свидетельство о смерти сохранено") % (
-                reverse('view_burial', args=[b.pk]), b.pk,
-            ))
-            redirect_to_view = True
+            else:
+                redirect_to_view = True
 
         if request.POST.get('approve') and request.user.profile.is_ugh() and b.can_approve():
-            approve_close_form = self.get_approve_close_form()
-            if approve_close_form.is_valid():
-                b = approve_close_form.save()
-            else:
+            b, refresh = self.approve_or_check_dc()
+            if refresh:
+                return redirect(reverse('view_burial', args=[self.b.pk]) + order_parm)
+            elif not b:
                 return self.get(request, *args, **kwargs)
-            b.status = Burial.STATUS_APPROVED
-            b.approve(self.request.user)
-            write_log(request, b, _(u'Захоронение согласовано'))
-            messages.success(request, _(u"<a href='%s'>Захоронение %s</a> согласовано") % (
-                reverse('view_burial', args=[b.pk]), b.pk,
-            ))
-            redirect_to_view = True
+            else:
+                b.status = Burial.STATUS_APPROVED
+                b.approve(self.request.user)
+                write_log(request, b, _(u'Захоронение согласовано'))
+                messages.success(request, _(u"<a href='%s'>Захоронение %s</a> согласовано") % (
+                    reverse('view_burial', args=[b.pk]), b.pk,
+                ))
+                redirect_to_view = True
 
         if request.POST.get('approve-inspect') and request.user.profile.is_ugh() and b.can_approve_inspect():
-            approve_close_form = self.get_approve_close_form()
-            if approve_close_form.is_valid():
-                b = approve_close_form.save()
-            else:
+            b, refresh = self.approve_or_check_dc()
+            if refresh:
+                return redirect(reverse('view_burial', args=[self.b.pk]) + order_parm)
+            elif not b:
                 return self.get(request, *args, **kwargs)
-            b.status = Burial.STATUS_READY
-            write_log(request, b, _(u'Обследование одобрено. Захоронение на согласовании'))
-            messages.success(request, _(u"Обследование одобрено. <a href='%s'>Захоронение %s</a> на согласовании") % (
-                reverse('view_burial', args=[b.pk]), b.pk,
-            ))
-            redirect_to_view = True
+            else:
+                b.status = Burial.STATUS_READY
+                write_log(request, b, _(u'Обследование одобрено. Захоронение на согласовании'))
+                messages.success(request, _(u"Обследование одобрено. <a href='%s'>Захоронение %s</a> на согласовании") % (
+                    reverse('view_burial', args=[b.pk]), b.pk,
+                ))
+                redirect_to_view = True
             
         if request.POST.get('decline') and request.user.profile.is_ugh() and b.can_decline():
             b.status = Burial.STATUS_DECLINED
@@ -345,6 +348,7 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
         возвращает захоронение или None, если неверно в форме
         """
         burial = None
+        refresh = False
         approve_close_form = self.get_approve_close_form()
         if approve_close_form.is_valid():
             dc_form = approve_close_form.dc_form
@@ -356,9 +360,14 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
                     _(u"<a href='%s'>Захоронение %s</a> было изменено другим пользователем. Страница обновлена") % (
                         reverse('view_burial', args=[self.b.pk]), self.b.pk,
                     ))
-                    return None
+                    refresh = True
+                    return burial, refresh
             burial = approve_close_form.save()
-        return burial
+            if dc_form and dc_form.changed_data:
+                messages.success(self.request, _(u"<a href='%s'>Захоронение %s</a>: свидетельство о смерти сохранено") % (
+                    reverse('view_burial', args=[self.b.pk]), self.b.pk,
+            ))
+        return burial, refresh
 
     def get_approve_close_form(self):
         return BurialApproveCloseForm(request=self.request, data=self.request.POST or None, instance=self.get_object())
