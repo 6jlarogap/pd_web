@@ -418,6 +418,8 @@ class Burial(SafeDeleteMixin, models.Model):
     changed_by = models.ForeignKey('auth.User', editable=False, null=True, related_name='changed_requests',
                                    on_delete=models.PROTECT)
     annulated = models.BooleanField(_(u"Аннулировано"), default=False, blank=True)
+    flag_no_applicant_doc_required = models.BooleanField(_(u"Документ заявителя-ФЛ не требуется"),
+                                   editable=False, default=False)
 
     class Meta:
         verbose_name = _(u"Захоронение")
