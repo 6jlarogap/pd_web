@@ -541,7 +541,6 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
             if self.applicant_address_form.is_valid_data():
                 applicant.address = self.applicant_address_form.save()
             applicant.save()
-
             if self.applicant_id_form.is_valid():
                 self.instance.flag_no_applicant_doc_required = \
                     self.applicant_id_form.cleaned_data.get('flag_no_applicant_doc_required')
@@ -549,9 +548,7 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
                 pid = self.applicant_id_form.save(commit=False)
                 pid.person = applicant
                 pid.save()
-                self.instance.applicant = applicant
-            else:
-                self.instance.applicant = None
+            self.instance.applicant = applicant
             self.instance.applicant_organization = None
         else:
             self.safe_delete('applicant', self.instance)
