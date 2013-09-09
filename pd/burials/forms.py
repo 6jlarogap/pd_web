@@ -498,7 +498,6 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
             self.instance.agent = None
             self.instance.dover = None
 
-        self.instance.changed = datetime.datetime.now()
         self.instance.changed_by = request.user
 
         if not self.instance.ugh:

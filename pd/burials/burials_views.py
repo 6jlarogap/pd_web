@@ -191,7 +191,6 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
         order = self.order
         order_parm = self.order_parm
 
-        b.changed = datetime.datetime.now()
         b.changed_by = request.user
         old_status = b.status
         old_annulated = b.annulated
