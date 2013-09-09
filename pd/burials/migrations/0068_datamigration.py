@@ -10,11 +10,31 @@ class Migration(DataMigration):
         "Write your forwards methods here."
         # Note: Remember to use orm['appname.ModelName'] rather than "from appname.models..."
         Burial = orm['burials.Burial']
+        ContentType = orm['contenttypes.ContentType']
+        try:
+            ct_burial = ContentType.objects.get(app_label='burials',model='burial').id
+        except (ContentType.DoesNotExist, ContentType.MultipleObjectsReturned):
+            ct_burial = None
+        Log = orm['logs.Log']
+        dt_fake = datetime.datetime.now()
         for b in Burial.objects.all():
-            dt = b.changed
+            # Надо заполнить чем-то правдоподобным дату/время создания зх.
+            # Выбираем меньшее из:
+            # - самого раннего упоминания о зх в журнале
+            # - поля changed из записи зх
+            # - текущая дата:   на тот невероятный случай, когда не будет времени
+            #                   захоронения ни в журнале, ни в самом зх
+            dt_from_logs = dt_fake
+            if ct_burial:
+                try:
+                    dt_from_logs = Log.objects.filter(ct=ct_burial, obj_id=b.pk).order_by('id')[0].dt
+                except IndexError:
+                    pass
+            dt_changed_in_burial = b.changed if b.changed else dt_fake
+            dt_created = min(dt_from_logs, dt_changed_in_burial)
             Burial.objects.filter(pk=b.pk).update(                
-                dt_created=dt,
-                dt_modified=dt,
+                dt_created=dt_created,
+                dt_modified=dt_changed_in_burial,
             )
 
     def backwards(self, orm):
@@ -303,6 +323,16 @@ class Migration(DataMigration):
             'user_first_name': ('django.db.models.fields.CharField', [], {'max_length': '255', 'null': 'True', 'blank': 'True'}),
             'user_last_name': ('django.db.models.fields.CharField', [], {'max_length': '255', 'null': 'True', 'blank': 'True'}),
             'user_middle_name': ('django.db.models.fields.CharField', [], {'max_length': '255', 'null': 'True', 'blank': 'True'})
+        },
+        'logs.log': {
+            'Meta': {'object_name': 'Log'},
+            'code': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '255'}),
+            'ct': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['contenttypes.ContentType']", 'null': 'True'}),
+            'dt': ('django.db.models.fields.DateTimeField', [], {'auto_now_add': 'True', 'blank': 'True'}),
+            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'msg': ('django.db.models.fields.TextField', [], {}),
+            'obj_id': ('django.db.models.fields.PositiveIntegerField', [], {'null': 'True', 'db_index': 'True'}),
+            'user': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['auth.User']", 'null': 'True'})
         }
     }
 
