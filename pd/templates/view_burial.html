@@ -42,9 +42,19 @@
                 <dd>
                     {% with pid=b.applicant.personid %}
                         {% if pid and pid.id_type and pid.series and pid.number %}
-                            {% trans "Документ:" %} {{ pid }}
+                            {% trans "Документ" %}
+                            {% if b.flag_no_applicant_doc_required %}
+                                ({% trans "не обязателен" %})
+                            {% endif %}
+                            :
+                            {{ pid }}
                         {% else %}
-                        <big><b><span style="color:red">{% trans "Документ не заполнен" %}</span></b></big>
+                            <big><b><span style="color:red">
+                            {% trans "Документ не заполнен" %}
+                            {% if b.flag_no_applicant_doc_required %}
+                                ({% trans "не обязателен" %})
+                            {% endif %}
+                            </span></b></big>
                         {% endif %}
                     {% endwith %}
                  </dd>

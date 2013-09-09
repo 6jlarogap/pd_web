@@ -401,6 +401,8 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
                         # Мало ли какие поля будут в форме в добавление к тем,
                         # что из модели, на которой форма основана:
                         pass
+        applicant_id_form_initial['flag_no_applicant_doc_required'] = self.instance.flag_no_applicant_doc_required \
+            if self.instance.pk else False
 
         self.applicant_form = AlivePersonForm(data=data, prefix='applicant',
                                               instance=applicant,
@@ -539,17 +541,18 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
             if self.applicant_address_form.is_valid_data():
                 applicant.address = self.applicant_address_form.save()
             applicant.save()
-
+            self.instance.applicant = applicant
+            self.instance.applicant_organization = None
+            if self.applicant_id_form.is_valid():
+                self.instance.flag_no_applicant_doc_required = \
+                    self.applicant_id_form.cleaned_data.get('flag_no_applicant_doc_required')
             if self.applicant_id_form.is_valid_data():
                 pid = self.applicant_id_form.save(commit=False)
                 pid.person = applicant
                 pid.save()
-                self.instance.applicant = applicant
-            else:
-                self.instance.applicant = None
-            self.instance.applicant_organization = None
         else:
             self.safe_delete('applicant', self.instance)
+            self.instance.flag_no_applicant_doc_required = False
 
         remove_responsible = False
         if self.responsible_form.cleaned_data.get('take_from') == ResponsibleForm.WHERE_FROM_APPLICANT:
@@ -741,7 +744,7 @@ class BurialCommitForm(BurialForm):
         pass
 
     def setup_required_applicant_id(self):
-        if self.data.get('applicant-last_name') and not self.data.get('applicant-pid-no_id_required'):
+        if self.data.get('applicant-last_name') and not self.data.get('applicant-pid-flag_no_applicant_doc_required'):
             for f in self.applicant_id_form.fields:
                 if f in ['id_type', 'series', 'number',]:
                     self.applicant_id_form.fields[f].required = True
