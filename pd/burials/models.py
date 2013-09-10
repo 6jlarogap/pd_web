@@ -5,7 +5,7 @@ from django.db import models
 from django.db.models.deletion import ProtectedError
 from django.utils.translation import ugettext_lazy as _
 from django.db.models.query_utils import Q
-from pd.models import UnclearDateModelField
+from pd.models import UnclearDateModelField, BaseModel
 
 import os
 import pytils
@@ -320,7 +320,7 @@ class GravePhoto(Photo):
     """
     grave = models.ForeignKey(Grave)
 
-class Burial(SafeDeleteMixin, models.Model):
+class Burial(SafeDeleteMixin, BaseModel):
     STATUS_BACKED = 'backed'
     STATUS_DECLINED = 'declined'
     STATUS_DRAFT = 'draft'
@@ -414,7 +414,6 @@ class Burial(SafeDeleteMixin, models.Model):
     dover = models.ForeignKey(Dover, verbose_name=_(u"Доверенность"), null=True, blank=True, on_delete=models.PROTECT)
 
     status = models.CharField(_(u"Статус"), max_length=255, choices=STATUS_CHOICES, default=STATUS_DRAFT, editable=False)
-    changed = models.DateTimeField(_(u"Изменено"), editable=False, null=True)
     changed_by = models.ForeignKey('auth.User', editable=False, null=True, related_name='changed_requests',
                                    on_delete=models.PROTECT)
     annulated = models.BooleanField(_(u"Аннулировано"), default=False, blank=True)
