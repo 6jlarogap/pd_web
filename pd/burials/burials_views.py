@@ -321,14 +321,13 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
             ))
             redirect_to_view = request.user.profile.is_ugh()
             redirect_to_edit = request.user.profile.is_loru()
-            
+
         if old_status != b.status or old_annulated != b.annulated:
             b.save()
         elif request.POST.get('unbind') and order:
             return redirect(reverse('order_burial', args=[order.pk]))
         elif request.POST.get('save-dc'):
             if not b.can_approve() and request.user.profile.is_loru():
-                print b.status
                 msg = _(u"Выполнить операцию не удалось: другой пользователь изменил статус <a href='%s'>захоронения</a> на \"%s\"") % (
                     reverse('view_burial', args=[b.pk]) + order_parm,
                     b.get_status_display(),
