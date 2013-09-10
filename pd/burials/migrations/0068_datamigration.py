@@ -21,23 +21,35 @@ class Migration(DataMigration):
             # Надо заполнить чем-то правдоподобным дату/время создания зх.
             # Выбираем меньшее из:
             # - самого раннего упоминания о зх в журнале
-            # - поля fact_date из записи зх
-            # - поля changed из записи зх
+            # - если упоминания в журнале нет, то из поля changed из записи зх
+            # - если и поля changed нет, то из fact_date зх
             # - текущая дата:   на тот невероятный случай, когда не будет времени
             #                   захоронения ни в журнале, ни в самом зх
-            dt_from_logs = dt_fake
+            dt_created = dt_fake
+            dt_from_logs = None
             if ct_burial:
                 try:
                     dt_from_logs = Log.objects.filter(ct=ct_burial, obj_id=b.pk).order_by('id')[0].dt
                 except IndexError:
                     pass
-            dt_changed_in_burial = b.changed if b.changed else dt_fake
-            dt_fact_date_in_burial = datetime.datetime(b.fact_date.year, b.fact_date.month, b.fact_date.day) \
-                if b.fact_date else dt_fake
-            dt_created = min(dt_from_logs, dt_changed_in_burial, dt_fact_date_in_burial)
+            if dt_from_logs:
+                dt_created = dt_from_logs
+            else:
+                if b.changed:
+                    dt_created = b.changed
+                elif b.fact_date:
+                    dt_created = datetime.datetime(b.fact_date.year, b.fact_date.month, b.fact_date.day)
+            # Дата/время последней модификации берется из b.changed, но если его нет (невероятный случай),
+            # то из последней записи в журнале. Если и там не будет, то dt_modified = dt_created
+            dt_modified = b.changed
+            if not dt_modified and ct_burial:
+                try:
+                    dt_modified = Log.objects.filter(ct=ct_burial, obj_id=b.pk).order_by('-id')[0].dt
+                except IndexError:
+                    pass
             Burial.objects.filter(pk=b.pk).update(                
                 dt_created=dt_created,
-                dt_modified=dt_changed_in_burial,
+                dt_modified=dt_modified or dt_created,
             )
 
     def backwards(self, orm):
