@@ -243,7 +243,7 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
 
     burial_container = forms.ChoiceField(label=_(u"Тип захоронения"), choices=Burial.BURIAL_CONTAINERS, widget=forms.RadioSelect,  required=False)
     burial_type = forms.ChoiceField(label=_(u"Вид захоронения"), choices=Burial.BURIAL_TYPES, widget=forms.RadioSelect,  required=False)
-    opf = forms.ChoiceField(label=_(u'ОПФ'), choices=OPF_CHOICES, widget=forms.RadioSelect)
+    opf = forms.ChoiceField(label='', choices=OPF_CHOICES, widget=forms.RadioSelect)
 
     class Meta:
         model = Burial
