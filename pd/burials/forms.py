@@ -761,7 +761,6 @@ class BurialCommitForm(BurialForm):
                     raise forms.ValidationError(_(u"Нужно указать либо Заявителя-ЮЛ, либо Заявителя-ФЛ"))
             if self.cleaned_data.get('applicant_organization'):
                 if self.applicant_form.is_valid_data():
-                    print 'HERE'
                     raise forms.ValidationError(_(u"Нужно указать либо Заявителя-ЮЛ, либо Заявителя-ФЛ"))
 
             if self.cleaned_data.get('opf') == 'person':
