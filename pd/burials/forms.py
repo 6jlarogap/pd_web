@@ -542,6 +542,9 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
             applicant.save()
             self.instance.applicant = applicant
             self.instance.applicant_organization = None
+            self.instance.agent_director = False
+            self.instance.agent = None
+            self.instance.dover = None
             if self.applicant_id_form.is_valid():
                 self.instance.flag_no_applicant_doc_required = \
                     self.applicant_id_form.cleaned_data.get('flag_no_applicant_doc_required')
@@ -743,7 +746,7 @@ class BurialCommitForm(BurialForm):
         pass
 
     def setup_required_applicant_id(self):
-        if self.data.get('applicant-last_name') and not self.data.get('applicant-pid-flag_no_applicant_doc_required'):
+        if self.data.get('opf') == 'person' and not self.data.get('applicant-pid-flag_no_applicant_doc_required'):
             for f in self.applicant_id_form.fields:
                 if f in ['id_type', 'series', 'number',]:
                     self.applicant_id_form.fields[f].required = True
@@ -758,6 +761,7 @@ class BurialCommitForm(BurialForm):
                     raise forms.ValidationError(_(u"Нужно указать либо Заявителя-ЮЛ, либо Заявителя-ФЛ"))
             if self.cleaned_data.get('applicant_organization'):
                 if self.applicant_form.is_valid_data():
+                    print 'HERE'
                     raise forms.ValidationError(_(u"Нужно указать либо Заявителя-ЮЛ, либо Заявителя-ФЛ"))
 
             if self.cleaned_data.get('opf') == 'person':
@@ -1301,6 +1305,10 @@ class ExhumationForm(ChildrenJSONMixin, SafeDeleteMixin, forms.ModelForm):
         self.instance.burial = self.burial
         self.instance.place = self.burial.place
 
+        if self.cleaned_data.get('agent_director'):
+            self.instance.agent = None
+            self.instance.dover = None
+
         if self.cleaned_data.get('opf') == 'person' and self.applicant_form.is_valid_data():
             applicant = self.applicant_form.save(commit=False)
             if self.applicant_address_form.is_valid_data():
@@ -1313,6 +1321,9 @@ class ExhumationForm(ChildrenJSONMixin, SafeDeleteMixin, forms.ModelForm):
                 pid.save()
             self.instance.applicant = applicant
             self.instance.applicant_organization = None
+            self.instance.agent_director = False
+            self.instance.agent = None
+            self.instance.dover = None
         else:
             self.safe_delete('applicant', self.instance)
 
