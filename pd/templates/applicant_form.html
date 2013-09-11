@@ -8,8 +8,8 @@
     {% endif %}
     {% if form.instance.applicant_organization %}
         {{ form.instance.applicant_organization }}
-    {% elif form.applicant_form.instance %}
-        {{ form.applicant_form.instance }}
+    {% elif form.instance.applicant %}
+        {{ form.instance.applicant }}
     {% else %}
     {% endif %}
 </h2>
