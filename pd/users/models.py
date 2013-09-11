@@ -114,7 +114,7 @@ class Org(models.Model):
     off_address = models.ForeignKey('geo.Location', verbose_name=_(u"Юр. адрес"), null=True, blank=True)
     numbers_algo = models.CharField(_(u"Заполнение номера захоронения"), max_length=255, choices=NUM_TYPES,
                                     default=NUM_EMPTY, blank=True)
-    opf_default = models.CharField(_(u"Заказчик в заказе по умолчанию"), max_length=255,
+    opf_default = models.CharField(_(u"Заказчик по умолчанию в заказе"), max_length=255,
                                     choices=OPF_CHOICES, default=OPF_NO_APPLICANT)
 
     class Meta:
