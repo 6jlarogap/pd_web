@@ -97,8 +97,8 @@ class Org(models.Model):
     OPF_ORG = 'off_org'
     OPF_PERSON = 'opf_person'
     OPF_CHOICES = (
-        (OPF_NO_APPLICANT, _(u'Без заказчика')),
-        (OPF_COMPANY, _(u'ЮЛ')),
+        (OPF_EMPTY, _(u'Без заказчика')),
+        (OPF_ORG, _(u'ЮЛ')),
         (OPF_PERSON, _(u'ФЛ')),
     )
    
