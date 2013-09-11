@@ -22,7 +22,7 @@ class ProductForm(forms.ModelForm):
         exclude = ['loru', ]
 
 class OrderForm(ChildrenJSONMixin, SafeDeleteMixin, forms.ModelForm):
-    opf = forms.ChoiceField(label=_(u'ОПФ'), choices=OPF_CHOICES, widget=forms.RadioSelect, initial='no_applicant')
+    opf = forms.ChoiceField(label='', choices=OPF_CHOICES, widget=forms.RadioSelect, initial='no_applicant')
 
     class Meta:
         model = Order

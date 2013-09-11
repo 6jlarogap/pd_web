@@ -186,9 +186,6 @@ class Order(models.Model):
         ct = ContentType.objects.get_for_model(self)
         return Log.objects.filter(ct=ct, obj_id=self.pk).order_by('-pk')
 
-    def no_any_applicant(self):
-        return not self.applicant and not self.applicant_organization
-
 class OrderItem(models.Model):
     order = models.ForeignKey(Order, editable=False)
     product = models.ForeignKey(Product, verbose_name=_(u"Товар"))

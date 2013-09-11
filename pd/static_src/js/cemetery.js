@@ -473,7 +473,6 @@ $(function() {
 
             $('input[name^=person]').closest('p').hide();
             $('#id_org').closest('p').hide();
-            $(resp_id+'1').closest('li').show();
         }
     });
     $('input[name=opf]').change();
