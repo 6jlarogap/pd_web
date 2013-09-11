@@ -8,12 +8,13 @@ from django.utils.translation import ugettext as _
 from burials.models import Burial
 from geo.forms import LocationForm
 from orders.models import Product, Order, OrderItem, CatafalqueData, CoffinData, AddInfoData
-from burials.forms import OPF_CHOICES, EMPTY
+from burials.forms import EMPTY
 from pd.forms import ChildrenJSONMixin
 from persons.forms import AlivePersonForm, PersonIDForm
 from persons.models import AlivePerson, PersonID, SafeDeleteMixin
 from users.models import Org
 
+OPF_CHOICES = (('no_applicant', _(u'Без заказчика')), ('person', _(u'ФЛ')), ('org', _(u'ЮЛ')))
 
 class ProductForm(forms.ModelForm):
     class Meta:
@@ -21,11 +22,11 @@ class ProductForm(forms.ModelForm):
         exclude = ['loru', ]
 
 class OrderForm(ChildrenJSONMixin, SafeDeleteMixin, forms.ModelForm):
-    opf = forms.ChoiceField(label=_(u'ОПФ'), choices=OPF_CHOICES, widget=forms.RadioSelect, initial='person')
+    opf = forms.ChoiceField(label=_(u'ОПФ'), choices=OPF_CHOICES, widget=forms.RadioSelect, initial='no_applicant')
 
     class Meta:
         model = Order
-        exclude = ['loru', 'applicant', 'org', ]
+        exclude = ['loru', 'applicant', ]
 
     def __init__(self, request, *args, **kwargs):
         self.request = request
@@ -34,7 +35,7 @@ class OrderForm(ChildrenJSONMixin, SafeDeleteMixin, forms.ModelForm):
 
         if self.instance.applicant:
             self.initial['opf'] = 'person'
-        else:
+        elif self.instance.applicant_organization:
             self.initial['opf'] = 'org'
 
         self.fields['payment'].widget = forms.RadioSelect(choices=Order.PAYMENT_CHOICES)
@@ -55,7 +56,7 @@ class OrderForm(ChildrenJSONMixin, SafeDeleteMixin, forms.ModelForm):
             if not (self.cleaned_data.get('agent_director') or \
                     self.cleaned_data.get('agent') and self.cleaned_data.get('dover')):
                 raise forms.ValidationError(_(u'Нет данных об агенте и/или доверенности для заявителя-ЮЛ. Изменения не сохранены'))
-        else:
+        elif self.cleaned_data.get('opf') == 'person':
             if not self.applicant_form.is_valid_data():
                 raise forms.ValidationError(_(u"Нужно указать Заявителя-ФЛ"))
         return self.cleaned_data
@@ -92,11 +93,17 @@ class OrderForm(ChildrenJSONMixin, SafeDeleteMixin, forms.ModelForm):
             else:
                 self.instance.applicant = None
             self.instance.applicant_organization = None
-        else:
+        elif self.cleaned_data.get('opf') == 'org':
             self.safe_delete('applicant', self.instance)
             if self.cleaned_data.get('agent_director'):
                 self.instance.agent = None
                 self.instance.dover = None
+        elif self.cleaned_data.get('opf') == 'no_applicant':
+            self.safe_delete('applicant', self.instance)
+            self.instance.applicant_organization = None
+            self.instance.agent_director = False
+            self.instance.agent = None
+            self.instance.dover = None
 
         self.instance.save()
 
