@@ -525,7 +525,7 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
             self.instance.agent_director = False
             self.instance.agent = None
             self.instance.dover = None
-            if self.applicant_form.is_valid_data():
+            if self.applicant_form.is_valid():
                 applicant = self.applicant_form.save(commit=False)
                 if self.applicant_address_form.is_valid_data():
                     applicant.address = self.applicant_address_form.save()
