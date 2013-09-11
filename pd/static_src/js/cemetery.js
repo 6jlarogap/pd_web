@@ -433,9 +433,8 @@ $(function() {
 
             $('#id_agent_director').change();
             $('input[name=payment][value=wire]').attr('checked', '1');
-
-            $('#id_applicant-last_name').val('');
-        } else {
+        }
+        else if ($('input[name=opf]:checked').val() == 'person') {
             $('#applicant_form_org').hide();
             $('#applicant_form_person').show();
 
@@ -449,19 +448,32 @@ $(function() {
             $('.btn-agent').closest('p').hide();
             $('.btn-org').closest('p').hide();
 
-
             $('input[name^=person]').closest('p').show();
             $('#id_org').closest('p').hide();
             $('input[name=payment][value=cash]').attr('checked', '1');
 
-            $('#id_applicant_organization').val('');
-            $('#id_agent_director').val('');
-            $('#id_agent').val('');
-            $('#id_dover').val('');
             $(resp_id+'1').closest('li').show();
             if (!$(resp_id+'0').is(':checked') && !$(resp_id+'2').is(':checked')) {
                 $(resp_id+'1').attr('checked', 'checked');
             }
+        }
+        else if ($('input[name=opf]:checked').val() == 'no_applicant') {
+            $('#applicant_form_org').hide();
+            $('#applicant_form_person').hide();
+
+            $('#id_applicant_organization').closest('p').hide();
+            $('#id_agent_director').closest('p').hide();
+            $('#id_agent').closest('p').hide();
+            $('#id_dover').closest('p').hide();
+
+            $('.btn-loru').closest('p').hide();
+            $('.btn-dover').closest('p').hide();
+            $('.btn-agent').closest('p').hide();
+            $('.btn-org').closest('p').hide();
+
+            $('input[name^=person]').closest('p').hide();
+            $('#id_org').closest('p').hide();
+            $(resp_id+'1').closest('li').show();
         }
     });
     $('input[name=opf]').change();

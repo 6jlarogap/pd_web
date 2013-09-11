@@ -445,21 +445,6 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
             if self.cleaned_data['cemetery'] != self.cleaned_data['area'].cemetery:
                 raise forms.ValidationError(_(u'Участок не от этого кладбища'))
 
-        if self.cleaned_data.get('applicant_organization') and self.cleaned_data.get('agent'):
-            if self.cleaned_data['applicant_organization'] != self.cleaned_data['agent'].org:
-                raise forms.ValidationError(_(u'Агент не от этого ЮЛ'))
-        if self.cleaned_data.get('agent') and self.cleaned_data.get('dover'):
-            if self.cleaned_data['agent'] != self.cleaned_data['dover'].agent:
-                raise forms.ValidationError(_(u'Доверенность не от этого Агента'))
-
-        if not self.cleaned_data.get('applicant_organization') and self.cleaned_data.get('agent'):
-            raise forms.ValidationError(_(u'Нельзя указать Агента без заявителя-ЮЛ'))
-        if not self.cleaned_data.get('agent') and self.cleaned_data.get('dover'):
-            raise forms.ValidationError(_(u'Нельзя указать Доверенность без Агента'))
-
-        if self.cleaned_data.get('applicant_organization') and self.applicant_form.is_valid_data():
-            raise forms.ValidationError(_(u"Нужно указать либо Заявителя-ЮЛ, либо Заявителя-ФЛ"))
-        
         if self.responsible_form.is_valid():
             if self.responsible_form.cleaned_data.get('take_from') == ResponsibleForm.WHERE_FROM_APPLICANT:
                 if self.cleaned_data.get('opf') != 'person':
@@ -535,20 +520,24 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
         else:
             self.safe_delete('deadman', self.instance)
 
-        if self.cleaned_data.get('opf') == 'person' and self.applicant_form.is_valid_data():
-            applicant = self.applicant_form.save(commit=False)
-            if self.applicant_address_form.is_valid_data():
-                applicant.address = self.applicant_address_form.save()
-            applicant.save()
-            self.instance.applicant = applicant
+        if self.cleaned_data.get('opf') == 'person':
             self.instance.applicant_organization = None
-            if self.applicant_id_form.is_valid():
-                self.instance.flag_no_applicant_doc_required = \
-                    self.applicant_id_form.cleaned_data.get('flag_no_applicant_doc_required')
-            if self.applicant_id_form.is_valid_data():
-                pid = self.applicant_id_form.save(commit=False)
-                pid.person = applicant
-                pid.save()
+            self.instance.agent_director = False
+            self.instance.agent = None
+            self.instance.dover = None
+            if self.applicant_form.is_valid():
+                applicant = self.applicant_form.save(commit=False)
+                if self.applicant_address_form.is_valid_data():
+                    applicant.address = self.applicant_address_form.save()
+                applicant.save()
+                self.instance.applicant = applicant
+                if self.applicant_id_form.is_valid():
+                    self.instance.flag_no_applicant_doc_required = \
+                        self.applicant_id_form.cleaned_data.get('flag_no_applicant_doc_required')
+                if self.applicant_id_form.is_valid_data():
+                    pid = self.applicant_id_form.save(commit=False)
+                    pid.person = applicant
+                    pid.save()
         else:
             self.safe_delete('applicant', self.instance)
             self.instance.flag_no_applicant_doc_required = False
@@ -743,7 +732,7 @@ class BurialCommitForm(BurialForm):
         pass
 
     def setup_required_applicant_id(self):
-        if self.data.get('applicant-last_name') and not self.data.get('applicant-pid-flag_no_applicant_doc_required'):
+        if self.data.get('opf') == 'person' and not self.data.get('applicant-pid-flag_no_applicant_doc_required'):
             for f in self.applicant_id_form.fields:
                 if f in ['id_type', 'series', 'number',]:
                     self.applicant_id_form.fields[f].required = True
@@ -753,12 +742,8 @@ class BurialCommitForm(BurialForm):
         StrippedStringsMixin.clean(self)
 
         if not self.instance.is_archive() and not self.instance.is_transferred() and not self.request.REQUEST.get('archive'):
-            if not self.cleaned_data.get('applicant_organization'):
-                if not self.applicant_form.is_valid_data():
-                    raise forms.ValidationError(_(u"Нужно указать либо Заявителя-ЮЛ, либо Заявителя-ФЛ"))
-            if self.cleaned_data.get('applicant_organization'):
-                if self.applicant_form.is_valid_data():
-                    raise forms.ValidationError(_(u"Нужно указать либо Заявителя-ЮЛ, либо Заявителя-ФЛ"))
+            if not self.cleaned_data.get('applicant_organization') and not self.applicant_form.is_valid_data():
+                raise forms.ValidationError(_(u"Нужно указать либо Заявителя-ЮЛ, либо Заявителя-ФЛ"))
 
             if self.cleaned_data.get('opf') == 'person':
                 if not self.applicant_form.is_valid_data():
@@ -1301,6 +1286,10 @@ class ExhumationForm(ChildrenJSONMixin, SafeDeleteMixin, forms.ModelForm):
         self.instance.burial = self.burial
         self.instance.place = self.burial.place
 
+        if self.cleaned_data.get('agent_director'):
+            self.instance.agent = None
+            self.instance.dover = None
+
         if self.cleaned_data.get('opf') == 'person' and self.applicant_form.is_valid_data():
             applicant = self.applicant_form.save(commit=False)
             if self.applicant_address_form.is_valid_data():
@@ -1313,6 +1302,9 @@ class ExhumationForm(ChildrenJSONMixin, SafeDeleteMixin, forms.ModelForm):
                 pid.save()
             self.instance.applicant = applicant
             self.instance.applicant_organization = None
+            self.instance.agent_director = False
+            self.instance.agent = None
+            self.instance.dover = None
         else:
             self.safe_delete('applicant', self.instance)
 
