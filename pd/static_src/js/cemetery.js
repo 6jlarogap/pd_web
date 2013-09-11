@@ -433,8 +433,6 @@ $(function() {
 
             $('#id_agent_director').change();
             $('input[name=payment][value=wire]').attr('checked', '1');
-
-            $('#id_applicant-last_name').val('');
         }
         else if ($('input[name=opf]:checked').val() == 'person') {
             $('#applicant_form_org').hide();
@@ -454,10 +452,6 @@ $(function() {
             $('#id_org').closest('p').hide();
             $('input[name=payment][value=cash]').attr('checked', '1');
 
-            $('#id_applicant_organization').val('');
-            $('#id_agent_director').val('');
-            $('#id_agent').val('');
-            $('#id_dover').val('');
             $(resp_id+'1').closest('li').show();
             if (!$(resp_id+'0').is(':checked') && !$(resp_id+'2').is(':checked')) {
                 $(resp_id+'1').attr('checked', 'checked');
@@ -479,12 +473,6 @@ $(function() {
 
             $('input[name^=person]').closest('p').hide();
             $('#id_org').closest('p').hide();
-
-            $('#id_applicant_organization').val('');
-            $('#id_agent_director').val('');
-            $('#id_agent').val('');
-            $('#id_dover').val('');
-            $('#id_applicant-last_name').val('');
             $(resp_id+'1').closest('li').show();
         }
     });
