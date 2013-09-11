@@ -93,9 +93,9 @@ class Org(models.Model):
         (PROFILE_UGH, _(u"УГХ")),
     )
 
-    OPF_EMPTY = 'opf_empty'
-    OPF_ORG = 'off_org'
-    OPF_PERSON = 'opf_person'
+    OPF_EMPTY = 'empty'
+    OPF_ORG = 'org'
+    OPF_PERSON = 'person'
     OPF_CHOICES = (
         (OPF_EMPTY, _(u'Без заказчика')),
         (OPF_ORG, _(u'ЮЛ')),
