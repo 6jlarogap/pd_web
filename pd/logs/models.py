@@ -81,11 +81,11 @@ class LoginLog(models.Model):
     org = models.ForeignKey('users.Org', verbose_name=_(u"Организация"), null=True)
     ip = models.IPAddressField(null=True)
 
-    @classmetod
+    @classmethod
     def write(cls, request):
-    user = request.user or None
-    if user:
-        # Пользователь может не иметь еще профиля при первом входе в систему
-        org = user.profile and user.profile.org or None
-        rec = cls(user=user, org = user.profile, ip=request.META.get('REMOTE_HOST', None))
-        rec.save()
+        user = request.user or None
+        if user:
+            # Пользователь может не иметь еще профиля при первом входе в систему
+            org = user.profile and user.profile.org or None
+            rec = cls(user=user, org = user.profile, ip=request.META.get('REMOTE_HOST', None))
+            rec.save()
