@@ -1,4 +1,5 @@
 # coding=utf-8
+from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
@@ -34,6 +35,11 @@ class Profile(models.Model):
 
     def is_ugh(self):
         return self.org and self.org.type == Org.PROFILE_UGH
+
+    def is_supervisor(self):
+        return hasattr(settings, 'SUPERVISOR_ORG_INN') and \
+               self.org and \
+               self.org.inn == settings.SUPERVISOR_ORG_INN
 
     def can_create_burials(self):
         return self.is_ugh() or self.is_loru()

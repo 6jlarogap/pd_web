@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 import json
 import datetime
-from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.forms import AuthenticationForm
@@ -15,7 +14,7 @@ from django.views.generic.base import View
 from django.views.generic.edit import UpdateView, CreateView
 from django.views.generic.list import ListView
 
-from burials.views import UGHRequiredMixin, LoginRequiredMixin
+from burials.views import UGHRequiredMixin, LoginRequiredMixin, SupervisorRequiredMixin
 from logs.models import Log, write_log
 from users.forms import RegisterForm, LoruFormset, ProfileForm, UserProfileForm, \
                         UserDataForm, ChangePasswordForm, BankAccountFormset, OrgForm, OrgLogForm
@@ -64,18 +63,10 @@ class LogoutView(View):
 
 ulogout = LogoutView.as_view()
 
-class RegisterView(View):
+class RegisterView(SupervisorRequiredMixin, View):
     """
     Регистрация
     """
-    def dispatch(self, request, *args, **kwargs):
-        if request.user.is_authenticated() and \
-           request.user.profile and \
-           hasattr(settings, 'SUPERVISOR_ORG_INN') and \
-           request.user.profile.org.inn == settings.SUPERVISOR_ORG_INN:
-            return super(RegisterView, self).dispatch(request, *args, **kwargs)
-        raise Http404
-
     def post(self, request, *args, **kwargs):
         form = RegisterForm(data=request.POST)
         if form.is_valid():
@@ -91,7 +82,6 @@ class RegisterView(View):
         form = RegisterForm()
         request.session.set_test_cookie()
         return render(request, 'register.html', {'form':form})
-
 
 uregister = RegisterView.as_view()
 
