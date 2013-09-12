@@ -15,7 +15,7 @@ from django.views.generic.edit import UpdateView, CreateView
 from django.views.generic.list import ListView
 
 from burials.views import UGHRequiredMixin, LoginRequiredMixin, SupervisorRequiredMixin
-from logs.models import Log, write_log
+from logs.models import Log, write_log, LoginLog
 from users.forms import RegisterForm, LoruFormset, ProfileForm, UserProfileForm, \
                         UserDataForm, ChangePasswordForm, BankAccountFormset, OrgForm, OrgLogForm
 from users.models import Profile, Org
@@ -36,6 +36,7 @@ class LoginView(View):
             user = form.get_user()
             login(request, user)
             write_log(request, request.user, _(u'Вход в систему'))
+            LoginLog.write(request)
             next_url = request.GET.get("next", "/")
             if next_url == '/logout/':
                 next_url = '/'
@@ -74,6 +75,7 @@ class RegisterView(SupervisorRequiredMixin, View):
             user = authenticate(username=form.cleaned_data['username'], password=form.cleaned_data['password1'])
             login(request, user)
             write_log(request, request.user, _(u'Вход в систему'))
+            LoginLog.write(request)
             messages.success(self.request, _(u"Все хорошо, регистрация успешна"))
             return redirect('dashboard')
         return self.get(request, *args, **kwargs)

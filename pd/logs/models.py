@@ -83,9 +83,10 @@ class LoginLog(models.Model):
 
     @classmethod
     def write(cls, request):
-        user = request.user or None
+        user = request.user
         if user:
             # Пользователь может не иметь еще профиля при первом входе в систему
             org = user.profile and user.profile.org or None
-            rec = cls(user=user, org = user.profile, ip=request.META.get('REMOTE_HOST', None))
+            print request
+            rec = cls(user=user, org = org, ip=request.META.get('REMOTE_ADDR'))
             rec.save()
