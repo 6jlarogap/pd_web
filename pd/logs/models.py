@@ -71,3 +71,22 @@ def write_log(request, obj=None, msg='', reason=None, code=None):
         msg=msg,
         code=code or '',
     )
+
+class LoginLog(models.Model):
+    """
+    Журнал входа пользователей в систему
+    """
+    dt = models.DateTimeField(auto_now_add=True, verbose_name=_(u"Время"))
+    user = models.ForeignKey('auth.User', verbose_name=_(u"Пользователь"))
+    org = models.ForeignKey('users.Org', verbose_name=_(u"Организация"), null=True)
+    ip = models.GenericIPAddressField(unpack_ipv4=True, null=True)
+
+    @classmethod
+    def write(cls, request):
+        user = request.user
+        if user:
+            # Пользователь может не иметь еще профиля при первом входе в систему
+            org = user.profile and user.profile.org or None
+            print request
+            rec = cls(user=user, org = org, ip=request.META.get('REMOTE_ADDR'))
+            rec.save()

@@ -32,6 +32,14 @@ class LoginRequiredMixin:
             return redirect('/')
         return View.dispatch(self, request, *args, **kwargs)
 
+class SupervisorRequiredMixin:
+    def dispatch(self, request, *args, **kwargs):
+        if request.user.is_authenticated() and \
+           request.user.profile and \
+           request.user.profile.is_supervisor():
+            return View.dispatch(self, request, *args, **kwargs)
+        raise Http404
+
 class CemeteryList(UGHRequiredMixin, ListView):
     template_name = 'cemetery_list.html'
     model = Cemetery
