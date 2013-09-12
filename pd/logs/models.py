@@ -79,7 +79,7 @@ class LoginLog(models.Model):
     dt = models.DateTimeField(auto_now_add=True, verbose_name=_(u"Время"))
     user = models.ForeignKey('auth.User', verbose_name=_(u"Пользователь"))
     org = models.ForeignKey('users.Org', verbose_name=_(u"Организация"), null=True)
-    ip = models.IPAddressField(null=True)
+    ip = models.GenericIPAddressField(unpack_ipv4=True, null=True)
 
     @classmethod
     def write(cls, request):
