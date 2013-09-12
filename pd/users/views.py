@@ -17,7 +17,7 @@ from django.views.generic.list import ListView
 from burials.views import UGHRequiredMixin, LoginRequiredMixin, SupervisorRequiredMixin
 from logs.models import Log, write_log, LoginLog
 from users.forms import RegisterForm, LoruFormset, ProfileForm, UserProfileForm, \
-                        UserDataForm, ChangePasswordForm, BankAccountFormset, OrgForm, OrgLogForm
+                        UserDataForm, ChangePasswordForm, BankAccountFormset, OrgForm, OrgLogForm, LoginLogForm
 from users.models import Profile, Org
 from pd.views import PaginateListView
 
@@ -323,7 +323,7 @@ class OrgLogView(LoginRequiredMixin, PaginateListView):
             if form.cleaned_data['log_date_to']:
                 logs = logs.filter(dt__lte=form.cleaned_data['log_date_to']+datetime.timedelta(days=1))
 
-        sort = self.request.GET.get('sort', '-dt')
+        sort = self.request.GET.get('sort', self.SORT_DEFAULT)
         SORT_FIELDS = {
             'dt': 'pk',
             '-dt': '-pk',
@@ -352,13 +352,7 @@ class LoginLogView(SupervisorRequiredMixin, PaginateListView):
         if not self.request.GET:
             return Log.objects.none()
 
-        org=self.request.user.profile.org
-        users = []
-        for profile in Profile.objects.filter(org=org):
-            if profile.user:
-                users.append(profile.user)
-        # Такой поиск будет гораздо быстрее, чем по user__profile__org=org
-        logs = Log.objects.filter(user__in=users)
+        logs = LoginLog.objects.all()
         form = self.get_form()
 
         if form.data and form.is_valid():
@@ -367,7 +361,7 @@ class LoginLogView(SupervisorRequiredMixin, PaginateListView):
             if form.cleaned_data['log_date_to']:
                 logs = logs.filter(dt__lte=form.cleaned_data['log_date_to']+datetime.timedelta(days=1))
 
-        sort = self.request.GET.get('sort', '-dt')
+        sort = self.request.GET.get('sort', self.SORT_DEFAULT)
         SORT_FIELDS = {
             'dt': 'pk',
             '-dt': '-pk',
@@ -384,7 +378,6 @@ class LoginLogView(SupervisorRequiredMixin, PaginateListView):
         return logs
 
     def get_form(self):
-        return OrgLogForm(data=self.request.GET or None)
+        return LoginLogForm(data=self.request.GET or None)
 
 login_log = LoginLogView.as_view()
-

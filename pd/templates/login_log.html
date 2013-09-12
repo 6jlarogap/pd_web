@@ -3,7 +3,7 @@
 {% load i18n %}
 
 {% block content %}
-    <h1>{% trans "Журнал" %}</h1>
+    <h1>{% trans "Журнал входа в систему" %}</h1>
     <div class="row-fluid no-print">
         <div class="span12">
             <div class="row-fluid">
@@ -41,15 +41,11 @@
                     <a href="?{{ GET_PARAMS }}&sort=user">{% trans "Пользователь" %}</a>
                 {% endif %}
             </th>
-            <th>{% trans "Объект" %}</th>
-            <th>{% trans "Действие" %}</th>
         </tr>
         {% for log in logs %}
             <tr>
                 <td>{{ log.dt }}</td>
                 <td>{{ log.user.username }} / {{ log.user.profile.last_name_initials }}</td>
-                <td>{% autoescape off %}{{ log.log_object_display }}{% endautoescape %}</td>
-                <td>{{ log.msg|linebreaksbr }}</td>
             </tr>
         {% endfor %}
         </table>
