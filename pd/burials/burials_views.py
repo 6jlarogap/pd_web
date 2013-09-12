@@ -512,7 +512,7 @@ class BurialsListView(PaginateListView):
         else:
             burials = burials.exclude(status=Burial.STATUS_EXHUMATED)
 
-        sort = self.request.GET.get('sort', '-pk')
+        sort = self.request.GET.get('sort', self.SORT_DEFAULT)
         SORT_FIELDS = {
             'pk': 'pk',
             '-pk': '-pk',

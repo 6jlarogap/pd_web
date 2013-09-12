@@ -24,6 +24,7 @@ from orders.forms import ProductForm, OrderForm, OrderItemFormset, CoffinForm, C
                          AddInfoForm, OrderSearchForm, OrderBurialForm
 from orders.models import Product, Order, OrderItem
 from pd.forms import CommentForm
+from pd.views import PaginateListView
 from reports.models import make_report
 
 
@@ -87,18 +88,14 @@ class ProductEdit(LORURequiredMixin, UpdateView):
 
 manage_products_edit = ProductEdit.as_view()
 
-class OrderList(LORURequiredMixin, ListView):
+class OrderList(LORURequiredMixin, PaginateListView):
     template_name = 'order_list.html'
     model = Order
 
-    def get_paginate_by(self, queryset):
-        if self.request.GET.get('print'):
-            return None
-        try:
-            return int(self.request.GET.get('per_page'))
-        except (TypeError, ValueError):
-            return 25
-
+    def __init__(self, *args, **kwargs):
+        super(OrderList, self).__init__(*args, **kwargs)
+        self.SORT_DEFAULT = '-order_date'
+        
     def get_queryset(self):
         if not self.request.GET:
             return Order.objects.none()
@@ -196,7 +193,7 @@ class OrderList(LORURequiredMixin, ListView):
             'burial__changed_by', 'burial__deadman', 'applicant_organization', 'applicant',
         )
 
-        sort = self.request.GET.get('sort', '-order_date')
+        sort = self.request.GET.get('sort', self.SORT_DEFAULT)
         SORT_FIELDS = {
             'order_date': 'dt',
             '-order_date': '-dt',
@@ -234,14 +231,6 @@ class OrderList(LORURequiredMixin, ListView):
         paginator = super(OrderList, self).get_paginator(queryset, per_page, orphans, allow_empty_first_page)
         paginator._count = queryset.count()
         return paginator
-
-    def get_context_data(self, **kwargs):
-        data = super(OrderList, self).get_context_data(**kwargs)
-        DISPLAY_OPTIONS = ['page', 'print']
-        get_for_paginator = u'&'.join([u'%s=%s' %  (k, v) for k,v in self.request.GET.items() if k not in DISPLAY_OPTIONS])
-        sort = self.request.GET.get('sort', '-order_date')
-        data.update(form=self.get_form(), GET_PARAMS=get_for_paginator, sort=sort)
-        return data
 
     def filter_by_name(self, queryset, search_by, name_string):
         import operator
