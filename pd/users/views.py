@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 import json
 import datetime
-from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.forms import AuthenticationForm
@@ -15,11 +14,12 @@ from django.views.generic.base import View
 from django.views.generic.edit import UpdateView, CreateView
 from django.views.generic.list import ListView
 
-from burials.views import UGHRequiredMixin, LoginRequiredMixin
-from logs.models import Log, write_log
+from burials.views import UGHRequiredMixin, LoginRequiredMixin, SupervisorRequiredMixin
+from logs.models import Log, write_log, LoginLog
 from users.forms import RegisterForm, LoruFormset, ProfileForm, UserProfileForm, \
-                        UserDataForm, ChangePasswordForm, BankAccountFormset, OrgForm, OrgLogForm
+                        UserDataForm, ChangePasswordForm, BankAccountFormset, OrgForm, OrgLogForm, LoginLogForm
 from users.models import Profile, Org
+from pd.views import PaginateListView
 
 
 class LoginView(View):
@@ -37,6 +37,7 @@ class LoginView(View):
             user = form.get_user()
             login(request, user)
             write_log(request, request.user, _(u'Вход в систему'))
+            LoginLog.write(request)
             next_url = request.GET.get("next", "/")
             if next_url == '/logout/':
                 next_url = '/'
@@ -64,18 +65,10 @@ class LogoutView(View):
 
 ulogout = LogoutView.as_view()
 
-class RegisterView(View):
+class RegisterView(SupervisorRequiredMixin, View):
     """
     Регистрация
     """
-    def dispatch(self, request, *args, **kwargs):
-        if request.user.is_authenticated() and \
-           request.user.profile and \
-           hasattr(settings, 'SUPERVISOR_ORG_INN') and \
-           request.user.profile.org.inn == settings.SUPERVISOR_ORG_INN:
-            return super(RegisterView, self).dispatch(request, *args, **kwargs)
-        raise Http404
-
     def post(self, request, *args, **kwargs):
         form = RegisterForm(data=request.POST)
         if form.is_valid():
@@ -83,6 +76,7 @@ class RegisterView(View):
             user = authenticate(username=form.cleaned_data['username'], password=form.cleaned_data['password1'])
             login(request, user)
             write_log(request, request.user, _(u'Вход в систему'))
+            LoginLog.write(request)
             messages.success(self.request, _(u"Все хорошо, регистрация успешна"))
             return redirect('dashboard')
         return self.get(request, *args, **kwargs)
@@ -91,7 +85,6 @@ class RegisterView(View):
         form = RegisterForm()
         request.session.set_test_cookie()
         return render(request, 'register.html', {'form':form})
-
 
 uregister = RegisterView.as_view()
 
@@ -307,7 +300,7 @@ class AutocompleteOrg(View):
 
 autocomplete_org = AutocompleteOrg.as_view()
 
-class OrgLogView(LoginRequiredMixin, ListView):
+class OrgLogView(LoginRequiredMixin, PaginateListView):
     template_name = 'org_log.html'
     context_object_name = 'logs'
 
@@ -330,7 +323,7 @@ class OrgLogView(LoginRequiredMixin, ListView):
             if form.cleaned_data['log_date_to']:
                 logs = logs.filter(dt__lte=form.cleaned_data['log_date_to']+datetime.timedelta(days=1))
 
-        sort = self.request.GET.get('sort', '-dt')
+        sort = self.request.GET.get('sort', self.SORT_DEFAULT)
         SORT_FIELDS = {
             'dt': 'pk',
             '-dt': '-pk',
@@ -346,22 +339,49 @@ class OrgLogView(LoginRequiredMixin, ListView):
         ).order_by(*s)
         return logs
 
-    def get_paginate_by(self, queryset):
-        try:
-            return int(self.request.GET.get('per_page'))
-        except (TypeError, ValueError):
-            return 25
-
     def get_form(self):
         return OrgLogForm(data=self.request.GET or None)
 
-    def get_context_data(self, **kwargs):
-        data = super(OrgLogView, self).get_context_data(**kwargs)
-        DISPLAY_OPTIONS = ['page', 'print']
-        get_for_paginator = u'&'.join([u'%s=%s' %  (k, v) for k,v in self.request.GET.items() if k not in DISPLAY_OPTIONS])
-        sort = self.request.GET.get('sort', '-dt')
-        data.update(form=self.get_form(), GET_PARAMS=get_for_paginator, sort=sort)
-        return data
-
 org_log = OrgLogView.as_view()
 
+class LoginLogView(SupervisorRequiredMixin, PaginateListView):
+    template_name = 'login_log.html'
+    context_object_name = 'logs'
+
+    def get_queryset(self):
+        if not self.request.GET:
+            return Log.objects.none()
+
+        logs = LoginLog.objects.all()
+        form = self.get_form()
+
+        if form.data and form.is_valid():
+            if form.cleaned_data['log_date_from']:
+                logs = logs.filter(dt__gte=form.cleaned_data['log_date_from'])
+            if form.cleaned_data['log_date_to']:
+                logs = logs.filter(dt__lte=form.cleaned_data['log_date_to']+datetime.timedelta(days=1))
+
+        sort = self.request.GET.get('sort', self.SORT_DEFAULT)
+        SORT_FIELDS = {
+            'dt': 'pk',
+            '-dt': '-pk',
+            'user': 'user__username',
+            '-user': '-user__username',
+            'org': 'org__name',
+            '-org': '-org__name',
+            'ip': 'ip',
+            '-ip': '-ip',
+       }
+        s = SORT_FIELDS[sort]
+        if not isinstance(s, list):
+            s = [s]
+
+        logs = logs.select_related(
+            'user__profile',
+        ).order_by(*s)
+        return logs
+
+    def get_form(self):
+        return LoginLogForm(data=self.request.GET or None)
+
+login_log = LoginLogView.as_view()
