@@ -38,7 +38,7 @@ class OrderForm(ChildrenJSONMixin, SafeDeleteMixin, forms.ModelForm):
                 self.initial['opf'] = Org.OPF_ORG
         else:
             self.initial['opf'] = request.user.profile.org.opf_order
-        # Во всех остальных случаев по умолчанию в определении поля: Org.OPF_EMPTY
+        # Во всех остальных случаях умолчание берется из определения поля: Org.OPF_EMPTY
 
         self.fields['payment'].widget = forms.RadioSelect(choices=Order.PAYMENT_CHOICES)
 
