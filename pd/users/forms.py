@@ -195,6 +195,8 @@ class OrgForm(BaseOrgForm):
         self.bank_formset = BankAccountFormset(data=request.POST or None, instance=request.user.profile.org)
         if not self.request.user.profile.is_ugh():
             del self.fields['numbers_algo']
+        if not self.request.user.profile.is_loru():
+            del self.fields['opf_order']
         if self.request.user.profile.org.pk == self.instance.pk:
             choices = []
             for profile_type in Org.PROFILE_TYPES:

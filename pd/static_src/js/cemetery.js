@@ -457,7 +457,7 @@ $(function() {
                 $(resp_id+'1').attr('checked', 'checked');
             }
         }
-        else if ($('input[name=opf]:checked').val() == 'no_applicant') {
+        else if ($('input[name=opf]:checked').val() == 'empty') {
             $('#applicant_form_org').hide();
             $('#applicant_form_person').hide();
 

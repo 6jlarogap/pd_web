@@ -93,6 +93,15 @@ class Org(models.Model):
         (PROFILE_UGH, _(u"УГХ")),
     )
 
+    OPF_EMPTY = 'empty'
+    OPF_ORG = 'org'
+    OPF_PERSON = 'person'
+    OPF_CHOICES = (
+        (OPF_EMPTY, _(u'Без заказчика')),
+        (OPF_ORG, _(u'ЮЛ')),
+        (OPF_PERSON, _(u'ФЛ')),
+    )
+   
     type = models.CharField(_(u"Тип"), max_length=255, choices=PROFILE_TYPES)
     name = models.CharField(_(u"Название организации"), max_length=255, default='')
     full_name = models.CharField(_(u"Полное название"), max_length=255, default='')
@@ -105,6 +114,8 @@ class Org(models.Model):
     off_address = models.ForeignKey('geo.Location', verbose_name=_(u"Юр. адрес"), null=True, blank=True)
     numbers_algo = models.CharField(_(u"Заполнение номера захоронения"), max_length=255, choices=NUM_TYPES,
                                     default=NUM_EMPTY, blank=True)
+    opf_order = models.CharField(_(u"Заказчик по умолчанию в заказе"), max_length=255,
+                                    choices=OPF_CHOICES, default=OPF_ORG)
 
     class Meta:
         verbose_name = _(u'Организация')
