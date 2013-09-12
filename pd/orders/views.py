@@ -106,7 +106,9 @@ class OrderList(LORURequiredMixin, ListView):
         return self.filtered_orders()
 
     def filtered_orders(self):
-        orders = Order.objects.filter(loru=self.request.user.profile.org).annotate(item_count=Count('orderitem'))
+        orders = Order.objects.filter(loru=self.request.user.profile.org) 
+                # .annotate(item_count=Count('orderitem'))  # мы не показываем в таблице кол-во товаров,
+                                                            # к тому же это резко замедляет поиск
 
         form = self.get_form()
         if form.data and form.is_valid():
@@ -190,9 +192,8 @@ class OrderList(LORURequiredMixin, ListView):
 
         orders_count = orders.count()
         orders = orders.select_related(
-            'burial', 'burial__ugh', 'burial__cemetery', 'burial__area', 'burial__responsible', 'burial__responsible',
-            'burial__changed_by', 'burial__deadman', 'applicant_organization', 'applicant', 'loru',
-            'agent', 'agent__person', 'agent__org',
+            'burial', 'burial__ugh', 'burial__cemetery', 'burial__area', 'burial__responsible',
+            'burial__changed_by', 'burial__deadman', 'applicant_organization', 'applicant',
         )
 
         sort = self.request.GET.get('sort', '-order_date')
