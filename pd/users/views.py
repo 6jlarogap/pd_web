@@ -367,7 +367,11 @@ class LoginLogView(SupervisorRequiredMixin, PaginateListView):
             '-dt': '-pk',
             'user': 'user__username',
             '-user': '-user__username',
-        }
+            'org': 'org__name',
+            '-org': '-org__name',
+            'ip': 'ip',
+            '-ip': '-ip',
+       }
         s = SORT_FIELDS[sort]
         if not isinstance(s, list):
             s = [s]
