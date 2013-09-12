@@ -64,8 +64,8 @@
             <tr>
                 <td>{{ log.dt }}</td>
                 <td>{{ log.user.username }} / {{ log.user.profile.last_name_initials }}</td>
-                <td>{{ log.org }}</td>
-                <td>{{ log.ip }}</td>
+                <td>{{ log.org|default_if_none:"" }}</td>
+                <td>{{ log.ip|default_if_none:"" }}</td>
             </tr>
         {% endfor %}
         </table>
