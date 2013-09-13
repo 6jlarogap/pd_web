@@ -32,6 +32,14 @@ class LoginRequiredMixin:
             return redirect('/')
         return View.dispatch(self, request, *args, **kwargs)
 
+class SupervisorRequiredMixin:
+    def dispatch(self, request, *args, **kwargs):
+        if request.user.is_authenticated() and \
+           request.user.profile and \
+           request.user.profile.is_supervisor():
+            return View.dispatch(self, request, *args, **kwargs)
+        raise Http404
+
 class CemeteryList(UGHRequiredMixin, ListView):
     template_name = 'cemetery_list.html'
     model = Cemetery
@@ -159,14 +167,15 @@ class AddAgentView(LoginRequiredMixin, View):
         fa = AddAgentForm(data=request.POST, prefix='agent')
         fd = AddDoverForm(data=request.POST, prefix='agent_dover')
         try:
-            loru = Org.objects.get(pk=request.GET['loru'], type=Org.PROFILE_LORU)
-        except Org.DoesNotExist:
-            return HttpResponse(_(u'ЛОРУ не существует'), mimetype='text/plain')
+            loru = Org.objects.get(pk=request.GET['loru'])
         except KeyError:
             return HttpResponse(_(u'Ошибка'), mimetype='text/plain')
+        except Org.DoesNotExist:
+            return HttpResponse(_(u'Нет такой организации'), mimetype='text/plain')
         if fa.is_valid() and fd.is_valid():
             agent = fa.save(loru=loru)
             dover = fd.save(commit=False)
+            dover.target_org = request.user.profile.org
             dover.agent = agent
             dover.save()
             return HttpResponse(json.dumps({

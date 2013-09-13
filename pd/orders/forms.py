@@ -8,12 +8,11 @@ from django.utils.translation import ugettext as _
 from burials.models import Burial
 from geo.forms import LocationForm
 from orders.models import Product, Order, OrderItem, CatafalqueData, CoffinData, AddInfoData
-from burials.forms import OPF_CHOICES, EMPTY
+from burials.forms import EMPTY
 from pd.forms import ChildrenJSONMixin
 from persons.forms import AlivePersonForm, PersonIDForm
 from persons.models import AlivePerson, PersonID, SafeDeleteMixin
-from users.models import Org, ProfileLORU
-
+from users.models import Org
 
 class ProductForm(forms.ModelForm):
     class Meta:
@@ -21,21 +20,25 @@ class ProductForm(forms.ModelForm):
         exclude = ['loru', ]
 
 class OrderForm(ChildrenJSONMixin, SafeDeleteMixin, forms.ModelForm):
-    opf = forms.ChoiceField(label=_(u'ОПФ'), choices=OPF_CHOICES, widget=forms.RadioSelect, initial='person')
+    opf = forms.ChoiceField(label='', choices=Org.OPF_CHOICES, widget=forms.RadioSelect, initial=Org.OPF_EMPTY)
 
     class Meta:
         model = Order
-        exclude = ['loru', 'applicant', 'org', ]
+        exclude = ['loru', 'applicant', ]
 
     def __init__(self, request, *args, **kwargs):
         self.request = request
         super(OrderForm, self).__init__(*args, **kwargs)
         self.fields.keyOrder.insert(0, self.fields.keyOrder.pop(-1))
 
-        if self.instance.applicant:
-            self.initial['opf'] = 'person'
+        if self.instance.pk:
+            if self.instance.applicant:
+                self.initial['opf'] = Org.OPF_PERSON
+            elif self.instance.applicant_organization:
+                self.initial['opf'] = Org.OPF_ORG
         else:
-            self.initial['opf'] = 'org'
+            self.initial['opf'] = request.user.profile.org.opf_order
+        # Во всех остальных случаях умолчание берется из определения поля: Org.OPF_EMPTY
 
         self.fields['payment'].widget = forms.RadioSelect(choices=Order.PAYMENT_CHOICES)
 
@@ -51,11 +54,11 @@ class OrderForm(ChildrenJSONMixin, SafeDeleteMixin, forms.ModelForm):
         return super(OrderForm, self).is_valid() and all([f.is_valid() for f in self.forms])
 
     def clean(self):
-        if self.cleaned_data.get('opf') == 'org':
+        if self.cleaned_data.get('opf') == Org.OPF_ORG:
             if not (self.cleaned_data.get('agent_director') or \
                     self.cleaned_data.get('agent') and self.cleaned_data.get('dover')):
                 raise forms.ValidationError(_(u'Нет данных об агенте и/или доверенности для заявителя-ЮЛ. Изменения не сохранены'))
-        else:
+        elif self.cleaned_data.get('opf') == Org.OPF_PERSON:
             if not self.applicant_form.is_valid_data():
                 raise forms.ValidationError(_(u"Нужно указать Заявителя-ФЛ"))
         return self.cleaned_data
@@ -77,7 +80,7 @@ class OrderForm(ChildrenJSONMixin, SafeDeleteMixin, forms.ModelForm):
     def save(self, commit=True, *args, **kwargs):
         self.instance = super(OrderForm, self).save(commit=False)
         
-        if self.cleaned_data.get('opf') == 'person':
+        if self.cleaned_data.get('opf') == Org.OPF_PERSON:
             if self.applicant_form.is_valid_data():
                 applicant = self.applicant_form.save(commit=False)
                 if self.applicant_address_form.is_valid_data():
@@ -92,8 +95,17 @@ class OrderForm(ChildrenJSONMixin, SafeDeleteMixin, forms.ModelForm):
             else:
                 self.instance.applicant = None
             self.instance.applicant_organization = None
-        else:
+        elif self.cleaned_data.get('opf') == Org.OPF_ORG:
             self.safe_delete('applicant', self.instance)
+            if self.cleaned_data.get('agent_director'):
+                self.instance.agent = None
+                self.instance.dover = None
+        elif self.cleaned_data.get('opf') == Org.OPF_EMPTY:
+            self.safe_delete('applicant', self.instance)
+            self.instance.applicant_organization = None
+            self.instance.agent_director = False
+            self.instance.agent = None
+            self.instance.dover = None
 
         self.instance.save()
 
@@ -241,16 +253,11 @@ class OrderBurialForm(forms.ModelForm):
                     raise forms.ValidationError(_(u'Задайте номер захоронения'))
                 try:
                     burial = Burial.objects.get(pk=cd['nb_burial'])
-                    if burial.is_full() and burial.loru == self.request.user.profile.org:
-                        pass
-                    elif (burial.is_closed() or burial.is_exhumated()) and \
-                         not burial.is_bio() and \
-                         not burial.is_annulated() and \
-                         burial.ugh and \
-                         ProfileLORU.objects.filter(ugh=burial.ugh,
-                                                    loru=self.request.user.profile.org).exists():
-                        pass
-                    else:
+                    if burial.is_annulated() and \
+                       burial.is_full() and burial.loru and burial.loru == self.request.user.profile.org:
+                        # своё аннулированное. Чужие проверяются ниже
+                        raise forms.ValidationError(_(u'Анулированное захоронение нельзя прикрепить к заказу'))
+                    elif not burial.can_bind_to_order(self.request.user.profile.org):
                         raise forms.ValidationError(_(u'Это захоронение недоступно вашей организации'))
                     self.instance.burial = burial
                     self.instance.save()

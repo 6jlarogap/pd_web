@@ -195,6 +195,8 @@ class OrgForm(BaseOrgForm):
         self.bank_formset = BankAccountFormset(data=request.POST or None, instance=request.user.profile.org)
         if not self.request.user.profile.is_ugh():
             del self.fields['numbers_algo']
+        if not self.request.user.profile.is_loru():
+            del self.fields['opf_order']
         if self.request.user.profile.org.pk == self.instance.pk:
             choices = []
             for profile_type in Org.PROFILE_TYPES:
@@ -220,3 +222,19 @@ class OrgForm(BaseOrgForm):
             org.save()
             self.put_log_data(msg=_(u'Изменены данные организации'))
         return org
+
+class OrgLogForm(forms.Form):
+
+    PAGE_CHOICES = (
+        (10, 10),
+        (25, 25),
+        (50, 50),
+        (100, 100),
+    )
+
+    log_date_from = forms.DateField(required=False, label=_(u"С"))
+    log_date_to = forms.DateField(required=False, label=_(u"по"))
+    per_page = forms.ChoiceField(label=_(u"На странице"), choices=PAGE_CHOICES, initial=25, required=False)
+
+# Никакой разницы в этих формах пока нет.
+LoginLogForm = OrgLogForm

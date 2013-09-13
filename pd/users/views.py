@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 import json
-from django.conf import settings
+import datetime
 from django.contrib import messages
 from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.forms import AuthenticationForm
@@ -12,11 +12,14 @@ from django.shortcuts import redirect, render
 from django.utils.translation import ugettext_lazy as _
 from django.views.generic.base import View
 from django.views.generic.edit import UpdateView, CreateView
+from django.views.generic.list import ListView
 
-from burials.views import UGHRequiredMixin, LoginRequiredMixin
-from logs.models import write_log
-from users.forms import RegisterForm, LoruFormset, ProfileForm, UserProfileForm, UserDataForm, ChangePasswordForm, BankAccountFormset, OrgForm
+from burials.views import UGHRequiredMixin, LoginRequiredMixin, SupervisorRequiredMixin
+from logs.models import Log, write_log, LoginLog
+from users.forms import RegisterForm, LoruFormset, ProfileForm, UserProfileForm, \
+                        UserDataForm, ChangePasswordForm, BankAccountFormset, OrgForm, OrgLogForm, LoginLogForm
 from users.models import Profile, Org
+from pd.views import PaginateListView
 
 
 class LoginView(View):
@@ -33,6 +36,8 @@ class LoginView(View):
         if form.is_valid():
             user = form.get_user()
             login(request, user)
+            write_log(request, request.user, _(u'Вход в систему'))
+            LoginLog.write(request)
             next_url = request.GET.get("next", "/")
             if next_url == '/logout/':
                 next_url = '/'
@@ -53,31 +58,25 @@ class LogoutView(View):
     def dispatch(self, request, *args, **kwargs):
         if not request.user.is_authenticated():
             return redirect('/')
-
+        write_log(request, request.user, _(u'Выход из системы'))
         logout(request)
         next_url = request.GET.get("next", "/")
         return redirect(next_url)
 
 ulogout = LogoutView.as_view()
 
-class RegisterView(View):
+class RegisterView(SupervisorRequiredMixin, View):
     """
     Регистрация
     """
-    def dispatch(self, request, *args, **kwargs):
-        if request.user.is_authenticated() and \
-           request.user.profile and \
-           hasattr(settings, 'SUPERVISOR_ORG_INN') and \
-           request.user.profile.org.inn == settings.SUPERVISOR_ORG_INN:
-            return super(RegisterView, self).dispatch(request, *args, **kwargs)
-        raise Http404
-
     def post(self, request, *args, **kwargs):
         form = RegisterForm(data=request.POST)
         if form.is_valid():
             form.save()
             user = authenticate(username=form.cleaned_data['username'], password=form.cleaned_data['password1'])
             login(request, user)
+            write_log(request, request.user, _(u'Вход в систему'))
+            LoginLog.write(request)
             messages.success(self.request, _(u"Все хорошо, регистрация успешна"))
             return redirect('dashboard')
         return self.get(request, *args, **kwargs)
@@ -86,7 +85,6 @@ class RegisterView(View):
         form = RegisterForm()
         request.session.set_test_cookie()
         return render(request, 'register.html', {'form':form})
-
 
 uregister = RegisterView.as_view()
 
@@ -114,7 +112,7 @@ class LoruRegistryView(UGHRequiredMixin, View):
         if formset.is_valid():
             formset.save()
             messages.success(self.request, _(u"Данные сохранены"))
-            write_log(self.request, self.request.user.profile, _(u'Изменены данные реестра ЛОРУ'))
+            write_log(self.request, self.request.user.profile.org, _(u'Изменены данные реестра ЛОРУ'))
             return redirect(self.get_success_url())
         else:
             messages.error(self.request, _(u"Обнаружены ошибки"))
@@ -301,3 +299,89 @@ class AutocompleteOrg(View):
         return HttpResponse(json.dumps([{'value': c.name} for c in orgs[:20]]), mimetype='text/javascript')
 
 autocomplete_org = AutocompleteOrg.as_view()
+
+class OrgLogView(LoginRequiredMixin, PaginateListView):
+    template_name = 'org_log.html'
+    context_object_name = 'logs'
+
+    def get_queryset(self):
+        if not self.request.GET:
+            return Log.objects.none()
+
+        org=self.request.user.profile.org
+        users = []
+        for profile in Profile.objects.filter(org=org):
+            if profile.user:
+                users.append(profile.user)
+        # Такой поиск будет гораздо быстрее, чем по user__profile__org=org
+        logs = Log.objects.filter(user__in=users)
+        form = self.get_form()
+
+        if form.data and form.is_valid():
+            if form.cleaned_data['log_date_from']:
+                logs = logs.filter(dt__gte=form.cleaned_data['log_date_from'])
+            if form.cleaned_data['log_date_to']:
+                logs = logs.filter(dt__lte=form.cleaned_data['log_date_to']+datetime.timedelta(days=1))
+
+        sort = self.request.GET.get('sort', self.SORT_DEFAULT)
+        SORT_FIELDS = {
+            'dt': 'pk',
+            '-dt': '-pk',
+            'user': 'user__username',
+            '-user': '-user__username',
+        }
+        s = SORT_FIELDS[sort]
+        if not isinstance(s, list):
+            s = [s]
+
+        logs = logs.select_related(
+            'user__profile',
+        ).order_by(*s)
+        return logs
+
+    def get_form(self):
+        return OrgLogForm(data=self.request.GET or None)
+
+org_log = OrgLogView.as_view()
+
+class LoginLogView(SupervisorRequiredMixin, PaginateListView):
+    template_name = 'login_log.html'
+    context_object_name = 'logs'
+
+    def get_queryset(self):
+        if not self.request.GET:
+            return Log.objects.none()
+
+        logs = LoginLog.objects.all()
+        form = self.get_form()
+
+        if form.data and form.is_valid():
+            if form.cleaned_data['log_date_from']:
+                logs = logs.filter(dt__gte=form.cleaned_data['log_date_from'])
+            if form.cleaned_data['log_date_to']:
+                logs = logs.filter(dt__lte=form.cleaned_data['log_date_to']+datetime.timedelta(days=1))
+
+        sort = self.request.GET.get('sort', self.SORT_DEFAULT)
+        SORT_FIELDS = {
+            'dt': 'pk',
+            '-dt': '-pk',
+            'user': 'user__username',
+            '-user': '-user__username',
+            'org': 'org__name',
+            '-org': '-org__name',
+            'ip': 'ip',
+            '-ip': '-ip',
+       }
+        s = SORT_FIELDS[sort]
+        if not isinstance(s, list):
+            s = [s]
+
+        logs = logs.select_related(
+            'user__profile',
+        ).order_by(*s)
+        return logs
+
+    def get_form(self):
+        return LoginLogForm(data=self.request.GET or None)
+
+login_log = LoginLogView.as_view()

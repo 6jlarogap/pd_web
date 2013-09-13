@@ -1,0 +1,11 @@
+{% load i18n %}
+
+{% for order in burial.burial_orders.all %}
+    {% if order.loru and order.loru == user.profile.org %}
+        <a href="{% url order_edit order.pk %}">{{ order.loru_number }}</a><br />
+    {% endif %}
+{% endfor %}
+{% if not burial.is_annulated %}
+    <br />
+    <a href="{% url order_create %}?burial={{ burial.pk }}">{% trans "создать заказ" %}</a>
+{% endif %}

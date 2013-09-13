@@ -17,6 +17,9 @@ urlpatterns = patterns('users.views',
     url(r'^user/create/', 'add_user', name='add_user'),
 
     url(r'^org/(?P<pk>\d+)/edit/', 'edit_org', name='edit_org'),
+    url(r'^org/log/$', 'org_log', name='org_log'),
+
+    url(r'^loginlog/$', 'login_log', name='login_log'),
 
     url(r'^autocomplete/org/', 'autocomplete_org', name='autocomplete_org'),
 )

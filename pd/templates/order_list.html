@@ -252,6 +252,7 @@
                     {% if c.burial.is_ready %}burial_blue{% endif %}
                     {% if c.burial.is_approved %}burial_green{% endif %}
                     {% if c.burial.is_declined or c.burial.is_backed %}burial_red{% endif %}
+                    {% if c.burial.is_inspecting %}burial_yellow{% endif %}
                 ">
                     <td>{{ c.burial.account_number|default:"" }}</td>
                     <td>{{ c.burial.deadman_or_bio }}</td>
@@ -259,7 +260,7 @@
                     <td>
                         {% with burial=c.burial %}{% include "burial_place.html" %}{% endwith %}
                     </td>
-                    <td>{{ c.burial.cemetery|default:"" }} / {{ c.burial.ugh|default:"" }}</td>
+                    <td>{% if c.burial.cemetery %}{{ c.burial.cemetery }} / {{ c.burial.ugh_name }}{% endif %}</td>
                     <td>{{ c.burial.pk|default:"" }}</td>
                     <td>
                         {% if c.applicant %}

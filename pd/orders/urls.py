@@ -9,7 +9,6 @@ urlpatterns = patterns('orders.views',
     url(r'^manage/product/(?P<pk>\d+)/edit/$', 'manage_products_edit', name='manage_products_edit'),
 
     url(r'^order/$', 'order_list', name='order_list'),
-    url(r'^order/dashboard/$', 'order_dashboard', name='order_dashboard'),
     url(r'^order/create/$', 'order_create', name='order_create'),
     url(r'^order/(?P<pk>\d+)/applicant/$', 'order_edit', name='order_edit'),
     url(r'^order/(?P<pk>\d+)/products/$', 'order_products', name='order_products'),

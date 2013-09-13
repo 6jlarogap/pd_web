@@ -248,3 +248,23 @@ class UnclearDateField(forms.DateField):
     def clean(self, value):
         return value
 
+class BaseModelForm(forms.ModelForm):
+    """
+    Базовая форма для базовой модели (с датой создания, модификации)
+    
+    При сохранении ModelForm, даже если ничего не изменилось
+    в полях формы по сравнении с реальными данными,
+    поле даты/времени последней модификации тоже меняется,
+    что не отражает настоящую дату/время последней модификации,
+    поэтому сохранение объекта формы поизводится только если
+    в полях формы произошли изменения.
+    """
+
+    def save(self, commit=True, *args, **kwargs):
+        """
+        Сохранение instance формы только если в полях формы произошли изменения
+        """
+        obj = super(BaseModelForm, self).save(commit=False, *args, **kwargs)
+        if self.changed_data and commit:
+            obj.save()
+        return obj

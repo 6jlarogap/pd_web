@@ -6,17 +6,16 @@
     <h1>{% trans "Новый заказ" %}</h1>
     <form action="" method="POST" class="order_form">
         {% csrf_token %}
-
-        {{ form.non_field_errors }}
-
-        {% include "applicant_form.html" %}
-
-        {{ form.payment.errors }}
-        <p class="inline">{{ form.payment.label_tag }} {{ form.payment }}<span class="helptext">{{ form.payment.help_text }}</span></p>
-
+        <input type="hidden" name="burial" value="{{ request.REQUEST.burial }}" />
         <p>
             <input type="submit" class="btn" value="{% trans "Создать" %}"/>
         </p>
+        <p class="inline">{{ form.payment.label_tag }} {{ form.payment }}<span class="helptext">{{ form.payment.help_text }}</span></p>
+
+        {{ form.non_field_errors }}
+        {% include "applicant_form.html" %}
+        {{ form.payment.errors }}
+
     </form>
 
     <div id="add_org" class="modal hide fade" tabindex="-1" role="dialog" aria-labelledby="{% trans "добавить юрлицо" %}" aria-hidden="true">
@@ -38,8 +37,6 @@
     {% include "create_burial_popups.html" %}
 
     <script type="text/javascript">
-        CEMETERY_AREAS = {{ form.cemetery_areas_json|default:"{}" }};
-        CEMETERY_TIMES = {{ form.cemetery_times_json|default:"{}" }};
         AGENT_DOVER = {{ form.agent_dover_json|default:"{}" }};
         LORU_AGENTS = {{ form.loru_agents_json|default:"{}" }};
         ACTUAL_DOVER = [{% for d in form.actual_dover_list %}{{ d }}{% if not forloop.last %},{% endif %}{% endfor %}];

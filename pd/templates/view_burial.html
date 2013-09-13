@@ -27,7 +27,7 @@
         {% if b.ugh %}
             <dt>{% trans "УГХ" %}:</dt><dd>{{ b.ugh }}</dd>
         {% endif %}
-        {% if b.applicant_organization %}
+        {% if b.applicant_organization and show_private_data %}
             <dt>{% trans "Заявитель-ЮЛ" %}:</dt><dd>{{ b.applicant_organization|default:"не указано" }}</dd>
             {% if b.agent %}
                 <dt>{% trans "Агент" %}:</dt><dd>{{ b.agent|default:"не указан" }}</dd>
@@ -35,12 +35,30 @@
             {% elif b.agent_director %}
                 <dt>{% trans "Агент" %}:</dt><dd>{% trans "Директор" %}</dd>
             {% endif %}
-        {% elif b.applicant %}
+        {% elif b.applicant and show_private_data %}
             <dt>{% trans "Заявитель-ФЛ" %}:</dt>
                 <dd>{{ b.applicant }}</dd>
                 <dd>{% trans "Адрес:" %} {{ b.applicant.address|default:"не указан" }}</dd>
-                <dd>{% trans "Документ:" %} {{ b.applicant.personid|default:"не указан" }}</dd>
-        {% else %}
+                <dd>
+                    {% with pid=b.applicant.personid %}
+                        {% if pid and pid.id_type and pid.series and pid.number %}
+                            {% trans "Документ" %}
+                            {% if b.flag_no_applicant_doc_required %}
+                                ({% trans "не обязателен" %})
+                            {% endif %}
+                            :
+                            {{ pid }}
+                        {% else %}
+                            <big><b><span style="color:red">
+                            {% trans "Документ не заполнен" %}
+                            {% if b.flag_no_applicant_doc_required %}
+                                ({% trans "не обязателен" %})
+                            {% endif %}
+                            </span></b></big>
+                        {% endif %}
+                    {% endwith %}
+                 </dd>
+        {% elif show_private_data  %}
             <dt>{% trans "Заявитель" %}:</dt>
                 <dd>не указан</dd>
         {% endif %}
@@ -60,15 +78,22 @@
                 {% endif %}
             {% endif %}
         </dd>
-        <dt>{% trans "Свидетельство о смерти" %}:</dt>
-            {% if b.deadman.deathcertificate %}
-                <dd>{% trans "Номер" %}: {{ b.deadman.deathcertificate.s_number }}</dd>
-                <dd>{% trans "Серия" %}: {{ b.deadman.deathcertificate.series }}</dd>
-                <dd>{% trans "Дата" %}: {{ b.deadman.deathcertificate.release_date|default_if_none:"" }}</dd>
-                <dd>{% trans "Выдано" %}: {{ b.deadman.deathcertificate.zags|default_if_none:"" }}</dd>
+        {% if not b.is_bio %}
+        <dt>
+            {% if b.dc_filled %}
+                {% trans "Свидетельство о смерти" %}:
             {% else %}
-                <dd>Нет</dd>
+                <span style="color:red"><b><big>{% trans "Свидетельство о смерти" %}:
+                                                {% trans "не заполнено!" %}</big></b></span>
             {% endif %}
+        <dt>
+            {% if b.deadman.deathcertificate %}
+                <dd>{% trans "Номер" %}*: {{ b.deadman.deathcertificate.s_number }}</dd>
+                <dd>{% trans "Серия" %}: {{ b.deadman.deathcertificate.series }}</dd>
+                <dd>{% trans "Выдано" %}*: {{ b.deadman.deathcertificate.zags|default_if_none:"" }}</dd>
+                <dd>{% trans "Дата" %}*: {{ b.deadman.deathcertificate.release_date|default_if_none:"" }}</dd>
+            {% endif %}
+        {% endif %}
         <dt>{% trans "Кладбище" %}:</dt><dd>{{ b.cemetery|default:"не указан" }}</dd>
         <dt>{% trans "Место" %}:</dt><dd>
             {% if b.area %}
@@ -84,8 +109,8 @@
             {% if user.profile.is_ugh %}
                 {% if b.exhumated and b.exhumationrequest.place %}
                     <a href="{% url view_place b.exhumationrequest.place.pk %}" class="btn">{% trans "карточка" %}</a>
-                {% elif b.place %}
-                    <a href="{% url view_place b.place.pk %}" class="btn">{% trans "карточка" %}</a>
+                {% elif place %}
+                    <a href="{% url view_place place.pk %}" class="btn">{% trans "карточка" %}</a>
                 {% endif %}
             {% endif %}
         </dd>
@@ -95,7 +120,7 @@
         </dd>
         <dt>{% trans "Ответственный" %}:</dt>
         <dd>
-            {% if user.profile.is_ugh or not b.is_closed %}
+            {% if show_private_data %}
                 {{ b.get_responsible|default:"не указан" }}
                 {% if b.get_responsible.address %}
                      <br />{{ b.get_responsible.address }}
@@ -121,24 +146,30 @@
     </dl>
     <form action="" method="POST">
         {% csrf_token %}
-        {% if user.profile.is_loru and b.is_full and not b.annulated %}
-            {% if b.is_edit %}
-                <input type="submit" class="btn" name="ready" value="{% trans "отправить на согласование" %}">
-            {% elif b.can_back %}
+        {% if user.profile.is_loru and b.loru and b.loru == user.profile.org %}
+            {# ВНИМАНИЕ: #}
+            {# Пока мы разрешаем ЛОРУ работать только со "своими" захоронениями #}
+            {# Если это изменится, то условие (b.loru and b.loru == user.profile.org), #}
+            {# при котором здесь оказываемся, придется в ряде случаев пересмотреть! #}
+            {% if b.can_approve and not b.is_bio %}
+                <h2>{% trans "Свидетельство о смерти" %}</h2>
+                {{ approve_close_form.dc_form.as_p }}
+                <input type="submit" class="btn btn-primary" name="save-dc" value="{% trans "cохранить" %}">
+                <br/><br/>
+            {% endif %}
+            {% if b.can_back %}
                 {% if b.is_approved %}
-                    <label>{% trans "Причина" %}</label>
+                    <label>{% trans "Причина отзыва" %}:</label>
                     <select name="reason_typical">
                         <option value=""></option>
                         {% for r in reason_typical_back %}<option value="{{ r.text }}">{{ r.name }}</option>{% endfor %}
                     </select>
                     <textarea name="reason" rows="5" cols="30"></textarea>
-                    <br/>
                 {% endif %}
-                <input type="submit" class="btn" name="back" value="{% trans "отозвать" %}">
+                <p><input type="submit" class="btn btn-danger" name="back" value="{% trans "отозвать" %}"></p>
             {% endif %}
-        {% endif %}
-        {% if user.profile.is_loru %}
-            {% if not b.is_edit and not b.annulated and order and not order.annulated %}
+            {% if order %}
+                {# ЛОРУ может откреплять от заказа и аннулированные захоронения #}
                 <input type="submit" class="btn btn-danger" name="unbind" value="{% trans "открепить от заказа" %}">
             {% endif %}
             {% if b.can_loru_deannulate %}
@@ -147,6 +178,12 @@
             {% if b.can_loru_annulate %}
                 <input type="submit" class="btn" name="annulate" value="{% trans "аннулировать" %}">
             {% endif %}
+            {% if b.can_loru_print_notification %}
+                <a class="btn" href="{% url make_notification b.pk %}" target="_blank">{% trans "уведомление" %}</a>
+            {% endif %}
+            {% if b.order %}
+                <a href="{% url order_services b.order.pk %}" class="btn btn-next">{% trans "далее" %}</a>
+            {% endif %}
         {% endif %}
         {% if user.profile.is_ugh %}
             {% if b.can_ugh_deannulate %}
@@ -154,7 +191,7 @@
             {% endif %}
             {% if b.can_ugh_annulate %}
                 <br/><br/>
-                <label>{% trans "Причина" %}</label>
+                <label>{% trans "Причина аннулирования" %}:</label>
                 <select name="reason_typical">
                     <option value=""></option>
                     {% for r in reason_typical_annulate %}<option value="{{ r.text }}">{{ r.name }}</option>{% endfor %}
@@ -163,71 +200,61 @@
                 <br/>
                 <input type="submit" class="btn" name="annulate" value="{% trans "аннулировать" %}">
             {% endif %}
+            {% if b.can_approve %}
+                {% if not b.area %}
+                    <h2>{% trans "Кладбище и участок" %}</h2>
+                    {{ approve_close_form.as_p }}
+                    <script type="text/javascript">
+                        CEMETERY_AREAS = {{ approve_close_form.cemetery_areas_json|default:"{}" }};
+                    </script>
+                {% endif %}
+                {% if not b.is_bio %}
+                    <h2>{% trans "Свидетельство о смерти" %}</h2>
+                    {{ approve_close_form.dc_form.as_p }}
+                {% endif %}
+            {% endif %}
             {% if b.can_inspect %}
                 <input type="submit" class="btn" name="inspect" value="{% trans "отправить на обследование" %}">
             {% endif %}
+            {% if b.is_inspecting %}
+                <input type="submit" class="btn" name="approve-inspect" value="{% trans "одобрить обследование" %}">
+            {% endif %}
             {% if b.can_approve %}
-                {% if not b.area %}
-                    {{ approve_close_form.as_p }}
-                {% endif %}
+                <input type="submit" class="btn btn-primary" name="approve" value="{% trans "согласовать захоронение" %}">
+            {% endif %}
+            {% if b.can_finish and not b.is_archive %}
+                {{ approve_close_form.as_p }}
                 <script type="text/javascript">
                     CEMETERY_AREAS = {{ approve_close_form.cemetery_areas_json|default:"{}" }};
-                    AGENT_DOVER = {{ approve_close_form.agent_dover_json|default:"{}"  }};
-                    LORU_AGENTS = {{ approve_close_form.loru_agents_json|default:"{}"  }};
                 </script>
-                <input type="submit" class="btn" name="approve" value="{% trans "одобрить" %}">
+                <input type="submit" class="btn btn-primary" name="complete" value="{% trans "закрыть" %}">
+            {% endif %}
+            {% if b.is_closed %}
+                <a href="{% url burial_exhumate b.pk %}" class="btn">{% trans "эксгумировать" %}</a>
             {% endif %}
             {% if b.can_decline %}
                 <br/><br/>
-                <label>{% trans "Причина" %}</label>
+                <label>{% trans "Причина отказа" %}:</label>
                 <select name="reason_typical">
                     <option value=""></option>
                     {% for r in reason_typical_decline %}<option value="{{ r.text }}">{{ r.name }}</option>{% endfor %}
                 </select>
                 <textarea name="reason" rows="5" cols="30"></textarea>
                 <br/>
-                <input type="submit" class="btn" name="decline" value="{% trans "отказать" %}">
+                <input type="submit" class="btn btn-danger" name="decline" value="{% trans "отказать" %}">
             {% endif %}
-            {% if b.can_finish and not b.is_archive %}
-                {{ approve_close_form.as_p }}
-                <script type="text/javascript">
-                    CEMETERY_AREAS = {{ approve_close_form.cemetery_areas_json|default:"{}" }};
-                    AGENT_DOVER = {{ approve_close_form.agent_dover_json|default:"{}"  }};
-                    LORU_AGENTS = {{ approve_close_form.loru_agents_json|default:"{}"  }};
-                </script>
-                <input type="submit" class="btn" name="complete" value="{% trans "закрыть" %}">
-            {% endif %}
-            {% if b.is_finished and not b.annulated %}
-                <a href="{% url burial_exhumate b.pk %}" class="btn">{% trans "эксгумировать" %}</a>
-            {% endif %}
-        {% endif %}
-        {% if user.profile.org == b.applicant_organization and b.is_edit and b.is_full_or_transferred and not b.annulated %}
-            <a class="btn" href="{% url edit_burial b.pk %}">{% trans "правка" %}</a>
-        {% elif user.profile.org == b.ugh or is_accessible %}
-            {% if b.is_edit and b.is_ugh %}
-                <a class="btn" href="{% url edit_burial b.pk %}">{% trans "правка" %}</a>
-            {% elif b.is_closed %}
+            {% if b.is_ugh or b.is_transferred or b.is_closed %}
+                {# (Ручные, архивные), перенесенные, закрытые: #}
                 <a class="btn" href="{% url edit_burial b.pk %}">{% trans "правка" %}</a>
             {% endif %}
-        {% endif %}
-        {% if user.profile.is_loru and b.can_loru_print_notification %}
-            <a class="btn" href="{% url make_notification b.pk %}" target="_blank">{% trans "уведомление" %}</a>
-        {% endif %}
-        {% if user.profile.is_ugh and b.can_print_notification %}
-            <a class="btn" href="{% url make_notification b.pk %}" target="_blank">{% trans "уведомление" %}</a>
-        {% endif %}
-        {% if user.profile.is_ugh %}
-            {% if b.can_print_reference %}
+            {% if b.can_ugh_print_notification %}
+                <a class="btn" href="{% url make_notification b.pk %}" target="_blank">{% trans "уведомление" %}</a>
+            {% endif %}
+            {% if b.can_ugh_print_reference %}
                 <a class="btn" href="{% url make_spravka b.pk %}" target="_blank">{% trans "справка" %}</a>
             {% elif b.exhumated %}
                 <a class="btn" href="{% url make_exhumate_report b.pk %}" target="_blank">{% trans "справка" %}</a>
                 <a class="btn" href="{% url make_exhumate_notification b.pk %}" target="_blank">{% trans "уведомление" %}</a>
-            {% endif %}
-        {% endif %}
-
-        {% if user.profile.is_loru %}
-            {% if b.order %}
-                <a href="{% url order_services b.order.pk %}" class="btn btn-next">{% trans "далее" %}</a>
             {% endif %}
         {% endif %}
 
@@ -246,7 +273,7 @@
         {% csrf_token %}
         {{ comment_form.as_p }}
         <p>
-            <input type="submit" class="btn btn-primary" value="{% trans "добавить" %}" />
+            <input type="submit" class="btn" value="{% trans "добавить" %}" />
         </p>
     </form>
 

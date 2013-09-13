@@ -6,6 +6,7 @@ from django.utils.translation import ugettext as _
 
 from persons.models import DeadPerson, PersonID, DeathCertificate, AlivePerson, DocumentSource
 from pd.models import UnclearDate
+from pd.forms import BaseModelForm
 
 class StrippedStringsMixin(object):
     
@@ -57,6 +58,7 @@ class DeadPersonForm(ValidDataMixin, StrippedStringsMixin, forms.ModelForm):
         return self.do_clean_date('death_date')
 
 class PersonIDForm(ValidDataMixin, StrippedStringsMixin, forms.ModelForm):
+    flag_no_applicant_doc_required = forms.BooleanField(label=_(u'Документ не обязателен'), required=False)
     source = forms.CharField(label=_(u'Кем выдан'), required=False)
 
     class Meta:
@@ -82,7 +84,9 @@ class PersonIDForm(ValidDataMixin, StrippedStringsMixin, forms.ModelForm):
             raise forms.ValidationError(msg)
         return release_date
 
-class DeathCertificateForm(ValidDataMixin, StrippedStringsMixin, forms.ModelForm):
+class DeathCertificateForm(ValidDataMixin, StrippedStringsMixin, BaseModelForm):
+    dt_modified = forms.IntegerField(widget=forms.HiddenInput, required=False, )
+
     class Meta:
         model = DeathCertificate
         exclude = ['person', ]
@@ -90,6 +94,10 @@ class DeathCertificateForm(ValidDataMixin, StrippedStringsMixin, forms.ModelForm
     def __init__(self, request, *args, **kwargs):
         kwargs.setdefault('initial', {})
         instance = kwargs.get('instance')
+        if instance:
+            kwargs['initial'].update({
+                'dt_modified': int(instance.dt_modified.strftime("%s")),
+            })
         if (not instance or not instance.person) and not request.REQUEST.get('archive'):
             kwargs['initial'].update({
                 'release_date': datetime.date.today(),

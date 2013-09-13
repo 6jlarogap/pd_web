@@ -106,7 +106,9 @@ class OrderList(LORURequiredMixin, ListView):
         return self.filtered_orders()
 
     def filtered_orders(self):
-        orders = Order.objects.filter(loru=self.request.user.profile.org).annotate(item_count=Count('orderitem'))
+        orders = Order.objects.filter(loru=self.request.user.profile.org) 
+                # .annotate(item_count=Count('orderitem'))  # мы не показываем в таблице кол-во товаров,
+                                                            # к тому же это резко замедляет поиск
 
         form = self.get_form()
         if form.data and form.is_valid():
@@ -190,9 +192,8 @@ class OrderList(LORURequiredMixin, ListView):
 
         orders_count = orders.count()
         orders = orders.select_related(
-            'burial', 'burial__ugh', 'burial__cemetery', 'burial__area', 'burial__responsible', 'burial__responsible',
-            'burial__changed_by', 'burial__deadman', 'applicant_organization', 'applicant', 'loru',
-            'agent', 'agent__person', 'agent__org',
+            'burial', 'burial__ugh', 'burial__cemetery', 'burial__area', 'burial__responsible',
+            'burial__changed_by', 'burial__deadman', 'applicant_organization', 'applicant',
         )
 
         sort = self.request.GET.get('sort', '-order_date')
@@ -252,27 +253,26 @@ class OrderList(LORURequiredMixin, ListView):
 
 order_list = OrderList.as_view()
 
-class OrderDashboard(OrderList):
-    template_name = 'order_dashboard.html'
-
-    def get_queryset(self):
-        src_qs = self.filtered_orders()
-        orders_count = src_qs.count()
-
-        ex_q = Q(burial__status__in=[Burial.STATUS_CLOSED, Burial.STATUS_EXHUMATED])
-        ex_q |= Q(burial__annulated=True)
-        inc_q = Q(loru=self.request.user.profile.org, burial__source_type=Burial.SOURCE_FULL)
-
-        qs = src_qs.filter(inc_q).exclude(ex_q)
-        qs.count = lambda: orders_count
-        return qs
-
-order_dashboard = OrderDashboard.as_view()
-
 class OrderCreate(LORURequiredMixin, CreateView):
     template_name = 'order_create.html'
     form_class = OrderForm
 
+    def dispatch(self, request, *args, **kwargs):
+        self.request = request
+        self.burial = None
+        if self.is_loru(request):
+            burial_pk = self.request.REQUEST.get('burial')
+            if burial_pk:
+                try:
+                    self.burial = Burial.objects.get(pk=burial_pk)
+                    if not self.burial.can_bind_to_order(self.request.user.profile.org):
+                        raise Http404
+                except Burial.DoesNotExist:
+                    raise Http404
+            return View.dispatch(self, request, *args, **kwargs)
+        else:
+            redirect('/')
+        
     def get_form_kwargs(self):
         data = super(OrderCreate, self).get_form_kwargs()
         data['request'] = self.request
@@ -293,6 +293,8 @@ class OrderCreate(LORURequiredMixin, CreateView):
     def form_valid(self, form):
         self.object = form.save(commit=False)
         self.object.loru = self.request.user.profile.org
+        if self.burial:
+            self.object.burial = self.burial
         self.object.save()
 
         for p in Product.objects.filter(loru=self.request.user.profile.org, default=True):

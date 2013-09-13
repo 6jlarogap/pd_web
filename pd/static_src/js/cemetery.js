@@ -295,11 +295,19 @@ function updateAreas() {
 
 function updateDover() {
     updateAnything($('#id_agent'), $('#id_dover'), AGENT_DOVER);
-    $('#id_dover').find('option').each(function() {
-        if (ACTUAL_DOVER.indexOf(parseInt(this.value)) > -1) {
-            this.selected = 'selected';
-        }
-    });
+    if (!$('#id_dover').val()) {
+        // Когда пользователь прыгает от одного агента к другому,
+        // ему предлагается из доверенностей соответствующего агента
+        // последняя из актуальных. Это нельзя делать при
+        // загрузке страницы зх (заказа...), в котором уже
+        // есть агент и доверенность, т.е. где в выпадающем
+        // списке доверенностей есть уже выбранное значение
+        $('#id_dover').find('option').each(function() {
+            if (ACTUAL_DOVER.indexOf(parseInt(this.value)) > -1) {
+                this.selected = 'selected';
+            }
+        });
+    }
 }
 
 function updateAgents() {
@@ -327,7 +335,7 @@ $(function() {
     if (!window.LORU_AGENTS) { LORU_AGENTS = {} }
     if (!window.PLACE_TYPES) { PLACE_TYPES = {} }
     
-    $('#id_address-fias_address').live('keypress', function(e) {
+    $('input[id$=fias_address]').live('keypress', function(e) {
         if (e.keyCode == 13) {
             e.preventDefault();
             $(this).change();
@@ -425,9 +433,8 @@ $(function() {
 
             $('#id_agent_director').change();
             $('input[name=payment][value=wire]').attr('checked', '1');
-
-            $('#id_applicant-last_name').val('');
-        } else {
+        }
+        else if ($('input[name=opf]:checked').val() == 'person') {
             $('#applicant_form_org').hide();
             $('#applicant_form_person').show();
 
@@ -441,19 +448,31 @@ $(function() {
             $('.btn-agent').closest('p').hide();
             $('.btn-org').closest('p').hide();
 
-
             $('input[name^=person]').closest('p').show();
             $('#id_org').closest('p').hide();
             $('input[name=payment][value=cash]').attr('checked', '1');
 
-            $('#id_applicant_organization').val('');
-            $('#id_agent_director').val('');
-            $('#id_agent').val('');
-            $('#id_dover').val('');
             $(resp_id+'1').closest('li').show();
             if (!$(resp_id+'0').is(':checked') && !$(resp_id+'2').is(':checked')) {
                 $(resp_id+'1').attr('checked', 'checked');
             }
+        }
+        else if ($('input[name=opf]:checked').val() == 'empty') {
+            $('#applicant_form_org').hide();
+            $('#applicant_form_person').hide();
+
+            $('#id_applicant_organization').closest('p').hide();
+            $('#id_agent_director').closest('p').hide();
+            $('#id_agent').closest('p').hide();
+            $('#id_dover').closest('p').hide();
+
+            $('.btn-loru').closest('p').hide();
+            $('.btn-dover').closest('p').hide();
+            $('.btn-agent').closest('p').hide();
+            $('.btn-org').closest('p').hide();
+
+            $('input[name^=person]').closest('p').hide();
+            $('#id_org').closest('p').hide();
         }
     });
     $('input[name=opf]').change();
@@ -662,14 +681,6 @@ $(function() {
     $('#id_country, #id_region').change();
     $('#id_lat, #id_lng').closest('p').hide();
 
-    $('input[id$=fias_address]').find(':input').live('keypress', function(e) {
-        if (e.keyCode == 13) {
-            e.preventDefault();
-            $(this).change();
-            return false;
-        }
-    });
-
     var ac_options = {
         bounds: USER_DEFAULT_BOUNDS,
         types: ['geocode'],
@@ -703,33 +714,33 @@ $(function() {
 
                 var address = results[0].address_components;
                 $(address).each(function() {
-                    if (this.types.indexOf("postal_code") > -1) { form_block.find('input[id$=post_index]').val(this.long_name); }
+//                     if (this.types.indexOf("postal_code") > -1) { form_block.find('input[id$=post_index]').val(this.long_name); }
                     if (this.types.indexOf("country") > -1) { country = this.long_name; form_block.find('input[id$=country_name]').val(country); }
                     if (this.types.indexOf("administrative_area_level_1") > -1) { region = this.long_name; form_block.find('input[id$=region_name]').val(''); }
                     if (this.types.indexOf("locality") > -1) { city = this.long_name; form_block.find('input[id$=city_name]').val(''); }
                     if (this.types.indexOf("route") > -1) { street = this.long_name; form_block.find('input[id$=street_name]').val(''); }
-                    if (this.types.indexOf("street_number") > -1) {
-                        form_block.find('input[id$=house]').val(this.long_name);
-                        house = this.long_name;
-                        if (this.long_name.indexOf("корпус") > -1) {
-                            var bits = this.long_name.split(" корпус ");
-                            form_block.find('input[id$=house]').val(bits[0]);
-                            form_block.find('input[id$=block]').val(bits[1]);
-                            house = bits[0];
-                            block = bits[1];
-                        }
-                        if (this.long_name.indexOf("строение") > -1) {
-                            var bits = this.long_name.split(" строение ");
-                            form_block.find('input[id$=house]').val(bits[0]);
-                            form_block.find('input[id$=building]').val(bits[1]);
-                            house = bits[0];
-                            building = bits[1];
-                        }
-                    }
-                    if (this.types.indexOf("subpremise") > -1) {
-                        flat = this.long_name;
-                        form_block.find('input[id$=flat]').val(this.long_name);
-                    }
+//                     if (this.types.indexOf("street_number") > -1) {
+//                         form_block.find('input[id$=house]').val(this.long_name);
+//                         house = this.long_name;
+//                         if (this.long_name.indexOf("корпус") > -1) {
+//                             var bits = this.long_name.split(" корпус ");
+//                             form_block.find('input[id$=house]').val(bits[0]);
+//                             form_block.find('input[id$=block]').val(bits[1]);
+//                             house = bits[0];
+//                             block = bits[1];
+//                         }
+//                         if (this.long_name.indexOf("строение") > -1) {
+//                             var bits = this.long_name.split(" строение ");
+//                             form_block.find('input[id$=house]').val(bits[0]);
+//                             form_block.find('input[id$=building]').val(bits[1]);
+//                             house = bits[0];
+//                             building = bits[1];
+//                         }
+//                     }
+//                     if (this.types.indexOf("subpremise") > -1) {
+//                         flat = this.long_name;
+//                         form_block.find('input[id$=flat]').val(this.long_name);
+//                     }
                 });
 
                 if (country) {

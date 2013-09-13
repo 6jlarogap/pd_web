@@ -19,6 +19,7 @@ from django.views.generic.list import ListView
 from burials.forms import BurialSearchForm, BurialPublicListForm, BurialForm, BurialCommitForm, BurialApproveCloseForm, AddDocTypeForm
 from burials.forms import AddAgentForm, AddDoverForm, AddOrgForm, ExhumationForm
 from burials.models import Reason, Burial, Cemetery, Place, ExhumationRequest
+from persons.models import DeathCertificate
 from logs.models import write_log
 from orders.models import Order
 from pd.forms import CommentForm
@@ -40,12 +41,19 @@ class BurialGetOrderMixin:
         return order
 
 class BurialsListGenericMixin:
+    """
+    Здесь фильтр для поиска всех захоронений, которые может видеть лору или угх
+    
+    В потомках этого класса уточняется, что относительно этого фильтра можно
+    править, что видеть в открытых и т.п.
+    """
+
     def get_qs_filter(self):
         qs = Q(pk__isnull=True)
         if self.request.user.is_authenticated():
             if self.request.user.profile.is_loru():
                 loru = self.request.user.profile.org
-                qs = Q(applicant_organization=loru) | Q(loru=loru)
+                qs = Q(applicant_organization=loru) | Q(loru=loru) | Q(ugh__loru_list__loru=loru)
                 qs = qs & Q(source_type__in=[Burial.SOURCE_FULL, Burial.SOURCE_TRANSFERRED])
             if self.request.user.profile.is_ugh():
                 qs = Q(applicant_organization__ugh_list__ugh=self.request.user.profile.org)
@@ -56,15 +64,19 @@ class BurialsListGenericMixin:
 class DashboardView(BurialsListGenericMixin, TemplateView):
     template_name = 'dashboard.html'
 
-    def get(self, request, *args, **kwargs):
-        if request.user.is_authenticated() and request.user.profile.is_loru():
-            return redirect('order_dashboard')
-        return super(DashboardView, self).get(request, *args, **kwargs)
+    def get_qs_filter(self):
+      if self.request.user.is_authenticated() and self.request.user.profile.is_loru():
+          # лору в открытых может видеть только свои (а не других лору) захоронения
+          qs = Q(loru=self.request.user.profile.org)
+      else:
+        qs = super(DashboardView, self).get_qs_filter()
+      return qs
 
     def get_context_data(self, **kwargs):
         qs = self.get_qs_filter()
         ex_qs = Q(status__in=[Burial.STATUS_CLOSED, Burial.STATUS_EXHUMATED])
-        ex_qs |= Q(source_type=Burial.SOURCE_FULL, status=Burial.STATUS_DRAFT)
+        if self.request.user.is_authenticated() and self.request.user.profile.is_ugh():
+            ex_qs |= Q(source_type=Burial.SOURCE_FULL, status=Burial.STATUS_DRAFT)
         ex_qs |= Q(annulated=True)
 
         sort = self.request.GET.get('sort', '-pk')
@@ -144,16 +156,29 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
         self.request = request
         self.args = args
         self.kwargs = kwargs
-        order = self.get_order()
-        b = self.get_object()
-        # Помешаем вставлять абы что в адресную строку браузера
-        if request.user.profile.is_loru() and not (order and b and order.burial == b):
-            raise Http404
+        self.order = None
+        self.order_parm = ''
+        if request.user.profile.is_loru():
+            b = self.get_object()
+            self.order = self.get_order()
+            self.order_parm = '?order=%s' % self.order.pk if self.order else ''
+            if b and b.pk:
+                if b.is_full() and b.loru and b.loru != request.user.profile.org and (b.is_edit() or b.is_ready()):
+                    raise Http404
+                if self.order and self.order.burial != b:
+                    raise Http404
+                if b.is_full() and b.is_edit() and not b.annulated:
+                    return redirect(reverse('edit_burial', args=[b.pk]) + self.order_parm)
         return super(BurialView, self).dispatch(request, *args, **kwargs)
 
     def get_queryset(self):
         qs = self.get_qs_filter()
-        burials = Burial.objects.filter(qs)
+        # Это может вернуть несколько записей
+        # одного и того же захоронения, из-за условий поиска
+        # Q(loru=loru) | Q(ugh__loru_list__loru=loru),
+        # которые могут соответствовать одному захоронению,
+        # поэтому distinct()
+        burials = Burial.objects.filter(qs).distinct()
         burials = burials.select_related('cemetery', 'place', 'grave', 'applicant_organization', 'ugh', 'deadman', 'deadman__address',)
         return burials
 
@@ -162,21 +187,17 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
             return redirect('dashboard')
 
         b = self.get_object()
-        
-        order = None
-        order_parm = ''
-        if self.request.user.profile.is_loru():
-            order = self.get_order()
-            order_parm = '?order=%s' % order.pk
+        self.b = b
+        order = self.order
+        order_parm = self.order_parm
 
-        b.changed = datetime.datetime.now()
         b.changed_by = request.user
         old_status = b.status
         old_annulated = b.annulated
         redirect_to_view = False
         redirect_to_edit = False
         reason = request.POST.get('reason') or request.POST.get('reason_typical')
-        if request.POST.get('back') and request.user.profile.is_loru() and b.can_back():
+        if request.POST.get('back') and request.user.profile.is_loru() and b.can_back() and b.loru == request.user.profile.org:
             b.status = Burial.STATUS_BACKED
             b.account_number = None
             write_log(request, b, _(u'Захоронение отозвано'), reason)
@@ -185,7 +206,7 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
             ))
             redirect_to_edit = True
 
-        if request.POST.get('unbind') and not b.is_edit() and b.is_full() and order:
+        if request.POST.get('unbind') and order:
             order.burial = None
             order.save()
             write_log(self.request, b, _(u'Захоронение откреплено от заказа %s') % order.pk)
@@ -200,26 +221,57 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
             return redirect(reverse('edit_burial', args=[b.pk]) + '?action=ready')
 
         if request.POST.get('inspect') and request.user.profile.is_ugh() and b.can_inspect():
-            b.status = Burial.STATUS_INSPECTING
-            write_log(request, b, _(u'Захоронение отправлено на обследование'))
-            messages.success(request, _(u"<a href='%s'>Захоронение %s</a> отправлено на обследование") % (
-                reverse('view_burial', args=[b.pk]), b.pk,
-            ))
+            b, refresh = self.approve_or_check_dc()
+            if refresh:
+                return redirect(reverse('view_burial', args=[self.b.pk]) + order_parm)
+            elif not b:
+                return self.get(request, *args, **kwargs)
+            else:
+                b.status = Burial.STATUS_INSPECTING
+                write_log(request, b, _(u'Захоронение отправлено на обследование'))
+                messages.success(request, _(u"<a href='%s'>Захоронение %s</a> отправлено на обследование") % (
+                    reverse('view_burial', args=[b.pk]), b.pk,
+                ))
+                redirect_to_view = True
+
+        if request.POST.get('save-dc') and request.user.profile.is_loru() and not b.is_bio() and b.can_approve():
+            b, refresh = self.approve_or_check_dc()
+            if refresh:
+                return redirect(reverse('view_burial', args=[self.b.pk]) + order_parm)
+            elif not b:
+                return self.get(request, *args, **kwargs)
+            else:
+                redirect_to_view = True
 
         if request.POST.get('approve') and request.user.profile.is_ugh() and b.can_approve():
-            if not b.area:
-                approve_close_form = self.get_approve_close_form()
-                if approve_close_form.is_valid():
-                    b = approve_close_form.save()
-                else:
-                    return self.get(request, *args, **kwargs)
-            b.status = Burial.STATUS_APPROVED
-            b.approve(self.request.user)
-            write_log(request, b, _(u'Захоронение согласовано'))
-            messages.success(request, _(u"<a href='%s'>Захоронение %s</a> согласовано") % (
-                reverse('view_burial', args=[b.pk]), b.pk,
-            ))
+            b, refresh = self.approve_or_check_dc()
+            if refresh:
+                return redirect(reverse('view_burial', args=[self.b.pk]) + order_parm)
+            elif not b:
+                return self.get(request, *args, **kwargs)
+            else:
+                b.status = Burial.STATUS_APPROVED
+                b.approve(self.request.user)
+                write_log(request, b, _(u'Захоронение согласовано'))
+                messages.success(request, _(u"<a href='%s'>Захоронение %s</a> согласовано") % (
+                    reverse('view_burial', args=[b.pk]), b.pk,
+                ))
+                redirect_to_view = True
 
+        if request.POST.get('approve-inspect') and request.user.profile.is_ugh() and b.can_approve_inspect():
+            b, refresh = self.approve_or_check_dc()
+            if refresh:
+                return redirect(reverse('view_burial', args=[self.b.pk]) + order_parm)
+            elif not b:
+                return self.get(request, *args, **kwargs)
+            else:
+                b.status = Burial.STATUS_READY
+                write_log(request, b, _(u'Обследование одобрено. Захоронение на согласовании'))
+                messages.success(request, _(u"Обследование одобрено. <a href='%s'>Захоронение %s</a> на согласовании") % (
+                    reverse('view_burial', args=[b.pk]), b.pk,
+                ))
+                redirect_to_view = True
+            
         if request.POST.get('decline') and request.user.profile.is_ugh() and b.can_decline():
             b.status = Burial.STATUS_DECLINED
             b.account_number = None
@@ -228,6 +280,7 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
             messages.success(request, _(u"<a href='%s'>Захоронение %s</a> отклонено") % (
                 reverse('view_burial', args=[b.pk]), b.pk,
             ))
+
         if request.POST.get('complete') and request.user.profile.is_ugh() and b.can_finish():
             approve_close_form = self.get_approve_close_form()
             if approve_close_form.is_valid():
@@ -268,22 +321,63 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
             ))
             redirect_to_view = request.user.profile.is_ugh()
             redirect_to_edit = request.user.profile.is_loru()
+
         if old_status != b.status or old_annulated != b.annulated:
             b.save()
         elif request.POST.get('unbind') and order:
             return redirect(reverse('order_burial', args=[order.pk]))
+        elif request.POST.get('save-dc'):
+            if not b.can_approve() and request.user.profile.is_loru():
+                msg = _(u"Выполнить операцию не удалось: другой пользователь изменил статус <a href='%s'>захоронения</a> на \"%s\"") % (
+                    reverse('view_burial', args=[b.pk]) + order_parm,
+                    b.get_status_display(),
+                )
+                messages.error(request, msg)
+                redirect_to_edit = b.is_edit()
+                redirect_to_view = not redirect_to_edit
         else:
-            msg = _(u"Выполнить операцию не удалось: <a href='%s'>захоронение в статусе \"%s\"") % (
+            msg = _(u"Выполнить операцию не удалось: <a href='%s'>захоронение</a> в статусе \"%s\"") % (
                 reverse('view_burial', args=[b.pk]) + order_parm,
                 b.get_status_display(),
             )
-            messages.success(request, msg)
+            messages.error(request, msg)
             
         if redirect_to_view:
             return redirect(reverse('view_burial', args=[b.pk]) + order_parm)
         elif redirect_to_edit:
             return redirect(reverse('edit_burial', args=[b.pk]) + order_parm)
         return redirect('dashboard')
+
+    def approve_or_check_dc(self):
+        """
+        Одобрить зх или просто подправить СоС
+        
+        возвращает:
+        - burial, захоронение или None, если неверно в форме
+        - refresh, надо ли обноновлять страницу при конфликте одновременного
+                   редактирования СоС со строноны угх и лору
+        """
+        burial = None
+        refresh = False
+        approve_close_form = self.get_approve_close_form()
+        if approve_close_form.is_valid():
+            dc_form = approve_close_form.dc_form
+            if dc_form and dc_form.changed_data:
+                timestamp_modified_really = int(DeathCertificate.objects.get(pk=dc_form.instance.pk).\
+                                                        dt_modified.strftime("%s"))
+                if timestamp_modified_really > dc_form.cleaned_data['dt_modified']:
+                    messages.error(self.request,
+                    _(u"<a href='%s'>Захоронение %s</a> было изменено другим пользователем. Страница обновлена") % (
+                        reverse('view_burial', args=[self.b.pk]), self.b.pk,
+                    ))
+                    refresh = True
+                    return burial, refresh
+            burial = approve_close_form.save()
+            if dc_form and dc_form.changed_data:
+                messages.success(self.request, _(u"<a href='%s'>Захоронение %s</a>: свидетельство о смерти сохранено") % (
+                    reverse('view_burial', args=[self.b.pk]), self.b.pk,
+            ))
+        return burial, refresh
 
     def get_approve_close_form(self):
         return BurialApproveCloseForm(request=self.request, data=self.request.POST or None, instance=self.get_object())
@@ -302,9 +396,12 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
             'reason_typical_annulate': Reason.objects.filter(reason_type=Reason.TYPE_ANNULATE),
             'approve_close_form': self.get_approve_close_form(),
             'comment_form': CommentForm(),
-            'is_accessible': b.loru and self.request.user.profile.org in b.loru.get_loru_list(),
-            'order': self.get_order(),
+            'order': self.order,
             'orders': b.get_orders(loru=self.request.user.profile.org) if self.request.user.profile.is_loru() else [],
+            # Кому можно смотреть в захоронении ответственного и заявителя:
+            'show_private_data': self.request.user.profile.is_ugh() or \
+                                 b.is_full() and b.loru and b.loru == self.request.user.profile.org,
+            'place': b.get_place() if self.request.user.profile.is_ugh() else None,
         }
 
 view_burial = BurialView.as_view()
@@ -482,10 +579,34 @@ class BurialsPublicListView(ListView):
 
         if self.request.user.is_authenticated() and self.request.user.profile.is_loru():
             burials = Burial.objects.filter(
-                Q(ugh__loru_list__loru=self.request.user.profile.org) &
-                Q(annulated=False) &
-                Q(status__in=[Burial.STATUS_EXHUMATED, Burial.STATUS_CLOSED, ])
-            ).exclude(burial_container=Burial.CONTAINER_BIO).order_by('-pk')
+                #Q(
+                  #(
+                   #Q(ugh__loru_list__loru=self.request.user.profile.org) &
+                   #Q(annulated=False) &
+                   #Q(status__in=[Burial.STATUS_EXHUMATED, Burial.STATUS_CLOSED, Burial.STATUS_APPROVED, ]) &
+                   #~Q(burial_container=Burial.CONTAINER_BIO)
+                  #)
+                  #|
+                  #(
+                   #Q(annulated=True) &
+                   #Q(loru = self.request.user.profile.org) & 
+                   #Q(source_type=Burial.SOURCE_FULL) & 
+                   #Q(status__in=[Burial.STATUS_BACKED, Burial.STATUS_DRAFT, Burial.STATUS_DECLINED, ])
+                  #)
+                 #)
+                 #).order_by('-pk').distinct()
+                  Q(source_type=Burial.SOURCE_FULL) & 
+                  Q(loru = self.request.user.profile.org) &
+                  (
+                   Q(annulated=False) &
+                   Q(status__in=[Burial.STATUS_EXHUMATED, Burial.STATUS_CLOSED, ])
+                   )
+                   |
+                   (
+                    Q(annulated=True) &
+                    Q(status__in=[Burial.STATUS_BACKED, Burial.STATUS_DRAFT, Burial.STATUS_DECLINED, ])
+                   )
+                 ).order_by('-pk').distinct()
         else:
             burials = Burial.objects.none()
         form = self.get_form()
@@ -524,6 +645,10 @@ class BurialsPublicListView(ListView):
                 burials = burials.filter(row=form.cleaned_data['row'])
             if form.cleaned_data['place']:
                 burials = burials.filter(place_number=form.cleaned_data['place'])
+            if form.cleaned_data['annulated']:
+                burials = burials.filter(annulated=True)
+            else:
+                burials = burials.filter(annulated=False)
 
         sort = self.request.GET.get('sort', '-pk')
         SORT_FIELDS = {
@@ -617,8 +742,6 @@ class CreateBurial(BurialGetOrderMixin, CreateView):
             order = self.get_order()
             if order and order.burial and order.burial != self.get_object():
                 return redirect(reverse('edit_burial', args=[order.burial.pk]) + '?order=%s' % order.pk)
-            if not order and 'create' in request.path_info.lower():
-                raise Http404
 
         return super(CreateBurial, self).dispatch(request, *args, **kwargs)
 
@@ -633,7 +756,7 @@ class CreateBurial(BurialGetOrderMixin, CreateView):
         order_parm = ''
         if self.request.user.profile.is_loru():
             order = self.get_order()
-            order_parm = '?order=%s' % order.pk
+            order_parm = '?order=%s' % order.pk if order else ''
 
         action = self.get_action()
         if action:
@@ -694,6 +817,7 @@ class CreateBurial(BurialGetOrderMixin, CreateView):
                     b.get_status_display(),
                 )
                 messages.success(self.request, msg)
+                return redirect('dashboard')
 
             if self.request.user.profile.is_loru():
                 if action == 'unbind' and order:
@@ -759,20 +883,29 @@ class EditBurialView(BurialsListGenericMixin, CreateBurial):
         self.request = request
         self.args = args
         self.kwargs = kwargs
-        # Помешаем вставлять абы что в адресную строку браузера
-        order = self.get_order()
-        b = self.get_object()
-        if request.user.profile.is_loru() and not (order and b and order.burial == b):
-            raise Http404
+        if request.user.profile.is_loru():
+            b = self.get_object()
+            if b and b.pk:
+                if b.is_full() and b.loru and b.loru != request.user.profile.org:
+                    raise Http404
+                order = self.get_order()
+                if order and order.burial != b:
+                    raise Http404
+                order_parm = '?order=%s' % order.pk if order else ''
+                if b.is_full() and b.is_edit() and not b.annulated:
+                    return super(EditBurialView, self).dispatch(request, *args, **kwargs)
+                return redirect(reverse('view_burial', args=[b.pk]) + order_parm)
         return super(EditBurialView, self).dispatch(request, *args, **kwargs)
 
     def get_queryset(self):
         q = self.get_qs_filter()
 
         if self.request.user.profile.is_loru():
-            q3 = Q(status__in=[Burial.STATUS_DRAFT, Burial.STATUS_DECLINED, Burial.STATUS_BACKED], annulated=False)
-            q3 |= Q(source_type__in=[Burial.SOURCE_TRANSFERRED])
-            q2 = q & q3
+            # ... это проверяется в self.dispatch():
+            # q3 = Q(status__in=[Burial.STATUS_DRAFT, Burial.STATUS_DECLINED, Burial.STATUS_BACKED], annulated=False)
+            # ... это учтено в self.get_qs_filter():
+            # q3 |= Q(source_type__in=[Burial.SOURCE_TRANSFERRED])
+            q2 = q # & q3
         elif self.request.user.profile.is_ugh():
             q3 = Q(source_type__in=[Burial.SOURCE_UGH, Burial.SOURCE_ARCHIVE, Burial.SOURCE_TRANSFERRED])
             q3 |= Q(status__in=[Burial.STATUS_CLOSED, ])
@@ -780,7 +913,12 @@ class EditBurialView(BurialsListGenericMixin, CreateBurial):
         else:
             return Burial.objects.none()
 
-        return Burial.objects.filter(q2)
+        # self.get_qs_filter() может вернуть несколько записей
+        # одного и того же захоронения, из-за условий поиска
+        # Q(loru=loru) | Q(ugh__loru_list__loru=loru),
+        # которые могут соответствовать одному захоронению,
+        # поэтому distinct()
+        return Burial.objects.filter(q2).distinct()
 
     def get_object(self):
         if getattr(self, '_burial', None):

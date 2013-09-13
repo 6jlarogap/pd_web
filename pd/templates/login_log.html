@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+
+{% load i18n %}
+
+{% block content %}
+    <h1>{% trans "Журнал входа в систему" %}</h1>
+    <div class="row-fluid no-print">
+        <div class="span12">
+            <div class="row-fluid">
+                <form id="mainform" class="form-horizontal" method="get" action="">
+                    {{ form.as_p }}
+
+                    <p class="buttons">
+                        <input type="submit" value="искать" class="btn btn-primary" />
+                    </p>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    {% if not form.errors %}
+        <p>{% trans "Найдено:" %} {{ paginator.count|default:object_list.count }}</p>
+
+        <table class="table table-bordered table-striped">
+        <tr>
+            <th>
+                {% if sort == '-dt' %}
+                    {% if sort == '-dt' %}<i class="icon icon-arrow-down"></i>{% endif %}
+                    <a href="?{{ GET_PARAMS }}&sort=dt">{% trans "Дата" %}</a>
+                {% else %}
+                    {% if sort == 'dt' %}<i class="icon icon-arrow-up"></i>{% endif %}
+                    <a href="?{{ GET_PARAMS }}&sort=-dt">{% trans "Дата" %}</a>
+                {% endif %}
+            </th>
+            <th>
+                {% if sort == 'user' %}
+                    {% if sort == 'user' %}<i class="icon icon-arrow-up"></i>{% endif %}
+                    <a href="?{{ GET_PARAMS }}&sort=-user">{% trans "Пользователь" %}</a>
+                {% else %}
+                    {% if sort == '-user' %}<i class="icon icon-arrow-down"></i>{% endif %}
+                    <a href="?{{ GET_PARAMS }}&sort=user">{% trans "Пользователь" %}</a>
+                {% endif %}
+            </th>
+            <th>
+                {% if sort == 'org' %}
+                    {% if sort == 'org' %}<i class="icon icon-arrow-up"></i>{% endif %}
+                    <a href="?{{ GET_PARAMS }}&sort=-org">{% trans "Организация" %}</a>
+                {% else %}
+                    {% if sort == '-org' %}<i class="icon icon-arrow-down"></i>{% endif %}
+                    <a href="?{{ GET_PARAMS }}&sort=org">{% trans "Организация" %}</a>
+                {% endif %}
+            </th>
+            <th>
+                {% if sort == 'ip' %}
+                    {% if sort == 'ip' %}<i class="icon icon-arrow-up"></i>{% endif %}
+                    <a href="?{{ GET_PARAMS }}&sort=-ip">{% trans "IP адрес" %}</a>
+                {% else %}
+                    {% if sort == '-ip' %}<i class="icon icon-arrow-down"></i>{% endif %}
+                    <a href="?{{ GET_PARAMS }}&sort=ip">{% trans "IP адрес" %}</a>
+                {% endif %}
+            </th>
+        </tr>
+        {% for log in logs %}
+            <tr>
+                <td>{{ log.dt }}</td>
+                <td>{{ log.user.username }} / {{ log.user.profile.last_name_initials }}</td>
+                <td>{{ log.org|default_if_none:"" }}</td>
+                <td>{{ log.ip|default_if_none:"" }}</td>
+            </tr>
+        {% endfor %}
+        </table>
+
+        {% include "paginator.html" %}
+    {% endif %}
+
+{% endblock %}

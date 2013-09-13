@@ -10,5 +10,7 @@
     <br/>{% trans "Отв." %}
     {% if user.profile.is_ugh %}
         {{ burial.get_responsible }}
+    {% elif b.is_full and b.loru and b.loru == user.profile.org  %}
+        {{ burial.get_responsible }}
     {% endif %}
 {% endif %}

@@ -54,6 +54,7 @@ ul.messages { list-style: none; }
 tr.burial_blue, tr.burial_blue:hover { background-color: #99ccff }
 tr.burial_green, tr.burial_green:hover { background-color: #62c462 }
 tr.burial_red, tr.burial_red:hover { background-color: #d59999 }
+tr.burial_yellow, tr.burial_yellow:hover { background-color: #e5df35 }
 #add_doctype_href {margin-top: 22px;}
 
 .hidden { display: none; visibility: hidden; }

@@ -5,14 +5,14 @@ from django.db import models
 from django.db.models.deletion import ProtectedError
 from django.utils.translation import ugettext_lazy as _
 from django.db.models.query_utils import Q
-from pd.models import UnclearDateModelField
+from pd.models import UnclearDateModelField, BaseModel
 
 import os
 import pytils
 
 from persons.models import DeadPerson, SafeDeleteMixin, DeathCertificate
 from reports.models import Report
-from users.models import Org, Profile, Dover
+from users.models import Org, Profile, Dover, ProfileLORU
 from logs.models import Log
 
 
@@ -35,7 +35,7 @@ class Cemetery(models.Model):
     name = models.CharField(_(u"Название"), max_length=255)
     time_begin = models.TimeField(_(u"Начало работы"), null=True, blank=True)
     time_end = models.TimeField(_(u"Окончание работы"), null=True, blank=True)
-    places_algo = models.CharField(_(u"Расстановка номеров мест"), max_length=255, choices=PLACE_TYPES, default=PLACE_MANUAL)
+    places_algo = models.CharField(_(u"Расстановка номеров мест"), max_length=255, choices=PLACE_TYPES, default=PLACE_AREA)
     time_slots = models.TextField(_(u"Время для захоронения"), default='', blank=True,
                                   help_text=_(u'В формате ЧЧ:ММ, по одному на строку'))
 
@@ -320,7 +320,7 @@ class GravePhoto(Photo):
     """
     grave = models.ForeignKey(Grave)
 
-class Burial(SafeDeleteMixin, models.Model):
+class Burial(SafeDeleteMixin, BaseModel):
     STATUS_BACKED = 'backed'
     STATUS_DECLINED = 'declined'
     STATUS_DRAFT = 'draft'
@@ -386,7 +386,8 @@ class Burial(SafeDeleteMixin, models.Model):
     row = models.CharField(_(u"Ряд"), max_length=255, blank=True, null=True)
     place_number = models.CharField(_(u"Номер места"), max_length=255, null=True, blank=True,
                                     help_text=_(u"Если пусто - номер будет сгенерирован автоматически"))
-    grave = models.ForeignKey(Grave, verbose_name=_(u"Могила"), null=True, blank=True, on_delete=models.PROTECT)
+    grave = models.ForeignKey(Grave, verbose_name=_(u"Могила"),
+                              null=True, blank=True, editable=False, on_delete=models.PROTECT)
     grave_number = models.PositiveSmallIntegerField(_(u"Могила"), default=1)
     desired_graves_count = models.PositiveSmallIntegerField(_(u"Желаемое число могил в месте"), default=1)
     responsible = models.ForeignKey('persons.AlivePerson', verbose_name=_(u"Ответственный"), blank=True, null=True,
@@ -413,10 +414,11 @@ class Burial(SafeDeleteMixin, models.Model):
     dover = models.ForeignKey(Dover, verbose_name=_(u"Доверенность"), null=True, blank=True, on_delete=models.PROTECT)
 
     status = models.CharField(_(u"Статус"), max_length=255, choices=STATUS_CHOICES, default=STATUS_DRAFT, editable=False)
-    changed = models.DateTimeField(_(u"Изменено"), editable=False, null=True)
     changed_by = models.ForeignKey('auth.User', editable=False, null=True, related_name='changed_requests',
                                    on_delete=models.PROTECT)
     annulated = models.BooleanField(_(u"Аннулировано"), default=False, blank=True)
+    flag_no_applicant_doc_required = models.BooleanField(_(u"Документ заявителя-ФЛ не требуется"),
+                                   editable=False, default=False)
 
     class Meta:
         verbose_name = _(u"Захоронение")
@@ -477,22 +479,40 @@ class Burial(SafeDeleteMixin, models.Model):
         return self.burial_container == self.CONTAINER_BIO
 
     def can_approve(self):
-        if self.is_ugh():
-            return False
-        elif self.is_full():
-            return self.is_ready() or self.is_inspecting()
-        return False
+        return self.is_full() and (self.is_ready() or self.is_inspecting())
 
     def can_inspect(self):
-        if self.is_ugh():
-            return False
-        elif self.is_full():
-            return self.is_ready() and self.get_place() and \
-                   self.burial_type in (self.BURIAL_ADD, self.BURIAL_OVER, )
+        return self.is_full() and \
+               self.is_ready() and \
+               self.cemetery and self.area and self.place_number
+
+    def can_approve_inspect(self):
+        # одобрение обследования означает перевод захоронения
+        # из статуса "Отправлено на обследование"
+        # в статус "На согласовании"
+        return self.is_full() and self.is_inspecting()
+
+    def dc_filled(self):
+        """
+        В захоронении заполнено свидетельство о смерти
+        """
+        
+        # ВНИМАНИЕ! СоС не надо заполнять для биоотходов, но для них
+        #           эта функция вернёт False.
+        try:
+            dc = self.deadman.deathcertificate
+            return dc.s_number and dc.release_date and dc.zags
+        except (AttributeError, DeathCertificate.DoesNotExist, ):
+            pass
         return False
 
     def can_finish(self):
-        if self.is_full():
+        """
+        Условия закрытия захоронения
+        """
+        if self.is_annulated():
+            return False
+        elif self.is_full():
             return self.is_approved()
         else:
             return self.is_draft()
@@ -521,13 +541,14 @@ class Burial(SafeDeleteMixin, models.Model):
         return self.annulated and self.is_full() and self.is_edit()
 
     def can_back(self):
-        return self.is_full() and not self.is_edit() and not self.is_finished()
+        return self.is_full() and not self.is_annulated() and \
+               (self.is_ready() or self.is_approved() or self.is_inspecting())
 
-    def can_decline(self):
-        return self.is_full() and (self.is_ready() or self.is_inspecting() or self.is_approved())
+    can_decline = can_back
+        # УГХ может отклонить зх при тех же условиях, что ЛОРУ может отозвать
 
     # условия печати уведомлений для ugh.
-    def can_print_notification(self):
+    def can_ugh_print_notification(self):
         return self.is_approved() or self.is_closed()
 
     # условия печати уведомлений для loru.
@@ -535,7 +556,7 @@ class Burial(SafeDeleteMixin, models.Model):
         return self.is_approved()
 
     # условия печати справок, справки может выдавать лишь УГХ
-    def can_print_reference(self):
+    def can_ugh_print_reference(self):
         return self.is_closed()
 
     @property
@@ -790,7 +811,22 @@ class Burial(SafeDeleteMixin, models.Model):
             self.account_number:
            result = self.account_number
         return result
-    
+
+    def can_bind_to_order(self, org):
+        """
+        Может ли лору из организации org прикрепить это захоронение к заказу
+        """
+        result = False
+        if self.is_full() and self.loru == org and not self.is_annulated():
+            result = True
+        #elif (self.is_closed() or self.is_exhumated() or self.is_approved()) and \
+                #not self.is_bio() and \
+                #not self.is_annulated() and \
+                #self.ugh and \
+                #ProfileLORU.objects.filter(ugh=self.ugh,loru=org).exists():
+            #result = True
+        return result
+
 class BurialFiles(Files):
     """
     Файлы, связанные с захоронением
