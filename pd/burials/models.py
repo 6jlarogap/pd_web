@@ -41,10 +41,8 @@ class Cemetery(BaseModel):
 
     creator = models.ForeignKey('auth.User', verbose_name=_(u"Владелец"), editable=False, null=True,
                                 on_delete=models.PROTECT)
-    created = models.DateTimeField(_(u"Создано"), auto_now_add=True)
     ugh = models.ForeignKey(Org, verbose_name=_(u"УГХ"), null=True, limit_choices_to={'type': Org.PROFILE_UGH},
                             on_delete=models.PROTECT)
-
     address = models.ForeignKey('geo.Location', editable=False, null=True)
 
     class Meta:
@@ -252,7 +250,6 @@ class PlaceStatus(BaseModel):
     comment = models.TextField(verbose_name=_(u"Примечание"), blank=True, null=True)
     creator = models.ForeignKey('auth.User', verbose_name=_(u"Создатель"), editable=False,
                                 on_delete=models.PROTECT)
-    date_of_creation = models.DateTimeField(auto_now_add=True)
     
 def files_upload_to(instance, filename):
     instance.original_name = filename
