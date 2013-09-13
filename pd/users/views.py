@@ -12,7 +12,6 @@ from django.shortcuts import redirect, render
 from django.utils.translation import ugettext_lazy as _
 from django.views.generic.base import View
 from django.views.generic.edit import UpdateView, CreateView
-from django.views.generic.list import ListView
 
 from burials.views import UGHRequiredMixin, LoginRequiredMixin, SupervisorRequiredMixin
 from logs.models import Log, write_log, LoginLog
