@@ -14,28 +14,30 @@ class Migration(DataMigration):
         # для моделей Place, PlaceStatus, Grave, Area, Cemetery, 
         
         # Получение dt_created для Place как даты/времени первого захоронения
-        # в соответствующем месте.
+        # в соответствующем месте. Причем в этом первом захоронении берется
+        # дата его модификации, т.е. обычно место формируется при закрытии зх,
+        # после чего редко что с зх делается.
         # Place.dt_modified будет таким же, как Place.dt_created
         #
-        print '*** Place: updating dt_modified == dt_created from corresponding burials'
+        print '*** Place: updating dt_modified = dt_created from corresponding burials'
         Burial = orm['burials.Burial']
         Place = orm['burials.Place']
         count_all = count_fake = 0
         for p in Place.objects.all():
             count_all += 1
             try:
-                dt_created = Burial.objects.filter(place=p).order_by('dt_created')[0].dt_created
+                dt_created = Burial.objects.filter(place=p).order_by('dt_modified')[0].dt_created
                 Place.objects.filter(pk=p.pk).update(dt_created=dt_created, dt_modified=dt_created, )
             except IndexError:
                 # Нет необходимости заполнять dt_modified, dt_created, они были заполнены
                 # текущими датами/временами при предыдущей миграции при формировании полей
                 count_fake += 1
-        print '***     %s*2 datetimes updated, %s*2 datetimes left intact (no burial for the place)' % \
+        print '***     %s*2 datetimes all, %s*2 datetimes left intact (no burial for the place)' % \
                 (count_all, count_fake, )
 
         # dt_created, dt_modified для PlaceStatus берутся из PlaceStatus.date_of_creation
         #
-        print '*** PlaceStatus: updating dt_modified == dt_created from date_of_creation'
+        print '*** PlaceStatus: updating dt_modified = dt_created from date_of_creation'
         PlaceStatus = orm['burials.PlaceStatus']
         count_all = count_fake = 0
         for s in PlaceStatus.objects.all():
@@ -47,12 +49,12 @@ class Migration(DataMigration):
                 )
             else:
                 count_fake += 1
-        print '***     %s*2 datetimes updated, %s*2 datetimes left intact (no date_of_creation available)' % \
+        print '***     %s*2 datetimes all, %s*2 datetimes left intact (no date_of_creation available)' % \
                 (count_all, count_fake, )
 
         # dt_created, dt_modified для Grave берутся из соответствующего Place
         #
-        print '*** Grave: updating dt_modified == dt_created from corresponding places'
+        print '*** Grave: updating dt_modified = dt_created from corresponding places'
         Grave = orm['burials.Grave']
         count_all = 0
         for g in Grave.objects.all():
@@ -60,6 +62,39 @@ class Migration(DataMigration):
             dt_created = g.place.dt_created
             Grave.objects.filter(pk=g.pk).update(dt_created=dt_created, dt_modified=dt_created, )
         print '***     %s*2 datetimes updated' % count_all
+
+        # Cemetery: dt_created из поля Cemetery.created,
+        #           dt_modified -- из журнала
+        #
+        print '*** Cemetery: dt_created from Cemetery.created, dt_modified from logs'
+        Cemetery = orm['burials.Cemetery']
+        ContentType = orm['contenttypes.ContentType']
+        try:
+            ct_cemetery = ContentType.objects.get(app_label='burials',model='cemetery').id
+        except (ContentType.DoesNotExist, ContentType.MultipleObjectsReturned):
+            ct_cemetery = None
+        Log = orm['logs.Log']
+        dt_fake = datetime.datetime.now()
+        count_all = count_fake_created = count_fake_modified = 0
+        for c in Cemetery.objects.all():
+            count_all += 1
+            dt_created = c.created
+            dt_modified = None
+            if ct_cemetery:
+                try:
+                    dt_modified = Log.objects.filter(ct=ct_cemetery, obj_id=c.pk).order_by('-id')[0].dt
+                except IndexError:
+                    pass
+            if not dt_created:
+                count_fake_created += 1
+                dt_created = dt_modified or dt_fake
+            if not dt_modified:
+                count_fake_modified += 1
+                dt_modified = dt_created
+            Cemetery.objects.filter(pk=c.pk).update(dt_created=dt_created, dt_modified=dt_created, )
+        print "***     %s*2 datetimes all, %s dt_created's faked: empty Cemetery.changed,\n" \
+              "                            %s dt_modified's faked: no recs in logs" % \
+                (count_all, count_fake_created, count_fake_modified, )
 
 
     def backwards(self, orm):
@@ -358,6 +393,16 @@ class Migration(DataMigration):
             'user_first_name': ('django.db.models.fields.CharField', [], {'max_length': '255', 'null': 'True', 'blank': 'True'}),
             'user_last_name': ('django.db.models.fields.CharField', [], {'max_length': '255', 'null': 'True', 'blank': 'True'}),
             'user_middle_name': ('django.db.models.fields.CharField', [], {'max_length': '255', 'null': 'True', 'blank': 'True'})
+        },
+        'logs.log': {
+            'Meta': {'object_name': 'Log'},
+            'code': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '255'}),
+            'ct': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['contenttypes.ContentType']", 'null': 'True'}),
+            'dt': ('django.db.models.fields.DateTimeField', [], {'auto_now_add': 'True', 'blank': 'True'}),
+            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'msg': ('django.db.models.fields.TextField', [], {}),
+            'obj_id': ('django.db.models.fields.PositiveIntegerField', [], {'null': 'True', 'db_index': 'True'}),
+            'user': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['auth.User']", 'null': 'True'})
         }
     }
 
