@@ -11,28 +11,30 @@ class Migration(DataMigration):
         # Note: Remember to use orm['appname.ModelName'] rather than "from appname.models..."
         
         # Заполнение более или менее правдоподобными значениями dt_created, dt_modified
-        # для моделей Place, PlaceStatus, Area, Grave, Cemetery, 
+        # для моделей Place, PlaceStatus, Grave, Area, Cemetery, 
         
         # Получение dt_created для Place как даты/времени первого захоронения
         # в соответствующем месте.
         # Place.dt_modified будет таким же, как Place.dt_created
         #
-        print '*** Place: updating dt_modified == dt_created'
+        print '*** Place: updating dt_modified == dt_created from corresponding burials'
         Burial = orm['burials.Burial']
         Place = orm['burials.Place']
         count_all = count_fake = 0
         for p in Place.objects.all():
             count_all += 1
             try:
-                dt_created = Burial.objects.filter(place=p).order_by('-dt_created')[0].dt_created
+                dt_created = Burial.objects.filter(place=p).order_by('dt_created')[0].dt_created
                 Place.objects.filter(pk=p.pk).update(dt_created=dt_created, dt_modified=dt_created, )
             except IndexError:
                 # Нет необходимости заполнять dt_modified, dt_created, они были заполнены
                 # текущими датами/временами при предыдущей миграции при формировании полей
                 count_fake += 1
-        print '***     %s datetimes updated, %s datetimes left intact (no burial for the place)' % \
+        print '***     %s*2 datetimes updated, %s*2 datetimes left intact (no burial for the place)' % \
                 (count_all, count_fake, )
 
+        # dt_created, dt_modified для PlaceStatus берутся из PlaceStatus.date_of_creation
+        #
         print '*** PlaceStatus: updating dt_modified == dt_created from date_of_creation'
         PlaceStatus = orm['burials.PlaceStatus']
         count_all = count_fake = 0
@@ -45,10 +47,21 @@ class Migration(DataMigration):
                 )
             else:
                 count_fake += 1
-        print '***     %s datetimes updated, %s datetimes left intact (no date_of_creation available)' % \
+        print '***     %s*2 datetimes updated, %s*2 datetimes left intact (no date_of_creation available)' % \
                 (count_all, count_fake, )
-        
-        
+
+        # dt_created, dt_modified для Grave берутся из соответствующего Place
+        #
+        print '*** Grave: updating dt_modified == dt_created from corresponding places'
+        Grave = orm['burials.Grave']
+        count_all = 0
+        for g in Grave.objects.all():
+            count_all += 1
+            dt_created = g.place.dt_created
+            Grave.objects.filter(pk=g.pk).update(dt_created=dt_created, dt_modified=dt_created, )
+        print '***     %s*2 datetimes updated' % count_all
+
+
     def backwards(self, orm):
         "Write your backwards methods here."
 
