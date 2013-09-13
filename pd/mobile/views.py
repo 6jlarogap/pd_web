@@ -65,7 +65,7 @@ class MobileGetPlace(UGHRequiredMixin, View):
             queryPlace &= Q(area__pk = argAreaId)
         listPlace = Place.objects.filter(queryPlace).order_by('cemetery', 'area', 'id')
                                 
-        queryPlaceStatus = 'select ps.* from burials_placestatus ps inner join burials_place p on ps.place_id = p.id inner join burials_cemetery c on p.cemetery_id = c.id inner join users_org org on c.ugh_id = org.id where org.id = %d and ps.date_of_creation = (select max(ps2.date_of_creation) from burials_placestatus ps2 where ps2.place_id = ps.place_id) ' % request.user.profile.org.pk
+        queryPlaceStatus = 'select ps.* from burials_placestatus ps inner join burials_place p on ps.place_id = p.id inner join burials_cemetery c on p.cemetery_id = c.id inner join users_org org on c.ugh_id = org.id where org.id = %d and ps.dt_created = (select max(ps2.dt_created) from burials_placestatus ps2 where ps2.place_id = ps.place_id) ' % request.user.profile.org.pk
         if argAreaId :
             queryPlaceStatus = queryPlaceStatus + ' and p.area_id = %s'% argAreaId
         if argCemeteryId :
@@ -245,7 +245,7 @@ def mobile_upload_place(request):
             listPlaceForResponse.append(place)
                
         try:
-            curPlaceStatus = PlaceStatus.objects.filter(place__cemetery__ugh=request.user.profile.org, place__pk = placeId ).order_by('-date_of_creation')[0]
+            curPlaceStatus = PlaceStatus.objects.filter(place__cemetery__ugh=request.user.profile.org, place__pk = placeId ).order_by('-dt_created')[0]
         except IndexError:
             curPlaceStatus = None        
         if psFoundUnowned == 1 :
