@@ -32,7 +32,7 @@ class Migration(DataMigration):
                 # Нет необходимости заполнять dt_modified, dt_created, они были заполнены
                 # текущими датами/временами при предыдущей миграции при формировании полей
                 count_fake += 1
-        print "***     %s*2 dt's all, %s*2 dt's left intact (no burial for the place)" % \
+        print "***     %s*2 dt's all, %s*2 dt's left now() (no burial for the place)" % \
                 (count_all, count_fake, )
 
         # dt_created, dt_modified для PlaceStatus берутся из PlaceStatus.date_of_creation
@@ -51,7 +51,7 @@ class Migration(DataMigration):
                 # Нет необходимости заполнять dt_modified, dt_created, они были заполнены
                 # текущими датами/временами при предыдущей миграции при формировании полей
                 count_fake += 1
-        print "***     %s*2 dt's all, %s*2 dt's left intact (no date_of_creation available)" % \
+        print "***     %s*2 dt's all, %s*2 dt's left now() (no date_of_creation available)" % \
                 (count_all, count_fake, )
 
         # dt_created, dt_modified для Grave берутся из соответствующего Place
