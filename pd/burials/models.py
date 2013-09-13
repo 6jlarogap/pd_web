@@ -16,7 +16,7 @@ from users.models import Org, Profile, Dover, ProfileLORU
 from logs.models import Log
 
 
-class Cemetery(models.Model):
+class Cemetery(BaseModel):
     PLACE_CEMETERY = 'cemetery'
     PLACE_AREA = 'area'
     PLACE_ROW = 'row'
@@ -41,10 +41,8 @@ class Cemetery(models.Model):
 
     creator = models.ForeignKey('auth.User', verbose_name=_(u"Владелец"), editable=False, null=True,
                                 on_delete=models.PROTECT)
-    created = models.DateTimeField(_(u"Создано"), auto_now_add=True)
     ugh = models.ForeignKey(Org, verbose_name=_(u"УГХ"), null=True, limit_choices_to={'type': Org.PROFILE_UGH},
                             on_delete=models.PROTECT)
-
     address = models.ForeignKey('geo.Location', editable=False, null=True)
 
     class Meta:
@@ -86,7 +84,7 @@ class AreaPurpose(models.Model):
     def __unicode__(self):
         return self.name
 
-class Area(models.Model):
+class Area(BaseModel):
     AVAILABILITY_OPEN = 'open'
     AVAILABILITY_OLD = 'old_only'
     AVAILABILITY_CLOSED = 'closed'
@@ -120,7 +118,7 @@ class Area(models.Model):
             self.name=''
         return super(Area, self).save(*args, **kwargs)
 
-class Place(SafeDeleteMixin, models.Model):
+class Place(SafeDeleteMixin, BaseModel):
     cemetery = models.ForeignKey(Cemetery, verbose_name=_(u"Кладбище"), on_delete=models.PROTECT)
     area = models.ForeignKey(Area, verbose_name=_(u"Участок"), blank=True, null=True,
                              on_delete=models.PROTECT)
@@ -228,7 +226,7 @@ class Place(SafeDeleteMixin, models.Model):
                 break
         return result
 
-class PlaceStatus(models.Model):
+class PlaceStatus(BaseModel):
     PS_ACTUAL = 'actual'
     PS_FOUND_UNOWNED = 'found-unowned'
     PS_SIGNED = 'signed'
@@ -252,7 +250,6 @@ class PlaceStatus(models.Model):
     comment = models.TextField(verbose_name=_(u"Примечание"), blank=True, null=True)
     creator = models.ForeignKey('auth.User', verbose_name=_(u"Создатель"), editable=False,
                                 on_delete=models.PROTECT)
-    date_of_creation = models.DateTimeField(auto_now_add=True)
     
 def files_upload_to(instance, filename):
     instance.original_name = filename
@@ -304,7 +301,7 @@ class Photo(Files):
     lat = models.FloatField(_(u"Широта"), blank=True, null=True)
     lng = models.FloatField(_(u"Долгота"), blank=True, null=True)
     
-class Grave(models.Model):
+class Grave(BaseModel):
 
     class Meta:
         unique_together = ('place', 'grave_number',)

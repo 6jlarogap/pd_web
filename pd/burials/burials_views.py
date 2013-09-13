@@ -23,6 +23,7 @@ from persons.models import DeathCertificate
 from logs.models import write_log
 from orders.models import Order
 from pd.forms import CommentForm
+from pd.views import PaginateListView
 from reports.models import make_report
 
 class BurialGetOrderMixin:
@@ -406,10 +407,14 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
 
 view_burial = BurialView.as_view()
 
-class BurialsListView(ListView):
+class BurialsListView(PaginateListView):
     template_name = 'burial_list.html'
     context_object_name = 'burials'
 
+    def __init__(self, *args, **kwargs):
+        super(BurialsListView, self).__init__(*args, **kwargs)
+        self.SORT_DEFAULT = '-pk'
+        
     def get_queryset(self):
         if not self.request.GET:
             return Burial.objects.none()
@@ -507,7 +512,7 @@ class BurialsListView(ListView):
         else:
             burials = burials.exclude(status=Burial.STATUS_EXHUMATED)
 
-        sort = self.request.GET.get('sort', '-pk')
+        sort = self.request.GET.get('sort', self.SORT_DEFAULT)
         SORT_FIELDS = {
             'pk': 'pk',
             '-pk': '-pk',
@@ -546,33 +551,21 @@ class BurialsListView(ListView):
             return 'burial_list_print.html'
         return super(BurialsListView, self).get_template_names()
 
-    def get_paginate_by(self, queryset):
-        if self.request.GET.get('print'):
-            return None
-        try:
-            return int(self.request.GET.get('per_page'))
-        except (TypeError, ValueError):
-            return 25
-
     def get_form(self):
         return BurialSearchForm(data=self.request.GET or None)
-
-    def get_context_data(self, **kwargs):
-        data = super(BurialsListView, self).get_context_data(**kwargs)
-        DISPLAY_OPTIONS = ['page', 'print']
-        get_for_paginator = u'&'.join([u'%s=%s' %  (k, v) for k,v in self.request.GET.items() if k not in DISPLAY_OPTIONS])
-        sort = self.request.GET.get('sort', '-pk')
-        data.update(form=self.get_form(), GET_PARAMS=get_for_paginator, sort=sort)
-        return data
 
 burial_list = BurialsListView.as_view()
 
 # Поиск захоронения для ЛОРУ
 #
-class BurialsPublicListView(ListView):
+class BurialsPublicListView(PaginateListView):
     template_name = 'burial_public_list.html'
     context_object_name = 'burials'
 
+    def __init__(self, *args, **kwargs):
+        super(BurialsPublicListView, self).__init__(*args, **kwargs)
+        self.SORT_DEFAULT = '-pk'
+        
     def get_queryset(self):
         if not self.request.GET:
             return Burial.objects.none()
@@ -650,7 +643,7 @@ class BurialsPublicListView(ListView):
             else:
                 burials = burials.filter(annulated=False)
 
-        sort = self.request.GET.get('sort', '-pk')
+        sort = self.request.GET.get('sort', self.SORT_DEFAULT)
         SORT_FIELDS = {
             'pk': 'pk',
             '-pk': '-pk',
@@ -675,22 +668,8 @@ class BurialsPublicListView(ListView):
         ).order_by(*s)
         return burials
 
-    def get_paginate_by(self, queryset):
-        try:
-            return int(self.request.GET.get('per_page'))
-        except (TypeError, ValueError):
-            return 25
-
     def get_form(self):
         return BurialPublicListForm(data=self.request.GET or None)
-
-    def get_context_data(self, **kwargs):
-        data = super(BurialsPublicListView, self).get_context_data(**kwargs)
-        DISPLAY_OPTIONS = ['page', 'print']
-        get_for_paginator = u'&'.join([u'%s=%s' %  (k, v) for k,v in self.request.GET.items() if k not in DISPLAY_OPTIONS])
-        sort = self.request.GET.get('sort', '-pk')
-        data.update(form=self.get_form(), GET_PARAMS=get_for_paginator, sort=sort)
-        return data
 
 burial_public_list = BurialsPublicListView.as_view()
 
