@@ -11,17 +11,13 @@ class Migration(DataMigration):
         # Note: Remember to use orm['appname.ModelName'] rather than "from appname.models..."
         
         # Заполнение более или менее правдоподобными значениями dt_created, dt_modified
-        # для моделей Place, Cemetery, Area, Grave, PlaceStatus
-        
-        # "Страховка" -- на случай, если соответствующую дату не удастся найти
-        #
-        dt_fake = datetime.datetime.now()
+        # для моделей Place, PlaceStatus, Area, Grave, Cemetery, 
         
         # Получение dt_created для Place как даты/времени первого захоронения
         # в соответствующем месте.
         # Place.dt_modified будет таким же, как Place.dt_created
         #
-        print '*** Place: updating dt_modified == dt_modified'
+        print '*** Place: updating dt_modified == dt_created'
         Burial = orm['burials.Burial']
         Place = orm['burials.Place']
         count_all = count_fake = 0
@@ -34,9 +30,25 @@ class Migration(DataMigration):
                 # Нет необходимости заполнять dt_modified, dt_created, они были заполнены
                 # текущими датами/временами при предыдущей миграции при формировании полей
                 count_fake += 1
-        print '***     %s datetimes updated, %s current datetimes left intact (no burial available)' % \
+        print '***     %s datetimes updated, %s datetimes left intact (no burial for the place)' % \
                 (count_all, count_fake, )
 
+        print '*** PlaceStatus: updating dt_modified == dt_created from date_of_creation'
+        PlaceStatus = orm['burials.PlaceStatus']
+        count_all = count_fake = 0
+        for s in PlaceStatus.objects.all():
+            count_all += 1
+            if s.date_of_creation:
+                PlaceStatus.objects.filter(pk=s.pk).update(
+                    dt_created=s.date_of_creation,
+                    dt_modified=s.date_of_creation,
+                )
+            else:
+                count_fake += 1
+        print '***     %s datetimes updated, %s datetimes left intact (no date_of_creation available)' % \
+                (count_all, count_fake, )
+        
+        
     def backwards(self, orm):
         "Write your backwards methods here."
 
