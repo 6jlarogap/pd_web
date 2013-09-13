@@ -48,13 +48,15 @@ class Migration(DataMigration):
                     dt_modified=s.date_of_creation,
                 )
             else:
+                # Нет необходимости заполнять dt_modified, dt_created, они были заполнены
+                # текущими датами/временами при предыдущей миграции при формировании полей
                 count_fake += 1
         print "***     %s*2 dt's all, %s*2 dt's left intact (no date_of_creation available)" % \
                 (count_all, count_fake, )
 
         # dt_created, dt_modified для Grave берутся из соответствующего Place
         #
-        print "*** Grave: updating dt_modified = dt_created from corresponding places"
+        print "*** Grave: updating dt_modified = dt_created from their places"
         Grave = orm['burials.Grave']
         count_all = 0
         for g in Grave.objects.all():
@@ -91,10 +93,22 @@ class Migration(DataMigration):
             if not dt_modified:
                 count_fake_modified += 1
                 dt_modified = dt_created
-            Cemetery.objects.filter(pk=c.pk).update(dt_created=dt_created, dt_modified=dt_created, )
+            Cemetery.objects.filter(pk=c.pk).update(dt_created=dt_created, dt_modified=dt_modified, )
         print "***     %s*2 dt's all, %s dt_created's faked: empty Cemetery.changed,\n" \
               "                       %s dt_modified's faked: no recs in logs" % \
                 (count_all, count_fake_created, count_fake_modified, )
+
+        # dt_created, dt_modified для Area берутся из соответствующего Cemetery
+        #
+        print "*** Area: updating dt_modified, dt_created from their cemeteries"
+        Area = orm['burials.Area']
+        count_all = 0
+        for a in Area.objects.all():
+            count_all += 1
+            dt_created = a.cemetery.dt_created
+            dt_modified = a.cemetery.dt_modified
+            Area.objects.filter(pk=a.pk).update(dt_created=dt_created, dt_modified=dt_modified, )
+        print "***     %s*2 dt's updated" % count_all
 
 
     def backwards(self, orm):
