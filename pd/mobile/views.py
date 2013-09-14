@@ -123,10 +123,11 @@ mobile_get_burial = MobileGetBurial.as_view()
 @csrf_exempt
 def mobile_upload_photo(request):
     if request.method == 'POST':
-        result = ""
         graveId = request.POST['grave']
         lat = request.POST['lat']
-        lng = request.POST['lng']        
+        lng = request.POST['lng'] 
+        data = ""
+        listPhoto = []
         try:
             grave = Grave.objects.get(id = graveId)            
             photo_content = ContentFile(request.FILES['photo'].read())
@@ -137,11 +138,12 @@ def mobile_upload_photo(request):
                 grave.lat = lat
                 grave.lng = lng
                 grave.save()
-            result = "Ok"
+            listPhoto.append(photo)
+            data = serializers.serialize("json", listPhoto, fields=('grave','lat','lng'))
+            return HttpResponse(data, mimetype='application/json')
         except Grave.DoesNotExist:
             grave = None
             raise Http404
-        return HttpResponse(result, mimetype='application/json')
     return render_to_response('mobile_upload_photo.html', {'message': _(u"Загрузите фотографию к могиле:")})
     
 @csrf_exempt
