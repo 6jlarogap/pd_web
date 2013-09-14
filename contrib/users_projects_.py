@@ -41,6 +41,8 @@ def main():
                     project[VENV])
             do_cmd('%s/bin/python ./manage.py collectstatic --noinput' % 
                     project[VENV])
+            for command in OTHER_COMMANDS:
+                do_cmd(command)
             do_cmd(APACHE2_RELOAD)
 
 def do_cmd(cmd):
