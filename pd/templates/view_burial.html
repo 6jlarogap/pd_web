@@ -297,22 +297,8 @@
         </table>
     {% endif %}
 
-    <h2>{% trans "Журнал" %}</h2>
-    <table class="table table-bordered">
-        <tr>
-            <th>{% trans "Дата" %}</th>
-            <th>{% trans "Пользователь" %}</th>
-            <th>{% trans "Действие" %}</th>
-        </tr>
-        {% for log in b.get_logs %}
-            {% if user.profile.is_loru or log.code != 'edit_request' %}
-                <tr>
-                    <td>{{ log.dt }}</td>
-                    <td>{{ log.user.profile }} / {{ log.user.profile.org }}</td>
-                    <td>{{ log.msg|linebreaksbr }}</td>
-                </tr>
-            {% endif %}
-        {% endfor %}
-    </table>
+    {% with burial=b %}
+        {% include "burial_comments.html" %}
+    {% endwith %}
 
 {% endblock %}
