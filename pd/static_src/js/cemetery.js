@@ -417,7 +417,7 @@ $(function() {
     $('input[name=opf]').change(function() {
         var resp_id = '#id_responsible-take_from_';
         $(resp_id+'1').removeAttr('checked').closest('li').hide();
-        var new_order = top.location.href.indexOf('/order/create') != -1
+        var new_order = top.location.href.toLowerCase().indexOf('/order/create') != -1
         if ($('input[name=opf]:checked').val() == 'org') {
             $('#applicant_form_org').show();
             $('#applicant_form_person').hide();
