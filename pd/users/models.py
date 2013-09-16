@@ -6,6 +6,7 @@ from django.utils.translation import ugettext_lazy as _
 
 from geo.models import DFiasAddrobj
 from logs.models import Log
+from pd.models import BaseModel
 from pd.utils import DigitsValidator, LengthValidator, NotEmptyValidator
 
 
@@ -78,7 +79,7 @@ class Profile(models.Model):
             return ','.join([self.lat, self.lng])
         return ''
 
-class Org(models.Model):
+class Org(BaseModel):
     NUM_EMPTY = ''
     NUM_YEAR_UGH = 'year_ugh'
     NUM_YEAR_CEMETERY = 'year_cemetery'
