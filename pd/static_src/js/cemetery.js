@@ -417,6 +417,7 @@ $(function() {
     $('input[name=opf]').change(function() {
         var resp_id = '#id_responsible-take_from_';
         $(resp_id+'1').removeAttr('checked').closest('li').hide();
+        var new_order = top.location.href.toLowerCase().indexOf('/order/create') != -1
         if ($('input[name=opf]:checked').val() == 'org') {
             $('#applicant_form_org').show();
             $('#applicant_form_person').hide();
@@ -432,7 +433,9 @@ $(function() {
             $('.btn-org').closest('p').show();
 
             $('#id_agent_director').change();
-            $('input[name=payment][value=wire]').attr('checked', '1');
+            if (new_order) {
+                $('input[name=payment][value=wire]').attr('checked', '1');
+            }
         }
         else if ($('input[name=opf]:checked').val() == 'person') {
             $('#applicant_form_org').hide();
@@ -450,7 +453,9 @@ $(function() {
 
             $('input[name^=person]').closest('p').show();
             $('#id_org').closest('p').hide();
-            $('input[name=payment][value=cash]').attr('checked', '1');
+            if (new_order) {
+                $('input[name=payment][value=cash]').attr('checked', '1');
+            }
 
             $(resp_id+'1').closest('li').show();
             if (!$(resp_id+'0').is(':checked') && !$(resp_id+'2').is(':checked')) {
