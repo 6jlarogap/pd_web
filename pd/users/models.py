@@ -6,6 +6,7 @@ from django.utils.translation import ugettext_lazy as _
 
 from geo.models import DFiasAddrobj
 from logs.models import Log
+from pd.models import BaseModel
 from pd.utils import DigitsValidator, LengthValidator, NotEmptyValidator
 
 
@@ -78,7 +79,7 @@ class Profile(models.Model):
             return ','.join([self.lat, self.lng])
         return ''
 
-class Org(models.Model):
+class Org(BaseModel):
     NUM_EMPTY = ''
     NUM_YEAR_UGH = 'year_ugh'
     NUM_YEAR_CEMETERY = 'year_cemetery'
@@ -121,7 +122,9 @@ class Org(models.Model):
     numbers_algo = models.CharField(_(u"Заполнение номера захоронения"), max_length=255, choices=NUM_TYPES,
                                     default=NUM_EMPTY, blank=True)
     opf_order = models.CharField(_(u"Заказчик по умолчанию в заказе"), max_length=255,
-                                    choices=OPF_CHOICES, default=OPF_ORG)
+                                    choices=list(OPF_CHOICES)[1:], default=OPF_ORG)
+    opf_order_customer_mandatory = models.BooleanField(_(u"Данные заказчика при оформлении заказа обязательны"),
+                                    default=True)
 
     class Meta:
         verbose_name = _(u'Организация')
