@@ -289,18 +289,14 @@ class GetGravesNumberView(View):
 
 get_graves_number = GetGravesNumberView.as_view()
 
-class CommentView(BurialsListGenericMixin, DetailView):
-    def dispatch(self, request, *args, **kwargs):
-        self.request = request
-        if not request.user.is_authenticated():
-            return redirect('/')
-        return View.dispatch(self, request, *args, **kwargs)
-
+class CommentView(BurialsListGenericMixin, LoginRequiredMixin, DetailView):
     def get_queryset(self):
         return Burial.objects.filter(self.get_qs_filter()).distinct()
 
     def post(self, request, *args, **kwargs):
-        write_log(request, self.get_object(), _(u'Комментарий: %s') % request.POST.get('comment'))
+        comment = request.POST.get('comment').strip()
+        if comment:
+            write_log(request, self.get_object(), _(u'Комментарий: %s') % comment)
         return redirect('view_burial', self.get_object().pk)
 
 burial_comment = CommentView.as_view()

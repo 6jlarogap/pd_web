@@ -423,7 +423,6 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
                                              )
 
         self.comment_form = CommentForm(data=data, prefix='comment')
-        self.comment_form.fields['comment'].required = False
         
         forms = [self.deadman_form, self.deadman_address_form, self.dc_form,
                 self.responsible_form, self.responsible_address_form,
