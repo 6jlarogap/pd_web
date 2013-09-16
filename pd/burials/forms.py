@@ -20,8 +20,8 @@ from django.db.models.query_utils import Q
 from burials.models import Cemetery, Area, Burial, Place, ExhumationRequest, BurialFiles, Grave
 from geo.forms import LocationForm
 from orders.models import Order
-from pd.forms import PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, CommentForm
-from persons.forms import DeadPersonForm, DeathCertificateForm, AlivePersonForm, PersonIDForm, StrippedStringsMixin
+from pd.forms import PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, CommentForm, StrippedStringsMixin
+from persons.forms import DeadPersonForm, DeathCertificateForm, AlivePersonForm, PersonIDForm
 from persons.models import DeathCertificate, PersonID, IDDocumentType, SafeDeleteMixin
 from users.forms import BaseOrgForm
 from users.models import Org, Profile, Dover
@@ -586,7 +586,7 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
 
         self.instance.save()
         if self.comment_form.is_valid():
-            comment = self.comment_form.cleaned_data['comment'].strip()
+            comment = self.comment_form.cleaned_data['comment']
             if comment:
                 write_log(request, self.instance, _(u'Комментарий: %s') % comment)
 
