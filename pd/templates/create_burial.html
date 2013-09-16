@@ -68,6 +68,10 @@
         {% endblock buttons %}
     </form>
 
+    {% with burial=b %}
+        {% include "burial_comments.html" %}
+    {% endwith %}
+
     {% include "create_burial_popups.html" %}
 
     <script type="text/javascript">

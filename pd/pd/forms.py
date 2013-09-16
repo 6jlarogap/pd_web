@@ -131,8 +131,16 @@ class PartialFormMixin:
         result += "</textarea>"
         return result
 
-class CommentForm(forms.Form):
-    comment = forms.CharField(label=_(u'Комментарий'), widget=forms.Textarea)
+class StrippedStringsMixin(object):
+    
+   def clean(self):
+       for field in self.cleaned_data:
+           if isinstance(self.cleaned_data[field], basestring):
+               self.cleaned_data[field] = self.cleaned_data[field].strip()
+       return self.cleaned_data
+
+class CommentForm(StrippedStringsMixin, forms.Form):
+    comment = forms.CharField(label=_(u'Комментарий'), widget=forms.Textarea, required=False)
 
 class UnclearSelectDateWidget(SelectDateWidget):
     month_unclear = False

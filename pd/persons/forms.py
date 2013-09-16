@@ -6,15 +6,7 @@ from django.utils.translation import ugettext as _
 
 from persons.models import DeadPerson, PersonID, DeathCertificate, AlivePerson, DocumentSource
 from pd.models import UnclearDate
-from pd.forms import BaseModelForm
-
-class StrippedStringsMixin(object):
-    
-   def clean(self):
-       for field in self.cleaned_data:
-           if isinstance(self.cleaned_data[field], basestring):
-               self.cleaned_data[field] = self.cleaned_data[field].strip()
-       return self.cleaned_data
+from pd.forms import BaseModelForm, StrippedStringsMixin
 
 class ValidDataMixin:
     def is_valid_data(self):
