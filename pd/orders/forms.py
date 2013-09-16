@@ -20,7 +20,6 @@ class ProductForm(forms.ModelForm):
         exclude = ['loru', ]
 
 class OrderForm(ChildrenJSONMixin, SafeDeleteMixin, forms.ModelForm):
-    opf = forms.ChoiceField(label='', choices=Org.OPF_CHOICES, widget=forms.RadioSelect, initial=Org.OPF_EMPTY)
 
     class Meta:
         model = Order
@@ -31,14 +30,25 @@ class OrderForm(ChildrenJSONMixin, SafeDeleteMixin, forms.ModelForm):
         super(OrderForm, self).__init__(*args, **kwargs)
         self.fields.keyOrder.insert(0, self.fields.keyOrder.pop(-1))
 
+        remove_opf_empty = request.user.profile.org.opf_order_customer_mandatory
         if self.instance.pk:
             if self.instance.applicant:
-                self.initial['opf'] = Org.OPF_PERSON
+                opf_initial = Org.OPF_PERSON
             elif self.instance.applicant_organization:
-                self.initial['opf'] = Org.OPF_ORG
+                opf_initial = Org.OPF_ORG
+            else:
+                opf_initial = Org.OPF_EMPTY
+                remove_opf_empty = False
         else:
-            self.initial['opf'] = request.user.profile.org.opf_order
-        # Во всех остальных случаях умолчание берется из определения поля: Org.OPF_EMPTY
+            opf_initial = request.user.profile.org.opf_order
+        choices=list(Org.OPF_CHOICES)
+        if remove_opf_empty:
+            for i, choice in enumerate(choices):
+                if choice[0] == Org.OPF_EMPTY:
+                    choices.pop(i)
+                    break
+        self.fields['opf'] = forms.ChoiceField(label='', widget=forms.RadioSelect,
+                                               choices=choices, initial = opf_initial)
 
         self.fields['payment'].widget = forms.RadioSelect(choices=Order.PAYMENT_CHOICES)
 

@@ -197,6 +197,7 @@ class OrgForm(BaseOrgForm):
             del self.fields['numbers_algo']
         if not self.request.user.profile.is_loru():
             del self.fields['opf_order']
+            del self.fields['opf_order_customer_mandatory']
         if self.request.user.profile.org.pk == self.instance.pk:
             choices = []
             for profile_type in Org.PROFILE_TYPES:
