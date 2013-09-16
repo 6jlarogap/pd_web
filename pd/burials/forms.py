@@ -20,8 +20,8 @@ from django.db.models.query_utils import Q
 from burials.models import Cemetery, Area, Burial, Place, ExhumationRequest, BurialFiles, Grave
 from geo.forms import LocationForm
 from orders.models import Order
-from pd.forms import PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin
-from persons.forms import DeadPersonForm, DeathCertificateForm, AlivePersonForm, PersonIDForm, StrippedStringsMixin
+from pd.forms import PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, CommentForm, StrippedStringsMixin
+from persons.forms import DeadPersonForm, DeathCertificateForm, AlivePersonForm, PersonIDForm
 from persons.models import DeathCertificate, PersonID, IDDocumentType, SafeDeleteMixin
 from users.forms import BaseOrgForm
 from users.models import Org, Profile, Dover
@@ -355,7 +355,7 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
         self.deadman_form = DeadPersonForm(request=self.request, data=data, prefix='deadman', instance=deadman)
         deadman_addr = deadman and deadman.address
         self.deadman_address_form = LocationForm(data=data, prefix='deadman-address', instance=deadman_addr)
-        self.bfiles_form = BurialFilesForm(data=data, files=self.request.FILES)
+        self.bfiles_form = BurialFilesForm(data=data, prefix='bfiles', files=self.request.FILES)
         try:
             dc = self.instance and self.instance.deadman and self.instance.deadman.deathcertificate
         except DeathCertificate.DoesNotExist:
@@ -422,10 +422,12 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
                                               initial=applicant_id_form_initial
                                              )
 
+        self.comment_form = CommentForm(data=data, prefix='comment')
+        
         forms = [self.deadman_form, self.deadman_address_form, self.dc_form,
                 self.responsible_form, self.responsible_address_form,
                 self.applicant_form, self.applicant_address_form, self.applicant_id_form,
-                self.bfiles_form, ]
+                self.bfiles_form, self.comment_form, ]
         return forms
 
     def is_valid(self):
@@ -582,11 +584,16 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
             # Это будет сделано ниже в self.instance.close(....)
 
         self.instance.save()
+        if self.comment_form.is_valid():
+            comment = self.comment_form.cleaned_data['comment']
+            if comment:
+                write_log(request, self.instance, _(u'Комментарий: %s') % comment)
+
         if self.order:
             self.order.burial = self.instance
             self.order.save()
 
-        if self.bfiles_form.is_valid() and self.request.FILES.get('bfile'):
+        if self.bfiles_form.is_valid() and self.request.FILES.get('bfiles-bfile'):
             saved_file = self.bfiles_form.save(burial=self.instance, user=self.request.user)
             write_log(request, self.instance,
                      _(u'Добавлен файл'), "%s, %s" % (saved_file.comment, saved_file.original_name,)
