@@ -75,7 +75,7 @@ class OrderForm(ChildrenJSONMixin, SafeDeleteMixin, forms.ModelForm):
                 raise forms.ValidationError(_(u'Нет данных об агенте и/или доверенности для заявителя-ЮЛ. Изменения не сохранены'))
             dover = self.cleaned_data.get('dover')
             if dover and not dover.begin <= self.cleaned_data.get('dt') <= dover.end:
-                    raise forms.ValidationError(_(u'Дата заказа не соответствует сроку действия доверенности'))
+                    raise forms.ValidationError(_(u'Дата заказа не соответствует сроку действия доверенности. Изменения не сохранены'))
         elif self.cleaned_data.get('opf') == Org.OPF_PERSON:
             if not self.applicant_form.is_valid_data():
                 raise forms.ValidationError(_(u"Нужно указать Заявителя-ФЛ"))
