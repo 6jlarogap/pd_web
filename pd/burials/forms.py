@@ -1135,13 +1135,13 @@ class AddAgentForm(forms.ModelForm):
             profile.save()
         return profile
 
-class AddDoverForm(forms.ModelForm):
+class AddDoverForm(StrippedStringsMixin, forms.ModelForm):
     class Meta:
         model = Dover
         exclude = ['agent', 'document', ]
 
     def clean(self):
-        cleaned_data = super(AddDoverForm, self).clean()
+        StrippedStringsMixin.clean(self)
         
         # Всплывающая форма. Если какое-то из обязательных полей не задано, то не будет,
         # как в "обычной" форме у поля сообщения "Обязательное поле". Просто не будет
@@ -1149,29 +1149,19 @@ class AddDoverForm(forms.ModelForm):
         # cleaned_data.
         errors = []
         for field in ('begin', 'end', 'number', ):
-            if field not in cleaned_data or \
-               isinstance(self.cleaned_data[field], basestring) and not self.cleaned_data[field].strip():
+            if not self.cleaned_data.get(field):
                 errors.append(u"%s : обязательное поле или неверно задано" % unicode(self.fields[field].label))
         if errors:
             raise forms.ValidationError("\n".join(errors))
 
-        begin_date = cleaned_data['begin']
-        end_date  = cleaned_data['end']
-        number = cleaned_data['number']
+        begin_date = self.cleaned_data['begin']
+        end_date  = self.cleaned_data['end']
+        number = self.cleaned_data['number']
         if begin_date > end_date:
             msg = _(u"Дата начала доверенности не может быть раньше даты окончания доверенности")
             raise forms.ValidationError(msg)
 
-        today = datetime.date.today()
-        if today > end_date:
-            msg = _(u"Дата окончания доверенности не может быть раньше текущей даты")
-            raise forms.ValidationError(msg)
-
-        if not number.strip():
-            msg = _(u"Пустое поле номера")
-            raise forms.ValidationError(msg)
-        
-        return cleaned_data
+        return self.cleaned_data
 
 class AddOrgForm(BaseOrgForm):
     class Meta:

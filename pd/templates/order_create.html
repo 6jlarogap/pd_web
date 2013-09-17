@@ -10,10 +10,14 @@
         <p>
             <input type="submit" class="btn" value="{% trans "Создать" %}"/>
         </p>
+        {{ form.non_field_errors }}
+
+        {{ form.dt.errors }}
+        <p>{{ form.dt.label_tag }} {{ form.dt }}<span class="helptext">{{ form.dt.help_text }}</span></p>
+
         {{ form.payment.errors }}
         <p class="inline">{{ form.payment.label_tag }} {{ form.payment }}<span class="helptext">{{ form.payment.help_text }}</span></p>
 
-        {{ form.non_field_errors }}
         {% include "applicant_form.html" %}
         <p>
             <input type="submit" class="btn" value="{% trans "Создать" %}"/>

@@ -1,4 +1,6 @@
 # coding=utf-8
+import datetime
+
 from django import forms
 from django.db.models.deletion import ProtectedError
 from django.db.models.query_utils import Q
@@ -40,7 +42,12 @@ class OrderForm(ChildrenJSONMixin, SafeDeleteMixin, forms.ModelForm):
                 opf_initial = Org.OPF_EMPTY
                 remove_opf_empty = False
         else:
-            opf_initial = request.user.profile.org.opf_order
+            if request.user.profile.org.opf_order_customer_mandatory:
+                opf_initial = request.user.profile.org.opf_order
+            else:
+                opf_initial = Org.OPF_EMPTY
+            self.initial.update({'dt': datetime.date.today()})
+            
         choices=list(Org.OPF_CHOICES)
         if remove_opf_empty:
             for i, choice in enumerate(choices):
@@ -66,8 +73,12 @@ class OrderForm(ChildrenJSONMixin, SafeDeleteMixin, forms.ModelForm):
     def clean(self):
         if self.cleaned_data.get('opf') == Org.OPF_ORG:
             if not (self.cleaned_data.get('agent_director') or \
-                    self.cleaned_data.get('agent') and self.cleaned_data.get('dover')):
+                    self.cleaned_data.get('agent') and self.cleaned_data.get('dover')
+                   ):
                 raise forms.ValidationError(_(u'Нет данных об агенте и/или доверенности для заявителя-ЮЛ. Изменения не сохранены'))
+            dover = self.cleaned_data.get('dover')
+            if dover and not dover.begin <= self.cleaned_data.get('dt') <= dover.end:
+                    raise forms.ValidationError(_(u'Дата заказа не соответствует сроку действия доверенности. Изменения не сохранены'))
         elif self.cleaned_data.get('opf') == Org.OPF_PERSON:
             if not self.applicant_form.is_valid_data():
                 raise forms.ValidationError(_(u"Нужно указать Заявителя-ФЛ"))
