@@ -9,6 +9,7 @@ from logs.models import Log
 
 from reports.models import Report
 from users.models import Org
+from pd.models import BaseModel
 
 
 class Product(models.Model):
@@ -42,7 +43,7 @@ class Product(models.Model):
     def is_burial(self):
         return self.ptype == self.PRODUCT_BURIAL
 
-class Order(models.Model):
+class Order(BaseModel):
     PAYMENT_CASH = 'cash'
     PAYMENT_WIRE = 'wire'
     PAYMENT_CHOICES = (
@@ -63,7 +64,8 @@ class Order(models.Model):
                               on_delete=models.PROTECT)
     annulated = models.BooleanField(_(u'Аннулировано'), editable=False, default=False)
     cost = models.DecimalField(_(u"Цена"), max_digits=20, decimal_places=2, editable=False)
-    dt = models.DateTimeField(auto_now_add=True)
+    dt = models.DateTimeField(_(u"Дата заказа"), auto_now_add=True)
+    dt_temp = models.DateField()
     burial = models.ForeignKey(Burial, related_name='burial_orders', editable=False, null=True)
 
     class Meta:
