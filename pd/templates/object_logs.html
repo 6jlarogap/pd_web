@@ -1,5 +1,6 @@
 {% load i18n %}
 
+{# Журнал для различных объектов: захоронение, заказ, организация и т.д #}
 <h2>{% trans "Журнал" %}</h2>
 <table class="table table-bordered">
     <tr>
@@ -7,7 +8,7 @@
         <th>{% trans "Пользователь" %}</th>
         <th>{% trans "Действие" %}</th>
     </tr>
-    {% for log in burial.get_logs %}
+    {% for log in object.get_logs %}
         <tr>
             <td>{{ log.dt }}</td>
             <td>{{ log.user.profile }} / {{ log.user.profile.org }}</td>
