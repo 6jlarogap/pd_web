@@ -42,7 +42,10 @@ class OrderForm(ChildrenJSONMixin, SafeDeleteMixin, forms.ModelForm):
                 opf_initial = Org.OPF_EMPTY
                 remove_opf_empty = False
         else:
-            opf_initial = request.user.profile.org.opf_order
+            if request.user.profile.org.opf_order_customer_mandatory:
+                opf_initial = request.user.profile.org.opf_order
+            else:
+                opf_initial = Org.OPF_EMPTY
             self.initial.update({'dt': datetime.date.today()})
             
         choices=list(Org.OPF_CHOICES)
