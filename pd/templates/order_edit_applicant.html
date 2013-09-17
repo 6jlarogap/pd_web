@@ -6,20 +6,20 @@
     {% with order=order tab="applicant" %}
         {% include "order_nav.html" %}
     {% endwith %}
-    <form action="" method="POST" class="main-form">
+    <form action="" method="POST" class="order_form">
         {% csrf_token %}
         <p>
             <input type="submit" class="btn" value="{% trans "сохранить" %}" class="btn"/>
         </p>
-        <style>
-            ul { list-style: none; margin: 0; }
-        </style>
+        {{ form.non_field_errors }}
+
+        {{ form.dt.errors }}
+        <p>{{ form.dt.label_tag }} {{ form.dt }}<span class="helptext">{{ form.dt.help_text }}</span></p>
+
         {{ form.payment.errors }}
         <p class="inline">{{ form.payment.label_tag }} {{ form.payment }}<span class="helptext">{{ form.payment.help_text }}</span></p>
 
-        {{ form.non_field_errors }}
         {% include "applicant_form.html" %}
-
         <p>
             <input type="submit" class="btn" value="{% trans "сохранить" %}" class="btn"/>
             <a href="{% url order_products order.pk %}" class="btn btn-next">{% trans "далее" %}</a>

@@ -838,6 +838,7 @@ function updateControls() {
     makeTimePicker($('input[id*=time]'));
     makeDatePicker($('.modal input[id$=begin]'));
     makeDatePicker($('.modal input[id$=end]'));
+    makeDatePicker($('.order_form input[id=id_dt]'));
     setup_address_autocompletes();
 }
 

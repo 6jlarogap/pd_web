@@ -64,7 +64,7 @@ class Order(BaseModel):
                               on_delete=models.PROTECT)
     annulated = models.BooleanField(_(u'Аннулировано'), editable=False, default=False)
     cost = models.DecimalField(_(u"Цена"), max_digits=20, decimal_places=2, editable=False)
-    dt = models.DateField(_(u"Дата заказа"), auto_now_add=True)
+    dt = models.DateField(_(u"Дата заказа"))
     burial = models.ForeignKey(Burial, related_name='burial_orders', editable=False, null=True)
 
     class Meta:
