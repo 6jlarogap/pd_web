@@ -68,8 +68,8 @@
         {% endblock buttons %}
     </form>
 
-    {% with burial=b %}
-        {% include "burial_comments.html" %}
+    {% with object=b %}
+        {% include "object_logs.html" %}
     {% endwith %}
 
     {% include "create_burial_popups.html" %}

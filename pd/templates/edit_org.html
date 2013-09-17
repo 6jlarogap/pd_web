@@ -61,21 +61,9 @@
         </form>
 
         {% if object.get_logs %}
-            <h2>{% trans "Журнал" %}</h2>
-            <table class="table table-bordered">
-                <tr>
-                    <th>{% trans "Дата" %}</th>
-                    <th>{% trans "Пользователь" %}</th>
-                    <th>{% trans "Действие" %}</th>
-                </tr>
-                {% for log in object.get_logs %}
-                    <tr>
-                        <td>{{ log.dt }}</td>
-                        <td>{{ log.user.profile }} / {{ log.user.profile.org }}</td>
-                        <td>{{ log.msg|linebreaksbr }}</td>
-                    </tr>
-                {% endfor %}
-            </table>
+            {% with object=object %}
+                {% include "object_logs.html" %}
+            {% endwith %}
         {% endif %}
     {% endif %}
 {% endblock %}

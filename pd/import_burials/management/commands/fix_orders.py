@@ -34,7 +34,8 @@ class Command(BaseCommand):
         for o in wrong_date_orders:
             b = o.get_burial()
             if b:
-                o.dt = b.changed and b.changed - datetime.timedelta(1) or o.dt or datetime.datetime.now()
+                dt = b.changed and b.changed - datetime.timedelta(1) or o.dt or datetime.datetime.now()
+                o.dt = datetime.date(year=dt.year, month=dt.month, day=dt.day)
                 o.save()
             i += 1
             if i % 400 == 0:

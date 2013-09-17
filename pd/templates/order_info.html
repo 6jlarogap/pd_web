@@ -16,40 +16,14 @@
         </p>
     </form>
 
-    <h2>{% trans "Журнал" %}</h2>
-    <table class="table table-bordered">
-        <tr>
-            <th>{% trans "Дата" %}</th>
-            <th>{% trans "Пользователь" %}</th>
-            <th>{% trans "Действие" %}</th>
-        </tr>
-        {% for log in order.get_logs %}
-            <tr>
-                <td>{{ log.dt }}</td>
-                <td>{{ log.user.profile }} / {{ log.user.profile.org }}</td>
-                <td>{{ log.msg|linebreaksbr }}</td>
-            </tr>
-        {% endfor %}
-    </table>
+    {% with object=order %}
+        {% include "object_logs.html" %}
+    {% endwith %}
 
     {% if order.get_documents %}
-        <h2>{% trans "Документы" %}</h2>
-        <table class="table table-bordered">
-            <tr>
-                <th>{% trans "Дата" %}</th>
-                <th>{% trans "Пользователь" %}</th>
-                <th>{% trans "Описание" %}</th>
-                <th></th>
-            </tr>
-            {% for doc in order.get_documents %}
-                <tr>
-                    <td>{{ doc.dt }}</td>
-                    <td>{{ doc.user.profile }} / {{ doc.user.profile.org }}</td>
-                    <td>{{ doc.description }}</td>
-                    <td><a class="btn" href="{% url report_view doc.pk %}" target="_blank">{% trans "просмотр" %}</a></td>
-                </tr>
-            {% endfor %}
-        </table>
+        {% with object=order %}
+            {% include "object_documents.html" %}
+        {% endwith %}
     {% endif %}
 
     <script type="text/javascript">
