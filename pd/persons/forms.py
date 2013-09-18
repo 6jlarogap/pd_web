@@ -84,6 +84,7 @@ class DeathCertificateForm(ValidDataMixin, StrippedStringsMixin, BaseModelForm):
         exclude = ['person', ]
 
     def __init__(self, request, *args, **kwargs):
+        self.request = request
         kwargs.setdefault('initial', {})
         instance = kwargs.get('instance')
         scan = None
@@ -101,7 +102,8 @@ class DeathCertificateForm(ValidDataMixin, StrippedStringsMixin, BaseModelForm):
                 'release_date': datetime.date.today(),
             })
         super(DeathCertificateForm, self).__init__(*args, **kwargs)
-        self.scan_form = DeathCertificateScanForm(request, prefix='dc-scan', instance = scan)
+        print request.FILES
+        self.scan_form = DeathCertificateScanForm(request, prefix='dc-scan', instance = scan, files=request.FILES)
 
     def clean_release_date(self):
         today = datetime.date.today()
@@ -110,6 +112,18 @@ class DeathCertificateForm(ValidDataMixin, StrippedStringsMixin, BaseModelForm):
             msg = _(u'Неверная дата выдачи')
             raise forms.ValidationError(msg)
         return release_date
+
+    def save(self, *args, **kwargs):
+        dc = super(DeathCertificateForm, self).save(*args, **kwargs)
+        if self.scan_form.is_valid():
+            print self.scan_form.clean()
+            print self.scan_form.cleaned_data
+            if self.request.FILES.get('dc-scan-bfile'):
+                dc_scan = self.scan_form.save(commit=False)
+                print dc_scan
+                dc_scan.deathcertificate = dc
+                dc_scan.save()
+        return dc
 
 class AlivePersonForm(ValidDataMixin, StrippedStringsMixin, forms.ModelForm):
     class Meta:

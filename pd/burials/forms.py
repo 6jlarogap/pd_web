@@ -622,7 +622,7 @@ class PlaceForm(forms.ModelForm):
 class BurialFilesForm(forms.ModelForm):
     class Meta:
         model = BurialFiles
-        exclude = ['burial', 'date_of_creation', ]
+        exclude = ['burial', ]
 
     MAX_UPLOAD_SIZE_MB = 2
 
