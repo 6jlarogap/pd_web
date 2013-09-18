@@ -186,4 +186,3 @@ class Photo(Files):
     lng = models.FloatField(_(u"Долгота"), blank=True, null=True)
     
 add_introspection_rules([], ['^pd\.models\.UnclearDateModelField'])
-
