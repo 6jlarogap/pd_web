@@ -4,7 +4,7 @@ import datetime
 from django import forms
 from django.utils.translation import ugettext as _
 
-from persons.models import DeadPerson, PersonID, DeathCertificate, AlivePerson, DocumentSource
+from persons.models import DeadPerson, PersonID, DeathCertificate, DeathCertificateScan, AlivePerson, DocumentSource
 from pd.models import UnclearDate
 from pd.forms import BaseModelForm, StrippedStringsMixin
 
@@ -86,15 +86,22 @@ class DeathCertificateForm(ValidDataMixin, StrippedStringsMixin, BaseModelForm):
     def __init__(self, request, *args, **kwargs):
         kwargs.setdefault('initial', {})
         instance = kwargs.get('instance')
+        scan = None
         if instance:
             kwargs['initial'].update({
                 'dt_modified': int(instance.dt_modified.strftime("%s")),
             })
+            if instance.pk:
+                try:
+                    scan = instance.deathcertificatescan
+                except DeathCertificateScan.DoesNotExist:
+                    pass
         if (not instance or not instance.person) and not request.REQUEST.get('archive'):
             kwargs['initial'].update({
                 'release_date': datetime.date.today(),
             })
         super(DeathCertificateForm, self).__init__(*args, **kwargs)
+        self.scan_form = DeathCertificateScanForm(request, prefix='dc-scan', instance = scan)
 
     def clean_release_date(self):
         today = datetime.date.today()
@@ -114,3 +121,12 @@ class AlivePersonForm(ValidDataMixin, StrippedStringsMixin, forms.ModelForm):
 
     def is_valid_data(self):
         return self.is_valid() and self.cleaned_data.get('last_name') # last name should be present
+
+class DeathCertificateScanForm(forms.ModelForm):
+    class Meta:
+        model = DeathCertificateScan
+        fields = ('bfile', )
+
+    def __init__(self, *args, **kwargs):
+        super(DeathCertificateScanForm, self).__init__(*args, **kwargs)
+        self.fields['bfile'].label = _(u'Скан')

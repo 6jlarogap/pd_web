@@ -146,6 +146,8 @@ def files_upload_to(instance, filename):
         return os.path.join('bfiles', str(instance.burial.pk), fname)
     elif isinstance(instance, get_model('burials', 'PlaceStatusFiles')):
         return os.path.join('place-status-files', str(instance.placestatus.pk), fname)
+    elif isinstance(instance, get_model('persons', 'DeathCertificateScan')):
+        return os.path.join('death-certificates', str(instance.deathcertificate.pk), fname)
     elif isinstance(instance, get_model('burials', 'GravePhoto')):
         d = datetime.date.today()
         return os.path.join('grave-photos',

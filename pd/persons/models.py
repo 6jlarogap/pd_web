@@ -249,9 +249,9 @@ class DeathCertificate(BaseModel):
         self.series = self.series.upper()
         super(DeathCertificate, self).save(*args, **kwargs)
 
-#class DeathCertificateFiles(Files):
-    #"""
-    #Файлы-сканы свидетельства о смерти
-    #"""
-    #deathcertificate = models.OneToOneField(DeathCertificate)
+class DeathCertificateScan(Files):
+    """
+    Файлы-сканы свидетельства о смерти, по одному на СоС
+    """
+    deathcertificate = models.OneToOneField(DeathCertificate)
 
