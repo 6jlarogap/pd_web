@@ -5,10 +5,7 @@ from django.db import models
 from django.db.models.deletion import ProtectedError
 from django.utils.translation import ugettext_lazy as _
 from django.db.models.query_utils import Q
-from pd.models import UnclearDateModelField, BaseModel
-
-import os
-import pytils
+from pd.models import UnclearDateModelField, BaseModel, Files, Photo
 
 from persons.models import DeadPerson, SafeDeleteMixin, DeathCertificate
 from reports.models import Report
@@ -250,56 +247,6 @@ class PlaceStatus(BaseModel):
     comment = models.TextField(verbose_name=_(u"Примечание"), blank=True, null=True)
     creator = models.ForeignKey('auth.User', verbose_name=_(u"Создатель"), editable=False,
                                 on_delete=models.PROTECT)
-    
-def files_upload_to(instance, filename):
-    instance.original_name = filename
-    fname = u'.'.join(map(pytils.translit.slugify, filename.rsplit('.', 1)))
-    if isinstance(instance, BurialFiles):
-        return os.path.join('bfiles', str(instance.burial.pk), fname)
-    elif isinstance(instance, PlaceStatusFiles):
-        return os.path.join('place-status-files', str(instance.placestatus.pk), fname)
-    elif isinstance(instance, GravePhoto):
-        d = datetime.date.today()
-        return os.path.join('grave-photos',
-                            "{0:d}/{1:02d}/{2:02d}".format(d.year, d.month, d.day),
-                             fname)
-    else:
-        return os.path.join('files', fname)
-
-# Абстрактные классы Files, Photo находятся здесь, а не в "общих" pd.models.py
-# из-за функции upload_to=files_upload_to, в которой много ссылок на модели
-# из этого burials/models.py
-
-class Files(models.Model):
-    """
-    Базовый класс для файлов
-    """
-    class Meta:
-        abstract = True
-        
-    bfile = models.FileField(u"Файл", upload_to=files_upload_to, blank=True)
-    comment = models.CharField(u"Описание", max_length=96, blank=True)
-    original_name = models.CharField(max_length=255, editable=False)
-    creator = models.ForeignKey('auth.User', verbose_name=_(u"Создатель"), editable=False, null=True,
-                                on_delete=models.PROTECT)
-    date_of_creation = models.DateTimeField(auto_now_add=True)
-
-    def delete(self):
-        if self.bfile != "":
-            if os.path.exists(self.bfile.path):
-                os.remove(self.bfile.path)
-            self.bfile = ""
-        super(Files, self).delete()
-
-class Photo(Files):
-    """
-    Базовый класс для фото
-    """
-    class Meta:
-        abstract = True
-
-    lat = models.FloatField(_(u"Широта"), blank=True, null=True)
-    lng = models.FloatField(_(u"Долгота"), blank=True, null=True)
     
 class Grave(BaseModel):
 
