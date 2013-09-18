@@ -7,9 +7,8 @@ from django.db.models.deletion import ProtectedError
 
 import datetime
 from geo.models import Location
-from pd.models import UnclearDate, UnclearDateModelField, BaseModel
+from pd.models import UnclearDate, UnclearDateModelField, BaseModel, Files
 from users.models import Org
-
 
 class SafeDeleteMixin(object):
     
@@ -249,3 +248,10 @@ class DeathCertificate(BaseModel):
     def save(self, *args, **kwargs):
         self.series = self.series.upper()
         super(DeathCertificate, self).save(*args, **kwargs)
+
+#class DeathCertificateFiles(Files):
+    #"""
+    #Файлы-сканы свидетельства о смерти
+    #"""
+    #deathcertificate = models.OneToOneField(DeathCertificate)
+
