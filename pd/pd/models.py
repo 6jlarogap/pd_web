@@ -1,7 +1,11 @@
 # -*- coding: utf-8 -*-
 
+import os
+import pytils
 import datetime
+
 from django.db import models
+from django.db.models.loading import get_model
 from django.utils.translation import ugettext as _
 from south.modelsinspector import add_introspection_rules
 
@@ -135,4 +139,51 @@ class BaseModel(models.Model):
     dt_created = models.DateTimeField(_(u"Дата/время создания"), auto_now_add=True)
     dt_modified = models.DateTimeField(_(u"Дата/время модификации"), auto_now=True)
 
+def files_upload_to(instance, filename):
+    instance.original_name = filename
+    fname = u'.'.join(map(pytils.translit.slugify, filename.rsplit('.', 1)))
+    if isinstance(instance, get_model('burials', 'BurialFiles')):
+        return os.path.join('bfiles', str(instance.burial.pk), fname)
+    elif isinstance(instance, get_model('burials', 'PlaceStatusFiles')):
+        return os.path.join('place-status-files', str(instance.placestatus.pk), fname)
+    elif isinstance(instance, get_model('burials', 'GravePhoto')):
+        d = datetime.date.today()
+        return os.path.join('grave-photos',
+                            "{0:d}/{1:02d}/{2:02d}".format(d.year, d.month, d.day),
+                             fname)
+    else:
+        return os.path.join('files', fname)
+
+class Files(models.Model):
+    """
+    Базовый класс для файлов
+    """
+    class Meta:
+        abstract = True
+        
+    bfile = models.FileField(u"Файл", upload_to=files_upload_to, blank=True)
+    comment = models.CharField(u"Описание", max_length=96, blank=True)
+    original_name = models.CharField(max_length=255, editable=False)
+    creator = models.ForeignKey('auth.User', verbose_name=_(u"Создатель"), editable=False, null=True,
+                                on_delete=models.PROTECT)
+    date_of_creation = models.DateTimeField(auto_now_add=True)
+
+    def delete(self):
+        if self.bfile != "":
+            if os.path.exists(self.bfile.path):
+                os.remove(self.bfile.path)
+            self.bfile = ""
+        super(Files, self).delete()
+
+class Photo(Files):
+    """
+    Базовый класс для фото
+    """
+    class Meta:
+        abstract = True
+
+    lat = models.FloatField(_(u"Широта"), blank=True, null=True)
+    lng = models.FloatField(_(u"Долгота"), blank=True, null=True)
+    
 add_introspection_rules([], ['^pd\.models\.UnclearDateModelField'])
+
