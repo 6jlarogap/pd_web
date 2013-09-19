@@ -3,6 +3,7 @@ import datetime
 
 from django import forms
 from django.utils.translation import ugettext as _
+from django.db.models.fields.files import FieldFile
 
 from persons.models import DeadPerson, PersonID, DeathCertificate, DeathCertificateScan, AlivePerson, DocumentSource
 from pd.models import UnclearDate
@@ -88,21 +89,19 @@ class DeathCertificateForm(ValidDataMixin, StrippedStringsMixin, BaseModelForm):
         kwargs.setdefault('initial', {})
         instance = kwargs.get('instance')
         scan = None
-        if instance:
+        if instance and instance.pk:
             kwargs['initial'].update({
                 'dt_modified': int(instance.dt_modified.strftime("%s")),
             })
-            if instance.pk:
-                try:
-                    scan = instance.deathcertificatescan
-                except DeathCertificateScan.DoesNotExist:
-                    pass
+            try:
+                scan = instance.deathcertificatescan
+            except DeathCertificateScan.DoesNotExist:
+                pass
         if (not instance or not instance.person) and not request.REQUEST.get('archive'):
             kwargs['initial'].update({
                 'release_date': datetime.date.today(),
             })
         super(DeathCertificateForm, self).__init__(*args, **kwargs)
-        print request.FILES
         self.scan_form = DeathCertificateScanForm(request, prefix='dc-scan', instance = scan, files=request.FILES)
 
     def clean_release_date(self):
@@ -113,14 +112,26 @@ class DeathCertificateForm(ValidDataMixin, StrippedStringsMixin, BaseModelForm):
             raise forms.ValidationError(msg)
         return release_date
 
-    def save(self, *args, **kwargs):
-        dc = super(DeathCertificateForm, self).save(*args, **kwargs)
+    def save(self, deadPerson=None, commit=True, *args, **kwargs):
+        uploaded = clear = False
         if self.scan_form.is_valid():
-            print self.scan_form.clean()
-            print self.scan_form.cleaned_data
-            if self.request.FILES.get('dc-scan-bfile'):
+            self.scan_form.clean()
+            # FieldFile -- это еще не UploadedFile
+            bfile = self.scan_form.cleaned_data.get('bfile')
+            uploaded = bfile and not isinstance(bfile, FieldFile)
+            clear = bool(self.request.POST.get(self.scan_form.prefix+'-bfile-clear'))
+        if deadPerson:
+            self.instance.person = deadPerson
+        dc = super(DeathCertificateForm, self).save(forceCommit=clear or uploaded, commit=commit, *args, **kwargs)
+        if commit:
+            if self.scan_form.instance.pk:
+                if clear and not uploaded:
+                    self.scan_form.instance.delete()
+                    return dc
+                if clear or uploaded:
+                    DeathCertificateScan.objects.get(pk=self.scan_form.instance.pk).delete_from_media()
+            if uploaded:
                 dc_scan = self.scan_form.save(commit=False)
-                print dc_scan
                 dc_scan.deathcertificate = dc
                 dc_scan.save()
         return dc

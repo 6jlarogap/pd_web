@@ -271,16 +271,9 @@ class BaseModelForm(forms.ModelForm):
     def save(self, forceCommit=False, commit=True, *args, **kwargs):
         """
         Сохранение instance формы, если в полях формы произошли изменения
-        или если задан параметр forceCommit_
-        
-        Параметр forceCommit добавлен разработчиком -- в отличие от
-        имеющегося в save() предка класса параметра commit.
-        Имя параметра, типа oneTwo, отличается по стилю от
-        параметров функций django типа one_two, так что
-        противоречие с возможными будущими параметрами от django
-        для этой функции мало вероятна
+        или если задан параметр forceCommit, -- при commit=True
         """
         obj = super(BaseModelForm, self).save(commit=False, *args, **kwargs)
-        if forceCommit or self.changed_data and commit:
+        if commit and (forceCommit or self.changed_data):
             obj.save()
         return obj
