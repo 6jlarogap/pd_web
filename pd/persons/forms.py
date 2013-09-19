@@ -151,7 +151,7 @@ class DeathCertificateScanForm(forms.ModelForm):
     class Meta:
         model = DeathCertificateScan
         fields = ('bfile', )
-        widgets = { 
+        widgets = {
             'bfile': CustomClearableFileInput,
         }
         
