@@ -252,12 +252,13 @@ class DeathCertificate(BaseModel):
     def delete(self):
         try:
             self.deathcertificatescan.delete()
-        except (AttributeError, DeathCertificateScan.DoesNotExist, ProtectedError):
+        except DeathCertificateScan.DoesNotExist:
             pass
-        try:
-            super(DeathCertificate, self).delete()
-        except ProtectedError:
-            pass
+        else:
+            try:
+                super(DeathCertificate, self).delete()
+            except ProtectedError:
+                pass
 
 class DeathCertificateScan(Files):
     """

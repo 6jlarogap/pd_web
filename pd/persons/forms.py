@@ -116,8 +116,8 @@ class DeathCertificateForm(ValidDataMixin, StrippedStringsMixin, BaseModelForm):
         uploaded = clear = False
         if self.scan_form.is_valid():
             self.scan_form.clean()
-            # FieldFile -- это еще не UploadedFile
             bfile = self.scan_form.cleaned_data.get('bfile')
+            # FieldFile -- это еще не UploadedFile
             uploaded = bfile and not isinstance(bfile, FieldFile)
             clear = bool(self.request.POST.get(self.scan_form.prefix+'-bfile-clear'))
         if deadPerson:
@@ -151,7 +151,7 @@ class DeathCertificateScanForm(forms.ModelForm):
     class Meta:
         model = DeathCertificateScan
         fields = ('bfile', )
-        widgets = {
+        widgets = { 
             'bfile': CustomClearableFileInput,
         }
         

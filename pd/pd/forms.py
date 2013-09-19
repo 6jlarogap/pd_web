@@ -284,7 +284,7 @@ class BaseModelForm(forms.ModelForm):
 class CustomClearableFileInput(ClearableFileInput):
     def render(self, name, value, attrs=None):
     
-        self.template_with_initial = u'%(initial_text)s: %(initial)s <BR />%(clear_template)s<br />%(input_text)s:<br /> %(input)s<br />'
+        self.template_with_initial = u'%(initial_text)s: %(initial)s <br />%(clear_template)s<br />%(input_text)s:<br /> %(input)s<br />'
         self.template_with_clear = u'<label for="%(clear_checkbox_id)s">%(clear_checkbox_label)s:</label> %(clear)s'
 
         substitutions = {
