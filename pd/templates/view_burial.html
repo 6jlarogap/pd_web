@@ -95,7 +95,7 @@
                     <dd>{% trans "Дата" %}*: {{ dc.release_date|default_if_none:"" }}</dd>
                     <dd>{% trans "Скан" %}:
                     {% if dc.deathcertificatescan %}
-                            <a href="/media/{{ dc.deathcertificatescan.bfile }}">{% trans "имеется" %}</a></dd>
+                        <a href="/media/{{ dc.deathcertificatescan.bfile }}">{% trans "имеется" %}</a></dd>
                     {% else %}
                         {% trans "отсутствует" %}
                     {% endif %}
