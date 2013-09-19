@@ -170,13 +170,11 @@ class Files(models.Model):
     date_of_creation = models.DateTimeField(auto_now_add=True)
 
     def delete_from_media(self):
-        if self.bfile != "":
-            if os.path.exists(self.bfile.path):
-                os.remove(self.bfile.path)
+        if self.bfile and os.path.exists(self.bfile.path):
+            os.remove(self.bfile.path)
 
     def delete(self):
         self.delete_from_media()
-        self.bfile = ""
         super(Files, self).delete()
 
 class Photo(Files):
