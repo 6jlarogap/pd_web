@@ -249,17 +249,6 @@ class DeathCertificate(BaseModel):
         self.series = self.series.upper()
         super(DeathCertificate, self).save(*args, **kwargs)
 
-    def delete(self):
-        try:
-            self.deathcertificatescan.delete()
-        except DeathCertificateScan.DoesNotExist:
-            pass
-        else:
-            try:
-                super(DeathCertificate, self).delete()
-            except ProtectedError:
-                pass
-
 class DeathCertificateScan(Files):
     """
     Файлы-сканы свидетельства о смерти, по одному на СоС
