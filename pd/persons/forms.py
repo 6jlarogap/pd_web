@@ -7,7 +7,7 @@ from django.db.models.fields.files import FieldFile
 
 from persons.models import DeadPerson, PersonID, DeathCertificate, DeathCertificateScan, AlivePerson, DocumentSource
 from pd.models import UnclearDate
-from pd.forms import BaseModelForm, StrippedStringsMixin
+from pd.forms import BaseModelForm, StrippedStringsMixin, CustomClearableFileInput
 
 class ValidDataMixin:
     def is_valid_data(self):
@@ -151,7 +151,10 @@ class DeathCertificateScanForm(forms.ModelForm):
     class Meta:
         model = DeathCertificateScan
         fields = ('bfile', )
-
+        widgets = {
+            'bfile': CustomClearableFileInput,
+        }
+        
     def __init__(self, *args, **kwargs):
         super(DeathCertificateScanForm, self).__init__(*args, **kwargs)
         self.fields['bfile'].label = _(u'Скан')
