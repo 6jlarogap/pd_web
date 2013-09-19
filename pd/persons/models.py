@@ -93,10 +93,6 @@ class BasePerson(models.Model):
             pass
         else:
             try:
-                self.personid.delete()
-            except (AttributeError, PersonID.DoesNotExist, ProtectedError):
-                pass
-            try:
                 self.address.delete()
             except (AttributeError, ProtectedError):
                 pass
