@@ -113,6 +113,9 @@ class DeathCertificateForm(StrippedStringsMixin, BaseModelForm):
             raise forms.ValidationError(msg)
         return release_date
 
+    def is_valid(self):
+        return super(DeathCertificateForm, self).is_valid() and self.scan_form.is_valid()
+        
     def save(self, deadPerson=None, commit=True, *args, **kwargs):
         scan_uploaded = scan_clear = False
         if self.scan_form.is_valid():
@@ -126,7 +129,7 @@ class DeathCertificateForm(StrippedStringsMixin, BaseModelForm):
         dc = super(DeathCertificateForm, self).save(forceCommit=scan_clear or scan_uploaded,
                                                     commit=commit,
                                                     *args, **kwargs)
-        if commit:
+        if commit and self.scan_form.is_valid():
             burial = dc.get_burial()
             log_prefix = u"Усопший, СоС, "
             if self.scan_form.instance.pk:
@@ -167,3 +170,15 @@ class DeathCertificateScanForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super(DeathCertificateScanForm, self).__init__(*args, **kwargs)
         self.fields['bfile'].label = _(u'Скан')
+
+    MAX_UPLOAD_SIZE_MB = 5
+
+    def clean_comment(self):
+        self.cleaned_data['comment'] = self.cleaned_data['comment'].strip()
+        return self.cleaned_data['comment']
+
+    def clean_bfile(self):
+        bfile = self.cleaned_data['bfile']
+        if bfile and not isinstance(bfile, FieldFile) and bfile.size > self.MAX_UPLOAD_SIZE_MB * 2**20:
+            raise forms.ValidationError(_(u'Превышен максимальный размер файла') + u", %s Мб." % self.MAX_UPLOAD_SIZE_MB)
+        return bfile
