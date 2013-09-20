@@ -269,6 +269,15 @@ class DeathCertificate(BaseModel):
         except ProtectedError:
             pass
 
+    def get_burial(self):
+        burial = None
+        if self.pk:
+            try:
+                burial = self.person.burial_set.all()[0]
+            except IndexError:
+                pass
+        return burial
+        
 class DeathCertificateScan(Files):
     """
     Файлы-сканы свидетельства о смерти, по одному на СоС

@@ -7,6 +7,7 @@ from django.db.models.fields.files import FieldFile
 
 from persons.models import DeadPerson, PersonID, DeathCertificate, DeathCertificateScan, AlivePerson, DocumentSource
 from pd.models import UnclearDate
+from logs.models import write_log
 from pd.forms import BaseModelForm, StrippedStringsMixin, CustomClearableFileInput
 
 class ValidDataMixin:
@@ -126,9 +127,13 @@ class DeathCertificateForm(StrippedStringsMixin, BaseModelForm):
                                                     commit=commit,
                                                     *args, **kwargs)
         if commit:
+            burial = dc.get_burial()
+            log_prefix = u"Усопший, СоС, "
             if self.scan_form.instance.pk:
                 if scan_clear and not scan_uploaded:
                     self.scan_form.instance.delete()
+                    if burial:
+                        write_log(self.request, burial, log_prefix + _(u'скан удален'))
                     return dc
                 if scan_clear or scan_uploaded:
                     DeathCertificateScan.objects.get(pk=self.scan_form.instance.pk).delete_from_media()
@@ -136,6 +141,8 @@ class DeathCertificateForm(StrippedStringsMixin, BaseModelForm):
                 scan = self.scan_form.save(commit=False)
                 scan.deathcertificate = dc
                 scan.save()
+                if burial:
+                    write_log(self.request, burial,  log_prefix + _(u'прикреплен скан: %s') % scan.original_name)
         return dc
 
 class AlivePersonForm(ValidDataMixin, StrippedStringsMixin, forms.ModelForm):
