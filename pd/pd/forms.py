@@ -273,11 +273,16 @@ class BaseModelForm(forms.ModelForm):
 
     def save(self, forceCommit=False, commit=True, *args, **kwargs):
         """
-        Сохранение instance формы, если в полях формы произошли изменения
-        или если задан параметр forceCommit, -- при commit=True
+        Сохранение instance формы в базу -- при commit=True -- если:
+        - в полях формы произошли изменения;
+        - операция insert (а не update существующей записи):
+        -   можно считать в этом случае, что изменения произошли:
+        -   не было ничего и вдруг должно возникнуть в базе;
+        - если задан параметр forceCommit
+        -   (на тот случай, если форма зависит от других форм и это надо учесть)
         """
         obj = super(BaseModelForm, self).save(commit=False, *args, **kwargs)
-        if commit and (forceCommit or self.changed_data):
+        if commit and (self.changed_data or not self.instance.pk or forceCommit):
             obj.save()
         return obj
 

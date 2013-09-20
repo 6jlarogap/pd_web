@@ -112,29 +112,31 @@ class DeathCertificateForm(ValidDataMixin, StrippedStringsMixin, BaseModelForm):
             raise forms.ValidationError(msg)
         return release_date
 
-    def save(self, deadPerson=None, forceCommit=False, commit=True, *args, **kwargs):
-        uploaded = clear = False
+    def save(self, deadPerson=None, commit=True, *args, **kwargs):
+        scan_uploaded = scan_clear = False
         if self.scan_form.is_valid():
             self.scan_form.clean()
             bfile = self.scan_form.cleaned_data.get('bfile')
             # FieldFile -- это еще не UploadedFile
-            uploaded = bfile and not isinstance(bfile, FieldFile)
-            clear = bool(self.request.POST.get(self.scan_form.prefix+'-bfile-clear'))
+            scan_uploaded = bfile and not isinstance(bfile, FieldFile)
+            scan_clear = self.request.POST.get(self.scan_form.prefix+'-bfile-clear')
+            print scan_clear
         if deadPerson:
             self.instance.person = deadPerson
-        dc = super(DeathCertificateForm, self).save(forceCommit=forceCommit or clear or uploaded,
-                                                    commit=commit, *args, **kwargs)
+        dc = super(DeathCertificateForm, self).save(forceCommit=scan_clear or scan_uploaded,
+                                                    commit=commit,
+                                                    *args, **kwargs)
         if commit:
             if self.scan_form.instance.pk:
-                if clear and not uploaded:
+                if scan_clear and not scan_uploaded:
                     self.scan_form.instance.delete()
                     return dc
-                if clear or uploaded:
+                if scan_clear or scan_uploaded:
                     DeathCertificateScan.objects.get(pk=self.scan_form.instance.pk).delete_from_media()
-            if uploaded:
-                dc_scan = self.scan_form.save(commit=False)
-                dc_scan.deathcertificate = dc
-                dc_scan.save()
+            if scan_uploaded:
+                scan = self.scan_form.save(commit=False)
+                scan.deathcertificate = dc
+                scan.save()
         return dc
 
 class AlivePersonForm(ValidDataMixin, StrippedStringsMixin, forms.ModelForm):

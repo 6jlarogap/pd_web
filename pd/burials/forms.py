@@ -515,7 +515,7 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
             deadman.save()
 
             if self.dc_form.is_valid():
-                self.dc_form.save(deadPerson=deadman, forceCommit=True)
+                self.dc_form.save(deadPerson=deadman)
             self.instance.deadman = deadman
         else:
             self.safe_delete('deadman', self.instance)
