@@ -20,7 +20,7 @@ from django.db.models.query_utils import Q
 from burials.models import Cemetery, Area, Burial, Place, ExhumationRequest, BurialFiles, Grave
 from geo.forms import LocationForm
 from orders.models import Order
-from pd.forms import PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, CommentForm, StrippedStringsMixin
+from pd.forms import PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, CommentForm, StrippedStringsMixin, CustomUploadModelForm
 from persons.forms import DeadPersonForm, DeathCertificateForm, AlivePersonForm, PersonIDForm
 from persons.models import DeathCertificate, PersonID, IDDocumentType, SafeDeleteMixin
 from users.forms import BaseOrgForm
@@ -617,12 +617,13 @@ class PlaceForm(forms.ModelForm):
         model = Place
         exclude = ['responsible', ]
 
-class BurialFilesForm(forms.ModelForm):
+class BurialFilesForm(CustomUploadModelForm):
     class Meta:
         model = BurialFiles
         exclude = ['burial', ]
 
-    MAX_UPLOAD_SIZE_MB = 2
+    # MAX_UPLOAD_SIZE_MB = 2, так установлено в CustomUploadModelForm,
+    # это устраивает, не будем менять в __init__()
 
     def clean_comment(self):
         self.cleaned_data['comment'] = self.cleaned_data['comment'].strip()
@@ -630,12 +631,10 @@ class BurialFilesForm(forms.ModelForm):
 
     def clean(self):
         cleaned_data = super(BurialFilesForm, self).clean()
-        comment = cleaned_data['comment']
-        bfile = cleaned_data['bfile']
+        comment = cleaned_data.get('comment')
+        bfile = cleaned_data.get('bfile')
         if comment and not bfile or not comment and bfile:
             raise forms.ValidationError(_(u'Надо задавать и файл, и описание; или ни файл, ни описание'))
-        if bfile and bfile.size > self.MAX_UPLOAD_SIZE_MB * 2**20:
-            raise forms.ValidationError(_(u'Превышен максимальный размер файла') + u", %s Мб." % self.MAX_UPLOAD_SIZE_MB)
         return cleaned_data
 
     def save(self, burial=None, user=None, commit=True, *args, **kwargs):

@@ -3,6 +3,7 @@ import json
 import datetime
 from django import forms
 from django.conf import settings
+from django.db.models.fields.files import FieldFile
 from django.forms.extras.widgets import SelectDateWidget, RE_DATE, _parse_date_fmt
 from django.utils.dates import MONTHS
 from django.utils.formats import get_format
@@ -285,6 +286,21 @@ class BaseModelForm(forms.ModelForm):
         if commit and (self.changed_data or not self.instance.pk or forceCommit):
             obj.save()
         return obj
+
+class CustomUploadModelForm(forms.ModelForm):
+    
+    # Если такой макс. размер не устраивает, то в потомках класса
+    # надо менять в соответствующий __init__(self)
+    #
+    MAX_UPLOAD_SIZE_MB = 2
+
+    # 'bfile' -- такое имя у нас в моделях для файлового поля
+    #
+    def clean_bfile(self):
+        bfile = self.cleaned_data.get('bfile')
+        if bfile and not isinstance(bfile, FieldFile) and bfile.size > self.MAX_UPLOAD_SIZE_MB * 2**20:
+            raise forms.ValidationError(_(u'Превышен максимальный размер файла') + u", %s Мб." % self.MAX_UPLOAD_SIZE_MB)
+        return bfile
 
 class CustomClearableFileInput(ClearableFileInput):
     def render(self, name, value, attrs=None):

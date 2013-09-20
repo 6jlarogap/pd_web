@@ -8,7 +8,7 @@ from django.db.models.fields.files import FieldFile
 from persons.models import DeadPerson, PersonID, DeathCertificate, DeathCertificateScan, AlivePerson, DocumentSource
 from pd.models import UnclearDate
 from logs.models import write_log
-from pd.forms import BaseModelForm, StrippedStringsMixin, CustomClearableFileInput
+from pd.forms import BaseModelForm, StrippedStringsMixin, CustomClearableFileInput, CustomUploadModelForm
 
 class ValidDataMixin:
     def is_valid_data(self):
@@ -159,7 +159,7 @@ class AlivePersonForm(ValidDataMixin, StrippedStringsMixin, forms.ModelForm):
     def is_valid_data(self):
         return self.is_valid() and self.cleaned_data.get('last_name') # last name should be present
 
-class DeathCertificateScanForm(forms.ModelForm):
+class DeathCertificateScanForm(CustomUploadModelForm):
     class Meta:
         model = DeathCertificateScan
         fields = ('bfile', )
@@ -170,11 +170,4 @@ class DeathCertificateScanForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super(DeathCertificateScanForm, self).__init__(*args, **kwargs)
         self.fields['bfile'].label = _(u'Скан')
-
-    MAX_UPLOAD_SIZE_MB = 5
-
-    def clean_bfile(self):
-        bfile = self.cleaned_data.get('bfile')
-        if bfile and not isinstance(bfile, FieldFile) and bfile.size > self.MAX_UPLOAD_SIZE_MB * 2**20:
-            raise forms.ValidationError(_(u'Превышен максимальный размер файла') + u", %s Мб." % self.MAX_UPLOAD_SIZE_MB)
-        return bfile
+        self.MAX_UPLOAD_SIZE_MB = 5
