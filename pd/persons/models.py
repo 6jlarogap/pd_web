@@ -88,6 +88,10 @@ class BasePerson(models.Model):
 
     def delete(self):
         try:
+            self.personid.delete()
+        except (AttributeError, PersonID.DoesNotExist, ProtectedError):
+            pass
+        try:
             super(BasePerson, self).delete()
         except ProtectedError:
             pass
@@ -181,6 +185,13 @@ class DeadPerson(BasePerson):
 
     unclear_death_date = property(get_death_date, set_death_date)
 
+    def delete(self):
+        try:
+            self.deathcertificate.delete()
+        except (AttributeError, DeathCertificate.DoesNotExist, ProtectedError):
+            pass
+        super(DeadPerson, self).delete()
+
 class AlivePerson(BasePerson):
     """
     Живое ФЛ с телефоном
@@ -244,6 +255,16 @@ class DeathCertificate(BaseModel):
     def save(self, *args, **kwargs):
         self.series = self.series.upper()
         super(DeathCertificate, self).save(*args, **kwargs)
+
+    def delete(self):
+        try:
+            self.deathcertificatescan.delete()
+        except (AttributeError, DeathCertificateScan.DoesNotExist, ProtectedError):
+            pass
+        try:
+            super(DeathCertificate, self).delete()
+        except ProtectedError:
+            pass
 
 class DeathCertificateScan(Files):
     """
