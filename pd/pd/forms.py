@@ -298,6 +298,11 @@ class CustomUploadModelForm(forms.ModelForm):
     #
     def clean_bfile(self):
         bfile = self.cleaned_data.get('bfile')
+        # В upload file field может оказаться:
+        # - типа None или пустой строки
+        # - типа FieldFile, если уже есть файл в form.instance, а новый на замену его не ввели
+        # - типа ...UploadFile (много разных таких типов),
+        #        когда выполнен POST с прикрепленным файлом
         if bfile and not isinstance(bfile, FieldFile) and bfile.size > self.MAX_UPLOAD_SIZE_MB * 2**20:
             raise forms.ValidationError(_(u'Превышен максимальный размер файла') + u", %s Мб." % self.MAX_UPLOAD_SIZE_MB)
         return bfile
