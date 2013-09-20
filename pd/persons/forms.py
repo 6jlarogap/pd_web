@@ -173,10 +173,6 @@ class DeathCertificateScanForm(forms.ModelForm):
 
     MAX_UPLOAD_SIZE_MB = 5
 
-    def clean_comment(self):
-        self.cleaned_data['comment'] = self.cleaned_data['comment'].strip()
-        return self.cleaned_data['comment']
-
     def clean_bfile(self):
         bfile = self.cleaned_data['bfile']
         if bfile and not isinstance(bfile, FieldFile) and bfile.size > self.MAX_UPLOAD_SIZE_MB * 2**20:
