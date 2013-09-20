@@ -120,7 +120,6 @@ class DeathCertificateForm(ValidDataMixin, StrippedStringsMixin, BaseModelForm):
             # FieldFile -- это еще не UploadedFile
             scan_uploaded = bfile and not isinstance(bfile, FieldFile)
             scan_clear = self.request.POST.get(self.scan_form.prefix+'-bfile-clear')
-            print scan_clear
         if deadPerson:
             self.instance.person = deadPerson
         dc = super(DeathCertificateForm, self).save(forceCommit=scan_clear or scan_uploaded,
