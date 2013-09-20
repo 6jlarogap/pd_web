@@ -77,7 +77,7 @@ class PersonIDForm(ValidDataMixin, StrippedStringsMixin, forms.ModelForm):
             raise forms.ValidationError(msg)
         return release_date
 
-class DeathCertificateForm(ValidDataMixin, StrippedStringsMixin, BaseModelForm):
+class DeathCertificateForm(StrippedStringsMixin, BaseModelForm):
     dt_modified = forms.IntegerField(widget=forms.HiddenInput, required=False, )
 
     class Meta:
