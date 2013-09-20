@@ -112,7 +112,7 @@ class DeathCertificateForm(ValidDataMixin, StrippedStringsMixin, BaseModelForm):
             raise forms.ValidationError(msg)
         return release_date
 
-    def save(self, deadPerson=None, commit=True, *args, **kwargs):
+    def save(self, deadPerson=None, forceCommit=False, commit=True, *args, **kwargs):
         uploaded = clear = False
         if self.scan_form.is_valid():
             self.scan_form.clean()
@@ -122,7 +122,8 @@ class DeathCertificateForm(ValidDataMixin, StrippedStringsMixin, BaseModelForm):
             clear = bool(self.request.POST.get(self.scan_form.prefix+'-bfile-clear'))
         if deadPerson:
             self.instance.person = deadPerson
-        dc = super(DeathCertificateForm, self).save(forceCommit=clear or uploaded, commit=commit, *args, **kwargs)
+        dc = super(DeathCertificateForm, self).save(forceCommit=forceCommit or clear or uploaded,
+                                                    commit=commit, *args, **kwargs)
         if commit:
             if self.scan_form.instance.pk:
                 if clear and not uploaded:

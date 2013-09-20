@@ -190,7 +190,10 @@ class DeadPerson(BasePerson):
             self.deathcertificate.delete()
         except (AttributeError, DeathCertificate.DoesNotExist, ProtectedError):
             pass
-        super(DeadPerson, self).delete()
+        try:
+            super(DeadPerson, self).delete()
+        except ProtectedError:
+            pass
 
 class AlivePerson(BasePerson):
     """
