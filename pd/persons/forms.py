@@ -174,7 +174,7 @@ class DeathCertificateScanForm(forms.ModelForm):
     MAX_UPLOAD_SIZE_MB = 5
 
     def clean_bfile(self):
-        bfile = self.cleaned_data['bfile']
+        bfile = self.cleaned_data.get('bfile')
         if bfile and not isinstance(bfile, FieldFile) and bfile.size > self.MAX_UPLOAD_SIZE_MB * 2**20:
             raise forms.ValidationError(_(u'Превышен максимальный размер файла') + u", %s Мб." % self.MAX_UPLOAD_SIZE_MB)
         return bfile
