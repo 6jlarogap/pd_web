@@ -980,12 +980,20 @@ ODF styles with no properties representable as CSS
     </tr>
     <tr class="ro1">
         <td style="text-align:left; " class="ce7 co1"><p>о том, что</p></td>
-        <td colspan="8" style="text-align:left; " class="ce17">{{ burial.deadman|default:"Неизвестный" }}</td>
+        <td colspan="8" style="text-align:left; " class="ce17">{{ burial.deadman|default_if_none:"Неизвестный" }}</td>
     </tr>
     <tr class="ro1">
-        <td style="text-align:left; " class="ce5 co1"><p>похоронен</p></td>
-        <td style="text-align:left; " class="ce17" colspan="8"><p>в {{ burial.cemetery.address.city|default:"" }}
-            на кладбище {{ burial.cemetery }} ({{ burial.cemetery.address }})</p></td>
+        <td style="text-align:left; " class="ce5 co1"><p>похоронен(а)</p></td>
+        <td style="text-align:left; " class="ce17" colspan="8">
+            <p> {% if burial.cemetery.address.city %}
+                    в г.{{ burial.cemetery.address.city }}
+                {% endif %}
+                на кладбище {{ burial.cemetery|default_if_none:"(не указано)" }}
+                {% if burial.cemetery.address %}
+                    ({{ burial.cemetery.address }})
+                {% endif %}
+            </p>
+       </td>
     </tr>
     <tr class="ro1">
         <td style="text-align:left; " class="ce5 co1"><p>участок №</p></td>
