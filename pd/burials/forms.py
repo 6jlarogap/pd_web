@@ -230,12 +230,17 @@ class BurialPublicListForm(forms.Form):
     place = forms.CharField(required=False, label=_(u"Место"))
     annulated = forms.BooleanField(required=False, initial=False, label=_(u"Аннулировано"))
     per_page = forms.ChoiceField(label=_(u"На странице"), choices=PAGE_CHOICES, initial=25, required=False)
-    
-    def clean(self):
-        cd = self.cleaned_data
-        if not cd['annulated'] and (not cd['fio'] or not cd['cemetery']):
-            raise forms.ValidationError(_(u'Обязательные поля: ФИО и Кладбище'))
-        return cd
+
+    # Так как ЛОРУ сейчас ищет только среди своих захоронений
+    # - обязательность ФИО и кладбища не имеет смысла!
+    # Проверка лишь закомментирована, а не удалена из кода,
+    # чтоб не забыть про аннулированные
+    #
+    #def clean(self):
+        #cd = self.cleaned_data
+        #if not cd['annulated'] and (not cd['fio'] or not cd['cemetery']):
+            #raise forms.ValidationError(_(u'Обязательные поля: ФИО и Кладбище'))
+        #return cd
 
 class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDeleteMixin, StrippedStringsMixin, forms.ModelForm):
     COFFIN = 'coffin'
