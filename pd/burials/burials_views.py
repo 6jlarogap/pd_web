@@ -588,7 +588,7 @@ class BurialsPublicListView(PaginateListView):
                   #)
                  #)
                  #).order_by('-pk').distinct()
-                  Q(source_type=Burial.SOURCE_FULL) & 
+                  Q(source_type__in=(Burial.SOURCE_FULL, Burial.SOURCE_TRANSFERRED,)) & 
                   Q(loru = self.request.user.profile.org) &
                   (
                    Q(annulated=False) &
