@@ -401,7 +401,8 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
             'orders': b.get_orders(loru=self.request.user.profile.org) if self.request.user.profile.is_loru() else [],
             # Кому можно смотреть в захоронении ответственного и заявителя:
             'show_private_data': self.request.user.profile.is_ugh() or \
-                                 b.is_full() and b.loru and b.loru == self.request.user.profile.org,
+                                 (b.is_full() or b.is_transferred()) and \
+                                 b.loru and b.loru == self.request.user.profile.org,
             'place': b.get_place() if self.request.user.profile.is_ugh() else None,
         }
 
@@ -588,7 +589,7 @@ class BurialsPublicListView(PaginateListView):
                   #)
                  #)
                  #).order_by('-pk').distinct()
-                  Q(source_type=Burial.SOURCE_FULL) & 
+                  Q(source_type__in=(Burial.SOURCE_FULL, Burial.SOURCE_TRANSFERRED,)) & 
                   Q(loru = self.request.user.profile.org) &
                   (
                    Q(annulated=False) &
