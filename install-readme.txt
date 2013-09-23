@@ -46,12 +46,8 @@ install-readme.txt, utf8 code page
             (последнее надолго, можно продолжать... :)
  
         - STATIC_ROOT:
-            ln -s static_src static
-            :   Django ругается, если static_root совпадает со static_src,
-                но в отладке неудобно всякий раз после изменений в static_src выполнять
-                ./manage.py collectstatic. Поэтому "обманем" Django, пусть думает,
-                что static_src и static_root в разных каталогах.
-                Разумеется, этот фокус только в отладочной среде (settings.DEBUG = True)
+            это -- в отладочной среде (!) -- может указывать на что угодно, только не
+            на каталог с исходниками статических файлов. А может и отсутствовать
  
         - MEDIA_ROOT:
             это дело вкуса, но в соответствии с local_settings.py.example:
