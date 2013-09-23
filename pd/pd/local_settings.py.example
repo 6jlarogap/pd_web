@@ -37,5 +37,4 @@ TEMPLATE_DIRS = (
     '/home/LINUX_USERNAME/projects/pd_web/pd/templates/',
 )
 
-STATIC_ROOT = '/home/LINUX_USERNAME/projects/pd_web/pd/static/'
 MEDIA_ROOT = '/home/LINUX_USERNAME/projects/MEDIA/pd_web/'

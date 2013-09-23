@@ -45,10 +45,6 @@ install-readme.txt, utf8 code page
             wget -q -O - http://basicdata.ru/data/fias/fias_addrobj_data.sql.bz2 | bzcat | mysql -u root fias
             (последнее надолго, можно продолжать... :)
  
-        - STATIC_ROOT:
-            это -- в отладочной среде (!) -- может указывать на что угодно, только не
-            на каталог с исходниками статических файлов. А может и отсутствовать
- 
         - MEDIA_ROOT:
             это дело вкуса, но в соответствии с local_settings.py.example:
             mkdir -p ~/projects/MEDIA/pd_web
