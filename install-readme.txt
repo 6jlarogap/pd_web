@@ -51,9 +51,9 @@ install-readme.txt, utf8 code page
  
     * cd ~/projects/pd_web
       ln -s /home/sev/venv/pdweb ENV
-            virtual env, запускаемое из ./manage.py
+            : virtual env, запускаемое из ./manage.py
     * deactivate
     !!! Можно запускать и отлаживать:
         cd ~/projects/pd_web/pd
-        mana
+        ./manage.py runserver <параметры>
  
