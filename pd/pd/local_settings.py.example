@@ -1,0 +1,41 @@
+DEBUG = True
+TEMPLATE_DEBUG = DEBUG
+ADMIN_ENABLED = True
+SUPERVISOR_ORG_INN = '1235'
+
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        'NAME': 'pd',
+        'USER': 'postgres',
+        'PASSWORD': '',
+        'HOST': '',
+        'PORT': '',
+        'OPTIONS': {
+            'autocommit': True,
+            },
+        },
+    'fias': {
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'fias',
+        'USER': 'root',
+        'PASSWORD': '',
+        'HOST': '',
+        'PORT': '',
+    }
+}
+
+TEST_FIAS = {
+    'ENGINE': 'django.db.backends.mysql',
+    'NAME': 'fias',
+    'USER': 'root',
+    'PASSWORD': '',
+}
+SENTRY_DSN = ''
+
+TEMPLATE_DIRS = (
+    '/home/LINUX_USERNAME/projects/pd_web/pd/templates/',
+)
+
+STATIC_ROOT = '/home/LINUX_USERNAME/projects/pd_web/pd/static/'
+MEDIA_ROOT = '/home/LINUX_USERNAME/projects/MEDIA/pd_web/'
