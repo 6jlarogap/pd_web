@@ -142,15 +142,16 @@ class BaseModel(models.Model):
 def files_upload_to(instance, filename):
     instance.original_name = filename
     fname = u'.'.join(map(pytils.translit.slugify, filename.rsplit('.', 1)))
+    today = datetime.date.today()
+    today_dir = "{0:d}/{1:02d}/{2:02d}".format(today.year, today.month, today.day)
     if isinstance(instance, get_model('burials', 'BurialFiles')):
         return os.path.join('bfiles', str(instance.burial.pk), fname)
     elif isinstance(instance, get_model('burials', 'PlaceStatusFiles')):
-        return os.path.join('place-status-files', str(instance.placestatus.pk), fname)
+        return os.path.join('place-status-files', today_dir, fname)
+    elif isinstance(instance, get_model('persons', 'DeathCertificateScan')):
+        return os.path.join('death-certificates', today_dir, fname)
     elif isinstance(instance, get_model('burials', 'GravePhoto')):
-        d = datetime.date.today()
-        return os.path.join('grave-photos',
-                            "{0:d}/{1:02d}/{2:02d}".format(d.year, d.month, d.day),
-                             fname)
+        return os.path.join('grave-photos', today_dir, fname)
     else:
         return os.path.join('files', fname)
 
@@ -168,11 +169,12 @@ class Files(models.Model):
                                 on_delete=models.PROTECT)
     date_of_creation = models.DateTimeField(auto_now_add=True)
 
+    def delete_from_media(self):
+        if self.bfile and os.path.exists(self.bfile.path):
+            os.remove(self.bfile.path)
+
     def delete(self):
-        if self.bfile != "":
-            if os.path.exists(self.bfile.path):
-                os.remove(self.bfile.path)
-            self.bfile = ""
+        self.delete_from_media()
         super(Files, self).delete()
 
 class Photo(Files):
