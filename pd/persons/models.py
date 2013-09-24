@@ -88,14 +88,14 @@ class BasePerson(models.Model):
 
     def delete(self):
         try:
+            self.personid.delete()
+        except (AttributeError, PersonID.DoesNotExist, ProtectedError):
+            pass
+        try:
             super(BasePerson, self).delete()
         except ProtectedError:
             pass
         else:
-            try:
-                self.personid.delete()
-            except (AttributeError, PersonID.DoesNotExist, ProtectedError):
-                pass
             try:
                 self.address.delete()
             except (AttributeError, ProtectedError):
@@ -185,6 +185,16 @@ class DeadPerson(BasePerson):
 
     unclear_death_date = property(get_death_date, set_death_date)
 
+    def delete(self):
+        try:
+            self.deathcertificate.delete()
+        except (AttributeError, DeathCertificate.DoesNotExist, ProtectedError):
+            pass
+        try:
+            super(DeadPerson, self).delete()
+        except ProtectedError:
+            pass
+
 class AlivePerson(BasePerson):
     """
     Живое ФЛ с телефоном
@@ -249,9 +259,40 @@ class DeathCertificate(BaseModel):
         self.series = self.series.upper()
         super(DeathCertificate, self).save(*args, **kwargs)
 
-#class DeathCertificateFiles(Files):
-    #"""
-    #Файлы-сканы свидетельства о смерти
-    #"""
-    #deathcertificate = models.OneToOneField(DeathCertificate)
+    def delete(self):
+        try:
+            self.deathcertificatescan.delete()
+        except (AttributeError, DeathCertificateScan.DoesNotExist, ProtectedError):
+            pass
+        try:
+            super(DeathCertificate, self).delete()
+        except ProtectedError:
+            pass
+
+    def get_burial(self):
+        """
+        Получить захоронение, в котором усопший с этим СоС
+        
+        Имеется недостатки в проектировании таблиц б.д.:
+        - теоретически может быть один усопший на несколько
+          захоронений (Burial.deadman is a ForeignKey)
+        - может быть усопший, но не "привязан" ни к какому
+          захоронению
+        Посему теоретически функция может вернуть или
+        первого из нескольких захоронений этого усопшего,
+        или вообще ничего не вернуть.
+        """
+        burial = None
+        if self.pk:
+            try:
+                burial = self.person.burial_set.all()[0]
+            except IndexError:
+                pass
+        return burial
+        
+class DeathCertificateScan(Files):
+    """
+    Файлы-сканы свидетельства о смерти, по одному на СоС
+    """
+    deathcertificate = models.OneToOneField(DeathCertificate)
 
