@@ -41,7 +41,6 @@ TEST_FIAS = {
 
 TIME_ZONE = 'Europe/Moscow'
 
-
 LANGUAGE_CODE = 'ru'
 
 SITE_ID = 1
