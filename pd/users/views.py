@@ -15,7 +15,7 @@ from django.views.generic.edit import UpdateView, CreateView
 
 from burials.views import UGHRequiredMixin, LoginRequiredMixin, SupervisorRequiredMixin
 from logs.models import Log, write_log, LoginLog
-from users.forms import UserAddForm, LoruFormset, ProfileForm, UserProfileForm, \
+from users.forms import UserAddForm, RegisterForm, LoruFormset, ProfileForm, UserProfileForm, \
                         UserDataForm, ChangePasswordForm, BankAccountFormset, OrgForm, OrgLogForm, LoginLogForm
 from users.models import Profile, Org
 from pd.views import PaginateListView
@@ -384,4 +384,26 @@ class LoginLogView(SupervisorRequiredMixin, PaginateListView):
         return LoginLogForm(data=self.request.GET or None)
 
 login_log = LoginLogView.as_view()
+
+class RegisterView(CreateView):
+    """
+    Регистрация новых пользователей
+    """
+    template_name = 'register.html'
+    form_class = RegisterForm
+
+    #def form_valid(self, form):
+        #self.object = form.save(commit=False)
+        #self.object.creator = self.request.user
+        #self.object.ugh = self.request.user.profile.org
+        #self.object.save()
+        #write_log(self.request, self.object, _(u'Кладбище создано'))
+        #msg = _(u"<a href='%s'>Кладбище %s</a> создано") % (
+            #reverse('manage_cemeteries_edit', args=[self.object.pk]),
+            #self.object.name,
+        #)
+        #messages.success(self.request, msg)
+        #return redirect('manage_cemeteries')
+
+register = RegisterView.as_view()
 

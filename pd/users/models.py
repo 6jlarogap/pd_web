@@ -190,12 +190,12 @@ class RegisterProfile(BaseModel):
     # Сразу hash (django.contrib.auth.hashers.make_password(raw_password)):
     user_password = models.CharField(_(u"Пароль"), max_length=255, editable=False, default='')
     user_activation_key = models.CharField(_(u'Ключ активации'), max_length=40, editable=False)
-    org_type = models.CharField(_(u"Тип организации"), max_length=255, choices=REG_ORG_TYPES)
+    org_type = models.CharField(_(u"Тип организации"), max_length=255, choices=REG_ORG_TYPES, default=REG_ORG_UGH)
     org_name = models.CharField(_(u"Краткое название организации"), max_length=255, default='')
     org_full_name = models.CharField(_(u"Полное название организации"), max_length=255, default='')
     org_inn = models.CharField(_(u"ИНН"), max_length=255, default='')
     org_director = models.CharField(_(u"ФИО директора"), max_length=255, default='')
-    org_phone = models.TextField(_(u"Телефон"), max_length=30, default='')
+    org_phone = models.CharField(_(u"Телефон"), max_length=30, default='')
     org_fax = models.CharField(_(u"Факс"), max_length=30, null=True, blank=True)
 
 class RegisterProfileScan(Files):

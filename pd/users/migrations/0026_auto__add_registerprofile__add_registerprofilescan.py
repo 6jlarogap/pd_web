@@ -25,7 +25,7 @@ class Migration(SchemaMigration):
             ('org_full_name', self.gf('django.db.models.fields.CharField')(default='', max_length=255)),
             ('org_inn', self.gf('django.db.models.fields.CharField')(default='', max_length=255)),
             ('org_director', self.gf('django.db.models.fields.CharField')(default='', max_length=255)),
-            ('org_phone', self.gf('django.db.models.fields.TextField')(default='', max_length=30)),
+            ('org_phone', self.gf('django.db.models.fields.CharField')(default='', max_length=30)),
             ('org_fax', self.gf('django.db.models.fields.CharField')(max_length=30, null=True, blank=True)),
         ))
         db.send_create_signal('users', ['RegisterProfile'])
@@ -228,7 +228,7 @@ class Migration(SchemaMigration):
             'org_full_name': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '255'}),
             'org_inn': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '255'}),
             'org_name': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '255'}),
-            'org_phone': ('django.db.models.fields.TextField', [], {'default': "''", 'max_length': '30'}),
+            'org_phone': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '30'}),
             'org_type': ('django.db.models.fields.CharField', [], {'max_length': '255'}),
             'user_activation_key': ('django.db.models.fields.CharField', [], {'max_length': '40'}),
             'user_email': ('django.db.models.fields.EmailField', [], {'max_length': '75', 'null': 'True', 'blank': 'True'}),

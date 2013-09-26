@@ -9,7 +9,7 @@ from geo.forms import LocationForm
 from pd.forms import ChildrenJSONMixin, LoggingFormMixin
 from burials.models import Cemetery
 
-from users.models import Profile, ProfileLORU, Org, BankAccount
+from users.models import Profile, ProfileLORU, Org, BankAccount, RegisterProfile
 
 
 class UserAddForm(forms.ModelForm):
@@ -239,3 +239,7 @@ class OrgLogForm(forms.Form):
 
 # Никакой разницы в этих формах пока нет.
 LoginLogForm = OrgLogForm
+
+class RegisterForm(forms.ModelForm):
+    class Meta:
+        model = RegisterProfile
