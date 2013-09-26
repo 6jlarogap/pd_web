@@ -191,17 +191,16 @@ DEBUG_TOOLBAR_CONFIG = {'INTERCEPT_REDIRECTS': False}
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 SESSION_SAVE_EVERY_REQUEST = True
 
-<<<<<<< HEAD
 # Google reCaptcha keys, поучаемые из http://www.google.com/recaptcha,
 # подлежат замене в local_settings.py:
-
+#
 RECAPTCHA_PUBLIC_KEY = 'a-string-of-hex-and-digits'
 RECAPTCHA_PRIVATE_KEY = 'another-string-of-hex-and-digits'
 RECAPTCHA_USE_SSL = False
 
 # для отправки кода активации и прочей почты от сервера,
 # по умолчанию, подлежат замене в local_settings.py:
-
+#
 AUTH_USER_EMAIL_UNIQUE = True
 EMAIL_HOST = 'localhost'
 EMAIL_PORT = 1025
