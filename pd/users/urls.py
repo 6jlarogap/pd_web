@@ -8,7 +8,11 @@ urlpatterns = patterns('users.views',
     url(r'^logout/', 'ulogout', name='ulogout'),
 
     url(r'^register/old/$', 'register_old', name='register_old'),
+    
     url(r'^register/$', 'register', name='register'),
+    url(r'^register/activation/complete/$', 'register_activation_complete',
+        name='register_activation_complete'),
+        
     url(r'^profile/', 'profile', name='profile'),
     url(r'^loruregistry/', 'loru_registry', name='loru_registry'),
     url(r'^userprofile/', 'user_profile', name='user_profile'),

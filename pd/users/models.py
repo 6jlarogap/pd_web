@@ -181,12 +181,16 @@ class RegisterProfile(BaseModel):
         (REG_ORG_UGH, _(u"Учет захоронений")),
         (REG_ORG_LORU, _(u"Учет заказов")),
     )
+    # Значение, записывамое в self.user_activation_key, когда пользователь
+    # активизирован в системе. Оно никак не совпадет с ключом активации ))
+    #
+    ACTIVATED = u"ALREADY_ACTIVATED"
 
     user_name = models.CharField(_(u"Имя для входа в систему (login)"), max_length=30)
     user_last_name = models.CharField(_(u"Фамилия"), max_length=255)
     user_first_name = models.CharField(_(u"Имя"), max_length=255)
     user_middle_name = models.CharField(_(u"Отчество"), max_length=255, null=True, blank=True)
-    user_email = models.EmailField(_(u"Email"), null=True, blank=True)
+    user_email = models.EmailField(_(u"Email"))
     # Сразу hash (django.contrib.auth.hashers.make_password(raw_password)):
     user_password = models.CharField(_(u"Пароль"), max_length=255, editable=False, default='')
     user_activation_key = models.CharField(_(u'Ключ активации'), max_length=40, editable=False)
@@ -197,6 +201,9 @@ class RegisterProfile(BaseModel):
     org_director = models.CharField(_(u"ФИО директора"), max_length=255, default='')
     org_phone = models.CharField(_(u"Телефон"), max_length=30, default='')
     org_fax = models.CharField(_(u"Факс"), max_length=30, null=True, blank=True)
+
+    def __unicode__(self):
+        return _(u"Заявка от организации %s, %s") % (self.org_name, self.user_email)
 
 class RegisterProfileScan(Files):
     """

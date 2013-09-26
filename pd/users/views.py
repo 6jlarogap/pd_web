@@ -1,18 +1,22 @@
 # -*- coding: utf-8 -*-
 import json
 import datetime
+import random
+import hashlib
+
 from django.contrib import messages
 from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.models import User
+from django.contrib.auth.hashers import make_password
 from django.core.urlresolvers import reverse
 from django.db.models.aggregates import Count
 from django.http import HttpResponse, Http404
 from django.shortcuts import redirect, render
 from django.utils.translation import ugettext_lazy as _
-from django.views.generic.base import View
+from django.views.generic.base import View, TemplateView
 from django.views.generic.edit import UpdateView, CreateView
-
+    
 from burials.views import UGHRequiredMixin, LoginRequiredMixin, SupervisorRequiredMixin
 from logs.models import Log, write_log, LoginLog
 from users.forms import UserAddForm, RegisterForm, LoruFormset, ProfileForm, UserProfileForm, \
@@ -392,18 +396,30 @@ class RegisterView(CreateView):
     template_name = 'register.html'
     form_class = RegisterForm
 
-    #def form_valid(self, form):
-        #self.object = form.save(commit=False)
-        #self.object.creator = self.request.user
-        #self.object.ugh = self.request.user.profile.org
-        #self.object.save()
-        #write_log(self.request, self.object, _(u'Кладбище создано'))
-        #msg = _(u"<a href='%s'>Кладбище %s</a> создано") % (
-            #reverse('manage_cemeteries_edit', args=[self.object.pk]),
-            #self.object.name,
-        #)
-        #messages.success(self.request, msg)
-        #return redirect('manage_cemeteries')
+    def get_form_kwargs(self):
+        data = super(RegisterView, self).get_form_kwargs()
+        data['request'] = self.request
+        return data
 
+    def get_success_url(self):
+        return reverse('register_activation_complete')
+
+    def form_valid(self, form):
+        obj = form.save(commit=False)
+        obj.user_password = make_password(form.cleaned_data['password1'])
+        salt = hashlib.sha1(str(random.random())).hexdigest()[:5]
+        obj.user_activation_key = hashlib.sha1(salt+obj.user_name).hexdigest()
+        # obj.save()
+        return redirect(self.get_success_url())
+        
 register = RegisterView.as_view()
 
+class RegisterActivationCompleteView(TemplateView):
+    template_name = 'simple_message.html'
+    
+    def get_context_data(self, **kwargs):
+        context = super(RegisterActivationCompleteView, self).get_context_data(**kwargs)
+        context['message'] = _(u'Регистрация успешна. Ждем ee подтверждения по e-mail.')
+        return context
+
+register_activation_complete = RegisterActivationCompleteView.as_view()

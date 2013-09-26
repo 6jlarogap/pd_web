@@ -122,6 +122,7 @@ INSTALLED_APPS = (
     'pytils',
     'debug_toolbar',
     'raven.contrib.django',
+    'captcha',
 
     'geo',
     'burials',
