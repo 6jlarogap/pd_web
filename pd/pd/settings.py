@@ -214,10 +214,10 @@ DEFAULT_FROM_EMAIL = 'admin@org.com'
 # Длительность действия заявки на регистрацию
 #
 ACCOUNT_ACTIVATION_DAYS = 3
-=======
+
 # Для учета настроек, необязательных на сайтах разработчиков
+#
 PRODUCTION_SITE = False
->>>>>>> remotes/suprune20/pd_web/master
 
 # Необязательные параметры
 #
