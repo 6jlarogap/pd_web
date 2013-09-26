@@ -95,6 +95,7 @@ TEMPLATE_CONTEXT_PROCESSORS = (
     "django.core.context_processors.static",
     "django.core.context_processors.tz",
     "django.contrib.messages.context_processors.messages",
+    "pd.context_processors.context_processor",
 )
 
 ROOT_URLCONF = 'pd.urls'
@@ -185,6 +186,9 @@ DEBUG_TOOLBAR_CONFIG = {'INTERCEPT_REDIRECTS': False}
 
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 SESSION_SAVE_EVERY_REQUEST = True
+
+# Для учета настроек, необязательных на сайтах разработчиков
+PRODUCTION_SITE = False
 
 # Необязательные параметры
 #
