@@ -152,6 +152,8 @@ def files_upload_to(instance, filename):
         return os.path.join('death-certificates', today_dir, fname)
     elif isinstance(instance, get_model('burials', 'GravePhoto')):
         return os.path.join('grave-photos', today_dir, fname)
+    elif isinstance(instance, get_model('users', 'RegisterProfileScan')):
+        return os.path.join('register-profile', today_dir, fname)
     else:
         return os.path.join('files', fname)
 

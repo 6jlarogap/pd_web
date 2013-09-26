@@ -15,7 +15,7 @@ from django.views.generic.edit import UpdateView, CreateView
 
 from burials.views import UGHRequiredMixin, LoginRequiredMixin, SupervisorRequiredMixin
 from logs.models import Log, write_log, LoginLog
-from users.forms import RegisterForm, LoruFormset, ProfileForm, UserProfileForm, \
+from users.forms import UserAddForm, LoruFormset, ProfileForm, UserProfileForm, \
                         UserDataForm, ChangePasswordForm, BankAccountFormset, OrgForm, OrgLogForm, LoginLogForm
 from users.models import Profile, Org
 from pd.views import PaginateListView
@@ -64,12 +64,12 @@ class LogoutView(View):
 
 ulogout = LogoutView.as_view()
 
-class RegisterView(SupervisorRequiredMixin, View):
+class RegisterOldView(SupervisorRequiredMixin, View):
     """
     Регистрация
     """
     def post(self, request, *args, **kwargs):
-        form = RegisterForm(data=request.POST)
+        form = UserAddForm(data=request.POST)
         if form.is_valid():
             form.save()
             user = authenticate(username=form.cleaned_data['username'], password=form.cleaned_data['password1'])
@@ -81,11 +81,11 @@ class RegisterView(SupervisorRequiredMixin, View):
         return self.get(request, *args, **kwargs)
 
     def get(self, request, *args, **kwargs):
-        form = RegisterForm()
+        form = UserAddForm()
         request.session.set_test_cookie()
-        return render(request, 'register.html', {'form':form})
+        return render(request, 'register_old.html', {'form':form})
 
-uregister = RegisterView.as_view()
+register_old = RegisterOldView.as_view()
 
 class LoruRegistryView(UGHRequiredMixin, View):
     """
@@ -169,10 +169,10 @@ class UserProfileView(LoginRequiredMixin, UpdateView):
 
 user_profile = UserProfileView.as_view()
 
-class UserAddForm(CreateView):
+class UserAddView(CreateView):
     template_name = 'add_user.html'
     model = User
-    form_class = RegisterForm
+    form_class = UserAddForm
 
     def form_valid(self, form):
         self.object = form.save()
@@ -193,14 +193,14 @@ class UserAddForm(CreateView):
     def dispatch(self, request, *args, **kwargs):
         if not request.user.is_authenticated():
             return redirect('/')
-        return super(UserAddForm, self).dispatch(request, *args, **kwargs)
+        return super(UserAddView, self).dispatch(request, *args, **kwargs)
 
     def get_form_kwargs(self, **kwargs):
-        data = super(UserAddForm, self).get_form_kwargs(**kwargs)
+        data = super(UserAddView, self).get_form_kwargs(**kwargs)
         del data['instance']
         return data
 
-add_user = UserAddForm.as_view()
+add_user = UserAddView.as_view()
 
 class UserEditView(LoginRequiredMixin, UpdateView):
     template_name = 'edit_user.html'
@@ -384,3 +384,4 @@ class LoginLogView(SupervisorRequiredMixin, PaginateListView):
         return LoginLogForm(data=self.request.GET or None)
 
 login_log = LoginLogView.as_view()
+

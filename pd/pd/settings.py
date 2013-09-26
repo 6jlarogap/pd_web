@@ -164,7 +164,11 @@ INTERNAL_IPS = ['127.0.0.1',]
 
 ACCOUNT_ACTIVATION_DAYS = 7
 
+# LOGIN_URL, REGISTER_URL, и некоторые другие -- в списке url,
+# к которым возможен доступ без регистрации, см. pd/middleware.py
+#
 LOGIN_URL = "/login/"
+REGISTER_URL = "/register/"
 LOGOUT_URL = "/logout/"
 LOGIN_REDIRECT_URL = "/"
 
@@ -187,8 +191,33 @@ DEBUG_TOOLBAR_CONFIG = {'INTERCEPT_REDIRECTS': False}
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 SESSION_SAVE_EVERY_REQUEST = True
 
+<<<<<<< HEAD
+# Google reCaptcha keys, поучаемые из http://www.google.com/recaptcha,
+# подлежат замене в local_settings.py:
+
+RECAPTCHA_PUBLIC_KEY = 'a-string-of-hex-and-digits'
+RECAPTCHA_PRIVATE_KEY = 'another-string-of-hex-and-digits'
+RECAPTCHA_USE_SSL = False
+
+# для отправки кода активации и прочей почты от сервера,
+# по умолчанию, подлежат замене в local_settings.py:
+
+AUTH_USER_EMAIL_UNIQUE = True
+EMAIL_HOST = 'localhost'
+EMAIL_PORT = 1025
+EMAIL_HOST_USER = 'user'
+EMAIL_HOST_PASSWORD = 'secret'
+EMAIL_USE_TLS = False
+EMAIL_USE_SSL = False
+DEFAULT_FROM_EMAIL = 'admin@org.com'
+
+# Длительность действия заявки на регистрацию
+#
+ACCOUNT_ACTIVATION_DAYS = 3
+=======
 # Для учета настроек, необязательных на сайтах разработчиков
 PRODUCTION_SITE = False
+>>>>>>> remotes/suprune20/pd_web/master
 
 # Необязательные параметры
 #
@@ -196,12 +225,6 @@ PRODUCTION_SITE = False
 # по умолчанию - не давать
 #
 # ADMIN_ENABLED = False
-#
-# URL-пути, которые не требуют регистрации,
-# строка из путей с пробельными разделителями,
-# по умолчанию: нет таких путей.
-#
-# LOGIN_EXEMPT_URLS = "/here /go/to/there"
 #
 # Имеет право регистировать нового пользователя
 # только таковой с организации с этим ИНН
@@ -216,5 +239,3 @@ except ImportError:
 import sys
 if len(sys.argv) > 1 and sys.argv[1] == 'test':
     from test_settings import *
-
-

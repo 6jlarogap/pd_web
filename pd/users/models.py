@@ -6,7 +6,7 @@ from django.utils.translation import ugettext_lazy as _
 
 from geo.models import DFiasAddrobj
 from logs.models import Log
-from pd.models import BaseModel
+from pd.models import BaseModel, Files
 from pd.utils import DigitsValidator, LengthValidator, NotEmptyValidator
 
 
@@ -173,5 +173,33 @@ class Dover(models.Model):
     def __unicode__(self):
         return u'%s (%s - %s)' % (self.number, self.begin.strftime('%d.%m.%Y'), self.end.strftime('%d.%m.%Y'))
 
+class RegisterProfile(BaseModel):
 
+    REG_ORG_UGH = Org.PROFILE_UGH
+    REG_ORG_LORU = Org.PROFILE_LORU
+    REG_ORG_TYPES = (
+        (REG_ORG_UGH, _(u"Учет захоронений")),
+        (REG_ORG_LORU, _(u"Учет заказов")),
+    )
 
+    user_name = models.CharField(_(u"Имя для входа в систему (login)"), max_length=30)
+    user_last_name = models.CharField(_(u"Фамилия"), max_length=255)
+    user_first_name = models.CharField(_(u"Имя"), max_length=255)
+    user_middle_name = models.CharField(_(u"Отчество"), max_length=255, null=True, blank=True)
+    user_email = models.EmailField(_(u"Email"), null=True, blank=True)
+    # Сразу hash (django.contrib.auth.hashers.make_password(raw_password)):
+    user_password = models.CharField(_(u"Пароль"), max_length=255, editable=False, default='')
+    user_activation_key = models.CharField(_(u'Ключ активации'), max_length=40, editable=False)
+    org_type = models.CharField(_(u"Тип организации"), max_length=255, choices=REG_ORG_TYPES)
+    org_name = models.CharField(_(u"Краткое название организации"), max_length=255, default='')
+    org_full_name = models.CharField(_(u"Полное название организации"), max_length=255, default='')
+    org_inn = models.CharField(_(u"ИНН"), max_length=255, default='')
+    org_director = models.CharField(_(u"ФИО директора"), max_length=255, default='')
+    org_phone = models.TextField(_(u"Телефон"), max_length=30, default='')
+    org_fax = models.CharField(_(u"Факс"), max_length=30, null=True, blank=True)
+
+class RegisterProfileScan(Files):
+    """
+    Файлы-сканы, прикрепляемые к завкам на регистрацию
+    """
+    registerprofile = models.OneToOneField(RegisterProfile)

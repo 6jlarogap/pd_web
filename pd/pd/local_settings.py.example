@@ -1,7 +1,9 @@
+# coding=utf-8
+
 DEBUG = True
 TEMPLATE_DEBUG = DEBUG
 ADMIN_ENABLED = True
-SUPERVISOR_ORG_INN = '1235'
+SUPERVISOR_ORG_INN = '12345'
 
 DATABASES = {
     'default': {
@@ -38,3 +40,20 @@ TEMPLATE_DIRS = (
 )
 
 MEDIA_ROOT = '/home/LINUX_USERNAME/projects/MEDIA/pd_web/'
+
+# Google reCaptcha keys, поучаемые из http://www.google.com/recaptcha,
+
+RECAPTCHA_PUBLIC_KEY = 'a-string-of-hex-and-digits'
+RECAPTCHA_PRIVATE_KEY = 'another-string-of-hex-and-digits'
+RECAPTCHA_USE_SSL = False
+
+# для отправки кода активации и прочей почты, по умолчанию
+
+AUTH_USER_EMAIL_UNIQUE = True
+EMAIL_HOST = 'localhost'
+EMAIL_PORT = 1025
+EMAIL_HOST_USER = 'user'
+EMAIL_HOST_PASSWORD = 'secret'
+EMAIL_USE_TLS = False
+EMAIL_USE_SSL = False
+DEFAULT_FROM_EMAIL = 'someone@org.com'

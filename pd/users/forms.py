@@ -12,7 +12,7 @@ from burials.models import Cemetery
 from users.models import Profile, ProfileLORU, Org, BankAccount
 
 
-class RegisterForm(forms.ModelForm):
+class UserAddForm(forms.ModelForm):
     class Meta:
         model = User
         fields = ['username', 'email']
