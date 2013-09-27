@@ -419,7 +419,7 @@ class RegisterActivationCompleteView(TemplateView):
     
     def get_context_data(self, **kwargs):
         context = super(RegisterActivationCompleteView, self).get_context_data(**kwargs)
-        context['message'] = _(u'Регистрация успешна. Ждем ee подтверждения по e-mail.')
+        context['message'] = _(u'Регистрация успешна. Ждем вашего подтверждения по e-mail.')
         return context
 
 register_activation_complete = RegisterActivationCompleteView.as_view()

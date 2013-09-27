@@ -165,11 +165,11 @@ INTERNAL_IPS = ['127.0.0.1',]
 
 ACCOUNT_ACTIVATION_DAYS = 7
 
-# LOGIN_URL, REGISTER_URL, и некоторые другие -- в списке url,
+# LOGIN_URL, все REGISTER_URLS_REGEX, и некоторые другие -- в списке url,
 # к которым возможен доступ без регистрации, см. pd/middleware.py
 #
 LOGIN_URL = "/login/"
-REGISTER_URL = "/register/"
+REGISTER_URLS_REGEX = r'^/?register(?:/|$)'
 LOGOUT_URL = "/logout/"
 LOGIN_REDIRECT_URL = "/"
 
