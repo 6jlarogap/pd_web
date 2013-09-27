@@ -8,7 +8,6 @@
         <tr>
             <th>{% trans "Название" %}</th>
             <th>{% trans "Часы работы" %}</th>
-            <th>{% trans "УГХ" %}</th>
             <th>{% trans "Участков" %}</th>
             <th></th>
         </tr>
@@ -18,7 +17,6 @@
                 <td>
                     {{ c.time_begin|time:"H:i" }} &mdash; {{ c.time_end|time:"H:i" }}
                 </td>
-                <td>{{ c.ugh }}</td>
                 <td>{{ c.area_set.all.count }}</td>
                 <td>
                     {% if user.profile.org == c.ugh %}
