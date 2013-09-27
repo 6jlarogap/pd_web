@@ -741,7 +741,8 @@ class BurialCommitForm(BurialForm):
         pass
 
     def setup_required_applicant_id(self):
-        if self.data.get('opf') == 'person' and not self.data.get('applicant-pid-flag_no_applicant_doc_required'):
+        if self.data.get('opf') == 'person' and not self.data.get('applicant-pid-flag_no_applicant_doc_required') and \
+           not (self.instance.is_archive() or self.request.REQUEST.get('archive')):
             for f in self.applicant_id_form.fields:
                 if f in ['id_type', 'series', 'number',]:
                     self.applicant_id_form.fields[f].required = True

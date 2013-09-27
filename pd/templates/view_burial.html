@@ -48,6 +48,8 @@
                             {% endif %}
                             :
                             {{ pid }}
+                        {% elif b.is_archive %}
+                            {% trans "Документ не заполнен" %}
                         {% else %}
                             <big><b><span style="color:red">
                             {% trans "Документ не заполнен" %}
