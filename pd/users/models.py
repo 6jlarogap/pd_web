@@ -85,7 +85,7 @@ class Org(BaseModel):
     NUM_YEAR_CEMETERY = 'year_cemetery'
     NUM_TYPES = (
         (NUM_EMPTY, _(u'Оставить пустым')),
-        (NUM_YEAR_UGH, _(u'Год + порядковый (в пределах УГХ)')),
+        (NUM_YEAR_UGH, _(u'Год + порядковый (в пределах организации)')),
         (NUM_YEAR_CEMETERY, _(u'Год + порядковый (в пределах кладбища)')),
     )
 
@@ -97,7 +97,7 @@ class Org(BaseModel):
         (PROFILE_COMPANY, _(u"Юрлицо")),
         (PROFILE_ZAGS, _(u"ЗАГС")),
         (PROFILE_LORU, _(u"ЛОРУ")),
-        (PROFILE_UGH, _(u"УГХ")),
+        (PROFILE_UGH, _(u"ОМС")),
     )
 
     OPF_EMPTY = 'empty'
@@ -155,7 +155,7 @@ class BankAccount(models.Model):
     ls = models.CharField(u"Л/с", max_length=11, blank=True, null=True, validators=[LengthValidator(11), ])
 
 class ProfileLORU(models.Model):
-    ugh = models.ForeignKey(Org, related_name='loru_list', limit_choices_to={'type': Org.PROFILE_UGH}, verbose_name=_(u"УГХ"))
+    ugh = models.ForeignKey(Org, related_name='loru_list', limit_choices_to={'type': Org.PROFILE_UGH}, verbose_name=_(u"ОМС"))
     loru = models.ForeignKey(Org, related_name='ugh_list', limit_choices_to={'type': Org.PROFILE_LORU}, verbose_name=_(u"ЛОРУ"))
 
 class Dover(models.Model):

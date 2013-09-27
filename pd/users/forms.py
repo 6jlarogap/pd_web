@@ -210,7 +210,10 @@ class OrgForm(BaseOrgForm):
                     choices.append(profile_type)
                     break
             label = self.fields['type'].label
-            self.fields['type'] = forms.fields.TypedChoiceField(choices=choices)
+            self.fields['type'] = forms.fields.TypedChoiceField(
+                choices=choices,
+                widget=forms.Select(attrs={'disabled':'disabled'}),
+            )
             self.fields['type'].label = label
 
     def is_valid(self):
