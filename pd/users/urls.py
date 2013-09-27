@@ -15,8 +15,10 @@ urlpatterns = patterns('users.views',
     # register_old требует не просто входа пользователя, а супервизора!
     #
     url(r'^register/$', 'register', name='register'),
-    url(r'^register/activation/complete/$', 'register_activation_complete',
-        name='register_activation_complete'),
+    url(r'^register/activation/to-confirm/$', 'register_activation_to_confirm',
+        name='register_activation_to_confirm'),
+    url(r'^register/activation/(?P<key>[A-Za-z0-9]+)/confirm/$', 'register_activation_confirm',
+        name='register_activation_confirm'),
         
     url(r'^profile/', 'profile', name='profile'),
     url(r'^loruregistry/', 'loru_registry', name='loru_registry'),

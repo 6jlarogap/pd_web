@@ -13,6 +13,7 @@ from django.core.urlresolvers import reverse
 from django.db.models.aggregates import Count
 from django.http import HttpResponse, Http404
 from django.shortcuts import redirect, render
+from django.template.loader import render_to_string
 from django.utils.translation import ugettext_lazy as _
 from django.views.generic.base import View, TemplateView
 from django.views.generic.edit import UpdateView, CreateView
@@ -21,7 +22,7 @@ from burials.views import UGHRequiredMixin, LoginRequiredMixin, SupervisorRequir
 from logs.models import Log, write_log, LoginLog
 from users.forms import UserAddForm, RegisterForm, LoruFormset, ProfileForm, UserProfileForm, \
                         UserDataForm, ChangePasswordForm, BankAccountFormset, OrgForm, OrgLogForm, LoginLogForm
-from users.models import Profile, Org
+from users.models import Profile, Org, RegisterProfile
 from pd.views import PaginateListView
 
 
@@ -391,7 +392,9 @@ login_log = LoginLogView.as_view()
 
 class RegisterView(CreateView):
     """
-    Регистрация новых пользователей
+    Регистрация новых пользователей и организаций
+    
+    Пользователь набирает форму, отправляет заявку
     """
     template_name = 'register.html'
     form_class = RegisterForm
@@ -402,24 +405,75 @@ class RegisterView(CreateView):
         return data
 
     def get_success_url(self):
-        return reverse('register_activation_complete')
+        return reverse('register_activation_to_confirm')
 
     def form_valid(self, form):
         obj = form.save(commit=False)
         obj.user_password = make_password(form.cleaned_data['password1'])
         salt = hashlib.sha1(str(random.random())).hexdigest()[:5]
         obj.user_activation_key = hashlib.sha1(salt+obj.user_name).hexdigest()
+        email_subject = "%s %s" % (_(u"Подтверждение заявки на регистрацию на"),
+                                   _(u"ПохоронноеДело")
+                                  )
+        email_text = render_to_string(
+                        'register_activation_email.txt',
+                        {
+                         'host': '%s://%s' % (self.request.is_secure() and 'https' or 'http',
+                                              self.request.get_host()
+                                             ),
+                         'activation_key': obj.user_activation_key,
+                        }
+                     )
         # obj.save()
         return redirect(self.get_success_url())
         
 register = RegisterView.as_view()
 
-class RegisterActivationCompleteView(TemplateView):
+class RegisterActivationToConfirmView(TemplateView):
+    """
+    Регистрация новых пользователей
+    
+    Пользователь набрал успешно форму и получает ответ
+    """
     template_name = 'simple_message.html'
     
     def get_context_data(self, **kwargs):
-        context = super(RegisterActivationCompleteView, self).get_context_data(**kwargs)
-        context['message'] = _(u'Регистрация успешна. Ждем вашего подтверждения по e-mail.')
+        context = super(RegisterActivationToConfirmView, self).get_context_data(**kwargs)
+        context['message'] = _(u'Регистрация успешна, но еще не завершена!')
+        context['html_message'] = _(u'<br />'
+                                    u'<big>'
+                                    u'Вам отправлено письмо, в котором имеется ссылка,<br />'
+                                    u'переход по которой направит вашу заявку на рассмотрение<br />'
+                                    u'администратора системы'
+                                    u'</big>'
+                                   )
         return context
 
-register_activation_complete = RegisterActivationCompleteView.as_view()
+register_activation_to_confirm = RegisterActivationToConfirmView.as_view()
+
+class RegisterActivationConfirmView(UpdateView):
+    """
+    Регистрация новых пользователей
+    
+    Пользователь получил письмо, надавил на ссылку и получает ответ.
+    """
+    template_name = 'simple_message.html'
+    model = RegisterProfile
+
+    def get_object(self):
+        return get_object_or_404(RegisterProfile, pk=self.kwargs['pk'])
+
+    def get(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        context = {}
+        context['message'] = _(u'Регистрация успешна, но еще не завершена!')
+        context['html_message'] = _(u'<br />'
+                                    u'<big>'
+                                    u'Ваша заявкам отправлено письмо, в котором имеется ссылка,<br />'
+                                    u'переход по которой направит вашу заявку на рассмотрение<br />'
+                                    u'администратора системы'
+                                    u'</big>'
+                                   )
+        return self.render_to_response(context)
+
+register_activation_confirm = RegisterActivationConfirmView.as_view()
