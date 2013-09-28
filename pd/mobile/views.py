@@ -180,6 +180,18 @@ def mobile_upload_photo(request):
             grave = None
             raise Http404
     return render_to_response('mobile_upload_photo.html', {'message': _(u"Загрузите фотографию к могиле:")})
+	
+@csrf_exempt
+def mobile_remove_photo(request):
+    if request.method == 'POST':
+        gravePhotoId = request.POST['gravePhotoId']
+        try :
+            gravePhoto = GravePhoto.objects.get(id = gravePhotoId)
+            gravePhoto.delete()
+            return HttpResponse("Ok", mimetype='application/json')
+        except GravePhoto.DoesNotExist:
+            raise Http404                
+    return render_to_response('mobile_remove_photo.html', {'message': _(u"Удалить фотографию к могиле:")})
     
 @csrf_exempt
 def mobile_upload_cemetery(request):    
