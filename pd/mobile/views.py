@@ -190,7 +190,7 @@ def mobile_remove_photo(request):
             gravePhoto.delete()
             return HttpResponse("Ok", mimetype='application/json')
         except GravePhoto.DoesNotExist:
-            raise Http404                
+            return HttpResponse("Ok", mimetype='application/json')                
     return render_to_response('mobile_remove_photo.html', {'message': _(u"Удалить фотографию к могиле:")})
     
 @csrf_exempt
