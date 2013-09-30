@@ -81,7 +81,7 @@ class PersonIDForm(ValidDataMixin, StrippedStringsMixin, forms.ModelForm):
 
 class DeathCertificateForm(StrippedStringsMixin, BaseModelForm):
     dt_modified = forms.IntegerField(widget=forms.HiddenInput, required=False, )
-    zags = forms.CharField(required=False, max_length=255, label=_(u"ЗАГС"))
+    zags = forms.CharField(required=False)
 
     class Meta:
         model = DeathCertificate
@@ -106,6 +106,8 @@ class DeathCertificateForm(StrippedStringsMixin, BaseModelForm):
                 'release_date': datetime.date.today(),
             })
         super(DeathCertificateForm, self).__init__(*args, **kwargs)
+        self.fields['zags'].max_length = Org._meta.get_field('name').max_length
+        self.fields['zags'].label = DeathCertificate._meta.get_field('zags').verbose_name
         self.scan_form = DeathCertificateScanForm(request, prefix='dc-scan', instance = scan, files=request.FILES)
 
     def clean_zags(self):
