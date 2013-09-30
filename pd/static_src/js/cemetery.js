@@ -434,6 +434,9 @@ $(function() {
         var zags_inp =$(this);
         var val = zags_inp.val();
         if (val != '' && val != old_zags_value) {
+            // загадка, почему дважды приходит событие change,
+            // оба раза с одним неверным значением,
+            // хотя ниже оно затирается
             old_zags_value = val;
             $.ajax({
                 url: ORG_URL + "?query=" + val + "&type=zags&exact=1",
