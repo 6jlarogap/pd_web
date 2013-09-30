@@ -74,6 +74,20 @@ function setup_address_autocompletes() {
         }
     });
 
+    $('input[id$=zags]').attr('autocomplete', 'off').typeahead({
+        items: 100,
+        source: function (typeahead, query) {
+            if (query.length < 2) { return }
+            $.ajax({
+                url: ORG_URL + "?query=" + query + "&type=zags",
+                dataType: 'json',
+                success: function(data) {
+                    typeahead.process(data);
+                }
+            });
+        }
+    });
+
     $('#mainform #id_applicant_person, #mainform #id_responsible').attr('autocomplete', 'off').typeahead({
         items: 100,
         source: function (typeahead, query) {
@@ -413,6 +427,30 @@ $(function() {
         }
     });
     $('#id_plan_date').change();
+
+    old_zags_value = '';
+    
+    $('input[id$=zags]').change(function() {
+        var zags_inp =$(this);
+        var val = zags_inp.val();
+        if (val != '' && val != old_zags_value) {
+            // загадка, почему дважды приходит событие change,
+            // оба раза с одним неверным значением,
+            // хотя ниже оно затирается
+            old_zags_value = val;
+            $.ajax({
+                url: ORG_URL + "?query=" + val + "&type=zags&exact=1",
+                dataType: 'json',
+                success: function(data) {
+                    if (data.length == 0) {
+                        alert("Нет такого ЗАГСа");
+                        zags_inp.val('');
+                        old_zags_value = '';
+                    }
+                }
+            });
+        }
+    });
 
     $('input[name=opf]').change(function() {
         var resp_id = '#id_responsible-take_from_';
