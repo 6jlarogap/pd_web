@@ -108,9 +108,16 @@
         <dt>{% trans "Место" %}:</dt><dd>
             {% if b.area %}
                 {% trans "Участок" %}: {{ b.area }}<br/>
-            {% elif b.is_ready %}
+            {% else %}
                 <span style="color:red"><b><big>{% trans "Участок не указан" %}.</big></b></span>
+            {% endif %}
+            {% if not place %}
                 {% trans "Запрошено место на число могил: " %}{{ b.desired_graves_count }}<br/>
+                {% if b.area and b.desired_graves_count > b.area.places_count  %}
+                <span style="color:red"><b>{% trans "больше числа могил на место участка" %}!</b></span><br />
+                {% elif b.area and b.desired_graves_count < b.area.places_count %}
+                <span style="color:blue"><b>{% trans "меньше числа могил на место участка" %}.</b></span><br />
+                {% endif %}
             {% endif %}
             {% if b.row %}{% trans "Ряд" %}: {{ b.row }}<br/>{% endif %}
             {% if b.place_number %}{% trans "Место" %}: {{ b.place_number }}<br/>{% endif %}

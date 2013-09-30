@@ -301,15 +301,14 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
         grave_choices = [(i,i) for i in range(1, places_count+1)]
         self.fields['grave_number'].widget = forms.Select(choices=grave_choices)
 
+        max_grave_number = self.fields['cemetery'].queryset.aggregate(m=Max('area__places_count'))['m']
+        if not max_grave_number:
+            # ЛОРУ может "не иметь" кладбищ, например, не быть приписан ни к какому УГХ
+            max_grave_number = 1
+        max_grave_choices = [(i,i) for i in range(1, max_grave_number+1)]
+        self.fields['desired_graves_count'].widget = forms.Select(choices=max_grave_choices)
         if self.request.user.profile.is_loru():
-            max_grave_number = self.fields['cemetery'].queryset.aggregate(m=Max('area__places_count'))['m']
-            if not max_grave_number:
-                # ЛОРУ может "не иметь" кладбищ, например, не быть приписан ни к какому УГХ
-                max_grave_number = 1
-            max_grave_choices = [(i,i) for i in range(1, max_grave_number+1)]
-            self.fields['desired_graves_count'].widget = forms.Select(choices=max_grave_choices)
-        else:
-            del self.fields['desired_graves_count']
+            self.fields['desired_graves_count'].label = _(u'Желаемое число могил в новом месте')
         
         loru_list = Org.objects.all()
         self.fields['applicant_organization'].queryset = loru_list
@@ -578,7 +577,7 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
                                                          place=self.cleaned_data['place_number'],)
             self.instance.place=place
             if created:
-                self.grave = place.create_graves(max(self.cleaned_data['area'].places_count or 1,
+                self.grave = place.create_graves(max(self.cleaned_data['desired_graves_count'] or 1,
                                                      self.cleaned_data['grave_number'],
                                                     ),
                                                  self.cleaned_data['grave_number'],
@@ -831,8 +830,12 @@ class BurialCommitForm(BurialForm):
                 msg = _(u"Номер могилы превышает максимальное количество в существующем месте")
                 raise forms.ValidationError(msg)
         else:
-            if area and area.places_count  < grave_number:
-                msg = _(u"Номер могилы превышает количество могил в месте для участка")
+            #if area and area.places_count  < grave_number:
+                #msg = _(u"Номер могилы превышает количество могил в месте для участка")
+                #raise forms.ValidationError(msg)
+            desired_graves_count = self.cleaned_data.get('desired_graves_count')
+            if grave_number > desired_graves_count:
+                msg = _(u"Номер могилы превышает запрошенное количество могил в новом месте")
                 raise forms.ValidationError(msg)
 
         burial_type = self.cleaned_data.get('burial_type')
@@ -990,7 +993,7 @@ class BurialApproveCloseForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelFor
     """
     class Meta:
         model = Burial
-        fields = ['cemetery', 'area', 'row', 'place_number', 'fact_date', ]
+        fields = ['cemetery', 'area', 'row', 'place_number', 'desired_graves_count', 'fact_date', ]
 
     def __init__(self, request, *args, **kwargs):
         super(BurialApproveCloseForm, self).__init__(*args, **kwargs)
@@ -1015,6 +1018,8 @@ class BurialApproveCloseForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelFor
             if cemetery and cemetery.places_algo != Cemetery.PLACE_MANUAL:
                 self.fields['place_number'].required = False
             self.fields['cemetery'].queryset = Cemetery.objects.filter(cemetery_qs)
+            max_grave_number = self.fields['cemetery'].queryset.aggregate(m=Max('area__places_count'))['m']
+            self.fields['desired_graves_count'].label += ' (' + _(u'не больше %s') % max_grave_number + ')'
 
         elif self.instance.can_approve():
             # отправленное на согласование или после этого отправленное на обследование в угх
@@ -1024,7 +1029,7 @@ class BurialApproveCloseForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelFor
                 if self.instance.area:
                     self.fields.clear()
                 else:
-                    for f in ('row', 'place_number', 'fact_date', ):
+                    for f in ('row', 'place_number', 'fact_date', 'desired_graves_count', ):
                         del self.fields[f]
                     for f in self.fields:
                         if f in ('cemetery', 'area', ):
@@ -1066,6 +1071,17 @@ class BurialApproveCloseForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelFor
            not self.cleaned_data['row'].strip():
             raise forms.ValidationError(_(u"На кладбище с нумерацией мест по ряду не указан номер ряда"))
         return self.cleaned_data
+
+    def clean_desired_graves_count(self):
+        """
+        Проверка, чтоб не ввели несуразное число могил в новом месте
+        """
+        desired_graves_count = self.cleaned_data['desired_graves_count']
+        if not self.instance.get_place():
+            max_grave_number = self.fields['cemetery'].queryset.aggregate(m=Max('area__places_count'))['m']
+            if self.cleaned_data['desired_graves_count'] > max_grave_number:
+                raise forms.ValidationError(_(u"Превышен максимум могил в новом месте (%s)") % max_grave_number)
+        return desired_graves_count
 
     def clean_area(self):
         """

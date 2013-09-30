@@ -194,14 +194,14 @@ class Place(SafeDeleteMixin, BaseModel):
                 self.set_next_number_for_year(cemetery=self.cemetery)
         return super(Place, self).save(*args, **kwargs)
 
-    def create_graves(self, places_count, grave_number):
+    def create_graves(self, graves_count, grave_number):
         """
         Создать place_count могил для только что созданного place
         
         Возвращаем указатель на могилу c номером grave_number
         """
         result = None
-        for n in range(1, places_count + 1):
+        for n in range(1, graves_count + 1):
             grave = Grave.objects.create(place=self, grave_number=n,)
             if n == grave_number:
                 result = grave
@@ -333,7 +333,7 @@ class Burial(SafeDeleteMixin, BaseModel):
     grave = models.ForeignKey(Grave, verbose_name=_(u"Могила"),
                               null=True, blank=True, editable=False, on_delete=models.PROTECT)
     grave_number = models.PositiveSmallIntegerField(_(u"Могила"), default=1)
-    desired_graves_count = models.PositiveSmallIntegerField(_(u"Желаемое число могил в месте"), default=1)
+    desired_graves_count = models.PositiveSmallIntegerField(_(u"Число могил в новом месте"), default=1)
     responsible = models.ForeignKey('persons.AlivePerson', verbose_name=_(u"Ответственный"), blank=True, null=True,
                                     related_name='responsible_burials', on_delete=models.PROTECT)
 
@@ -673,13 +673,13 @@ class Burial(SafeDeleteMixin, BaseModel):
         new_place = not place.pk
         place.save()
         if new_place:
-            places_count = place.area.places_count or 1
+            graves_count = self.desired_graves_count or 1
             # fool-proof, чтоб не пропустили могилу с номером,
             # бОльшим чем заложено для участка. Это должно проверяться
             # в форме правки захоронения, но мало ли...
             #
-            places_count = max(places_count, self.grave_number)
-            self.grave = place.create_graves(places_count, self.grave_number)
+            graves_count = max(graves_count, self.grave_number)
+            self.grave = place.create_graves(graves_count, self.grave_number)
         elif not self.is_annulated():
             self.grave = Grave.objects.get(place=place, grave_number=self.grave_number)
         if self.is_annulated():
