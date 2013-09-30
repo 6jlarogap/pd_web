@@ -431,7 +431,7 @@ $(function() {
     old_zags_value = '';
     
     $('input[id$=zags]').change(function() {
-        var zags_inp =$(this)
+        var zags_inp =$(this);
         var val = zags_inp.val();
         if (val != '' && val != old_zags_value) {
             old_zags_value = val
