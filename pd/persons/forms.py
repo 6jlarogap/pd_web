@@ -7,6 +7,7 @@ from django.db.models.fields.files import FieldFile
 
 from persons.models import DeadPerson, PersonID, DeathCertificate, DeathCertificateScan, AlivePerson, DocumentSource
 from pd.models import UnclearDate
+from users.models import Org
 from logs.models import write_log
 from pd.forms import BaseModelForm, StrippedStringsMixin, CustomClearableFileInput, CustomUploadModelForm
 
@@ -80,6 +81,7 @@ class PersonIDForm(ValidDataMixin, StrippedStringsMixin, forms.ModelForm):
 
 class DeathCertificateForm(StrippedStringsMixin, BaseModelForm):
     dt_modified = forms.IntegerField(widget=forms.HiddenInput, required=False, )
+    zags = forms.CharField(required=False, max_length=255, label=_(u"ЗАГС"))
 
     class Meta:
         model = DeathCertificate
@@ -93,6 +95,7 @@ class DeathCertificateForm(StrippedStringsMixin, BaseModelForm):
         if instance and instance.pk:
             kwargs['initial'].update({
                 'dt_modified': int(instance.dt_modified.strftime("%s")),
+                'zags': instance.zags.name if instance.zags else '',
             })
             try:
                 scan = instance.deathcertificatescan
@@ -104,6 +107,16 @@ class DeathCertificateForm(StrippedStringsMixin, BaseModelForm):
             })
         super(DeathCertificateForm, self).__init__(*args, **kwargs)
         self.scan_form = DeathCertificateScanForm(request, prefix='dc-scan', instance = scan, files=request.FILES)
+
+    def clean_zags(self):
+        zags = None
+        zags_str = self.cleaned_data.get('zags').strip()
+        if zags_str:
+            try:
+                zags = Org.objects.filter(name=zags_str, type=Org.PROFILE_ZAGS)[0]
+            except IndexError:
+                raise forms.ValidationError(_(u'Нет такого ЗАГСа'))
+        return zags
 
     def clean_release_date(self):
         today = datetime.date.today()
