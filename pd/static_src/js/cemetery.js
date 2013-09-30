@@ -434,7 +434,7 @@ $(function() {
         var zags_inp =$(this);
         var val = zags_inp.val();
         if (val != '' && val != old_zags_value) {
-            old_zags_value = val
+            old_zags_value = val;
             $.ajax({
                 url: ORG_URL + "?query=" + val + "&type=zags&exact=1",
                 dataType: 'json',
