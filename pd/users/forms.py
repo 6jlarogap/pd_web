@@ -172,6 +172,30 @@ class BaseOrgForm(LoggingFormMixin, forms.ModelForm):
         super(BaseOrgForm, self).__init__(*args, **kwargs)
         # требуется для self.collect_log_data():
         self.forms = []
+        choices = []
+        if self.instance and self.instance.pk and self.instance.pk == self.request.user.profile.org.pk:
+            for profile_type in Org.PROFILE_TYPES:
+                if profile_type[0] == self.instance.type:
+                    choices.append(profile_type)
+                    break
+        else:
+            for profile_type in Org.PROFILE_TYPES:
+                if self.request.user.profile.is_ugh():
+                    if profile_type[0] in (Org.PROFILE_LORU, Org.PROFILE_ZAGS, Org.PROFILE_COMPANY, ):
+                        choices.append(profile_type)
+                elif self.request.user.profile.is_loru():
+                    if profile_type[0] in (Org.PROFILE_ZAGS, Org.PROFILE_COMPANY, ):
+                        choices.append(profile_type)
+                    # если лорику попался для редактирования другой лору:
+                    elif self.instance and self.instance.pk and \
+                         self.instance.type == Org.PROFILE_LORU and profile_type[0] == Org.PROFILE_LORU:
+                        choices.append(profile_type)
+                else:
+                    if profile_type[0] in (Org.PROFILE_ZAGS, ):
+                        choices.append(profile_type)
+        label = self.fields['type'].label
+        self.fields['type'] = forms.fields.TypedChoiceField(choices = choices)
+        self.fields['type'].label = label
 
     def clean_inn(self):
         inn = self.cleaned_data['inn']
@@ -198,15 +222,6 @@ class OrgForm(BaseOrgForm):
         if not self.request.user.profile.is_loru():
             del self.fields['opf_order']
             del self.fields['opf_order_customer_mandatory']
-        if self.request.user.profile.org.pk == self.instance.pk:
-            choices = []
-            for profile_type in Org.PROFILE_TYPES:
-                if profile_type[0] == self.instance.type:
-                    choices.append(profile_type)
-                    break
-            label = self.fields['type'].label
-            self.fields['type'] = forms.fields.TypedChoiceField(choices=choices)
-            self.fields['type'].label = label
 
     def is_valid(self):
         return super(OrgForm, self).is_valid() and \
