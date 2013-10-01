@@ -337,6 +337,7 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
                 self.initial['cemetery'] = self.request.user.profile.cemetery
             if self.request.user.profile.area:
                 self.initial['area'] = self.request.user.profile.area
+                self.initial['desired_graves_count'] = self.initial['area'].places_count or 1
 
         if self.instance.is_finished() and self.instance.place:
             self.initial.update(
