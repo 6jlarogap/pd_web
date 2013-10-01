@@ -14,7 +14,7 @@ from burials.forms import EMPTY
 from pd.forms import ChildrenJSONMixin
 from persons.forms import AlivePersonForm, PersonIDForm
 from persons.models import AlivePerson, PersonID, SafeDeleteMixin
-from users.models import Org
+from users.models import Org, Profile
 
 class ProductForm(forms.ModelForm):
     class Meta:
