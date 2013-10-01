@@ -245,7 +245,7 @@ class OrgEditView(LoginRequiredMixin, UpdateView):
     def get_queryset(self):
         #return Org.objects.annotate(profiles=Count('profile')).filter(profiles=0)
         return Org.objects.filter(Q(pk=self.request.user.profile.org.pk) |
-                                  Q(profile=None) | 
+                                  Q(profile=None) |
                                  ~Q(profile__user__is_active=True)
                                  ).distinct()
 
