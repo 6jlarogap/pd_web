@@ -59,7 +59,8 @@ class OrderForm(ChildrenJSONMixin, SafeDeleteMixin, forms.ModelForm):
 
         self.fields['payment'].widget = forms.RadioSelect(choices=Order.PAYMENT_CHOICES)
 
-        self.fields['agent'].queryset = self.fields['agent'].queryset.select_related('user')
+        self.fields['applicant_organization'].inactive_queryset = Org.objects.filter(Q(profile__user__is_active=False) | Q(profile=None))
+        self.fields['agent'].queryset = Profile.objects.filter(is_agent=True).select_related('user')
         self.fields['dover'].queryset = self.fields['dover'].queryset.select_related('agent', 'agent__user')
 
         # Отсутствие выбора будет в выпадающем списке не "---", а ""
