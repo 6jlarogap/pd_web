@@ -310,7 +310,8 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
         if self.request.user.profile.is_loru():
             self.fields['desired_graves_count'].label = _(u'Желаемое число могил в новом месте')
         
-        self.fields['applicant_organization'].inactive_queryset = Org.objects.filter(Q(profile__user__is_active=False) | Q(profile=None))
+        self.fields['applicant_organization'].inactive_queryset = \
+            Org.objects.filter(Q(profile=None) | ~Q(profile__user__is_active=True)).distinct()
         self.fields['agent'].queryset = Profile.objects.filter(is_agent=True).select_related('user')
         self.fields['dover'].queryset = self.fields['dover'].queryset.select_related('agent', 'agent__user')
 

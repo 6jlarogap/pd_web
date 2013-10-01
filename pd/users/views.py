@@ -242,8 +242,12 @@ class OrgEditView(LoginRequiredMixin, UpdateView):
         data['request'] = self.request
         return data
 
-    #def get_queryset(self):
+    def get_queryset(self):
         #return Org.objects.annotate(profiles=Count('profile')).filter(profiles=0)
+        return Org.objects.filter(Q(pk=self.request.user.profile.org.pk) |
+                                  Q(profile=None) | 
+                                 ~Q(profile__user__is_active=True)
+                                 ).distinct()
 
     def get_context_data(self, **kwargs):
         data = super(OrgEditView, self).get_context_data(**kwargs)
