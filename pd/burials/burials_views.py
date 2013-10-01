@@ -401,7 +401,7 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
             'show_private_data': self.request.user.profile.is_ugh() or \
                                  (b.is_full() or b.is_transferred()) and \
                                  b.loru and b.loru == self.request.user.profile.org,
-            'place': b.get_place() if self.request.user.profile.is_ugh() else None,
+            'place': b.get_place(),
         }
 
 view_burial = BurialView.as_view()
