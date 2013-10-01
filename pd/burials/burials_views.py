@@ -57,8 +57,6 @@ class BurialsListGenericMixin:
                 qs = Q(applicant_organization=loru) | Q(loru=loru) | Q(ugh__loru_list__loru=loru)
                 qs = qs & Q(source_type__in=[Burial.SOURCE_FULL, Burial.SOURCE_TRANSFERRED])
             if self.request.user.profile.is_ugh():
-                qs = Q(applicant_organization__ugh_list__ugh=self.request.user.profile.org)
-                qs |= Q(loru__ugh_list__ugh=self.request.user.profile.org)
                 qs |= Q(ugh=self.request.user.profile.org)
         return qs
 
