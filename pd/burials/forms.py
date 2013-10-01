@@ -1018,7 +1018,8 @@ class BurialApproveCloseForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelFor
                 self.fields['place_number'].required = False
             self.fields['cemetery'].queryset = Cemetery.objects.filter(cemetery_qs)
             max_grave_number = self.fields['cemetery'].queryset.aggregate(m=Max('area__places_count'))['m']
-            self.fields['desired_graves_count'].label += ' (' + _(u'не больше %s') % max_grave_number + ')'
+            max_grave_choices = [(i,i) for i in range(1, max_grave_number+1)]
+            self.fields['desired_graves_count'].widget = forms.Select(choices=max_grave_choices)
 
         elif self.instance.can_approve():
             # отправленное на согласование или после этого отправленное на обследование в угх
@@ -1070,17 +1071,6 @@ class BurialApproveCloseForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelFor
            not self.cleaned_data['row'].strip():
             raise forms.ValidationError(_(u"На кладбище с нумерацией мест по ряду не указан номер ряда"))
         return self.cleaned_data
-
-    def clean_desired_graves_count(self):
-        """
-        Проверка, чтоб не ввели несуразное число могил в новом месте
-        """
-        desired_graves_count = self.cleaned_data['desired_graves_count']
-        if not self.instance.get_place():
-            max_grave_number = self.fields['cemetery'].queryset.aggregate(m=Max('area__places_count'))['m']
-            if self.cleaned_data['desired_graves_count'] > max_grave_number:
-                raise forms.ValidationError(_(u"Превышен максимум могил в новом месте (%s)") % max_grave_number)
-        return desired_graves_count
 
     def clean_area(self):
         """
