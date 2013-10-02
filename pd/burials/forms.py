@@ -1081,6 +1081,17 @@ class BurialApproveCloseForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelFor
             raise forms.ValidationError(_(u'Можно предлагать лишь открытый участок кладбища'))
         return self.cleaned_data['area']
 
+    def clean_desired_graves_count(self):
+        desired_graves_count = self.cleaned_data['desired_graves_count']
+        b_temp = Burial(cemetery = self.instance.cemetery,
+                        area = self.instance.area,
+                        row = self.instance.row,
+                        place_number = self.instance.place_number
+                       )
+        if not b_temp.get_place() and self.instance.grave_number > desired_graves_count:
+            raise forms.ValidationError(_(u"Номер могилы превышает запрошенное количество могил в новом месте"))
+        return desired_graves_count
+
     def is_valid(self):
         is_valid = super(BurialApproveCloseForm, self).is_valid() and all([f.is_valid() for f in self.forms])
         if not is_valid:
