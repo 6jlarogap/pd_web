@@ -216,6 +216,16 @@ class BaseOrgForm(LoggingFormMixin, forms.ModelForm):
                 raise forms.ValidationError(_(u"ИНН уже зарегистрирован"))
         return inn
 
+    def clean_name(self):
+        name = self.cleaned_data.get('name')
+        if name:
+            orgs = Org.objects.filter(name=name)
+            if self.instance and self.instance.pk:
+                orgs = orgs.exclude(pk=self.instance.pk)
+            if orgs.exists():
+                raise forms.ValidationError(_(u"Есть уже такая организация"))
+        return name
+
 class OrgForm(BaseOrgForm):
     class Meta:
         model = Org
@@ -225,7 +235,7 @@ class OrgForm(BaseOrgForm):
         super(OrgForm, self).__init__(request, *args, **kwargs)
         self.address_form = LocationForm(data=self.data or None, prefix='address', instance=self.instance.off_address)
         self.forms = [self.address_form, ]
-        self.bank_formset = BankAccountFormset(data=request.POST or None, instance=request.user.profile.org)
+        # self.bank_formset = BankAccountFormset(data=request.POST or None, instance=request.user.profile.org)
         if not self.is_own_org or not self.request.user.profile.is_ugh():
             del self.fields['numbers_algo']
         if not self.is_own_org or not self.request.user.profile.is_loru():
@@ -233,14 +243,12 @@ class OrgForm(BaseOrgForm):
             del self.fields['opf_order_customer_mandatory']
 
     def is_valid(self):
-        return super(OrgForm, self).is_valid() and \
-                    self.address_form.is_valid() and \
-                    self.bank_formset.is_valid()
+        return super(OrgForm, self).is_valid() and self.address_form.is_valid() # and self.bank_formset.is_valid()
 
     def save(self, commit=True):
         self.collect_log_data()
         org = super(OrgForm, self).save(commit=False)
-        self.bank_formset.save()
+        # self.bank_formset.save()
         if any(self.address_form.cleaned_data.values()):
             org.off_address = self.address_form.save()
         if commit:
