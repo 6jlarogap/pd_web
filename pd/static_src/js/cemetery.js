@@ -655,6 +655,12 @@ $(function() {
                 $.get('/burials/get_place/?'+data, function (data) {
                     var place_html = data;
                     $('#place_info').html(place_html);
+                    if (place_html.indexOf("place_exists") >= 0) {
+                        $('#id_desired_graves_count').closest('p').hide();
+                    }
+                    else {
+                        $('#id_desired_graves_count').closest('p').show();
+                    }
                     if (place_html.indexOf("place_has_responsible") >= 0) {
                         var resp_id = '#id_responsible-take_from_';
                         $(resp_id+'0').closest('li').show();
@@ -667,6 +673,7 @@ $(function() {
                     }
                 });
             } else {
+                $('#id_desired_graves_count').closest('p').show();
                 $('#place_info').html('');
             }
             $.getJSON('/burials/get_graves_number/?'+data, function(data) {
@@ -683,9 +690,10 @@ $(function() {
                 $('#id_responsible-place').val(data.place_pk || "");
             })
         } else {
+            $('#id_desired_graves_count').closest('p').show();
             $('#place_info').html('');
         }
-        
+
         var cemetery = $('#id_cemetery').val();
         if (cemetery && PLACE_TYPES[cemetery] != 'manual') {
             $('#id_place_number').siblings('.helptext').show();

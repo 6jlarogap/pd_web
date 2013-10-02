@@ -172,9 +172,42 @@ class BaseOrgForm(LoggingFormMixin, forms.ModelForm):
         super(BaseOrgForm, self).__init__(*args, **kwargs)
         # требуется для self.collect_log_data():
         self.forms = []
+        # Сделаем поле типа организации в зависимости от различных условий
+        choices = []
+        if self.instance and self.instance.pk and self.instance.pk == request.user.profile.org.pk:
+            widget = forms.Select(attrs={'disabled':'disabled'})
+            self.saved_type = self.instance.type
+            for profile_type in Org.PROFILE_TYPES:
+                if profile_type[0] == self.instance.type:
+                    choices.append(profile_type)
+                    break
+        else:
+            widget = None
+            self.saved_type = None
+            for profile_type in Org.PROFILE_TYPES:
+                if request.user.profile.is_ugh():
+                    if profile_type[0] in (Org.PROFILE_LORU, Org.PROFILE_ZAGS, Org.PROFILE_COMPANY, ):
+                        choices.append(profile_type)
+                elif request.user.profile.is_loru():
+                    if profile_type[0] in (Org.PROFILE_ZAGS, Org.PROFILE_COMPANY, ):
+                        choices.append(profile_type)
+                    # если лорику попался для редактирования другой лору:
+                    elif self.instance and self.instance.pk and \
+                         self.instance.type == Org.PROFILE_LORU and profile_type[0] == Org.PROFILE_LORU:
+                        choices.append(profile_type)
+                else:
+                    if profile_type[0] in (Org.PROFILE_ZAGS, ):
+                        choices.append(profile_type)
+        self.is_own_org = bool(self.saved_type)    # Псевдоним, чтоб не путаться
+        label = self.fields['type'].label
+        self.fields['type'] = forms.fields.TypedChoiceField(choices = choices,
+                                                            widget=widget,
+                                                            required = not self.is_own_org
+                                                           )
+        self.fields['type'].label = label
 
     def clean_inn(self):
-        inn = self.cleaned_data['inn']
+        inn = self.cleaned_data.get('inn')
         if inn:
             orgs = Org.objects.filter(inn=inn)
             if self.instance and self.instance.pk:
@@ -193,20 +226,11 @@ class OrgForm(BaseOrgForm):
         self.address_form = LocationForm(data=self.data or None, prefix='address', instance=self.instance.off_address)
         self.forms = [self.address_form, ]
         self.bank_formset = BankAccountFormset(data=request.POST or None, instance=request.user.profile.org)
-        if not self.request.user.profile.is_ugh():
+        if not self.is_own_org or not self.request.user.profile.is_ugh():
             del self.fields['numbers_algo']
-        if not self.request.user.profile.is_loru():
+        if not self.is_own_org or not self.request.user.profile.is_loru():
             del self.fields['opf_order']
             del self.fields['opf_order_customer_mandatory']
-        if self.request.user.profile.org.pk == self.instance.pk:
-            choices = []
-            for profile_type in Org.PROFILE_TYPES:
-                if profile_type[0] == self.instance.type:
-                    choices.append(profile_type)
-                    break
-            label = self.fields['type'].label
-            self.fields['type'] = forms.fields.TypedChoiceField(choices=choices)
-            self.fields['type'].label = label
 
     def is_valid(self):
         return super(OrgForm, self).is_valid() and \
@@ -214,6 +238,15 @@ class OrgForm(BaseOrgForm):
                     self.bank_formset.is_valid()
 
     def save(self, commit=True):
+        # В BaseOrgForm сохранили тип организации (self.saved_type),
+        # если правим свою организацию.
+        # Используется disabled <select>, а он ничего не возвращает по POST
+        # посему self.instance.type становится '', а в self.changed_data
+        # появляется 'type'
+        if self.saved_type:
+            if 'type' in self.changed_data:
+                self.changed_data.remove('type')
+            self.instance.type = self.saved_type
         self.collect_log_data()
         org = super(OrgForm, self).save(commit=False)
         self.bank_formset.save()
