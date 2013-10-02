@@ -114,9 +114,9 @@
             {% if not place %}
                 {% trans "Запрошено место на число могил: " %}{{ b.desired_graves_count }}<br/>
                 {% if b.area and b.desired_graves_count > b.area.places_count  %}
-                <span style="color:red"><b>{% trans "больше числа могил на место участка" %}!</b></span><br />
+                <span style="color:blue"><b>{% trans "Число могил больше, чем задано у участка" %}!</b></span><br />
                 {% elif b.area and b.desired_graves_count < b.area.places_count %}
-                <span style="color:blue"><b>{% trans "меньше числа могил на место участка" %}</b></span><br />
+                <span style="color:blue"><b>{% trans "Число могил меньше, чем задано у участка" %}</b></span><br />
                 {% endif %}
             {% endif %}
             {% if b.row %}{% trans "Ряд" %}: {{ b.row }}<br/>{% endif %}
@@ -130,7 +130,7 @@
                     <a href="{% url view_place place.pk %}" class="btn">{% trans "карточка" %}</a>
                 {% endif %}
             {% endif %}
-            {% if user.profile.is_loru %} 
+            {% if user.profile.is_loru and not b.is_closed and not b.exhumated %} 
                 {% if place %}
                     <span style="color:blue"><b>{% trans "Место существует" %}</b></span><br />
                 {% elif b.cemetery and b.area and b.place_number %}
