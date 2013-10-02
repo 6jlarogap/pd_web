@@ -627,22 +627,6 @@ $(function() {
         })
     });
 
-    $('#add_org').find('.btn-primary').click(function() {
-        var data = $('#add_org form').serialize();
-        $.post('/burials/add_org/', data, function(data){
-            if (data.pk) {
-                var select = $('#id_org');
-                select.append('<option value="'+data.pk+'">'+data.label+'</option>');
-                select.val(data.pk);
-                $('#add_org').modal('hide');
-                $('#add_org form :input').val('');
-                select.change();
-            } else {
-                alert(data);
-            }
-        })
-    });
-
     old_grave_value = $('#id_grave_number').val();
 
     $('#cont_place #id_cemetery, #cont_place #id_area, #cont_place #id_row, #cont_place #id_place_number, #id_desired_graves_count').change(function() {
