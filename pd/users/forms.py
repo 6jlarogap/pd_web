@@ -172,9 +172,37 @@ class BaseOrgForm(LoggingFormMixin, forms.ModelForm):
         super(BaseOrgForm, self).__init__(*args, **kwargs)
         # требуется для self.collect_log_data():
         self.forms = []
+        # Сделаем поле типа организации в зависимости от различных условий
+        self.is_own_org = self.instance and self.instance.pk and self.instance.pk == request.user.profile.org.pk
+        if self.is_own_org:
+            del self.fields['type']
+            self.fields['type_'] = forms.CharField(widget=forms.TextInput(attrs={'readonly':'readonly'}),
+                                                   initial = self.instance.get_type_display(),
+                                                   required = False)
+            self.fields['type_'].label = u'Тип'
+            self.fields.keyOrder.insert(0, self.fields.keyOrder.pop(-1))
+        else:
+            choices = []
+            for profile_type in Org.PROFILE_TYPES:
+                if request.user.profile.is_ugh():
+                    if profile_type[0] in (Org.PROFILE_LORU, Org.PROFILE_ZAGS, Org.PROFILE_COMPANY, ):
+                        choices.append(profile_type)
+                elif request.user.profile.is_loru():
+                    if profile_type[0] in (Org.PROFILE_ZAGS, Org.PROFILE_COMPANY, ):
+                        choices.append(profile_type)
+                    # если лорику попался для редактирования другой лору:
+                    elif self.instance and self.instance.pk and \
+                         self.instance.type == Org.PROFILE_LORU and profile_type[0] == Org.PROFILE_LORU:
+                        choices.append(profile_type)
+                else:
+                    if profile_type[0] in (Org.PROFILE_ZAGS, ):
+                        choices.append(profile_type)
+            label = self.fields['type'].label
+            self.fields['type'] = forms.fields.TypedChoiceField(choices = choices)
+            self.fields['type'].label = label
 
     def clean_inn(self):
-        inn = self.cleaned_data['inn']
+        inn = self.cleaned_data.get('inn')
         if inn:
             orgs = Org.objects.filter(inn=inn)
             if self.instance and self.instance.pk:
@@ -182,6 +210,16 @@ class BaseOrgForm(LoggingFormMixin, forms.ModelForm):
             if orgs.exists():
                 raise forms.ValidationError(_(u"ИНН уже зарегистрирован"))
         return inn
+
+    def clean_name(self):
+        name = self.cleaned_data.get('name')
+        if name:
+            orgs = Org.objects.filter(name=name)
+            if self.instance and self.instance.pk:
+                orgs = orgs.exclude(pk=self.instance.pk)
+            if orgs.exists():
+                raise forms.ValidationError(_(u"Есть уже такая организация"))
+        return name
 
 class OrgForm(BaseOrgForm):
     class Meta:
@@ -192,31 +230,20 @@ class OrgForm(BaseOrgForm):
         super(OrgForm, self).__init__(request, *args, **kwargs)
         self.address_form = LocationForm(data=self.data or None, prefix='address', instance=self.instance.off_address)
         self.forms = [self.address_form, ]
-        self.bank_formset = BankAccountFormset(data=request.POST or None, instance=request.user.profile.org)
-        if not self.request.user.profile.is_ugh():
+        # self.bank_formset = BankAccountFormset(data=request.POST or None, instance=request.user.profile.org)
+        if not self.is_own_org or not self.request.user.profile.is_ugh():
             del self.fields['numbers_algo']
-        if not self.request.user.profile.is_loru():
+        if not self.is_own_org or not self.request.user.profile.is_loru():
             del self.fields['opf_order']
             del self.fields['opf_order_customer_mandatory']
-        if self.request.user.profile.org.pk == self.instance.pk:
-            choices = []
-            for profile_type in Org.PROFILE_TYPES:
-                if profile_type[0] == self.instance.type:
-                    choices.append(profile_type)
-                    break
-            label = self.fields['type'].label
-            self.fields['type'] = forms.fields.TypedChoiceField(choices=choices)
-            self.fields['type'].label = label
 
     def is_valid(self):
-        return super(OrgForm, self).is_valid() and \
-                    self.address_form.is_valid() and \
-                    self.bank_formset.is_valid()
+        return super(OrgForm, self).is_valid() and self.address_form.is_valid() # and self.bank_formset.is_valid()
 
     def save(self, commit=True):
         self.collect_log_data()
         org = super(OrgForm, self).save(commit=False)
-        self.bank_formset.save()
+        # self.bank_formset.save()
         if any(self.address_form.cleaned_data.values()):
             org.off_address = self.address_form.save()
         if commit:

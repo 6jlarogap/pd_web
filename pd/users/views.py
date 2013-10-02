@@ -6,6 +6,7 @@ from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
+from django.db.models.query_utils import Q
 from django.db.models.aggregates import Count
 from django.http import HttpResponse, Http404
 from django.shortcuts import redirect, render
@@ -241,8 +242,12 @@ class OrgEditView(LoginRequiredMixin, UpdateView):
         data['request'] = self.request
         return data
 
-    #def get_queryset(self):
+    def get_queryset(self):
         #return Org.objects.annotate(profiles=Count('profile')).filter(profiles=0)
+        return Org.objects.filter(Q(pk=self.request.user.profile.org.pk) |
+                                  Q(profile=None) |
+                                 ~Q(profile__user__is_active=True)
+                                 ).distinct()
 
     def get_context_data(self, **kwargs):
         data = super(OrgEditView, self).get_context_data(**kwargs)
@@ -288,10 +293,15 @@ change_password = ChangePasswordView.as_view()
 
 class AutocompleteOrg(View):
     def get(self, request, *args, **kwargs):
-        query = request.GET['query']
+        query = request.GET.get('query')
+        type_ = request.GET.get('type')
+        exact = request.GET.get('exact')
         if request.user.profile.is_loru() or \
            request.user.profile.is_ugh():
-            orgs = Org.objects.filter(name__icontains=query)
+            q = Q(name=query) if exact else Q(name__icontains=query)
+            if type_:
+                q &= Q(type=type_)
+            orgs = Org.objects.filter(q).order_by('name')
         else:
             orgs = Org.objects.none()
 
