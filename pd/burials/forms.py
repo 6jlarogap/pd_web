@@ -310,7 +310,8 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
         if self.request.user.profile.is_loru():
             self.fields['desired_graves_count'].label = _(u'Желаемое число могил в новом месте')
         
-        self.fields['applicant_organization'].inactive_queryset = Org.objects.filter(Q(profile__user__is_active=False) | Q(profile=None))
+        self.fields['applicant_organization'].inactive_queryset = \
+            Org.objects.filter(Q(profile=None) | ~Q(profile__user__is_active=True)).distinct()
         self.fields['agent'].queryset = Profile.objects.filter(is_agent=True).select_related('user')
         self.fields['dover'].queryset = self.fields['dover'].queryset.select_related('agent', 'agent__user')
 
@@ -1018,7 +1019,8 @@ class BurialApproveCloseForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelFor
                 self.fields['place_number'].required = False
             self.fields['cemetery'].queryset = Cemetery.objects.filter(cemetery_qs)
             max_grave_number = self.fields['cemetery'].queryset.aggregate(m=Max('area__places_count'))['m']
-            self.fields['desired_graves_count'].label += ' (' + _(u'не больше %s') % max_grave_number + ')'
+            max_grave_choices = [(i,i) for i in range(1, max_grave_number+1)]
+            self.fields['desired_graves_count'].widget = forms.Select(choices=max_grave_choices)
 
         elif self.instance.can_approve():
             # отправленное на согласование или после этого отправленное на обследование в угх
@@ -1070,17 +1072,6 @@ class BurialApproveCloseForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelFor
            not self.cleaned_data['row'].strip():
             raise forms.ValidationError(_(u"На кладбище с нумерацией мест по ряду не указан номер ряда"))
         return self.cleaned_data
-
-    def clean_desired_graves_count(self):
-        """
-        Проверка, чтоб не ввели несуразное число могил в новом месте
-        """
-        desired_graves_count = self.cleaned_data['desired_graves_count']
-        if not self.instance.get_place():
-            max_grave_number = self.fields['cemetery'].queryset.aggregate(m=Max('area__places_count'))['m']
-            if self.cleaned_data['desired_graves_count'] > max_grave_number:
-                raise forms.ValidationError(_(u"Превышен максимум могил в новом месте (%s)") % max_grave_number)
-        return desired_graves_count
 
     def clean_area(self):
         """
@@ -1188,20 +1179,6 @@ class AddOrgForm(BaseOrgForm):
     
     def __init__(self, request, *args, **kwargs):
         super(AddOrgForm, self).__init__(request, *args, **kwargs)
-        choices = []
-        for profile_type in Org.PROFILE_TYPES:
-            if request.user.profile.is_ugh():
-                if profile_type[0] in (Org.PROFILE_LORU, Org.PROFILE_ZAGS, Org.PROFILE_COMPANY, ):
-                    choices.append(profile_type)
-            elif request.user.profile.is_loru():
-                if profile_type[0] in (Org.PROFILE_ZAGS, Org.PROFILE_COMPANY, ):
-                    choices.append(profile_type)
-            else:
-                if profile_type[0] in (Org.PROFILE_ZAGS, ):
-                    choices.append(profile_type)
-        label = self.fields['type'].label
-        self.fields['type'] = forms.fields.TypedChoiceField(choices=choices)
-        self.fields['type'].label = label
         for field in ('name', 'full_name', 'inn', 'director', ):
             self.fields[field].required = False
 
