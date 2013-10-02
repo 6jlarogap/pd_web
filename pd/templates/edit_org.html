@@ -13,13 +13,13 @@
         {% include "location_form.html" %}
     {% endwith %}
 
-    <h2>{% trans "Банковские счета" %}</h2>
-    {{ form.bank_formset.management_form }}
-    {% for f in form.bank_formset.forms %}
-        <fieldset>
-            {{ f.as_p }}
-        </fieldset>
-    {% endfor %}
+    {# <h2>{% trans "Банковские счета" %}</h2>   #}
+    {# {{ form.bank_formset.management_form }}   #}
+    {# {% for f in form.bank_formset.forms %}    #}
+    {#     <fieldset>                            #}
+    {#         {{ f.as_p }}                      #}
+    {#     </fieldset>                           #}
+    {# {% endfor %}                              #}
 
     <p>
         <input type="submit" class="btn btn-primary" value="{% trans "cохранить" %}"/>
