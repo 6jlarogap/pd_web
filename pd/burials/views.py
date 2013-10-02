@@ -260,32 +260,25 @@ class GetGravesNumberView(View):
         return View.dispatch(self, request, *args, **kwargs)
 
     def get(self, request, *args, **kwargs):
-        places = Place.objects.all()
         data = dict(
             cemetery__pk=request.GET.get('cemetery') or None,
             area__pk=request.GET.get('area') or None,
             row=request.GET.get('row') or '',
             place=request.GET.get('place_number') or '',
         )
+        desired_graves_count=request.GET.get('desired_graves_count') or '',
 
         if request.GET.get('place_number'):
             try:
-                p = places.get(**data)
+                p = Place.objects.get(**data)
             except Place.DoesNotExist:
                 pass
             except Place.MultipleObjectsReturned:
                 return HttpResponse('')
             else:
-                return HttpResponse('{"place_pk": %s, "places": %s}' % (p.pk, p.get_graves_count()), mimetype='application/json')
+                return HttpResponse('{"place_pk": %s, "graves_count": %s}' % (p.pk, p.get_graves_count()), mimetype='application/json')
 
-        try:
-            a = Area.objects.get(cemetery__pk=request.GET.get('cemetery') or None, pk=request.GET.get('area') or None)
-        except Area.DoesNotExist:
-            return HttpResponse('')
-        except Area.MultipleObjectsReturned:
-            return HttpResponse('')
-        else:
-            return HttpResponse('{"places": %s}' % a.places_count, mimetype='application/json')
+        return HttpResponse('{"graves_count": %s}' % desired_graves_count, mimetype='application/json')
 
 get_graves_number = GetGravesNumberView.as_view()
 
