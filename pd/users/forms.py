@@ -179,9 +179,8 @@ class BaseOrgForm(LoggingFormMixin, forms.ModelForm):
         self.forms = []
         # Сделаем поле типа организации в зависимости от различных условий
         self.is_own_org = self.instance and self.instance.pk and self.instance.pk == request.user.profile.org.pk
-        # Добавить новый ЗАГС, передается форма с заданным типом
-        self.is_new_typed = self.instance and not self.instance.pk and self.instance.type
-        if self.is_own_org or self.is_new_typed:
+        # Добавить новый ЗАГС, в форму передается пустой instance с заданным типом
+        if self.is_own_org or self.instance and not self.instance.pk and self.instance.type:
             del self.fields['type']
             self.fields['type_'] = forms.CharField(widget=forms.TextInput(attrs={'readonly':'readonly'}),
                                                    initial = self.instance.get_type_display(),

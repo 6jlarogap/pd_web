@@ -1057,7 +1057,7 @@ class BurialApproveCloseForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelFor
                     dc = None
                 if not dc and deadman:
                     dc = DeathCertificate(person=deadman)
-                self.dc_form = DeathCertificateForm(request, data=self.request.POST or None, instance=dc)
+                self.dc_form = DeathCertificateForm(request, data=self.request.POST or None, instance=dc, prefix='deadman-dc')
                 self.forms.append(self.dc_form)
 
                 # - если угх нажмет "Согласовать" или если лору/угх нажмет "сохранить" (СоС),
@@ -1199,7 +1199,6 @@ class AddOrgForm(BaseOrgForm):
 
     def clean(self):
         cleaned_data = super(AddOrgForm, self).clean()
-        print self.errors
         errors = []
         for field in ('name', 'full_name', 'inn', 'director', ):
             # Нюанс django: Если clean_FIELD raises an exception,
