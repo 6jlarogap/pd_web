@@ -177,10 +177,9 @@
             {# при котором здесь оказываемся, придется в ряде случаев пересмотреть! #}
             {% if b.can_approve and not b.is_bio %}
                 <h2>{% trans "Свидетельство о смерти" %}</h2>
-                {{ approve_close_form.dc_form.as_p }}
-                <a href="#add_zags" role="button" class="btn btn-loru" data-toggle="modal">
-                    {% trans "добавить ЗАГС" %}
-                </a>
+                {% with approve_close_form.dc_form as form %}
+                    {% include "deathcertificate.html" %}
+                {% endwith %}
                 {{ approve_close_form.dc_form.scan_form.as_p }}
                 <br />
                 <input type="submit" class="btn btn-primary" name="save-dc" value="{% trans "cохранить" %}">
@@ -239,7 +238,9 @@
                 {% endif %}
                 {% if not b.is_bio %}
                     <h2>{% trans "Свидетельство о смерти" %}</h2>
-                    {{ approve_close_form.dc_form.as_p }}
+                    {% with approve_close_form.dc_form as form %}
+                        {% include "deathcertificate.html" %}
+                    {% endwith %}
                     {{ approve_close_form.dc_form.scan_form.as_p }}
                     <br />
                 {% endif %}
