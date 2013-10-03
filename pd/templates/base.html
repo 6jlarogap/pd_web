@@ -20,7 +20,17 @@
         .sidebar-nav {
             padding: 9px 0;
         }
+        #hidden_if_js {
+            margin: 15px;
+        }
     </style>
+    <noscript>
+        <style>
+            #hidden_if_no_js {
+                display: none;
+            }
+        </style>
+    </noscript>
     <link type="text/css" href="{{ STATIC_URL }}css/custom-theme/jquery-ui-1.8.16.custom.css" rel="stylesheet" />
     <link type="text/css" href="{{ STATIC_URL }}css/jquery-ui-timepicker.css" rel="stylesheet" />
 
@@ -64,9 +74,24 @@
 
     <script type="text/javascript" src="{{ STATIC_URL }}js/cemetery.js" defer="true"></script>
 
+    <script language="javascript">
+         function check_js() {
+              document.getElementById("hidden_if_js").innerHTML = "";
+              document.getElementById("hidden_if_js").style.display = "none";
+         }
+    </script>
     {% block scripts %}{% endblock %}
 </head>
-<body>
+<body onload="check_js()">
+    <div id="hidden_if_js">
+        <h1>{% trans "Внимание" %}!
+        <br />
+        <h2 style="color:red">{% trans "У вас отключен JavaScript" %}!</h2>
+        <br />
+        <h3>{% trans "Для отображения страницы вам понадобится включить поддержку JavaScript в настройках браузера" %}.</h3>
+    </div>
+    <div id="hidden_if_no_js">
+    {# TODO: may be git conficts, so indent the contents of the enclosing div later #}
     <div class="navbar navbar-fixed-top no-print">
         <div class="navbar-inner">
             <div class="container-fluid">
@@ -153,7 +178,6 @@
         </div>
     </div>
 
-
     <div class="container-fluid">
         {% if messages %}
             <ul class="messages no-print">
@@ -170,5 +194,6 @@
         {% include "yandex_metrika.html" %}
     {% endif %}
 
+    </div>
 </body>
 </html>
