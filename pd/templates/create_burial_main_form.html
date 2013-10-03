@@ -79,10 +79,9 @@
             {% endwith %}
         </div>
         <h3>{% trans "Свидетельство о смерти" %}</h3>
-        {{ form.dc_form.as_p }}
-        <a href="#add_zags" role="button" class="btn btn-loru" data-toggle="modal">
-            {% trans "добавить ЗАГС" %}
-        </a>
+        {% with form.dc_form as form %}
+            {% include "deathcertificate.html" %}
+        {% endwith %}
         {{ form.dc_form.scan_form.as_p }}
 </div>
 
