@@ -31,8 +31,8 @@
             </p>
             <script type="text/javascript">
                 ORGS_INACTIVE = [{% for org in form.fields.applicant_organization.inactive_queryset %}"{{ org.pk }}"{% if not forloop.last %},{% endif %}{% endfor %}];
+                ORGS_LIST = [{% for org in form.fields.applicant_organization.queryset %}"{{ org.name|escapejs }}"{% if not forloop.last %},{% endif %}{% endfor %}];
                 $(function() {
-                    var ORGS_LIST = [{% for org in form.fields.applicant_organization.queryset %}"{{ org.name|escapejs }}"{% if not forloop.last %},{% endif %}{% endfor %}];
                     $('select[name$=applicant_organization]').attr('autocomplete', 'off').change(function() {
                         if (ORGS_INACTIVE.indexOf($(this).val()) > -1) {
                             $('.btn-edit-org').attr('href', '/org/'+$(this).val()+'/edit/').show();

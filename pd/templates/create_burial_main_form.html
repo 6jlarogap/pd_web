@@ -80,6 +80,9 @@
         </div>
         <h3>{% trans "Свидетельство о смерти" %}</h3>
         {{ form.dc_form.as_p }}
+        <a href="#add_zags" role="button" class="btn btn-loru" data-toggle="modal">
+            {% trans "добавить ЗАГС" %}
+        </a>
         {{ form.dc_form.scan_form.as_p }}
 </div>
 
