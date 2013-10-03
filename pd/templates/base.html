@@ -91,108 +91,107 @@
         <h3>{% trans "Для отображения страницы вам понадобится включить поддержку JavaScript в настройках браузера" %}.</h3>
     </div>
     <div id="hidden_if_no_js">
-    {# TODO: may be git conficts, so indent the contents of the enclosing div later #}
-    <div class="navbar navbar-fixed-top no-print">
-        <div class="navbar-inner">
-            <div class="container-fluid">
-                <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
-                    <span class="icon-bar"></span>
-                    <span class="icon-bar"></span>
-                    <span class="icon-bar"></span>
-                </a>
-                <a class="brand" href="/">ПохоронноеДело</a>
-                <div class="btn-group pull-right dropdown" id="auth_menu">
-                    {% if user.is_authenticated %}
-                        <a class="btn dropdown-toggle" data-toggle="dropdown" href="#auth_menu">
-                            <i class="icon-user"></i> {{ user.profile.last_name_initials }}
-                            {% if user.profile.org %}[{{ user.profile.org }}]{% endif %}
-                            <span class="caret"></span>
-                        </a>
-                        <ul class="dropdown-menu">
-                            {% if user.profile.is_ugh %}
-                                <li><a href="{% url manage_cemeteries %}">{% trans "Кладбища" %}</a></li>
-                                <li><a href="{% url loru_registry %}">{% trans "Реестр ЛОРУ" %}</a></li>
-                            {% endif %}
-                            {% if user.profile.org.pk %}
-                                <li><a href="{% url edit_org user.profile.org.pk %}">{% trans "Организация" %}</a></li>
-                            {% endif %}
-                            {% if user.profile.pk %}
-                                <li><a href="{% url user_profile %}">{% trans "Пользователь" %}</a></li>
+        <div class="navbar navbar-fixed-top no-print">
+            <div class="navbar-inner">
+                <div class="container-fluid">
+                    <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                    </a>
+                    <a class="brand" href="/">ПохоронноеДело</a>
+                    <div class="btn-group pull-right dropdown" id="auth_menu">
+                        {% if user.is_authenticated %}
+                            <a class="btn dropdown-toggle" data-toggle="dropdown" href="#auth_menu">
+                                <i class="icon-user"></i> {{ user.profile.last_name_initials }}
+                                {% if user.profile.org %}[{{ user.profile.org }}]{% endif %}
+                                <span class="caret"></span>
+                            </a>
+                            <ul class="dropdown-menu">
+                                {% if user.profile.is_ugh %}
+                                    <li><a href="{% url manage_cemeteries %}">{% trans "Кладбища" %}</a></li>
+                                    <li><a href="{% url loru_registry %}">{% trans "Реестр ЛОРУ" %}</a></li>
+                                {% endif %}
+                                {% if user.profile.org.pk %}
+                                    <li><a href="{% url edit_org user.profile.org.pk %}">{% trans "Организация" %}</a></li>
+                                {% endif %}
+                                {% if user.profile.pk %}
+                                    <li><a href="{% url user_profile %}">{% trans "Пользователь" %}</a></li>
+                                {% endif %}
+                                {% if user.profile.is_loru %}
+                                    <li><a href="{% url manage_products %}">{% trans "Товары и услуги" %}</a></li>
+                                {% endif %}
+                                {% if user.profile.org.pk %}
+                                    <li><a href="{% url org_log %}">{% trans "Журнал" %}</a></li>
+                                {% endif %}
+                                {% if user.profile.is_supervisor %}
+                                    <li class="divider"></li>
+                                    <li><a href="{% url uregister %}">{% trans "Регистрация" %}</a></li>
+                                    <li><a href="{% url login_log %}">{% trans "Журнал входов в систему" %}</a></li>
+                                {% endif %}
+                                <li class="divider"></li>
+                                <li><a href="{% url ulogout %}">{% trans "Выйти" %}</a></li>
+                            </ul>
+                        {% else %}
+                            <a class="btn" href="{% url ulogin %}">{% trans "Войти" %}</a>
+                        {% endif %}
+                    </div>
+                    <div class="nav-collapse">
+                        <ul class="nav">
+                            {% if user.profile.is_loru or user.profile.is_ugh %}
+                                <li{% if request.path == '/' %} class="active"{% endif %}>
+                                    <a href="{% url dashboard %}">{% trans "Открытые" %}</a>
+                                </li>
                             {% endif %}
                             {% if user.profile.is_loru %}
-                                <li><a href="{% url manage_products %}">{% trans "Товары и услуги" %}</a></li>
+                                <li{% if request.path == '/burials/search/' %} class="active"{% endif %}>
+                                    <a href="{% url burial_public_list %}">{% trans "Захоронения" %}</a>
+                                </li>
+                                <li{% if request.path == '/burials/create/'  %} class="active"{% endif %}>
+                                    <a href="{% url create_burial %}">{% trans "Создать захоронение" %}</a>
+                                </li>
+                                <li{% if request.path == '/order/' %} class="active"{% endif %}>
+                                    <a href="{% url order_list %}">{% trans "Заказы" %}</a>
+                                </li>
+
+                                <li{% if request.path == '/order/create/' %} class="active"{% endif %}>
+                                    <a href="{% url order_create %}">{% trans "Создать Заказ" %}</a>
+                                </li>
                             {% endif %}
-                            {% if user.profile.org.pk %}
-                                <li><a href="{% url org_log %}">{% trans "Журнал" %}</a></li>
+                            {% if user.profile.is_ugh %}
+                                <li{% if request.path == '/burials/' %} class="active"{% endif %}>
+                                    <a href="{% url burial_list %}">{% trans "Захоронения" %}</a>
+                                </li>
+
+                                <li{% if request.path == '/burials/create/' and not request.GET.archive %} class="active"{% endif %}>
+                                    <a href="{% url create_burial %}">{% trans "Создать захоронение" %}</a>
+                                </li>
+
+                                <li{% if request.path == '/burials/create/' and request.GET.archive %} class="active"{% endif %}>
+                                    <a href="{% url create_burial %}?archive=1">{% trans "Внести архивное" %}</a>
+                                </li>
                             {% endif %}
-                            {% if user.profile.is_supervisor %}
-                                <li class="divider"></li>
-                                <li><a href="{% url uregister %}">{% trans "Регистрация" %}</a></li>
-                                <li><a href="{% url login_log %}">{% trans "Журнал входов в систему" %}</a></li>
-                            {% endif %}
-                            <li class="divider"></li>
-                            <li><a href="{% url ulogout %}">{% trans "Выйти" %}</a></li>
                         </ul>
-                    {% else %}
-                        <a class="btn" href="{% url ulogin %}">{% trans "Войти" %}</a>
-                    {% endif %}
+                    </div><!--/.nav-collapse -->
                 </div>
-                <div class="nav-collapse">
-                    <ul class="nav">
-                        {% if user.profile.is_loru or user.profile.is_ugh %}
-                            <li{% if request.path == '/' %} class="active"{% endif %}>
-                                <a href="{% url dashboard %}">{% trans "Открытые" %}</a>
-                            </li>
-                        {% endif %}
-                        {% if user.profile.is_loru %}
-                            <li{% if request.path == '/burials/search/' %} class="active"{% endif %}>
-                                <a href="{% url burial_public_list %}">{% trans "Захоронения" %}</a>
-                            </li>
-                            <li{% if request.path == '/burials/create/'  %} class="active"{% endif %}>
-                                <a href="{% url create_burial %}">{% trans "Создать захоронение" %}</a>
-                            </li>
-                            <li{% if request.path == '/order/' %} class="active"{% endif %}>
-                                <a href="{% url order_list %}">{% trans "Заказы" %}</a>
-                            </li>
-
-                            <li{% if request.path == '/order/create/' %} class="active"{% endif %}>
-                                <a href="{% url order_create %}">{% trans "Создать Заказ" %}</a>
-                            </li>
-                        {% endif %}
-                        {% if user.profile.is_ugh %}
-                            <li{% if request.path == '/burials/' %} class="active"{% endif %}>
-                                <a href="{% url burial_list %}">{% trans "Захоронения" %}</a>
-                            </li>
-
-                            <li{% if request.path == '/burials/create/' and not request.GET.archive %} class="active"{% endif %}>
-                                <a href="{% url create_burial %}">{% trans "Создать захоронение" %}</a>
-                            </li>
-
-                            <li{% if request.path == '/burials/create/' and request.GET.archive %} class="active"{% endif %}>
-                                <a href="{% url create_burial %}?archive=1">{% trans "Внести архивное" %}</a>
-                            </li>
-                        {% endif %}
-                    </ul>
-                </div><!--/.nav-collapse -->
             </div>
         </div>
-    </div>
 
-    <div class="container-fluid">
-        {% if messages %}
-            <ul class="messages no-print">
-                {% for m in messages %}
-                    <li class="alert alert-{{ m.tags }}">{{ m|safe }}</li>
-                {% endfor %}
-            </ul>
+        <div class="container-fluid">
+            {% if messages %}
+                <ul class="messages no-print">
+                    {% for m in messages %}
+                        <li class="alert alert-{{ m.tags }}">{{ m|safe }}</li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+
+            {% block content %}{% endblock %}
+        </div>
+        
+        {% if global_context_PRODUCTION_SITE %}
+            {% include "yandex_metrika.html" %}
         {% endif %}
-
-        {% block content %}{% endblock %}
-    </div>
-    
-    {% if global_context_PRODUCTION_SITE %}
-        {% include "yandex_metrika.html" %}
-    {% endif %}
 
     </div>
 </body>
