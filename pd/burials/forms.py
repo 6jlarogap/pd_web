@@ -310,6 +310,7 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
         if self.request.user.profile.is_loru():
             self.fields['desired_graves_count'].label = _(u'Желаемое число могил в новом месте')
         
+        self.fields['applicant_organization'].queryset = Org.objects.all()
         self.fields['applicant_organization'].inactive_queryset = \
             Org.objects.filter(Q(profile=None) | ~Q(profile__user__is_active=True)).distinct()
         self.fields['agent'].queryset = Profile.objects.filter(is_agent=True).select_related('user')
@@ -1198,6 +1199,7 @@ class AddOrgForm(BaseOrgForm):
 
     def clean(self):
         cleaned_data = super(AddOrgForm, self).clean()
+        print self.errors
         errors = []
         for field in ('name', 'full_name', 'inn', 'director', ):
             # Нюанс django: Если clean_FIELD raises an exception,

@@ -210,6 +210,22 @@ class AddOrgView(LoginRequiredMixin, View):
 
 add_org = AddOrgView.as_view()
 
+class AddZagsView(LoginRequiredMixin, View):
+    def post(self, request, *args, **kwargs):
+        f = AddOrgForm(request=self.request, data=request.POST, prefix='zags', instance=Org(type=Org.PROFILE_ZAGS))
+        if f.is_valid():
+            new_org = f.save()
+            f.put_log_data(msg=_(u'Данные сохранены'))
+            return HttpResponse(json.dumps({'pk': new_org.pk, 'label': u'%s' % new_org}), mimetype='application/json')
+        else:
+            err_str = _(u'Ошибка: %s')
+            errors = '\n'.join([u'%s' % v[0] for k,v in f.errors.items()])
+            if "\n" in errors:
+                err_str = _(u'Ошибки:\n%s')
+            return HttpResponse(err_str % errors, mimetype='text/plain')
+
+add_zags = AddZagsView.as_view()
+
 class AddDocTypeView(LoginRequiredMixin, View):
     def post(self, request, *args, **kwargs):
         f = AddDocTypeForm(data=request.POST, prefix='doctype')

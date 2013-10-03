@@ -22,6 +22,7 @@ from burials.models import Reason, Burial, Cemetery, Place, ExhumationRequest
 from persons.models import DeathCertificate
 from logs.models import write_log
 from orders.models import Order
+from users.models import Org
 from pd.forms import CommentForm
 from pd.views import PaginateListView
 from reports.models import make_report
@@ -684,6 +685,7 @@ class CreateBurial(BurialGetOrderMixin, CreateView):
             'agent_dover_form': AddDoverForm(prefix='agent_dover'),
             'dover_form': AddDoverForm(prefix='dover'),
             'loru_form': AddOrgForm(request=self.request, prefix='loru'),
+            'zags_form': AddOrgForm(request=self.request, prefix='zags', instance=Org(type=Org.PROFILE_ZAGS)),
             'doc_type_form': AddDocTypeForm(prefix='doctype'),
             'order': self.get_order(),
         })

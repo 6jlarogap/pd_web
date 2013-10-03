@@ -59,6 +59,7 @@ class OrderForm(ChildrenJSONMixin, SafeDeleteMixin, forms.ModelForm):
 
         self.fields['payment'].widget = forms.RadioSelect(choices=Order.PAYMENT_CHOICES)
 
+        self.fields['applicant_organization'].queryset = Org.objects.all()
         self.fields['applicant_organization'].inactive_queryset = \
             Org.objects.filter(Q(profile=None) | ~Q(profile__user__is_active=True)).distinct()
         self.fields['agent'].queryset = Profile.objects.filter(is_agent=True).select_related('user')
