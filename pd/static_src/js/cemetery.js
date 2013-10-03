@@ -627,6 +627,24 @@ $(function() {
         })
     });
 
+    $('#add_zags').find('.btn-primary').click(function() {
+        var data = $('#add_zags form').serialize();
+        $.post('/burials/add_zags/', data, function(data){
+            if (data.pk) {
+                if (typeof ORGS_INACTIVE != "undefined") {
+                    ORGS_INACTIVE.push(data.pk.toString());
+                    ORGS_LIST.push(data.label);
+                    var select = $('#id_applicant_organization');
+                    select.append('<option value="'+data.pk+'" selected="selected">'+data.label+'</option>');
+                }
+                $('#add_zags').modal('hide');
+                $('#id_deadman-dc-zags').val(data.label);
+            } else {
+                alert(data);
+            }
+        })
+    });
+
     old_grave_value = $('#id_grave_number').val();
 
     $('#cont_place #id_cemetery, #cont_place #id_area, #cont_place #id_row, #cont_place #id_place_number, #id_desired_graves_count').change(function() {
