@@ -28,6 +28,9 @@
                 <a href="#" class="btn btn-edit-org" target="_blank">
                     {% trans "править" %}
                 </a>
+                <div id="cannot_edit_org_message" class="inline" style="padding-left: 10px; vertical-align: baseline;">
+                    {% trans "Правка организации с активными пользователями недоступна" %}
+                </div>
             </p>
             <script type="text/javascript">
                 ORGS_INACTIVE = [{% for org in form.fields.applicant_organization.inactive_queryset %}"{{ org.pk }}"{% if not forloop.last %},{% endif %}{% endfor %}];
@@ -36,8 +39,14 @@
                     $('select[name$=applicant_organization]').attr('autocomplete', 'off').change(function() {
                         if (ORGS_INACTIVE.indexOf($(this).val()) > -1) {
                             $('.btn-edit-org').attr('href', '/org/'+$(this).val()+'/edit/').show();
+                            $('#cannot_edit_org_message').hide();
                         } else {
                             $('.btn-edit-org').hide();
+                            if ($(this).val()) {
+                                $('#cannot_edit_org_message').show();
+                            } else {
+                                $('#cannot_edit_org_message').hide();
+                            }
                         }
                     }).each(function() {
                         var sel_input = $(this);
