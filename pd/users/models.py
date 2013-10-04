@@ -126,7 +126,7 @@ class Org(BaseModel):
     opf_order_customer_mandatory = models.BooleanField(_(u"Данные заказчика при оформлении заказа обязательны"),
                                     default=True)
     # название поля не заканчивается на date, чтоб не угодить под специфический datePicker widget для дат:
-    plan_date_days_before = models.PositiveIntegerField(_(u"Кол-во дней для ввода плановой даты в прошлом"), default=0)
+    plan_date_days_before = models.PositiveIntegerField(_(u"Кол-во дней для ввода плановой даты захоронения в прошлом"), default=0)
 
     class Meta:
         verbose_name = _(u'Организация')
