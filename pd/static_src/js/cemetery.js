@@ -882,7 +882,7 @@ function makeTimePicker(obj) {
 
 function updateControls() {
     $('span.move-left').remove();
-    makeDatePicker($('input[id*=date]'));
+    makeDatePicker($('input[id$=date]'));
     makeTimePicker($('input[id*=time]'));
     makeDatePicker($('.modal input[id$=begin]'));
     makeDatePicker($('.modal input[id$=end]'));
