@@ -194,6 +194,7 @@ class Migration(SchemaMigration):
             'opf_order': ('django.db.models.fields.CharField', [], {'default': "'org'", 'max_length': '255'}),
             'opf_order_customer_mandatory': ('django.db.models.fields.BooleanField', [], {'default': 'True'}),
             'phones': ('django.db.models.fields.TextField', [], {'null': 'True', 'blank': 'True'}),
+            'plan_date_days_before': ('django.db.models.fields.PositiveIntegerField', [], {'default': '0'}),
             'type': ('django.db.models.fields.CharField', [], {'max_length': '255'})
         },
         'users.profile': {
