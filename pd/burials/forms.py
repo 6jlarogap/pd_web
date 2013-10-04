@@ -858,10 +858,22 @@ class BurialCommitForm(BurialForm):
             raise forms.ValidationError(_(u"На кладбище с нумерацией мест по ряду не указан номер ряда"))
 
         today = datetime.date.today()
+        
         plan_date = self.cleaned_data.get('plan_date')
-        if plan_date and today > plan_date and not self.instance.is_finished():
-            if not self.instance.is_archive() and not self.request.REQUEST.get('archive'):
-                msg = _(u"Плановая дата захоронения не может быть раньше текущей даты")
+        if plan_date and \
+           not self.instance.is_archive() and not self.request.REQUEST.get('archive') and \
+           not self.instance.is_finished():
+            days_before = self.request.user.profile.org.plan_date_days_before \
+                if self.request.user.profile.is_ugh() else 0
+            days_before = datetime.timedelta(days=days_before)
+            if today > plan_date + days_before:
+                if days_before:
+                    msg = _(u"Плановая дата захоронения не может быть раньше %s %s до текущей даты") % \
+                            (days_before.days,
+                             _(u'дня') if days_before.days == 1 else _(u'дней'),
+                            )
+                else:
+                    msg = _(u"Плановая дата захоронения не может быть раньше текущей даты")
                 raise forms.ValidationError(msg)
 
         if cemetery:
