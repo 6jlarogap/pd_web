@@ -1151,14 +1151,12 @@ class AddAgentForm(forms.ModelForm):
         return cleaned_data
 
     def save(self, commit=True, *args, **kwargs):
-        loru = kwargs.pop('loru')
+        org = kwargs.pop('org')
         profile = super(AddAgentForm, self).save(commit=False, *args, **kwargs)
-        profile.org = loru
+        profile.org = org
         profile.is_agent=True
         user = User()
         user.is_active = False
-        user.email = loru.email or ''
-        user.username = loru.email
         user.last_name = profile.user_last_name
         user.first_name = profile.user_first_name
         if profile.user_middle_name:

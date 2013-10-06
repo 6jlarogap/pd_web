@@ -167,13 +167,13 @@ class AddAgentView(LoginRequiredMixin, View):
         fa = AddAgentForm(data=request.POST, prefix='agent')
         fd = AddDoverForm(data=request.POST, prefix='agent_dover')
         try:
-            loru = Org.objects.get(pk=request.GET['loru'])
+            org = Org.objects.get(pk=request.GET['org'])
         except KeyError:
             return HttpResponse(_(u'Ошибка'), mimetype='text/plain')
         except Org.DoesNotExist:
             return HttpResponse(_(u'Нет такой организации'), mimetype='text/plain')
         if fa.is_valid() and fd.is_valid():
-            agent = fa.save(loru=loru)
+            agent = fa.save(org=org)
             dover = fd.save(commit=False)
             dover.target_org = request.user.profile.org
             dover.agent = agent
@@ -198,7 +198,7 @@ class AddOrgView(LoginRequiredMixin, View):
             prefix = kwargs['type']
             instance = Org(type=kwargs['type'])
         else:
-            prefix='loru'
+            prefix='org'
             instance = None
         f = AddOrgForm(request=self.request, data=request.POST, prefix=prefix, instance=instance)
         if f.is_valid():
