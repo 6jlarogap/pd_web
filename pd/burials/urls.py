@@ -3,13 +3,15 @@
 from django.conf.urls import patterns, include, url
 from django.conf import settings
 
+from users.models import Org
+
 urlpatterns = patterns('burials.views',
     url(r'^$', 'dashboard', name='dashboard'),
 
     url(r'^burials/add_agent/$', 'add_agent', name='add_agent'),
     url(r'^burials/add_dover/$', 'add_dover', name='add_dover'),
     url(r'^burials/add_org/$', 'add_org', name='add_org'),
-    url(r'^burials/add_zags/$', 'add_zags', name='add_zags'),
+    url(r'^burials/add_zags/$', 'add_org', dict(type=Org.PROFILE_ZAGS), name='add_org'),
     url(r'^burials/add_doctype/$', 'add_doctype', name='add_doctype'),
 
     url(r'^burials/archive/$', 'archive', name='archive'),
