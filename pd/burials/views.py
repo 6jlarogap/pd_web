@@ -167,13 +167,13 @@ class AddAgentView(LoginRequiredMixin, View):
         fa = AddAgentForm(data=request.POST, prefix='agent')
         fd = AddDoverForm(data=request.POST, prefix='agent_dover')
         try:
-            loru = Org.objects.get(pk=request.GET['loru'])
+            org = Org.objects.get(pk=request.GET['org'])
         except KeyError:
             return HttpResponse(_(u'Ошибка'), mimetype='text/plain')
         except Org.DoesNotExist:
             return HttpResponse(_(u'Нет такой организации'), mimetype='text/plain')
         if fa.is_valid() and fd.is_valid():
-            agent = fa.save(loru=loru)
+            agent = fa.save(org=org)
             dover = fd.save(commit=False)
             dover.target_org = request.user.profile.org
             dover.agent = agent
@@ -194,7 +194,13 @@ add_agent = AddAgentView.as_view()
 
 class AddOrgView(LoginRequiredMixin, View):
     def post(self, request, *args, **kwargs):
-        f = AddOrgForm(request=self.request, data=request.POST, prefix='loru')
+        if kwargs.get('type'):
+            prefix = kwargs['type']
+            instance = Org(type=kwargs['type'])
+        else:
+            prefix='org'
+            instance = None
+        f = AddOrgForm(request=self.request, data=request.POST, prefix=prefix, instance=instance)
         if f.is_valid():
             new_org = f.save()
             f.put_log_data(msg=_(u'Данные сохранены'))
@@ -209,22 +215,6 @@ class AddOrgView(LoginRequiredMixin, View):
             return HttpResponse(err_str % errors, mimetype='text/plain')
 
 add_org = AddOrgView.as_view()
-
-class AddZagsView(LoginRequiredMixin, View):
-    def post(self, request, *args, **kwargs):
-        f = AddOrgForm(request=self.request, data=request.POST, prefix='zags', instance=Org(type=Org.PROFILE_ZAGS))
-        if f.is_valid():
-            new_org = f.save()
-            f.put_log_data(msg=_(u'Данные сохранены'))
-            return HttpResponse(json.dumps({'pk': new_org.pk, 'label': u'%s' % new_org}), mimetype='application/json')
-        else:
-            err_str = _(u'Ошибка: %s')
-            errors = '\n'.join([u'%s' % v[0] for k,v in f.errors.items()])
-            if "\n" in errors:
-                err_str = _(u'Ошибки:\n%s')
-            return HttpResponse(err_str % errors, mimetype='text/plain')
-
-add_zags = AddZagsView.as_view()
 
 class AddDocTypeView(LoginRequiredMixin, View):
     def post(self, request, *args, **kwargs):

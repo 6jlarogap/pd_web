@@ -685,7 +685,7 @@ class CreateBurial(BurialGetOrderMixin, CreateView):
             'agent_form': AddAgentForm(prefix='agent'),
             'agent_dover_form': AddDoverForm(prefix='agent_dover'),
             'dover_form': AddDoverForm(prefix='dover'),
-            'loru_form': AddOrgForm(request=self.request, prefix='loru'),
+            'org_form': AddOrgForm(request=self.request, prefix='org'),
             'zags_form': AddOrgForm(request=self.request, prefix='zags', instance=Org(type=Org.PROFILE_ZAGS)),
             'doc_type_form': AddDocTypeForm(prefix='doctype'),
             'order': self.get_order(),
@@ -1034,7 +1034,7 @@ class ExhumateView(ArchiveMixin, DetailView):
             'agent_form': AddAgentForm(prefix='agent'),
             'agent_dover_form': AddDoverForm(prefix='agent_dover'),
             'dover_form': AddDoverForm(prefix='dover'),
-            'loru_form': AddOrgForm(request=self.request, prefix='loru'),
+            'org_form': AddOrgForm(request=self.request, prefix='org'),
         })
         return data
 
