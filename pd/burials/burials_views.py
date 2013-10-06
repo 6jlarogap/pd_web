@@ -22,6 +22,7 @@ from burials.models import Reason, Burial, Cemetery, Place, ExhumationRequest
 from persons.models import DeathCertificate
 from logs.models import write_log
 from orders.models import Order
+from users.models import Org
 from pd.forms import CommentForm
 from pd.views import PaginateListView
 from reports.models import make_report
@@ -395,6 +396,7 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
             'reason_typical_annulate': Reason.objects.filter(reason_type=Reason.TYPE_ANNULATE),
             'approve_close_form': self.get_approve_close_form(),
             'comment_form': CommentForm(),
+            'zags_form': AddOrgForm(request=self.request, prefix='zags', instance=Org(type=Org.PROFILE_ZAGS)),
             'order': self.order,
             'orders': b.get_orders(loru=self.request.user.profile.org) if self.request.user.profile.is_loru() else [],
             # Кому можно смотреть в захоронении ответственного и заявителя:
@@ -683,7 +685,8 @@ class CreateBurial(BurialGetOrderMixin, CreateView):
             'agent_form': AddAgentForm(prefix='agent'),
             'agent_dover_form': AddDoverForm(prefix='agent_dover'),
             'dover_form': AddDoverForm(prefix='dover'),
-            'loru_form': AddOrgForm(request=self.request, prefix='loru'),
+            'org_form': AddOrgForm(request=self.request, prefix='org'),
+            'zags_form': AddOrgForm(request=self.request, prefix='zags', instance=Org(type=Org.PROFILE_ZAGS)),
             'doc_type_form': AddDocTypeForm(prefix='doctype'),
             'order': self.get_order(),
         })
@@ -1031,7 +1034,7 @@ class ExhumateView(ArchiveMixin, DetailView):
             'agent_form': AddAgentForm(prefix='agent'),
             'agent_dover_form': AddDoverForm(prefix='agent_dover'),
             'dover_form': AddDoverForm(prefix='dover'),
-            'loru_form': AddOrgForm(request=self.request, prefix='loru'),
+            'org_form': AddOrgForm(request=self.request, prefix='org'),
         })
         return data
 

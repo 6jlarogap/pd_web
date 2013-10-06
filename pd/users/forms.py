@@ -174,7 +174,8 @@ class BaseOrgForm(LoggingFormMixin, forms.ModelForm):
         self.forms = []
         # Сделаем поле типа организации в зависимости от различных условий
         self.is_own_org = self.instance and self.instance.pk and self.instance.pk == request.user.profile.org.pk
-        if self.is_own_org:
+        # Добавить новый ЗАГС, в форму передается пустой instance с заданным типом
+        if self.is_own_org or self.instance and not self.instance.pk and self.instance.type:
             del self.fields['type']
             self.fields['type_'] = forms.CharField(widget=forms.TextInput(attrs={'readonly':'readonly'}),
                                                    initial = self.instance.get_type_display(),
@@ -233,6 +234,7 @@ class OrgForm(BaseOrgForm):
         # self.bank_formset = BankAccountFormset(data=request.POST or None, instance=request.user.profile.org)
         if not self.is_own_org or not self.request.user.profile.is_ugh():
             del self.fields['numbers_algo']
+            del self.fields['plan_date_days_before']
         if not self.is_own_org or not self.request.user.profile.is_loru():
             del self.fields['opf_order']
             del self.fields['opf_order_customer_mandatory']

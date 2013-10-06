@@ -310,6 +310,7 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
         if self.request.user.profile.is_loru():
             self.fields['desired_graves_count'].label = _(u'Желаемое число могил в новом месте')
         
+        self.fields['applicant_organization'].queryset = Org.objects.all()
         self.fields['applicant_organization'].inactive_queryset = \
             Org.objects.filter(Q(profile=None) | ~Q(profile__user__is_active=True)).distinct()
         self.fields['agent'].queryset = Profile.objects.filter(is_agent=True).select_related('user')
@@ -857,10 +858,22 @@ class BurialCommitForm(BurialForm):
             raise forms.ValidationError(_(u"На кладбище с нумерацией мест по ряду не указан номер ряда"))
 
         today = datetime.date.today()
+        
         plan_date = self.cleaned_data.get('plan_date')
-        if plan_date and today > plan_date and not self.instance.is_finished():
-            if not self.instance.is_archive() and not self.request.REQUEST.get('archive'):
-                msg = _(u"Плановая дата захоронения не может быть раньше текущей даты")
+        if plan_date and \
+           not self.instance.is_archive() and not self.request.REQUEST.get('archive') and \
+           not self.instance.is_finished():
+            days_before = self.request.user.profile.org.plan_date_days_before \
+                if self.request.user.profile.is_ugh() else 0
+            days_before = datetime.timedelta(days=days_before)
+            if today > plan_date + days_before:
+                if days_before:
+                    msg = _(u"Плановая дата захоронения не может быть раньше %s %s до текущей даты") % \
+                            (days_before.days,
+                             _(u'дня') if days_before.days == 1 else _(u'дней'),
+                            )
+                else:
+                    msg = _(u"Плановая дата захоронения не может быть раньше текущей даты")
                 raise forms.ValidationError(msg)
 
         if cemetery:
@@ -1056,7 +1069,7 @@ class BurialApproveCloseForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelFor
                     dc = None
                 if not dc and deadman:
                     dc = DeathCertificate(person=deadman)
-                self.dc_form = DeathCertificateForm(request, data=self.request.POST or None, instance=dc)
+                self.dc_form = DeathCertificateForm(request, data=self.request.POST or None, instance=dc, prefix='deadman-dc')
                 self.forms.append(self.dc_form)
 
                 # - если угх нажмет "Согласовать" или если лору/угх нажмет "сохранить" (СоС),
@@ -1138,14 +1151,14 @@ class AddAgentForm(forms.ModelForm):
         return cleaned_data
 
     def save(self, commit=True, *args, **kwargs):
-        loru = kwargs.pop('loru')
+        org = kwargs.pop('org')
         profile = super(AddAgentForm, self).save(commit=False, *args, **kwargs)
-        profile.org = loru
+        profile.org = org
         profile.is_agent=True
         user = User()
         user.is_active = False
-        user.email = loru.email or ''
-        user.username = loru.email
+        user.email = org.email or ''
+        user.username = org.email
         user.last_name = profile.user_last_name
         user.first_name = profile.user_first_name
         if profile.user_middle_name:

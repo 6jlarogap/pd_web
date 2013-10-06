@@ -29,7 +29,7 @@
 
     <script type="text/javascript">
         AGENT_DOVER = {{ form.agent_dover_json|default:"{}" }};
-        LORU_AGENTS = {{ form.loru_agents_json|default:"{}" }};
+        ORG_AGENTS = {{ form.loru_agents_json|default:"{}" }};
         ACTUAL_DOVER = [{% for d in form.actual_dover_list %}{{ d }}{% if not forloop.last %},{% endif %}{% endfor %}];
     </script>
 {% endblock %}

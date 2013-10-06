@@ -34,24 +34,6 @@ class DeadPersonForm(ValidDataMixin, StrippedStringsMixin, forms.ModelForm):
     def is_valid_data(self):
         return self.is_valid() and len([k for k,v in self.cleaned_data.items() if v]) > 1 # more than just death date
     
-    def do_clean_date(self, unclear_date_form_field):
-        d = self.cleaned_data[unclear_date_form_field]
-        if isinstance(d, basestring):
-            try:
-                datetime.datetime.strptime(d, "%Y-%m-%d")
-            except ValueError:
-                y, m, d_ = d.split('-')
-                raise forms.ValidationError(_(u'Была введена неверная дата (д-м-г): %s-%s-%s') % (d_, m, y))
-        elif isinstance(d, UnclearDate) and not d.no_day and d.no_month:
-            raise forms.ValidationError(_(u'Нет месяца в дате'))
-        return d
-
-    def clean_birth_date(self):
-        return self.do_clean_date('birth_date')
-
-    def clean_death_date(self):
-        return self.do_clean_date('death_date')
-
 class PersonIDForm(ValidDataMixin, StrippedStringsMixin, forms.ModelForm):
     flag_no_applicant_doc_required = forms.BooleanField(label=_(u'Документ не обязателен'), required=False)
     source = forms.CharField(label=_(u'Кем выдан'), required=False)
