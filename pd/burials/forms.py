@@ -1157,6 +1157,8 @@ class AddAgentForm(forms.ModelForm):
         profile.is_agent=True
         user = User()
         user.is_active = False
+        user.email = org.email or ''
+        user.username = org.email
         user.last_name = profile.user_last_name
         user.first_name = profile.user_first_name
         if profile.user_middle_name:
