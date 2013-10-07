@@ -516,7 +516,7 @@ class Burial(SafeDeleteMixin, BaseModel):
 
     @property
     def status_dt(self):
-        return self.changed
+        return self.dt_modified
 
     def get_orders(self, loru):
         return self.burial_orders.filter(loru=loru)
@@ -609,7 +609,7 @@ class Burial(SafeDeleteMixin, BaseModel):
         return Report.objects.filter(content_type=ct, object_id=self.pk).order_by('-pk')
 
     def approved_dt(self):
-        return self.changed
+        return self.dt_modified
 
     def close(self, old_place=None):
         if not self.account_number:
