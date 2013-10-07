@@ -154,7 +154,7 @@ class AddDoverView(LoginRequiredMixin, View):
             dover.save()
             return HttpResponse(json.dumps({'pk': dover.pk, 'label': u'%s' % dover}), mimetype='application/json')
         else:
-            err_str = _(u'Ошибка: %s')
+            err_str = _(u'Ошибка:\n%s')
             errors = '\n'.join([u'%s' % v[0] for k,v in f.errors.items() if k == '__all__'])
             if "\n" in errors:
                 err_str = _(u'Ошибки:\n%s')
@@ -183,7 +183,7 @@ class AddAgentView(LoginRequiredMixin, View):
                 'dover_pk': dover.pk, 'dover_label': u'%s' % dover
             }), mimetype='application/json')
         else:
-            err_str = _(u'Ошибка: %s')
+            err_str = _(u'Ошибка:\n%s')
             errors = '\n'.join([u'%s' % v[0] for k,v in fa.errors.items()] + \
                                [u'%s' % v[0] for k,v in fd.errors.items()])
             if "\n" in errors:
@@ -208,7 +208,7 @@ class AddOrgView(LoginRequiredMixin, View):
                 new_org.ugh_list.create(ugh=request.user.profile.org)
             return HttpResponse(json.dumps({'pk': new_org.pk, 'label': u'%s' % new_org}), mimetype='application/json')
         else:
-            err_str = _(u'Ошибка: %s')
+            err_str = _(u'Ошибка:\n%s')
             errors = '\n'.join([u'%s' % v[0] for k,v in f.errors.items()])
             if "\n" in errors:
                 err_str = _(u'Ошибки:\n%s')
@@ -223,8 +223,11 @@ class AddDocTypeView(LoginRequiredMixin, View):
             dt = f.save()
             return HttpResponse(json.dumps({'pk': dt.pk, 'label': u'%s' % dt}), mimetype='application/json')
         else:
-            errors = '\n'.join([u'%s: %s' % (k,v[0]) for k,v in f.errors.items()])
-            return HttpResponse(_(u'Ошибки: %s') % errors, mimetype='text/plain')
+            err_str = _(u'Ошибка:\n%s')
+            errors = '\n'.join([u'%s' % v[0] for k,v in f.errors.items()])
+            if "\n" in errors:
+                err_str = _(u'Ошибки:\n%s')
+            return HttpResponse(err_str % errors, mimetype='text/plain')
 
 add_doctype = AddDocTypeView.as_view()
 
