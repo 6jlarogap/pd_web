@@ -28,9 +28,9 @@
                 <a href="#" class="btn btn-edit-org" target="_blank">
                     {% trans "править" %}
                 </a>
-                <div id="cannot_edit_org_message" class="inline" style="padding-left: 10px; vertical-align: baseline;">
+                <div id="cannot_edit_org_message" class="inline" style="padding-left: 10px; vertical-align: top;">
                     {% trans "Правка организации с активными пользователями недоступна." %}<br />
-                    {# include "goto_support.html" #}
+                    {% include "goto_support.html" %}
                 </div>
             </p>
             <script type="text/javascript">
