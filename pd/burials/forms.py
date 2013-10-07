@@ -1206,13 +1206,16 @@ class AddOrgForm(BaseOrgForm):
     
     def __init__(self, request, *args, **kwargs):
         super(AddOrgForm, self).__init__(request, *args, **kwargs)
+        self.required_fields = []
         for field in ('name', 'full_name', 'inn', 'director', ):
+            if self.fields[field].required:
+                self.required_fields.append(field)
             self.fields[field].required = False
 
     def clean(self):
         cleaned_data = super(AddOrgForm, self).clean()
         errors = []
-        for field in ('name', 'full_name', 'inn', 'director', ):
+        for field in self.required_fields:
             # Нюанс django: Если clean_FIELD raises an exception,
             # то FIELD не будет в cleaned_data, а здесь вызывается
             # clean_inn родительского класса (OrgForm)
