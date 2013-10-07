@@ -1208,7 +1208,7 @@ class AddOrgForm(BaseOrgForm):
         super(AddOrgForm, self).__init__(request, *args, **kwargs)
         self.required_fields = []
         for field in ('name', 'full_name', 'inn', 'director', ):
-            if self.fields.get(field) and self.fields[field].required:
+            if self.fields[field].required:
                 self.required_fields.append(field)
             self.fields[field].required = False
 
