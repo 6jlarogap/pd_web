@@ -235,6 +235,9 @@
                     <script type="text/javascript">
                         CEMETERY_AREAS = {{ approve_close_form.cemetery_areas_json|default:"{}" }};
                     </script>
+                {% elif not place %}
+                    {# Здесь в форме остается только желаемое число могил на новое (!) место #}
+                    {{ approve_close_form.as_p }}
                 {% endif %}
                 {% if not b.is_bio %}
                     <h2>{% trans "Свидетельство о смерти" %}</h2>
