@@ -1027,11 +1027,12 @@ class BurialApproveCloseForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelFor
         else:
             cemetery = self.instance.cemetery
 
-        max_grave_number = \
-            Area.objects.filter(Q(cemetery__ugh=request.user.profile.org) & \
-                                Q(availability=Area.AVAILABILITY_OPEN)). \
-                aggregate(m=Max('places_count'))['m'] or 1
-        max_grave_choices = [(i,i) for i in range(1, max_grave_number+1)]
+        if request.user.profile.is_ugh():
+            max_grave_number = \
+                Area.objects.filter(Q(cemetery__ugh=request.user.profile.org) & \
+                                    Q(availability=Area.AVAILABILITY_OPEN)). \
+                    aggregate(m=Max('places_count'))['m'] or 1
+            max_grave_choices = [(i,i) for i in range(1, max_grave_number+1)]
 
         if self.instance.can_finish():
             # Закрытие
