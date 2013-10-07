@@ -345,8 +345,12 @@ order_edit = OrderEdit.as_view()
 class AjaxProductPrice(LORURequiredMixin, View):
     def get(self, request, *args, **kwargs):
         id = request.GET.get('id')
-        product = get_object_or_404(Product, pk=id)
-        return HttpResponse(json.dumps({'price': float(product.price)}), mimetype='application/json')
+        if id:
+            product = get_object_or_404(Product, pk=id)
+            price = product.price
+        else:
+            price = 0
+        return HttpResponse(json.dumps({'price': float(price)}), mimetype='application/json')
 
 ajax_product_price = AjaxProductPrice.as_view()
 
