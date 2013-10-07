@@ -175,7 +175,8 @@ class BaseOrgForm(LoggingFormMixin, forms.ModelForm):
         # Сделаем поле типа организации в зависимости от различных условий
         self.is_own_org = self.instance and self.instance.pk and self.instance.pk == request.user.profile.org.pk
         # Добавить новый ЗАГС, в форму передается пустой instance с заданным типом
-        if self.is_own_org or self.instance and not self.instance.pk and self.instance.type:
+        add_org_with_type = self.instance and not self.instance.pk and self.instance.type
+        if self.is_own_org or add_org_with_type:
             del self.fields['type']
             self.fields['type_'] = forms.CharField(widget=forms.TextInput(attrs={'readonly':'readonly'}),
                                                    initial = self.instance.get_type_display(),
@@ -201,6 +202,12 @@ class BaseOrgForm(LoggingFormMixin, forms.ModelForm):
             label = self.fields['type'].label
             self.fields['type'] = forms.fields.TypedChoiceField(choices = choices)
             self.fields['type'].label = label
+
+        type_posted = request.POST.get("%s-type" % self.prefix if self.prefix else "type")
+        if type_posted and type_posted == Org.PROFILE_ZAGS or \
+           add_org_with_type and add_org_with_type == Org.PROFILE_ZAGS:
+            for f in ('full_name', 'inn', 'director', ):
+                self.fields[f].required = False
 
     def clean_inn(self):
         inn = self.cleaned_data.get('inn')

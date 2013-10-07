@@ -301,10 +301,16 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
         grave_choices = [(i,i) for i in range(1, places_count+1)]
         self.fields['grave_number'].widget = forms.Select(choices=grave_choices)
 
-        max_grave_number = self.fields['cemetery'].queryset.aggregate(m=Max('area__places_count'))['m']
-        if not max_grave_number:
-            # ЛОРУ может "не иметь" кладбищ, например, не быть приписан ни к какому УГХ
-            max_grave_number = 1
+        max_grave_number = \
+            Area.objects.filter((Q(cemetery__ugh__isnull=True) |
+                                 Q(cemetery__ugh__loru_list__loru=self.request.user.profile.org) |
+                                 Q(cemetery__ugh=request.user.profile.org)
+                                )
+                                & 
+                                Q(availability=Area.AVAILABILITY_OPEN)
+                               ).aggregate(m=Max('places_count'))['m'] or 1
+
+        max_grave_number = self.fields['cemetery'].queryset.aggregate(m=Max('area__places_count'))['m'] or 1
         max_grave_choices = [(i,i) for i in range(1, max_grave_number+1)]
         self.fields['desired_graves_count'].widget = forms.Select(choices=max_grave_choices)
         if self.request.user.profile.is_loru():
@@ -1021,6 +1027,13 @@ class BurialApproveCloseForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelFor
         else:
             cemetery = self.instance.cemetery
 
+        if request.user.profile.is_ugh():
+            max_grave_number = \
+                Area.objects.filter(Q(cemetery__ugh=request.user.profile.org) & \
+                                    Q(availability=Area.AVAILABILITY_OPEN)). \
+                    aggregate(m=Max('places_count'))['m'] or 1
+            max_grave_choices = [(i,i) for i in range(1, max_grave_number+1)]
+
         if self.instance.can_finish():
             # Закрытие
             if not self.instance.fact_date:
@@ -1031,11 +1044,6 @@ class BurialApproveCloseForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelFor
             if cemetery and cemetery.places_algo != Cemetery.PLACE_MANUAL:
                 self.fields['place_number'].required = False
             self.fields['cemetery'].queryset = Cemetery.objects.filter(cemetery_qs)
-            max_grave_number = self.fields['cemetery'].queryset.aggregate(m=Max('area__places_count'))['m']
-            if not max_grave_number:
-                # ЛОРУ может "не иметь" кладбищ, например, не быть приписан ни к какому УГХ
-                max_grave_number = 1
-            max_grave_choices = [(i,i) for i in range(1, max_grave_number+1)]
             self.fields['desired_graves_count'].widget = forms.Select(choices=max_grave_choices)
 
         elif self.instance.can_approve():
@@ -1044,15 +1052,20 @@ class BurialApproveCloseForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelFor
             if request.user.profile.is_ugh():
                 self.instance.area = Burial.objects.get(pk=self.instance.pk).area
                 if self.instance.area:
-                    self.fields.clear()
+                    for f in ('cemetery', 'area', 'row', 'place_number', 'fact_date', ):
+                        del self.fields[f]
+                    if self.instance.get_place():
+                        del self.fields['desired_graves_count']
                 else:
-                    for f in ('row', 'place_number', 'fact_date', 'desired_graves_count', ):
+                    for f in ('row', 'place_number', 'fact_date', ):
                         del self.fields[f]
                     for f in self.fields:
                         if f in ('cemetery', 'area', ):
                             self.fields[f].required = True
-                    cemetery_qs &= Q(area__availability=Area.AVAILABILITY_OPEN)
-                    self.fields['cemetery'].queryset = Cemetery.objects.filter(cemetery_qs).distinct()
+                    self.fields['cemetery'].queryset = \
+                        Cemetery.objects.filter(cemetery_qs & Q(area__availability=Area.AVAILABILITY_OPEN)).distinct()
+                if 'desired_graves_count' in self.fields:
+                    self.fields['desired_graves_count'].widget = forms.Select(choices=max_grave_choices)
 
             elif request.user.profile.is_loru():
                 # лору в отправленном на согласовании или в место-обследуемом зх
@@ -1206,13 +1219,16 @@ class AddOrgForm(BaseOrgForm):
     
     def __init__(self, request, *args, **kwargs):
         super(AddOrgForm, self).__init__(request, *args, **kwargs)
+        self.required_fields = []
         for field in ('name', 'full_name', 'inn', 'director', ):
+            if self.fields[field].required:
+                self.required_fields.append(field)
             self.fields[field].required = False
 
     def clean(self):
         cleaned_data = super(AddOrgForm, self).clean()
         errors = []
-        for field in ('name', 'full_name', 'inn', 'director', ):
+        for field in self.required_fields:
             # Нюанс django: Если clean_FIELD raises an exception,
             # то FIELD не будет в cleaned_data, а здесь вызывается
             # clean_inn родительского класса (OrgForm)
