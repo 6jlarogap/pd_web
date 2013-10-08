@@ -39,7 +39,7 @@ class MobileGetCemetery(UGHRequiredMixin, View):
         argSyncDateUnix = request.GET.get('syncDate', None)        
         queryCemetery = Q(ugh = request.user.profile.org)
         if argSyncDateUnix :
-            argSyncDate = datetime.fromtimestamp(float(argSyncDateUnix))
+            argSyncDate = datetime.fromtimestamp(int(argSyncDateUnix))
             queryCemetery &= Q(dt_modified__gte = argSyncDate)
         listCemetery = Cemetery.objects.filter(queryCemetery).order_by('id')
         data = serializers.serialize("json", listCemetery, fields=('name'))
@@ -55,7 +55,7 @@ class MobileGetArea(UGHRequiredMixin, View):
         if argCemeteryId :
             queryArea &= Q(cemetery__pk = argCemeteryId)
         if argSyncDateUnix :
-            argSyncDate = datetime.fromtimestamp(float(argSyncDateUnix))
+            argSyncDate = datetime.fromtimestamp(int(argSyncDateUnix))
             queryArea &= Q(dt_modified__gte = argSyncDate)
         listArea = Area.objects.filter(queryArea).order_by('cemetery', 'id')
         data = serializers.serialize("json", listArea, fields=('cemetery','name'))
@@ -75,7 +75,7 @@ class MobileGetPlace(UGHRequiredMixin, View):
         if argAreaId :
             queryPlace &= Q(area__pk = argAreaId)
         if argSyncDateUnix :
-            argSyncDate = datetime.fromtimestamp(float(argSyncDateUnix))
+            argSyncDate = datetime.fromtimestamp(int(argSyncDateUnix))
             queryPlace &= Q(dt_modified__gte = argSyncDate)
         listPlace = Place.objects.filter(queryPlace).order_by('cemetery', 'area', 'id')
                                 
@@ -109,7 +109,7 @@ class MobileGetGrave(UGHRequiredMixin, View):
         if argPlaceId :
             queryGrave &= Q(place__pk = argPlaceId)
         if argSyncDateUnix :
-            argSyncDate = datetime.fromtimestamp(float(argSyncDateUnix))
+            argSyncDate = datetime.fromtimestamp(int(argSyncDateUnix))
             queryGrave &= Q(dt_modified__gte = argSyncDate)        
         listGrave = Grave.objects.filter(queryGrave).order_by('id')
         
@@ -133,7 +133,7 @@ class MobileGetBurial(UGHRequiredMixin, View):
         if argGraveId :
             queryBurial &= Q(grave__pk = argGraveId)
         if argSyncDateUnix :
-            argSyncDate = datetime.fromtimestamp(float(argSyncDateUnix))
+            argSyncDate = datetime.fromtimestamp(int(argSyncDateUnix))
             queryBurial &= Q(dt_modified__gte = argSyncDate)        
         listBurial = Burial.objects.filter(queryBurial).order_by('id')
 
@@ -145,7 +145,7 @@ class MobileGetBurial(UGHRequiredMixin, View):
         if argAreaId :
             queryPerson &= Q(deadperson__burial__area__pk = argAreaId)
         if argSyncDateUnix :
-            argSyncDate = datetime.fromtimestamp(float(argSyncDateUnix))
+            argSyncDate = datetime.fromtimestamp(int(argSyncDateUnix))
             queryBurial &= Q(deadperson__burial__dt_modified__gte = argSyncDate)
         listPerson = BasePerson.objects.filter(queryPerson)
                 
