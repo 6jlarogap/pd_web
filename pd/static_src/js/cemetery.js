@@ -734,6 +734,15 @@ $(function() {
     $('#id_country, #id_region').change();
     $('#id_lat, #id_lng').closest('p').hide();
 
+    $('#id_org-name, #id_zags-name').change(function() {
+        var val = $(this).val();
+        var full_name = $(this).attr('id').indexOf('org') > -1 ? '#id_org-full_name' :
+                                                                 '#id_zags-full_name';
+        if (val && !$(full_name).val()) {
+            $(full_name).val(val);
+        }
+    });
+
     var ac_options = {
         bounds: USER_DEFAULT_BOUNDS,
         types: ['geocode'],
