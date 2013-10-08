@@ -79,16 +79,17 @@
             {% endwith %}
         </div>
         <h3>{% trans "Свидетельство о смерти" %}</h3>
-        {{ form.dc_form.as_p }}
+        {% with form.dc_form as form %}
+            {% include "deathcertificate.html" %}
+        {% endwith %}
+        {{ form.dc_form.scan_form.as_p }}
 </div>
 
 <h2>{% trans "Место" %} {{ form.instance.get_place|default:"" }}</h2>
 <!-- <div id="cont_place" style="{% if form.instance.pk %}display: none{% endif %}"> -->
 <div id="cont_place">
-    {% if user.profile.is_loru %}
-        {{ form.desired_graves_count.errors }}
-        <p>{{ form.desired_graves_count.label_tag }} {{ form.desired_graves_count }}<span class="helptext">{{ form.desired_graves_count.help_text }}</span></p>
-    {% endif %}
+    {{ form.desired_graves_count.errors }}
+    <p>{{ form.desired_graves_count.label_tag }} {{ form.desired_graves_count }}<span class="helptext">{{ form.desired_graves_count.help_text }}</span></p>
 
     {{ form.cemetery.errors }}
     <p class="inline">{{ form.cemetery.label_tag }} {{ form.cemetery }}<span class="helptext">{{ form.cemetery.help_text }}</span></p>
@@ -159,3 +160,6 @@
 <h4>{% trans "Новый:" %}</h4>
 &nbsp; макс. {{ form.bfiles_form.MAX_UPLOAD_SIZE_MB }} Мб.
 {{ form.bfiles_form.as_p }}
+
+<h2>{% trans "Комментарий" %}</h2>
+{{ form.comment_form.as_p }}

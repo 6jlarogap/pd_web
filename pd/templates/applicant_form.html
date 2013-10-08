@@ -28,16 +28,26 @@
                 <a href="#" class="btn btn-edit-org" target="_blank">
                     {% trans "править" %}
                 </a>
+                <div id="cannot_edit_org_message" class="inline" style="padding-left: 10px; vertical-align: top;">
+                    {% trans "Правка организации с активными пользователями недоступна." %}<br />
+                    {% include "goto_support.html" %}
+                </div>
             </p>
             <script type="text/javascript">
                 ORGS_INACTIVE = [{% for org in form.fields.applicant_organization.inactive_queryset %}"{{ org.pk }}"{% if not forloop.last %},{% endif %}{% endfor %}];
+                ORGS_LIST = [{% for org in form.fields.applicant_organization.queryset %}"{{ org.name|escapejs }}"{% if not forloop.last %},{% endif %}{% endfor %}];
                 $(function() {
-                    var ORGS_LIST = [{% for org in form.fields.applicant_organization.queryset %}"{{ org.name|escapejs }}"{% if not forloop.last %},{% endif %}{% endfor %}];
                     $('select[name$=applicant_organization]').attr('autocomplete', 'off').change(function() {
                         if (ORGS_INACTIVE.indexOf($(this).val()) > -1) {
                             $('.btn-edit-org').attr('href', '/org/'+$(this).val()+'/edit/').show();
+                            $('#cannot_edit_org_message').hide();
                         } else {
                             $('.btn-edit-org').hide();
+                            if ($(this).val()) {
+                                $('#cannot_edit_org_message').show();
+                            } else {
+                                $('#cannot_edit_org_message').hide();
+                            }
                         }
                     }).each(function() {
                         var sel_input = $(this);
@@ -124,7 +134,7 @@
         <h3>{% trans "Удостоверение личности" %}</h3>
         <div class="form_block">
             {{ form.applicant_id_form.id_type.errors }}
-            {% if 'burial' in request.path %}    
+            {% if 'burial' in request.path and not request.REQUEST.archive and not form.instance.is_archive %}    
                 <p>
                     {{ form.applicant_id_form.flag_no_applicant_doc_required.label_tag }} {{ form.applicant_id_form.flag_no_applicant_doc_required }}
                     <span class="helptext">{{ form.applicant_id_form.flag_no_applicant_doc_required.help_text }}</span>

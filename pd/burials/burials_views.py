@@ -22,6 +22,7 @@ from burials.models import Reason, Burial, Cemetery, Place, ExhumationRequest
 from persons.models import DeathCertificate
 from logs.models import write_log
 from orders.models import Order
+from users.models import Org
 from pd.forms import CommentForm
 from pd.views import PaginateListView
 from reports.models import make_report
@@ -57,8 +58,6 @@ class BurialsListGenericMixin:
                 qs = Q(applicant_organization=loru) | Q(loru=loru) | Q(ugh__loru_list__loru=loru)
                 qs = qs & Q(source_type__in=[Burial.SOURCE_FULL, Burial.SOURCE_TRANSFERRED])
             if self.request.user.profile.is_ugh():
-                qs = Q(applicant_organization__ugh_list__ugh=self.request.user.profile.org)
-                qs |= Q(loru__ugh_list__ugh=self.request.user.profile.org)
                 qs |= Q(ugh=self.request.user.profile.org)
         return qs
 
@@ -397,12 +396,14 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
             'reason_typical_annulate': Reason.objects.filter(reason_type=Reason.TYPE_ANNULATE),
             'approve_close_form': self.get_approve_close_form(),
             'comment_form': CommentForm(),
+            'zags_form': AddOrgForm(request=self.request, prefix='zags', instance=Org(type=Org.PROFILE_ZAGS)),
             'order': self.order,
             'orders': b.get_orders(loru=self.request.user.profile.org) if self.request.user.profile.is_loru() else [],
             # Кому можно смотреть в захоронении ответственного и заявителя:
             'show_private_data': self.request.user.profile.is_ugh() or \
-                                 b.is_full() and b.loru and b.loru == self.request.user.profile.org,
-            'place': b.get_place() if self.request.user.profile.is_ugh() else None,
+                                 (b.is_full() or b.is_transferred()) and \
+                                 b.loru and b.loru == self.request.user.profile.org,
+            'place': b.get_place(),
         }
 
 view_burial = BurialView.as_view()
@@ -588,7 +589,7 @@ class BurialsPublicListView(PaginateListView):
                   #)
                  #)
                  #).order_by('-pk').distinct()
-                  Q(source_type=Burial.SOURCE_FULL) & 
+                  Q(source_type__in=(Burial.SOURCE_FULL, Burial.SOURCE_TRANSFERRED,)) & 
                   Q(loru = self.request.user.profile.org) &
                   (
                    Q(annulated=False) &
@@ -684,7 +685,8 @@ class CreateBurial(BurialGetOrderMixin, CreateView):
             'agent_form': AddAgentForm(prefix='agent'),
             'agent_dover_form': AddDoverForm(prefix='agent_dover'),
             'dover_form': AddDoverForm(prefix='dover'),
-            'loru_form': AddOrgForm(request=self.request, prefix='loru'),
+            'org_form': AddOrgForm(request=self.request, prefix='org'),
+            'zags_form': AddOrgForm(request=self.request, prefix='zags', instance=Org(type=Org.PROFILE_ZAGS)),
             'doc_type_form': AddDocTypeForm(prefix='doctype'),
             'order': self.get_order(),
         })
@@ -1032,7 +1034,7 @@ class ExhumateView(ArchiveMixin, DetailView):
             'agent_form': AddAgentForm(prefix='agent'),
             'agent_dover_form': AddDoverForm(prefix='agent_dover'),
             'dover_form': AddDoverForm(prefix='dover'),
-            'loru_form': AddOrgForm(request=self.request, prefix='loru'),
+            'org_form': AddOrgForm(request=self.request, prefix='org'),
         })
         return data
 

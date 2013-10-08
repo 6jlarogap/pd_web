@@ -442,7 +442,8 @@ def do_import_orders(csv_fileobj):
                 o.agent_director = b.agent_director
                 o.agent = b.agent
                 o.dover = dover
-                o.dt = b.changed and b.changed - datetime.timedelta(1) or o.dt or datetime.datetime.now()
+                dt = b.changed and b.changed - datetime.timedelta(1) or o.dt or datetime.datetime.now()
+                o.dt = datetime.date(year=dt.year, month=dt.month, day=dt.day)
                 o.save()
 
                 real_i += 1

@@ -105,9 +105,9 @@
                         {% if b.annulated %}
                             <br />
                             <span style="color:red">{% trans "АННУЛИРОВАНО" %}</span>
-                            <br />
-                            <a class="btn" href="{% url view_burial b.pk %}">{% trans "просмотр" %}</a>
                         {% endif %}
+                        <br />
+                        <a class="btn" href="{% url view_burial b.pk %}">{% trans "просмотр" %}</a>
                     </td>
                     <td>
                         {% with burial=b %}{% include "burial_orders.html" %}{% endwith %}

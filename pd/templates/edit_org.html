@@ -3,79 +3,65 @@
 {% load i18n %}
 
 {% block content %}
-    <h1>{% trans "Данные организации" %} {{ object }}</h1>
-    {% if not is_my_org and user.profile.is_loru and not form.instance.is_inactive %}
-        <h2><span style="color:red">У Вас нет прав для редактирования данных активированной организации</span></h2>
-    {% else %}
-        <form action="" method="POST">
-            {% csrf_token %}
-            {{ form.as_p }}
+<h1>{% trans "Данные организации" %} {{ object }}</h1>
+<form action="" method="POST">
+    {% csrf_token %}
+    {{ form.as_p }}
 
-            <h2>{% trans "Адрес" %}</h2>
-            {% with form.address_form as form %}
-                {% include "location_form.html" %}
-            {% endwith %}
+    <h2>{% trans "Адрес" %}</h2>
+    {% with form.address_form as form %}
+        {% include "location_form.html" %}
+    {% endwith %}
 
-            <h2>{% trans "Банковские счета" %}</h2>
-            {{ form.bank_formset.management_form }}
-            {% for f in form.bank_formset.forms %}
-                <fieldset>
-                    {{ f.as_p }}
-                </fieldset>
-            {% endfor %}
-        
-            <p>
-                <input type="submit" class="btn btn-primary" value="{% trans "cохранить" %}"/>
-            </p>
+    {# <h2>{% trans "Банковские счета" %}</h2>   #}
+    {# {{ form.bank_formset.management_form }}   #}
+    {# {% for f in form.bank_formset.forms %}    #}
+    {#     <fieldset>                            #}
+    {#         {{ f.as_p }}                      #}
+    {#     </fieldset>                           #}
+    {# {% endfor %}                              #}
 
-            <h2>{% trans "Пользователи" %}</h2>
-            <table class="table table-bordered">
-                <tr>
-                    <th>{% trans "Имя пользователя" %}</th>
-                    <th>{% trans "Email" %}</th>
-                    <th>{% trans "Фамилия" %}</th>
-                    <th>{% trans "Имя" %}</th>
-                    {% if user.profile.is_loru %}<th>{% trans "Агент" %}</th>{% endif %}
-                    <th>{% trans "Активен" %}</th>
-                    <th></th>
-                </tr>
-                {% for p in user.profile.org.profile_set.all %}
-                    <tr>
-                        <td>{{ p.user.username }}</td>
-                        <td>{{ p.user.email }}</td>
-                        <td>{{ p.user.last_name }}</td>
-                        <td>{{ p.user.first_name }}</td>
-                        {% if user.profile.is_loru %}<td>{{ p.is_agent|yesno }}</td>{% endif %}
-                        <td>{{ p.user.is_active|yesno }}</td>
-                        <td>
-                            <a href="{% url change_password p.user.pk %}" class="btn">сменить пароль</a>
-                            <a href="{% url edit_user p.user.pk %}" class="btn">править данные</a>
-                        </td>
-                    </tr>
-                {% endfor %}
-            </table>
+    <p>
+        <input type="submit" class="btn btn-primary" value="{% trans "cохранить" %}"/>
+    </p>
     
-            <p>
-                <a href="{% url add_user %}" class="btn">{% trans "новый пользователь" %}</a>
-            </p>
-        </form>
-
-        {% if object.get_logs %}
-            <h2>{% trans "Журнал" %}</h2>
-            <table class="table table-bordered">
+    {% if is_my_org %}
+        <h2>{% trans "Пользователи" %}</h2>
+        <table class="table table-bordered">
+            <tr>
+                <th>{% trans "Имя пользователя" %}</th>
+                <th>{% trans "Email" %}</th>
+                <th>{% trans "Фамилия" %}</th>
+                <th>{% trans "Имя" %}</th>
+                {% if user.profile.is_loru %}<th>{% trans "Агент" %}</th>{% endif %}
+                <th>{% trans "Активен" %}</th>
+                <th></th>
+            </tr>
+            {% for p in user.profile.org.profile_set.all %}
                 <tr>
-                    <th>{% trans "Дата" %}</th>
-                    <th>{% trans "Пользователь" %}</th>
-                    <th>{% trans "Действие" %}</th>
+                    <td>{{ p.user.username }}</td>
+                    <td>{{ p.user.email }}</td>
+                    <td>{{ p.user.last_name }}</td>
+                    <td>{{ p.user.first_name }}</td>
+                    {% if user.profile.is_loru %}<td>{{ p.is_agent|yesno }}</td>{% endif %}
+                    <td>{{ p.user.is_active|yesno }}</td>
+                    <td>
+                        <a href="{% url change_password p.user.pk %}" class="btn">сменить пароль</a>
+                        <a href="{% url edit_user p.user.pk %}" class="btn">править данные</a>
+                    </td>
                 </tr>
-                {% for log in object.get_logs %}
-                    <tr>
-                        <td>{{ log.dt }}</td>
-                        <td>{{ log.user.profile }} / {{ log.user.profile.org }}</td>
-                        <td>{{ log.msg|linebreaksbr }}</td>
-                    </tr>
-                {% endfor %}
-            </table>
-        {% endif %}
+            {% endfor %}
+        </table>
+
+        <p>
+            <a href="{% url add_user %}" class="btn">{% trans "новый пользователь" %}</a>
+        </p>
     {% endif %}
+</form>
+
+{% if is_my_org and object.get_logs %}
+    {% with object=object %}
+        {% include "object_logs.html" %}
+    {% endwith %}
+{% endif %}
 {% endblock %}

@@ -3,9 +3,13 @@ import json
 import datetime
 from django import forms
 from django.conf import settings
+from django.db.models.fields.files import FieldFile
 from django.forms.extras.widgets import SelectDateWidget, RE_DATE, _parse_date_fmt
 from django.utils.dates import MONTHS
 from django.utils.formats import get_format
+from django.utils.html import escape, conditional_escape
+from django.utils.safestring import mark_safe
+from django.forms.widgets import ClearableFileInput, CheckboxInput
 
 from django.utils.translation import ugettext as _
 from django.utils.datastructures import SortedDict
@@ -131,8 +135,16 @@ class PartialFormMixin:
         result += "</textarea>"
         return result
 
-class CommentForm(forms.Form):
-    comment = forms.CharField(label=_(u'Комментарий'), widget=forms.Textarea)
+class StrippedStringsMixin(object):
+    
+   def clean(self):
+       for field in self.cleaned_data:
+           if isinstance(self.cleaned_data[field], basestring):
+               self.cleaned_data[field] = self.cleaned_data[field].strip()
+       return self.cleaned_data
+
+class CommentForm(StrippedStringsMixin, forms.Form):
+    comment = forms.CharField(label=_(u'Комментарий'), widget=forms.Textarea, required=False)
 
 class UnclearSelectDateWidget(SelectDateWidget):
     month_unclear = False
@@ -246,6 +258,14 @@ class UnclearDateField(forms.DateField):
         return value
 
     def clean(self, value):
+        if isinstance(value, basestring):
+            try:
+                datetime.datetime.strptime(value, "%Y-%m-%d")
+            except ValueError:
+                y, m, d = value.split('-')
+                raise forms.ValidationError(_(u'Была введена неверная дата (д-м-г): %s-%s-%s') % (d, m, y))
+        elif isinstance(value, UnclearDate) and not value.no_day and value.no_month:
+            raise forms.ValidationError(_(u'Нет месяца в дате'))
         return value
 
 class BaseModelForm(forms.ModelForm):
@@ -260,11 +280,67 @@ class BaseModelForm(forms.ModelForm):
     в полях формы произошли изменения.
     """
 
-    def save(self, commit=True, *args, **kwargs):
+    def save(self, forceCommit=False, commit=True, *args, **kwargs):
         """
-        Сохранение instance формы только если в полях формы произошли изменения
+        Сохранение instance формы в базу -- при commit=True -- если:
+        - в полях формы произошли изменения;
+        - операция insert (а не update существующей записи):
+            можно считать в этом случае, что изменения произошли:
+            не было ничего и вдруг должно возникнуть в базе;
+        - если задан параметр forceCommit
+            (на тот случай, если форма зависит от других форм и это надо учесть)
         """
         obj = super(BaseModelForm, self).save(commit=False, *args, **kwargs)
-        if self.changed_data and commit:
+        if commit and (self.changed_data or not self.instance.pk or forceCommit):
             obj.save()
         return obj
+
+class CustomUploadModelForm(forms.ModelForm):
+    
+    # Если такой макс. размер не устраивает, то в потомках класса
+    # надо менять в соответствующий __init__(self)
+    #
+    MAX_UPLOAD_SIZE_MB = 2
+
+    # 'bfile' -- такое имя у нас в моделях для файлового поля
+    #
+    def clean_bfile(self):
+        bfile = self.cleaned_data.get('bfile')
+        # В upload file field может оказаться:
+        # - типа None или пустой строки
+        # - типа FieldFile, если уже есть файл в form.instance, а новый на замену его не ввели
+        # - типа ...UploadFile (много разных таких типов),
+        #        когда выполнен POST с прикрепленным файлом
+        if bfile and not isinstance(bfile, FieldFile) and bfile.size > self.MAX_UPLOAD_SIZE_MB * 2**20:
+            raise forms.ValidationError(_(u'Превышен максимальный размер файла') + u", %s Мб." % self.MAX_UPLOAD_SIZE_MB)
+        return bfile
+
+class CustomClearableFileInput(ClearableFileInput):
+    def render(self, name, value, attrs=None):
+    
+        self.template_with_initial = u'%(initial_text)s: %(initial)s <br />%(clear_template)s<br />%(input_text)s:<br /> %(input)s<br />'
+        self.template_with_clear = u'<label for="%(clear_checkbox_id)s">%(clear_checkbox_label)s:</label> %(clear)s'
+
+        substitutions = {
+            'initial_text': self.initial_text,
+            'input_text': self.input_text,
+            'clear_template': '',
+            'clear_checkbox_label': self.clear_checkbox_label,
+        }
+        template = u'%(input)s'
+        substitutions['input'] = super(ClearableFileInput, self).render(name, value, attrs)
+
+        if value and hasattr(value, "url"):
+            template = self.template_with_initial
+            substitutions['initial'] = (u'<a href="%s">%s</a>'
+                                        % (escape(value.url),
+                                           "("+_(u"просмотр")+")"))
+            if not self.is_required:
+                checkbox_name = self.clear_checkbox_name(name)
+                checkbox_id = self.clear_checkbox_id(checkbox_name)
+                substitutions['clear_checkbox_name'] = conditional_escape(checkbox_name)
+                substitutions['clear_checkbox_id'] = conditional_escape(checkbox_id)
+                substitutions['clear'] = CheckboxInput().render(checkbox_name, False, attrs={'id': checkbox_id})
+                substitutions['clear_template'] = self.template_with_clear % substitutions
+
+        return mark_safe(template % substitutions)

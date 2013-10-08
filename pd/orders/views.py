@@ -269,12 +269,11 @@ class OrderCreate(LORURequiredMixin, CreateView):
 
     def get_context_data(self, **kwargs):
         data = super(OrderCreate, self).get_context_data(**kwargs)
-        data['org_form'] = AddOrgForm(request=self.request, prefix='loru')
         data.update({
             'agent_form': AddAgentForm(prefix='agent'),
             'agent_dover_form': AddDoverForm(prefix='agent_dover'),
             'dover_form': AddDoverForm(prefix='dover'),
-            'loru_form': AddOrgForm(request=self.request, prefix='loru'),
+            'org_form': AddOrgForm(request=self.request, prefix='org'),
             'doc_type_form': AddDocTypeForm(prefix='doctype'),
         })
         return data
@@ -315,7 +314,7 @@ class OrderEdit(LORURequiredMixin, UpdateView):
             'agent_form': AddAgentForm(prefix='agent'),
             'agent_dover_form': AddDoverForm(prefix='agent_dover'),
             'dover_form': AddDoverForm(prefix='dover'),
-            'loru_form': AddOrgForm(request=self.request, prefix='loru'),
+            'org_form': AddOrgForm(request=self.request, prefix='org'),
         })
         return data
 
@@ -346,8 +345,12 @@ order_edit = OrderEdit.as_view()
 class AjaxProductPrice(LORURequiredMixin, View):
     def get(self, request, *args, **kwargs):
         id = request.GET.get('id')
-        product = get_object_or_404(Product, pk=id)
-        return HttpResponse(json.dumps({'price': float(product.price)}), mimetype='application/json')
+        if id:
+            product = get_object_or_404(Product, pk=id)
+            price = product.price
+        else:
+            price = 0
+        return HttpResponse(json.dumps({'price': float(price)}), mimetype='application/json')
 
 ajax_product_price = AjaxProductPrice.as_view()
 

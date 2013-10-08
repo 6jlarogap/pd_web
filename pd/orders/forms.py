@@ -1,4 +1,6 @@
 # coding=utf-8
+import datetime
+
 from django import forms
 from django.db.models.deletion import ProtectedError
 from django.db.models.query_utils import Q
@@ -12,7 +14,7 @@ from burials.forms import EMPTY
 from pd.forms import ChildrenJSONMixin
 from persons.forms import AlivePersonForm, PersonIDForm
 from persons.models import AlivePerson, PersonID, SafeDeleteMixin
-from users.models import Org
+from users.models import Org, Profile
 
 class ProductForm(forms.ModelForm):
     class Meta:
@@ -20,7 +22,6 @@ class ProductForm(forms.ModelForm):
         exclude = ['loru', ]
 
 class OrderForm(ChildrenJSONMixin, SafeDeleteMixin, forms.ModelForm):
-    opf = forms.ChoiceField(label='', choices=Org.OPF_CHOICES, widget=forms.RadioSelect, initial=Org.OPF_EMPTY)
 
     class Meta:
         model = Order
@@ -31,18 +32,37 @@ class OrderForm(ChildrenJSONMixin, SafeDeleteMixin, forms.ModelForm):
         super(OrderForm, self).__init__(*args, **kwargs)
         self.fields.keyOrder.insert(0, self.fields.keyOrder.pop(-1))
 
+        remove_opf_empty = request.user.profile.org.opf_order_customer_mandatory
         if self.instance.pk:
             if self.instance.applicant:
-                self.initial['opf'] = Org.OPF_PERSON
+                opf_initial = Org.OPF_PERSON
             elif self.instance.applicant_organization:
-                self.initial['opf'] = Org.OPF_ORG
+                opf_initial = Org.OPF_ORG
+            else:
+                opf_initial = Org.OPF_EMPTY
+                remove_opf_empty = False
         else:
-            self.initial['opf'] = request.user.profile.org.opf_order
-        # Во всех остальных случаях умолчание берется из определения поля: Org.OPF_EMPTY
+            if request.user.profile.org.opf_order_customer_mandatory:
+                opf_initial = request.user.profile.org.opf_order
+            else:
+                opf_initial = Org.OPF_EMPTY
+            self.initial.update({'dt': datetime.date.today()})
+            
+        choices=list(Org.OPF_CHOICES)
+        if remove_opf_empty:
+            for i, choice in enumerate(choices):
+                if choice[0] == Org.OPF_EMPTY:
+                    choices.pop(i)
+                    break
+        self.fields['opf'] = forms.ChoiceField(label='', widget=forms.RadioSelect,
+                                               choices=choices, initial = opf_initial)
 
         self.fields['payment'].widget = forms.RadioSelect(choices=Order.PAYMENT_CHOICES)
 
-        self.fields['agent'].queryset = self.fields['agent'].queryset.select_related('user')
+        self.fields['applicant_organization'].queryset = Org.objects.all()
+        self.fields['applicant_organization'].inactive_queryset = \
+            Org.objects.filter(Q(profile=None) | ~Q(profile__user__is_active=True)).distinct()
+        self.fields['agent'].queryset = Profile.objects.filter(is_agent=True).select_related('user')
         self.fields['dover'].queryset = self.fields['dover'].queryset.select_related('agent', 'agent__user')
 
         # Отсутствие выбора будет в выпадающем списке не "---", а ""
@@ -56,8 +76,12 @@ class OrderForm(ChildrenJSONMixin, SafeDeleteMixin, forms.ModelForm):
     def clean(self):
         if self.cleaned_data.get('opf') == Org.OPF_ORG:
             if not (self.cleaned_data.get('agent_director') or \
-                    self.cleaned_data.get('agent') and self.cleaned_data.get('dover')):
+                    self.cleaned_data.get('agent') and self.cleaned_data.get('dover')
+                   ):
                 raise forms.ValidationError(_(u'Нет данных об агенте и/или доверенности для заявителя-ЮЛ. Изменения не сохранены'))
+            dover = self.cleaned_data.get('dover')
+            if dover and not dover.begin <= self.cleaned_data.get('dt') <= dover.end:
+                    raise forms.ValidationError(_(u'Дата заказа не соответствует сроку действия доверенности. Изменения не сохранены'))
         elif self.cleaned_data.get('opf') == Org.OPF_PERSON:
             if not self.applicant_form.is_valid_data():
                 raise forms.ValidationError(_(u"Нужно указать Заявителя-ФЛ"))

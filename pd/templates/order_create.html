@@ -10,10 +10,14 @@
         <p>
             <input type="submit" class="btn" value="{% trans "Создать" %}"/>
         </p>
+        {{ form.non_field_errors }}
+
+        {{ form.dt.errors }}
+        <p>{{ form.dt.label_tag }} {{ form.dt }}<span class="helptext">{{ form.dt.help_text }}</span></p>
+
         {{ form.payment.errors }}
         <p class="inline">{{ form.payment.label_tag }} {{ form.payment }}<span class="helptext">{{ form.payment.help_text }}</span></p>
 
-        {{ form.non_field_errors }}
         {% include "applicant_form.html" %}
         <p>
             <input type="submit" class="btn" value="{% trans "Создать" %}"/>
@@ -21,27 +25,11 @@
 
     </form>
 
-    <div id="add_org" class="modal hide fade" tabindex="-1" role="dialog" aria-labelledby="{% trans "добавить юрлицо" %}" aria-hidden="true">
-        <div class="modal-header">
-            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
-            <h3 id="myModalLabel">{% trans "Добавить юрлицо" %}</h3>
-        </div>
-        <div class="modal-body">
-            <form>
-                {{ org_form.as_p }}
-            </form>
-        </div>
-        <div class="modal-footer">
-            <button class="btn" data-dismiss="modal" aria-hidden="true">{% trans "закрыть" %}</button>
-            <button class="btn btn-primary">{% trans "добавить" %}</button>
-        </div>
-    </div>
-
     {% include "create_burial_popups.html" %}
 
     <script type="text/javascript">
         AGENT_DOVER = {{ form.agent_dover_json|default:"{}" }};
-        LORU_AGENTS = {{ form.loru_agents_json|default:"{}" }};
+        ORG_AGENTS = {{ form.loru_agents_json|default:"{}" }};
         ACTUAL_DOVER = [{% for d in form.actual_dover_list %}{{ d }}{% if not forloop.last %},{% endif %}{% endfor %}];
     </script>
 {% endblock %}
