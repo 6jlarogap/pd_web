@@ -869,8 +869,12 @@ class BurialCommitForm(BurialForm):
         if plan_date and \
            not self.instance.is_archive() and not self.request.REQUEST.get('archive') and \
            not self.instance.is_finished():
-            days_before = self.request.user.profile.org.plan_date_days_before \
-                if self.request.user.profile.is_ugh() else 0
+            if self.request.user.profile.is_ugh():
+                days_before = self.request.user.profile.org.plan_date_days_before
+            elif self.request.user.profile.is_loru() and cemetery and cemetery.ugh:
+                days_before = cemetery.ugh.plan_date_days_before
+            else:
+                days_before = 0
             days_before = datetime.timedelta(days=days_before)
             if today > plan_date + days_before:
                 if days_before:
