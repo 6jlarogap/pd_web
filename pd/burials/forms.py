@@ -700,8 +700,15 @@ class BurialCommitForm(BurialForm):
         else:
             cemetery = self.instance.cemetery or None
 
-        if self.instance.is_archive() and self.fields.get('fact_date'):
+        if self.fields.get('fact_date'):
             self.fields['fact_date'].required = True
+            if (self.instance.is_archive() or self.request.REQUEST.get('archive')) and \
+               not self.request.user.profile.org.archive_burial_fact_date_required:
+                self.fields['fact_date'].required = False
+            else:
+                # Во всех остальных случаях, когда на форме есть факт. дата,
+                # например в закрытом зх:
+                self.fields['fact_date'].required = True
 
         if self.instance.is_finished():
             if cemetery and cemetery.places_algo == Cemetery.PLACE_MANUAL:
@@ -844,6 +851,16 @@ class BurialCommitForm(BurialForm):
             if grave_number > desired_graves_count:
                 msg = _(u"Номер могилы превышает запрошенное количество могил в новом месте")
                 raise forms.ValidationError(msg)
+            if self.request.user.profile.is_loru() and cemetery and cemetery.ugh:
+                max_grave_number_this_ugh = \
+                    Area.objects.filter(Q(cemetery__ugh=cemetery.ugh) & \
+                                        Q(availability=Area.AVAILABILITY_OPEN)). \
+                        aggregate(m=Max('places_count'))['m'] or 1
+                if desired_graves_count > max_grave_number_this_ugh:
+                    msg = _(u"Запрошенное число могил (%s) в новом месте превышает максимум (%s) по кладбищам этого ОМС" % \
+                            (desired_graves_count, max_grave_number_this_ugh)
+                           )
+                    raise forms.ValidationError(msg) 
 
         burial_type = self.cleaned_data.get('burial_type')
         if burial_type in (Burial.BURIAL_ADD, Burial.BURIAL_OVER,) and \
@@ -1219,7 +1236,9 @@ class AddDoverForm(StrippedStringsMixin, forms.ModelForm):
 class AddOrgForm(BaseOrgForm):
     class Meta:
         model = Org
-        exclude = ['off_address', 'numbers_algo', 'opf_order', 'opf_order_customer_mandatory', ]
+        exclude = ['off_address', 'numbers_algo',
+                   'opf_order', 'opf_order_customer_mandatory',
+                   'plan_date_days_before', 'archive_burial_fact_date_required' ,]
     
     def __init__(self, request, *args, **kwargs):
         super(AddOrgForm, self).__init__(request, *args, **kwargs)
