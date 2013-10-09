@@ -145,6 +145,19 @@ class Org(BaseModel):
     def get_loru_list(self):
         return [ul.loru for ul in self.loru_list.all()]
 
+    @classmethod
+    def get_supervisor(cls):
+        """
+        Возвращает организацию-Супервизора или None
+        """
+        result = None
+        if hasattr(settings, 'SUPERVISOR_ORG_INN'):
+            try:
+                result = cls.objects.filter(inn=settings.SUPERVISOR_ORG_INN)[0]
+            except IndexError:
+                pass
+        return result
+
 class BankAccount(models.Model):
     """
     Банковские реквизиты

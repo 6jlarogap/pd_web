@@ -434,6 +434,10 @@ class RegisterView(CreateView):
                          'activation_key': obj.user_activation_key,
                         }
                      )
+        try:
+            email_from = Org.get_supervisor().email 
+        except AttributeError:
+            email_from = None
         # obj.save()
         return redirect(self.get_success_url())
         
