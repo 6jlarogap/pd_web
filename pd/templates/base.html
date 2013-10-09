@@ -74,15 +74,9 @@
 
     <script type="text/javascript" src="{{ STATIC_URL }}js/cemetery.js" defer="true"></script>
 
-    <script language="javascript">
-         function check_js() {
-              document.getElementById("hidden_if_js").style.display = "none";
-              document.getElementById("hidden_if_js").innerHTML = "";
-         }
-    </script>
     {% block scripts %}{% endblock %}
 </head>
-<body onload="check_js()">
+<body>
     <div id="hidden_if_no_js">
         <div class="navbar navbar-fixed-top no-print">
             <div class="navbar-inner">
@@ -187,12 +181,14 @@
         {% endif %}
 
     </div>
-    <div id="hidden_if_js">
-        <h1>{% trans "Внимание" %}!
-        <br />
-        <h2 style="color:red">{% trans "У вас отключен JavaScript" %}!</h2>
-        <br />
-        <h3>{% trans "Для отображения страницы вам понадобится включить поддержку JavaScript в настройках браузера" %}.</h3>
-    </div>
+    <noscript>
+        <div id="hidden_if_js">
+            <h1>{% trans "Внимание" %}!
+            <br />
+            <h2 style="color:red">{% trans "У вас отключен JavaScript" %}!</h2>
+            <br />
+            <h3>{% trans "Для отображения страницы вам понадобится включить поддержку JavaScript в настройках браузера" %}.</h3>
+        </div>
+    </noscript>
 </body>
 </html>
