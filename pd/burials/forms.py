@@ -844,6 +844,16 @@ class BurialCommitForm(BurialForm):
             if grave_number > desired_graves_count:
                 msg = _(u"Номер могилы превышает запрошенное количество могил в новом месте")
                 raise forms.ValidationError(msg)
+            if self.request.user.profile.is_loru() and cemetery and cemetery.ugh:
+                max_grave_number_this_ugh = \
+                    Area.objects.filter(Q(cemetery__ugh=cemetery.ugh) & \
+                                        Q(availability=Area.AVAILABILITY_OPEN)). \
+                        aggregate(m=Max('places_count'))['m'] or 1
+                if desired_graves_count > max_grave_number_this_ugh:
+                    msg = _(u"Запрошенное число могил (%s) в новом месте превышает максимум (%s) по кладбищам этого ОМС" % \
+                            (desired_graves_count, max_grave_number_this_ugh)
+                           )
+                    raise forms.ValidationError(msg) 
 
         burial_type = self.cleaned_data.get('burial_type')
         if burial_type in (Burial.BURIAL_ADD, Burial.BURIAL_OVER,) and \
