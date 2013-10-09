@@ -258,6 +258,8 @@ class UnclearDateField(forms.DateField):
         return value
 
     def clean(self, value):
+        if not value and self.required:
+            raise forms.ValidationError(_(u'Обязательное поле'))
         if isinstance(value, basestring):
             try:
                 datetime.datetime.strptime(value, "%Y-%m-%d")
