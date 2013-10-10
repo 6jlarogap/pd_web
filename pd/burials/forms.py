@@ -1055,7 +1055,7 @@ class BurialApproveCloseForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelFor
                     aggregate(m=Max('places_count'))['m'] or 1
             max_grave_choices = [(i,i) for i in range(1, max_grave_number+1)]
 
-        if self.instance.can_finish():
+        if self.instance.can_finish() and request.user.profile.is_ugh():
             # Закрытие
             if not self.instance.fact_date:
                 self.initial['fact_date'] = self.instance.plan_date
