@@ -540,27 +540,34 @@ class Burial(SafeDeleteMixin, BaseModel):
             others = Burial.objects.none()
             now = datetime.datetime.now()
             year = str(now.year)
-            month = ''
             if algo in (Org.NUM_YEAR_MONTH_UGH, Org.NUM_YEAR_MONTH_CEMETERY, ):
                 month = "%02d" % now.month
-                an_regex = r'^%s%s\d+$' % (year, month, )
+                an_regex = r'^%s%s\d$' % (year, month, )
             else:
+                month = ''
                 an_regex = r'^%s\d+$' % year
+                
+            # Мы должны использовать числовое сравнение dddd, например,
+            # в 2013dddd. При символьном сравнении всех 2013dddd,
+            # реализуемом в django без raw запроса,
+            # после номера '20139' всегда будет 201310
+            #
+            query = ("select max(substring(account_number from %s)::integer) from burials_burial "
+                    "where account_number ~ '%s'"
+                    ) % (7 if month else 5, an_regex, );
             if algo in (Org.NUM_YEAR_UGH, Org.NUM_YEAR_MONTH_UGH, ) and ugh:
-                others = Burial.objects.filter(ugh=ugh, account_number__regex=an_regex)
+                query += ' and ugh_id=%s' % ugh.id
             elif algo in (Org.NUM_YEAR_CEMETERY, Org.NUM_YEAR_MONTH_CEMETERY, ) and cemetery:
-                others = Burial.objects.filter(cemetery=cemetery, account_number__regex=an_regex)
+                query += ' and cemetery_id=%s' % cemetery.id
 
             if self.pk:
-                others = others.exclude(pk=self.pk)
-
-            others = others.order_by('-account_number')
-            
-            try:
-                num = int(others[0].account_number[(6 if month else 4):])
-                ghsdg
-            except (IndexError, ValueError, TypeError):
-                num = 0
+                query += ' and id!=%s' % self.pk
+                
+            from django.db import connection
+            cursor = connection.cursor()
+            cursor.execute(query)
+            result = cursor.fetchone()
+            num = result and result[0] or 0
             self.account_number = year + month + '%04d' % (num + 1, )
 
     def approve(self, user):
