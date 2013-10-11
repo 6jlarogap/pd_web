@@ -1,7 +1,7 @@
 # coding=utf-8
 import datetime
 from django.contrib.contenttypes.models import ContentType
-from django.db import models
+from django.db import models, connection
 from django.db.models.deletion import ProtectedError
 from django.utils.translation import ugettext_lazy as _
 from django.db.models.query_utils import Q
@@ -535,24 +535,39 @@ class Burial(SafeDeleteMixin, BaseModel):
         else:
             algo = Org.NUM_EMPTY
         
-        if algo in [Org.NUM_YEAR_UGH, Org.NUM_YEAR_CEMETERY]:
+        if algo in (Org.NUM_YEAR_UGH, Org.NUM_YEAR_CEMETERY,
+                    Org.NUM_YEAR_MONTH_UGH, Org.NUM_YEAR_MONTH_CEMETERY, ):
             others = Burial.objects.none()
-            year = str(datetime.datetime.now().year)
-            an_regex = r'^%s\d+$' % year
-            if algo == Org.NUM_YEAR_UGH and ugh:
-                others = Burial.objects.filter(ugh=ugh, account_number__regex=an_regex)
-            elif algo == Org.NUM_YEAR_CEMETERY and cemetery:
-                others = Burial.objects.filter(cemetery=cemetery, account_number__regex=an_regex)
+            now = datetime.datetime.now()
+            year = str(now.year)
+            if algo in (Org.NUM_YEAR_MONTH_UGH, Org.NUM_YEAR_MONTH_CEMETERY, ):
+                month = "%02d" % now.month
+                an_regex = r'^%s%s\d$' % (year, month, )
+            else:
+                month = ''
+                an_regex = r'^%s\d+$' % year
+                
+            # Мы должны использовать числовое сравнение dddd, например,
+            # в 2013dddd. При символьном сравнении всех 2013dddd,
+            # после номера '20139' следующий всегда будет
+            # 20134 = int('20139') +1
+            #
+            query = ("select max(substring(account_number from %s)::integer) from burials_burial "
+                    "where account_number ~ '%s'"
+                    ) % (7 if month else 5, an_regex, );
+            if algo in (Org.NUM_YEAR_UGH, Org.NUM_YEAR_MONTH_UGH, ) and ugh:
+                query += ' and ugh_id=%s' % ugh.id
+            elif algo in (Org.NUM_YEAR_CEMETERY, Org.NUM_YEAR_MONTH_CEMETERY, ) and cemetery:
+                query += ' and cemetery_id=%s' % cemetery.id
 
             if self.pk:
-                others = others.exclude(pk=self.pk)
-
-            others = others.order_by('-account_number')
-            try:
-                num = others[0].account_number
-                self.account_number = int(num) + 1
-            except (IndexError, ValueError, TypeError):
-                self.account_number = year + '0001'
+                query += ' and id!=%s' % self.pk
+                
+            cursor = connection.cursor()
+            cursor.execute(query)
+            result = cursor.fetchone()
+            num = result and result[0] or 0
+            self.account_number = year + month + '%04d' % (num + 1, )
 
     def approve(self, user):
         if not self.account_number and not self.is_archive():
