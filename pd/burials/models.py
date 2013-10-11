@@ -1,7 +1,7 @@
 # coding=utf-8
 import datetime
 from django.contrib.contenttypes.models import ContentType
-from django.db import models
+from django.db import models, connection
 from django.db.models.deletion import ProtectedError
 from django.utils.translation import ugettext_lazy as _
 from django.db.models.query_utils import Q
@@ -563,7 +563,6 @@ class Burial(SafeDeleteMixin, BaseModel):
             if self.pk:
                 query += ' and id!=%s' % self.pk
                 
-            from django.db import connection
             cursor = connection.cursor()
             cursor.execute(query)
             result = cursor.fetchone()
