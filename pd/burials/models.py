@@ -550,7 +550,7 @@ class Burial(SafeDeleteMixin, BaseModel):
             # Мы должны использовать числовое сравнение dddd, например,
             # в 2013dddd. При символьном сравнении всех 2013dddd,
             # реализуемом в django без raw запроса,
-            # после номера '20139' всегда будет 201310
+            # после номера '20139' следующий всегда будет 201310
             #
             query = ("select max(substring(account_number from %s)::integer) from burials_burial "
                     "where account_number ~ '%s'"
