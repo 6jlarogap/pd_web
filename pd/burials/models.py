@@ -542,10 +542,10 @@ class Burial(SafeDeleteMixin, BaseModel):
             year = str(now.year)
             if algo in (Org.NUM_YEAR_MONTH_UGH, Org.NUM_YEAR_MONTH_CEMETERY, ):
                 month = "%02d" % now.month
-                an_regex = r'^%s%s\d$' % (year, month, )
+                an_regex = r"E'^%s%s\\d+$'" % (year, month, )
             else:
                 month = ''
-                an_regex = r'^%s\d+$' % year
+                an_regex = r"E'^%s\\d+$'" % year
                 
             # Мы должны использовать числовое сравнение dddd, например,
             # в 2013dddd. При символьном сравнении всех 2013dddd,
@@ -553,7 +553,7 @@ class Burial(SafeDeleteMixin, BaseModel):
             # 20134 = int('20139') +1
             #
             query = ("select max(substring(account_number from %s)::integer) from burials_burial "
-                    "where account_number ~ '%s'"
+                    "where account_number ~ %s"
                     ) % (7 if month else 5, an_regex, );
             if algo in (Org.NUM_YEAR_UGH, Org.NUM_YEAR_MONTH_UGH, ) and ugh:
                 query += ' and ugh_id=%s' % ugh.id
