@@ -535,24 +535,33 @@ class Burial(SafeDeleteMixin, BaseModel):
         else:
             algo = Org.NUM_EMPTY
         
-        if algo in [Org.NUM_YEAR_UGH, Org.NUM_YEAR_CEMETERY]:
+        if algo in (Org.NUM_YEAR_UGH, Org.NUM_YEAR_CEMETERY,
+                    Org.NUM_YEAR_MONTH_UGH, Org.NUM_YEAR_MONTH_CEMETERY, ):
             others = Burial.objects.none()
-            year = str(datetime.datetime.now().year)
-            an_regex = r'^%s\d+$' % year
-            if algo == Org.NUM_YEAR_UGH and ugh:
+            now = datetime.datetime.now()
+            year = str(now.year)
+            month = ''
+            if algo in (Org.NUM_YEAR_MONTH_UGH, Org.NUM_YEAR_MONTH_CEMETERY, ):
+                month = "%02d" % now.month
+                an_regex = r'^%s%s\d+$' % (year, month, )
+            else:
+                an_regex = r'^%s\d+$' % year
+            if algo in (Org.NUM_YEAR_UGH, Org.NUM_YEAR_MONTH_UGH, ) and ugh:
                 others = Burial.objects.filter(ugh=ugh, account_number__regex=an_regex)
-            elif algo == Org.NUM_YEAR_CEMETERY and cemetery:
+            elif algo in (Org.NUM_YEAR_CEMETERY, Org.NUM_YEAR_MONTH_CEMETERY, ) and cemetery:
                 others = Burial.objects.filter(cemetery=cemetery, account_number__regex=an_regex)
 
             if self.pk:
                 others = others.exclude(pk=self.pk)
 
             others = others.order_by('-account_number')
+            
             try:
-                num = others[0].account_number
-                self.account_number = int(num) + 1
+                num = int(others[0].account_number[(6 if month else 4):])
+                ghsdg
             except (IndexError, ValueError, TypeError):
-                self.account_number = year + '0001'
+                num = 0
+            self.account_number = year + month + '%04d' % (num + 1, )
 
     def approve(self, user):
         if not self.account_number and not self.is_archive():
