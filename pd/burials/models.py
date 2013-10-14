@@ -564,7 +564,7 @@ class Burial(SafeDeleteMixin, BaseModel):
             cursor.execute(query)
             result = cursor.fetchone()
             num = result and result[0] or 0
-            self.account_number = year + month + ('%04d' if month else '%04d') % (num + 1, )
+            self.account_number = year + month + ('%03d' if month else '%04d') % (num + 1, )
 
     def approve(self, user):
         if not self.account_number and not self.is_archive():
