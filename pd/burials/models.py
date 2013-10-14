@@ -540,12 +540,9 @@ class Burial(SafeDeleteMixin, BaseModel):
             others = Burial.objects.none()
             now = datetime.datetime.now()
             year = str(now.year)
-            if algo in (Org.NUM_YEAR_MONTH_UGH, Org.NUM_YEAR_MONTH_CEMETERY, ):
-                month = "%02d" % now.month
-                an_regex = r"E'^%s%s\\d+$'" % (year, month, )
-            else:
-                month = ''
-                an_regex = r"E'^%s\\d+$'" % year
+            month = "%02d" % now.month if algo in (Org.NUM_YEAR_MONTH_UGH, Org.NUM_YEAR_MONTH_CEMETERY, ) \
+                                       else ''
+            an_regex = r"E'^%s%s\\d+$'" % (year, month, )
                 
             # Мы должны использовать числовое сравнение dddd, например,
             # в 2013dddd. При символьном сравнении всех 2013dddd,
@@ -567,7 +564,7 @@ class Burial(SafeDeleteMixin, BaseModel):
             cursor.execute(query)
             result = cursor.fetchone()
             num = result and result[0] or 0
-            self.account_number = year + month + '%04d' % (num + 1, )
+            self.account_number = year + month + ('%03d' if month else '%04d') % (num + 1, )
 
     def approve(self, user):
         if not self.account_number and not self.is_archive():
