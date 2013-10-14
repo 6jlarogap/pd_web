@@ -226,14 +226,16 @@ class Place(SafeDeleteMixin, BaseModel):
         return result
 
 class PlaceSize(models.Model):
-    org = models.ForeignKey(Org, editable=False) 
+    org = models.ForeignKey(Org, verbose_name=_(u"Организация"), editable=False) 
     graves_count = models.PositiveSmallIntegerField(_(u"Число могил"), )
     place_length = models.DecimalField(_(u"Длина, м."), max_digits=5, decimal_places=2)
     place_width = models.DecimalField(_(u"Ширина, м."), max_digits=5, decimal_places=2)
 
     class Meta:
+        verbose_name = _(u"Размер места")
+        verbose_name_plural = _(u"Размеры мест")
         unique_together = ('org', 'graves_count', )
-        ordering = ('org', 'graves_count', ) 
+        ordering = ('graves_count', )
 
 class PlaceStatus(BaseModel):
     PS_ACTUAL = 'actual'
