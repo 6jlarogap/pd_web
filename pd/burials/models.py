@@ -124,6 +124,8 @@ class Place(SafeDeleteMixin, BaseModel):
     place = models.CharField(_(u"Место"), max_length=255, blank=True, null=True)
     responsible = models.ForeignKey('persons.AlivePerson', verbose_name=_(u"Ответственный"), blank=True, null=True,
                                     on_delete=models.PROTECT)
+    place_length = models.DecimalField(_(u"Длина, м."), max_digits=5, decimal_places=2, null=True, blank=True)
+    place_width = models.DecimalField(_(u"Ширина, м."), max_digits=5, decimal_places=2, null=True, blank=True)
 
     class Meta:
         verbose_name = _(u"Место")
@@ -334,6 +336,8 @@ class Burial(SafeDeleteMixin, BaseModel):
                               null=True, blank=True, editable=False, on_delete=models.PROTECT)
     grave_number = models.PositiveSmallIntegerField(_(u"Могила"), default=1)
     desired_graves_count = models.PositiveSmallIntegerField(_(u"Число могил в новом месте"), default=1)
+    place_length = models.DecimalField(_(u"Длина, м."), max_digits=5, decimal_places=2, null=True, blank=True)
+    place_width = models.DecimalField(_(u"Ширина, м."), max_digits=5, decimal_places=2, null=True, blank=True)
     responsible = models.ForeignKey('persons.AlivePerson', verbose_name=_(u"Ответственный"), blank=True, null=True,
                                     related_name='responsible_burials', on_delete=models.PROTECT)
 
@@ -861,5 +865,14 @@ class ExhumationRequest(SafeDeleteMixin, models.Model):
 def apply_exhumation(instance, created, **kwargs):
     if created:
         instance.apply()
+
+class PlaceSize(models.Model):
+    org = models.ForeignKey(Org, editable=False) 
+    graves_count = models.PositiveSmallIntegerField(_(u"Число могил"), )
+    place_length = models.DecimalField(_(u"Длина, м."), max_digits=5, decimal_places=2)
+    place_width = models.DecimalField(_(u"Ширина, м."), max_digits=5, decimal_places=2)
+
+    class Meta:
+        unique_together = ('org', 'graves_count', )
 
 models.signals.post_save.connect(apply_exhumation, sender=ExhumationRequest)
