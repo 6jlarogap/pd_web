@@ -87,7 +87,7 @@ AreaFormset = inlineformset_factory(Cemetery, Area, formset=BaseAreaFormset, can
 class PlaceEditForm(forms.ModelForm):
     class Meta:
         model = Place
-        fields = ()
+        fields = ('place_length', 'place_width', )
 
     new_graves_count = forms.IntegerField(required=True, label=_(u"Кол-во могил в месте"))
 
@@ -252,7 +252,7 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
 
     class Meta:
         model = Burial
-        exclude = ['place', 'deadman', 'responsible', 'applicant', 'annulated', ]
+        exclude = ['place', 'deadman', 'responsible', 'applicant', 'annulated', 'place_length', 'place_width', ]
 
     def __init__(self, request, *args, **kwargs):
         super(BurialForm, self).__init__(*args, **kwargs)
