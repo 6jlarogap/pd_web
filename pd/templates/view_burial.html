@@ -122,7 +122,12 @@
             {% if b.row %}{% trans "Ряд" %}: {{ b.row }}<br/>{% endif %}
             {% if b.place_number %}{% trans "Место" %}: {{ b.place_number }}<br/>{% endif %}
             {% if place %}
-                {% trans "Размер, м." %}: {{ place.place_length }} x {{ place.place_width }}
+                {% trans "Размер, м." %}: 
+                {% if place.place_width and place.place_length %}
+                    {{ place.place_length }} x {{ place.place_width }}
+                {% else %}
+                    {% trans "не указан" %}
+                {% endif %}
                 <br/>
             {% endif %}
             {% if b.grave_number %}{% trans "Могила" %}: {{ b.grave_number }}<br/>{% endif %}
