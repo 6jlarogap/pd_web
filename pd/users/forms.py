@@ -229,7 +229,7 @@ class BaseOrgForm(LoggingFormMixin, forms.ModelForm):
                 raise forms.ValidationError(_(u"Есть уже такая организация"))
         return name
 
-PlaceSizeFormset = inlineformset_factory(Org, PlaceSize, formset=BaseInlineFormSet, can_delete=True)
+PlaceSizeFormset = inlineformset_factory(Org, PlaceSize, formset=BaseInlineFormSet, can_delete=True, extra=2)
 
 class OrgForm(BaseOrgForm):
     class Meta:
