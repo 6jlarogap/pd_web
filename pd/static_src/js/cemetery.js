@@ -659,9 +659,17 @@ $(function() {
                     $('#place_info').html(place_html);
                     if (place_html.indexOf("place_exists") >= 0) {
                         $('#id_desired_graves_count').closest('p').hide();
+                        if ($('#id_place_length').length > 0) {
+                            $('#id_place_length').closest('p').hide();
+                            $('#id_place_width').closest('p').hide();
+                        }
                     }
                     else {
                         $('#id_desired_graves_count').closest('p').show();
+                        if ($('#id_place_length').length > 0) {
+                            $('#id_place_length').closest('p').show();
+                            $('#id_place_width').closest('p').show();
+                        }
                     }
                     if (place_html.indexOf("place_has_responsible") >= 0) {
                         var resp_id = '#id_responsible-take_from_';
