@@ -225,6 +225,16 @@ class Place(SafeDeleteMixin, BaseModel):
                 break
         return result
 
+class PlaceSize(models.Model):
+    org = models.ForeignKey(Org, editable=False) 
+    graves_count = models.PositiveSmallIntegerField(_(u"Число могил"), )
+    place_length = models.DecimalField(_(u"Длина, м."), max_digits=5, decimal_places=2)
+    place_width = models.DecimalField(_(u"Ширина, м."), max_digits=5, decimal_places=2)
+
+    class Meta:
+        unique_together = ('org', 'graves_count', )
+        ordering = ('org', 'graves_count', ) 
+
 class PlaceStatus(BaseModel):
     PS_ACTUAL = 'actual'
     PS_FOUND_UNOWNED = 'found-unowned'
@@ -865,14 +875,5 @@ class ExhumationRequest(SafeDeleteMixin, models.Model):
 def apply_exhumation(instance, created, **kwargs):
     if created:
         instance.apply()
-
-class PlaceSize(models.Model):
-    org = models.ForeignKey(Org, editable=False) 
-    graves_count = models.PositiveSmallIntegerField(_(u"Число могил"), )
-    place_length = models.DecimalField(_(u"Длина, м."), max_digits=5, decimal_places=2)
-    place_width = models.DecimalField(_(u"Ширина, м."), max_digits=5, decimal_places=2)
-
-    class Meta:
-        unique_together = ('org', 'graves_count', )
 
 models.signals.post_save.connect(apply_exhumation, sender=ExhumationRequest)

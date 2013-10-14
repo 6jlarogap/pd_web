@@ -221,7 +221,7 @@ class Migration(SchemaMigration):
             'row': ('django.db.models.fields.CharField', [], {'max_length': '255', 'null': 'True', 'blank': 'True'})
         },
         'burials.placesize': {
-            'Meta': {'unique_together': "(('org', 'graves_count'),)", 'object_name': 'PlaceSize'},
+            'Meta': {'ordering': "('org', 'graves_count')", 'unique_together': "(('org', 'graves_count'),)", 'object_name': 'PlaceSize'},
             'graves_count': ('django.db.models.fields.PositiveSmallIntegerField', [], {}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'org': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['users.Org']"}),
