@@ -17,7 +17,7 @@ from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext_lazy as _
 from django.db.models.query_utils import Q
 
-from burials.models import Cemetery, Area, Burial, Place, ExhumationRequest, BurialFiles, Grave
+from burials.models import Cemetery, Area, Burial, Place, ExhumationRequest, BurialFiles, Grave, PlaceSize
 from geo.forms import LocationForm
 from orders.models import Order
 from pd.forms import PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, CommentForm, StrippedStringsMixin, CustomUploadModelForm
@@ -252,7 +252,7 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
 
     class Meta:
         model = Burial
-        exclude = ['place', 'deadman', 'responsible', 'applicant', 'annulated', 'place_length', 'place_width', ]
+        exclude = ['place', 'deadman', 'responsible', 'applicant', 'annulated', ]
 
     def __init__(self, request, *args, **kwargs):
         super(BurialForm, self).__init__(*args, **kwargs)
@@ -337,6 +337,10 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
         elif not self.instance.is_finished():
             del self.fields['fact_date']
             del self.fields['account_number']
+            
+        if not self.request.user.profile.is_ugh():
+            del self.fields['place_length']
+            del self.fields['place_width']
 
         if not self.instance.pk:
             self.initial['burial_container'] = Burial.CONTAINER_COFFIN
@@ -346,6 +350,15 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
             if self.request.user.profile.area:
                 self.initial['area'] = self.request.user.profile.area
                 self.initial['desired_graves_count'] = self.initial['area'].places_count or 1
+            if self.request.user.profile.is_ugh():
+                desired_graves_count = self.initial.get('desired_graves_count') or 1
+                try:
+                    place_size = PlaceSize.objects.get(org=self.request.user.profile.org,
+                                                       graves_count=desired_graves_count)
+                    self.initial['place_length'] = place_size.place_length
+                    self.initial['place_width'] = place_size.place_width
+                except PlaceSize.DoesNotExist:
+                    pass
 
         if self.instance.is_finished() and self.instance.place:
             self.initial.update(
