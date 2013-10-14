@@ -802,14 +802,14 @@ class BurialCommitForm(BurialForm):
             fact_date  = self.cleaned_data.get('fact_date')
             if acc_number and fact_date:
                 if self.request.user.profile.org.numbers_algo in (Org.NUM_YEAR_UGH, Org.NUM_YEAR_CEMETERY, ):
-                    msg = _(u"Номер в книге учета должен быть: ГГГГнн...н (год фактической даты, номер)")
+                    msg = _(u"Номер в книге учета должен быть: ГГГГнннн (год фактической даты, номер)")
                     try:
                         if len(acc_number) < 4 or int(acc_number[:4]) != fact_date.year:
                             raise forms.ValidationError(msg)
                     except ValueError:
                         raise forms.ValidationError(msg)
                 if self.request.user.profile.org.numbers_algo in (Org.NUM_YEAR_MONTH_UGH, Org.NUM_YEAR_MONTH_CEMETERY, ):
-                    msg = _(u"Номер в книге учета должен быть: ГГГГММнн...н (год, месяц фактической даты, номер)")
+                    msg = _(u"Номер в книге учета должен быть: ГГГГММннн (год, месяц фактической даты, номер)")
                     if not fact_date.month or not (1 <= fact_date.month <= 12):
                         raise forms.ValidationError(msg)
                     try:
