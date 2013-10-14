@@ -94,6 +94,7 @@ class PlaceEditForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super(PlaceEditForm, self).__init__(*args, **kwargs)
         self.initial['new_graves_count'] = self.instance.get_graves_count()
+        self.fields.keyOrder.insert(0, self.fields.keyOrder.pop(-1))
 
     def clean_new_graves_count(self):
         new_graves_count = self.cleaned_data['new_graves_count']
@@ -117,6 +118,12 @@ class PlaceEditForm(forms.ModelForm):
         elif new_graves_count > graves_count:
             self.instance.get_or_create_graves(new_graves_count)
         return new_graves_count
+
+    def clean(self):
+        if self.cleaned_data.get('place_width') and not self.cleaned_data.get('place_length') or \
+           not self.cleaned_data.get('place_width') and self.cleaned_data.get('place_length'):
+            raise forms.ValidationError(_(u"Надо указывать и длину, и ширину места"))
+        return self.cleaned_data
 
 EMPTY = (('', '--------'),)
 
@@ -594,7 +601,9 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
             place, created = Place.objects.get_or_create(cemetery=self.cleaned_data['cemetery'],
                                                          area=self.cleaned_data['area'],
                                                          row=self.cleaned_data['row'],
-                                                         place=self.cleaned_data['place_number'],)
+                                                         place=self.cleaned_data['place_number'],
+                                                         place_length=self.cleaned_data['place_length'],
+                                                         place_width=self.cleaned_data['place_width'])
             self.instance.place=place
             if created:
                 self.grave = place.create_graves(max(self.cleaned_data['desired_graves_count'] or 1,
@@ -838,6 +847,7 @@ class BurialCommitForm(BurialForm):
                 msg = _(u"Нельзя закрывать архивное захоронение без указания его номера в книге учета")
                 raise forms.ValidationError(msg)
 
+        return self.cleaned_data
         place_number = self.cleaned_data.get('place_number') or ''
         area = self.cleaned_data.get('area')
         row = self.cleaned_data.get('row')
@@ -885,6 +895,12 @@ class BurialCommitForm(BurialForm):
                             (desired_graves_count, max_grave_number_this_ugh)
                            )
                     raise forms.ValidationError(msg) 
+            if self.request.user.profile.is_ugh() and \
+               (self.cleaned_data.get('place_width') and not self.cleaned_data.get('place_length') or \
+                not self.cleaned_data.get('place_width') and self.cleaned_data.get('place_length')
+               ):
+                raise forms.ValidationError(_(u"Надо указывать и длину, и ширину нового места"))
+
 
         burial_type = self.cleaned_data.get('burial_type')
         if burial_type in (Burial.BURIAL_ADD, Burial.BURIAL_OVER,) and \

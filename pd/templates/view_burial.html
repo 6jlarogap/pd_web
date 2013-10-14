@@ -121,6 +121,10 @@
             {% endif %}
             {% if b.row %}{% trans "Ряд" %}: {{ b.row }}<br/>{% endif %}
             {% if b.place_number %}{% trans "Место" %}: {{ b.place_number }}<br/>{% endif %}
+            {% if place %}
+                {% trans "Размер, м." %}: {{ place.place_length }} x {{ place.place_width }}
+                <br/>
+            {% endif %}
             {% if b.grave_number %}{% trans "Могила" %}: {{ b.grave_number }}<br/>{% endif %}
             {% if place %}{% trans "Свободно" %}: {{ place.get_available_count }}<br/>{% endif %}
             {% if user.profile.is_ugh %}

@@ -684,6 +684,10 @@ $(function() {
                 });
             } else {
                 $('#id_desired_graves_count').closest('p').show();
+                if ($('#id_place_length').length > 0) {
+                    $('#id_place_length').closest('p').show();
+                    $('#id_place_width').closest('p').show();
+                }
                 $('#place_info').html('');
             }
             $.getJSON('/burials/get_graves_number/?'+data, function(data) {
@@ -701,6 +705,10 @@ $(function() {
             })
         } else {
             $('#id_desired_graves_count').closest('p').show();
+            if ($('#id_place_length').length > 0) {
+                $('#id_place_length').closest('p').show();
+                $('#id_place_width').closest('p').show();
+            }
             $('#place_info').html('');
         }
 
