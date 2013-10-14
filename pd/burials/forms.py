@@ -602,8 +602,10 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
                                                          area=self.cleaned_data['area'],
                                                          row=self.cleaned_data['row'],
                                                          place=self.cleaned_data['place_number'],
-                                                         place_length=self.cleaned_data['place_length'],
-                                                         place_width=self.cleaned_data['place_width'])
+                                         defaults = { 'place_length': self.cleaned_data['place_length'],
+                                                      'place_width': self.cleaned_data['place_width'],
+                                                    }
+                             )
             self.instance.place=place
             if created:
                 self.grave = place.create_graves(max(self.cleaned_data['desired_graves_count'] or 1,
@@ -1073,7 +1075,9 @@ class BurialApproveCloseForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelFor
     """
     class Meta:
         model = Burial
-        fields = ['cemetery', 'area', 'row', 'place_number', 'desired_graves_count', 'fact_date', ]
+        fields = ['cemetery', 'area', 'row', 'place_number',
+                  'desired_graves_count', 'place_length', 'place_width',
+                  'fact_date', ]
 
     def __init__(self, request, *args, **kwargs):
         super(BurialApproveCloseForm, self).__init__(*args, **kwargs)
@@ -1117,6 +1121,8 @@ class BurialApproveCloseForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelFor
                         del self.fields[f]
                     if self.instance.get_place():
                         del self.fields['desired_graves_count']
+                        del self.fields['place_length']
+                        del self.fields['place_width']
                 else:
                     for f in ('row', 'place_number', 'fact_date', ):
                         del self.fields[f]
