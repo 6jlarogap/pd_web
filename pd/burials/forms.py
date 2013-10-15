@@ -862,7 +862,6 @@ class BurialCommitForm(BurialForm):
                 msg = _(u"Нельзя закрывать архивное захоронение без указания его номера в книге учета")
                 raise forms.ValidationError(msg)
 
-        return self.cleaned_data
         place_number = self.cleaned_data.get('place_number') or ''
         area = self.cleaned_data.get('area')
         row = self.cleaned_data.get('row')
