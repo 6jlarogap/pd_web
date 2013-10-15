@@ -5,7 +5,7 @@ from django.db import models, connection
 from django.db.models.deletion import ProtectedError
 from django.utils.translation import ugettext_lazy as _
 from django.db.models.query_utils import Q
-from pd.models import UnclearDateModelField, BaseModel, Files, Photo
+from pd.models import UnclearDateModelField, BaseModel, Files, Photo, validate_gt0
 
 from persons.models import DeadPerson, SafeDeleteMixin, DeathCertificate
 from reports.models import Report
@@ -124,6 +124,10 @@ class Place(SafeDeleteMixin, BaseModel):
     place = models.CharField(_(u"Место"), max_length=255, blank=True, null=True)
     responsible = models.ForeignKey('persons.AlivePerson', verbose_name=_(u"Ответственный"), blank=True, null=True,
                                     on_delete=models.PROTECT)
+    place_length = models.DecimalField(_(u"Длина, м."), max_digits=5, decimal_places=2,
+                                       null=True, blank=True, validators=[validate_gt0])
+    place_width = models.DecimalField(_(u"Ширина, м."), max_digits=5, decimal_places=2,
+                                        null=True, blank=True, validators=[validate_gt0])
 
     class Meta:
         verbose_name = _(u"Место")
@@ -222,6 +226,18 @@ class Place(SafeDeleteMixin, BaseModel):
             if not created:
                 break
         return result
+
+class PlaceSize(models.Model):
+    org = models.ForeignKey(Org, verbose_name=_(u"Организация"), editable=False) 
+    graves_count = models.PositiveSmallIntegerField(_(u"Число могил"), )
+    place_length = models.DecimalField(_(u"Длина, м."), max_digits=5, decimal_places=2, validators=[validate_gt0])
+    place_width = models.DecimalField(_(u"Ширина, м."), max_digits=5, decimal_places=2, validators=[validate_gt0])
+
+    class Meta:
+        verbose_name = _(u"Размер места")
+        verbose_name_plural = _(u"Размеры мест")
+        unique_together = ('org', 'graves_count', )
+        ordering = ('graves_count', )
 
 class PlaceStatus(BaseModel):
     PS_ACTUAL = 'actual'
@@ -334,6 +350,10 @@ class Burial(SafeDeleteMixin, BaseModel):
                               null=True, blank=True, editable=False, on_delete=models.PROTECT)
     grave_number = models.PositiveSmallIntegerField(_(u"Могила"), default=1)
     desired_graves_count = models.PositiveSmallIntegerField(_(u"Число могил в новом месте"), default=1)
+    place_length = models.DecimalField(_(u"Длина, м."), max_digits=5, decimal_places=2,
+                                        null=True, blank=True, validators=[validate_gt0])
+    place_width = models.DecimalField(_(u"Ширина, м."), max_digits=5, decimal_places=2,
+                                        null=True, blank=True, validators=[validate_gt0])
     responsible = models.ForeignKey('persons.AlivePerson', verbose_name=_(u"Ответственный"), blank=True, null=True,
                                     related_name='responsible_burials', on_delete=models.PROTECT)
 
@@ -683,6 +703,9 @@ class Burial(SafeDeleteMixin, BaseModel):
         place.row = self.row
         place.place = self.place_number
         new_place = not place.pk
+        if new_place:
+            place.place_length = self.place_length
+            place.place_width = self.place_width
         place.save()
         if new_place:
             graves_count = self.desired_graves_count or 1

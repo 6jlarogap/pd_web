@@ -15,7 +15,7 @@ from django.utils.translation import ugettext as _
 from django.utils.datastructures import SortedDict
 from django.utils.safestring import mark_safe
 
-from burials.models import Burial, Area
+from burials.models import Burial, Area, PlaceSize
 from logs.models import write_log
 from pd.models import UnclearDate
 from users.models import Profile, Dover
@@ -53,6 +53,14 @@ class ChildrenJSONMixin:
     def agent_dover_json(self):
         kw = {'target_org': self.request.user.profile.org}
         return self.universal_children_json('agent', Dover, 'agent', filter_kw=kw, related=['agent', 'agent__user'])
+
+    def place_size_json(self):
+        sizes = {}
+        for place_size in PlaceSize.objects.filter(org=self.request.user.profile.org):
+            sizes[place_size.graves_count] = {'place_length': str(place_size.place_length),
+                                              'place_width': str(place_size.place_width)
+                                             }
+        return mark_safe(json.dumps(sizes))
 
     def actual_dover_list(self):
         today = datetime.date.today()

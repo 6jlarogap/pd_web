@@ -8,6 +8,17 @@
     {% csrf_token %}
     {{ form.as_p }}
 
+    {% if form.placesize_formset %}
+        <h2>{% trans "Размеры мест" %}</h2>
+        {{ form.placesize_formset.management_form }}
+        {{ form.placesize_formset.non_form_errors }}
+        {% for f in form.placesize_formset.forms %}
+            <fieldset>
+                {{ f.as_p }}
+            </fieldset>
+        {% endfor %}
+    {% endif %}
+
     <h2>{% trans "Адрес" %}</h2>
     {% with form.address_form as form %}
         {% include "location_form.html" %}
