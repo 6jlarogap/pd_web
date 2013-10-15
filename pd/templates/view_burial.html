@@ -243,6 +243,7 @@
                     {{ approve_close_form.as_p }}
                     <script type="text/javascript">
                         CEMETERY_AREAS = {{ approve_close_form.cemetery_areas_json|default:"{}" }};
+                        PLACE_SIZE = {{ approve_close_form.place_size_json|default:"{}" }};
                     </script>
                 {% elif not place %}
                     {# Здесь в форме остается только желаемое число могил на новое (!) место #}

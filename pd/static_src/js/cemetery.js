@@ -348,6 +348,7 @@ $(function() {
     if (!window.AGENT_DOVER) { AGENT_DOVER = {} }
     if (!window.ORG_AGENTS) { ORG_AGENTS = {} }
     if (!window.PLACE_TYPES) { PLACE_TYPES = {} }
+    if (!window.PLACE_SIZE) { PLACE_SIZE = {} }
     
     $('input[id$=fias_address]').live('keypress', function(e) {
         if (e.keyCode == 13) {
