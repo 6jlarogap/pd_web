@@ -1161,6 +1161,20 @@ class BurialApproveCloseForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelFor
                     for f in self.dc_form.fields:
                         if f in ('s_number', 'release_date', 'zags',) :
                             self.dc_form.fields[f].required = True
+                            
+        if 'place_length' in self.fields:
+            self.fields['place_length'].required = False
+            self.fields['place_width'].required = False
+            if not self.instance.place_length or not self.instance.place_width:
+                try:
+                    place_size = PlaceSize.objects.get(org=request.user.profile.org,
+                                                       graves_count=self.instance.desired_graves_count)
+                    if not self.instance.place_length:
+                        self.initial['place_length'] = place_size.place_length
+                    if not self.instance.place_width:
+                        self.initial['place_width'] = place_size.place_width
+                except PlaceSize.DoesNotExist:
+                    pass
 
     def clean(self):
         if 'row' in self.fields and \
