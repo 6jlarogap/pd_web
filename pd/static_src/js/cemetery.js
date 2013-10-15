@@ -738,6 +738,14 @@ $(function() {
         old_grave_value = $('#id_grave_number').val();
     });
 
+    $('#id_desired_graves_count').change(function() {
+        var size = PLACE_SIZE[$(this).val()] || '';
+        if (size) {
+            $('#id_place_length').val(size['place_length']);
+            $('#id_place_width').val(size['place_width']);
+        }
+    });
+
     $('#id_country, #id_region').change(function() {
         var geocoder = new google.maps.Geocoder();
         var addr = $('#id_country [selected]').text() + ', ' + $('#id_region [selected]').text();

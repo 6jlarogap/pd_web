@@ -238,12 +238,14 @@
                 <input type="submit" class="btn" name="annulate" value="{% trans "аннулировать" %}">
             {% endif %}
             {% if b.can_approve %}
+                <script type="text/javascript">
+                    PLACE_SIZE = {{ approve_close_form.place_size_json|default:"{}" }};
+                </script>
                 {% if not b.area %}
                     <h2>{% trans "Кладбище и участок" %}</h2>
                     {{ approve_close_form.as_p }}
                     <script type="text/javascript">
                         CEMETERY_AREAS = {{ approve_close_form.cemetery_areas_json|default:"{}" }};
-                        PLACE_SIZE = {{ approve_close_form.place_size_json|default:"{}" }};
                     </script>
                 {% elif not place %}
                     {# Здесь в форме остается только желаемое число могил на новое (!) место #}
@@ -271,6 +273,7 @@
                 {{ approve_close_form.as_p }}
                 <script type="text/javascript">
                     CEMETERY_AREAS = {{ approve_close_form.cemetery_areas_json|default:"{}" }};
+                    PLACE_SIZE = {{ approve_close_form.place_size_json|default:"{}" }};
                 </script>
                 <input type="submit" class="btn btn-primary" name="complete" value="{% trans "закрыть" %}">
             {% endif %}
