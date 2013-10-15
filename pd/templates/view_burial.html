@@ -108,19 +108,33 @@
         <dt>{% trans "Место" %}:</dt><dd>
             {% if b.area %}
                 {% trans "Участок" %}: {{ b.area }}<br/>
-            {% elif b.is_ready %}
+            {% else %}
                 <span style="color:red"><b><big>{% trans "Участок не указан" %}.</big></b></span>
+            {% endif %}
+            {% if not place %}
                 {% trans "Запрошено место на число могил: " %}{{ b.desired_graves_count }}<br/>
+                {% if b.area and b.desired_graves_count > b.area.places_count  %}
+                <span style="color:blue"><b>{% trans "Число могил больше, чем задано у участка" %}!</b></span><br />
+                {% elif b.area and b.desired_graves_count < b.area.places_count %}
+                <span style="color:blue"><b>{% trans "Число могил меньше, чем задано у участка" %}</b></span><br />
+                {% endif %}
             {% endif %}
             {% if b.row %}{% trans "Ряд" %}: {{ b.row }}<br/>{% endif %}
             {% if b.place_number %}{% trans "Место" %}: {{ b.place_number }}<br/>{% endif %}
             {% if b.grave_number %}{% trans "Могила" %}: {{ b.grave_number }}<br/>{% endif %}
-            {% if b.get_place %}{% trans "Свободно" %}: {{ b.get_place.get_available_count }}<br/>{% endif %}
+            {% if place %}{% trans "Свободно" %}: {{ place.get_available_count }}<br/>{% endif %}
             {% if user.profile.is_ugh %}
                 {% if b.exhumated and b.exhumationrequest.place %}
                     <a href="{% url view_place b.exhumationrequest.place.pk %}" class="btn">{% trans "карточка" %}</a>
                 {% elif place %}
                     <a href="{% url view_place place.pk %}" class="btn">{% trans "карточка" %}</a>
+                {% endif %}
+            {% endif %}
+            {% if user.profile.is_loru and not b.is_closed and not b.exhumated %} 
+                {% if place %}
+                    <span style="color:blue"><b>{% trans "Место существует" %}</b></span><br />
+                {% elif b.cemetery and b.area and b.place_number %}
+                    <span style="color:red"><b>{% trans "Место отсутствует в архиве" %}!</b></span><br />
                 {% endif %}
             {% endif %}
         </dd>
@@ -145,7 +159,7 @@
         </dd>
         <dt>{% trans "План. дата и время" %}:</dt>
         <dd>{{ b.plan_date|date:"d.m.Y"|default:"не указана" }} {{ b.plan_time|time:"H:i"|default:"Время не указано" }}</dd>
-        <dt>{% trans "Факт. дата" %}:</dt><dd>{{ b.fact_date|date:"d.m.Y"|default:"не указана" }}</dd>
+        <dt>{% trans "Факт. дата" %}:</dt><dd>{{ b.fact_date|default:"не указана" }}</dd>
         <dt>{% trans "Файлы" %}:</dt>
         {% for f in b.burialfiles_set.all %}
             <dd>{{ forloop.counter }}. &nbsp;
@@ -163,7 +177,9 @@
             {# при котором здесь оказываемся, придется в ряде случаев пересмотреть! #}
             {% if b.can_approve and not b.is_bio %}
                 <h2>{% trans "Свидетельство о смерти" %}</h2>
-                {{ approve_close_form.dc_form.as_p }}
+                {% with approve_close_form.dc_form as form %}
+                    {% include "deathcertificate.html" %}
+                {% endwith %}
                 {{ approve_close_form.dc_form.scan_form.as_p }}
                 <br />
                 <input type="submit" class="btn btn-primary" name="save-dc" value="{% trans "cохранить" %}">
@@ -219,10 +235,15 @@
                     <script type="text/javascript">
                         CEMETERY_AREAS = {{ approve_close_form.cemetery_areas_json|default:"{}" }};
                     </script>
+                {% elif not place %}
+                    {# Здесь в форме остается только желаемое число могил на новое (!) место #}
+                    {{ approve_close_form.as_p }}
                 {% endif %}
                 {% if not b.is_bio %}
                     <h2>{% trans "Свидетельство о смерти" %}</h2>
-                    {{ approve_close_form.dc_form.as_p }}
+                    {% with approve_close_form.dc_form as form %}
+                        {% include "deathcertificate.html" %}
+                    {% endwith %}
                     {{ approve_close_form.dc_form.scan_form.as_p }}
                     <br />
                 {% endif %}
@@ -300,5 +321,7 @@
     {% with object=b %}
         {% include "object_logs.html" %}
     {% endwith %}
+
+    {% include "create_burial_popups.html" %}
 
 {% endblock %}

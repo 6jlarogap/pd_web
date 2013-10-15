@@ -15,5 +15,6 @@ urlpatterns = patterns('mobile.views',
     url(r'^mobile/uploadarea/$', 'mobile_upload_area', name='mobile_upload_area'),
     url(r'^mobile/uploadplace/$', 'mobile_upload_place', name='mobile_upload_place'),
     url(r'^mobile/uploadgrave/$', 'mobile_upload_grave', name='mobile_upload_grave'),
+    url(r'^mobile/removephoto/$', 'mobile_remove_photo', name='mobile_remove_photo'),
 
 )

@@ -83,10 +83,14 @@ class Org(BaseModel):
     NUM_EMPTY = ''
     NUM_YEAR_UGH = 'year_ugh'
     NUM_YEAR_CEMETERY = 'year_cemetery'
+    NUM_YEAR_MONTH_UGH = 'year_month_ugh'
+    NUM_YEAR_MONTH_CEMETERY = 'year_month_cemetery'
     NUM_TYPES = (
         (NUM_EMPTY, _(u'Оставить пустым')),
         (NUM_YEAR_UGH, _(u'Год + порядковый (в пределах организации)')),
         (NUM_YEAR_CEMETERY, _(u'Год + порядковый (в пределах кладбища)')),
+        (NUM_YEAR_MONTH_UGH, _(u'Год + месяц + порядковый (в пределах организации)')),
+        (NUM_YEAR_MONTH_CEMETERY, _(u'Год + месяц + порядковый (в пределах кладбища)')),
     )
 
     PROFILE_ZAGS = 'zags'
@@ -125,6 +129,9 @@ class Org(BaseModel):
                                     choices=list(OPF_CHOICES)[1:], default=OPF_ORG)
     opf_order_customer_mandatory = models.BooleanField(_(u"Данные заказчика при оформлении заказа обязательны"),
                                     default=True)
+    # название поля не заканчивается на date, чтоб не угодить под специфический datePicker widget для дат:
+    plan_date_days_before = models.PositiveIntegerField(_(u"Кол-во дней для ввода плановой даты захоронения в прошлом"), default=0)
+    archive_burial_fact_date_required = models.BooleanField(_(u"Дата архивного захоронения обязательна"), default=False)
 
     class Meta:
         verbose_name = _(u'Организация')

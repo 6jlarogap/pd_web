@@ -3,7 +3,7 @@ from django.shortcuts import render_to_response
 from django.views.generic.base import View
 from django.utils.translation import ugettext as _
 
-from burials.views import LoginRequiredMixin, UGHRequiredMixin
+from burials.views import UGHRequiredMixin
 
 from django.http import HttpResponseRedirect
 from django.shortcuts import render_to_response
@@ -30,11 +30,17 @@ from cStringIO import StringIO
 from django.utils.dateparse import parse_datetime
 from django.core.files.base import ContentFile
 from django.http import Http404
-from django.db.models import Q, Min, Max
+from django.db.models import Q
+from datetime import datetime
+
 
 class MobileGetCemetery(UGHRequiredMixin, View):
     def get(self, request, *args, **kwargs):
+        argSyncDateUnix = request.GET.get('syncDate', None)        
         queryCemetery = Q(ugh = request.user.profile.org)
+        if argSyncDateUnix :
+            argSyncDate = datetime.fromtimestamp(int(argSyncDateUnix))
+            queryCemetery &= Q(dt_modified__gte = argSyncDate)
         listCemetery = Cemetery.objects.filter(queryCemetery).order_by('id')
         data = serializers.serialize("json", listCemetery, fields=('name'))
         return HttpResponse(data, mimetype='application/json')      
@@ -43,10 +49,14 @@ mobile_get_cemetery = MobileGetCemetery.as_view()
 
 class MobileGetArea(UGHRequiredMixin, View):
     def get(self, request, *args, **kwargs):
+        argSyncDateUnix = request.GET.get('syncDate', None) 
         argCemeteryId = request.GET.get('cemeteryId', None)        
         queryArea = Q(cemetery__ugh = request.user.profile.org)
         if argCemeteryId :
             queryArea &= Q(cemetery__pk = argCemeteryId)
+        if argSyncDateUnix :
+            argSyncDate = datetime.fromtimestamp(int(argSyncDateUnix))
+            queryArea &= Q(dt_modified__gte = argSyncDate)
         listArea = Area.objects.filter(queryArea).order_by('cemetery', 'id')
         data = serializers.serialize("json", listArea, fields=('cemetery','name'))
         return HttpResponse(data, mimetype='application/json')
@@ -55,6 +65,7 @@ mobile_get_area = MobileGetArea.as_view()
 
 class MobileGetPlace(UGHRequiredMixin, View):
     def get(self, request, *args, **kwargs):
+        argSyncDateUnix = request.GET.get('syncDate', None) 
         argAreaId = request.GET.get('areaId', None)
         argCemeteryId = request.GET.get('cemeteryId', None)
         
@@ -63,6 +74,9 @@ class MobileGetPlace(UGHRequiredMixin, View):
             queryPlace &= Q(cemetery__pk = argCemeteryId)
         if argAreaId :
             queryPlace &= Q(area__pk = argAreaId)
+        if argSyncDateUnix :
+            argSyncDate = datetime.fromtimestamp(int(argSyncDateUnix))
+            queryPlace &= Q(dt_modified__gte = argSyncDate)
         listPlace = Place.objects.filter(queryPlace).order_by('cemetery', 'area', 'id')
                                 
         queryPlaceStatus = 'select ps.* from burials_placestatus ps inner join burials_place p on ps.place_id = p.id inner join burials_cemetery c on p.cemetery_id = c.id inner join users_org org on c.ugh_id = org.id where org.id = %d and ps.dt_created = (select max(ps2.dt_created) from burials_placestatus ps2 where ps2.place_id = ps.place_id) ' % request.user.profile.org.pk
@@ -70,6 +84,8 @@ class MobileGetPlace(UGHRequiredMixin, View):
             queryPlaceStatus = queryPlaceStatus + ' and p.area_id = %s'% argAreaId
         if argCemeteryId :
             queryPlaceStatus = queryPlaceStatus + ' and p.cemetery_id = %s'% argCemeteryId
+        if argSyncDateUnix :
+            queryPlaceStatus = queryPlaceStatus + ' and extract (epoch from p.dt_modified) >= %s'% argSyncDateUnix
         listPlaceStatus = PlaceStatus.objects.raw(queryPlaceStatus) 
         
         all_objects = list(listPlace) + list(listPlaceStatus)
@@ -80,14 +96,21 @@ mobile_get_place = MobileGetPlace.as_view()
 
 class MobileGetGrave(UGHRequiredMixin, View):
     def get(self, request, *args, **kwargs):
+        argSyncDateUnix = request.GET.get('syncDate', None) 
         argPlaceId = request.GET.get('placeId', None)
         argCemeteryId = request.GET.get('cemeteryId', None)
+        argAreaId = request.GET.get('areaId', None)
         
         queryGrave = Q(place__cemetery__ugh = request.user.profile.org)
         if argCemeteryId :
             queryGrave &= Q(place__cemetery__pk = argCemeteryId)
+        if argAreaId :
+            queryGrave &= Q(place__area__pk = argAreaId)
         if argPlaceId :
             queryGrave &= Q(place__pk = argPlaceId)
+        if argSyncDateUnix :
+            argSyncDate = datetime.fromtimestamp(int(argSyncDateUnix))
+            queryGrave &= Q(dt_modified__gte = argSyncDate)        
         listGrave = Grave.objects.filter(queryGrave).order_by('id')
         
         data = serializers.serialize("json", listGrave, fields=('place','grave_number'))
@@ -97,14 +120,21 @@ mobile_get_grave = MobileGetGrave.as_view()
 
 class MobileGetBurial(UGHRequiredMixin, View):
     def get(self, request, *args, **kwargs):
+        argSyncDateUnix = request.GET.get('syncDate', None) 
         argGraveId = request.GET.get('graveId', None)
         argCemeteryId = request.GET.get('cemeteryId', None)
+        argAreaId = request.GET.get('areaId', None)
         
         queryBurial = Q(grave__place__cemetery__ugh = request.user.profile.org)
         if argCemeteryId :
             queryBurial &= Q(grave__place__cemetery__pk = argCemeteryId)
+        if argAreaId :
+            queryBurial &= Q(grave__place__area__pk = argAreaId)
         if argGraveId :
             queryBurial &= Q(grave__pk = argGraveId)
+        if argSyncDateUnix :
+            argSyncDate = datetime.fromtimestamp(int(argSyncDateUnix))
+            queryBurial &= Q(dt_modified__gte = argSyncDate)        
         listBurial = Burial.objects.filter(queryBurial).order_by('id')
 
         queryPerson = Q(deadperson__burial__cemetery__ugh=request.user.profile.org)
@@ -112,6 +142,11 @@ class MobileGetBurial(UGHRequiredMixin, View):
             queryPerson &= Q(deadperson__burial__grave__pk=argGraveId) 
         if argCemeteryId :
             queryPerson &= Q(deadperson__burial__cemetery__pk=argCemeteryId)
+        if argAreaId :
+            queryPerson &= Q(deadperson__burial__area__pk = argAreaId)
+        if argSyncDateUnix :
+            argSyncDate = datetime.fromtimestamp(int(argSyncDateUnix))
+            queryBurial &= Q(deadperson__burial__dt_modified__gte = argSyncDate)
         listPerson = BasePerson.objects.filter(queryPerson)
                 
         all_objects = list(listBurial) + list(listPerson)
@@ -123,10 +158,11 @@ mobile_get_burial = MobileGetBurial.as_view()
 @csrf_exempt
 def mobile_upload_photo(request):
     if request.method == 'POST':
-        result = ""
         graveId = request.POST['grave']
         lat = request.POST['lat']
-        lng = request.POST['lng']        
+        lng = request.POST['lng'] 
+        data = ""
+        listPhoto = []
         try:
             grave = Grave.objects.get(id = graveId)            
             photo_content = ContentFile(request.FILES['photo'].read())
@@ -137,12 +173,25 @@ def mobile_upload_photo(request):
                 grave.lat = lat
                 grave.lng = lng
                 grave.save()
-            result = "Ok"
+            listPhoto.append(photo)
+            data = serializers.serialize("json", listPhoto, fields=('grave','lat','lng'))
+            return HttpResponse(data, mimetype='application/json')
         except Grave.DoesNotExist:
             grave = None
             raise Http404
-        return HttpResponse(result, mimetype='application/json')
     return render_to_response('mobile_upload_photo.html', {'message': _(u"Загрузите фотографию к могиле:")})
+	
+@csrf_exempt
+def mobile_remove_photo(request):
+    if request.method == 'POST':
+        gravePhotoId = request.POST['gravePhotoId']
+        try :
+            gravePhoto = GravePhoto.objects.get(id = gravePhotoId)
+            gravePhoto.delete()
+            return HttpResponse("Ok", mimetype='application/json')
+        except GravePhoto.DoesNotExist:
+            return HttpResponse("Ok", mimetype='application/json')                
+    return render_to_response('mobile_remove_photo.html', {'message': _(u"Удалить фотографию к могиле:")})
     
 @csrf_exempt
 def mobile_upload_cemetery(request):    

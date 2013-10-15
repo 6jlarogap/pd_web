@@ -7,6 +7,7 @@ from django.db.models.fields.files import FieldFile
 
 from persons.models import DeadPerson, PersonID, DeathCertificate, DeathCertificateScan, AlivePerson, DocumentSource
 from pd.models import UnclearDate
+from users.models import Org
 from logs.models import write_log
 from pd.forms import BaseModelForm, StrippedStringsMixin, CustomClearableFileInput, CustomUploadModelForm
 
@@ -33,24 +34,6 @@ class DeadPersonForm(ValidDataMixin, StrippedStringsMixin, forms.ModelForm):
     def is_valid_data(self):
         return self.is_valid() and len([k for k,v in self.cleaned_data.items() if v]) > 1 # more than just death date
     
-    def do_clean_date(self, unclear_date_form_field):
-        d = self.cleaned_data[unclear_date_form_field]
-        if isinstance(d, basestring):
-            try:
-                datetime.datetime.strptime(d, "%Y-%m-%d")
-            except ValueError:
-                y, m, d_ = d.split('-')
-                raise forms.ValidationError(_(u'Была введена неверная дата (д-м-г): %s-%s-%s') % (d_, m, y))
-        elif isinstance(d, UnclearDate) and not d.no_day and d.no_month:
-            raise forms.ValidationError(_(u'Нет месяца в дате'))
-        return d
-
-    def clean_birth_date(self):
-        return self.do_clean_date('birth_date')
-
-    def clean_death_date(self):
-        return self.do_clean_date('death_date')
-
 class PersonIDForm(ValidDataMixin, StrippedStringsMixin, forms.ModelForm):
     flag_no_applicant_doc_required = forms.BooleanField(label=_(u'Документ не обязателен'), required=False)
     source = forms.CharField(label=_(u'Кем выдан'), required=False)
@@ -80,6 +63,7 @@ class PersonIDForm(ValidDataMixin, StrippedStringsMixin, forms.ModelForm):
 
 class DeathCertificateForm(StrippedStringsMixin, BaseModelForm):
     dt_modified = forms.IntegerField(widget=forms.HiddenInput, required=False, )
+    zags = forms.CharField(required=False)
 
     class Meta:
         model = DeathCertificate
@@ -93,6 +77,7 @@ class DeathCertificateForm(StrippedStringsMixin, BaseModelForm):
         if instance and instance.pk:
             kwargs['initial'].update({
                 'dt_modified': int(instance.dt_modified.strftime("%s")),
+                'zags': instance.zags.name if instance.zags else '',
             })
             try:
                 scan = instance.deathcertificatescan
@@ -103,7 +88,19 @@ class DeathCertificateForm(StrippedStringsMixin, BaseModelForm):
                 'release_date': datetime.date.today(),
             })
         super(DeathCertificateForm, self).__init__(*args, **kwargs)
+        self.fields['zags'].max_length = Org._meta.get_field('name').max_length
+        self.fields['zags'].label = DeathCertificate._meta.get_field('zags').verbose_name
         self.scan_form = DeathCertificateScanForm(request, prefix='dc-scan', instance = scan, files=request.FILES)
+
+    def clean_zags(self):
+        zags = None
+        zags_str = self.cleaned_data.get('zags').strip()
+        if zags_str:
+            try:
+                zags = Org.objects.filter(name=zags_str, type=Org.PROFILE_ZAGS)[0]
+            except IndexError:
+                raise forms.ValidationError(_(u'Нет такого ЗАГСа'))
+        return zags
 
     def clean_release_date(self):
         today = datetime.date.today()

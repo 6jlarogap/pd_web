@@ -258,6 +258,16 @@ class UnclearDateField(forms.DateField):
         return value
 
     def clean(self, value):
+        if not value and self.required:
+            raise forms.ValidationError(self.error_messages['required'])
+        if isinstance(value, basestring):
+            try:
+                datetime.datetime.strptime(value, "%Y-%m-%d")
+            except ValueError:
+                y, m, d = value.split('-')
+                raise forms.ValidationError(_(u'Была введена неверная дата (д-м-г): %s-%s-%s') % (d, m, y))
+        elif isinstance(value, UnclearDate) and not value.no_day and value.no_month:
+            raise forms.ValidationError(_(u'Нет месяца в дате'))
         return value
 
 class BaseModelForm(forms.ModelForm):
