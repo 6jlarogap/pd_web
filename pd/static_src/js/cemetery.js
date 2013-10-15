@@ -743,6 +743,9 @@ $(function() {
         if (size) {
             $('#id_place_length').val(size['place_length']);
             $('#id_place_width').val(size['place_width']);
+        } else {
+            $('#id_place_length').val('');
+            $('#id_place_width').val('');
         }
     });
 
