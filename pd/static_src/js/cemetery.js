@@ -738,7 +738,7 @@ $(function() {
         old_grave_value = $('#id_grave_number').val();
     });
 
-    $('#id_desired_graves_count').change(function() {
+    $('#id_desired_graves_count, #id_new_graves_count').change(function() {
         var size = PLACE_SIZE[$(this).val()] || '';
         if (size) {
             $('#id_place_length').val(size['place_length']);

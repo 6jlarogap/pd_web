@@ -84,16 +84,29 @@ class BaseAreaFormset(BaseInlineFormSet):
 
 AreaFormset = inlineformset_factory(Cemetery, Area, formset=BaseAreaFormset, can_delete=True)
 
-class PlaceEditForm(forms.ModelForm):
+class PlaceEditForm(ChildrenJSONMixin, forms.ModelForm):
     class Meta:
         model = Place
         fields = ('place_length', 'place_width', )
 
     new_graves_count = forms.IntegerField(required=True, label=_(u"Кол-во могил в месте"))
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, request, *args, **kwargs):
         super(PlaceEditForm, self).__init__(*args, **kwargs)
+        self.request = request
         self.initial['new_graves_count'] = self.instance.get_graves_count()
+        self.fields['place_length'].required = False
+        self.fields['place_width'].required = False
+        if not self.instance.place_length or not self.instance.place_width:
+            try:
+                place_size = PlaceSize.objects.get(org=self.instance.cemetery.ugh,
+                                                   graves_count=self.instance.get_graves_count())
+                if not self.instance.place_length:
+                    self.initial['place_length'] = place_size.place_length
+                if not self.instance.place_width:
+                    self.initial['place_width'] = place_size.place_width
+            except PlaceSize.DoesNotExist:
+                pass
         self.fields.keyOrder.insert(0, self.fields.keyOrder.pop(-1))
 
     def clean_new_graves_count(self):
