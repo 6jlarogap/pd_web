@@ -12,7 +12,7 @@ from captcha.fields import ReCaptchaField
 from geo.forms import LocationForm
 # from geo.models import DFiasAddrobj
 from pd.forms import ChildrenJSONMixin, LoggingFormMixin
-from burials.models import Cemetery
+from burials.models import Cemetery, PlaceSize
 
 from users.models import Profile, ProfileLORU, Org, BankAccount, RegisterProfile
 
@@ -234,6 +234,8 @@ class BaseOrgForm(LoggingFormMixin, forms.ModelForm):
                 raise forms.ValidationError(_(u"Есть уже такая организация"))
         return name
 
+PlaceSizeFormset = inlineformset_factory(Org, PlaceSize, formset=BaseInlineFormSet, can_delete=True, extra=2)
+
 class OrgForm(BaseOrgForm):
     class Meta:
         model = Org
@@ -251,14 +253,22 @@ class OrgForm(BaseOrgForm):
         if not self.is_own_org or not self.request.user.profile.is_loru():
             del self.fields['opf_order']
             del self.fields['opf_order_customer_mandatory']
+        if self.is_own_org and request.user.profile.is_ugh():
+            self.placesize_formset = PlaceSizeFormset(data=request.POST or None, instance=self.instance)
+        else:
+            self.placesize_formset = None
 
     def is_valid(self):
-        return super(OrgForm, self).is_valid() and self.address_form.is_valid() # and self.bank_formset.is_valid()
+        return super(OrgForm, self).is_valid() and self.address_form.is_valid() and \
+                    (not self.placesize_formset or self.placesize_formset.is_valid())
+                    # and self.bank_formset.is_valid()
 
     def save(self, commit=True):
         self.collect_log_data()
         org = super(OrgForm, self).save(commit=False)
         # self.bank_formset.save()
+        if self.placesize_formset:
+            self.placesize_formset.save()
         if any(self.address_form.cleaned_data.values()):
             org.off_address = self.address_form.save()
         if commit:

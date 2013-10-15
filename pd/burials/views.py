@@ -128,6 +128,11 @@ class PlaceView(UGHRequiredMixin, UpdateView):
     model = Place
     form_class = PlaceEditForm
 
+    def get_form_kwargs(self, *args, **kwargs):
+        data = super(PlaceView, self).get_form_kwargs(*args, **kwargs)
+        data['request'] = self.request
+        return data
+
     def get_queryset(self):
         org = self.request.user.profile.org
         return Place.objects.filter(Q(burial__ugh=org) | Q(cemetery__ugh=org)).distinct()
