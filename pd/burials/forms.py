@@ -17,7 +17,7 @@ from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext_lazy as _
 from django.db.models.query_utils import Q
 
-from burials.models import Cemetery, Area, Burial, Place, ExhumationRequest, BurialFiles, Grave
+from burials.models import Cemetery, Area, Burial, Place, ExhumationRequest, BurialFiles, Grave, PlaceSize
 from geo.forms import LocationForm
 from orders.models import Order
 from pd.forms import PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, CommentForm, StrippedStringsMixin, CustomUploadModelForm
@@ -84,16 +84,30 @@ class BaseAreaFormset(BaseInlineFormSet):
 
 AreaFormset = inlineformset_factory(Cemetery, Area, formset=BaseAreaFormset, can_delete=True)
 
-class PlaceEditForm(forms.ModelForm):
+class PlaceEditForm(ChildrenJSONMixin, forms.ModelForm):
     class Meta:
         model = Place
-        fields = ()
+        fields = ('place_length', 'place_width', )
 
     new_graves_count = forms.IntegerField(required=True, label=_(u"Кол-во могил в месте"))
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, request, *args, **kwargs):
         super(PlaceEditForm, self).__init__(*args, **kwargs)
+        self.request = request
         self.initial['new_graves_count'] = self.instance.get_graves_count()
+        self.fields['place_length'].required = False
+        self.fields['place_width'].required = False
+        if not self.instance.place_length or not self.instance.place_width:
+            try:
+                place_size = PlaceSize.objects.get(org=self.instance.cemetery.ugh,
+                                                   graves_count=self.instance.get_graves_count())
+                if not self.instance.place_length:
+                    self.initial['place_length'] = place_size.place_length
+                if not self.instance.place_width:
+                    self.initial['place_width'] = place_size.place_width
+            except PlaceSize.DoesNotExist:
+                pass
+        self.fields.keyOrder.insert(0, self.fields.keyOrder.pop(-1))
 
     def clean_new_graves_count(self):
         new_graves_count = self.cleaned_data['new_graves_count']
@@ -117,6 +131,12 @@ class PlaceEditForm(forms.ModelForm):
         elif new_graves_count > graves_count:
             self.instance.get_or_create_graves(new_graves_count)
         return new_graves_count
+
+    def clean(self):
+        if self.cleaned_data.get('place_width') and not self.cleaned_data.get('place_length') or \
+           not self.cleaned_data.get('place_width') and self.cleaned_data.get('place_length'):
+            raise forms.ValidationError(_(u"Надо указывать и длину, и ширину места"))
+        return self.cleaned_data
 
 EMPTY = (('', '--------'),)
 
@@ -337,6 +357,10 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
         elif not self.instance.is_finished():
             del self.fields['fact_date']
             del self.fields['account_number']
+            
+        if not self.request.user.profile.is_ugh():
+            del self.fields['place_length']
+            del self.fields['place_width']
 
         if not self.instance.pk:
             self.initial['burial_container'] = Burial.CONTAINER_COFFIN
@@ -346,6 +370,15 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
             if self.request.user.profile.area:
                 self.initial['area'] = self.request.user.profile.area
                 self.initial['desired_graves_count'] = self.initial['area'].places_count or 1
+            if self.request.user.profile.is_ugh():
+                desired_graves_count = self.initial.get('desired_graves_count') or 1
+                try:
+                    place_size = PlaceSize.objects.get(org=self.request.user.profile.org,
+                                                       graves_count=desired_graves_count)
+                    self.initial['place_length'] = place_size.place_length
+                    self.initial['place_width'] = place_size.place_width
+                except PlaceSize.DoesNotExist:
+                    pass
 
         if self.instance.is_finished() and self.instance.place:
             self.initial.update(
@@ -581,7 +614,11 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
             place, created = Place.objects.get_or_create(cemetery=self.cleaned_data['cemetery'],
                                                          area=self.cleaned_data['area'],
                                                          row=self.cleaned_data['row'],
-                                                         place=self.cleaned_data['place_number'],)
+                                                         place=self.cleaned_data['place_number'],
+                                         defaults = { 'place_length': self.cleaned_data['place_length'],
+                                                      'place_width': self.cleaned_data['place_width'],
+                                                    }
+                             )
             self.instance.place=place
             if created:
                 self.grave = place.create_graves(max(self.cleaned_data['desired_graves_count'] or 1,
@@ -872,6 +909,12 @@ class BurialCommitForm(BurialForm):
                             (desired_graves_count, max_grave_number_this_ugh)
                            )
                     raise forms.ValidationError(msg) 
+            if self.request.user.profile.is_ugh() and \
+               (self.cleaned_data.get('place_width') and not self.cleaned_data.get('place_length') or \
+                not self.cleaned_data.get('place_width') and self.cleaned_data.get('place_length')
+               ):
+                raise forms.ValidationError(_(u"Надо указывать и длину, и ширину нового места"))
+
 
         burial_type = self.cleaned_data.get('burial_type')
         if burial_type in (Burial.BURIAL_ADD, Burial.BURIAL_OVER,) and \
@@ -1044,7 +1087,9 @@ class BurialApproveCloseForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelFor
     """
     class Meta:
         model = Burial
-        fields = ['cemetery', 'area', 'row', 'place_number', 'desired_graves_count', 'fact_date', ]
+        fields = ['cemetery', 'area', 'row', 'place_number',
+                  'desired_graves_count', 'place_length', 'place_width',
+                  'fact_date', ]
 
     def __init__(self, request, *args, **kwargs):
         super(BurialApproveCloseForm, self).__init__(*args, **kwargs)
@@ -1088,6 +1133,8 @@ class BurialApproveCloseForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelFor
                         del self.fields[f]
                     if self.instance.get_place():
                         del self.fields['desired_graves_count']
+                        del self.fields['place_length']
+                        del self.fields['place_width']
                 else:
                     for f in ('row', 'place_number', 'fact_date', ):
                         del self.fields[f]
@@ -1126,6 +1173,20 @@ class BurialApproveCloseForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelFor
                     for f in self.dc_form.fields:
                         if f in ('s_number', 'release_date', 'zags',) :
                             self.dc_form.fields[f].required = True
+                            
+        if 'place_length' in self.fields:
+            self.fields['place_length'].required = False
+            self.fields['place_width'].required = False
+            if not self.instance.place_length or not self.instance.place_width:
+                try:
+                    place_size = PlaceSize.objects.get(org=request.user.profile.org,
+                                                       graves_count=self.instance.desired_graves_count)
+                    if not self.instance.place_length:
+                        self.initial['place_length'] = place_size.place_length
+                    if not self.instance.place_width:
+                        self.initial['place_width'] = place_size.place_width
+                except PlaceSize.DoesNotExist:
+                    pass
 
     def clean(self):
         if 'row' in self.fields and \

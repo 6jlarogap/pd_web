@@ -40,6 +40,9 @@
     <form action="" method="POST">
         {% csrf_token %}
          {{ form.as_p }}
+        <script type="text/javascript">
+            PLACE_SIZE = {{ form.place_size_json|default:"{}" }};
+        </script>
         <p>
             <input type="submit" class="btn btn-primary btn-commit-burial" value="{% trans "cохранить" %}"/>
         </p>
