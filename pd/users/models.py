@@ -201,11 +201,15 @@ class RegisterProfile(BaseModel):
         (REG_ORG_UGH, _(u"Учет захоронений")),
         (REG_ORG_LORU, _(u"Учет заказов")),
     )
-    # Значение, записывамое в self.user_activation_key, когда пользователь
-    # активизирован в системе. Оно никак не совпадет с ключом активации ))
-    #
-    ACTIVATED = u"ALREADY_ACTIVATED"
+    
+    STATUS_TO_CONFIRM = 'to_confirm'
+    STATUS_CONFIRMED = 'confirmed'
+    STATUS_CHOICES = (
+        (STATUS_TO_CONFIRM, _(u"Ожидание подтверждения")),
+        (STATUS_CONFIRMED, _(u"Заявка подтверждена")),
+    )
 
+    status = models.CharField(_(u"Статус заявки"), max_length=255, choices=STATUS_CHOICES, editable=False)
     user_name = models.CharField(_(u"Имя для входа в систему (login)"), max_length=30)
     user_last_name = models.CharField(_(u"Фамилия"), max_length=255)
     user_first_name = models.CharField(_(u"Имя"), max_length=255)
