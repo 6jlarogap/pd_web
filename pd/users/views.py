@@ -439,16 +439,17 @@ class RegisterView(CreateView):
         email_from = settings.DEFAULT_FROM_EMAIL
         try:
             email_from = Org.get_supervisor().email or email_from
-            # Система должна быть настроена на отправку почты
-            # через действующий почтовый ящик на действующем сервере,
-            # см. параметры settings.EMAIL_ ...
-            # - если не удастся связаться с этим почтовым ящиком
-            #   для отправки письма, здесь будет какое-то smtplib.SMTPException
-            # - если недействительный получатель письма, то 
-            #   email_from получит об этом сообщение средствами электронной
-            #   почты, не относящимися к этому приложению.
         except AttributeError:
             pass
+        # Система должна быть настроена на отправку почты
+        # через действующий почтовый ящик на действующем сервере,
+        # см. параметры settings.EMAIL_ ...
+        # - если не удастся связаться с этим почтовым ящиком
+        #   для отправки письма, здесь будет какое-то smtplib.SMTPException
+        # - если недействительный получатель письма, то 
+        #   email_from получит об этом сообщение средствами электронной
+        #   почты, не относящимися к этому приложению.
+        #
         send_mail(email_subject, email_text, email_from, (obj.user_email, ))
         return redirect(reverse('register_activation', args=[obj.user_activation_key]))
         
