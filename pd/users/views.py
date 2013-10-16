@@ -421,6 +421,7 @@ class RegisterView(CreateView):
         obj.user_password = make_password(form.cleaned_data['password1'])
         salt = hashlib.sha1(str(random.random())).hexdigest()[:5]
         obj.user_activation_key = hashlib.sha1(salt+obj.user_name).hexdigest()
+        obj.status = RegisterProfile.STATUS_TO_CONFIRM
         obj.save()
         email_subject = "%s %s" % (unicode(_(u"Подтверждение заявки на регистрацию на")),
                                    unicode(_(u"ПохоронноеДело")),
@@ -447,37 +448,11 @@ class RegisterView(CreateView):
             send_mail(email_subject, email_text, email_from, (obj.user_email, ))
         except AttributeError:
             email_from = None
-        return redirect(reverse('register_activation_to_confirm', args=[obj.user_activation_key]))
+        return redirect(reverse('register_activation', args=[obj.user_activation_key]))
         
 register = RegisterView.as_view()
 
-class RegisterActivationToConfirmView(DetailView):
-    """
-    Регистрация новых пользователей
-    
-    Пользователь набрал успешно форму и получает ответ
-    """
-    template_name = 'simple_message.html'
-    model = RegisterProfile
-
-    def get_object(self):
-        return get_object_or_404(RegisterProfile, user_activation_key=self.kwargs['key'])
-    
-    def get_context_data(self, **kwargs):
-        context = super(RegisterActivationToConfirmView, self).get_context_data(**kwargs)
-        context['message'] = _(u'Регистрация успешна, но еще не завершена!')
-        context['html_message'] = _(u'<br />'
-                                    u'<big>'
-                                    u'Вам отправлено письмо, в котором имеется ссылка,<br />'
-                                    u'переход по которой направит вашу заявку на рассмотрение<br />'
-                                    u'администратора системы'
-                                    u'</big>'
-                                   )
-        return context
-
-register_activation_to_confirm = RegisterActivationToConfirmView.as_view()
-
-class RegisterActivationConfirmView(UpdateView):
+class RegisterActivation(DetailView):
     """
     Регистрация новых пользователей
     
@@ -491,13 +466,17 @@ class RegisterActivationConfirmView(UpdateView):
 
     def get(self, request, *args, **kwargs):
         self.object = self.get_object()
+        if self.object.status == RegisterProfile.STATUS_TO_CONFIRM:
+            message = _(u'Регистрация успешна, но еще не завершена!')
+            explain = _(
+                        u'Вам отправлено письмо, в котором имеется ссылка\n'
+                        u'переход по которой направит вашу заявку на рассмотрение\n'
+                        u'администратора системы\n'
+                       )
+            #u'Ваша заявка принята на рассмотрение администратора системы'
         context = {}
-        context['message'] = _(u'Регистрация успешна, но еще не завершена!')
-        context['html_message'] = _(u'<br />'
-                                    u'<big>'
-                                    u'Ваша заявка принята на рассмотрение администратора системы'
-                                    u'</big>'
-                                   )
+        context['message'] = message
+        context['html_message'] = u'<br /><big>%s</big>' % explain.replace('\n','<br />')
         return self.render_to_response(context)
 
-register_activation_confirm = RegisterActivationConfirmView.as_view()
+register_activation = RegisterActivation.as_view()
