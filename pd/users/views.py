@@ -4,6 +4,7 @@ import datetime
 import random
 import hashlib
 
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.forms import AuthenticationForm
@@ -435,8 +436,9 @@ class RegisterView(CreateView):
                          'activation_key': obj.user_activation_key,
                         }
                      )
+        email_from = settings.DEFAULT_FROM_EMAIL
         try:
-            email_from = Org.get_supervisor().email
+            email_from = Org.get_supervisor().email or email_from
             # Система должна быть настроена на отправку почты
             # через действующий почтовый ящик на действующем сервере,
             # см. параметры settings.EMAIL_ ...
@@ -445,9 +447,9 @@ class RegisterView(CreateView):
             # - если недействительный получатель письма, то 
             #   email_from получит об этом сообщение средствами электронной
             #   почты, не относящимися к этому приложению.
-            send_mail(email_subject, email_text, email_from, (obj.user_email, ))
         except AttributeError:
-            email_from = None
+            pass
+        send_mail(email_subject, email_text, email_from, (obj.user_email, ))
         return redirect(reverse('register_activation', args=[obj.user_activation_key]))
         
 register = RegisterView.as_view()
