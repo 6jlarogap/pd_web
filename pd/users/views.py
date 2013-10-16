@@ -14,11 +14,12 @@ from django.core.urlresolvers import reverse
 from django.db.models.query_utils import Q
 from django.db.models.aggregates import Count
 from django.http import HttpResponse, Http404
-from django.shortcuts import redirect, render
+from django.shortcuts import redirect, render, get_object_or_404
 from django.template.loader import render_to_string
 from django.utils.translation import ugettext_lazy as _
 from django.views.generic.base import View, TemplateView
 from django.views.generic.edit import UpdateView, CreateView
+from django.views.generic.detail import DetailView
     
 from burials.views import UGHRequiredMixin, LoginRequiredMixin, SupervisorRequiredMixin
 from logs.models import Log, write_log, LoginLog
@@ -415,14 +416,12 @@ class RegisterView(CreateView):
         data['request'] = self.request
         return data
 
-    def get_success_url(self):
-        return reverse('register_activation_to_confirm')
-
     def form_valid(self, form):
         obj = form.save(commit=False)
         obj.user_password = make_password(form.cleaned_data['password1'])
         salt = hashlib.sha1(str(random.random())).hexdigest()[:5]
         obj.user_activation_key = hashlib.sha1(salt+obj.user_name).hexdigest()
+        obj.save()
         email_subject = "%s %s" % (unicode(_(u"Подтверждение заявки на регистрацию на")),
                                    unicode(_(u"ПохоронноеДело")),
                                   )
@@ -448,18 +447,21 @@ class RegisterView(CreateView):
             send_mail(email_subject, email_text, email_from, (obj.user_email, ))
         except AttributeError:
             email_from = None
-        # obj.save()
-        return redirect(self.get_success_url())
+        return redirect(reverse('register_activation_to_confirm', args=[obj.user_activation_key]))
         
 register = RegisterView.as_view()
 
-class RegisterActivationToConfirmView(TemplateView):
+class RegisterActivationToConfirmView(DetailView):
     """
     Регистрация новых пользователей
     
     Пользователь набрал успешно форму и получает ответ
     """
     template_name = 'simple_message.html'
+    model = RegisterProfile
+
+    def get_object(self):
+        return get_object_or_404(RegisterProfile, user_activation_key=self.kwargs['key'])
     
     def get_context_data(self, **kwargs):
         context = super(RegisterActivationToConfirmView, self).get_context_data(**kwargs)
@@ -485,7 +487,7 @@ class RegisterActivationConfirmView(UpdateView):
     model = RegisterProfile
 
     def get_object(self):
-        return get_object_or_404(RegisterProfile, pk=self.kwargs['pk'])
+        return get_object_or_404(RegisterProfile, user_activation_key=self.kwargs['key'])
 
     def get(self, request, *args, **kwargs):
         self.object = self.get_object()
@@ -493,9 +495,7 @@ class RegisterActivationConfirmView(UpdateView):
         context['message'] = _(u'Регистрация успешна, но еще не завершена!')
         context['html_message'] = _(u'<br />'
                                     u'<big>'
-                                    u'Ваша заявкам отправлено письмо, в котором имеется ссылка,<br />'
-                                    u'переход по которой направит вашу заявку на рассмотрение<br />'
-                                    u'администратора системы'
+                                    u'Ваша заявка принята на рассмотрение администратора системы'
                                     u'</big>'
                                    )
         return self.render_to_response(context)

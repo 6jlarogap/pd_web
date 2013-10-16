@@ -201,15 +201,17 @@ RECAPTCHA_PRIVATE_KEY = 'another-string-of-hex-and-digits'
 RECAPTCHA_USE_SSL = False
 
 # для отправки кода активации и прочей почты от сервера,
-# по умолчанию, подлежат замене в local_settings.py:
+# по умолчанию, подлежат замене в local_settings.py.
+# Здесь приведены параметры, отработанные для отправки
+# через smtp-сервер @gmail.com
 #
-EMAIL_HOST = 'localhost'
-EMAIL_PORT = 1025
-EMAIL_HOST_USER = 'user'
-EMAIL_HOST_PASSWORD = 'secret'
-EMAIL_USE_TLS = False
+EMAIL_HOST = 'smtp.googlemail.com'
+EMAIL_PORT = 587
+EMAIL_HOST_USER = 'ADMIN-USER@gmail.com'
+EMAIL_HOST_PASSWORD = 'SECRET'
+EMAIL_USE_TLS = True
 EMAIL_USE_SSL = False
-DEFAULT_FROM_EMAIL = 'admin@org.com'
+DEFAULT_FROM_EMAIL = 'ADMIN-USER@gmail.com'
 
 # Длительность действия заявки на регистрацию
 #
