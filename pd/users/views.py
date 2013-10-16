@@ -9,6 +9,7 @@ from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.models import User
 from django.contrib.auth.hashers import make_password
+from django.core.mail import send_mail
 from django.core.urlresolvers import reverse
 from django.db.models.query_utils import Q
 from django.db.models.aggregates import Count
@@ -422,8 +423,8 @@ class RegisterView(CreateView):
         obj.user_password = make_password(form.cleaned_data['password1'])
         salt = hashlib.sha1(str(random.random())).hexdigest()[:5]
         obj.user_activation_key = hashlib.sha1(salt+obj.user_name).hexdigest()
-        email_subject = "%s %s" % (_(u"Подтверждение заявки на регистрацию на"),
-                                   _(u"ПохоронноеДело")
+        email_subject = "%s %s" % (unicode(_(u"Подтверждение заявки на регистрацию на")),
+                                   unicode(_(u"ПохоронноеДело")),
                                   )
         email_text = render_to_string(
                         'register_activation_email.txt',
@@ -435,7 +436,16 @@ class RegisterView(CreateView):
                         }
                      )
         try:
-            email_from = Org.get_supervisor().email 
+            email_from = Org.get_supervisor().email
+            # Система должна быть настроена на отправку почты
+            # через действующий почтовый ящик на действующем сервере,
+            # см. параметры settings.EMAIL_ ...
+            # - если не удастся связаться с этим почтовым ящиком
+            #   для отправки письма, здесь будет какое-то smtplib.SMTPException
+            # - если недействительный получатель письма, то 
+            #   email_from получит об этом сообщение средствами электронной
+            #   почты, не относящимися к этому приложению.
+            send_mail(email_subject, email_text, email_from, (obj.user_email, ))
         except AttributeError:
             email_from = None
         # obj.save()

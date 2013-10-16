@@ -203,7 +203,6 @@ RECAPTCHA_USE_SSL = False
 # для отправки кода активации и прочей почты от сервера,
 # по умолчанию, подлежат замене в local_settings.py:
 #
-AUTH_USER_EMAIL_UNIQUE = True
 EMAIL_HOST = 'localhost'
 EMAIL_PORT = 1025
 EMAIL_HOST_USER = 'user'
