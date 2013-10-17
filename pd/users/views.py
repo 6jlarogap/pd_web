@@ -73,7 +73,7 @@ class LogoutView(View):
 
 ulogout = LogoutView.as_view()
 
-class RegisterOldView(SupervisorRequiredMixin, View):
+class RegistrationOldView(SupervisorRequiredMixin, View):
     """
     Регистрация
     """
@@ -92,9 +92,9 @@ class RegisterOldView(SupervisorRequiredMixin, View):
     def get(self, request, *args, **kwargs):
         form = UserAddForm()
         request.session.set_test_cookie()
-        return render(request, 'register_old.html', {'form':form})
+        return render(request, 'registration_old.html', {'form':form})
 
-register_old = RegisterOldView.as_view()
+registration_old = RegistrationOldView.as_view()
 
 class LoruRegistryView(UGHRequiredMixin, View):
     """

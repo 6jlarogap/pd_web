@@ -7,13 +7,8 @@ urlpatterns = patterns('users.views',
     url(r'^login/', 'ulogin', name='ulogin'),
     url(r'^logout/', 'ulogout', name='ulogout'),
 
-    url(r'^register-old/$', 'register_old', name='register_old'),
+    url(r'^registration-old/$', 'registration_old', name='registration_old'),
     
-    # Внимание: все URLs, которые re.match(r'^/?register(?:/|$)')
-    # не требуют входа пользователя в систему,
-    # см. pd/middleware.py.LoginRequiredMiddleware.
-    # register_old требует не просто входа пользователя, а супервизора!
-    #
     url(r'^register/$', 'register', name='register'),
     url(r'^register/(?P<key>[A-Za-z0-9]+)/activation/$', 'register_activation',
         name='register_activation'),
