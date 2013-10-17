@@ -436,21 +436,9 @@ class RegisterView(CreateView):
                          'activation_key': obj.user_activation_key,
                         }
                      )
-        email_from = settings.DEFAULT_FROM_EMAIL
-        try:
-            email_from = Org.get_supervisor().email or email_from
-        except AttributeError:
-            pass
-        # Система должна быть настроена на отправку почты
-        # через действующий почтовый ящик на действующем сервере,
-        # см. параметры settings.EMAIL_ ...
-        # - если не удастся связаться с этим почтовым ящиком
-        #   для отправки письма, здесь будет какое-то smtplib.SMTPException
-        # - если недействительный получатель письма, то 
-        #   email_from получит об этом сообщение средствами электронной
-        #   почты, не относящимися к этому приложению.
-        #
-        send_mail(email_subject, email_text, email_from, (obj.user_email, ))
+        email_from = Org.get_supervisor_email()
+        email_to = (obj.user_email, )
+        send_mail(email_subject, email_text, email_from, email_to)
         return redirect(reverse('register_activation', args=[obj.user_activation_key]))
         
 register = RegisterView.as_view()
@@ -462,7 +450,8 @@ class RegisterActivation(DetailView):
     - пользователь заполнил форму регистрации, подал заявку,
       получает ответ: жди письмо, в нем ссылка;
     - пользователь получил письмо, надавил на ссылку,
-      получает ответ: заявка принята на рассмотрение
+      получает ответ: заявка принята на рассмотрение.
+      Администратору посылается об этом уведомление
     """
     template_name = 'simple_message.html'
     model = RegisterProfile
@@ -472,14 +461,31 @@ class RegisterActivation(DetailView):
 
     def get(self, request, *args, **kwargs):
         self.object = self.get_object()
+        message = _(u'Регистрация успешна, но еще не завершена!')
         if self.object.status == RegisterProfile.STATUS_TO_CONFIRM:
-            message = _(u'Регистрация успешна, но еще не завершена!')
             explain = _(
-                        u'Вам отправлено письмо, в котором имеется ссылка\n'
+                        u'Вам отправлено письмо, в котором имеется ссылка,\n'
                         u'переход по которой направит вашу заявку на рассмотрение\n'
                         u'администратора системы\n'
                        )
-            #u'Ваша заявка принята на рассмотрение администратора системы'
+        elif self.object.status == RegisterProfile.STATUS_CONFIRMED:
+            explain = _(
+                        u'Спасибо за подтверждение заявки на регистрацию!\n'
+                        u'Ваша заявка принята на рассмотрение администратора системы\n'
+                       )
+            email_subject = unicode(_(u"Заявка на регистрацию"))
+            email_text = render_to_string(
+                            'register_activation_email.txt',
+                            {
+                            'host': '%s://%s' % (request.is_secure() and 'https' or 'http',
+                                                 request.get_host()
+                                                ),
+                            'activation_key': obj.user_activation_key,
+                            }
+                        )
+            email_from = Org.get_supervisor_email()
+            email_to = (email_from, )
+            send_mail(email_subject, email_text, email_from, email_to )
         context = {}
         context['message'] = message
         context['html_message'] = u'<br /><big>%s</big>' % explain.replace('\n','<br />')

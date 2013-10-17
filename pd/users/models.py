@@ -163,6 +163,27 @@ class Org(BaseModel):
                 pass
         return result
 
+    @classmethod
+    def get_supervisor_email(cls):
+        """
+        Возвращает email-адрес Супервизора или seltings.DEFAULT_FROM_EMAIL
+        """
+        email = settings.DEFAULT_FROM_EMAIL
+        try:
+            email = cls.get_supervisor().email or email_from
+        except AttributeError:
+            pass
+        # Система должна быть настроена на отправку почты
+        # через действующий почтовый ящик на действующем сервере,
+        # см. параметры settings.EMAIL_ ...
+        # - если не удастся связаться с этим почтовым ящиком
+        #   для отправки письма, здесь будет какое-то smtplib.SMTPException
+        # - если недействительный получатель письма, то 
+        #   email_from получит об этом сообщение средствами электронной
+        #   почты, не относящимися к этому приложению.
+        #
+        return email
+
 class BankAccount(models.Model):
     """
     Банковские реквизиты
