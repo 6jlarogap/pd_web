@@ -470,7 +470,6 @@ class RegisterActivation(DetailView):
         message = _(u'Регистрация успешна, но еще не завершена!')
         if self.object.status == RegisterProfile.STATUS_TO_CONFIRM:
             if 'confirm' in request.GET:
-                # 2.
                 self.object.status = RegisterProfile.STATUS_CONFIRMED
                 self.object.save()
                 explain = _(
@@ -488,17 +487,28 @@ class RegisterActivation(DetailView):
                 email_to = (email_from, )
                 send_mail(email_subject, email_text, email_from, email_to )
             else:
-                # 1.
                 explain = _(
                             u'Вам отправлено письмо, в котором имеется ссылка,\n'
                             u'переход по которой направит вашу заявку на рассмотрение\n'
                             u'администратора системы\n'
                         )
         elif self.object.status == RegisterProfile.STATUS_CONFIRMED:
-            # 3.
             explain = _(
-                        u'Ваша заявка на регистрацию уже рассматривается администратором системы\n'
+                        u'Ваша заявка на регистрацию уже <b>рассматривается администратором системы</b>\n'
                        )
+        elif self.object.status == RegisterProfile.STATUS_DECLINED:
+            message = _(u'В регистрации отказано!')
+            explain = _(
+                        u'Ваша заявка на регистрацию была <b>отклонена</b>.\n'
+                        u'Подробности будут высланы или уже высланы на Ваш Email\n'
+                       )
+        elif self.object.status == RegisterProfile.STATUS_APPROVED:
+            message = _(u'Регистрация успешна!')
+            explain = _(
+                        u"Вы можете работать в <a href='%s'>системе</a>\n"
+                       ) % reverse('dashboard')
+        else:
+            raise Http404
         context = {}
         context['message'] = message
         context['html_message'] = u'<br /><big>%s</big>' % explain.replace('\n','<br />')

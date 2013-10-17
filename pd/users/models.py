@@ -230,8 +230,8 @@ class RegisterProfile(BaseModel):
     STATUS_CHOICES = (
         (STATUS_TO_CONFIRM, _(u"Ожидание подтверждения")),
         (STATUS_CONFIRMED, _(u"Заявка подтверждена")),
-        (STATUS_APPROVED, _(u"Заявка подтверждена")),
         (STATUS_DECLINED, _(u"В регистрации отказано")),
+        (STATUS_APPROVED, _(u"Заявка подтверждена")),
     )
 
     status = models.CharField(_(u"Статус заявки"), max_length=255, choices=STATUS_CHOICES, editable=False)
