@@ -16,6 +16,7 @@ urlpatterns = patterns('users.views',
     url(r'^registrants/$', 'registrants', name='registrants'),
     url(r'^registrant/(?P<pk>\d+)/delete/$', 'registrant_delete', name='registrant_delete'),
     url(r'^registrant/(?P<pk>\d+)/approve/$', 'registrant_approve', name='registrant_approve'),
+    url(r'^registrant/(?P<pk>\d+)/decline/$', 'registrant_decline', name='registrant_decline'),
         
     url(r'^profile/', 'profile', name='profile'),
     url(r'^loruregistry/', 'loru_registry', name='loru_registry'),

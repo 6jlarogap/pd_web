@@ -474,7 +474,7 @@ class RegisterActivation(DetailView):
                 self.object.save()
                 explain = _(
                             u'Спасибо за подтверждение заявки на регистрацию!\n'
-                            u'Ваша заявка принята на рассмотрение администратора системы\n'
+                            u'Ваша заявка принята на <b>рассмотрение администратора системы</b>\n'
                         )
                 email_subject = "%s %s" % (unicode(_(u"Заявка на регистрацию на")),
                                            unicode(_(u"ПохоронноеДело")),
@@ -548,7 +548,7 @@ registrants = RegistrantsView.as_view()
 class RegistrantDelete(SupervisorRequiredMixin, View):
     def get(self, request, *args, **kwargs):
         registrant = get_object_or_404(RegisterProfile, pk=self.kwargs['pk'])
-        # registrant.delete()
+        registrant.delete()
         return redirect('registrants')
 
 registrant_delete = RegistrantDelete.as_view()
@@ -560,3 +560,12 @@ class RegistrantApprove(SupervisorRequiredMixin, View):
         return redirect('registrants')
 
 registrant_approve = RegistrantApprove.as_view()
+
+class RegistrantDecline(SupervisorRequiredMixin, View):
+    def get(self, request, *args, **kwargs):
+        registrant = get_object_or_404(RegisterProfile, pk=self.kwargs['pk'])
+        registrant.status = RegisterProfile.STATUS_DECLINED
+        registrant.save()
+        return redirect('registrants')
+
+registrant_decline = RegistrantDecline.as_view()
