@@ -301,16 +301,15 @@ class RegisterForm(forms.ModelForm):
                   'user_last_name', 'user_first_name', 'user_middle_name', 'user_email',
                   'org_type', 'org_name', 'org_full_name', 'org_inn', 'org_director',
                   'org_phone', 'org_fax',
-                  # 'captcha',
                  )
 
-    captcha = ReCaptchaField(label='')
+    # captcha = ReCaptchaField(label='')
     password1 = forms.CharField(label=_(u"Пароль"), widget=forms.PasswordInput())
     password2 = forms.CharField(label=_(u"Пароль (повторите)"), widget=forms.PasswordInput())
 
     def __init__(self, request, *args, **kwargs):
         super(RegisterForm, self).__init__(*args, **kwargs)
-        self.fields['captcha'].error_messages['captcha_invalid'] = _(u'Неверно. Попробуйте еще раз.')
+        # self.fields['captcha'].error_messages['captcha_invalid'] = _(u'Неверно. Попробуйте еще раз.')
 
     def clean_user_name(self):
         user_name=self.cleaned_data['user_name'].strip()
@@ -319,7 +318,9 @@ class RegisterForm(forms.ModelForm):
                                           u"цифр, знаков подчеркивания или дефиса"))
         if User.objects.filter(username=user_name).exists():
             raise forms.ValidationError(_(u"Это имя уже используется в системе"))
-        if RegisterProfile.objects.filter(user_name=user_name).exists():
+        q = Q(user_name=user_name) & \
+            ~Q(status__in=(RegisterProfile.STATUS_DECLINED, RegisterProfile.STATUS_APPROVED, ))
+        if RegisterProfile.objects.filter(q).exists():
             raise forms.ValidationError(_(u"Это имя уже используется среди кандидатов на регистрацию"))
         return user_name
 
