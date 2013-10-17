@@ -253,6 +253,18 @@ class RegisterProfile(BaseModel):
 
     def __unicode__(self):
         return _(u"Заявка от организации %s, %s") % (self.org_name, self.user_email)
+    
+    def is_to_confirm(self):
+        return self.status == self.STATUS_TO_CONFIRM
+
+    def is_confirmed(self):
+        return self.status == self.STATUS_CONFIRMED
+
+    def is_approved(self):
+        return self.status == self.STATUS_APPROVED
+
+    def is_declined(self):
+        return self.status == self.STATUS_DECLINED
 
 class RegisterProfileScan(Files):
     """

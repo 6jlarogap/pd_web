@@ -113,6 +113,7 @@
                                 {% endif %}
                                 {% if user.profile.is_supervisor %}
                                     <li class="divider"></li>
+                                    <li><a href="{% url registrants %}">{% trans "Регистрация" %}</a></li>
                                     <li><a href="{% url registration_old %}">{% trans "Регистрация (старый вариант)" %}</a></li>
                                     <li><a href="{% url login_log %}">{% trans "Журнал входов в систему" %}</a></li>
                                 {% endif %}
@@ -121,6 +122,7 @@
                             </ul>
                         {% else %}
                             <a class="btn" href="{% url ulogin %}">{% trans "Войти" %}</a>
+                            <a class="btn" href="{% url register %}">{% trans "Зарегистрироваться (для ЮЛ)" %}</a>
                         {% endif %}
                     </div>
                     <div class="nav-collapse">

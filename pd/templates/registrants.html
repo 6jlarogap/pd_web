@@ -6,80 +6,94 @@
     <meta http-equiv="refresh" content="180" > 
 {% endblock %}
 
-<tr>
-    <th>
-        {% if sort == '-pk' %}
-            {% if sort == '-pk' %}<i class="icon icon-arrow-down"></i>{% endif %}
-            <a href="?{{ GET_PARAMS }}&sort=pk">{% trans "Дата" %}</a>
-        {% else %}
-            {% if sort == 'pk' %}<i class="icon icon-arrow-up"></i>{% endif %}
-            <a href="?{{ GET_PARAMS }}&sort=-pk">{% trans "Дата" %}</a>
-        {% endif %}
-    </th>
-    <th>
-        {% if sort == 'org' %}
-            {% if sort == 'org' %}<i class="icon icon-arrow-up"></i>{% endif %}
-            <a href="?{{ GET_PARAMS }}&sort=-org">{% trans "Организация" %}</a>
-        {% else %}
-            {% if sort == '-org' %}<i class="icon icon-arrow-down"></i>{% endif %}
-            <a href="?{{ GET_PARAMS }}&sort=org">{% trans "Организация" %}</a>
-        {% endif %}
-    </th>
-    <th>
-        {% if sort == 'fio' %}
-            {% if sort == 'fio' %}<i class="icon icon-arrow-up"></i>{% endif %}
-            <a href="?{{ GET_PARAMS }}&sort=-fio">{% trans "Контактное лицо" %}</a>
-        {% else %}
-            {% if sort == '-fio' %}<i class="icon icon-arrow-down"></i>{% endif %}
-            <a href="?{{ GET_PARAMS }}&sort=fio">{% trans "Контактное лицо" %}</a>
-        {% endif %}
-    </th>
-    <th>
-        {% if sort == 'director' %}
-            {% if sort == 'director' %}<i class="icon icon-arrow-up"></i>{% endif %}
-            <a href="?{{ GET_PARAMS }}&sort=-director">{% trans "Директор" %}</a>
-        {% else %}
-            {% if sort == '-director' %}<i class="icon icon-arrow-down"></i>{% endif %}
-            <a href="?{{ GET_PARAMS }}&sort=director">{% trans "Директор" %}</a>
-        {% endif %}
-    </th>
-    <th>
-        {% if sort == 'status' %}
-            {% if sort == 'status' %}<i class="icon icon-arrow-up"></i>{% endif %}
-            <a href="?{{ GET_PARAMS }}&sort=-status">{% trans "Статус" %}</a>
-        {% else %}
-            {% if sort == '-status' %}<i class="icon icon-arrow-down"></i>{% endif %}
-            <a href="?{{ GET_PARAMS }}&sort=status">{% trans "Статус" %}</a>
-        {% endif %}
-    </th>
-    <th>
-         {% trans "Примечания" %}
-    </th>
-</tr>
-{% for r in registrants %}
+{% block content %}
+    <h1>{% trans "Заявки на регистрацию" %}</h1>
+    <table class="table table-bordered">
     <tr>
-        <td>
-            {{ r.dt_created|date:"d.m.Y" }}
-        </td>
-        <td>
-            {{ r.org_name }}<br />
-            {% trans "ИНН" %}: {{ r.org_inn }}<br />
-            {% trans "Тел." %}: {{ r.org_phone }}<br />
-            {% if r.org_fax %}
-                {% trans "Факс" %}: {{ r.org_fax }}<br />
+        <th>
+            {% if sort == '-pk' %}
+                {% if sort == '-pk' %}<i class="icon icon-arrow-down"></i>{% endif %}
+                <a href="?{{ GET_PARAMS }}&sort=pk">{% trans "Дата" %}</a>
+            {% else %}
+                {% if sort == 'pk' %}<i class="icon icon-arrow-up"></i>{% endif %}
+                <a href="?{{ GET_PARAMS }}&sort=-pk">{% trans "Дата" %}</a>
             {% endif %}
-        </td>
-        <td>
-            {{ r.user_last_name }}
-            {{ r.user_first_name }}
-            {{ r.user_middle_name }}<br />
-            <a href="mailto:{{ r.user_email }}">{{ r.user_email }}</a>
-        </td>
-        <td>
-            {{ r.org_director }}
-        </td>
-        <td>
-            {{ r.get_status_display }}
-        </td>
+        </th>
+        <th>
+            {% if sort == 'org' %}
+                {% if sort == 'org' %}<i class="icon icon-arrow-up"></i>{% endif %}
+                <a href="?{{ GET_PARAMS }}&sort=-org">{% trans "Организация" %}</a>
+            {% else %}
+                {% if sort == '-org' %}<i class="icon icon-arrow-down"></i>{% endif %}
+                <a href="?{{ GET_PARAMS }}&sort=org">{% trans "Организация" %}</a>
+            {% endif %}
+        </th>
+        <th>
+            {% if sort == 'fio' %}
+                {% if sort == 'fio' %}<i class="icon icon-arrow-up"></i>{% endif %}
+                <a href="?{{ GET_PARAMS }}&sort=-fio">{% trans "Контактное лицо" %}</a>
+            {% else %}
+                {% if sort == '-fio' %}<i class="icon icon-arrow-down"></i>{% endif %}
+                <a href="?{{ GET_PARAMS }}&sort=fio">{% trans "Контактное лицо" %}</a>
+            {% endif %}
+        </th>
+        <th>
+            {% if sort == 'director' %}
+                {% if sort == 'director' %}<i class="icon icon-arrow-up"></i>{% endif %}
+                <a href="?{{ GET_PARAMS }}&sort=-director">{% trans "Директор" %}</a>
+            {% else %}
+                {% if sort == '-director' %}<i class="icon icon-arrow-down"></i>{% endif %}
+                <a href="?{{ GET_PARAMS }}&sort=director">{% trans "Директор" %}</a>
+            {% endif %}
+        </th>
+        <th>
+            {% if sort == 'status' %}
+                {% if sort == 'status' %}<i class="icon icon-arrow-up"></i>{% endif %}
+                <a href="?{{ GET_PARAMS }}&sort=-status">{% trans "Статус" %}</a>
+            {% else %}
+                {% if sort == '-status' %}<i class="icon icon-arrow-down"></i>{% endif %}
+                <a href="?{{ GET_PARAMS }}&sort=status">{% trans "Статус" %}</a>
+            {% endif %}
+        </th>
+        <th>
+            {% trans "Примечания" %}
+        </th>
     </tr>
-{% endfor %}
+    {% for r in registrants %}
+        <tr>
+            <td>
+                {{ r.dt_created|date:"d.m.Y" }}
+            </td>
+            <td>
+                {{ r.org_name }}<br />
+                {% trans "ИНН" %}: {{ r.org_inn }}<br />
+                {% trans "Тел." %}: {{ r.org_phone }}<br />
+                {% if r.org_fax %}
+                    {% trans "Факс" %}: {{ r.org_fax }}<br />
+                {% endif %}
+            </td>
+            <td>
+                {{ r.user_last_name }}
+                {{ r.user_first_name }}
+                {{ r.user_middle_name }}<br />
+                <a href="mailto:{{ r.user_email }}">{{ r.user_email }}</a>
+            </td>
+            <td>
+                {{ r.org_director }}
+            </td>
+            <td><b><big>
+                <span style="color:{% if r.is_confirmed %}blue{% elif r.is_approved %}green{% elif r.is_declined %}red{% else %}black{% endif %}">
+                {{ r.get_status_display }}
+                </span>
+                </big></b>
+                {% if r.is_confirmed %}
+                    <br /><a href="{% url registrant_approve r.pk %}">{% trans "одобрить" %}</a>
+                {% endif %}
+                 <br /><a href="{% url registrant_delete r.pk %}">{% trans "удалить" %}</a>
+            </td>
+            <td>
+            </td>
+        </tr>
+    {% endfor %}
+    </table>
+{% endblock %}

@@ -515,3 +515,48 @@ class RegisterActivation(DetailView):
         return self.render_to_response(context)
 
 register_activation = RegisterActivation.as_view()
+
+class RegistrantsView(SupervisorRequiredMixin, TemplateView):
+    template_name = 'registrants.html'
+
+    def get_context_data(self, **kwargs):
+        sort = self.request.GET.get('sort', '-pk')
+        SORT_FIELDS = {
+            'pk': 'pk',
+            '-pk': '-pk',
+            'org': 'org_name',
+            '-org': '-org_name',
+            'fio': ['user_last_name', 'user_first_name', 'user_middle_name'],
+            '-fio': ['-user_last_name', '-user_first_name', '-user_middle_name'],
+            'director': 'org_director',
+            '-director': '-org_director',
+            'status': 'status',
+            '-status': '-status',
+        }
+        s = SORT_FIELDS[sort] if sort in SORT_FIELDS else '-pk'
+        if not isinstance(s, list):
+            s = [s]
+
+        registrants = RegisterProfile.objects.all().order_by(*s)
+        return {
+            'registrants': registrants,
+            'sort': sort,
+        }
+
+registrants = RegistrantsView.as_view()
+
+class RegistrantDelete(SupervisorRequiredMixin, View):
+    def get(self, request, *args, **kwargs):
+        registrant = get_object_or_404(RegisterProfile, pk=self.kwargs['pk'])
+        # registrant.delete()
+        return redirect('registrants')
+
+registrant_delete = RegistrantDelete.as_view()
+
+class RegistrantApprove(SupervisorRequiredMixin, View):
+    def get(self, request, *args, **kwargs):
+        registrant = get_object_or_404(RegisterProfile, pk=self.kwargs['pk'])
+        # registrant.delete()
+        return redirect('registrants')
+
+registrant_approve = RegistrantApprove.as_view()

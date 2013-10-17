@@ -13,6 +13,10 @@ urlpatterns = patterns('users.views',
     url(r'^register/(?P<key>[A-Za-z0-9]+)/activation/$', 'register_activation',
         name='register_activation'),
         
+    url(r'^registrants/$', 'registrants', name='registrants'),
+    url(r'^registrant/(?P<pk>\d+)/delete/$', 'registrant_delete', name='registrant_delete'),
+    url(r'^registrant/(?P<pk>\d+)/approve/$', 'registrant_approve', name='registrant_approve'),
+        
     url(r'^profile/', 'profile', name='profile'),
     url(r'^loruregistry/', 'loru_registry', name='loru_registry'),
     url(r'^userprofile/', 'user_profile', name='user_profile'),
