@@ -556,7 +556,6 @@ registrant_delete = RegistrantDelete.as_view()
 class RegistrantApprove(SupervisorRequiredMixin, View):
     def get(self, request, *args, **kwargs):
         registrant = get_object_or_404(RegisterProfile, pk=self.kwargs['pk'])
-        # registrant.delete()
         return redirect('registrants')
 
 registrant_approve = RegistrantApprove.as_view()
