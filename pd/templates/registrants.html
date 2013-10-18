@@ -67,10 +67,7 @@
             <td>
                 {{ r.org_name }}<br />
                 {% trans "ИНН" %}: {{ r.org_inn }}<br />
-                {% trans "Тел." %}: {{ r.org_phone }}<br />
-                {% if r.org_fax %}
-                    {% trans "Факс" %}: {{ r.org_fax }}<br />
-                {% endif %}
+                {% trans "Тел." %}: {{ r.org_phones|linebreaksbr }}<br />
             </td>
             <td>
                 {{ r.org_director }}

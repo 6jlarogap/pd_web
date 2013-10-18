@@ -26,8 +26,7 @@ class Migration(SchemaMigration):
             ('org_full_name', self.gf('django.db.models.fields.CharField')(default='', max_length=255)),
             ('org_inn', self.gf('django.db.models.fields.CharField')(default='', max_length=255)),
             ('org_director', self.gf('django.db.models.fields.CharField')(default='', max_length=255)),
-            ('org_phone', self.gf('django.db.models.fields.CharField')(default='', max_length=30)),
-            ('org_fax', self.gf('django.db.models.fields.CharField')(max_length=30, null=True, blank=True)),
+            ('org_phones', self.gf('django.db.models.fields.TextField')()),
         ))
         db.send_create_signal('users', ['RegisterProfile'])
 
@@ -190,7 +189,7 @@ class Migration(SchemaMigration):
             'inn': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '255'}),
             'kpp': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '255', 'blank': 'True'}),
             'name': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '255'}),
-            'numbers_algo': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '255', 'blank': 'True'}),
+            'numbers_algo': ('django.db.models.fields.CharField', [], {'default': "'empty'", 'max_length': '255'}),
             'off_address': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['geo.Location']", 'null': 'True', 'blank': 'True'}),
             'ogrn': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '255', 'blank': 'True'}),
             'opf_order': ('django.db.models.fields.CharField', [], {'default': "'org'", 'max_length': '255'}),
@@ -227,11 +226,10 @@ class Migration(SchemaMigration):
             'dt_modified': ('django.db.models.fields.DateTimeField', [], {'auto_now': 'True', 'blank': 'True'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'org_director': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '255'}),
-            'org_fax': ('django.db.models.fields.CharField', [], {'max_length': '30', 'null': 'True', 'blank': 'True'}),
             'org_full_name': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '255'}),
             'org_inn': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '255'}),
             'org_name': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '255'}),
-            'org_phone': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '30'}),
+            'org_phones': ('django.db.models.fields.TextField', [], {}),
             'org_type': ('django.db.models.fields.CharField', [], {'default': "'ugh'", 'max_length': '255'}),
             'status': ('django.db.models.fields.CharField', [], {'max_length': '255'}),
             'user_activation_key': ('django.db.models.fields.CharField', [], {'max_length': '40'}),

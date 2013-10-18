@@ -170,7 +170,7 @@ class Org(BaseModel):
         """
         email = settings.DEFAULT_FROM_EMAIL
         try:
-            email = cls.get_supervisor().email or email_from
+            email = cls.get_supervisor().email or email
         except AttributeError:
             pass
         return email
@@ -239,8 +239,7 @@ class RegisterProfile(BaseModel):
     org_full_name = models.CharField(_(u"Полное название организации"), max_length=255, default='')
     org_inn = models.CharField(_(u"ИНН"), max_length=255, default='')
     org_director = models.CharField(_(u"ФИО директора"), max_length=255, default='')
-    org_phone = models.CharField(_(u"Телефон"), max_length=30, default='')
-    org_fax = models.CharField(_(u"Факс"), max_length=30, null=True, blank=True)
+    org_phones = models.TextField(_(u"Телефоны"))
 
     def __unicode__(self):
         return _(u"Заявка от организации %s, %s") % (self.org_name, self.user_email)

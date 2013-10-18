@@ -570,7 +570,7 @@ class RegistrantApprove(SupervisorRequiredMixin, View):
                     inn = registrant.org_inn,
                     director = registrant.org_director,
                     email = registrant.user_email,
-                    phones = registrant.org_phone,
+                    phones = registrant.org_phones,
         )
         profile=Profile.objects.create(
                     user_last_name=registrant.user_last_name,
