@@ -80,7 +80,7 @@ class Profile(models.Model):
         return ''
 
 class Org(BaseModel):
-    NUM_EMPTY = ''
+    NUM_EMPTY = 'empty'
     NUM_YEAR_UGH = 'year_ugh'
     NUM_YEAR_CEMETERY = 'year_cemetery'
     NUM_YEAR_MONTH_UGH = 'year_month_ugh'
@@ -124,7 +124,7 @@ class Org(BaseModel):
     phones = models.TextField(_(u"Телефоны"), blank=True, null=True)
     off_address = models.ForeignKey('geo.Location', verbose_name=_(u"Юр. адрес"), null=True, blank=True)
     numbers_algo = models.CharField(_(u"Заполнение номера захоронения"), max_length=255, choices=NUM_TYPES,
-                                    default=NUM_EMPTY, blank=True)
+                                    default=NUM_EMPTY)
     opf_order = models.CharField(_(u"Заказчик по умолчанию в заказе"), max_length=255,
                                     choices=list(OPF_CHOICES)[1:], default=OPF_ORG)
     opf_order_customer_mandatory = models.BooleanField(_(u"Данные заказчика при оформлении заказа обязательны"),
