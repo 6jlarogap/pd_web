@@ -14,7 +14,7 @@ from burials.forms import EMPTY
 from pd.forms import ChildrenJSONMixin
 from persons.forms import AlivePersonForm, PersonIDForm
 from persons.models import AlivePerson, PersonID, SafeDeleteMixin
-from users.models import Org
+from users.models import Org, Profile
 
 class ProductForm(forms.ModelForm):
     class Meta:
@@ -59,7 +59,10 @@ class OrderForm(ChildrenJSONMixin, SafeDeleteMixin, forms.ModelForm):
 
         self.fields['payment'].widget = forms.RadioSelect(choices=Order.PAYMENT_CHOICES)
 
-        self.fields['agent'].queryset = self.fields['agent'].queryset.select_related('user')
+        self.fields['applicant_organization'].queryset = Org.objects.all()
+        self.fields['applicant_organization'].inactive_queryset = \
+            Org.objects.filter(Q(profile=None) | ~Q(profile__user__is_active=True)).distinct()
+        self.fields['agent'].queryset = Profile.objects.filter(is_agent=True).select_related('user')
         self.fields['dover'].queryset = self.fields['dover'].queryset.select_related('agent', 'agent__user')
 
         # Отсутствие выбора будет в выпадающем списке не "---", а ""

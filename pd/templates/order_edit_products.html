@@ -58,11 +58,6 @@
     </form>
 
     <script type="text/javascript">
-        CEMETERY_AREAS = {{ form.cemetery_areas_json|default:"{}" }};
-        CEMETERY_TIMES = {{ form.cemetery_times_json|default:"{}" }};
-        AGENT_DOVER = {{ form.agent_dover_json|default:"{}" }};
-        LORU_AGENTS = {{ form.loru_agents_json|default:"{}" }};
-
         $(function () {
             $('#id_orderitem_set-INITIAL_FORMS').attr('value', 0);
             updateProductId();

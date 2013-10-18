@@ -154,7 +154,7 @@ class AddDoverView(LoginRequiredMixin, View):
             dover.save()
             return HttpResponse(json.dumps({'pk': dover.pk, 'label': u'%s' % dover}), mimetype='application/json')
         else:
-            err_str = _(u'Ошибка: %s')
+            err_str = _(u'Ошибка:\n%s')
             errors = '\n'.join([u'%s' % v[0] for k,v in f.errors.items() if k == '__all__'])
             if "\n" in errors:
                 err_str = _(u'Ошибки:\n%s')
@@ -167,13 +167,13 @@ class AddAgentView(LoginRequiredMixin, View):
         fa = AddAgentForm(data=request.POST, prefix='agent')
         fd = AddDoverForm(data=request.POST, prefix='agent_dover')
         try:
-            loru = Org.objects.get(pk=request.GET['loru'])
+            org = Org.objects.get(pk=request.GET['org'])
         except KeyError:
             return HttpResponse(_(u'Ошибка'), mimetype='text/plain')
         except Org.DoesNotExist:
             return HttpResponse(_(u'Нет такой организации'), mimetype='text/plain')
         if fa.is_valid() and fd.is_valid():
-            agent = fa.save(loru=loru)
+            agent = fa.save(org=org)
             dover = fd.save(commit=False)
             dover.target_org = request.user.profile.org
             dover.agent = agent
@@ -183,7 +183,7 @@ class AddAgentView(LoginRequiredMixin, View):
                 'dover_pk': dover.pk, 'dover_label': u'%s' % dover
             }), mimetype='application/json')
         else:
-            err_str = _(u'Ошибка: %s')
+            err_str = _(u'Ошибка:\n%s')
             errors = '\n'.join([u'%s' % v[0] for k,v in fa.errors.items()] + \
                                [u'%s' % v[0] for k,v in fd.errors.items()])
             if "\n" in errors:
@@ -194,7 +194,13 @@ add_agent = AddAgentView.as_view()
 
 class AddOrgView(LoginRequiredMixin, View):
     def post(self, request, *args, **kwargs):
-        f = AddOrgForm(request=self.request, data=request.POST, prefix='loru')
+        if kwargs.get('type'):
+            prefix = kwargs['type']
+            instance = Org(type=kwargs['type'])
+        else:
+            prefix='org'
+            instance = None
+        f = AddOrgForm(request=self.request, data=request.POST, prefix=prefix, instance=instance)
         if f.is_valid():
             new_org = f.save()
             f.put_log_data(msg=_(u'Данные сохранены'))
@@ -202,7 +208,7 @@ class AddOrgView(LoginRequiredMixin, View):
                 new_org.ugh_list.create(ugh=request.user.profile.org)
             return HttpResponse(json.dumps({'pk': new_org.pk, 'label': u'%s' % new_org}), mimetype='application/json')
         else:
-            err_str = _(u'Ошибка: %s')
+            err_str = _(u'Ошибка:\n%s')
             errors = '\n'.join([u'%s' % v[0] for k,v in f.errors.items()])
             if "\n" in errors:
                 err_str = _(u'Ошибки:\n%s')
@@ -217,8 +223,11 @@ class AddDocTypeView(LoginRequiredMixin, View):
             dt = f.save()
             return HttpResponse(json.dumps({'pk': dt.pk, 'label': u'%s' % dt}), mimetype='application/json')
         else:
-            errors = '\n'.join([u'%s: %s' % (k,v[0]) for k,v in f.errors.items()])
-            return HttpResponse(_(u'Ошибки: %s') % errors, mimetype='text/plain')
+            err_str = _(u'Ошибка:\n%s')
+            errors = '\n'.join([u'%s' % v[0] for k,v in f.errors.items()])
+            if "\n" in errors:
+                err_str = _(u'Ошибки:\n%s')
+            return HttpResponse(err_str % errors, mimetype='text/plain')
 
 add_doctype = AddDocTypeView.as_view()
 
@@ -260,32 +269,25 @@ class GetGravesNumberView(View):
         return View.dispatch(self, request, *args, **kwargs)
 
     def get(self, request, *args, **kwargs):
-        places = Place.objects.all()
         data = dict(
             cemetery__pk=request.GET.get('cemetery') or None,
             area__pk=request.GET.get('area') or None,
             row=request.GET.get('row') or '',
             place=request.GET.get('place_number') or '',
         )
+        desired_graves_count=request.GET.get('desired_graves_count') or '',
 
         if request.GET.get('place_number'):
             try:
-                p = places.get(**data)
+                p = Place.objects.get(**data)
             except Place.DoesNotExist:
                 pass
             except Place.MultipleObjectsReturned:
                 return HttpResponse('')
             else:
-                return HttpResponse('{"place_pk": %s, "places": %s}' % (p.pk, p.get_graves_count()), mimetype='application/json')
+                return HttpResponse('{"place_pk": %s, "graves_count": %s}' % (p.pk, p.get_graves_count()), mimetype='application/json')
 
-        try:
-            a = Area.objects.get(cemetery__pk=request.GET.get('cemetery') or None, pk=request.GET.get('area') or None)
-        except Area.DoesNotExist:
-            return HttpResponse('')
-        except Area.MultipleObjectsReturned:
-            return HttpResponse('')
-        else:
-            return HttpResponse('{"places": %s}' % a.places_count, mimetype='application/json')
+        return HttpResponse('{"graves_count": %s}' % desired_graves_count, mimetype='application/json')
 
 get_graves_number = GetGravesNumberView.as_view()
 

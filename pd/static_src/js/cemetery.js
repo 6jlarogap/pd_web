@@ -74,6 +74,20 @@ function setup_address_autocompletes() {
         }
     });
 
+    $('input[id$=zags]').attr('autocomplete', 'off').typeahead({
+        items: 100,
+        source: function (typeahead, query) {
+            if (query.length < 2) { return }
+            $.ajax({
+                url: ORG_URL + "?query=" + query + "&type=zags",
+                dataType: 'json',
+                success: function(data) {
+                    typeahead.process(data);
+                }
+            });
+        }
+    });
+
     $('#mainform #id_applicant_person, #mainform #id_responsible').attr('autocomplete', 'off').typeahead({
         items: 100,
         source: function (typeahead, query) {
@@ -311,7 +325,7 @@ function updateDover() {
 }
 
 function updateAgents() {
-    updateAnything($('#id_applicant_organization'), $('#id_agent'), LORU_AGENTS);
+    updateAnything($('#id_applicant_organization'), $('#id_agent'), ORG_AGENTS);
 }
 
 function updateTimes() {
@@ -332,7 +346,7 @@ $(function() {
     if (!window.CEMETERY_AREAS) { CEMETERY_AREAS = {} }
     if (!window.CEMETERY_TIMES) { CEMETERY_TIMES = {} }
     if (!window.AGENT_DOVER) { AGENT_DOVER = {} }
-    if (!window.LORU_AGENTS) { LORU_AGENTS = {} }
+    if (!window.ORG_AGENTS) { ORG_AGENTS = {} }
     if (!window.PLACE_TYPES) { PLACE_TYPES = {} }
     
     $('input[id$=fias_address]').live('keypress', function(e) {
@@ -413,6 +427,30 @@ $(function() {
         }
     });
     $('#id_plan_date').change();
+
+    old_zags_value = '';
+    
+    $('input[id$=zags]').change(function() {
+        var zags_inp =$(this);
+        var val = zags_inp.val();
+        if (val != '' && val != old_zags_value) {
+            // загадка, почему дважды приходит событие change,
+            // оба раза с одним неверным значением,
+            // хотя ниже оно затирается
+            old_zags_value = val;
+            $.ajax({
+                url: ORG_URL + "?query=" + val + "&type=zags&exact=1",
+                dataType: 'json',
+                success: function(data) {
+                    if (data.length == 0) {
+                        alert("Нет такого ЗАГСа");
+                        zags_inp.val('');
+                        old_zags_value = '';
+                    }
+                }
+            });
+        }
+    });
 
     $('input[name=opf]').change(function() {
         var resp_id = '#id_responsible-take_from_';
@@ -506,21 +544,21 @@ $(function() {
     $('#id_agent_director:visible').change();
 
     $('#add_agent').find('.btn-primary').click(function() {
-        var loru_pk = $('#id_applicant_organization').val();
-        if (!loru_pk) {
-            return alert('Выберите ЛОРУ');
+        var org_pk = $('#id_applicant_organization').val();
+        if (!org_pk) {
+            return alert('Выберите организацию');
         }
         var data = $('#add_agent form').serialize();
-        $.post('/burials/add_agent/?loru='+loru_pk, data, function(data){
+        $.post('/burials/add_agent/?org='+org_pk, data, function(data){
             if (data.pk) {
                 $('#id_agent').append('<option value="'+data.pk+'">'+data.label+'</option>');
                 $('#id_dover').append('<option value="'+data.dover_pk+'">'+data.dover_label+'</option>');
                 $('#id_agent').val(data.pk);
                 $('#id_dover').val(data.dover_pk);
-                if (!LORU_AGENTS[loru_pk]) {
-                    LORU_AGENTS[loru_pk] = [];
+                if (!ORG_AGENTS[org_pk]) {
+                    ORG_AGENTS[org_pk] = [];
                 }
-                LORU_AGENTS[loru_pk].push([data.pk, data.label])
+                ORG_AGENTS[org_pk].push([data.pk, data.label])
                 if (!AGENT_DOVER[data.pk]) {
                     AGENT_DOVER[data.pk] = [];
                 }
@@ -589,16 +627,18 @@ $(function() {
         })
     });
 
-    $('#add_org').find('.btn-primary').click(function() {
-        var data = $('#add_org form').serialize();
-        $.post('/burials/add_org/', data, function(data){
+    $('#add_zags').find('.btn-primary').click(function() {
+        var data = $('#add_zags form').serialize();
+        $.post('/burials/add_zags/', data, function(data){
             if (data.pk) {
-                var select = $('#id_org');
-                select.append('<option value="'+data.pk+'">'+data.label+'</option>');
-                select.val(data.pk);
-                $('#add_org').modal('hide');
-                $('#add_org form :input').val('');
-                select.change();
+                if (typeof ORGS_INACTIVE != "undefined") {
+                    ORGS_INACTIVE.push(data.pk.toString());
+                    ORGS_LIST.push(data.label);
+                    var select = $('#id_applicant_organization');
+                    select.append('<option value="'+data.pk+'" selected="selected">'+data.label+'</option>');
+                }
+                $('#add_zags').modal('hide');
+                $('#id_deadman-dc-zags').val(data.label);
             } else {
                 alert(data);
             }
@@ -607,16 +647,22 @@ $(function() {
 
     old_grave_value = $('#id_grave_number').val();
 
-    $('#cont_place #id_cemetery, #cont_place #id_area, #cont_place #id_row, #cont_place #id_place_number').change(function() {
+    $('#cont_place #id_cemetery, #cont_place #id_area, #cont_place #id_row, #cont_place #id_place_number, #id_desired_graves_count').change(function() {
         $('#id_responsible-take_from_0').removeAttr('checked').closest('li').hide();
 
-        var data = $('#id_cemetery, #id_area, #id_row, #id_place_number').serialize();
+        var data = $('#id_cemetery, #id_area, #id_row, #id_place_number, #id_desired_graves_count').serialize();
         if ($('#id_cemetery').val() &&  $('#id_area').val()) {
             if ($('#id_place_number').val()) {
                 // $('#place_info').load('/burials/get_place/?'+data)
                 $.get('/burials/get_place/?'+data, function (data) {
                     var place_html = data;
                     $('#place_info').html(place_html);
+                    if (place_html.indexOf("place_exists") >= 0) {
+                        $('#id_desired_graves_count').closest('p').hide();
+                    }
+                    else {
+                        $('#id_desired_graves_count').closest('p').show();
+                    }
                     if (place_html.indexOf("place_has_responsible") >= 0) {
                         var resp_id = '#id_responsible-take_from_';
                         $(resp_id+'0').closest('li').show();
@@ -629,10 +675,11 @@ $(function() {
                     }
                 });
             } else {
+                $('#id_desired_graves_count').closest('p').show();
                 $('#place_info').html('');
             }
             $.getJSON('/burials/get_graves_number/?'+data, function(data) {
-                var count = data.places || 1;
+                var count = data.graves_count || 1;
                 count = Math.max(parseInt(old_grave_value), count);
                 if (count != $('#id_grave_number').find('option').length) {
                     var options = '';
@@ -645,9 +692,10 @@ $(function() {
                 $('#id_responsible-place').val(data.place_pk || "");
             })
         } else {
+            $('#id_desired_graves_count').closest('p').show();
             $('#place_info').html('');
         }
-        
+
         var cemetery = $('#id_cemetery').val();
         if (cemetery && PLACE_TYPES[cemetery] != 'manual') {
             $('#id_place_number').siblings('.helptext').show();
@@ -685,6 +733,15 @@ $(function() {
     });
     $('#id_country, #id_region').change();
     $('#id_lat, #id_lng').closest('p').hide();
+
+    $('#id_org-name, #id_zags-name').change(function() {
+        var val = $(this).val();
+        var full_name = $(this).attr('id').indexOf('org') > -1 ? '#id_org-full_name' :
+                                                                 '#id_zags-full_name';
+        if (val && !$(full_name).val()) {
+            $(full_name).val(val);
+        }
+    });
 
     var ac_options = {
         bounds: USER_DEFAULT_BOUNDS,
@@ -834,7 +891,9 @@ function makeTimePicker(obj) {
 
 function updateControls() {
     $('span.move-left').remove();
-    makeDatePicker($('input[id*=date]'));
+    makeDatePicker($('input[id$=date]'));
+    makeDatePicker($('input[id$=date_from]'));
+    makeDatePicker($('input[id$=date_to]'));
     makeTimePicker($('input[id*=time]'));
     makeDatePicker($('.modal input[id$=begin]'));
     makeDatePicker($('.modal input[id$=end]'));
