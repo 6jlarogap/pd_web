@@ -210,10 +210,6 @@ EMAIL_USE_TLS = True
 EMAIL_USE_SSL = False
 DEFAULT_FROM_EMAIL = 'ADMIN-USER@gmail.com'
 
-# Длительность действия заявки на регистрацию
-#
-ACCOUNT_ACTIVATION_DAYS = 3
-
 # Для учета настроек, необязательных на сайтах разработчиков
 #
 PRODUCTION_SITE = False
