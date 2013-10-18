@@ -163,6 +163,9 @@ SOUTH_TESTS_MIGRATE = False
 
 INTERNAL_IPS = ['127.0.0.1',]
 
+ACCOUNT_ACTIVATION_DAYS = 7
+
+
 # LOGIN_URL, все REGISTER_URLS_REGEX, и некоторые другие -- в списке url,
 # к которым возможен доступ без регистрации, см. pd/middleware.py
 #
