@@ -198,8 +198,7 @@ RECAPTCHA_PUBLIC_KEY = 'a-string-of-hex-and-digits'
 RECAPTCHA_PRIVATE_KEY = 'another-string-of-hex-and-digits'
 RECAPTCHA_USE_SSL = False
 
-# для отправки кода активации и прочей почты от сервера,
-# по умолчанию, подлежат замене в local_settings.py.
+# Для отправки кода активации и прочей почты,
 # Здесь приведены параметры, отработанные для отправки
 # через smtp-сервер @gmail.com
 #
