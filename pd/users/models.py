@@ -231,7 +231,7 @@ class RegisterProfile(BaseModel):
         (STATUS_TO_CONFIRM, _(u"Ожидание подтверждения")),
         (STATUS_CONFIRMED, _(u"Заявка подтверждена")),
         (STATUS_DECLINED, _(u"В регистрации отказано")),
-        (STATUS_APPROVED, _(u"Заявка подтверждена")),
+        (STATUS_APPROVED, _(u"Пользователь в системе")),
     )
 
     status = models.CharField(_(u"Статус заявки"), max_length=255, choices=STATUS_CHOICES, editable=False)
@@ -266,6 +266,9 @@ class RegisterProfile(BaseModel):
     def is_declined(self):
         return self.status == self.STATUS_DECLINED
 
+    def orgs_same_inn(self):
+        return Org.objects.filter(inn=self.org_inn)
+        
 class RegisterProfileScan(Files):
     """
     Файлы-сканы, прикрепляемые к завкам на регистрацию

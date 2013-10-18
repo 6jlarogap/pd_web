@@ -29,21 +29,21 @@
             {% endif %}
         </th>
         <th>
-            {% if sort == 'fio' %}
-                {% if sort == 'fio' %}<i class="icon icon-arrow-up"></i>{% endif %}
-                <a href="?{{ GET_PARAMS }}&sort=-fio">{% trans "Контактное лицо" %}</a>
-            {% else %}
-                {% if sort == '-fio' %}<i class="icon icon-arrow-down"></i>{% endif %}
-                <a href="?{{ GET_PARAMS }}&sort=fio">{% trans "Контактное лицо" %}</a>
-            {% endif %}
-        </th>
-        <th>
             {% if sort == 'director' %}
                 {% if sort == 'director' %}<i class="icon icon-arrow-up"></i>{% endif %}
                 <a href="?{{ GET_PARAMS }}&sort=-director">{% trans "Директор" %}</a>
             {% else %}
                 {% if sort == '-director' %}<i class="icon icon-arrow-down"></i>{% endif %}
                 <a href="?{{ GET_PARAMS }}&sort=director">{% trans "Директор" %}</a>
+            {% endif %}
+        </th>
+        <th>
+            {% if sort == 'fio' %}
+                {% if sort == 'fio' %}<i class="icon icon-arrow-up"></i>{% endif %}
+                <a href="?{{ GET_PARAMS }}&sort=-fio">{% trans "Контактное лицо" %}</a>
+            {% else %}
+                {% if sort == '-fio' %}<i class="icon icon-arrow-down"></i>{% endif %}
+                <a href="?{{ GET_PARAMS }}&sort=fio">{% trans "Контактное лицо" %}</a>
             {% endif %}
         </th>
         <th>
@@ -73,13 +73,14 @@
                 {% endif %}
             </td>
             <td>
+                {{ r.org_director }}
+            </td>
+            <td>
                 {{ r.user_last_name }}
                 {{ r.user_first_name }}
                 {{ r.user_middle_name }}<br />
-                <a href="mailto:{{ r.user_email }}">{{ r.user_email }}</a>
-            </td>
-            <td>
-                {{ r.org_director }}
+                <a href="mailto:{{ r.user_email }}">{{ r.user_email }}</a><br />
+                {% trans "Имя входа в систему" %}: {{ r.user_name }}
             </td>
             <td><b><big>
                 <span style="color:{% if r.is_confirmed %}blue{% elif r.is_approved %}green{% elif r.is_declined %}red{% else %}black{% endif %}">
@@ -101,10 +102,18 @@
                     {% if r.is_confirmed or r.is_to_confirm %}
                         onclick="return confirm('{% trans "Вы уверены?" %}');"
                     {% endif %}>
-                    {% trans "удалить" %}
+                    {% trans "удалить заявку" %}
                  </a>
             </td>
             <td>
+                {% if not r.is_approved and r.orgs_same_inn %}
+                    <span style="color:red">
+                        {% trans "Совпадение ИНН" %}:<br />
+                    </span>
+                    {% for o in r.orgs_same_inn %}
+                        {{ o }}<br />
+                    {% endfor %}
+                {% endif %}
             </td>
         </tr>
     {% endfor %}

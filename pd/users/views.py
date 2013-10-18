@@ -431,7 +431,7 @@ class RegisterView(CreateView):
                         'register_activation_email.txt',
                         {
                          'host': '%s://%s' % (self.request.is_secure() and 'https' or 'http',
-                                              self.request.get_host()
+                                              self.request.get_host(),
                                              ),
                          'activation_key': obj.user_activation_key,
                         }
@@ -556,6 +556,41 @@ registrant_delete = RegistrantDelete.as_view()
 class RegistrantApprove(SupervisorRequiredMixin, View):
     def get(self, request, *args, **kwargs):
         registrant = get_object_or_404(RegisterProfile, pk=self.kwargs['pk'])
+        registrant.status = RegisterProfile.STATUS_APPROVED
+        registrant.save()
+        user = User.objects.create(
+                    username=registrant.user_name,
+                    password=registrant.user_password,
+                    email=registrant.user_email,
+        )
+        org=Org.objects.create(
+                    type=registrant.org_type,
+                    name=registrant.org_name,
+                    full_name=registrant.org_full_name,
+                    inn = registrant.org_inn,
+                    director = registrant.org_director,
+                    email = registrant.user_email,
+                    phones = registrant.org_phone,
+        )
+        profile=Profile.objects.create(
+                    user_last_name=registrant.user_last_name,
+                    user_first_name=registrant.user_first_name,
+                    user_middle_name=registrant.user_middle_name,
+                    user=user,
+                    org=org,
+        )
+        email_subject = unicode(_(u"Заявка на регистрацию одобрена"))
+        email_text = render_to_string(
+                        'register_approved_email.txt',
+                        { 'host': '%s://%s' % (self.request.is_secure() and 'https' or 'http',
+                                               self.request.get_host(),
+                                              ),
+                          'obj': registrant,
+                        }
+                    )
+        email_from = Org.get_supervisor_email()
+        email_to = (registrant.user_email, )
+        send_mail(email_subject, email_text, email_from, email_to )
         return redirect('registrants')
 
 registrant_approve = RegistrantApprove.as_view()
