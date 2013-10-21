@@ -425,7 +425,7 @@ class RegisterView(CreateView):
         obj.status = RegisterProfile.STATUS_TO_CONFIRM
         obj.save()
         email_subject = "%s %s" % (unicode(_(u"Подтверждение заявки на регистрацию на")),
-                                   unicode(_(u"ПохоронноеДело")),
+                                   unicode(_(u"Похоронное Дело")),
                                   )
         email_text = render_to_string(
                         'register_activation_email.txt',
@@ -436,7 +436,7 @@ class RegisterView(CreateView):
                          'activation_key': obj.user_activation_key,
                         }
                      )
-        email_from = Org.get_supervisor_email()
+        email_from = settings.DEFAULT_FROM_EMAIL
         email_to = (obj.user_email, )
         send_mail(email_subject, email_text, email_from, email_to)
         return redirect(reverse('register_activation', args=[obj.user_activation_key]))
@@ -483,8 +483,8 @@ class RegisterActivation(DetailView):
                                 'register_notify_supervisor_email.txt',
                                 { 'obj': self.object, }
                             )
-                email_from = Org.get_supervisor_email()
-                email_to = (email_from, )
+                email_from = settings.DEFAULT_FROM_EMAIL
+                email_to = (Org.get_supervisor_email(), )
                 send_mail(email_subject, email_text, email_from, email_to )
             else:
                 explain = _(
@@ -588,7 +588,7 @@ class RegistrantApprove(SupervisorRequiredMixin, View):
                           'obj': registrant,
                         }
                     )
-        email_from = Org.get_supervisor_email()
+        email_from = settings.DEFAULT_FROM_EMAIL
         email_to = (registrant.user_email, )
         send_mail(email_subject, email_text, email_from, email_to )
         return redirect('registrants')
