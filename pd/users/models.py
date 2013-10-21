@@ -6,7 +6,7 @@ from django.utils.translation import ugettext_lazy as _
 
 from geo.models import DFiasAddrobj
 from logs.models import Log
-from pd.models import BaseModel
+from pd.models import BaseModel, Files
 from pd.utils import DigitsValidator, LengthValidator, NotEmptyValidator
 
 
@@ -150,6 +150,31 @@ class Org(BaseModel):
     def get_loru_list(self):
         return [ul.loru for ul in self.loru_list.all()]
 
+    @classmethod
+    def get_supervisor(cls):
+        """
+        Возвращает организацию-Супервизора или None
+        """
+        result = None
+        if hasattr(settings, 'SUPERVISOR_ORG_INN'):
+            try:
+                result = cls.objects.filter(inn=settings.SUPERVISOR_ORG_INN)[0]
+            except IndexError:
+                pass
+        return result
+
+    @classmethod
+    def get_supervisor_email(cls):
+        """
+        Возвращает email-адрес Супервизора или seltings.DEFAULT_FROM_EMAIL
+        """
+        email = settings.DEFAULT_FROM_EMAIL
+        try:
+            email = cls.get_supervisor().email or email
+        except AttributeError:
+            pass
+        return email
+
 class BankAccount(models.Model):
     """
     Банковские реквизиты
@@ -180,5 +205,62 @@ class Dover(models.Model):
     def __unicode__(self):
         return u'%s (%s - %s)' % (self.number, self.begin.strftime('%d.%m.%Y'), self.end.strftime('%d.%m.%Y'))
 
+class RegisterProfile(BaseModel):
 
+    REG_ORG_UGH = Org.PROFILE_UGH
+    REG_ORG_LORU = Org.PROFILE_LORU
+    REG_ORG_TYPES = (
+        (REG_ORG_UGH, _(u"Учет захоронений")),
+        (REG_ORG_LORU, _(u"Учет заказов")),
+    )
+    
+    STATUS_TO_CONFIRM = 'to_confirm'
+    STATUS_CONFIRMED = 'confirmed'
+    STATUS_APPROVED = 'approved'
+    STATUS_DECLINED = 'declined'
+    STATUS_CHOICES = (
+        (STATUS_TO_CONFIRM, _(u"Ожидание подтверждения")),
+        (STATUS_CONFIRMED, _(u"Заявка подтверждена")),
+        (STATUS_DECLINED, _(u"В регистрации отказано")),
+        (STATUS_APPROVED, _(u"Пользователь в системе")),
+    )
 
+    status = models.CharField(_(u"Статус заявки"), max_length=255, choices=STATUS_CHOICES, editable=False)
+    user_name = models.CharField(_(u"Имя для входа в систему (login)"), max_length=30)
+    user_last_name = models.CharField(_(u"Фамилия"), max_length=255)
+    user_first_name = models.CharField(_(u"Имя"), max_length=255)
+    user_middle_name = models.CharField(_(u"Отчество (необязательно)"), max_length=255, null=True, blank=True)
+    user_email = models.EmailField(_(u"Email"))
+    # Сразу hash (django.contrib.auth.hashers.make_password(raw_password)):
+    user_password = models.CharField(_(u"Пароль"), max_length=255, editable=False, default='')
+    user_activation_key = models.CharField(_(u'Ключ активации'), max_length=40, editable=False)
+    org_type = models.CharField(_(u"Тип организации"), max_length=255, choices=REG_ORG_TYPES, default=REG_ORG_UGH)
+    org_name = models.CharField(_(u"Краткое название организации"), max_length=255, default='')
+    org_full_name = models.CharField(_(u"Полное название организации"), max_length=255, default='')
+    org_inn = models.CharField(_(u"ИНН"), max_length=255, default='')
+    org_director = models.CharField(_(u"ФИО директора"), max_length=255, default='')
+    org_phones = models.TextField(_(u"Телефоны"))
+
+    def __unicode__(self):
+        return _(u"Заявка от организации %s, %s") % (self.org_name, self.user_email)
+    
+    def is_to_confirm(self):
+        return self.status == self.STATUS_TO_CONFIRM
+
+    def is_confirmed(self):
+        return self.status == self.STATUS_CONFIRMED
+
+    def is_approved(self):
+        return self.status == self.STATUS_APPROVED
+
+    def is_declined(self):
+        return self.status == self.STATUS_DECLINED
+
+    def orgs_same_inn(self):
+        return Org.objects.filter(inn=self.org_inn)
+        
+class RegisterProfileScan(Files):
+    """
+    Файлы-сканы, прикрепляемые к завкам на регистрацию
+    """
+    registerprofile = models.OneToOneField(RegisterProfile)

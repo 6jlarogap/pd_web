@@ -1,18 +1,23 @@
 # coding=utf-8
+import re
+
 from django import forms
 from django.contrib.auth.models import User
 from django.forms.models import inlineformset_factory, BaseInlineFormSet
 from django.utils.translation import ugettext_lazy as _
 from django.db.models.query_utils import Q
+
+from captcha.fields import ReCaptchaField
+
 from geo.forms import LocationForm
 # from geo.models import DFiasAddrobj
 from pd.forms import ChildrenJSONMixin, LoggingFormMixin
 from burials.models import Cemetery, PlaceSize
 
-from users.models import Profile, ProfileLORU, Org, BankAccount
+from users.models import Profile, ProfileLORU, Org, BankAccount, RegisterProfile
 
 
-class RegisterForm(forms.ModelForm):
+class UserAddForm(forms.ModelForm):
     class Meta:
         model = User
         fields = ['username', 'email']
@@ -286,3 +291,48 @@ class OrgLogForm(forms.Form):
 
 # Никакой разницы в этих формах пока нет.
 LoginLogForm = OrgLogForm
+
+class RegisterForm(forms.ModelForm):
+
+    class Meta:
+        model = RegisterProfile
+        # Задаем порядок полей:
+        fields = ('user_name', 'password1', 'password2',
+                  'user_last_name', 'user_first_name', 'user_middle_name', 'user_email',
+                  'org_type', 'org_name', 'org_full_name', 'org_inn', 'org_director',
+                  'org_phones',
+                  'captcha',
+                 )
+
+    captcha = ReCaptchaField(label='')
+    password1 = forms.CharField(label=_(u"Пароль"), widget=forms.PasswordInput())
+    password2 = forms.CharField(label=_(u"Пароль (повторите)"), widget=forms.PasswordInput())
+
+    def __init__(self, request, *args, **kwargs):
+        super(RegisterForm, self).__init__(*args, **kwargs)
+        self.fields['captcha'].error_messages['captcha_invalid'] = _(u'Неверно. Попробуйте еще раз.')
+
+    def clean_user_name(self):
+        user_name=self.cleaned_data['user_name'].strip()
+        if not re.match(r'^[A-Za-z0-9_-]+$', user_name):
+            raise forms.ValidationError(_(u"Имя может состоять только из латинских букв, "
+                                          u"цифр, знаков подчеркивания или дефиса"))
+        if User.objects.filter(username=user_name).exists():
+            raise forms.ValidationError(_(u"Это имя уже используется в системе"))
+        q = Q(user_name=user_name) & \
+            ~Q(status__in=(RegisterProfile.STATUS_DECLINED, RegisterProfile.STATUS_APPROVED, ))
+        if RegisterProfile.objects.filter(q).exists():
+            raise forms.ValidationError(_(u"Это имя уже используется среди кандидатов на регистрацию"))
+        return user_name
+
+    def clean(self):
+        cleaned_data = super(RegisterForm, self).clean()
+        password1 = self.cleaned_data.get('password1')
+        password2 = self.cleaned_data.get('password2')
+        if password1 and password2 and password1 != password2:
+            raise forms.ValidationError(_(u"Пароли не совпадают"))
+        for field in cleaned_data:
+            if field not in ('password1', 'password2') and \
+              isinstance(cleaned_data[field], basestring):
+                cleaned_data[field] = cleaned_data[field].strip()
+        return cleaned_data
