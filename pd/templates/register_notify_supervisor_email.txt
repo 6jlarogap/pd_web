@@ -1,0 +1,10 @@
+{% load i18n %}{% autoescape off %}
+
+{% trans "Получено подтверждение заявки на регистрацию на" %} {% trans "Похоронное Дело" %}
+
+{% trans "от" %}
+
+{{ obj.org_name }}
+{{ obj.user_email }}
+
+{% endautoescape %}

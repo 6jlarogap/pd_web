@@ -122,6 +122,7 @@ INSTALLED_APPS = (
     'pytils',
     'debug_toolbar',
     'raven.contrib.django',
+    'captcha',
 
     'geo',
     'burials',
@@ -164,7 +165,12 @@ INTERNAL_IPS = ['127.0.0.1',]
 
 ACCOUNT_ACTIVATION_DAYS = 7
 
+# LOGIN_URL, все REGISTER_URLS_REGEX, и некоторые другие -- в списке url,
+# к которым возможен доступ без регистрации, см. pd/middleware.py
+#
 LOGIN_URL = "/login/"
+# Это регулярное выражение!!! :
+REGISTER_URLS_REGEX = r'^/?register(?:/|$)'
 LOGOUT_URL = "/logout/"
 LOGIN_REDIRECT_URL = "/"
 
@@ -187,7 +193,27 @@ DEBUG_TOOLBAR_CONFIG = {'INTERCEPT_REDIRECTS': False}
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 SESSION_SAVE_EVERY_REQUEST = True
 
+# Google reCaptcha keys, поучаемые из http://www.google.com/recaptcha,
+# подлежат замене в local_settings.py:
+#
+RECAPTCHA_PUBLIC_KEY = 'a-string-of-hex-and-digits'
+RECAPTCHA_PRIVATE_KEY = 'another-string-of-hex-and-digits'
+RECAPTCHA_USE_SSL = False
+
+# Для отправки кода активации и прочей почты,
+# Здесь приведены параметры, отработанные для отправки
+# через smtp-сервер @gmail.com
+#
+EMAIL_HOST = 'smtp.googlemail.com'
+EMAIL_PORT = 587
+EMAIL_HOST_USER = 'EMAIL-HOST-USER@gmail.com'
+EMAIL_HOST_PASSWORD = 'SECRET'
+EMAIL_USE_TLS = True
+EMAIL_USE_SSL = False
+DEFAULT_FROM_EMAIL = 'EMAIL-HOST-USER@gmail.com'
+
 # Для учета настроек, необязательных на сайтах разработчиков
+#
 PRODUCTION_SITE = False
 
 # Необязательные параметры
@@ -196,12 +222,6 @@ PRODUCTION_SITE = False
 # по умолчанию - не давать
 #
 # ADMIN_ENABLED = False
-#
-# URL-пути, которые не требуют регистрации,
-# строка из путей с пробельными разделителями,
-# по умолчанию: нет таких путей.
-#
-# LOGIN_EXEMPT_URLS = "/here /go/to/there"
 #
 # Имеет право регистировать нового пользователя
 # только таковой с организации с этим ИНН
@@ -216,5 +236,3 @@ except ImportError:
 import sys
 if len(sys.argv) > 1 and sys.argv[1] == 'test':
     from test_settings import *
-
-
