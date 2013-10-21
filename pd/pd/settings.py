@@ -206,11 +206,11 @@ RECAPTCHA_USE_SSL = False
 #
 EMAIL_HOST = 'smtp.googlemail.com'
 EMAIL_PORT = 587
-EMAIL_HOST_USER = 'ADMIN-USER@gmail.com'
+EMAIL_HOST_USER = 'EMAIL-HOST-USER@gmail.com'
 EMAIL_HOST_PASSWORD = 'SECRET'
 EMAIL_USE_TLS = True
 EMAIL_USE_SSL = False
-DEFAULT_FROM_EMAIL = 'ADMIN-USER@gmail.com'
+DEFAULT_FROM_EMAIL = 'EMAIL-HOST-USER@gmail.com'
 
 # Для учета настроек, необязательных на сайтах разработчиков
 #
