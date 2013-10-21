@@ -229,7 +229,7 @@ class RegisterProfile(BaseModel):
     user_name = models.CharField(_(u"Имя для входа в систему (login)"), max_length=30)
     user_last_name = models.CharField(_(u"Фамилия"), max_length=255)
     user_first_name = models.CharField(_(u"Имя"), max_length=255)
-    user_middle_name = models.CharField(_(u"Отчество"), max_length=255, null=True, blank=True)
+    user_middle_name = models.CharField(_(u"Отчество (необязательно)"), max_length=255, null=True, blank=True)
     user_email = models.EmailField(_(u"Email"))
     # Сразу hash (django.contrib.auth.hashers.make_password(raw_password)):
     user_password = models.CharField(_(u"Пароль"), max_length=255, editable=False, default='')

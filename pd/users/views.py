@@ -500,7 +500,7 @@ class RegisterActivation(DetailView):
             message = _(u'В регистрации отказано!')
             explain = _(
                         u'Ваша заявка на регистрацию была <b>отклонена</b>.\n'
-                        u'Подробности будут высланы или уже высланы на Ваш Email\n'
+                        u'Обратитесь в поддержку\n'
                        )
         elif self.object.status == RegisterProfile.STATUS_APPROVED:
             message = _(u'Регистрация успешна!')
@@ -576,6 +576,7 @@ class RegistrantApprove(SupervisorRequiredMixin, View):
                     user_last_name=registrant.user_last_name,
                     user_first_name=registrant.user_first_name,
                     user_middle_name=registrant.user_middle_name,
+                    is_agent=True,
                     user=user,
                     org=org,
         )
