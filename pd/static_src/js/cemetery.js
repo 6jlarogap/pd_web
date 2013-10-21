@@ -762,10 +762,20 @@ $(function() {
     $('#id_country, #id_region').change();
     $('#id_lat, #id_lng').closest('p').hide();
 
-    $('#id_org-name, #id_zags-name').change(function() {
+    $('#id_org-name, #id_zags-name, #id_org_name').change(function() {
         var val = $(this).val();
-        var full_name = $(this).attr('id').indexOf('org') > -1 ? '#id_org-full_name' :
-                                                                 '#id_zags-full_name';
+        var full_name = "";
+        switch ($(this).attr('id')) {
+            case 'id_org-name':
+                full_name = '#id_org-full_name';
+                break;
+            case 'id_zags-name':
+                full_name = '#id_zags-full_name';
+                break;
+            case 'id_org_name':
+                full_name = '#id_org_full_name';
+                break;
+        }
         if (val && !$(full_name).val()) {
             $(full_name).val(val);
         }
