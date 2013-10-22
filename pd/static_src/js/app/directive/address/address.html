@@ -1,0 +1,76 @@
+<div class="address_block">
+	<div ng-hide="isAddressEditorOpen">
+		<h2>Адрес</h2>
+		<div ng-include src="'/static/js/app/directive/address/static_block.html'"></div>
+    	<button class="btn" ng-click="open()">Редактировать</button>
+	</div>
+
+	<div ng-show="isAddressEditorOpen">
+	      <h2>Редактирование адреса</h2>
+	  
+  					<form name="address_editor">
+						<div class="row-fluid">
+				    		<google-search class="span12" location="location" ></google-search>
+						</div>
+						<hr/>
+						<div class="row-fluid">
+					    		<input id="id_address-post_index" class="" type="text" maxlength="255"
+					    		ng-model="item.post_index" placeholder="Индекс" />
+						</div>
+					    <table class="row-fluid">
+					    <tr>
+					    	<td>
+								<input type="text"  class="span12 country" ng-model="item.country" placeholder="Страна" 
+									ng-required="item.street.length || item.city.length || item.region.length"/>
+					    	</td>
+					    	<td>
+								<input type="text" class="span12 region" ng-model="item.region" placeholder="Регион" 
+									ng-required="item.street.length || item.city.length"/>
+					    	</td>
+					    	<td>
+								<input type="text" ng-model="item.city" class="span12 city" placeholder="Город" 
+								ng-required="item.street.length"/>
+					    	</td>
+					    	<td>
+								<input type="text" ng-model="item.street" class="span12 street" placeholder="Улица"/>
+					    	</td>
+						</tr>
+						</table>
+					    <table class="row-fluid">
+					    <tr>
+					    	<td>
+						    	<input  placeholder="Дом" id="id_address-house" type="text" ng-model="item.house" class="span12" maxlength="255"/>
+						    </td>
+						    <td>
+						    	<input placeholder="Корпус" id="id_address-block" type="text" ng-model="item.block" class="span12" maxlength="255"/>
+						    </td>
+						    <td>
+						    	<input placeholder="Строение" id="id_address-building" type="text" ng-model="item.building" class="span12" maxlength="255"/>
+						    </td>
+						    <td>
+						    	<input placeholder="Квартира" id="id_address-flat" type="text" ng-model="item.flat" class="span12" maxlength="255"/>
+					    	</td>
+						</tr>
+						</table>
+	
+				<hr/>
+				<div class="row-fluid">
+					<div class="span12">
+				    	<input placeholder="Дополнительная информация" class="span12" type="text" ng-model="item.info" id="id_address-info" />
+					</div>
+				</div>
+				</form>
+	  
+	  <div class="row-fluid">
+	    	<button class="btn btn-primary" ng-click="save()" ng-disabled="address_editor.$invalid">Сохранить</button>
+	        <button class="btn cancel" ng-click="close()">Закрыть</button>
+	  </div>
+	</div>
+	
+
+</div>
+
+
+
+
+

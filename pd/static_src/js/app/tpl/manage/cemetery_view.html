@@ -1,0 +1,76 @@
+<alert ng-repeat="alert in alerts" type="alert.type" close="closeAlert($index)">{{alert.msg}}</alert>
+
+<ul class="breadcrumb">
+  	<li><h3 class="brand" href="#">{{cemetery.name}}</h3></li>
+    <li><span class="divider">|</span></li>
+    <li><a href="/manage/cemetery/">Назад к списку</a></li>
+    <li><span class="divider">|</span></li>
+    <li><a href="#" ng-click="openEditForm()">Редактировать</a></li>
+    <li><span class="divider">|</span></li>
+    <li><a href="#" ng-click="openAddModal()">Добавить участок</a></li>
+</ul>
+        
+<div class="row-fluid">
+	<div class="span7">
+		<dl class="dl-horizontal">
+		  <dt>Время работы</dt>
+		  <dd>{{cemetery.work_time}}</dd>
+		  <dt>Расстановка номеров мест</dt>
+		  <dd>{{cemetery.places_algo| list: PLACE_TYPES}}</dd>
+		  <dt>Время для захоронения</dt>
+		  <dd>{{cemetery.time_slots}}</dd>
+		</dl>
+		<address address_class="address_class" address="cemetery.address" save_action="saveEditForm"></address>
+	</div>
+    <yandex-map id="yandex-map" class="span5"></yandex-map>
+
+    <!--ymap-marker coordinates="marker" icon="$index+1" balloon="'qqq'" ng-repeat="marker in markers"></ymap-marker-->
+</div>
+
+<h3>Участки</h3>
+<div class="gridStyle full-size-grid" ng-grid="gridOptions"></div>
+
+<hr />
+<ul class="breadcrumb">
+  	<li><h3 class="brand" href="#">{{cemetery.name}}</h3></li>
+    <li><span class="divider">|</span></li>
+    <li><a href="/manage/cemetery/">Назад к списку</a></li>
+    <li><span class="divider">|</span></li>
+    <li><a href="#" ng-click="openEditForm()">Редактировать</a></li>
+    <li><span class="divider">|</span></li>
+    <li><a href="#" ng-click="openAddModal()">Добавить участок</a></li>
+</ul>
+      
+
+
+<!-- POPUP form -->
+<div modal="isEditorOpen" close="closeEditForm()">
+    <div class="modal-header">
+        <h3>Редактировать кладбище "{{cemetery.name}}"</h3>
+    </div>
+    <div class="modal-body">
+    	<div ng-include src="'/static/js/app/tpl/manage/form_edit_cemetery.html'"></div>
+    </div>
+    <div class="modal-footer">
+    	<button class="btn btn-primary" ng-disabled="cemeteryEditForm.$invalid" ng-click="saveEditForm()">Сохранить</button>
+        <button class="btn cancel" ng-click="closeEditForm()">Закрыть</button>
+    </div>
+</div>
+<!-- EOF POPUP form -->
+
+
+
+
+<div modal="addModalOpened" close="closeAddModal()" options="addOpts">
+    <div class="modal-header">
+        <h3>Добавить участок</h3>
+    </div>
+    <div class="modal-body">
+    	<div ng-include src="'/static/js/app/tpl/manage/form_edit_area.html'"></div>
+    </div>
+    <div class="modal-footer">
+        <button ng-click="addElement(addItem)" class="btn btn-primary" ng-disabled="areaEditForm.$invalid">Добавить</button>
+        <button ng-click="closeAddModal()" class="btn" >Отменить</button>
+    </div>
+</div>
+

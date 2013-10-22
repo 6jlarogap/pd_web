@@ -1,0 +1,117 @@
+.gridStyle {
+    height: 500px;
+}
+
+
+.dl-horizontal dt {
+	float: left;
+	width: 200px;
+	clear: left;
+	text-align: left;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+.dl-horizontal dt, .dl-horizontal dd {
+	padding: 4px 0;
+}
+
+.modal dd {line-height: 18px; min-height: 18px;}
+
+.pac-container{
+	z-index:5000 !important; /* angular js google place integration fix*/
+}
+
+#google_places_ac{
+	width:400px
+}
+
+
+.gridStyle.full-size-grid, .gridStyle.full-size-grid .ngViewport{
+	height: auto !important;
+	overflow:hidden !important;
+}
+
+#yandex-map{
+    height: 310px;
+    margin-bottom:20px;
+}
+
+form .error{
+    color: #b94a48;
+    margin: -5px 0 0 69px;
+    display: block;
+}
+
+.gallery.modal{
+    width: 980px;
+    margin: -310px 0 0 -490px;
+}
+
+.gallery .modal-body{
+    max-height: 500px;
+}
+.gallery .modal-body img{
+	max-height: 430px !important;
+}
+
+.gallery .modal-body .preview-col{height: auto;}
+.gallery .modal-body .preview-col img{width:120px; height:100px; margin:0;}
+
+
+/*Place*/
+.place-view .row-fluid{margin: 20px 0;}
+.place-view dd {height: 18px;}
+
+.place-view .well {border: 1px solid rgba(0, 0, 0, 0.3);}
+
+.place-view .graves {
+    margin: 30px 0 0;
+}
+
+.place-view .graves .grave{
+    width: 233px;
+    margin: 0 5px 5px 0;
+    padding: 7px;
+    /*float: left;*/
+}
+
+.grave .btn-toolbar{
+	text-align: center;
+}
+
+.place-view .graves .grave img{
+	margin: 0 auto;
+}
+.place-view .graves .grave .photo-container img{
+    display: block;
+    max-width: 100%;
+    height: auto;
+}
+
+.place-view .graves .grave .photo-container .first-photo{cursor: pointer;}
+
+.place-view .graves .grave .meta{max-height: 150px;}
+
+.place-view .graves .grave h3{
+    margin-bottom: 15px;
+}
+
+.place-view .burials .burial{
+    background-color: #FEFEFE;
+    height: 75px;
+    cursor: pointer;
+}
+
+.place-view .burials .burial:hover{
+    border: 1px solid rgba(0, 0, 0, 1);
+}
+
+.place-view .burials .burial h4{
+    max-height: 36px;
+    overflow: hidden;
+}
+
+.burial.exhumated{
+	background-color:silver !important;
+}
