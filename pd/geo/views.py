@@ -2,8 +2,19 @@
 import json
 
 from django.http import HttpResponse
+from django.shortcuts import get_object_or_404
 
-from geo.models import Country, Street, City, Region, DFiasAddrobj
+from geo.models import Country, Street, City, Region, Location, DFiasAddrobj
+from geo.serializers import CountrySerializer, RegionSerializer, CitySerializer, StreetSerializer, \
+    LocationSerializer, LocationStaticSerializer
+
+# REST import
+from rest_framework import generics, viewsets
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.reverse import reverse
+from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
+# EOF REST import
 
 
 def autocomplete_countries(request):
@@ -81,3 +92,100 @@ def autocomplete_fias(request):
         return HttpResponse(json.dumps({'ok': 1, 'id': sf.aoguid, 'info': info }), mimetype='application/json')
     except IndexError:
         return HttpResponse(json.dumps({}), mimetype='application/json')
+
+
+
+# REST API
+
+class CountryList(generics.ListCreateAPIView):
+    serializer_class = CountrySerializer
+    model = Country
+    paginate_by = None
+    def get_queryset(self):
+        queryset = Country.objects
+        name = self.request.GET.get('q', None)
+        if name is not None:
+            queryset = queryset.filter(name__icontains=name)
+        return queryset.all()[0:10]
+
+
+class RegionList(generics.ListCreateAPIView):
+    serializer_class = RegionSerializer
+    model = Region
+    paginate_by = None
+    
+    def get_queryset(self):
+        queryset = Region.objects
+        name = self.request.GET.get('q', None)
+        if name is not None:
+            queryset = queryset.filter(name__icontains=name)
+        
+        #country_id = self.request.GET.get('country_id')
+        #if country_id:
+        #    country = get_object_or_404(Country, pk=country_id)
+        #    queryset = queryset.filter(country=country)
+        return queryset.all()[0:10]
+
+
+class CityList(generics.ListCreateAPIView):
+    serializer_class = CitySerializer
+    model = City
+    paginate_by = None
+
+    def get_queryset(self):
+        queryset = City.objects
+        name = self.request.GET.get('q', None)
+        if name is not None:
+            queryset = queryset.filter(name__icontains=name)
+        
+        #region_id = self.request.GET.get('region_id')
+        #if region_id:
+        #    region = get_object_or_404(City, pk=region_id)
+        #    queryset = queryset.filter(region=region)
+        return queryset.all()[0:10]
+
+
+class StreetList(generics.ListCreateAPIView):
+    serializer_class = StreetSerializer
+    model = Street
+    paginate_by = None
+
+    def get_queryset(self):
+        queryset = Street.objects
+        name = self.request.GET.get('q', None)
+        if name is not None:
+            queryset = queryset.filter(name__icontains=name)
+        
+        #city_id = self.request.GET.get('city_id')
+        #if region_id:
+        #    city = get_object_or_404(Street, pk=city_id)
+        #    queryset = queryset.filter(city=city)
+        return queryset.all()[0:10]
+
+
+class LocationViewSet(viewsets.ModelViewSet):
+    """
+    TODO: fias: add empty field validators
+    """
+    model = Location
+    serializer_class = LocationSerializer
+    permission_classes = (IsAuthenticated,)
+
+    def get_queryset(self):
+        return Location.objects.all()
+
+
+class LocationStaticViewSet(LocationViewSet):
+    permission_classes = (IsAuthenticated,)
+    serializer_class = LocationStaticSerializer
+
+
+
+
+country_list = CountryList.as_view()
+region_list  = RegionList.as_view()
+city_list    = CityList.as_view()
+street_list  = StreetList.as_view()
+#location_list= LocationList.as_view()
+
+# EOF REST API

@@ -3,7 +3,9 @@
 from django.contrib import messages
 from django.core.urlresolvers import reverse
 from django.db.models.query_utils import Q
+from django.db.models import Count, Avg
 from django.shortcuts import redirect, render, get_object_or_404
+from django.http import Http404
 from django.views.decorators.csrf import csrf_exempt
 from django.views.generic.base import View
 from django.utils.translation import ugettext as _
@@ -12,10 +14,52 @@ from django.views.generic.edit import CreateView, UpdateView
 from django.views.generic.list import ListView
 
 from burials.forms import CemeteryForm, AreaFormset, PlaceEditForm, AddOrgForm, AreaMergeForm, BurialfileCommentEditForm
-from burials.models import Cemetery, Place, Area, BurialFiles
+from burials.models import Cemetery, Place, Area, BurialFiles, Grave, Burial, AreaPhoto, GravePhoto, ExhumationRequest, AreaPurpose
 from burials.burials_views import *
 from logs.models import write_log
 from users.models import Profile, Org
+
+from geo.models import Location
+
+# REST import
+from rest_framework import generics, viewsets
+from rest_framework.decorators import api_view, permission_classes, action
+from rest_framework.reverse import reverse
+from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
+# EOF REST import
+
+from django.db import transaction
+
+
+from serializers import CemeterySerializer, AreaSerializer, PlaceSerializer, AreaPurposeSerializer, \
+    GraveSerializer, BurialSerializer, BurialListSerializer, AreaPhotoSerializer, GravePhotoSerializer, ExhumationRequestSerializer
+
+
+
+def getCemetery(request):
+    try:
+        # PUT request issue
+        cemetery_id = int(request.GET.get('cemetery_id'))
+        assert cemetery_id>0, u'Wrong id'
+    except:
+        raise Http404()
+    else:
+        return get_object_or_404(Cemetery, id=cemetery_id)
+
+
+
+
+def getArea(request):
+    try:
+        # PUT request issue
+        area_id = int(request.GET.get('area_id'))
+        assert area_id>0, u'Wrong id'
+    except:
+        raise Http404()
+    else:
+        return get_object_or_404(Cemetery, id=cemetery_id)
+
 
 
 class UGHRequiredMixin:
@@ -31,6 +75,28 @@ class LoginRequiredMixin:
         if not request.user.is_authenticated():
             return redirect('/')
         return View.dispatch(self, request, *args, **kwargs)
+
+
+class CemeteryViewSet(viewsets.ModelViewSet):
+    model = Cemetery
+    form_class = CemeteryForm
+    serializer_class = CemeterySerializer
+    permission_classes = (IsAuthenticated,)
+    paginate_by = None
+
+    def get_queryset(self):
+        return  Cemetery.objects.filter(ugh=self.request.user.profile.org).order_by('pk').all()
+
+    def pre_save(self, object):
+        if not object.address:
+            location_id = self.request.GET.get('address_id')
+            if location_id:
+                object.address = get_object_or_404(Location, pk=location_id)
+        object.creator = self.request.user
+        object.ugh = self.request.user.profile.org
+        write_log(self.request, object, _(u'Кладбище изменено'))
+        # TODO: send signal
+
 
 class SupervisorRequiredMixin:
     def dispatch(self, request, *args, **kwargs):
@@ -85,7 +151,253 @@ class CemeteryEdit(UGHRequiredMixin, UpdateView):
         messages.success(self.request, msg)
         return redirect('manage_cemeteries')
 
-manage_cemeteries_edit = CemeteryEdit.as_view()
+
+
+
+class AreaViewSet(viewsets.ModelViewSet):
+    model = Area
+    serializer_class = AreaSerializer
+    permission_classes = (IsAuthenticated,)
+    paginate_by = None
+
+    def get_queryset(self):
+        item = getCemetery(self.request)
+        qs = self.model.objects.filter(cemetery=item)
+        return  qs.all()
+
+    def pre_save(self, object):
+        item = getCemetery(self.request)
+        object.cemetery = item
+
+
+class PlaceViewSet(viewsets.ModelViewSet):
+    model = Place
+    serializer_class = PlaceSerializer
+    permission_classes = (IsAuthenticated,)
+    paginate_by = None
+
+    def get_queryset(self):
+        item = getCemetery(self.request)
+        qs = self.model.objects.filter(cemetery=item)
+        area_id = self.request.GET.get('area_id')
+        if area_id:
+            try:
+                area_id = int(area_id)
+                assert area_id>0
+                item = get_object_or_404(Area, id=area_id)
+                qs = qs.filter(area=item)
+            except:
+                raise Http404()
+
+        return  qs.all()
+
+    def pre_save(self, object):
+        id = int(self.request.GET.get('area_id'))
+        item = get_object_or_404(Area, id=id) # TODO: check this
+        object.area = item
+        write_log(self.request, object, _(u'Место №%s изменено' % object.place))
+        
+        if not object.address:
+            location_id = self.request.GET.get('address_id')
+            if location_id:
+                object.address = get_object_or_404(Location, pk=location_id)
+
+        # Update grave point coords
+        items = Grave.objects.filter(place=object).all()
+        for item in items:
+            item.lng = object.lng
+            item.lat = object.lat
+            item.save()
+        return object
+
+    def post_save(self, object, created=False):
+        if created: 
+            write_log(self.request, object, _(u'Место №%s создано')% object.place)
+
+
+
+class AreaPurposeViewSet(viewsets.ModelViewSet):
+    model = AreaPurpose
+    serializer_class = AreaPurposeSerializer
+    permission_classes = (IsAuthenticated,)
+    paginate_by = None
+
+
+class GraveViewSet(viewsets.ModelViewSet):
+    model = Grave
+    serializer_class = GraveSerializer
+    permission_classes = (IsAuthenticated,)
+    paginate_by = None
+
+    def delete(self, request, *args, **kwargs):
+        write_log(self.request, self.get_object(), _(u'Могила №%d удалена') % object.grave_number)
+        return super(GraveViewSet, self).delete(request, *args, **kwargs)
+
+    def get_queryset(self):
+        qs = self.model.objects
+        id = self.request.GET.get('place_id')
+        if id:
+            item = get_object_or_404(Place, id=id)
+            qs = qs.filter(place=item)
+        return  qs.order_by('grave_number').all()
+
+    def pre_save(self, object):
+        # Update placer point coords
+        res = Grave.objects.filter(place=object.place, lng__isnull=False, lat__isnull=False).\
+            annotate(countval=Count('id')).\
+            aggregate(lng=Avg('lng'), lat=Avg('lat')) #, cnt=Count('id')
+        object.place.lat = res["lat"]
+        object.place.lng = res["lng"]  
+        object.place.save()
+        return object
+        
+    def post_save(self, object, created=False):
+        if created:
+            write_log(self.request, object, _(u'Могила №%d создана') % object.grave_number)
+
+
+    @action(methods=['GET',])
+    def move(self, request, pk=None):
+        direction = request.GET.get('direction','forward')
+        try:
+            current = Grave.objects.get(pk=pk)
+            if direction==u'forward':
+                direction = 1
+                direction_text = _(u'вправо')
+                assert current.grave_number+direction<=current.place.grave_set.count()
+            else:
+                direction = -1
+                direction_text = _(u'влево')
+                assert current.grave_number+direction>0
+
+            swapped = Grave.objects.get(place=current.place, grave_number = current.grave_number+direction)
+            t = current.grave_number
+            t1 = swapped.grave_number
+            write_log(self.request, current, _(u'Могила перемещена %s c №%d на №%d' % (direction_text, t, t1)))
+            #TODO: Transaction level?
+            current.grave_number = 32767
+            current.save()
+            current.grave_number = t1
+            swapped.grave_number = t
+            swapped.save()
+            current.save()
+        except:
+            pass
+        return Response(status=200)
+
+
+
+    def destroy(self, request, pk=None):
+        try:
+            object = self.model.objects.get(pk=int(pk))
+            write_log(self.request, object.place, _(u'Могила удалена'))
+            object.delete();
+        except:
+            raise Http404()
+        return Response(status=200)
+
+
+class BurialViewSet(viewsets.ModelViewSet):
+    model = Burial
+    serializer_class = BurialSerializer
+    serializer_list_class = BurialListSerializer
+    permission_classes = (IsAuthenticated,)
+    paginate_by = None
+
+    def filter_queryset(self, queryset):
+        id = self.request.GET.get('place_id')
+        item = get_object_or_404(Place, id=id)
+        queryset = queryset.filter(place=item)
+        
+        item = getCemetery(self.request)
+        queryset = queryset.filter(cemetery=item)
+        
+        id = self.request.GET.get('area_id')
+        item = get_object_or_404(Area, id=id)
+        queryset = queryset.filter(area=item)
+        return  queryset
+
+    def get_serializer_class(self):
+        """
+        Serilializer fetches a list of related items, result - resource overuse.
+        Solution: replacement with easier serializer
+        """
+        if self.action == 'list':
+            serializer_class = self.serializer_list_class
+        else:
+            serializer_class = self.serializer_class
+        return serializer_class
+
+
+class AreaPhotoViewSet(viewsets.ModelViewSet):
+    model = AreaPhoto
+    serializer_class = AreaPhotoSerializer
+    permission_classes = (IsAuthenticated,)
+    paginate_by = None
+    def get_queryset(self):
+        qs = self.model.objects
+        try:
+            area_id = int(self.request.GET.get('area_id'))
+            assert area_id>0
+        except:
+            raise Http404()
+        item = get_object_or_404(Area, id=area_id)
+        qs = qs.filter(area=item)
+        return  qs.all()
+
+
+class GravePhotoViewSet(viewsets.ModelViewSet):
+    model = GravePhoto
+    serializer_class = GravePhotoSerializer
+    permission_classes = (IsAuthenticated,)
+    paginate_by = None
+    def get_queryset(self):
+        qs = self.model.objects
+        id = self.request.GET.get('grave_id')
+        if id:
+            item = get_object_or_404(Grave, id=id)
+            qs = qs.filter(grave=item)
+        return  qs.all()
+
+    def pre_save(self, object):
+        # Update grave point coords
+        grave = object.grave
+        res = GravePhoto.objects.filter(grave=grave, lng__isnull=False, lat__isnull=False).\
+            annotate(countval=Count('id')).\
+            aggregate(lng=Avg('lng'), lat=Avg('lat')) #, cnt=Count('id')
+        grave.lng = res["lng"]
+        grave.lat = res["lat"]
+        grave.save()
+    
+        # Update place point coords
+        place = object.grave.place
+        res = Grave.objects.filter(place=place, lng__isnull=False, lat__isnull=False).\
+            annotate(countval=Count('id')).\
+            aggregate(lng=Avg('lng'), lat=Avg('lat')) #, cnt=Count('id')
+        place.lng = res["lng"]
+        place.lat = res["lat"]
+        place.save()
+
+
+class ExhumationRequestViewSet(viewsets.ModelViewSet):
+    model = ExhumationRequest
+    serializer_class = ExhumationRequestSerializer
+    permission_classes = (IsAuthenticated,)
+    paginate_by = None
+    def get_queryset(self):
+        qs = self.model.objects
+        id = self.request.GET.get('burial_id')
+        if id:
+            item = get_object_or_404(Burial, id=id)
+            qs = qs.filter(burial=item)
+        id = self.request.GET.get('place_id')
+        if id:
+            item = get_object_or_404(Place, id=id)
+            qs = qs.filter(place=item)
+        return  qs.all()
+
+
+
 
 class CemeteryMerge(UGHRequiredMixin, TemplateView):
     template_name = 'cemetery_merge.html'

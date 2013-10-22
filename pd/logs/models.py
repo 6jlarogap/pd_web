@@ -18,6 +18,12 @@ class Log(models.Model):
     msg = models.TextField(editable=False, verbose_name=_(u"Описание"))
     code = models.CharField(max_length=255, default='', editable=False, verbose_name=_(u"Спец. код"))
     
+    class Meta:
+        verbose_name = _(u"Событие")
+        verbose_name_plural = _(u"Журнал событий")
+        ordering = ['-dt']
+
+    
     def log_object_display(self):
         """
         Показываем в таблице действий пользователей: что за объект + ссылка

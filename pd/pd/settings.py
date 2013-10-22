@@ -1,5 +1,7 @@
 # coding: utf-8
 
+import os
+
 DEBUG = False
 TEMPLATE_DEBUG = DEBUG
 
@@ -53,11 +55,14 @@ DATE_INPUT_FORMATS = (
     '%d.%m.%Y', '%Y-%m-%d',
 )
 
-MEDIA_ROOT = './media/'
+ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+
+MEDIA_ROOT = os.path.join(ROOT_DIR, 'media/')
 MEDIA_URL = '/media/'
 
-STATIC_ROOT = './static/'
+STATIC_ROOT = os.path.join(ROOT_DIR, 'static/')
 STATIC_URL = '/static/'
+
 
 STATICFILES_DIRS = (
     './static_src/',
@@ -118,6 +123,8 @@ INSTALLED_APPS = (
     'django.contrib.admin',
     'django.contrib.admindocs',
 
+    'rest_framework',
+
     'south',
     'pytils',
     'debug_toolbar',
@@ -133,6 +140,9 @@ INSTALLED_APPS = (
     'reports',
     'import_burials',
     'mobile',
+    'rest_api',
+    'restthumbnails',
+    'django_assets',
 )
 
 LOGGING = {
@@ -227,6 +237,35 @@ PRODUCTION_SITE = False
 # только таковой с организации с этим ИНН
 #
 # SUPERVISOR_ORG_INN = 'строка'
+
+
+# THUMB
+THUMBNAILS_FILE_SIGNATURE = '%(source)s/%(size)s~%(method)s~%(secret)s.%(extension)s'
+THUMBNAILS_STORAGE_BASE_PATH = '/thumb/'
+THUMBNAILS_PROXY_BASE_URL = '/thumb/'
+#THUMBNAILS_STORAGE_BACKEND = 'testsuite.storages.TemporaryStorage'
+THUMBNAILS_STORAGE_ROOT = os.path.join(MEDIA_ROOT, 'thumbnails')
+
+
+# REST framework
+REST_FRAMEWORK = {
+    'PAGINATE_BY': 50,
+    'PAGINATE_BY_PARAM': 'page_size',
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework.authentication.BasicAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
+    ),
+    #'DEFAULT_RENDERER_CLASSES': (
+    #    'rest_api.serializers.TranslatedJsonRenderer',
+    #),
+}
+
+
+#ASSETS_URL = STATIC_URL
+ASSETS_MODULES = [
+    'pd.assets'
+]
+ASSETS_DEBUG = False
 
 try:
     from local_settings import *

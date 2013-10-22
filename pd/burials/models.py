@@ -2,15 +2,20 @@
 import datetime
 from django.contrib.contenttypes.models import ContentType
 from django.db import models, connection
+from django.db.models import Count, Avg
 from django.db.models.deletion import ProtectedError
 from django.utils.translation import ugettext_lazy as _
 from django.db.models.query_utils import Q
+from django.conf import settings
+
 from pd.models import UnclearDateModelField, BaseModel, Files, Photo, validate_gt0
 
 from persons.models import DeadPerson, SafeDeleteMixin, DeathCertificate
 from reports.models import Report
 from users.models import Org, Profile, Dover, ProfileLORU
 from logs.models import Log
+
+from geo.models import GeoPointModel
 
 
 class Cemetery(BaseModel):
@@ -70,6 +75,18 @@ class Cemetery(BaseModel):
                     v = u'%s (резерв кладб. %s)' % (s, len(planned)+len(approved))
                 result.append((s, v))
         return result
+    
+    @property
+    def area_cnt(self):
+        # TODO: replace with field, updated trought signals 
+        return self.area_set.count()
+
+    @property
+    def work_time(self):
+        if self.time_begin and self.time_end:
+            return "%s-%s" % (self.time_begin, self.time_end)
+
+
 
 class AreaPurpose(models.Model):
     name = models.CharField(_(u"Название"), max_length=255)
@@ -102,6 +119,7 @@ class Area(BaseModel):
         verbose_name = _(u"Участок")
         verbose_name_plural = _(u"Участки")
         ordering = ['name']
+        #unique_together = ('cemetery', 'name',)
 
     def __unicode__(self):
         return _(u'%s (%s, %s, %s могил)') % (
@@ -115,7 +133,8 @@ class Area(BaseModel):
             self.name=''
         return super(Area, self).save(*args, **kwargs)
 
-class Place(SafeDeleteMixin, BaseModel):
+
+class Place(SafeDeleteMixin, GeoPointModel):
     cemetery = models.ForeignKey(Cemetery, verbose_name=_(u"Кладбище"), on_delete=models.PROTECT)
     area = models.ForeignKey(Area, verbose_name=_(u"Участок"), blank=True, null=True,
                              on_delete=models.PROTECT)
@@ -124,11 +143,14 @@ class Place(SafeDeleteMixin, BaseModel):
     place = models.CharField(_(u"Место"), max_length=255, blank=True, null=True)
     responsible = models.ForeignKey('persons.AlivePerson', verbose_name=_(u"Ответственный"), blank=True, null=True,
                                     on_delete=models.PROTECT)
+    available_count = models.PositiveSmallIntegerField(_(u"Число свободных мест"), default=0)
     place_length = models.DecimalField(_(u"Длина, м."), max_digits=5, decimal_places=2,
                                        null=True, blank=True, validators=[validate_gt0])
     place_width = models.DecimalField(_(u"Ширина, м."), max_digits=5, decimal_places=2,
                                         null=True, blank=True, validators=[validate_gt0])
-
+    
+    address = models.ForeignKey('geo.Location', editable=False, null=True)
+    
     class Meta:
         verbose_name = _(u"Место")
         verbose_name_plural = _(u"Место")
@@ -263,22 +285,27 @@ class PlaceStatus(BaseModel):
     comment = models.TextField(verbose_name=_(u"Примечание"), blank=True, null=True)
     creator = models.ForeignKey('auth.User', verbose_name=_(u"Создатель"), editable=False,
                                 on_delete=models.PROTECT)
-    
-class Grave(BaseModel):
 
+class Grave(GeoPointModel):
     class Meta:
         unique_together = ('place', 'grave_number',)
 
     place = models.ForeignKey(Place, verbose_name=_(u"Место"))
     grave_number = models.PositiveSmallIntegerField(_(u"Номер"), default=1)
-    lat = models.FloatField(_(u"Широта"), blank=True, null=True)
-    lng = models.FloatField(_(u"Долгота"), blank=True, null=True)
 
-class GravePhoto(Photo):
+    def __unicode__(self):
+        return _(u'Могила. место: %s номер:%d') % (self.place, self.grave_number)
+
+class AreaPhoto(Files, GeoPointModel):
+    area = models.ForeignKey(Area)
+
+
+class GravePhoto(Files, GeoPointModel):
     """
     Файлы, связанные с захоронением
     """
     grave = models.ForeignKey(Grave)
+
 
 class Burial(SafeDeleteMixin, BaseModel):
     STATUS_BACKED = 'backed'
@@ -886,3 +913,28 @@ def apply_exhumation(instance, created, **kwargs):
         instance.apply()
 
 models.signals.post_save.connect(apply_exhumation, sender=ExhumationRequest)
+
+
+
+def calculate_free_burial_count(sender, instance, **kwargs):
+    if 'created' in kwargs.keys() and not kwargs['created']:
+        return
+    exclude_pk_list = [i.grave.pk for i in instance.place.burial_set.select_related().all()]
+    instance.place.available_count = Grave.objects.filter(place=instance.place).exclude(pk__in=exclude_pk_list).count()
+    instance.place.save()
+    
+models.signals.post_save.connect(calculate_free_burial_count, sender=Grave)
+models.signals.post_save.connect(calculate_free_burial_count, sender=Burial)
+models.signals.post_delete.connect(calculate_free_burial_count, sender=Grave)
+models.signals.post_delete.connect(calculate_free_burial_count, sender=Burial)
+
+
+def relocate_grave_numbers(sender, instance, **kwargs):
+    # Reorder grave numbers
+    i = 1
+    for row in instance.place.grave_set.order_by('grave_number').all():
+        row.grave_number = i
+        i += 1
+        row.save()
+
+models.signals.post_delete.connect(relocate_grave_numbers, sender=Grave)
