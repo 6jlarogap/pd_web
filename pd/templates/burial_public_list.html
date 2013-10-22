@@ -62,10 +62,10 @@
                 <th>
                     {% if sort == 'fio' %}
                         {% if sort == 'fio' %}<i class="icon icon-arrow-up"></i>{% endif %}
-                        <a href="?{{ GET_PARAMS }}&sort=-fio">{% trans "Усопший" %}</a>
+                        <a href="?{{ GET_PARAMS }}&sort=-fio"><big>{% trans "Усопший" %}</big></a>
                     {% else %}
                         {% if sort == '-fio' %}<i class="icon icon-arrow-down"></i>{% endif %}
-                        <a href="?{{ GET_PARAMS }}&sort=fio">{% trans "Усопший" %}</a>
+                        <a href="?{{ GET_PARAMS }}&sort=fio"><big>{% trans "Усопший" %}</big></a>
                     {% endif %}
                 </th>
                 <th>
@@ -98,7 +98,7 @@
                     <td>
                         {% with burial=b %}{% include "burial_place.html" %}{% endwith %}
                     </td>
-                    <td>{{ b.deadman_or_bio }}</td>
+                    <td><b>{{ b.deadman_or_bio }}</b></td>
                     <td>{{ b.combined_date }}</td>
                     <td>
                         {{ b.status_str|default:"" }}
