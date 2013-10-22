@@ -285,8 +285,8 @@ class OrgLogForm(forms.Form):
         (100, 100),
     )
 
-    log_date_from = forms.DateField(required=False, label=_(u"С"))
-    log_date_to = forms.DateField(required=False, label=_(u"по"))
+    date_from = forms.DateField(required=False, label=_(u"С"))
+    date_to = forms.DateField(required=False, label=_(u"по"))
     per_page = forms.ChoiceField(label=_(u"На странице"), choices=PAGE_CHOICES, initial=25, required=False)
 
 # Никакой разницы в этих формах пока нет.
@@ -336,3 +336,8 @@ class RegisterForm(forms.ModelForm):
               isinstance(cleaned_data[field], basestring):
                 cleaned_data[field] = cleaned_data[field].strip()
         return cleaned_data
+
+class OrgBurialStatsForm(forms.Form):
+
+    date_from = forms.DateField(required=False, label=_(u"С"))
+    date_to = forms.DateField(required=False, label=_(u"по"))
