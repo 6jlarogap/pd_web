@@ -502,7 +502,7 @@ class RegisterActivation(DetailView):
             message = _(u'В регистрации отказано!')
             explain = _(
                         u'Ваша заявка на регистрацию была <b>отклонена</b>.\n'
-                        u'Обратитесь в поддержку\n'
+                        u'Обратитесь в <a href="%s">поддержку</a>\n' % reverse('support')
                        )
         elif self.object.status == RegisterProfile.STATUS_APPROVED:
             message = _(u'Регистрация успешна!')
