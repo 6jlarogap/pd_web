@@ -1,7 +1,9 @@
 # coding=utf-8
 import re
 
+from django.conf import settings
 from django import forms
+from django.core.mail import send_mail
 from django.contrib.auth.models import User
 from django.forms.models import inlineformset_factory, BaseInlineFormSet
 from django.utils.translation import ugettext_lazy as _
@@ -341,3 +343,16 @@ class OrgBurialStatsForm(forms.Form):
 
     date_from = forms.DateField(required=False, label=_(u"С"))
     date_to = forms.DateField(required=False, label=_(u"по"))
+
+class SupportForm(forms.Form):
+    subject = forms.CharField(label=_(u'Тема'), max_length=100, required=True)
+    message = forms.CharField(label=_(u'Сообщение'), widget=forms.Textarea, required=True)
+    sender = forms.EmailField(label=_(u'Ваш Email'), required=True)
+    captcha = ReCaptchaField(label='', required=True)
+
+    def save(self):
+        email_subject = self.cleaned_data['subject']
+        email_text = self.cleaned_data['message']
+        email_from = settings.DEFAULT_FROM_EMAIL
+        email_to = (self.cleaned_data['sender'], )
+        send_mail(email_subject, email_text, email_from, email_to )
