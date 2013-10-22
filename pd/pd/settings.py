@@ -169,8 +169,11 @@ ACCOUNT_ACTIVATION_DAYS = 7
 # к которым возможен доступ без регистрации, см. pd/middleware.py
 #
 LOGIN_URL = "/login/"
-# Это регулярное выражение!!! :
+
+# Это регулярные выражения!!! :
 REGISTER_URLS_REGEX = r'^/?register(?:/|$)'
+SUPPORT_URLS_REGEX = r'^/?support(?:/|$)'
+
 LOGOUT_URL = "/logout/"
 LOGIN_REDIRECT_URL = "/"
 

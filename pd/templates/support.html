@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+
+{% load i18n %}
+
+{% block content %}
+    <h1>{% trans "Служба поддержки" %}</h1>
+    <p></p>
+    <h4>{% trans "Задайте ваш вопрос, мы постараемся на него ответить." %}</h4>
+    <p></p>
+    <form action="" method="POST">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <p>
+            <input type="submit" class="btn  btn-primary" value="{% trans "Отправить" %}"/>
+        </p>
+        <br />
+    </form>
+{% endblock %}
