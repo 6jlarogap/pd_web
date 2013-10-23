@@ -149,8 +149,6 @@ class Place(SafeDeleteMixin, GeoPointModel):
     place_width = models.DecimalField(_(u"Ширина, м."), max_digits=5, decimal_places=2,
                                         null=True, blank=True, validators=[validate_gt0])
     
-    address = models.ForeignKey('geo.Location', editable=False, null=True)
-    
     class Meta:
         verbose_name = _(u"Место")
         verbose_name_plural = _(u"Место")

@@ -13,8 +13,8 @@ from serializers import AlivePersonSerializer, DeadPersonSerializer
 from rest_framework import generics, viewsets
 from rest_framework.permissions import IsAuthenticated
 
+from burials.models import Place 
 from logs.models import write_log
-
 
 class AutocompleteFIO(View):
     def get(self, request, *args, **kwargs):
@@ -81,6 +81,14 @@ class AlivePersonViewSet(viewsets.ModelViewSet):
     model = AlivePerson
     serializer_class = AlivePersonSerializer
     permission_classes = (IsAuthenticated,)
+
+    def get_queryset(self):
+        # TODO: perfomance issue
+        responcible_ids = [i.responsible.pk for i in Place.objects.filter(cemetery__ugh=self.request.user.profile.org, responsible__isnull=False).all()]
+        #.distinct('responsible')
+        return self.model.objects.filter(pk__in=responcible_ids).all()
+
+
 
     def pre_save(self, object):
         old_obj = self.model.objects.get(pk=object.pk)

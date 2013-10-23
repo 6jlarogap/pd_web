@@ -10,6 +10,7 @@ from rest_framework.permissions import IsAuthenticated
 
 from django.middleware.csrf import get_token
 from django.views.decorators.csrf import csrf_protect
+from django.http import Http404
 
 from django.shortcuts import render_to_response
 
@@ -17,6 +18,11 @@ from django.conf import settings
 from serializers import CemeterySerializer
 
 from burials.models import Cemetery, Place, Area, BurialFiles
+
+
+def isObjectOwnerCheck(qs, field_name, pk):
+    filter = {field_name:pk}
+    return qs.filter(**filter).count()>0
 
 
 @api_view(['GET'])

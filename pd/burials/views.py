@@ -45,9 +45,7 @@ def getCemetery(request):
     except:
         raise Http404()
     else:
-        return get_object_or_404(Cemetery, id=cemetery_id)
-
-
+        return get_object_or_404(Cemetery, id=cemetery_id, ugh=request.user.profile.org)
 
 
 def getArea(request):
@@ -58,7 +56,17 @@ def getArea(request):
     except:
         raise Http404()
     else:
-        return get_object_or_404(Cemetery, id=cemetery_id)
+        return get_object_or_404(Area, id=area_id, cemetery__ugh=request.user.profile.org)
+
+def getPlace(request):
+    try:
+        # PUT request issue
+        place_id = int(request.GET.get('place_id'))
+        assert palce_id>0, u'Wrong id'
+    except:
+        raise Http404()
+    else:
+        return get_object_or_404(Place, id=place_id, cemetery__ugh=request.user.profile.org)
 
 
 
@@ -90,6 +98,10 @@ class CemeteryViewSet(viewsets.ModelViewSet):
     def pre_save(self, object):
         if not object.address:
             location_id = self.request.GET.get('address_id')
+
+            if self.get_queryset.filter(location_id=location_id).count()==0:
+                return Http404()
+
             if location_id:
                 object.address = get_object_or_404(Location, pk=location_id)
         object.creator = self.request.user
@@ -138,6 +150,7 @@ class CemeteryEdit(UGHRequiredMixin, UpdateView):
     template_name = 'cemetery_edit.html'
     form_class = CemeteryForm
 
+
     def get_queryset(self):
         return Cemetery.objects.filter(ugh=self.request.user.profile.org)
 
@@ -179,21 +192,13 @@ class PlaceViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         item = getCemetery(self.request)
         qs = self.model.objects.filter(cemetery=item)
-        area_id = self.request.GET.get('area_id')
-        if area_id:
-            try:
-                area_id = int(area_id)
-                assert area_id>0
-                item = get_object_or_404(Area, id=area_id)
-                qs = qs.filter(area=item)
-            except:
-                raise Http404()
-
+        if self.request.GET.get('area_id'):
+            area  = getArea(self.request)
+            qs = qs.filter(area=item)
         return  qs.all()
 
     def pre_save(self, object):
-        id = int(self.request.GET.get('area_id'))
-        item = get_object_or_404(Area, id=id) # TODO: check this
+        item = getArea(self.request) # TODO: check this
         object.area = item
         write_log(self.request, object, _(u'Место №%s изменено' % object.place))
         
@@ -222,6 +227,11 @@ class AreaPurposeViewSet(viewsets.ModelViewSet):
     permission_classes = (IsAuthenticated,)
     paginate_by = None
 
+    #def get_queryset(self):
+    #    qs = self.model.objects.filter(cemetery__ugh=self.request.user.profile.org)
+    #    return  qs.all()
+
+
 
 class GraveViewSet(viewsets.ModelViewSet):
     model = Grave
@@ -234,7 +244,7 @@ class GraveViewSet(viewsets.ModelViewSet):
         return super(GraveViewSet, self).delete(request, *args, **kwargs)
 
     def get_queryset(self):
-        qs = self.model.objects
+        qs = self.model.objects.filter(place__cemetery__ugh=self.request.user.profile.org)
         id = self.request.GET.get('place_id')
         if id:
             item = get_object_or_404(Place, id=id)
@@ -260,7 +270,7 @@ class GraveViewSet(viewsets.ModelViewSet):
     def move(self, request, pk=None):
         direction = request.GET.get('direction','forward')
         try:
-            current = Grave.objects.get(pk=pk)
+            current = Grave.objects.filter(place__cemetery__ugh=self.request.user.profile.org).get(pk=pk)
             if direction==u'forward':
                 direction = 1
                 direction_text = _(u'вправо')
@@ -304,6 +314,9 @@ class BurialViewSet(viewsets.ModelViewSet):
     permission_classes = (IsAuthenticated,)
     paginate_by = None
 
+    def get_queryset(self):
+        return self.model.objects.filter(cemetery__ugh=self.request.user.profile.org)
+
     def filter_queryset(self, queryset):
         id = self.request.GET.get('place_id')
         item = get_object_or_404(Place, id=id)
@@ -334,14 +347,10 @@ class AreaPhotoViewSet(viewsets.ModelViewSet):
     serializer_class = AreaPhotoSerializer
     permission_classes = (IsAuthenticated,)
     paginate_by = None
+    
     def get_queryset(self):
-        qs = self.model.objects
-        try:
-            area_id = int(self.request.GET.get('area_id'))
-            assert area_id>0
-        except:
-            raise Http404()
-        item = get_object_or_404(Area, id=area_id)
+        qs = self.model.objects.filter(area__cemetery__ugh=self.request.user.profile.org)
+        item = getArea(self.request)
         qs = qs.filter(area=item)
         return  qs.all()
 
@@ -352,7 +361,7 @@ class GravePhotoViewSet(viewsets.ModelViewSet):
     permission_classes = (IsAuthenticated,)
     paginate_by = None
     def get_queryset(self):
-        qs = self.model.objects
+        qs = self.model.objects.filter(grave__place__cemetery__ugh=self.request.user.profile.org)
         id = self.request.GET.get('grave_id')
         if id:
             item = get_object_or_404(Grave, id=id)
@@ -385,7 +394,7 @@ class ExhumationRequestViewSet(viewsets.ModelViewSet):
     permission_classes = (IsAuthenticated,)
     paginate_by = None
     def get_queryset(self):
-        qs = self.model.objects
+        qs = self.model.objects.filter(place__cemetery__ugh=self.request.user.profile.org)
         id = self.request.GET.get('burial_id')
         if id:
             item = get_object_or_404(Burial, id=id)

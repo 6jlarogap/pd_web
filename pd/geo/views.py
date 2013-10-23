@@ -4,6 +4,8 @@ import json
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 
+from burials.models import Cemetery
+ 
 from geo.models import Country, Street, City, Region, Location, DFiasAddrobj
 from geo.serializers import CountrySerializer, RegionSerializer, CitySerializer, StreetSerializer, \
     LocationSerializer, LocationStaticSerializer
@@ -14,6 +16,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.reverse import reverse
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
+from rest_api.views import isObjectOwnerCheck
 # EOF REST import
 
 
@@ -172,7 +175,9 @@ class LocationViewSet(viewsets.ModelViewSet):
     permission_classes = (IsAuthenticated,)
 
     def get_queryset(self):
-        return Location.objects.all()
+        address_ids = [i.address.pk for i in Cemetery.objects.filter(ugh=self.request.user.profile.org, address__isnull=False).all()]
+        #.distinct('address')
+        return self.model.objects.filter(pk__in=address_ids).all()
 
 
 class LocationStaticViewSet(LocationViewSet):
