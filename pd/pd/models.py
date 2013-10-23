@@ -7,6 +7,7 @@ import datetime
 from django.db import models
 from django.db.models.loading import get_model
 from django.utils.translation import ugettext as _
+from django.core.exceptions import ValidationError
 from south.modelsinspector import add_introspection_rules
 
 
@@ -152,6 +153,8 @@ def files_upload_to(instance, filename):
         return os.path.join('death-certificates', today_dir, fname)
     elif isinstance(instance, get_model('burials', 'GravePhoto')):
         return os.path.join('grave-photos', today_dir, fname)
+    elif isinstance(instance, get_model('users', 'RegisterProfileScan')):
+        return os.path.join('register-profile', today_dir, fname)
     else:
         return os.path.join('files', fname)
 
@@ -186,5 +189,9 @@ class Photo(Files):
 
     lat = models.FloatField(_(u"Широта"), blank=True, null=True)
     lng = models.FloatField(_(u"Долгота"), blank=True, null=True)
-    
+
+def validate_gt0(value):
+    if value <= 0:
+        raise ValidationError(_(u'Должно быть больше нуля'))
+
 add_introspection_rules([], ['^pd\.models\.UnclearDateModelField'])

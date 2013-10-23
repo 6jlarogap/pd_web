@@ -78,6 +78,7 @@
         PLACE_TYPES = {{ form.cemetery_placing_json|default:"{}" }};
         CEMETERY_AREAS = {{ form.cemetery_areas_json|default:"{}" }};
         CEMETERY_TIMES = {{ form.cemetery_times_json|default:"{}" }};
+        PLACE_SIZE = {{ form.place_size_json|default:"{}" }};
         AGENT_DOVER = {{ form.agent_dover_json|default:"{}" }};
         ACTUAL_DOVER = [{% for d in form.actual_dover_list %}{{ d }}{% if not forloop.last %},{% endif %}{% endfor %}];
         ORG_AGENTS = {{ form.loru_agents_json|default:"{}" }};

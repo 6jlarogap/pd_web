@@ -7,7 +7,19 @@ urlpatterns = patterns('users.views',
     url(r'^login/', 'ulogin', name='ulogin'),
     url(r'^logout/', 'ulogout', name='ulogout'),
 
-    url(r'^register/', 'uregister', name='uregister'),
+    url(r'^registration-old/$', 'registration_old', name='registration_old'),
+    
+    url(r'^register/$', 'register', name='register'),
+    url(r'^register/(?P<key>[A-Za-z0-9]+)/activation/$', 'register_activation',
+        name='register_activation'),
+        
+    url(r'^registrants/$', 'registrants', name='registrants'),
+    url(r'^registrant/(?P<pk>\d+)/delete/$', 'registrant_delete', name='registrant_delete'),
+    url(r'^registrant/(?P<pk>\d+)/approve/$', 'registrant_approve', name='registrant_approve'),
+    url(r'^registrant/(?P<pk>\d+)/decline/$', 'registrant_decline', name='registrant_decline'),
+    
+    url(r'^orgburialstats/', 'org_burial_stats', name='org_burial_stats'),
+        
     url(r'^profile/', 'profile', name='profile'),
     url(r'^loruregistry/', 'loru_registry', name='loru_registry'),
     url(r'^userprofile/', 'user_profile', name='user_profile'),

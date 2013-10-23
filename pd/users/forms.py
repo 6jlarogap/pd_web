@@ -1,18 +1,23 @@
 # coding=utf-8
+import re
+
 from django import forms
 from django.contrib.auth.models import User
 from django.forms.models import inlineformset_factory, BaseInlineFormSet
 from django.utils.translation import ugettext_lazy as _
 from django.db.models.query_utils import Q
+
+from captcha.fields import ReCaptchaField
+
 from geo.forms import LocationForm
 # from geo.models import DFiasAddrobj
 from pd.forms import ChildrenJSONMixin, LoggingFormMixin
-from burials.models import Cemetery
+from burials.models import Cemetery, PlaceSize
 
-from users.models import Profile, ProfileLORU, Org, BankAccount
+from users.models import Profile, ProfileLORU, Org, BankAccount, RegisterProfile
 
 
-class RegisterForm(forms.ModelForm):
+class UserAddForm(forms.ModelForm):
     class Meta:
         model = User
         fields = ['username', 'email']
@@ -229,6 +234,8 @@ class BaseOrgForm(LoggingFormMixin, forms.ModelForm):
                 raise forms.ValidationError(_(u"Есть уже такая организация"))
         return name
 
+PlaceSizeFormset = inlineformset_factory(Org, PlaceSize, formset=BaseInlineFormSet, can_delete=True, extra=2)
+
 class OrgForm(BaseOrgForm):
     class Meta:
         model = Org
@@ -246,14 +253,22 @@ class OrgForm(BaseOrgForm):
         if not self.is_own_org or not self.request.user.profile.is_loru():
             del self.fields['opf_order']
             del self.fields['opf_order_customer_mandatory']
+        if self.is_own_org and request.user.profile.is_ugh():
+            self.placesize_formset = PlaceSizeFormset(data=request.POST or None, instance=self.instance)
+        else:
+            self.placesize_formset = None
 
     def is_valid(self):
-        return super(OrgForm, self).is_valid() and self.address_form.is_valid() # and self.bank_formset.is_valid()
+        return super(OrgForm, self).is_valid() and self.address_form.is_valid() and \
+                    (not self.placesize_formset or self.placesize_formset.is_valid())
+                    # and self.bank_formset.is_valid()
 
     def save(self, commit=True):
         self.collect_log_data()
         org = super(OrgForm, self).save(commit=False)
         # self.bank_formset.save()
+        if self.placesize_formset:
+            self.placesize_formset.save()
         if any(self.address_form.cleaned_data.values()):
             org.off_address = self.address_form.save()
         if commit:
@@ -270,9 +285,59 @@ class OrgLogForm(forms.Form):
         (100, 100),
     )
 
-    log_date_from = forms.DateField(required=False, label=_(u"С"))
-    log_date_to = forms.DateField(required=False, label=_(u"по"))
+    date_from = forms.DateField(required=False, label=_(u"С"))
+    date_to = forms.DateField(required=False, label=_(u"по"))
     per_page = forms.ChoiceField(label=_(u"На странице"), choices=PAGE_CHOICES, initial=25, required=False)
 
 # Никакой разницы в этих формах пока нет.
 LoginLogForm = OrgLogForm
+
+class RegisterForm(forms.ModelForm):
+
+    class Meta:
+        model = RegisterProfile
+        # Задаем порядок полей:
+        fields = ('user_name', 'password1', 'password2',
+                  'user_last_name', 'user_first_name', 'user_middle_name', 'user_email',
+                  'org_type', 'org_name', 'org_full_name', 'org_inn', 'org_director',
+                  'org_phones',
+                  'captcha',
+                 )
+
+    captcha = ReCaptchaField(label='')
+    password1 = forms.CharField(label=_(u"Пароль"), widget=forms.PasswordInput())
+    password2 = forms.CharField(label=_(u"Пароль (повторите)"), widget=forms.PasswordInput())
+
+    def __init__(self, request, *args, **kwargs):
+        super(RegisterForm, self).__init__(*args, **kwargs)
+        self.fields['captcha'].error_messages['captcha_invalid'] = _(u'Неверно. Попробуйте еще раз.')
+
+    def clean_user_name(self):
+        user_name=self.cleaned_data['user_name'].strip()
+        if not re.match(r'^[A-Za-z0-9_-]+$', user_name):
+            raise forms.ValidationError(_(u"Имя может состоять только из латинских букв, "
+                                          u"цифр, знаков подчеркивания или дефиса"))
+        if User.objects.filter(username=user_name).exists():
+            raise forms.ValidationError(_(u"Это имя уже используется в системе"))
+        q = Q(user_name=user_name) & \
+            ~Q(status__in=(RegisterProfile.STATUS_DECLINED, RegisterProfile.STATUS_APPROVED, ))
+        if RegisterProfile.objects.filter(q).exists():
+            raise forms.ValidationError(_(u"Это имя уже используется среди кандидатов на регистрацию"))
+        return user_name
+
+    def clean(self):
+        cleaned_data = super(RegisterForm, self).clean()
+        password1 = self.cleaned_data.get('password1')
+        password2 = self.cleaned_data.get('password2')
+        if password1 and password2 and password1 != password2:
+            raise forms.ValidationError(_(u"Пароли не совпадают"))
+        for field in cleaned_data:
+            if field not in ('password1', 'password2') and \
+              isinstance(cleaned_data[field], basestring):
+                cleaned_data[field] = cleaned_data[field].strip()
+        return cleaned_data
+
+class OrgBurialStatsForm(forms.Form):
+
+    date_from = forms.DateField(required=False, label=_(u"С"))
+    date_to = forms.DateField(required=False, label=_(u"по"))
