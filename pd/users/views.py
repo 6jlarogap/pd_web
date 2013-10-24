@@ -414,11 +414,6 @@ class RegisterView(CreateView):
     template_name = 'register.html'
     form_class = RegisterForm
 
-    def get_form_kwargs(self):
-        data = super(RegisterView, self).get_form_kwargs()
-        data['request'] = self.request
-        return data
-
     def form_valid(self, form):
         obj = form.save(commit=False)
         obj.user_password = make_password(form.cleaned_data['password1'])
@@ -668,6 +663,11 @@ org_burial_stats = OrgBurialStatsView.as_view()
 class SupportView(FormView):
     form_class = SupportForm
     template_name = 'support.html'
+
+    def get_form_kwargs(self):
+        data = super(SupportView, self).get_form_kwargs()
+        data['request'] = self.request
+        return data
 
     def form_valid(self, form):
         form.save()
