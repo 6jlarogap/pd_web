@@ -63,7 +63,7 @@ STATIC_URL = '/static/'
 
 
 STATICFILES_DIRS = (
-    './static_src/',
+    os.path.join(ROOT_DIR, 'static_src/'),
 )
 
 STATICFILES_FINDERS = (
@@ -106,7 +106,7 @@ ROOT_URLCONF = 'pd.urls'
 WSGI_APPLICATION = 'pd.wsgi.application'
 
 TEMPLATE_DIRS = (
-    './templates/',
+    os.path.join(ROOT_DIR, 'templates/'),
 )
 
 
