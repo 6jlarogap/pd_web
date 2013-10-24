@@ -2,8 +2,21 @@
 
 DEBUG = True
 TEMPLATE_DEBUG = DEBUG
+ASSETS_DEBUG = DEBUG
+
 ADMIN_ENABLED = True
 SUPERVISOR_ORG_INN = '12345'
+
+ADMINS = (
+
+    ('Ivan Ivanov', 'ivan.ivanov@org.com'),
+
+)
+
+MANAGERS = ADMINS
+
+# Настройка на production server (раскомментировать)
+# REST_FRAMEWORK['DEFAULT_RENDERER_CLASSES'] = (  'rest_framework.renderers.JSONRenderer' , )
 
 DATABASES = {
     'default': {
