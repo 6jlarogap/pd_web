@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from django.conf import settings
 
+
 class UnclearDateFieldSerializer(serializers.Field):
     """
     Field to frontend conversion
@@ -8,10 +9,10 @@ class UnclearDateFieldSerializer(serializers.Field):
     next step: serializers.WritebleField
     """
     def to_native(self, obj):
-        if obj:
-            return obj.strftime('%d.%m.%Y')
-
-
+        try:
+            return obj.strftime('%Y.%m.%d')
+        except:
+            return obj
 
 
 class ThumbnailFieldSerializer(serializers.Field):

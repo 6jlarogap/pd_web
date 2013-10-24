@@ -18,7 +18,6 @@ urlpatterns = patterns('rest_api.views',
 )
 
 
-
 urlpatterns += patterns('geo.views',
     url(r'^geo/country/list/$', 'country_list', name='country-list'),
     url(r'^geo/region/list/$',  'region_list',  name='region-list'),

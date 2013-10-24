@@ -99,7 +99,8 @@ class CemeteryViewSet(viewsets.ModelViewSet):
         if not object.address:
             location_id = self.request.GET.get('address_id')
 
-            if self.get_queryset.filter(location_id=location_id).count()==0:
+            # Если адрес привязан к другой ugh - выйти
+            if Cemetery.objects.exclude(ugh=self.request.user.profile.org).filter(location_id=location_id).count()>0:
                 return Http404()
 
             if location_id:
@@ -254,7 +255,6 @@ class GraveViewSet(viewsets.ModelViewSet):
     def pre_save(self, object):
         # Update placer point coords
         res = Grave.objects.filter(place=object.place, lng__isnull=False, lat__isnull=False).\
-            annotate(countval=Count('id')).\
             aggregate(lng=Avg('lng'), lat=Avg('lat')) #, cnt=Count('id')
         object.place.lat = res["lat"]
         object.place.lng = res["lng"]  
@@ -300,7 +300,7 @@ class GraveViewSet(viewsets.ModelViewSet):
     def destroy(self, request, pk=None):
         try:
             object = self.model.objects.get(pk=int(pk))
-            write_log(self.request, object.place, _(u'Могила удалена'))
+            write_log(self.request, object.place, _(u'Могила №%d удалена') % object.pk)
             object.delete();
         except:
             raise Http404()
@@ -372,7 +372,6 @@ class GravePhotoViewSet(viewsets.ModelViewSet):
         # Update grave point coords
         grave = object.grave
         res = GravePhoto.objects.filter(grave=grave, lng__isnull=False, lat__isnull=False).\
-            annotate(countval=Count('id')).\
             aggregate(lng=Avg('lng'), lat=Avg('lat')) #, cnt=Count('id')
         grave.lng = res["lng"]
         grave.lat = res["lat"]
@@ -381,7 +380,6 @@ class GravePhotoViewSet(viewsets.ModelViewSet):
         # Update place point coords
         place = object.grave.place
         res = Grave.objects.filter(place=place, lng__isnull=False, lat__isnull=False).\
-            annotate(countval=Count('id')).\
             aggregate(lng=Avg('lng'), lat=Avg('lat')) #, cnt=Count('id')
         place.lng = res["lng"]
         place.lat = res["lat"]

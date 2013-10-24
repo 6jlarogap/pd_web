@@ -60,7 +60,6 @@ urlpatterns += patterns('pd.views',
     url(r'^geo/', include('geo.urls')),
     url(r'^import/', include('import_burials.urls')),
     
-    #url(r'^manage/cemetery2$', TemplateView.as_view(template_name='base_angular.html'),), # v1.5
     url(r'^api/', include('rest_api.urls')),
     url(r'^', include(router.urls)),
 )

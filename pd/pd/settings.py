@@ -5,9 +5,7 @@ import os
 DEBUG = False
 TEMPLATE_DEBUG = DEBUG
 
-ADMINS = (
-    ('Arcady Chumachenko', 'arcady.chumachenko@gmail.com'),
-)
+ADMINS = ()
 
 MANAGERS = ADMINS
 
@@ -111,7 +109,6 @@ TEMPLATE_DIRS = (
     './templates/',
 )
 
-SENTRY_DSN = 'https://3d969464fe0c413f8394d2a045afc2d9:ab5346a1afbc43ceb131bd02c1f2ed53@app.getsentry.com/4786'
 
 INSTALLED_APPS = (
     'django.contrib.auth',
@@ -255,9 +252,10 @@ REST_FRAMEWORK = {
         'rest_framework.authentication.BasicAuthentication',
         'rest_framework.authentication.SessionAuthentication',
     ),
-    #'DEFAULT_RENDERER_CLASSES': (
-    #    'rest_api.serializers.TranslatedJsonRenderer',
-    #),
+    'DEFAULT_RENDERER_CLASSES': (
+        'rest_framework.renderers.JSONRenderer',
+        'rest_framework.renderers.BrowsableAPIRenderer',
+    ),
 }
 
 
