@@ -4,6 +4,7 @@ import os
 import pytils
 import datetime
 
+from django.conf import settings
 from django.db import models
 from django.db.models.loading import get_model
 from django.utils.translation import ugettext as _
@@ -149,6 +150,9 @@ def files_upload_to(instance, filename):
         return os.path.join('bfiles', str(instance.burial.pk), fname)
     elif isinstance(instance, get_model('burials', 'PlaceStatusFiles')):
         return os.path.join('place-status-files', today_dir, fname)
+    elif isinstance(instance, get_model('burials', 'AreaPhoto')):
+        d = datetime.date.today()
+        return os.path.join('area-photos', today_dir,fname)
     elif isinstance(instance, get_model('persons', 'DeathCertificateScan')):
         return os.path.join('death-certificates', today_dir, fname)
     elif isinstance(instance, get_model('burials', 'GravePhoto')):
@@ -157,6 +161,7 @@ def files_upload_to(instance, filename):
         return os.path.join('register-profile', today_dir, fname)
     else:
         return os.path.join('files', fname)
+
 
 class Files(models.Model):
     """
@@ -175,10 +180,14 @@ class Files(models.Model):
     def delete_from_media(self):
         if self.bfile and os.path.exists(self.bfile.path):
             os.remove(self.bfile.path)
+            thmb = os.path.join(settings.THUMBNAILS_STORAGE_ROOT, self.bfile.name)
+            if os.path.exists(thmb):
+                os.shutil.rmtree(thmb)
 
     def delete(self):
         self.delete_from_media()
         super(Files, self).delete()
+
 
 class Photo(Files):
     """

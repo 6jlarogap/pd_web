@@ -1,0 +1,30 @@
+<form name="graveAddForm" novalidate>
+    <div class="modal-header">
+        <h3>Добавление могилы</h3>
+    </div>
+    <div class="modal-body">
+        <dl class="dl-horizontal">
+            <dt>Номер могилы:</dt>
+            <dd>
+                <input name="graveNumber" id="id_new_grave_number" type="number" ng-model="newGrave.grave_number"
+                       required maxlength="255" disabled="disabled"
+                       min="1" max="{{max_grave_number+1}}"/>
+                <span class="error" ng-show="graveAddForm.graveNumber.$error.required">Не указан номер могилы</span>
+            </dd>
+            <dt>Широта:</dt>
+            <dd>
+                <input name="graveLatitude" id="id_new_grave_latitude" type="text" ng-model="newGrave.lat" maxlength="255"/>
+            </dd>
+            <dt>Долгота:</dt>
+            <dd>
+                <input name="graveLongitude" id="id_new_grave_longitude" type="text" ng-model="newGrave.lng" maxlength="255"/>
+            </dd>
+        </dl>
+    </div>
+    <div class="modal-footer">
+        <button class="btn btn-primary" ng-disabled="!graveAddForm.$valid" ng-click="addGrave(graveAddForm)">
+            Добавить
+        </button>
+        <button class="btn cancel" ng-click="closeEditForm('isGraveAddOpen')">Закрыть</button>
+    </div>
+</form>

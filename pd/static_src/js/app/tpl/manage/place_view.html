@@ -1,0 +1,202 @@
+<alert ng-repeat="alert in alerts" type="alert.type" close="closeAlert($index)">{{alert.msg}}</alert>
+
+<ul class="breadcrumb">
+    <li><h3 class="brand" href="#">Место "{{item.place}}"</h3></li>
+    <li><span class="divider">|</span></li>
+    <li><a href="/manage/cemetery/{{cemetery.id}}/area/{{area.id}}">Участок "{{area.name}}"</a></li>
+    <li><span class="divider">|</span></li>
+    <li><a href="/manage/cemetery/{{cemetery.id}}/">{{cemetery.name}}</a></li>
+    <li><span class="divider">|</span></li>
+    <li><a href="#" ng-click="openEditForm('isPlaceEditorOpen')">Редактировать место</a></li>
+    <li><span class="divider">|</span></li>
+    <li><a href="#" ng-click="openEditForm('isGraveAddOpen')">Добавить могилу</a></li>
+</ul>
+
+<div class="place-view">
+    <div class="row-fluid">
+        <div class="span7">
+            <h1>{{item.name}}</h1>
+            <dl class="dl-horizontal">
+                <dt>Кладбище:</dt>
+                <dd>{{ cemetery.name }}</dd>
+                <dt>Участок:</dt>
+                <dd>{{ area.name }}</dd>
+                <dt>Ряд:</dt>
+                <dd>{{ item.row }}</dd>
+                <dt>Место:</dt>
+                <dd>{{ item.place }}</dd>
+                <dt>Ответственный:</dt>
+                <dd>
+                    {{ responsible.last_name + ' ' + responsible.first_name + ' ' + responsible.middle_name }}
+                    <button class="btn btn-success btn-mini"
+                            ng-click="openEditForm('isResponsibleEditorOpen')">
+                        <span class="icon-edit"></span>
+                    </button>
+                    <button class="btn btn-danger btn-mini"
+                            ng-show="responsible.last_name || responsible.first_name || responsible.middle_name"
+                            ng-click="removeResponsible()">
+                        <span class="icon-remove"></span>
+                    </button>
+                </dd>
+                <dt>Могил всего</dt>
+                <dd>{{graves.length}}</dd>
+                <dt>Свободно</dt>
+                <dd>{{item.available_count}}</dd>
+                
+                <dt>Координаты</dt>
+                <dd>широта: {{item.lat || '-'}}, долгота: {{item.lng || '-'}}</dd>
+                <dt>Размеры</dt>
+                <dd>длинна {{item.place_length || '-'}}м, ширина {{item.place_width || '-'}}м</dd>
+                
+                <!-- dt></dt>
+                <dd><a href="#" class="btn btn-success" ng-click="openEditForm('isPlaceEditorOpen')">Редактировать</a></dd -->
+            </dl>
+        </div>
+	    <yandex-map id="yandex-map" class="span5" coordinates="placeCoordinates" points="placePoints">
+	    </yandex-map>
+    </div>
+
+
+    <div class="graves row-fluid clearfix">
+        <h2>Могилы</h2>
+        <!-- div class="row-fluid"><button class="btn btn-success" ng-click="openEditForm('isGraveAddOpen')">Добавить могилу</button></div -->
+        <div class="row" style="overflow-x:auto; width: auto;">
+	        
+	        <table width="auto">
+			<tr>	        	
+	        <td class="" ng-repeat="grave in graves" valign="top">
+	            <div class="grave well well-large">
+	            	<div class="btn-toolbar">
+	                    <div class="btn-group" style="margin: 0 -7px;">
+		                    <button class="btn btn-success btn-mini"ng-click="openEditForm('isGraveEditOpen', grave)">
+		                       №{{ grave.grave_number }} Редактировать
+		                    </button>
+		                    <button class="btn btn-success btn-mini"ng-click="graveMove('backward', grave)"
+		                    		ng-hide="$first">
+		                    		<i class="icon-arrow-left"></i>Влево
+		                    </button>                    
+		                    <button class="btn btn-success btn-mini"ng-click="graveMove('forward', grave)"
+		                    	ng-hide="$last">
+		                    	Вправо<i class="icon-arrow-right"></i>
+		                    </button>
+	                    </div>
+	            	</div>
+		            <div class="row-fluid meta">
+		                <div class="photo-container span12">
+		                    <img ng-show="grave.photos" ng-click="openEditForm('isGraveGalleryOpen', grave.photos)"
+		                         class="first-photo" ng-src="{{ grave.firstPhoto | thumbnail:233:134:'scale' }} " />
+		                    <img ng-show="!grave.photos" src="/static/img/no-photo.png" />
+		                </div>
+		                <!-- span ng-show="DEBUG">ID: {{ grave.id }}</span -->
+		            </div>
+		            <p style="text-align: left">Захоронения</p>
+	                <ul class="unstyled burials">
+	                    <li ng-repeat="burial in burials | filter :{grave : grave.id}"
+	                    	class="well burial {{burial.status}}" 
+	                    	ng-click="openEditForm('isBurialEditorOpen', burial)">
+	                        <h4 style="text-align: left">{{burial.deadman.last_name}}</h4>
+	                        <h4 style="text-align: left">{{burial.deadman.middle_name}}</h4>
+	                        <h4 style="text-align: left">{{burial.deadman.first_name}}</h4>
+	                        <div>{{burial.fact_date || burial.plan_date}}</div>
+	                    </li>
+	                </ul>
+	                
+	                <div class="unstyled well burial" style="padding:10px;"> 
+	                	<a class="span12" target="_current" 
+	                		href="/burials/create/?place_id={{item.id}}&grave_id={{grave.id}}">
+	                		<h4>+ Добавить</h4>
+	                	</a>
+	                </div>
+					<div class="btn-toolbar">
+	                	<button class="btn btn-mini btn-danger pull-right" 
+	                		ng-show="!haveBurials(grave.id)" 
+	                		ng-click="deleteGrave(grave)">
+	                		Удалить могилу
+                		</button>
+					</div>
+	            </div>
+	        </td>
+	        
+	        </tr>
+	        </table>
+        </div>
+	        <br/>
+    </div>
+
+	<ul class="breadcrumb">
+	    <li><h3 class="brand" href="#">Место "{{item.place}}"</h3></li>
+	    <li><span class="divider">|</span></li>
+	    <li><a href="/manage/cemetery/{{cemetery.id}}/area/{{area.id}}">Участок "{{area.name}}"</a></li>
+	    <li><span class="divider">|</span></li>
+	    <li><a href="/manage/cemetery/{{cemetery.id}}/">{{cemetery.name}}</a></li>
+	    <li><span class="divider">|</span></li>
+	    <li><a href="#" ng-click="openEditForm('isPlaceEditorOpen')">Редактировать место</a></li>
+	    <li><span class="divider">|</span></li>
+	    <li><a href="#" ng-click="openEditForm('isGraveAddOpen')">Добавить могилу</a></li>
+	</ul>
+
+    <!-- POPUP Place edit form -->
+    <div modal="isPlaceEditorOpen" close="closeEditForm('isPlaceEditorOpen')">
+        <div ng-include src="'/static/js/app/tpl/manage/form_edit_place.html'"></div>
+    </div>
+    <!-- EOF POPUP form -->
+
+    <!-- POPUP Responsible edit form -->
+    <div modal="isResponsibleEditorOpen" close="closeEditForm('isResponsibleEditorOpen')">
+        <div ng-include src="'/static/js/app/tpl/manage/form_edit_responsible.html'"></div>
+    </div>
+    <!-- EOF POPUP form -->
+
+    <!-- POPUP Add grave -->
+    <div modal="isGraveAddOpen" close="closeEditForm('isGraveAddOpen')">
+        <div ng-include src="'/static/js/app/tpl/manage/form_add_grave.html'"></div>
+    </div>
+    <!-- EOF POPUP form -->
+
+    <!-- POPUP Edit grave -->
+    <div modal="isGraveEditOpen" close="closeEditForm('isGraveEditOpen')">
+        <div ng-include src="'/static/js/app/tpl/manage/form_edit_grave.html'"></div>
+    </div>
+    <!-- EOF POPUP form -->
+
+    <!-- POPUP Burial edit form -->
+    <div modal="isBurialEditorOpen" close="closeEditForm('isBurialEditorOpen')">
+        <div ng-include src="'/static/js/app/tpl/manage/form_edit_burial.html'"></div>
+    </div>
+    <!-- EOF POPUP form -->
+
+    <div options="{dialogClass: 'modal gallery'}" modal="isGraveGalleryOpen" close="closeEditForm('isGraveGalleryOpen')">
+        <div class="modal-header">
+            <h3>Фотографии</h3>
+        </div>
+        <div class="modal-body">
+            <div class="row">
+                <div class="span9">
+                    <img  ng-show="currentImage" ng-src="{{'/media/'+currentImage.bfile}}" />
+                    <img  ng-hide="currentImage" alt="Нет фотографии"
+                        src="/static/no-image.png" width="265px" height="265px"/>
+                </div>
+                <div class="span2 well preview-col">
+                    <ul class="thumbnails">
+                        <li class="thumbnail-preview-col" ng-repeat="image in selectedGravePhotos">
+                            <img class="thumbnail"  ng-click="setCurrentImage(image)"
+                                 ng-src="{{image.bfile | thumbnail:120:100:'scale'}}"
+                            />
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn cancel" ng-click="closeEditForm('isGraveGalleryOpen')">Закрыть</button>
+        </div>
+    </div>
+
+    <div class="row-fluid">
+        <div class="span12">
+            <h3>История изменений</h3>
+            <div class="gridStyle" ng-grid="logGridOptions"></div>
+    	</div>      
+	</div>
+
+</div>

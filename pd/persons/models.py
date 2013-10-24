@@ -133,8 +133,9 @@ class DeadPerson(BasePerson):
     """
     Мертвое ФЛ
     """
-    birth_date = UnclearDateModelField(_(u"Дата рождения"), blank=True, null=True)
-    death_date = UnclearDateModelField(_(u"Дата смерти"), blank=True, null=True)
+	# serialize=False - не выгружать значение поля в фикстуры. Для этого типа поля не описан сериализатор
+    birth_date = UnclearDateModelField(_(u"Дата рождения"), serialize=False, blank=True, null=True)
+    death_date = UnclearDateModelField(_(u"Дата смерти"), serialize=False, blank=True, null=True)
 
     def save(self, *args, **kwargs):
         self.first_name = self.first_name.capitalize().strip(' ').strip('*')

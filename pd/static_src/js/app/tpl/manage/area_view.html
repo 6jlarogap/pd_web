@@ -1,0 +1,154 @@
+<alert ng-repeat="alert in alerts" type="alert.type" close="closeAlert($index)">{{alert.msg}}</alert>
+
+<ul class="breadcrumb">
+  	<li><h3 class="brand" href="#">Участок "{{area.name}}"</h3></li>
+    <li><span class="divider">|</span></li>
+    <li><a href="/manage/cemetery/">Список кладбищ</a></li>
+    <li><span class="divider">|</span></li>
+    <li><a href="/manage/cemetery/{{area.cemetery}}">Назад к кладбищу</a></li>
+    <li><span class="divider">|</span></li>
+    <li><a href="#" ng-click="openEditForm()">Редактировать</a></li>
+    <li><span class="divider">|</span></li>
+    <li><a href="#" ng-click="openAddModal()">Добавить место</a></li>
+    <li><span class="divider">|</span></li>
+    <li><a href="#" ng-click="openUploadImageModal()">Загрузить фотографии</a></li>
+</ul>
+
+<div class="row-fluid">
+	<dl class="dl-horizontal">
+	  <dt>Название</dt>
+	  <dd>{{area.name}}</dd>
+	  <dt>Открытость</dt>
+	  <dd>{{area.availability|list:AVAILABILITY_CHOICES}}</dd>
+	  <dt>Назначение</dt>
+	  <dd>{{area.purpose|objList:PURPOSE_LIST}}</dd>
+	  <dt>Кол-во могил в месте</dt>
+	  <dd>{{area.places_count}}</dd>
+	</dl>
+</div>
+
+<hr />
+
+<!-- removed style full-size-grid -->
+<div class="gridStyle" ng-grid="gridOptions" style="height:300px !important;"></div>
+
+
+<ul class="breadcrumb">
+  	<li><h3 class="brand" href="#">Участок "{{area.name}}"</h3></li>
+    <li><span class="divider">|</span></li>
+    <li><a href="/manage/cemetery/">Список кладбищ</a></li>
+    <li><span class="divider">|</span></li>
+    <li><a href="/manage/cemetery/{{area.cemetery}}">Назад к кладбищу</a></li>
+    <li><span class="divider">|</span></li>
+    <li><a href="#" ng-click="openEditForm()">Редактировать</a></li>
+    <li><span class="divider">|</span></li>
+    <li><a href="#" ng-click="openAddModal()">Добавить место</a></li>
+    <li><span class="divider">|</span></li>
+    <li><a href="#" ng-click="openUploadImageModal()">Загрузить фотографии</a></li>
+</ul>
+
+
+<!-- POPUP form -->
+<div modal="isEditorOpen" close="closeEditForm()">
+    <div class="modal-header">
+        <h3>Редактировать участок "{{area.name}}"</h3>
+    </div>
+    <div class="modal-body">
+    	<div ng-include src="'/static/js/app/tpl/manage/form_edit_area.html'"></div>
+    </div>
+    <div class="modal-footer">
+    	<button class="btn btn-primary" ng-disabled="areaEditForm.$invalid" ng-click="saveEditForm()">Сохранить</button>
+        <button class="btn cancel" ng-click="closeEditForm()">Закрыть</button>
+    </div>
+</div>
+<!-- EOF POPUP form -->
+
+    
+
+<div modal="addModalOpened" close="closeAddModal()" options="addOpts">
+    <div class="modal-header">
+        <h3>Добавить место</h3>
+    </div>
+    <div class="modal-body">
+        <div ng-include src="'/static/js/app/tpl/manage/form_add_place.html'"></div>
+    </div>
+    <div class="modal-footer">
+        <button ng-click="addElement(addItem)" class="btn btn-primary" ng-disabled="createForm.$invalid">Добавить</button>
+        <button ng-click="closeAddModal()" class="btn" >Отменить</button>
+    </div>
+</div>
+
+
+
+<h2>Фотографии</h2>
+
+<div class="row">
+	<div class="span10 well well-large" style="min-height:600px !important;">
+		<img ng-show="currentImage" ng-src="{{'/media/'+currentImage.bfile}}" />
+		<img ng-hide="currentImage" alt="Нет фотографии"
+			src="/static/no-image.png" width="265px" height="265px"/>
+	</div>
+    <div class="span2 well preview-col">
+	    <ul class="thumbnails">
+	        <li class="thumbnail-preview-col" ng-repeat="image in area_photo">
+	            <a href="#" class="thumbnail" ng-click="setCurrentImage(image)">
+	            	<img ng-src="{{image.bfile | thumbnail:120:100:'scale'}}" 
+	            		width="120px" height="100px" style="margin:0px;"/>
+	            </a>
+	            {{image.lat}} {{image.lng}}
+	            ---
+	        </li>
+	    </ul>
+    </div>
+</div>
+
+
+
+<div modal="uploadImageModalOpened" close="closeUploadImageModal()" options="addOpts">
+	
+	    <div class="modal-header">
+	        <h3>Загрузка файлов</h3>
+	    </div>
+	    <div class="modal-body">
+			<form id="fileupload" action="{{gallery_url}}" method="POST" enctype="multipart/form-data">
+	    		<dl class="row-fluid">
+					<dt>Широта:</dt>
+					<dd>
+						<input type="text" name="lat" ng-model="gallery_data.lat" value="{{default_lat}}" maxlength="10"/>
+					</dd>
+					<dt>Долгота:</dt>
+					<dd>
+						<input type="text" name="lng" ng-model="gallery_data.lng" value="{{default_lng}}"/>
+					</dd>
+					<dt>Коментарий:</dt>
+					<dd>
+						<input class="span12" type="text" name="comment" ng-model="gallery_data.comment" value=""/>
+					</dd>
+					<dt>Файлы для загрузки:</dt>
+					<dd>
+						<div class="span5 badge" ng-repeat="file in files" style="overflow:hidden; margin-bottom: 4px;">{{file}}</div>
+					    <span ng-show="!files.length">Не выбраны</span>
+					</dd>
+				</dl>
+					<input type="hidden" name="area" value="{{area.id}}"/>
+					<input type="hidden" name="csrftoken" value="{{csrfToken}}"/>
+			</form>    
+	    </div>
+	    <div class="modal-footer">
+	        <span class="btn btn-success fileinput-button pull-left">
+	            <i class="icon-plus icon-white"></i>
+	            <input id="#fileupload" type="file" name="bfile" 
+	            		gallery_url="{{gallery_url}}"
+	            		gallery_data='{{gallery_data}}' 
+	                    multiple upload>
+	            <span>Добавить файлы...</span>
+	        </span>
+	        <!-- a href="#" class="btn pull-left" ng-click="clear()">Убрать файлы</a -->
+			<a href="#" class="btn btn-primary" ng-disabled="!files.length" ng-click="[upload(), closeUploadImageModal()]">Загрузить</a>    
+	        <button ng-click="closeUploadImageModal()" class="btn" >Отменить</button>
+	    </div>
+</div>
+
+
+
+

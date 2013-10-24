@@ -4,7 +4,21 @@ from django.db import models
 from django.db.models.query_utils import Q
 from django.utils.translation import ugettext as _
 
+from pd.models import BaseModel 
+
 import re
+
+
+class GeoPointModel(BaseModel):
+    """
+    Базовая GEO модель
+    """
+    lat = models.FloatField(_(u"Широта"), blank=True, null=True)
+    lng = models.FloatField(_(u"Долгота"), blank=True, null=True)
+
+    class Meta:
+        abstract = True
+
 
 class Country(models.Model):
     """
