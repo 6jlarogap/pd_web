@@ -19,14 +19,14 @@ from django.shortcuts import redirect, render, get_object_or_404
 from django.template.loader import render_to_string
 from django.utils.translation import ugettext_lazy as _
 from django.views.generic.base import View, TemplateView
-from django.views.generic.edit import UpdateView, CreateView
+from django.views.generic.edit import UpdateView, CreateView, FormView
 from django.views.generic.detail import DetailView
     
 from burials.views import UGHRequiredMixin, LoginRequiredMixin, SupervisorRequiredMixin
 from logs.models import Log, write_log, LoginLog
 from users.forms import UserAddForm, RegisterForm, LoruFormset, ProfileForm, UserProfileForm, \
                         UserDataForm, ChangePasswordForm, BankAccountFormset, OrgForm, \
-                        OrgLogForm, LoginLogForm, OrgBurialStatsForm
+                        OrgLogForm, LoginLogForm, OrgBurialStatsForm, SupportForm
 from users.models import Profile, Org, RegisterProfile
 from burials.models import Burial
 from pd.views import PaginateListView
@@ -414,11 +414,6 @@ class RegisterView(CreateView):
     template_name = 'register.html'
     form_class = RegisterForm
 
-    def get_form_kwargs(self):
-        data = super(RegisterView, self).get_form_kwargs()
-        data['request'] = self.request
-        return data
-
     def form_valid(self, form):
         obj = form.save(commit=False)
         obj.user_password = make_password(form.cleaned_data['password1'])
@@ -502,7 +497,7 @@ class RegisterActivation(DetailView):
             message = _(u'В регистрации отказано!')
             explain = _(
                         u'Ваша заявка на регистрацию была <b>отклонена</b>.\n'
-                        u'Обратитесь в поддержку\n'
+                        u'Обратитесь в <a href="%s">поддержку</a>\n' % reverse('support')
                        )
         elif self.object.status == RegisterProfile.STATUS_APPROVED:
             message = _(u'Регистрация успешна!')
@@ -664,3 +659,33 @@ class OrgBurialStatsView(SupervisorRequiredMixin, TemplateView):
         return OrgBurialStatsForm(data=self.request.GET or None)
 
 org_burial_stats = OrgBurialStatsView.as_view()
+
+class SupportView(FormView):
+    form_class = SupportForm
+    template_name = 'support.html'
+
+    def get_form_kwargs(self):
+        data = super(SupportView, self).get_form_kwargs()
+        data['request'] = self.request
+        return data
+
+    def form_valid(self, form):
+        form.save()
+        return super(SupportView, self).form_valid(form)
+        
+    def get_success_url(self):
+        return reverse('support_thanks')
+
+support = SupportView.as_view()
+
+class SupportThanks(TemplateView):
+    template_name = 'simple_message.html'
+
+    def get(self, request, *args, **kwargs):
+        message = _(u'Спасибо за сообщение!')
+        html_message = u'<br /><big>%s.</big>' % \
+                       _(u'Сообщение будет рассмотрено в службе поддержки')
+        return self.render_to_response({'message': message,
+                                        'html_message': html_message})
+
+support_thanks = SupportThanks.as_view()

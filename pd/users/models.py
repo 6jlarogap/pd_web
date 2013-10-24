@@ -239,7 +239,9 @@ class RegisterProfile(BaseModel):
     org_full_name = models.CharField(_(u"Полное название организации"), max_length=255, default='')
     org_inn = models.CharField(_(u"ИНН"), max_length=255, default='')
     org_director = models.CharField(_(u"ФИО директора"), max_length=255, default='')
-    org_phones = models.TextField(_(u"Телефоны"))
+    org_phones = models.TextField(_(u"Телефоны"),
+                                  help_text=_(u'В международном формате: +код-страны-код-города-номер-телефона')
+                                 )
 
     def __unicode__(self):
         return _(u"Заявка от организации %s, %s") % (self.org_name, self.user_email)

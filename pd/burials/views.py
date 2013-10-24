@@ -45,7 +45,7 @@ class CemeteryList(UGHRequiredMixin, ListView):
     model = Cemetery
 
     def get_queryset(self):
-        return Cemetery.objects.filter(Q(creator__isnull=True) | Q(ugh=self.request.user.profile.org))
+        return Cemetery.objects.filter(ugh=self.request.user.profile.org)
 
 manage_cemeteries = CemeteryList.as_view()
 
