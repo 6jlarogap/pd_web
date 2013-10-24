@@ -31,8 +31,14 @@
             }
         </style>
     </noscript>
-    <link type="text/css" href="{{ STATIC_URL }}css/custom-theme/jquery-ui-1.8.16.custom.css" rel="stylesheet" />
+
+	{% block jquery %}
+   	<link type="text/css" href="{{ STATIC_URL }}css/custom-theme/jquery-ui-1.8.16.custom.css" rel="stylesheet" />
     <link type="text/css" href="{{ STATIC_URL }}css/jquery-ui-timepicker.css" rel="stylesheet" />
+    <script type="text/javascript" src="{{ STATIC_URL }}js/jquery-1.7.2.min.js"></script>
+    <script type="text/javascript" src="{{ STATIC_URL }}js/jquery-ui-1.8.6.custom.min.js"></script>
+    <script type="text/javascript" src="{{ STATIC_URL }}js/jquery.ui.timepicker.js"></script>
+	{% endblock %}
 
     <link href="{{ STATIC_URL }}css/base.css" rel="stylesheet">
     <link href="{{ STATIC_URL }}css/print.css" rel="stylesheet" media="print">
@@ -49,16 +55,12 @@
 
     {% if close %} <script type="text/javascript">top.close();</script> {% endif %}
 
-    <script type="text/javascript" src="{{ STATIC_URL }}js/jquery-1.7.2.min.js"></script>
-    <script type="text/javascript" src="{{ STATIC_URL }}js/jquery-ui-1.8.6.custom.min.js"></script>
-    <script type="text/javascript" src="{{ STATIC_URL }}js/jquery.ui.timepicker.js"></script>
-
     <script type="text/javascript" src="{{ STATIC_URL }}js/bootstrap-dropdown.js"></script>
     <script type="text/javascript" src="{{ STATIC_URL }}js/bootstrap-modal.js"></script>
     <script type="text/javascript" src="{{ STATIC_URL }}js/bootstrap-typeahead-ajax.js"></script>
     <script type="text/javascript" src="{{ STATIC_URL }}js/utils.js"></script>
     <script type="text/javascript"
-            src="{% if request.is_secure %}https{% else %}http{% endif %}://maps.googleapis.com/maps/api/js?libraries=places&key=AIzaSyCr1PI2Q-8hxtstv5kka-8w0xxuPUEHNDA&sensor=false&language=ru">
+            src="{% if request.is_secure %}https{% else %}http{% endif %}://maps.googleapis.com/maps/api/js?libraries=places&key=AIzaSyCr1PI2Q-8hxtstv5kka-8w0xxuPUEHNDA&sensor=true&language=ru">
     </script>
 
     <script type="text/javascript">
@@ -167,7 +169,11 @@
             </div>
         </div>
 
-        <div class="container-fluid">
+
+
+
+
+		<div class="container-fluid" {% block container_attr_extra %}{% endblock %}>
             {% if messages %}
                 <ul class="messages no-print">
                     {% for m in messages %}
@@ -178,7 +184,7 @@
 
             {% block content %}{% endblock %}
         </div>
-        
+
         {% if global_context_PRODUCTION_SITE %}
             {% include "yandex_metrika.html" %}
         {% endif %}
