@@ -915,7 +915,7 @@ models.signals.post_save.connect(apply_exhumation, sender=ExhumationRequest)
 
 
 def calculate_free_burial_count(sender, instance, **kwargs):
-    if 'created' in kwargs.keys() and not kwargs['created']:
+    if 'created' in kwargs.keys() and not kwargs['created'] and instance.place:
         return
     exclude_pk_list = [i.grave.pk for i in instance.place.burial_set.select_related().all()]
     instance.place.available_count = Grave.objects.filter(place=instance.place).exclude(pk__in=exclude_pk_list).count()
