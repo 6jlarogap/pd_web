@@ -28,6 +28,7 @@ install-readme.txt, utf8 code page
     * mkdir ~/projects; cd ~/projects
     * cd ~/projects/pd_web
     * git clone https://USERNAME@bitbucket.org/USERNAME/pd_web.git
+    * bower install
     * source ~/venv/pdweb/bin/activate
     * export VIRTUALENV_DISTRIBUTE=true
     * curl http://python-distribute.org/distribute_setup.py | python
