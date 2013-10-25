@@ -203,11 +203,6 @@ class PlaceViewSet(viewsets.ModelViewSet):
         object.area = item
         write_log(self.request, object, _(u'Место №%s изменено' % object.place))
         
-        if not object.address:
-            location_id = self.request.GET.get('address_id')
-            if location_id:
-                object.address = get_object_or_404(Location, pk=location_id)
-
         # Update grave point coords
         items = Grave.objects.filter(place=object).all()
         for item in items:
