@@ -26,8 +26,8 @@ install-readme.txt, utf8 code page
  
     * mkdir ~/venv; cd ~/venv; virtualenv --no-site-packages pdweb
     * mkdir ~/projects; cd ~/projects
-    * cd ~/projects/pd_web
     * git clone https://USERNAME@bitbucket.org/USERNAME/pd_web.git
+    * cd ~/projects/pd_web
     * bower install
     * source ~/venv/pdweb/bin/activate
     * export VIRTUALENV_DISTRIBUTE=true
@@ -65,4 +65,3 @@ install-readme.txt, utf8 code page
     !!! Можно запускать и отлаживать:
         cd ~/projects/pd_web/pd
         ./manage.py runserver <параметры>
- 
