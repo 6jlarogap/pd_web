@@ -6,3 +6,5 @@ ENV
 build
 pd/media
 pd/static
+pd/asset_src
+pd/fixtures

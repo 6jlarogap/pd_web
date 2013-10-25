@@ -64,6 +64,7 @@ STATIC_URL = '/static/'
 
 STATICFILES_DIRS = (
     os.path.join(ROOT_DIR, 'static_src/'),
+    os.path.join(ROOT_DIR, 'asset_src/'),
 )
 
 STATICFILES_FINDERS = (
