@@ -3,17 +3,15 @@ import re
 
 from django.conf import settings
 from django import forms
-from django.core.mail import send_mail
+from django.core.mail import EmailMessage
 from django.contrib.auth.models import User
 from django.forms.models import inlineformset_factory, BaseInlineFormSet
 from django.utils.translation import ugettext_lazy as _
 from django.db.models.query_utils import Q
 
-from captcha.fields import ReCaptchaField
-
 from geo.forms import LocationForm
 # from geo.models import DFiasAddrobj
-from pd.forms import ChildrenJSONMixin, LoggingFormMixin
+from pd.forms import ChildrenJSONMixin, LoggingFormMixin, OurReCaptchaField
 from burials.models import Cemetery, PlaceSize
 
 from users.models import Profile, ProfileLORU, Org, BankAccount, RegisterProfile
@@ -306,13 +304,9 @@ class RegisterForm(forms.ModelForm):
                   'captcha',
                  )
 
-    captcha = ReCaptchaField(label='')
+    captcha = OurReCaptchaField(label='')
     password1 = forms.CharField(label=_(u"Пароль"), widget=forms.PasswordInput())
     password2 = forms.CharField(label=_(u"Пароль (повторите)"), widget=forms.PasswordInput())
-
-    def __init__(self, request, *args, **kwargs):
-        super(RegisterForm, self).__init__(*args, **kwargs)
-        self.fields['captcha'].error_messages['captcha_invalid'] = _(u'Неверно. Попробуйте еще раз.')
 
     def clean_user_name(self):
         user_name=self.cleaned_data['user_name'].strip()
@@ -345,14 +339,45 @@ class OrgBurialStatsForm(forms.Form):
     date_to = forms.DateField(required=False, label=_(u"по"))
 
 class SupportForm(forms.Form):
-    subject = forms.CharField(label=_(u'Тема'), max_length=100, required=True)
-    message = forms.CharField(label=_(u'Сообщение'), widget=forms.Textarea, required=True)
+    subject = forms.CharField(label=_(u'Тема (необязательно)'), max_length=100, required=False)
+    message = forms.CharField(label=_(u'Вопрос'), widget=forms.Textarea, required=True)
     sender = forms.EmailField(label=_(u'Ваш Email'), required=True)
-    captcha = ReCaptchaField(label='', required=True)
+    captcha = OurReCaptchaField(label='', required=True)
+
+    def __init__(self, request, *args, **kwargs):
+        super(SupportForm, self).__init__(*args, **kwargs)
+        self.request = request
+        if request.user.is_authenticated():
+            del self.fields['sender']
+            del self.fields['captcha']
 
     def save(self):
-        email_subject = self.cleaned_data['subject']
+        if self.cleaned_data.get('subject'):
+            email_subject = self.cleaned_data['subject']
+        else:
+            email_subject = _(u'Вопрос в поддержку')
         email_text = self.cleaned_data['message']
-        email_from = settings.DEFAULT_FROM_EMAIL
-        email_to = (self.cleaned_data['sender'], )
-        send_mail(email_subject, email_text, email_from, email_to )
+        headers = {}
+        if self.request.user.is_authenticated():
+            email_text += _(u'\n\n'
+                            u'Пользователь: %s / %s\n'
+                            u'Email: %s\n'
+                            u'Организация: %s\n'
+                           ) % (self.request.user.username,
+                                self.request.user.profile.full_name(),
+                                self.request.user.email,
+                                self.request.user.profile.org,
+                               )
+            if self.request.user.email:
+                email_from = self.request.user.email
+            else:
+                email_from = settings.DEFAULT_FROM_EMAIL
+        else:
+            email_from = self.cleaned_data['sender']
+        email_to = (settings.DEFAULT_FROM_EMAIL, )
+        # Некоторые почтовые серверы подменяют поле From: письма
+        # на тот почтовый ящик, через который шла аутентификация
+        # при отправке письма (settings.EMAIL_HOST_USER
+        #
+        headers = {'Reply-To': email_from, }
+        EmailMessage(email_subject, email_text, email_from, email_to, headers=headers, ).send()

@@ -9,10 +9,18 @@ install-readme.txt, utf8 code page
         - USERNAME:             имя пользователя на bitbucket.org
  
     * Д.б. установлено на Linux:
-        - python, не ниже 2.6,  в т.ч. для разработчика
+        - средства разработки:
+            * python, не ниже 2.6
+            * C /C++
+            * g++
         - python-virtualenv
         - postgresql,           в т.ч. для разработчика
         - mysql,                в т.ч. для разработчика
+    
+        - bower
+            * скачать NodeJS: http://nodejs.org/
+            * распаковать, cd node-<VERSION>; ./configure; make; sudo make install
+            * sudo npm install -g bower
  
     * Д.б. запущены postgresql & mysql серверы
  
