@@ -60,8 +60,7 @@ js_angular = Bundle(
         
         #<!--script type="text/javascript" src="{{ STATIC_URL }}js/angular3d/ng-grid/i18n/ru.js"></script-->
         #<!--script type="text/javascript" src="{{ STATIC_URL }}js/angular3d/bootstrap-typeahead.js"></script-->
-        "js/libs/lodash.compat.min.js",
-
+        "lodash/dist/lodash.compat.min.js",
         # #############################
 
 
