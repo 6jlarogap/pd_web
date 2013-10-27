@@ -36,7 +36,7 @@ class Cemetery(BaseModel):
     time_slots = models.TextField(_(u"Время для захоронения"), default='', blank=True,
                                   help_text=_(u'В формате ЧЧ:ММ, по одному на строку'))
 
-    creator = models.ForeignKey('auth.User', verbose_name=_(u"Владелец"), editable=False, null=True,
+    creator = models.ForeignKey('auth.User', verbose_name=_(u"Владелец"), editable=False,
                                 on_delete=models.PROTECT)
     ugh = models.ForeignKey(Org, verbose_name=_(u"УГХ"), null=True, limit_choices_to={'type': Org.PROFILE_UGH},
                             on_delete=models.PROTECT)
