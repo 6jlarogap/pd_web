@@ -469,17 +469,26 @@ class RegisterActivation(DetailView):
             if 'confirm' in request.GET:
                 self.object.status = RegisterProfile.STATUS_CONFIRMED
                 self.object.save()
+                RegisterProfile.objects.filter(
+                    status__in=(RegisterProfile.STATUS_DECLINED, RegisterProfile.STATUS_APPROVED, ),
+                    dt_modified__lt=datetime.datetime.now() - datetime.timedelta(days=30),
+                ).delete()
                 explain = _(
                             u'Спасибо за подтверждение заявки на регистрацию!\n'
                             u'Ваша заявка принята на <b>рассмотрение администратора системы</b>\n'
-                        )
+                )
                 email_subject = "%s %s" % (unicode(_(u"Заявка на регистрацию на")),
                                            unicode(_(u"ПохоронноеДело")),
                                           )
                 email_text = render_to_string(
                                 'register_notify_supervisor_email.txt',
-                                { 'obj': self.object, }
-                            )
+                                { 
+                                    'obj': self.object,
+                                    'host': '%s://%s' % (request.is_secure() and 'https' or 'http',
+                                                         self.request.get_host(),
+                                                        ),
+                                }
+                )
                 email_from = settings.DEFAULT_FROM_EMAIL
                 email_to = (Org.get_supervisor_email(), )
                 send_mail(email_subject, email_text, email_from, email_to )

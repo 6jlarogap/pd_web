@@ -348,8 +348,8 @@ class SupportForm(forms.Form):
         super(SupportForm, self).__init__(*args, **kwargs)
         self.request = request
         if request.user.is_authenticated():
-            del self.fields['sender']
             del self.fields['captcha']
+            self.initial['sender'] = request.user.email or request.user.profile.org.email or ''
 
     def save(self):
         if self.cleaned_data.get('subject'):
@@ -363,17 +363,14 @@ class SupportForm(forms.Form):
                             u'Пользователь: %s / %s\n'
                             u'Email: %s\n'
                             u'Организация: %s\n'
+                            u'Email организации: %s\n'
                            ) % (self.request.user.username,
                                 self.request.user.profile.full_name(),
                                 self.request.user.email,
                                 self.request.user.profile.org,
+                                self.request.user.profile.org.email,
                                )
-            if self.request.user.email:
-                email_from = self.request.user.email
-            else:
-                email_from = settings.DEFAULT_FROM_EMAIL
-        else:
-            email_from = self.cleaned_data['sender']
+        email_from = self.cleaned_data['sender']
         email_to = (settings.DEFAULT_FROM_EMAIL, )
         # Некоторые почтовые серверы подменяют поле From: письма
         # на тот почтовый ящик, через который шла аутентификация
