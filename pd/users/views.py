@@ -478,7 +478,12 @@ class RegisterActivation(DetailView):
                                           )
                 email_text = render_to_string(
                                 'register_notify_supervisor_email.txt',
-                                { 'obj': self.object, }
+                                { 
+                                    'obj': self.object,
+                                    'host': '%s://%s' % (request.is_secure() and 'https' or 'http',
+                                                         self.request.get_host(),
+                                                        ),
+                                }
                             )
                 email_from = settings.DEFAULT_FROM_EMAIL
                 email_to = (Org.get_supervisor_email(), )
