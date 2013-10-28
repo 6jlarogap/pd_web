@@ -73,6 +73,10 @@ class Cemetery(BaseModel):
                 result.append((s, v))
         return result
 
+    def get_logs(self):
+        ct = ContentType.objects.get_for_model(self)
+        return Log.objects.filter(ct=ct, obj_id=self.pk).order_by('-pk')
+
 class AreaPurpose(models.Model):
     name = models.CharField(_(u"Название"), max_length=255)
 
