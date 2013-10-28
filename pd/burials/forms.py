@@ -740,8 +740,9 @@ class BurialCommitForm(BurialForm):
         if self.fields.get('fact_date'):
             self.fields['fact_date'].required = True
             if (self.instance.is_archive() or self.request.REQUEST.get('archive')) and \
-               not self.request.user.profile.org.archive_burial_fact_date_required:
-                self.fields['fact_date'].required = False
+               cemetery:
+                if not cemetery.archive_burial_fact_date_required:
+                    self.fields['fact_date'].required = False
             else:
                 # Во всех остальных случаях, когда на форме есть факт. дата,
                 # например в закрытом зх:
@@ -834,6 +835,8 @@ class BurialCommitForm(BurialForm):
         if (not self.instance or not self.instance.pk) and self.request.user.profile.is_ugh():
             is_ugh = True
 
+        cemetery = self.cleaned_data.get('cemetery')
+
         if is_ugh:
             acc_number = self.cleaned_data.get('account_number')
             fact_date  = self.cleaned_data.get('fact_date')
@@ -858,7 +861,8 @@ class BurialCommitForm(BurialForm):
                         raise forms.ValidationError(msg)
 
             if (self.instance.is_archive() or self.request.REQUEST.get('archive')) and \
-               not self.cleaned_data.get('account_number').strip():
+               not self.cleaned_data.get('account_number').strip() and \
+               (not cemetery or cemetery.archive_burial_account_number_required):
                 msg = _(u"Нельзя закрывать архивное захоронение без указания его номера в книге учета")
                 raise forms.ValidationError(msg)
 
@@ -879,7 +883,6 @@ class BurialCommitForm(BurialForm):
             msg = _(u"Указан ряд и/или место, но не указан участок")
             raise forms.ValidationError(msg)
 
-        cemetery = self.cleaned_data.get('cemetery')
         grave_number = self.cleaned_data.get('grave_number')
         place = None
         if cemetery and area and place_number:
