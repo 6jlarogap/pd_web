@@ -224,6 +224,12 @@ class RegisterProfile(BaseModel):
         (STATUS_DECLINED, _(u"В регистрации отказано")),
         (STATUS_APPROVED, _(u"Пользователь в системе")),
     )
+    
+    # При подтверждении очередной заявки, существующие заявки, которые
+    # уже обработаны (одобрены или получили отказ) и существуют
+    # более этого числа дней, удаляются
+    #
+    CLEAR_PROCESSED = 30
 
     status = models.CharField(_(u"Статус заявки"), max_length=255, choices=STATUS_CHOICES, editable=False)
     user_name = models.CharField(_(u"Имя для входа в систему (login)"), max_length=30)
@@ -244,7 +250,11 @@ class RegisterProfile(BaseModel):
                                  )
 
     def __unicode__(self):
-        return _(u"Заявка от организации %s, %s") % (self.org_name, self.user_email)
+        fio = u'%s %s.' % (self.user_last_name, self.user_first_name[0].upper(), )
+        if self.user_middle_name:
+            fio += u'%s.' % self.user_middle_name[0].upper()
+        return _(u'Заявка: %s/"%s"/%s/%s/%s') % (self.get_org_type_display(), self.org_name,
+                                                 fio, self.user_name, self.user_email, )
     
     def is_to_confirm(self):
         return self.status == self.STATUS_TO_CONFIRM
@@ -260,7 +270,12 @@ class RegisterProfile(BaseModel):
 
     def orgs_same_inn(self):
         return Org.objects.filter(inn=self.org_inn)
-        
+
+    @classmethod
+    def get_logs(cls):
+        ct = ContentType.objects.get_for_model(cls)
+        return Log.objects.filter(ct=ct).order_by('-pk')
+
 class RegisterProfileScan(Files):
     """
     Файлы-сканы, прикрепляемые к завкам на регистрацию
