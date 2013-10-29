@@ -259,6 +259,18 @@ class OrgForm(BaseOrgForm):
             self.placesize_formset = None
         if self.is_own_org:
             self.reason_formset = ReasonFormset(data=request.POST or None, instance=self.instance)
+            print self.reason_formset.forms[0].fields['reason_type'].choices
+            choices = [('', '---------')]
+            for reason_type in Reason.TYPE_CHOICES:
+                if request.user.profile.is_ugh():
+                    if reason_type[0] in Reason.TYPES_UGH:
+                        choices.append(reason_type)
+                elif request.user.profile.is_loru():
+                    if reason_type[0] in Reason.TYPES_LORU:
+                        choices.append(reason_type)
+            label = self.reason_formset.forms[0].fields['reason_type'].label
+            for f in self.reason_formset.forms:
+                f.fields['reason_type'] = forms.fields.TypedChoiceField(choices = choices, label=label)
         else:
             self.reason_formset = None
 
