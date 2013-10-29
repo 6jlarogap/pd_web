@@ -197,7 +197,7 @@ def validate_gt0(value):
 
 class  GetLogsMixin(object):
     """
-    get_logs() fuction
+    Для функция get_logs(), применяемой во многих моделях
     """
 
     def get_logs(self):

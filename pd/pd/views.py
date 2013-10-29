@@ -33,6 +33,12 @@ class PaginateListView(ListView):
         return data
 
 class RequestToFormMixin(BaseFormView):
+    """
+    Для view, отсылающего в свою форму request
+    
+    Форма этого view дожна иметь __init__(self, request, *args, *kwargs)
+    и вызывать super(форма, self).__init__((self, *args, *kwargs)
+    """
 
     def get_form_kwargs(self):
         data = super(RequestToFormMixin, self).get_form_kwargs()
