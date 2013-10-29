@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from django.views.generic.list import ListView
+from django.views.generic.edit import BaseFormView
 
 class PaginateListView(ListView):
     """
@@ -29,4 +30,11 @@ class PaginateListView(ListView):
         get_for_paginator = u'&'.join([u'%s=%s' %  (k, v) for k,v in self.request.GET.items() if k not in self.DISPLAY_OPTIONS])
         sort = self.request.GET.get('sort', self.SORT_DEFAULT)
         data.update(form=self.get_form(), GET_PARAMS=get_for_paginator, sort=sort)
+        return data
+
+class RequestToFormMixin(BaseFormView):
+
+    def get_form_kwargs(self):
+        data = super(RequestToFormMixin, self).get_form_kwargs()
+        data['request'] = self.request
         return data

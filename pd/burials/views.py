@@ -11,6 +11,7 @@ from django.views.generic.detail import DetailView
 from django.views.generic.edit import CreateView, UpdateView
 from django.views.generic.list import ListView
 
+from pd.views import RequestToFormMixin
 from burials.forms import CemeteryForm, AreaFormset, PlaceEditForm, AddOrgForm, AreaMergeForm, BurialfileCommentEditForm
 from burials.models import Cemetery, Place, Area, BurialFiles
 from burials.burials_views import *
@@ -122,16 +123,11 @@ class CemeteryMerge(UGHRequiredMixin, TemplateView):
 
 manage_cemeteries_merge = CemeteryMerge.as_view()
 
-class PlaceView(UGHRequiredMixin, UpdateView):
+class PlaceView(UGHRequiredMixin, RequestToFormMixin, UpdateView):
     template_name = 'view_place.html'
     context_object_name = 'place'
     model = Place
     form_class = PlaceEditForm
-
-    def get_form_kwargs(self, *args, **kwargs):
-        data = super(PlaceView, self).get_form_kwargs(*args, **kwargs)
-        data['request'] = self.request
-        return data
 
     def get_queryset(self):
         org = self.request.user.profile.org
