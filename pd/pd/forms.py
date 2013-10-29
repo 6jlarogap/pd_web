@@ -87,8 +87,12 @@ class LoggingFormMixin:
             for form in [self] + self.forms:
                 prefix = self.get_prefix(form)
                 for f in form.changed_data:
-                    old_value = obj and getattr(obj, f, None) or form.initial.get(f) or ''
-                    new_value = form.cleaned_data.get(f) or ''
+                    old_value = obj and getattr(obj, f, None) or form.initial.get(f)
+                    new_value = form.cleaned_data.get(f)
+                    if not old_value and not isinstance(old_value, bool):
+                        old_value = ''
+                    if not new_value and not isinstance(new_value, bool):
+                        new_value = ''
 
                     if isinstance(old_value, datetime.date) or isinstance(old_value, UnclearDate):
                         old_value = old_value.strftime('%d.%m.%Y')
@@ -111,6 +115,9 @@ class LoggingFormMixin:
     def put_log_data(self, msg=_(u'Захоронение сохранено')):
         if self.changed_list or not self.instance or not self.instance.pk:
             changed_data_str = u'\n'.join([u'%s: %s -> %s' % cd for cd in self.changed_list])
+            changed_data_str = changed_data_str. \
+                                replace(u'True -> False', _(u'выключ.')). \
+                                replace(u'False -> True', _(u'включ.'))
             write_log(self.request, self.instance, msg + u'\n' + changed_data_str)
         else:
             write_log(self.request, self.instance, msg)

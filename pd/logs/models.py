@@ -63,7 +63,7 @@ def write_log(request, obj=None, msg='', reason=None, code=None):
             msg = u'%s: %s' % (msg, reason)
         else:
             msg = reason
-    user = request.user.is_authenticated() and request.user or None
+    user = request and request.user.is_authenticated() and request.user or None
     Log.objects.create(
         user=user,
         ct=obj and ContentType.objects.get_for_model(obj) or None,
