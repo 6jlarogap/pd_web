@@ -746,9 +746,8 @@ class BurialCommitForm(BurialForm):
         if self.fields.get('fact_date'):
             self.fields['fact_date'].required = True
             if (self.instance.is_archive() or self.request.REQUEST.get('archive')) and \
-               cemetery:
-                if not cemetery.archive_burial_fact_date_required:
-                    self.fields['fact_date'].required = False
+               cemetery and not cemetery.archive_burial_fact_date_required:
+                self.fields['fact_date'].required = False
             else:
                 # Во всех остальных случаях, когда на форме есть факт. дата,
                 # например в закрытом зх:
