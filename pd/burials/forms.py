@@ -40,16 +40,18 @@ class BaseCemeteryForm(forms.ModelForm):
             raise forms.ValidationError(_(u'Формат должен быть: по одному времени в формате ЧЧ:ММ на строку'))
         return u'\n'.join([s.strftime('%H:%M') for s in slots])
 
-class CemeteryForm(BaseCemeteryForm):
+class CemeteryForm(LoggingFormMixin, BaseCemeteryForm):
     class Meta:
         model = Cemetery
         exclude = ['ugh', ]
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, request, *args, **kwargs):
+        self.request = request
         super(CemeteryForm, self).__init__(*args, **kwargs)
         address = self.instance and self.instance.address
         self.address_form = LocationForm(data=self.data or None, instance=address, prefix='address')
         #self.address_form.fields['country_name'].required = True
+        self.forms = [self.address_form, ]
         if self.instance and self.instance.pk:
             self.area_formset = AreaFormset(data=self.data or None, instance=self.instance)
         else:
@@ -58,7 +60,11 @@ class CemeteryForm(BaseCemeteryForm):
     def is_valid(self):
         return super(CemeteryForm, self).is_valid() and self.address_form.is_valid() and (not self.area_formset or self.area_formset.is_valid())
 
+    def get_prefix(self, form):
+        return _(u"Адрес, ") if form is self.address_form else u''
+
     def save(self, commit=True, *args, **kwargs):
+        self.collect_log_data()
         obj = super(CemeteryForm, self).save(commit=False, *args, **kwargs)
         if obj.pk and self.area_formset:
             self.area_formset.save()
@@ -67,8 +73,8 @@ class CemeteryForm(BaseCemeteryForm):
             obj.address = self.address_form.save()
         if commit:
             obj.save()
+            self.put_log_data(_(u'Кладбище изменено'))
         return obj
-
 
 class CemeteryAdminForm(BaseCemeteryForm):
     class Meta:
