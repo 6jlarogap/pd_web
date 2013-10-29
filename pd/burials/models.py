@@ -41,6 +41,8 @@ class Cemetery(BaseModel):
     ugh = models.ForeignKey(Org, verbose_name=_(u"УГХ"), null=True, limit_choices_to={'type': Org.PROFILE_UGH},
                             on_delete=models.PROTECT)
     address = models.ForeignKey('geo.Location', editable=False, null=True)
+    archive_burial_fact_date_required = models.BooleanField(_(u"Дата архивного захоронения обязательна"), default=True)
+    archive_burial_account_number_required = models.BooleanField(_(u"Номер архивного захоронения обязателен"), default=True)
 
     class Meta:
         verbose_name = _(u"Кладбище")
@@ -70,6 +72,10 @@ class Cemetery(BaseModel):
                     v = u'%s (резерв кладб. %s)' % (s, len(planned)+len(approved))
                 result.append((s, v))
         return result
+
+    def get_logs(self):
+        ct = ContentType.objects.get_for_model(self)
+        return Log.objects.filter(ct=ct, obj_id=self.pk).order_by('-pk')
 
 class AreaPurpose(models.Model):
     name = models.CharField(_(u"Название"), max_length=255)

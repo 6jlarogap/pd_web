@@ -131,7 +131,6 @@ class Org(BaseModel):
                                     default=True)
     # название поля не заканчивается на date, чтоб не угодить под специфический datePicker widget для дат:
     plan_date_days_before = models.PositiveIntegerField(_(u"Кол-во дней для ввода плановой даты захоронения в прошлом"), default=0)
-    archive_burial_fact_date_required = models.BooleanField(_(u"Дата архивного захоронения обязательна"), default=False)
 
     class Meta:
         verbose_name = _(u'Организация')
