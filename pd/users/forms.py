@@ -12,7 +12,7 @@ from django.db.models.query_utils import Q
 from geo.forms import LocationForm
 # from geo.models import DFiasAddrobj
 from pd.forms import ChildrenJSONMixin, LoggingFormMixin, OurReCaptchaField
-from burials.models import Cemetery, PlaceSize
+from burials.models import Cemetery, PlaceSize, Reason
 
 from users.models import Profile, ProfileLORU, Org, BankAccount, RegisterProfile
 
@@ -235,6 +235,7 @@ class BaseOrgForm(LoggingFormMixin, forms.ModelForm):
         return name
 
 PlaceSizeFormset = inlineformset_factory(Org, PlaceSize, formset=BaseInlineFormSet, can_delete=True, extra=2)
+ReasonFormset = inlineformset_factory(Org, Reason, formset=BaseInlineFormSet, can_delete=True, extra=2)
 
 class OrgForm(BaseOrgForm):
     class Meta:
@@ -256,10 +257,27 @@ class OrgForm(BaseOrgForm):
             self.placesize_formset = PlaceSizeFormset(data=request.POST or None, instance=self.instance)
         else:
             self.placesize_formset = None
+        if self.is_own_org:
+            self.reason_formset = ReasonFormset(data=request.POST or None, instance=self.instance)
+            print self.reason_formset.forms[0].fields['reason_type'].choices
+            choices = [('', '---------')]
+            for reason_type in Reason.TYPE_CHOICES:
+                if request.user.profile.is_ugh():
+                    if reason_type[0] in Reason.TYPES_UGH:
+                        choices.append(reason_type)
+                elif request.user.profile.is_loru():
+                    if reason_type[0] in Reason.TYPES_LORU:
+                        choices.append(reason_type)
+            label = self.reason_formset.forms[0].fields['reason_type'].label
+            for f in self.reason_formset.forms:
+                f.fields['reason_type'] = forms.fields.TypedChoiceField(choices = choices, label=label)
+        else:
+            self.reason_formset = None
 
     def is_valid(self):
         return super(OrgForm, self).is_valid() and self.address_form.is_valid() and \
-                    (not self.placesize_formset or self.placesize_formset.is_valid())
+                    (not self.placesize_formset or self.placesize_formset.is_valid()) and \
+                    (not self.reason_formset or self.reason_formset.is_valid())
                     # and self.bank_formset.is_valid()
 
     def save(self, commit=True):
@@ -268,6 +286,8 @@ class OrgForm(BaseOrgForm):
         # self.bank_formset.save()
         if self.placesize_formset:
             self.placesize_formset.save()
+        if self.reason_formset:
+            self.reason_formset.save()
         if any(self.address_form.cleaned_data.values()):
             org.off_address = self.address_form.save()
         if commit:
