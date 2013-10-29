@@ -5,7 +5,7 @@ from django.db import models, connection
 from django.db.models.deletion import ProtectedError
 from django.utils.translation import ugettext_lazy as _
 from django.db.models.query_utils import Q
-from pd.models import UnclearDateModelField, BaseModel, Files, Photo, validate_gt0
+from pd.models import UnclearDateModelField, BaseModel, Files, Photo, GetLogsMixin, validate_gt0
 
 from persons.models import DeadPerson, SafeDeleteMixin, DeathCertificate
 from reports.models import Report
@@ -13,7 +13,7 @@ from users.models import Org, Profile, Dover, ProfileLORU
 from logs.models import Log
 
 
-class Cemetery(BaseModel):
+class Cemetery(GetLogsMixin, BaseModel):
     PLACE_CEMETERY = 'cemetery'
     PLACE_AREA = 'area'
     PLACE_ROW = 'row'
@@ -72,10 +72,6 @@ class Cemetery(BaseModel):
                     v = u'%s (резерв кладб. %s)' % (s, len(planned)+len(approved))
                 result.append((s, v))
         return result
-
-    def get_logs(self):
-        ct = ContentType.objects.get_for_model(self)
-        return Log.objects.filter(ct=ct, obj_id=self.pk).order_by('-pk')
 
 class AreaPurpose(models.Model):
     name = models.CharField(_(u"Название"), max_length=255)
@@ -176,10 +172,6 @@ class Place(SafeDeleteMixin, BaseModel):
 
     def remove_responsible(self):
         self.safe_delete('responsible', self)
-
-    def get_logs(self):
-        ct = ContentType.objects.get_for_model(self)
-        return Log.objects.filter(ct=ct, obj_id=self.pk).order_by('-pk')
 
     def bio_only(self):
         """
@@ -286,7 +278,7 @@ class GravePhoto(Photo):
     """
     grave = models.ForeignKey(Grave)
 
-class Burial(SafeDeleteMixin, BaseModel):
+class Burial(SafeDeleteMixin, GetLogsMixin, BaseModel):
     STATUS_BACKED = 'backed'
     STATUS_DECLINED = 'declined'
     STATUS_DRAFT = 'draft'
@@ -617,10 +609,6 @@ class Burial(SafeDeleteMixin, BaseModel):
 
     def get_responsible(self):
         return self.responsible or (self.get_place() and self.get_place().responsible) or None
-
-    def get_logs(self):
-        ct = ContentType.objects.get_for_model(self)
-        return Log.objects.filter(ct=ct, obj_id=self.pk).order_by('-pk')
 
     def get_last_decline_reason(self):
         """
