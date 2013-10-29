@@ -27,4 +27,9 @@
             <input type="submit" class="btn" value="{% trans "cохранить" %}" class="btn btn-primary"/>
         </p>
     </form>
+
+    {% with object=form.instance %}
+        {% include "object_logs.html" %}
+    {% endwith %}
+
 {% endblock %}

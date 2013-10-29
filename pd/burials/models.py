@@ -8,7 +8,7 @@ from django.utils.translation import ugettext_lazy as _
 from django.db.models.query_utils import Q
 from django.conf import settings
 
-from pd.models import UnclearDateModelField, BaseModel, Files, Photo, validate_gt0
+from pd.models import UnclearDateModelField, BaseModel, Files, Photo, GetLogsMixin, validate_gt0
 
 from persons.models import DeadPerson, SafeDeleteMixin, DeathCertificate
 from reports.models import Report
@@ -18,7 +18,7 @@ from logs.models import Log
 from geo.models import GeoPointModel
 
 
-class Cemetery(BaseModel):
+class Cemetery(GetLogsMixin, BaseModel):
     PLACE_CEMETERY = 'cemetery'
     PLACE_AREA = 'area'
     PLACE_ROW = 'row'
@@ -46,6 +46,8 @@ class Cemetery(BaseModel):
     ugh = models.ForeignKey(Org, verbose_name=_(u"УГХ"), null=True, limit_choices_to={'type': Org.PROFILE_UGH},
                             on_delete=models.PROTECT)
     address = models.ForeignKey('geo.Location', editable=False, null=True)
+    archive_burial_fact_date_required = models.BooleanField(_(u"Дата архивного захоронения обязательна"), default=True)
+    archive_burial_account_number_required = models.BooleanField(_(u"Номер архивного захоронения обязателен"), default=True)
 
     class Meta:
         verbose_name = _(u"Кладбище")
@@ -191,10 +193,6 @@ class Place(SafeDeleteMixin, GeoPointModel):
     def remove_responsible(self):
         self.safe_delete('responsible', self)
 
-    def get_logs(self):
-        ct = ContentType.objects.get_for_model(self)
-        return Log.objects.filter(ct=ct, obj_id=self.pk).order_by('-pk')
-
     def bio_only(self):
         """
         В месте только биоотходы
@@ -304,8 +302,7 @@ class GravePhoto(Files, GeoPointModel):
     """
     grave = models.ForeignKey(Grave)
 
-
-class Burial(SafeDeleteMixin, BaseModel):
+class Burial(SafeDeleteMixin, GetLogsMixin, BaseModel):
     STATUS_BACKED = 'backed'
     STATUS_DECLINED = 'declined'
     STATUS_DRAFT = 'draft'
@@ -636,10 +633,6 @@ class Burial(SafeDeleteMixin, BaseModel):
 
     def get_responsible(self):
         return self.responsible or (self.get_place() and self.get_place().responsible) or None
-
-    def get_logs(self):
-        ct = ContentType.objects.get_for_model(self)
-        return Log.objects.filter(ct=ct, obj_id=self.pk).order_by('-pk')
 
     def get_last_decline_reason(self):
         """

@@ -29,7 +29,7 @@ from users.forms import UserAddForm, RegisterForm, LoruFormset, ProfileForm, Use
                         OrgLogForm, LoginLogForm, OrgBurialStatsForm, SupportForm
 from users.models import Profile, Org, RegisterProfile
 from burials.models import Burial
-from pd.views import PaginateListView
+from pd.views import PaginateListView, RequestToFormMixin
 
 
 class LoginView(View):
@@ -242,15 +242,10 @@ class UserEditView(LoginRequiredMixin, UpdateView):
         
 edit_user = UserEditView.as_view()
 
-class OrgEditView(LoginRequiredMixin, UpdateView):
+class OrgEditView(LoginRequiredMixin, RequestToFormMixin, UpdateView):
     template_name = 'edit_org.html'
     model = Org
     form_class = OrgForm
-
-    def get_form_kwargs(self):
-        data = super(OrgEditView, self).get_form_kwargs()
-        data['request'] = self.request
-        return data
 
     def get_queryset(self):
         #return Org.objects.annotate(profiles=Count('profile')).filter(profiles=0)
@@ -681,14 +676,9 @@ class OrgBurialStatsView(SupervisorRequiredMixin, TemplateView):
 
 org_burial_stats = OrgBurialStatsView.as_view()
 
-class SupportView(FormView):
+class SupportView(RequestToFormMixin, FormView):
     form_class = SupportForm
     template_name = 'support.html'
-
-    def get_form_kwargs(self):
-        data = super(SupportView, self).get_form_kwargs()
-        data['request'] = self.request
-        return data
 
     def form_valid(self, form):
         form.save()

@@ -40,16 +40,18 @@ class BaseCemeteryForm(forms.ModelForm):
             raise forms.ValidationError(_(u'Формат должен быть: по одному времени в формате ЧЧ:ММ на строку'))
         return u'\n'.join([s.strftime('%H:%M') for s in slots])
 
-class CemeteryForm(BaseCemeteryForm):
+class CemeteryForm(LoggingFormMixin, BaseCemeteryForm):
     class Meta:
         model = Cemetery
         exclude = ['ugh', ]
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, request, *args, **kwargs):
+        self.request = request
         super(CemeteryForm, self).__init__(*args, **kwargs)
         address = self.instance and self.instance.address
         self.address_form = LocationForm(data=self.data or None, instance=address, prefix='address')
         #self.address_form.fields['country_name'].required = True
+        self.forms = [self.address_form, ]
         if self.instance and self.instance.pk:
             self.area_formset = AreaFormset(data=self.data or None, instance=self.instance)
         else:
@@ -58,7 +60,11 @@ class CemeteryForm(BaseCemeteryForm):
     def is_valid(self):
         return super(CemeteryForm, self).is_valid() and self.address_form.is_valid() and (not self.area_formset or self.area_formset.is_valid())
 
+    def get_prefix(self, form):
+        return _(u"Адрес, ") if form is self.address_form else u''
+
     def save(self, commit=True, *args, **kwargs):
+        self.collect_log_data()
         obj = super(CemeteryForm, self).save(commit=False, *args, **kwargs)
         if obj.pk and self.area_formset:
             self.area_formset.save()
@@ -67,8 +73,8 @@ class CemeteryForm(BaseCemeteryForm):
             obj.address = self.address_form.save()
         if commit:
             obj.save()
+            self.put_log_data(_(u'Кладбище изменено'))
         return obj
-
 
 class CemeteryAdminForm(BaseCemeteryForm):
     class Meta:
@@ -740,7 +746,7 @@ class BurialCommitForm(BurialForm):
         if self.fields.get('fact_date'):
             self.fields['fact_date'].required = True
             if (self.instance.is_archive() or self.request.REQUEST.get('archive')) and \
-               not self.request.user.profile.org.archive_burial_fact_date_required:
+               cemetery and not cemetery.archive_burial_fact_date_required:
                 self.fields['fact_date'].required = False
             else:
                 # Во всех остальных случаях, когда на форме есть факт. дата,
@@ -834,6 +840,8 @@ class BurialCommitForm(BurialForm):
         if (not self.instance or not self.instance.pk) and self.request.user.profile.is_ugh():
             is_ugh = True
 
+        cemetery = self.cleaned_data.get('cemetery')
+
         if is_ugh:
             acc_number = self.cleaned_data.get('account_number')
             fact_date  = self.cleaned_data.get('fact_date')
@@ -858,7 +866,8 @@ class BurialCommitForm(BurialForm):
                         raise forms.ValidationError(msg)
 
             if (self.instance.is_archive() or self.request.REQUEST.get('archive')) and \
-               not self.cleaned_data.get('account_number').strip():
+               not self.cleaned_data.get('account_number').strip() and \
+               (not cemetery or cemetery.archive_burial_account_number_required):
                 msg = _(u"Нельзя закрывать архивное захоронение без указания его номера в книге учета")
                 raise forms.ValidationError(msg)
 
@@ -879,7 +888,6 @@ class BurialCommitForm(BurialForm):
             msg = _(u"Указан ряд и/или место, но не указан участок")
             raise forms.ValidationError(msg)
 
-        cemetery = self.cleaned_data.get('cemetery')
         grave_number = self.cleaned_data.get('grave_number')
         place = None
         if cemetery and area and place_number:
