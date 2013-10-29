@@ -1,12 +1,10 @@
 # coding=utf-8
 from django.conf import settings
-from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
 
 from geo.models import DFiasAddrobj
-from logs.models import Log
-from pd.models import BaseModel, Files
+from pd.models import BaseModel, Files, GetLogsMixin
 from pd.utils import DigitsValidator, LengthValidator, NotEmptyValidator
 
 
@@ -79,7 +77,7 @@ class Profile(models.Model):
             return ','.join([self.lat, self.lng])
         return ''
 
-class Org(BaseModel):
+class Org(GetLogsMixin, BaseModel):
     NUM_EMPTY = 'empty'
     NUM_YEAR_UGH = 'year_ugh'
     NUM_YEAR_CEMETERY = 'year_cemetery'
@@ -138,10 +136,6 @@ class Org(BaseModel):
 
     def __unicode__(self):
         return self.name
-
-    def get_logs(self):
-        ct = ContentType.objects.get_for_model(self)
-        return Log.objects.filter(ct=ct, obj_id=self.pk).order_by('-pk')
 
     def is_inactive(self):
         return not self.profile_set.filter(user__is_active=True).exists()

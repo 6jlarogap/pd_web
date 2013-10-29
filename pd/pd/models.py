@@ -5,11 +5,12 @@ import pytils
 import datetime
 
 from django.db import models
+from django.contrib.contenttypes.models import ContentType
 from django.db.models.loading import get_model
 from django.utils.translation import ugettext as _
 from django.core.exceptions import ValidationError
 from south.modelsinspector import add_introspection_rules
-
+from logs.models import Log
 
 class UnclearDate:
     def __init__(self, year, month=None, day=None):
@@ -193,5 +194,14 @@ class Photo(Files):
 def validate_gt0(value):
     if value <= 0:
         raise ValidationError(_(u'Должно быть больше нуля'))
+
+class  GetLogsMixin(object):
+    """
+    get_logs() fuction
+    """
+
+    def get_logs(self):
+        ct = ContentType.objects.get_for_model(self)
+        return Log.objects.filter(ct=ct, obj_id=self.pk).order_by('-pk')
 
 add_introspection_rules([], ['^pd\.models\.UnclearDateModelField'])
