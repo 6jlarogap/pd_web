@@ -401,8 +401,9 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
             'orders': b.get_orders(loru=self.request.user.profile.org) if self.request.user.profile.is_loru() else [],
             # Кому можно смотреть в захоронении ответственного и заявителя:
             'show_private_data': self.request.user.profile.is_ugh() or \
-                                 (b.is_full() or b.is_transferred()) and \
-                                 b.loru and b.loru == self.request.user.profile.org,
+                                 (b.is_full() and not b.is_closed() and not b.is_exhumated() and \
+                                  b.loru and b.loru == self.request.user.profile.org
+                                 ),
             'place': b.get_place(),
         }
 
