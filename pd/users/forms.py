@@ -12,7 +12,7 @@ from django.db.models.query_utils import Q
 from geo.forms import LocationForm
 # from geo.models import DFiasAddrobj
 from pd.forms import ChildrenJSONMixin, LoggingFormMixin, OurReCaptchaField
-from burials.models import Cemetery, PlaceSize
+from burials.models import Cemetery, PlaceSize, Reason
 
 from users.models import Profile, ProfileLORU, Org, BankAccount, RegisterProfile
 
@@ -235,6 +235,7 @@ class BaseOrgForm(LoggingFormMixin, forms.ModelForm):
         return name
 
 PlaceSizeFormset = inlineformset_factory(Org, PlaceSize, formset=BaseInlineFormSet, can_delete=True, extra=2)
+ReasonFormset = inlineformset_factory(Org, Reason, formset=BaseInlineFormSet, can_delete=True, extra=2)
 
 class OrgForm(BaseOrgForm):
     class Meta:
@@ -256,6 +257,10 @@ class OrgForm(BaseOrgForm):
             self.placesize_formset = PlaceSizeFormset(data=request.POST or None, instance=self.instance)
         else:
             self.placesize_formset = None
+        if self.is_own_org:
+            self.reason_formset = ReasonFormset(data=request.POST or None, instance=self.instance)
+        else:
+            self.reason_formset = None
 
     def is_valid(self):
         return super(OrgForm, self).is_valid() and self.address_form.is_valid() and \
@@ -268,6 +273,8 @@ class OrgForm(BaseOrgForm):
         # self.bank_formset.save()
         if self.placesize_formset:
             self.placesize_formset.save()
+        if self.reason_formset:
+            self.reason_formset.save()
         if any(self.address_form.cleaned_data.values()):
             org.off_address = self.address_form.save()
         if commit:
