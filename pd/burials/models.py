@@ -832,8 +832,8 @@ class Reason(models.Model):
     text = models.CharField(_(u'Текст причины'), max_length=100)
 
     class Meta:
-        verbose_name = _(u"Причина отказа, отзыва и т.п.")
-        verbose_name_plural = _(u"Причины отказа, отзыва и т.п.")
+        verbose_name = _(u"Причина")
+        verbose_name_plural = _(u"Причины")
         ordering = ('reason_type', 'name', )
         unique_together = ('org', 'reason_type', 'text')
 

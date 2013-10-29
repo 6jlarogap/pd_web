@@ -276,7 +276,8 @@ class OrgForm(BaseOrgForm):
 
     def is_valid(self):
         return super(OrgForm, self).is_valid() and self.address_form.is_valid() and \
-                    (not self.placesize_formset or self.placesize_formset.is_valid())
+                    (not self.placesize_formset or self.placesize_formset.is_valid()) and \
+                    (not self.reason_formset or self.reason_formset.is_valid())
                     # and self.bank_formset.is_valid()
 
     def save(self, commit=True):
