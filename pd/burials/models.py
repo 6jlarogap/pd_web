@@ -827,15 +827,15 @@ class Reason(models.Model):
     TYPES_LORU = (TYPE_BACK, TYPE_ANNULATE, )
     
     org = models.ForeignKey(Org, verbose_name=_(u"Организация"), editable=False, on_delete=models.PROTECT) 
-    reason_type = models.CharField(_(u'Действие'), max_length=100, choices=TYPE_CHOICES)
-    name = models.CharField(_(u'Обозначение (по нему сортируется)'), max_length=50)
-    text = models.CharField(_(u'Текст причины'), max_length=100)
+    reason_type = models.CharField(_(u'Действие'), max_length=255, choices=TYPE_CHOICES)
+    name = models.CharField(_(u'Причина'), max_length=255)
+    text = models.TextField(_(u'Текст причины'), default='', editable=False)
 
     class Meta:
         verbose_name = _(u"Причина")
         verbose_name_plural = _(u"Причины")
         ordering = ('reason_type', 'name', )
-        unique_together = ('org', 'reason_type', 'text')
+        unique_together = ('org', 'reason_type', 'name')
 
     def save(self, *args, **kwargs):
         if not self.text.strip():

@@ -389,11 +389,12 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
 
     def get_context_data(self, **kwargs):
         b = self.get_object()
+        org = self.request.user.profile.org
         return {
             'b': b,
-            'reason_typical_back': Reason.objects.filter(reason_type=Reason.TYPE_BACK),
-            'reason_typical_decline': Reason.objects.filter(reason_type=Reason.TYPE_DECLINE),
-            'reason_typical_annulate': Reason.objects.filter(reason_type=Reason.TYPE_ANNULATE),
+            'reason_typical_back': Reason.objects.filter(org=org, reason_type=Reason.TYPE_BACK),
+            'reason_typical_decline': Reason.objects.filter(org=org, reason_type=Reason.TYPE_DECLINE),
+            'reason_typical_annulate': Reason.objects.filter(org=org, reason_type=Reason.TYPE_ANNULATE),
             'approve_close_form': self.get_approve_close_form(),
             'comment_form': CommentForm(),
             'zags_form': AddOrgForm(request=self.request, prefix='zags', instance=Org(type=Org.PROFILE_ZAGS)),

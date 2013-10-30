@@ -16,22 +16,13 @@ class Migration(SchemaMigration):
                       self.gf('django.db.models.fields.related.ForeignKey')(default=64, to=orm['users.Org'], on_delete=models.PROTECT),
                       keep_default=False)
 
-
-        # Changing field 'Reason.reason_type'
-        db.alter_column('burials_reason', 'reason_type', self.gf('django.db.models.fields.CharField')(max_length=100))
-
-        # Changing field 'Reason.text'
-        db.alter_column('burials_reason', 'text', self.gf('django.db.models.fields.CharField')(max_length=100))
-
-        # Changing field 'Reason.name'
-        db.alter_column('burials_reason', 'name', self.gf('django.db.models.fields.CharField')(max_length=50))
-        # Adding unique constraint on 'Reason', fields ['reason_type', 'org', 'text']
-        db.create_unique('burials_reason', ['reason_type', 'org_id', 'text'])
+        # Adding unique constraint on 'Reason', fields ['reason_type', 'org', 'name']
+        db.create_unique('burials_reason', ['reason_type', 'org_id', 'name'])
 
 
     def backwards(self, orm):
-        # Removing unique constraint on 'Reason', fields ['reason_type', 'org', 'text']
-        db.delete_unique('burials_reason', ['reason_type', 'org_id', 'text'])
+        # Removing unique constraint on 'Reason', fields ['reason_type', 'org', 'name']
+        db.delete_unique('burials_reason', ['reason_type', 'org_id', 'name'])
 
 
         # Changing field 'PlaceSize.org'
@@ -39,15 +30,6 @@ class Migration(SchemaMigration):
         # Deleting field 'Reason.org'
         db.delete_column('burials_reason', 'org_id')
 
-
-        # Changing field 'Reason.reason_type'
-        db.alter_column('burials_reason', 'reason_type', self.gf('django.db.models.fields.CharField')(max_length=255))
-
-        # Changing field 'Reason.text'
-        db.alter_column('burials_reason', 'text', self.gf('django.db.models.fields.TextField')())
-
-        # Changing field 'Reason.name'
-        db.alter_column('burials_reason', 'name', self.gf('django.db.models.fields.CharField')(max_length=255))
 
     models = {
         'auth.group': {
@@ -238,12 +220,12 @@ class Migration(SchemaMigration):
             'placestatus': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['burials.PlaceStatus']"})
         },
         'burials.reason': {
-            'Meta': {'ordering': "('reason_type', 'name')", 'unique_together': "(('org', 'reason_type', 'text'),)", 'object_name': 'Reason'},
+            'Meta': {'ordering': "('reason_type', 'name')", 'unique_together': "(('org', 'reason_type', 'name'),)", 'object_name': 'Reason'},
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'name': ('django.db.models.fields.CharField', [], {'max_length': '50'}),
+            'name': ('django.db.models.fields.CharField', [], {'max_length': '255'}),
             'org': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['users.Org']", 'on_delete': 'models.PROTECT'}),
-            'reason_type': ('django.db.models.fields.CharField', [], {'max_length': '100'}),
-            'text': ('django.db.models.fields.CharField', [], {'max_length': '100'})
+            'reason_type': ('django.db.models.fields.CharField', [], {'max_length': '255'}),
+            'text': ('django.db.models.fields.TextField', [], {})
         },
         'contenttypes.contenttype': {
             'Meta': {'ordering': "('name',)", 'unique_together': "(('app_label', 'model'),)", 'object_name': 'ContentType', 'db_table': "'django_content_type'"},
