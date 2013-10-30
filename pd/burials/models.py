@@ -824,7 +824,7 @@ class Reason(models.Model):
     # ЛОРУ и УГХ имеют разные списки отказов и др. действий
     #
     TYPES_UGH = (TYPE_DECLINE, TYPE_ANNULATE, )
-    TYPES_LORU = (TYPE_BACK, TYPE_ANNULATE, )
+    TYPES_LORU = (TYPE_BACK, )
     
     org = models.ForeignKey(Org, verbose_name=_(u"Организация"), editable=False, on_delete=models.PROTECT) 
     reason_type = models.CharField(_(u'Действие'), max_length=255, choices=TYPE_CHOICES)
