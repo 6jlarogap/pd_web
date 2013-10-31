@@ -24,8 +24,7 @@
         $(function() {
             // расширим название причины отказа, что красивее было
             $('input[id^=id_reason_set]').each(function() {
-                var id = $(this).attr('id')
-                if(id.indexOf('-name', id.length - 5) !== -1) {
+                if($(this).attr('id').match(/\-name$/i)) {
                     $(this).css('width', '400px');
                 }
             });
