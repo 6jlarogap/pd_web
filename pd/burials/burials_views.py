@@ -284,11 +284,11 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
             else:
                 msg = _(u"Выполнить операцию не удалось: <a href='%s'>захоронение</a> в статусе \"%s\". "
                         u"Не указана причина отказа.") % (
-                    reverse('view_burial', args=[b.pk]) + order_parm,
+                    reverse('view_burial', args=[b.pk]),
                     b.get_status_display(),
                 )
                 messages.error(request, msg)
-                return redirect(reverse('view_burial', args=[b.pk]) + order_parm)
+                return redirect(reverse('view_burial', args=[b.pk]))
 
         if request.POST.get('complete') and request.user.profile.is_ugh() and b.can_finish():
             approve_close_form = self.get_approve_close_form()
