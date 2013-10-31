@@ -31,8 +31,15 @@
             }
         </style>
     </noscript>
-    <link type="text/css" href="{{ STATIC_URL }}css/custom-theme/jquery-ui-1.8.16.custom.css" rel="stylesheet" />
+
+	{% block jquery %}
+   	<link type="text/css" href="{{ STATIC_URL }}css/custom-theme/jquery-ui-1.8.16.custom.css" rel="stylesheet" />
     <link type="text/css" href="{{ STATIC_URL }}css/jquery-ui-timepicker.css" rel="stylesheet" />
+    <script type="text/javascript" src="{{ STATIC_URL }}jquery/jquery.js"></script>
+	<script type="text/javascript" src="{{ STATIC_URL }}jquery-ui/ui/minified/jquery.ui.datepicker.min.js"></script>
+    <script type="text/javascript" src="{{ STATIC_URL }}js/jquery-ui-1.8.6.custom.min.js"></script>
+    <script type="text/javascript" src="{{ STATIC_URL }}js/jquery.ui.timepicker.js"></script>
+	{% endblock %}
 
     <link href="{{ STATIC_URL }}css/base.css" rel="stylesheet">
     <link href="{{ STATIC_URL }}css/print.css" rel="stylesheet" media="print">
@@ -49,16 +56,12 @@
 
     {% if close %} <script type="text/javascript">top.close();</script> {% endif %}
 
-    <script type="text/javascript" src="{{ STATIC_URL }}js/jquery-1.7.2.min.js"></script>
-    <script type="text/javascript" src="{{ STATIC_URL }}js/jquery-ui-1.8.6.custom.min.js"></script>
-    <script type="text/javascript" src="{{ STATIC_URL }}js/jquery.ui.timepicker.js"></script>
-
     <script type="text/javascript" src="{{ STATIC_URL }}js/bootstrap-dropdown.js"></script>
     <script type="text/javascript" src="{{ STATIC_URL }}js/bootstrap-modal.js"></script>
     <script type="text/javascript" src="{{ STATIC_URL }}js/bootstrap-typeahead-ajax.js"></script>
     <script type="text/javascript" src="{{ STATIC_URL }}js/utils.js"></script>
     <script type="text/javascript"
-            src="{% if request.is_secure %}https{% else %}http{% endif %}://maps.googleapis.com/maps/api/js?libraries=places&key=AIzaSyCr1PI2Q-8hxtstv5kka-8w0xxuPUEHNDA&sensor=false&language=ru">
+            src="{% if request.is_secure %}https{% else %}http{% endif %}://maps.googleapis.com/maps/api/js?libraries=places&key=AIzaSyCr1PI2Q-8hxtstv5kka-8w0xxuPUEHNDA&sensor=true&language=ru">
     </script>
 
     <script type="text/javascript">
@@ -74,15 +77,9 @@
 
     <script type="text/javascript" src="{{ STATIC_URL }}js/cemetery.js" defer="true"></script>
 
-    <script language="javascript">
-         function check_js() {
-              document.getElementById("hidden_if_js").style.display = "none";
-              document.getElementById("hidden_if_js").innerHTML = "";
-         }
-    </script>
     {% block scripts %}{% endblock %}
 </head>
-<body onload="check_js()">
+<body>
     <div id="hidden_if_no_js">
         <div class="navbar navbar-fixed-top no-print">
             <div class="navbar-inner">
@@ -92,7 +89,7 @@
                         <span class="icon-bar"></span>
                         <span class="icon-bar"></span>
                     </a>
-                    <a class="brand" href="/">ПохоронноеДело</a>
+                    <a class="brand" href="/">Похоронное Дело</a>
                     <div class="btn-group pull-right dropdown" id="auth_menu">
                         {% if user.is_authenticated %}
                             <a class="btn dropdown-toggle" data-toggle="dropdown" href="#auth_menu">
@@ -119,14 +116,17 @@
                                 {% endif %}
                                 {% if user.profile.is_supervisor %}
                                     <li class="divider"></li>
-                                    <li><a href="{% url uregister %}">{% trans "Регистрация" %}</a></li>
+                                    <li><a href="{% url registrants %}">{% trans "Регистрация" %}</a></li>
+                                    <li><a href="{% url registration_old %}">{% trans "Регистрация (старый вариант)" %}</a></li>
                                     <li><a href="{% url login_log %}">{% trans "Журнал входов в систему" %}</a></li>
+                                    <li><a href="{% url org_burial_stats %}">{% trans "Статистика захоронений" %}</a></li>
                                 {% endif %}
                                 <li class="divider"></li>
                                 <li><a href="{% url ulogout %}">{% trans "Выйти" %}</a></li>
                             </ul>
                         {% else %}
                             <a class="btn" href="{% url ulogin %}">{% trans "Войти" %}</a>
+                            {# <a class="btn" href="{% url register %}">{% trans "Зарегистрироваться (для ЮЛ)" %}</a> #}
                         {% endif %}
                     </div>
                     <div class="nav-collapse">
@@ -170,7 +170,11 @@
             </div>
         </div>
 
-        <div class="container-fluid">
+
+
+
+
+		<div class="container-fluid" {% block container_attr_extra %}{% endblock %}>
             {% if messages %}
                 <ul class="messages no-print">
                     {% for m in messages %}
@@ -181,18 +185,21 @@
 
             {% block content %}{% endblock %}
         </div>
-        
+
         {% if global_context_PRODUCTION_SITE %}
             {% include "yandex_metrika.html" %}
         {% endif %}
 
     </div>
-    <div id="hidden_if_js">
-        <h1>{% trans "Внимание" %}!
-        <br />
-        <h2 style="color:red">{% trans "У вас отключен JavaScript" %}!</h2>
-        <br />
-        <h3>{% trans "Для отображения страницы вам понадобится включить поддержку JavaScript в настройках браузера" %}.</h3>
-    </div>
+    <noscript>
+        <div id="hidden_if_js">
+            <h1>{% trans "Внимание" %}!
+            <br />
+            <h2 style="color:red">{% trans "У вас отключен JavaScript" %}!</h2>
+            <br />
+            <h3>{% trans "Для отображения страницы вам понадобится включить поддержку JavaScript в настройках браузера" %}.</h3>
+            <h3>{% trans "После этого обновите страницу!" %}.</h3>
+        </div>
+    </noscript>
 </body>
 </html>

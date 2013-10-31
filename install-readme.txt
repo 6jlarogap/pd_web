@@ -9,17 +9,26 @@ install-readme.txt, utf8 code page
         - USERNAME:             имя пользователя на bitbucket.org
  
     * Д.б. установлено на Linux:
-        - python, не ниже 2.6,  в т.ч. для разработчика
+        - средства разработки:
+            * python, не ниже 2.6
+            * C /C++
+            * g++
         - python-virtualenv
         - postgresql,           в т.ч. для разработчика
         - mysql,                в т.ч. для разработчика
+    
+        - bower
+            * скачать NodeJS: http://nodejs.org/
+            * распаковать, cd node-<VERSION>; ./configure; make; sudo make install
+            * sudo npm install -g bower
  
     * Д.б. запущены postgresql & mysql серверы
  
     * mkdir ~/venv; cd ~/venv; virtualenv --no-site-packages pdweb
     * mkdir ~/projects; cd ~/projects
-    * cd ~/projects/pd_web
     * git clone https://USERNAME@bitbucket.org/USERNAME/pd_web.git
+    * cd ~/projects/pd_web
+    * bower install
     * source ~/venv/pdweb/bin/activate
     * export VIRTUALENV_DISTRIBUTE=true
     * curl http://python-distribute.org/distribute_setup.py | python
@@ -56,4 +65,3 @@ install-readme.txt, utf8 code page
     !!! Можно запускать и отлаживать:
         cd ~/projects/pd_web/pd
         ./manage.py runserver <параметры>
- 

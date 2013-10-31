@@ -5,11 +5,10 @@ from burials.models import Burial
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.utils.translation import ugettext as _
-from logs.models import Log
 
 from reports.models import Report
 from users.models import Org
-from pd.models import BaseModel
+from pd.models import BaseModel, GetLogsMixin
 
 
 class Product(models.Model):
@@ -43,7 +42,7 @@ class Product(models.Model):
     def is_burial(self):
         return self.ptype == self.PRODUCT_BURIAL
 
-class Order(BaseModel):
+class Order(GetLogsMixin, BaseModel):
     PAYMENT_CASH = 'cash'
     PAYMENT_WIRE = 'wire'
     PAYMENT_CHOICES = (
@@ -182,10 +181,6 @@ class Order(BaseModel):
         hrs = self.orderitem_set.filter(product__ptype=Product.PRODUCT_CATAFALQUE)[0].quantity
         minutes = int(round(hrs * 60))
         return dict(hour=minutes // 60, minute=minutes % 60)
-
-    def get_logs(self):
-        ct = ContentType.objects.get_for_model(self)
-        return Log.objects.filter(ct=ct, obj_id=self.pk).order_by('-pk')
 
 class OrderItem(models.Model):
     order = models.ForeignKey(Order, editable=False)

@@ -1,0 +1,34 @@
+<form name="createForm">
+            <dt>
+                <label for="id_place_set-row">Ряд:</label>
+            </dt>
+            <dd>
+                <input name="placeRow" id="id_place_set-row" type="text" required ng-model="place.row" maxlength="255" />
+                <span class="error" ng-show="placeEditForm.placeRow.$error.required">Не указан ряд</span>
+            </dd>
+
+            <dt>
+                <label for="id_place_set-name">Место:</label>
+            </dt>
+            <dd>
+                <input name="placeName" id="id_place_set-name" type="text" required ng-model="place.place" maxlength="255" />
+                <span class="error" ng-show="placeEditForm.placeName.$error.required">Не указано название места</span>
+            </dd>
+            
+            <dt>
+                <label for="id_place_set-len">Длинна:</label>
+            </dt>
+            <dd>
+                <input name="placeLen" id="id_place_set-len" type="number" min="0" step="0.01" required ng-model="place.place_length" maxlength="255" />
+                <span class="error" ng-show="placeEditForm.placeLen.$error.required">Не указана</span>
+            </dd>
+            
+            <dt>
+                <label for="id_place_set-w">Ширина:</label>
+            </dt>
+            <dd>
+                <input name="placeW" id="id_place_set-w" type="number" min="0" step="0.01" required ng-model="place.place_width" maxlength="255" />
+                <span class="error" ng-show="placeEditForm.placeW.$error.required">Не указана</span>
+            </dd>
+        </dl>
+</form>

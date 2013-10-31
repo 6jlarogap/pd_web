@@ -1,11 +1,11 @@
 # coding: utf-8
 
+import os
+
 DEBUG = False
 TEMPLATE_DEBUG = DEBUG
 
-ADMINS = (
-    ('Arcady Chumachenko', 'arcady.chumachenko@gmail.com'),
-)
+ADMINS = ()
 
 MANAGERS = ADMINS
 
@@ -53,14 +53,18 @@ DATE_INPUT_FORMATS = (
     '%d.%m.%Y', '%Y-%m-%d',
 )
 
-MEDIA_ROOT = './media/'
+ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+
+MEDIA_ROOT = os.path.join(ROOT_DIR, 'media/')
 MEDIA_URL = '/media/'
 
-STATIC_ROOT = './static/'
+STATIC_ROOT = os.path.join(ROOT_DIR, 'static/')
 STATIC_URL = '/static/'
 
+
 STATICFILES_DIRS = (
-    './static_src/',
+    os.path.join(ROOT_DIR, 'static_src/'),
+    os.path.join(ROOT_DIR, 'asset_src/'),
 )
 
 STATICFILES_FINDERS = (
@@ -103,10 +107,9 @@ ROOT_URLCONF = 'pd.urls'
 WSGI_APPLICATION = 'pd.wsgi.application'
 
 TEMPLATE_DIRS = (
-    './templates/',
+    os.path.join(ROOT_DIR, 'templates/'),
 )
 
-SENTRY_DSN = 'https://3d969464fe0c413f8394d2a045afc2d9:ab5346a1afbc43ceb131bd02c1f2ed53@app.getsentry.com/4786'
 
 INSTALLED_APPS = (
     'django.contrib.auth',
@@ -118,10 +121,13 @@ INSTALLED_APPS = (
     'django.contrib.admin',
     'django.contrib.admindocs',
 
+    'rest_framework',
+
     'south',
     'pytils',
     'debug_toolbar',
     'raven.contrib.django',
+    'captcha',
 
     'geo',
     'burials',
@@ -132,6 +138,9 @@ INSTALLED_APPS = (
     'reports',
     'import_burials',
     'mobile',
+    'rest_api',
+    'restthumbnails',
+    'django_assets',
 )
 
 LOGGING = {
@@ -164,7 +173,15 @@ INTERNAL_IPS = ['127.0.0.1',]
 
 ACCOUNT_ACTIVATION_DAYS = 7
 
+# LOGIN_URL, все REGISTER_URLS_REGEX, и некоторые другие -- в списке url,
+# к которым возможен доступ без регистрации, см. pd/middleware.py
+#
 LOGIN_URL = "/login/"
+
+# Это регулярные выражения!!! :
+REGISTER_URLS_REGEX = r'^/?register(?:/|$)'
+SUPPORT_URLS_REGEX = r'^/?support(?:/|$)'
+
 LOGOUT_URL = "/logout/"
 LOGIN_REDIRECT_URL = "/"
 
@@ -187,7 +204,27 @@ DEBUG_TOOLBAR_CONFIG = {'INTERCEPT_REDIRECTS': False}
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 SESSION_SAVE_EVERY_REQUEST = True
 
+# Google reCaptcha keys, поучаемые из http://www.google.com/recaptcha,
+# подлежат замене в local_settings.py:
+#
+RECAPTCHA_PUBLIC_KEY = 'a-string-of-hex-and-digits'
+RECAPTCHA_PRIVATE_KEY = 'another-string-of-hex-and-digits'
+RECAPTCHA_USE_SSL = False
+
+# Для отправки кода активации и прочей почты,
+# Здесь приведены параметры, отработанные для отправки
+# через smtp-сервер @gmail.com
+#
+EMAIL_HOST = 'smtp.googlemail.com'
+EMAIL_PORT = 587
+EMAIL_HOST_USER = 'EMAIL-HOST-USER@gmail.com'
+EMAIL_HOST_PASSWORD = 'SECRET'
+EMAIL_USE_TLS = True
+EMAIL_USE_SSL = False
+DEFAULT_FROM_EMAIL = 'EMAIL-HOST-USER@gmail.com'
+
 # Для учета настроек, необязательных на сайтах разработчиков
+#
 PRODUCTION_SITE = False
 
 # Необязательные параметры
@@ -197,16 +234,40 @@ PRODUCTION_SITE = False
 #
 # ADMIN_ENABLED = False
 #
-# URL-пути, которые не требуют регистрации,
-# строка из путей с пробельными разделителями,
-# по умолчанию: нет таких путей.
-#
-# LOGIN_EXEMPT_URLS = "/here /go/to/there"
-#
 # Имеет право регистировать нового пользователя
 # только таковой с организации с этим ИНН
 #
 # SUPERVISOR_ORG_INN = 'строка'
+
+
+# THUMB
+THUMBNAILS_FILE_SIGNATURE = '%(source)s/%(size)s~%(method)s~%(secret)s.%(extension)s'
+THUMBNAILS_STORAGE_BASE_PATH = '/thumb/'
+THUMBNAILS_PROXY_BASE_URL = '/thumb/'
+#THUMBNAILS_STORAGE_BACKEND = 'testsuite.storages.TemporaryStorage'
+THUMBNAILS_STORAGE_ROOT = os.path.join(MEDIA_ROOT, 'thumbnails')
+
+
+# REST framework
+REST_FRAMEWORK = {
+    'PAGINATE_BY': 50,
+    'PAGINATE_BY_PARAM': 'page_size',
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework.authentication.BasicAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
+    ),
+    'DEFAULT_RENDERER_CLASSES': (
+        'rest_framework.renderers.JSONRenderer',
+        'rest_framework.renderers.BrowsableAPIRenderer',
+    ),
+}
+
+
+#ASSETS_URL = STATIC_URL
+ASSETS_MODULES = [
+    'pd.assets'
+]
+ASSETS_DEBUG = False
 
 try:
     from local_settings import *
@@ -216,5 +277,3 @@ except ImportError:
 import sys
 if len(sys.argv) > 1 and sys.argv[1] == 'test':
     from test_settings import *
-
-

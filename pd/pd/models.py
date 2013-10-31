@@ -4,11 +4,14 @@ import os
 import pytils
 import datetime
 
+from django.conf import settings
 from django.db import models
+from django.contrib.contenttypes.models import ContentType
 from django.db.models.loading import get_model
 from django.utils.translation import ugettext as _
+from django.core.exceptions import ValidationError
 from south.modelsinspector import add_introspection_rules
-
+from logs.models import Log
 
 class UnclearDate:
     def __init__(self, year, month=None, day=None):
@@ -148,12 +151,18 @@ def files_upload_to(instance, filename):
         return os.path.join('bfiles', str(instance.burial.pk), fname)
     elif isinstance(instance, get_model('burials', 'PlaceStatusFiles')):
         return os.path.join('place-status-files', today_dir, fname)
+    elif isinstance(instance, get_model('burials', 'AreaPhoto')):
+        d = datetime.date.today()
+        return os.path.join('area-photos', today_dir,fname)
     elif isinstance(instance, get_model('persons', 'DeathCertificateScan')):
         return os.path.join('death-certificates', today_dir, fname)
     elif isinstance(instance, get_model('burials', 'GravePhoto')):
         return os.path.join('grave-photos', today_dir, fname)
+    elif isinstance(instance, get_model('users', 'RegisterProfileScan')):
+        return os.path.join('register-profile', today_dir, fname)
     else:
         return os.path.join('files', fname)
+
 
 class Files(models.Model):
     """
@@ -172,10 +181,14 @@ class Files(models.Model):
     def delete_from_media(self):
         if self.bfile and os.path.exists(self.bfile.path):
             os.remove(self.bfile.path)
+            thmb = os.path.join(settings.THUMBNAILS_STORAGE_ROOT, self.bfile.name)
+            if os.path.exists(thmb):
+                os.shutil.rmtree(thmb)
 
     def delete(self):
         self.delete_from_media()
         super(Files, self).delete()
+
 
 class Photo(Files):
     """
@@ -186,5 +199,18 @@ class Photo(Files):
 
     lat = models.FloatField(_(u"Широта"), blank=True, null=True)
     lng = models.FloatField(_(u"Долгота"), blank=True, null=True)
-    
+
+def validate_gt0(value):
+    if value <= 0:
+        raise ValidationError(_(u'Должно быть больше нуля'))
+
+class  GetLogsMixin(object):
+    """
+    Для функция get_logs(), применяемой во многих моделях
+    """
+
+    def get_logs(self):
+        ct = ContentType.objects.get_for_model(self)
+        return Log.objects.filter(ct=ct, obj_id=self.pk).order_by('-pk')
+
 add_introspection_rules([], ['^pd\.models\.UnclearDateModelField'])

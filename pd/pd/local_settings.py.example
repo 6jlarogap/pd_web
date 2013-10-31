@@ -1,7 +1,22 @@
+# coding=utf-8
+
 DEBUG = True
 TEMPLATE_DEBUG = DEBUG
+ASSETS_DEBUG = DEBUG
+
 ADMIN_ENABLED = True
-SUPERVISOR_ORG_INN = '1235'
+SUPERVISOR_ORG_INN = '12345'
+
+ADMINS = (
+
+    ('Ivan Ivanov', 'ivan.ivanov@org.com'),
+
+)
+
+MANAGERS = ADMINS
+
+# Настройка на production server (раскомментировать)
+# REST_FRAMEWORK['DEFAULT_RENDERER_CLASSES'] = (  'rest_framework.renderers.JSONRenderer' , )
 
 DATABASES = {
     'default': {
@@ -38,3 +53,21 @@ TEMPLATE_DIRS = (
 )
 
 MEDIA_ROOT = '/home/LINUX_USERNAME/projects/MEDIA/pd_web/'
+
+# Google reCaptcha keys, поучаемые из http://www.google.com/recaptcha,
+
+RECAPTCHA_PUBLIC_KEY = 'a-string-of-hex-and-digits'
+RECAPTCHA_PRIVATE_KEY = 'another-string-of-hex-and-digits'
+RECAPTCHA_USE_SSL = False
+
+# Для отправки кода активации и прочей почты.
+# Здесь приведены параметры, отработанные для отправки
+# через smtp-сервер @gmail.com
+#
+EMAIL_HOST = 'smtp.googlemail.com'
+EMAIL_PORT = 587
+EMAIL_HOST_USER = 'EMAIL-HOST-USER@gmail.com'
+EMAIL_HOST_PASSWORD = 'SECRET'
+EMAIL_USE_TLS = True
+EMAIL_USE_SSL = False
+DEFAULT_FROM_EMAIL = 'EMAIL-HOST-USER@gmail.com'

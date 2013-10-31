@@ -121,6 +121,15 @@
             {% endif %}
             {% if b.row %}{% trans "Ряд" %}: {{ b.row }}<br/>{% endif %}
             {% if b.place_number %}{% trans "Место" %}: {{ b.place_number }}<br/>{% endif %}
+            {% if place %}
+                {% trans "Размер, м." %}: 
+                {% if place.place_width and place.place_length %}
+                    {{ place.place_length }} x {{ place.place_width }}
+                {% else %}
+                    {% trans "не указан" %}
+                {% endif %}
+                <br/>
+            {% endif %}
             {% if b.grave_number %}{% trans "Могила" %}: {{ b.grave_number }}<br/>{% endif %}
             {% if place %}{% trans "Свободно" %}: {{ place.get_available_count }}<br/>{% endif %}
             {% if user.profile.is_ugh %}
@@ -159,7 +168,7 @@
         </dd>
         <dt>{% trans "План. дата и время" %}:</dt>
         <dd>{{ b.plan_date|date:"d.m.Y"|default:"не указана" }} {{ b.plan_time|time:"H:i"|default:"Время не указано" }}</dd>
-        <dt>{% trans "Факт. дата" %}:</dt><dd>{{ b.fact_date|date:"d.m.Y"|default:"не указана" }}</dd>
+        <dt>{% trans "Факт. дата" %}:</dt><dd>{{ b.fact_date|default:"не указана" }}</dd>
         <dt>{% trans "Файлы" %}:</dt>
         {% for f in b.burialfiles_set.all %}
             <dd>{{ forloop.counter }}. &nbsp;
@@ -189,7 +198,7 @@
                 {% if b.is_approved %}
                     <label>{% trans "Причина отзыва" %}:</label>
                     <select name="reason_typical">
-                        <option value=""></option>
+                        <option value="">-------</option>
                         {% for r in reason_typical_back %}<option value="{{ r.text }}">{{ r.name }}</option>{% endfor %}
                     </select>
                     <textarea name="reason" rows="5" cols="30"></textarea>
@@ -221,7 +230,7 @@
                 <br/><br/>
                 <label>{% trans "Причина аннулирования" %}:</label>
                 <select name="reason_typical">
-                    <option value=""></option>
+                    <option value="">-------</option>
                     {% for r in reason_typical_annulate %}<option value="{{ r.text }}">{{ r.name }}</option>{% endfor %}
                 </select>
                 <textarea name="reason" rows="5" cols="30"></textarea>
@@ -229,6 +238,9 @@
                 <input type="submit" class="btn" name="annulate" value="{% trans "аннулировать" %}">
             {% endif %}
             {% if b.can_approve %}
+                <script type="text/javascript">
+                    PLACE_SIZE = {{ approve_close_form.place_size_json|default:"{}" }};
+                </script>
                 {% if not b.area %}
                     <h2>{% trans "Кладбище и участок" %}</h2>
                     {{ approve_close_form.as_p }}
@@ -261,6 +273,7 @@
                 {{ approve_close_form.as_p }}
                 <script type="text/javascript">
                     CEMETERY_AREAS = {{ approve_close_form.cemetery_areas_json|default:"{}" }};
+                    PLACE_SIZE = {{ approve_close_form.place_size_json|default:"{}" }};
                 </script>
                 <input type="submit" class="btn btn-primary" name="complete" value="{% trans "закрыть" %}">
             {% endif %}
@@ -271,7 +284,7 @@
                 <br/><br/>
                 <label>{% trans "Причина отказа" %}:</label>
                 <select name="reason_typical">
-                    <option value=""></option>
+                    <option value="">-------</option>
                     {% for r in reason_typical_decline %}<option value="{{ r.text }}">{{ r.name }}</option>{% endfor %}
                 </select>
                 <textarea name="reason" rows="5" cols="30"></textarea>
@@ -295,7 +308,7 @@
 
     </form>
 
-    {% if user.profile.is_ugh and b.status == 'exhumated' %}
+    {% if user.profile.is_ugh and b.is_exhumated %}
         <form action="{% url burial_cancel_exhumation b.exhumationrequest.pk %}" method="POST" class="inline" style="display: inline;">
             {% csrf_token %}
             <input type="submit" class="btn" value="{% trans "Отменить эксгумацию" %}" />
@@ -303,14 +316,16 @@
         <p></p>
     {% endif %}
 
-    <h2>{% trans "Комментарий" %}</h2>
-    <form action="{% url burial_comment b.pk %}" method="POST">
-        {% csrf_token %}
-        {{ comment_form.as_p }}
-        <p>
-            <input type="submit" class="btn" value="{% trans "добавить" %}" />
-        </p>
-    </form>
+    {% if show_private_data %}
+        <h2>{% trans "Комментарий" %}</h2>
+        <form action="{% url burial_comment b.pk %}" method="POST">
+            {% csrf_token %}
+            {{ comment_form.as_p }}
+            <p>
+                <input type="submit" class="btn" value="{% trans "добавить" %}" />
+            </p>
+        </form>
+    {% endif %}
 
     {% if user.profile.is_ugh and b.get_documents %}
         {% with object=b %}
@@ -318,9 +333,11 @@
         {% endwith %}
     {% endif %}
 
-    {% with object=b %}
-        {% include "object_logs.html" %}
-    {% endwith %}
+    {% if show_private_data %}
+        {% with object=b %}
+            {% include "object_logs.html" %}
+        {% endwith %}
+    {% endif %}
 
     {% include "create_burial_popups.html" %}
 

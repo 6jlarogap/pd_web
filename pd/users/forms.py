@@ -1,18 +1,23 @@
 # coding=utf-8
+import re
+
+from django.conf import settings
 from django import forms
+from django.core.mail import EmailMessage
 from django.contrib.auth.models import User
 from django.forms.models import inlineformset_factory, BaseInlineFormSet
 from django.utils.translation import ugettext_lazy as _
 from django.db.models.query_utils import Q
+
 from geo.forms import LocationForm
 # from geo.models import DFiasAddrobj
-from pd.forms import ChildrenJSONMixin, LoggingFormMixin
-from burials.models import Cemetery
+from pd.forms import ChildrenJSONMixin, LoggingFormMixin, OurReCaptchaField
+from burials.models import Cemetery, PlaceSize, Reason
 
-from users.models import Profile, ProfileLORU, Org, BankAccount
+from users.models import Profile, ProfileLORU, Org, BankAccount, RegisterProfile
 
 
-class RegisterForm(forms.ModelForm):
+class UserAddForm(forms.ModelForm):
     class Meta:
         model = User
         fields = ['username', 'email']
@@ -229,6 +234,9 @@ class BaseOrgForm(LoggingFormMixin, forms.ModelForm):
                 raise forms.ValidationError(_(u"Есть уже такая организация"))
         return name
 
+PlaceSizeFormset = inlineformset_factory(Org, PlaceSize, formset=BaseInlineFormSet, can_delete=True, extra=2)
+ReasonFormset = inlineformset_factory(Org, Reason, formset=BaseInlineFormSet, can_delete=True, extra=2)
+
 class OrgForm(BaseOrgForm):
     class Meta:
         model = Org
@@ -245,14 +253,41 @@ class OrgForm(BaseOrgForm):
         if not self.is_own_org or not self.request.user.profile.is_loru():
             del self.fields['opf_order']
             del self.fields['opf_order_customer_mandatory']
+        if self.is_own_org and request.user.profile.is_ugh():
+            self.placesize_formset = PlaceSizeFormset(data=request.POST or None, instance=self.instance)
+        else:
+            self.placesize_formset = None
+        if self.is_own_org:
+            self.reason_formset = ReasonFormset(data=request.POST or None, instance=self.instance)
+            choices = [('', '---------')]
+            for reason_type in Reason.TYPE_CHOICES:
+                if request.user.profile.is_ugh():
+                    if reason_type[0] in Reason.TYPES_UGH:
+                        choices.append(reason_type)
+                elif request.user.profile.is_loru():
+                    if reason_type[0] in Reason.TYPES_LORU:
+                        choices.append(reason_type)
+            label = self.reason_formset.forms[0].fields['reason_type'].label
+            for f in self.reason_formset.forms:
+                f.fields['reason_type'] = forms.fields.TypedChoiceField(choices = choices, label=label)
+                # f.prefix += '-reason'
+        else:
+            self.reason_formset = None
 
     def is_valid(self):
-        return super(OrgForm, self).is_valid() and self.address_form.is_valid() # and self.bank_formset.is_valid()
+        return super(OrgForm, self).is_valid() and self.address_form.is_valid() and \
+                    (not self.placesize_formset or self.placesize_formset.is_valid()) and \
+                    (not self.reason_formset or self.reason_formset.is_valid())
+                    # and self.bank_formset.is_valid()
 
     def save(self, commit=True):
         self.collect_log_data()
         org = super(OrgForm, self).save(commit=False)
         # self.bank_formset.save()
+        if self.placesize_formset:
+            self.placesize_formset.save()
+        if self.reason_formset:
+            self.reason_formset.save()
         if any(self.address_form.cleaned_data.values()):
             org.off_address = self.address_form.save()
         if commit:
@@ -269,9 +304,96 @@ class OrgLogForm(forms.Form):
         (100, 100),
     )
 
-    log_date_from = forms.DateField(required=False, label=_(u"С"))
-    log_date_to = forms.DateField(required=False, label=_(u"по"))
+    date_from = forms.DateField(required=False, label=_(u"С"))
+    date_to = forms.DateField(required=False, label=_(u"по"))
     per_page = forms.ChoiceField(label=_(u"На странице"), choices=PAGE_CHOICES, initial=25, required=False)
 
 # Никакой разницы в этих формах пока нет.
 LoginLogForm = OrgLogForm
+
+class RegisterForm(forms.ModelForm):
+
+    class Meta:
+        model = RegisterProfile
+        # Задаем порядок полей:
+        fields = ('user_name', 'password1', 'password2',
+                  'user_last_name', 'user_first_name', 'user_middle_name', 'user_email',
+                  'org_type', 'org_name', 'org_full_name', 'org_inn', 'org_director',
+                  'org_phones',
+                  'captcha',
+                 )
+
+    captcha = OurReCaptchaField(label='')
+    password1 = forms.CharField(label=_(u"Пароль"), widget=forms.PasswordInput())
+    password2 = forms.CharField(label=_(u"Пароль (повторите)"), widget=forms.PasswordInput())
+
+    def clean_user_name(self):
+        user_name=self.cleaned_data['user_name'].strip()
+        if not re.match(r'^[A-Za-z0-9_-]+$', user_name):
+            raise forms.ValidationError(_(u"Имя может состоять только из латинских букв, "
+                                          u"цифр, знаков подчеркивания или дефиса"))
+        if User.objects.filter(username=user_name).exists():
+            raise forms.ValidationError(_(u"Это имя уже используется в системе"))
+        q = Q(user_name=user_name) & \
+            ~Q(status__in=(RegisterProfile.STATUS_DECLINED, RegisterProfile.STATUS_APPROVED, ))
+        if RegisterProfile.objects.filter(q).exists():
+            raise forms.ValidationError(_(u"Это имя уже используется среди кандидатов на регистрацию"))
+        return user_name
+
+    def clean(self):
+        cleaned_data = super(RegisterForm, self).clean()
+        password1 = self.cleaned_data.get('password1')
+        password2 = self.cleaned_data.get('password2')
+        if password1 and password2 and password1 != password2:
+            raise forms.ValidationError(_(u"Пароли не совпадают"))
+        for field in cleaned_data:
+            if field not in ('password1', 'password2') and \
+              isinstance(cleaned_data[field], basestring):
+                cleaned_data[field] = cleaned_data[field].strip()
+        return cleaned_data
+
+class OrgBurialStatsForm(forms.Form):
+
+    date_from = forms.DateField(required=False, label=_(u"С"))
+    date_to = forms.DateField(required=False, label=_(u"по"))
+
+class SupportForm(forms.Form):
+    subject = forms.CharField(label=_(u'Тема (необязательно)'), max_length=100, required=False)
+    message = forms.CharField(label=_(u'Вопрос'), widget=forms.Textarea, required=True)
+    sender = forms.EmailField(label=_(u'Ваш Email'), required=True)
+    captcha = OurReCaptchaField(label='', required=True)
+
+    def __init__(self, request, *args, **kwargs):
+        super(SupportForm, self).__init__(*args, **kwargs)
+        self.request = request
+        if request.user.is_authenticated():
+            del self.fields['captcha']
+            self.initial['sender'] = request.user.email or request.user.profile.org.email or ''
+
+    def save(self):
+        if self.cleaned_data.get('subject'):
+            email_subject = self.cleaned_data['subject']
+        else:
+            email_subject = _(u'Вопрос в поддержку')
+        email_text = self.cleaned_data['message']
+        headers = {}
+        if self.request.user.is_authenticated():
+            email_text += _(u'\n\n'
+                            u'Пользователь: %s / %s\n'
+                            u'Email: %s\n'
+                            u'Организация: %s\n'
+                            u'Email организации: %s\n'
+                           ) % (self.request.user.username,
+                                self.request.user.profile.full_name(),
+                                self.request.user.email,
+                                self.request.user.profile.org,
+                                self.request.user.profile.org.email,
+                               )
+        email_from = self.cleaned_data['sender']
+        email_to = (settings.DEFAULT_FROM_EMAIL, )
+        # Некоторые почтовые серверы подменяют поле From: письма
+        # на тот почтовый ящик, через который шла аутентификация
+        # при отправке письма (settings.EMAIL_HOST_USER
+        #
+        headers = {'Reply-To': email_from, }
+        EmailMessage(email_subject, email_text, email_from, email_to, headers=headers, ).send()

@@ -1,0 +1,44 @@
+			<div class="row-fluid">
+				<div class="span6 hero-unit">
+				    <div class="span12">
+				    	<label for="id_address-country_name">Страна</label>
+						<input type="text"  ng-model="item.country" class="span6 country" 
+							id="id_address-country" data-placeholder="Выберите страна"/><br/>				
+					</div>
+				    <div class="span12">
+				        <label for="id_address-region_name">Регион</label>
+						<input type="text"  ng-model="item.region" class="span6 region" 
+							id="id_address-region" data-placeholder="Выберите регион"/><br/>
+					</div>
+				    <div class="span12">
+				        <label for="id_address-region_name">Город</label>
+						<input type="text" ng-model="item.city" class="span6 city" 
+							id="id_address-city" data-placeholder="Выберите город"/><br/>
+					</div>
+				    <div class="span12">
+				        <label for="id_address-region_name">Улица</label>
+						<input type="text" ng-model="item.street" class="span6 street" 
+							id="id_address-street" data-placeholder="Выберите улицу"/>
+					</div>
+					<div class="span12">
+				
+				    	<label for="id_address-post_index">Почтовый индекс</label>
+				    	<input id="id_address-postal_code" type="text" ng-model="item.post_index" maxlength="255"></p><br/>
+					</div>
+				</div>
+				<div class="span6 hero-unit">
+					<div class="span12">	
+				    	<label for="id_address-house">Дом</label> <input id="id_address-house" type="text" ng-model="item.house" maxlength="255">
+					</div>
+					<div class="span12">
+				    	<label for="id_address-block">Корпус</label> <input id="id_address-block" type="text" ng-model="item.block" maxlength="255">
+					</div>
+					<div class="span12">
+				    	<label for="id_address-building">Строение</label> <input id="id_address-building" type="text" ng-model="item.building" maxlength="255">
+					</div>
+					<div class="span12">
+				    	<label for="id_address-flat">Квартира</label> <input id="id_address-flat" type="text" ng-model="item.flat" maxlength="255">
+					</div>
+
+				</div>
+			</div>

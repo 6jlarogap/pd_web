@@ -1,0 +1,24 @@
+{% load i18n %}{% autoescape off %}
+
+{% trans "Получено подтверждение заявки на регистрацию на" %} {% trans "Похоронное Дело" %}
+
+{% trans "от" %}
+
+{% trans "Пользователь" %}: {{ obj.user_name }} / {{ obj.user_last_name }} {{ obj.user_first_name }} {{ obj.user_middle_name }}
+{% trans "Email" %}: {{ obj.user_email }}
+
+{% trans "Тип организации" %}: {{ obj.get_org_type_display }}
+
+{% trans "Организация" %}: {{ obj.org_name }}
+{% trans "Полное название" %}: {{ obj.org_full_name }}
+{% trans "ИНН" %}: {{ obj.org_inn }}
+{% trans "Директор" %}: {{ obj.org_director }}
+{% trans "Телефон(ы)" %}: {{ obj.org_phones }}
+
+{% trans "Одобрить" %}: {{ host }}{% url registrant_approve  obj.pk %}
+
+{% trans "Отказать" %}: {{ host }}{% url registrant_decline  obj.pk %}
+
+{% trans "Все регистранты" %}: {{ host }}{% url registrants %}
+
+{% endautoescape %}

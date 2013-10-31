@@ -348,6 +348,7 @@ $(function() {
     if (!window.AGENT_DOVER) { AGENT_DOVER = {} }
     if (!window.ORG_AGENTS) { ORG_AGENTS = {} }
     if (!window.PLACE_TYPES) { PLACE_TYPES = {} }
+    if (!window.PLACE_SIZE) { PLACE_SIZE = {} }
     
     $('input[id$=fias_address]').live('keypress', function(e) {
         if (e.keyCode == 13) {
@@ -651,51 +652,58 @@ $(function() {
         $('#id_responsible-take_from_0').removeAttr('checked').closest('li').hide();
 
         var data = $('#id_cemetery, #id_area, #id_row, #id_place_number, #id_desired_graves_count').serialize();
-        if ($('#id_cemetery').val() &&  $('#id_area').val()) {
-            if ($('#id_place_number').val()) {
-                // $('#place_info').load('/burials/get_place/?'+data)
-                $.get('/burials/get_place/?'+data, function (data) {
-                    var place_html = data;
-                    $('#place_info').html(place_html);
-                    if (place_html.indexOf("place_exists") >= 0) {
-                        $('#id_desired_graves_count').closest('p').hide();
+        if ($('#id_cemetery').val() &&  $('#id_area').val() && $('#id_place_number').val()) {
+            // $('#place_info').load('/burials/get_place/?'+data)
+            $.get('/burials/get_place/?'+data, function (data) {
+                var place_html = data;
+                $('#place_info').html(place_html);
+                if (place_html.indexOf("place_exists") >= 0) {
+                    $('#id_desired_graves_count').closest('p').hide();
+                    if ($('#id_place_length').length > 0) {
+                        $('#id_place_length').closest('p').hide();
+                        $('#id_place_width').closest('p').hide();
                     }
-                    else {
-                        $('#id_desired_graves_count').closest('p').show();
-                    }
-                    if (place_html.indexOf("place_has_responsible") >= 0) {
-                        var resp_id = '#id_responsible-take_from_';
-                        $(resp_id+'0').closest('li').show();
-                        // 0 - из места
-                        // 1 - заявитель
-                        // 2 - новый ответственный
-                        if (!$(resp_id+'1').is(':checked') && !$(resp_id+'2').is(':checked')) {
-                            $(resp_id+'0').attr('checked', 'checked');
-                        }
-                    }
-                });
-            } else {
-                $('#id_desired_graves_count').closest('p').show();
-                $('#place_info').html('');
-            }
-            $.getJSON('/burials/get_graves_number/?'+data, function(data) {
-                var count = data.graves_count || 1;
-                count = Math.max(parseInt(old_grave_value), count);
-                if (count != $('#id_grave_number').find('option').length) {
-                    var options = '';
-                    for (var i=1; i<=count; i++) {
-                        var selected = i == old_grave_value ? ' selected="selected"' : '';
-                        options += '<option value="'+i+'"'+selected+'>'+i+'</option>';
-                    }
-                    $('#id_grave_number').html(options);
                 }
-                $('#id_responsible-place').val(data.place_pk || "");
-            })
+                else {
+                    $('#id_desired_graves_count').closest('p').show();
+                    if ($('#id_place_length').length > 0) {
+                        $('#id_place_length').closest('p').show();
+                        $('#id_place_width').closest('p').show();
+                    }
+                }
+                if (place_html.indexOf("place_has_responsible") >= 0) {
+                    var resp_id = '#id_responsible-take_from_';
+                    $(resp_id+'0').closest('li').show();
+                    // 0 - из места
+                    // 1 - заявитель
+                    // 2 - новый ответственный
+                    if (!$(resp_id+'1').is(':checked') && !$(resp_id+'2').is(':checked')) {
+                        $(resp_id+'0').attr('checked', 'checked');
+                    }
+                }
+            });
         } else {
             $('#id_desired_graves_count').closest('p').show();
+            if ($('#id_place_length').length > 0) {
+                $('#id_place_length').closest('p').show();
+                $('#id_place_width').closest('p').show();
+            }
             $('#place_info').html('');
         }
 
+        $.getJSON('/burials/get_graves_number/?'+data, function(data) {
+            var count = data.graves_count || 1;
+            count = Math.max(parseInt(old_grave_value), count);
+            if (count != $('#id_grave_number').find('option').length) {
+                var options = '';
+                for (var i=1; i<=count; i++) {
+                    var selected = i == old_grave_value ? ' selected="selected"' : '';
+                    options += '<option value="'+i+'"'+selected+'>'+i+'</option>';
+                }
+                $('#id_grave_number').html(options);
+            }
+            $('#id_responsible-place').val(data.place_pk || "");
+        })
         var cemetery = $('#id_cemetery').val();
         if (cemetery && PLACE_TYPES[cemetery] != 'manual') {
             $('#id_place_number').siblings('.helptext').show();
@@ -721,6 +729,17 @@ $(function() {
         old_grave_value = $('#id_grave_number').val();
     });
 
+    $('#id_desired_graves_count, #id_new_graves_count').change(function() {
+        var size = PLACE_SIZE[$(this).val()] || '';
+        if (size) {
+            $('#id_place_length').val(size['place_length']);
+            $('#id_place_width').val(size['place_width']);
+        } else {
+            $('#id_place_length').val('');
+            $('#id_place_width').val('');
+        }
+    });
+
     $('#id_country, #id_region').change(function() {
         var geocoder = new google.maps.Geocoder();
         var addr = $('#id_country [selected]').text() + ', ' + $('#id_region [selected]').text();
@@ -734,10 +753,20 @@ $(function() {
     $('#id_country, #id_region').change();
     $('#id_lat, #id_lng').closest('p').hide();
 
-    $('#id_org-name, #id_zags-name').change(function() {
+    $('#id_org-name, #id_zags-name, #id_org_name').change(function() {
         var val = $(this).val();
-        var full_name = $(this).attr('id').indexOf('org') > -1 ? '#id_org-full_name' :
-                                                                 '#id_zags-full_name';
+        var full_name = "";
+        switch ($(this).attr('id')) {
+            case 'id_org-name':
+                full_name = '#id_org-full_name';
+                break;
+            case 'id_zags-name':
+                full_name = '#id_zags-full_name';
+                break;
+            case 'id_org_name':
+                full_name = '#id_org_full_name';
+                break;
+        }
         if (val && !$(full_name).val()) {
             $(full_name).val(val);
         }
@@ -930,3 +959,4 @@ $(function() {
     updateControls();
     setup_address_autocompletes();
 });
+

@@ -17,7 +17,7 @@ from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext_lazy as _
 from django.db.models.query_utils import Q
 
-from burials.models import Cemetery, Area, Burial, Place, ExhumationRequest, BurialFiles, Grave
+from burials.models import Cemetery, Area, Burial, Place, ExhumationRequest, BurialFiles, Grave, PlaceSize
 from geo.forms import LocationForm
 from orders.models import Order
 from pd.forms import PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, CommentForm, StrippedStringsMixin, CustomUploadModelForm
@@ -40,16 +40,18 @@ class BaseCemeteryForm(forms.ModelForm):
             raise forms.ValidationError(_(u'Формат должен быть: по одному времени в формате ЧЧ:ММ на строку'))
         return u'\n'.join([s.strftime('%H:%M') for s in slots])
 
-class CemeteryForm(BaseCemeteryForm):
+class CemeteryForm(LoggingFormMixin, BaseCemeteryForm):
     class Meta:
         model = Cemetery
         exclude = ['ugh', ]
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, request, *args, **kwargs):
+        self.request = request
         super(CemeteryForm, self).__init__(*args, **kwargs)
         address = self.instance and self.instance.address
         self.address_form = LocationForm(data=self.data or None, instance=address, prefix='address')
         #self.address_form.fields['country_name'].required = True
+        self.forms = [self.address_form, ]
         if self.instance and self.instance.pk:
             self.area_formset = AreaFormset(data=self.data or None, instance=self.instance)
         else:
@@ -58,7 +60,11 @@ class CemeteryForm(BaseCemeteryForm):
     def is_valid(self):
         return super(CemeteryForm, self).is_valid() and self.address_form.is_valid() and (not self.area_formset or self.area_formset.is_valid())
 
+    def get_prefix(self, form):
+        return _(u"Адрес, ") if form is self.address_form else u''
+
     def save(self, commit=True, *args, **kwargs):
+        self.collect_log_data()
         obj = super(CemeteryForm, self).save(commit=False, *args, **kwargs)
         if obj.pk and self.area_formset:
             self.area_formset.save()
@@ -67,8 +73,8 @@ class CemeteryForm(BaseCemeteryForm):
             obj.address = self.address_form.save()
         if commit:
             obj.save()
+            self.put_log_data(_(u'Кладбище изменено'))
         return obj
-
 
 class CemeteryAdminForm(BaseCemeteryForm):
     class Meta:
@@ -84,16 +90,30 @@ class BaseAreaFormset(BaseInlineFormSet):
 
 AreaFormset = inlineformset_factory(Cemetery, Area, formset=BaseAreaFormset, can_delete=True)
 
-class PlaceEditForm(forms.ModelForm):
+class PlaceEditForm(ChildrenJSONMixin, forms.ModelForm):
     class Meta:
         model = Place
-        fields = ()
+        fields = ('place_length', 'place_width', )
 
     new_graves_count = forms.IntegerField(required=True, label=_(u"Кол-во могил в месте"))
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, request, *args, **kwargs):
         super(PlaceEditForm, self).__init__(*args, **kwargs)
+        self.request = request
         self.initial['new_graves_count'] = self.instance.get_graves_count()
+        self.fields['place_length'].required = False
+        self.fields['place_width'].required = False
+        if not self.instance.place_length or not self.instance.place_width:
+            try:
+                place_size = PlaceSize.objects.get(org=self.instance.cemetery.ugh,
+                                                   graves_count=self.instance.get_graves_count())
+                if not self.instance.place_length:
+                    self.initial['place_length'] = place_size.place_length
+                if not self.instance.place_width:
+                    self.initial['place_width'] = place_size.place_width
+            except PlaceSize.DoesNotExist:
+                pass
+        self.fields.keyOrder.insert(0, self.fields.keyOrder.pop(-1))
 
     def clean_new_graves_count(self):
         new_graves_count = self.cleaned_data['new_graves_count']
@@ -117,6 +137,12 @@ class PlaceEditForm(forms.ModelForm):
         elif new_graves_count > graves_count:
             self.instance.get_or_create_graves(new_graves_count)
         return new_graves_count
+
+    def clean(self):
+        if self.cleaned_data.get('place_width') and not self.cleaned_data.get('place_length') or \
+           not self.cleaned_data.get('place_width') and self.cleaned_data.get('place_length'):
+            raise forms.ValidationError(_(u"Надо указывать и длину, и ширину места"))
+        return self.cleaned_data
 
 EMPTY = (('', '--------'),)
 
@@ -337,6 +363,10 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
         elif not self.instance.is_finished():
             del self.fields['fact_date']
             del self.fields['account_number']
+            
+        if not self.request.user.profile.is_ugh():
+            del self.fields['place_length']
+            del self.fields['place_width']
 
         if not self.instance.pk:
             self.initial['burial_container'] = Burial.CONTAINER_COFFIN
@@ -346,6 +376,15 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
             if self.request.user.profile.area:
                 self.initial['area'] = self.request.user.profile.area
                 self.initial['desired_graves_count'] = self.initial['area'].places_count or 1
+            if self.request.user.profile.is_ugh():
+                desired_graves_count = self.initial.get('desired_graves_count') or 1
+                try:
+                    place_size = PlaceSize.objects.get(org=self.request.user.profile.org,
+                                                       graves_count=desired_graves_count)
+                    self.initial['place_length'] = place_size.place_length
+                    self.initial['place_width'] = place_size.place_width
+                except PlaceSize.DoesNotExist:
+                    pass
 
         if self.instance.is_finished() and self.instance.place:
             self.initial.update(
@@ -581,7 +620,11 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
             place, created = Place.objects.get_or_create(cemetery=self.cleaned_data['cemetery'],
                                                          area=self.cleaned_data['area'],
                                                          row=self.cleaned_data['row'],
-                                                         place=self.cleaned_data['place_number'],)
+                                                         place=self.cleaned_data['place_number'],
+                                         defaults = { 'place_length': self.cleaned_data['place_length'],
+                                                      'place_width': self.cleaned_data['place_width'],
+                                                    }
+                             )
             self.instance.place=place
             if created:
                 self.grave = place.create_graves(max(self.cleaned_data['desired_graves_count'] or 1,
@@ -700,8 +743,15 @@ class BurialCommitForm(BurialForm):
         else:
             cemetery = self.instance.cemetery or None
 
-        if self.instance.is_archive() and self.fields.get('fact_date'):
+        if self.fields.get('fact_date'):
             self.fields['fact_date'].required = True
+            if (self.instance.is_archive() or self.request.REQUEST.get('archive')) and \
+               cemetery and not cemetery.archive_burial_fact_date_required:
+                self.fields['fact_date'].required = False
+            else:
+                # Во всех остальных случаях, когда на форме есть факт. дата,
+                # например в закрытом зх:
+                self.fields['fact_date'].required = True
 
         if self.instance.is_finished():
             if cemetery and cemetery.places_algo == Cemetery.PLACE_MANUAL:
@@ -790,20 +840,34 @@ class BurialCommitForm(BurialForm):
         if (not self.instance or not self.instance.pk) and self.request.user.profile.is_ugh():
             is_ugh = True
 
+        cemetery = self.cleaned_data.get('cemetery')
+
         if is_ugh:
-            if self.request.user.profile.org.numbers_algo in (Org.NUM_YEAR_UGH, Org.NUM_YEAR_CEMETERY) and \
-               self.cleaned_data.get('account_number') and self.cleaned_data.get('fact_date'):
-                acc_number = self.cleaned_data.get('account_number')
-                fact_date  = self.cleaned_data.get('fact_date')
-                msg = _(u"Номер в книге учета должен быть: ГГГГнн...н (год фактической даты, номер)")
-                try:
-                    if len(acc_number) < 4 or int(acc_number[:4]) != fact_date.year:
+            acc_number = self.cleaned_data.get('account_number')
+            fact_date  = self.cleaned_data.get('fact_date')
+            if acc_number and fact_date:
+                if self.request.user.profile.org.numbers_algo in (Org.NUM_YEAR_UGH, Org.NUM_YEAR_CEMETERY, ):
+                    msg = _(u"Номер в книге учета должен быть: ГГГГнннн (год фактической даты, номер)")
+                    try:
+                        if len(acc_number) < 4 or int(acc_number[:4]) != fact_date.year:
+                            raise forms.ValidationError(msg)
+                    except ValueError:
                         raise forms.ValidationError(msg)
-                except ValueError:
-                    raise forms.ValidationError(msg)
+                if self.request.user.profile.org.numbers_algo in (Org.NUM_YEAR_MONTH_UGH, Org.NUM_YEAR_MONTH_CEMETERY, ):
+                    msg = _(u"Номер в книге учета должен быть: ГГГГММннн (год, месяц фактической даты, номер)")
+                    if not fact_date.month or not (1 <= fact_date.month <= 12):
+                        raise forms.ValidationError(msg)
+                    try:
+                        if len(acc_number) < 6 or \
+                           int(acc_number[:4]) != fact_date.year or \
+                           int(acc_number[4:6]) != fact_date.month:
+                            raise forms.ValidationError(msg)
+                    except ValueError:
+                        raise forms.ValidationError(msg)
 
             if (self.instance.is_archive() or self.request.REQUEST.get('archive')) and \
-               not self.cleaned_data.get('account_number').strip():
+               not self.cleaned_data.get('account_number').strip() and \
+               (not cemetery or cemetery.archive_burial_account_number_required):
                 msg = _(u"Нельзя закрывать архивное захоронение без указания его номера в книге учета")
                 raise forms.ValidationError(msg)
 
@@ -824,7 +888,6 @@ class BurialCommitForm(BurialForm):
             msg = _(u"Указан ряд и/или место, но не указан участок")
             raise forms.ValidationError(msg)
 
-        cemetery = self.cleaned_data.get('cemetery')
         grave_number = self.cleaned_data.get('grave_number')
         place = None
         if cemetery and area and place_number:
@@ -844,6 +907,22 @@ class BurialCommitForm(BurialForm):
             if grave_number > desired_graves_count:
                 msg = _(u"Номер могилы превышает запрошенное количество могил в новом месте")
                 raise forms.ValidationError(msg)
+            if self.request.user.profile.is_loru() and cemetery and cemetery.ugh:
+                max_grave_number_this_ugh = \
+                    Area.objects.filter(Q(cemetery__ugh=cemetery.ugh) & \
+                                        Q(availability=Area.AVAILABILITY_OPEN)). \
+                        aggregate(m=Max('places_count'))['m'] or 1
+                if desired_graves_count > max_grave_number_this_ugh:
+                    msg = _(u"Запрошенное число могил (%s) в новом месте превышает максимум (%s) по кладбищам этого ОМС" % \
+                            (desired_graves_count, max_grave_number_this_ugh)
+                           )
+                    raise forms.ValidationError(msg) 
+            if self.request.user.profile.is_ugh() and \
+               (self.cleaned_data.get('place_width') and not self.cleaned_data.get('place_length') or \
+                not self.cleaned_data.get('place_width') and self.cleaned_data.get('place_length')
+               ):
+                raise forms.ValidationError(_(u"Надо указывать и длину, и ширину нового места"))
+
 
         burial_type = self.cleaned_data.get('burial_type')
         if burial_type in (Burial.BURIAL_ADD, Burial.BURIAL_OVER,) and \
@@ -1016,7 +1095,9 @@ class BurialApproveCloseForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelFor
     """
     class Meta:
         model = Burial
-        fields = ['cemetery', 'area', 'row', 'place_number', 'desired_graves_count', 'fact_date', ]
+        fields = ['cemetery', 'area', 'row', 'place_number',
+                  'desired_graves_count', 'place_length', 'place_width',
+                  'fact_date', ]
 
     def __init__(self, request, *args, **kwargs):
         super(BurialApproveCloseForm, self).__init__(*args, **kwargs)
@@ -1038,7 +1119,7 @@ class BurialApproveCloseForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelFor
                     aggregate(m=Max('places_count'))['m'] or 1
             max_grave_choices = [(i,i) for i in range(1, max_grave_number+1)]
 
-        if self.instance.can_finish():
+        if self.instance.can_finish() and request.user.profile.is_ugh():
             # Закрытие
             if not self.instance.fact_date:
                 self.initial['fact_date'] = self.instance.plan_date
@@ -1060,6 +1141,8 @@ class BurialApproveCloseForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelFor
                         del self.fields[f]
                     if self.instance.get_place():
                         del self.fields['desired_graves_count']
+                        del self.fields['place_length']
+                        del self.fields['place_width']
                 else:
                     for f in ('row', 'place_number', 'fact_date', ):
                         del self.fields[f]
@@ -1098,6 +1181,20 @@ class BurialApproveCloseForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelFor
                     for f in self.dc_form.fields:
                         if f in ('s_number', 'release_date', 'zags',) :
                             self.dc_form.fields[f].required = True
+                            
+        if 'place_length' in self.fields:
+            self.fields['place_length'].required = False
+            self.fields['place_width'].required = False
+            if not self.instance.place_length or not self.instance.place_width:
+                try:
+                    place_size = PlaceSize.objects.get(org=request.user.profile.org,
+                                                       graves_count=self.instance.desired_graves_count)
+                    if not self.instance.place_length:
+                        self.initial['place_length'] = place_size.place_length
+                    if not self.instance.place_width:
+                        self.initial['place_width'] = place_size.place_width
+                except PlaceSize.DoesNotExist:
+                    pass
 
     def clean(self):
         if 'row' in self.fields and \
@@ -1219,7 +1316,9 @@ class AddDoverForm(StrippedStringsMixin, forms.ModelForm):
 class AddOrgForm(BaseOrgForm):
     class Meta:
         model = Org
-        exclude = ['off_address', 'numbers_algo', 'opf_order', 'opf_order_customer_mandatory', ]
+        exclude = ['off_address', 'numbers_algo',
+                   'opf_order', 'opf_order_customer_mandatory',
+                   'plan_date_days_before', ]
     
     def __init__(self, request, *args, **kwargs):
         super(AddOrgForm, self).__init__(request, *args, **kwargs)

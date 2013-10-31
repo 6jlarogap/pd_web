@@ -1,0 +1,76 @@
+<form name="burialEditForm" novalidate>
+    <div class="modal-header">
+        <h3>Просмотр захоронения</h3>
+    </div>
+    <div class="modal-body">
+        <dl class="dl-horizontal">
+            <dt>Учетный номер:</dt>
+            <dd>{{ selectedBurial.account_number }}</dd>
+            <dt>Статус:</dt>
+            <dd>{{ STATUS_CHOICES[selectedBurial.status] }}</dd>
+            <dt>Тип:</dt>
+            <dd>{{ BURIAL_CONTAINERS[selectedBurial.burial_container] }}</dd>
+            <dt>Вид:</dt>
+            <dd>{{ BURIAL_TYPES[selectedBurial.burial_type] }}</dd>
+
+            <!-- <dt>УГХ:</dt>
+             <dd>Организация_УГХ</dd>
+
+
+             <dt>Заявитель-ЮЛ:</dt>
+             <dd>Организация 47</dd>
+
+             <dt>Агент:</dt>
+             <dd>Директор</dd>-->
+
+            <dt>Усопший:</dt>
+            <dd>{{selectedBurial.deadman.last_name + ' ' + selectedBurial.deadman.first_name + ' ' + selectedBurial.deadman.middle_name}}</dd>
+
+            <!--
+            <dt>Свидетельство о смерти:</dt>
+            <dd>Номер: 774436\972</dd>
+            <dd>Серия: 1-НК</dd>
+            <dd>Дата: 7 июля 2013 г.</dd>
+            <dd>Выдано: Организация 68</dd>
+            -->
+
+            <dt>Кладбище:</dt>
+            <dd>{{ cemetery.name }}</dd>
+            <dt>Участок:</dt>
+            <dd>{{ area.name }}</dd>
+            <dt>Место:</dt>
+            <dd>{{ selectedBurial.place_number }}</dd>
+            <dt>Могила:</dt>
+            <dd>
+                <select name="graveNumber" ng-model="selectedBurial.grave"
+                        ng-options="g.grave_number for g in graves"
+                        required>
+                    <option value="" selected>Выберите № могилы:</option>
+                </select>
+                <span class="error" ng-show="burialEditForm.graveNumber.$error.required">Не выбран номер могилы</span>
+            </dd>
+
+            <!--                <dt>Правило создания номера места:</dt>
+                            <dd>По рег. номеру захоронения</dd>
+                            <dt>Ответственный:</dt>
+                            <dd>
+                                Холопова Олег Камоевич
+                                <br>улица Верховая, дом 754, Калуга, Калужская область, Россия
+                            </dd>-->
+
+            <dt>План. дата и время:</dt>
+            <dd>{{ selectedBurial.plan_date}} {{ selectedBurial.plan_time }}</dd>
+            <dt>Факт. дата:</dt>
+            <dd>{{ selectedBurial.fact_date }}</dd>
+        </dl>
+    </div>
+    <div class="modal-footer">
+        <a  href="/burials/{{selectedBurial.id}}/edit/" class="btn">Редактировать</a>
+        <button class="btn btn-primary"
+                ng-disabled="burialEditForm.graveNumber.$pristine || !burialEditForm.$valid"
+                ng-click="saveBurialEditForm(burialEditForm)">
+            Сохранить
+        </button>
+        <button class="btn cancel" ng-click="closeEditForm('isBurialEditorOpen')">Закрыть</button>
+    </div>
+</form>

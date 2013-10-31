@@ -1,25 +1,35 @@
 # -*- coding: utf-8 -*-
 import json
 import datetime
+import random
+import hashlib
+
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.models import User
+from django.contrib.auth.hashers import make_password
+from django.core.mail import send_mail
 from django.core.urlresolvers import reverse
 from django.db.models.query_utils import Q
 from django.db.models.aggregates import Count
 from django.http import HttpResponse, Http404
-from django.shortcuts import redirect, render
+from django.shortcuts import redirect, render, get_object_or_404
+from django.template.loader import render_to_string
 from django.utils.translation import ugettext_lazy as _
-from django.views.generic.base import View
-from django.views.generic.edit import UpdateView, CreateView
-
+from django.views.generic.base import View, TemplateView
+from django.views.generic.edit import UpdateView, CreateView, FormView
+from django.views.generic.detail import DetailView
+    
 from burials.views import UGHRequiredMixin, LoginRequiredMixin, SupervisorRequiredMixin
 from logs.models import Log, write_log, LoginLog
-from users.forms import RegisterForm, LoruFormset, ProfileForm, UserProfileForm, \
-                        UserDataForm, ChangePasswordForm, BankAccountFormset, OrgForm, OrgLogForm, LoginLogForm
-from users.models import Profile, Org
-from pd.views import PaginateListView
+from users.forms import UserAddForm, RegisterForm, LoruFormset, ProfileForm, UserProfileForm, \
+                        UserDataForm, ChangePasswordForm, BankAccountFormset, OrgForm, \
+                        OrgLogForm, LoginLogForm, OrgBurialStatsForm, SupportForm
+from users.models import Profile, Org, RegisterProfile
+from burials.models import Burial
+from pd.views import PaginateListView, RequestToFormMixin
 
 
 class LoginView(View):
@@ -65,12 +75,12 @@ class LogoutView(View):
 
 ulogout = LogoutView.as_view()
 
-class RegisterView(SupervisorRequiredMixin, View):
+class RegistrationOldView(SupervisorRequiredMixin, View):
     """
     Регистрация
     """
     def post(self, request, *args, **kwargs):
-        form = RegisterForm(data=request.POST)
+        form = UserAddForm(data=request.POST)
         if form.is_valid():
             form.save()
             user = authenticate(username=form.cleaned_data['username'], password=form.cleaned_data['password1'])
@@ -82,11 +92,11 @@ class RegisterView(SupervisorRequiredMixin, View):
         return self.get(request, *args, **kwargs)
 
     def get(self, request, *args, **kwargs):
-        form = RegisterForm()
+        form = UserAddForm()
         request.session.set_test_cookie()
-        return render(request, 'register.html', {'form':form})
+        return render(request, 'registration_old.html', {'form':form})
 
-uregister = RegisterView.as_view()
+registration_old = RegistrationOldView.as_view()
 
 class LoruRegistryView(UGHRequiredMixin, View):
     """
@@ -170,10 +180,10 @@ class UserProfileView(LoginRequiredMixin, UpdateView):
 
 user_profile = UserProfileView.as_view()
 
-class UserAddForm(CreateView):
+class UserAddView(CreateView):
     template_name = 'add_user.html'
     model = User
-    form_class = RegisterForm
+    form_class = UserAddForm
 
     def form_valid(self, form):
         self.object = form.save()
@@ -194,14 +204,14 @@ class UserAddForm(CreateView):
     def dispatch(self, request, *args, **kwargs):
         if not request.user.is_authenticated():
             return redirect('/')
-        return super(UserAddForm, self).dispatch(request, *args, **kwargs)
+        return super(UserAddView, self).dispatch(request, *args, **kwargs)
 
     def get_form_kwargs(self, **kwargs):
-        data = super(UserAddForm, self).get_form_kwargs(**kwargs)
+        data = super(UserAddView, self).get_form_kwargs(**kwargs)
         del data['instance']
         return data
 
-add_user = UserAddForm.as_view()
+add_user = UserAddView.as_view()
 
 class UserEditView(LoginRequiredMixin, UpdateView):
     template_name = 'edit_user.html'
@@ -232,15 +242,10 @@ class UserEditView(LoginRequiredMixin, UpdateView):
         
 edit_user = UserEditView.as_view()
 
-class OrgEditView(LoginRequiredMixin, UpdateView):
+class OrgEditView(LoginRequiredMixin, RequestToFormMixin, UpdateView):
     template_name = 'edit_org.html'
     model = Org
     form_class = OrgForm
-
-    def get_form_kwargs(self):
-        data = super(OrgEditView, self).get_form_kwargs()
-        data['request'] = self.request
-        return data
 
     def get_queryset(self):
         #return Org.objects.annotate(profiles=Count('profile')).filter(profiles=0)
@@ -327,10 +332,10 @@ class OrgLogView(LoginRequiredMixin, PaginateListView):
         form = self.get_form()
 
         if form.data and form.is_valid():
-            if form.cleaned_data['log_date_from']:
-                logs = logs.filter(dt__gte=form.cleaned_data['log_date_from'])
-            if form.cleaned_data['log_date_to']:
-                logs = logs.filter(dt__lte=form.cleaned_data['log_date_to']+datetime.timedelta(days=1))
+            if form.cleaned_data['date_from']:
+                logs = logs.filter(dt__gte=form.cleaned_data['date_from'])
+            if form.cleaned_data['date_to']:
+                logs = logs.filter(dt__lte=form.cleaned_data['date_to']+datetime.timedelta(days=1))
 
         sort = self.request.GET.get('sort', self.SORT_DEFAULT)
         SORT_FIELDS = {
@@ -365,10 +370,10 @@ class LoginLogView(SupervisorRequiredMixin, PaginateListView):
         form = self.get_form()
 
         if form.data and form.is_valid():
-            if form.cleaned_data['log_date_from']:
-                logs = logs.filter(dt__gte=form.cleaned_data['log_date_from'])
-            if form.cleaned_data['log_date_to']:
-                logs = logs.filter(dt__lte=form.cleaned_data['log_date_to']+datetime.timedelta(days=1))
+            if form.cleaned_data['date_from']:
+                logs = logs.filter(dt__gte=form.cleaned_data['date_from'])
+            if form.cleaned_data['date_to']:
+                logs = logs.filter(dt__lte=form.cleaned_data['date_to']+datetime.timedelta(days=1))
 
         sort = self.request.GET.get('sort', self.SORT_DEFAULT)
         SORT_FIELDS = {
@@ -394,3 +399,304 @@ class LoginLogView(SupervisorRequiredMixin, PaginateListView):
         return LoginLogForm(data=self.request.GET or None)
 
 login_log = LoginLogView.as_view()
+
+class RegisterView(CreateView):
+    """
+    Регистрация новых пользователей и организаций
+    
+    Пользователь набирает форму, отправляет заявку
+    """
+    template_name = 'register.html'
+    form_class = RegisterForm
+
+    def form_valid(self, form):
+        obj = form.save(commit=False)
+        obj.user_password = make_password(form.cleaned_data['password1'])
+        salt = hashlib.sha1(str(random.random())).hexdigest()[:5]
+        obj.user_activation_key = hashlib.sha1(salt+obj.user_name).hexdigest()
+        obj.status = RegisterProfile.STATUS_TO_CONFIRM
+        obj.save()
+        write_log(None, obj, _(u'%s : получена. Ожидание подтверждения') % obj)
+        email_subject = "%s %s" % (unicode(_(u"Подтверждение заявки на регистрацию на")),
+                                   unicode(_(u"Похоронное Дело")),
+                                  )
+        email_text = render_to_string(
+                        'register_activation_email.txt',
+                        {
+                         'host': '%s://%s' % (self.request.is_secure() and 'https' or 'http',
+                                              self.request.get_host(),
+                                             ),
+                         'activation_key': obj.user_activation_key,
+                        }
+                     )
+        email_from = settings.DEFAULT_FROM_EMAIL
+        email_to = (obj.user_email, )
+        send_mail(email_subject, email_text, email_from, email_to)
+        return redirect(reverse('register_activation', args=[obj.user_activation_key]))
+        
+register = RegisterView.as_view()
+
+class RegisterActivation(DetailView):
+    """
+    Регистрация новых пользователей. Различные варианты.
+    
+    1. пользователь заполнил форму регистрации, подал заявку,
+       получает ответ: жди письмо, в нем ссылка;
+    2. пользователь получил письмо, надавил на ссылку,
+       которая отличается от 1-й ссылки только: ?confirm=1
+       получает ответ: заявка принята на рассмотрение.
+       Администратору посылается об этом уведомление
+    3. Пользователь подтвердил заявку на регистрацию,
+       но тупо давит на присланные ему ссылку. Получит
+       ответ, что его заявка уже рассматривается
+    4. Пользователю отказано в регистрации.
+    5. Пользователь уже внесен в систему.
+    """
+    template_name = 'simple_message.html'
+    model = RegisterProfile
+
+    def get_object(self):
+        return get_object_or_404(RegisterProfile, user_activation_key=self.kwargs['key'])
+
+    def get(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        message = _(u'Регистрация успешна, но еще не завершена!')
+        if self.object.status == RegisterProfile.STATUS_TO_CONFIRM:
+            if 'confirm' in request.GET:
+                self.object.status = RegisterProfile.STATUS_CONFIRMED
+                self.object.save()
+                write_log(None, self.object, _(u'%s : получено подтверждение') % self.object)
+                for r in RegisterProfile.objects.filter(
+                        status__in=(RegisterProfile.STATUS_DECLINED, RegisterProfile.STATUS_APPROVED, ),
+                        dt_modified__lt=datetime.datetime.now() - \
+                                        datetime.timedelta(days=RegisterProfile.CLEAR_PROCESSED),):
+                    r.delete()
+                    write_log(None, self.object,
+                              _(u'%s : автоматическое удаление по истечении %s дней') % \
+                                (self.object, RegisterProfile.CLEAR_PROCESSED, ))
+                explain = _(
+                            u'Спасибо за подтверждение заявки на регистрацию!\n'
+                            u'Ваша заявка принята на <b>рассмотрение администратора системы</b>\n'
+                )
+                email_subject = "%s %s" % (unicode(_(u"Заявка на регистрацию на")),
+                                           unicode(_(u"ПохоронноеДело")),
+                                          )
+                email_text = render_to_string(
+                                'register_notify_supervisor_email.txt',
+                                { 
+                                    'obj': self.object,
+                                    'host': '%s://%s' % (request.is_secure() and 'https' or 'http',
+                                                         self.request.get_host(),
+                                                        ),
+                                }
+                )
+                email_from = settings.DEFAULT_FROM_EMAIL
+                email_to = (Org.get_supervisor_email(), )
+                send_mail(email_subject, email_text, email_from, email_to )
+            else:
+                explain = _(
+                            u'Вам отправлено письмо, в котором имеется ссылка,\n'
+                            u'переход по которой направит вашу заявку на рассмотрение\n'
+                            u'администратора системы\n'
+                        )
+        elif self.object.status == RegisterProfile.STATUS_CONFIRMED:
+            explain = _(
+                        u'Ваша заявка на регистрацию уже <b>рассматривается администратором системы</b>\n'
+                       )
+        elif self.object.status == RegisterProfile.STATUS_DECLINED:
+            message = _(u'В регистрации отказано!')
+            explain = _(
+                        u'Ваша заявка на регистрацию была <b>отклонена</b>.\n'
+                        u'Обратитесь в <a href="%s">поддержку</a>\n' % reverse('support')
+                       )
+        elif self.object.status == RegisterProfile.STATUS_APPROVED:
+            message = _(u'Регистрация успешна!')
+            explain = _(
+                        u"Вы можете работать в <a href='%s'>системе</a>\n"
+                       ) % reverse('dashboard')
+        else:
+            raise Http404
+        context = {}
+        context['message'] = message
+        context['html_message'] = u'<br /><big>%s</big>' % explain.replace('\n','<br />')
+        return self.render_to_response(context)
+
+register_activation = RegisterActivation.as_view()
+
+class RegistrantsView(SupervisorRequiredMixin, TemplateView):
+    template_name = 'registrants.html'
+
+    def get_context_data(self, **kwargs):
+        sort = self.request.GET.get('sort', '-pk')
+        SORT_FIELDS = {
+            'pk': 'pk',
+            '-pk': '-pk',
+            'org_type': 'org_type',
+            '-org_type': '-org_org_type',
+            'org': 'org_name',
+            '-org': '-org_name',
+            'fio': ['user_last_name', 'user_first_name', 'user_middle_name'],
+            '-fio': ['-user_last_name', '-user_first_name', '-user_middle_name'],
+            'director': 'org_director',
+            '-director': '-org_director',
+            'status': 'status',
+            '-status': '-status',
+        }
+        s = SORT_FIELDS[sort] if sort in SORT_FIELDS else '-pk'
+        if not isinstance(s, list):
+            s = [s]
+
+        registrants = RegisterProfile.objects.all().order_by(*s)
+        return {
+            'registrants': registrants,
+            'sort': sort,
+            'RegisterProfile' : RegisterProfile,
+        }
+
+registrants = RegistrantsView.as_view()
+
+class RegistrantDelete(SupervisorRequiredMixin, View):
+    def get(self, request, *args, **kwargs):
+        registrant = get_object_or_404(RegisterProfile, pk=self.kwargs['pk'])
+        write_log(request, registrant, _(u'%s : удалена') % registrant)
+        registrant.delete()
+        return redirect('registrants')
+
+registrant_delete = RegistrantDelete.as_view()
+
+class RegistrantApprove(SupervisorRequiredMixin, View):
+    def get(self, request, *args, **kwargs):
+        registrant = get_object_or_404(RegisterProfile, pk=self.kwargs['pk'])
+        registrant.status = RegisterProfile.STATUS_APPROVED
+        registrant.save()
+        write_log(request, registrant, _(u'%s : одобрена') % registrant)
+        user = User.objects.create(
+                    username=registrant.user_name,
+                    password=registrant.user_password,
+                    email=registrant.user_email,
+        )
+        org=Org.objects.create(
+                    type=registrant.org_type,
+                    name=registrant.org_name,
+                    full_name=registrant.org_full_name,
+                    inn = registrant.org_inn,
+                    director = registrant.org_director,
+                    email = registrant.user_email,
+                    phones = registrant.org_phones,
+        )
+        profile=Profile.objects.create(
+                    user_last_name=registrant.user_last_name,
+                    user_first_name=registrant.user_first_name,
+                    user_middle_name=registrant.user_middle_name,
+                    is_agent=True,
+                    user=user,
+                    org=org,
+        )
+        email_subject = unicode(_(u"Заявка на регистрацию одобрена"))
+        email_text = render_to_string(
+                        'register_approved_email.txt',
+                        { 'host': '%s://%s' % (self.request.is_secure() and 'https' or 'http',
+                                               self.request.get_host(),
+                                              ),
+                          'obj': registrant,
+                        }
+                    )
+        email_from = settings.DEFAULT_FROM_EMAIL
+        email_to = (registrant.user_email, )
+        send_mail(email_subject, email_text, email_from, email_to )
+        return redirect('registrants')
+
+registrant_approve = RegistrantApprove.as_view()
+
+class RegistrantDecline(SupervisorRequiredMixin, View):
+    def get(self, request, *args, **kwargs):
+        registrant = get_object_or_404(RegisterProfile, pk=self.kwargs['pk'])
+        registrant.status = RegisterProfile.STATUS_DECLINED
+        registrant.save()
+        write_log(request, registrant, _(u'%s : отказано') % registrant)
+        return redirect('registrants')
+
+registrant_decline = RegistrantDecline.as_view()
+
+class OrgBurialStatsView(SupervisorRequiredMixin, TemplateView):
+    template_name = 'org_burial_stats.html'
+
+    def get_context_data(self, **kwargs):
+        form = self.get_form()
+        q = Q()
+        if form.data and form.is_valid():
+            if form.cleaned_data['date_from']:
+                q &= Q(dt_modified__gte=form.cleaned_data['date_from'])
+            if form.cleaned_data['date_to']:
+                q &= Q(dt_modified__lte=form.cleaned_data['date_to'])
+
+        sort = self.request.GET.get('sort', 'org')
+        SORT_FIELDS = {
+            'org': 'name',
+            '-org': '-name',
+       }
+        s = SORT_FIELDS[sort]
+        if not isinstance(s, list):
+            s = [s]
+
+        orgs = []
+        total={}
+        for source_type in Burial.SOURCE_TYPES:
+            total[source_type[0]] = 0
+        total['all'] = 0
+        for o in Org.objects.filter(type=Org.PROFILE_UGH).order_by(*s):
+            org = {'name': o.name, 'all': 0}
+            for source_type in Burial.SOURCE_TYPES:
+                org[source_type[0]] = Burial.objects.filter(
+                    q &
+                    Q(
+                      ugh=o,
+                      source_type=source_type[0],
+                      status__in=(
+                                  Burial.STATUS_CLOSED,
+                                  Burial.STATUS_EXHUMATED,
+                                 ),
+                      annulated=False,
+                     )
+                ).count()
+                total[source_type[0]] += org[source_type[0]]
+                org['all'] += org[source_type[0]]
+                total['all'] += org[source_type[0]]
+            orgs.append(org)
+
+        return {
+            'form': form,
+            'orgs':orgs,
+            'total': total,
+            'sort': sort,
+        }
+
+    def get_form(self):
+        return OrgBurialStatsForm(data=self.request.GET or None)
+
+org_burial_stats = OrgBurialStatsView.as_view()
+
+class SupportView(RequestToFormMixin, FormView):
+    form_class = SupportForm
+    template_name = 'support.html'
+
+    def form_valid(self, form):
+        form.save()
+        return super(SupportView, self).form_valid(form)
+        
+    def get_success_url(self):
+        return reverse('support_thanks')
+
+support = SupportView.as_view()
+
+class SupportThanks(TemplateView):
+    template_name = 'simple_message.html'
+
+    def get(self, request, *args, **kwargs):
+        message = _(u'Спасибо за сообщение!')
+        html_message = u'<br /><big>%s.</big>' % \
+                       _(u'Сообщение будет рассмотрено в службе поддержки')
+        return self.render_to_response({'message': message,
+                                        'html_message': html_message})
+
+support_thanks = SupportThanks.as_view()
