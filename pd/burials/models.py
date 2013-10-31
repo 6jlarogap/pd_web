@@ -226,7 +226,7 @@ class Place(SafeDeleteMixin, BaseModel):
         return result
 
 class PlaceSize(models.Model):
-    org = models.ForeignKey(Org, verbose_name=_(u"Организация"), editable=False) 
+    org = models.ForeignKey(Org, verbose_name=_(u"Организация"), editable=False, on_delete=models.PROTECT) 
     graves_count = models.PositiveSmallIntegerField(_(u"Число могил"), )
     place_length = models.DecimalField(_(u"Длина, м."), max_digits=5, decimal_places=2, validators=[validate_gt0])
     place_width = models.DecimalField(_(u"Ширина, м."), max_digits=5, decimal_places=2, validators=[validate_gt0])
@@ -817,17 +817,28 @@ class Reason(models.Model):
     TYPE_DECLINE = 'decline'
     TYPE_ANNULATE = 'annulate'
     TYPE_CHOICES = (
-        (TYPE_BACK, _(u'Отзыв ЛОРУ')),
-        (TYPE_DECLINE, _(u'Отказ УГХ')),
-        (TYPE_ANNULATE, _(u'Аннулирование УГХ')),
+        (TYPE_BACK, _(u'ЛОРУ отзывает захоронение')),
+        (TYPE_DECLINE, _(u'ОМС отказывает в захоронении')),
+        (TYPE_ANNULATE, _(u'Аннулирование захоронения')),
     )
-    name = models.CharField(_(u'Название'), max_length=255)
-    reason_type = models.CharField(_(u'Тип'), max_length=255, choices=TYPE_CHOICES)
-    text = models.TextField(_(u'Текст'), default='', blank=True)
+    # ЛОРУ и УГХ имеют разные списки отказов и др. действий
+    #
+    TYPES_UGH = (TYPE_DECLINE, TYPE_ANNULATE, )
+    # ЛОРУ аннулирует лишь свои черновики, отказванные, отозванные,
+    # т.е. по сути свои черновики, так что незачем ему указывать причину
+    # аннулирования
+    TYPES_LORU = (TYPE_BACK, )
+    
+    org = models.ForeignKey(Org, verbose_name=_(u"Организация"), editable=False, on_delete=models.PROTECT) 
+    reason_type = models.CharField(_(u'Действие'), max_length=255, choices=TYPE_CHOICES)
+    name = models.CharField(_(u'Причина'), max_length=255)
+    text = models.TextField(_(u'Текст причины'), default='', editable=False)
 
     class Meta:
-        verbose_name = _(u"Причина отказа")
-        verbose_name_plural = _(u"Причина отказа")
+        verbose_name = _(u"Причина")
+        verbose_name_plural = _(u"Причины")
+        ordering = ('reason_type', 'name', )
+        unique_together = ('org', 'reason_type', 'name')
 
     def save(self, *args, **kwargs):
         if not self.text.strip():
