@@ -273,13 +273,22 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
                 redirect_to_view = True
             
         if request.POST.get('decline') and request.user.profile.is_ugh() and b.can_decline():
-            b.status = Burial.STATUS_DECLINED
-            b.account_number = None
-            msg_declined = u'Захоронение отклонено'
-            write_log(request, b, msg_declined, reason)
-            messages.success(request, _(u"<a href='%s'>Захоронение %s</a> отклонено") % (
-                reverse('view_burial', args=[b.pk]), b.pk,
-            ))
+            if reason and reason.strip():
+                b.status = Burial.STATUS_DECLINED
+                b.account_number = None
+                msg_declined = u'Захоронение отклонено'
+                write_log(request, b, msg_declined, reason)
+                messages.success(request, _(u"<a href='%s'>Захоронение %s</a> отклонено") % (
+                    reverse('view_burial', args=[b.pk]), b.pk,
+                ))
+            else:
+                msg = _(u"Выполнить операцию не удалось: <a href='%s'>захоронение</a> в статусе \"%s\". "
+                        u"Не указана причина отказа.") % (
+                    reverse('view_burial', args=[b.pk]),
+                    b.get_status_display(),
+                )
+                messages.error(request, msg)
+                return redirect(reverse('view_burial', args=[b.pk]))
 
         if request.POST.get('complete') and request.user.profile.is_ugh() and b.can_finish():
             approve_close_form = self.get_approve_close_form()
@@ -389,11 +398,12 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
 
     def get_context_data(self, **kwargs):
         b = self.get_object()
+        org = self.request.user.profile.org
         return {
             'b': b,
-            'reason_typical_back': Reason.objects.filter(reason_type=Reason.TYPE_BACK),
-            'reason_typical_decline': Reason.objects.filter(reason_type=Reason.TYPE_DECLINE),
-            'reason_typical_annulate': Reason.objects.filter(reason_type=Reason.TYPE_ANNULATE),
+            'reason_typical_back': Reason.objects.filter(org=org, reason_type=Reason.TYPE_BACK),
+            'reason_typical_decline': Reason.objects.filter(org=org, reason_type=Reason.TYPE_DECLINE),
+            'reason_typical_annulate': Reason.objects.filter(org=org, reason_type=Reason.TYPE_ANNULATE),
             'approve_close_form': self.get_approve_close_form(),
             'comment_form': CommentForm(),
             'zags_form': AddOrgForm(request=self.request, prefix='zags', instance=Org(type=Org.PROFILE_ZAGS)),
