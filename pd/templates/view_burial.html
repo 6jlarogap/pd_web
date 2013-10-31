@@ -198,7 +198,7 @@
                 {% if b.is_approved %}
                     <label>{% trans "Причина отзыва" %}:</label>
                     <select name="reason_typical">
-                        <option value=""></option>
+                        <option value="">-------</option>
                         {% for r in reason_typical_back %}<option value="{{ r.text }}">{{ r.name }}</option>{% endfor %}
                     </select>
                     <textarea name="reason" rows="5" cols="30"></textarea>
@@ -230,7 +230,7 @@
                 <br/><br/>
                 <label>{% trans "Причина аннулирования" %}:</label>
                 <select name="reason_typical">
-                    <option value=""></option>
+                    <option value="">-------</option>
                     {% for r in reason_typical_annulate %}<option value="{{ r.text }}">{{ r.name }}</option>{% endfor %}
                 </select>
                 <textarea name="reason" rows="5" cols="30"></textarea>
@@ -284,7 +284,7 @@
                 <br/><br/>
                 <label>{% trans "Причина отказа" %}:</label>
                 <select name="reason_typical">
-                    <option value=""></option>
+                    <option value="">-------</option>
                     {% for r in reason_typical_decline %}<option value="{{ r.text }}">{{ r.name }}</option>{% endfor %}
                 </select>
                 <textarea name="reason" rows="5" cols="30"></textarea>
