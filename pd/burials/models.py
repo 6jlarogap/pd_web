@@ -824,6 +824,9 @@ class Reason(models.Model):
     # ЛОРУ и УГХ имеют разные списки отказов и др. действий
     #
     TYPES_UGH = (TYPE_DECLINE, TYPE_ANNULATE, )
+    # ЛОРУ аннулирует лишь свои черновики, отказванные, отозванные,
+    # т.е. по сути свои черновики, так что незачем ему указывать причину
+    # аннулирования
     TYPES_LORU = (TYPE_BACK, )
     
     org = models.ForeignKey(Org, verbose_name=_(u"Организация"), editable=False, on_delete=models.PROTECT) 
