@@ -14,14 +14,12 @@ from logs.models import Log
 
 
 class Cemetery(GetLogsMixin, BaseModel):
-    PLACE_CEMETERY = 'cemetery'
     PLACE_AREA = 'area'
     PLACE_ROW = 'row'
     PLACE_CEM_YEAR = 'cem_year'
     PLACE_BURIAL_ACCOUNT_NUMBER = 'burial_account_number'
     PLACE_MANUAL = 'manual'
     PLACE_TYPES = (
-        (PLACE_CEMETERY, _(u'По кладбищу')),
         (PLACE_AREA, _(u'По участку')),
         (PLACE_ROW, _(u'По ряду')),
         (PLACE_CEM_YEAR, _(u'Кладбище + год')),
@@ -33,18 +31,16 @@ class Cemetery(GetLogsMixin, BaseModel):
     PLACE_ARCHIVE_PREFIX_AREA = '-area'
     PLACE_ARCHIVE_TYPES = (
         (PLACE_ARCHIVE_MANUAL, _(u'Вручную')),
-        (PLACE_ARCHIVE_PREFIX_AREA, _(u'-ннннн (-Номер в пределах участка)')),
+        (PLACE_ARCHIVE_PREFIX_AREA, _(u'По порядку в пределах участка (-0001 -0002...)')),
     )
 
     name = models.CharField(_(u"Название"), max_length=255)
     time_begin = models.TimeField(_(u"Начало работы"), null=True, blank=True)
     time_end = models.TimeField(_(u"Окончание работы"), null=True, blank=True)
     places_algo = models.CharField(_(u"Расстановка номеров мест захоронений (кроме архивных)"),
-                                help_text=_(u'Если номер места не указан и если не вручную'),
                                 max_length=255, choices=PLACE_TYPES, default=PLACE_AREA)
     places_algo_archive = models.CharField(_(u"Расстановка номеров мест архивных захоронений"),
-                                help_text=_(u'Если номер места не указан и если не вручную'),
-                                max_length=255, choices=PLACE_TYPES, default=PLACE_ARCHIVE_MANUAL)
+                                max_length=255, choices=PLACE_ARCHIVE_TYPES, default=PLACE_ARCHIVE_MANUAL)
     time_slots = models.TextField(_(u"Время для захоронения"), default='', blank=True,
                                   help_text=_(u'В формате ЧЧ:ММ, по одному на строку'))
 
@@ -176,8 +172,6 @@ class Place(SafeDeleteMixin, BaseModel):
             filter += " and area_id=%s and row='%s'" % (self.area.pk, self.row, )
         elif self.cemetery.places_algo == Cemetery.PLACE_AREA:
             filter += ' and area_id=%s' % (self.area.pk, )
-        elif self.cemetery.places_algo == Cemetery.PLACE_CEMETERY:
-            pass
         elif self.cemetery.places_algo == Cemetery.PLACE_CEM_YEAR:
             year = str(datetime.datetime.now().year)
         else:
