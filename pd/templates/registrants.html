@@ -20,6 +20,15 @@
             {% endif %}
         </th>
         <th>
+            {% if sort == 'org_type' %}
+                {% if sort == 'org_type' %}<i class="icon icon-arrow-up"></i>{% endif %}
+                <a href="?{{ GET_PARAMS }}&sort=-org_type">{% trans "Тип" %}</a>
+            {% else %}
+                {% if sort == '-org_type' %}<i class="icon icon-arrow-down"></i>{% endif %}
+                <a href="?{{ GET_PARAMS }}&sort=org_type">{% trans "Тип" %}</a>
+            {% endif %}
+        </th>
+        <th>
             {% if sort == 'org' %}
                 {% if sort == 'org' %}<i class="icon icon-arrow-up"></i>{% endif %}
                 <a href="?{{ GET_PARAMS }}&sort=-org">{% trans "Организация" %}</a>
@@ -65,7 +74,13 @@
                 {{ r.dt_created|date:"d.m.Y" }}
             </td>
             <td>
+                {{ r.get_org_type_display }}
+            </td>
+            <td>
                 {{ r.org_name }}<br />
+                {% if r.org_name != r.org_full_name %}
+                    ({{ r.org_full_name }})<br />
+                {% endif %}
                 {% trans "ИНН" %}: {{ r.org_inn }}<br />
                 {% trans "Тел." %}: {{ r.org_phones|linebreaksbr }}<br />
             </td>
@@ -115,4 +130,9 @@
         </tr>
     {% endfor %}
     </table>
+
+    {% with object=RegisterProfile %}
+        {% include "object_logs.html" %}
+    {% endwith %}
+
 {% endblock %}

@@ -13,6 +13,7 @@ from django.views.generic.detail import DetailView
 from django.views.generic.edit import CreateView, UpdateView
 from django.views.generic.list import ListView
 
+from pd.views import RequestToFormMixin
 from burials.forms import CemeteryForm, AreaFormset, PlaceEditForm, AddOrgForm, AreaMergeForm, BurialfileCommentEditForm
 from burials.models import Cemetery, Place, Area, BurialFiles, Grave, Burial, AreaPhoto, GravePhoto, ExhumationRequest, AreaPurpose
 from burials.burials_views import *
@@ -124,11 +125,11 @@ class CemeteryList(UGHRequiredMixin, ListView):
     model = Cemetery
 
     def get_queryset(self):
-        return Cemetery.objects.filter(Q(creator__isnull=True) | Q(ugh=self.request.user.profile.org))
+        return Cemetery.objects.filter(ugh=self.request.user.profile.org)
 
 manage_cemeteries = CemeteryList.as_view()
 
-class CemeteryCreate(UGHRequiredMixin, CreateView):
+class CemeteryCreate(UGHRequiredMixin, RequestToFormMixin, CreateView):
     template_name = 'cemetery_create.html'
     form_class = CemeteryForm
 
@@ -147,7 +148,7 @@ class CemeteryCreate(UGHRequiredMixin, CreateView):
 
 manage_cemeteries_create = CemeteryCreate.as_view()
 
-class CemeteryEdit(UGHRequiredMixin, UpdateView):
+class CemeteryEdit(UGHRequiredMixin, RequestToFormMixin, UpdateView):
     template_name = 'cemetery_edit.html'
     form_class = CemeteryForm
 
@@ -157,7 +158,6 @@ class CemeteryEdit(UGHRequiredMixin, UpdateView):
 
     def form_valid(self, form):
         self.object = form.save()
-        write_log(self.request, self.object, _(u'Кладбище изменено'))
         msg = _(u"<a href='%s'>Кладбище %s</a> изменено") % (
             reverse('manage_cemeteries_edit', args=[self.object.pk]),
             self.object.name,
@@ -436,16 +436,11 @@ class CemeteryMerge(UGHRequiredMixin, TemplateView):
 
 manage_cemeteries_merge = CemeteryMerge.as_view()
 
-class PlaceView(UGHRequiredMixin, UpdateView):
+class PlaceView(UGHRequiredMixin, RequestToFormMixin, UpdateView):
     template_name = 'view_place.html'
     context_object_name = 'place'
     model = Place
     form_class = PlaceEditForm
-
-    def get_form_kwargs(self, *args, **kwargs):
-        data = super(PlaceView, self).get_form_kwargs(*args, **kwargs)
-        data['request'] = self.request
-        return data
 
     def get_queryset(self):
         org = self.request.user.profile.org

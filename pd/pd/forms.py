@@ -15,6 +15,8 @@ from django.utils.translation import ugettext as _
 from django.utils.datastructures import SortedDict
 from django.utils.safestring import mark_safe
 
+from captcha.fields import ReCaptchaField
+
 from burials.models import Burial, Area, PlaceSize
 from logs.models import write_log
 from pd.models import UnclearDate
@@ -85,8 +87,12 @@ class LoggingFormMixin:
             for form in [self] + self.forms:
                 prefix = self.get_prefix(form)
                 for f in form.changed_data:
-                    old_value = obj and getattr(obj, f, None) or form.initial.get(f) or ''
-                    new_value = form.cleaned_data.get(f) or ''
+                    old_value = obj and getattr(obj, f, None) or form.initial.get(f)
+                    new_value = form.cleaned_data.get(f)
+                    if not old_value and not isinstance(old_value, bool):
+                        old_value = ''
+                    if not new_value and not isinstance(new_value, bool):
+                        new_value = ''
 
                     if isinstance(old_value, datetime.date) or isinstance(old_value, UnclearDate):
                         old_value = old_value.strftime('%d.%m.%Y')
@@ -109,6 +115,9 @@ class LoggingFormMixin:
     def put_log_data(self, msg=_(u'Захоронение сохранено')):
         if self.changed_list or not self.instance or not self.instance.pk:
             changed_data_str = u'\n'.join([u'%s: %s -> %s' % cd for cd in self.changed_list])
+            changed_data_str = changed_data_str. \
+                                replace(u'True -> False', _(u'выключ.')). \
+                                replace(u'False -> True', _(u'включ.'))
             write_log(self.request, self.instance, msg + u'\n' + changed_data_str)
         else:
             write_log(self.request, self.instance, msg)
@@ -277,6 +286,12 @@ class UnclearDateField(forms.DateField):
         elif isinstance(value, UnclearDate) and not value.no_day and value.no_month:
             raise forms.ValidationError(_(u'Нет месяца в дате'))
         return value
+
+class OurReCaptchaField(ReCaptchaField):
+    
+    def __init__(self, *args, **kwargs):
+        super(OurReCaptchaField, self).__init__(*args, **kwargs)
+        self.error_messages['captcha_invalid'] = _(u'Неверно. Попробуйте еще раз.')
 
 class BaseModelForm(forms.ModelForm):
     """

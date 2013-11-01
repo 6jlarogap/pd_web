@@ -19,17 +19,17 @@ from django.shortcuts import redirect, render, get_object_or_404
 from django.template.loader import render_to_string
 from django.utils.translation import ugettext_lazy as _
 from django.views.generic.base import View, TemplateView
-from django.views.generic.edit import UpdateView, CreateView
+from django.views.generic.edit import UpdateView, CreateView, FormView
 from django.views.generic.detail import DetailView
     
 from burials.views import UGHRequiredMixin, LoginRequiredMixin, SupervisorRequiredMixin
 from logs.models import Log, write_log, LoginLog
 from users.forms import UserAddForm, RegisterForm, LoruFormset, ProfileForm, UserProfileForm, \
                         UserDataForm, ChangePasswordForm, BankAccountFormset, OrgForm, \
-                        OrgLogForm, LoginLogForm, OrgBurialStatsForm
+                        OrgLogForm, LoginLogForm, OrgBurialStatsForm, SupportForm
 from users.models import Profile, Org, RegisterProfile
 from burials.models import Burial
-from pd.views import PaginateListView
+from pd.views import PaginateListView, RequestToFormMixin
 
 
 class LoginView(View):
@@ -242,15 +242,10 @@ class UserEditView(LoginRequiredMixin, UpdateView):
         
 edit_user = UserEditView.as_view()
 
-class OrgEditView(LoginRequiredMixin, UpdateView):
+class OrgEditView(LoginRequiredMixin, RequestToFormMixin, UpdateView):
     template_name = 'edit_org.html'
     model = Org
     form_class = OrgForm
-
-    def get_form_kwargs(self):
-        data = super(OrgEditView, self).get_form_kwargs()
-        data['request'] = self.request
-        return data
 
     def get_queryset(self):
         #return Org.objects.annotate(profiles=Count('profile')).filter(profiles=0)
@@ -414,11 +409,6 @@ class RegisterView(CreateView):
     template_name = 'register.html'
     form_class = RegisterForm
 
-    def get_form_kwargs(self):
-        data = super(RegisterView, self).get_form_kwargs()
-        data['request'] = self.request
-        return data
-
     def form_valid(self, form):
         obj = form.save(commit=False)
         obj.user_password = make_password(form.cleaned_data['password1'])
@@ -426,6 +416,7 @@ class RegisterView(CreateView):
         obj.user_activation_key = hashlib.sha1(salt+obj.user_name).hexdigest()
         obj.status = RegisterProfile.STATUS_TO_CONFIRM
         obj.save()
+        write_log(None, obj, _(u'%s : получена. Ожидание подтверждения') % obj)
         email_subject = "%s %s" % (unicode(_(u"Подтверждение заявки на регистрацию на")),
                                    unicode(_(u"Похоронное Дело")),
                                   )
@@ -474,17 +465,31 @@ class RegisterActivation(DetailView):
             if 'confirm' in request.GET:
                 self.object.status = RegisterProfile.STATUS_CONFIRMED
                 self.object.save()
+                write_log(None, self.object, _(u'%s : получено подтверждение') % self.object)
+                for r in RegisterProfile.objects.filter(
+                        status__in=(RegisterProfile.STATUS_DECLINED, RegisterProfile.STATUS_APPROVED, ),
+                        dt_modified__lt=datetime.datetime.now() - \
+                                        datetime.timedelta(days=RegisterProfile.CLEAR_PROCESSED),):
+                    r.delete()
+                    write_log(None, self.object,
+                              _(u'%s : автоматическое удаление по истечении %s дней') % \
+                                (self.object, RegisterProfile.CLEAR_PROCESSED, ))
                 explain = _(
                             u'Спасибо за подтверждение заявки на регистрацию!\n'
                             u'Ваша заявка принята на <b>рассмотрение администратора системы</b>\n'
-                        )
+                )
                 email_subject = "%s %s" % (unicode(_(u"Заявка на регистрацию на")),
                                            unicode(_(u"ПохоронноеДело")),
                                           )
                 email_text = render_to_string(
                                 'register_notify_supervisor_email.txt',
-                                { 'obj': self.object, }
-                            )
+                                { 
+                                    'obj': self.object,
+                                    'host': '%s://%s' % (request.is_secure() and 'https' or 'http',
+                                                         self.request.get_host(),
+                                                        ),
+                                }
+                )
                 email_from = settings.DEFAULT_FROM_EMAIL
                 email_to = (Org.get_supervisor_email(), )
                 send_mail(email_subject, email_text, email_from, email_to )
@@ -502,7 +507,7 @@ class RegisterActivation(DetailView):
             message = _(u'В регистрации отказано!')
             explain = _(
                         u'Ваша заявка на регистрацию была <b>отклонена</b>.\n'
-                        u'Обратитесь в поддержку\n'
+                        u'Обратитесь в <a href="%s">поддержку</a>\n' % reverse('support')
                        )
         elif self.object.status == RegisterProfile.STATUS_APPROVED:
             message = _(u'Регистрация успешна!')
@@ -526,6 +531,8 @@ class RegistrantsView(SupervisorRequiredMixin, TemplateView):
         SORT_FIELDS = {
             'pk': 'pk',
             '-pk': '-pk',
+            'org_type': 'org_type',
+            '-org_type': '-org_org_type',
             'org': 'org_name',
             '-org': '-org_name',
             'fio': ['user_last_name', 'user_first_name', 'user_middle_name'],
@@ -543,6 +550,7 @@ class RegistrantsView(SupervisorRequiredMixin, TemplateView):
         return {
             'registrants': registrants,
             'sort': sort,
+            'RegisterProfile' : RegisterProfile,
         }
 
 registrants = RegistrantsView.as_view()
@@ -550,6 +558,7 @@ registrants = RegistrantsView.as_view()
 class RegistrantDelete(SupervisorRequiredMixin, View):
     def get(self, request, *args, **kwargs):
         registrant = get_object_or_404(RegisterProfile, pk=self.kwargs['pk'])
+        write_log(request, registrant, _(u'%s : удалена') % registrant)
         registrant.delete()
         return redirect('registrants')
 
@@ -560,6 +569,7 @@ class RegistrantApprove(SupervisorRequiredMixin, View):
         registrant = get_object_or_404(RegisterProfile, pk=self.kwargs['pk'])
         registrant.status = RegisterProfile.STATUS_APPROVED
         registrant.save()
+        write_log(request, registrant, _(u'%s : одобрена') % registrant)
         user = User.objects.create(
                     username=registrant.user_name,
                     password=registrant.user_password,
@@ -603,6 +613,7 @@ class RegistrantDecline(SupervisorRequiredMixin, View):
         registrant = get_object_or_404(RegisterProfile, pk=self.kwargs['pk'])
         registrant.status = RegisterProfile.STATUS_DECLINED
         registrant.save()
+        write_log(request, registrant, _(u'%s : отказано') % registrant)
         return redirect('registrants')
 
 registrant_decline = RegistrantDecline.as_view()
@@ -664,3 +675,28 @@ class OrgBurialStatsView(SupervisorRequiredMixin, TemplateView):
         return OrgBurialStatsForm(data=self.request.GET or None)
 
 org_burial_stats = OrgBurialStatsView.as_view()
+
+class SupportView(RequestToFormMixin, FormView):
+    form_class = SupportForm
+    template_name = 'support.html'
+
+    def form_valid(self, form):
+        form.save()
+        return super(SupportView, self).form_valid(form)
+        
+    def get_success_url(self):
+        return reverse('support_thanks')
+
+support = SupportView.as_view()
+
+class SupportThanks(TemplateView):
+    template_name = 'simple_message.html'
+
+    def get(self, request, *args, **kwargs):
+        message = _(u'Спасибо за сообщение!')
+        html_message = u'<br /><big>%s.</big>' % \
+                       _(u'Сообщение будет рассмотрено в службе поддержки')
+        return self.render_to_response({'message': message,
+                                        'html_message': html_message})
+
+support_thanks = SupportThanks.as_view()

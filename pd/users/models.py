@@ -1,12 +1,10 @@
 # coding=utf-8
 from django.conf import settings
-from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
 
 from geo.models import DFiasAddrobj
-from logs.models import Log
-from pd.models import BaseModel, Files
+from pd.models import BaseModel, Files, GetLogsMixin
 from pd.utils import DigitsValidator, LengthValidator, NotEmptyValidator
 
 
@@ -79,7 +77,7 @@ class Profile(models.Model):
             return ','.join([self.lat, self.lng])
         return ''
 
-class Org(BaseModel):
+class Org(GetLogsMixin, BaseModel):
     NUM_EMPTY = 'empty'
     NUM_YEAR_UGH = 'year_ugh'
     NUM_YEAR_CEMETERY = 'year_cemetery'
@@ -131,7 +129,6 @@ class Org(BaseModel):
                                     default=True)
     # название поля не заканчивается на date, чтоб не угодить под специфический datePicker widget для дат:
     plan_date_days_before = models.PositiveIntegerField(_(u"Кол-во дней для ввода плановой даты захоронения в прошлом"), default=0)
-    archive_burial_fact_date_required = models.BooleanField(_(u"Дата архивного захоронения обязательна"), default=False)
 
     class Meta:
         verbose_name = _(u'Организация')
@@ -139,10 +136,6 @@ class Org(BaseModel):
 
     def __unicode__(self):
         return self.name
-
-    def get_logs(self):
-        ct = ContentType.objects.get_for_model(self)
-        return Log.objects.filter(ct=ct, obj_id=self.pk).order_by('-pk')
 
     def is_inactive(self):
         return not self.profile_set.filter(user__is_active=True).exists()
@@ -224,6 +217,12 @@ class RegisterProfile(BaseModel):
         (STATUS_DECLINED, _(u"В регистрации отказано")),
         (STATUS_APPROVED, _(u"Пользователь в системе")),
     )
+    
+    # При подтверждении очередной заявки, существующие заявки, которые
+    # уже обработаны (одобрены или получили отказ) и существуют
+    # более этого числа дней, удаляются
+    #
+    CLEAR_PROCESSED = 30
 
     status = models.CharField(_(u"Статус заявки"), max_length=255, choices=STATUS_CHOICES, editable=False)
     user_name = models.CharField(_(u"Имя для входа в систему (login)"), max_length=30)
@@ -239,10 +238,16 @@ class RegisterProfile(BaseModel):
     org_full_name = models.CharField(_(u"Полное название организации"), max_length=255, default='')
     org_inn = models.CharField(_(u"ИНН"), max_length=255, default='')
     org_director = models.CharField(_(u"ФИО директора"), max_length=255, default='')
-    org_phones = models.TextField(_(u"Телефоны"))
+    org_phones = models.TextField(_(u"Телефоны"),
+                                  help_text=_(u'В международном формате: +код-страны-код-города-номер-телефона')
+                                 )
 
     def __unicode__(self):
-        return _(u"Заявка от организации %s, %s") % (self.org_name, self.user_email)
+        fio = u'%s %s.' % (self.user_last_name, self.user_first_name[0].upper(), )
+        if self.user_middle_name:
+            fio += u'%s.' % self.user_middle_name[0].upper()
+        return _(u'Заявка: %s/"%s"/%s/%s/%s') % (self.get_org_type_display(), self.org_name,
+                                                 fio, self.user_name, self.user_email, )
     
     def is_to_confirm(self):
         return self.status == self.STATUS_TO_CONFIRM
@@ -258,7 +263,12 @@ class RegisterProfile(BaseModel):
 
     def orgs_same_inn(self):
         return Org.objects.filter(inn=self.org_inn)
-        
+
+    @classmethod
+    def get_logs(cls):
+        ct = ContentType.objects.get_for_model(cls)
+        return Log.objects.filter(ct=ct).order_by('-pk')
+
 class RegisterProfileScan(Files):
     """
     Файлы-сканы, прикрепляемые к завкам на регистрацию

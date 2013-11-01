@@ -198,7 +198,7 @@
                 {% if b.is_approved %}
                     <label>{% trans "Причина отзыва" %}:</label>
                     <select name="reason_typical">
-                        <option value=""></option>
+                        <option value="">-------</option>
                         {% for r in reason_typical_back %}<option value="{{ r.text }}">{{ r.name }}</option>{% endfor %}
                     </select>
                     <textarea name="reason" rows="5" cols="30"></textarea>
@@ -230,7 +230,7 @@
                 <br/><br/>
                 <label>{% trans "Причина аннулирования" %}:</label>
                 <select name="reason_typical">
-                    <option value=""></option>
+                    <option value="">-------</option>
                     {% for r in reason_typical_annulate %}<option value="{{ r.text }}">{{ r.name }}</option>{% endfor %}
                 </select>
                 <textarea name="reason" rows="5" cols="30"></textarea>
@@ -284,7 +284,7 @@
                 <br/><br/>
                 <label>{% trans "Причина отказа" %}:</label>
                 <select name="reason_typical">
-                    <option value=""></option>
+                    <option value="">-------</option>
                     {% for r in reason_typical_decline %}<option value="{{ r.text }}">{{ r.name }}</option>{% endfor %}
                 </select>
                 <textarea name="reason" rows="5" cols="30"></textarea>
@@ -308,7 +308,7 @@
 
     </form>
 
-    {% if user.profile.is_ugh and b.status == 'exhumated' %}
+    {% if user.profile.is_ugh and b.is_exhumated %}
         <form action="{% url burial_cancel_exhumation b.exhumationrequest.pk %}" method="POST" class="inline" style="display: inline;">
             {% csrf_token %}
             <input type="submit" class="btn" value="{% trans "Отменить эксгумацию" %}" />
@@ -316,14 +316,16 @@
         <p></p>
     {% endif %}
 
-    <h2>{% trans "Комментарий" %}</h2>
-    <form action="{% url burial_comment b.pk %}" method="POST">
-        {% csrf_token %}
-        {{ comment_form.as_p }}
-        <p>
-            <input type="submit" class="btn" value="{% trans "добавить" %}" />
-        </p>
-    </form>
+    {% if show_private_data %}
+        <h2>{% trans "Комментарий" %}</h2>
+        <form action="{% url burial_comment b.pk %}" method="POST">
+            {% csrf_token %}
+            {{ comment_form.as_p }}
+            <p>
+                <input type="submit" class="btn" value="{% trans "добавить" %}" />
+            </p>
+        </form>
+    {% endif %}
 
     {% if user.profile.is_ugh and b.get_documents %}
         {% with object=b %}
@@ -331,9 +333,11 @@
         {% endwith %}
     {% endif %}
 
-    {% with object=b %}
-        {% include "object_logs.html" %}
-    {% endwith %}
+    {% if show_private_data %}
+        {% with object=b %}
+            {% include "object_logs.html" %}
+        {% endwith %}
+    {% endif %}
 
     {% include "create_burial_popups.html" %}
 
