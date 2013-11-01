@@ -20,10 +20,12 @@
 #           под которым работает сценарий, мог выполнять
 #           suso без пароля
 # * Права на файлы и каталоги:
-#       Должна быть настройка, чтобы пользователь,
-#       под которым работает сценарий, мог выполнять
-#       операции над файлами и каталогами, например,
-#       manage.py collectstatic, без проблем
+#   -   Файлы в каталогах проекта и там, где статические
+#       файлы, должны быть доступны пользователю,
+#       исполняющему apache web server, в т.ч.
+#       по записи. "По записи" не требуется
+#       в "классическом" django, но при использовании
+#       assets обязательно (по крайней мере static)
 
 import os, subprocess
 
@@ -33,17 +35,14 @@ def main():
     for project in PROJECTS:
         print '\nChecking %s ...' % project[MANAGE_PY]
         os.chdir(project[MANAGE_PY])
-        outp = do_cmd('git pull')
+        outp = do_cmd('sudo -u %s git pull' % (APACHE2_USER, ))
         if ALREADY_UP_TO_DATE in outp:
             continue
         else:
-            do_cmd('%s/bin/python ./manage.py migrate --noinput' % 
-                    project[VENV])
-            do_cmd('%s/bin/python ./manage.py collectstatic --noinput' % 
-                    project[VENV])
-            for command in OTHER_COMMANDS:
-                do_cmd(command)
-            do_cmd(APACHE2_RELOAD)
+            do_cmd('sudo -u %s %s/bin/python ./manage.py migrate --noinput' % 
+                    (APACHE2_USER, project[VENV]), )
+            do_cmd('sudo -u %s %s/bin/python ./manage.py collectstatic --noinput' % 
+                    (APACHE2_USER, project[VENV]), )
 
 def do_cmd(cmd):
     outp = subprocess.check_output(cmd,
