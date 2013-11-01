@@ -26,13 +26,25 @@ class Cemetery(GetLogsMixin, BaseModel):
         (PLACE_ROW, _(u'По ряду')),
         (PLACE_CEM_YEAR, _(u'Кладбище + год')),
         (PLACE_BURIAL_ACCOUNT_NUMBER, _(u'По рег. номеру захоронения')),
-        (PLACE_MANUAL, _(u'Ручное')),
+        (PLACE_MANUAL, _(u'Вручную')),
+    )
+
+    PLACE_ARCHIVE_MANUAL = 'manual'
+    PLACE_ARCHIVE_PREFIX_AREA = '-area'
+    PLACE_ARCHIVE_TYPES = (
+        (PLACE_ARCHIVE_MANUAL, _(u'Вручную')),
+        (PLACE_ARCHIVE_PREFIX_AREA, _(u'-ннннн (-Номер в пределах участка)')),
     )
 
     name = models.CharField(_(u"Название"), max_length=255)
     time_begin = models.TimeField(_(u"Начало работы"), null=True, blank=True)
     time_end = models.TimeField(_(u"Окончание работы"), null=True, blank=True)
-    places_algo = models.CharField(_(u"Расстановка номеров мест"), max_length=255, choices=PLACE_TYPES, default=PLACE_AREA)
+    places_algo = models.CharField(_(u"Расстановка номеров мест захоронений (кроме архивных)"),
+                                help_text=_(u'Если номер места не указан и если не вручную'),
+                                max_length=255, choices=PLACE_TYPES, default=PLACE_AREA)
+    places_algo_archive = models.CharField(_(u"Расстановка номеров мест архивных захоронений"),
+                                help_text=_(u'Если номер места не указан и если не вручную'),
+                                max_length=255, choices=PLACE_TYPES, default=PLACE_ARCHIVE_MANUAL)
     time_slots = models.TextField(_(u"Время для захоронения"), default='', blank=True,
                                   help_text=_(u'В формате ЧЧ:ММ, по одному на строку'))
 
@@ -700,7 +712,7 @@ class Burial(SafeDeleteMixin, GetLogsMixin, BaseModel):
         if new_place:
             place.place_length = self.place_length
             place.place_width = self.place_width
-        place.save()
+        place.save(is_archive=self.is_archive())
         if new_place:
             graves_count = self.desired_graves_count or 1
             # fool-proof, чтоб не пропустили могилу с номером,
