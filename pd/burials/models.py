@@ -164,23 +164,35 @@ class Place(SafeDeleteMixin, BaseModel):
     def get_available_count(self):
         return max(0, self.get_graves_count() - self.burial_count())
 
-    def set_next_number(self, **params):
-        other_places = Place.objects.filter(**params)
-        other_places = other_places.filter(place__regex=r'^\d+$')
-        try:
-            self.place = int(other_places.order_by('-place')[0].place) + 1
-        except (ValueError, IndexError, TypeError):
-            self.place = 1
+    def set_next_number(self):
+        if self.cemetery.places_algo in (Cemetery.PLACE_MANUAL,
+                                         Cemetery.PLACE_BURIAL_ACCOUNT_NUMBER,
+                                        ):
+            return
 
-    def set_next_number_for_year(self, **params):
-        year = str(datetime.datetime.now().year)
-        other_places = Place.objects.filter(**params)
-        other_places = other_places.filter(place__regex=r'^%s\d+$' % year)
-        try:
-            last_num = other_places.order_by('-place')[0].place
-            self.place = int(last_num) + 1
-        except (ValueError, IndexError, TypeError):
-            self.place = year + '0001'
+        filter = 'cemetery_id=%s' % (self.cemetery.pk, )
+        year = ''
+        if self.cemetery.places_algo == Cemetery.PLACE_ROW:
+            filter += " and area_id=%s and row='%s'" % (self.area.pk, self.row, )
+        elif self.cemetery.places_algo == Cemetery.PLACE_AREA:
+            filter += ' and area_id=%s' % (self.area.pk, )
+        elif self.cemetery.places_algo == Cemetery.PLACE_CEMETERY:
+            pass
+        elif self.cemetery.places_algo == Cemetery.PLACE_CEM_YEAR:
+            year = str(datetime.datetime.now().year)
+        else:
+            return
+
+        p_regex = r"E'^%s\\d+$'" % (year, )
+        query = ("select max(substring(place from %s)::integer) from burials_place "
+                "where place ~ %s and %s"
+                ) % (len(year)+1, p_regex, filter, );
+
+        cursor = connection.cursor()
+        cursor.execute(query)
+        result = cursor.fetchone()
+        num = result and result[0] or 0
+        self.place = year + ('%04d' if year else '%d') % (num + 1, )
 
     def remove_responsible(self):
         self.safe_delete('responsible', self)
@@ -193,19 +205,8 @@ class Place(SafeDeleteMixin, BaseModel):
         return burials_available and all([ b.is_bio() for b in burials_available ])
 
     def save(self, *args, **kwargs):
-        if self.cemetery and not self.place:
-            if self.cemetery.places_algo == Cemetery.PLACE_MANUAL:
-                pass
-            elif self.cemetery.places_algo == Cemetery.PLACE_BURIAL_ACCOUNT_NUMBER:
-                pass
-            elif self.cemetery.places_algo == Cemetery.PLACE_ROW:
-                self.set_next_number(cemetery=self.cemetery, area=self.area, row=self.row)
-            elif self.cemetery.places_algo == Cemetery.PLACE_AREA:
-                self.set_next_number(cemetery=self.cemetery, area=self.area)
-            elif self.cemetery.places_algo == Cemetery.PLACE_CEMETERY:
-                self.set_next_number(cemetery=self.cemetery)
-            elif self.cemetery.places_algo == Cemetery.PLACE_CEM_YEAR:
-                self.set_next_number_for_year(cemetery=self.cemetery)
+        if self.cemetery and self.area and not self.place:
+            self.set_next_number()
         return super(Place, self).save(*args, **kwargs)
 
     def create_graves(self, graves_count, grave_number):
