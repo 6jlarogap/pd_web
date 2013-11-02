@@ -24,21 +24,26 @@ js_app = Bundle(
         "angular-ui-bootstrap/src/dialog/dialog.js",
     
         "js/app/directive/angular-ymaps.js",
-        
-        "js/app/directive/file_upload.js",
-    
+
         "js/app/controller/cemetery.js",
         "js/app/controller/cemetery_view.js",
         "js/app/controller/area_view.js",
         "js/app/controller/place_view.js",
-        filters='jsmin', output='pd.js')
 
+        "js/app/directive/file_upload.js",
+        filters='rjsmin', output='pd.js')
+    
 
 js_angular = Bundle(
-        
-        # #############################
+        #<script type="text/javascript" src="{{ STATIC_URL }}angular/angular.min.js"></script>
+        "ng-grid/ng-grid-2.0.7.debug.js",
 
-        "angular/angular.min.js",
+        # "angular/angular.min.js",
+        # "js/angular/angular-bootstrap.js",
+        # "js/angular/i18n/angular-locale_ru-ru.js",
+
+        "js/jquery/vendor/jquery.ui.widget.js",
+    
         "angular-resource/angular-resource.min.js",
         "angular-cookies/angular-cookies.min.js",
 
@@ -47,37 +52,73 @@ js_angular = Bundle(
 
         "select2/select2.min.js",
         "select2/select2_locale_ru.js",
-
-        "ng-grid/ng-grid-2.0.7.min.js",
-
-
-        #<!-- script type="text/javascript" src="{{ STATIC_URL }}js/angular/angular-bootstrap.js"></script --><!-- * -->
-        #<!-- script type="text/javascript" src="{{ STATIC_URL }}js/angular/i18n/angular-locale_ru-ru.js"></script --><!-- * -->
-        
-        #<!--"js/angular3d/select2.js",-->
+        #"ng-grid/ng-grid-2.0.7.debug.js",
     
         "js/bootstrap-typeahead.js",
         
-        #<!--script type="text/javascript" src="{{ STATIC_URL }}js/angular3d/ng-grid/i18n/ru.js"></script-->
-        #<!--script type="text/javascript" src="{{ STATIC_URL }}js/angular3d/bootstrap-typeahead.js"></script-->
+        #"js/angular3d/bootstrap-typeahead.js",
         "lodash/dist/lodash.compat.min.js",
-        # #############################
-
 
         "js/bootstrap-typeahead.js",
-        "ng-grid/ng-grid-2.0.7.min.js",
         #"ng-grid/ng-grid/src/i18n/ru.js",
-        "lodash/dist/lodash.min.js",
-        filters='jsmin', output='pd-angular.js')
+
+        "js/angular3d/modules/jquery.fileupload-angular.js",
+        filters='rjsmin', output='pd-angular.js')
+
+
+
+
+
+js_fileupload = Bundle(
+        "js/jquery/fileupload/jquery.iframe-transport.js",
+        "js/jquery/fileupload/jquery.fileupload.js",
+        "js/jquery/fileupload/jquery.fileupload-process.js",
+        "js/jquery/fileupload/jquery.fileupload-image.js",
+        "js/jquery/fileupload/jquery.fileupload-audio.js",
+        "js/jquery/fileupload/jquery.fileupload-video.js",
+        "js/jquery/fileupload/jquery.fileupload-validate.js",
+        filters='rjsmin', output='pd-fu.js')
+
+
+js_jquery = Bundle(
+        "jquery-ui/ui/minified/jquery-ui.min.js",
+        "jquery-ui/ui/minified/jquery.ui.datepicker.min.js",
+        "jquery-ui/ui/minified/i18n/jquery.ui.datepicker-ru.min.js",
+        "jquery-timepicker/jquery.ui.timepicker.js",
+        filters='rjsmin', output='pd-jq.js')
+
+
+js_bootstrap_static = Bundle(
+        "js/bootstrap-dropdown.js",
+        "js/bootstrap-modal.js",
+        "js/bootstrap-typeahead-ajax.js",
+        filters='rjsmin', output='pd-static.js')
 
 
 css_app = Bundle(
+        "js/jquery/fileupload/jquery.fileupload-ui.css",
         "select2/select2.css",
         "ng-grid/ng-grid.min.css",
         "js/app/app.css",
         filters='cssmin', output='pd.css')
 
 
+css_static = Bundle(
+        "css/base.css",
+        filters='cssmin', output='pd-static.css')
+
+
+css_print = Bundle(
+        "css/print.css",
+        filters='cssmin', output='pd-print.css')
+
+
 register('js_app', js_app)
 register('js_angular', js_angular)
+register('js_fileupload', js_fileupload)
+register('js_jquery', js_jquery)
+register('js_bootstrap_static', js_bootstrap_static)
+
 register('css_app', css_app)
+register('css_static', css_static)
+register('css_print', css_print)

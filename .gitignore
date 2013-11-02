@@ -6,5 +6,11 @@ ENV
 build
 pd/media
 pd/static
-pd/asset_src
-pd/fixtures
+.env
+
+pd/asset_src/
+pd/.project
+pd/.pydevproject
+pd/.settings/
+pd/fixtures/
+pd/thumbnails/

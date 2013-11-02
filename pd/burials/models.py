@@ -10,6 +10,7 @@ from django.conf import settings
 
 from pd.models import UnclearDateModelField, BaseModel, Files, Photo, GetLogsMixin, validate_gt0
 
+
 from persons.models import DeadPerson, SafeDeleteMixin, DeathCertificate
 from reports.models import Report
 from users.models import Org, Profile, Dover, ProfileLORU
@@ -302,6 +303,7 @@ class GravePhoto(Files, GeoPointModel):
     Файлы, связанные с захоронением
     """
     grave = models.ForeignKey(Grave)
+
 
 class Burial(SafeDeleteMixin, GetLogsMixin, BaseModel):
     STATUS_BACKED = 'backed'
@@ -920,10 +922,12 @@ models.signals.post_save.connect(apply_exhumation, sender=ExhumationRequest)
 
 
 def calculate_free_burial_count(sender, instance, **kwargs):
-    if 'created' in kwargs.keys() and not kwargs['created'] and instance.place:
-        exclude_pk_list = [i.grave.pk for i in instance.place.burial_set.select_related().all()]
-        instance.place.available_count = Grave.objects.filter(place=instance.place).exclude(pk__in=exclude_pk_list).count()
-        instance.place.save()
+    if ('created' in kwargs.keys() and not kwargs['created']) or not instance.place:
+        return
+    exclude_pk_list = [i.grave.pk for i in instance.place.burial_set.select_related().all()]
+    instance.place.available_count = Grave.objects.filter(place=instance.place).exclude(pk__in=exclude_pk_list).count()
+    instance.place.save()
+
     
 models.signals.post_save.connect(calculate_free_burial_count, sender=Grave)
 models.signals.post_save.connect(calculate_free_burial_count, sender=Burial)
