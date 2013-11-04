@@ -106,7 +106,7 @@ function CemeteryViewCtrl($scope, $http, $resource, $location,  $routeParams,
 		$scope.cemetery.$update(function(){
 			$scope.closeEditForm();
 			$scope.update();
-			$scope.alerts.push({msg: "Элемент сохранен"});
+			noty({text: 'Изменения сохранены', type:'success', layout:'topRight'});
 		});
 	};
 	

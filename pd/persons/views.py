@@ -94,7 +94,8 @@ class AlivePersonViewSet(viewsets.ModelViewSet):
         if object.pk:
             old_obj = self.model.objects.get(pk=object.pk)
             write_log(self.request, object, _(u'Ответственный изменен с "%s" на "%s"') % (old_obj,object))
-        
+        else:
+            write_log(self.request, object, _(u'Ответственный создан'))
 
 
 class DeadPersonViewSet(viewsets.ModelViewSet):

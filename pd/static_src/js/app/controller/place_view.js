@@ -232,9 +232,7 @@
 			}, function() {
 				$scope.updateMap();
 				$scope.closeEditForm('isPlaceEditorOpen');
-				$scope.alerts.push({
-					msg : "Изменения сохранены"
-				});
+				noty({text: 'Изменения сохранены', type:'success', layout:'topRight'});
 				$location.path(url);
 				$location.replace();
 				//$scope.update();
@@ -253,18 +251,14 @@
 										cemetery_id : $routeParams.cemetery_id,
 										area_id : $routeParams.area_id
 					},function() {
-						$scope.alerts.push({
-							msg : "Изменения сохранены."
-						});
+						noty({text: 'Изменения сохранены', type:'success', layout:'topRight'});
 						$scope.update();
 					});
 				});
 			} else {
 				$scope.responsible.$update(function() {
 					$scope.update();
-					$scope.alerts.push({
-						msg : "Изменения сохранены."
-					});
+					noty({text: 'Изменения сохранены', type:'success', layout:'topRight'});
 				});
 			}
 			$scope.closeEditForm('isResponsibleEditorOpen');
@@ -280,9 +274,7 @@
 										cemetery_id : $routeParams.cemetery_id,
 										area_id : $routeParams.area_id
 					},function() {
-					$scope.alerts.push({
-						msg : fio + " откреплен."
-					});
+					noty({text: fio + " откреплен.", type:'success', layout:'topRight'});
 					$scope.update();
 				});
 			}
@@ -329,9 +321,8 @@
 			$scope.newGrave.$save(function() {
 				$scope.closeEditForm('isGraveAddOpen');
 				$scope.updateGraves();
-				$scope.alerts.push({
-					msg : "Могила добавлена."
-				});
+				var msg = "Могила добавлена.";
+				noty({text: msg, type:'success', layout:'topRight'});
 				$scope.update();
 			});
 		}
@@ -343,9 +334,8 @@
 			var graveUpdateHandler = function() {
 				$scope.closeEditForm('isGraveEditOpen');
 				$scope.updateGraves();
-				$scope.alerts.push({
-					msg : "Изменения сохранены."
-				});
+				var msg = "Изменения сохранены.";
+				noty({text: msg, type:'success', layout:'topRight'});
 			};
 
 			var targetGrave = _.find($scope.graves, function(grave) {
@@ -381,9 +371,8 @@
 						//var grave = new Grave($scope.grave_to_delete);
 						$scope.grave_to_delete.$delete(function(){
 							$scope.updateGraves();
-							$scope.alerts.push({
-								msg : "Могила удалена."
-							});
+							var msg = "Могила удалена.";
+							noty({text: msg, type:'success', layout:'topRight'});
 							delete $scope.grave_to_delete;
 							$scope.update();
 						});
@@ -412,9 +401,8 @@
 			},function() {
 				$scope.closeEditForm('isBurialEditorOpen');
 				$scope.updateGraves();
-				$scope.alerts.push({
-					msg : "Изменения сохранены."
-				});
+				var msg = "Изменения сохранены.";
+				noty({text: msg, type:'success', layout:'topRight'});
 			});
 		}
 	};

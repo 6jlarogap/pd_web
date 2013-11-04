@@ -81,7 +81,7 @@ function AreaViewCtrl($scope, $rootScope, $http, $routeParams, $resource, $locat
 		$scope.area.$update({cemetery_id: $routeParams.cemetery_id}, function(){
 			$scope.closeEditForm();
 			$scope.update();
-			$scope.alerts.push({msg: "Элемент сохранен"});
+			noty({text: 'Элемент сохранен', type:'success', layout:'topRight'});
 		});
 	};
 	// EOF Diallog
