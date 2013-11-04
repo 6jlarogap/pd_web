@@ -91,8 +91,9 @@ class AlivePersonViewSet(viewsets.ModelViewSet):
 
 
     def pre_save(self, object):
-        old_obj = self.model.objects.get(pk=object.pk)
-        write_log(self.request, object, _(u'Ответственный изменен с "%s" на "%s"') % (old_obj,object))
+        if object.pk:
+            old_obj = self.model.objects.get(pk=object.pk)
+            write_log(self.request, object, _(u'Ответственный изменен с "%s" на "%s"') % (old_obj,object))
         
 
 
