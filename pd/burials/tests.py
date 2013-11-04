@@ -710,27 +710,6 @@ class TestPlaces(TestCase):
         place.save()
         self.assertEqual(place.place, None)
 
-    def test_cemetery(self):
-        self.cemetery.places_algo = Cemetery.PLACE_CEMETERY
-        old_place = Place.objects.create(
-            cemetery=self.cemetery,
-            area=self.area,
-            row='234',
-            place='123',
-            responsible=None,
-        )
-        place = Place(
-            cemetery=self.cemetery,
-            area=None,
-            row=None,
-            place=None,
-            responsible=None,
-        )
-        self.assertEqual(place.place, None)
-
-        place.save()
-        self.assertEqual(str(place.place), '124')
-
     def test_area(self):
         self.cemetery.places_algo = Cemetery.PLACE_AREA
         old_place = Place.objects.create(
