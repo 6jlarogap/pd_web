@@ -85,6 +85,10 @@ js_jquery = Bundle(
         "jquery-ui/ui/minified/jquery.ui.datepicker.min.js",
         "jquery-ui/ui/minified/i18n/jquery.ui.datepicker-ru.min.js",
         "jquery-timepicker/jquery.ui.timepicker.js",
+        
+        "noty/js/noty/jquery.noty.js",
+        "noty/js/noty/layouts/topRight.js",
+        "noty/js/noty/themes/default.js",
         filters='rjsmin', output='pd-jq.js')
 
 
