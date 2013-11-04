@@ -165,7 +165,7 @@ class Place(SafeDeleteMixin, BaseModel):
         if new_place_for_archive:
             assert self.cemetery and \
                 self.cemetery.places_algo_archive != Cemetery.PLACE_ARCHIVE_MANUAL, \
-                u'Empty place number for a new archive burial'
+                u'Empty manual place number for a new archive burial'
         elif self.cemetery.places_algo in (Cemetery.PLACE_MANUAL,
                                            Cemetery.PLACE_BURIAL_ACCOUNT_NUMBER,
                                           ):
@@ -176,14 +176,18 @@ class Place(SafeDeleteMixin, BaseModel):
             # self.cemetery.places_algo_archive == Cemetery.PLACE_ARCHIVE_PREFIX_AREA:
             # пока это едиственный выбор для заполнения пустого места архивного зх
             prefix = '-'
+            num_template = '%05d'
+            filter += ' and area_id=%s' % (self.area.pk, )
         else:
             prefix = ''
+            num_template = '%d'
             if self.cemetery.places_algo == Cemetery.PLACE_ROW:
                 filter += " and area_id=%s and row='%s'" % (self.area.pk, self.row, )
             elif self.cemetery.places_algo == Cemetery.PLACE_AREA:
                 filter += ' and area_id=%s' % (self.area.pk, )
             elif self.cemetery.places_algo == Cemetery.PLACE_CEM_YEAR:
                 prefix = str(datetime.datetime.now().year)
+                num_template = '%04d'
             else:
                 return
 
@@ -196,7 +200,7 @@ class Place(SafeDeleteMixin, BaseModel):
         cursor.execute(query)
         result = cursor.fetchone()
         num = result and result[0] or 0
-        self.place = prefix + ('%04d' if prefix else '%d') % (num + 1, )
+        self.place = prefix + num_template % (num + 1, )
 
     def remove_responsible(self):
         self.safe_delete('responsible', self)
