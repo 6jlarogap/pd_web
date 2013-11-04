@@ -807,6 +807,32 @@ class Burial(SafeDeleteMixin, GetLogsMixin, BaseModel):
             #result = True
         return result
 
+    def is_editable(self, user):
+        """
+        Захоронение может правится организацией этого пользователя
+        
+        Например, используется, чтоб определить, имеет ли пользователь право
+        на удаление файла или редактирование его комментария
+        """
+        result = False
+        try:
+            if user.profile.is_loru():
+                return self.ugh and \
+                       self.loru and \
+                       self.is_full() and \
+                       self.is_edit() and \
+                       self.loru == user.profile.org
+            elif user.profile.is_ugh():
+                return self.ugh and \
+                       (self.is_full() and self.is_closed() or not self.is_full()) and \
+                       self.ugh == user.profile.org
+                       
+        except AttributeError:
+            # пользователь без профиля.
+            pass
+        return result
+        
+        
 class BurialFiles(Files):
     """
     Файлы, связанные с захоронением
