@@ -20,6 +20,8 @@
 		  <dt>Время для захоронения</dt>
 		  <dd>{{cemetery.time_slots}}</dd>
 		</dl>
+		<p ng-show="cemetery.archive_burial_fact_date_required">Дата архивного захоронения обязательна</p>
+		<p ng-show="cemetery.archive_burial_account_number_required">Номер архивного захоронения обязателен</p>
 		<address address_class="address_class" address="cemetery.address" save_action="saveEditForm"></address>
 	</div>
     <yandex-map id="yandex-map" class="span5"></yandex-map>
