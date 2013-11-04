@@ -195,7 +195,7 @@ class PlaceViewSet(viewsets.ModelViewSet):
         qs = self.model.objects.filter(cemetery=item)
         if self.request.GET.get('area_id'):
             area  = getArea(self.request)
-            qs = qs.filter(area=item)
+            qs = qs.filter(area=area)
         return  qs.all()
 
     def pre_save(self, object):

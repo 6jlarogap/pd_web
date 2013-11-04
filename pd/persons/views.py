@@ -82,11 +82,11 @@ class AlivePersonViewSet(viewsets.ModelViewSet):
     serializer_class = AlivePersonSerializer
     permission_classes = (IsAuthenticated,)
 
-    def get_queryset(self):
-        # TODO: perfomance issue
-        responcible_ids = [i.responsible.pk for i in Place.objects.filter(cemetery__ugh=self.request.user.profile.org, responsible__isnull=False).all()]
-        #.distinct('responsible')
-        return self.model.objects.filter(pk__in=responcible_ids).all()
+    #def get_queryset(self):
+    #    # TODO: perfomance issue
+    #    responcible_ids = [i.responsible.pk for i in Place.objects.filter(cemetery__ugh=self.request.user.profile.org, responsible__isnull=False).all()]
+    #    #.distinct('responsible')
+    #    return self.model.objects.filter(pk__in=responcible_ids).all()
 
 
 
