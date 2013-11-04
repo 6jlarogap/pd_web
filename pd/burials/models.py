@@ -172,31 +172,31 @@ class Place(SafeDeleteMixin, BaseModel):
             return
 
         filter = 'cemetery_id=%s' % (self.cemetery.pk, )
-        year = ''
         if new_place_for_archive:
             # self.cemetery.places_algo_archive == Cemetery.PLACE_ARCHIVE_PREFIX_AREA:
             # пока это едиственный выбор для заполнения пустого места архивного зх
-            year = '-'
+            prefix = '-'
         else:
+            prefix = ''
             if self.cemetery.places_algo == Cemetery.PLACE_ROW:
                 filter += " and area_id=%s and row='%s'" % (self.area.pk, self.row, )
             elif self.cemetery.places_algo == Cemetery.PLACE_AREA:
                 filter += ' and area_id=%s' % (self.area.pk, )
             elif self.cemetery.places_algo == Cemetery.PLACE_CEM_YEAR:
-                year = str(datetime.datetime.now().year)
+                prefix = str(datetime.datetime.now().year)
             else:
                 return
 
-        p_regex = r"E'^%s\\d+$'" % (re.escape(year), )
+        p_regex = r"E'^%s\\d+$'" % (re.escape(prefix), )
         query = ("select max(substring(place from %s)::integer) from burials_place "
                 "where place ~ %s and %s"
-                ) % (len(year)+1, p_regex, filter, );
+                ) % (len(prefix)+1, p_regex, filter, );
 
         cursor = connection.cursor()
         cursor.execute(query)
         result = cursor.fetchone()
         num = result and result[0] or 0
-        self.place = year + ('%04d' if year else '%d') % (num + 1, )
+        self.place = prefix + ('%04d' if prefix else '%d') % (num + 1, )
 
     def remove_responsible(self):
         self.safe_delete('responsible', self)
