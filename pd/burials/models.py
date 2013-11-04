@@ -817,14 +817,15 @@ class Burial(SafeDeleteMixin, GetLogsMixin, BaseModel):
         result = False
         try:
             if user.profile.is_loru():
-                return self.ugh and \
-                       self.loru and \
+                return self.loru and \
                        self.is_full() and \
                        self.is_edit() and \
                        self.loru == user.profile.org
             elif user.profile.is_ugh():
                 return self.ugh and \
-                       (self.is_full() and self.is_closed() or not self.is_full()) and \
+                       (self.is_full() and self.is_closed() or \
+                        self.is_ugh() or self.is_transferred()
+                       ) and \
                        self.ugh == user.profile.org
                        
         except AttributeError:
