@@ -22,6 +22,15 @@
 			<option value="manual">Ручное</option>
 		</select>
 	</p>
+
+
+	<p><label for="id_archive_burial_fact_date_required">Дата архивного захоронения обязательна:</label> 
+		<input id="id_archive_burial_fact_date_required" type="checkbox" name="name" ng-model="cemetery.archive_burial_fact_date_required" maxlength="255">
+	</p>
+	<p><label for="id_archive_burial_account_number_required">Номер архивного захоронения обязателен:</label> 
+		<input id="id_archive_burial_account_number_required" type="checkbox" name="name" ng-model="cemetery.archive_burial_account_number_required" maxlength="255">
+	</p>
+
 	
 	<p><label for="id_time_slots">Время для захоронения:</label> 
 		<textarea ng-model="cemetery.time_slots" id="id_time_slots" rows="10" cols="40" name="time_slots">

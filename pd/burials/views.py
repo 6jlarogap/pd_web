@@ -101,7 +101,7 @@ class CemeteryViewSet(viewsets.ModelViewSet):
             location_id = self.request.GET.get('address_id')
 
             # Если адрес привязан к другой ugh - выйти
-            if Cemetery.objects.exclude(ugh=self.request.user.profile.org).filter(location_id=location_id).count()>0:
+            if Cemetery.objects.exclude(ugh=self.request.user.profile.org).filter(address_id=location_id).count()>0:
                 return Http404()
 
             if location_id:
@@ -201,8 +201,9 @@ class PlaceViewSet(viewsets.ModelViewSet):
     def pre_save(self, object):
         item = getArea(self.request) # TODO: check this
         object.area = item
-        write_log(self.request, object, _(u'Место №%s изменено' % object.place))
-        
+        if item.pk:
+            write_log(self.request, object, _(u'Место №%s изменено' % object.place))
+
         # Update grave point coords
         items = Grave.objects.filter(place=object).all()
         for item in items:
