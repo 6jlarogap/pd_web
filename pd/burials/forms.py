@@ -874,7 +874,9 @@ class BurialCommitForm(BurialForm):
         place_number = self.cleaned_data.get('place_number') or ''
         area = self.cleaned_data.get('area')
         row = self.cleaned_data.get('row')
-        if not place_number.strip() and (self.instance.is_archive() or self.request.REQUEST.get('archive')):
+        if not place_number.strip() and \
+           (self.instance.is_archive() or self.request.REQUEST.get('archive')) and \
+           cemetery and cemetery.places_algo_archive == Cemetery.PLACE_ARCHIVE_MANUAL:
             msg = _(u"Нельзя закрывать архивное захоронение без указания номера места")
             raise forms.ValidationError(msg)
         elif not place_number.strip() and area and area.availability == Area.AVAILABILITY_CLOSED:
