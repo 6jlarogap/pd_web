@@ -6,9 +6,7 @@
     <h1>{% trans "Кладбище" %} {{ form.instance }}</h1>
     <form action="" method="POST">
         {% csrf_token %}
-        <fieldset>
-            {{ form.as_p }}
-        </fieldset>
+        {{ form.as_p }}
 
         <h2>{% trans "Адрес" %}</h2>
         {% with form.address_form as form %}
