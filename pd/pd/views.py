@@ -63,7 +63,7 @@ def media_xsendfile(request, path, document_root):
     if server_software and re.search(r'apache', server_software, flags=re.I):
         # Нижеследующее отработает только под сервером Apache с mod_xsendfile
         #
-        m= re.search(r'^/?([^/]+)/(\S+)',path)
+        m= re.search(r'^/?([^/]+)(/\S+)',path)
         if not m:
             raise Http404
         what = m.group(1)
