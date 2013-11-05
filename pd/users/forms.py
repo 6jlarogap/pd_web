@@ -259,7 +259,6 @@ class OrgForm(BaseOrgForm):
             self.placesize_formset = None
         if self.is_own_org:
             self.reason_formset = ReasonFormset(data=request.POST or None, instance=self.instance)
-            print self.reason_formset.forms[0].fields['reason_type'].choices
             choices = [('', '---------')]
             for reason_type in Reason.TYPE_CHOICES:
                 if request.user.profile.is_ugh():
@@ -271,6 +270,7 @@ class OrgForm(BaseOrgForm):
             label = self.reason_formset.forms[0].fields['reason_type'].label
             for f in self.reason_formset.forms:
                 f.fields['reason_type'] = forms.fields.TypedChoiceField(choices = choices, label=label)
+                # f.prefix += '-reason'
         else:
             self.reason_formset = None
 

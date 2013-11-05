@@ -874,7 +874,9 @@ class BurialCommitForm(BurialForm):
         place_number = self.cleaned_data.get('place_number') or ''
         area = self.cleaned_data.get('area')
         row = self.cleaned_data.get('row')
-        if not place_number.strip() and (self.instance.is_archive() or self.request.REQUEST.get('archive')):
+        if not place_number.strip() and \
+           (self.instance.is_archive() or self.request.REQUEST.get('archive')) and \
+           cemetery and cemetery.places_algo_archive == Cemetery.PLACE_ARCHIVE_MANUAL:
             msg = _(u"Нельзя закрывать архивное захоронение без указания номера места")
             raise forms.ValidationError(msg)
         elif not place_number.strip() and area and area.availability == Area.AVAILABILITY_CLOSED:
@@ -985,10 +987,6 @@ class BurialCommitForm(BurialForm):
             if deadman_birth_date and deadman_death_date:
                 if deadman_birth_date > deadman_death_date:
                     msg = _(u"Дата смерти не может быть раньше даты рождения")
-                    raise forms.ValidationError(msg)
-                from_death_150_years = datetime.datetime(deadman_birth_date.year - 150,  deadman_birth_date.month, deadman_birth_date.day).date()
-                if deadman_birth_date < from_death_150_years :
-                    msg = _(u"Не верно указаны даты жизни")
                     raise forms.ValidationError(msg)
 
             if deadman_death_date and deadman_death_date > today:

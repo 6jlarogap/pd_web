@@ -8,46 +8,16 @@ from django.db import models
 class Migration(SchemaMigration):
 
     def forwards(self, orm):
-
-        # Changing field 'PlaceSize.org'
-        db.alter_column('burials_placesize', 'org_id', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['users.Org'], on_delete=models.PROTECT))
-        # Adding field 'Reason.org'
-        db.add_column('burials_reason', 'org',
-                      self.gf('django.db.models.fields.related.ForeignKey')(default=64, to=orm['users.Org'], on_delete=models.PROTECT),
+        # Adding field 'Cemetery.places_algo_archive'
+        db.add_column('burials_cemetery', 'places_algo_archive',
+                      self.gf('django.db.models.fields.CharField')(default='manual', max_length=255),
                       keep_default=False)
 
 
-        # Changing field 'Reason.reason_type'
-        db.alter_column('burials_reason', 'reason_type', self.gf('django.db.models.fields.CharField')(max_length=100))
-
-        # Changing field 'Reason.text'
-        db.alter_column('burials_reason', 'text', self.gf('django.db.models.fields.CharField')(max_length=100))
-
-        # Changing field 'Reason.name'
-        db.alter_column('burials_reason', 'name', self.gf('django.db.models.fields.CharField')(max_length=50))
-        # Adding unique constraint on 'Reason', fields ['reason_type', 'org', 'text']
-        db.create_unique('burials_reason', ['reason_type', 'org_id', 'text'])
-
-
     def backwards(self, orm):
-        # Removing unique constraint on 'Reason', fields ['reason_type', 'org', 'text']
-        db.delete_unique('burials_reason', ['reason_type', 'org_id', 'text'])
+        # Deleting field 'Cemetery.places_algo_archive'
+        db.delete_column('burials_cemetery', 'places_algo_archive')
 
-
-        # Changing field 'PlaceSize.org'
-        db.alter_column('burials_placesize', 'org_id', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['users.Org']))
-        # Deleting field 'Reason.org'
-        db.delete_column('burials_reason', 'org_id')
-
-
-        # Changing field 'Reason.reason_type'
-        db.alter_column('burials_reason', 'reason_type', self.gf('django.db.models.fields.CharField')(max_length=255))
-
-        # Changing field 'Reason.text'
-        db.alter_column('burials_reason', 'text', self.gf('django.db.models.fields.TextField')())
-
-        # Changing field 'Reason.name'
-        db.alter_column('burials_reason', 'name', self.gf('django.db.models.fields.CharField')(max_length=255))
 
     models = {
         'auth.group': {
@@ -154,6 +124,7 @@ class Migration(SchemaMigration):
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'name': ('django.db.models.fields.CharField', [], {'max_length': '255'}),
             'places_algo': ('django.db.models.fields.CharField', [], {'default': "'area'", 'max_length': '255'}),
+            'places_algo_archive': ('django.db.models.fields.CharField', [], {'default': "'manual'", 'max_length': '255'}),
             'time_begin': ('django.db.models.fields.TimeField', [], {'null': 'True', 'blank': 'True'}),
             'time_end': ('django.db.models.fields.TimeField', [], {'null': 'True', 'blank': 'True'}),
             'time_slots': ('django.db.models.fields.TextField', [], {'default': "''", 'blank': 'True'}),
@@ -238,12 +209,12 @@ class Migration(SchemaMigration):
             'placestatus': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['burials.PlaceStatus']"})
         },
         'burials.reason': {
-            'Meta': {'ordering': "('reason_type', 'name')", 'unique_together': "(('org', 'reason_type', 'text'),)", 'object_name': 'Reason'},
+            'Meta': {'ordering': "('reason_type', 'name')", 'unique_together': "(('org', 'reason_type', 'name'),)", 'object_name': 'Reason'},
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'name': ('django.db.models.fields.CharField', [], {'max_length': '50'}),
+            'name': ('django.db.models.fields.CharField', [], {'max_length': '255'}),
             'org': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['users.Org']", 'on_delete': 'models.PROTECT'}),
-            'reason_type': ('django.db.models.fields.CharField', [], {'max_length': '100'}),
-            'text': ('django.db.models.fields.CharField', [], {'max_length': '100'})
+            'reason_type': ('django.db.models.fields.CharField', [], {'max_length': '255'}),
+            'text': ('django.db.models.fields.TextField', [], {'default': "''"})
         },
         'contenttypes.contenttype': {
             'Meta': {'ordering': "('name',)", 'unique_together': "(('app_label', 'model'),)", 'object_name': 'ContentType', 'db_table': "'django_content_type'"},
