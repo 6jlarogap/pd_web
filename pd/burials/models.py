@@ -30,9 +30,11 @@ class Cemetery(GetLogsMixin, BaseModel):
 
     PLACE_ARCHIVE_MANUAL = 'manual'
     PLACE_ARCHIVE_PREFIX_AREA = '-area'
+    PLACE_ARCHIVE_BURIAL_ACCOUNT_NUMBER = 'burial_account_number'
     PLACE_ARCHIVE_TYPES = (
         (PLACE_ARCHIVE_MANUAL, _(u'Вручную')),
         (PLACE_ARCHIVE_PREFIX_AREA, _(u'По порядку в пределах участка (-0001 -0002...)')),
+        (PLACE_ARCHIVE_BURIAL_ACCOUNT_NUMBER, _(u'По рег. номеру захоронения')),
     )
 
     name = models.CharField(_(u"Название"), max_length=255)
@@ -164,8 +166,8 @@ class Place(SafeDeleteMixin, BaseModel):
     def set_next_number(self, new_place_for_archive=False):
         if new_place_for_archive:
             assert self.cemetery and \
-                self.cemetery.places_algo_archive != Cemetery.PLACE_ARCHIVE_MANUAL, \
-                u'Empty manual place number for a new archive burial'
+                self.cemetery.places_algo_archive in (Cemetery.PLACE_ARCHIVE_PREFIX_AREA, ), \
+                u'Empty place number for a new archive burial and no appropriate algorythm'
         elif self.cemetery.places_algo in (Cemetery.PLACE_MANUAL,
                                            Cemetery.PLACE_BURIAL_ACCOUNT_NUMBER,
                                           ):
@@ -665,8 +667,14 @@ class Burial(SafeDeleteMixin, GetLogsMixin, BaseModel):
             self.set_account_number(user=self.changed_by)
 
         if not self.place_number and \
-           not self.is_archive() and \
-           self.cemetery and self.cemetery.places_algo == Cemetery.PLACE_BURIAL_ACCOUNT_NUMBER:
+           self.cemetery and \
+           (
+                self.is_archive() and \
+                self.cemetery.places_algo_archive == Cemetery.PLACE_ARCHIVE_BURIAL_ACCOUNT_NUMBER \
+            or \
+                not self.is_archive() and \
+                self.cemetery.places_algo == Cemetery.PLACE_BURIAL_ACCOUNT_NUMBER \
+           ):
             self.place_number = self.account_number
 
         place = self.get_place() or Place()
