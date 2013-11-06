@@ -66,7 +66,7 @@ def media_xsendfile(request, path, document_root):
         # Например: death-certificates/2013/11/06/5998/1376137215179.jpg
         # Должны получить две группы: 'death-certificates' и  '5998'
         #
-        m= re.search(r'^/?([^/]+).*/(\d+)/[^/]+',path)
+        m= re.search(r'^/?([^/]+).*/(\d+)/[^/]+$',path)
         if not m:
             raise Http404
         what = m.group(1)
