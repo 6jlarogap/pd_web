@@ -827,12 +827,34 @@ class Burial(SafeDeleteMixin, GetLogsMixin, BaseModel):
                         self.is_ugh() or self.is_transferred()
                        ) and \
                        self.ugh == user.profile.org
-                       
         except AttributeError:
             # пользователь без профиля.
             pass
         return result
         
+    def is_accessible(self, user):
+        """
+        Захоронение доступно организации этого пользователя
+        
+        Например, используется, чтоб определить, имеет ли пользователь право
+        на просмотр файла, прикрепленного к захоронению
+        """
+        result = False
+        try:
+            if user.profile.is_loru():
+                return self.loru and \
+                       self.is_full() and \
+                       self.loru == user.profile.org
+            elif user.profile.is_ugh():
+                return self.ugh and \
+                       (self.is_full() and not self.is_edit() or \
+                        self.is_ugh() or self.is_transferred()
+                       ) and \
+                       self.ugh == user.profile.org
+        except AttributeError:
+            # пользователь без профиля.
+            pass
+        return result
         
 class BurialFiles(Files):
     """

@@ -63,21 +63,21 @@ def media_xsendfile(request, path, document_root):
     if server_software and re.search(r'apache', server_software, flags=re.I):
         # Нижеследующее отработает только под сервером Apache с mod_xsendfile
         #
-        m= re.search(r'^/?([^/]+)(/\S+)',path)
+        # Например: death-certificates/2013/11/06/5998/1376137215179.jpg
+        # Должны получить две группы: 'death-certificates' и  '5998'
+        #
+        m= re.search(r'^/?([^/]+).*/(\d+)/[^/]+',path)
         if not m:
             raise Http404
         what = m.group(1)
-        m = re.search(r'/(\d+)/\S+$', m.group(2));
-        if not m:
-            raise Http404
-        pk = m.group(1)
+        pk = m.group(2)
         if what == 'death-certificates':
             burial = get_object_or_404(get_model('burials', 'Burial'), pk=pk)
-            if not burial.is_editable(request.user):
+            if not burial.is_accessible(request.user):
                 raise Http404
         elif what == 'bfiles':
             burial = get_object_or_404(get_model('burials', 'Burial'), pk=pk)
-            if not burial.is_editable(request.user):
+            if not burial.is_accessible(request.user):
                 raise Http404
         # На остальные объекты разрешения пока не формируем
         response = HttpResponse()
