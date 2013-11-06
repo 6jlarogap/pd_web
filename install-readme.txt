@@ -74,34 +74,34 @@ install-readme.txt, utf8 code page
     * пример настройки виртуального хоста Apache
         (имя сервера, каталоги могут отличаться)
 
-    <VirtualHost *:80>
-        ServerName SERVER.ORG.COM
-        ServerAlias SERVER.ORG.COM
+        <VirtualHost *:80>
+            ServerName SERVER.ORG.COM
+            ServerAlias SERVER.ORG.COM
 
-        XSendFile On
-        # Каталог media должен быть доступен пользователю,
-        # исполняющему Apache, по чтению-записи.
-        XSendFilePath /home/www-data/media/pd_web
+            XSendFile On
+            # Каталог media должен быть доступен пользователю,
+            # исполняющему Apache, по чтению-записи.
+            XSendFilePath /home/www-data/media/pd_web
 
-        Alias /static/          /home/www-data/static/pd_web/
-        Alias /robots.txt       /home/www-data/static/pd_web/system/robots.txt
+            Alias /static/          /home/www-data/static/pd_web/
+            Alias /robots.txt       /home/www-data/static/pd_web/system/robots.txt
 
-        WSGIDaemonProcess SERVER.ORG.COM display-name=%{GROUP} processes=1 threads=2
-        WSGIProcessGroup  SERVER.ORG.COM
-        WSGIScriptAlias / /home/www-data/django/pd_web/pd/pd/wsgi.py
+            WSGIDaemonProcess SERVER.ORG.COM display-name=%{GROUP} processes=1 threads=2
+            WSGIProcessGroup  SERVER.ORG.COM
+            WSGIScriptAlias / /home/www-data/django/pd_web/pd/pd/wsgi.py
 
-        <Directory /home/www-data/static/pd_web>
-            # ВНИМАНИЕ!
-            # Каталог static должен быть доступен пользователю,
-            # исполняющему Apache, не только, разумеется,
-            # по чтению, но и по записи (AngularJS)
-            Order deny,allow
-            Allow from all
-        </Directory>
-        <Directory /etc/apache2/wsgi>
-            WSGIApplicationGroup %{GLOBAL}
-            Order deny,allow
-            Allow from all
-        </Directory>
-    </VirtualHost>
+            <Directory /home/www-data/static/pd_web>
+                # ВНИМАНИЕ!
+                # Каталог static должен быть доступен пользователю,
+                # исполняющему Apache, не только, разумеется,
+                # по чтению, но и по записи (AngularJS)
+                Order deny,allow
+                Allow from all
+            </Directory>
+            <Directory /etc/apache2/wsgi>
+                WSGIApplicationGroup %{GLOBAL}
+                Order deny,allow
+                Allow from all
+            </Directory>
+        </VirtualHost>
     
