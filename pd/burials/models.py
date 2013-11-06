@@ -847,7 +847,7 @@ class Burial(SafeDeleteMixin, GetLogsMixin, BaseModel):
                        self.loru == user.profile.org
             elif user.profile.is_ugh():
                 return self.ugh and \
-                       (self.is_full() and not self.is_edit() or \
+                       (self.is_full() and not self.is_draft() or \
                         self.is_ugh() or self.is_transferred()
                        ) and \
                        self.ugh == user.profile.org
