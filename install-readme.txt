@@ -98,10 +98,8 @@ install-readme.txt, utf8 code page
                 Order deny,allow
                 Allow from all
             </Directory>
-            <Directory /etc/apache2/wsgi>
-                WSGIApplicationGroup %{GLOBAL}
+            <FilesMatch "wsgi\.py$">
                 Order deny,allow
                 Allow from all
-            </Directory>
+            </FilesMatch>
         </VirtualHost>
-    
