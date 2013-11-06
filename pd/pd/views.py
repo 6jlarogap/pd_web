@@ -79,7 +79,8 @@ def media_xsendfile(request, path, document_root):
             burial = get_object_or_404(get_model('burials', 'Burial'), pk=pk)
             if not burial.is_accessible(request.user):
                 raise Http404
-        # На остальные объекты разрешения пока не формируем
+        # Файлы остальных обхъектов пока отдаем без проверки, имеет ли к ним доступ
+        # пользователь request.user
         response = HttpResponse()
         response['Content-Type'] = mimetypes.guess_type(filename)[0] or 'application/octet-stream'
         response['Content-Disposition']='attachment;filename="%s"' % os.path.basename(filename).encode('utf-8')
