@@ -81,7 +81,11 @@ install-readme.txt, utf8 code page
             XSendFile On
             # Каталог media должен быть доступен пользователю,
             # исполняющему Apache, по чтению-записи.
+            
+            # Для свежих версий mod_xsendfile:
             XSendFilePath /home/www-data/media/pd_web
+            # Для версий ниже 1.0 (на "старом" Debian):
+            # XSendFileAllowAbove on
 
             Alias /static/          /home/www-data/static/pd_web/
             Alias /robots.txt       /home/www-data/static/pd_web/system/robots.txt
