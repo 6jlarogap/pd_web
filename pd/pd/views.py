@@ -72,8 +72,11 @@ def media_xsendfile(request, path, document_root):
         what = m.group(1)
         pk = m.group(2)
         if what == 'death-certificates':
-            burial = get_object_or_404(get_model('burials', 'Burial'), pk=pk)
-            if not burial.is_accessible(request.user):
+            try:
+                burial = get_model('burials', 'Burial').objects.filter(deadman__pk=pk)[0]
+                if not burial.is_accessible(request.user):
+                    raise Http404
+            except IndexError:
                 raise Http404
         elif what == 'bfiles':
             burial = get_object_or_404(get_model('burials', 'Burial'), pk=pk)

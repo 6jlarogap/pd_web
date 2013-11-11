@@ -162,10 +162,10 @@ def files_upload_to(instance, filename):
                 today_pk_dir % instance.burial.pk, fname)
     elif isinstance(instance, get_model('burials', 'PlaceStatusFiles')):
         return os.path.join('place-status-files',
-                today_pk_dir % instance.placestatus.place.pk, fname)
+                today_pk_dir % instance.placestatus.pk, fname)
     elif isinstance(instance, get_model('persons', 'DeathCertificateScan')):
         return os.path.join('death-certificates',
-                today_pk_dir % instance.deathcertificate.person.burial_set.all()[0].pk, fname)
+                today_pk_dir % instance.deathcertificate.person.pk, fname)
     elif isinstance(instance, get_model('burials', 'GravePhoto')):
         return os.path.join('grave-photos',
                 today_pk_dir % instance.grave.place.pk, fname)
