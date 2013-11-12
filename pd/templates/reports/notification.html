@@ -974,7 +974,7 @@ ODF styles with no properties representable as CSS
 </tr>
 <tr class="ro5">
     <td style="text-align:left;width:1.6752in; " class="ce5"><p><b>Регистрационный номер</b></p></td>
-    <td colspan="3" style="text-align:left;width:0.6173in; " class="ce21a"><b>{{ burial.account_number }}</b></td>
+    <td colspan="3" style="text-align:left;width:0.6173in; " class="ce21a"><b>{{ burial.account_number|default_if_none:"" }}</b></td>
     <td style="text-align:left;width:1.4484in; " class="ce23" colspan="2"><p></p></td>
     <td colspan="3" style="text-align:left;width:1.0457in; " class="ce28"></td>
     <td style="text-align:left;width:0.7984in; " class="Default"> </td>
