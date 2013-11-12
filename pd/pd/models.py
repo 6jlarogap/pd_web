@@ -162,15 +162,8 @@ def files_upload_to(instance, filename):
         return os.path.join('bfiles',
                 today_pk_dir % instance.burial.pk, fname)
     elif isinstance(instance, get_model('burials', 'PlaceStatusFiles')):
-<<<<<<< HEAD
-        return os.path.join('place-status-files', today_dir, fname)
-    elif isinstance(instance, get_model('burials', 'AreaPhoto')):
-        d = datetime.date.today()
-        return os.path.join('area-photos', today_dir,fname)
-=======
         return os.path.join('place-status-files',
                 today_pk_dir % instance.placestatus.pk, fname)
->>>>>>> remotes/suprune20/pd_web/master
     elif isinstance(instance, get_model('persons', 'DeathCertificateScan')):
         return os.path.join('death-certificates',
                 today_pk_dir % instance.deathcertificate.person.pk, fname)
