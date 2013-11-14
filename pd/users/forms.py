@@ -110,7 +110,7 @@ class UserProfileForm(ChildrenJSONMixin, forms.ModelForm):
 
     class Meta:
         model = Profile
-        exclude = ['org', 'is_agent', 'region_fias', 'country', 'user']
+        fields = ('user_last_name', 'user_first_name', 'user_middle_name', 'cemetery', 'area', )
 
     def __init__(self, *args, **kwargs):
         super(UserProfileForm, self).__init__(*args, **kwargs)
