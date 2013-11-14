@@ -86,7 +86,9 @@ def media_xsendfile(request, path, document_root):
         # пользователь request.user
         response = HttpResponse()
         response['Content-Type'] = mimetypes.guess_type(filename)[0] or 'application/octet-stream'
-        response['Content-Disposition']='attachment;filename="%s"' % os.path.basename(filename).encode('utf-8')
+        # Так в любом случае идет предложение или сохранить, или открыть файл, но
+        # не открытие его в браузере:
+        #response['Content-Disposition']='attachment;filename="%s"' % os.path.basename(filename).encode('utf-8')
         response['X-Sendfile'] = filename
         response['Content-length'] = os.stat(filename).st_size
         return response
