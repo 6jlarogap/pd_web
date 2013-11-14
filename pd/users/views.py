@@ -134,7 +134,7 @@ class LoruRegistryView(UGHRequiredMixin, View):
                 if loru not in new_lorus:
                     removed_lorus.append(loru)
             for profile in Profile.objects.filter(org__in=removed_lorus):
-                if profile.cemetery and profile.cemetery.ugh is self.my_ugh:
+                if profile.cemetery and profile.cemetery.ugh.pk == self.my_ugh.pk:
                     profile.area = None
                     profile.cemetery = None
                     profile.save()
