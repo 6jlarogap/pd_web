@@ -12,7 +12,7 @@ from django.db.models.query_utils import Q
 from geo.forms import LocationForm
 # from geo.models import DFiasAddrobj
 from pd.forms import ChildrenJSONMixin, LoggingFormMixin, OurReCaptchaField
-from burials.models import Cemetery, PlaceSize
+from burials.models import Cemetery, PlaceSize, Reason
 
 from users.models import Profile, ProfileLORU, Org, BankAccount, RegisterProfile
 
@@ -110,7 +110,7 @@ class UserProfileForm(ChildrenJSONMixin, forms.ModelForm):
 
     class Meta:
         model = Profile
-        exclude = ['org', 'is_agent', 'region_fias', 'country', 'user']
+        fields = ('user_last_name', 'user_first_name', 'user_middle_name', 'cemetery', 'area', )
 
     def __init__(self, *args, **kwargs):
         super(UserProfileForm, self).__init__(*args, **kwargs)
@@ -235,6 +235,7 @@ class BaseOrgForm(LoggingFormMixin, forms.ModelForm):
         return name
 
 PlaceSizeFormset = inlineformset_factory(Org, PlaceSize, formset=BaseInlineFormSet, can_delete=True, extra=2)
+ReasonFormset = inlineformset_factory(Org, Reason, formset=BaseInlineFormSet, can_delete=True, extra=2)
 
 class OrgForm(BaseOrgForm):
     class Meta:
@@ -249,7 +250,6 @@ class OrgForm(BaseOrgForm):
         if not self.is_own_org or not self.request.user.profile.is_ugh():
             del self.fields['numbers_algo']
             del self.fields['plan_date_days_before']
-            del self.fields['archive_burial_fact_date_required']
         if not self.is_own_org or not self.request.user.profile.is_loru():
             del self.fields['opf_order']
             del self.fields['opf_order_customer_mandatory']
@@ -257,10 +257,27 @@ class OrgForm(BaseOrgForm):
             self.placesize_formset = PlaceSizeFormset(data=request.POST or None, instance=self.instance)
         else:
             self.placesize_formset = None
+        if self.is_own_org:
+            self.reason_formset = ReasonFormset(data=request.POST or None, instance=self.instance)
+            choices = [('', '---------')]
+            for reason_type in Reason.TYPE_CHOICES:
+                if request.user.profile.is_ugh():
+                    if reason_type[0] in Reason.TYPES_UGH:
+                        choices.append(reason_type)
+                elif request.user.profile.is_loru():
+                    if reason_type[0] in Reason.TYPES_LORU:
+                        choices.append(reason_type)
+            label = self.reason_formset.forms[0].fields['reason_type'].label
+            for f in self.reason_formset.forms:
+                f.fields['reason_type'] = forms.fields.TypedChoiceField(choices = choices, label=label)
+                # f.prefix += '-reason'
+        else:
+            self.reason_formset = None
 
     def is_valid(self):
         return super(OrgForm, self).is_valid() and self.address_form.is_valid() and \
-                    (not self.placesize_formset or self.placesize_formset.is_valid())
+                    (not self.placesize_formset or self.placesize_formset.is_valid()) and \
+                    (not self.reason_formset or self.reason_formset.is_valid())
                     # and self.bank_formset.is_valid()
 
     def save(self, commit=True):
@@ -269,6 +286,8 @@ class OrgForm(BaseOrgForm):
         # self.bank_formset.save()
         if self.placesize_formset:
             self.placesize_formset.save()
+        if self.reason_formset:
+            self.reason_formset.save()
         if any(self.address_form.cleaned_data.values()):
             org.off_address = self.address_form.save()
         if commit:
@@ -348,8 +367,8 @@ class SupportForm(forms.Form):
         super(SupportForm, self).__init__(*args, **kwargs)
         self.request = request
         if request.user.is_authenticated():
-            del self.fields['sender']
             del self.fields['captcha']
+            self.initial['sender'] = request.user.email or request.user.profile.org.email or ''
 
     def save(self):
         if self.cleaned_data.get('subject'):
@@ -363,17 +382,14 @@ class SupportForm(forms.Form):
                             u'Пользователь: %s / %s\n'
                             u'Email: %s\n'
                             u'Организация: %s\n'
+                            u'Email организации: %s\n'
                            ) % (self.request.user.username,
                                 self.request.user.profile.full_name(),
                                 self.request.user.email,
                                 self.request.user.profile.org,
+                                self.request.user.profile.org.email,
                                )
-            if self.request.user.email:
-                email_from = self.request.user.email
-            else:
-                email_from = settings.DEFAULT_FROM_EMAIL
-        else:
-            email_from = self.cleaned_data['sender']
+        email_from = self.cleaned_data['sender']
         email_to = (settings.DEFAULT_FROM_EMAIL, )
         # Некоторые почтовые серверы подменяют поле From: письма
         # на тот почтовый ящик, через который шла аутентификация

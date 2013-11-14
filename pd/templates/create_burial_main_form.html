@@ -157,7 +157,7 @@
 {% for f in b.burialfiles_set.all %}
     <b>{{ forloop.counter }}.</b>&nbsp;
     <a href="/media/{{ f.bfile }}">открыть</a>
-    <a href="/burialfiles/{{ f.pk }}/delete/">удалить</a>&nbsp;&nbsp; 
+    <a href="/burialfiles/{{ f.pk }}/delete/" onclick="return confirm('{% trans "Вы уверены?" %}');">удалить</a>&nbsp;&nbsp; 
     <small>Описание:</small> <b>{{ f.comment|default:"(без описания)" }}</b>
     <br /> &nbsp;&nbsp;&nbsp;&nbsp;
     <a href="/burialfiles/{{ f.pk }}/editcomment/" target="_self">редактировать описание</a>

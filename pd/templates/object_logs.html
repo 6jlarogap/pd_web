@@ -11,7 +11,11 @@
     {% for log in object.get_logs %}
         <tr>
             <td>{{ log.dt }}</td>
-            <td>{{ log.user.profile }} / {{ log.user.profile.org }}</td>
+            <td>
+            {% if log.user %}
+                {{ log.user.profile }} / {{ log.user.profile.org }}
+            {% endif %}
+            </td>
             <td>{{ log.msg|linebreaksbr }}</td>
         </tr>
     {% endfor %}

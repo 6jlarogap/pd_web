@@ -5,11 +5,12 @@ import pytils
 import datetime
 
 from django.db import models
+from django.contrib.contenttypes.models import ContentType
 from django.db.models.loading import get_model
 from django.utils.translation import ugettext as _
 from django.core.exceptions import ValidationError
 from south.modelsinspector import add_introspection_rules
-
+from logs.models import Log
 
 class UnclearDate:
     def __init__(self, year, month=None, day=None):
@@ -144,17 +145,33 @@ def files_upload_to(instance, filename):
     instance.original_name = filename
     fname = u'.'.join(map(pytils.translit.slugify, filename.rsplit('.', 1)))
     today = datetime.date.today()
-    today_dir = "{0:d}/{1:02d}/{2:02d}".format(today.year, today.month, today.day)
+    
+    # Путь к сохраняемому файлу:
+    #   - первая составляющая (каталог): - /то, к чему относятся файлы/
+    #   - год/месяц/день, чтоб не допускать огромное множество файлов
+    #     (каталогов) в одной папке. Заодно и дата создания наглядна
+    #   - первичный ключ того объекта, проверку на доступ к которому
+    #     будем осуществлять
+    #   - имя файла, оттуда убраны нелатинские символы, знаки препинания
+    #     и т.п.
+    today_pk_dir = "{0:d}/{1:02d}/{2:02d}".format(today.year, today.month, today.day)
+    today_pk_dir += "/%s" 
+    
     if isinstance(instance, get_model('burials', 'BurialFiles')):
-        return os.path.join('bfiles', str(instance.burial.pk), fname)
+        return os.path.join('bfiles',
+                today_pk_dir % instance.burial.pk, fname)
     elif isinstance(instance, get_model('burials', 'PlaceStatusFiles')):
-        return os.path.join('place-status-files', today_dir, fname)
+        return os.path.join('place-status-files',
+                today_pk_dir % instance.placestatus.pk, fname)
     elif isinstance(instance, get_model('persons', 'DeathCertificateScan')):
-        return os.path.join('death-certificates', today_dir, fname)
+        return os.path.join('death-certificates',
+                today_pk_dir % instance.deathcertificate.person.pk, fname)
     elif isinstance(instance, get_model('burials', 'GravePhoto')):
-        return os.path.join('grave-photos', today_dir, fname)
+        return os.path.join('grave-photos',
+                today_pk_dir % instance.grave.place.pk, fname)
     elif isinstance(instance, get_model('users', 'RegisterProfileScan')):
-        return os.path.join('register-profile', today_dir, fname)
+        return os.path.join('register-profile',
+                today_pk_dir % instance.registerprofile.pk, fname)
     else:
         return os.path.join('files', fname)
 
@@ -193,5 +210,14 @@ class Photo(Files):
 def validate_gt0(value):
     if value <= 0:
         raise ValidationError(_(u'Должно быть больше нуля'))
+
+class  GetLogsMixin(object):
+    """
+    Для функция get_logs(), применяемой во многих моделях
+    """
+
+    def get_logs(self):
+        ct = ContentType.objects.get_for_model(self)
+        return Log.objects.filter(ct=ct, obj_id=self.pk).order_by('-pk')
 
 add_introspection_rules([], ['^pd\.models\.UnclearDateModelField'])

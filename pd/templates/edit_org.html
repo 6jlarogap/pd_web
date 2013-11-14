@@ -19,6 +19,27 @@
         {% endfor %}
     {% endif %}
 
+    {% if form.reason_formset %}
+    <script type="text/javascript">
+        $(function() {
+            // расширим название причины отказа, что красивее было
+            $('input[id^=id_reason_set]').each(function() {
+                if($(this).attr('id').match(/\-name$/i)) {
+                    $(this).css('width', '400px');
+                }
+            });
+        });
+    </script>
+        <h2>{% trans "Причины отказа, отзыва и т.п. действий" %}</h2>
+        {{ form.reason_formset.management_form }}
+        {{ form.reason_formset.non_form_errors }}
+        {% for f in form.reason_formset.forms %}
+            <fieldset>
+                {{ f.as_p }}
+            </fieldset>
+        {% endfor %}
+    {% endif %}
+
     <h2>{% trans "Адрес" %}</h2>
     {% with form.address_form as form %}
         {% include "location_form.html" %}
