@@ -200,7 +200,7 @@ class AlivePerson(BasePerson):
     """
     Живое ФЛ с телефоном
     """
-    #phones = models.TextField(_(u"Телефоны"), blank=True, null=True)
+    phones = models.TextField(_(u"Телефоны"), blank=True, null=True)
 
     def save(self, *args, **kwargs):
         self.first_name = self.first_name.capitalize().strip(' ').strip('*')
@@ -317,7 +317,7 @@ PHONE_TYPE_CHOICES = (
 class Phone(BaseModel):
     person = models.ForeignKey(AlivePerson, verbose_name=_(u"Живое ФЛ"), null=True, blank=True, limit_choices_to={'type': Org.PROFILE_ZAGS})
     number = models.CharField(_(u"Номер"), max_length=50, blank=True)
-    phone_type = models.SmallIntegerField(_(u"Тип телефона"), choices=PHONE_TYPE_CHOICES, default=PHONE_TYPE_CITY)
+    phonetype = models.SmallIntegerField(_(u"Тип телефона"), choices=PHONE_TYPE_CHOICES, default=PHONE_TYPE_CITY)
 
     class Meta:
         verbose_name = _(u"телефон")
