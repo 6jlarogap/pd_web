@@ -1,0 +1,18 @@
+﻿	  
+<form name="edit_phone" novalidate>
+    <h2>Редактировать телефон</h2>
+
+    <label for="phone_type">Тип:</label>
+
+    <select ng-model="phone.type_id" name="phone_type" ng-options="value.id as value.name for value in PHONE_TYPE_CHOICES" required></select>
+    <span class="error" ng-show="add_phone.phone_type.$error.required">Выберите тип телефона</span>
+    <label for="phone_number">Номер:</label>
+
+    <input type="text" name="phone_number" ng-model="phone.text" maxlength="20" required>
+    <span class="error" ng-show="edit_phone.phone_number.$error.required">Укажите номер телефона</span>
+    <div class="row-fluid">
+    <button ng-click="save()" ng-disabled="!edit_phone.$valid" class="btn btn-primary">Сохранить</button>
+    <button ng-click="destroy()" class="btn btn-danger">Удалить</button>
+    <button class="btn cancel" ng-click="close()">Закрыть</button>
+    </div>
+</form>

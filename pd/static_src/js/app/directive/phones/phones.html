@@ -1,0 +1,46 @@
+﻿<div class="phones_block">
+    <div ng-hide="isStaticBlock">
+    <h2>Телефоны</h2>
+        <table>
+	  <thead>
+	  <tr>
+	    <th>Тип</th>
+	    <th>Номер</th>
+	    <th><button class="btn btn-success btn-mini"
+                            ng-click="open()">
+                        <span class="icon-plus"></span>
+                    </button></th>
+	  </tr>
+	  </thead>
+	  <tbody>
+	  <tr ng-repeat="phone in phones">
+	    <td>{{phone.type_id | objList:PHONE_TYPE_CHOICES}}</td>
+	    <td>{{phone.text}}</td>
+	    <td>
+	      <button class="btn btn-success btn-mini"
+                            ng-click="open(phone)">
+                        <span class="icon-edit"></span>
+                    </button>
+	    </td>
+	  </tr>
+	  </tbody>
+	</table>
+    </div>
+    
+    <!-- Phone add form -->
+    <div ng-show="isPhoneAddOpen">
+        <div ng-include src="'/static/js/app/directive/phones/form_add_phone.html'"></div>
+    </div>
+    <!-- EOF add form -->
+
+    <!-- Phone edit form -->
+    <div ng-show="isPhoneEditOpen">
+        <div ng-include src="'/static/js/app/directive/phones/form_edit_phone.html'"></div>
+    </div>
+    <!-- EOF edit form -->
+</div>
+
+
+
+
+

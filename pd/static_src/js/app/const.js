@@ -51,3 +51,15 @@
         container_bio:    'Биоотходы'
     };
 	// EOF Burial model
+
+    PHONE_TYPE_MOBILE = 0,
+    PHONE_TYPE_CITY = 1,
+    PHONE_TYPE_FAX = 2,
+
+    PHONE_TYPE_CHOICES = [
+        {id:0, name:'Мобильный'},
+        {id:1, name:'Городской'},
+        {id:2, name:'Факс'}
+    ],
+    
+    RESPONCIBLE_CT = 20;
