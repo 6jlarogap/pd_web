@@ -36,7 +36,8 @@ from django.db import transaction
 from serializers import CemeterySerializer, AreaSerializer, PlaceSerializer, AreaPurposeSerializer, \
     GraveSerializer, BurialSerializer, BurialListSerializer, AreaPhotoSerializer, GravePhotoSerializer, ExhumationRequestSerializer
 
-
+from persons.serializers import AlivePersonSerializer, PhoneSerializer
+from geo.serializers import LocationSerializer, LocationStaticSerializer
 
 def getCemetery(request):
     try:
@@ -215,6 +216,67 @@ class PlaceViewSet(viewsets.ModelViewSet):
     def post_save(self, object, created=False):
         if created: 
             write_log(self.request, object, _(u'Место №%s создано')% object.place)
+        if object.responsible:
+            responsible = self.request.DATA.get('obj_responsible')
+            phone = self.request.DATA.get('obj_responsible_phones')
+            #import pudb; pudb.set_trace()
+            #for i in phone:
+            #    i["person"] = object.responsible.pk
+            responsible_serializer =  AlivePersonSerializer(object.responsible, data=responsible, partial=True)
+            phone_serializer =  PhoneSerializer(
+                                            object.responsible.phone_set.all(), 
+                                            data=phone,
+                                            many=True,
+                                            allow_add_remove=True,)#partial=True,
+            
+            if not responsible_serializer.is_valid():
+                return Response(status=400, data=responsible_serializer.errors) 
+            
+            if  not phone_serializer.is_valid():
+                return Response(status=400, data=phone_serializer.errors)
+            
+            responsible_serializer.save()
+            res = phone_serializer.save()
+            import pudb; pudb.set_trace()
+            for i in res:
+                i.person_id = object.responsible.pk
+                i.save() 
+
+
+
+    @action(methods=['GET',])
+    def getform(self, request, pk=None):
+        
+        cemetery = getCemetery(self.request)
+        if self.request.GET.get('area_id'):
+            area  = getArea(self.request)
+        place = get_object_or_404(self.model, pk=pk, cemetery=cemetery, area=area)
+        data = {
+                "cemetery" : CemeterySerializer(cemetery).data,
+                "area" : AreaSerializer(area).data,
+                "place" : PlaceSerializer(place).data,
+                "graves" : GraveSerializer(place.grave_set.all(), many=True).data,
+                "burials" : BurialSerializer(place.burial_set.all(), many=True).data,
+                "responsible" : {},
+                "responsible_phones" : [],
+                "responsible_address" : {}
+                }
+        if place.responsible:
+            data["responsible_phones"] = PhoneSerializer(place.responsible.phone_set.all()).data
+            data["responsible"] = AlivePersonSerializer(place.responsible).data 
+            if place.responsible.address:
+                data["responsible_address"] = LocationStaticSerializer(place.responsible.address).data
+        return Response(status=200, data=data)
+
+
+    @action(methods=['POST',])
+    def setform(self, request, pk=None):
+        form = request.GET.get('form')
+        address = request.GET.get('address')
+        phones = request.GET.get('phones')
+        responcible = request.GET.get('responcible')
+        return Response(status=200)
+
 
 
 
@@ -450,6 +512,7 @@ class PlaceView(UGHRequiredMixin, RequestToFormMixin, UpdateView):
     def get_success_url(self):
         messages.success(self.request, _(u"Данные обновлены"))
         return reverse('view_place', args=[self.get_object().pk])
+
 
 view_place = PlaceView.as_view()
 

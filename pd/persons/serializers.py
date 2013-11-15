@@ -1,16 +1,24 @@
 from django.contrib.auth.models import Group, Permission
 from rest_framework import serializers
+from rest_framework.fields import Field, TimeField
 
-
-from persons.models import AlivePerson, DeadPerson
-
+from persons.models import AlivePerson, DeadPerson, Phone
 from rest_api.fields import UnclearDateFieldSerializer
 
 
+class PhoneSerializer(serializers.HyperlinkedModelSerializer):
+    #person = serializers.PrimaryKeyRelatedField()
+    class Meta:
+        model = Phone
+        fields = ('id', 'phonetype', 'number')
+
+
 class AlivePersonSerializer(serializers.HyperlinkedModelSerializer):
+    address = Field(source='address_id')
+    phones = Field(source='phones', read_only=True)
     class Meta:
         model = AlivePerson
-        fields = ('id', 'first_name', 'last_name', 'middle_name', 'phones')
+        fields = ('id', 'first_name', 'last_name', 'middle_name', 'address', 'phones')
 
 
 class DeadPersonSerializer(serializers.HyperlinkedModelSerializer):
@@ -18,6 +26,6 @@ class DeadPersonSerializer(serializers.HyperlinkedModelSerializer):
     death_date = UnclearDateFieldSerializer()
     class Meta:
         model = DeadPerson
-        fields = ('id', 'first_name', 'last_name', 'middle_name', 'birth_date', 'death_date' )
+        fields = ('id', 'first_name', 'last_name', 'middle_name', 'birth_date', 'death_date')
 
 

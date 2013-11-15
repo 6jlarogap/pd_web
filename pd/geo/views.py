@@ -174,6 +174,10 @@ class LocationViewSet(viewsets.ModelViewSet):
     permission_classes = (IsAuthenticated,)
 
     def get_queryset(self):
+        """
+        TODO: moved into place get/update
+        """
+        return self.model.objects.all()
         address_ids = [i.address.pk for i in Cemetery.objects.filter(ugh=self.request.user.profile.org, address__isnull=False).all()]
         #.distinct('address')
         return self.model.objects.filter(pk__in=address_ids).all()

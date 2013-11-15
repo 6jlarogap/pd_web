@@ -21,7 +21,7 @@ from geo.views import LocationViewSet, LocationStaticViewSet
 from burials.views import CemeteryViewSet, AreaViewSet, PlaceViewSet, \
     GraveViewSet, BurialViewSet, AreaPhotoViewSet, GravePhotoViewSet, AreaPurposeViewSet
 
-from persons.views import AlivePersonViewSet, DeadPersonViewSet 
+from persons.views import AlivePersonViewSet, DeadPersonViewSet, PhoneViewSet 
 from logs.views import LogViewSet
  
 # Burial
@@ -39,6 +39,10 @@ router.register(r'^api/area-purpose', AreaPurposeViewSet)
 
 router.register(r'^api/alive-person', AlivePersonViewSet)
 router.register(r'^api/dead-person', DeadPersonViewSet)
+
+router.register(r'^api/alive-person-phone', PhoneViewSet)
+
+
 
 # Geo
 router.register(r'^api/geo/location', LocationViewSet)
@@ -67,6 +71,8 @@ urlpatterns += patterns('pd.views',
 # Redirects. Move into nginx at production
 urlpatterns += patterns('rest_api.views',
     url(r'^api$', 'api_root'),
+    url(r'^manage/404$', 'base_page'),
+    url(r'^manage/500$', 'base_page'),
     url(r'^manage/cemetery/$', 'base_page'),
     url(r'^manage/cemetery/(?P<id>.*)$', 'base_page'),
     url(r'^manage/area/(?P<id>.*)$', 'base_page'),

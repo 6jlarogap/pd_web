@@ -65,7 +65,7 @@ class PlaceSerializer(serializers.ModelSerializer):
     area = serializers.PrimaryKeyRelatedField()
     responsible = serializers.PrimaryKeyRelatedField(required=False)
     available_count = Field(source='available_count')
-    responsible_txt = serializers.SerializerMethodField('responsible_str') 
+    responsible_txt = serializers.SerializerMethodField('responsible_str')
     class Meta:
         model = Place
         fields = ('id', 'cemetery', 'lat', 'lng', 'area', 'row', 'place', 'responsible', 'responsible_txt', 
