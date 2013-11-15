@@ -24,7 +24,7 @@ from orders.forms import ProductForm, OrderForm, OrderItemFormset, CoffinForm, C
                          AddInfoForm, OrderSearchForm, OrderBurialForm
 from orders.models import Product, Order, OrderItem
 from pd.forms import CommentForm
-from pd.views import PaginateListView
+from pd.views import PaginateListView, RequestToFormMixin
 from reports.models import make_report
 
 
@@ -242,7 +242,7 @@ class OrderList(LORURequiredMixin, PaginateListView):
 
 order_list = OrderList.as_view()
 
-class OrderCreate(LORURequiredMixin, CreateView):
+class OrderCreate(LORURequiredMixin, RequestToFormMixin, CreateView):
     template_name = 'order_create.html'
     form_class = OrderForm
 
@@ -262,11 +262,6 @@ class OrderCreate(LORURequiredMixin, CreateView):
         else:
             redirect('/')
         
-    def get_form_kwargs(self):
-        data = super(OrderCreate, self).get_form_kwargs()
-        data['request'] = self.request
-        return data
-
     def get_context_data(self, **kwargs):
         data = super(OrderCreate, self).get_context_data(**kwargs)
         data.update({
@@ -298,14 +293,9 @@ class OrderCreate(LORURequiredMixin, CreateView):
 
 order_create = OrderCreate.as_view()
 
-class OrderEdit(LORURequiredMixin, UpdateView):
+class OrderEdit(LORURequiredMixin, RequestToFormMixin, UpdateView):
     template_name = 'order_edit_applicant.html'
     form_class = OrderForm
-
-    def get_form_kwargs(self):
-        data = super(OrderEdit, self).get_form_kwargs()
-        data['request'] = self.request
-        return data
 
     def get_context_data(self, **kwargs):
         data = super(OrderEdit, self).get_context_data(**kwargs)
@@ -547,7 +537,7 @@ class AnnulateOrder(LORURequiredMixin, DetailView):
 
 order_annulate = AnnulateOrder.as_view()
 
-class OrderBurialView(LORURequiredMixin, UpdateView):
+class OrderBurialView(LORURequiredMixin, RequestToFormMixin, UpdateView):
     """
     Cоздание или привязка захоронения к заказу
     """
@@ -556,11 +546,6 @@ class OrderBurialView(LORURequiredMixin, UpdateView):
 
     def get_queryset(self):
         return Order.objects.filter(loru=self.request.user.profile.org)
-
-    def get_form_kwargs(self):
-        data = super(OrderBurialView, self).get_form_kwargs()
-        data['request'] = self.request
-        return data
 
     def get(self, request, *args, **kwargs):
         order = self.get_object()

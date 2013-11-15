@@ -1,11 +1,12 @@
 # coding=utf-8
 import datetime
+import re
 from django.contrib.contenttypes.models import ContentType
 from django.db import models, connection
 from django.db.models.deletion import ProtectedError
 from django.utils.translation import ugettext_lazy as _
 from django.db.models.query_utils import Q
-from pd.models import UnclearDateModelField, BaseModel, Files, Photo, validate_gt0
+from pd.models import UnclearDateModelField, BaseModel, Files, Photo, GetLogsMixin, validate_gt0
 
 from persons.models import DeadPerson, SafeDeleteMixin, DeathCertificate
 from reports.models import Report
@@ -13,26 +14,36 @@ from users.models import Org, Profile, Dover, ProfileLORU
 from logs.models import Log
 
 
-class Cemetery(BaseModel):
-    PLACE_CEMETERY = 'cemetery'
+class Cemetery(GetLogsMixin, BaseModel):
     PLACE_AREA = 'area'
     PLACE_ROW = 'row'
     PLACE_CEM_YEAR = 'cem_year'
     PLACE_BURIAL_ACCOUNT_NUMBER = 'burial_account_number'
     PLACE_MANUAL = 'manual'
     PLACE_TYPES = (
-        (PLACE_CEMETERY, _(u'По кладбищу')),
         (PLACE_AREA, _(u'По участку')),
         (PLACE_ROW, _(u'По ряду')),
         (PLACE_CEM_YEAR, _(u'Кладбище + год')),
         (PLACE_BURIAL_ACCOUNT_NUMBER, _(u'По рег. номеру захоронения')),
-        (PLACE_MANUAL, _(u'Ручное')),
+        (PLACE_MANUAL, _(u'Вручную')),
+    )
+
+    PLACE_ARCHIVE_MANUAL = 'manual'
+    PLACE_ARCHIVE_PREFIX_AREA = '-area'
+    PLACE_ARCHIVE_BURIAL_ACCOUNT_NUMBER = 'burial_account_number'
+    PLACE_ARCHIVE_TYPES = (
+        (PLACE_ARCHIVE_MANUAL, _(u'Вручную')),
+        (PLACE_ARCHIVE_PREFIX_AREA, _(u'По порядку в пределах участка (-0001 -0002...)')),
+        (PLACE_ARCHIVE_BURIAL_ACCOUNT_NUMBER, _(u'По рег. номеру захоронения')),
     )
 
     name = models.CharField(_(u"Название"), max_length=255)
     time_begin = models.TimeField(_(u"Начало работы"), null=True, blank=True)
     time_end = models.TimeField(_(u"Окончание работы"), null=True, blank=True)
-    places_algo = models.CharField(_(u"Расстановка номеров мест"), max_length=255, choices=PLACE_TYPES, default=PLACE_AREA)
+    places_algo = models.CharField(_(u"Расстановка номеров мест захоронений (кроме архивных)"),
+                                max_length=255, choices=PLACE_TYPES, default=PLACE_AREA)
+    places_algo_archive = models.CharField(_(u"Расстановка номеров мест архивных захоронений"),
+                                max_length=255, choices=PLACE_ARCHIVE_TYPES, default=PLACE_ARCHIVE_MANUAL)
     time_slots = models.TextField(_(u"Время для захоронения"), default='', blank=True,
                                   help_text=_(u'В формате ЧЧ:ММ, по одному на строку'))
 
@@ -41,6 +52,8 @@ class Cemetery(BaseModel):
     ugh = models.ForeignKey(Org, verbose_name=_(u"УГХ"), null=True, limit_choices_to={'type': Org.PROFILE_UGH},
                             on_delete=models.PROTECT)
     address = models.ForeignKey('geo.Location', editable=False, null=True)
+    archive_burial_fact_date_required = models.BooleanField(_(u"Дата архивного захоронения обязательна"), default=True)
+    archive_burial_account_number_required = models.BooleanField(_(u"Номер архивного захоронения обязателен"), default=True)
 
     class Meta:
         verbose_name = _(u"Кладбище")
@@ -150,30 +163,49 @@ class Place(SafeDeleteMixin, BaseModel):
     def get_available_count(self):
         return max(0, self.get_graves_count() - self.burial_count())
 
-    def set_next_number(self, **params):
-        other_places = Place.objects.filter(**params)
-        other_places = other_places.filter(place__regex=r'^\d+$')
-        try:
-            self.place = int(other_places.order_by('-place')[0].place) + 1
-        except (ValueError, IndexError, TypeError):
-            self.place = 1
+    def set_next_number(self, new_place_for_archive=False):
+        if new_place_for_archive:
+            assert self.cemetery and \
+                self.cemetery.places_algo_archive in (Cemetery.PLACE_ARCHIVE_PREFIX_AREA, ), \
+                u'Empty place number for a new archive burial and no appropriate algorythm'
+        elif self.cemetery.places_algo in (Cemetery.PLACE_MANUAL,
+                                           Cemetery.PLACE_BURIAL_ACCOUNT_NUMBER,
+                                          ):
+            return
 
-    def set_next_number_for_year(self, **params):
-        year = str(datetime.datetime.now().year)
-        other_places = Place.objects.filter(**params)
-        other_places = other_places.filter(place__regex=r'^%s\d+$' % year)
-        try:
-            last_num = other_places.order_by('-place')[0].place
-            self.place = int(last_num) + 1
-        except (ValueError, IndexError, TypeError):
-            self.place = year + '0001'
+        filter = 'cemetery_id=%s' % (self.cemetery.pk, )
+        if new_place_for_archive:
+            # self.cemetery.places_algo_archive == Cemetery.PLACE_ARCHIVE_PREFIX_AREA:
+            # пока это едиственный выбор для заполнения пустого места архивного зх
+            prefix = '-'
+            num_template = '%05d'
+            filter += ' and area_id=%s' % (self.area.pk, )
+        else:
+            prefix = ''
+            num_template = '%d'
+            if self.cemetery.places_algo == Cemetery.PLACE_ROW:
+                filter += " and area_id=%s and row='%s'" % (self.area.pk, self.row, )
+            elif self.cemetery.places_algo == Cemetery.PLACE_AREA:
+                filter += ' and area_id=%s' % (self.area.pk, )
+            elif self.cemetery.places_algo == Cemetery.PLACE_CEM_YEAR:
+                prefix = str(datetime.datetime.now().year)
+                num_template = '%04d'
+            else:
+                return
+
+        p_regex = r"E'^%s\\d+$'" % (re.escape(prefix), )
+        query = ("select max(substring(place from %s)::integer) from burials_place "
+                "where place ~ %s and %s"
+                ) % (len(prefix)+1, p_regex, filter, );
+
+        cursor = connection.cursor()
+        cursor.execute(query)
+        result = cursor.fetchone()
+        num = result and result[0] or 0
+        self.place = prefix + num_template % (num + 1, )
 
     def remove_responsible(self):
         self.safe_delete('responsible', self)
-
-    def get_logs(self):
-        ct = ContentType.objects.get_for_model(self)
-        return Log.objects.filter(ct=ct, obj_id=self.pk).order_by('-pk')
 
     def bio_only(self):
         """
@@ -182,20 +214,11 @@ class Place(SafeDeleteMixin, BaseModel):
         burials_available = self.burials_available()
         return burials_available and all([ b.is_bio() for b in burials_available ])
 
-    def save(self, *args, **kwargs):
-        if self.cemetery and not self.place:
-            if self.cemetery.places_algo == Cemetery.PLACE_MANUAL:
-                pass
-            elif self.cemetery.places_algo == Cemetery.PLACE_BURIAL_ACCOUNT_NUMBER:
-                pass
-            elif self.cemetery.places_algo == Cemetery.PLACE_ROW:
-                self.set_next_number(cemetery=self.cemetery, area=self.area, row=self.row)
-            elif self.cemetery.places_algo == Cemetery.PLACE_AREA:
-                self.set_next_number(cemetery=self.cemetery, area=self.area)
-            elif self.cemetery.places_algo == Cemetery.PLACE_CEMETERY:
-                self.set_next_number(cemetery=self.cemetery)
-            elif self.cemetery.places_algo == Cemetery.PLACE_CEM_YEAR:
-                self.set_next_number_for_year(cemetery=self.cemetery)
+    def save(self, new_place_for_archive=False, *args, **kwargs):
+        if self.cemetery and self.area and not self.place:
+            # Новое место для архивного зх формируется по другим правилам,
+            # нежели для остальных зх
+            self.set_next_number(new_place_for_archive)
         return super(Place, self).save(*args, **kwargs)
 
     def create_graves(self, graves_count, grave_number):
@@ -228,7 +251,7 @@ class Place(SafeDeleteMixin, BaseModel):
         return result
 
 class PlaceSize(models.Model):
-    org = models.ForeignKey(Org, verbose_name=_(u"Организация"), editable=False) 
+    org = models.ForeignKey(Org, verbose_name=_(u"Организация"), editable=False, on_delete=models.PROTECT) 
     graves_count = models.PositiveSmallIntegerField(_(u"Число могил"), )
     place_length = models.DecimalField(_(u"Длина, м."), max_digits=5, decimal_places=2, validators=[validate_gt0])
     place_width = models.DecimalField(_(u"Ширина, м."), max_digits=5, decimal_places=2, validators=[validate_gt0])
@@ -280,7 +303,7 @@ class GravePhoto(Photo):
     """
     grave = models.ForeignKey(Grave)
 
-class Burial(SafeDeleteMixin, BaseModel):
+class Burial(SafeDeleteMixin, GetLogsMixin, BaseModel):
     STATUS_BACKED = 'backed'
     STATUS_DECLINED = 'declined'
     STATUS_DRAFT = 'draft'
@@ -612,10 +635,6 @@ class Burial(SafeDeleteMixin, BaseModel):
     def get_responsible(self):
         return self.responsible or (self.get_place() and self.get_place().responsible) or None
 
-    def get_logs(self):
-        ct = ContentType.objects.get_for_model(self)
-        return Log.objects.filter(ct=ct, obj_id=self.pk).order_by('-pk')
-
     def get_last_decline_reason(self):
         """
         Получить причину последнего отказа в захоронении, если в этом захоронении отказано
@@ -647,21 +666,20 @@ class Burial(SafeDeleteMixin, BaseModel):
         if not self.account_number:
             self.set_account_number(user=self.changed_by)
 
-        if self.cemetery and self.cemetery.places_algo == Cemetery.PLACE_BURIAL_ACCOUNT_NUMBER and not self.place_number:
-           self.place_number = self.account_number
+        if not self.place_number and \
+           self.cemetery and \
+           (
+                self.is_archive() and \
+                self.cemetery.places_algo_archive == Cemetery.PLACE_ARCHIVE_BURIAL_ACCOUNT_NUMBER \
+            or \
+                not self.is_archive() and \
+                self.cemetery.places_algo == Cemetery.PLACE_BURIAL_ACCOUNT_NUMBER \
+           ):
+            self.place_number = self.account_number
 
         place = self.get_place() or Place()
         if place != old_place:
             if not place.pk or not place.burial_count(): # move TO new
-                ### if old_place and (not old_place.pk or not old_place.burial_count()): # and FROM new
-                    # TODO: ответить на вопрос? 
-                    #       А ведь сюда (не задали место, но при этом было существующее) никогда
-                    #       не придем. В вызывающей функции делается get_or_create места,
-                    #       если при правке закрытого (с местом) захоронения пользователь
-                    #       ввел другое место.
-                    ### place = old_place # edit OLD
-                ### else: # from OLD and POPULATED (or non-existing at all)
-                ###     pass
                 place.responsible = self.get_responsible() # update responsible
             else: # move TO existing
                 if not old_place or not old_place.pk or not old_place.burial_count(): # and FROM old and populated
@@ -670,15 +688,6 @@ class Burial(SafeDeleteMixin, BaseModel):
                     # Иначе заменяем
                     if self.responsible:
                         place.responsible = self.responsible
-                ### else: # from new
-                    # TODO: ответить на вопрос? А сработает ли это когда-нибудь? Без ProtectedError ?
-                    #       если в месте есть захоронения, то на него есть ссылки из таблицы Burial.
-                    #       Всегда будет ProtectedError.
-                    #   !!! А вот могилы старого места затрутся ....
-                    ### try:
-                        ### old_place.delete() # deleting old
-                    ### except (AttributeError, ProtectedError):
-                        ### pass
         else:
             if not place.responsible:
                 place.responsible = self.get_responsible() # just update responsible
@@ -706,7 +715,7 @@ class Burial(SafeDeleteMixin, BaseModel):
         if new_place:
             place.place_length = self.place_length
             place.place_width = self.place_width
-        place.save()
+        place.save(new_place_for_archive=self.is_archive())
         if new_place:
             graves_count = self.desired_graves_count or 1
             # fool-proof, чтоб не пропустили могилу с номером,
@@ -806,6 +815,55 @@ class Burial(SafeDeleteMixin, BaseModel):
             #result = True
         return result
 
+    def is_editable(self, user):
+        """
+        Захоронение может правится организацией этого пользователя
+        
+        Например, используется, чтоб определить, имеет ли пользователь право
+        на удаление файла или редактирование его комментария
+        """
+        result = False
+        try:
+            if user.profile.is_loru():
+                return self.loru and \
+                       self.is_full() and \
+                       self.is_edit() and \
+                       self.loru == user.profile.org
+            elif user.profile.is_ugh():
+                return self.ugh and \
+                       (self.is_full() and self.is_closed() or \
+                        self.is_ugh() or self.is_transferred()
+                       ) and \
+                       self.ugh == user.profile.org
+        except AttributeError:
+            # пользователь без профиля.
+            pass
+        return result
+        
+    def is_accessible(self, user):
+        """
+        Захоронение доступно организации этого пользователя
+        
+        Например, используется, чтоб определить, имеет ли пользователь право
+        на просмотр файла, прикрепленного к захоронению
+        """
+        result = False
+        try:
+            if user.profile.is_loru():
+                return self.loru and \
+                       self.is_full() and \
+                       self.loru == user.profile.org
+            elif user.profile.is_ugh():
+                return self.ugh and \
+                       (self.is_full() and not self.is_draft() or \
+                        self.is_ugh() or self.is_transferred()
+                       ) and \
+                       self.ugh == user.profile.org
+        except AttributeError:
+            # пользователь без профиля.
+            pass
+        return result
+        
 class BurialFiles(Files):
     """
     Файлы, связанные с захоронением
@@ -823,17 +881,28 @@ class Reason(models.Model):
     TYPE_DECLINE = 'decline'
     TYPE_ANNULATE = 'annulate'
     TYPE_CHOICES = (
-        (TYPE_BACK, _(u'Отзыв ЛОРУ')),
-        (TYPE_DECLINE, _(u'Отказ УГХ')),
-        (TYPE_ANNULATE, _(u'Аннулирование УГХ')),
+        (TYPE_BACK, _(u'ЛОРУ отзывает захоронение')),
+        (TYPE_DECLINE, _(u'ОМС отказывает в захоронении')),
+        (TYPE_ANNULATE, _(u'Аннулирование захоронения')),
     )
-    name = models.CharField(_(u'Название'), max_length=255)
-    reason_type = models.CharField(_(u'Тип'), max_length=255, choices=TYPE_CHOICES)
-    text = models.TextField(_(u'Текст'), default='', blank=True)
+    # ЛОРУ и УГХ имеют разные списки отказов и др. действий
+    #
+    TYPES_UGH = (TYPE_DECLINE, TYPE_ANNULATE, )
+    # ЛОРУ аннулирует лишь свои черновики, отказванные, отозванные,
+    # т.е. по сути свои черновики, так что незачем ему указывать причину
+    # аннулирования
+    TYPES_LORU = (TYPE_BACK, )
+    
+    org = models.ForeignKey(Org, verbose_name=_(u"Организация"), editable=False, on_delete=models.PROTECT) 
+    reason_type = models.CharField(_(u'Действие'), max_length=255, choices=TYPE_CHOICES)
+    name = models.CharField(_(u'Причина'), max_length=255)
+    text = models.TextField(_(u'Текст причины'), default='', editable=False)
 
     class Meta:
-        verbose_name = _(u"Причина отказа")
-        verbose_name_plural = _(u"Причина отказа")
+        verbose_name = _(u"Причина")
+        verbose_name_plural = _(u"Причины")
+        ordering = ('reason_type', 'name', )
+        unique_together = ('org', 'reason_type', 'name')
 
     def save(self, *args, **kwargs):
         if not self.text.strip():

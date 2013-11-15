@@ -33,8 +33,21 @@ if 'ADMIN_ENABLED' in dir(settings) and settings.ADMIN_ENABLED:
         url(r'^admin/', include(admin.site.urls)),
     )
 
+urlpatterns += patterns('',
+    #
+    # url(r'^media/(?P<path>.*)$',  'django.views.static.serve', {'document_root': settings.MEDIA_ROOT}),
+    #
+    # Здесь django.views.static.serve заменена на свою функцию
+    # pd.views.media_xsendfile, которая проверяет, работаем ли мы под сервером Apache и если да,
+    # то проверяем доступ к media файлу. Если проверки успешны, то Apache с mod_xsendfile
+    # передает media файл клиенту.
+    # Если работаем не под сервером Apache, а пока это только из ./manage.py runserver, то 
+    # управление передается на django.views.static.serve, но это без проверок доступа к файлу
+    #
+    url(r'^media/(?P<path>.*)$',  'pd.views.media_xsendfile', {'document_root': settings.MEDIA_ROOT}),
+)
+
 if settings.DEBUG:
     urlpatterns += patterns('',
-        url(r'^media/(?P<path>.*)$', 'django.views.static.serve', {'document_root': settings.MEDIA_ROOT}),
-        url(r'^static/(?P<path>.*)$', 'django.views.static.serve', {'document_root': settings.STATIC_ROOT}),
+            url(r'^static/(?P<path>.*)$', 'django.views.static.serve', {'document_root': settings.STATIC_ROOT}),
     )
