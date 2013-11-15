@@ -133,7 +133,7 @@ class DeadPerson(BasePerson):
     """
     Мертвое ФЛ
     """
-	# serialize=False - не выгружать значение поля в фикстуры. Для этого типа поля не описан сериализатор
+    # serialize=False - не выгружать значение поля в фикстуры. Для этого типа поля не описан сериализатор
     birth_date = UnclearDateModelField(_(u"Дата рождения"), serialize=False, blank=True, null=True)
     death_date = UnclearDateModelField(_(u"Дата смерти"), serialize=False, blank=True, null=True)
 
@@ -208,13 +208,11 @@ class AlivePerson(BasePerson):
         self.middle_name = self.middle_name.capitalize().strip(' ').strip('*')
         super(AlivePerson, self).save(*args, **kwargs)
 
-
 class DocumentSource(models.Model):
     name = models.CharField(_(u"Наименование органа"), max_length=255, unique=True)
 
     def __unicode__(self):
         return self.name
-
 
 class PersonID(models.Model):
     """
@@ -238,7 +236,6 @@ class PersonID(models.Model):
     def save(self, *args, **kwargs):
         self.series = self.series.upper()
         super(PersonID, self).save(*args, **kwargs)
-
 
 class DeathCertificate(BaseModel):
     """
@@ -301,7 +298,6 @@ class DeathCertificateScan(Files):
     deathcertificate = models.OneToOneField(DeathCertificate)
 
 
-
 PHONE_TYPE_MOBILE = 0
 PHONE_TYPE_CITY = 1
 PHONE_TYPE_FAX = 2
@@ -311,7 +307,6 @@ PHONE_TYPE_CHOICES = (
     (PHONE_TYPE_CITY, _(u"Городской")),
     (PHONE_TYPE_FAX, _(u"Факс"))
 )
-
 
 
 class Phone(BaseModel):
@@ -325,4 +320,3 @@ class Phone(BaseModel):
 
     def __unicode__(self):
         return _(u"Телефон: %s") % self.number
-
