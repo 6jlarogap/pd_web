@@ -15,7 +15,7 @@ class PhoneSerializer(serializers.HyperlinkedModelSerializer):
 
 class AlivePersonSerializer(serializers.HyperlinkedModelSerializer):
     address = Field(source='address_id')
-    phones = Field(source='phones', read_only=True)
+    phones = Field(source='phones')
     class Meta:
         model = AlivePerson
         fields = ('id', 'first_name', 'last_name', 'middle_name', 'address', 'phones')
