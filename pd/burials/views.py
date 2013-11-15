@@ -712,10 +712,9 @@ autocomplete_areas = AutocompleteAreas.as_view()
 
 class DeleteBurialfile(LoginRequiredMixin, View):
     def get(self, request, *args, **kwargs):
-        try:
-            burial_file = BurialFiles.objects.get(pk=kwargs['pk'])
-        except BurialFiles.DoesNotExist:
-            return redirect('/')        # foolproof
+        burial_file = get_object_or_404(BurialFiles, pk=self.kwargs['pk'])
+        if not burial_file.burial.is_editable(request.user):
+            raise Http404
         burial_file.delete()
         return redirect('edit_burial', burial_file.burial.pk)
 
@@ -726,7 +725,10 @@ class BurialfileCommentEdit(LoginRequiredMixin, UpdateView):
     form_class = BurialfileCommentEditForm
 
     def get_object(self):
-        return get_object_or_404(BurialFiles, pk=self.kwargs['pk'])
+        obj =  get_object_or_404(BurialFiles, pk=self.kwargs['pk'])
+        if not obj.burial.is_editable(self.request.user):
+            raise Http404
+        return obj
 
     def post(self, request, *args, **kwargs):
         self.object = self.get_object()
