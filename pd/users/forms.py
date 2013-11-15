@@ -12,7 +12,7 @@ from django.db.models.query_utils import Q
 from geo.forms import LocationForm
 # from geo.models import DFiasAddrobj
 from pd.forms import ChildrenJSONMixin, LoggingFormMixin, OurReCaptchaField
-from burials.models import Cemetery, PlaceSize, Reason
+from burials.models import Cemetery, PlaceSize, Reason, Burial
 
 from users.models import Profile, ProfileLORU, Org, BankAccount, RegisterProfile
 
@@ -110,7 +110,7 @@ class UserProfileForm(ChildrenJSONMixin, forms.ModelForm):
 
     class Meta:
         model = Profile
-        exclude = ['org', 'is_agent', 'region_fias', 'country', 'user']
+        fields = ('user_last_name', 'user_first_name', 'user_middle_name', 'cemetery', 'area', )
 
     def __init__(self, *args, **kwargs):
         super(UserProfileForm, self).__init__(*args, **kwargs)
@@ -354,8 +354,11 @@ class RegisterForm(forms.ModelForm):
 
 class OrgBurialStatsForm(forms.Form):
 
+    EMPTY = (('', _(u'Закрытые и эксгумированные')),)
+
     date_from = forms.DateField(required=False, label=_(u"С"))
     date_to = forms.DateField(required=False, label=_(u"по"))
+    status = forms.TypedChoiceField(required=False, label=_(u"Статус"), choices=EMPTY + Burial.STATUS_CHOICES)
 
 class SupportForm(forms.Form):
     subject = forms.CharField(label=_(u'Тема (необязательно)'), max_length=100, required=False)
