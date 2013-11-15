@@ -134,7 +134,7 @@ class LoruRegistryView(UGHRequiredMixin, View):
                 if loru not in new_lorus:
                     removed_lorus.append(loru)
             for profile in Profile.objects.filter(org__in=removed_lorus):
-                if profile.cemetery and profile.cemetery.ugh is self.my_ugh:
+                if profile.cemetery and profile.cemetery.ugh == self.my_ugh:
                     profile.area = None
                     profile.cemetery = None
                     profile.save()
@@ -647,6 +647,10 @@ class OrgBurialStatsView(SupervisorRequiredMixin, TemplateView):
                 q &= Q(dt_modified__gte=form.cleaned_data['date_from'])
             if form.cleaned_data['date_to']:
                 q &= Q(dt_modified__lte=form.cleaned_data['date_to'])
+            if form.cleaned_data['status']:
+                q &= Q(status=form.cleaned_data['status'])
+            else:
+                q &= Q(status__in=(Burial.STATUS_CLOSED, Burial.STATUS_EXHUMATED, ))
 
         sort = self.request.GET.get('sort', 'org')
         SORT_FIELDS = {
@@ -670,10 +674,6 @@ class OrgBurialStatsView(SupervisorRequiredMixin, TemplateView):
                     Q(
                       ugh=o,
                       source_type=source_type[0],
-                      status__in=(
-                                  Burial.STATUS_CLOSED,
-                                  Burial.STATUS_EXHUMATED,
-                                 ),
                       annulated=False,
                      )
                 ).count()
