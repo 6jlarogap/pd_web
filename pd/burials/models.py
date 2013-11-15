@@ -180,7 +180,12 @@ class Place(SafeDeleteMixin, GeoPointModel):
         return self.grave_set.count()
 
     def get_available_count(self):
-        return max(0, self.get_graves_count() - self.burial_count())
+        """
+        Deprecated func
+        please use 'self.available_count' which is updated via signals
+        """
+        return self.available_count
+        #return max(0, self.get_graves_count() - self.burial_count())
 
     def set_next_number(self, new_place_for_archive=False):
         if new_place_for_archive:
