@@ -154,7 +154,7 @@ app.directive('address', [
 function() {
 	return {
 		restrict : 'EA',
-        replace:true,
+        //replace:true,
 		controller : 'AddressController',
 		require : 'address',
 		templateUrl : STATIC_APP_URL + '/directive/address/address.html' + version_str,

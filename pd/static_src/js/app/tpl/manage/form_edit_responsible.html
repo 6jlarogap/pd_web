@@ -2,33 +2,44 @@
     <div class="modal-header">
         <h3>Редактировать ответственного</h3>
     </div>
+    
     <div class="modal-body">
-        <dl class="dl-horizontal">
-            <dt>
-                <label for="id_responsible_set-last_name">Фамилия:</label>
-            </dt>
-            <dd>
-                <input name="placeCemetery" id="id_responsible_set-last_name" type="text" ng-model="responsible.last_name"
-                       maxlength="255"/>
-            </dd>
-            <dt>
-                <label for="id_responsible_set-first_name">Имя:</label>
-            </dt>
-            <dd>
-                <input name="placeArea" id="id_responsible_set-first_name" type="text" ng-model="responsible.first_name"
-                       maxlength="255"/>
-            </dd>
-            <dt>
-                <label for="id_responsible_set-middle_name">Отчество:</label>
-            </dt>
-            <dd>
-                <input name="placeRow" id="id_responsible_set-middle_name" type="text" ng-model="responsible.middle_name"
-                       maxlength="255" />
-            </dd>
-        </dl>
-    </div>
+    <tabset>
+    <tab heading="Личные данные">
+	        <dl class="dl-horizontal">
+	            <dt>
+	                <label for="id_responsible_set-last_name">Фамилия:</label>
+	            </dt>
+	            <dd>
+	                <input name="placeCemetery" id="id_responsible_set-last_name" type="text" ng-model="responsible.last_name"
+	                       maxlength="255"/>
+	            </dd>
+	            <dt>
+	                <label for="id_responsible_set-first_name">Имя:</label>
+	            </dt>
+	            <dd>
+	                <input name="placeArea" id="id_responsible_set-first_name" type="text" ng-model="responsible.first_name"
+	                       maxlength="255"/>
+	            </dd>
+	            <dt>
+	                <label for="id_responsible_set-middle_name">Отчество:</label>
+	            </dt>
+	            <dd>
+	                <input name="placeRow" id="id_responsible_set-middle_name" type="text" ng-model="responsible.middle_name"
+	                       maxlength="255" />
+	            </dd>
+	        </dl>
+       		
+    </tab>
+    <tab heading="Адрес">
+    	<address address_class="address_class" address="responsible.address" save_action="saveEditForm"></address>
+    </tab>
+	<tab heading="Телефоны">
+		<phones phones="responsible_phones"></phones>
+    </tab>
+    </tabset>
     <div class="modal-footer">
-        <button class="btn btn-primary" ng-disabled="!responsibleEditForm.$valid" ng-click="saveResponsibleEditForm(responsibleEditForm)">
+        <button class="btn btn-primary" ng-disabled-off="!responsibleEditForm.$valid" ng-click="saveResponsibleEditForm(responsibleEditForm)">
             Сохранить
         </button>
         <button class="btn cancel" ng-click="closeEditForm('isResponsibleEditorOpen')">Закрыть</button>

@@ -43,7 +43,7 @@ app.config(["$httpProvider", function($httpProvider) {
 
 .config(['$httpProvider', function($httpProvider) {
 	/* HTTP Interceptor*/
-	$httpProvider.responseInterceptors.push(['$q', function($q) {
+	$httpProvider.responseInterceptors.push(['$q', '$location' function($q, $location) {
 		return function(promise) {
 			return promise.then(function(response) { // The HTTP request was successful.
 				// response.status >= 200 && response.status <= 299
@@ -57,18 +57,22 @@ app.config(["$httpProvider", function($httpProvider) {
 			            $location.path('/login');
 			            break;
 					case 404:
-						noty({text: 'Объект не найден', timeout:false, type:'warning', layout:'topRight'});
+						//console.log(response);
+						//noty({text: 'Объект не найден', timeout:false, type:'warning', layout:'topRight'});
+						$location.path('/manage/404?title=Объект не найден');
 			            break;
 					case 400:
-						// var key = keys(a)[0]
 						var error = '';
 						for(var i in response.data){
-							if(i) error += '{0}: {1}\n'.format(i, response.data[i]);
+							if(i){ 
+								var error = '{0}: {1}\n'.format(i, response.data[i]);
+			            		noty({text: error, timeout:false, type:'warning', layout:'topRight'});
+			            	}
 						}
-			            noty({text: error, timeout:false, type:'warning', layout:'topRight'});
 			            break;
 					case 500:
 						noty({text: 'Ошибка обработки', type:'warning', layout:'topRight'});
+			            $location.path('/manage/500');
 			            break;
 					default:
 						noty({text: 'Ошибка выполнения', type:'warning', layout:'topRight'});

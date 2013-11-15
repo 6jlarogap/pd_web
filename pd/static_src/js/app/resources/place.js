@@ -1,9 +1,16 @@
 app.factory('Place', function($resource,$routeParams){
-	return $resource('/api/place/:placeID', {placeID: '@id'}, {
+	return $resource('/api/place/:placeID/:action', {placeID: '@id'}, {
 		get: {
 			method: 'GET',
 			params: {
 				format: 'json'
+			},
+			isArray: false
+		},
+		getForm: {
+			method: 'GET',
+			params: {
+				action: 'getform',
 			},
 			isArray: false
 		},

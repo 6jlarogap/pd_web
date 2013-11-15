@@ -27,10 +27,18 @@ function($routeProvider, $locationProvider, $dialogProvider) {
 	    }).when('/manage/cemetery/:cemetery_id/area/:area_id/place/:place_id', {
 	        controller: 'PlaceViewCtrl',
 	        templateUrl: STATIC_TPL_URL+'/manage/place_view.html'+version_str
-	    }).when('/manage/404', {
-	        controller: 'PlaceViewCtrl',
+
+	    }).when('/manage/500', {
+	        controller: 'SupportViewCtrl',
+	        templateUrl: STATIC_TPL_URL+'/page500.html'+version_str
+	    }).when('/manage/500?title=:title', {
+	        controller: 'SupportViewCtrl',
+	        templateUrl: STATIC_TPL_URL+'/page500.html'+version_str
+	    }).when('/manage/404?title=:title', {
+	        controller: 'SupportViewCtrl',
 	        templateUrl: STATIC_TPL_URL+'/page404.html'+version_str
 	    }).otherwise({
+	    	controller: 'SupportViewCtrl',
 	        templateUrl: STATIC_TPL_URL+'/page404.html'+version_str
 	    });
 });

@@ -1,3 +1,3 @@
 app.factory('Phone', function($resource,$routeParams){
-	return $resource('/static/js/app/phones.json');
+	return $resource('/api/alive-person-phone/:phoneID', {phoneID: '@id'})
 });

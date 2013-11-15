@@ -32,6 +32,8 @@ function AreaViewCtrl($scope, $rootScope, $http, $routeParams, $resource, $locat
 
 	$scope.update = function(){
 		Area.get({areaID:$routeParams.area_id,  cemetery_id: $routeParams.cemetery_id}, function(area) {
+			if(!area.id)
+				window.location = '/manage/500?title=Участок не найден';
 			$scope.area = area;
 	        AreaPhoto.query({area_id:area.id}, function(photo){
 	            $scope.area_photo = photo;

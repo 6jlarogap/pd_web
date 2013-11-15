@@ -12,6 +12,8 @@ app.factory('AlivePerson', function($resource,$routeParams){
 		}
 	});
 })
+
+
 .factory('DeadPerson', function($resource,$routeParams){
 	return $resource('/api/dead-person/:personID', {personID: '@id'}, {
 		get: {

@@ -1,5 +1,5 @@
 ﻿app.controller('PlaceViewCtrl', function PlaceViewCtrl($scope, $routeParams, $location, 
-	Place, Cemetery, Grave, GravePhoto, Burial, Area, AlivePerson, Log, ymapData, $dialog) {
+	Place, Cemetery, Grave, GravePhoto, Burial, Area, AlivePerson, Phone, Log, ymapData, $dialog) {
 	"use strict";
 
 	//Constants
@@ -73,50 +73,45 @@
 		};
 		$scope.address_class = 'Place';
 		$scope.address_class_params = item_params;
-		
-		Place.get(item_params, function(result) {
-			$scope.item = result;
-			$scope.item.name = "Кл.?, уч. {1}, ряд {2}, место {3}".format($scope.item.area.name, $scope.item.row || DEFAULT_MESSAGES.no_data, $scope.item.place)
-			if (result.responsible) {
-				AlivePerson.get({
-					personID : result.responsible
-				}, function(result) {
-					$scope.responsible = result;
-				});
-			} else {
+
+
+		Place.getForm(item_params, function(result) {
+			console.log(result);
+			
+			$scope.cemetery = new Cemetery(result.cemetery);
+			$scope.area = new Area(result.area);
+			$scope.item = new Place(result.place);
+			//$scope.responsible_phones = new Phone(result.responsible_phones);
+			/*result.responsible_phones = [
+				{"id": 3, "phone_type": 1, "number":"+1(234)5678901"},
+				{"id": 5, "phone_type": 2, "number":"+1(234)5678901" },
+				{"id": 7, "phone_type": 0, "number":"+1(234)5678901" }
+			];*/
+			
+			$scope.responsible_phones = [];
+			angular.forEach(result.responsible_phones, function(item) {
+                  $scope.responsible_phones.push(new Phone(item));
+            });
+
+			//$scope.burials = new Burial(result.burials);
+			//$scope.graves = new Grave(result.graves);
+			
+			if(result.responsible){
+				$scope.responsible = new AlivePerson(result.responsible);
+			}else{
 				$scope.responsible = new AlivePerson({
 					is_new : true
 				});
 			}
 
-			Area.get({
-				areaID : $routeParams.area_id,
-				cemetery_id : $routeParams.cemetery_id
-			}, function(result) {
-				$scope.area = result;
-
-				Cemetery.get({
-					cemeteryID : $routeParams.cemetery_id
-				}, function(result) {
-					$scope.cemetery = result;
-					$scope.item.name = "Кл. {0}, уч. {1}, ряд {2}, место {3}".format($scope.cemetery.name, $scope.area.name, $scope.item.row || DEFAULT_MESSAGES.no_data, $scope.item.place)
-					$scope.updateGraves();
-				});
-
-			});
-
-			Area.query({
-				cemetery_id : $routeParams.cemetery_id,
-				area_id : $routeParams.area_id
-			}, function(result) {
-				$scope.area_list = result;
-			});
-
-			Cemetery.query({}, function(result) {
-				$scope.cemetery_list = result;
-			});
-
+			$scope.item.name = "Кл. {0}, уч. {1}, ряд {2}, место {3}".format($scope.cemetery.name, $scope.area.name, $scope.item.row || DEFAULT_MESSAGES.no_data, $scope.item.place)
+			$scope.updateGraves();
+		},function(data){
+			if(data.status==404){
+				window.location = '/manage/404?title=Место не найдено';
+			}
 		});
+		
 	};
 
 	$scope.updateGraves = function() {
@@ -243,8 +238,19 @@
 	//Responsible
 	$scope.isResponsibleEditorOpen = false;
 	$scope.saveResponsibleEditForm = function(form) {
-		if (form.$valid) {
-			if ($scope.responsible.is_new) {
+		if (form.$valid || true) { //TODO: check this
+			$scope.item.obj_responsible = $scope.responsible;
+			$scope.item.obj_responsible_phones = $scope.responsible_phones; 
+			
+			$scope.item.$update({
+				cemetery_id : $routeParams.cemetery_id,
+				area_id : $routeParams.area_id
+			}, function() {
+				noty({text: 'Изменения сохранены', type:'success', layout:'topRight'});
+				$scope.update();
+			});
+
+			/*if ($scope.responsible.is_new) {
 				$scope.responsible.$save(function(data) {
 					$scope.item.responsible = data.id;
 					$scope.item.$update({placeID : $routeParams.place_id,
@@ -260,7 +266,9 @@
 					$scope.update();
 					noty({text: 'Изменения сохранены', type:'success', layout:'topRight'});
 				});
-			}
+			}*/
+			
+			
 			$scope.closeEditForm('isResponsibleEditorOpen');
 		}
 	};
