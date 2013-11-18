@@ -296,3 +296,26 @@ class DeathCertificateScan(Files):
     """
     deathcertificate = models.OneToOneField(DeathCertificate)
 
+
+PHONE_TYPE_MOBILE = 0
+PHONE_TYPE_CITY = 1
+PHONE_TYPE_FAX = 2
+
+PHONE_TYPE_CHOICES = (
+    (PHONE_TYPE_MOBILE, _(u"Мобильный")),
+    (PHONE_TYPE_CITY, _(u"Городской")),
+    (PHONE_TYPE_FAX, _(u"Факс"))
+)
+
+
+class Phone(BaseModel):
+    person = models.ForeignKey(AlivePerson, verbose_name=_(u"Живое ФЛ"), null=True, blank=True, limit_choices_to={'type': Org.PROFILE_ZAGS})
+    number = models.CharField(_(u"Номер"), max_length=50, blank=True)
+    phonetype = models.SmallIntegerField(_(u"Тип телефона"), choices=PHONE_TYPE_CHOICES, default=PHONE_TYPE_CITY)
+
+    class Meta:
+        verbose_name = _(u"телефон")
+        verbose_name_plural = _(u"Телефоны")
+
+    def __unicode__(self):
+        return _(u"Телефон: %s") % self.number
