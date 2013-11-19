@@ -358,6 +358,14 @@ $(function() {
         }
     });
 
+    $('.burial-form, .order_form').find(':input').live('keypress', function(e) {
+        if (e.keyCode == 13) {
+            e.preventDefault();
+            $(this).change();
+            return false;
+        }
+    });
+
     $('input[name$=last_name], input[name$=first_name], input[name$=middle_name]').parents('p').addClass('inline');
 
     $('.burial-form,.order_form, .main-form').find(':input').live('blur', function(e) {

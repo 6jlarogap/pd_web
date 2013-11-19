@@ -3,7 +3,7 @@ import os
 import re
 import mimetypes
 
-from django.http import Http404, HttpResponse
+from django.http import Http404, HttpResponse, UnreadablePostError
 from django.views.generic.list import ListView
 from django.views.generic.edit import BaseFormView
 from django.shortcuts import get_object_or_404
@@ -88,7 +88,7 @@ def media_xsendfile(request, path, document_root):
         response['Content-Type'] = mimetypes.guess_type(filename)[0] or 'application/octet-stream'
         # Так в любом случае идет предложение или сохранить, или открыть файл, но
         # не открытие его в браузере:
-        response['Content-Disposition']='attachment;filename="%s"' % os.path.basename(filename).encode('utf-8')
+        # response['Content-Disposition']='attachment;filename="%s"' % os.path.basename(filename).encode('utf-8')
         response['X-Sendfile'] = filename
         response['Content-length'] = os.stat(filename).st_size
         return response
@@ -97,3 +97,13 @@ def media_xsendfile(request, path, document_root):
         #
         from django.views.static import serve
         return serve(request, path, document_root)
+
+def skip_unreadable_post(record):
+    """
+     Filter out UnreadablePostError (raised when a user cancels an upload) from the admin emails
+    """
+    if record.exc_info:
+        exc_type, exc_value = record.exc_info[:2]
+        if isinstance(exc_value, UnreadablePostError):
+            return False
+    return True
