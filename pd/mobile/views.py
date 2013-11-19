@@ -334,8 +334,7 @@ def mobile_upload_grave(request):
             prevGrave = None
             grave = Grave(place = place, grave_number = graveName)
             grave.save()
-            write_log(self.request, grave, _(u"Могила '%d' создана через мобильное приложение") % graveName )
-
+            write_log(request, grave, _(u"Могила '%s' создана через мобильное приложение") % graveName )
             listInsertedGrave.append(grave)
         data = serializers.serialize("json", listInsertedGrave, fields=('place','grave_number'))
         return HttpResponse(data, mimetype='application/json')
