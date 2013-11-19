@@ -165,9 +165,10 @@ def mobile_upload_photo(request):
         listPhoto = []
         try:
             grave = Grave.objects.get(id = graveId)            
-            photo = GravePhoto(grave=grave, lat = lat, lng = lng, comment = '', creator = request.user,
-                               bfile=request.FILES.get['photo'])
+            photo_content = ContentFile(request.FILES['photo'].read())
+            photo = GravePhoto(grave=grave, lat = lat, lng = lng, comment = '', creator = request.user)
             photo.save()
+            photo.bfile.save(request.FILES['photo'].name, photo_content)            
             if lat and lat :
                 grave.lat = lat
                 grave.lng = lng
@@ -334,8 +335,7 @@ def mobile_upload_grave(request):
             prevGrave = None
             grave = Grave(place = place, grave_number = graveName)
             grave.save()
-            write_log(self.request, grave, _(u"Могила '%d' создана через мобильное приложение") % graveName )
-
+            write_log(request, grave, _(u"Могила '%s' создана через мобильное приложение") % graveName )
             listInsertedGrave.append(grave)
         data = serializers.serialize("json", listInsertedGrave, fields=('place','grave_number'))
         return HttpResponse(data, mimetype='application/json')
