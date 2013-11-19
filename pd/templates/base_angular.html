@@ -7,44 +7,35 @@
 
 {% block jquery %}
     <script type="text/javascript" src="{{ STATIC_URL }}jquery/jquery.js"></script>
+	{% assets "js_jquery" %}
+	<script type="text/javascript" src="{{ ASSET_URL }}"></script>{% endassets %}
     <link type="text/css" href="{{ STATIC_URL }}jquery-ui/themes/ui-lightness/jquery-ui.min.css" rel="stylesheet" />
-    <script type="text/javascript" src="{{ STATIC_URL }}jquery-ui/ui/minified/jquery-ui.min.js"></script>
-    <script type="text/javascript" src="{{ STATIC_URL }}jquery-ui/ui/minified/jquery.ui.datepicker.min.js"></script>
-    <script type="text/javascript" src="{{ STATIC_URL }}jquery-ui/ui/minified/i18n/jquery.ui.datepicker-ru.min.js"></script>
 {% endblock %}
 
 
 {% block scripts %}
-	{% assets "css_app" %}
-	<link rel="stylesheet" type="text/css" href="{{ ASSET_URL }}" />{% endassets %}
-	
+	<script type="text/javascript" src="{{ STATIC_URL }}angular/angular.min.js"></script>
+
 	<!-- js_angular -->
 	{% assets "js_angular" %}
 	<script type="text/javascript" src="{{ ASSET_URL }}"></script>{% endassets %}
+
+	<!-- script src="{{ STATIC_URL }}js/jquery/vendor/jquery.ui.widget.js"></script-->
+
+	<!-- FileUpload -->
+	<script src="http://blueimp.github.io/JavaScript-Load-Image/js/load-image.min.js"></script>
+	<script src="http://blueimp.github.io/JavaScript-Canvas-to-Blob/js/canvas-to-blob.min.js"></script>
+	<!--script src="http://blueimp.github.io/Gallery/js/jquery.blueimp-gallery.min.js"></script-->
+	{% assets "js_fileupload" %}
+	<script type="text/javascript" src="{{ ASSET_URL }}"></script>{% endassets %}
+	<!-- EOF FileUpload -->
 	
 	<!-- js_app -->
 	{% assets "js_app" %}
 	<script type="text/javascript" src="{{ ASSET_URL }}"></script>{% endassets %}
 
-
-	<!-- FileUpload -->
-	<script src="{{ STATIC_URL }}js/jquery/vendor/jquery.ui.widget.js"></script>
-	<script src="http://blueimp.github.io/JavaScript-Load-Image/js/load-image.min.js"></script>
-	<script src="http://blueimp.github.io/JavaScript-Canvas-to-Blob/js/canvas-to-blob.min.js"></script>
-	<!--script src="http://blueimp.github.io/Gallery/js/jquery.blueimp-gallery.min.js"></script-->
-	<script src="{{ STATIC_URL }}js/jquery/fileupload/jquery.iframe-transport.js"></script>
-	<script src="{{ STATIC_URL }}js/jquery/fileupload/jquery.fileupload.js"></script>
-	<script src="{{ STATIC_URL }}js/jquery/fileupload/jquery.fileupload-process.js"></script>
-	<script src="{{ STATIC_URL }}js/jquery/fileupload/jquery.fileupload-image.js"></script>
-	<script src="{{ STATIC_URL }}js/jquery/fileupload/jquery.fileupload-audio.js"></script>
-	<script src="{{ STATIC_URL }}js/jquery/fileupload/jquery.fileupload-video.js"></script>
-	<script src="{{ STATIC_URL }}js/jquery/fileupload/jquery.fileupload-validate.js"></script>
-
-	<script src="{{ STATIC_URL }}js/angular3d/modules/jquery.fileupload-angular.js"></script>
-
-	<link type="text/css" rel="stylesheet" href="{{ STATIC_URL }}js/jquery/fileupload/jquery.fileupload-ui.css" />
-	<!-- EOF FileUpload -->
-
+	{% assets "css_app" %}
+	<link rel="stylesheet" type="text/css" href="{{ ASSET_URL }}" />{% endassets %}
 
 	<script type="text/javascript">
 		var csrfToken = '{{ csrf_token }}'; 

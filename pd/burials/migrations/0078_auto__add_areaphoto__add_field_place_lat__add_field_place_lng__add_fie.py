@@ -41,12 +41,12 @@ class Migration(SchemaMigration):
 
         # Adding field 'GravePhoto.dt_created'
         db.add_column('burials_gravephoto', 'dt_created',
-                      self.gf('django.db.models.fields.DateTimeField')(auto_now_add=True, default=datetime.datetime(2013, 10, 21, 0, 0), blank=True),
+                      self.gf('django.db.models.fields.DateTimeField')(auto_now_add=True, default=datetime.datetime(2013, 11, 12, 0, 0), blank=True),
                       keep_default=False)
 
         # Adding field 'GravePhoto.dt_modified'
         db.add_column('burials_gravephoto', 'dt_modified',
-                      self.gf('django.db.models.fields.DateTimeField')(auto_now=True, default=datetime.datetime(2013, 10, 21, 0, 0), blank=True),
+                      self.gf('django.db.models.fields.DateTimeField')(auto_now=True, default=datetime.datetime(2013, 11, 12, 0, 0), blank=True),
                       keep_default=False)
 
 
@@ -181,12 +181,15 @@ class Migration(SchemaMigration):
         'burials.cemetery': {
             'Meta': {'ordering': "['name']", 'object_name': 'Cemetery'},
             'address': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['geo.Location']", 'null': 'True'}),
-            'creator': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['auth.User']", 'null': 'True', 'on_delete': 'models.PROTECT'}),
+            'archive_burial_account_number_required': ('django.db.models.fields.BooleanField', [], {'default': 'True'}),
+            'archive_burial_fact_date_required': ('django.db.models.fields.BooleanField', [], {'default': 'True'}),
+            'creator': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['auth.User']", 'on_delete': 'models.PROTECT'}),
             'dt_created': ('django.db.models.fields.DateTimeField', [], {'auto_now_add': 'True', 'blank': 'True'}),
             'dt_modified': ('django.db.models.fields.DateTimeField', [], {'auto_now': 'True', 'blank': 'True'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'name': ('django.db.models.fields.CharField', [], {'max_length': '255'}),
             'places_algo': ('django.db.models.fields.CharField', [], {'default': "'area'", 'max_length': '255'}),
+            'places_algo_archive': ('django.db.models.fields.CharField', [], {'default': "'manual'", 'max_length': '255'}),
             'time_begin': ('django.db.models.fields.TimeField', [], {'null': 'True', 'blank': 'True'}),
             'time_end': ('django.db.models.fields.TimeField', [], {'null': 'True', 'blank': 'True'}),
             'time_slots': ('django.db.models.fields.TextField', [], {'default': "''", 'blank': 'True'}),
@@ -251,7 +254,7 @@ class Migration(SchemaMigration):
             'Meta': {'ordering': "('graves_count',)", 'unique_together': "(('org', 'graves_count'),)", 'object_name': 'PlaceSize'},
             'graves_count': ('django.db.models.fields.PositiveSmallIntegerField', [], {}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'org': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['users.Org']"}),
+            'org': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['users.Org']", 'on_delete': 'models.PROTECT'}),
             'place_length': ('django.db.models.fields.DecimalField', [], {'max_digits': '5', 'decimal_places': '2'}),
             'place_width': ('django.db.models.fields.DecimalField', [], {'max_digits': '5', 'decimal_places': '2'})
         },
@@ -276,11 +279,12 @@ class Migration(SchemaMigration):
             'placestatus': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['burials.PlaceStatus']"})
         },
         'burials.reason': {
-            'Meta': {'object_name': 'Reason'},
+            'Meta': {'ordering': "('reason_type', 'name')", 'unique_together': "(('org', 'reason_type', 'name'),)", 'object_name': 'Reason'},
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'name': ('django.db.models.fields.CharField', [], {'max_length': '255'}),
+            'org': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['users.Org']", 'on_delete': 'models.PROTECT'}),
             'reason_type': ('django.db.models.fields.CharField', [], {'max_length': '255'}),
-            'text': ('django.db.models.fields.TextField', [], {'default': "''", 'blank': 'True'})
+            'text': ('django.db.models.fields.TextField', [], {'default': "''"})
         },
         'contenttypes.contenttype': {
             'Meta': {'ordering': "('name',)", 'unique_together': "(('app_label', 'model'),)", 'object_name': 'ContentType', 'db_table': "'django_content_type'"},
@@ -363,7 +367,6 @@ class Migration(SchemaMigration):
         },
         'users.org': {
             'Meta': {'object_name': 'Org'},
-            'archive_burial_fact_date_required': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'director': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '255'}),
             'dt_created': ('django.db.models.fields.DateTimeField', [], {'auto_now_add': 'True', 'blank': 'True'}),
             'dt_modified': ('django.db.models.fields.DateTimeField', [], {'auto_now': 'True', 'blank': 'True'}),

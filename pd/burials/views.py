@@ -101,7 +101,7 @@ class CemeteryViewSet(viewsets.ModelViewSet):
             location_id = self.request.GET.get('address_id')
 
             # Если адрес привязан к другой ugh - выйти
-            if Cemetery.objects.exclude(ugh=self.request.user.profile.org).filter(location_id=location_id).count()>0:
+            if Cemetery.objects.exclude(ugh=self.request.user.profile.org).filter(address_id=location_id).count()>0:
                 return Http404()
 
             if location_id:
@@ -195,14 +195,15 @@ class PlaceViewSet(viewsets.ModelViewSet):
         qs = self.model.objects.filter(cemetery=item)
         if self.request.GET.get('area_id'):
             area  = getArea(self.request)
-            qs = qs.filter(area=item)
+            qs = qs.filter(area=area)
         return  qs.all()
 
     def pre_save(self, object):
         item = getArea(self.request) # TODO: check this
         object.area = item
-        write_log(self.request, object, _(u'Место №%s изменено' % object.place))
-        
+        if item.pk:
+            write_log(self.request, object, _(u'Место №%s изменено' % object.place))
+
         # Update grave point coords
         items = Grave.objects.filter(place=object).all()
         for item in items:
@@ -648,10 +649,9 @@ autocomplete_areas = AutocompleteAreas.as_view()
 
 class DeleteBurialfile(LoginRequiredMixin, View):
     def get(self, request, *args, **kwargs):
-        try:
-            burial_file = BurialFiles.objects.get(pk=kwargs['pk'])
-        except BurialFiles.DoesNotExist:
-            return redirect('/')        # foolproof
+        burial_file = get_object_or_404(BurialFiles, pk=self.kwargs['pk'])
+        if not burial_file.burial.is_editable(request.user):
+            raise Http404
         burial_file.delete()
         return redirect('edit_burial', burial_file.burial.pk)
 
@@ -662,7 +662,10 @@ class BurialfileCommentEdit(LoginRequiredMixin, UpdateView):
     form_class = BurialfileCommentEditForm
 
     def get_object(self):
-        return get_object_or_404(BurialFiles, pk=self.kwargs['pk'])
+        obj =  get_object_or_404(BurialFiles, pk=self.kwargs['pk'])
+        if not obj.burial.is_editable(self.request.user):
+            raise Http404
+        return obj
 
     def post(self, request, *args, **kwargs):
         self.object = self.get_object()

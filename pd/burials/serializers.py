@@ -44,7 +44,9 @@ class CemeterySerializer(serializers.ModelSerializer):
     time_end = TimeField()
     class Meta:
         model = Cemetery
-        fields = ('id', 'name', 'work_time', 'area_cnt', 'time_begin', 'time_end', 'places_algo', 'address', 'time_slots') 
+        fields = ('id', 'name', 'work_time', 'area_cnt', 'time_begin', 'time_end', 'places_algo', \
+                  'archive_burial_fact_date_required', 'archive_burial_account_number_required', \
+                  'address', 'time_slots')
 
 
 class AreaSerializer(serializers.ModelSerializer):

@@ -18,6 +18,6 @@ wsgiref==0.1.2
 djangorestframework==2.3.6
 git+https://github.com/hcarvalhoalves/django-rest-thumbnails.git
 django_assets
-jsmin
+rjsmin
 cssmin
 django-recaptcha==0.0.6

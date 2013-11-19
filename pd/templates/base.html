@@ -1,8 +1,5 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="ru" lang="ru">
-
-{% load i18n %}
-
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="ru" lang="ru">{% load i18n assets%}
 <head>
     <title>{% block title %}{% endblock %}</title>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
@@ -41,8 +38,12 @@
     <script type="text/javascript" src="{{ STATIC_URL }}js/jquery.ui.timepicker.js"></script>
 	{% endblock %}
 
-    <link href="{{ STATIC_URL }}css/base.css" rel="stylesheet">
-    <link href="{{ STATIC_URL }}css/print.css" rel="stylesheet" media="print">
+	{% assets "css_static" %}
+	<link rel="stylesheet" type="text/css" href="{{ ASSET_URL }}" />{% endassets %}
+	{% assets "css_print" %}
+	<link rel="stylesheet" type="text/css" href="{{ ASSET_URL }}" media="print" />{% endassets %}
+
+
 
     <!-- favicon for Internet Explorer -->
     <link rel="shortcut icon" href="{{ STATIC_URL }}img/favicon16x16.ico" />
@@ -56,9 +57,9 @@
 
     {% if close %} <script type="text/javascript">top.close();</script> {% endif %}
 
-    <script type="text/javascript" src="{{ STATIC_URL }}js/bootstrap-dropdown.js"></script>
-    <script type="text/javascript" src="{{ STATIC_URL }}js/bootstrap-modal.js"></script>
-    <script type="text/javascript" src="{{ STATIC_URL }}js/bootstrap-typeahead-ajax.js"></script>
+	{% assets "js_bootstrap_static" %}
+	<script type="text/javascript" src="{{ ASSET_URL }}"></script>{% endassets %}
+
     <script type="text/javascript" src="{{ STATIC_URL }}js/utils.js"></script>
     <script type="text/javascript"
             src="{% if request.is_secure %}https{% else %}http{% endif %}://maps.googleapis.com/maps/api/js?libraries=places&key=AIzaSyCr1PI2Q-8hxtstv5kka-8w0xxuPUEHNDA&sensor=true&language=ru">

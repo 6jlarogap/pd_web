@@ -149,7 +149,11 @@
         </dd>
         <dt>{% trans "Правило создания номера места" %}:</dt>
         <dd>
-            {{ b.cemetery.get_places_algo_display|default:"не указано" }}
+            {% if b.is_archive %}
+                {{ b.cemetery.get_places_algo_archive_display }}
+            {% else %}
+                {{ b.cemetery.get_places_algo_display }}
+            {% endif %}
         </dd>
         <dt>{% trans "Ответственный" %}:</dt>
         <dd>
