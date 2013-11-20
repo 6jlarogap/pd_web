@@ -52,7 +52,7 @@ class BaseCemeteryForm(forms.ModelForm):
         if places_algo and \
            places_algo == Cemetery.PLACE_BURIAL_ACCOUNT_NUMBER and \
            self.request.user.profile.org.numbers_algo == Org.NUM_EMPTY:
-            raise forms.ValidationError(_(u"В организации рег. номера захоронений могут быть пустыми"))
+            raise forms.ValidationError(_(u"Указанный способ недопустим, т.к. рег. номера могут быть пустыми"))
         return places_algo
 
     def clean_places_algo_archive(self):
@@ -63,7 +63,7 @@ class BaseCemeteryForm(forms.ModelForm):
         if places_algo_archive and \
            places_algo_archive == Cemetery.PLACE_ARCHIVE_BURIAL_ACCOUNT_NUMBER and \
            self.request.user.profile.org.numbers_algo == Org.NUM_EMPTY:
-            raise forms.ValidationError(_(u"В организации рег. номера захоронений могут быть пустыми"))
+            raise forms.ValidationError(_(u"Указанный способ недопустим, т.к. рег. номера могут быть пустыми"))
         return places_algo_archive
 
 class CemeteryForm(LoggingFormMixin, BaseCemeteryForm):
