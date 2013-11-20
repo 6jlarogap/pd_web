@@ -897,7 +897,7 @@ class BurialCommitForm(BurialForm):
                     except ValueError:
                         raise forms.ValidationError(msg)
 
-            if self.instance.is_archive() or self.request.REQUEST.get('archive') and not acc_number.strip():
+            if (self.instance.is_archive() or self.request.REQUEST.get('archive')) and not acc_number.strip():
                 if not cemetery or cemetery.archive_burial_account_number_required:
                     msg = _(u"Нельзя закрывать архивное захоронение без указания его номера в книге учета")
                     raise forms.ValidationError(msg)
