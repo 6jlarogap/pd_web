@@ -285,7 +285,7 @@ class OrgForm(BaseOrgForm):
                  Q(places_algo_archive=Cemetery.PLACE_ARCHIVE_BURIAL_ACCOUNT_NUMBER)
                 )
             if Cemetery.objects.filter(q).exists():
-                raise forms.ValidationError(_(u"Указанный способ недопустим, т.к. есть кладбища с расстановкой номеров мест по рег. номеру захоронения"))
+                raise forms.ValidationError(_(u"Указанный способ недопустим, т.к. есть кладбища с расстановкой номеров мест (в т.ч. архивных) по рег. номеру захоронения"))
         return numbers_algo
 
     def is_valid(self):
