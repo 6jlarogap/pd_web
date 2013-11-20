@@ -388,6 +388,10 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
         elif not self.instance.is_finished():
             del self.fields['fact_date']
             del self.fields['account_number']
+        if 'account_number' in self.fields and \
+           self.request.user.profile.org.numbers_algo == Org.NUM_EMPTY and \
+           not self.instance.account_number:
+            del self.fields['account_number']
             
         if not self.request.user.profile.is_ugh():
             del self.fields['place_length']
