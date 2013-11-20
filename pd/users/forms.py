@@ -274,6 +274,20 @@ class OrgForm(BaseOrgForm):
         else:
             self.reason_formset = None
 
+    def clean_numbers_algo(self):
+        """
+        Если выбрали рег. номер "ост. пустым", то у этого угх не должно быть кладбищ с местом "по рег. №", 
+        """
+        numbers_algo = self.cleaned_data.get('numbers_algo')
+        if numbers_algo and numbers_algo == Org.NUM_EMPTY:
+            q = Q(ugh=self.request.user.profile.org) & \
+                (Q(places_algo=Cemetery.PLACE_BURIAL_ACCOUNT_NUMBER) |
+                 Q(places_algo_archive=Cemetery.PLACE_ARCHIVE_BURIAL_ACCOUNT_NUMBER)
+                )
+            if Cemetery.objects.filter(q).exists():
+                raise forms.ValidationError(_(u"Имеются кладбища с заполнением номеров мест по рег. номеру захоронения"))
+        return numbers_algo
+
     def is_valid(self):
         return super(OrgForm, self).is_valid() and self.address_form.is_valid() and \
                     (not self.placesize_formset or self.placesize_formset.is_valid()) and \
