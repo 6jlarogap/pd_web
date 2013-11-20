@@ -12,7 +12,7 @@ from django.db.models.query_utils import Q
 from geo.forms import LocationForm
 # from geo.models import DFiasAddrobj
 from pd.forms import ChildrenJSONMixin, LoggingFormMixin, OurReCaptchaField
-from burials.models import Cemetery, PlaceSize, Reason
+from burials.models import Cemetery, PlaceSize, Reason, Burial
 
 from users.models import Profile, ProfileLORU, Org, BankAccount, RegisterProfile
 
@@ -110,7 +110,7 @@ class UserProfileForm(ChildrenJSONMixin, forms.ModelForm):
 
     class Meta:
         model = Profile
-        exclude = ['org', 'is_agent', 'region_fias', 'country', 'user']
+        fields = ('user_last_name', 'user_first_name', 'user_middle_name', 'cemetery', 'area', )
 
     def __init__(self, *args, **kwargs):
         super(UserProfileForm, self).__init__(*args, **kwargs)
@@ -274,6 +274,20 @@ class OrgForm(BaseOrgForm):
         else:
             self.reason_formset = None
 
+    def clean_numbers_algo(self):
+        """
+        Если выбрали рег. номер "ост. пустым", то у этого угх не должно быть кладбищ с местом "по рег. №", 
+        """
+        numbers_algo = self.cleaned_data.get('numbers_algo')
+        if numbers_algo and numbers_algo == Org.NUM_EMPTY:
+            q = Q(ugh=self.request.user.profile.org) & \
+                (Q(places_algo=Cemetery.PLACE_BURIAL_ACCOUNT_NUMBER) |
+                 Q(places_algo_archive=Cemetery.PLACE_ARCHIVE_BURIAL_ACCOUNT_NUMBER)
+                )
+            if Cemetery.objects.filter(q).exists():
+                raise forms.ValidationError(_(u"Имеются кладбища с заполнением номеров мест по рег. номеру захоронения"))
+        return numbers_algo
+
     def is_valid(self):
         return super(OrgForm, self).is_valid() and self.address_form.is_valid() and \
                     (not self.placesize_formset or self.placesize_formset.is_valid()) and \
@@ -354,8 +368,11 @@ class RegisterForm(forms.ModelForm):
 
 class OrgBurialStatsForm(forms.Form):
 
+    EMPTY = (('', _(u'Закрытые и эксгумированные')),)
+
     date_from = forms.DateField(required=False, label=_(u"С"))
     date_to = forms.DateField(required=False, label=_(u"по"))
+    status = forms.TypedChoiceField(required=False, label=_(u"Статус"), choices=EMPTY + Burial.STATUS_CHOICES)
 
 class SupportForm(forms.Form):
     subject = forms.CharField(label=_(u'Тема (необязательно)'), max_length=100, required=False)

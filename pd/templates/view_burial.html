@@ -97,7 +97,7 @@
                     <dd>{% trans "Дата" %}*: {{ dc.release_date|default_if_none:"" }}</dd>
                     <dd>{% trans "Скан" %}:
                     {% if dc.deathcertificatescan %}
-                        <a href="/media/{{ dc.deathcertificatescan.bfile }}">{% trans "имеется" %}</a></dd>
+                        <a href="/media/{{ dc.deathcertificatescan.bfile }}" target="_blank">{% trans "имеется" %}</a></dd>
                     {% else %}
                         {% trans "отсутствует" %}
                     {% endif %}
@@ -150,7 +150,7 @@
         <dt>{% trans "Правило создания номера места" %}:</dt>
         <dd>
             {% if b.is_archive %}
-                {{ b.cemetery.get_places_algo_achive_display }}
+                {{ b.cemetery.get_places_algo_archive_display }}
             {% else %}
                 {{ b.cemetery.get_places_algo_display }}
             {% endif %}
@@ -176,7 +176,7 @@
         <dt>{% trans "Файлы" %}:</dt>
         {% for f in b.burialfiles_set.all %}
             <dd>{{ forloop.counter }}. &nbsp;
-            <a href="/media/{{ f.bfile }}">{{ f.comment|default:"(без описания)" }}</a></dd>
+            <a href="/media/{{ f.bfile }}" target="_blank">{{ f.comment|default:"(без описания)" }}</a></dd>
         {% empty %}
             <dd>{% trans "отсутствуют" %}</dd>
         {% endfor %}
