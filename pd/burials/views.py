@@ -17,6 +17,7 @@ from pd.views import RequestToFormMixin
 from burials.forms import CemeteryForm, AreaFormset, PlaceEditForm, AddOrgForm, AreaMergeForm, BurialfileCommentEditForm
 from burials.models import Cemetery, Place, Area, BurialFiles, Grave, Burial, AreaPhoto, GravePhoto, ExhumationRequest, AreaPurpose
 from burials.burials_views import *
+#from logs.models import write_log, log_object
 from logs.models import write_log
 from users.models import Profile, Org
 
@@ -204,7 +205,12 @@ class PlaceViewSet(viewsets.ModelViewSet):
         object.area = item
         if item.pk:
             write_log(self.request, object, _(u'Место №%s изменено' % object.place))
-
+        """try:
+            old = self.model.objects.get(pk=object.pk)
+        except self.model.DoesNotExist:
+            old = None
+        log_object(self.request, obj=object, old=old, new=object)
+        """
         # Update grave point coords
         items = Grave.objects.filter(place=object).all()
         for item in items:
@@ -425,23 +431,6 @@ class GravePhotoViewSet(viewsets.ModelViewSet):
             item = get_object_or_404(Grave, id=id)
             qs = qs.filter(grave=item)
         return  qs.all()
-
-    def pre_save(self, object):
-        # Update grave point coords
-        grave = object.grave
-        res = GravePhoto.objects.filter(grave=grave, lng__isnull=False, lat__isnull=False).\
-            aggregate(lng=Avg('lng'), lat=Avg('lat')) #, cnt=Count('id')
-        grave.lng = res["lng"]
-        grave.lat = res["lat"]
-        grave.save()
-    
-        # Update place point coords
-        place = object.grave.place
-        res = Grave.objects.filter(place=place, lng__isnull=False, lat__isnull=False).\
-            aggregate(lng=Avg('lng'), lat=Avg('lat')) #, cnt=Count('id')
-        place.lng = res["lng"]
-        place.lat = res["lat"]
-        place.save()
 
 
 class ExhumationRequestViewSet(viewsets.ModelViewSet):

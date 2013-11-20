@@ -1012,3 +1012,25 @@ def relocate_grave_numbers(sender, instance, **kwargs):
         row.save()
 
 models.signals.post_delete.connect(relocate_grave_numbers, sender=Grave)
+
+
+
+def update_grave_place_coords(sender, instance, **kwargs):
+    #if 'created' in kwargs.keys() and kwargs['created']:
+    # Update grave point coords
+    grave = instance.grave
+    res = GravePhoto.objects.filter(grave=grave, lng__isnull=False, lat__isnull=False).\
+        aggregate(lng=Avg('lng'), lat=Avg('lat')) #, cnt=Count('id')
+    grave.lng = res["lng"]
+    grave.lat = res["lat"]
+    grave.save()
+
+    # Update place point coords
+    place = instance.grave.place
+    res = Grave.objects.filter(place=place, lng__isnull=False, lat__isnull=False).\
+        aggregate(lng=Avg('lng'), lat=Avg('lat')) #, cnt=Count('id')
+    place.lng = res["lng"]
+    place.lat = res["lat"]
+    place.save()
+
+models.signals.post_save.connect(update_grave_place_coords, sender=GravePhoto)
