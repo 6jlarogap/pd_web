@@ -135,7 +135,7 @@ INSTALLED_APPS = (
     'mobile',
 )
 
-from pd.views import skip_unreadable_post
+from pd.logging import skip_unreadable_post
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
