@@ -399,7 +399,11 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
 
         if not self.instance.pk:
             self.initial['burial_container'] = Burial.CONTAINER_COFFIN
-            self.initial['burial_type'] = Burial.BURIAL_NEW
+            if self.request.REQUEST.get('place_id'):
+                # Вызов из карточки места
+                self.initial['burial_type'] = Burial.BURIAL_ADD
+            else:
+                self.initial['burial_type'] = Burial.BURIAL_NEW
             if self.request.user.profile.cemetery:
                 self.initial['cemetery'] = self.request.user.profile.cemetery
             if self.request.user.profile.area:
