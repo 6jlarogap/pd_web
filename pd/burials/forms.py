@@ -924,8 +924,8 @@ class BurialCommitForm(BurialForm):
                 msg = _(u"Не указано место для закрытого участка. Нельзя отправлять на согласование")
                 raise forms.ValidationError(msg)
         elif not place_number.strip() and \
-             self.request.user.profile.org.numbers_algo == Org.NUM_EMPTY and \
              cemetery and \
+             cemetery.ugh.numbers_algo == Org.NUM_EMPTY and \
              cemetery.places_algo == Cemetery.PLACE_BURIAL_ACCOUNT_NUMBER:
             if is_ugh:
                 msg = _(u"Номер места не может быть пуст, если формируется из номера захоронения, а он пустой (см. свойства организации)")
