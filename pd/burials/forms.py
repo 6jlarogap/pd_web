@@ -399,7 +399,11 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
 
         if not self.instance.pk:
             self.initial['burial_container'] = Burial.CONTAINER_COFFIN
-            self.initial['burial_type'] = Burial.BURIAL_NEW
+            if self.request.REQUEST.get('place_id'):
+                # Вызов из карточки места
+                self.initial['burial_type'] = Burial.BURIAL_ADD
+            else:
+                self.initial['burial_type'] = Burial.BURIAL_NEW
             if self.request.user.profile.cemetery:
                 self.initial['cemetery'] = self.request.user.profile.cemetery
             if self.request.user.profile.area:
@@ -920,8 +924,8 @@ class BurialCommitForm(BurialForm):
                 msg = _(u"Не указано место для закрытого участка. Нельзя отправлять на согласование")
                 raise forms.ValidationError(msg)
         elif not place_number.strip() and \
-             self.request.user.profile.org.numbers_algo == Org.NUM_EMPTY and \
              cemetery and \
+             cemetery.ugh.numbers_algo == Org.NUM_EMPTY and \
              cemetery.places_algo == Cemetery.PLACE_BURIAL_ACCOUNT_NUMBER:
             if is_ugh:
                 msg = _(u"Номер места не может быть пуст, если формируется из номера захоронения, а он пустой (см. свойства организации)")
