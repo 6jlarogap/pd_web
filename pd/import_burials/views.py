@@ -6,8 +6,9 @@ from django.views.generic.base import TemplateView, View
 from django.utils.translation import ugettext_lazy as _
 
 from import_burials.forms import ImportCsvForm, ImportCsvMinskForm
-from import_burials.models import do_import_orgs, do_import_burials, do_import_services, do_import_orders, do_import_banks, do_import_docs, do_import_dcs
-
+from import_burials.models import do_import_orgs, do_import_burials, do_import_services, \
+                                  do_import_orders, do_import_banks, do_import_docs, do_import_dcs, \
+                                  do_import_burials_minsk
 
 class ImportMinskView(TemplateView):
     template_name = 'import_minsk.html'
@@ -21,7 +22,9 @@ import_minsk = ImportMinskView.as_view()
 
 class ImportBurialsMinskView(View):
     def post(self, request, *args, **kwargs):
-        # real_i, dupes_i = do_import_burials(request.FILES['burials-csv'], user=request.user)
+        real_i, dupes_i = do_import_burials_minsk(request.FILES['burials-csv'],
+                                                  request.POST['burials-cemetery'],
+                                                  user=request.user)
         messages.success(request, _(u"Импорт успешен, %s записей, игнорировано %s записей") % (0, 0))
         return redirect('import_minsk')
 

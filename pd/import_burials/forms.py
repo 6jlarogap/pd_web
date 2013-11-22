@@ -7,5 +7,5 @@ class ImportCsvForm(forms.Form):
     csv = forms.FileField(label=_(u"Файл CSV"))
 
 class ImportCsvMinskForm(forms.Form):
-    cemetery = forms.CharField(label=_(u"Кладбище"))
-    csv = forms.FileField(label=_(u"Файл CSV"))
+    cemetery = forms.CharField(label=_(u"Кладбище"), required=True)
+    csv = forms.FileField(label=_(u"Файл CSV"), required=True)

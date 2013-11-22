@@ -186,6 +186,22 @@ def import_dead_person(data):
         return dp
 
 @transaction.commit_on_success
+def do_import_burials_minsk(csv_fileobj, cemetery, user):
+    csvreader = UnicodeReader(csv_fileobj)
+    real_i = dupes_i = 0
+    for i, row in enumerate(csvreader):
+        if i % 1000 == 0:
+            transaction.commit()
+            print 'Processed', i
+    csvreader = UnicodeReader(csv_fileobj)
+    real_i = dupes_i = 0
+    for i, row in enumerate(csvreader):
+        if i % 1000 == 0:
+            transaction.commit()
+            print 'Processed', i
+    return real_i, dupes_i
+    
+@transaction.commit_on_success
 def do_import_burials(csv_fileobj, user):
     csvreader = UnicodeReader(csv_fileobj)
     try:
