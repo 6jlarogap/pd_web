@@ -314,6 +314,8 @@ class Grave(GeoPointModel):
 
     place = models.ForeignKey(Place, verbose_name=_(u"Место"))
     grave_number = models.PositiveSmallIntegerField(_(u"Номер"), default=1)
+    is_wrong_fio = models.BooleanField(_(u"Неверное ФИО"), default=False)
+    is_military = models.BooleanField(_(u"Воинская могила"), default=False)
 
     def __unicode__(self):
         return _(u'Могила. место: %s номер:%d') % (self.place, self.grave_number)
