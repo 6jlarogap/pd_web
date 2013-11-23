@@ -143,18 +143,23 @@ INSTALLED_APPS = (
     'django_assets',
 )
 
+from pd.logging import skip_unreadable_post
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
     'filters': {
         'require_debug_false': {
             '()': 'django.utils.log.RequireDebugFalse'
-        }
+        },
+        'skip_unreadable_posts': {
+            '()': 'django.utils.log.CallbackFilter',
+            'callback': skip_unreadable_post,
+        },
     },
     'handlers': {
         'mail_admins': {
             'level': 'ERROR',
-            'filters': ['require_debug_false'],
+            'filters': ['require_debug_false', 'skip_unreadable_posts', ],
             'class': 'django.utils.log.AdminEmailHandler'
         }
     },

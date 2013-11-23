@@ -357,7 +357,7 @@ class CustomClearableFileInput(ClearableFileInput):
 
         if value and hasattr(value, "url"):
             template = self.template_with_initial
-            substitutions['initial'] = (u'<a href="%s">%s</a>'
+            substitutions['initial'] = (u'<a href="%s" target="_blank">%s</a>'
                                         % (escape(value.url),
                                            "("+_(u"просмотр")+")"))
             if not self.is_required:
