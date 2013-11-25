@@ -316,8 +316,6 @@ class Grave(GeoPointModel):
     grave_number = models.PositiveSmallIntegerField(_(u"Номер"), default=1)
     is_wrong_fio = models.BooleanField(_(u"Неверное ФИО"), default=False)
     is_military = models.BooleanField(_(u"Воинская могила"), default=False)
-    lat = models.FloatField(_(u"Широта"), blank=True, null=True)
-    lng = models.FloatField(_(u"Долгота"), blank=True, null=True)
 
     def __unicode__(self):
         return _(u'Могила. место: %s номер:%d') % (self.place, self.grave_number)
