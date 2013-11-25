@@ -43,6 +43,7 @@ def main():
                     (APACHE2_USER, project[VENV]), )
             do_cmd('sudo -u %s %s/bin/python ./manage.py collectstatic --noinput' % 
                     (APACHE2_USER, project[VENV]), )
+            do_cmd(APACHE2_RELOAD)
 
 def do_cmd(cmd):
     outp = subprocess.check_output(cmd,
