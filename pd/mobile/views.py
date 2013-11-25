@@ -113,7 +113,7 @@ class MobileGetGrave(UGHRequiredMixin, View):
             queryGrave &= Q(dt_modified__gte = argSyncDate)        
         listGrave = Grave.objects.filter(queryGrave).order_by('id')
         
-        data = serializers.serialize("json", listGrave, fields=('place','grave_number'))
+        data = serializers.serialize("json", listGrave, fields=('place','grave_number','is_military','is_wrong_fio'))
         return HttpResponse(data, mimetype='application/json')
         
 mobile_get_grave = MobileGetGrave.as_view()
@@ -321,22 +321,30 @@ def mobile_upload_grave(request):
         graveName = request.POST['graveName']
         graveId = int(request.POST['graveId'])
         placeId = int(request.POST['placeId'])
+        isWrongFIO = False
+        isMilitary = False
+        if int(request.POST['isWrongFIO']) == 1 :
+            isWrongFIO = True
+        if int(request.POST['isMilitary']) == 1 :
+            isMilitary = True		
         listInsertedGrave = []
         try:
             place = Place.objects.get(pk = placeId)
             prevGrave = Grave.objects.get(pk = graveId)
-            if prevGrave.grave_number != graveName or prevGrave.place != place:
+            if prevGrave.grave_number != graveName or prevGrave.place != place or prevGrave.is_wrong_fio != isWrongFIO or prevGrave.is_military != isMilitary:
                 prevGrave.grave_number = graveName
                 prevGrave.place = place
+                prevGrave.is_military = isMilitary
+                prevGrave.is_wrong_fio = isWrongFIO
                 prevGrave.save()
         except Place.DoesNotExist:
             raise Http404            
         except Grave.DoesNotExist:
             prevGrave = None
-            grave = Grave(place = place, grave_number = graveName)
+            grave = Grave(place = place, grave_number = graveName, is_military = isMilitary, is_wrong_fio = isWrongFIO)
             grave.save()
             write_log(request, grave, _(u"Могила '%s' создана через мобильное приложение") % graveName )
             listInsertedGrave.append(grave)
-        data = serializers.serialize("json", listInsertedGrave, fields=('place','grave_number'))
+        data = serializers.serialize("json", listInsertedGrave, fields=('place','grave_number','is_military','is_wrong_fio'))
         return HttpResponse(data, mimetype='application/json')
     return render_to_response('mobile_upload_grave.html', {'message': _(u"Загрузите название могилы:")})
