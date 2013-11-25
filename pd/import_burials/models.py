@@ -1,4 +1,5 @@
 # coding=utf-8
+import os
 import copy
 import csv
 import cStringIO
@@ -6,6 +7,7 @@ import datetime
 import gc
 import json
 import codecs
+from django.conf import settings
 from django.contrib.auth.models import User
 from django.db import transaction, connection
 from django.http import HttpRequest
@@ -21,6 +23,7 @@ from pd.models import UnclearDate
 from persons.models import AlivePerson, DeadPerson, PersonID, IDDocumentType, DocumentSource, DeathCertificate
 from users.models import Org, Profile, Dover, BankAccount
 
+csv.register_dialect("4minsk", escapechar="\\", quoting=csv.QUOTE_ALL, doublequote=False)
 
 class UTF8Recoder:
     def __init__(self, f, encoding):
@@ -187,18 +190,22 @@ def import_dead_person(data):
 
 @transaction.commit_on_success
 def do_import_burials_minsk(csv_fileobj, cemetery, user):
-    csvreader = UnicodeReader(csv_fileobj)
     real_i = dupes_i = 0
+    # Будут несколько проходов по считанному файлу импорта, надо бы сохранить
+    tmp_file = os.path.join(settings.MEDIA_ROOT, 'csv_minsk.tmp')
+    f = open(tmp_file, 'w')
+    f.write(csv_fileobj.read())
+    f.close()
+    f = open(tmp_file, 'r')
+    csvreader = UnicodeReader(f, dialect="4minsk")
+    print '1-st step: new burials: burials, kid burials, honour burials'
     for i, row in enumerate(csvreader):
         if i % 1000 == 0:
             transaction.commit()
-            print 'Processed', i
-    csvreader = UnicodeReader(csv_fileobj)
-    real_i = dupes_i = 0
-    for i, row in enumerate(csvreader):
-        if i % 1000 == 0:
-            transaction.commit()
-            print 'Processed', i
+            print 'Processed', i+1
+    if i % 1000 != 0:
+        print 'Processed', i+1
+    os.remove(tmp_file)
     return real_i, dupes_i
     
 @transaction.commit_on_success
