@@ -1,8 +1,8 @@
 app.controller('PhonesController', ['$scope', 'Phone', function($scope, Phone) {
 	var self = this;
 
+    var DEFAULT_PHONETYPE = PHONE_TYPE_MOBILE;
 	$scope.PHONETYPE_CHOICES = PHONETYPE_CHOICES;
-            
     $scope.isPhoneEditorOpen = false;
     $scope.isPhoneAddOpen = false;
     $scope.isStaticBlock = false;
@@ -27,7 +27,7 @@ app.controller('PhonesController', ['$scope', 'Phone', function($scope, Phone) {
 			$scope.isPhoneEditOpen = true;
             $scope.isStaticBlock = true;
         }else{
-            $scope.phone = new Phone({is_new:true});
+            $scope.phone = new Phone({is_new:true, phonetype:DEFAULT_PHONETYPE});
             $scope.isPhoneAddOpen = true;
             $scope.isStaticBlock = true;
         }

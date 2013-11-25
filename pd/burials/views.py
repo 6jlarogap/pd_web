@@ -118,6 +118,8 @@ class CemeteryViewSet(viewsets.ModelViewSet):
             old = self.model.objects.get(pk=object.pk)
         except self.model.DoesNotExist:
             old = None
+        except AttributeError:
+            old = None
         log_object(self.request, obj=object, old=old, new=object, reason=_(u'Кладбище изменено'))
         #write_log(self.request, obj, _(u'Кладбище изменено'))
 

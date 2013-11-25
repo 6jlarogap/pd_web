@@ -31,7 +31,9 @@ function CemeteryViewCtrl($scope, $http, $resource, $location,  $routeParams,
         	{cellTemplate:tplPurpose, displayName: 'Назначение'},
         	{field: 'places_count', displayName: 'Кол-во могил в месте'},
             {displayName:'Действие',cellTemplate:tplButtonEdit}
-        ]
+        ],
+        enableRowReordering:true,
+        sortInfo: { fields: ['name'], directions: ['asc']}
     };
 
 	$scope.PLACE_TYPES = PLACE_TYPES;	
@@ -102,9 +104,11 @@ function CemeteryViewCtrl($scope, $http, $resource, $location,  $routeParams,
 	$scope.isEditorOpen = false;
 	$scope.openEditForm = function() {
 		$scope.isEditorOpen = true;
+		$('body').css('overflow-y','hidden');
 	};
 	$scope.closeEditForm = function() {
 		$scope.isEditorOpen = false;
+		$('body').css('overflow-y','auto');
 	};
 	$scope.saveEditForm = function() {
 		$scope.cemetery.time_begin = date2time($scope.cemetery.time_begin);
@@ -130,10 +134,12 @@ function CemeteryViewCtrl($scope, $http, $resource, $location,  $routeParams,
   
     $scope.openAddModal = function () {
         $scope.addModalOpened = true;
+        $('body').css('overflow-y','hidden');
     };
 
     $scope.closeAddModal = function () {
         $scope.addModalOpened = false;
+        $('body').css('overflow-y','auto');
     };
 	$scope.addElement = function(){
 		$scope.area.cemetery = $routeParams.cemetery_id;

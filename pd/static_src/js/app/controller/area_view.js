@@ -63,7 +63,9 @@ function AreaViewCtrl($scope, $rootScope, $http, $routeParams, $resource, $locat
         	{field: 'place', displayName: 'Место'},
         	{displayName:'Ответственный', field:'responsible_txt'}, 
             {displayName:'Действие',cellTemplate:tplButtonEdit}
-        ]
+        ],
+        enableRowReordering:true,
+        sortInfo: { fields: ['row', 'place'], directions: ['asc', 'asc']}
     };
 
 	// Diallog
@@ -74,9 +76,11 @@ function AreaViewCtrl($scope, $rootScope, $http, $routeParams, $resource, $locat
 	$scope.isEditorOpen = false;
 	$scope.openEditForm = function() {
 		$scope.isEditorOpen = true;
+		$('body').css('overflow-y','hidden');
 	};
 	$scope.closeEditForm = function() {
 		$scope.isEditorOpen = false;
+		$('body').css('overflow-y','auto');
 	};
 	$scope.saveEditForm = function() {
 		$scope.area.cemetery_id = $routeParams.cemetery_id;
@@ -99,10 +103,12 @@ function AreaViewCtrl($scope, $rootScope, $http, $routeParams, $resource, $locat
   
     $scope.openAddModal = function () {
         $scope.addModalOpened = true;
+        $('body').css('overflow-y','hidden');
     };
 
     $scope.closeAddModal = function () {
         $scope.addModalOpened = false;
+        $('body').css('overflow-y','auto');
     };
 	$scope.addElement = function(){
 		$scope.closeAddModal();

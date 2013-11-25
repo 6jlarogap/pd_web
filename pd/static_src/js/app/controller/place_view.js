@@ -161,6 +161,7 @@
 
 	$scope.openEditForm = function(form, data) {
 		$scope[form] = true;
+		$('body').css('overflow-y','hidden');
 		switch (form) {
 			case 'isBurialEditorOpen':
 				if (data) {
@@ -207,6 +208,7 @@
 
 	$scope.closeEditForm = function(form) {
 		$scope[form] = false;
+		$('body').css('overflow-y','auto');
 	};
 
 	//Place

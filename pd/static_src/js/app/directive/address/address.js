@@ -52,7 +52,7 @@ function($scope, $dialog, $http, $resource, $parse, Place) {
 		$scope.item.city = data.city;
 		$scope.item.street = data.street;
 		$scope.item.post_index = data.postal_code;
-		$scope.item.house = data.house;
+		//$scope.item.house = data.house;
 		$scope.item.flat = data.flat;
 		$("input.country").val($scope.item.country);
 		$("input.region").val($scope.item.region);

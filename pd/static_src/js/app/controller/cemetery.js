@@ -23,7 +23,10 @@ function CemeteryCtrl($scope, $http, $location, $resource) {
         	{field: 'work_time', displayName: 'Часы работы'},
         	{field: 'area_cnt', displayName: 'Участков'},
             {displayName:'Действие',cellTemplate:tplButtonEdit}
-        ]
+        ],
+        enableRowReordering:true,
+        showFilter:true,
+        sortInfo: { fields: ['name'], directions: ['asc']}
     };
 	
 	
@@ -45,11 +48,13 @@ function CemeteryCtrl($scope, $http, $location, $resource) {
     };
   
     $scope.openAddModal = function () {
+		$('body').css('overflow-y','hidden');
         $scope.addModalOpened = true;
     };
 
     $scope.closeAddModal = function () {
         $scope.addModalOpened = false;
+		$('body').css('overflow-y','auto');
     };
 	$scope.addElement = function(){
 		var data = {
