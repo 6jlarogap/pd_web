@@ -124,7 +124,7 @@ class Area(BaseModel):
     )
 
     cemetery = models.ForeignKey(Cemetery, verbose_name=_(u"Кладбище"), on_delete=models.PROTECT)
-    name = models.CharField(_(u"Название"), max_length=255, blank=True)
+    name = models.CharField(_(u"Название"), max_length=255)
     availability = models.CharField(_(u"Открытость"), max_length=32, choices=AVAILABILITY_CHOICES, null=True)
     purpose = models.ForeignKey(AreaPurpose, verbose_name=_(u"Назначение"), null=True, on_delete=models.PROTECT)
     places_count = models.PositiveIntegerField(_(u"Макс. кол-во могил в месте"), default=1)
@@ -133,7 +133,7 @@ class Area(BaseModel):
         verbose_name = _(u"Участок")
         verbose_name_plural = _(u"Участки")
         ordering = ['name']
-        #unique_together = ('cemetery', 'name',)
+        unique_together = ('cemetery', 'name',)
 
     def __unicode__(self):
         return _(u'%s (%s, %s, %s могил)') % (
@@ -319,6 +319,8 @@ class Grave(GeoPointModel):
 
     place = models.ForeignKey(Place, verbose_name=_(u"Место"))
     grave_number = models.PositiveSmallIntegerField(_(u"Номер"), default=1)
+    is_wrong_fio = models.BooleanField(_(u"Неверное ФИО"), default=False)
+    is_military = models.BooleanField(_(u"Воинская могила"), default=False)
 
     def __unicode__(self):
         return _(u'Могила. место: %s номер:%d') % (self.place, self.grave_number)
