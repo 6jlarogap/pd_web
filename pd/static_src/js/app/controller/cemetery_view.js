@@ -1,7 +1,7 @@
-﻿//'use strict';
+﻿var qqq;//'use strict';
 app.controller('CemeteryViewCtrl',
 function CemeteryViewCtrl($scope, $http, $resource, $location,  $routeParams, 
-						Cemetery, Area, AreaPurpose, Place, ymapData) {
+						Cemetery, Area, AreaPurpose, Place, Phone, ymapData) {
     "use strict";
 
 	var tplButtonEdit = '<a class="btn btn-small" ng-href="/manage/cemetery/'+$routeParams.cemetery_id+
@@ -45,14 +45,20 @@ function CemeteryViewCtrl($scope, $http, $resource, $location,  $routeParams,
 		$scope.address_class_params ={
 			cemeteryID : $routeParams.cemetery_id
 		};
-		Cemetery.get({cemeteryID:$routeParams.cemetery_id}, function(result) {
+		Cemetery.getForm({cemeteryID:$routeParams.cemetery_id}, function(result) {
 			if(result.status === 404){
 	            $location.path('/manage/404');
                 $location.replace();
 		    }
-			$scope.cemetery = result;
+			$scope.cemetery = new Cemetery(result.cemetery);
 			$scope.cemetery.time_begin = new Date('0 '+ $scope.cemetery.time_begin);
 			$scope.cemetery.time_end = new Date('0 '+ $scope.cemetery.time_end);
+			
+			$scope.phones = [];
+			angular.forEach(result.phones, function(item) {
+                  $scope.phones.push(new Phone(item));
+            });
+
 		});
 
 		Area.list({cemetery_id: $routeParams.cemetery_id}, function(result) {
@@ -103,6 +109,7 @@ function CemeteryViewCtrl($scope, $http, $resource, $location,  $routeParams,
 	$scope.saveEditForm = function() {
 		$scope.cemetery.time_begin = date2time($scope.cemetery.time_begin);
 		$scope.cemetery.time_end = date2time($scope.cemetery.time_end);
+		$scope.cemetery.obj_phones = $scope.phones;
 		$scope.cemetery.$update(function(){
 			$scope.closeEditForm();
 			$scope.update();

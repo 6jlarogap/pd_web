@@ -1,10 +1,10 @@
-﻿//'use strict';
-var APP_VERSION = '0.1.0-11',
+// 'use strict';
+var APP_VERSION = '0.1.0-12',
 	version_str = '?v='+APP_VERSION,
 	test, qqq;
 
 var app = angular.module('angularPD', ['ngGrid', 'ngCookies', 'ngResource', 'ui.bootstrap', 
-	'ui.bootstrap.dialog', 'googleObjects', 'blueimp.fileupload', 'ymaps'], //'pd.address',  
+	'ui.bootstrap.dialog', 'googleObjects', 'blueimp.fileupload', 'ui.mask', 'ymaps'], //'pd.address',  
 function($routeProvider, $locationProvider, $dialogProvider) {
 	$locationProvider.html5Mode(true);
     $dialogProvider.options({

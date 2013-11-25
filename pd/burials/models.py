@@ -12,7 +12,7 @@ from django.conf import settings
 from pd.models import UnclearDateModelField, BaseModel, Files, Photo, GetLogsMixin, validate_gt0
 
 
-from persons.models import DeadPerson, SafeDeleteMixin, DeathCertificate
+from persons.models import DeadPerson, SafeDeleteMixin, DeathCertificate, PhonesMixin
 from reports.models import Report
 from users.models import Org, Profile, Dover, ProfileLORU
 from logs.models import Log
@@ -20,7 +20,7 @@ from logs.models import Log
 from geo.models import GeoPointModel
 
 
-class Cemetery(GetLogsMixin, BaseModel):
+class Cemetery(GetLogsMixin, BaseModel, PhonesMixin):
     PLACE_AREA = 'area'
     PLACE_ROW = 'row'
     PLACE_CEM_YEAR = 'cem_year'

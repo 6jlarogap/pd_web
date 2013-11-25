@@ -64,6 +64,10 @@ app.controller('PhonesController', ['$scope', 'Phone', function($scope, Phone) {
             $scope.isStaticBlock = false;
         }
 	};
+	
+	if(!$scope.phones.length){
+		$scope.open();
+	}
 }]);
 
 

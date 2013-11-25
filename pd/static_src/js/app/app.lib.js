@@ -39,4 +39,4 @@ function date2time(val){
 	 	m = '0'+m;
 	 }
 	return h+':'+m;
-}
+};

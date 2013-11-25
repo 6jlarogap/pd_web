@@ -28,6 +28,7 @@
     "select2": "~3.4.3",
     "angular-bootstrap": "0.5.0",
     "jquery-timepicker": "*",
-    "noty": "~2.1.0"
+    "noty": "~2.1.0",
+    "angular-ui-utils": "~0.0.4"
   }
 }

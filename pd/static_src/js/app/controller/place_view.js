@@ -76,17 +76,10 @@
 
 
 		Place.getForm(item_params, function(result) {
-			console.log(result);
 			
 			$scope.cemetery = new Cemetery(result.cemetery);
 			$scope.area = new Area(result.area);
 			$scope.item = new Place(result.place);
-			//$scope.responsible_phones = new Phone(result.responsible_phones);
-			/*result.responsible_phones = [
-				{"id": 3, "phone_type": 1, "number":"+1(234)5678901"},
-				{"id": 5, "phone_type": 2, "number":"+1(234)5678901" },
-				{"id": 7, "phone_type": 0, "number":"+1(234)5678901" }
-			];*/
 			
 			$scope.responsible_phones = [];
 			angular.forEach(result.responsible_phones, function(item) {

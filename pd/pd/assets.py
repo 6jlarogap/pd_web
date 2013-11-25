@@ -53,6 +53,8 @@ js_angular = Bundle(
         "angular-bootstrap/ui-bootstrap.min.js",
         "angular-bootstrap/ui-bootstrap-tpls.min.js",
 
+        "angular-ui-utils/modules/mask/mask.js",
+
         "select2/select2.min.js",
         "select2/select2_locale_ru.js",
         #"ng-grid/ng-grid-2.0.7.debug.js",
@@ -66,6 +68,7 @@ js_angular = Bundle(
         #"ng-grid/ng-grid/src/i18n/ru.js",
 
         "js/angular3d/modules/jquery.fileupload-angular.js",
+
         filters='rjsmin', output='pd-angular.js')
 
 
