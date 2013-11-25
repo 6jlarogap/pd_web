@@ -190,22 +190,77 @@ def import_dead_person(data):
 
 @transaction.commit_on_success
 def do_import_burials_minsk(csv_fileobj, cemetery, user):
+    
+    cemetery = Cemetery.objects.filter(name=cemetery, ugh=user.profile.org)[0]
+    area_availability = Area.AVAILABILITY_OPEN
+    area_purpose, _created = AreaPurpose.objects.get_or_create(name='общественный')
+
+    def prepare_burial(row):
+        (musor_str_id,
+            account_number,
+            last_name, first_name, middle_name,
+            musor_initials,
+            date_fact,
+            area, row_name, place_number,
+            applicant_ln, applicant_fn, applicant_mn,
+            musor_cust_initials,
+            city, street, house, block, flat,
+            comment,
+            country,
+            region,
+            phone,
+            files, file_comments,
+            post_index, building,
+            op_type,
+        ) = range(28)
+
+        if not row[area].strip():
+            row[area] = u'Без имени'
+        area, _created = Area.objects.get_or_create(
+            cemetery=cemetery,
+            name=row[area],
+            defaults = {'availability': area_availability,
+                        'purpose': area_purpose,
+                       }
+        )
+
     real_i = dupes_i = 0
     # Будут несколько проходов по считанному файлу импорта, надо бы сохранить
     tmp_file = os.path.join(settings.MEDIA_ROOT, 'csv_minsk.tmp')
     f = open(tmp_file, 'w')
     f.write(csv_fileobj.read())
     f.close()
+   
     f = open(tmp_file, 'r')
     csvreader = UnicodeReader(f, dialect="4minsk")
     print '1-st step: new burials: burials, kid burials, honour burials'
+    n = 0
+    op_type = 27
     for i, row in enumerate(csvreader):
-        if i % 1000 == 0:
+        row[op_type] = row[op_type].lower()
+        if row[op_type] not in (u'', u'захоронение', u'захоронение детское', u'почетное захоронение', ):
+            continue
+        n += 1
+
+        prepare_burial(row)
+        place, _created = Place.objects.get_or_create(
+            cemetery=cemetery,
+            area=area,
+            row=row[row_name].strip(),
+            place=row[place_number].strip(),
+        )
+        # Адрес ответственного
+        
+        # Ответственный у места: если задан и новый ответственный задан,
+        # т о меняем. Если новый ответственный не задан, не меняем
+
+        if (n + 1) % 1000 == 0:
             transaction.commit()
-            print 'Processed', i+1
-    if i % 1000 != 0:
-        print 'Processed', i+1
+            print 'Processed', n + 1
+    if (n + 1) % 1000 != 0:
+        print 'Processed', n + 1
     os.remove(tmp_file)
+    print cemetery.pk
     return real_i, dupes_i
     
 @transaction.commit_on_success
