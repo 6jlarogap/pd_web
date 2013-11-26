@@ -233,52 +233,55 @@ def do_import_burials_minsk(csv_fileobj, cemetery, user):
             place=row[place_number].strip(),
         )
 
-        # Адрес ответственного. Формируем, когда хотя бы есть город
-        country = region = city = street = location = None
-        row[country_name] = row[country_name].strip()
-        if row[country_name]:
-            country, _created = Country.objects.get_or_create(
-                name=row[country_name],
-            )
-        row[region_name] = row[region_name].strip()
-        if row[region_name] and country:
-            region, _created = Region.objects.get_or_create(
-                country=country,
-                name=row[region_name],
-            )
-        row[city_name] = row[city_name].strip()
-        if row[city_name] and region:
-            city, _created = City.objects.get_or_create(
-                region=region,
-                name=row[city_name],
-            )
-        if city:
-            row[street_name] = row[street_name].strip()
-            if row[street_name] and city:
-                street, _created = Street.objects.get_or_create(
-                    city=city,
-                    name=row[street_name],
-                )
-            location = Location.objects.create(
-                country=country,
-                region=region,
-                city=city,
-                street=street,
-                post_index=row[post_index].strip(),
-                house=row[house].strip(),
-                block=row[block].strip(),
-                building=row[building].strip(),
-                flat=row[flat].strip(),
-            )
-        
-        # Ответственный у места: если задан и новый ответственный задан,
-        # т о меняем. Если новый ответственный не задан, не меняем
-        
+        applicant = None
         row[applicant_ln] = row[applicant_ln].strip()
         if row[applicant_ln] and row[applicant_ln].lower() != u'неизвестен':
-            pass
 
-
+            # Адрес ответственного. Формируем, когда хотя бы есть город
+            country = region = city = street = location = None
+            row[country_name] = row[country_name].strip()
+            if row[country_name]:
+                country, _created = Country.objects.get_or_create(
+                    name=row[country_name],
+                )
+            row[region_name] = row[region_name].strip()
+            if row[region_name] and country:
+                region, _created = Region.objects.get_or_create(
+                    country=country,
+                    name=row[region_name],
+                )
+            row[city_name] = row[city_name].strip()
+            if row[city_name] and region:
+                city, _created = City.objects.get_or_create(
+                    region=region,
+                    name=row[city_name],
+                )
+            if city:
+                row[street_name] = row[street_name].strip()
+                if row[street_name] and city:
+                    street, _created = Street.objects.get_or_create(
+                        city=city,
+                        name=row[street_name],
+                    )
+                location = Location.objects.create(
+                    country=country,
+                    region=region,
+                    city=city,
+                    street=street,
+                    post_index=row[post_index].strip(),
+                    house=row[house].strip(),
+                    block=row[block].strip(),
+                    building=row[building].strip(),
+                    flat=row[flat].strip(),
+                )
+            applicant = AlivePerson.objects.create(
+                last_name=row[applicant_ln],
+                first_name=row[applicant_fn].strip(),
+                middle_name=row[applicant_mn].strip(),
+                address=location,
+                phones=row[phone]
+            )
+        
     real_i = dupes_i = 0
     # Будут несколько проходов по считанному файлу импорта, надо бы сохранить
     tmp_file = os.path.join(settings.MEDIA_ROOT, 'csv_minsk.tmp')
