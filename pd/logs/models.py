@@ -96,10 +96,14 @@ def log_object(request, obj=None, old=None, new=None, reason=None, code=None):
     else:
         for field in new._meta.fields:
             if field.name not in LOG_STOP_FIELDS and getattr(old,field.name) != getattr(new,field.name):
-                    msg.append(_(u'Изменено "%s" с "%s" на "%s"') % (
-                                                            field.verbose_name,
-                                                            getattr(old,field.name),
-                                                            getattr(new,field.name)))
+                old_val = getattr(old,field.name)
+                new_val = getattr(new,field.name)
+                if not old_val:
+                    msg.append(_(u'"%s": добавлено "%s"') % (field.verbose_name, new_val))
+                elif not new_val:
+                    msg.append(_(u'"%s": удалено "%s"') % (field.verbose_name, old_val))
+                else:
+                    msg.append(_(u'"%s": "%s" -> "%s"') % (field.verbose_name, old_val, new_val))
 
     user = request and request.user.is_authenticated() and request.user or None
     Log.objects.create(
