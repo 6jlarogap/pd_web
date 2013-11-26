@@ -15,7 +15,7 @@ from django.core.exceptions import ValidationError
 
 from django.utils.translation import ugettext as _
 
-from burials.models import Burial, ExhumationRequest, Cemetery, Area, Place, AreaPurpose
+from burials.models import Burial, ExhumationRequest, Cemetery, Area, Place, AreaPurpose, Grave
 from geo.models import Location, Country, LocationFIAS, DFiasAddrobj, Region, City, Street
 from logs.models import write_log
 from orders.models import Product, Order, OrderItem, CoffinData, CatafalqueData, AddInfoData
@@ -191,7 +191,8 @@ def import_dead_person(data):
 @transaction.commit_on_success
 def do_import_burials_minsk(csv_fileobj, cemetery, user):
     
-    cemetery = Cemetery.objects.filter(name=cemetery, ugh=user.profile.org)[0]
+    ugh=user.profile.org
+    cemetery = Cemetery.objects.filter(name=cemetery, ugh=ugh)[0]
     # Defaults:
     area_availability = Area.AVAILABILITY_OPEN
     area_purpose, _created = AreaPurpose.objects.get_or_create(name='общественный')
@@ -213,8 +214,13 @@ def do_import_burials_minsk(csv_fileobj, cemetery, user):
         post_index, building,
         op_type,
      ) = range(28)
-
-    def prepare_burial(row):
+     
+    def make_burial(row, burial_type):
+        """
+        Создать захоронение
+        
+        В зависимости от того, новое оно, подзахоронение, в существующую
+        """
         if not row[area_name].strip():
             row[area_name] = u'Без имени'
 
@@ -281,6 +287,22 @@ def do_import_burials_minsk(csv_fileobj, cemetery, user):
                 address=location,
                 phones=row[phone]
             )
+
+        graves_count = place.get_graves_count()
+        grave_number = graves_count + 1
+        grave = None
+        if not graves_count or \
+           burial_type in (Burial.BURIAL_NEW, Burial.BURIAL_ADD):
+            grave = Grave.objects.create(
+                place=place,
+                grave_number=grave_number,
+            )
+        if burial_type == Burial.BURIAL_OVER and graves_count:
+            # ищем могилу по порядку с наименьшим там числом захороненных,
+            # туда кладем захоронение в существующую или урну
+            grave = Grave.objects.filter(place=place). \
+                    annotate(num_burials=Count('burial')).order_by('num_burials')[:1][0]
+            grave_number = grave.grave_number
         
     real_i = dupes_i = 0
     # Будут несколько проходов по считанному файлу импорта, надо бы сохранить
@@ -293,19 +315,51 @@ def do_import_burials_minsk(csv_fileobj, cemetery, user):
     csvreader = UnicodeReader(f, dialect="4minsk")
     print '1-st step: new burials: burials, kid burials, honour burials'
     n = 0
-    op_type = 27
     for i, row in enumerate(csvreader):
         row[op_type] = row[op_type].lower()
-        if row[op_type] not in (u'', u'захоронение', u'захоронение детское', u'почетное захоронение', ):
-            continue
-        n += 1
-
-        prepare_burial(row)
-        if (n + 1) % 1000 == 0:
-            transaction.commit()
-            print 'Processed', n + 1
+        if row[op_type] in (u'', u'захоронение', u'захоронение детское', u'почетное захоронение', ):
+            n += 1
+            make_burial(row, Burial.BURIAL_NEW)
+            if (n + 1) % 1000 == 0:
+                transaction.commit()
+                print 'Processed', n + 1
     if (n + 1) % 1000 != 0:
         print 'Processed', n + 1
+    f.close()
+
+    f = open(tmp_file, 'r')
+    csvreader = UnicodeReader(f, dialect="4minsk")
+    print '2-nd step: burials to add'
+    n = 0
+    for i, row in enumerate(csvreader):
+        row[op_type] = row[op_type].lower()
+        if row[op_type].startswith(u'подзахоронен'):
+            n += 1
+            make_burial(row, Burial.BURIAL_ADD)
+            if (n + 1) % 1000 == 0:
+                transaction.commit()
+                print 'Processed', n + 1
+    if (n + 1) % 1000 != 0:
+        print 'Processed', n + 1
+    f.close()
+
+    f = open(tmp_file, 'r')
+    csvreader = UnicodeReader(f, dialect="4minsk")
+    print '3-rd step: burials to existing graves'
+    n = 0
+    for i, row in enumerate(csvreader):
+        row[op_type] = row[op_type].lower()
+        if not row[op_type].startswith(u'захоронение в существ') or \
+           row[op_type] == u'урна':
+            n += 1
+            make_burial(row, Burial.BURIAL_OVER)
+            if (n + 1) % 1000 == 0:
+                transaction.commit()
+                print 'Processed', n + 1
+    if (n + 1) % 1000 != 0:
+        print 'Processed', n + 1
+    f.close()
+
     os.remove(tmp_file)
     return real_i, dupes_i
     
