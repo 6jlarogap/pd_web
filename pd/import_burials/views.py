@@ -22,10 +22,10 @@ import_minsk = ImportMinskView.as_view()
 
 class ImportBurialsMinskView(View):
     def post(self, request, *args, **kwargs):
-        real_i, dupes_i = do_import_burials_minsk(request.FILES['burials-csv'],
-                                                  request.POST['burials-cemetery'],
-                                                  user=request.user)
-        messages.success(request, _(u"Импорт успешен, %s записей, игнорировано %s записей") % (0, 0))
+        total = do_import_burials_minsk(request.FILES['burials-csv'],
+                                        request.POST['burials-cemetery'],
+                                        user=request.user)
+        messages.success(request, _(u"Импорт успешен, %s записей") % total)
         return redirect('import_minsk')
 
 import_burials_minsk = transaction.commit_on_success(ImportBurialsMinskView.as_view())
