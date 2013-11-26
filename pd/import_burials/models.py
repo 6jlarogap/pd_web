@@ -204,10 +204,10 @@ def do_import_burials_minsk(csv_fileobj, cemetery, user):
         area_name, row_name, place_number,
         applicant_ln, applicant_fn, applicant_mn,
         musor_cust_initials,
-        city, street, house, block, flat,
+        city_name, street_name, house, block, flat,
         comment,
-        country,
-        region,
+        country_name,
+        region_name,
         phone,
         files, file_comments,
         post_index, building,
@@ -233,10 +233,50 @@ def do_import_burials_minsk(csv_fileobj, cemetery, user):
             place=row[place_number].strip(),
         )
 
-        # Адрес ответственного
+        # Адрес ответственного. Формируем, когда хотя бы есть город
+        country = region = city = street = location = None
+        row[country_name] = row[country_name].strip()
+        if row[country_name]:
+            country, _created = Country.objects.get_or_create(
+                name=row[country_name],
+            )
+        row[region_name] = row[region_name].strip()
+        if row[region_name] and country:
+            region, _created = Region.objects.get_or_create(
+                country=country,
+                name=row[region_name],
+            )
+        row[city_name] = row[city_name].strip()
+        if row[city_name] and region:
+            city, _created = City.objects.get_or_create(
+                region=region,
+                name=row[city_name],
+            )
+        if city:
+            row[street_name] = row[street_name].strip()
+            if row[street_name] and city:
+                street, _created = Street.objects.get_or_create(
+                    city=city,
+                    name=row[street_name],
+                )
+            location = Location.objects.create(
+                country=country,
+                region=region,
+                city=city,
+                street=street,
+                post_index=row[post_index].strip(),
+                house=row[house].strip(),
+                block=row[block].strip(),
+                building=row[building].strip(),
+                flat=row[flat].strip(),
+            )
         
         # Ответственный у места: если задан и новый ответственный задан,
         # т о меняем. Если новый ответственный не задан, не меняем
+        
+        row[applicant_ln] = row[applicant_ln].strip()
+        if row[applicant_ln] and row[applicant_ln].lower() != u'неизвестен':
+            pass
 
 
     real_i = dupes_i = 0
@@ -264,7 +304,6 @@ def do_import_burials_minsk(csv_fileobj, cemetery, user):
     if (n + 1) % 1000 != 0:
         print 'Processed', n + 1
     os.remove(tmp_file)
-    print cemetery.pk
     return real_i, dupes_i
     
 @transaction.commit_on_success
