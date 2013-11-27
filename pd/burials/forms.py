@@ -43,7 +43,7 @@ class BaseCemeteryForm(forms.ModelForm):
 class CemeteryForm(LoggingFormMixin, BaseCemeteryForm):
     class Meta:
         model = Cemetery
-        exclude = ['ugh', ]
+        exclude = ('ugh', 'creator', )
 
     def __init__(self, request, *args, **kwargs):
         self.request = request
