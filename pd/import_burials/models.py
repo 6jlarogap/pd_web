@@ -16,7 +16,7 @@ from django.core.exceptions import ValidationError
 
 from django.utils.translation import ugettext as _
 
-from burials.models import Burial, ExhumationRequest, Cemetery, Area, Place, AreaPurpose, Grave
+from burials.models import Burial, ExhumationRequest, Cemetery, Area, Place, AreaPurpose, Grave, BurialFiles
 from geo.models import Location, Country, LocationFIAS, DFiasAddrobj, Region, City, Street
 from logs.models import write_log
 from orders.models import Product, Order, OrderItem, CoffinData, CatafalqueData, AddInfoData
@@ -211,7 +211,7 @@ def do_import_burials_minsk(csv_fileobj, cemetery, user):
         country_name,
         region_name,
         phone,
-        files, file_comments,
+        file_names, file_comments,
         post_index, building,
         op_type,
      ) = range(28)
@@ -344,10 +344,22 @@ def do_import_burials_minsk(csv_fileobj, cemetery, user):
         request = HttpRequest()
         request.user = user
         if row[comment]:
-            write_log(request, burial, comment)
-        write_log(request, burial, "Импорт")
+            write_log(request, burial, row[comment])
+        write_log(request, burial, _(u"Импорт"))
         
-        # TODO: Burial comments and files
+        files = row[file_names].split('\n')
+        fcomments = row[file_comments].split('\t')
+        for i, f in enumerate(files):
+            f = f.replace('ofiles/','%s/' % burial.pk)
+            try:
+                fcomment = fcomments[i] if fcomments[i] else _(u'Без комментария')
+            except IndexError:
+                fcomment = _(u'Без комментария')
+            BurialFiles.objects.create(
+                burial=burial,
+                bfile=f,
+                comment=fcomment,
+            )
         
     # Будут несколько проходов по считанному файлу импорта, надо бы сохранить
     tmp_file = os.path.join(settings.MEDIA_ROOT, 'csv_minsk.tmp')
