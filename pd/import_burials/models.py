@@ -1,4 +1,5 @@
 # coding=utf-8
+import os
 import copy
 import csv
 import cStringIO
@@ -6,14 +7,16 @@ import datetime
 import gc
 import json
 import codecs
+from django.conf import settings
 from django.contrib.auth.models import User
 from django.db import transaction, connection
+from django.db.models import Count
 from django.http import HttpRequest
 from django.core.exceptions import ValidationError
 
 from django.utils.translation import ugettext as _
 
-from burials.models import Burial, ExhumationRequest, Cemetery, Area, Place, AreaPurpose
+from burials.models import Burial, ExhumationRequest, Cemetery, Area, Place, AreaPurpose, Grave, BurialFiles
 from geo.models import Location, Country, LocationFIAS, DFiasAddrobj, Region, City, Street
 from logs.models import write_log
 from orders.models import Product, Order, OrderItem, CoffinData, CatafalqueData, AddInfoData
@@ -21,6 +24,7 @@ from pd.models import UnclearDate
 from persons.models import AlivePerson, DeadPerson, PersonID, IDDocumentType, DocumentSource, DeathCertificate
 from users.models import Org, Profile, Dover, BankAccount
 
+csv.register_dialect("4minsk", escapechar="\\", quoting=csv.QUOTE_ALL, doublequote=False)
 
 class UTF8Recoder:
     def __init__(self, f, encoding):
@@ -185,6 +189,243 @@ def import_dead_person(data):
 
         return dp
 
+@transaction.commit_on_success
+def do_import_burials_minsk(csv_fileobj, cemetery, user):
+    
+    ugh=user.profile.org
+    cemetery = Cemetery.objects.filter(name=cemetery, ugh=ugh)[0]
+    # Defaults:
+    area_availability = Area.AVAILABILITY_OPEN
+    area_purpose, _created = AreaPurpose.objects.get_or_create(name='общественный')
+
+    (musor_str_id,
+        account_number,
+        deadman_ln, deadman_fn, deadman_mn,
+        musor_initials,
+        fact_date,
+        area_name, row_name, place_number,
+        applicant_ln, applicant_fn, applicant_mn,
+        musor_cust_initials,
+        city_name, street_name, house, block, flat,
+        comment,
+        country_name,
+        region_name,
+        phone,
+        file_names, file_comments,
+        post_index, building,
+        op_type,
+     ) = range(28)
+     
+    def make_burial(row, burial_type):
+        """
+        Создать захоронение
+        
+        В зависимости от того, новое оно, подзахоронение, в существующую
+        """
+        row[area_name] = row[area_name].strip()
+        if not row[area_name]:
+            row[area_name] = u'Без имени'
+
+        area, _created = Area.objects.get_or_create(
+            cemetery=cemetery,
+            name=row[area_name],
+            defaults = {'availability': area_availability,
+                        'purpose': area_purpose,
+                        'places_count': 2,
+                       }
+        )
+
+        row[row_name] = row[row_name].strip()
+        row[place_number] = row[place_number].strip()
+        place, _created = Place.objects.get_or_create(
+            cemetery=cemetery,
+            area=area,
+            row=row[row_name],
+            place=row[place_number],
+        )
+
+        applicant = None
+        row[applicant_ln] = row[applicant_ln].strip()
+        if row[applicant_ln] and row[applicant_ln].lower() != u'неизвестен':
+
+            # Адрес заявителя. Формируем, когда хотя бы есть город
+            country = region = city = street = location = None
+            row[country_name] = row[country_name].strip()
+            if row[country_name]:
+                country, _created = Country.objects.get_or_create(
+                    name=row[country_name],
+                )
+            row[region_name] = row[region_name].strip()
+            if row[region_name] and country:
+                region, _created = Region.objects.get_or_create(
+                    country=country,
+                    name=row[region_name],
+                )
+            row[city_name] = row[city_name].strip()
+            if row[city_name] and region:
+                city, _created = City.objects.get_or_create(
+                    region=region,
+                    name=row[city_name],
+                )
+            if city:
+                row[street_name] = row[street_name].strip()
+                if row[street_name] and city:
+                    street, _created = Street.objects.get_or_create(
+                        city=city,
+                        name=row[street_name],
+                    )
+                location = Location.objects.create(
+                    country=country,
+                    region=region,
+                    city=city,
+                    street=street,
+                    post_index=row[post_index].strip(),
+                    house=row[house].strip(),
+                    block=row[block].strip(),
+                    building=row[building].strip(),
+                    flat=row[flat].strip(),
+                )
+            applicant = AlivePerson.objects.create(
+                last_name=row[applicant_ln],
+                first_name=row[applicant_fn].strip(),
+                middle_name=row[applicant_mn].strip(),
+                address=location,
+                phones=row[phone]
+            )
+
+        graves_count = place.get_graves_count()
+        grave_number = graves_count + 1
+        grave = None
+        if not graves_count or \
+           burial_type in (Burial.BURIAL_NEW, Burial.BURIAL_ADD):
+            grave = Grave.objects.create(
+                place=place,
+                grave_number=grave_number,
+            )
+        if burial_type == Burial.BURIAL_OVER and graves_count:
+            # все захоронения в существующую, а также урны кладем
+            # в 1-ю могилу
+            grave_number = 1
+            grave = Grave.objects.get(
+                place=place,
+                grave_number=grave_number,
+            )
+
+        burial_container = Burial.CONTAINER_URN if row[op_type].lower() == u'урна' \
+                                                else Burial.CONTAINER_COFFIN
+
+        row[deadman_ln] = row[deadman_ln].strip()
+        if row[deadman_ln] and row[deadman_ln] != u'*' and \
+           row[deadman_ln].lower != u'неизвестен':
+            deadman = DeadPerson.objects.create(
+                last_name=row[deadman_ln],
+                first_name=row[deadman_fn].strip(),
+                middle_name=row[deadman_mn].strip(),
+            )
+
+        burial = Burial.objects.create(
+            burial_type=burial_type,
+            burial_container=burial_container,
+            source_type=Burial.SOURCE_TRANSFERRED,
+            account_number=row[account_number].strip(),
+            place=place,
+            cemetery=cemetery,
+            area=area,
+            row=row[row_name],
+            place_number=row[place_number],
+            grave=grave,
+            grave_number=grave_number,
+            fact_date=row[fact_date][:10] or None,
+            deadman=deadman,
+            applicant=applicant,
+            ugh=ugh,
+            status=Burial.STATUS_CLOSED,
+            changed_by=user,
+        )
+        
+        request = HttpRequest()
+        request.user = user
+        if row[comment]:
+            write_log(request, burial, row[comment])
+        write_log(request, burial, _(u"Импорт"))
+        
+        files = row[file_names].split('\n')
+        fcomments = row[file_comments].split('\t')
+        for i, f in enumerate(files):
+            f = f.replace('ofiles/','bfiles/%s/' % burial.pk)
+            try:
+                fcomment = fcomments[i] if fcomments[i] else _(u'Без комментария')
+            except IndexError:
+                fcomment = _(u'Без комментария')
+            BurialFiles.objects.create(
+                burial=burial,
+                bfile=f,
+                comment=fcomment,
+            )
+        
+    # Будут несколько проходов по считанному файлу импорта, надо бы сохранить
+    tmp_file = os.path.join(settings.MEDIA_ROOT, 'csv_minsk.tmp')
+    f = open(tmp_file, 'w')
+    f.write(csv_fileobj.read())
+    f.close()
+   
+    total = 0
+    f = open(tmp_file, 'r')
+    csvreader = UnicodeReader(f, dialect="4minsk")
+    print '1-st step: new burials: burials, kid burials, honour burials'
+    n = 0
+    for i, row in enumerate(csvreader):
+        row[op_type] = row[op_type].lower()
+        if row[op_type] in (u'', u'захоронение', u'захоронение детское', u'почетное захоронение', ):
+            n += 1
+            total += 1
+            make_burial(row, Burial.BURIAL_NEW)
+            if n % 1000 == 0:
+                transaction.commit()
+                print 'Processed', n
+    if n % 1000 != 0:
+        print 'Processed', n
+    f.close()
+
+    f = open(tmp_file, 'r')
+    csvreader = UnicodeReader(f, dialect="4minsk")
+    print '2-nd step: burials to add to existing place'
+    n = 0
+    for i, row in enumerate(csvreader):
+        row[op_type] = row[op_type].lower()
+        if row[op_type].startswith(u'подзахоронен'):
+            n += 1
+            total += 1
+            make_burial(row, Burial.BURIAL_ADD)
+            if n % 1000 == 0:
+                transaction.commit()
+                print 'Processed', n
+    if n % 1000 != 0:
+        print 'Processed', n
+    f.close()
+
+    f = open(tmp_file, 'r')
+    csvreader = UnicodeReader(f, dialect="4minsk")
+    print '3-rd step: burials to existing graves, including urns'
+    n = 0
+    for i, row in enumerate(csvreader):
+        row[op_type] = row[op_type].lower()
+        if row[op_type].startswith(u'захоронение в существ') or \
+           row[op_type] == u'урна':
+            n += 1
+            total += 1
+            make_burial(row, Burial.BURIAL_OVER)
+            if n % 1000 == 0:
+                transaction.commit()
+                print 'Processed', n
+    if n % 1000 != 0:
+        print 'Processed', n
+    f.close()
+    print 'Processed total', total
+
+    os.remove(tmp_file)
+    return total
+    
 @transaction.commit_on_success
 def do_import_burials(csv_fileobj, user):
     csvreader = UnicodeReader(csv_fileobj)
