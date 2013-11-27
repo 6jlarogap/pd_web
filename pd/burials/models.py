@@ -156,7 +156,6 @@ class Place(SafeDeleteMixin, GeoPointModel):
     available_count = models.PositiveSmallIntegerField(_(u"Число свободных мест"), default=0)
     responsible = models.ForeignKey('persons.AlivePerson', verbose_name=_(u"Ответственный"), blank=True, null=True,
                                     on_delete=models.PROTECT)
-    available_count = models.PositiveSmallIntegerField(_(u"Число свободных мест"), default=0)
     place_length = models.DecimalField(_(u"Длина, м."), max_digits=5, decimal_places=2,
                                        null=True, blank=True, validators=[validate_gt0])
     place_width = models.DecimalField(_(u"Ширина, м."), max_digits=5, decimal_places=2,
