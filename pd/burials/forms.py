@@ -31,10 +31,6 @@ from logs.models import write_log
 OPF_CHOICES = (('person', _(u'ФЛ')), ('org', _(u'ЮЛ')))
 
 class BaseCemeteryForm(forms.ModelForm):
-    def __init__(self, request, *args, **kwargs):
-        self.request = request
-        super(BaseCemeteryForm, self).__init__(*args, **kwargs)
-
     def clean_time_slots(self):
         slots = self.cleaned_data['time_slots'].split('\n')
         slots = filter(lambda s: s.strip(), slots)
@@ -43,6 +39,23 @@ class BaseCemeteryForm(forms.ModelForm):
         except ValueError:
             raise forms.ValidationError(_(u'Формат должен быть: по одному времени в формате ЧЧ:ММ на строку'))
         return u'\n'.join([s.strftime('%H:%M') for s in slots])
+
+class CemeteryForm(LoggingFormMixin, BaseCemeteryForm):
+    class Meta:
+        model = Cemetery
+        exclude = ('ugh', 'creator', )
+
+    def __init__(self, request, *args, **kwargs):
+        self.request = request
+        super(CemeteryForm, self).__init__(*args, **kwargs)
+        address = self.instance and self.instance.address
+        self.address_form = LocationForm(data=self.data or None, instance=address, prefix='address')
+        #self.address_form.fields['country_name'].required = True
+        self.forms = [self.address_form, ]
+        if self.instance and self.instance.pk:
+            self.area_formset = AreaFormset(data=self.data or None, instance=self.instance)
+        else:
+            self.area_formset = None
 
     def clean_places_algo(self):
         """
@@ -65,22 +78,6 @@ class BaseCemeteryForm(forms.ModelForm):
            self.request.user.profile.org.numbers_algo == Org.NUM_EMPTY:
             raise forms.ValidationError(_(u"Указанный способ недопустим, т.к. рег. номера захоронений могут быть пустыми"))
         return places_algo_archive
-
-class CemeteryForm(LoggingFormMixin, BaseCemeteryForm):
-    class Meta:
-        model = Cemetery
-        exclude = ['ugh', ]
-
-    def __init__(self, request, *args, **kwargs):
-        super(CemeteryForm, self).__init__(request, *args, **kwargs)
-        address = self.instance and self.instance.address
-        self.address_form = LocationForm(data=self.data or None, instance=address, prefix='address')
-        #self.address_form.fields['country_name'].required = True
-        self.forms = [self.address_form, ]
-        if self.instance and self.instance.pk:
-            self.area_formset = AreaFormset(data=self.data or None, instance=self.instance)
-        else:
-            self.area_formset = None
 
     def is_valid(self):
         return super(CemeteryForm, self).is_valid() and self.address_form.is_valid() and (not self.area_formset or self.area_formset.is_valid())

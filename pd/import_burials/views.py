@@ -5,9 +5,30 @@ from django.shortcuts import redirect
 from django.views.generic.base import TemplateView, View
 from django.utils.translation import ugettext_lazy as _
 
-from import_burials.forms import ImportCsvForm
-from import_burials.models import do_import_orgs, do_import_burials, do_import_services, do_import_orders, do_import_banks, do_import_docs, do_import_dcs
+from import_burials.forms import ImportCsvForm, ImportCsvMinskForm
+from import_burials.models import do_import_orgs, do_import_burials, do_import_services, \
+                                  do_import_orders, do_import_banks, do_import_docs, do_import_dcs, \
+                                  do_import_burials_minsk
 
+class ImportMinskView(TemplateView):
+    template_name = 'import_minsk.html'
+
+    def get_context_data(self, **kwargs):
+        return {
+            'burials_form': ImportCsvMinskForm(prefix='burials'),
+        }
+
+import_minsk = ImportMinskView.as_view()
+
+class ImportBurialsMinskView(View):
+    def post(self, request, *args, **kwargs):
+        total = do_import_burials_minsk(request.FILES['burials-csv'],
+                                        request.POST['burials-cemetery'],
+                                        user=request.user)
+        messages.success(request, _(u"Импорт успешен, %s записей") % total)
+        return redirect('import_minsk')
+
+import_burials_minsk = transaction.commit_on_success(ImportBurialsMinskView.as_view())
 
 class ImportFormsView(TemplateView):
     template_name = 'import_forms.html'

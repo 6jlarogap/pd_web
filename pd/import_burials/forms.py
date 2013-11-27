@@ -5,3 +5,7 @@ from django.utils.translation import ugettext_lazy as _
 
 class ImportCsvForm(forms.Form):
     csv = forms.FileField(label=_(u"Файл CSV"))
+
+class ImportCsvMinskForm(forms.Form):
+    cemetery = forms.CharField(label=_(u"Кладбище"), required=True)
+    csv = forms.FileField(label=_(u"Файл CSV"), required=True)
