@@ -350,7 +350,7 @@ def do_import_burials_minsk(csv_fileobj, cemetery, user):
         files = row[file_names].split('\n')
         fcomments = row[file_comments].split('\t')
         for i, f in enumerate(files):
-            f = f.replace('ofiles/','%s/' % burial.pk)
+            f = f.replace('ofiles/','bfiles/%s/' % burial.pk)
             try:
                 fcomment = fcomments[i] if fcomments[i] else _(u'Без комментария')
             except IndexError:
