@@ -303,11 +303,13 @@ def do_import_burials_minsk(csv_fileobj, cemetery, user):
                 grave_number=grave_number,
             )
         if burial_type == Burial.BURIAL_OVER and graves_count:
-            # ищем могилу по порядку с наименьшим там числом захороненных,
-            # туда кладем захоронение в существующую или урну
-            grave = Grave.objects.filter(place=place). \
-                    annotate(num_burials=Count('burial')).order_by('num_burials')[:1][0]
-            grave_number = grave.grave_number
+            # все захоронения в существующую, а также урны кладем
+            # в 1-ю могилу
+            grave_number = 1
+            grave = Grave.objects.get(
+                place=place,
+                grave_number=grave_number,
+            )
 
         burial_container = Burial.CONTAINER_URN if row[op_type].lower() == u'урна' \
                                                 else Burial.CONTAINER_COFFIN

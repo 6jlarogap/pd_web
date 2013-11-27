@@ -101,7 +101,7 @@ class CemeteryForm(LoggingFormMixin, BaseCemeteryForm):
             self.put_log_data(_(u'Кладбище изменено'))
         return obj
 
-class CemeteryAdminForm(BaseCemeteryForm):
+class CemeteryAdminForm(forms.ModelForm):
     class Meta:
         model = Cemetery
 
