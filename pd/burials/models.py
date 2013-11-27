@@ -8,14 +8,13 @@ from django.db.models.deletion import ProtectedError
 from django.utils.translation import ugettext_lazy as _
 from django.db.models.query_utils import Q
 from django.conf import settings
-
-from pd.models import UnclearDateModelField, BaseModel, Files, Photo, GetLogsMixin, validate_gt0
-
+from pd.models import UnclearDateModelField, BaseModel, Files, GetLogsMixin, validate_gt0
 
 from persons.models import DeadPerson, SafeDeleteMixin, DeathCertificate
 from reports.models import Report
 from users.models import Org, Profile, Dover, ProfileLORU
 from logs.models import Log
+from geo.models import GeoPointModel
 
 from geo.models import GeoPointModel
 
@@ -147,7 +146,6 @@ class Area(BaseModel):
             self.name=''
         return super(Area, self).save(*args, **kwargs)
 
-
 class Place(SafeDeleteMixin, GeoPointModel):
     cemetery = models.ForeignKey(Cemetery, verbose_name=_(u"Кладбище"), on_delete=models.PROTECT)
     area = models.ForeignKey(Area, verbose_name=_(u"Участок"), blank=True, null=True,
@@ -155,6 +153,7 @@ class Place(SafeDeleteMixin, GeoPointModel):
     row = models.CharField(_(u"Ряд"), max_length=255, blank=True, null=True)
     oldplace = models.CharField(_(u"Старое место"), max_length=255, blank=True, null=True)
     place = models.CharField(_(u"Место"), max_length=255, blank=True, null=True)
+    available_count = models.PositiveSmallIntegerField(_(u"Число свободных мест"), default=0)
     responsible = models.ForeignKey('persons.AlivePerson', verbose_name=_(u"Ответственный"), blank=True, null=True,
                                     on_delete=models.PROTECT)
     available_count = models.PositiveSmallIntegerField(_(u"Число свободных мест"), default=0)
@@ -307,7 +306,6 @@ class PlaceStatus(BaseModel):
     comment = models.TextField(verbose_name=_(u"Примечание"), blank=True, null=True)
     creator = models.ForeignKey('auth.User', verbose_name=_(u"Создатель"), editable=False,
                                 on_delete=models.PROTECT)
-
 class Grave(GeoPointModel):
     class Meta:
         unique_together = ('place', 'grave_number',)
@@ -323,13 +321,8 @@ class Grave(GeoPointModel):
 class AreaPhoto(Files, GeoPointModel):
     area = models.ForeignKey(Area)
 
-
 class GravePhoto(Files, GeoPointModel):
-    """
-    Файлы, связанные с захоронением
-    """
     grave = models.ForeignKey(Grave)
-
 
 class Burial(SafeDeleteMixin, GetLogsMixin, BaseModel):
     STATUS_BACKED = 'backed'
