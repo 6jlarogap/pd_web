@@ -79,6 +79,14 @@ class CemeteryForm(LoggingFormMixin, BaseCemeteryForm):
             raise forms.ValidationError(_(u"Указанный способ недопустим, т.к. рег. номера захоронений могут быть пустыми"))
         return places_algo_archive
 
+    def clean(self):
+        cleaned_data = super(CemeteryForm, self).clean()
+        if self.cleaned_data['places_algo_archive'] == Cemetery.PLACE_ARCHIVE_BURIAL_ACCOUNT_NUMBER and \
+           not self.cleaned_data['archive_burial_account_number_required']:
+            raise forms.ValidationError(_(u'Номер архивного захоронения обязателен, '
+                                          u'если расстановка мест архивных захоронений: по рег. номеру'))
+        return cleaned_data
+
     def is_valid(self):
         return super(CemeteryForm, self).is_valid() and self.address_form.is_valid() and (not self.area_formset or self.area_formset.is_valid())
 
