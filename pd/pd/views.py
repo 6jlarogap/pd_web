@@ -104,10 +104,9 @@ class FormInvalidMixin(BaseFormView):
     """
     Типичное сообщение об ошибках, особенно в представлениях с пространными формами
     
-    ВНИМАНИЕ: Объект представления должен иметь атрибут self.request!!!
+    ВНИМАНИЕ: Объект представления должен иметь атрибут self.request !
     """
     def form_invalid(self, form, *args, **kwargs):
-        print form.__dict__
         messages.error(self.request, _(u'Обнаружены ошибки, их необходимо исправить'))
         return super(FormInvalidMixin, self).form_invalid(form, *args, **kwargs)
 
