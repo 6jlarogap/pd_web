@@ -111,6 +111,11 @@ class CemeteryAdminForm(BaseCemeteryForm):
         model = Cemetery
 
 class BaseAreaFormset(BaseInlineFormSet):
+    def __init__(self, *args, **kwargs):
+        super(BaseAreaFormset, self).__init__(*args, **kwargs)
+        for f in self.forms:
+            f.formset = self
+
     def clean(self):
         for df in getattr(self, 'deleted_forms', []):
             if df.instance:
@@ -118,7 +123,18 @@ class BaseAreaFormset(BaseInlineFormSet):
                     msg = _(u'Участок %s с <a href="/burials/?area=%s" target="_blank">захоронениями</a> удалить нельзя')
                     raise forms.ValidationError(mark_safe(msg % (df.instance.name, df.instance.name)))
 
-AreaFormset = inlineformset_factory(Cemetery, Area, formset=BaseAreaFormset, can_delete=True)
+class AreaItemForm(forms.ModelForm):
+
+    class Meta:
+        model = Area
+
+    def clean(self):
+        for f in self.formset:
+            if (f is not self) and f['name'].value() == self['name'].value():
+                raise forms.ValidationError(_(u'Участки не могут иметь одинаковые названия'))
+        return self.cleaned_data
+
+AreaFormset = inlineformset_factory(Cemetery, Area, form=AreaItemForm, formset=BaseAreaFormset, can_delete=True)
 
 class PlaceEditForm(ChildrenJSONMixin, forms.ModelForm):
     class Meta:
