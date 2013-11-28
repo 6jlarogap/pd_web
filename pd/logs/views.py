@@ -18,6 +18,27 @@ from serializers import LogSerializer
 from burials.models import Place, Grave
 from logs.models import Log
 
+def getLogQuerySet(log_type=None, place=None):
+    if log_type == "place" and place and place.id:
+        ct_place = ContentType.objects.get(app_label="burials", model="place")
+        ct_grave = ContentType.objects.get(app_label="burials", model="grave")
+        ct_fl = ContentType.objects.get(app_label="persons", model="aliveperson")
+        
+        responsible_ids = []
+        if Place.responsible:
+            responsible_ids.append(place.responsible_id)
+    
+        grave_ids = [i.pk for i in Grave.objects.filter(place__pk=place.id)]
+    
+        qs = Log.objects.select_related()
+        qs = qs.filter( Q(Q(obj_id = place.id) & Q(ct=ct_place)) | \
+                        Q(Q(obj_id__in = grave_ids) & Q(ct=ct_grave)) | \
+                        Q(Q(obj_id__in = responsible_ids) & Q(ct=ct_fl)) )
+    else:
+        raise Http404()
+    return qs.all()
+
+
 class LogViewSet(viewsets.ModelViewSet):
     model = Log
     serializer_class = LogSerializer
@@ -26,27 +47,9 @@ class LogViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         log_type = self.request.GET.get("type")
-        if log_type == "place":
-            ct_place = ContentType.objects.get(app_label="burials", model="place")
-            ct_grave = ContentType.objects.get(app_label="burials", model="grave")
-            ct_fl = ContentType.objects.get(app_label="persons", model="aliveperson")
-            
-            try:
-                id = int(self.request.GET.get('id'))
-                place = Place.objects.get(pk=id)
-            except:
-                raise Http404()
-            responsible_ids = []
-            if Place.responsible:
-                responsible_ids.append(place.responsible_id)
- 
-            grave_ids = [i.pk for i in Grave.objects.filter(place__pk=id)]
-
-            qs = self.model.objects.select_related()
-            qs = qs.filter( Q(Q(obj_id = id) & Q(ct=ct_place)) | \
-                            Q(Q(obj_id__in = grave_ids) & Q(ct=ct_grave)) | \
-                            Q(Q(obj_id__in = responsible_ids) & Q(ct=ct_fl)) )
-        else:
+        try:
+            id = int(self.request.GET.get('id'))
+            place = Place.objects.get(pk=id)
+        except:
             raise Http404()
-        
-        return qs.all()
+        return  getLogQuerySet(log_type=log_type, place=place)

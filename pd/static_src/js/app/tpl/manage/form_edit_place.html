@@ -44,7 +44,7 @@
                 <label for="id_place_set-name">Длинна:</label>
             </dt>
             <dd>
-                <input name="placeLen" id="id_place_set-name" type="text" step="0.01" required ng-model="item.place_length" maxlength="14" />
+                <input name="placeLen" id="id_place_set-name" type="text" step="0.01" ng-model="item.place_length" maxlength="14" />
                 <span class="error" ng-show="placeEditForm.placeLen.$error.required">Не указана</span>
             </dd>
             
@@ -52,7 +52,7 @@
                 <label for="id_place_set-name">Ширина:</label>
             </dt>
             <dd>
-                <input name="placeW" id="id_place_set-name" type="text" required ng-model="item.place_width" maxlength="14"/>
+                <input name="placeW" id="id_place_set-name" type="text" ng-model="item.place_width" maxlength="14"/>
                 <span class="error" ng-show="placeEditForm.placeW.$error.required">Не указана</span>
             </dd>
 

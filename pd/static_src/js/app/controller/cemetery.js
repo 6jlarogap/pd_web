@@ -16,17 +16,14 @@ function CemeteryCtrl($scope, $http, $location, $resource) {
 	var tplButtonEdit = '<a class="btn btn-small" ng-href="/manage/cemetery/{{row.getProperty(\'id\')}}">Открыть</a>';
 	var tplLinkOpen = '<a ng-class="col.colIndex()" ng-href="/manage/cemetery/{{row.getProperty(\'id\')}}">{{row.getProperty(\'name\')}}</a>';
     $scope.gridOptions = { 
-        data: 'cemetery_list',
+        data: '(cemetery_list|filter:search)',
         enableRowSelection:false,
         columnDefs: [
         	{field: 'name', cellTemplate:tplLinkOpen, displayName:'Наименование'},
         	{field: 'work_time', displayName: 'Часы работы'},
         	{field: 'area_cnt', displayName: 'Участков'},
             {displayName:'Действие',cellTemplate:tplButtonEdit}
-        ],
-        enableRowReordering:true,
-        showFilter:true,
-        sortInfo: { fields: ['name'], directions: ['asc']}
+        ]
     };
 	
 	

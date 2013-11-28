@@ -31,9 +31,7 @@ function CemeteryViewCtrl($scope, $http, $resource, $location,  $routeParams,
         	{cellTemplate:tplPurpose, displayName: 'Назначение'},
         	{field: 'places_count', displayName: 'Кол-во могил в месте'},
             {displayName:'Действие',cellTemplate:tplButtonEdit}
-        ],
-        enableRowReordering:true,
-        sortInfo: { fields: ['name'], directions: ['asc']}
+        ]
     };
 
 	$scope.PLACE_TYPES = PLACE_TYPES;	

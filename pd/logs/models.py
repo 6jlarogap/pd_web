@@ -96,11 +96,11 @@ def log_object(request, obj=None, old=None, new=None, reason=None, code=None):
     else:
         for field in new._meta.fields:
             if field.name not in LOG_STOP_FIELDS and getattr(old,field.name) != getattr(new,field.name):
-                old_val = getattr(old,field.name)
-                new_val = getattr(new,field.name)
-                if not old_val:
+                old_val = unicode(getattr(old,field.name)) #.__unicode__()
+                new_val = unicode(getattr(new,field.name))
+                if old_val=="None":
                     msg.append(_(u'"%s": добавлено "%s"') % (field.verbose_name, new_val))
-                elif not new_val:
+                elif new_val=="None":
                     msg.append(_(u'"%s": удалено "%s"') % (field.verbose_name, old_val))
                 else:
                     msg.append(_(u'"%s": "%s" -> "%s"') % (field.verbose_name, old_val, new_val))
@@ -110,7 +110,7 @@ def log_object(request, obj=None, old=None, new=None, reason=None, code=None):
         user=user,
         ct=obj and ContentType.objects.get_for_model(obj) or None,
         obj_id=obj and obj.pk or None,
-        msg = ", ".join(msg),
+        msg = "<br/>".join(msg),
         code=code or '',
     )
 

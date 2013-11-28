@@ -21,7 +21,6 @@ from burials.forms import CemeteryForm, AreaFormset, PlaceEditForm, AddOrgForm, 
 from burials.models import Cemetery, Place, Area, BurialFiles, Grave, Burial, AreaPhoto, GravePhoto, ExhumationRequest, AreaPurpose
 from burials.burials_views import *
 from logs.models import write_log, log_object
-from logs.models import write_log
 from users.models import Profile, Org
 from persons.models import Phone 
 from geo.models import Location
@@ -42,6 +41,9 @@ from serializers import CemeterySerializer, AreaSerializer, PlaceSerializer, Are
 
 from persons.serializers import AlivePersonSerializer, PhoneSerializer
 from geo.serializers import LocationSerializer, LocationStaticSerializer
+from logs.serializers import LogSerializer
+
+from logs.views import getLogQuerySet
 
 def getCemetery(request):
     try:
@@ -99,7 +101,7 @@ class CemeteryViewSet(viewsets.ModelViewSet):
     paginate_by = None
 
     def get_queryset(self):
-        return  Cemetery.objects.filter(ugh=self.request.user.profile.org).order_by('pk').all()
+        return  Cemetery.objects.filter(ugh=self.request.user.profile.org).all()
 
     def pre_save(self, obj):
         if not obj.address:
@@ -231,6 +233,8 @@ class AreaViewSet(viewsets.ModelViewSet):
             old = self.model.objects.get(pk=object.pk)
         except self.model.DoesNotExist:
             old = None
+        except AttributeError:
+            old = None
         log_object(self.request, obj=object, old=old, new=object, reason=_(u'Участок изменен'))
 
 class PlaceViewSet(viewsets.ModelViewSet):
@@ -250,11 +254,21 @@ class PlaceViewSet(viewsets.ModelViewSet):
     def pre_save(self, object):
         item = getArea(self.request) # TODO: check this
         object.area = item
-        if item.pk:
-            write_log(self.request, object, _(u'Место №%s изменено' % object.place))
+        #if item.pk:
+        #    write_log(self.request, object, _(u'Место №%s изменено' % object.place))
+        
+        responsible = self.request.DATA.get('obj_responsible')
+        if object.pk and responsible:
+            responsible_serializer =  AlivePersonSerializer(object.responsible, data=responsible, partial=True)
+            if not responsible_serializer.is_valid():
+                return Response(status=400, data=responsible_serializer.errors) 
+            object.responsible = responsible_serializer.save()
+        
         try:
             old = self.model.objects.get(pk=object.pk)
         except self.model.DoesNotExist:
+            old = None
+        except AttributeError:
             old = None
         log_object(self.request, obj=object, old=old, new=object, reason=_(u'Место изменено'))
         
@@ -267,17 +281,11 @@ class PlaceViewSet(viewsets.ModelViewSet):
         return object
 
     def post_save(self, object, created=False):
-        if created: 
-            write_log(self.request, object, _(u'Место №%s создано')% object.place)
+        #if created: 
+        #    write_log(self.request, object, _(u'Место №%s создано')% object.place)
         if object.responsible:
-            responsible = self.request.DATA.get('obj_responsible')
-            responsible_serializer =  AlivePersonSerializer(object.responsible, data=responsible, partial=True)
-            if not responsible_serializer.is_valid():
-                return Response(status=400, data=responsible_serializer.errors) 
-            responsible = responsible_serializer.save()
-
             phone = self.request.DATA.get('obj_responsible_phones')
-            phone_set = responsible.phone_set.all()
+            phone_set = object.responsible.phone_set.all()
             phone_serializer = PhoneSerializer(
                                             phone_set, 
                                             data=phone,
@@ -286,9 +294,9 @@ class PlaceViewSet(viewsets.ModelViewSet):
             if  not phone_serializer.is_valid():
                 return Response(status=400, data=phone_serializer.errors)
             res = phone_serializer.save()
-            ct = ContentType.objects.get_for_model(responsible)
+            ct = ContentType.objects.get_for_model(object.responsible)
             for i in res:
-                i.obj_id = responsible.pk
+                i.obj_id = object.responsible.pk
                 i.ct = ct
                 i.save() 
 
@@ -308,7 +316,8 @@ class PlaceViewSet(viewsets.ModelViewSet):
                 "burials" : BurialSerializer(place.burial_set.all(), many=True).data,
                 "responsible" : {},
                 "responsible_phones" : [],
-                "responsible_address" : {}
+                "responsible_address" : {},
+                "log": LogSerializer(getLogQuerySet(log_type="place", place=place),many=True).data
                 }
         if place.responsible:
             phone_set = place.responsible.phone_set.all()
@@ -367,11 +376,18 @@ class GraveViewSet(viewsets.ModelViewSet):
         object.place.lat = res["lat"]
         object.place.lng = res["lng"]  
         object.place.save()
+        try:
+            old = self.model.objects.get(pk=object.pk)
+        except self.model.DoesNotExist:
+            old = None
+        except AttributeError:
+            old = None
+        log_object(self.request, obj=object.place, old=old, new=object, reason=_(u'Могила изменена'))        
         return object
         
-    def post_save(self, object, created=False):
-        if created:
-            write_log(self.request, object, _(u'Могила №%d создана') % object.grave_number)
+    #def post_save(self, object, created=False):
+    #    if created:
+    #        write_log(self.request, object, _(u'Могила №%d создана') % object.grave_number)
 
 
     @action(methods=['GET',])
@@ -449,6 +465,17 @@ class BurialViewSet(viewsets.ModelViewSet):
             serializer_class = self.serializer_class
         return serializer_class
 
+
+    def pre_save(self, object):
+        try:
+            old = self.model.objects.get(pk=object.pk)
+        except self.model.DoesNotExist:
+            old = None
+        except AttributeError:
+            old = None
+        log_object(self.request, obj=object.place, old=old, new=object, reason=_(u'Захоронение изменено'))        
+        return object
+        
 
 class AreaPhotoViewSet(viewsets.ModelViewSet):
     model = AreaPhoto

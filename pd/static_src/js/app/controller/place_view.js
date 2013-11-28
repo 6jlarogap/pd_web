@@ -8,24 +8,6 @@
 	$scope.BURIAL_TYPES = BURIAL_TYPES;
 	$scope.STATUS_CHOICES = STATUS_CHOICES;
 
-	$scope.logGridOptions = {
-		data : 'place_log',
-		enableRowSelection : false,
-		columnDefs : [
-			{
-				field : 'dt',
-				displayName : 'Дата',
-				width:'130'
-			}, {
-				field : 'user',
-				displayName : 'Пользователь',
-				width:'250'
-			}, {
-				field : 'msg',
-				displayName : 'Действие'
-			}
-		]
-	};
 
 	//setup
 	$scope.updateMap = function() {
@@ -63,9 +45,9 @@
 	};
 
 	$scope.update = function() {
-		Log.place_log({id:$routeParams.place_id},function(result) {
+		/*Log.place_log({id:$routeParams.place_id},function(result) {
 			$scope.place_log = result;
-		});
+		});*/
 		var item_params = {
 			placeID : $routeParams.place_id,
 			cemetery_id : $routeParams.cemetery_id,
@@ -80,6 +62,11 @@
 			$scope.cemetery = new Cemetery(result.cemetery);
 			$scope.area = new Area(result.area);
 			$scope.item = new Place(result.place);
+			
+			$scope.place_log = [];
+			angular.forEach(result.log, function(item) {
+                  $scope.place_log.push(new Log(item));
+            });
 			
 			$scope.responsible_phones = [];
 			angular.forEach(result.responsible_phones, function(item) {
@@ -220,6 +207,7 @@
 				cemetery_id : $routeParams.cemetery_id,
 				area_id : $routeParams.area_id
 			}, function() {
+				$scope.update();
 				$scope.updateMap();
 				$scope.closeEditForm('isPlaceEditorOpen');
 				noty({text: 'Изменения сохранены', type:'success', layout:'topRight'});

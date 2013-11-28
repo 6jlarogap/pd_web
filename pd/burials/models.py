@@ -112,6 +112,7 @@ class AreaPurpose(models.Model):
     def __unicode__(self):
         return self.name
 
+
 class Area(BaseModel):
     AVAILABILITY_OPEN = 'open'
     AVAILABILITY_OLD = 'old_only'
@@ -167,6 +168,7 @@ class Place(SafeDeleteMixin, GeoPointModel):
         verbose_name = _(u"Место")
         verbose_name_plural = _(u"Место")
         unique_together = ('cemetery', 'area', 'row', 'place',)
+        ordering = ['row', 'place']
 
     def __unicode__(self):
         return _(u'Кл. %s, уч. %s, ряд %s, место %s') % (self.cemetery, self.area and self.area.name or '', self.row, self.place)

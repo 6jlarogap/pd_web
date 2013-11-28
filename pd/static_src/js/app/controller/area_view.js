@@ -63,9 +63,7 @@ function AreaViewCtrl($scope, $rootScope, $http, $routeParams, $resource, $locat
         	{field: 'place', displayName: 'Место'},
         	{displayName:'Ответственный', field:'responsible_txt'}, 
             {displayName:'Действие',cellTemplate:tplButtonEdit}
-        ],
-        enableRowReordering:true,
-        sortInfo: { fields: ['row', 'place'], directions: ['asc', 'asc']}
+        ]
     };
 
 	// Diallog
