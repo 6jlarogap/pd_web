@@ -8,6 +8,8 @@ from django.views.generic.list import ListView
 from django.views.generic.edit import BaseFormView
 from django.shortcuts import get_object_or_404
 from django.db.models.loading import get_model
+from django.utils.translation import ugettext as _
+from django.contrib import messages
 
 from django.conf import settings
 
@@ -97,3 +99,14 @@ def media_xsendfile(request, path, document_root):
         #
         from django.views.static import serve
         return serve(request, path, document_root)
+
+class FormInvalidMixin(BaseFormView):
+    """
+    Типичное сообщение об ошибках, особенно в представлениях с пространными формами
+    
+    ВНИМАНИЕ: Объект представления должен иметь атрибут self.request !
+    """
+    def form_invalid(self, form, *args, **kwargs):
+        messages.error(self.request, _(u'Обнаружены ошибки, их необходимо исправить'))
+        return super(FormInvalidMixin, self).form_invalid(form, *args, **kwargs)
+
