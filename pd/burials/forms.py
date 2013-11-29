@@ -81,10 +81,11 @@ class CemeteryForm(LoggingFormMixin, BaseCemeteryForm):
 
     def clean(self):
         cleaned_data = super(CemeteryForm, self).clean()
-        if self.cleaned_data['places_algo_archive'] == Cemetery.PLACE_ARCHIVE_BURIAL_ACCOUNT_NUMBER and \
-           not self.cleaned_data['archive_burial_account_number_required']:
-            raise forms.ValidationError(_(u'Номер архивного захоронения обязателен, '
-                                          u'если расстановка мест архивных захоронений: по рег. номеру'))
+        if self.is_valid():
+            if self.cleaned_data['places_algo_archive'] == Cemetery.PLACE_ARCHIVE_BURIAL_ACCOUNT_NUMBER and \
+               not self.cleaned_data['archive_burial_account_number_required']:
+                raise forms.ValidationError(_(u'Номер архивного захоронения обязателен, '
+                                              u'если расстановка мест архивных захоронений: по рег. номеру'))
         return cleaned_data
 
     def is_valid(self):
