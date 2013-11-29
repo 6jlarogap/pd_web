@@ -29,7 +29,7 @@ from users.forms import UserAddForm, RegisterForm, LoruFormset, ProfileForm, Use
                         OrgLogForm, LoginLogForm, OrgBurialStatsForm, SupportForm
 from users.models import Profile, Org, RegisterProfile, ProfileLORU
 from burials.models import Burial
-from pd.views import PaginateListView, RequestToFormMixin
+from pd.views import PaginateListView, RequestToFormMixin, FormInvalidMixin
 
 
 class LoginView(View):
@@ -260,7 +260,7 @@ class UserEditView(LoginRequiredMixin, UpdateView):
         
 edit_user = UserEditView.as_view()
 
-class OrgEditView(LoginRequiredMixin, RequestToFormMixin, UpdateView):
+class OrgEditView(LoginRequiredMixin, RequestToFormMixin, FormInvalidMixin, UpdateView):
     template_name = 'edit_org.html'
     model = Org
     form_class = OrgForm
@@ -285,10 +285,6 @@ class OrgEditView(LoginRequiredMixin, RequestToFormMixin, UpdateView):
         messages.success(self.request, msg)
         return reverse('edit_org', args=[self.object.pk])
         
-    def form_invalid(self, form, *args, **kwargs):
-        messages.error(self.request, _(u'Обнаружены ошибки, их необходимо исправить'))
-        return super(OrgEditView, self).form_invalid(form, *args, **kwargs)
-
 edit_org = OrgEditView.as_view()
 
 class ChangePasswordView(LoginRequiredMixin, UpdateView):

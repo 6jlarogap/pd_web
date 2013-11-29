@@ -43,7 +43,7 @@ class BaseCemeteryForm(forms.ModelForm):
 class CemeteryForm(LoggingFormMixin, BaseCemeteryForm):
     class Meta:
         model = Cemetery
-        exclude = ['ugh', ]
+        exclude = ('ugh', 'creator', )
 
     def __init__(self, request, *args, **kwargs):
         self.request = request
@@ -56,6 +56,36 @@ class CemeteryForm(LoggingFormMixin, BaseCemeteryForm):
             self.area_formset = AreaFormset(data=self.data or None, instance=self.instance)
         else:
             self.area_formset = None
+
+    def clean_places_algo(self):
+        """
+        Если у угх стоит рег. номер "ост. пустым", то в кладбище не должно быть место "по рег. №",
+        """
+        places_algo = self.cleaned_data.get('places_algo')
+        if places_algo and \
+           places_algo == Cemetery.PLACE_BURIAL_ACCOUNT_NUMBER and \
+           self.request.user.profile.org.numbers_algo == Org.NUM_EMPTY:
+            raise forms.ValidationError(_(u"Указанный способ недопустим, т.к. рег. номера захоронений могут быть пустыми"))
+        return places_algo
+
+    def clean_places_algo_archive(self):
+        """
+        Если у угх стоит рег. номер "ост. пустым", то в кладбище не должно быть место "по рег. №",
+        """
+        places_algo_archive = self.cleaned_data.get('places_algo_archive')
+        if places_algo_archive and \
+           places_algo_archive == Cemetery.PLACE_ARCHIVE_BURIAL_ACCOUNT_NUMBER and \
+           self.request.user.profile.org.numbers_algo == Org.NUM_EMPTY:
+            raise forms.ValidationError(_(u"Указанный способ недопустим, т.к. рег. номера захоронений могут быть пустыми"))
+        return places_algo_archive
+
+    def clean(self):
+        cleaned_data = super(CemeteryForm, self).clean()
+        if self.cleaned_data['places_algo_archive'] == Cemetery.PLACE_ARCHIVE_BURIAL_ACCOUNT_NUMBER and \
+           not self.cleaned_data['archive_burial_account_number_required']:
+            raise forms.ValidationError(_(u'Номер архивного захоронения обязателен, '
+                                          u'если расстановка мест архивных захоронений: по рег. номеру'))
+        return cleaned_data
 
     def is_valid(self):
         return super(CemeteryForm, self).is_valid() and self.address_form.is_valid() and (not self.area_formset or self.area_formset.is_valid())
@@ -81,6 +111,11 @@ class CemeteryAdminForm(BaseCemeteryForm):
         model = Cemetery
 
 class BaseAreaFormset(BaseInlineFormSet):
+    def __init__(self, *args, **kwargs):
+        super(BaseAreaFormset, self).__init__(*args, **kwargs)
+        for f in self.forms:
+            f.formset = self
+
     def clean(self):
         for df in getattr(self, 'deleted_forms', []):
             if df.instance:
@@ -88,7 +123,18 @@ class BaseAreaFormset(BaseInlineFormSet):
                     msg = _(u'Участок %s с <a href="/burials/?area=%s" target="_blank">захоронениями</a> удалить нельзя')
                     raise forms.ValidationError(mark_safe(msg % (df.instance.name, df.instance.name)))
 
-AreaFormset = inlineformset_factory(Cemetery, Area, formset=BaseAreaFormset, can_delete=True)
+class AreaItemForm(forms.ModelForm):
+
+    class Meta:
+        model = Area
+
+    def clean(self):
+        for f in self.formset:
+            if (f is not self) and f['name'].value() == self['name'].value():
+                raise forms.ValidationError(_(u'Участки не могут иметь одинаковые названия'))
+        return self.cleaned_data
+
+AreaFormset = inlineformset_factory(Cemetery, Area, form=AreaItemForm, formset=BaseAreaFormset, can_delete=True)
 
 class PlaceEditForm(ChildrenJSONMixin, forms.ModelForm):
     class Meta:
@@ -363,6 +409,10 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
         elif not self.instance.is_finished():
             del self.fields['fact_date']
             del self.fields['account_number']
+        if 'account_number' in self.fields and \
+           self.request.user.profile.org.numbers_algo == Org.NUM_EMPTY and \
+           not self.instance.account_number:
+            del self.fields['account_number']
             
         if not self.request.user.profile.is_ugh():
             del self.fields['place_length']
@@ -370,7 +420,11 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
 
         if not self.instance.pk:
             self.initial['burial_container'] = Burial.CONTAINER_COFFIN
-            self.initial['burial_type'] = Burial.BURIAL_NEW
+            if self.request.REQUEST.get('place_id'):
+                # Вызов из карточки места
+                self.initial['burial_type'] = Burial.BURIAL_ADD
+            else:
+                self.initial['burial_type'] = Burial.BURIAL_NEW
             if self.request.user.profile.cemetery:
                 self.initial['cemetery'] = self.request.user.profile.cemetery
             if self.request.user.profile.area:
@@ -841,9 +895,12 @@ class BurialCommitForm(BurialForm):
             is_ugh = True
 
         cemetery = self.cleaned_data.get('cemetery')
+        area = self.cleaned_data.get('area')
+        row = self.cleaned_data.get('row')
+        place_number = self.cleaned_data.get('place_number') or ''
 
         if is_ugh:
-            acc_number = self.cleaned_data.get('account_number')
+            acc_number = self.cleaned_data.get('account_number') or ''
             fact_date  = self.cleaned_data.get('fact_date')
             if acc_number and fact_date:
                 if self.request.user.profile.org.numbers_algo in (Org.NUM_YEAR_UGH, Org.NUM_YEAR_CEMETERY, ):
@@ -865,15 +922,16 @@ class BurialCommitForm(BurialForm):
                     except ValueError:
                         raise forms.ValidationError(msg)
 
-            if (self.instance.is_archive() or self.request.REQUEST.get('archive')) and \
-               not self.cleaned_data.get('account_number').strip() and \
-               (not cemetery or cemetery.archive_burial_account_number_required):
-                msg = _(u"Нельзя закрывать архивное захоронение без указания его номера в книге учета")
-                raise forms.ValidationError(msg)
+            if (self.instance.is_archive() or self.request.REQUEST.get('archive')) and not acc_number.strip():
+                if not cemetery or cemetery.archive_burial_account_number_required:
+                    msg = _(u"Нельзя закрывать архивное захоронение без указания его номера в книге учета")
+                    raise forms.ValidationError(msg)
+                if not place_number.strip() and \
+                    cemetery and \
+                    cemetery.places_algo_archive == Cemetery.PLACE_ARCHIVE_BURIAL_ACCOUNT_NUMBER:
+                    msg = _(u"Номер места не может быть пуст, если формируется из номера захоронения, а он пустой (см. свойства организации)")
+                    raise forms.ValidationError(msg)
 
-        place_number = self.cleaned_data.get('place_number') or ''
-        area = self.cleaned_data.get('area')
-        row = self.cleaned_data.get('row')
         if not place_number.strip() and \
            (self.instance.is_archive() or self.request.REQUEST.get('archive')) and \
            cemetery and cemetery.places_algo_archive == Cemetery.PLACE_ARCHIVE_MANUAL:
@@ -885,6 +943,16 @@ class BurialCommitForm(BurialForm):
                 raise forms.ValidationError(msg)
             elif self.request.REQUEST.get('ready'):
                 msg = _(u"Не указано место для закрытого участка. Нельзя отправлять на согласование")
+                raise forms.ValidationError(msg)
+        elif not place_number.strip() and \
+             cemetery and \
+             cemetery.ugh.numbers_algo == Org.NUM_EMPTY and \
+             cemetery.places_algo == Cemetery.PLACE_BURIAL_ACCOUNT_NUMBER:
+            if is_ugh:
+                msg = _(u"Номер места не может быть пуст, если формируется из номера захоронения, а он пустой (см. свойства организации)")
+                raise forms.ValidationError(msg)
+            elif self.request.REQUEST.get('ready'):
+                msg = _(u"Номер места не может быть пуст, если формируется из номера захоронения, а он пустой, в свойствах ОМС")
                 raise forms.ValidationError(msg)
         elif (row.strip() or place_number.strip()) and not area:
             msg = _(u"Указан ряд и/или место, но не указан участок")

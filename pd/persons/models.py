@@ -124,6 +124,13 @@ class BasePerson(models.Model):
             pass
         return new_person
 
+    def save(self, *args, **kwargs):
+        uname = lambda s: (s[:1].upper() + s[1:]).strip(' ').strip('*')
+        self.first_name = uname(self.first_name)
+        self.last_name = uname(self.last_name)
+        self.middle_name = uname(self.middle_name)
+        super(BasePerson, self).save(*args, **kwargs)
+
     class Meta:
         ordering = ['last_name', 'first_name', 'middle_name', ]
         verbose_name = _(u"физ. лицо")
@@ -135,12 +142,6 @@ class DeadPerson(BasePerson):
     """
     birth_date = UnclearDateModelField(_(u"Дата рождения"), blank=True, null=True)
     death_date = UnclearDateModelField(_(u"Дата смерти"), blank=True, null=True)
-
-    def save(self, *args, **kwargs):
-        self.first_name = self.first_name.capitalize().strip(' ').strip('*')
-        self.last_name = self.last_name.capitalize().strip(' ').strip('*')
-        self.middle_name = self.middle_name.capitalize().strip(' ').strip('*')
-        super(DeadPerson, self).save(*args, **kwargs)
 
     def get_birth_date(self):
         if not self.birth_date:
@@ -200,12 +201,6 @@ class AlivePerson(BasePerson):
     Живое ФЛ с телефоном
     """
     phones = models.TextField(_(u"Телефоны"), blank=True, null=True)
-
-    def save(self, *args, **kwargs):
-        self.first_name = self.first_name.capitalize().strip(' ').strip('*')
-        self.last_name = self.last_name.capitalize().strip(' ').strip('*')
-        self.middle_name = self.middle_name.capitalize().strip(' ').strip('*')
-        super(AlivePerson, self).save(*args, **kwargs)
 
 class DocumentSource(models.Model):
     name = models.CharField(_(u"Наименование органа"), max_length=255, unique=True)
@@ -296,3 +291,26 @@ class DeathCertificateScan(Files):
     """
     deathcertificate = models.OneToOneField(DeathCertificate)
 
+
+PHONE_TYPE_MOBILE = 0
+PHONE_TYPE_CITY = 1
+PHONE_TYPE_FAX = 2
+
+PHONE_TYPE_CHOICES = (
+    (PHONE_TYPE_MOBILE, _(u"Мобильный")),
+    (PHONE_TYPE_CITY, _(u"Городской")),
+    (PHONE_TYPE_FAX, _(u"Факс"))
+)
+
+
+class Phone(BaseModel):
+    person = models.ForeignKey(AlivePerson, verbose_name=_(u"Живое ФЛ"), null=True, blank=True, limit_choices_to={'type': Org.PROFILE_ZAGS})
+    number = models.CharField(_(u"Номер"), max_length=50, blank=True)
+    phonetype = models.SmallIntegerField(_(u"Тип телефона"), choices=PHONE_TYPE_CHOICES, default=PHONE_TYPE_CITY)
+
+    class Meta:
+        verbose_name = _(u"телефон")
+        verbose_name_plural = _(u"Телефоны")
+
+    def __unicode__(self):
+        return _(u"Телефон: %s") % self.number

@@ -197,16 +197,6 @@ class Files(models.Model):
         self.delete_from_media()
         super(Files, self).delete()
 
-class Photo(Files):
-    """
-    Базовый класс для фото
-    """
-    class Meta:
-        abstract = True
-
-    lat = models.FloatField(_(u"Широта"), blank=True, null=True)
-    lng = models.FloatField(_(u"Долгота"), blank=True, null=True)
-
 def validate_gt0(value):
     if value <= 0:
         raise ValidationError(_(u'Должно быть больше нуля'))
