@@ -8,7 +8,6 @@ from pd.models import BaseModel
 
 import re
 
-
 class GeoPointModel(BaseModel):
     """
     Базовая GEO модель

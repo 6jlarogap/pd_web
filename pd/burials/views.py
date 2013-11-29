@@ -13,7 +13,7 @@ from django.views.generic.detail import DetailView
 from django.views.generic.edit import CreateView, UpdateView
 from django.views.generic.list import ListView
 
-from pd.views import RequestToFormMixin
+from pd.views import RequestToFormMixin, FormInvalidMixin
 from burials.forms import CemeteryForm, AreaFormset, PlaceEditForm, AddOrgForm, AreaMergeForm, BurialfileCommentEditForm
 from burials.models import Cemetery, Place, Area, BurialFiles, Grave, Burial, AreaPhoto, GravePhoto, ExhumationRequest, AreaPurpose
 from burials.burials_views import *
@@ -129,7 +129,7 @@ class CemeteryList(UGHRequiredMixin, ListView):
 
 manage_cemeteries = CemeteryList.as_view()
 
-class CemeteryCreate(UGHRequiredMixin, RequestToFormMixin, CreateView):
+class CemeteryCreate(UGHRequiredMixin, RequestToFormMixin, FormInvalidMixin, CreateView):
     template_name = 'cemetery_create.html'
     form_class = CemeteryForm
 
@@ -148,7 +148,7 @@ class CemeteryCreate(UGHRequiredMixin, RequestToFormMixin, CreateView):
 
 manage_cemeteries_create = CemeteryCreate.as_view()
 
-class CemeteryEdit(UGHRequiredMixin, RequestToFormMixin, UpdateView):
+class CemeteryEdit(UGHRequiredMixin, RequestToFormMixin, FormInvalidMixin, UpdateView):
     template_name = 'cemetery_edit.html'
     form_class = CemeteryForm
 
