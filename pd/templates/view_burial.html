@@ -142,7 +142,7 @@
             {% if user.profile.is_loru and not b.is_closed and not b.exhumated %} 
                 {% if place %}
                     <span style="color:blue"><b>{% trans "Место существует" %}</b></span><br />
-                {% elif b.cemetery and b.area and b.place_number %}
+                {% elif b.cemetery and b.area and b.place_number and not b.is_new %}
                     <span style="color:red"><b>{% trans "Место отсутствует в архиве" %}!</b></span><br />
                 {% endif %}
             {% endif %}
