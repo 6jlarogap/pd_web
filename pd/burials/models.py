@@ -482,6 +482,15 @@ class Burial(SafeDeleteMixin, GetLogsMixin, BaseModel):
     def is_ugh(self):
         return self.is_ugh_only() or self.is_archive()
 
+    def is_new(self):
+        return self.burial_type == self.BURIAL_NEW
+
+    def is_add(self):
+        return self.burial_type == self.BURIAL_ADD
+
+    def is_over(self):
+        return self.burial_type == self.BURIAL_OVER
+
     def is_bio(self):
         return self.burial_container == self.CONTAINER_BIO
 
