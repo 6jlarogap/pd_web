@@ -16,7 +16,7 @@ function CemeteryCtrl($scope, $http, $location, $resource) {
 	var tplButtonEdit = '<a class="btn btn-small" ng-href="/manage/cemetery/{{row.getProperty(\'id\')}}">Открыть</a>';
 	var tplLinkOpen = '<a ng-class="col.colIndex()" ng-href="/manage/cemetery/{{row.getProperty(\'id\')}}">{{row.getProperty(\'name\')}}</a>';
     $scope.gridOptions = { 
-        data: '(cemetery_list|filter:search)',
+        data: '(cemetery_list|filter:search| orderBy:natural("name"))',
         enableRowSelection:false,
         columnDefs: [
         	{field: 'name', cellTemplate:tplLinkOpen, displayName:'Наименование'},

@@ -26,6 +26,8 @@ js_app = Bundle(
         #"angular-ui-bootstrap/src/dialog/dialog.js",
     
         "js/app/directive/angular-ymaps.js",
+        
+        "js/app/filters/natural_sort.js",
 
         "js/app/controller/cemetery.js",
         "js/app/controller/cemetery_view.js",

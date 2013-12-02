@@ -23,7 +23,7 @@ function CemeteryViewCtrl($scope, $http, $resource, $location,  $routeParams,
 	});
 	
     $scope.gridOptions = { 
-        data: 'area_list|filter:search',
+        data: 'area_list|filter:search| orderBy:natural("name")',
         enableRowSelection:false,
         columnDefs: [
         	{field: 'name', displayName: 'Наименование'},

@@ -4,7 +4,7 @@ var APP_VERSION = '0.1.0-16',
 	test, qqq;
 
 var app = angular.module('angularPD', ['ngGrid', 'ngCookies', 'ngResource', 'ui.bootstrap', 
-	'ui.bootstrap.dialog', 'googleObjects', 'blueimp.fileupload', 'ui.mask', 'ymaps'], //'pd.address',  
+	'ui.bootstrap.dialog', 'googleObjects', 'blueimp.fileupload', 'ui.mask', 'ymaps', 'naturalSort'], //'pd.address',  
 function($routeProvider, $locationProvider, $dialogProvider) {
 	$locationProvider.html5Mode(true);
     $dialogProvider.options({
@@ -41,4 +41,14 @@ function($routeProvider, $locationProvider, $dialogProvider) {
 	    	controller: 'SupportViewCtrl',
 	        templateUrl: STATIC_TPL_URL+'/page404.html'+version_str
 	    });
-});
+})
+
+.run(["$rootScope", "naturalService", function($rootScope, naturalService) {
+    // integrate natural sorting fn
+    $rootScope.natural = function (field) {
+        return function (item) {
+            return naturalService.naturalValue(item[field]);
+        }
+    };
+}]);
+;
