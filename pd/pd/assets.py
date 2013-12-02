@@ -22,13 +22,13 @@ js_app = Bundle(
         "js/app/directive/address/address.js",
         "js/app/directive/phones/phones.js",
         "js/app/directive/google.js",
+        
+        "js/app/filter/natural_sort.js",
     
         #"angular-ui-bootstrap/src/dialog/dialog.js",
     
         "js/app/directive/angular-ymaps.js",
         
-        "js/app/filters/natural_sort.js",
-
         "js/app/controller/cemetery.js",
         "js/app/controller/cemetery_view.js",
         "js/app/controller/area_view.js",

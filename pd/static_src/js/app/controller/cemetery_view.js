@@ -1,7 +1,7 @@
 ﻿var qqq;//'use strict';
 app.controller('CemeteryViewCtrl',
 function CemeteryViewCtrl($scope, $http, $resource, $location,  $routeParams, 
-						Cemetery, Area, AreaPurpose, Place, Phone, ymapData) {
+						Cemetery, Area, AreaPurpose, Place, Phone, ymapData, naturalService) {
     "use strict";
 
 	var tplButtonEdit = '<a class="btn btn-small" ng-href="/manage/cemetery/'+$routeParams.cemetery_id+
@@ -23,7 +23,7 @@ function CemeteryViewCtrl($scope, $http, $resource, $location,  $routeParams,
 	});
 	
     $scope.gridOptions = { 
-        data: 'area_list|filter:search| orderBy:natural("name")',
+        data: '(area_list|filter:search)',
         enableRowSelection:false,
         columnDefs: [
         	{field: 'name', displayName: 'Наименование'},
@@ -64,6 +64,7 @@ function CemeteryViewCtrl($scope, $http, $resource, $location,  $routeParams,
 
 		Area.list({cemetery_id: $routeParams.cemetery_id}, function(result) {
 			$scope.area_list = result;
+			$scope.area_list.sort(function(a,b){return naturalService.naturalSortField(a,b,'name')});
 		});
 		
 		

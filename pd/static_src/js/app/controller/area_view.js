@@ -45,6 +45,7 @@ function AreaViewCtrl($scope, $rootScope, $http, $routeParams, $resource, $locat
 				area_id: $routeParams.area_id
 			}, function(result) {
 			$scope.place_list = result;
+			$scope.place_list.sort();
 			try{
 				$scope.$digest();
 			}catch(e){}
@@ -56,7 +57,7 @@ function AreaViewCtrl($scope, $rootScope, $http, $routeParams, $resource, $locat
     };
 
     $scope.gridOptions = { 
-        data: 'place_list|filter:search|orderBy:natural("row")',
+        data: '(place_list|filter:search)',
         enableRowSelection:false,
         columnDefs: [
         	{field: 'row', displayName: 'Ряд'},

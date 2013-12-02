@@ -1,3 +1,4 @@
+
 // Create a module for naturalSorting
 angular.module("naturalSort", [])
 
@@ -6,7 +7,7 @@ angular.module("naturalSort", [])
         // the cache prevents re-creating the values every time, at the expense of
         // storing the results forever. Not recommended for highly changing data
         // on long-term applications.
-    var natCache = {},
+    var natCache = {}, natValue,
         // amount of extra zeros to padd for sorting
         padding = function(value) {
             return '00000000000000000000'.slice(value.length);
@@ -14,8 +15,9 @@ angular.module("naturalSort", [])
         
         // Calculate the default out-of-order date format (d/m/yyyy vs m/d/yyyy)
         natDateMonthFirst = $locale.DATETIME_FORMATS.shortDate.charAt(0) == 'm';
+        
         // Replaces all suspected dates with a standardized yyyy-m-d, which is fixed below
-        fixDates = function(value) {
+         var fixDates = function(value) {
             // first look for dd?-dd?-dddd, where "-" can be one of "-", "/", or "."
             return value.replace(/(\d\d?)[-\/\.](\d\d?)[-\/\.](\d{4})/, function($0, $m, $d, $y) {
                 // temporary holder for swapping below
@@ -69,9 +71,23 @@ angular.module("naturalSort", [])
     return {
         naturalValue: natValue,
         naturalSort: function(a, b) {
-            a = natVale(a);
+            a = natValue(a);
             b = natValue(b);
+            return (a < b) ? -1 : ((a > b) ? 1 : 0)
+        },
+        naturalSortField: function(a, b, field) {
+            a = natValue(a[field]);
+            b = natValue(b[field]);
             return (a < b) ? -1 : ((a > b) ? 1 : 0)
         }
     };
 }])
+
+// Attach a function to the rootScope so it can be accessed by "orderBy"
+.run(["$rootScope", "naturalService", function($rootScope, naturalService) {
+    $rootScope.natural = function (field) {
+        return function (item) {
+            return naturalService.naturalValue(item[field]);
+        }
+    };
+}]);

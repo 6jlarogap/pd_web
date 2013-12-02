@@ -42,13 +42,4 @@ function($routeProvider, $locationProvider, $dialogProvider) {
 	        templateUrl: STATIC_TPL_URL+'/page404.html'+version_str
 	    });
 })
-
-.run(["$rootScope", "naturalService", function($rootScope, naturalService) {
-    // integrate natural sorting fn
-    $rootScope.natural = function (field) {
-        return function (item) {
-            return naturalService.naturalValue(item[field]);
-        }
-    };
-}]);
 ;
