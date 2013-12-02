@@ -12,13 +12,11 @@ from pd.models import BaseModel, GetLogsMixin
 
 
 class Product(models.Model):
-    PRODUCT_BURIAL = 'burial'
     PRODUCT_CATAFALQUE = 'catafalque'
     PRODUCT_LOADERS = 'loaders'
     PRODUCT_DIGGERS = 'diggers'
     PRODUCT_SIGN = 'SIGN'
     PRODUCT_TYPES = (
-        (PRODUCT_BURIAL, _(u"Захоронение")),
         (PRODUCT_CATAFALQUE, _(u"Автокатафалк")),
         (PRODUCT_LOADERS, _(u"Грузчики")),
         (PRODUCT_DIGGERS, _(u"Рытье могилы")),
