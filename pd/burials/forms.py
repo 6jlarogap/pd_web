@@ -124,14 +124,15 @@ class BaseAreaFormset(BaseInlineFormSet):
                     msg = _(u'Участок %s с <a href="/burials/?area=%s" target="_blank">захоронениями</a> удалить нельзя')
                     raise forms.ValidationError(mark_safe(msg % (df.instance.name, df.instance.name)))
 
-class AreaItemForm(forms.ModelForm):
+class AreaItemForm(StrippedStringsMixin, forms.ModelForm):
 
     class Meta:
         model = Area
 
     def clean(self):
+        StrippedStringsMixin.clean(self)
         for f in self.formset:
-            if (f is not self) and f['name'].value() == self['name'].value():
+            if (f is not self) and f['name'].value().strip() == self['name'].value().strip():
                 raise forms.ValidationError(_(u'Участки не могут иметь одинаковые названия'))
         return self.cleaned_data
 
