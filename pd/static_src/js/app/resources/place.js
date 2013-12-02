@@ -7,13 +7,20 @@ app.factory('Place', function($resource,$routeParams){
 			},
 			isArray: false
 		},
-		getForm: {
-			method: 'GET',
-			params: {
-				action: 'getform',
-			},
-			isArray: false
-		},
+        getForm: {
+            method: 'GET',
+            params: {
+                action: 'getform',
+            },
+            isArray: false
+        },
+        getGraves: {
+            method: 'GET',
+            params: {
+                action: 'getgraves',
+            },
+            isArray: false
+        },
 		query: {
 			method: 'GET',
 			params: {

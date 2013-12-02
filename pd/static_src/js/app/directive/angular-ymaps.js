@@ -100,7 +100,6 @@ ymapModule = angular.module('ymaps', [])
     };
     $scope.removeMarkers = function () {
     	/*ymaps.geoObjects.each(function (geoObject) {
-    		console.log(geoObject);
     		geoObject.remove();
     	})*/;
 		if(ymapData.collection && ymapData.collection.removeAll)

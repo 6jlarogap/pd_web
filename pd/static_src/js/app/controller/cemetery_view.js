@@ -23,7 +23,7 @@ function CemeteryViewCtrl($scope, $http, $resource, $location,  $routeParams,
 	});
 	
     $scope.gridOptions = { 
-        data: 'area_list',
+        data: 'area_list|filter:search',
         enableRowSelection:false,
         columnDefs: [
         	{field: 'name', displayName: 'Наименование'},
@@ -51,6 +51,7 @@ function CemeteryViewCtrl($scope, $http, $resource, $location,  $routeParams,
                 $location.replace();
 		    }
 			$scope.cemetery = new Cemetery(result.cemetery);
+			$scope.address = result.address;
 			$scope.cemetery.time_begin = new Date('0 '+ $scope.cemetery.time_begin);
 			$scope.cemetery.time_end = new Date('0 '+ $scope.cemetery.time_end);
 			

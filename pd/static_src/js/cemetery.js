@@ -102,7 +102,7 @@ function setup_address_autocompletes() {
         }
     });
 
-    $('#mainform #id_cemetery').attr('autocomplete', 'off').typeahead({
+    $('#mainform #id_cemetery, #importform #id_burials-cemetery').attr('autocomplete', 'off').typeahead({
         items: 100,
         source: function (typeahead, query) {
             if (query.length < 2) { return }

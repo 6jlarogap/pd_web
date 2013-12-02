@@ -41,12 +41,12 @@ class Migration(SchemaMigration):
 
         # Adding field 'GravePhoto.dt_created'
         db.add_column('burials_gravephoto', 'dt_created',
-                      self.gf('django.db.models.fields.DateTimeField')(auto_now_add=True, default=datetime.datetime(2013, 11, 12, 0, 0), blank=True),
+                      self.gf('django.db.models.fields.DateTimeField')(auto_now_add=True, default=datetime.datetime(2013, 11, 27, 0, 0), blank=True),
                       keep_default=False)
 
         # Adding field 'GravePhoto.dt_modified'
         db.add_column('burials_gravephoto', 'dt_modified',
-                      self.gf('django.db.models.fields.DateTimeField')(auto_now=True, default=datetime.datetime(2013, 11, 12, 0, 0), blank=True),
+                      self.gf('django.db.models.fields.DateTimeField')(auto_now=True, default=datetime.datetime(2013, 11, 27, 0, 0), blank=True),
                       keep_default=False)
 
 
@@ -101,13 +101,13 @@ class Migration(SchemaMigration):
             'username': ('django.db.models.fields.CharField', [], {'unique': 'True', 'max_length': '30'})
         },
         'burials.area': {
-            'Meta': {'ordering': "['name']", 'object_name': 'Area'},
+            'Meta': {'ordering': "['name']", 'unique_together': "(('cemetery', 'name'),)", 'object_name': 'Area'},
             'availability': ('django.db.models.fields.CharField', [], {'max_length': '32', 'null': 'True'}),
             'cemetery': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['burials.Cemetery']", 'on_delete': 'models.PROTECT'}),
             'dt_created': ('django.db.models.fields.DateTimeField', [], {'auto_now_add': 'True', 'blank': 'True'}),
             'dt_modified': ('django.db.models.fields.DateTimeField', [], {'auto_now': 'True', 'blank': 'True'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'name': ('django.db.models.fields.CharField', [], {'max_length': '255', 'blank': 'True'}),
+            'name': ('django.db.models.fields.CharField', [], {'max_length': '255'}),
             'places_count': ('django.db.models.fields.PositiveIntegerField', [], {'default': '1'}),
             'purpose': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['burials.AreaPurpose']", 'null': 'True', 'on_delete': 'models.PROTECT'})
         },
@@ -215,6 +215,8 @@ class Migration(SchemaMigration):
             'dt_modified': ('django.db.models.fields.DateTimeField', [], {'auto_now': 'True', 'blank': 'True'}),
             'grave_number': ('django.db.models.fields.PositiveSmallIntegerField', [], {'default': '1'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'is_military': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
+            'is_wrong_fio': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'lat': ('django.db.models.fields.FloatField', [], {'null': 'True', 'blank': 'True'}),
             'lng': ('django.db.models.fields.FloatField', [], {'null': 'True', 'blank': 'True'}),
             'place': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['burials.Place']"})

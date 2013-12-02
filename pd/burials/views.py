@@ -2,6 +2,7 @@
 
 from django.contrib import messages
 from django.core.urlresolvers import reverse
+from django.core.paginator import Paginator
 from django.db.models.query_utils import Q
 from django.db.models import Count, Avg
 from django.shortcuts import redirect, render, get_object_or_404
@@ -16,7 +17,9 @@ from django.views.generic.list import ListView
 from django.contrib.contenttypes.models import ContentType
 
 
-from pd.views import RequestToFormMixin
+
+from pd.views import RequestToFormMixin, FormInvalidMixin
+
 from burials.forms import CemeteryForm, AreaFormset, PlaceEditForm, AddOrgForm, AreaMergeForm, BurialfileCommentEditForm
 from burials.models import Cemetery, Place, Area, BurialFiles, Grave, Burial, AreaPhoto, GravePhoto, ExhumationRequest, AreaPurpose
 from burials.burials_views import *
@@ -176,7 +179,7 @@ class CemeteryList(UGHRequiredMixin, ListView):
 
 manage_cemeteries = CemeteryList.as_view()
 
-class CemeteryCreate(UGHRequiredMixin, RequestToFormMixin, CreateView):
+class CemeteryCreate(UGHRequiredMixin, RequestToFormMixin, FormInvalidMixin, CreateView):
     template_name = 'cemetery_create.html'
     form_class = CemeteryForm
 
@@ -195,7 +198,7 @@ class CemeteryCreate(UGHRequiredMixin, RequestToFormMixin, CreateView):
 
 manage_cemeteries_create = CemeteryCreate.as_view()
 
-class CemeteryEdit(UGHRequiredMixin, RequestToFormMixin, UpdateView):
+class CemeteryEdit(UGHRequiredMixin, RequestToFormMixin, FormInvalidMixin, UpdateView):
     template_name = 'cemetery_edit.html'
     form_class = CemeteryForm
 
@@ -244,6 +247,7 @@ class PlaceViewSet(viewsets.ModelViewSet):
     paginate_by = None
 
     def get_queryset(self):
+        # import pudb; pudb.set_trace()
         item = getCemetery(self.request)
         qs = self.model.objects.filter(cemetery=item)
         if self.request.GET.get('area_id'):
@@ -303,11 +307,21 @@ class PlaceViewSet(viewsets.ModelViewSet):
 
     @action(methods=['GET',])
     def getform(self, request, pk=None):
-        
+        #import pudb; pudb.set_trace()
         cemetery = getCemetery(self.request)
         if self.request.GET.get('area_id'):
             area  = getArea(self.request)
         place = get_object_or_404(self.model, pk=pk, cemetery=cemetery, area=area)
+        
+        # Log set
+        paginator = Paginator(getLogQuerySet(log_type="place", place=place), 10)
+        page = request.GET.get('log_page')
+        try:
+            page = paginator.page(page)
+        except:
+            page = paginator.page(1)
+        log_data = LogSerializer(page,many=True).data
+        
         data = {
                 "cemetery" : CemeterySerializer(cemetery).data,
                 "area" : AreaSerializer(area).data,
@@ -317,7 +331,9 @@ class PlaceViewSet(viewsets.ModelViewSet):
                 "responsible" : {},
                 "responsible_phones" : [],
                 "responsible_address" : {},
-                "log": LogSerializer(getLogQuerySet(log_type="place", place=place),many=True).data
+                "log": log_data,
+                "log_page":page.number,
+                "log_pages":page.paginator._num_pages,
                 }
         if place.responsible:
             phone_set = place.responsible.phone_set.all()
@@ -326,6 +342,31 @@ class PlaceViewSet(viewsets.ModelViewSet):
             if place.responsible.address:
                 data["responsible_address"] = LocationStaticSerializer(place.responsible.address).data
         return Response(status=200, data=data)
+
+
+    @action(methods=['GET',])
+    def getgraves(self, request, pk=None):
+        cemetery = getCemetery(self.request)
+        if self.request.GET.get('area_id'):
+            area  = getArea(self.request)
+        place = get_object_or_404(Place, pk=pk, cemetery=cemetery, area=area)
+        paginator = Paginator(place.grave_set.all(), 10)
+
+        page = request.GET.get('grave_page')
+        try:
+            page = paginator.page(page)
+        except:
+            page = paginator.page(1)
+        
+        #import pudb; pudb.set_trace()
+        serializer_context = {'request': request}
+        serializer = GraveSerializer(page, many=True, context=serializer_context)
+        return Response({
+                         'count': place.grave_set.count(),
+                         'page':page.number,
+                         'pages':page.paginator._num_pages,
+                         'results':serializer.data,
+                         })
 
 
     @action(methods=['POST',])
@@ -355,7 +396,7 @@ class GraveViewSet(viewsets.ModelViewSet):
     model = Grave
     serializer_class = GraveSerializer
     permission_classes = (IsAuthenticated,)
-    paginate_by = None
+    paginate_by = 1
 
     def delete(self, request, *args, **kwargs):
         write_log(self.request, self.get_object(), _(u'Могила №%d удалена') % object.grave_number)

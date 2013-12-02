@@ -7,11 +7,15 @@
 	$scope.BURIAL_CONTAINERS = BURIAL_CONTAINERS;
 	$scope.BURIAL_TYPES = BURIAL_TYPES;
 	$scope.STATUS_CHOICES = STATUS_CHOICES;
+    $scope.grave_page = 1;
+    $scope.log_page = 1;
 
-
+  
+    var item_params;
 	//setup
 	$scope.updateMap = function() {
-		ymapData.markers = [{
+		if($scope.item){
+		  ymapData.markers = [{
 				point: [$scope.item.lat, $scope.item.lng],
 				caption: 'Место: "{0}"'.format($scope.item.place),
 				content: "Кл. {0}, уч. {1}, ряд {2}, место {3}".format(
@@ -23,12 +27,16 @@
 				obj_type : 'place',
 				id: $scope.item.id
 			}];
-		$scope.placeCoordinates = [{
-			point : [$scope.item.lat, $scope.item.lng],
-			title : $scope.item.name,
-			obj_type : 'place',
-			id: $scope.item.id
-		}];
+    		$scope.placeCoordinates = [{
+    			point : [$scope.item.lat, $scope.item.lng],
+    			title : $scope.item.name,
+    			obj_type : 'place',
+    			id: $scope.item.id
+    		}];
+		}else{
+		  ymapData.markers = [];
+		}
+		
 		ymapData.points = [];
 		angular.forEach($scope.graves, function(grave, key) {
 			if (grave.lat && grave.lng) {
@@ -45,13 +53,12 @@
 	};
 
 	$scope.update = function() {
-		/*Log.place_log({id:$routeParams.place_id},function(result) {
-			$scope.place_log = result;
-		});*/
-		var item_params = {
+		item_params = {
 			placeID : $routeParams.place_id,
 			cemetery_id : $routeParams.cemetery_id,
-			area_id : $routeParams.area_id
+			area_id : $routeParams.area_id,
+			grave_page:$scope.grave_page,
+			log_page:$scope.log_page
 		};
 		$scope.address_class = 'Place';
 		$scope.address_class_params = item_params;
@@ -67,6 +74,9 @@
 			angular.forEach(result.log, function(item) {
                   $scope.place_log.push(new Log(item));
             });
+			
+			$scope.log_page = result.log_page;
+			$scope.log_pages = result.log_pages; 
 			
 			$scope.responsible_phones = [];
 			angular.forEach(result.responsible_phones, function(item) {
@@ -95,16 +105,24 @@
 	};
 
 	$scope.updateGraves = function() {
-		Grave.query({
-			place_id : $routeParams.place_id
-		}, function(graves) {
-			$scope.max_grave_number = graves.length;
-			$scope.graves = graves;
-
+	   
+       item_params.grave_page = $scope.grave_page;
+	   
+	   Place.getGraves(item_params, function(graves) {
+			//$scope.totalItems = graves.pages || 0;
+			$scope.grave_page = graves.page || 1;
+			$scope.grave_pages = graves.pages;
 			
-			$scope.updateMap(); 
-		    
-			angular.forEach($scope.graves, function(grave, key) {
+			//$scope.pageSize = 2;
+                         
+    
+			$scope.graves = [];
+
+		    var grave;
+			angular.forEach(graves.results, function(row, key) {
+				grave = new Grave(row);
+				$scope.graves.push(grave);
+				
 				GravePhoto.query({
 					grave_id : grave.id
 				}, function(photos) {
@@ -113,7 +131,10 @@
 						grave.firstPhoto = _.first(photos).bfile;
 					}
 				});
+
 			});
+			$scope.updateMap(); 
+            return;
 		    
 			// New element with default data
 			$scope.newGrave = new Grave({
@@ -131,6 +152,11 @@
 			$scope.burials = result;
 		});
 	};
+
+
+    $scope.$watch("log_page", $scope.update);
+    $scope.$watch("grave_page", $scope.updateGraves);    
+
 
 	//alerts
 	$scope.alerts = [];

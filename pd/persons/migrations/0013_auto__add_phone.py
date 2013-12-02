@@ -13,7 +13,8 @@ class Migration(SchemaMigration):
             ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
             ('dt_created', self.gf('django.db.models.fields.DateTimeField')(auto_now_add=True, blank=True)),
             ('dt_modified', self.gf('django.db.models.fields.DateTimeField')(auto_now=True, blank=True)),
-            ('person', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['persons.AlivePerson'], null=True, blank=True)),
+            ('ct', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['contenttypes.ContentType'], null=True, blank=True)),
+            ('obj_id', self.gf('django.db.models.fields.PositiveIntegerField')(db_index=True, null=True, blank=True)),
             ('number', self.gf('django.db.models.fields.CharField')(max_length=50, blank=True)),
             ('phonetype', self.gf('django.db.models.fields.SmallIntegerField')(default=1)),
         ))
@@ -167,11 +168,12 @@ class Migration(SchemaMigration):
         },
         'persons.phone': {
             'Meta': {'object_name': 'Phone'},
+            'ct': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['contenttypes.ContentType']", 'null': 'True', 'blank': 'True'}),
             'dt_created': ('django.db.models.fields.DateTimeField', [], {'auto_now_add': 'True', 'blank': 'True'}),
             'dt_modified': ('django.db.models.fields.DateTimeField', [], {'auto_now': 'True', 'blank': 'True'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'number': ('django.db.models.fields.CharField', [], {'max_length': '50', 'blank': 'True'}),
-            'person': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['persons.AlivePerson']", 'null': 'True', 'blank': 'True'}),
+            'obj_id': ('django.db.models.fields.PositiveIntegerField', [], {'db_index': 'True', 'null': 'True', 'blank': 'True'}),
             'phonetype': ('django.db.models.fields.SmallIntegerField', [], {'default': '1'})
         },
         'users.org': {

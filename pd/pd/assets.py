@@ -23,7 +23,7 @@ js_app = Bundle(
         "js/app/directive/phones/phones.js",
         "js/app/directive/google.js",
     
-        "angular-ui-bootstrap/src/dialog/dialog.js",
+        #"angular-ui-bootstrap/src/dialog/dialog.js",
     
         "js/app/directive/angular-ymaps.js",
 

@@ -24,7 +24,7 @@ from logs.models import write_log
 from orders.models import Order
 from users.models import Org
 from pd.forms import CommentForm
-from pd.views import PaginateListView
+from pd.views import PaginateListView, FormInvalidMixin
 from reports.models import make_report
 
 class BurialGetOrderMixin:
@@ -684,7 +684,7 @@ class BurialsPublicListView(PaginateListView):
 
 burial_public_list = BurialsPublicListView.as_view()
 
-class CreateBurial(BurialGetOrderMixin, CreateView):
+class CreateBurial(BurialGetOrderMixin, FormInvalidMixin, CreateView):
     template_name = 'create_burial.html'
     form_class = BurialForm
 
@@ -735,10 +735,6 @@ class CreateBurial(BurialGetOrderMixin, CreateView):
                 return redirect(reverse('edit_burial', args=[order.burial.pk]) + '?order=%s' % order.pk)
 
         return super(CreateBurial, self).dispatch(request, *args, **kwargs)
-
-    def form_invalid(self, form, *args, **kwargs):
-        messages.error(self.request, _(u'Обнаружены ошибки, их необходимо исправить'))
-        return super(CreateBurial, self).form_invalid(form, *args, **kwargs)
 
     def form_valid(self, form, *args, **kwargs):
         b = form.save()
@@ -1087,13 +1083,15 @@ burial_cancel_exhumation = CancelExhumationView.as_view()
 
 class RemoveResponsible(ArchiveMixin, View):
     def post(self, request, *args, **kwargs):
-        qs = Q(burial__ugh=self.request.user.profile.org) | Q(cemetery__ugh=self.request.user.profile.org)
-        place = Place.objects.get(qs, pk=kwargs['pk'])
-        resp = place.responsible
-        if resp:
-            place.remove_responsible()
-            write_log(self.request, place, _(u'Ответственный %s откреплен') % resp)
-            messages.success(self.request, _(u"Ответственный %s откреплен") % resp)
-        return redirect('view_place', place.pk)
+        try:
+            place = Place.objects.get(cemetery__ugh=self.request.user.profile.org, pk=kwargs['pk'])
+            resp = place.responsible
+            if resp:
+                place.remove_responsible()
+                write_log(self.request, place, _(u'Ответственный %s откреплен') % resp)
+                messages.success(self.request, _(u"Ответственный %s откреплен") % resp)
+            return redirect('view_place', place.pk)
+        except Place.DoesNotExist:
+            raise Http404
 
 rm_responsible = RemoveResponsible.as_view()
