@@ -950,6 +950,9 @@ class BurialCommitForm(BurialForm):
              cemetery and \
              cemetery.ugh.numbers_algo == Org.NUM_EMPTY and \
              cemetery.places_algo == Cemetery.PLACE_BURIAL_ACCOUNT_NUMBER:
+            # Такого не может быть, ибо проверяется в свойствах организации-угх,
+            # чтобы не оказалось: номер зх оставить пустым, а есть кладбища
+            # с расстановкой мест по номеру зх. Но fool-proof не помешает...
             if is_ugh:
                 msg = _(u"Номер места не может быть пуст, если формируется из номера захоронения, а он пустой (см. свойства организации)")
                 raise forms.ValidationError(msg)
