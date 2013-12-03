@@ -4,6 +4,8 @@ import copy
 from django.db import models
 from django.utils.translation import ugettext as _
 from django.db.models.deletion import ProtectedError
+from django.contrib.contenttypes import generic
+from django.contrib.contenttypes.models import ContentType
 
 import datetime
 from geo.models import Location
@@ -30,6 +32,14 @@ class SafeDeleteMixin(object):
                 field_to_delete.delete()
             except ProtectedError:
                 pass
+
+
+class PhonesMixin(object):
+    @property
+    def phone_set(self):
+        ct = ContentType.objects.get_for_model(self)
+        return Phone.objects.filter(obj_id=self.pk, ct=ct)
+
 
 class IDDocumentType(models.Model):
     name = models.CharField(_(u"Тип документа"), max_length=255)
@@ -140,8 +150,9 @@ class DeadPerson(BasePerson):
     """
     Мертвое ФЛ
     """
-    birth_date = UnclearDateModelField(_(u"Дата рождения"), blank=True, null=True)
-    death_date = UnclearDateModelField(_(u"Дата смерти"), blank=True, null=True)
+    # serialize=False - не выгружать значение поля в фикстуры. Для этого типа поля не описан сериализатор
+    birth_date = UnclearDateModelField(_(u"Дата рождения"), serialize=False, blank=True, null=True)
+    death_date = UnclearDateModelField(_(u"Дата смерти"), serialize=False, blank=True, null=True)
 
     def get_birth_date(self):
         if not self.birth_date:
@@ -196,7 +207,7 @@ class DeadPerson(BasePerson):
         except ProtectedError:
             pass
 
-class AlivePerson(BasePerson):
+class AlivePerson(BasePerson, PhonesMixin):
     """
     Живое ФЛ с телефоном
     """
@@ -304,7 +315,9 @@ PHONE_TYPE_CHOICES = (
 
 
 class Phone(BaseModel):
-    person = models.ForeignKey(AlivePerson, verbose_name=_(u"Живое ФЛ"), null=True, blank=True, limit_choices_to={'type': Org.PROFILE_ZAGS})
+    ct = models.ForeignKey('contenttypes.ContentType', null=True, blank=True, editable=False, verbose_name=_(u"Тип"))
+    obj_id = models.PositiveIntegerField(null=True, blank=True, editable=False, verbose_name=_(u"ID объекта"), db_index=True)
+    obj = generic.GenericForeignKey(ct_field='ct', fk_field='obj_id')
     number = models.CharField(_(u"Номер"), max_length=50, blank=True)
     phonetype = models.SmallIntegerField(_(u"Тип телефона"), choices=PHONE_TYPE_CHOICES, default=PHONE_TYPE_CITY)
 
