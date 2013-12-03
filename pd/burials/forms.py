@@ -81,10 +81,11 @@ class CemeteryForm(LoggingFormMixin, BaseCemeteryForm):
 
     def clean(self):
         cleaned_data = super(CemeteryForm, self).clean()
-        if self.cleaned_data['places_algo_archive'] == Cemetery.PLACE_ARCHIVE_BURIAL_ACCOUNT_NUMBER and \
-           not self.cleaned_data['archive_burial_account_number_required']:
-            raise forms.ValidationError(_(u'Номер архивного захоронения обязателен, '
-                                          u'если расстановка мест архивных захоронений: по рег. номеру'))
+        if self.is_valid():
+            if self.cleaned_data['places_algo_archive'] == Cemetery.PLACE_ARCHIVE_BURIAL_ACCOUNT_NUMBER and \
+               not self.cleaned_data['archive_burial_account_number_required']:
+                raise forms.ValidationError(_(u'Номер архивного захоронения обязателен, '
+                                              u'если расстановка мест архивных захоронений: по рег. номеру'))
         return cleaned_data
 
     def is_valid(self):
@@ -123,14 +124,15 @@ class BaseAreaFormset(BaseInlineFormSet):
                     msg = _(u'Участок %s с <a href="/burials/?area=%s" target="_blank">захоронениями</a> удалить нельзя')
                     raise forms.ValidationError(mark_safe(msg % (df.instance.name, df.instance.name)))
 
-class AreaItemForm(forms.ModelForm):
+class AreaItemForm(StrippedStringsMixin, forms.ModelForm):
 
     class Meta:
         model = Area
 
     def clean(self):
+        StrippedStringsMixin.clean(self)
         for f in self.formset:
-            if (f is not self) and f['name'].value() == self['name'].value():
+            if (f is not self) and f['name'].value().strip() == self['name'].value().strip():
                 raise forms.ValidationError(_(u'Участки не могут иметь одинаковые названия'))
         return self.cleaned_data
 
