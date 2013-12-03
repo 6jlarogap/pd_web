@@ -993,7 +993,6 @@ def apply_exhumation(instance, created, **kwargs):
 models.signals.post_save.connect(apply_exhumation, sender=ExhumationRequest)
 
 
-
 def calculate_free_burial_count(sender, instance, **kwargs):
     if ('created' in kwargs.keys() and not kwargs['created']) or not instance.place:
         return
