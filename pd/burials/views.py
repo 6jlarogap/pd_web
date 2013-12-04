@@ -359,22 +359,22 @@ class PlaceViewSet(viewsets.ModelViewSet):
         if self.request.GET.get('area_id'):
             area  = getArea(self.request)
         place = get_object_or_404(Place, pk=pk, cemetery=cemetery, area=area)
-        paginator = Paginator(place.grave_set.all(), 10)
 
         page = request.GET.get('grave_page')
+        paginator = Paginator(place.grave_set.all(), 10)
         try:
-            page = paginator.page(page)
+            grave_list = paginator.page(page)
         except:
-            page = paginator.page(1)
+            grave_list = paginator.page(1)
         
-        #import pudb; pudb.set_trace()
-        serializer_context = {'request': request}
-        serializer = GraveSerializer(page, many=True, context=serializer_context)
+        burial_list = place.burial_set.filter(grave__in=grave_list).all()
+        
         return Response({
                          'count': place.grave_set.count(),
-                         'page':page.number,
-                         'pages':page.paginator._num_pages,
-                         'results':serializer.data,
+                         'page': grave_list.number,
+                         'pages': grave_list.paginator._num_pages,
+                         'graves': GraveSerializer(grave_list, many=True).data,
+                         'burials': BurialSerializer(burial_list, many=True).data,
                          })
 
 
