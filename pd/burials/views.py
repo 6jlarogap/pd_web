@@ -322,11 +322,18 @@ class PlaceViewSet(viewsets.ModelViewSet):
             page = paginator.page(1)
         log_data = LogSerializer(page,many=True).data
         
+        paginator = Paginator(place.grave_set.all(), 10)
+        grave_page = request.GET.get('grave_page')
+        try:
+            grave_list = paginator.page(grave_page)
+        except:
+            grave_list = paginator.page(1)
+
         data = {
                 "cemetery" : CemeterySerializer(cemetery).data,
                 "area" : AreaSerializer(area).data,
                 "place" : PlaceSerializer(place).data,
-                "graves" : GraveSerializer(place.grave_set.all(), many=True).data,
+                "graves" : GraveSerializer(grave_list, many=True).data,
                 "burials" : BurialSerializer(place.burial_set.all(), many=True).data,
                 "responsible" : {},
                 "responsible_phones" : [],
