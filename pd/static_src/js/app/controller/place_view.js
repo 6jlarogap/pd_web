@@ -117,13 +117,13 @@
 			$scope.grave_page = graves.page || 1;
 			$scope.grave_pages = graves.pages;
 			
+
 			//$scope.pageSize = 2;
                          
     
 			$scope.graves = [];
-
 		    var grave;
-			angular.forEach(graves.results, function(row, key) {
+			angular.forEach(graves.graves, function(row, key) {
 				grave = new Grave(row);
 				$scope.graves.push(grave);
 				
@@ -137,6 +137,15 @@
 				});
 
 			});
+			
+            $scope.burials = [];
+            var burial;
+            angular.forEach(graves.burials, function(row, key) {
+                burial = new Burial(row);
+                $scope.burials.push(burial);
+            });
+
+			
 			$scope.updateMap(); 
 			$scope.loading = false;
             return;
@@ -151,13 +160,13 @@
 		},function(data){
             $scope.loading = false;
         });
-		Burial.query({
+		/*Burial.query({
 			cemetery_id : $routeParams.cemetery_id,
 			area_id : $routeParams.area_id,
 			place_id : $routeParams.place_id
 		}, function(result) {
 			$scope.burials = result;
-		});
+		});*/
 	};
 
 
