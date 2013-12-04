@@ -123,15 +123,18 @@
         <div class="row-fluid" ng-hide="grave_pages==1">
             <div class="input-prepend input-append">
               <button class="btn" type="button"
-                  ng-disabled="grave_page == 1" ng-click="[grave_page=grave_page-1, updateGraves()]" >
+                  ng-disabled="loading || grave_page == 1" ng-click="[grave_page=grave_page-1, updateGraves()]" >
                   <i class="icon-backward"></i>
               </button>
-              <input class="span1" type="text" ng-model="grave_page" />
+              <input class="span1" type="text" ng-model="grave_page" ng-disabled="loading" />
               <span class="add-on">/{{grave_pages}}</span>
               <button class="btn" type="button"
-                  ng-disabled="grave_page >= grave_pages" ng-click="[grave_page=grave_page+1, updateGraves()]">
+                  ng-disabled="loading || grave_page >= grave_pages" ng-click="[grave_page=grave_page+1, updateGraves()]">
                   <i class="icon-forward"></i>
               </button>
+              <div ng-show="loading" class="btn" type="button">
+                  <img src="/static/img/ajax-loader.gif" alt="Загрузка" width="14px" height="14px" />
+              </div>
             </div>
         </div>
     </div>
@@ -228,17 +231,20 @@
     	</div>      
 	</div>
         <div class="row-fluid" ng-hide="log_pages==1">
-            <div class="input-prepend input-append">
+            <div class="input-prepend input-append span8">
               <button class="btn" type="button"
-                  ng-disabled="log_page == 1" ng-click="[log_page=log_page-1, update()]" >
+                  ng-disabled="loading || log_page == 1" ng-click="[log_page=log_page-1, update()]" >
                   <i class="icon-backward"></i>
               </button>
-              <input class="span1" type="text" ng-model="log_page"/>
+              <input class="span1" type="text" ng-model="log_page" ng-disabled="loading"/>
               <span class="add-on">/{{log_pages}}</span>
               <button class="btn" type="button"
-                  ng-disabled="log_page >= log_pages" ng-click="[log_page=log_page+1, update()]">
+                  ng-disabled="loading || log_page >= log_pages" ng-click="[log_page=log_page+1, update()]">
                   <i class="icon-forward"></i>
               </button>
+              <div ng-show="loading" class="btn" type="button">
+                  <img src="/static/img/ajax-loader.gif" alt="Загрузка" width="14px" height="14px" />
+              </div>
             </div>
         </div>
 	

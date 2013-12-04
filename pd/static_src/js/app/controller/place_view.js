@@ -9,7 +9,7 @@
 	$scope.STATUS_CHOICES = STATUS_CHOICES;
     $scope.grave_page = 1;
     $scope.log_page = 1;
-
+    $scope.loading = false;
   
     var item_params;
 	//setup
@@ -53,6 +53,7 @@
 	};
 
 	$scope.update = function() {
+	    $scope.loading = true;
 		item_params = {
 			placeID : $routeParams.place_id,
 			cemetery_id : $routeParams.cemetery_id,
@@ -95,8 +96,10 @@
 			}
 
 			$scope.item.name = "Кл. {0}, уч. {1}, ряд {2}, место {3}".format($scope.cemetery.name, $scope.area.name, $scope.item.row || DEFAULT_MESSAGES.no_data, $scope.item.place)
+			$scope.loading = false;
 			$scope.updateGraves();
 		},function(data){
+		    $scope.loading = false;
 			if(data.status==404){
 				window.location = '/manage/404?title=Место не найдено';
 			}
@@ -105,6 +108,7 @@
 	};
 
 	$scope.updateGraves = function() {
+	   $scope.loading = true;
 	   
        item_params.grave_page = $scope.grave_page;
 	   
@@ -134,6 +138,7 @@
 
 			});
 			$scope.updateMap(); 
+			$scope.loading = false;
             return;
 		    
 			// New element with default data
@@ -143,7 +148,9 @@
 				//lat: lat || 0,
 				//lng: lng || 0
 			});
-		});
+		},function(data){
+            $scope.loading = false;
+        });
 		Burial.query({
 			cemetery_id : $routeParams.cemetery_id,
 			area_id : $routeParams.area_id,
