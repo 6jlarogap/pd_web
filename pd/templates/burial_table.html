@@ -158,6 +158,9 @@
                 {% if b.is_ugh or b.is_transferred or b.is_closed %}
                     <a class="btn" href="{% url edit_burial b.pk %}">{% trans "правка" %}</a>
                 {% endif %}
+                {% if b.get_place %}
+                    <a class="btn" href="{% url view_place b.get_place.pk %}">{% trans "место" %}</a>
+                {% endif %}
             {% endif %}
             {% if not b.is_bio and not b.dc_filled %}
                 <br/><span style="color:red"><b>{% trans "Нет СоС!" %}</b></span>
