@@ -78,6 +78,43 @@ def write_log(request, obj=None, msg='', reason=None, code=None):
         code=code or '',
     )
 
+
+LOG_STOP_FIELDS = ['pk', 'dt_created', 'dt_updated']
+
+def log_object(request, obj=None, old=None, new=None, reason=None, code=None):
+    msg = []
+    if old.__class__ != new.__class__:
+        return False
+    
+    if reason:
+        msg.append(reason)
+    
+    if old is None:
+        msg.append(_(u'Создан "%s"' % new))
+    elif new is None:
+        msg.append(_(u'Удален "%s"' % old))
+    else:
+        for field in new._meta.fields:
+            if field.name not in LOG_STOP_FIELDS and getattr(old,field.name) != getattr(new,field.name):
+                old_val = unicode(getattr(old,field.name)) #.__unicode__()
+                new_val = unicode(getattr(new,field.name))
+                if old_val=="None":
+                    msg.append(_(u'"%s": добавлено "%s"') % (field.verbose_name, new_val))
+                elif new_val=="None":
+                    msg.append(_(u'"%s": удалено "%s"') % (field.verbose_name, old_val))
+                else:
+                    msg.append(_(u'"%s": "%s" -> "%s"') % (field.verbose_name, old_val, new_val))
+
+    user = request and request.user.is_authenticated() and request.user or None
+    Log.objects.create(
+        user=user,
+        ct=obj and ContentType.objects.get_for_model(obj) or None,
+        obj_id=obj and obj.pk or None,
+        msg = "<br/>".join(msg),
+        code=code or '',
+    )
+
+
 class LoginLog(models.Model):
     """
     Журнал входа пользователей в систему

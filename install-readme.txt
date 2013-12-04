@@ -43,7 +43,9 @@ install-readme.txt, utf8 code page
           (пусть это: pd.psql.gz)
             createdb pd
             zcat pd.psql.gz | psql -U postgres pd
- 
+
+           (create database '<database>' encoding 'UTF-8' owned by '<user>';)
+            
         - fias db:
             echo 'create database fias' | mysql -u root
             # качаем, разархивируем, вносим в базу fias:

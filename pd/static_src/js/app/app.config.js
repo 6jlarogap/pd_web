@@ -10,18 +10,18 @@ $.noty.defaults = {
     type: 'alert',
     text: '',
     dismissQueue: true, // If you want to use queue feature set this true
-    template: '<div class="noty_message"><span class="noty_text"></span><div class="noty_close"></div></div>',
+    template: '<div class="noty_message"><span class="noty_text"></span><div class="noty_close">X</div>X</div>',
     animation: {
         open: {height: 'toggle'},
         close: {height: 'toggle'},
         easing: 'swing',
         speed: 500 // opening & closing animation speed
     },
-    timeout: 5000, // delay for closing event. Set false for sticky notifications
+    timeout: 2500, // delay for closing event. Set false for sticky notifications
     force: false, // adds notification to the beginning of queue when set to true
     modal: false,
     maxVisible: 5, // you can set max visible notification for dismissQueue true option
-    closeWith: ['click'], // ['click', 'button', 'hover']
+    closeWith: ['click', 'hover'], // ['click', 'button', 'hover']
     callback: {
         onShow: function() {},
         afterShow: function() {},
@@ -43,7 +43,7 @@ app.config(["$httpProvider", function($httpProvider) {
 
 .config(['$httpProvider', function($httpProvider) {
 	/* HTTP Interceptor*/
-	$httpProvider.responseInterceptors.push(['$q', function($q) {
+	$httpProvider.responseInterceptors.push(['$q', '$location' function($q, $location) {
 		return function(promise) {
 			return promise.then(function(response) { // The HTTP request was successful.
 				// response.status >= 200 && response.status <= 299
@@ -57,18 +57,22 @@ app.config(["$httpProvider", function($httpProvider) {
 			            $location.path('/login');
 			            break;
 					case 404:
-						noty({text: 'Объект не найден', timeout:false, type:'warning', layout:'topRight'});
+						//console.log(response);
+						//noty({text: 'Объект не найден', timeout:false, type:'warning', layout:'topRight'});
+						$location.path('/manage/404?title=Объект не найден');
 			            break;
 					case 400:
-						// var key = keys(a)[0]
 						var error = '';
 						for(var i in response.data){
-							if(i) error += '{0}: {1}\n'.format(i, response.data[i]);
+							if(i){ 
+								var error = '{0}: {1}\n'.format(i, response.data[i]);
+			            		noty({text: error, timeout:false, type:'warning', layout:'topRight'});
+			            	}
 						}
-			            noty({text: error, timeout:false, type:'warning', layout:'topRight'});
 			            break;
 					case 500:
 						noty({text: 'Ошибка обработки', type:'warning', layout:'topRight'});
+			            $location.path('/manage/500');
 			            break;
 					default:
 						noty({text: 'Ошибка выполнения', type:'warning', layout:'topRight'});

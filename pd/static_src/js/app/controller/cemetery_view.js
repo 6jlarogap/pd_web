@@ -1,7 +1,7 @@
-﻿//'use strict';
+﻿var qqq;//'use strict';
 app.controller('CemeteryViewCtrl',
 function CemeteryViewCtrl($scope, $http, $resource, $location,  $routeParams, 
-						Cemetery, Area, AreaPurpose, Place, ymapData) {
+						Cemetery, Area, AreaPurpose, Place, Phone, ymapData, naturalService) {
     "use strict";
 
 	var tplButtonEdit = '<a class="btn btn-small" ng-href="/manage/cemetery/'+$routeParams.cemetery_id+
@@ -23,7 +23,7 @@ function CemeteryViewCtrl($scope, $http, $resource, $location,  $routeParams,
 	});
 	
     $scope.gridOptions = { 
-        data: 'area_list',
+        data: '(area_list|filter:search)',
         enableRowSelection:false,
         columnDefs: [
         	{field: 'name', displayName: 'Наименование'},
@@ -45,18 +45,26 @@ function CemeteryViewCtrl($scope, $http, $resource, $location,  $routeParams,
 		$scope.address_class_params ={
 			cemeteryID : $routeParams.cemetery_id
 		};
-		Cemetery.get({cemeteryID:$routeParams.cemetery_id}, function(result) {
+		Cemetery.getForm({cemeteryID:$routeParams.cemetery_id}, function(result) {
 			if(result.status === 404){
 	            $location.path('/manage/404');
                 $location.replace();
 		    }
-			$scope.cemetery = result;
+			$scope.cemetery = new Cemetery(result.cemetery);
+			$scope.address = result.address;
 			$scope.cemetery.time_begin = new Date('0 '+ $scope.cemetery.time_begin);
 			$scope.cemetery.time_end = new Date('0 '+ $scope.cemetery.time_end);
+			
+			$scope.phones = [];
+			angular.forEach(result.phones, function(item) {
+                  $scope.phones.push(new Phone(item));
+            });
+
 		});
 
 		Area.list({cemetery_id: $routeParams.cemetery_id}, function(result) {
 			$scope.area_list = result;
+			$scope.area_list.sort(function(a,b){return naturalService.naturalSortField(a,b,'name')});
 		});
 		
 		
@@ -96,13 +104,16 @@ function CemeteryViewCtrl($scope, $http, $resource, $location,  $routeParams,
 	$scope.isEditorOpen = false;
 	$scope.openEditForm = function() {
 		$scope.isEditorOpen = true;
+		$('body').css('overflow-y','hidden');
 	};
 	$scope.closeEditForm = function() {
 		$scope.isEditorOpen = false;
+		$('body').css('overflow-y','auto');
 	};
 	$scope.saveEditForm = function() {
 		$scope.cemetery.time_begin = date2time($scope.cemetery.time_begin);
 		$scope.cemetery.time_end = date2time($scope.cemetery.time_end);
+		$scope.cemetery.obj_phones = $scope.phones;
 		$scope.cemetery.$update(function(){
 			$scope.closeEditForm();
 			$scope.update();
@@ -123,10 +134,12 @@ function CemeteryViewCtrl($scope, $http, $resource, $location,  $routeParams,
   
     $scope.openAddModal = function () {
         $scope.addModalOpened = true;
+        $('body').css('overflow-y','hidden');
     };
 
     $scope.closeAddModal = function () {
         $scope.addModalOpened = false;
+        $('body').css('overflow-y','auto');
     };
 	$scope.addElement = function(){
 		$scope.area.cemetery = $routeParams.cemetery_id;

@@ -32,6 +32,8 @@ function AreaViewCtrl($scope, $rootScope, $http, $routeParams, $resource, $locat
 
 	$scope.update = function(){
 		Area.get({areaID:$routeParams.area_id,  cemetery_id: $routeParams.cemetery_id}, function(area) {
+			if(!area.id)
+				window.location = '/manage/500?title=Участок не найден';
 			$scope.area = area;
 	        AreaPhoto.query({area_id:area.id}, function(photo){
 	            $scope.area_photo = photo;
@@ -43,6 +45,7 @@ function AreaViewCtrl($scope, $rootScope, $http, $routeParams, $resource, $locat
 				area_id: $routeParams.area_id
 			}, function(result) {
 			$scope.place_list = result;
+			$scope.place_list.sort();
 			try{
 				$scope.$digest();
 			}catch(e){}
@@ -54,7 +57,7 @@ function AreaViewCtrl($scope, $rootScope, $http, $routeParams, $resource, $locat
     };
 
     $scope.gridOptions = { 
-        data: 'place_list',
+        data: '(place_list|filter:search)',
         enableRowSelection:false,
         columnDefs: [
         	{field: 'row', displayName: 'Ряд'},
@@ -72,9 +75,11 @@ function AreaViewCtrl($scope, $rootScope, $http, $routeParams, $resource, $locat
 	$scope.isEditorOpen = false;
 	$scope.openEditForm = function() {
 		$scope.isEditorOpen = true;
+		$('body').css('overflow-y','hidden');
 	};
 	$scope.closeEditForm = function() {
 		$scope.isEditorOpen = false;
+		$('body').css('overflow-y','auto');
 	};
 	$scope.saveEditForm = function() {
 		$scope.area.cemetery_id = $routeParams.cemetery_id;
@@ -97,10 +102,12 @@ function AreaViewCtrl($scope, $rootScope, $http, $routeParams, $resource, $locat
   
     $scope.openAddModal = function () {
         $scope.addModalOpened = true;
+        $('body').css('overflow-y','hidden');
     };
 
     $scope.closeAddModal = function () {
         $scope.addModalOpened = false;
+        $('body').css('overflow-y','auto');
     };
 	$scope.addElement = function(){
 		$scope.closeAddModal();

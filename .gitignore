@@ -14,3 +14,6 @@ pd/.pydevproject
 pd/.settings/
 pd/fixtures/
 pd/thumbnails/
+pd/static_src/pd*
+backup
+#restthumbnails

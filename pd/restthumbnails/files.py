@@ -5,6 +5,7 @@ from restthumbnails.base import ThumbnailBase
 
 import os
 
+from django.conf import settings
 
 logger = getLogger(__name__)
 
@@ -70,6 +71,10 @@ class ThumbnailFile(ThumbnailFileBase):
     def generate(self):
         if self._source_exists():
             if not self._exists():
+                # work only with allowed sizes
+                if self.size not in settings.THUMBNAILS_ALLOWED_SIZES:
+                    return False
+
                 im = processors.get_image(self.source_storage.open(self.source))
                 im = processors.scale_and_crop(im, self.size, self.method)
                 im = processors.colorspace(im)
