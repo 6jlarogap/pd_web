@@ -59,6 +59,7 @@ class UnclearDate:
         """
         if isinstance(other, datetime.date):
             other = UnclearDate(other.year, other.month, other.day)
+
         if not self.no_month and not other.no_month:
             self_month = self.month
             other_month = other.month
@@ -68,6 +69,7 @@ class UnclearDate:
             self_month = other_month = other.month
         elif self.no_month and other.no_month:
             self_month = other_month = 0
+
         if not self.no_day and not other.no_day:
             self_day = self.day
             other_day = other.day
@@ -75,8 +77,9 @@ class UnclearDate:
             other_day = self_day = self.day
         elif self.no_day and not other.no_day:
             self_day = other_day = other.day
-        elif self.no_day and not other.no_day:
+        elif self.no_day and other.no_day:
             self_day = other_day = 0
+
         fmt = "%d-%02d-%02d"
         self_date = fmt % (self.year, self_month, self_day)
         other_date = fmt % (other.year, other_month, other_day)
