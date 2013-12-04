@@ -201,7 +201,8 @@ class UnclearSelectDateWidget(SelectDateWidget):
 
         choices = [(i, i) for i in self.years]
         year_html = self.create_select(name, self.year_field, value, year_val, choices, {'class': 'date-year'})
-        choices = zip(MONTHS.keys(), MONTHS.keys())
+        # choices = zip(MONTHS.keys(), MONTHS.keys())
+        choices = MONTHS.items()
         month_html = self.create_select(name, self.month_field, value, month_val, choices, {'class': 'date-month'})
         choices = [(i, i) for i in range(1, 32)]
         day_html = self.create_select(name, self.day_field, value, day_val,  choices, {'class': 'date-day'})
