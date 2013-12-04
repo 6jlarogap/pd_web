@@ -81,10 +81,11 @@ class CemeteryForm(LoggingFormMixin, BaseCemeteryForm):
 
     def clean(self):
         cleaned_data = super(CemeteryForm, self).clean()
-        if self.cleaned_data['places_algo_archive'] == Cemetery.PLACE_ARCHIVE_BURIAL_ACCOUNT_NUMBER and \
-           not self.cleaned_data['archive_burial_account_number_required']:
-            raise forms.ValidationError(_(u'Номер архивного захоронения обязателен, '
-                                          u'если расстановка мест архивных захоронений: по рег. номеру'))
+        if self.is_valid():
+            if self.cleaned_data['places_algo_archive'] == Cemetery.PLACE_ARCHIVE_BURIAL_ACCOUNT_NUMBER and \
+               not self.cleaned_data['archive_burial_account_number_required']:
+                raise forms.ValidationError(_(u'Номер архивного захоронения обязателен, '
+                                              u'если расстановка мест архивных захоронений: по рег. номеру'))
         return cleaned_data
 
     def is_valid(self):
@@ -123,14 +124,15 @@ class BaseAreaFormset(BaseInlineFormSet):
                     msg = _(u'Участок %s с <a href="/burials/?area=%s" target="_blank">захоронениями</a> удалить нельзя')
                     raise forms.ValidationError(mark_safe(msg % (df.instance.name, df.instance.name)))
 
-class AreaItemForm(forms.ModelForm):
+class AreaItemForm(StrippedStringsMixin, forms.ModelForm):
 
     class Meta:
         model = Area
 
     def clean(self):
+        StrippedStringsMixin.clean(self)
         for f in self.formset:
-            if (f is not self) and f['name'].value() == self['name'].value():
+            if (f is not self) and f['name'].value().strip() == self['name'].value().strip():
                 raise forms.ValidationError(_(u'Участки не могут иметь одинаковые названия'))
         return self.cleaned_data
 
@@ -899,9 +901,9 @@ class BurialCommitForm(BurialForm):
         row = self.cleaned_data.get('row')
         place_number = self.cleaned_data.get('place_number') or ''
 
+        fact_date  = self.cleaned_data.get('fact_date')
         if is_ugh:
             acc_number = self.cleaned_data.get('account_number') or ''
-            fact_date  = self.cleaned_data.get('fact_date')
             if acc_number and fact_date:
                 if self.request.user.profile.org.numbers_algo in (Org.NUM_YEAR_UGH, Org.NUM_YEAR_CEMETERY, ):
                     msg = _(u"Номер в книге учета должен быть: ГГГГнннн (год фактической даты, номер)")
@@ -948,6 +950,9 @@ class BurialCommitForm(BurialForm):
              cemetery and \
              cemetery.ugh.numbers_algo == Org.NUM_EMPTY and \
              cemetery.places_algo == Cemetery.PLACE_BURIAL_ACCOUNT_NUMBER:
+            # Такого не может быть, ибо проверяется в свойствах организации-угх,
+            # чтобы не оказалось: номер зх оставить пустым, а есть кладбища
+            # с расстановкой мест по номеру зх. Но fool-proof не помешает...
             if is_ugh:
                 msg = _(u"Номер места не может быть пуст, если формируется из номера захоронения, а он пустой (см. свойства организации)")
                 raise forms.ValidationError(msg)
@@ -1045,30 +1050,30 @@ class BurialCommitForm(BurialForm):
         deadman_birth_date = None
         deadman_death_date = None
 
-        if self.deadman_form.is_valid_data():
+        if self.deadman_form.is_valid():
             deadman_birth_date = self.deadman_form.cleaned_data.get("birth_date")
-            if deadman_birth_date:
-                deadman_birth_date = deadman_birth_date.d
             deadman_death_date = self.deadman_form.cleaned_data.get("death_date")
-            if deadman_death_date:
-                deadman_death_date = deadman_death_date.d
-            if deadman_birth_date and deadman_death_date:
-                if deadman_birth_date > deadman_death_date:
-                    msg = _(u"Дата смерти не может быть раньше даты рождения")
-                    raise forms.ValidationError(msg)
+            if deadman_birth_date and deadman_death_date and \
+               deadman_birth_date > deadman_death_date:
+                msg = _(u"Дата смерти не может быть раньше даты рождения")
+                raise forms.ValidationError(msg)
 
             if deadman_death_date and deadman_death_date > today:
                 msg = _(u"Дата смерти не может быть позже сегодняшней")
                 raise forms.ValidationError(msg)
             if not self.instance.is_archive() and not self.instance.is_transferred():
-                if plan_date and deadman_birth_date:
-                    if deadman_birth_date > plan_date:
-                        msg = _(u"Дата рождения не может быть позже даты захоронения")
-                        raise forms.ValidationError(msg)
-                if plan_date and deadman_death_date:
-                    if deadman_death_date > plan_date:
-                        msg = _(u"Дата смерти не может быть позже даты захоронения")
-                        raise forms.ValidationError(msg)
+                if plan_date and deadman_birth_date and \
+                   deadman_birth_date > plan_date:
+                    msg = _(u"Дата рождения не может быть позже плановой даты захоронения")
+                    raise forms.ValidationError(msg)
+                if plan_date and deadman_death_date and \
+                   deadman_death_date > plan_date:
+                    msg = _(u"Дата смерти не может быть позже плановой даты захоронения")
+                    raise forms.ValidationError(msg)
+            if fact_date and deadman_death_date and \
+               deadman_death_date > fact_date:
+                msg = _(u"Фактическая дата захоронения не может быть раньше даты смерти")
+                raise forms.ValidationError(msg)
 
         if self.dc_form.is_valid() and \
            not (self.instance.is_archive() or self.request.REQUEST.get('archive') or \
@@ -1287,6 +1292,15 @@ class BurialApproveCloseForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelFor
         if not b_temp.get_place() and self.instance.grave_number > desired_graves_count:
             raise forms.ValidationError(_(u"Номер могилы превышает запрошенное количество могил в новом месте"))
         return desired_graves_count
+
+    def clean_fact_date(self):
+        fact_date = self.cleaned_data.get('fact_date')
+        deadman_death_date = self.instance.deadman and self.instance.deadman.death_date
+        if fact_date and deadman_death_date and \
+           deadman_death_date > fact_date:
+            msg = _(u"Фактическая дата захоронения не может быть раньше даты смерти")
+            raise forms.ValidationError(msg)
+        return fact_date
 
     def is_valid(self):
         is_valid = super(BurialApproveCloseForm, self).is_valid() and all([f.is_valid() for f in self.forms])

@@ -50,6 +50,56 @@ class UnclearDate:
     def day(self):
         return self.d.day
 
+    def prepare_compare(self, other):
+        """
+        Подготовить даты к сравнению
+        
+        Возвращает строки обеих дат
+        1999 и 7.7.1999 дожны стать обе '1999-07-07'
+        """
+        if isinstance(other, datetime.date):
+            other = UnclearDate(other.year, other.month, other.day)
+
+        if not self.no_month and not other.no_month:
+            self_month = self.month
+            other_month = other.month
+        elif not self.no_month and other.no_month:
+            other_month = self_month = self.month
+        elif self.no_month and not other.no_month:
+            self_month = other_month = other.month
+        elif self.no_month and other.no_month:
+            self_month = other_month = 0
+
+        if not self.no_day and not other.no_day:
+            self_day = self.day
+            other_day = other.day
+        elif not self.no_day and other.no_day:
+            other_day = self_day = self.day
+        elif self.no_day and not other.no_day:
+            self_day = other_day = other.day
+        elif self.no_day and other.no_day:
+            self_day = other_day = 0
+
+        fmt = "%d-%02d-%02d"
+        self_date = fmt % (self.year, self_month, self_day)
+        other_date = fmt % (other.year, other_month, other_day)
+        return (self_date , other_date, )
+    
+    # Было бы удобнее воспользоваться __cmp__(), но 
+    # нам эти даты надо сравнивать на больше или меньше,
+    # а сравнивать на равенство 07.07.1999 и 1999?
+    # Пока такой потребности не было.
+    # Кроме того, cmp() is deprecated в python 3
+
+    def __lt__(self, other):
+        self_date, other_date = self.prepare_compare(other)
+        return self_date < other_date
+
+    def __gt__(self, other):
+        self_date, other_date = self.prepare_compare(other)
+        return self_date > other_date
+
+
 class UnclearDateCreator(object):
     # http://blog.elsdoerfer.name/2008/01/08/fuzzydates-or-one-django-model-field-multiple-database-columns/
 

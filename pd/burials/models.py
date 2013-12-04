@@ -465,6 +465,15 @@ class Burial(SafeDeleteMixin, GetLogsMixin, BaseModel):
     def is_ugh(self):
         return self.is_ugh_only() or self.is_archive()
 
+    def is_new(self):
+        return self.burial_type == self.BURIAL_NEW
+
+    def is_add(self):
+        return self.burial_type == self.BURIAL_ADD
+
+    def is_over(self):
+        return self.burial_type == self.BURIAL_OVER
+
     def is_bio(self):
         return self.burial_container == self.CONTAINER_BIO
 
@@ -958,3 +967,17 @@ def apply_exhumation(instance, created, **kwargs):
         instance.apply()
 
 models.signals.post_save.connect(apply_exhumation, sender=ExhumationRequest)
+
+
+def calculate_free_burial_count(sender, instance, **kwargs):
+    if ('created' in kwargs.keys() and not kwargs['created']) or not instance.place:
+        return
+    exclude_pk_list = [i.grave.pk for i in instance.place.burial_set.select_related().all()]
+    instance.place.available_count = Grave.objects.filter(place=instance.place).exclude(pk__in=exclude_pk_list).count()
+    instance.place.save()
+
+    
+models.signals.post_save.connect(calculate_free_burial_count, sender=Grave)
+models.signals.post_save.connect(calculate_free_burial_count, sender=Burial)
+models.signals.post_delete.connect(calculate_free_burial_count, sender=Grave)
+models.signals.post_delete.connect(calculate_free_burial_count, sender=Burial)
