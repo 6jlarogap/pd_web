@@ -328,13 +328,15 @@ class PlaceViewSet(viewsets.ModelViewSet):
             grave_list = paginator.page(grave_page)
         except:
             grave_list = paginator.page(1)
+            
+        burial_list = place.burial_set.filter(grave__in=grave_list).all()
 
         data = {
                 "cemetery" : CemeterySerializer(cemetery).data,
                 "area" : AreaSerializer(area).data,
                 "place" : PlaceSerializer(place).data,
                 "graves" : GraveSerializer(grave_list, many=True).data,
-                "burials" : BurialSerializer(place.burial_set.all(), many=True).data,
+                "burials" : BurialSerializer(burial_list, many=True).data,
                 "responsible" : {},
                 "responsible_phones" : [],
                 "responsible_address" : {},
