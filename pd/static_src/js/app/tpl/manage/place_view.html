@@ -146,17 +146,17 @@
     
     
 
-	<ul class="breadcrumb">
-	    <li><h3 class="brand" href="#">Место "{{item.place}}"</h3></li>
-	    <li><span class="divider">|</span></li>
-	    <li><a href="/manage/cemetery/{{cemetery.id}}/area/{{area.id}}">Участок "{{area.name}}"</a></li>
-	    <li><span class="divider">|</span></li>
-	    <li><a href="/manage/cemetery/{{cemetery.id}}/">{{cemetery.name}}</a></li>
-	    <li><span class="divider">|</span></li>
-	    <li><a href="#" ng-click="openEditForm('isPlaceEditorOpen')">Редактировать место</a></li>
-	    <li><span class="divider">|</span></li>
-	    <li><a href="#" ng-click="openEditForm('isGraveAddOpen')">Добавить могилу</a></li>
-	</ul>
+<ul class="breadcrumb">
+    <li><h3 class="brand" href="#">Место "{{item.place}}"</h3></li>
+    <li><span class="divider">|</span></li>
+    <li><a href="/manage/cemetery/{{cemetery.id}}/">{{cemetery.name}}</a></li>
+    <li><span class="divider">|</span></li>
+    <li><a href="/manage/cemetery/{{cemetery.id}}/area/{{area.id}}">Участок "{{area.name}}"</a></li>
+    <li><span class="divider">|</span></li>
+    <li><a href="#" ng-click="openEditForm('isPlaceEditorOpen')">Редактировать место</a></li>
+    <li><span class="divider">|</span></li>
+    <li><a href="#" ng-click="openEditForm('isGraveAddOpen')">Добавить могилу</a></li>
+</ul>
 
     <!-- POPUP Place edit form -->
     <div modal="isPlaceEditorOpen" close="closeEditForm('isPlaceEditorOpen')">
