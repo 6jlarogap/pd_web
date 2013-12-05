@@ -2,7 +2,7 @@
     <div class="modal-header">
         <h3>Просмотр захоронения</h3>
     </div>
-    <div class="modal-body">
+    <div class="modal-body" style="overflow-y:hidden;">
         <dl class="dl-horizontal">
             <dt>Учетный номер:</dt>
             <dd>{{ selectedBurial.account_number }}</dd>
@@ -42,9 +42,8 @@
             <dd>{{ selectedBurial.place_number }}</dd>
             <dt>Могила:</dt>
             <dd>
-                <select name="graveNumber" ng-model="selectedBurial.grave"
-                        ng-options="g.grave_number for g in graves"
-                        required>
+                <select name="graveNumber" ng-model="selectedBurial.grave_number"
+                    ng-options="g.grave_number as g.grave_number for g in graves" required>
                     <option value="" selected>Выберите № могилы:</option>
                 </select>
                 <span class="error" ng-show="burialEditForm.graveNumber.$error.required">Не выбран номер могилы</span>

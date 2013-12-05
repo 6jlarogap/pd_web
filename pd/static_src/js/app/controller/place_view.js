@@ -120,7 +120,7 @@
 
 			//$scope.pageSize = 2;
                          
-    
+			delete $scope.graves;
 			$scope.graves = [];
 		    var grave;
 			angular.forEach(graves.graves, function(row, key) {
@@ -137,7 +137,7 @@
 				});
 
 			});
-			
+			delete $scope.burials;
             $scope.burials = [];
             var burial;
             angular.forEach(graves.burials, function(row, key) {

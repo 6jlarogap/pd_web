@@ -34,7 +34,8 @@ $.noty.defaults = {
 
 app.config(["$httpProvider", function($httpProvider) {
 	var csrfToken = getCookie('csrftoken') || csrfToken;
-    $httpProvider.defaults.headers.common['X-CSRFToken'] = csrfToken; 
+    $httpProvider.defaults.headers.common['X-CSRFToken'] = csrfToken;
+    $httpProvider.defaults.headers.common['HTTP_X_CSRFTOKEN'] = csrfToken;
     //$httpProvider.defaults.headers.post['X-CSRF-Token'] = csrfToken;
     //$httpProvider.defaults.headers.put['X-CSRF-Token'] = csrfToken;
     //$httpProvider.defaults.headers.patch['X-CSRF-Token'] = csrfToken;
