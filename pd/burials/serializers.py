@@ -72,6 +72,7 @@ class PlaceSerializer(serializers.ModelSerializer):
     responsible = serializers.PrimaryKeyRelatedField(required=False)
     available_count = Field(source='available_count')
     responsible_txt = serializers.SerializerMethodField('responsible_str')
+
     class Meta:
         model = Place
         fields = ('id', 'cemetery', 'lat', 'lng', 'area', 'row', 'place', 'responsible', 'responsible_txt', 
@@ -85,9 +86,10 @@ class PlaceSerializer(serializers.ModelSerializer):
 
 class GraveSerializer(serializers.ModelSerializer):
     place = serializers.PrimaryKeyRelatedField()
+
     class Meta:
         model = Grave
-        fields = ('id', 'place', 'grave_number', 'lat', 'lng')
+        fields = ('id', 'place', 'grave_number', 'lat', 'lng', 'is_wrong_fio', 'is_military')
 
 
 class BurialListSerializer(serializers.ModelSerializer):

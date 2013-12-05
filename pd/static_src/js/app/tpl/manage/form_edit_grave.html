@@ -20,6 +20,14 @@
             <dd>
                 <input name="graveLongitude" id="id_new_grave_longitude" type="text" ng-model="selectedGrave.lng" maxlength="255"/>
             </dd>
+            <dt>Неверное ФИО:</dt>
+            <dd>
+                <input name="is_wrong_fio" id="id_is_wrong_fio" type="checkbox" ng-model="selectedGrave.is_wrong_fio"/>
+            </dd>
+            <dt>Воинская могила:</dt>
+            <dd>
+                <input name="is_military" id="id_is_military" type="checkbox" ng-model="selectedGrave.is_military"/>
+            </dd>
         </dl>
     </div>
     <div class="modal-footer">

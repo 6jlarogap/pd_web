@@ -96,14 +96,19 @@ def log_object(request, obj=None, old=None, new=None, reason=None, code=None):
     else:
         for field in new._meta.fields:
             if field.name not in LOG_STOP_FIELDS and getattr(old,field.name) != getattr(new,field.name):
-                old_val = unicode(getattr(old,field.name)) #.__unicode__()
-                new_val = unicode(getattr(new,field.name))
+                old_val = getattr(old,field.name)
+                new_val = getattr(new,field.name)
+                if isinstance(old_val, bool):
+                     old_val = old_val and u'Да' or u'Нет'
+                     new_val = old_val and u'Да' or u'Нет'
+                old_val = old_val is None and u'<пусто>' or unicode(old_val) #.__unicode__()
+                new_val = new_val is None and u'<пусто>' or unicode(new_val)
                 if old_val=="None":
-                    msg.append(_(u'"%s": добавлено "%s"') % (field.verbose_name, new_val))
+                    msg.append(_(u"'%s': добавлено '%s'") % (field.verbose_name, new_val))
                 elif new_val=="None":
-                    msg.append(_(u'"%s": удалено "%s"') % (field.verbose_name, old_val))
+                    msg.append(_(u"'%s': удалено '%s'") % (field.verbose_name, old_val))
                 else:
-                    msg.append(_(u'"%s": "%s" -> "%s"') % (field.verbose_name, old_val, new_val))
+                    msg.append(_(u"'%s': '%s' -> '%s'") % (field.verbose_name, old_val, new_val))
 
     user = request and request.user.is_authenticated() and request.user or None
     Log.objects.create(

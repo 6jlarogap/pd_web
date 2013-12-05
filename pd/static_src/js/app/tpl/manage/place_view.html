@@ -46,7 +46,6 @@
                 <dd>широта: {{item.lat || '-'}}, долгота: {{item.lng || '-'}}</dd>
                 <dt>Размеры</dt>
                 <dd>длинна {{item.place_length || '-'}}м, ширина {{item.place_width || '-'}}м</dd>
-                
                 <!-- dt></dt>
                 <dd><a href="#" class="btn btn-success" ng-click="openEditForm('isPlaceEditorOpen')">Редактировать</a></dd -->
             </dl>
@@ -89,6 +88,12 @@
 		                <!-- span ng-show="DEBUG">ID: {{ grave.id }}</span -->
 		            </div>
 		            <p style="text-align: left">Захоронения</p>
+                    
+                    <p ng-show="item.is_wrong_fio||item.is_military">
+                        <span class="label" ng-show="grave.is_wrong_fio">Неверное ФИО</span>
+                        <span class="label" ng-show="grave.is_military">Воинская могила</span>
+                    </p>
+
 	                <ul class="unstyled burials">
 	                    <li ng-repeat="burial in burials | filter :{grave : grave.id}"
 	                    	class="well burial {{burial.status}}" 
