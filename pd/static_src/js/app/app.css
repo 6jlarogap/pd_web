@@ -115,3 +115,8 @@ form .error{
 .burial.exhumated{
 	background-color:silver !important;
 }
+
+
+#noty_topRight_layout_container .noty_message{
+    background: transparent url('/static/delete.png') right center no-repeat;
+}
