@@ -1,6 +1,6 @@
 ﻿//'use strict';
 
-function AreaViewCtrl($scope, $rootScope, $http, $routeParams, $resource, $location, Area, AreaPhoto,
+function AreaViewCtrl($scope, $rootScope, $http, $routeParams, $resource, $location, Cemetery, Area, AreaPhoto,
 	AreaPurpose, uploadManager, Place) {
 
     "use strict";
@@ -31,6 +31,7 @@ function AreaViewCtrl($scope, $rootScope, $http, $routeParams, $resource, $locat
 
 
 	$scope.update = function(){
+
 		Area.get({areaID:$routeParams.area_id,  cemetery_id: $routeParams.cemetery_id}, function(area) {
 			if(!area.id)
 				window.location = '/manage/500?title=Участок не найден';
@@ -39,6 +40,9 @@ function AreaViewCtrl($scope, $rootScope, $http, $routeParams, $resource, $locat
 	            $scope.area_photo = photo;
 	            $scope.currentImage = photo[0];
 	        });
+		});
+		Cemetery.get({cemeteryID:$routeParams.cemetery_id}, function(result) {
+		    $scope.cemetery = result;
 		});
 		Place.query({
 			 	cemetery_id: $routeParams.cemetery_id, 

@@ -7,6 +7,7 @@
 	$scope.BURIAL_CONTAINERS = BURIAL_CONTAINERS;
 	$scope.BURIAL_TYPES = BURIAL_TYPES;
 	$scope.STATUS_CHOICES = STATUS_CHOICES;
+	$scope.BURIAL_STATUS_EXHUMATED = BURIAL_STATUS_EXHUMATED;
     $scope.grave_page = 1;
     $scope.log_page = 1;
     $scope.loading = false;

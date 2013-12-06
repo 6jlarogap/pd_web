@@ -62,4 +62,6 @@
         {id:2, name:'Факс'}
     ],
     
-    RESPONCIBLE_CT = 20;
+    RESPONCIBLE_CT = 20,
+
+    BURIAL_STATUS_EXHUMATED = 'exhumated';

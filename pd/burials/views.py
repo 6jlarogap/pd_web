@@ -274,7 +274,7 @@ class PlaceViewSet(viewsets.ModelViewSet):
             old = None
         except AttributeError:
             old = None
-        log_object(self.request, obj=object, old=old, new=object, reason=_(u'Место изменено'))
+        log_object(self.request, obj=object, old=old, new=object, reason=_(u'Место %s изменено') % object.place)
         
         # Update grave point coords
         items = Grave.objects.filter(place=object).all()
@@ -426,21 +426,34 @@ class GraveViewSet(viewsets.ModelViewSet):
         object.place.lat = res["lat"]
         object.place.lng = res["lng"]  
         object.place.save()
+        
+        """
+        TODO: Newd review this. Replacement for "def move(self, request, pk=None):"
+        current_qs = Grave.objects.filter(place__cemetery__ugh=self.request.user.profile.org)
+        if current.filter(pk=pk).count():
+            current = current_qs.get(pk=pk)
+            if current.grave_number != object.grave_number:
+                 current_qs = current_qs.filter(grave_number__gte=current.grave_number).all()
+                 ind = object.grave_number
+                 for row in current_qs:
+                     ind += 1
+                     row.grave_number = ind
+                     row.save()
+        """
+        
+        
         try:
             old = self.model.objects.get(pk=object.pk)
         except self.model.DoesNotExist:
             old = None
         except AttributeError:
             old = None
-        log_object(self.request, obj=object.place, old=old, new=object, reason=_(u'Могила изменена'))        
+        log_object(self.request, obj=object.place, old=old, new=object, reason=_(u'Могила №%d изменена') % object.grave_number)        
         return object
-        
-    #def post_save(self, object, created=False):
-    #    if created:
-    #        write_log(self.request, object, _(u'Могила №%d создана') % object.grave_number)
 
 
-    @action(methods=['GET',])
+    """
+    #@action(methods=['GET',])
     def move(self, request, pk=None):
         direction = request.GET.get('direction','forward')
         try:
@@ -457,7 +470,7 @@ class GraveViewSet(viewsets.ModelViewSet):
             swapped = Grave.objects.get(place=current.place, grave_number = current.grave_number+direction)
             t = current.grave_number
             t1 = swapped.grave_number
-            write_log(self.request, current, _(u'Могила перемещена %s c №%d на №%d' % (direction_text, t, t1)))
+            write_log(self.request, current, _(u'Могила №%d  перемещена %s c №%d на №%d' % (t1, direction_text, t, t1)))
             #TODO: Transaction level?
             current.grave_number = 32767
             current.save()
@@ -468,13 +481,13 @@ class GraveViewSet(viewsets.ModelViewSet):
         except:
             pass
         return Response(status=200)
-
+    """
 
 
     def destroy(self, request, pk=None):
         try:
             object = self.model.objects.get(pk=int(pk))
-            write_log(self.request, object.place, _(u'Могила №%d удалена') % object.pk)
+            write_log(self.request, object.place, _(u'Могила №%d удалена') % object.grave_number)
             object.delete();
         except:
             raise Http404()

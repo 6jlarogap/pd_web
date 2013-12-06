@@ -1,16 +1,6 @@
 <alert ng-repeat="alert in alerts" type="alert.type" close="closeAlert($index)">{{alert.msg}}</alert>
 
-<ul class="breadcrumb">
-    <li><h3 class="brand" href="#">Место "{{item.place}}"</h3></li>
-    <li><span class="divider">|</span></li>
-    <li><a href="/manage/cemetery/{{cemetery.id}}/">{{cemetery.name}}</a></li>
-    <li><span class="divider">|</span></li>
-    <li><a href="/manage/cemetery/{{cemetery.id}}/area/{{area.id}}">Участок "{{area.name}}"</a></li>
-    <li><span class="divider">|</span></li>
-    <li><a href="#" ng-click="openEditForm('isPlaceEditorOpen')">Редактировать место</a></li>
-    <li><span class="divider">|</span></li>
-    <li><a href="#" ng-click="openEditForm('isGraveAddOpen')">Добавить могилу</a></li>
-</ul>
+<div ng-include src="'/static/js/app/tpl/manage/place_view_header.html'"></div>
 
 <div class="place-view">
     <div class="row-fluid">
@@ -58,24 +48,16 @@
     <div class="graves row-fluid clearfix">
         <h2>Могилы</h2>
         <!-- div class="row-fluid"><button class="btn btn-success" ng-click="openEditForm('isGraveAddOpen')">Добавить могилу</button></div -->
-        <div class="row" style="overflow-x:auto; width: auto;">
+        <div class="row" style="overflow-x:auto; width: auto; padding-left:30px;">
 	        
 	        <table width="auto">
-			<tr>	        	
+			<tr>
 	        <td class="" ng-repeat="grave in graves" valign="top">
 	            <div class="grave well well-large">
 	            	<div class="btn-toolbar">
 	                    <div class="btn-group" style="margin: 0 -7px;">
 		                    <button class="btn btn-success btn-mini"ng-click="openEditForm('isGraveEditOpen', grave)">
 		                       №{{ grave.grave_number }} Редактировать
-		                    </button>
-		                    <button class="btn btn-success btn-mini"ng-click="graveMove('backward', grave)"
-		                    		ng-hide="$first">
-		                    		<i class="icon-arrow-left"></i>Влево
-		                    </button>                    
-		                    <button class="btn btn-success btn-mini"ng-click="graveMove('forward', grave)"
-		                    	ng-hide="$last">
-		                    	Вправо<i class="icon-arrow-right"></i>
 		                    </button>
 	                    </div>
 	            	</div>
@@ -87,6 +69,7 @@
 		                </div -->
 		                <!-- span ng-show="DEBUG">ID: {{ grave.id }}</span -->
 		            </div>
+		            
 		            <p style="text-align: left">Захоронения</p>
                     
                     <p ng-show="item.is_wrong_fio||item.is_military">
@@ -96,12 +79,43 @@
 
 	                <ul class="unstyled burials">
 	                    <li ng-repeat="burial in burials | filter :{grave : grave.id}"
-	                    	class="well burial {{burial.status}}" 
-	                    	ng-click="openEditForm('isBurialEditorOpen', burial)">
+	                    	class="well burial {{burial.status}}">
+	                    	<div ng-click="openEditForm('isBurialEditorOpen', burial)">
 	                        <h4 style="text-align: left">{{burial.deadman.last_name}}</h4>
 	                        <h4 style="text-align: left">{{burial.deadman.first_name}}</h4>
 	                        <h4 style="text-align: left">{{burial.deadman.middle_name}}</h4>
 	                        <div>{{burial.fact_date || burial.plan_date}}</div>
+	                        </div>
+                            <div class="btn-group pull-right">
+                                <a class="btn btn-mini" popover="Просмотр" popover-trigger="mouseenter"
+                                    href="/burials/{{burial.id}}/" target="_new">
+                                    <i class="icon-search"></i>
+                                </a>
+                                <a class="btn btn-mini" popover="Правка" popover-trigger="mouseenter"
+                                    href="/burials/{{burial.id}}/edit/" target="_new">
+                                    <i class="icon-edit"></i>
+                                </a>
+                                <a class="btn btn-mini" popover="Эксгумировать" popover-trigger="mouseenter"
+                                    href="/burials/{{burial.id}}/exhumate/" target="_new">
+                                    <i class="icon-print"></i>
+                                </a>
+
+                                <a class="btn btn-mini" popover="Печать справки" popover-trigger="mouseenter"
+                                    href="/burials/{{burial.id}}/spravka/" target="_new"
+                                    ng-hide="burial.status==BURIAL_STATUS_EXHUMATED">
+                                    <i class="icon-print"></i>
+                                </a>
+                                <a class="btn btn-mini" popover="Печать справки" popover-trigger="mouseenter"
+                                    href="/burials/{{burial.id}}/exhumate/report/" target="_new"
+                                    ng-show="burial.status==BURIAL_STATUS_EXHUMATED">
+                                    <i class="icon-print"></i>
+                                </a>
+                                <a class="btn btn-mini" popover="Отмена эксгумации" popover-trigger="mouseenter"
+                                    href="/places/{{item.id}}/"
+                                    ng-show="burial.status==BURIAL_STATUS_EXHUMATED">
+                                    <i class="icon-arrow-down"></i>
+                                </a>
+                            </div>
 	                    </li>
 	                </ul>
 	                
@@ -146,17 +160,7 @@
     
     
 
-<ul class="breadcrumb">
-    <li><h3 class="brand" href="#">Место "{{item.place}}"</h3></li>
-    <li><span class="divider">|</span></li>
-    <li><a href="/manage/cemetery/{{cemetery.id}}/">{{cemetery.name}}</a></li>
-    <li><span class="divider">|</span></li>
-    <li><a href="/manage/cemetery/{{cemetery.id}}/area/{{area.id}}">Участок "{{area.name}}"</a></li>
-    <li><span class="divider">|</span></li>
-    <li><a href="#" ng-click="openEditForm('isPlaceEditorOpen')">Редактировать место</a></li>
-    <li><span class="divider">|</span></li>
-    <li><a href="#" ng-click="openEditForm('isGraveAddOpen')">Добавить могилу</a></li>
-</ul>
+<div ng-include src="'/static/js/app/tpl/manage/place_view_header.html'"></div>
 
     <!-- POPUP Place edit form -->
     <div modal="isPlaceEditorOpen" close="closeEditForm('isPlaceEditorOpen')">
