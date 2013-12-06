@@ -71,13 +71,11 @@
                 <br/>
                 {{ b.deadman.address }}
             {% endif %}
-            {% if b.deadman.birth_date %}
+            {% if b.deadman.birth_date or b.deadman.death_date %}
                 <br/>
-                {{ b.deadman.birth_date }}
-                {% if b.deadman.death_date %}
-                    &mdash;
-                    {{ b.deadman.death_date }}
-                {% endif %}
+                {{ b.deadman.birth_date|default_if_none:"..."}}
+                &mdash;
+                {{ b.deadman.death_date|default_if_none:"..." }}
             {% endif %}
         </dd>
         {% if not b.is_bio %}
