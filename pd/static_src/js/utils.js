@@ -89,21 +89,55 @@ function addForm(btn, prefix) {
     $('#id_' + prefix + '-TOTAL_FORMS').val(formCount + 1);
     $('#' + prefix + '-' + formCount + '-row td:first').html(formCount + 1);
     updateProductId();
+    hideShowDelete()
     return false;
 }
 
 function deleteForm(btn, prefix) {
-    $(btn).parents('.dynamic-form').remove();
+    if ($('.dynamic-form').length > 1) {
+        $(btn).parents('.dynamic-form').remove();
+        var forms = $('.dynamic-form');
+        $('#id_' + prefix + '-TOTAL_FORMS').val(forms.length);
+        for (var i=0, formCount=forms.length; i<formCount; i++) {
+            $(forms.get(i)).each(function() {
+                updateElementIndex(this, prefix, i);
+            });
+        }
+        updateProductId();
+        updateTotalForm();
+        hideShowDelete()
+    }
+    return false;
+}
+
+function hideShowDelete() {
+    if ($('.dynamic-form').length > 1) {
+        $('.delete-row').show();
+    } else {
+        $('.delete-row').hide();
+    }
+}
+    
+function removeEmptyForms() {
     var forms = $('.dynamic-form');
-    $('#id_' + prefix + '-TOTAL_FORMS').val(forms.length);
+    var forms_to_delete = [];
     for (var i=0, formCount=forms.length; i<formCount; i++) {
+        var form = $(this);
         $(forms.get(i)).each(function() {
-            updateElementIndex(this, prefix, i);
+            $(this).find('.product_type').each(function() {
+                $(this).find('select').each(function() {
+                    if (!$(this).val()) {
+                        forms_to_delete.push(form);
+                    }
+                });
+            });
         });
     }
-    updateProductId();
-    updateTotalForm();
-    return false;
+    $('#id_orderitem_set-TOTAL_FORMS').val(forms.length-forms_to_delete.length);
+    for (var i=0, formCount=forms_to_delete.length; i<formCount; i++) {
+        forms_to_delete.get(i).remove();
+    }
+    return true;
 }
 
 function updateAmountForm(el) {
