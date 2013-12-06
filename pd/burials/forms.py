@@ -1075,27 +1075,28 @@ class BurialCommitForm(BurialForm):
                 msg = _(u"Фактическая дата захоронения не может быть раньше даты смерти")
                 raise forms.ValidationError(msg)
 
-        if self.dc_form.is_valid() and \
-           not (self.instance.is_archive() or self.request.REQUEST.get('archive') or \
-                self.instance.is_transferred() or \
-                self.request.user.profile.is_loru() or \
-                self.cleaned_data.get('burial_container') == Burial.CONTAINER_BIO \
-               ):
+        if self.dc_form.is_valid():
             death_certificate_release_date = self.dc_form.cleaned_data.get('release_date')
-            if not self.dc_form.cleaned_data.get("s_number").strip():
-                raise forms.ValidationError(_(u"Не заполнен номер свидетельства о смерти"))
-            if not death_certificate_release_date:
-                raise forms.ValidationError(_(u"Не указана дата свидетельства о смерти"))
-            if not self.dc_form.cleaned_data.get("zags"):
-                raise forms.ValidationError(_(u"Не указан ЗАГС, выдавший свидетельство о смерти"))
-            if deadman_birth_date:
-                if deadman_birth_date > death_certificate_release_date:
-                    msg = _(u"Дата выдачи свидетельства о смерти не может быть раньше даты рождения")
-                    raise forms.ValidationError(msg)
-            if deadman_death_date:
-                if deadman_death_date> death_certificate_release_date:
-                    msg = _(u"Дата выдачи свидетельства о смерти не может быть раньше даты смерти")
-                    raise forms.ValidationError(msg)
+            if not (self.instance.is_archive() or self.request.REQUEST.get('archive') or \
+                    self.instance.is_transferred() or \
+                    self.request.user.profile.is_loru() or \
+                    self.cleaned_data.get('burial_container') == Burial.CONTAINER_BIO \
+                   ):
+                if not self.dc_form.cleaned_data.get("s_number").strip():
+                    raise forms.ValidationError(_(u"Не заполнен номер свидетельства о смерти"))
+                if not death_certificate_release_date:
+                    raise forms.ValidationError(_(u"Не указана дата свидетельства о смерти"))
+                if not self.dc_form.cleaned_data.get("zags"):
+                    raise forms.ValidationError(_(u"Не указан ЗАГС, выдавший свидетельство о смерти"))
+            if death_certificate_release_date:
+                if deadman_birth_date:
+                    if deadman_birth_date > death_certificate_release_date:
+                        msg = _(u"Дата выдачи свидетельства о смерти не может быть раньше даты рождения")
+                        raise forms.ValidationError(msg)
+                if deadman_death_date:
+                    if deadman_death_date> death_certificate_release_date:
+                        msg = _(u"Дата выдачи свидетельства о смерти не может быть раньше даты смерти")
+                        raise forms.ValidationError(msg)
 
         if self.responsible_form.is_valid():
             r_last_name = self.responsible_form.cleaned_data.get('last_name').strip()
