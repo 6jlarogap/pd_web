@@ -124,12 +124,10 @@ function removeEmptyForms() {
     for (var i=0, formCount=forms.length; i<formCount; i++) {
         var form = $(this);
         $(forms.get(i)).each(function() {
-            $(this).find('.product_type').each(function() {
-                $(this).find('select').each(function() {
-                    if (!$(this).val()) {
-                        forms_to_delete.push(form);
-                    }
-                });
+            $(this).find('.product_type').find('select').each(function() {
+                if (!$(this).val()) {
+                    forms_to_delete.push(form);
+                }
             });
         });
     }
