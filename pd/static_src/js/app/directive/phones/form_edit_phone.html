@@ -7,10 +7,15 @@
 	<span class="error" ng-show="form_phone.phonetype.$error.required">Выберите тип телефона</span>
 	<label for="phone_number">Номер:</label>
 
-	<input type="text" name="phone_number" ui-mask="{{'+7 (999) 999-9999'}}" ng-model="phone.number" maxlength="20" required>
+	<input type="text" name="phone_number" ui-mask="{{'+7 (999) 999-9999'}}"
+	   ng-model="phone.number" 
+	   off-ng-required="requireTel" required
+	   off-ng-pattern="phoneNumberPattern" 
+	   ng-maxlength="maxlength">
+
 	<span class="error" ng-show="form_phone.phone_number.$error.required">Укажите номер телефона</span>
 	<div class="row-fluid">
-		<button ng-click="save(phone)" off-ng-disabled="!form_phone.$valid" class="btn btn-primary">
+		<button ng-click="save(phone)" ng-disabled="!form_phone.$valid" class="btn btn-primary">
 			Сохранить
 		</button>
 		<button ng-click="[destroy(phone), close()]" class="btn btn-danger">

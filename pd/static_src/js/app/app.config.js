@@ -58,17 +58,21 @@ app.config(["$httpProvider", function($httpProvider) {
 			            $location.path('/login');
 			            break;
 					case 404:
-						//console.log(response);
 						//noty({text: 'Объект не найден', timeout:false, type:'warning', layout:'topRight'});
 						$location.path('/manage/404?title=Объект не найден');
 			            break;
 					case 400:
 						var error = '';
-						for(var i in response.data){
-							if(i){ 
-								var error = '{0}: {1}\n'.format(i, response.data[i]);
-			            		noty({text: error, timeout:false, type:'warning', layout:'topRight'});
-			            	}
+						if(response.data.__all__){
+						    var error = response.data.__all__;
+                            noty({text: error, timeout:false, type:'warning', layout:'topRight'});
+						}else{
+						    for(var i in response.data){
+    							if(i){ 
+    								var error = '{0}: {1}\n'.format(i, response.data[i]);
+    			            		noty({text: error, timeout:false, type:'warning', layout:'topRight'});
+    			            	}
+						    }
 						}
 			            break;
 					case 500:

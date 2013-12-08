@@ -109,6 +109,7 @@ function CemeteryViewCtrl($scope, $http, $resource, $location,  $routeParams,
 	$scope.closeEditForm = function() {
 		$scope.isEditorOpen = false;
 		$('body').css('overflow-y','auto');
+		$scope.update();
 	};
 	$scope.saveEditForm = function() {
 		$scope.cemetery.time_begin = date2time($scope.cemetery.time_begin);
@@ -140,6 +141,7 @@ function CemeteryViewCtrl($scope, $http, $resource, $location,  $routeParams,
     $scope.closeAddModal = function () {
         $scope.addModalOpened = false;
         $('body').css('overflow-y','auto');
+        $scope.update();
     };
 	$scope.addElement = function(){
 		$scope.area.cemetery = $routeParams.cemetery_id;

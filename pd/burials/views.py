@@ -247,7 +247,6 @@ class PlaceViewSet(viewsets.ModelViewSet):
     paginate_by = None
 
     def get_queryset(self):
-        # import pudb; pudb.set_trace()
         item = getCemetery(self.request)
         qs = self.model.objects.filter(cemetery=item)
         if self.request.GET.get('area_id'):
@@ -285,8 +284,16 @@ class PlaceViewSet(viewsets.ModelViewSet):
         return object
 
     def post_save(self, object, created=False):
-        #if created: 
-        #    write_log(self.request, object, _(u'Место №%s создано')% object.place)
+        if created: 
+            #    write_log(self.request, object, _(u'Место №%s создано')% object.place)
+            try:
+                places_count = int(self.request.DATA.get('places_count',1))
+            except:
+                places_count = 1
+            for i in xrange(1,places_count+1):
+                item = Grave(place=object, grave_number=i)
+                item.save()
+            
         if object.responsible:
             phone = self.request.DATA.get('obj_responsible_phones')
             phone_set = object.responsible.phone_set.all()
@@ -307,7 +314,6 @@ class PlaceViewSet(viewsets.ModelViewSet):
 
     @action(methods=['GET',])
     def getform(self, request, pk=None):
-        #import pudb; pudb.set_trace()
         cemetery = getCemetery(self.request)
         if self.request.GET.get('area_id'):
             area  = getArea(self.request)

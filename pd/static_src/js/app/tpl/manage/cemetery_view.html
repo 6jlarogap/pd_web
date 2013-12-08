@@ -98,6 +98,7 @@
     <div class="modal-header">
         <h3>Добавить участок</h3>
     </div>
+    <form name="areaEditForm">
     <div class="modal-body">
     	<div ng-include src="'/static/js/app/tpl/manage/form_edit_area.html'"></div>
     </div>
@@ -105,5 +106,6 @@
         <button ng-click="addElement(addItem)" class="btn btn-primary" ng-disabled="areaEditForm.$invalid">Добавить</button>
         <button ng-click="closeAddModal()" class="btn" >Отменить</button>
     </div>
+    </form>
 </div>
 

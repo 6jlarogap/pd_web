@@ -296,7 +296,10 @@
 			
 			
 			$scope.closeEditForm('isResponsibleEditorOpen');
-		}
+		}else{
+            var msg = "Исправьте ошибки в форме";
+            noty({text: msg, type:'error', layout:'topRight'});
+        }
 	};
 
 	$scope.removeResponsible = function() {
@@ -359,6 +362,9 @@
 				noty({text: msg, type:'success', layout:'topRight'});
 				$scope.update();
 			});
+		}else{
+            var msg = "Исправьте ошибки в форме";
+            noty({text: msg, type:'error', layout:'topRight'});
 		}
 	};
 
@@ -388,7 +394,10 @@
 				}
 				$scope.update();
 			});
-		}
+		}else{
+            var msg = "Исправьте ошибки в форме";
+            noty({text: msg, type:'error', layout:'topRight'});
+        }
 	};
 
 	$scope.deleteGrave = function(grave) {

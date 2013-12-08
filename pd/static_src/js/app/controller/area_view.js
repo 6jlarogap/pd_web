@@ -13,7 +13,8 @@ function AreaViewCtrl($scope, $rootScope, $http, $routeParams, $resource, $locat
 		row :'',
 		place : '',
 		cemetery: $routeParams.cemetery_id,
-		area: $routeParams.area_id
+		area: $routeParams.area_id,
+		places_count: 1
 	};
 	$scope.AVAILABILITY_CHOICES = AVAILABILITY_CHOICES; 
 
@@ -36,6 +37,7 @@ function AreaViewCtrl($scope, $rootScope, $http, $routeParams, $resource, $locat
 			if(!area.id)
 				window.location = '/manage/500?title=Участок не найден';
 			$scope.area = area;
+			$scope.place.places_count = area.places_count>0?area.places_count:1;
 	        AreaPhoto.query({area_id:area.id}, function(photo){
 	            $scope.area_photo = photo;
 	            $scope.currentImage = photo[0];
@@ -84,6 +86,7 @@ function AreaViewCtrl($scope, $rootScope, $http, $routeParams, $resource, $locat
 	$scope.closeEditForm = function() {
 		$scope.isEditorOpen = false;
 		$('body').css('overflow-y','auto');
+		$scope.update();
 	};
 	$scope.saveEditForm = function() {
 		$scope.area.cemetery_id = $routeParams.cemetery_id;
@@ -112,6 +115,7 @@ function AreaViewCtrl($scope, $rootScope, $http, $routeParams, $resource, $locat
     $scope.closeAddModal = function () {
         $scope.addModalOpened = false;
         $('body').css('overflow-y','auto');
+        $scope.update();
     };
 	$scope.addElement = function(){
 		$scope.closeAddModal();
@@ -120,6 +124,12 @@ function AreaViewCtrl($scope, $rootScope, $http, $routeParams, $resource, $locat
 			var url = '/manage/cemetery/{0}/area/{1}/place/{2}'.format($routeParams.cemetery_id, $routeParams.area_id, result.id);
 			$location.path(url);
    			$location.replace();
+  		},function(result){
+  		    console.log(123, result);
+            if(result.data.__all__ && result.data.__all__.length){
+                var error = result.data.__all__[0] || 'Ошибка при добавлении' ;
+                noty({text: error, type:'error', layout:'topRight'});
+            }
   		});
 	};
 	// EOF ADD form

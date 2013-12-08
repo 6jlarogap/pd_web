@@ -6,7 +6,18 @@ app.controller('PhonesController', ['$scope', 'Phone', function($scope, Phone) {
     $scope.isPhoneEditorOpen = false;
     $scope.isPhoneAddOpen = false;
     $scope.isStaticBlock = false;
-
+    $scope.requireTel = true;
+    $scope.maxlength = 12;
+    
+    $scope.phoneNumberPattern = (function() {
+        var regexp = /^\(?(\d{3})\)?[ .-]?(\d{3})[ .-]?(\d{4})$/;
+        return {
+            test: function(value) {
+                if( $scope.requireTel === false ) return true;
+                else return regexp.test(value);
+            }
+        };
+    })();
         
     $scope.update = function(obj) {
         /*if (!$scope.phones){

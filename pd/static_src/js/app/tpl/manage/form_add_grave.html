@@ -7,7 +7,7 @@
             <dt>Номер могилы:</dt>
             <dd>
                 <input name="graveNumber" id="id_new_grave_number" type="number" ng-model="newGrave.grave_number"
-                       required maxlength="255" disabled="disabled"
+                       required maxlength="255" disabled="disabled" required
                        min="1" max="{{max_grave_number+1}}"/>
                 <span class="error" ng-show="graveAddForm.graveNumber.$error.required">Не указан номер могилы</span>
             </dd>
