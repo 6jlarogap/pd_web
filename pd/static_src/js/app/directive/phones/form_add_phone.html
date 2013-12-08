@@ -7,7 +7,7 @@
 	<span class="error" ng-show="add_phone.phonetype.$error.required">Выберите тип телефона</span>
 	<label for="phone_number">Номер:</label>
 
-    <input type="text" name="phone_number" ui-mask="{{'+7 (999) 999-9999'}}" 
+    <input type="text" name="phone_number" ui-mask="{{'+9 (999) 999-9999'}}"
        ng-model="phone.number"
        off-ng-required="requireTel" required
        off-ng-pattern="phoneNumberPattern"
