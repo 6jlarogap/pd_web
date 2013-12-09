@@ -166,7 +166,7 @@ class Order(GetLogsMixin, BaseModel):
     def has_services(self):
         # return self.has_diggers() or self.has_loaders() or self.has_sign() or self.has_catafalque()
         # Но это все имеющиеся сейчас типы услуг. Быстрее будет:
-        return self.orderitem_set.exists()
+        return self.orderitem_set.filter(product__ptype__isnull=False).exists()
 
     def get_documents(self):
         ct = ContentType.objects.get_for_model(self)

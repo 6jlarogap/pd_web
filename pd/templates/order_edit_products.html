@@ -6,7 +6,7 @@
     {% with order=order tab="products" %}
         {% include "order_nav.html" %}
     {% endwith %}
-    <form action="" method="POST" class="main-form">
+    <form action="" method="POST" class="main-form" onSubmit="return removeEmptyForms()" >
         {% csrf_token %}
 
         {{ formset.management_form }}
@@ -59,6 +59,7 @@
 
     <script type="text/javascript">
         $(function () {
+            hideShowDelete()
             $('#id_orderitem_set-INITIAL_FORMS').attr('value', 0);
             updateProductId();
             
