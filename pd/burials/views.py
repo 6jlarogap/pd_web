@@ -112,7 +112,7 @@ class CemeteryViewSet(viewsets.ModelViewSet):
         Add "unique together" check in parent class 
         """
         name = request.DATA.get('name')
-        if self.get_queryset().filter(ugh=self.request.user.profile.org, name=name).exists():
+        if self.get_queryset().filter(ugh=self.request.user.profile.org, name__icontains=name).exists():
             data = {"__all__":[u"Кладбище с таким именем уже существует",]}
             return Response(status=400, data=data)
         return super(CemeteryViewSet, self).create(request, *args, **kwargs)
@@ -120,11 +120,11 @@ class CemeteryViewSet(viewsets.ModelViewSet):
     
     def update(self, request, *args, **kwargs):
         try:
-            pk = request.DATA.get('pk')
+            pk = int(request.DATA.get('id'))
         except:
             return Response(status=400)
         name = request.DATA.get('name')
-        if self.get_queryset().exclude(pk=pk).filter(ugh=self.request.user.profile.org, name=name).exists():
+        if self.get_queryset().exclude(pk=pk).filter(ugh=self.request.user.profile.org, name__icontains=name).exists():
             data = {"__all__":[u"Кладбище с таким именем уже существует",]}
             return Response(status=400, data=data)
         return super(CemeteryViewSet, self).update(request, *args, **kwargs)
