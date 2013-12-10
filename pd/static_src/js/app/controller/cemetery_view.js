@@ -3,7 +3,7 @@ app.controller('CemeteryViewCtrl',
 function CemeteryViewCtrl($scope, $http, $resource, $location,  $routeParams, 
 						Cemetery, Area, AreaPurpose, Place, Phone, ymapData, naturalService) {
     "use strict";
-
+    $scope.version_str = version_str;
 	var tplButtonEdit = '<a class="btn btn-small" ng-href="/manage/cemetery/'+$routeParams.cemetery_id+
 					'/area/{{row.getProperty(\'id\')}}">Открыть</a>',
 					
@@ -12,16 +12,11 @@ function CemeteryViewCtrl($scope, $http, $resource, $location,  $routeParams,
 		item = {
 			address:false
 		};
-	$scope.area = {
-		availability: 'open',
-		purpose: 1,
-		places_count:2
-	};
 	
 	AreaPurpose.get(function(result) {
 		$scope.PURPOSE_LIST = result;
 	});
-	
+	$scope.area_max_places = 10;
     $scope.gridOptions = { 
         data: '(area_list|filter:search)',
         enableRowSelection:false,
@@ -41,6 +36,11 @@ function CemeteryViewCtrl($scope, $http, $resource, $location,  $routeParams,
 	
 	$scope.coordinates = false;
 	$scope.update = function(){
+	    $scope.area = {
+	            availability: 'open',
+	            purpose: 1,
+	            places_count:2
+	        };
 		$scope.address_class = 'Cemetery';
 		$scope.address_class_params ={
 			cemeteryID : $routeParams.cemetery_id
@@ -119,7 +119,7 @@ function CemeteryViewCtrl($scope, $http, $resource, $location,  $routeParams,
 			$scope.closeEditForm();
 			$scope.update();
 			noty({text: 'Изменения сохранены', type:'success', layout:'topRight'});
-		});
+		}, default_display_response_error);
 	};
 	
 	// EOF Diallog
@@ -150,7 +150,7 @@ function CemeteryViewCtrl($scope, $http, $resource, $location,  $routeParams,
 			$scope.closeAddModal();
    			$location.path('/manage/cemetery/'+$routeParams.cemetery_id+'/area/'+result.id);
    			$location.replace();
-        });
+        }, default_display_response_error);
 	};
 	// EOF ADD form
 

@@ -8,7 +8,7 @@ function AreaViewCtrl($scope, $rootScope, $http, $routeParams, $resource, $locat
 					'/area/'+$routeParams.area_id+'/place/{{row.getProperty(\'id\')}}">Открыть</a>';
 	var tplFIO = '<div>{{row.getProperty(\'responsible.last_name\')}} {{row.getProperty(\'responsible.first_name\')}} {{row.getProperty(\'responsible.middle_name\')}}</div>';
 
-
+	$scope.version_str = version_str;
 	$scope.place = {
 		row :'',
 		place : '',
@@ -16,6 +16,7 @@ function AreaViewCtrl($scope, $rootScope, $http, $routeParams, $resource, $locat
 		area: $routeParams.area_id,
 		places_count: 1
 	};
+	$scope.area_max_places = 1000;
 	$scope.AVAILABILITY_CHOICES = AVAILABILITY_CHOICES; 
 
 
@@ -94,7 +95,7 @@ function AreaViewCtrl($scope, $rootScope, $http, $routeParams, $resource, $locat
 			$scope.closeEditForm();
 			$scope.update();
 			noty({text: 'Элемент сохранен', type:'success', layout:'topRight'});
-		});
+		}, default_display_response_error);
 	};
 	// EOF Diallog
 
@@ -124,13 +125,7 @@ function AreaViewCtrl($scope, $rootScope, $http, $routeParams, $resource, $locat
 			var url = '/manage/cemetery/{0}/area/{1}/place/{2}'.format($routeParams.cemetery_id, $routeParams.area_id, result.id);
 			$location.path(url);
    			$location.replace();
-  		},function(result){
-  		    console.log(123, result);
-            if(result.data.__all__ && result.data.__all__.length){
-                var error = result.data.__all__[0] || 'Ошибка при добавлении' ;
-                noty({text: error, type:'error', layout:'topRight'});
-            }
-  		});
+  		}, default_display_response_error);
 	};
 	// EOF ADD form
 

@@ -106,6 +106,31 @@ class CemeteryViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         return  Cemetery.objects.filter(ugh=self.request.user.profile.org).all()
 
+    
+    def create(self, request, *args, **kwargs):
+        """
+        Add "unique together" check in parent class 
+        """
+        name = request.DATA.get('name')
+        if self.get_queryset().filter(ugh=self.request.user.profile.org, name=name).exists():
+            data = {"__all__":[u"Кладбище с таким именем уже существует",]}
+            return Response(status=400, data=data)
+        return super(CemeteryViewSet, self).create(request, *args, **kwargs)
+    
+    
+    def update(self, request, *args, **kwargs):
+        try:
+            pk = request.DATA.get('pk')
+        except:
+            return Response(status=400)
+        name = request.DATA.get('name')
+        if self.get_queryset().exclude(pk=pk).filter(ugh=self.request.user.profile.org, name=name).exists():
+            data = {"__all__":[u"Кладбище с таким именем уже существует",]}
+            return Response(status=400, data=data)
+        return super(CemeteryViewSet, self).update(request, *args, **kwargs)
+    
+
+
     def pre_save(self, obj):
         if not obj.address:
             location_id = self.request.GET.get('address_id')
@@ -170,6 +195,7 @@ class SupervisorRequiredMixin:
             return View.dispatch(self, request, *args, **kwargs)
         raise Http404
 
+
 class CemeteryList(UGHRequiredMixin, ListView):
     template_name = 'cemetery_list.html'
     model = Cemetery
@@ -178,6 +204,7 @@ class CemeteryList(UGHRequiredMixin, ListView):
         return Cemetery.objects.filter(ugh=self.request.user.profile.org)
 
 manage_cemeteries = CemeteryList.as_view()
+
 
 class CemeteryCreate(UGHRequiredMixin, RequestToFormMixin, FormInvalidMixin, CreateView):
     template_name = 'cemetery_create.html'
@@ -342,6 +369,7 @@ class PlaceViewSet(viewsets.ModelViewSet):
                 "area" : AreaSerializer(area).data,
                 "place" : PlaceSerializer(place).data,
                 "graves" : GraveSerializer(grave_list, many=True).data,
+                "grave_count" : place.grave_set.count(),
                 "burials" : BurialSerializer(burial_list, many=True).data,
                 "responsible" : {},
                 "responsible_phones" : [],

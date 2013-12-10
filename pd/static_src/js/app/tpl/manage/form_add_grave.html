@@ -13,11 +13,13 @@
             </dd>
             <dt>Широта:</dt>
             <dd>
-                <input name="graveLatitude" id="id_new_grave_latitude" type="text" ng-model="newGrave.lat" maxlength="255"/>
+                {{selectedGrave.lat||'-'}}
+                <!--input disabled="disabled" name="graveLatitude" id="id_new_grave_latitude" type="text" ng-model="newGrave.lat" maxlength="255"/-->
             </dd>
             <dt>Долгота:</dt>
             <dd>
-                <input name="graveLongitude" id="id_new_grave_longitude" type="text" ng-model="newGrave.lng" maxlength="255"/>
+                {{selectedGrave.lng||'-'}}
+                <!--input disabled="disabled" name="graveLongitude" id="id_new_grave_longitude" type="text" ng-model="newGrave.lng" maxlength="255"/-->
             </dd>
         </dl>
     </div>

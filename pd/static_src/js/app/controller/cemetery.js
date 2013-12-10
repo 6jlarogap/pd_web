@@ -11,7 +11,7 @@ function CemeteryCtrl($rootScope, $scope, $http, $location, $resource, naturalSe
 		places_algo:'area',
 		time_slots:''
 	};
-
+	$scope.version_str = version_str;
 	var Cemetery = $resource('/api/cemetery/:cemeteryID', {cemeteryID:'@id'},{});
 
 	var tplButtonEdit = '<a class="btn btn-small" ng-href="/manage/cemetery/{{row.getProperty(\'id\')}}">Открыть</a>';
@@ -66,7 +66,7 @@ function CemeteryCtrl($rootScope, $scope, $http, $location, $resource, naturalSe
 			$scope.closeAddModal();
    			$location.path('/manage/cemetery/'+result.id);
    			$location.replace();
-        });
+        }, default_display_response_error);
 	};
 	// EOF ADD form
 	

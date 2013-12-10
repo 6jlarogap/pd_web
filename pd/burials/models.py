@@ -64,6 +64,7 @@ class Cemetery(GetLogsMixin, BaseModel, PhonesMixin):
         verbose_name = _(u"Кладбище")
         verbose_name_plural = _(u"Кладбища")
         ordering = ['name']
+        unique_together = ('ugh', 'name',)
 
     def __unicode__(self):
         return self.name
@@ -313,16 +314,18 @@ class PlaceStatus(BaseModel):
     creator = models.ForeignKey('auth.User', verbose_name=_(u"Создатель"), editable=False,
                                 on_delete=models.PROTECT)
 class Grave(GeoPointModel):
-    class Meta:
-        unique_together = ('place', 'grave_number',)
-
     place = models.ForeignKey(Place, verbose_name=_(u"Место"))
     grave_number = models.PositiveSmallIntegerField(_(u"Номер"), default=1)
     is_wrong_fio = models.BooleanField(_(u"Неверное ФИО"), default=False)
     is_military = models.BooleanField(_(u"Воинская могила"), default=False)
 
+    class Meta:
+        unique_together = ('place', 'grave_number',)
+        ordering = ['grave_number']
+
     def __unicode__(self):
         return _(u'Могила. место: %s номер:%d') % (self.place, self.grave_number)
+
 
 class AreaPhoto(Files, GeoPointModel):
     area = models.ForeignKey(Area)

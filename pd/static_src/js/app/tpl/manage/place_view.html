@@ -1,6 +1,6 @@
 <alert ng-repeat="alert in alerts" type="alert.type" close="closeAlert($index)">{{alert.msg}}</alert>
 
-<div ng-include src="'/static/js/app/tpl/manage/place_view_header.html'"></div>
+<div ng-include src="'/static/js/app/tpl/manage/place_view_header.html'+version_str"></div>
 
 <div class="place-view">
     <div class="row-fluid">
@@ -35,7 +35,7 @@
                 <dt>Координаты</dt>
                 <dd>широта: {{item.lat || '-'}}, долгота: {{item.lng || '-'}}</dd>
                 <dt>Размеры</dt>
-                <dd>длинна {{item.place_length || '-'}}м, ширина {{item.place_width || '-'}}м</dd>
+                <dd>длина {{item.place_length || '-'}}м, ширина {{item.place_width || '-'}}м</dd>
                 <!-- dt></dt>
                 <dd><a href="#" class="btn btn-success" ng-click="openEditForm('isPlaceEditorOpen')">Редактировать</a></dd -->
             </dl>
@@ -160,35 +160,35 @@
     
     
 
-<div ng-include src="'/static/js/app/tpl/manage/place_view_header.html'"></div>
+<div ng-include src="'/static/js/app/tpl/manage/place_view_header.html'+version_str"></div>
 
     <!-- POPUP Place edit form -->
     <div modal="isPlaceEditorOpen" close="closeEditForm('isPlaceEditorOpen')">
-        <div ng-include src="'/static/js/app/tpl/manage/form_edit_place.html'"></div>
+        <div ng-include src="'/static/js/app/tpl/manage/form_edit_place.html'+version_str"></div>
     </div>
     <!-- EOF POPUP form -->
 
     <!-- POPUP Responsible edit form -->
     <div modal="isResponsibleEditorOpen" close="closeEditForm('isResponsibleEditorOpen')">
-        <div ng-include src="'/static/js/app/tpl/manage/form_edit_responsible.html'"></div>
+        <div ng-include src="'/static/js/app/tpl/manage/form_edit_responsible.html'+version_str"></div>
     </div>
     <!-- EOF POPUP form -->
 
     <!-- POPUP Add grave -->
     <div modal="isGraveAddOpen" close="closeEditForm('isGraveAddOpen')">
-        <div ng-include src="'/static/js/app/tpl/manage/form_add_grave.html'"></div>
+        <div ng-include src="'/static/js/app/tpl/manage/form_add_grave.html'+version_str"></div>
     </div>
     <!-- EOF POPUP form -->
 
     <!-- POPUP Edit grave -->
     <div modal="isGraveEditOpen" close="closeEditForm('isGraveEditOpen')">
-        <div ng-include src="'/static/js/app/tpl/manage/form_edit_grave.html'"></div>
+        <div ng-include src="'/static/js/app/tpl/manage/form_edit_grave.html'+version_str"></div>
     </div>
     <!-- EOF POPUP form -->
 
     <!-- POPUP Burial edit form -->
     <div modal="isBurialEditorOpen" close="closeEditForm('isBurialEditorOpen')">
-        <div ng-include src="'/static/js/app/tpl/manage/form_edit_burial.html'"></div>
+        <div ng-include src="'/static/js/app/tpl/manage/form_edit_burial.html'+version_str"></div>
     </div>
     <!-- EOF POPUP form -->
 

@@ -4,6 +4,7 @@
 
 	//Constants
 	//todo put all constants in constant provider
+	$scope.version_str = version_str;
 	$scope.BURIAL_CONTAINERS = BURIAL_CONTAINERS;
 	$scope.BURIAL_TYPES = BURIAL_TYPES;
 	$scope.STATUS_CHOICES = STATUS_CHOICES;
@@ -11,7 +12,7 @@
     $scope.grave_page = 1;
     $scope.log_page = 1;
     $scope.loading = false;
-  
+    
     var item_params;
 	//setup
 	$scope.updateMap = function() {
@@ -71,7 +72,6 @@
 			$scope.cemetery = new Cemetery(result.cemetery);
 			$scope.area = new Area(result.area);
 			$scope.item = new Place(result.place);
-			
 			$scope.place_log = [];
 			angular.forEach(result.log, function(item) {
                   $scope.place_log.push(new Log(item));
@@ -98,6 +98,8 @@
 
 			$scope.item.name = "Кл. {0}, уч. {1}, ряд {2}, место {3}".format($scope.cemetery.name, $scope.area.name, $scope.item.row || DEFAULT_MESSAGES.no_data, $scope.item.place)
 			$scope.loading = false;
+			
+			$scope.grave_count = result.grave_count;
 			$scope.updateGraves();
 		},function(data){
 		    $scope.loading = false;
@@ -212,7 +214,7 @@
 				}
 				$scope.newGrave = new Grave({
 					place : $scope.item.id,
-					grave_number : $scope.graves.length + 1, //todo add way to count next grave_number or add validation of grave_number
+					grave_number : $scope.grave_count + 1, //todo add way to count next grave_number or add validation of grave_number
 					lat : lat || 0,
 					lng : lng || 0
 				});

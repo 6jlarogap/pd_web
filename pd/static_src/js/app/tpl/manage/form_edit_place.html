@@ -58,11 +58,13 @@
 
 			<dt><label>Широта:</label></dt>
 			<dd>
-				<input type="text" name="lat" ng-model="item.lat" />
+			    {{selectedGrave.lat||'-'}}
+				<!-- input type="text" name="lat" ng-model="item.lat" / -->
 			</dd>
 			<dt><label>Долгота:</label></dt>
 			<dd>
-				<input type="text" name="lng" ng-model="item.lng" />
+			    {{selectedGrave.lng||'-'}}
+				<!-- input type="text" name="lng" ng-model="item.lng" / -->
 
         </dl>
     </div>
