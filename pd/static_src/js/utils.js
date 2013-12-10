@@ -94,19 +94,17 @@ function addForm(btn, prefix) {
 }
 
 function deleteForm(btn, prefix) {
-    if ($('.dynamic-form').length > 1) {
-        $(btn).parents('.dynamic-form').remove();
-        var forms = $('.dynamic-form');
-        $('#id_' + prefix + '-TOTAL_FORMS').val(forms.length);
-        for (var i=0, formCount=forms.length; i<formCount; i++) {
-            $(forms.get(i)).each(function() {
-                updateElementIndex(this, prefix, i);
-            });
-        }
-        updateProductId();
-        updateTotalForm();
-        hideShowDelete()
+    $(btn).parents('.dynamic-form').remove();
+    var forms = $('.dynamic-form');
+    $('#id_' + prefix + '-TOTAL_FORMS').val(forms.length);
+    for (var i=0, formCount=forms.length; i<formCount; i++) {
+        $(forms.get(i)).each(function() {
+            updateElementIndex(this, prefix, i);
+        });
     }
+    updateProductId();
+    updateTotalForm();
+    hideShowDelete()
     return false;
 }
 
@@ -119,22 +117,27 @@ function hideShowDelete() {
 }
     
 function removeEmptyForms() {
-    var forms = $('.dynamic-form');
-    var forms_to_delete = [];
-    for (var i=0, formCount=forms.length; i<formCount; i++) {
-        var form = $(this);
-        $(forms.get(i)).each(function() {
-            $(this).find('.product_type').find('select').each(function() {
-                if (!$(this).val()) {
-                    forms_to_delete.push(form);
-                }
+    while (true) {
+        var to_delete = [];
+        var forms = $('.dynamic-form');
+        for (var i=0, formCount=forms.length; i<formCount; i++) {
+            $(forms.get(i)).each(function() {
+                $(this).find('.product_type').find('select').each(function() {
+                    if (!$(this).val()) {
+                        to_delete.push($(this));
+                    }
+                });
             });
-        });
+            if (to_delete.length > 0) {
+                deleteForm(to_delete[0], 'orderitem_set');
+                break;
+            }
+        }
+        if (i >= formCount) {
+            break;
+        }
     }
-    $('#id_orderitem_set-TOTAL_FORMS').val(forms.length-forms_to_delete.length);
-    for (var i=0, formCount=forms_to_delete.length; i<formCount; i++) {
-        forms_to_delete.get(i).remove();
-    }
+    $('#id_orderitem_set-TOTAL_FORMS').val($('.dynamic-form').length);
     return true;
 }
 
