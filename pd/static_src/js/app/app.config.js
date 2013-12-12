@@ -1,4 +1,19 @@
-﻿
+﻿var geo = { 
+        getLat:function(val){
+            if(val)
+                return val;
+            else
+                return ymaps && ymaps.geolocation ? ymaps.geolocation.latitude : 0;
+        },
+        getLng:function(val){
+            if(val)
+                return val;
+            else
+                return ymaps && ymaps.geolocation ? ymaps.geolocation.longitude:0;
+        }
+    };
+
+
 $(function(){
     $.ajaxSetup({
         headers: { 'X-CSRFToken': getCookie('csrftoken') || csrf }

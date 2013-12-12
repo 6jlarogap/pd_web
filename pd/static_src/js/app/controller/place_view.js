@@ -19,8 +19,8 @@
 		if($scope.item){
 		  ymapData.markers = [{
 				point: [
-				        $scope.item.lat || ymaps.geolocation.latitude,
-				        $scope.item.lng || ymaps.geolocation.longitude
+				        geo.getLat($scope.item.lat),
+				        geo.getLng($scope.item.lng)
 				        ],
 				caption: 'Место: "{0}"'.format($scope.item.place),
 				content: "Кл. {0}, уч. {1}, ряд {2}, место {3}".format(
@@ -34,8 +34,8 @@
 			}];
     		$scope.placeCoordinates = [{
     			point : [
-    			         $scope.item.lat || ymaps.geolocation.latitude,
-    			         $scope.item.lng || ymaps.geolocation.longitude
+                         geo.getLat($scope.item.lat),
+                         geo.getLng($scope.item.lng)
     			        ],
     			title : $scope.item.name,
     			obj_type : 'place',
@@ -50,8 +50,8 @@
 			if (grave.lat && grave.lng) {
 				ymapData.points.push({
 					point : [
-					         grave.lat || $scope.item.lat || ymaps.geolocation.latitude,
-					         grave.lng || $scope.item.lng || ymaps.geolocation.longitude
+		                        geo.getLat(grave.lat || $scope.item.lat),
+		                        geo.getLng(grave.lng || $scope.item.lng)
 					         ],
 					caption : 'Могила {0}'.format(grave.grave_number),
 					content : '',
@@ -166,8 +166,6 @@
 			$scope.newGrave = new Grave({
 				place : $scope.item.id,
 				grave_number : $scope.graves.length + 1, //todo add way to count next grave_number or add validation of grave_number
-				//lat: lat || 0,
-				//lng: lng || 0
 			});
 		},function(data){
             $scope.loading = false;
@@ -224,8 +222,8 @@
 				$scope.newGrave = new Grave({
 					place : $scope.item.id,
 					grave_number : $scope.grave_count + 1, //todo add way to count next grave_number or add validation of grave_number
-					lat : lat || $scope.item.lat || ymaps.geolocation.latitude,
-					lng : lng || $scope.item.lng || ymaps.geolocation.longitude
+					lat :geo.getLat(lat || $scope.item.lat),
+                    lng :geo.getLng(lng || $scope.item.lng )
 				});
 				break;
 			case 'isGraveEditOpen':

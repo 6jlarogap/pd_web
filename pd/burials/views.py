@@ -415,6 +415,8 @@ class PlaceViewSet(viewsets.ModelViewSet):
                 "log_page":page.number,
                 "log_pages":page.paginator._num_pages,
                 }
+        data["place"]["graves_count"] = place.get_graves_count()
+        data["place"]["available_count"] = place.get_available_count()
         if place.responsible:
             phone_set = place.responsible.phone_set.all()
             data["responsible_phones"] = PhoneSerializer(phone_set).data
