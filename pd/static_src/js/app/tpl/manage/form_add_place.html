@@ -28,7 +28,7 @@
     <dd>
         <input name="placeLen" id="id_place_set-len" type="number" 
         step="0.01"  min="0.1" max="10"
-        required ng-model="place.place_length" maxlength="255" />
+        ng-model="place.place_length" maxlength="255" />
         <span class="error" ng-show="placeEditForm.placeLen.$error.required">Не указана</span>
     </dd>
     
@@ -38,7 +38,7 @@
     <dd>
         <input name="placeW" id="id_place_set-w" type="number" 
         step="0.01"  min="0.1" max="10"
-        required ng-model="place.place_width" maxlength="255" />
+        ng-model="place.place_width" maxlength="255" />
         <span class="error" ng-show="placeEditForm.placeW.$error.required">Не указана</span>
     </dd>
 </dl>
