@@ -18,7 +18,7 @@ function CemeteryViewCtrl($scope, $http, $resource, $location,  $routeParams,
 	});
 	$scope.area_max_places = 10;
     $scope.gridOptions = { 
-        data: '(area_list|filter:search)',
+        data: 'area_list|filter:search',
         enableRowSelection:false,
         columnDefs: [
         	{field: 'name', displayName: 'Наименование'},
@@ -115,7 +115,6 @@ function CemeteryViewCtrl($scope, $http, $resource, $location,  $routeParams,
 		$scope.update();
 	};
 	$scope.saveEditForm = function() {
-	    console.log($scope.phones);
 		$scope.cemetery.time_begin = date2time($scope.cemetery.time_begin);
 		$scope.cemetery.time_end = date2time($scope.cemetery.time_end);
 		$scope.cemetery.obj_phones = $scope.phones;

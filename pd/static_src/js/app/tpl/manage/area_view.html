@@ -20,8 +20,7 @@
 <!-- removed style full-size-grid -->
 <div class="row-fluid">
 	<div class="span12" style="width:auto !important">
-	    Найти <input ng-model="search.row">
-	    <input ng-model="search.place">
+	    Найти <input ng-model="search">
 	    <br/> 
 		<div class="gridStyle" ng-grid="gridOptions" style="height:300px !important;"></div>
 	</div>
@@ -33,16 +32,18 @@
 
 <!-- POPUP form -->
 <div modal="isEditorOpen" close="closeEditForm()">
-    <div class="modal-header">
-        <h3>Редактировать участок "{{area.name}}"</h3>
-    </div>
-    <div class="modal-body">
-    	<div ng-include src="'/static/js/app/tpl/manage/form_edit_area.html'+version_str"></div>
-    </div>
-    <div class="modal-footer">
-    	<button class="btn btn-primary" ng-disabled="areaEditForm.$invalid" ng-click="saveEditForm()">Сохранить</button>
-        <button class="btn cancel" ng-click="closeEditForm()">Отменить</button>
-    </div>
+    <form name="areaEditForm" novalidate>
+        <div class="modal-header">
+            <h3>Редактировать участок "{{area.name}}"</h3>
+        </div>
+        <div class="modal-body">
+        	<div ng-include src="'/static/js/app/tpl/manage/form_edit_area.html'+version_str"></div>
+        </div>
+        <div class="modal-footer">
+        	<button class="btn btn-primary" ng-disabled="areaEditForm.$invalid" ng-click="saveEditForm()">Сохранить</button>
+            <button class="btn cancel" ng-click="closeEditForm()">Отменить</button>
+        </div>
+    </form>
 </div>
 <!-- EOF POPUP form -->
 

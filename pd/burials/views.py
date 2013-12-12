@@ -315,10 +315,9 @@ class PlaceViewSet(viewsets.ModelViewSet):
         #if item.pk:
         #    write_log(self.request, object, _(u'Место №%s изменено' % object.place))
         
-
         try:
             self.places_count = int(self.request.DATA.get('places_count',1))
-            assert places_count>0 and places_count<=10 
+            assert self.places_count>0 and self.places_count<=10 
         except:
             data = {"__all__":[u"Количество могил должно быть от 1 до 10",]}
             return Response(status=400, data=data)

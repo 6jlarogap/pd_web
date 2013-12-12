@@ -15,8 +15,8 @@ function AreaViewCtrl($scope, $rootScope, $http, $routeParams, $resource, $locat
 	};
 	$scope.area_max_places = 1000;
 	$scope.AVAILABILITY_CHOICES = AVAILABILITY_CHOICES; 
-	$scope.search = {row:'', place:''};
-
+	$scope.search = '';
+	$scope.place_list_filtered = [];
 
 	$scope.alerts = [];$scope.closeAlert = function(index){$scope.alerts.splice(index,1);};
 	
@@ -58,6 +58,7 @@ function AreaViewCtrl($scope, $rootScope, $http, $routeParams, $resource, $locat
 			}, function(result) {
 			$scope.place_list = result;
 			$scope.place_list.sort();
+			$scope.place_list_filtered = $scope.place_list;
 			try{
 				$scope.$digest();
 			}catch(e){}
@@ -67,9 +68,23 @@ function AreaViewCtrl($scope, $rootScope, $http, $routeParams, $resource, $locat
     $scope.setCurrentImage = function (image) {
         $scope.currentImage = image;
     };
+    
+    $scope.$watch("search", function(newVal, oldVal){
+        $scope.place_list_filtered = [];
+        if($scope.place_list){
+            for(var i=0;i<$scope.place_list.length;i++){
+                if($scope.place_list[i].row.indexOf(newVal)!=-1 || $scope.place_list[i].place.indexOf(newVal)!=-1){
+                    $scope.place_list_filtered.push($scope.place_list[i]);
+                }
+            }
+        }else{
+            $scope.place_list_filtered = $scope.place_list;
+        }
+    });
 
+    
     $scope.gridOptions = { 
-        data: '(place_list|filter:search)',
+        data: 'place_list_filtered', //|filter:search
         enableRowSelection:false,
         columnDefs: [
         	{field: 'row', displayName: 'Ряд'},

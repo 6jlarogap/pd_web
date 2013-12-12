@@ -17,3 +17,4 @@ pd/thumbnails/
 pd/static_src/pd*
 backup
 #restthumbnails
+pd/rest_framework/

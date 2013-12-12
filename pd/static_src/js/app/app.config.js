@@ -54,7 +54,6 @@ app.config(function($httpProvider) {
 				//console.info(response.config.url)
 				return response; 
 			}, function(response) { // The HTTP request was not successful.
-			    console.log(response);
 				switch (response.status) {
 					case 401:
 			            $location.path('/login');
@@ -82,7 +81,7 @@ app.config(function($httpProvider) {
 			            $location.path('/manage/500');
 			            break;
 					default:
-						noty({text: 'Ошибка выполнения', type:'warning', layout:'topRight'});
+						//noty({text: 'Ошибка выполнения', type:'warning', layout:'topRight'});
 			            break;
 				}
 				return $q.reject(response);
