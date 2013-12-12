@@ -153,11 +153,12 @@ class CemeteryViewSet(viewsets.ModelViewSet):
         #write_log(self.request, obj, _(u'Кладбище изменено'))
 
         # TODO: send signal
-        if obj.pk:
+        phone = self.request.DATA.get('obj_phones')
+        if obj.pk and phone:
             #import pudb; pudb.set_trace()
-            phone = self.request.DATA.get('obj_phones')
             id_binds = {}
             ct = ContentType.objects.get_for_model(obj)
+
             for i in phone:
                 i["ct"] = ct.pk
                 try:
