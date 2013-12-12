@@ -21,7 +21,7 @@ from django.core.exceptions import ValidationError
 
 
 def validate_area_places_count(value):
-    if value<=0 or value>3:
+    if value<1 or value>10:
         raise ValidationError(u'Количество могил должно быть от 1 до 10')
 
 
