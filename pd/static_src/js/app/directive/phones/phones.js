@@ -9,6 +9,8 @@ app.controller('PhonesController', ['$scope', 'Phone', function($scope, Phone) {
     $scope.requireTel = true;
     $scope.maxlength = 12;
     
+    $scope.phone = new Phone({is_new:true, phonetype:DEFAULT_PHONETYPE});
+    
     $scope.phoneNumberPattern = (function() {
         var regexp = /^\(?(\d{3})\)?[ .-]?(\d{3})[ .-]?(\d{4})$/;
         return {

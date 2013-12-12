@@ -39,7 +39,7 @@ function CemeteryViewCtrl($scope, $http, $resource, $location,  $routeParams,
 	    $scope.area = {
 	            availability: 'open',
 	            purpose: 1,
-	            places_count:2
+	            places_count:1
 	        };
 		$scope.address_class = 'Cemetery';
 		$scope.address_class_params ={
@@ -81,7 +81,10 @@ function CemeteryViewCtrl($scope, $http, $resource, $location,  $routeParams,
 			            		);
 					data.push({
 							id: result[i].id,
-							point:[result[i].lat, result[i].lng],
+							point:[
+							       result[i].lat || ymaps.geolocation.latitude, 
+							       result[i].lng || ymaps.geolocation.longitude
+							       ],
 							title:title,
 							caption: 'Место: "{0}"'.format(result[i].place),
 							content: title,
@@ -112,6 +115,7 @@ function CemeteryViewCtrl($scope, $http, $resource, $location,  $routeParams,
 		$scope.update();
 	};
 	$scope.saveEditForm = function() {
+	    console.log($scope.phones);
 		$scope.cemetery.time_begin = date2time($scope.cemetery.time_begin);
 		$scope.cemetery.time_end = date2time($scope.cemetery.time_end);
 		$scope.cemetery.obj_phones = $scope.phones;

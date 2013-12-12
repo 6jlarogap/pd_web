@@ -10,15 +10,12 @@ function AreaViewCtrl($scope, $rootScope, $http, $routeParams, $resource, $locat
 
 	$scope.version_str = version_str;
 	$scope.place = {
-		row :'',
-		place : '',
 		cemetery: $routeParams.cemetery_id,
 		area: $routeParams.area_id,
-		places_count: 1
 	};
 	$scope.area_max_places = 1000;
 	$scope.AVAILABILITY_CHOICES = AVAILABILITY_CHOICES; 
-
+	$scope.search = {row:'', place:''};
 
 
 	$scope.alerts = [];$scope.closeAlert = function(index){$scope.alerts.splice(index,1);};
@@ -37,8 +34,16 @@ function AreaViewCtrl($scope, $rootScope, $http, $routeParams, $resource, $locat
 		Area.get({areaID:$routeParams.area_id,  cemetery_id: $routeParams.cemetery_id}, function(area) {
 			if(!area.id)
 				window.location = '/manage/500?title=Участок не найден';
+
 			$scope.area = area;
-			$scope.place.places_count = area.places_count>0?area.places_count:1;
+			$scope.place = {
+			        row :'',
+			        place : '',
+			        cemetery: $routeParams.cemetery_id,
+			        area: $routeParams.area_id,
+			        places_count: area.places_count>0?area.places_count:1
+			};
+
 	        AreaPhoto.query({area_id:area.id}, function(photo){
 	            $scope.area_photo = photo;
 	            $scope.currentImage = photo[0];

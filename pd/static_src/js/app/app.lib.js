@@ -1,9 +1,10 @@
 ﻿
 function default_display_response_error(result){
-    if(result.data.__all__ && result.data.__all__.length){
+    return;
+    /*if(result.data.__all__ && result.data.__all__.length){
         var error = result.data.__all__[0] || 'Ошибка при добавлении' ;
         noty({text: error, type:'error', layout:'topRight'});
-    }
+    }*/
 }
 
 if (!String.prototype.format) {

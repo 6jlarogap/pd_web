@@ -8,9 +8,10 @@ from rest_api.fields import UnclearDateFieldSerializer
 
 class PhoneSerializer(serializers.HyperlinkedModelSerializer):
     #person = serializers.PrimaryKeyRelatedField()
+    ct = serializers.PrimaryKeyRelatedField()
     class Meta:
         model = Phone
-        fields = ('id', 'phonetype', 'number')
+        fields = ('id', 'phonetype', 'number', 'ct', 'obj_id')
 
 
 class AlivePersonSerializer(serializers.HyperlinkedModelSerializer):

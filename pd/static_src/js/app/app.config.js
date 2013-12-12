@@ -1,7 +1,8 @@
-﻿$(function(){
-	$.ajaxSetup({
-    	headers: { 'X-CSRFToken': getCookie('csrftoken') || csrf }
-	});
+﻿
+$(function(){
+    $.ajaxSetup({
+        headers: { 'X-CSRFToken': getCookie('csrftoken') || csrf }
+    });
 });
 
 $.noty.defaults = {
@@ -10,7 +11,7 @@ $.noty.defaults = {
     type: 'alert',
     text: '',
     dismissQueue: true, // If you want to use queue feature set this true
-    template: '<div class="noty_message"><span class="noty_text"></span><div class="noty_close">X</div>X</div>',
+    template: '<div class="noty_message"><span class="noty_text"></span></div>',
     animation: {
         open: {height: 'toggle'},
         close: {height: 'toggle'},
@@ -40,11 +41,11 @@ app.config(["$httpProvider", function($httpProvider) {
     //$httpProvider.defaults.headers.put['X-CSRF-Token'] = csrfToken;
     //$httpProvider.defaults.headers.patch['X-CSRF-Token'] = csrfToken;
     //$httpProvider.defaults.headers['delete']['X-CSRF-Token'] = csrfToken;
-}])
+}]);
 
-.config(['$httpProvider', function($httpProvider) {
+app.config(function($httpProvider) {
 	/* HTTP Interceptor*/
-	$httpProvider.responseInterceptors.push(['$q', '$location' function($q, $location) {
+	$httpProvider.responseInterceptors.push(function($q, $location) {
 		return function(promise) {
 			return promise.then(function(response) { // The HTTP request was successful.
 				// response.status >= 200 && response.status <= 299
@@ -53,6 +54,7 @@ app.config(["$httpProvider", function($httpProvider) {
 				//console.info(response.config.url)
 				return response; 
 			}, function(response) { // The HTTP request was not successful.
+			    console.log(response);
 				switch (response.status) {
 					case 401:
 			            $location.path('/login');
@@ -63,13 +65,13 @@ app.config(["$httpProvider", function($httpProvider) {
 			            break;
 					case 400:
 						var error = '';
-						if(response.data.__all__){
-						    var error = response.data.__all__;
+						if(response.data.__all__ && response.data.__all__.length){
+						    var error = response.data.__all__[0];
                             noty({text: error, timeout:false, type:'warning', layout:'topRight'});
 						}else{
 						    for(var i in response.data){
     							if(i){ 
-    								var error = '{0}: {1}\n'.format(i, response.data[i]);
+    								var error = '{0}: {1}\n'.format(TRANSLATIONS[i]||i, response.data[i]);
     			            		noty({text: error, timeout:false, type:'warning', layout:'topRight'});
     			            	}
 						    }
@@ -86,5 +88,5 @@ app.config(["$httpProvider", function($httpProvider) {
 				return $q.reject(response);
 			});
 		}
-	}]);
-}]);
+	});
+});

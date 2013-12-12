@@ -111,8 +111,8 @@ class CemeteryViewSet(viewsets.ModelViewSet):
         """
         Add "unique together" check in parent class 
         """
-        name = request.DATA.get('name')
-        if self.get_queryset().filter(ugh=self.request.user.profile.org, name__icontains=name).exists():
+        name = request.DATA.get('name').upper()
+        if self.get_queryset().filter(ugh=self.request.user.profile.org).extra(where=['upper(name)=%s'], params=[name]).exists():
             data = {"__all__":[u"Кладбище с таким именем уже существует",]}
             return Response(status=400, data=data)
         return super(CemeteryViewSet, self).create(request, *args, **kwargs)
@@ -123,13 +123,12 @@ class CemeteryViewSet(viewsets.ModelViewSet):
             pk = int(request.DATA.get('id'))
         except:
             return Response(status=400)
-        name = request.DATA.get('name')
-        if self.get_queryset().exclude(pk=pk).filter(ugh=self.request.user.profile.org, name__icontains=name).exists():
+        name = request.DATA.get('name').upper()
+        if self.get_queryset().exclude(pk=pk).filter(ugh=self.request.user.profile.org).extra(where=['upper(name)=%s'], params=[name]).exists():
             data = {"__all__":[u"Кладбище с таким именем уже существует",]}
             return Response(status=400, data=data)
         return super(CemeteryViewSet, self).update(request, *args, **kwargs)
     
-
 
     def pre_save(self, obj):
         if not obj.address:
@@ -145,32 +144,61 @@ class CemeteryViewSet(viewsets.ModelViewSet):
         obj.creator = self.request.user
         obj.ugh = self.request.user.profile.org
         try:
-            old = self.model.objects.get(pk=object.pk)
+            old = self.model.objects.get(pk=obj.pk)
         except self.model.DoesNotExist:
             old = None
         except AttributeError:
             old = None
-        log_object(self.request, obj=object, old=old, new=object, reason=_(u'Кладбище изменено'))
+        log_object(self.request, obj=obj, old=old, new=obj, reason=_(u'Кладбище изменено'))
         #write_log(self.request, obj, _(u'Кладбище изменено'))
 
         # TODO: send signal
         if obj.pk:
+            #import pudb; pudb.set_trace()
             phone = self.request.DATA.get('obj_phones')
+            id_binds = {}
+            ct = ContentType.objects.get_for_model(obj)
+            for i in phone:
+                i["ct"] = ct.pk
+                try:
+                    phone_obj = obj.phone_set.get(pk=i['id'])
+                except:
+                    phone_obj = None
+                phone_serializer = PhoneSerializer(phone_obj, data=i)
+                if not phone_serializer.is_valid():
+                    return Response(status=400, data=phone_serializer.errors)
+                res = phone_serializer.save()
+                res.obj_id = obj.pk
+                res.save()                
+                id_binds[res.id] = 1
+            obj.phone_set.exclude(pk__in=id_binds.keys()).delete()
+        """
+        if obj.pk:
+            phone = self.request.DATA.get('obj_phones')
+            ct = ContentType.objects.get_for_model(obj)
+            print obj.phone_set.count(), obj.phone_set.all()
+            for i in phone:
+                i["ct"] = ct.pk
+                i["obj_id"] = obj.pk
+            print phone
+
             phone_set = obj.phone_set.all()
             phone_serializer = PhoneSerializer(
                                             phone_set, 
                                             data=phone,
                                             many=True,
+                                            #partial=True,
                                             allow_add_remove=True,)
             if  not phone_serializer.is_valid():
+                print phone_serializer.errors
                 return Response(status=400, data=phone_serializer.errors)
             res = phone_serializer.save()
-            ct = ContentType.objects.get_for_model(obj)
             for i in res:
                 i.obj_id = obj.pk
-                i.ct = ct
                 i.save() 
-
+            print obj.phone_set.count(), obj.phone_set.all()
+            pass
+        """
 
     @action(methods=['GET',])
     def getform(self, request, pk=None):
@@ -287,6 +315,14 @@ class PlaceViewSet(viewsets.ModelViewSet):
         #if item.pk:
         #    write_log(self.request, object, _(u'Место №%s изменено' % object.place))
         
+
+        try:
+            self.places_count = int(self.request.DATA.get('places_count',1))
+            assert places_count>0 and places_count<=10 
+        except:
+            data = {"__all__":[u"Количество могил должно быть от 1 до 10",]}
+            return Response(status=400, data=data)
+
         responsible = self.request.DATA.get('obj_responsible')
         if object.pk and responsible:
             responsible_serializer =  AlivePersonSerializer(object.responsible, data=responsible, partial=True)
@@ -313,30 +349,31 @@ class PlaceViewSet(viewsets.ModelViewSet):
     def post_save(self, object, created=False):
         if created: 
             #    write_log(self.request, object, _(u'Место №%s создано')% object.place)
-            try:
-                places_count = int(self.request.DATA.get('places_count',1))
-            except:
-                places_count = 1
-            for i in xrange(1,places_count+1):
+            for i in xrange(1,min(self.places_count,10)+1):
                 item = Grave(place=object, grave_number=i)
                 item.save()
             
+            
         if object.responsible:
+            #import pudb; pudb.set_trace()
             phone = self.request.DATA.get('obj_responsible_phones')
-            phone_set = object.responsible.phone_set.all()
-            phone_serializer = PhoneSerializer(
-                                            phone_set, 
-                                            data=phone,
-                                            many=True,
-                                            allow_add_remove=True,)
-            if  not phone_serializer.is_valid():
-                return Response(status=400, data=phone_serializer.errors)
-            res = phone_serializer.save()
+            id_binds = {}
             ct = ContentType.objects.get_for_model(object.responsible)
-            for i in res:
-                i.obj_id = object.responsible.pk
-                i.ct = ct
-                i.save() 
+            if phone:
+                for i in phone:
+                    i["ct"] = ct.pk
+                    try:
+                        phone_obj = object.responsible.phone_set.get(pk=i['id'])
+                    except:
+                        phone_obj = None
+                    phone_serializer = PhoneSerializer(phone_obj, data=i)
+                    if not phone_serializer.is_valid():
+                        return Response(status=400, data=phone_serializer.errors)
+                    res = phone_serializer.save()
+                    res.obj_id = object.responsible.pk
+                    res.save()                
+                    id_binds[res.id] = 1
+                object.responsible.phone_set.exclude(pk__in=id_binds.keys()).delete()
 
 
     @action(methods=['GET',])

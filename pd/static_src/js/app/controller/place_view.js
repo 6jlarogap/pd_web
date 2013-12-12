@@ -18,7 +18,10 @@
 	$scope.updateMap = function() {
 		if($scope.item){
 		  ymapData.markers = [{
-				point: [$scope.item.lat, $scope.item.lng],
+				point: [
+				        $scope.item.lat || ymaps.geolocation.latitude,
+				        $scope.item.lng || ymaps.geolocation.longitude
+				        ],
 				caption: 'Место: "{0}"'.format($scope.item.place),
 				content: "Кл. {0}, уч. {1}, ряд {2}, место {3}".format(
 														$scope.cemetery.name, 
@@ -30,7 +33,10 @@
 				id: $scope.item.id
 			}];
     		$scope.placeCoordinates = [{
-    			point : [$scope.item.lat, $scope.item.lng],
+    			point : [
+    			         $scope.item.lat || ymaps.geolocation.latitude,
+    			         $scope.item.lng || ymaps.geolocation.longitude
+    			        ],
     			title : $scope.item.name,
     			obj_type : 'place',
     			id: $scope.item.id
@@ -43,7 +49,10 @@
 		angular.forEach($scope.graves, function(grave, key) {
 			if (grave.lat && grave.lng) {
 				ymapData.points.push({
-					point : [grave.lat, grave.lng],
+					point : [
+					         grave.lat || $scope.item.lat || ymaps.geolocation.latitude,
+					         grave.lng || $scope.item.lng || ymaps.geolocation.longitude
+					         ],
 					caption : 'Могила {0}'.format(grave.grave_number),
 					content : '',
 					obj_type : 'grave',
@@ -215,8 +224,8 @@
 				$scope.newGrave = new Grave({
 					place : $scope.item.id,
 					grave_number : $scope.grave_count + 1, //todo add way to count next grave_number or add validation of grave_number
-					lat : lat || 0,
-					lng : lng || 0
+					lat : lat || $scope.item.lat || ymaps.geolocation.latitude,
+					lng : lng || $scope.item.lng || ymaps.geolocation.longitude
 				});
 				break;
 			case 'isGraveEditOpen':
@@ -241,6 +250,7 @@
 	$scope.closeEditForm = function(form) {
 		$scope[form] = false;
 		$('body').css('overflow-y','auto');
+		$scope.update();
 	};
 
 	//Place

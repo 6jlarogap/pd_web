@@ -3,13 +3,13 @@
 
 	<label for="phonetype">Тип:</label>
 
-	<select ng-model="phone.phonetype" name="phonetype" ng-options="value.id as value.name for value in PHONETYPE_CHOICES" required></select>
+	<select ng-model="phone.phonetype" name="phonetype" ng-options="value.id as value.name for value in PHONETYPE_CHOICES"></select>
 	<span class="error" ng-show="add_phone.phonetype.$error.required">Выберите тип телефона</span>
 	<label for="phone_number">Номер:</label>
 
     <input type="text" name="phone_number" ui-mask="{{'+9 (999) 999-9999'}}"
        ng-model="phone.number"
-       off-ng-required="requireTel" required
+       off-ng-required="requireTel"
        off-ng-pattern="phoneNumberPattern"
        ng-maxlength="maxlength">
 
@@ -17,7 +17,7 @@
 	
 	<span class="error" ng-show="add_phone.phone_number.$error.required">Укажите номер телефона</span>
 	<div class="row-fluid">
-		<button ng-click="save()" ng-disabled="!add_phone.$valid" class="btn btn-primary">
+		<button ng-click="save()" ng-disabled="!phone.number.length" class="btn btn-primary">
 			Сохранить
 		</button>
 	</div>

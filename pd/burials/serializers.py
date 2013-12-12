@@ -1,3 +1,5 @@
+# coding=utf-8
+
 from django.contrib.auth.models import Group, Permission
 from rest_framework import serializers
 from rest_framework.fields import Field, TimeField
@@ -13,6 +15,15 @@ from geo.serializers import LocationSerializer
 from persons.serializers import AlivePersonSerializer, DeadPersonSerializer, PhoneSerializer
 
 from rest_api.fields import UnclearDateFieldSerializer
+
+from django.core.exceptions import ValidationError
+
+
+
+def validate_area_places_count(value):
+    if value<=0 or value>3:
+        raise ValidationError(u'Количество могил должно быть от 1 до 10')
+
 
 
 class SubCemeterySerializer(serializers.ModelSerializer):
@@ -58,6 +69,9 @@ class CemeterySerializer(serializers.ModelSerializer):
 class AreaSerializer(serializers.ModelSerializer):
     purpose = serializers.PrimaryKeyRelatedField()
     cemetery = serializers.PrimaryKeyRelatedField()
+    places_count = serializers.IntegerField(validators=[validate_area_places_count],\
+                                                         required=True)
+
     class Meta:
         model = Area
         fields = ('id', 'cemetery', 'name', 'availability', 'places_count', 'purpose')
@@ -76,7 +90,7 @@ class PlaceSerializer(serializers.ModelSerializer):
     class Meta:
         model = Place
         fields = ('id', 'cemetery', 'lat', 'lng', 'area', 'row', 'place', 'responsible', 'responsible_txt', 
-                  'available_count', 'place_length', 'place_width')
+                  'available_count', 'place_length', 'place_width') 
 
     def responsible_str(self, obj):
         if obj.responsible:

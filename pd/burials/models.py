@@ -97,8 +97,7 @@ class Cemetery(GetLogsMixin, BaseModel, PhonesMixin):
 
     @property
     def work_time(self):
-        if self.time_begin and self.time_end:
-            return "%s-%s" % (self.time_begin, self.time_end)
+        return "%s-%s" % (self.time_begin or u'00:00:00', self.time_end or u'00:00:00')
 
 
 

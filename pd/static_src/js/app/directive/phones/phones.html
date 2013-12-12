@@ -27,13 +27,13 @@
 
 	<!-- Phone add form -->
 	<div ng-show="isPhoneAddOpen">
-		<div ng-include src="'/static/js/app/directive/phones/form_add_phone.html'"></div>
+		<div ng-include src="'/static/js/app/directive/phones/form_add_phone.html'+version_str"></div>
 	</div>
 	<!-- EOF add form -->
 
 	<!-- Phone edit form -->
 	<div ng-show="isPhoneEditOpen">
-		<div ng-include src="'/static/js/app/directive/phones/form_edit_phone.html'"></div>
+		<div ng-include src="'/static/js/app/directive/phones/form_edit_phone.html'+version_str"></div>
 	</div>
 	<!-- EOF edit form -->
 </div>

@@ -64,4 +64,10 @@
     
     RESPONCIBLE_CT = 20,
 
-    BURIAL_STATUS_EXHUMATED = 'exhumated';
+    BURIAL_STATUS_EXHUMATED = 'exhumated',
+    
+    
+    TRANSLATIONS = {
+      '__ALL__':'',
+      'places_count':'Колличество могил в месте'      
+    };
