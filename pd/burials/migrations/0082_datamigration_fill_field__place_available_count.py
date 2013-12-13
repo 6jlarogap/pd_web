@@ -72,13 +72,13 @@ class Migration(DataMigration):
             'username': ('django.db.models.fields.CharField', [], {'unique': 'True', 'max_length': '30'})
         },
         'burials.area': {
-            'Meta': {'ordering': "['name']", 'object_name': 'Area'},
+            'Meta': {'ordering': "['name']", 'unique_together': "(('cemetery', 'name'),)", 'object_name': 'Area'},
             'availability': ('django.db.models.fields.CharField', [], {'max_length': '32', 'null': 'True'}),
             'cemetery': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['burials.Cemetery']", 'on_delete': 'models.PROTECT'}),
             'dt_created': ('django.db.models.fields.DateTimeField', [], {'auto_now_add': 'True', 'blank': 'True'}),
             'dt_modified': ('django.db.models.fields.DateTimeField', [], {'auto_now': 'True', 'blank': 'True'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'name': ('django.db.models.fields.CharField', [], {'max_length': '255', 'blank': 'True'}),
+            'name': ('django.db.models.fields.CharField', [], {'max_length': '255'}),
             'places_count': ('django.db.models.fields.PositiveIntegerField', [], {'default': '1'}),
             'purpose': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['burials.AreaPurpose']", 'null': 'True', 'on_delete': 'models.PROTECT'})
         },
@@ -186,6 +186,8 @@ class Migration(DataMigration):
             'dt_modified': ('django.db.models.fields.DateTimeField', [], {'auto_now': 'True', 'blank': 'True'}),
             'grave_number': ('django.db.models.fields.PositiveSmallIntegerField', [], {'default': '1'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'is_military': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
+            'is_wrong_fio': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'lat': ('django.db.models.fields.FloatField', [], {'null': 'True', 'blank': 'True'}),
             'lng': ('django.db.models.fields.FloatField', [], {'null': 'True', 'blank': 'True'}),
             'place': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['burials.Place']"})
