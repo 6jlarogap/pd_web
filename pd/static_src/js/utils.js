@@ -89,6 +89,7 @@ function addForm(btn, prefix) {
     $('#id_' + prefix + '-TOTAL_FORMS').val(formCount + 1);
     $('#' + prefix + '-' + formCount + '-row td:first').html(formCount + 1);
     updateProductId();
+    hideShowDelete()
     return false;
 }
 
@@ -103,7 +104,40 @@ function deleteForm(btn, prefix) {
     }
     updateProductId();
     updateTotalForm();
+    hideShowDelete()
     return false;
+}
+
+function hideShowDelete() {
+    if ($('.dynamic-form').length > 1) {
+        $('.delete-row').show();
+    } else {
+        $('.delete-row').hide();
+    }
+}
+    
+function removeEmptyForms() {
+    while (true) {
+        var to_delete = [];
+        var forms = $('.dynamic-form');
+        for (var i=0, formCount=forms.length; i<formCount; i++) {
+            $(forms.get(i)).each(function() {
+                $(this).find('.product_type').find('select').each(function() {
+                    if (!$(this).val()) {
+                        to_delete.push($(this));
+                    }
+                });
+            });
+            if (to_delete.length > 0) {
+                deleteForm(to_delete[0], 'orderitem_set');
+                break;
+            }
+        }
+        if (i >= formCount) {
+            break;
+        }
+    }
+    return true;
 }
 
 function updateAmountForm(el) {
