@@ -31,6 +31,10 @@ def api_root(request, format=None):
     The entry endpoint of our API.
     """
     return Response({
+        'catalog':{
+            'category-list':  '/api/catalog/category/list',
+            'product-list':   '/api/catalog/product/list',
+        },
         'log':{
             'log-list':  '/api/log',
         },
@@ -56,7 +60,7 @@ def api_root(request, format=None):
             'gravephoto-list':'/api/grave-photo', #reverse('gravephoto-list', request=request),
             'placephoto-list':'/api/place-photo', #reverse('gravephoto-list', request=request),
             'areapurpose-list': '/api/areapurpose', #reverse('areapurpose-list', request=request),
-        }
+        },
     })
     #'cemetery-detail': reverse('cemetery-detail', request=request),
 

@@ -27,6 +27,12 @@ from pd.forms import CommentForm
 from pd.views import PaginateListView, RequestToFormMixin
 from reports.models import make_report
 
+from serializers import CategorySerializer, ProductSerializer
+from rest_framework import generics, viewsets
+
+from models import Category, Product
+from rest_framework import permissions
+
 
 class LORURequiredMixin:
     def is_loru(self, request):
@@ -572,3 +578,19 @@ class OrderBurialView(LORURequiredMixin, RequestToFormMixin, UpdateView):
         return redirect(reverse('create_burial') + '?order=%s' % self.object.pk)
 
 order_burial = OrderBurialView.as_view()
+
+
+
+
+class CategoryViewSet(viewsets.ModelViewSet):
+    model = Category
+    serializer_class = CategorySerializer
+    permission_classes = (permissions.AllowAny,)
+    paginate_by = 25
+
+
+class ProductViewSet(viewsets.ModelViewSet):
+    model = Product
+    serializer_class = ProductSerializer
+    permission_classes = (permissions.AllowAny,)
+    paginate_by = 25

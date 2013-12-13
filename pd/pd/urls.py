@@ -24,7 +24,12 @@ from burials.views import CemeteryViewSet, AreaViewSet, PlaceViewSet, \
 from persons.views import AlivePersonViewSet, DeadPersonViewSet, PhoneViewSet 
 from logs.views import LogViewSet
  
+from orders.views import CategoryViewSet, ProductViewSet 
+ 
 # Burial
+router.register(r'^api/catalog/category', CategoryViewSet)
+router.register(r'^api/catalog/product', ProductViewSet)
+
 router.register(r'^api/log', LogViewSet)
 router.register(r'^api/cemetery', CemeteryViewSet)
 router.register(r'^api/area', AreaViewSet)
