@@ -137,7 +137,6 @@ function removeEmptyForms() {
             break;
         }
     }
-    $('#id_orderitem_set-TOTAL_FORMS').val($('.dynamic-form').length);
     return true;
 }
 
