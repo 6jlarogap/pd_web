@@ -6,7 +6,7 @@ from rest_framework.fields import Field, TimeField
 
 
 from burials.models import Cemetery, Place, Area, Grave, Burial, AreaPhoto, GravePhoto, BurialFiles, ExhumationRequest, \
-    AreaPurpose
+    AreaPurpose, PlaceSize
 
 
 from geo.models import Location
@@ -150,7 +150,6 @@ class AreaPhotoSerializer(serializers.ModelSerializer):
         fields = ('id', 'area', 'bfile', 'comment', 'original_name', 'lat', 'lng', 'date_of_creation') 
 
 
-
 class ExhumationRequestSerializer(serializers.ModelSerializer):
     burial = serializers.PrimaryKeyRelatedField()
     place = serializers.PrimaryKeyRelatedField()
@@ -162,3 +161,9 @@ class ExhumationRequestSerializer(serializers.ModelSerializer):
                   'applicant_organization',)
         #agent_director, agent, dover
 
+
+class PlaceSizeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PlaceSize
+        fields = ('graves_count', 'place_length', 'place_width')
+      

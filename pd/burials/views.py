@@ -21,7 +21,7 @@ from django.contrib.contenttypes.models import ContentType
 from pd.views import RequestToFormMixin, FormInvalidMixin
 
 from burials.forms import CemeteryForm, AreaFormset, PlaceEditForm, AddOrgForm, AreaMergeForm, BurialfileCommentEditForm
-from burials.models import Cemetery, Place, Area, BurialFiles, Grave, Burial, AreaPhoto, GravePhoto, ExhumationRequest, AreaPurpose
+from burials.models import Cemetery, Place, Area, BurialFiles, Grave, Burial, AreaPhoto, GravePhoto, ExhumationRequest, AreaPurpose, PlaceSize
 from burials.burials_views import *
 from logs.models import write_log, log_object
 from users.models import Profile, Org
@@ -40,7 +40,7 @@ from django.db import transaction
 
 
 from serializers import CemeterySerializer, AreaSerializer, PlaceSerializer, AreaPurposeSerializer, \
-    GraveSerializer, BurialSerializer, BurialListSerializer, AreaPhotoSerializer, GravePhotoSerializer, ExhumationRequestSerializer
+    GraveSerializer, BurialSerializer, BurialListSerializer, AreaPhotoSerializer, GravePhotoSerializer, ExhumationRequestSerializer, PlaceSizeSerializer
 
 from persons.serializers import AlivePersonSerializer, PhoneSerializer
 from geo.serializers import LocationSerializer, LocationStaticSerializer
@@ -315,7 +315,7 @@ class PlaceViewSet(viewsets.ModelViewSet):
         object.area = item
         #if item.pk:
         #    write_log(self.request, object, _(u'Место №%s изменено' % object.place))
-        
+        #import pudb; pudb.set_trace()
         try:
             self.places_count = int(self.request.DATA.get('places_count',1))
             assert self.places_count>0 and self.places_count<=10 
@@ -416,7 +416,7 @@ class PlaceViewSet(viewsets.ModelViewSet):
                 "log_pages":page.paginator._num_pages,
                 }
         data["place"]["graves_count"] = place.get_graves_count()
-        data["place"]["available_count"] = place.get_available_count()
+        data["place"]["available_count"] = place.available_count
         if place.responsible:
             phone_set = place.responsible.phone_set.all()
             data["responsible_phones"] = PhoneSerializer(phone_set).data
@@ -637,6 +637,16 @@ class GravePhotoViewSet(viewsets.ModelViewSet):
         if id:
             item = get_object_or_404(Grave, id=id)
             qs = qs.filter(grave=item)
+        return  qs.all()
+
+
+class PlaceSizeViewSet(viewsets.ModelViewSet):
+    model = PlaceSize
+    serializer_class = PlaceSizeSerializer
+    permission_classes = (IsAuthenticated,)
+    paginate_by = None
+    def get_queryset(self):
+        qs = self.model.objects.filter(org=self.request.user.profile.org)
         return  qs.all()
 
 
