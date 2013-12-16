@@ -36,13 +36,13 @@ function AreaViewCtrl($scope, $rootScope, $http, $routeParams, $resource, $locat
             $scope.placesizes[item.graves_count] = [parseFloat(item.place_length), parseFloat(item.place_width)];
         });
         var size = $scope.placesizes[$scope.place.places_count];
-        $scope.place.place_length = size?$scope.placesizes[$scope.place.places_count][0]:0;
-        $scope.place.place_width = size?$scope.placesizes[$scope.place.places_count][1]:0;
+        $scope.place.place_length = size?$scope.placesizes[$scope.place.places_count][0]:null;
+        $scope.place.place_width = size?$scope.placesizes[$scope.place.places_count][1]:null;
     });
     $scope.$watch("place.places_count", function(newVal){
         var size = $scope.placesizes[$scope.place.places_count];
-        $scope.place.place_length = size?$scope.placesizes[$scope.place.places_count][0]:0;
-        $scope.place.place_width = size?$scope.placesizes[$scope.place.places_count][1]:0;
+        $scope.place.place_length = size?$scope.placesizes[$scope.place.places_count][0]:null;
+        $scope.place.place_width = size?$scope.placesizes[$scope.place.places_count][1]:null;
     });
 	
 	
@@ -56,8 +56,8 @@ function AreaViewCtrl($scope, $rootScope, $http, $routeParams, $resource, $locat
 			$scope.place = {
 			        row :'',
 			        place : '',
-			        place_length:'',
-			        place_width:'',
+			        place_length:null,
+			        place_width:null,
 			        cemetery: $routeParams.cemetery_id,
 			        area: $routeParams.area_id,
 			        places_count: area.places_count>0?area.places_count:1
