@@ -69,5 +69,5 @@
     
     TRANSLATIONS = {
       '__ALL__':'',
-      'places_count':'Колличество могил в месте'      
+      'places_count':'Количество могил в месте'      
     };
