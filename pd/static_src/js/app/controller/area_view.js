@@ -13,7 +13,7 @@ function AreaViewCtrl($scope, $rootScope, $http, $routeParams, $resource, $locat
 		cemetery: $routeParams.cemetery_id,
 		area: $routeParams.area_id,
 	};
-	$scope.area_max_places = 1000;
+	$scope.area_max_places = 100;
 	$scope.AVAILABILITY_CHOICES = AVAILABILITY_CHOICES; 
 	$scope.search = '';
 	$scope.place_list_filtered = [];
