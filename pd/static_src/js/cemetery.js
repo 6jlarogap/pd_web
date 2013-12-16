@@ -88,6 +88,20 @@ function setup_address_autocompletes() {
         }
     });
 
+    $('input[id$=loru_name]').attr('autocomplete', 'off').typeahead({
+        items: 100,
+        source: function (typeahead, query) {
+            if (query.length < 2) { return }
+            $.ajax({
+                url: ORG_URL + "?query=" + query + "&type=loru",
+                dataType: 'json',
+                success: function(data) {
+                    typeahead.process(data);
+                }
+            });
+        }
+    });
+
     $('#mainform #id_applicant_person, #mainform #id_responsible').attr('autocomplete', 'off').typeahead({
         items: 100,
         source: function (typeahead, query) {
@@ -455,6 +469,30 @@ $(function() {
                         alert("Нет такого ЗАГСа");
                         zags_inp.val('');
                         old_zags_value = '';
+                    }
+                }
+            });
+        }
+    });
+
+    old_loru_value = '';
+
+    $('input[id$=loru_name]').change(function() {
+        var loru_inp =$(this);
+        var val = loru_inp.val();
+        if (val != '' && val != old_loru_value) {
+            // загадка, почему дважды приходит событие change,
+            // оба раза с одним неверным значением,
+            // хотя ниже оно затирается
+            old_loru_value = val;
+            $.ajax({
+                url: ORG_URL + "?query=" + val + "&type=loru&exact=1",
+                dataType: 'json',
+                success: function(data) {
+                    if (data.length == 0) {
+                        alert("Нет такого ЛОРУ");
+                        loru_inp.val('');
+                        old_loru_value = '';
                     }
                 }
             });

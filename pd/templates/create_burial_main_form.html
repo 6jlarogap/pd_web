@@ -42,6 +42,20 @@
     {% endif %}
     });
 </script>
+{% if request.user.profile.is_ugh %}
+    <h2>{% trans "Посредник" %}</h2>
+    {% if form.instance.is_full %}
+        <p><big>
+        {% if form.instance.loru %}
+            {{ form.instance.loru.name }}
+        {% else %}
+            ({% trans "не указан" %})
+        {% endif %}
+        </big></p>
+    {% else %}
+        {{ form.loru_name.label_tag }} {{ form.loru_name }}<span class="helptext">{{ form.loru_name.help_text }}</span>
+    {% endif %}
+{% endif %}
 {{ form.burial_container.errors }}
 <div id="burial_container">
     <h2>{{ form.burial_container.label}}</h2>
