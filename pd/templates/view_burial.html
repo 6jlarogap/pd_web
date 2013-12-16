@@ -25,7 +25,7 @@
         <dt>{% trans "Тип" %}:</dt><dd>{{ b.get_burial_container_display|default:"" }}</dd>
         <dt>{% trans "Вид" %}:</dt><dd>{{ b.get_burial_type_display|default:"" }}</dd>
         {% if b.ugh %}
-            <dt>{% trans "УГХ" %}:</dt><dd>{{ b.ugh }}</dd>
+            <dt>{% trans "ОМС" %}:</dt><dd>{{ b.ugh }}</dd>
         {% endif %}
         {% if b.applicant_organization and show_private_data %}
             <dt>{% trans "Заявитель-ЮЛ" %}:</dt><dd>{{ b.applicant_organization|default:"не указано" }}</dd>
