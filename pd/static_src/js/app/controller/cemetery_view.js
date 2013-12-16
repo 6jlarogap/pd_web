@@ -68,7 +68,7 @@ function CemeteryViewCtrl($scope, $http, $resource, $location,  $routeParams,
 		});
 		
 		
-		Place.list_cemetery({cemetery_id:$routeParams.cemetery_id},function(result) {
+		/*Place.list_cemetery({cemetery_id:$routeParams.cemetery_id},function(result) {
 			var data = [];
 			for(var i=0; i<result.length;i++){
 				if(result[i].lng && result[i].lat){
@@ -95,7 +95,7 @@ function CemeteryViewCtrl($scope, $http, $resource, $location,  $routeParams,
 			ymapData.markers = data;
 			ymapData.points = [];
 		    $scope.$broadcast('handleMapChanged');
-		});
+		});*/
 	};
 
 

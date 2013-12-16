@@ -1,7 +1,7 @@
 ﻿//'use strict';
 
 function AreaViewCtrl($scope, $rootScope, $http, $routeParams, $resource, $location, Cemetery, Area, AreaPhoto,
-	AreaPurpose, uploadManager, Place) {
+	AreaPurpose, uploadManager, Place, PlaceSize) {
 
     "use strict";
 	var tplButtonEdit = '<a class="btn btn-small" ng-href="/manage/cemetery/'+$routeParams.cemetery_id+
@@ -29,6 +29,23 @@ function AreaViewCtrl($scope, $rootScope, $http, $routeParams, $resource, $locat
 	});
 
 
+    $scope.placesizes = {};
+    PlaceSize.query(function(result){
+        $scope.placesizes = {};
+        angular.forEach(result, function(item) {
+            $scope.placesizes[item.graves_count] = [parseFloat(item.place_length), parseFloat(item.place_width)];
+        });
+        var size = $scope.placesizes[$scope.place.places_count];
+        $scope.place.place_length = size?$scope.placesizes[$scope.place.places_count][0]:0;
+        $scope.place.place_width = size?$scope.placesizes[$scope.place.places_count][1]:0;
+    });
+    $scope.$watch("place.places_count", function(newVal){
+        var size = $scope.placesizes[$scope.place.places_count];
+        $scope.place.place_length = size?$scope.placesizes[$scope.place.places_count][0]:0;
+        $scope.place.place_width = size?$scope.placesizes[$scope.place.places_count][1]:0;
+    });
+	
+	
 	$scope.update = function(){
 
 		Area.get({areaID:$routeParams.area_id,  cemetery_id: $routeParams.cemetery_id}, function(area) {
@@ -39,6 +56,8 @@ function AreaViewCtrl($scope, $rootScope, $http, $routeParams, $resource, $locat
 			$scope.place = {
 			        row :'',
 			        place : '',
+			        place_length:'',
+			        place_width:'',
 			        cemetery: $routeParams.cemetery_id,
 			        area: $routeParams.area_id,
 			        places_count: area.places_count>0?area.places_count:1

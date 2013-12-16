@@ -12,6 +12,7 @@
     $scope.grave_page = 1;
     $scope.log_page = 1;
     $scope.loading = false;
+
     
     var item_params;
 	//setup
@@ -81,6 +82,9 @@
 			$scope.cemetery = new Cemetery(result.cemetery);
 			$scope.area = new Area(result.area);
 			$scope.item = new Place(result.place);
+			$scope.item.place_length = parseFloat($scope.item.place_length); // html5 input[type=number]
+			$scope.item.place_width = parseFloat($scope.item.place_width);
+
 			$scope.place_log = [];
 			angular.forEach(result.log, function(item) {
                   $scope.place_log.push(new Log(item));
