@@ -4,7 +4,7 @@ from django.db import models
 from django.utils.translation import ugettext_lazy as _
 
 from geo.models import DFiasAddrobj
-from pd.models import BaseModel, Files, GetLogsMixin
+from pd.models import BaseModel, Files, GetLogsMixin, validate_gt0
 from pd.utils import DigitsValidator, LengthValidator, NotEmptyValidator
 
 
@@ -129,6 +129,8 @@ class Org(GetLogsMixin, BaseModel):
                                     default=True)
     # название поля не заканчивается на date, чтоб не угодить под специфический datePicker widget для дат:
     plan_date_days_before = models.PositiveIntegerField(_(u"Кол-во дней для ввода плановой даты захоронения в прошлом"), default=0)
+    max_graves_count = models.PositiveIntegerField(_(u"Максимальное число могил в месте"), default=5,
+                                validators=[validate_gt0])
 
     class Meta:
         verbose_name = _(u'Организация')
