@@ -42,9 +42,9 @@
     {% endif %}
     });
 </script>
-{% if request.user.profile.is_ugh %}
-    <h2>{% trans "Посредник" %}</h2>
-    {% if form.instance.is_full %}
+{% if request.user.profile.is_ugh and not request.REQUEST.archive and not form.instance.is_archive %}
+    {% if form.instance.is_full or form.instance.is_transferred %}
+        <h2>{% trans "Посредник" %}</h2>
         <p><big>
         {% if form.instance.loru %}
             {{ form.instance.loru.name }}
@@ -53,7 +53,30 @@
         {% endif %}
         </big></p>
     {% else %}
-        {{ form.loru_name.label_tag }} {{ form.loru_name }}<span class="helptext">{{ form.loru_name.help_text }}</span>
+        <h2>{% trans "Посредник" %} <span id="loru_title">{{ form.instance.loru|default_if_none:"" }}</span></h2>
+        <a href="#" onclick="return contShowHide('#cont_loru', '#a_cont_loru', '{% trans 'развернуть' %}', '{% trans 'свернуть' %}');"
+        class="slider" data-id="cont_loru" id="a_cont_loru">{% trans "развернуть" %}</a>
+        <div id="cont_loru" style="display: none">
+            <br />
+            {{ form.loru.errors }}
+            {{ form.loru }}<span class="helptext">{{ form.loru.help_text }}</span>
+            
+            <h3>{% trans "Агент" %}</h3>
+
+            {{ form.loru_agent_director.errors }}
+            <p>{{ form.loru_agent_director.label_tag }} {{ form.loru_agent_director }}<span class="helptext">{{ form.loru_agent_director.help_text }}</span></p>
+
+            <div class="inline">
+                {{ form.loru_agent.errors }}
+                {{ form.loru_agent.label_tag }} {{ form.loru_agent }}<span class="helptext">{{ form.loru_agent.help_text }}</span>
+            </div>
+
+            <div class="inline">
+                {{ form.loru_dover.errors }}
+                {{ form.loru_dover.label_tag }} {{ form.loru_dover }}<span class="helptext">{{ form.loru_dover.help_text }}</span>
+            </div>
+            <br/>
+        </div>
     {% endif %}
 {% endif %}
 {{ form.burial_container.errors }}

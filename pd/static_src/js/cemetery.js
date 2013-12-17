@@ -88,7 +88,7 @@ function setup_address_autocompletes() {
         }
     });
 
-    $('input[id$=loru_name]').attr('autocomplete', 'off').typeahead({
+    $('input[id=id_loru]').attr('autocomplete', 'off').typeahead({
         items: 100,
         source: function (typeahead, query) {
             if (query.length < 2) { return }
@@ -303,7 +303,11 @@ function setup_address_autocompletes() {
 }
 
 function updateAnything(parent, children, data) {
-    var cem = parent.val();
+    // В качестве parent может передаваться:
+    // - объект select, тогда берем значение соответствующего select
+    // - первичный ключ, который и есть значение этого "мнимого" select,
+    //   например, если организацию нашли по имени, а от нее первичный ключ
+    var cem = typeof(parent) == "number" ? parent.toString() : parent.val();
     var val = children.val();
     var options = '<option value="">----------</option>';
     var area_list = data[cem] || [];
@@ -336,6 +340,10 @@ function updateDover() {
             }
         });
     }
+}
+
+function updateLoruDover() {
+    updateAnything($('#id_loru_agent'), $('#id_loru_dover'), AGENT_DOVER);
 }
 
 function updateAgents() {
@@ -477,13 +485,10 @@ $(function() {
 
     old_loru_value = '';
 
-    $('input[id$=loru_name]').change(function() {
+    $('input[id=id_loru]').change(function() {
         var loru_inp =$(this);
         var val = loru_inp.val();
         if (val != '' && val != old_loru_value) {
-            // загадка, почему дважды приходит событие change,
-            // оба раза с одним неверным значением,
-            // хотя ниже оно затирается
             old_loru_value = val;
             $.ajax({
                 url: ORG_URL + "?query=" + val + "&type=loru&exact=1",
@@ -493,11 +498,22 @@ $(function() {
                         alert("Нет такого ЛОРУ");
                         loru_inp.val('');
                         old_loru_value = '';
+                        updateAnything(0, $('#id_loru_agent'), ORG_AGENTS);
+                    } else {
+                        updateAnything(data[0]['value'], $('#id_loru_agent'), ORG_AGENTS);
                     }
                 }
             });
+        } else {
+            old_loru_value = '';
+            updateAnything(0, $('#id_loru_agent'), ORG_AGENTS);
         }
+        $('#loru_title').html(loru_inp.val());
     });
+    $('#id_loru').change();
+
+    $('#id_loru_agent').change(updateLoruDover);
+    $('#id_loru_agent').change();
 
     $('input[name=opf]').change(function() {
         var resp_id = '#id_responsible-take_from_';
@@ -589,6 +605,16 @@ $(function() {
         }
     });
     $('#id_agent_director:visible').change();
+
+    $('#id_loru_agent_director').change(function() {
+        if ($(this).is(':checked')) {
+            $('#id_loru_dover').closest('div').hide();
+            $('#id_loru_agent').closest('div').hide();
+        } else {
+            $('#id_loru_dover').closest('div').show();
+            $('#id_loru_agent').closest('div').show();
+        }
+    });
 
     $('#add_agent').find('.btn-primary').click(function() {
         var org_pk = $('#id_applicant_organization').val();

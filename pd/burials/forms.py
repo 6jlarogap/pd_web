@@ -323,12 +323,11 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
     burial_container = forms.ChoiceField(label=_(u"Тип захоронения"), choices=Burial.BURIAL_CONTAINERS, widget=forms.RadioSelect,  required=False)
     burial_type = forms.ChoiceField(label=_(u"Вид захоронения"), choices=Burial.BURIAL_TYPES, widget=forms.RadioSelect,  required=False)
     opf = forms.ChoiceField(label='', choices=OPF_CHOICES, widget=forms.RadioSelect)
-    loru_name = forms.CharField(required=False, max_length=100, label='')
+    loru = forms.CharField(required=False, label=_(u'Посредник'))
 
     class Meta:
         model = Burial
         exclude = ('place', 'deadman', 'responsible', 'applicant', 'annulated',
-                   'loru', 'loru_agent', 'loru_agent_director', 'loru_dover',
                   )
 
     def __init__(self, request, *args, **kwargs):
@@ -446,10 +445,14 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
                     pass
 
         if self.request.user.profile.is_loru() or \
-           self.instance.pk and self.instance.is_full():
-            del self.fields['loru_name']
-        elif self.instance.pk and self.instance.loru:
-            self.initial['loru_name'] = self.instance.loru.name
+           self.request.REQUEST.get('archive') or \
+           self.instance.pk and not self.instance.is_ugh_only():
+            del self.fields['loru']
+            del self.fields['loru_agent_director']
+            del self.fields['loru_agent']
+            del self.fields['loru_dover']
+        else:
+            self.initial['loru'] = self.instance.pk and self.instance.loru and self.instance.loru.name or ''
 
         if self.instance.is_finished() and self.instance.place:
             self.initial.update(
@@ -551,6 +554,16 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
     def clean_plan_time(self):
         return self.cleaned_data['plan_time'] or None
 
+    def clean_loru(self):
+        loru = None
+        loru_str = self.cleaned_data.get('loru').strip()
+        if loru_str:
+            try:
+                loru = Org.objects.filter(name=loru_str, type=Org.PROFILE_LORU)[0]
+            except IndexError:
+                raise forms.ValidationError(_(u'Нет такого ЛОРУ'))
+        return loru
+
     def clean(self):
         
         StrippedStringsMixin.clean(self)
@@ -599,6 +612,9 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
         if self.cleaned_data.get('agent_director'):
             self.instance.agent = None
             self.instance.dover = None
+        if self.cleaned_data.get('loru_agent_director'):
+            self.instance.loru_agent = None
+            self.instance.loru_dover = None
 
         self.instance.changed_by = request.user
 
