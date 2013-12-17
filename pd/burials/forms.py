@@ -1399,7 +1399,7 @@ class AddOrgForm(BaseOrgForm):
         model = Org
         exclude = ['off_address', 'numbers_algo',
                    'opf_order', 'opf_order_customer_mandatory',
-                   'plan_date_days_before', ]
+                   'plan_date_days_before', 'max_graves_count' ]
     
     def __init__(self, request, *args, **kwargs):
         super(AddOrgForm, self).__init__(request, *args, **kwargs)
