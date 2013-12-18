@@ -109,7 +109,7 @@
 				});
 			}
 
-			$scope.item.name = "Кл. {0}, уч. {1}, ряд {2}, место {3}".format($scope.cemetery.name, $scope.area.name, $scope.item.row || DEFAULT_MESSAGES.no_data, $scope.item.place)
+			$scope.item.name = $scope.cemetery.name;
 			$scope.loading = false;
 			
 			$scope.grave_count = result.grave_count;
