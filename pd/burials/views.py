@@ -166,8 +166,14 @@ class AddAgentView(LoginRequiredMixin, View):
     def post(self, request, *args, **kwargs):
         fa = AddAgentForm(data=request.POST, prefix='agent')
         fd = AddDoverForm(data=request.POST, prefix='agent_dover')
+        if request.GET.get('org'):
+            q = Q(pk=request.GET['org'])
+        elif request.GET.get('org_name'):
+            q = Q(name=request.GET['org_name'])
+        else:
+            return HttpResponse(_(u'Ошибка'), mimetype='text/plain')
         try:
-            org = Org.objects.get(pk=request.GET['org'])
+            org = Org.objects.get(q)
         except KeyError:
             return HttpResponse(_(u'Ошибка'), mimetype='text/plain')
         except Org.DoesNotExist:
@@ -179,6 +185,7 @@ class AddAgentView(LoginRequiredMixin, View):
             dover.agent = agent
             dover.save()
             return HttpResponse(json.dumps({
+                'org_pk': org.pk,
                 'pk': agent.pk, 'label': u'%s' % agent,
                 'dover_pk': dover.pk, 'dover_label': u'%s' % dover
             }), mimetype='application/json')

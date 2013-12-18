@@ -74,6 +74,11 @@
             <div class="inline">
                 {{ form.loru_agent.errors }}
                 {{ form.loru_agent.label_tag }} {{ form.loru_agent }}<span class="helptext">{{ form.loru_agent.help_text }}</span>
+                <p>
+                    <a href="#add_loru_agent" role="button" class="btn btn-loru_agent" data-toggle="modal">
+                        {% trans "добавить агента" %}
+                    </a>
+                </p>
             </div>
 
             <div class="inline">

@@ -513,6 +513,7 @@ $(function() {
                         old_loru_value = '';
                         $('#loru_title').html('');
                         updateAnything(0, $('#id_loru_agent'), ORG_AGENTS);
+                        $('.btn-loru_agent').closest('p').hide();
                     } else {
                         updateAnything(data[0]['value'], $('#id_loru_agent'), ORG_AGENTS);
                     }
@@ -523,6 +524,13 @@ $(function() {
             updateAnything(0, $('#id_loru_agent'), ORG_AGENTS);
         }
         $('#loru_title').html(loru_inp.val());
+        if (!$('#id_loru_agent_director').is(':checked')) {
+            if (loru_inp.val()) {
+                $('.btn-loru_agent').closest('p').show();
+            } else {
+                $('.btn-loru_agent').closest('p').hide();
+            }
+        }
     });
     $('#id_loru').change();
 
@@ -653,6 +661,34 @@ $(function() {
                 AGENT_DOVER[data.pk].push([data.dover_pk, data.dover_label])
                 $('#add_agent').modal('hide');
                 $('#add_agent form :input').val('');
+            } else {
+                alert(data);
+            }
+        })
+    });
+
+    $('#add_loru_agent').find('.btn-primary').click(function() {
+        var org_name = $('#id_loru').val();
+        if (!org_name) {
+            return alert('Выберите организацию');
+        }
+        var data = $('#add_loru_agent form').serialize();
+        $.post('/burials/add_agent/?org_name='+org_name, data, function(data){
+            if (data.pk) {
+                $('#id_loru_agent').append('<option value="'+data.pk+'">'+data.label+'</option>');
+                $('#id_loru_dover').append('<option value="'+data.dover_pk+'">'+data.dover_label+'</option>');
+                $('#id_loru_agent').val(data.pk);
+                $('#id_loru_dover').val(data.dover_pk);
+                if (!ORG_AGENTS[data.org_pk]) {
+                    ORG_AGENTS[data.org_pk] = [];
+                }
+                ORG_AGENTS[data.org_pk].push([data.pk, data.label])
+                if (!AGENT_DOVER[data.pk]) {
+                    AGENT_DOVER[data.pk] = [];
+                }
+                AGENT_DOVER[data.pk].push([data.dover_pk, data.dover_label])
+                $('#add_loru_agent').modal('hide');
+                $('#add_loru_agent form :input').val('');
             } else {
                 alert(data);
             }
