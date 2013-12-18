@@ -694,8 +694,8 @@ $(function() {
         })
     });
 
-    $('#add_loru').find('.btn-primary').click(function() {
-        var data = $('#add_loru form').serialize();
+    $('#add_org').find('.btn-primary').click(function() {
+        var data = $('#add_org form').serialize();
         //TODO validation on client!
         $.post('/burials/add_org/', data, function(data){
             if (data.pk) {
@@ -703,8 +703,8 @@ $(function() {
                 var select = $('#id_applicant_organization');
                 select.append('<option value="'+data.pk+'" selected="selected">'+data.label+'</option>');
                 select.val(data.pk);
-                $('#add_loru').modal('hide');
-                $('#add_loru form :input').val('');
+                $('#add_org').modal('hide');
+                $('#add_org form :input').val('');
                 $("#applicant_form_org div.inline input").val(data.label);
                 $("#applicant_form_org div.inline input").data('typeahead').source.push(data.label);
                 select.change();
