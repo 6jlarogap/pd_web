@@ -693,7 +693,9 @@ class CreateBurial(BurialGetOrderMixin, FormInvalidMixin, CreateView):
         data.update({
             'b': self.get_object(),
             'agent_form': AddAgentForm(prefix='agent'),
+            'loru_agent_form': AddAgentForm(prefix='loru_agent'),
             'agent_dover_form': AddDoverForm(prefix='agent_dover'),
+            'loru_agent_dover_form': AddDoverForm(prefix='loru_agent_dover'),
             'dover_form': AddDoverForm(prefix='dover'),
             'org_form': AddOrgForm(request=self.request, prefix='org'),
             'loru_form': AddOrgForm(request=self.request, prefix='loru', instance=Org(type=Org.PROFILE_LORU)),

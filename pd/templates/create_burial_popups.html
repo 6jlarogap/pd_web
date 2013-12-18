@@ -78,9 +78,9 @@
     <div class="modal-body">
         <form>
             {% csrf_token %}
-            {{ agent_form.as_p }}
+            {{ loru_agent_form.as_p }}
             <h3>{% trans "Доверенность" %}</h3>
-            {{ agent_dover_form.as_p }}
+            {{ loru_agent_dover_form.as_p }}
         </form>
     </div>
     <div class="modal-footer">
