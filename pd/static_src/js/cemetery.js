@@ -615,6 +615,7 @@ $(function() {
             $('#id_loru_agent').closest('div').show();
         }
     });
+    $('#id_loru_agent_director').change();
 
     $('#add_agent').find('.btn-primary').click(function() {
         var org_pk = $('#id_applicant_organization').val();
