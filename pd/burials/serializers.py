@@ -1,6 +1,7 @@
 # coding=utf-8
 
 from django.contrib.auth.models import Group, Permission
+from django.utils.translation import ugettext as _
 from rest_framework import serializers
 from rest_framework.fields import Field, TimeField
 
@@ -17,7 +18,6 @@ from persons.serializers import AlivePersonSerializer, DeadPersonSerializer, Pho
 from rest_api.fields import UnclearDateFieldSerializer
 
 from django.core.exceptions import ValidationError
-
 
 
 def validate_area_places_count(value):
@@ -69,14 +69,21 @@ class CemeterySerializer(serializers.ModelSerializer):
 class AreaSerializer(serializers.ModelSerializer):
     purpose = serializers.PrimaryKeyRelatedField()
     cemetery = serializers.PrimaryKeyRelatedField()
-    places_count = serializers.IntegerField(validators=[validate_area_places_count],\
-                                                         required=True)
+    places_count = serializers.IntegerField(required=True) #validators=[validate_area_places_count],\
 
     class Meta:
         model = Area
         fields = ('id', 'cemetery', 'name', 'availability', 'places_count', 'purpose')
 
-
+    def is_valid(self):
+        valid = not self.errors
+        if not self.many and self.object:
+            max_graves_count = self.context['request'].user.profile.org.max_graves_count or 10
+            if self.object.places_count<=0 or self.object.places_count>max_graves_count:
+                self._errors = self._errors or {}
+                self._errors["__all__"] = [_(u"Количество могил должно быть от 1 до %d") % max_graves_count,]
+                valid = False
+        return valid
 
 
 
@@ -96,7 +103,19 @@ class PlaceSerializer(serializers.ModelSerializer):
         if obj.responsible:
             return "%s %s %s" % (obj.responsible.first_name, obj.responsible.middle_name, obj.responsible.last_name)
 
-
+    def is_valid(self):
+        valid = not self.errors
+        if not self.many and self.object:
+            max_graves_count = self.context['request'].user.profile.org.max_graves_count or 10
+            try:
+                places_count = int(self.context['request'].DATA.get('places_count',1))
+                assert places_count>0 and places_count<=max_graves_count
+            except:
+                self._errors = self._errors or {}
+                self._errors["__all__"] = [_(u"Количество могил должно быть от 1 до %d") % max_graves_count,]
+                valid = False
+        return valid
+        
 
 class GraveSerializer(serializers.ModelSerializer):
     place = serializers.PrimaryKeyRelatedField()

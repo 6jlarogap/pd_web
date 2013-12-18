@@ -173,33 +173,7 @@ class CemeteryViewSet(viewsets.ModelViewSet):
                 res.save()                
                 id_binds[res.id] = 1
             obj.phone_set.exclude(pk__in=id_binds.keys()).delete()
-        """
-        if obj.pk:
-            phone = self.request.DATA.get('obj_phones')
-            ct = ContentType.objects.get_for_model(obj)
-            print obj.phone_set.count(), obj.phone_set.all()
-            for i in phone:
-                i["ct"] = ct.pk
-                i["obj_id"] = obj.pk
-            print phone
 
-            phone_set = obj.phone_set.all()
-            phone_serializer = PhoneSerializer(
-                                            phone_set, 
-                                            data=phone,
-                                            many=True,
-                                            #partial=True,
-                                            allow_add_remove=True,)
-            if  not phone_serializer.is_valid():
-                print phone_serializer.errors
-                return Response(status=400, data=phone_serializer.errors)
-            res = phone_serializer.save()
-            for i in res:
-                i.obj_id = obj.pk
-                i.save() 
-            print obj.phone_set.count(), obj.phone_set.all()
-            pass
-        """
 
     @action(methods=['GET',])
     def getform(self, request, pk=None):
@@ -211,6 +185,7 @@ class CemeteryViewSet(viewsets.ModelViewSet):
                 }
         phone_set = cemetery.phone_set.all()
         data["phones"] = PhoneSerializer(phone_set).data
+        data["cemetery"]["max_graves_count"] = request.user.profile.org.max_graves_count
         if cemetery.address:
             data["address"] = LocationStaticSerializer(cemetery.address).data
         return Response(status=200, data=data)
@@ -272,8 +247,6 @@ class CemeteryEdit(UGHRequiredMixin, RequestToFormMixin, FormInvalidMixin, Updat
         return redirect('manage_cemeteries')
 
 
-
-
 class AreaViewSet(viewsets.ModelViewSet):
     model = Area
     serializer_class = AreaSerializer
@@ -288,6 +261,7 @@ class AreaViewSet(viewsets.ModelViewSet):
     def pre_save(self, object):
         item = getCemetery(self.request)
         object.cemetery = item
+
         try:
             old = self.model.objects.get(pk=object.pk)
         except self.model.DoesNotExist:
@@ -325,7 +299,8 @@ class PlaceViewSet(viewsets.ModelViewSet):
         object.area = item
         #if item.pk:
         #    write_log(self.request, object, _(u'Место №%s изменено' % object.place))
-        max_graves_count = self.request.user.profile.org.max_graves_count
+
+        max_graves_count = self.request.user.profile.org.max_graves_count or 10
         try:
             self.places_count = int(self.request.DATA.get('places_count',1))
             assert self.places_count>0 and self.places_count<=max_graves_count
