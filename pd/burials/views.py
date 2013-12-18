@@ -296,6 +296,16 @@ class AreaViewSet(viewsets.ModelViewSet):
             old = None
         log_object(self.request, obj=object, old=old, new=object, reason=_(u'Участок изменен'))
 
+
+    def retrieve(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        serializer = self.get_serializer(self.object)
+        data = serializer.data
+        data["max_graves_count"] = request.user.profile.org.max_graves_count
+        return Response(data)
+
+
+
 class PlaceViewSet(viewsets.ModelViewSet):
     model = Place
     serializer_class = PlaceSerializer
@@ -315,12 +325,12 @@ class PlaceViewSet(viewsets.ModelViewSet):
         object.area = item
         #if item.pk:
         #    write_log(self.request, object, _(u'Место №%s изменено' % object.place))
-        #import pudb; pudb.set_trace()
+        max_graves_count = self.request.user.profile.org.max_graves_count
         try:
             self.places_count = int(self.request.DATA.get('places_count',1))
-            assert self.places_count>0 and self.places_count<=10 
+            assert self.places_count>0 and self.places_count<=max_graves_count
         except:
-            data = {"__all__":[u"Количество могил должно быть от 1 до 10",]}
+            data = {"__all__":[_(u"Количество могил должно быть от 1 до %d") % max_graves_count,]}
             return Response(status=400, data=data)
 
         responsible = self.request.DATA.get('obj_responsible')

@@ -27,7 +27,7 @@
 				content: "Кл. {0}, уч. {1}, ряд {2}, место {3}".format(
 														$scope.cemetery.name, 
 														$scope.area.name, 
-														$scope.item.row || DEFAULT_MESSAGES.no_data, 
+														$scope.item.row || '-', 
 														$scope.item.place),
 
 				obj_type : 'place',
