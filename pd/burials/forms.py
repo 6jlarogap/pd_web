@@ -612,7 +612,12 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
         if self.cleaned_data.get('agent_director'):
             self.instance.agent = None
             self.instance.dover = None
+
         if self.cleaned_data.get('loru_agent_director'):
+            self.instance.loru_agent = None
+            self.instance.loru_dover = None
+        if 'loru' in self.fields and not self.cleaned_data.get('loru'):
+            self.instance.loru_agent_director = False
             self.instance.loru_agent = None
             self.instance.loru_dover = None
 
@@ -914,6 +919,22 @@ class BurialCommitForm(BurialForm):
                             if dover_end_date < today.date() :
                                 msg = _(u"Срок действия доверенности не может быть меньше текущей даты")
                                 raise forms.ValidationError(msg)
+
+        if self.cleaned_data.get('loru'):
+            if not self.cleaned_data.get('loru_agent_director'):
+                if not self.cleaned_data.get('loru_agent') and not self.cleaned_data.get('loru_dover'):
+                    msg = _(u"Нужно указать Агента и Доверенность посредника или указать, что Агент - Директор")
+                    raise forms.ValidationError(msg)
+                if not self.instance.is_closed():
+                    dover_begin_date = self.cleaned_data.get('loru_dover').begin
+                    dover_end_date = self.cleaned_data.get('loru_dover').end
+                    today = datetime.datetime.today()
+                    if dover_begin_date > today.date():
+                        msg = _(u"Дата выдачи доверенности посредника не может быть позже текущей даты")
+                        raise forms.ValidationError(msg)
+                    if dover_end_date < today.date() :
+                        msg = _(u"Срок действия доверенности посредника не может быть меньше текущей даты")
+                        raise forms.ValidationError(msg)
 
         is_ugh = False
         if self.instance and self.instance.is_ugh():
