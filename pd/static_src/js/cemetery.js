@@ -511,6 +511,7 @@ $(function() {
                         alert("Нет такого ЛОРУ");
                         loru_inp.val('');
                         old_loru_value = '';
+                        $('#loru_title').html('');
                         updateAnything(0, $('#id_loru_agent'), ORG_AGENTS);
                     } else {
                         updateAnything(data[0]['value'], $('#id_loru_agent'), ORG_AGENTS);
@@ -726,6 +727,24 @@ $(function() {
                 }
                 $('#add_zags').modal('hide');
                 $('#id_deadman-dc-zags').val(data.label);
+            } else {
+                alert(data);
+            }
+        })
+    });
+
+    $('#add_loru').find('.btn-primary').click(function() {
+        var data = $('#add_loru form').serialize();
+        $.post('/burials/add_loru/', data, function(data){
+            if (data.pk) {
+                if (typeof ORGS_INACTIVE != "undefined") {
+                    ORGS_INACTIVE.push(data.pk.toString());
+                    ORGS_LIST.push(data.label);
+                    var select = $('#id_applicant_organization');
+                    select.append('<option value="'+data.pk+'" selected="selected">'+data.label+'</option>');
+                }
+                $('#add_loru').modal('hide');
+                $('#id_loru').val(data.label);
             } else {
                 alert(data);
             }
