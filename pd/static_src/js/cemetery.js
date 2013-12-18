@@ -344,6 +344,19 @@ function updateDover() {
 
 function updateLoruDover() {
     updateAnything($('#id_loru_agent'), $('#id_loru_dover'), AGENT_DOVER);
+    if (!$('#id_dover').val()) {
+        // Когда пользователь прыгает от одного агента к другому,
+        // ему предлагается из доверенностей соответствующего агента
+        // последняя из актуальных. Это нельзя делать при
+        // загрузке страницы зх (заказа...), в котором уже
+        // есть агент и доверенность, т.е. где в выпадающем
+        // списке доверенностей есть уже выбранное значение
+        $('#id_loru_dover').find('option').each(function() {
+            if (ACTUAL_DOVER.indexOf(parseInt(this.value)) > -1) {
+                this.selected = 'selected';
+            }
+        });
+    }
 }
 
 function updateAgents() {
