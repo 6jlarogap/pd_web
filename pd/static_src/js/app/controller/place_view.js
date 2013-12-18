@@ -401,11 +401,13 @@
 			}
 
 			$scope.selectedGrave.$update(function(targetGrave) {
-				if (targetGrave) {
-					targetGrave.$update(graveUpdateHandler);
+			    graveUpdateHandler();
+			    //TODO: E.St.: is it necessary?
+				/*if (targetGrave) {
+					//targetGrave.$update(graveUpdateHandler);
 				} else {
 					graveUpdateHandler();
-				}
+				}*/
 				$scope.update();
 			});
 		}else{
