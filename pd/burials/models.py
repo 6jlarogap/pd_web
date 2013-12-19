@@ -1000,7 +1000,7 @@ def calculate_free_burial_count(sender, instance, **kwargs):
     #    return
     if not instance.place:
         return
-    exclude_pk_list = [i.grave.pk for i in instance.place.burial_set.select_related().all()]
+    exclude_pk_list = [i.grave.pk for i in instance.place.burial_set.select_related().all() if i.grave]
     instance.place.available_count = Grave.objects.filter(place=instance.place).exclude(pk__in=exclude_pk_list).count()
     instance.place.save()
 
