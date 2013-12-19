@@ -158,12 +158,12 @@ function AreaViewCtrl($scope, $rootScope, $http, $routeParams, $resource, $locat
         $scope.update();
     };
 	$scope.addElement = function(){
-		$scope.closeAddModal();
 		var place = new Place($scope.place);
 		place.$save({area_id:$routeParams.area_id}, function(result){
 			var url = '/manage/cemetery/{0}/area/{1}/place/{2}'.format($routeParams.cemetery_id, $routeParams.area_id, result.id);
 			$location.path(url);
    			$location.replace();
+   			$scope.closeAddModal();
   		}, default_display_response_error);
 	};
 	// EOF ADD form
