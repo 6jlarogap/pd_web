@@ -12,7 +12,7 @@
     $scope.grave_page = 1;
     $scope.log_page = 1;
     $scope.loading = false;
-
+    
     
     var item_params;
 	//setup
@@ -113,7 +113,18 @@
 			$scope.loading = false;
 			
 			$scope.grave_count = result.grave_count;
-			$scope.updateGraves();
+	       if ($scope.placeCoordinates) {
+	           var lat = $scope.placeCoordinates.lat, lng = $scope.placeCoordinates.lng;
+	       }
+	       $scope.newGrave = new Grave({
+	           place : $scope.item.id,
+	           is_wrong_fio:false,
+	           is_military:false,
+	           grave_number : $scope.grave_count + 1 //todo add way to count next grave_number or add validation of grave_number
+	           //lat :geo.getLat(lat || $scope.item.lat),
+	           //lng :geo.getLng(lng || $scope.item.lng )
+	       });
+	       $scope.updateGraves();
 		},function(data){
 		    $scope.loading = false;
 			if(data.status==404){
@@ -125,7 +136,7 @@
 
 	$scope.updateGraves = function() {
 	   $scope.loading = true;
-	   
+
        item_params.grave_page = $scope.grave_page;
 	   
 	   Place.getGraves(item_params, function(graves) {
@@ -165,11 +176,18 @@
 			$scope.updateMap(); 
 			$scope.loading = false;
             return;
-		    
+            
+            if ($scope.placeCoordinates) {
+                var lat = $scope.placeCoordinates.lat, lng = $scope.placeCoordinates.lng;
+            }		    
 			// New element with default data
 			$scope.newGrave = new Grave({
+			    is_wrong_fio:false,
+			    is_military:false,
 				place : $scope.item.id,
-				grave_number : $scope.graves.length + 1, //todo add way to count next grave_number or add validation of grave_number
+				grave_number : $scope.graves.length + 1 //todo add way to count next grave_number or add validation of grave_number
+	            //lat :geo.getLat(lat || $scope.item.lat),
+	            //lng :geo.getLng(lng || $scope.item.lng )
 			});
 		},function(data){
             $scope.loading = false;
@@ -224,10 +242,12 @@
 					var lat = $scope.placeCoordinates.lat, lng = $scope.placeCoordinates.lng;
 				}
 				$scope.newGrave = new Grave({
+	                is_wrong_fio:false,
+	                is_military:false,
 					place : $scope.item.id,
-					grave_number : $scope.grave_count + 1, //todo add way to count next grave_number or add validation of grave_number
-					lat :geo.getLat(lat || $scope.item.lat),
-                    lng :geo.getLng(lng || $scope.item.lng )
+					grave_number : $scope.grave_count + 1 //todo add way to count next grave_number or add validation of grave_number
+					//lat :geo.getLat(lat || $scope.item.lat),
+                    //lng :geo.getLng(lng || $scope.item.lng )
 				});
 				break;
 			case 'isGraveEditOpen':
@@ -369,6 +389,7 @@
 
 	$scope.addGrave = function(form) {
 		if (form.$valid) {
+		    $scope.loading = true;
 			$scope.newGrave.$save(function() {
 				$scope.closeEditForm('isGraveAddOpen');
 				$scope.updateGraves();

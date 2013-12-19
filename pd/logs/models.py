@@ -83,24 +83,29 @@ LOG_STOP_FIELDS = ['pk', 'dt_created', 'dt_updated']
 
 def log_object(request, obj=None, old=None, new=None, reason=None, code=None):
     msg = []
-    if old.__class__ != new.__class__:
+    if old is not None and old.__class__ != new.__class__:
         return False
-    
     if reason:
         msg.append(reason)
     
     if old is None:
-        msg.append(_(u'Создан "%s"' % new))
+        msg.append(_(u'Создан "%s"') % new.__unicode__())
     elif new is None:
-        msg.append(_(u'Удален "%s"' % old))
+        msg.append(_(u'Удален "%s"') % old.__unicode__())
     else:
         for field in new._meta.fields:
             if field.name not in LOG_STOP_FIELDS and getattr(old,field.name) != getattr(new,field.name):
                 old_val = getattr(old,field.name)
                 new_val = getattr(new,field.name)
-                if isinstance(old_val, bool):
-                     old_val = old_val and u'Да' or u'Нет'
-                     new_val = old_val and u'Да' or u'Нет'
+                if isinstance(old_val, bool) or isinstance(new_val, bool):
+                     if old_val:
+                         old_val=_(u'Да')
+                     else:
+                         old_val=_(u'Нет')
+                     if new_val:
+                         new_val=_(u'Да')
+                     else:
+                         new_val=_(u'Нет')
                 old_val = old_val is None and u'<пусто>' or unicode(old_val) #.__unicode__()
                 new_val = new_val is None and u'<пусто>' or unicode(new_val)
                 if old_val=="None":
@@ -115,7 +120,7 @@ def log_object(request, obj=None, old=None, new=None, reason=None, code=None):
         user=user,
         ct=obj and ContentType.objects.get_for_model(obj) or None,
         obj_id=obj and obj.pk or None,
-        msg = "<br/>".join(msg),
+        msg = u"<br/>".join(msg),
         code=code or '',
     )
 

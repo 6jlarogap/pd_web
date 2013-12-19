@@ -155,7 +155,6 @@ class CemeteryViewSet(viewsets.ModelViewSet):
         # TODO: send signal
         phone = self.request.DATA.get('obj_phones')
         if obj.pk and phone:
-            #import pudb; pudb.set_trace()
             id_binds = {}
             ct = ContentType.objects.get_for_model(obj)
 
@@ -499,14 +498,13 @@ class GraveViewSet(viewsets.ModelViewSet):
                      row.save()
         """
         
-        
         try:
             old = self.model.objects.get(pk=object.pk)
         except self.model.DoesNotExist:
             old = None
         except AttributeError:
             old = None
-        log_object(self.request, obj=object.place, old=old, new=object, reason=_(u'Могила №%d изменена') % object.grave_number)        
+        log_object(self.request, obj=object.place, old=old, new=object, reason="")        
         return object
 
 
