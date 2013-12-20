@@ -74,12 +74,15 @@
 		                <!-- span ng-show="DEBUG">ID: {{ grave.id }}</span -->
 		            </div>
 		            
-		            <p style="text-align: left">Захоронения</p>
+		            <p style="text-align: left">Захоронения
+		                <i class="icon-question-sign" ng-show="grave.is_wrong_fio"></i>
+		                <i class="icon-star" ng-show="grave.is_military"></i>
+		            </p>
                     
-                    <p ng-show="item.is_wrong_fio||item.is_military">
+                    <!-- p ng-show="grave.is_wrong_fio||grave.is_military">
                         <span class="label" ng-show="grave.is_wrong_fio">Неверное ФИО</span>
                         <span class="label" ng-show="grave.is_military">Воинская могила</span>
-                    </p>
+                    </p -->
 
 	                <ul class="unstyled burials">
 	                    <li ng-repeat="burial in burials | filter :{grave : grave.id}"
