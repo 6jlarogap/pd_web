@@ -280,6 +280,7 @@
 	$scope.savePlaceEditForm = function(form) {
 		if (form.$valid) {
 			var url = '/manage/cemetery/{0}/area/{1}/place/{2}'.format($scope.item.cemetery, $scope.item.area, $scope.item.id);
+			$scope.loading = true;
 			$scope.item.$update({
 				cemetery_id : $routeParams.cemetery_id,
 				area_id : $routeParams.area_id
@@ -302,6 +303,7 @@
 			$scope.item.obj_responsible = $scope.responsible;
 			$scope.item.obj_responsible_phones = $scope.responsible_phones; 
 			
+			$scope.loading = true;
 			$scope.item.$update({
 				cemetery_id : $routeParams.cemetery_id,
 				area_id : $routeParams.area_id
@@ -341,6 +343,7 @@
 			var fio = "{0} {1} {2}".format($scope.responsible.last_name, $scope.responsible.first_name, $scope.responsible.middle_name);
 			if (confirm("Открепить " + fio + '?')) {
 				delete $scope.item.responsible;
+				$scope.loading = true;
 				$scope.item.$update({placeID : $routeParams.place_id,
 										cemetery_id : $routeParams.cemetery_id,
 										area_id : $routeParams.area_id
@@ -374,6 +377,7 @@
 	//Grave
 	
 	$scope.graveMove = function(direction, grave){
+	    $scope.loading = true;
 		grave.$move({
 				cemetery_id : $routeParams.cemetery_id,
 				area_id : $routeParams.area_id,
@@ -406,29 +410,25 @@
 	$scope.isGraveEditOpen = false;
 	$scope.saveGraveEditForm = function(form) {
 		if (form.$valid) {
-			var graveUpdateHandler = function() {
-				$scope.closeEditForm('isGraveEditOpen');
-				$scope.updateGraves();
-				var msg = "Изменения сохранены.";
-				noty({text: msg, type:'success', layout:'topRight'});
-			};
-
-			var targetGrave = _.find($scope.graves, function(grave) {
+			/*var targetGrave = _.find($scope.graves, function(grave) {
 				return grave.grave_number == $scope.selectedGrave.grave_number && grave.id !== $scope.selectedGrave.id;
 			});
 
 			if (targetGrave) {
 				targetGrave.grave_number = $scope.originGraveNumber;
-			}
-
+			}*/
+			$scope.loading = true;
 			$scope.selectedGrave.$update(function(targetGrave) {
-			    graveUpdateHandler();
+			    //graveUpdateHandler();
 			    //TODO: E.St.: is it necessary?
 				/*if (targetGrave) {
 					//targetGrave.$update(graveUpdateHandler);
 				} else {
 					graveUpdateHandler();
 				}*/
+			    $scope.closeEditForm('isGraveEditOpen');
+	             var msg = "Изменения сохранены.";
+	                noty({text: msg, type:'success', layout:'topRight'});
 				$scope.update();
 			});
 		}else{

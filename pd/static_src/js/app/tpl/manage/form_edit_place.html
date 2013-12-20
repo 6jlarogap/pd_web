@@ -70,7 +70,7 @@
 
     </div>
     <div class="modal-footer">
-        <button class="btn btn-primary" ng-disabled="!placeEditForm.$valid" ng-click="savePlaceEditForm(placeEditForm)">
+        <button class="btn btn-primary" ng-disabled="loading || !placeEditForm.$valid" ng-click="savePlaceEditForm(placeEditForm)">
             Сохранить
         </button>
         <button class="btn cancel" ng-click="closeEditForm('isPlaceEditorOpen')">Отменить</button>

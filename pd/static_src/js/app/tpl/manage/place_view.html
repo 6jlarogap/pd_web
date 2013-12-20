@@ -18,10 +18,12 @@
                 <dd>
                     {{ responsible.last_name + ' ' + responsible.first_name + ' ' + responsible.middle_name }}
                     <button class="btn btn-success btn-mini"
+                            ng-disabled="loading"
                             ng-click="openEditForm('isResponsibleEditorOpen')">
                         <span class="icon-edit"></span>
                     </button>
                     <button class="btn btn-danger btn-mini"
+                            ng-disabled="loading"
                             ng-show="responsible.last_name || responsible.first_name || responsible.middle_name"
                             ng-click="removeResponsible()">
                         <span class="icon-remove"></span>
@@ -37,7 +39,9 @@
                 <dt>Размеры</dt>
                 <dd>длина {{item.place_length || '-'}}м, ширина {{item.place_width || '-'}}м</dd>
                 <!-- dt></dt>
-                <dd><a href="#" class="btn btn-success" ng-click="openEditForm('isPlaceEditorOpen')">Редактировать</a></dd -->
+                <dd><a href="#" class="btn btn-success"
+                    ng-disabled="loading"
+                    ng-click="openEditForm('isPlaceEditorOpen')">Редактировать</a></dd -->
             </dl>
         </div>
 	    <yandex-map id="yandex-map" class="span5" coordinates="placeCoordinates" points="placePoints">
@@ -128,6 +132,7 @@
 					<div class="btn-toolbar">
 	                	<button class="btn btn-mini btn-danger pull-right" 
 	                		ng-show="!haveBurials(grave.id)" 
+	                		ng-disabled="loading"
 	                		ng-click="deleteGrave(grave)">
 	                		Удалить могилу
                 		</button>

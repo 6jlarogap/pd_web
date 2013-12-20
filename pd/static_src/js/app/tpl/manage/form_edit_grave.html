@@ -33,7 +33,7 @@
         </dl>
     </div>
     <div class="modal-footer">
-        <button class="btn btn-primary" ng-disabled="!graveEditForm.$valid" ng-click="saveGraveEditForm(graveEditForm)">
+        <button class="btn btn-primary" ng-disabled="loading || !graveEditForm.$valid" ng-click="saveGraveEditForm(graveEditForm)">
             сохранить
         </button>
         <button class="btn cancel" ng-click="closeEditForm('isGraveEditOpen')">Отменить</button>
