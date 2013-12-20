@@ -81,7 +81,7 @@ def write_log(request, obj=None, msg='', reason=None, code=None):
 
 LOG_STOP_FIELDS = ['pk', 'dt_created', 'dt_updated']
 
-def log_object(request, obj=None, old=None, new=None, reason=None, code=None):
+def log_object(request, obj=None, old=None, new=None, reason=None, footer=None, code=None):
     msg = []
     if old is not None and old.__class__ != new.__class__:
         return False
@@ -116,6 +116,9 @@ def log_object(request, obj=None, old=None, new=None, reason=None, code=None):
                     msg.append(_(u"'%s': '%s' -> '%s'") % (field.verbose_name, old_val, new_val))
 
     user = request and request.user.is_authenticated() and request.user or None
+    if footer:
+        msg.append(footer)
+
     Log.objects.create(
         user=user,
         ct=obj and ContentType.objects.get_for_model(obj) or None,
