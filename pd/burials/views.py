@@ -502,9 +502,16 @@ class GraveViewSet(viewsets.ModelViewSet):
             old = self.model.objects.get(pk=object.pk)
         except self.model.DoesNotExist:
             old = None
+            footer = []
+            if object.is_wrong_fio:
+                footer.append(u"Неверное ФИО")
+            if object.is_military:
+                footer.append(u"Воинская могила")
+            if len(footer):
+                footer = ", ".join(footer)
         except AttributeError:
             old = None
-        log_object(self.request, obj=object.place, old=old, new=object, reason="")        
+        log_object(self.request, obj=object.place, old=old, footer=footer, new=object, reason="")        
         return object
 
 
@@ -592,6 +599,7 @@ class BurialViewSet(viewsets.ModelViewSet):
             old = None
         except AttributeError:
             old = None
+            footer = None
         log_object(self.request, obj=object.place, old=old, new=object, reason=_(u'Захоронение изменено'))        
         return object
         
