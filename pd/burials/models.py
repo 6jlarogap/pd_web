@@ -1000,9 +1000,14 @@ def calculate_free_burial_count(sender, instance, **kwargs):
     #    return
     if not instance.place:
         return
-    exclude_pk_list = [i.grave.pk for i in instance.place.burial_set.select_related().all() if i.grave]
+
+    burials_available = Q(status=Burial.STATUS_EXHUMATED) | Q(annulated=True)
+    exclude_pk_list = [i.grave.pk \
+                       for i in instance.place.burial_set.exclude(burials_available).select_related().all() \
+                       if i.grave]
     instance.place.available_count = Grave.objects.filter(place=instance.place).exclude(pk__in=exclude_pk_list).count()
     instance.place.save()
+
 
 models.signals.post_save.connect(calculate_free_burial_count, sender=Grave)
 models.signals.post_save.connect(calculate_free_burial_count, sender=Burial)
