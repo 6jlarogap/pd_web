@@ -1001,9 +1001,9 @@ def calculate_free_burial_count(sender, instance, **kwargs):
     if not instance.place:
         return
 
-    burials_available = Q(status=Burial.STATUS_EXHUMATED) | Q(annulated=True)
+    #burials_available = Q(status=Burial.STATUS_EXHUMATED) | Q(annulated=True)
     exclude_pk_list = [i.grave.pk \
-                       for i in instance.place.burial_set.exclude(burials_available).select_related().all() \
+                       for i in instance.place.burial_set.exclude(exhumationrequest__isnull=True).select_related().all() \
                        if i.grave]
     instance.place.available_count = Grave.objects.filter(place=instance.place).exclude(pk__in=exclude_pk_list).count()
     instance.place.save()
