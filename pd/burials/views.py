@@ -73,7 +73,7 @@ def getPlace(request):
     try:
         # PUT request issue
         place_id = int(request.GET.get('place_id'))
-        assert palce_id>0, u'Wrong id'
+        assert place_id>0, u'Wrong id'
     except:
         raise Http404()
     else:
@@ -469,9 +469,7 @@ class GraveViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         place = getPlace(self.request)
-        if place:
-            qs = qs.filter(place=item)
-        return  qs.order_by('grave_number').all()
+        return self.model.objects.filter(place=place).order_by('grave_number').all()
 
     def pre_save(self, object):
         # Update placer point coords

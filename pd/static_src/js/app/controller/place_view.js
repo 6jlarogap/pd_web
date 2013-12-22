@@ -418,7 +418,11 @@
 				targetGrave.grave_number = $scope.originGraveNumber;
 			}*/
 			$scope.loading = true;
-			$scope.selectedGrave.$update(function(targetGrave) {
+			$scope.selectedGrave.$update({
+                cemetery_id : $routeParams.cemetery_id,
+                area_id : $routeParams.area_id,
+                place_id : $routeParams.place_id
+            }, function(targetGrave) {
 			    //graveUpdateHandler();
 			    //TODO: E.St.: is it necessary?
 				/*if (targetGrave) {
@@ -449,7 +453,12 @@
                .then(function(result){
 					if (result=='ok') {
 						//var grave = new Grave($scope.grave_to_delete);
-						$scope.grave_to_delete.$delete(function(){
+						$scope.grave_to_delete.$delete({
+			                cemetery_id : $routeParams.cemetery_id,
+			                area_id : $routeParams.area_id,
+			                place_id : $routeParams.place_id,
+			                graveID:grave.id
+			            },function(){
 							$scope.updateGraves();
 							var msg = "Могила удалена.";
 							noty({text: msg, type:'success', layout:'topRight'});
