@@ -1029,9 +1029,9 @@ def relocate_grave_numbers(sender, instance, **kwargs):
         i += 1
     if relocated > 0:
         if relocated < i-1:
-            write_log(None, instance.place, _(u'Записи %d-%d перенумерованы') % (relocated, i-1))
+            write_log(None, instance.place, _(u'Могилы %d-%d перенумерованы') % (relocated, i-1))
         else:
-            write_log(None, instance.place, _(u'Запись %d перенумерована') % relocated)
+            write_log(None, instance.place, _(u'Могила %d перенумерована') % relocated)
 models.signals.post_delete.connect(relocate_grave_numbers, sender=Grave)
 
 
