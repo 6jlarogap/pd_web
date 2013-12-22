@@ -1,7 +1,6 @@
 <alert ng-repeat="alert in alerts" type="alert.type" close="closeAlert($index)">{{alert.msg}}</alert>
-
+<div ng-include src="'/static/js/app/tpl/loading-indicator.html'+version_str"></div>
 <div ng-include src="'/static/js/app/tpl/manage/place_view_header.html'+version_str"></div>
-
 <div class="place-view">
     <div class="row-fluid">
         <div class="span7">
@@ -31,8 +30,8 @@
                 </dd>
                 <dt>Могил всего</dt>
                 <dd>{{item.graves_count}}</dd>
-                <dt>Свободно</dt>
-                <dd>{{item.available_count}}</dd>
+                <!-- dt>Свободно</dt>
+                <dd>{{item.available_count}}</dd -->
                 
                 <dt>Координаты</dt>
                 <dd>широта: {{item.lat || '-'}}, долгота: {{item.lng || '-'}}</dd>
@@ -118,7 +117,7 @@
                                     <i class="icon-print"></i>
                                 </a>
                                 <a class="btn btn-mini" popover="Отмена эксгумации" popover-trigger="mouseenter"
-                                    href="/places/{{item.id}}/"
+                                    href="/places/{{item.id}}/" target="_new"
                                     ng-show="burial.status==BURIAL_STATUS_EXHUMATED">
                                     <i class="icon-arrow-down"></i>
                                 </a>
@@ -259,9 +258,6 @@
                   ng-disabled="loading || log_page >= log_pages" ng-click="[log_page=log_page+1, update()]">
                   <i class="icon-forward"></i>
               </button>
-              <div ng-show="loading" class="btn" type="button">
-                  <img src="/static/img/ajax-loader.gif" alt="Загрузка" width="14px" height="14px" />
-              </div>
             </div>
         </div>
 	

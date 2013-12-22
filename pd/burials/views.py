@@ -382,16 +382,16 @@ class PlaceViewSet(viewsets.ModelViewSet):
             grave_list = paginator.page(grave_page)
         except:
             grave_list = paginator.page(1)
-            
-        burial_list = place.burial_set.filter(grave__in=grave_list).all()
-
+        grave_count = place.grave_set.count()
+        
+        #burial_list = Burial.objects.filter(grave__place=place, grave__in=grave_list).all()
         data = {
                 "cemetery" : CemeterySerializer(cemetery).data,
                 "area" : AreaSerializer(area).data,
                 "place" : PlaceSerializer(place).data,
                 "graves" : GraveSerializer(grave_list, many=True).data,
-                "grave_count" : place.grave_set.count(),
-                "burials" : BurialSerializer(burial_list, many=True).data,
+                "grave_count" : grave_count,
+                #"burials" : BurialSerializer(burial_list, many=True).data,
                 "responsible" : {},
                 "responsible_phones" : [],
                 "responsible_address" : {},
@@ -424,8 +424,7 @@ class PlaceViewSet(viewsets.ModelViewSet):
         except:
             grave_list = paginator.page(1)
         
-        burial_list = place.burial_set.filter(grave__in=grave_list).all()
-        
+        burial_list = Burial.objects.filter(grave__place=place, grave__in=grave_list).all()
         return Response({
                          'count': place.grave_set.count(),
                          'page': grave_list.number,
@@ -498,11 +497,12 @@ class GraveViewSet(viewsets.ModelViewSet):
                      row.save()
         """
         
+        footer = ''
         try:
             old = self.model.objects.get(pk=object.pk)
         except self.model.DoesNotExist:
-            old = None
             footer = []
+            old = None
             if object.is_wrong_fio:
                 footer.append(u"Неверное ФИО")
             if object.is_military:
@@ -511,7 +511,9 @@ class GraveViewSet(viewsets.ModelViewSet):
                 footer = ", ".join(footer)
         except AttributeError:
             old = None
-        log_object(self.request, obj=object.place, old=old, footer=footer, new=object, reason="")        
+        log_object(self.request, obj=object.place, old=old, footer=footer, \
+                   new=object, reason="", \
+                   create_text=_(u"Могила %d создана") % object.grave_number)        
         return object
 
 
@@ -568,10 +570,8 @@ class BurialViewSet(viewsets.ModelViewSet):
         return self.model.objects.filter(cemetery__ugh=self.request.user.profile.org)
 
     def filter_queryset(self, queryset):
-        id = self.request.GET.get('place_id')
-        item = get_object_or_404(Place, id=id)
-        queryset = queryset.filter(place=item)
-        
+        # place_id filter removed. Exhumation issue
+
         item = getCemetery(self.request)
         queryset = queryset.filter(cemetery=item)
         

@@ -81,7 +81,8 @@ def write_log(request, obj=None, msg='', reason=None, code=None):
 
 LOG_STOP_FIELDS = ['pk', 'dt_created', 'dt_updated']
 
-def log_object(request, obj=None, old=None, new=None, reason=None, footer=None, code=None):
+def log_object(request, obj=None, old=None, new=None, reason=None, footer=None, \
+               code=None, create_text=None, delete_text=None):
     msg = []
     if old is not None and old.__class__ != new.__class__:
         return False
@@ -89,9 +90,9 @@ def log_object(request, obj=None, old=None, new=None, reason=None, footer=None, 
         msg.append(reason)
     
     if old is None:
-        msg.append(_(u'Создан "%s"') % new.__unicode__())
+        msg.append(create_text or _(u'Создан "%s"') % new.__unicode__())
     elif new is None:
-        msg.append(_(u'Удален "%s"') % old.__unicode__())
+        msg.append(delete_text or _(u'Удален "%s"') % old.__unicode__())
     else:
         for field in new._meta.fields:
             if field.name not in LOG_STOP_FIELDS and getattr(old,field.name) != getattr(new,field.name):
