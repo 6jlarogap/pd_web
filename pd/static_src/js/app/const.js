@@ -49,9 +49,24 @@
         container_urn:    'Урна',
         container_ash:    'Прах',
         container_bio:    'Биоотходы'
+    },
+
+    STATUS_CHOICES = {
+            backed: "Отозвано",
+            declined: "Отклонено",
+            draft: "Черновик",
+            ready: "На согласовании",
+            inspecting: "На обследовании",
+            approved: "Согласовано",
+            closed: "Закрыто",
+            exhumated: "Эксгумировано"
     };
+
 	// EOF Burial model
 
+
+
+    
     PHONE_TYPE_MOBILE = 0,
     PHONE_TYPE_CITY = 1,
     PHONE_TYPE_FAX = 2,

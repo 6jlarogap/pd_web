@@ -87,6 +87,7 @@
 	                    <li ng-repeat="burial in burials | filter :{grave : grave.id}"
 	                    	class="well burial {{burial.status}}">
 	                    	<div ng-click="openEditForm('isBurialEditorOpen', burial)">
+	                    	<span>{{burial.status|list:STATUS_CHOICES}}</span>
 	                        <h4 style="text-align: left">{{burial.deadman.last_name}}</h4>
 	                        <h4 style="text-align: left">{{burial.deadman.first_name}}</h4>
 	                        <h4 style="text-align: left">{{burial.deadman.middle_name}}</h4>
