@@ -468,10 +468,8 @@ class GraveViewSet(viewsets.ModelViewSet):
         return super(GraveViewSet, self).delete(request, *args, **kwargs)
 
     def get_queryset(self):
-        qs = self.model.objects.filter(place__cemetery__ugh=self.request.user.profile.org)
-        id = self.request.GET.get('place_id')
-        if id:
-            item = get_object_or_404(Place, id=id)
+        place = getPlace(self.request)
+        if place:
             qs = qs.filter(place=item)
         return  qs.order_by('grave_number').all()
 
@@ -553,7 +551,7 @@ class GraveViewSet(viewsets.ModelViewSet):
         try:
             object = self.model.objects.get(pk=int(pk))
             write_log(self.request, object.place, _(u'Могила №%d удалена') % object.grave_number)
-            object.delete();
+            object.delete()
         except:
             raise Http404()
         return Response(status=200)

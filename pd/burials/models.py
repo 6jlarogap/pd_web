@@ -18,6 +18,7 @@ from geo.models import GeoPointModel
 
 from geo.models import GeoPointModel
 
+from logs.models import write_log
 
 class Cemetery(GetLogsMixin, BaseModel, PhonesMixin):
     PLACE_AREA = 'area'
@@ -1018,11 +1019,19 @@ models.signals.post_delete.connect(calculate_free_burial_count, sender=Burial)
 def relocate_grave_numbers(sender, instance, **kwargs):
     # Reorder grave numbers
     i = 1
+    relocated = False
     for row in instance.place.grave_set.order_by('grave_number').all():
-        row.grave_number = i
+        if row.grave_number != i: 
+            if not relocated:
+                relocated = i
+            row.grave_number = i
+            row.save()
         i += 1
-        row.save()
-
+    if relocated > 0:
+        if relocated < i-1:
+            write_log(None, instance.place, _(u'Записи %d-%d перенумерованы') % (relocated, i-1))
+        else:
+            write_log(None, instance.place, _(u'Запись %d перенумерована') % relocated)
 models.signals.post_delete.connect(relocate_grave_numbers, sender=Grave)
 
 
