@@ -103,6 +103,7 @@
                                     <i class="icon-edit"></i>
                                 </a>
                                 <a class="btn btn-mini" popover="Эксгумировать" popover-trigger="mouseenter"
+                                    ng-hide="burial.status==BURIAL_STATUS_EXHUMATED"
                                     href="/burials/{{burial.id}}/exhumate/" target="_new">
                                     <i class="icon-arrow-up"></i>
                                 </a>

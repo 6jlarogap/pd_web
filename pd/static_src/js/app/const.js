@@ -58,7 +58,7 @@
             ready: "На согласовании",
             inspecting: "На обследовании",
             approved: "Согласовано",
-            closed: "Закрыто",
+            closed: "",
             exhumated: "Эксгумировано"
     };
 
