@@ -13,17 +13,13 @@ from pd.models import BaseModel, GetLogsMixin
 
 class Category(models.Model):
     name = models.CharField(_(u"Название"), max_length=255)
-    order = models.PositiveIntegerField(_(u"Ед. изм."), max_length=255, default=_(u"шт"))
-    #icon
+
     class Meta:
         verbose_name = _(u"Категория")
         verbose_name_plural = _(u"Категории")
 
     def __unicode__(self):
         return self.name
-
-#class image
-    
 
 
 class Product(models.Model):
@@ -38,7 +34,6 @@ class Product(models.Model):
         (PRODUCT_SIGN, _(u"Написание надмогильной таблички")),
     )
 
-    #preview
     category = models.ForeignKey(Category, blank=True, null=True, verbose_name=_(u"Категория"))
     loru = models.ForeignKey(Org, limit_choices_to={'type': Org.PROFILE_LORU}, null=True, verbose_name=_(u"ЛОРУ"))
     name = models.CharField(_(u"Название"), max_length=255)
