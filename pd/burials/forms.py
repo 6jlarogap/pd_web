@@ -427,9 +427,9 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
                 self.initial['burial_type'] = Burial.BURIAL_ADD
             else:
                 self.initial['burial_type'] = Burial.BURIAL_NEW
-            if self.request.user.profile.cemetery and self.initial['cemetery'] is None:
+            if self.request.user.profile.cemetery and not self.initial.get('cemetery'):
                 self.initial['cemetery'] = self.request.user.profile.cemetery
-            if self.request.user.profile.area and self.initial['area'] is None:
+            if self.request.user.profile.area and not self.initial.get('area'):
                 self.initial['area'] = self.request.user.profile.area
                 self.initial['desired_graves_count'] = self.initial['area'].places_count or 1
             if self.request.user.profile.is_ugh():

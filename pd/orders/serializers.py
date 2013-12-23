@@ -9,11 +9,9 @@ from orders.models import Category, Product
 
 
 class CategorySerializer(serializers.HyperlinkedModelSerializer):
-    loru = Field('loru')
-    price = serializers.DecimalField()
     class Meta:
         model = Product
-        fields = ('id', 'loru', 'name', 'measure', 'price', 'ptype')
+        fields = ('id', 'name')
 
 
 class ProductSerializer(serializers.HyperlinkedModelSerializer):
@@ -22,4 +20,4 @@ class ProductSerializer(serializers.HyperlinkedModelSerializer):
     price = serializers.DecimalField()
     class Meta:
         model = Product
-        fields = ('id', 'category', 'loru', 'name', 'measure', 'price', 'ptype')
+        fields = ('id', 'category', 'loru', 'name', 'measure', 'price')

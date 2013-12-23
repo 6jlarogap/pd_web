@@ -585,12 +585,10 @@ order_burial = OrderBurialView.as_view()
 class CategoryViewSet(viewsets.ModelViewSet):
     model = Category
     serializer_class = CategorySerializer
-    permission_classes = (permissions.AllowAny,)
     paginate_by = 25
 
 
 class ProductViewSet(viewsets.ModelViewSet):
     model = Product
     serializer_class = ProductSerializer
-    permission_classes = (permissions.AllowAny,)
     paginate_by = 25
