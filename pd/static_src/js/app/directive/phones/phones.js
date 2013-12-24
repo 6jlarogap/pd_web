@@ -78,7 +78,12 @@ app.controller('PhonesController', ['$scope', 'Phone', function($scope, Phone) {
         }
 	};
 	
-	if(!$scope.phones.length){
+	$scope.validatePhone = function(value) {
+	    return value && value.match(/^((8|\+7|\+375)[\- ]?)?(\(?\d{2,3}\)?[\- ]?)?[\d\- ]{7,10}$/) != null 
+	};
+	
+	
+	if(!($scope.phones && $scope.phones.length)){
 		$scope.open();
 	}
 }]);

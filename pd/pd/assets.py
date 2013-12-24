@@ -57,6 +57,7 @@ js_angular = Bundle(
         "angular-bootstrap/ui-bootstrap-tpls.min.js",
 
         "angular-ui-utils/modules/mask/mask.js",
+        "angular-ui-utils/modules/validate/validate.js",
 
         "select2/select2.min.js",
         "select2/select2_locale_ru.js",
