@@ -517,6 +517,7 @@ $(function() {
                         $('#loru_title').html('');
                         updateAnything(0, $('#id_loru_agent'), ORG_AGENTS);
                         $('.btn-loru_agent').closest('p').hide();
+                        // $('.btn-loru_dover').closest('p').hide();
                     } else {
                         updateAnything(data[0]['value'], $('#id_loru_agent'), ORG_AGENTS);
                     }
@@ -530,8 +531,10 @@ $(function() {
         if (!$('#id_loru_agent_director').is(':checked')) {
             if (loru_inp.val()) {
                 $('.btn-loru_agent').closest('p').show();
+                $('.btn-loru_dover').closest('p').show();
             } else {
                 $('.btn-loru_agent').closest('p').hide();
+                $('.btn-loru_dover').closest('p').hide();
             }
         }
     });
@@ -728,6 +731,28 @@ $(function() {
                 AGENT_DOVER[agent_pk].push([data.pk, data.label])
                 $('#add_dover').modal('hide');
                 $('#add_dover form :input').val('');
+            } else {
+                alert(data);
+            }
+        })
+    });
+
+    $('#add_loru_dover').find('.btn-primary').click(function() {
+        var agent_pk = $('#id_loru_agent').val();
+        if (!agent_pk) {
+            return alert('Выберите агента');
+        }
+        var data = $('#add_loru_dover form').serialize();
+        $.post('/burials/add_loru_dover/?agent='+agent_pk, data, function(data){
+            if (data.pk) {
+                $('#id_loru_dover').append('<option value="'+data.pk+'">'+data.label+'</option>');
+                $('#id_loru_dover').val(data.pk);
+                if (!AGENT_DOVER[agent_pk]) {
+                    AGENT_DOVER[agent_pk] = [];
+                }
+                AGENT_DOVER[agent_pk].push([data.pk, data.label])
+                $('#add_loru_dover').modal('hide');
+                $('#add_loru_dover form :input').val('');
             } else {
                 alert(data);
             }

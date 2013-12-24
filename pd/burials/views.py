@@ -140,7 +140,8 @@ view_place = PlaceView.as_view()
 
 class AddDoverView(LoginRequiredMixin, View):
     def post(self, request, *args, **kwargs):
-        f = AddDoverForm(data=request.POST, prefix='dover')
+        prefix = kwargs.get('prefix') or ''
+        f = AddDoverForm(data=request.POST, prefix='%sdover' % prefix)
         try:
             agent = Profile.objects.get(pk=request.GET['agent'], is_agent=True)
         except Profile.DoesNotExist:
