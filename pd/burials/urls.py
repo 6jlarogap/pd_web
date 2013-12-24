@@ -9,6 +9,7 @@ urlpatterns = patterns('burials.views',
     url(r'^$', 'dashboard', name='dashboard'),
 
     url(r'^burials/add_agent/$', 'add_agent', name='add_agent'),
+    url(r'^burials/add_loru_agent/$', 'add_agent', dict(prefix='loru_'), name='add_agent'),
     url(r'^burials/add_dover/$', 'add_dover', name='add_dover'),
     url(r'^burials/add_org/$', 'add_org', name='add_org'),
     url(r'^burials/add_zags/$', 'add_org', dict(type=Org.PROFILE_ZAGS), name='add_org'),

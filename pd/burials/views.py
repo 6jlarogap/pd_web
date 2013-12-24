@@ -164,8 +164,9 @@ add_dover = AddDoverView.as_view()
 
 class AddAgentView(LoginRequiredMixin, View):
     def post(self, request, *args, **kwargs):
-        fa = AddAgentForm(data=request.POST, prefix='agent')
-        fd = AddDoverForm(data=request.POST, prefix='agent_dover')
+        prefix = kwargs.get('prefix') or ''
+        fa = AddAgentForm(data=request.POST, prefix='%sagent' % prefix)
+        fd = AddDoverForm(data=request.POST, prefix='%sagent_dover' % prefix)
         if request.GET.get('org'):
             q = Q(pk=request.GET['org'])
         elif request.GET.get('org_name'):

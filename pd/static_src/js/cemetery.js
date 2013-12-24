@@ -90,6 +90,9 @@ function setup_address_autocompletes() {
 
     $('input[id=id_loru]').attr('autocomplete', 'off').typeahead({
         items: 100,
+        onselect: function() {
+            $('input[id=id_loru]').change();
+        },
         source: function (typeahead, query) {
             if (query.length < 2) { return }
             $.ajax({
@@ -673,7 +676,7 @@ $(function() {
             return alert('Выберите организацию');
         }
         var data = $('#add_loru_agent form').serialize();
-        $.post('/burials/add_agent/?org_name='+org_name, data, function(data){
+        $.post('/burials/add_loru_agent/?org_name='+org_name, data, function(data){
             if (data.pk) {
                 $('#id_loru_agent').append('<option value="'+data.pk+'">'+data.label+'</option>');
                 $('#id_loru_dover').append('<option value="'+data.dover_pk+'">'+data.dover_label+'</option>');
