@@ -667,6 +667,10 @@ $(function() {
                 AGENT_DOVER[data.pk].push([data.dover_pk, data.dover_label])
                 $('#add_agent').modal('hide');
                 $('#add_agent form :input').val('');
+                if ($('#id_loru').length && old_loru_value) {
+                    old_loru_value='';
+                    $('#id_loru').change();
+                }
             } else {
                 alert(data);
             }
@@ -695,6 +699,7 @@ $(function() {
                 AGENT_DOVER[data.pk].push([data.dover_pk, data.dover_label])
                 $('#add_loru_agent').modal('hide');
                 $('#add_loru_agent form :input').val('');
+                $('#id_applicant_organization').change();
             } else {
                 alert(data);
             }
@@ -731,6 +736,9 @@ $(function() {
                 AGENT_DOVER[agent_pk].push([data.pk, data.label])
                 $('#add_dover').modal('hide');
                 $('#add_dover form :input').val('');
+                if ($('#id_loru_agent').length) {
+                    $('#id_loru_agent').change();
+                }
             } else {
                 alert(data);
             }
@@ -753,6 +761,7 @@ $(function() {
                 AGENT_DOVER[agent_pk].push([data.pk, data.label])
                 $('#add_loru_dover').modal('hide');
                 $('#add_loru_dover form :input').val('');
+                $('#id_agent').change();
             } else {
                 alert(data);
             }
