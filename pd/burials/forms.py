@@ -923,17 +923,17 @@ class BurialCommitForm(BurialForm):
         if self.cleaned_data.get('loru'):
             if not self.cleaned_data.get('loru_agent_director'):
                 if not self.cleaned_data.get('loru_agent') and not self.cleaned_data.get('loru_dover'):
-                    msg = _(u"Нужно указать Агента и Доверенность посредника или указать, что Агент - Директор")
+                    msg = _(u"Посредник: нужно указать Агента и Доверенность или указать, что Агент - Директор")
                     raise forms.ValidationError(msg)
                 if not self.instance.is_closed():
                     dover_begin_date = self.cleaned_data.get('loru_dover').begin
                     dover_end_date = self.cleaned_data.get('loru_dover').end
                     today = datetime.datetime.today()
                     if dover_begin_date > today.date():
-                        msg = _(u"Дата выдачи доверенности посредника не может быть позже текущей даты")
+                        msg = _(u"Посредник: дата выдачи доверенности не может быть позже текущей даты")
                         raise forms.ValidationError(msg)
                     if dover_end_date < today.date() :
-                        msg = _(u"Срок действия доверенности посредника не может быть меньше текущей даты")
+                        msg = _(u"Посредник: срок действия доверенности не может быть меньше текущей даты")
                         raise forms.ValidationError(msg)
 
         is_ugh = False
