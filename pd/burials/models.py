@@ -70,6 +70,13 @@ class Cemetery(GetLogsMixin, BaseModel, PhonesMixin):
     def __unicode__(self):
         return self.name
 
+    def unique_error_message(self, model_class, unique_check):
+        if len(unique_check) == 1:
+            return super(Cemetery, self).unique_error_message(model_class, unique_check)
+        # unique_together
+        else:
+            return _(u"Кладбище с таким названием уже существует")
+
     def get_time_choices(self, date, request):
         others = Burial.objects.none()
         others_loru = Burial.objects.none()
@@ -143,6 +150,13 @@ class Area(BaseModel):
             self.places_count
         )
 
+    def unique_error_message(self, model_class, unique_check):
+        if len(unique_check) == 1:
+            return super(Area, self).unique_error_message(model_class, unique_check)
+        # unique_together
+        else:
+            return _(u"Участок с таким названием уже существует")
+
     def save(self, *args, **kwargs):
         if not self.name.strip():
             self.name=''
@@ -171,6 +185,15 @@ class Place(SafeDeleteMixin, GeoPointModel):
 
     def __unicode__(self):
         return _(u'Кл. %s, уч. %s, ряд %s, место %s') % (self.cemetery, self.area and self.area.name or '', self.row, self.place)
+
+
+    def unique_error_message(self, model_class, unique_check):
+        if len(unique_check) == 1:
+            return super(Place, self).unique_error_message(model_class, unique_check)
+        # unique_together
+        else:
+            return _(u"Место с таким рядом и местом уже существует")
+
 
     def burials_available(self):
         q_ex = Q(status=Burial.STATUS_EXHUMATED) | Q(annulated=True)
