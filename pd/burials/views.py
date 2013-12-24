@@ -156,7 +156,7 @@ class AddDoverView(LoginRequiredMixin, View):
             return HttpResponse(json.dumps({'pk': dover.pk, 'label': u'%s' % dover}), mimetype='application/json')
         else:
             err_str = _(u'Ошибка:\n%s')
-            errors = '\n'.join([u'%s' % v[0] for k,v in f.errors.items() if k == '__all__'])
+            errors = '\n'.join([u'%s' % v for v in f.non_field_errors()])
             if "\n" in errors:
                 err_str = _(u'Ошибки:\n%s')
             return HttpResponse(err_str % errors, mimetype='text/plain')
