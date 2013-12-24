@@ -447,8 +447,6 @@ class PlaceViewSet(viewsets.ModelViewSet):
         return Response(status=200)
 
 
-
-
 class AreaPurposeViewSet(viewsets.ModelViewSet):
     model = AreaPurpose
     serializer_class = AreaPurposeSerializer
