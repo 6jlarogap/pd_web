@@ -191,9 +191,10 @@ class AddAgentView(LoginRequiredMixin, View):
                 'dover_pk': dover.pk, 'dover_label': u'%s' % dover
             }), mimetype='application/json')
         else:
+            print fa.non_field_errors()
             err_str = _(u'Ошибка:\n%s')
-            errors = '\n'.join([u'%s' % v[0] for k,v in fa.errors.items()] + \
-                               [u'%s' % v[0] for k,v in fd.errors.items()])
+            errors = '\n'.join([u'%s' % v for v in fa.non_field_errors()] + \
+                               [u'%s' % v for v in fd.non_field_errors()])
             if "\n" in errors:
                 err_str = _(u'Ошибки:\n%s')
             return HttpResponse(err_str % errors, mimetype='text/plain')
