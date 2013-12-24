@@ -1,5 +1,5 @@
 // 'use strict';
-var APP_VERSION = '0.1.0-41',
+var APP_VERSION = '0.1.0-43',
 	version_str = '?v='+APP_VERSION,
 	test, qqq;
 

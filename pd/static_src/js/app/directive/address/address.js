@@ -98,7 +98,7 @@ function($scope, $dialog, $http, $resource, $parse, Place) {
 		$scope.update();
 		$scope.isAddressEditorOpen = false;
 	};
-	$scope.save = function() {
+	$scope.save = function(form) {
 		/*if (!$scope.item.country || !$scope.item.region || !$scope.item.city) {
 			var title = 'Форма не заполнена';
 			var msg = 'Необходимо заполнить все поля';
@@ -127,15 +127,19 @@ function($scope, $dialog, $http, $resource, $parse, Place) {
 						$scope.close();
 					});
 				}else{
-					$scope.$parent.item.address = obj.id;
+				    $scope.$parent.responsible.address = obj.id;
+				    $scope.$parent.item.address = obj.id;
+				    //$scope.$parent.saveResponsibleEditForm(form);
+				    /*
 					$scope.$parent.item.$update({
 						cemetery_id : $scope.$parent.address_class_params.cemetery_id,
 						area_id : $scope.$parent.address_class_params.area_id,
 						address_id : obj.id
-					},function(){
+					},function(res){
 						$scope.update();
 						$scope.close();
-					});
+					});*/
+				    $scope.close();
 				}
 			});
 		} else {

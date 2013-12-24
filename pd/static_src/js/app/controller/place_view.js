@@ -308,8 +308,9 @@
 			$scope.item.$update({
 				cemetery_id : $routeParams.cemetery_id,
 				area_id : $routeParams.area_id
-			}, function() {
+			}, function(response) {
 				noty({text: 'Изменения сохранены', type:'success', layout:'topRight'});
+				$scope.closeEditForm('isResponsibleEditorOpen');
 				$scope.update();
 			});
 
@@ -330,9 +331,6 @@
 					noty({text: 'Изменения сохранены', type:'success', layout:'topRight'});
 				});
 			}*/
-			
-			
-			$scope.closeEditForm('isResponsibleEditorOpen');
 		}else{
             var msg = "Исправьте ошибки в форме";
             noty({text: msg, type:'error', layout:'topRight'});

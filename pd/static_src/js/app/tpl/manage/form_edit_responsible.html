@@ -1,4 +1,4 @@
-<form name="responsibleEditForm" novalidate>
+<form name="responsibleEditForm" >
     <div class="modal-header">
         <h3>Редактировать ответственного</h3>
     </div>
@@ -12,7 +12,8 @@
 	            </dt>
 	            <dd>
 	                <input name="placeCemetery" id="id_responsible_set-last_name" type="text" ng-model="responsible.last_name"
-	                       required maxlength="255"/>
+	                       name="last_name" required maxlength="255"/>
+                    <span class="error" ng-show="!responsible.last_name.length">Не указана</span>
 	            </dd>
 	            <dt>
 	                <label for="id_responsible_set-first_name">Имя:</label>
@@ -29,7 +30,6 @@
 	                       maxlength="255" />
 	            </dd>
 	        </dl>
-       		
     </tab>
     <tab heading="Адрес">
     	<address address_class="address_class" address="responsible.address" save_action="saveEditForm"></address>
@@ -39,7 +39,7 @@
     </tab>
     </tabset>
     <div class="modal-footer">
-        <button class="btn btn-primary" ng-disabled-off="!responsibleEditForm.$valid" ng-click="saveResponsibleEditForm(responsibleEditForm)">
+        <button class="btn btn-primary" ng-disabled="!responsibleEditForm.$valid" ng-click="saveResponsibleEditForm(responsibleEditForm)">
             Сохранить
         </button>
         <button class="btn cancel" ng-click="closeEditForm('isResponsibleEditorOpen')">Отменить</button>

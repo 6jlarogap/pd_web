@@ -313,7 +313,9 @@ class PlaceViewSet(viewsets.ModelViewSet):
             if not responsible_serializer.is_valid():
                 return Response(status=400, data=responsible_serializer.errors) 
             object.responsible = responsible_serializer.save()
-        
+            #import pudb; pudb.set_trace()
+            #object.responsible.address_id = responsible.address
+
         try:
             old = self.model.objects.get(pk=object.pk)
         except self.model.DoesNotExist:
@@ -333,7 +335,7 @@ class PlaceViewSet(viewsets.ModelViewSet):
     def post_save(self, object, created=False):
         if created: 
             #    write_log(self.request, object, _(u'Место №%s создано')% object.place)
-            for i in xrange(1,min(self.places_count,10)+1):
+            for i in xrange(1,self.places_count+1):
                 item = Grave(place=object, grave_number=i)
                 item.save()
             
@@ -358,6 +360,8 @@ class PlaceViewSet(viewsets.ModelViewSet):
                     res.save()                
                     id_binds[res.id] = 1
                 object.responsible.phone_set.exclude(pk__in=id_binds.keys()).delete()
+        if object.responsible:
+            object.responsible.save()
 
 
     @action(methods=['GET',])
