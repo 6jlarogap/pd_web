@@ -192,7 +192,7 @@ class Place(SafeDeleteMixin, GeoPointModel):
             return super(Place, self).unique_error_message(model_class, unique_check)
         # unique_together
         else:
-            return _(u"Место с таким рядом и местом уже существует")
+            return _(u"Место с таким номером уже существует")
 
 
     def burials_available(self):
