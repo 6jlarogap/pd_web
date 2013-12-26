@@ -36,12 +36,12 @@
                 <span class="error" ng-show="add_phone.phonetype.$error.required">Выберите тип телефона</span>
                 <label for="phone_number">Номер:</label>
             
-                <input type="text" name="phone_number" off-ui-mask="{{'+9 (999) 999-9999'}}"
+                +<input type="text" name="phone_number" off-ui-mask="{{'+9 (999) 999-9999'}}"
                    ui-validate="{validPhone : 'validatePhone($value)' }"
                    ng-model="phone.number"
                    required
                    placeholder="x(xxx) xxx-xx-xx"
-                   popover-placement="right" popover="Введите в формате: страна(код)номер, номер. Допустимы пробелы и '-'"
+                   popover-placement="right" popover='Введите номер телефона в международном формате без "+" и без "8". Пример: 74996772043'
                    ng-maxlength="maxlength">
                 <p class="error" ng-show="form_phone.phone_number.$error.validPhone">Неверный номер телефона</p>
                 <!--p class="error" ng-show="add_phone.phone_number.$error.required">Укажите номер телефона</p-->
@@ -67,12 +67,12 @@
                 <span class="error" ng-show="form_phone.phonetype.$error.required">Выберите тип телефона</span>
                 <label for="phone_number">Номер:</label>
             
-                <input type="text" name="phone_number" 
+                +<input type="text" name="phone_number" 
                    ng-model="phone.number"  off-ui-mask="{{'+9 (999) 999-9999'}}"
                    ui-validate="{validPhone : 'validatePhone($value)' }"
                    required 
                    placeholder="x(xxx) xxx-xx-xx"
-				   popover-placement="right" popover="Введите в формате: страна(код)номер, номер. Допустимы пробелы и '-'"
+				   popover-placement="right" popover='Введите номер телефона в международном формате без "+" и без "8". Пример: 74996772043'
                    ng-maxlength="maxlength">
                 <p class="error" ng-show="form_phone.phone_number.$error.validPhone">Неверный номер телефона</p>
                 <!--p class="error" ng-show="add_phone.phone_number.$error.required">Укажите номер телефона</p-->
