@@ -79,7 +79,7 @@ app.controller('PhonesController', ['$scope', 'Phone', function($scope, Phone) {
 	};
 	
 	$scope.validatePhone = function(value) {
-	    return value && value.match(/^((8|\+7|\+375)[\- ]?)?(\(?\d{2,3}\)?[\- ]?)?[\d\- ]{7,12}$/) != null 
+	    return value && value.length>0 && value.match(/^((7|375)[\- ]?)?(\(?\d{2,3}\)?[\- ]?)?[\d\- ]{7,12}$/) != null 
 	};
 	
 	

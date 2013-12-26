@@ -12,7 +12,7 @@
 			</tr>
 			<tr ng-repeat="phone in phones">
 				<td>{{phone.phonetype | objList:PHONETYPE_CHOICES}}</td>
-				<td>{{phone.number}}</td>
+				<td>+{{phone.number}}</td>
 				<td>
 				<button class="btn btn-success btn-mini"
 				ng-click="open(phone)">
@@ -40,10 +40,11 @@
                    ui-validate="{validPhone : 'validatePhone($value)' }"
                    ng-model="phone.number"
                    required
+                   placeholder="x(xxx) xxx-xx-xx"
+                   popover-placement="right" popover="Введите в формате: +страна(код)номер, номер. Допустимы пробелы и '-'"
                    ng-maxlength="maxlength">
-                <p class="info" >Введите номер в одном из форматов: +страна(код)номер, 8(код)номер, номер. Допустимы пробелы и '-'</p>
-                <p class="error" ng-show="add_phone.phone_number.$error.validPhone">Неверный номер телефона</p>
-                <p class="error" ng-show="add_phone.phone_number.$error.required">Укажите номер телефона</p>
+                <p class="error" ng-show="form_phone.phone_number.$error.validPhone">Неверный номер телефона</p>
+                <!--p class="error" ng-show="add_phone.phone_number.$error.required">Укажите номер телефона</p-->
                 
                 <div class="row-fluid">
                     <button ng-click="save()" ng-disabled="add_phone.phone_number.$invalid" class="btn btn-primary">
@@ -69,11 +70,12 @@
                 <input type="text" name="phone_number" 
                    ng-model="phone.number"  off-ui-mask="{{'+9 (999) 999-9999'}}"
                    ui-validate="{validPhone : 'validatePhone($value)' }"
-                   required
+                   required 
+                   placeholder="x(xxx) xxx-xx-xx"
+				   popover-placement="right" popover="Введите в формате: +страна(код)номер, номер. Допустимы пробелы и '-'"
                    ng-maxlength="maxlength">
-                    <p class="info" >Введите номер в одном из форматов: +страна(код)номер, 8(код)номер, номер. Допустимы пробелы и '-'</p>
-                    <p class="error" ng-show="form_phone.phone_number.$error.validPhone">Неверный номер телефона</p>
-                    <p class="error" ng-show="form_phone.phone_number.$error.required">Укажите номер телефона</p>
+                <p class="error" ng-show="form_phone.phone_number.$error.validPhone">Неверный номер телефона</p>
+                <!--p class="error" ng-show="add_phone.phone_number.$error.required">Укажите номер телефона</p-->
             
                 <div class="row-fluid">
                     <button ng-click="save(phone)" ng-disabled="form_phone.phone_number.$invalid" class="btn btn-primary">

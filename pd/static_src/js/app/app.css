@@ -130,3 +130,8 @@ form .error{
     height:31px;
     z-index:10000;
 }
+
+
+form .error {
+margin: -5px 0 0 60px;
+}

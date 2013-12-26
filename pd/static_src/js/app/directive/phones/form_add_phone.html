@@ -12,9 +12,6 @@
        ng-model="phone.number"
        required
        ng-maxlength="maxlength">
-    =={{add_phone.phone_number.$error.validator}}<br/>
-    =={{add_phone.phone_number.$error.validPhone}}<br/>
-    =={{add_phone.phone_number.$error|json}}<br/>
     <span ng-show="add_phone.phone_number.$error.validator">Неверный номер телефона. Введите номер в формате +страна(код)номер.</span>
 	<!-- span ng-show="add_phone.phone_number.$error.phoneField">Неверный номер телефона. Введите только цифры.</span -->
 	{{add_phone.phone_number.$error|json}}
