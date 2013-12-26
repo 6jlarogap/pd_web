@@ -41,7 +41,7 @@
                    ng-model="phone.number"
                    required
                    placeholder="x(xxx) xxx-xx-xx"
-                   popover-placement="right" popover="Введите в формате: +страна(код)номер, номер. Допустимы пробелы и '-'"
+                   popover-placement="right" popover="Введите в формате: страна(код)номер, номер. Допустимы пробелы и '-'"
                    ng-maxlength="maxlength">
                 <p class="error" ng-show="form_phone.phone_number.$error.validPhone">Неверный номер телефона</p>
                 <!--p class="error" ng-show="add_phone.phone_number.$error.required">Укажите номер телефона</p-->
@@ -72,7 +72,7 @@
                    ui-validate="{validPhone : 'validatePhone($value)' }"
                    required 
                    placeholder="x(xxx) xxx-xx-xx"
-				   popover-placement="right" popover="Введите в формате: +страна(код)номер, номер. Допустимы пробелы и '-'"
+				   popover-placement="right" popover="Введите в формате: страна(код)номер, номер. Допустимы пробелы и '-'"
                    ng-maxlength="maxlength">
                 <p class="error" ng-show="form_phone.phone_number.$error.validPhone">Неверный номер телефона</p>
                 <!--p class="error" ng-show="add_phone.phone_number.$error.required">Укажите номер телефона</p-->
