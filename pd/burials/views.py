@@ -113,7 +113,7 @@ class CemeteryViewSet(viewsets.ModelViewSet):
         """
         name = request.DATA.get('name').upper()
         if self.get_queryset().filter(ugh=self.request.user.profile.org).extra(where=['upper(name)=%s'], params=[name]).exists():
-            data = {"__all__":[u"Кладбище с таким именем уже существует",]}
+            data = {"__all__":[u"Кладбище с таким названием уже существует",]}
             return Response(status=400, data=data)
         return super(CemeteryViewSet, self).create(request, *args, **kwargs)
     
@@ -125,7 +125,7 @@ class CemeteryViewSet(viewsets.ModelViewSet):
             return Response(status=400)
         name = request.DATA.get('name').upper()
         if self.get_queryset().exclude(pk=pk).filter(ugh=self.request.user.profile.org).extra(where=['upper(name)=%s'], params=[name]).exists():
-            data = {"__all__":[u"Кладбище с таким именем уже существует",]}
+            data = {"__all__":[u"Кладбище с таким названием уже существует",]}
             return Response(status=400, data=data)
         return super(CemeteryViewSet, self).update(request, *args, **kwargs)
     
