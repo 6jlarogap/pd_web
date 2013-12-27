@@ -12,7 +12,10 @@
 			</tr>
 			<tr ng-repeat="phone in phones">
 				<td>{{phone.phonetype | objList:PHONETYPE_CHOICES}}</td>
-				<td>+{{phone.number}}</td>
+				<td>
+				    <span ng-show="phone.number.length>7">+</span>
+				    {{phone.number}}
+				</td>
 				<td>
 				<button class="btn btn-success btn-mini"
 				ng-click="open(phone)">
@@ -36,11 +39,11 @@
                 <span class="error" ng-show="add_phone.phonetype.$error.required">Выберите тип телефона</span>
                 <label for="phone_number">Номер:</label>
             
-                +<input type="text" name="phone_number" off-ui-mask="{{'+9 (999) 999-9999'}}"
+                <span ng-show="phone.number.length>7">+</span>
+                <input type="text" name="phone_number" off-ui-mask="{{'+9 (999) 999-9999'}}"
                    ui-validate="{validPhone : 'validatePhone($value)' }"
                    ng-model="phone.number"
                    required
-                   placeholder="x(xxx) xxx-xx-xx"
                    popover-placement="right" popover='Введите номер телефона в международном формате без "+" и без "8". Пример: 74996772043'
                    ng-maxlength="maxlength">
                 <p class="error" ng-show="form_phone.phone_number.$error.validPhone">Неверный номер телефона</p>
@@ -66,12 +69,12 @@
                 <select ng-model="phone.phonetype" name="phonetype" ng-options="value.id as value.name for value in PHONETYPE_CHOICES"></select>
                 <span class="error" ng-show="form_phone.phonetype.$error.required">Выберите тип телефона</span>
                 <label for="phone_number">Номер:</label>
-            
-                +<input type="text" name="phone_number" 
+                
+                <span ng-show="phone.number.length>7">+</span>
+                <input type="text" name="phone_number" 
                    ng-model="phone.number"  off-ui-mask="{{'+9 (999) 999-9999'}}"
                    ui-validate="{validPhone : 'validatePhone($value)' }"
                    required 
-                   placeholder="x(xxx) xxx-xx-xx"
 				   popover-placement="right" popover='Введите номер телефона в международном формате без "+" и без "8". Пример: 74996772043'
                    ng-maxlength="maxlength">
                 <p class="error" ng-show="form_phone.phone_number.$error.validPhone">Неверный номер телефона</p>

@@ -149,6 +149,17 @@ function($scope, $dialog, $http, $resource, $parse, Place) {
 			});
 		}
 	};
+	$scope.form_disabled = function(){
+		var item = $scope.item;
+		if(!item)
+			return;
+		var res = (item.address && (!item.street || !item.city || !item.region || !item.country))
+		|| (item.street && (!item.city || !item.region || !item.country))
+		|| (item.city && (!item.region || !item.country))
+		|| (item.region && !item.country)
+		|| !item.country;
+		return res;
+	}
 
 	// EOF Diallog
 }]);

@@ -514,7 +514,11 @@
 			});
 		}
 	});
-
+	$scope.is_responsible_disabled = function(responsibleEditForm){
+		var valid = responsibleEditForm.$valid && ($scope.responsible.address || 
+				($scope.responsible_phones && $scope.responsible_phones.length));
+		return !valid;
+	};
 	ymapData.markers = [];
 	ymapData.points = [];
     $scope.$broadcast('handleMapChanged');
