@@ -10,9 +10,10 @@ from burials.models import Cemetery, Place, Area, Grave, Burial, AreaPhoto, Grav
 from geo.models import Location
 from geo.serializers import LocationSerializer
 
-from persons.serializers import AlivePersonSerializer, DeadPersonSerializer
+from persons.serializers import AlivePersonSerializer, DeadPersonSerializer, PhoneSerializer
 
 from rest_api.fields import UnclearDateFieldSerializer
+
 
 class SubCemeterySerializer(serializers.ModelSerializer):
     """
@@ -42,11 +43,16 @@ class CemeterySerializer(serializers.ModelSerializer):
     address = Field(source='address_id')
     time_begin = TimeField()
     time_end = TimeField()
+    #phones = serializers.SerializerMethodField('get_phones')
+
     class Meta:
         model = Cemetery
         fields = ('id', 'name', 'work_time', 'area_cnt', 'time_begin', 'time_end', 'places_algo', \
                   'archive_burial_fact_date_required', 'archive_burial_account_number_required', \
                   'address', 'time_slots')
+    
+    def get_phones(self, obj):
+        return PhoneSerializer(obj.phone_set.all()).data
 
 
 class AreaSerializer(serializers.ModelSerializer):
@@ -65,7 +71,7 @@ class PlaceSerializer(serializers.ModelSerializer):
     area = serializers.PrimaryKeyRelatedField()
     responsible = serializers.PrimaryKeyRelatedField(required=False)
     available_count = Field(source='available_count')
-    responsible_txt = serializers.SerializerMethodField('responsible_str') 
+    responsible_txt = serializers.SerializerMethodField('responsible_str')
     class Meta:
         model = Place
         fields = ('id', 'cemetery', 'lat', 'lng', 'area', 'row', 'place', 'responsible', 'responsible_txt', 

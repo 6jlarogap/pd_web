@@ -1,6 +1,7 @@
 ﻿'use strict';
 
-function CemeteryCtrl($scope, $http, $location, $resource) {
+function CemeteryCtrl($rootScope, $scope, $http, $location, $resource, naturalService) {
+
     "use strict";
 	var object_url = '/api/cemetery';
     $scope.cemetery_list = [];
@@ -16,7 +17,7 @@ function CemeteryCtrl($scope, $http, $location, $resource) {
 	var tplButtonEdit = '<a class="btn btn-small" ng-href="/manage/cemetery/{{row.getProperty(\'id\')}}">Открыть</a>';
 	var tplLinkOpen = '<a ng-class="col.colIndex()" ng-href="/manage/cemetery/{{row.getProperty(\'id\')}}">{{row.getProperty(\'name\')}}</a>';
     $scope.gridOptions = { 
-        data: 'cemetery_list',
+        data: '(cemetery_list|filter:search)',
         enableRowSelection:false,
         columnDefs: [
         	{field: 'name', cellTemplate:tplLinkOpen, displayName:'Наименование'},
@@ -32,8 +33,8 @@ function CemeteryCtrl($scope, $http, $location, $resource) {
     $scope.update = function() {
 		Cemetery.query(function(result) {
 			$scope.cemetery_list = result;
+			$scope.cemetery_list.sort(function(a,b){return naturalService.naturalSortField(a,b,'name')});
 		});
-
     };
 
 	// ADD form
@@ -45,11 +46,13 @@ function CemeteryCtrl($scope, $http, $location, $resource) {
     };
   
     $scope.openAddModal = function () {
+		$('body').css('overflow-y','hidden');
         $scope.addModalOpened = true;
     };
 
     $scope.closeAddModal = function () {
         $scope.addModalOpened = false;
+		$('body').css('overflow-y','auto');
     };
 	$scope.addElement = function(){
 		var data = {

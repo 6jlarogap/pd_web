@@ -251,15 +251,15 @@ THUMBNAILS_STORAGE_BASE_PATH = '/thumb/'
 THUMBNAILS_PROXY_BASE_URL = '/thumb/'
 #THUMBNAILS_STORAGE_BACKEND = 'testsuite.storages.TemporaryStorage'
 THUMBNAILS_STORAGE_ROOT = os.path.join(MEDIA_ROOT, 'thumbnails')
-
+THUMBNAILS_ALLOWED_SIZES = ((120,100),)
 
 # REST framework
 REST_FRAMEWORK = {
     'PAGINATE_BY': 50,
     'PAGINATE_BY_PARAM': 'page_size',
     'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_api.authentication.SessionAuthentication',
         'rest_framework.authentication.BasicAuthentication',
-        'rest_framework.authentication.SessionAuthentication',
     ),
     'DEFAULT_RENDERER_CLASSES': (
         'rest_framework.renderers.JSONRenderer',

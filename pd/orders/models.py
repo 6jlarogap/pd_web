@@ -12,13 +12,11 @@ from pd.models import BaseModel, GetLogsMixin
 
 
 class Product(models.Model):
-    PRODUCT_BURIAL = 'burial'
     PRODUCT_CATAFALQUE = 'catafalque'
     PRODUCT_LOADERS = 'loaders'
     PRODUCT_DIGGERS = 'diggers'
     PRODUCT_SIGN = 'SIGN'
     PRODUCT_TYPES = (
-        (PRODUCT_BURIAL, _(u"Захоронение")),
         (PRODUCT_CATAFALQUE, _(u"Автокатафалк")),
         (PRODUCT_LOADERS, _(u"Грузчики")),
         (PRODUCT_DIGGERS, _(u"Рытье могилы")),
@@ -166,7 +164,9 @@ class Order(GetLogsMixin, BaseModel):
         return self.orderitem_set.filter(product__ptype=Product.PRODUCT_LOADERS).exists()
 
     def has_services(self):
-        return self.has_diggers() or self.has_loaders() or self.has_sign()
+        # return self.has_diggers() or self.has_loaders() or self.has_sign() or self.has_catafalque()
+        # Но это все имеющиеся сейчас типы услуг. Быстрее будет:
+        return self.orderitem_set.filter(product__ptype__isnull=False).exists()
 
     def get_documents(self):
         ct = ContentType.objects.get_for_model(self)

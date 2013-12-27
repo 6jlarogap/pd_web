@@ -25,7 +25,7 @@
         <dt>{% trans "Тип" %}:</dt><dd>{{ b.get_burial_container_display|default:"" }}</dd>
         <dt>{% trans "Вид" %}:</dt><dd>{{ b.get_burial_type_display|default:"" }}</dd>
         {% if b.ugh %}
-            <dt>{% trans "УГХ" %}:</dt><dd>{{ b.ugh }}</dd>
+            <dt>{% trans "ОМС" %}:</dt><dd>{{ b.ugh }}</dd>
         {% endif %}
         {% if b.applicant_organization and show_private_data %}
             <dt>{% trans "Заявитель-ЮЛ" %}:</dt><dd>{{ b.applicant_organization|default:"не указано" }}</dd>
@@ -71,13 +71,11 @@
                 <br/>
                 {{ b.deadman.address }}
             {% endif %}
-            {% if b.deadman.birth_date %}
+            {% if b.deadman.birth_date or b.deadman.death_date %}
                 <br/>
-                {{ b.deadman.birth_date }}
-                {% if b.deadman.death_date %}
-                    &mdash;
-                    {{ b.deadman.death_date }}
-                {% endif %}
+                {{ b.deadman.birth_date|default_if_none:"..."}}
+                &mdash;
+                {{ b.deadman.death_date|default_if_none:"..." }}
             {% endif %}
         </dd>
         {% if not b.is_bio %}
@@ -134,9 +132,9 @@
             {% if place %}{% trans "Свободно" %}: {{ place.get_available_count }}<br/>{% endif %}
             {% if user.profile.is_ugh %}
                 {% if b.exhumated and b.exhumationrequest.place %}
-                    <a href="{% url view_place b.exhumationrequest.place.pk %}" class="btn">{% trans "карточка" %}</a>
+                    <a href="/manage/cemetery/{{ b.exhumationrequest.place.cemetery.pk }}/area/{{ b.exhumationrequest.place.area.pk }}/place/{{ b.exhumationrequest.place.pk }}" class="btn">{% trans "карточка" %}</a>
                 {% elif place %}
-                    <a href="{% url view_place place.pk %}" class="btn">{% trans "карточка" %}</a>
+                    <a href="/manage/cemetery/{{ b.cemetery.pk }}/area/{{ b.area.pk }}/place/{{ b.place.pk }}" class="btn">{% trans "карточка" %}</a>
                 {% endif %}
             {% endif %}
             {% if user.profile.is_loru and not b.is_closed and not b.exhumated %} 

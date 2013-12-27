@@ -7,8 +7,12 @@
 </ul>
           
 
-
-<div class="gridStyle full-size-grid" ng-grid="gridOptions"></div>
+<div class="row-fluid">
+	<div class="span12" style="width:auto !important">
+		Найти <input ng-model="search.$"><br/>	
+		<div class="gridStyle full-size-grid" ng-grid="gridOptions"></div>
+	</div>
+</div>
 <hr/>
 
 <ul class="breadcrumb">

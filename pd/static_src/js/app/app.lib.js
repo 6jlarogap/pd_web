@@ -33,10 +33,15 @@ function getCookie(name) {
 
 
 function date2time(val){
+    if(typeof(val)=='string' && val[2]==':'){
+        return val
+    }else if(!val || !val.getHours ){
+        return '00:00';
+    }
 	var h = val.getHours().toString(),
 		m = val.getMinutes().toString();
 	 if(m.length==1){
 	 	m = '0'+m;
 	 }
 	return h+':'+m;
-}
+};

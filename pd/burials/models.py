@@ -10,7 +10,7 @@ from django.db.models.query_utils import Q
 from django.conf import settings
 from pd.models import UnclearDateModelField, BaseModel, Files, GetLogsMixin, validate_gt0
 
-from persons.models import DeadPerson, SafeDeleteMixin, DeathCertificate
+from persons.models import DeadPerson, SafeDeleteMixin, DeathCertificate, PhonesMixin
 from reports.models import Report
 from users.models import Org, Profile, Dover, ProfileLORU
 from logs.models import Log
@@ -19,7 +19,7 @@ from geo.models import GeoPointModel
 from geo.models import GeoPointModel
 
 
-class Cemetery(GetLogsMixin, BaseModel):
+class Cemetery(GetLogsMixin, BaseModel, PhonesMixin):
     PLACE_AREA = 'area'
     PLACE_ROW = 'row'
     PLACE_CEM_YEAR = 'cem_year'
@@ -111,6 +111,7 @@ class AreaPurpose(models.Model):
     def __unicode__(self):
         return self.name
 
+
 class Area(BaseModel):
     AVAILABILITY_OPEN = 'open'
     AVAILABILITY_OLD = 'old_only'
@@ -165,6 +166,7 @@ class Place(SafeDeleteMixin, GeoPointModel):
         verbose_name = _(u"Место")
         verbose_name_plural = _(u"Место")
         unique_together = ('cemetery', 'area', 'row', 'place',)
+        ordering = ['row', 'place']
 
     def __unicode__(self):
         return _(u'Кл. %s, уч. %s, ряд %s, место %s') % (self.cemetery, self.area and self.area.name or '', self.row, self.place)
@@ -180,7 +182,12 @@ class Place(SafeDeleteMixin, GeoPointModel):
         return self.grave_set.count()
 
     def get_available_count(self):
-        return max(0, self.get_graves_count() - self.burial_count())
+        """
+        Deprecated func
+        please use 'self.available_count' which is updated via signals
+        """
+        return self.available_count
+        #return max(0, self.get_graves_count() - self.burial_count())
 
     def set_next_number(self, new_place_for_archive=False):
         if new_place_for_archive:
@@ -986,7 +993,6 @@ def apply_exhumation(instance, created, **kwargs):
 models.signals.post_save.connect(apply_exhumation, sender=ExhumationRequest)
 
 
-
 def calculate_free_burial_count(sender, instance, **kwargs):
     if ('created' in kwargs.keys() and not kwargs['created']) or not instance.place:
         return
@@ -1010,3 +1016,25 @@ def relocate_grave_numbers(sender, instance, **kwargs):
         row.save()
 
 models.signals.post_delete.connect(relocate_grave_numbers, sender=Grave)
+
+
+
+def update_grave_place_coords(sender, instance, **kwargs):
+    #if 'created' in kwargs.keys() and kwargs['created']:
+    # Update grave point coords
+    grave = instance.grave
+    res = GravePhoto.objects.filter(grave=grave, lng__isnull=False, lat__isnull=False).\
+        aggregate(lng=Avg('lng'), lat=Avg('lat')) #, cnt=Count('id')
+    grave.lng = res["lng"]
+    grave.lat = res["lat"]
+    grave.save()
+
+    # Update place point coords
+    place = instance.grave.place
+    res = Grave.objects.filter(place=place, lng__isnull=False, lat__isnull=False).\
+        aggregate(lng=Avg('lng'), lat=Avg('lat')) #, cnt=Count('id')
+    place.lng = res["lng"]
+    place.lat = res["lat"]
+    place.save()
+
+models.signals.post_save.connect(update_grave_place_coords, sender=GravePhoto)

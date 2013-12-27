@@ -52,7 +52,7 @@ function($scope, $dialog, $http, $resource, $parse, Place) {
 		$scope.item.city = data.city;
 		$scope.item.street = data.street;
 		$scope.item.post_index = data.postal_code;
-		$scope.item.house = data.house;
+		//$scope.item.house = data.house;
 		$scope.item.flat = data.flat;
 		$("input.country").val($scope.item.country);
 		$("input.region").val($scope.item.region);
@@ -154,7 +154,7 @@ app.directive('address', [
 function() {
 	return {
 		restrict : 'EA',
-        replace:true,
+        //replace:true,
 		controller : 'AddressController',
 		require : 'address',
 		templateUrl : STATIC_APP_URL + '/directive/address/address.html' + version_str,

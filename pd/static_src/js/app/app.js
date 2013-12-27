@@ -1,10 +1,10 @@
-﻿//'use strict';
-var APP_VERSION = '0.1.0-11',
+// 'use strict';
+var APP_VERSION = '0.1.0-16',
 	version_str = '?v='+APP_VERSION,
 	test, qqq;
 
 var app = angular.module('angularPD', ['ngGrid', 'ngCookies', 'ngResource', 'ui.bootstrap', 
-	'ui.bootstrap.dialog', 'googleObjects', 'blueimp.fileupload', 'ymaps'], //'pd.address',  
+	'ui.bootstrap.dialog', 'googleObjects', 'blueimp.fileupload', 'ui.mask', 'ymaps', 'naturalSort'], //'pd.address',  
 function($routeProvider, $locationProvider, $dialogProvider) {
 	$locationProvider.html5Mode(true);
     $dialogProvider.options({
@@ -27,10 +27,19 @@ function($routeProvider, $locationProvider, $dialogProvider) {
 	    }).when('/manage/cemetery/:cemetery_id/area/:area_id/place/:place_id', {
 	        controller: 'PlaceViewCtrl',
 	        templateUrl: STATIC_TPL_URL+'/manage/place_view.html'+version_str
-	    }).when('/manage/404', {
-	        controller: 'PlaceViewCtrl',
+
+	    }).when('/manage/500', {
+	        controller: 'SupportViewCtrl',
+	        templateUrl: STATIC_TPL_URL+'/page500.html'+version_str
+	    }).when('/manage/500?title=:title', {
+	        controller: 'SupportViewCtrl',
+	        templateUrl: STATIC_TPL_URL+'/page500.html'+version_str
+	    }).when('/manage/404?title=:title', {
+	        controller: 'SupportViewCtrl',
 	        templateUrl: STATIC_TPL_URL+'/page404.html'+version_str
 	    }).otherwise({
+	    	controller: 'SupportViewCtrl',
 	        templateUrl: STATIC_TPL_URL+'/page404.html'+version_str
 	    });
-});
+})
+;

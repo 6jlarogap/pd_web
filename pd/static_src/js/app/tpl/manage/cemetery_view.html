@@ -1,6 +1,8 @@
 <alert ng-repeat="alert in alerts" type="alert.type" close="closeAlert($index)">{{alert.msg}}</alert>
 
 <ul class="breadcrumb">
+    <li><a href="/manage/cemetery/">Список кладбищ</a></li>
+    <li><span class="divider">|</span></li>
   	<li><h3 class="brand" href="#">{{cemetery.name}}</h3></li>
     <li><span class="divider">|</span></li>
     <li><a href="/manage/cemetery/">Назад к списку</a></li>
@@ -22,7 +24,48 @@
 		</dl>
 		<p ng-show="cemetery.archive_burial_fact_date_required">Дата архивного захоронения обязательна</p>
 		<p ng-show="cemetery.archive_burial_account_number_required">Номер архивного захоронения обязателен</p>
-		<address address_class="address_class" address="cemetery.address" save_action="saveEditForm"></address>
+		<!-- address address_class="address_class" address="cemetery.address" save_action="saveEditForm"></address -->
+		
+        <div class="row-fluid">
+            <div class="span6">
+                <div class="full_address">
+                    <dl class="dl-horizontal">
+                      <dt>Страна</dt>
+                      <dd>{{address.country.name || '-'}}</dd>
+                    
+                      <dt>Регион</dt>
+                      <dd>{{address.region.name || '-'}}</dd>
+                    
+                      <dt>Город</dt>
+                      <dd>{{address.city.name || '-'}}</dd>
+                    
+                      <dt>Улица</dt>
+                      <dd>{{address.street.name || '-'}}</dd>
+                    
+                      <dt>Почтовый индекс</dt>
+                      <dd>{{address.post_index || '-'}}</dd>
+                    </dl>
+                </div>
+            </div>
+            <div class="span6">
+                <dl class="dl-horizontal">
+                  <dt>Дом</dt>
+                  <dd>{{address.house || '-'}}</dd>
+                
+                  <dt>Корпус</dt>
+                  <dd>{{address.block || '-'}}</dd>
+                
+                  <dt>Строение</dt>
+                  <dd>{{address.building || '-'}}</dd>
+                
+                  <dt>Квартира</dt>
+                  <dd>{{address.flat || '-'}}</dd>
+
+                </dl>
+            </div>
+        </div>
+                    
+
 	</div>
     <yandex-map id="yandex-map" class="span5"></yandex-map>
 
@@ -30,7 +73,12 @@
 </div>
 
 <h3>Участки</h3>
-<div class="gridStyle full-size-grid" ng-grid="gridOptions"></div>
+<div class="row-fluid">
+	<div class="span12" style="width:auto !important">
+        Найти <input ng-model="search.$"><br/> 
+		<div class="gridStyle full-size-grid" ng-grid="gridOptions"></div>
+	</div>
+</div>
 
 <hr />
 <ul class="breadcrumb">
@@ -55,7 +103,7 @@
     </div>
     <div class="modal-footer">
     	<button class="btn btn-primary" ng-disabled="cemeteryEditForm.$invalid" ng-click="saveEditForm()">Сохранить</button>
-        <button class="btn cancel" ng-click="closeEditForm()">Закрыть</button>
+    	<button class="btn cancel" ng-click="closeEditForm()">Отменить</button>
     </div>
 </div>
 <!-- EOF POPUP form -->

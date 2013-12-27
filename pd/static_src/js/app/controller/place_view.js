@@ -1,5 +1,5 @@
 ﻿app.controller('PlaceViewCtrl', function PlaceViewCtrl($scope, $routeParams, $location, 
-	Place, Cemetery, Grave, GravePhoto, Burial, Area, AlivePerson, Log, ymapData, $dialog) {
+	Place, Cemetery, Grave, GravePhoto, Burial, Area, AlivePerson, Phone, Log, ymapData, $dialog) {
 	"use strict";
 
 	//Constants
@@ -7,29 +7,15 @@
 	$scope.BURIAL_CONTAINERS = BURIAL_CONTAINERS;
 	$scope.BURIAL_TYPES = BURIAL_TYPES;
 	$scope.STATUS_CHOICES = STATUS_CHOICES;
-
-	$scope.logGridOptions = {
-		data : 'place_log',
-		enableRowSelection : false,
-		columnDefs : [
-			{
-				field : 'dt',
-				displayName : 'Дата',
-				width:'130'
-			}, {
-				field : 'user',
-				displayName : 'Пользователь',
-				width:'250'
-			}, {
-				field : 'msg',
-				displayName : 'Действие'
-			}
-		]
-	};
-
+    $scope.grave_page = 1;
+    $scope.log_page = 1;
+    $scope.loading = false;
+  
+    var item_params;
 	//setup
 	$scope.updateMap = function() {
-		ymapData.markers = [{
+		if($scope.item){
+		  ymapData.markers = [{
 				point: [$scope.item.lat, $scope.item.lng],
 				caption: 'Место: "{0}"'.format($scope.item.place),
 				content: "Кл. {0}, уч. {1}, ряд {2}, место {3}".format(
@@ -41,12 +27,16 @@
 				obj_type : 'place',
 				id: $scope.item.id
 			}];
-		$scope.placeCoordinates = [{
-			point : [$scope.item.lat, $scope.item.lng],
-			title : $scope.item.name,
-			obj_type : 'place',
-			id: $scope.item.id
-		}];
+    		$scope.placeCoordinates = [{
+    			point : [$scope.item.lat, $scope.item.lng],
+    			title : $scope.item.name,
+    			obj_type : 'place',
+    			id: $scope.item.id
+    		}];
+		}else{
+		  ymapData.markers = [];
+		}
+		
 		ymapData.points = [];
 		angular.forEach($scope.graves, function(grave, key) {
 			if (grave.lat && grave.lng) {
@@ -63,73 +53,80 @@
 	};
 
 	$scope.update = function() {
-		Log.place_log({id:$routeParams.place_id},function(result) {
-			$scope.place_log = result;
-		});
-		var item_params = {
+	    $scope.loading = true;
+		item_params = {
 			placeID : $routeParams.place_id,
 			cemetery_id : $routeParams.cemetery_id,
-			area_id : $routeParams.area_id
+			area_id : $routeParams.area_id,
+			grave_page:$scope.grave_page,
+			log_page:$scope.log_page
 		};
 		$scope.address_class = 'Place';
 		$scope.address_class_params = item_params;
-		
-		Place.get(item_params, function(result) {
-			$scope.item = result;
-			$scope.item.name = "Кл.?, уч. {1}, ряд {2}, место {3}".format($scope.item.area.name, $scope.item.row || DEFAULT_MESSAGES.no_data, $scope.item.place)
-			if (result.responsible) {
-				AlivePerson.get({
-					personID : result.responsible
-				}, function(result) {
-					$scope.responsible = result;
-				});
-			} else {
+
+
+		Place.getForm(item_params, function(result) {
+			
+			$scope.cemetery = new Cemetery(result.cemetery);
+			$scope.area = new Area(result.area);
+			$scope.item = new Place(result.place);
+			
+			$scope.place_log = [];
+			angular.forEach(result.log, function(item) {
+                  $scope.place_log.push(new Log(item));
+            });
+			
+			$scope.log_page = result.log_page;
+			$scope.log_pages = result.log_pages; 
+			
+			$scope.responsible_phones = [];
+			angular.forEach(result.responsible_phones, function(item) {
+                  $scope.responsible_phones.push(new Phone(item));
+            });
+
+			//$scope.burials = new Burial(result.burials);
+			//$scope.graves = new Grave(result.graves);
+			
+			if(result.responsible){
+				$scope.responsible = new AlivePerson(result.responsible);
+			}else{
 				$scope.responsible = new AlivePerson({
 					is_new : true
 				});
 			}
 
-			Area.get({
-				areaID : $routeParams.area_id,
-				cemetery_id : $routeParams.cemetery_id
-			}, function(result) {
-				$scope.area = result;
-
-				Cemetery.get({
-					cemeteryID : $routeParams.cemetery_id
-				}, function(result) {
-					$scope.cemetery = result;
-					$scope.item.name = "Кл. {0}, уч. {1}, ряд {2}, место {3}".format($scope.cemetery.name, $scope.area.name, $scope.item.row || DEFAULT_MESSAGES.no_data, $scope.item.place)
-					$scope.updateGraves();
-				});
-
-			});
-
-			Area.query({
-				cemetery_id : $routeParams.cemetery_id,
-				area_id : $routeParams.area_id
-			}, function(result) {
-				$scope.area_list = result;
-			});
-
-			Cemetery.query({}, function(result) {
-				$scope.cemetery_list = result;
-			});
-
+			$scope.item.name = "Кл. {0}, уч. {1}, ряд {2}, место {3}".format($scope.cemetery.name, $scope.area.name, $scope.item.row || DEFAULT_MESSAGES.no_data, $scope.item.place)
+			$scope.loading = false;
+			$scope.updateGraves();
+		},function(data){
+		    $scope.loading = false;
+			if(data.status==404){
+				window.location = '/manage/404?title=Место не найдено';
+			}
 		});
+		
 	};
 
 	$scope.updateGraves = function() {
-		Grave.query({
-			place_id : $routeParams.place_id
-		}, function(graves) {
-			$scope.max_grave_number = graves.length;
-			$scope.graves = graves;
-
+	   $scope.loading = true;
+	   
+       item_params.grave_page = $scope.grave_page;
+	   
+	   Place.getGraves(item_params, function(graves) {
+			//$scope.totalItems = graves.pages || 0;
+			$scope.grave_page = graves.page || 1;
+			$scope.grave_pages = graves.pages;
 			
-			$scope.updateMap(); 
-		    
-			angular.forEach($scope.graves, function(grave, key) {
+
+			//$scope.pageSize = 2;
+                         
+			delete $scope.graves;
+			$scope.graves = [];
+		    var grave;
+			angular.forEach(graves.graves, function(row, key) {
+				grave = new Grave(row);
+				$scope.graves.push(grave);
+				
 				GravePhoto.query({
 					grave_id : grave.id
 				}, function(photos) {
@@ -138,7 +135,20 @@
 						grave.firstPhoto = _.first(photos).bfile;
 					}
 				});
+
 			});
+			delete $scope.burials;
+            $scope.burials = [];
+            var burial;
+            angular.forEach(graves.burials, function(row, key) {
+                burial = new Burial(row);
+                $scope.burials.push(burial);
+            });
+
+			
+			$scope.updateMap(); 
+			$scope.loading = false;
+            return;
 		    
 			// New element with default data
 			$scope.newGrave = new Grave({
@@ -147,15 +157,22 @@
 				//lat: lat || 0,
 				//lng: lng || 0
 			});
-		});
-		Burial.query({
+		},function(data){
+            $scope.loading = false;
+        });
+		/*Burial.query({
 			cemetery_id : $routeParams.cemetery_id,
 			area_id : $routeParams.area_id,
 			place_id : $routeParams.place_id
 		}, function(result) {
 			$scope.burials = result;
-		});
+		});*/
 	};
+
+
+    $scope.$watch("log_page", $scope.update);
+    $scope.$watch("grave_page", $scope.updateGraves);    
+
 
 	//alerts
 	$scope.alerts = [];
@@ -173,6 +190,7 @@
 
 	$scope.openEditForm = function(form, data) {
 		$scope[form] = true;
+		$('body').css('overflow-y','hidden');
 		switch (form) {
 			case 'isBurialEditorOpen':
 				if (data) {
@@ -219,6 +237,7 @@
 
 	$scope.closeEditForm = function(form) {
 		$scope[form] = false;
+		$('body').css('overflow-y','auto');
 	};
 
 	//Place
@@ -230,6 +249,7 @@
 				cemetery_id : $routeParams.cemetery_id,
 				area_id : $routeParams.area_id
 			}, function() {
+				$scope.update();
 				$scope.updateMap();
 				$scope.closeEditForm('isPlaceEditorOpen');
 				noty({text: 'Изменения сохранены', type:'success', layout:'topRight'});
@@ -243,8 +263,19 @@
 	//Responsible
 	$scope.isResponsibleEditorOpen = false;
 	$scope.saveResponsibleEditForm = function(form) {
-		if (form.$valid) {
-			if ($scope.responsible.is_new) {
+		if (form.$valid || true) { //TODO: check this
+			$scope.item.obj_responsible = $scope.responsible;
+			$scope.item.obj_responsible_phones = $scope.responsible_phones; 
+			
+			$scope.item.$update({
+				cemetery_id : $routeParams.cemetery_id,
+				area_id : $routeParams.area_id
+			}, function() {
+				noty({text: 'Изменения сохранены', type:'success', layout:'topRight'});
+				$scope.update();
+			});
+
+			/*if ($scope.responsible.is_new) {
 				$scope.responsible.$save(function(data) {
 					$scope.item.responsible = data.id;
 					$scope.item.$update({placeID : $routeParams.place_id,
@@ -260,7 +291,9 @@
 					$scope.update();
 					noty({text: 'Изменения сохранены', type:'success', layout:'topRight'});
 				});
-			}
+			}*/
+			
+			
 			$scope.closeEditForm('isResponsibleEditorOpen');
 		}
 	};

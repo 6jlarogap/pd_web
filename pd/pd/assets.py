@@ -16,19 +16,24 @@ js_app = Bundle(
         "js/app/resources/area_photo.js",
         "js/app/resources/grave_photo.js",
         "js/app/resources/person.js",
+        "js/app/resources/phone.js",
         "js/app/resources/log.js",
     
         "js/app/directive/address/address.js",
+        "js/app/directive/phones/phones.js",
         "js/app/directive/google.js",
+        
+        "js/app/filter/natural_sort.js",
     
-        "angular-ui-bootstrap/src/dialog/dialog.js",
+        #"angular-ui-bootstrap/src/dialog/dialog.js",
     
         "js/app/directive/angular-ymaps.js",
-
+        
         "js/app/controller/cemetery.js",
         "js/app/controller/cemetery_view.js",
         "js/app/controller/area_view.js",
         "js/app/controller/place_view.js",
+        "js/app/controller/support_view.js",
 
         "js/app/directive/file_upload.js",
         filters='rjsmin', output='pd.js')
@@ -50,6 +55,8 @@ js_angular = Bundle(
         "angular-bootstrap/ui-bootstrap.min.js",
         "angular-bootstrap/ui-bootstrap-tpls.min.js",
 
+        "angular-ui-utils/modules/mask/mask.js",
+
         "select2/select2.min.js",
         "select2/select2_locale_ru.js",
         #"ng-grid/ng-grid-2.0.7.debug.js",
@@ -63,6 +70,7 @@ js_angular = Bundle(
         #"ng-grid/ng-grid/src/i18n/ru.js",
 
         "js/angular3d/modules/jquery.fileupload-angular.js",
+
         filters='rjsmin', output='pd-angular.js')
 
 
