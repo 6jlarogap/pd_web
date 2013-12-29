@@ -13,7 +13,7 @@
 	$scope.grave_page = 1;
     $scope.log_page = 1;
     $scope.loading = false;
-    
+    $scope.edit_resp = false;
     
     var item_params;
 	//setup

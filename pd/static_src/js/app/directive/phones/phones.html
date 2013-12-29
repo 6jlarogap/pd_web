@@ -17,10 +17,13 @@
 				    {{phone.number}}
 				</td>
 				<td>
-				<button class="btn btn-success btn-mini"
-				ng-click="open(phone)">
+				<button class="btn btn-success btn-mini" ng-click="open(phone)">
 					<span class="icon-edit"></span>
-				</button></td>
+				</button>
+                <button class="btn btn-mini" ng-click="destroy($index)">
+                    <span class="icon-remove"></span>
+                </button>
+				</td>
 			</tr>
 		</table>
 		<p ng-show="responsible.phones"><b>Старые записи телефонов:</b>
@@ -53,6 +56,9 @@
                     <button ng-click="save()" ng-disabled="add_phone.phone_number.$invalid" class="btn btn-primary">
                         Сохранить
                     </button>
+                    <button ng-click="close()" class="btn">
+                        Отмена
+                    </button>
                 </div>
             </form>
 
@@ -84,8 +90,8 @@
                     <button ng-click="save(phone)" ng-disabled="form_phone.phone_number.$invalid" class="btn btn-primary">
                         Сохранить
                     </button>
-                    <button ng-click="[destroy(phone), close()]" class="btn btn-danger">
-                        Удалить
+                    <button ng-click="close()" class="btn">
+                        Отмена
                     </button>
                 </div>
             </form>	</div>

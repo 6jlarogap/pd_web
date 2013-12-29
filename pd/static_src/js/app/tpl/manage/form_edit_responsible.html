@@ -6,8 +6,33 @@
     <tabset>
     <tab heading="Личные данные">
 		<form name="responsibleEditForm" >
-	        <dl class="dl-horizontal">
-	            <dt>
+	        <dl class="dl-horizontal" ng-hide="edit_resp">
+                <dt>
+                    <label for="id_responsible_set-last_name">Фамилия:</label>
+                </dt>
+                <dd>
+                    {{responsible.last_name}}
+                    <span class="error" ng-show="!responsible.last_name.length">Не указана</span>
+                </dd>
+                <dt>
+                    <label for="id_responsible_set-first_name">Имя:</label>
+                </dt>
+                <dd>
+                    {{responsible.first_name}}
+                </dd>
+                <dt>
+                    <label for="id_responsible_set-middle_name">Отчество:</label>
+                </dt>
+                <dd>
+                    {{responsible.middle_name}}
+                </dd>
+                <dt></dt>
+                <dd>
+                    <button class="btn" ng-click="edit_resp=true">Редактировать</button>
+                </dd>
+            </dl>
+	        <dl class="dl-horizontal" ng-show="edit_resp">
+                <dt>
 	                <label for="id_responsible_set-last_name">Фамилия:</label>
 	            </dt>
 	            <dd>
@@ -29,8 +54,14 @@
 	                <input name="placeRow" id="id_responsible_set-middle_name" type="text" ng-model="responsible.middle_name"
 	                       maxlength="255" />
 	            </dd>
+	            <dt></dt>
+                <dd>
+                    <button class="btn" ng-click="edit_resp=false" ng-disabled="responsibleEditForm.$invalid">Сохранить</button>
+                </dd>
 	        </dl>
+	        
 		    <div class="modal-footer">
+                <span ng-show="is_responsible_disabled(responsibleEditForm)">Необходимо указать адрес или телефон</span>
 		        <button class="btn btn-primary" ng-disabled="is_responsible_disabled(responsibleEditForm)" ng-click="saveResponsibleEditForm(responsibleEditForm)">
 		            Сохранить
 		        </button>
@@ -43,7 +74,7 @@
     		<address address_class="address_class" address="responsible.address" 
 	    		save_action="saveEditForm"></address>
 		    <div class="modal-footer">
-    			<span ng-hide="responsible.last_name">Заполните фамилию и адрес либо телефон</span>
+    			<span ng-hide="responsible.last_name">Необходимо указать фамилию ответственного</span>
 		        <button class="btn btn-primary" ng-disabled="is_responsible_disabled(responsibleEditForm)" ng-click="saveResponsibleEditForm(responsibleEditForm)">
 		            Сохранить
 		        </button>
@@ -56,7 +87,7 @@
 		<phones phones="responsible_phones"></phones>
 		<form name="responsibleEditForm2" >
 		    <div class="modal-footer">
-		    	<span ng-hide="responsible.last_name">Заполните фамилию и адрес либо телефон</span>
+		    	<span ng-hide="responsible.last_name">Необходимо указать фамилию ответственного</span>
 		        <button class="btn btn-primary" ng-disabled="is_responsible_disabled(responsibleEditForm)" ng-click="saveResponsibleEditForm(responsibleEditForm)">
 		            Сохранить
 		        </button>
