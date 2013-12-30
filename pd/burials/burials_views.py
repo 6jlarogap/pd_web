@@ -1073,7 +1073,8 @@ class CancelExhumationView(ArchiveMixin, DeleteView):
         write_log(self.request, self.burial, _(u'Эксгумация отменена'))
         messages.success(self.request, _(u"Эксгумация отменена"))
         if self.place and self.place.pk:
-            return reverse('view_place', args=[self.place.pk])
+            return '/manage/cemetery/%s/area/%s/place/%s' % \
+                   (self.place.cemetery.pk, self.place.area.pk, self.place.pk, )
         else:
             return reverse('dashboard')
 
