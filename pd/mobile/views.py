@@ -32,6 +32,7 @@ from django.core.files.base import ContentFile
 from django.http import Http404
 from django.db.models import Q
 from datetime import datetime
+from decimal import Decimal
 
 
 class MobileGetCemetery(UGHRequiredMixin, View):
@@ -87,9 +88,9 @@ class MobileGetPlace(UGHRequiredMixin, View):
         if argSyncDateUnix :
             queryPlaceStatus = queryPlaceStatus + ' and extract (epoch from p.dt_modified) >= %s'% argSyncDateUnix
         listPlaceStatus = PlaceStatus.objects.raw(queryPlaceStatus) 
-        
+                
         all_objects = list(listPlace) + list(listPlaceStatus)
-        data = serializers.serialize("json", all_objects, fields=('cemetery','area','row','place','oldplace','status'))     
+        data = serializers.serialize("json", all_objects, fields=('cemetery','area','row','place','oldplace', 'place_width', 'place_length','status'))     
         return HttpResponse(data, mimetype='application/json')
         
 mobile_get_place = MobileGetPlace.as_view()
@@ -248,13 +249,19 @@ def mobile_upload_place(request):
         oldPlaceName = request.POST['oldPlaceName']
         areaId = int(request.POST['areaId'])
         placeId = int(request.POST['placeId'])
+        placeLength = None
+        placeWidth = None
+        if request.POST['placeLength'] :
+            placeLength = Decimal(request.POST['placeLength'])
+        if request.POST['placeWidth'] :
+            placeWidth = request.POST['placeWidth']
         psFoundUnowned = int(request.POST['psFoundUnowned'])
         user = request.user
         listPlaceForResponse = []
         try:
             area = Area.objects.get(pk = areaId)
             prevPlace = Place.objects.get(pk = placeId)
-            if (prevPlace.place or "") != placeName or (prevPlace.oldplace or "") != oldPlaceName or (prevPlace.row or "") != rowName or prevPlace.area != area:
+            if (prevPlace.place or "") != placeName or (prevPlace.oldplace or "") != oldPlaceName or (prevPlace.row or "") != rowName or prevPlace.area != area or prevPlace.place_length != placeLength or prevPlace.place_width != placeWidth:
                 if (prevPlace.oldplace or "") != oldPlaceName :
                     write_log(request, prevPlace, _(u'Переименование места (place=%s, oldplace=%s) в (place=%s, oldplace=%s)' % (prevPlace.place, prevPlace.oldplace, placeName, oldPlaceName)))
                     prevPlace.oldplace = oldPlaceName
@@ -262,6 +269,8 @@ def mobile_upload_place(request):
                 prevPlace.row = rowName
                 prevPlace.area = area
                 prevPlace.cemetery = area.cemetery
+                prevPlace.place_length = placeLength
+                prevPlace.place_width = placeWidth
                 prevPlace.save()                
             place = prevPlace    
         except Area.DoesNotExist:
@@ -286,10 +295,12 @@ def mobile_upload_place(request):
                     prevPlace.oldplace = oldPlaceName
                 prevPlace.place = placeName
                 prevPlace.row = rowName
+                prevPlace.place_length = placeLength
+                prevPlace.place_width = placeWidth
                 prevPlace.save()
                 place = prevPlace                
             else :
-                place = Place(cemetery = area.cemetery, area = area, place = placeName, row = rowName, oldplace = oldPlaceName)  
+                place = Place(cemetery = area.cemetery, area = area, place = placeName, row = rowName, oldplace = oldPlaceName, place_length = placeLength, place_width = placeWidth)  
                 place.save()
             listPlaceForResponse.append(place)
                
@@ -311,7 +322,7 @@ def mobile_upload_place(request):
                 curPlaceStatus = PlaceStatus.objects.create(place = place, status = PlaceStatus.PS_ACTUAL, creator = request.user)
         
         listPlaceForResponse.append(curPlaceStatus)
-        data = serializers.serialize("json", listPlaceForResponse, fields=('cemetery','area','row','place','oldplace','status'))
+        data = serializers.serialize("json", listPlaceForResponse, fields=('cemetery','area','row','place','oldplace','place_length','place_width','status'))
         return HttpResponse(data, mimetype='application/json')
     return render_to_response('mobile_upload_place.html', {'message': _(u"Загрузите название места:")})
     
