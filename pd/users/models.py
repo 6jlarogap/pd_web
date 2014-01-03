@@ -131,6 +131,8 @@ class Org(GetLogsMixin, BaseModel):
     plan_date_days_before = models.PositiveIntegerField(_(u"Кол-во дней для ввода плановой даты захоронения в прошлом"), default=0)
     max_graves_count = models.PositiveIntegerField(_(u"Максимальное число могил в месте"), default=5,
                                 validators=[validate_gt0])
+    worktime = models.CharField(_(u"Время работы"), max_length=255, default='', blank=True)
+    site = models.URLField(_(u"Сайт"), default='', blank=True)
 
     class Meta:
         verbose_name = _(u'Организация')

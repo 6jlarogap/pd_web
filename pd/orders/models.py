@@ -11,6 +11,15 @@ from users.models import Org
 from pd.models import BaseModel, GetLogsMixin
 
 
+class Currency(models.Model):
+    name = models.CharField(_(u"Название"), max_length=255)
+    code = models.CharField(_(u"Код"), max_length=10)
+    icon = models.FileField(u"Иконка", upload_to='icons', blank=True, null=True)
+
+class ProductCategory(models.Model):
+    title = models.CharField(_(u"Название"), max_length=255)
+    icon = models.FileField(u"Иконка", upload_to='icons', blank=True, null=True)
+
 class Product(models.Model):
     PRODUCT_CATAFALQUE = 'catafalque'
     PRODUCT_LOADERS = 'loaders'
@@ -25,10 +34,14 @@ class Product(models.Model):
 
     loru = models.ForeignKey(Org, limit_choices_to={'type': Org.PROFILE_LORU}, null=True, verbose_name=_(u"ЛОРУ"))
     name = models.CharField(_(u"Название"), max_length=255)
+    description = models.TextField(_(u"Описание"), blank=True, default='')
     measure = models.CharField(_(u"Ед. изм."), max_length=255, default=_(u"шт"))
     price = models.DecimalField(_(u"Цена"), max_digits=20, decimal_places=2)
     ptype = models.CharField(_(u"Тип"), max_length=255, choices=PRODUCT_TYPES, null=True, blank=True)
     default = models.BooleanField(_(u"По умолчанию"), default=False, blank=True)
+    photo = models.FileField(u"Фото", upload_to='product-photo', blank=True, null=True)
+    currency = models.ForeignKey(Currency, verbose_name=_(u"Валюта"))
+    sku = models.CharField(_(u"Артикул"), max_length=255, blank=True, default='')
 
     class Meta:
         verbose_name = _(u"Товар")

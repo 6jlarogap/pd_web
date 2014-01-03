@@ -22,11 +22,15 @@ from burials.forms import AddOrgForm, AddAgentForm, AddDoverForm, AddDocTypeForm
 from burials.models import Burial
 from orders.forms import ProductForm, OrderForm, OrderItemFormset, CoffinForm, CatafalqueForm, \
                          AddInfoForm, OrderSearchForm, OrderBurialForm
-from orders.models import Product, Order, OrderItem
+from orders.models import Product, Order, OrderItem, ProductCategory
 from pd.forms import CommentForm
 from pd.views import PaginateListView, RequestToFormMixin
 from reports.models import make_report
 
+from rest_framework import viewsets
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from serializers import ProductCategorySerializer
 
 class LORURequiredMixin:
     def is_loru(self, request):
@@ -572,3 +576,14 @@ class OrderBurialView(LORURequiredMixin, RequestToFormMixin, UpdateView):
         return redirect(reverse('create_burial') + '?order=%s' % self.object.pk)
 
 order_burial = OrderBurialView.as_view()
+
+class ProductCategoryViewSet(viewsets.ModelViewSet):
+    model = ProductCategory
+    serializer_class = ProductCategorySerializer
+    permission_classes = (IsAuthenticated,)
+
+    #def get(self, request, format=None):
+        #snippets = ProductCategory.objects.all()
+        #serializer = ProductCategorySerializer(snippets, many=True, context={'request': request})
+        #print serializer.data
+        #return Response(serializer.data)
