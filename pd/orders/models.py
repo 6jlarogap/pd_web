@@ -12,7 +12,7 @@ from pd.models import BaseModel, GetLogsMixin
 
 
 class ProductCategory(models.Model):
-    title = models.CharField(_(u"Название"), max_length=255)
+    name = models.CharField(_(u"Название"), max_length=255)
     icon = models.FileField(u"Иконка", upload_to='icons', blank=True, null=True)
 
 class Product(models.Model):

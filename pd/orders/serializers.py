@@ -11,7 +11,7 @@ class ProductCategorySerializer(serializers.HyperlinkedModelSerializer):
     
     class Meta:
         model = ProductCategory
-        fields = ('id', 'title', 'icon', )
+        fields = ('id', 'name', 'icon', )
 
 
 #class DeadPersonSerializer(serializers.HyperlinkedModelSerializer):

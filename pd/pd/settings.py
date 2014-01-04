@@ -131,6 +131,7 @@ INSTALLED_APPS = (
 
     'geo',
     'burials',
+    'billing',
     'persons',
     'users',
     'orders',
