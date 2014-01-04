@@ -8,6 +8,15 @@ from pd.models import BaseModel, Files, GetLogsMixin, validate_gt0
 from pd.utils import DigitsValidator, LengthValidator, NotEmptyValidator
 
 
+class CustomerProfile(models.Model):
+    user = models.OneToOneField('auth.User', null=True)
+    user_last_name = models.CharField(_(u"Фамилия"), max_length=255, null=True, blank=True)
+    user_first_name = models.CharField(_(u"Имя"), max_length=255, null=True, blank=True)
+    user_middle_name = models.CharField(_(u"Отчество"), max_length=255, null=True, blank=True)
+
+class CustomerProfilePhoto(Files):
+    customerprofile = models.OneToOneField(CustomerProfile)
+
 class Profile(models.Model):
     user = models.OneToOneField('auth.User', null=True)
     user_first_name = models.CharField(_(u"Имя"), max_length=255, null=True, blank=True)

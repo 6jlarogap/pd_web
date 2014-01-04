@@ -223,6 +223,9 @@ def files_upload_to(instance, filename):
     elif isinstance(instance, get_model('users', 'RegisterProfileScan')):
         return os.path.join('register-profile',
                 today_pk_dir % instance.registerprofile.pk, fname)
+    elif isinstance(instance, get_model('users', 'CustomerProfilePhoto')):
+        return os.path.join('customer-profile',
+                today_pk_dir % instance.customerprofile.user.pk, fname)
     else:
         return os.path.join('files', fname)
 
