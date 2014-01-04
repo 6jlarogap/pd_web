@@ -11,11 +11,6 @@ from users.models import Org
 from pd.models import BaseModel, GetLogsMixin
 
 
-class Currency(models.Model):
-    name = models.CharField(_(u"Название"), max_length=255)
-    code = models.CharField(_(u"Код"), max_length=10)
-    icon = models.FileField(u"Иконка", upload_to='icons', blank=True, null=True)
-
 class ProductCategory(models.Model):
     title = models.CharField(_(u"Название"), max_length=255)
     icon = models.FileField(u"Иконка", upload_to='icons', blank=True, null=True)
@@ -40,7 +35,7 @@ class Product(models.Model):
     ptype = models.CharField(_(u"Тип"), max_length=255, choices=PRODUCT_TYPES, null=True, blank=True)
     default = models.BooleanField(_(u"По умолчанию"), default=False, blank=True)
     photo = models.FileField(u"Фото", upload_to='product-photo', blank=True, null=True)
-    currency = models.ForeignKey(Currency, verbose_name=_(u"Валюта"))
+    currency = models.ForeignKey('billing.Currency', verbose_name=_(u"Валюта"))
     sku = models.CharField(_(u"Артикул"), max_length=255, blank=True, default='')
 
     class Meta:
