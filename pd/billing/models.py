@@ -8,3 +8,6 @@ class Currency(models.Model):
     name = models.CharField(_(u"Название"), max_length=255)
     code = models.CharField(_(u"Код"), max_length=10)
     icon = models.FileField(u"Иконка", upload_to='icons', blank=True, null=True)
+
+    def __unicode__(self):
+        return self.name

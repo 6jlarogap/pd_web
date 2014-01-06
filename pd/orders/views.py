@@ -583,33 +583,37 @@ class ProductCategoryViewSet(viewsets.ModelViewSet):
     serializer_class = ProductCategorySerializer
     permission_classes = (IsAuthenticated,)
 
-class CatalogFiltersViewSet(viewsets.ViewSet):
+class CustomerDataMixin:
+    def get_customer_data(self, request):
+        username = request.user.username
+        places = []
+        lorus = set()
+        is_customer = True
+        try:
+            login_phone = decimal.Decimal(username)
+        except decimal.InvalidOperation:
+            is_customer = False
+        else:
+            lorus = set()
+            for p in Place.objects.filter(responsible__login_phone=login_phone):
+                places.append(p)
+                lorus.update(p.cemetery.ugh.get_loru_list())
+        return is_customer, places, lorus
+        
+
+class CatalogFiltersViewSet(CustomerDataMixin, viewsets.ViewSet):
     queryset = Place.objects.none()
     permission_classes = (IsAuthenticated,)
     
     def list(self, request):
-        username = self.request.user.username
-        places = []
+        is_customer, places, lorus = self.get_customer_data(request)
+        places = [{'id': p.pk, 'place': p.place, } for p in places]
+        suppliers = [{'id': l.pk, 'name': l.name, } for l in lorus]
         data = {
-            'supplier': [],
-            'place': [],
+            'supplier': suppliers,
+            'place': places,
         }
-        status = 200
-        try:
-            login_phone = decimal.Decimal(username)
-        except decimal.InvalidOperation:
-            status = 400
-        else:
-            lorus = set()
-            for p in Place.objects.filter(responsible__login_phone=login_phone):
-                places.append({'id': p.pk, 'place': p.place, })
-                lorus.update(p.cemetery.ugh.get_loru_list())
-            suppliers = [{'id': l.pk, 'name': l.name, } for l in lorus]
-            data = {
-                'supplier': suppliers,
-                'place': places,
-            }
-        return Response(status=status, data=data)
+        return Response(status=200 if is_customer else 400, data=data)
 
     #def get(self, request, format=None):
         #snippets = ProductCategory.objects.all()

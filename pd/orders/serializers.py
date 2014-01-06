@@ -3,7 +3,7 @@ from rest_framework import serializers
 from rest_framework.fields import Field
 
 from rest_api.fields import HyperlinkedFileField
-from orders.models import ProductCategory
+from orders.models import ProductCategory, Product
 
 
 class ProductCategorySerializer(serializers.HyperlinkedModelSerializer):
@@ -14,10 +14,12 @@ class ProductCategorySerializer(serializers.HyperlinkedModelSerializer):
         fields = ('id', 'name', 'icon', )
 
 
-#class DeadPersonSerializer(serializers.HyperlinkedModelSerializer):
-    #birth_date = UnclearDateFieldSerializer()
-    #death_date = UnclearDateFieldSerializer()
-    #class Meta:
-        #model = DeadPerson
-        #fields = ('id', 'first_name', 'last_name', 'middle_name', 'birth_date', 'death_date')
+class ProductSerializer(serializers.HyperlinkedModelSerializer):
+    photo = HyperlinkedFileField()
+    currency_name = serializers.RelatedField(source='currency')
+    supplier = serializers.RelatedField(source='loru')
+    
+    class Meta:
+        model = Product
+        fields = ('id', 'photo', 'measure', 'price', 'currency_name', 'sku', 'supplier', )
 
