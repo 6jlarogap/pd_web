@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from users.models import Profile, Org, ProfileLORU, Dover
+from users.models import Profile, Org, ProfileLORU, Dover, CustomerProfile
 
 
 class AgentDoverInline(admin.TabularInline):
@@ -18,6 +18,11 @@ class ProfileAdmin(admin.ModelAdmin):
     search_fields = ['user__username', 'user_last_name', 'org__name']
 
 admin.site.register(Profile, ProfileAdmin)
+
+class CustomerProfileAdmin(admin.ModelAdmin):
+    pass
+
+admin.site.register(CustomerProfile, CustomerProfileAdmin)
 
 class OrgAdmin(admin.ModelAdmin):
     inlines = [ProfileLORUInline, ]

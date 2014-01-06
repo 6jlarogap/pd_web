@@ -14,6 +14,11 @@ class CustomerProfile(models.Model):
     user_first_name = models.CharField(_(u"Имя"), max_length=255, null=True, blank=True)
     user_middle_name = models.CharField(_(u"Отчество"), max_length=255, null=True, blank=True)
 
+    def __unicode__(self):
+        return self.user and self.user_last_name and \
+               "%s %s %s" % (self.user_last_name, self.user_first_name, self.user_middle_name) or \
+               u'%s' % self.pk
+
 class CustomerProfilePhoto(Files):
     customerprofile = models.OneToOneField(CustomerProfile)
 
