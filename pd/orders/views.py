@@ -31,7 +31,7 @@ from reports.models import make_report
 from rest_framework import viewsets
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from serializers import ProductCategorySerializer, ProductSerializer
+from serializers import ProductCategorySerializer, ProductSerializer, ProductInfoSerializer
 
 class LORURequiredMixin:
     def is_loru(self, request):
@@ -667,8 +667,8 @@ class ProductViewSet(CustomerDataMixin, viewsets.ModelViewSet):
         
         return filter
         
-    #def get(self, request, format=None):
-        #snippets = ProductCategory.objects.all()
-        #serializer = ProductCategorySerializer(snippets, many=True, context={'request': request})
-        #print serializer.data
-        #return Response(serializer.data)
+class ProductInfoViewSet(viewsets.ModelViewSet):
+    model = Product
+    serializer_class = ProductInfoSerializer
+    permission_classes = (IsAuthenticated,)
+
