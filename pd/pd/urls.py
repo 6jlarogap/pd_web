@@ -23,7 +23,7 @@ from burials.views import CemeteryViewSet, AreaViewSet, PlaceViewSet, \
 
 from persons.views import AlivePersonViewSet, DeadPersonViewSet, PhoneViewSet 
 from logs.views import LogViewSet
-from orders.views import ProductCategoryViewSet, CatalogFiltersViewSet, ProductViewSet, ProductInfoViewSet
+from orders.views import ProductCategoryViewSet, CatalogFiltersViewSet, ProductsViewSet, ProductInfoViewSet
  
 # Burial
 router.register(r'^api/log', LogViewSet)
@@ -46,8 +46,8 @@ router.register(r'^api/alive-person-phone', PhoneViewSet)
 # Orders
 router.register(r'^api/product_category', ProductCategoryViewSet)
 router.register(r'^api/catalog_filters', CatalogFiltersViewSet)
-router.register(r'^api/products', ProductViewSet)
-router.register(r'^api/product/(?P<id>.*)$', ProductInfoViewSet)
+router.register(r'^api/products', ProductsViewSet)
+router.register(r'^api/product', ProductInfoViewSet)
 
 # Geo
 router.register(r'^api/geo/location', LocationViewSet)

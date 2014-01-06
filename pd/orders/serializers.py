@@ -15,7 +15,7 @@ class ProductCategorySerializer(serializers.HyperlinkedModelSerializer):
         fields = ('id', 'name', 'icon', )
 
 
-class ProductSerializer(serializers.HyperlinkedModelSerializer):
+class ProductsSerializer(serializers.HyperlinkedModelSerializer):
     photo = HyperlinkedFileField()
     currency = serializers.RelatedField(source='currency')
     supplier = serializers.RelatedField(source='loru')

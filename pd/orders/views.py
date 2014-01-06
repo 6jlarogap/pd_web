@@ -21,6 +21,7 @@ from django.shortcuts import get_object_or_404
 from logs.models import write_log
 from burials.forms import AddOrgForm, AddAgentForm, AddDoverForm, AddDocTypeForm
 from burials.models import Burial, Place
+from users.models import CustomerProfile
 from orders.forms import ProductForm, OrderForm, OrderItemFormset, CoffinForm, CatafalqueForm, \
                          AddInfoForm, OrderSearchForm, OrderBurialForm
 from orders.models import Product, Order, OrderItem, ProductCategory
@@ -31,7 +32,7 @@ from reports.models import make_report
 from rest_framework import viewsets
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from serializers import ProductCategorySerializer, ProductSerializer, ProductInfoSerializer
+from serializers import ProductCategorySerializer, ProductsSerializer, ProductInfoSerializer
 
 class LORURequiredMixin:
     def is_loru(self, request):
@@ -590,14 +591,19 @@ class CustomerDataMixin:
         lorus = set()
         is_customer = True
         try:
-            login_phone = decimal.Decimal(username)
-        except decimal.InvalidOperation:
+            request.user.customerprofile
+        except CustomerProfile.DoesNotExist:
             is_customer = False
         else:
-            lorus = set()
-            for p in Place.objects.filter(responsible__login_phone=login_phone):
-                places.append(p)
-                lorus.update(p.cemetery.ugh.get_loru_list())
+            try:
+                login_phone = decimal.Decimal(username)
+            except decimal.InvalidOperation:
+                is_customer = False
+            else:
+                lorus = set()
+                for p in Place.objects.filter(responsible__login_phone=login_phone):
+                    places.append(p)
+                    lorus.update(p.cemetery.ugh.get_loru_list())
         return is_customer, places, lorus
         
 
@@ -615,9 +621,9 @@ class CatalogFiltersViewSet(CustomerDataMixin, viewsets.ViewSet):
         }
         return Response(status=200 if is_customer else 400, data=data)
 
-class ProductViewSet(CustomerDataMixin, viewsets.ModelViewSet):
+class ProductsViewSet(CustomerDataMixin, viewsets.ModelViewSet):
     model = Product
-    serializer_class = ProductSerializer
+    serializer_class = ProductsSerializer
     permission_classes = (IsAuthenticated,)
 
     def get_queryset(self):
@@ -667,8 +673,13 @@ class ProductViewSet(CustomerDataMixin, viewsets.ModelViewSet):
         
         return filter
         
-class ProductInfoViewSet(viewsets.ModelViewSet):
+class ProductInfoViewSet(CustomerDataMixin, viewsets.ModelViewSet):
     model = Product
     serializer_class = ProductInfoSerializer
     permission_classes = (IsAuthenticated,)
 
+    def get_queryset(self):
+        is_customer, places, lorus = self.get_customer_data(self.request)
+        if not is_customer or not places or not self.request.GET.get('id'):
+            return Product.objects.none()
+        return Product.objects.filter(loru__in=lorus, pk=self.request.GET.get('id'))
