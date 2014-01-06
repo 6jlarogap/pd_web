@@ -20,8 +20,8 @@ from django.shortcuts import get_object_or_404
 
 from logs.models import write_log
 from burials.forms import AddOrgForm, AddAgentForm, AddDoverForm, AddDocTypeForm
-from burials.models import Burial, Place
-from users.models import CustomerProfile
+from burials.models import Burial, Place, Grave, GravePhoto
+from users.models import CustomerProfile, CustomerProfilePhoto
 from orders.forms import ProductForm, OrderForm, OrderItemFormset, CoffinForm, CatafalqueForm, \
                          AddInfoForm, OrderSearchForm, OrderBurialForm
 from orders.models import Product, Order, OrderItem, ProductCategory
@@ -683,3 +683,59 @@ class ProductInfoViewSet(CustomerDataMixin, viewsets.ModelViewSet):
         if not is_customer or not places or not self.request.GET.get('id'):
             return Product.objects.none()
         return Product.objects.filter(loru__in=lorus, pk=self.request.GET.get('id'))
+
+class CabinetViewSet(CustomerDataMixin, viewsets.ViewSet):
+    queryset = CustomerProfile.objects.none()
+    permission_classes = (IsAuthenticated,)
+    
+    def list(self, request):
+        is_customer, places, lorus = self.get_customer_data(request)
+        profile = request.user.customerprofile
+        data = {
+            'id': request.user.pk,
+        }
+        try:
+            photo = request.build_absolute_uri(profile.customerprofilephoto.bfile.url) \
+                if profile.customerprofilephoto.bfile else ''
+        except CustomerProfilePhoto.DoesNotExist:
+            photo = ''
+        data['photo'] = photo
+        data['lastName'] = profile.user_last_name
+        data['firstName'] = profile.user_first_name
+        data['middleName'] = profile.user_middle_name
+        data['loginPhone'] = '+' + request.user.username
+        data['places'] = []
+        for p in places:
+            place={}
+            place['address'] = p.cemetery.address and p.cemetery.address.__unicode__() or ''
+            place['location'] = {
+                'latititude': p.lat,
+                'longitude': p.lng,
+            }
+            place['graves'] = []
+            place['gallery'] = []
+            for g in Grave.objects.filter(place=p).order_by('grave_number'):
+                grave = {'graveNumber': g.grave_number}
+                for gph in GravePhoto.objects.filter(grave=g):
+                    if gph.bfile:
+                        place['gallery'].append(
+                            {
+                                'photo': request.build_absolute_uri(gph.bfile.url),
+                                'addedAt': gph.date_of_creation,
+                            }
+                        )
+                burials = []
+                for b in g.burial_set.all():
+                    burials.append(
+                        {
+                            'fio': b.deadman and b.deadman.full_name_complete() or _(u"Неизвестный"),
+                            'photo': None,
+                            'birthDate': b.deadman and b.deadman.birth_date and b.deadman.birth_date.strftime('%Y.%m.%d') or None,
+                            'deathDate': b.deadman and b.deadman.death_date and b.deadman.death_date.strftime('%Y.%m.%d') or None,
+                        }
+                    )
+                grave['burials'] = burials
+                place['graves'].append(grave)
+            data['places'].append(place)           
+            
+        return Response(status=200 if is_customer else 400, data=data)
