@@ -31,7 +31,7 @@ from reports.models import make_report
 from rest_framework import viewsets
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from serializers import ProductCategorySerializer
+from serializers import ProductCategorySerializer, ProductSerializer
 
 class LORURequiredMixin:
     def is_loru(self, request):
@@ -615,6 +615,47 @@ class CatalogFiltersViewSet(CustomerDataMixin, viewsets.ViewSet):
         }
         return Response(status=200 if is_customer else 400, data=data)
 
+class ProductViewSet(CustomerDataMixin, viewsets.ModelViewSet):
+    model = Product
+    serializer_class = ProductSerializer
+    permission_classes = (IsAuthenticated,)
+
+    def get_queryset(self):
+        is_customer, places, lorus = self.get_customer_data(self.request)
+        if not is_customer or not places:
+            return Product.objects.none()
+
+        place_id = self.request.GET.get('filter[place]')
+        loru_id = self.request.GET.get('filter[supplier]')
+        qs = Q(loru__in=lorus) if not place_id and not loru_id else Q()
+
+        if place_id:
+            for p in places:
+                if p.pk == int(place_id):
+                    place = p
+                    break
+            else:
+                return Product.objects.none()
+            qs &= Q(loru__ugh_list__ugh=place.cemetery.ugh)
+
+        if loru_id:
+            for l in lorus:
+                if l.pk == int(loru_id):
+                    loru = l
+                    break
+            else:
+                return Product.objects.none()
+            qs &= Q(loru=loru)
+
+        if self.request.GET.get('filter[price_from]'):
+            qs &= Q(price__gte=self.request.GET.get('filter[price_from]'))
+        if self.request.GET.get('filter[price_to]'):
+            qs &= Q(price__lte=self.request.GET.get('filter[price_to]'))
+        if self.request.GET.get('filter[category]'):
+            qs &= Q(category__pk=self.request.GET.get('filter[category]'))
+        
+        return Product.objects.filter(qs)
+        
     #def get(self, request, format=None):
         #snippets = ProductCategory.objects.all()
         #serializer = ProductCategorySerializer(snippets, many=True, context={'request': request})

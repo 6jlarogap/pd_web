@@ -8,7 +8,7 @@ class HyperlinkedFileField(serializers.FileField):
     """
     def to_native(self, value):
         request = self.context.get('request', None)
-        return request.build_absolute_uri(value.url)
+        return request.build_absolute_uri(value.url) if request and value else ''
 
 class UnclearDateFieldSerializer(serializers.Field):
     """
