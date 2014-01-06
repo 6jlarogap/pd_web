@@ -1,5 +1,6 @@
 # coding=utf-8
 import datetime
+import decimal
 import json
 
 from django.contrib import messages
@@ -19,7 +20,7 @@ from django.shortcuts import get_object_or_404
 
 from logs.models import write_log
 from burials.forms import AddOrgForm, AddAgentForm, AddDoverForm, AddDocTypeForm
-from burials.models import Burial
+from burials.models import Burial, Place
 from orders.forms import ProductForm, OrderForm, OrderItemFormset, CoffinForm, CatafalqueForm, \
                          AddInfoForm, OrderSearchForm, OrderBurialForm
 from orders.models import Product, Order, OrderItem, ProductCategory
@@ -581,6 +582,34 @@ class ProductCategoryViewSet(viewsets.ModelViewSet):
     model = ProductCategory
     serializer_class = ProductCategorySerializer
     permission_classes = (IsAuthenticated,)
+
+class CatalogFiltersViewSet(viewsets.ViewSet):
+    queryset = Place.objects.none()
+    permission_classes = (IsAuthenticated,)
+    
+    def list(self, request):
+        username = self.request.user.username
+        places = []
+        data = {
+            'supplier': [],
+            'place': [],
+        }
+        status = 200
+        try:
+            login_phone = decimal.Decimal(username)
+        except decimal.InvalidOperation:
+            status = 400
+        else:
+            lorus = set()
+            for p in Place.objects.filter(responsible__login_phone=login_phone):
+                places.append({'id': p.pk, 'place': p.place, })
+                lorus.update(p.cemetery.ugh.get_loru_list())
+            suppliers = [{'id': l.pk, 'name': l.name, } for l in lorus]
+            data = {
+                'supplier': suppliers,
+                'place': places,
+            }
+        return Response(status=status, data=data)
 
     #def get(self, request, format=None):
         #snippets = ProductCategory.objects.all()
