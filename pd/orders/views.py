@@ -652,9 +652,20 @@ class ProductViewSet(CustomerDataMixin, viewsets.ModelViewSet):
         if self.request.GET.get('filter[price_to]'):
             qs &= Q(price__lte=self.request.GET.get('filter[price_to]'))
         if self.request.GET.get('filter[category]'):
-            qs &= Q(category__pk=self.request.GET.get('filter[category]'))
+            qs &= Q(productcategory__pk=self.request.GET.get('filter[category]'))
         
-        return Product.objects.filter(qs)
+        offset = self.request.GET.get('offset') and int(self.request.GET.get('offset'))
+        limit = self.request.GET.get('limit') and int(self.request.GET.get('limit'))
+        
+        filter = Product.objects.filter(qs)
+        if offset and limit:
+            filter = filter[offset:offset+limit]
+        elif offset:
+            filter = filter[offset:]
+        elif limit:
+            filter = filter[:limit]
+        
+        return filter
         
     #def get(self, request, format=None):
         #snippets = ProductCategory.objects.all()

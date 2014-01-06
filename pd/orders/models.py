@@ -15,6 +15,9 @@ class ProductCategory(models.Model):
     name = models.CharField(_(u"Название"), max_length=255)
     icon = models.FileField(u"Иконка", upload_to='icons', blank=True, null=True)
 
+    def __unicode__(self):
+        return self.name
+
 class Product(models.Model):
     PRODUCT_CATAFALQUE = 'catafalque'
     PRODUCT_LOADERS = 'loaders'
@@ -35,6 +38,8 @@ class Product(models.Model):
     ptype = models.CharField(_(u"Тип"), max_length=255, choices=PRODUCT_TYPES, null=True, blank=True)
     default = models.BooleanField(_(u"По умолчанию"), default=False, blank=True)
     photo = models.FileField(u"Фото", upload_to='product-photo', blank=True, null=True)
+    productcategory = models.ForeignKey(ProductCategory, verbose_name=_(u"Категория"),
+                      null=True, blank=True)
     currency = models.ForeignKey('billing.Currency', verbose_name=_(u"Валюта"))
     sku = models.CharField(_(u"Артикул"), max_length=255, blank=True, default='')
 
