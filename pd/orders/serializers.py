@@ -37,10 +37,10 @@ class SupplierSerializer(serializers.HyperlinkedModelSerializer):
 class ProductInfoSerializer(serializers.HyperlinkedModelSerializer):
     photo = HyperlinkedFileField()
     currency = serializers.RelatedField(source='currency')
-    productcategory_name = serializers.RelatedField(source='productcategory')
+    category = serializers.RelatedField(source='productcategory')
     supplier = SupplierSerializer(source='loru')
     
     class Meta:
         model = Product
-        fields = ('id', 'photo', 'price', 'currency', 'sku', 'productcategory_name', 'supplier', )
+        fields = ('id', 'photo', 'price', 'currency', 'sku', 'category', 'description', 'supplier', )
 

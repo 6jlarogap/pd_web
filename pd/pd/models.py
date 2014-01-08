@@ -39,6 +39,17 @@ class UnclearDate:
     def __unicode__(self):
         return self.strftime('%d.%m.%Y')
 
+    def str_safe(self):
+        """
+        YYYY or YYYY-MM or YYYY-MM-DD
+        """
+        result = str(self.d.year)
+        if not self.no_month:
+            result += '-%2d' % self.d.month
+        if not self.no_day:
+            result += '-%2d' % self.d.day
+        return result
+
     @property
     def month(self):
         return self.d.month

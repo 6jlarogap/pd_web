@@ -730,8 +730,8 @@ class CabinetViewSet(CustomerDataMixin, viewsets.ViewSet):
                         {
                             'fio': b.deadman and b.deadman.full_name_complete() or _(u"Неизвестный"),
                             'photo': None,
-                            'birthDate': b.deadman and b.deadman.birth_date and b.deadman.birth_date.strftime('%Y.%m.%d') or None,
-                            'deathDate': b.deadman and b.deadman.death_date and b.deadman.death_date.strftime('%Y.%m.%d') or None,
+                            'birthDate': b.deadman and b.deadman.birth_date and b.deadman.birth_date.str_safe() or None,
+                            'deathDate': b.deadman and b.deadman.death_date and b.deadman.death_date.str_safe() or None,
                         }
                     )
                 grave['burials'] = burials
