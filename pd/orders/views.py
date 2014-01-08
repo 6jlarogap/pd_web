@@ -690,6 +690,8 @@ class CabinetViewSet(CustomerDataMixin, viewsets.ViewSet):
     
     def list(self, request):
         is_customer, places, lorus = self.get_customer_data(request)
+        if not is_customer:
+            return Response(status=400, data=[])
         profile = request.user.customerprofile
         data = {
             'id': request.user.pk,
@@ -745,4 +747,4 @@ class CabinetViewSet(CustomerDataMixin, viewsets.ViewSet):
                 place['graves'].append(grave)
             data['places'].append(place)           
             
-        return Response(status=200 if is_customer else 400, data=data)
+        return Response(status=200, data=data)
