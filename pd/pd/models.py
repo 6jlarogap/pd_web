@@ -45,9 +45,9 @@ class UnclearDate:
         """
         result = str(self.d.year)
         if not self.no_month:
-            result += '-%2d' % self.d.month
+            result += '-%02d' % self.d.month
         if not self.no_day:
-            result += '-%2d' % self.d.day
+            result += '-%02d' % self.d.day
         return result
 
     @property

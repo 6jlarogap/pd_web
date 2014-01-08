@@ -696,17 +696,17 @@ class CabinetViewSet(CustomerDataMixin, viewsets.ViewSet):
         }
         try:
             photo = request.build_absolute_uri(profile.customerprofilephoto.bfile.url) \
-                if profile.customerprofilephoto.bfile else ''
+                if profile.customerprofilephoto.bfile else None
         except CustomerProfilePhoto.DoesNotExist:
-            photo = ''
+            photo = None
         data['photo'] = photo
         data['lastName'] = profile.user_last_name
         data['firstName'] = profile.user_first_name
         data['middleName'] = profile.user_middle_name
-        data['loginPhone'] = '+' + request.user.username
+        data['loginPhone'] = request.user.username
         data['places'] = []
         for p in places:
-            place={}
+            place={'id': p.pk}
             place['address'] = p.cemetery.address and p.cemetery.address.__unicode__() or ''
             place['location'] = {
                 'latititude': p.lat,
@@ -714,13 +714,19 @@ class CabinetViewSet(CustomerDataMixin, viewsets.ViewSet):
             }
             place['graves'] = []
             place['gallery'] = []
+            place['photo'] = None
+            grave_photo_last_id = -1
             for g in Grave.objects.filter(place=p).order_by('grave_number'):
                 grave = {'graveNumber': g.grave_number}
                 for gph in GravePhoto.objects.filter(grave=g):
                     if gph.bfile:
+                        photo = request.build_absolute_uri(gph.bfile.url)
+                        if gph.pk > grave_photo_last_id:
+                            place['photo'] = photo
+                            grave_photo_last_id = gph.pk
                         place['gallery'].append(
                             {
-                                'photo': request.build_absolute_uri(gph.bfile.url),
+                                'photo': photo,
                                 'addedAt': gph.date_of_creation,
                             }
                         )
@@ -728,6 +734,7 @@ class CabinetViewSet(CustomerDataMixin, viewsets.ViewSet):
                 for b in g.burial_set.all():
                     burials.append(
                         {
+                            'id': b.pk,
                             'fio': b.deadman and b.deadman.full_name_complete() or _(u"Неизвестный"),
                             'photo': None,
                             'birthDate': b.deadman and b.deadman.birth_date and b.deadman.birth_date.str_safe() or None,
