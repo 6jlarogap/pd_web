@@ -254,7 +254,7 @@ def mobile_upload_place(request):
         if request.POST['placeLength'] :
             placeLength = Decimal(request.POST['placeLength'])
         if request.POST['placeWidth'] :
-            placeWidth = request.POST['placeWidth']
+            placeWidth = Decimal(request.POST['placeWidth'])
         psFoundUnowned = int(request.POST['psFoundUnowned'])
         user = request.user
         listPlaceForResponse = []
