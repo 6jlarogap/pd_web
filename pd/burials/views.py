@@ -23,9 +23,9 @@ from pd.views import RequestToFormMixin, FormInvalidMixin
 from burials.forms import CemeteryForm, AreaFormset, PlaceEditForm, AddOrgForm, AreaMergeForm, BurialfileCommentEditForm
 from burials.models import Cemetery, Place, Area, BurialFiles, Grave, Burial, AreaPhoto, GravePhoto, ExhumationRequest, AreaPurpose, PlaceSize
 from burials.burials_views import *
-from logs.models import write_log, log_object
+from logs.models import write_log, log_object, prepare_m2m_log, compare_obj
 from users.models import Profile, Org
-from persons.models import Phone 
+from persons.models import Phone, AlivePerson
 from geo.models import Location
 
 # REST import
@@ -294,8 +294,13 @@ class PlaceViewSet(viewsets.ModelViewSet):
         return  qs.all()
 
     def pre_save(self, object):
+        
         item = getArea(self.request) # TODO: check this
         object.area = item
+        self.new_msg = []
+        self.old_responsible = object.responsible
+        self.old_object = None
+        
         #if item.pk:
         #    write_log(self.request, object, _(u'Место №%s изменено' % object.place))
 
@@ -309,20 +314,27 @@ class PlaceViewSet(viewsets.ModelViewSet):
 
         responsible = self.request.DATA.get('obj_responsible')
         if object.pk and responsible:
+            
             responsible_serializer =  AlivePersonSerializer(object.responsible, data=responsible, partial=True)
             if not responsible_serializer.is_valid():
                 return Response(status=400, data=responsible_serializer.errors) 
+            
+            try:
+                self.old_responsible = AlivePerson.objects.get(pk=object.responsible.pk)
+            except AlivePerson.DoesNotExist:
+                self.old_responsible = None
+            except AttributeError:
+                self.old_responsible = None
             object.responsible = responsible_serializer.save()
-            #import pudb; pudb.set_trace()
+
             #object.responsible.address_id = responsible.address
 
         try:
-            old = self.model.objects.get(pk=object.pk)
+            self.old_object = self.model.objects.get(pk=object.pk)
         except self.model.DoesNotExist:
-            old = None
+            self.old_object = None
         except AttributeError:
-            old = None
-        log_object(self.request, obj=object, old=old, new=object, reason=_(u'Место %s изменено') % object.place)
+            self.old_object = None
         
         # Update grave point coords
         items = Grave.objects.filter(place=object).all()
@@ -338,10 +350,10 @@ class PlaceViewSet(viewsets.ModelViewSet):
             for i in xrange(1,self.places_count+1):
                 item = Grave(place=object, grave_number=i)
                 item.save()
-            
-            
+
         if object.responsible:
-            #import pudb; pudb.set_trace()
+            old_phones = [i for i in object.responsible.phone_set.all()]
+            
             phone = self.request.DATA.get('obj_responsible_phones')
             id_binds = {}
             ct = ContentType.objects.get_for_model(object.responsible)
@@ -360,6 +372,29 @@ class PlaceViewSet(viewsets.ModelViewSet):
                     res.save()                
                     id_binds[res.id] = 1
                 object.responsible.phone_set.exclude(pk__in=id_binds.keys()).delete()
+            
+                phone_set = object.responsible.phone_set.all()
+                
+                self.new_msg += prepare_m2m_log(_(u'Телефон'), old_phones,  phone_set)
+                
+        try:
+            old_address = self.old_object.responsible.address
+        except AttributeError:
+            old_address = None
+
+        try:   
+            new_address = object.responsible.address
+        except AttributeError:
+            new_address = None
+        
+        if unicode(old_address)!= unicode(new_address):
+            self.new_msg += [compare_obj(_(u'Адрес'), old_address, new_address)]
+        
+        if self.old_responsible and unicode(self.old_responsible) != unicode(object.responsible):
+            self.new_msg += [compare_obj(_(u'Ответственный'), self.old_responsible, object.responsible)]
+
+        log_object(self.request, obj=object, old=self.old_object, new=object, reason=_(u'Место %s изменено') % object.place, new_msg=self.new_msg)
+
         if object.responsible:
             object.responsible.save()
 

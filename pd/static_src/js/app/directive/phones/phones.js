@@ -8,7 +8,7 @@ app.controller('PhonesController', ['$scope', 'Phone', function($scope, Phone) {
     $scope.isStaticBlock = false;
     $scope.requireTel = true;
     $scope.maxlength = 12;
-    
+    $scope.old = {};
     $scope.phone = new Phone({is_new:true, phonetype:DEFAULT_PHONETYPE});
     
     $scope.phoneNumberPattern = (function() {
@@ -44,13 +44,18 @@ app.controller('PhonesController', ['$scope', 'Phone', function($scope, Phone) {
             $scope.isPhoneAddOpen = true;
             $scope.isStaticBlock = true;
         }
+		$('#edit_save_btn').hide();
+		$scope.old = {phonetype:$scope.phone.phonetype, number:$scope.phone.number};
 	};
-	$scope.close = function() {
-    //    $scope.phones = undefined;
+	$scope.close = function(form) {
+		$scope.phone.phonetype = $scope.old.phonetype; 
+		$scope.phone.number = $scope.old.number;
+
 		$scope.update();
 		$scope.isPhoneEditOpen = false;
         $scope.isPhoneAddOpen = false;
         $scope.isStaticBlock = false;
+        $('#edit_save_btn').show();
 	};
         
     $scope.destroy = function(index){
@@ -76,6 +81,7 @@ app.controller('PhonesController', ['$scope', 'Phone', function($scope, Phone) {
             $scope.isPhoneAddOpen = false;
             $scope.isStaticBlock = false;
         }
+		$('#edit_save_btn').show();
 	};
 	
 	$scope.validatePhone = function(value) {
