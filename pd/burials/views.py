@@ -374,7 +374,6 @@ class PlaceViewSet(viewsets.ModelViewSet):
                 object.responsible.phone_set.exclude(pk__in=id_binds.keys()).delete()
             
                 phone_set = object.responsible.phone_set.all()
-                
                 self.new_msg += prepare_m2m_log(_(u'Телефон'), old_phones,  phone_set)
                 
         try:

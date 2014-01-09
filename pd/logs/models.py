@@ -156,7 +156,7 @@ def prepare_m2m_log(verbose_name="", old_set = [], new_set=[]):
     for i in old_set:
         old_arr[i.id] = i
         if i.id not in new_arr_keys:
-            res  = compare_obj(verbose_name, None, i)
+            res  = compare_obj(verbose_name, i, None)
             if res:
                 msg.append(res)
         
@@ -164,7 +164,7 @@ def prepare_m2m_log(verbose_name="", old_set = [], new_set=[]):
     
     for i in new_set:
         if i.id not in old_arr_keys:
-            res = compare_obj(verbose_name, i, None)
+            res = compare_obj(verbose_name, None, i)
             if res:
                 msg.append(res)
         else:
