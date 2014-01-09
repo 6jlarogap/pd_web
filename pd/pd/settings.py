@@ -87,7 +87,8 @@ MIDDLEWARE_CLASSES = (
     'django.contrib.messages.middleware.MessageMiddleware',
     'debug_toolbar.middleware.DebugToolbarMiddleware',
     'users.middleware.ProfileMiddleware',
-    'pd.middleware.LoginRequiredMiddleware'
+    'pd.middleware.LoginRequiredMiddleware',
+    'pd.middleware_cors.XsSharing',
 )
 
 TEMPLATE_CONTEXT_PROCESSORS = (
@@ -274,6 +275,13 @@ ASSETS_MODULES = [
     'pd.assets'
 ]
 ASSETS_DEBUG = False
+
+# Cross-origin resource sharing. Нам это и не надо, но
+# чтобы наше api выходило на front-end другого домена,
+# надо добавить в список XS_SHARING_ALLOWED_ORIGINS
+# front-end домен(ы) или '*'
+
+XS_SHARING_ALLOWED_ORIGINS = []
 
 try:
     from local_settings import *
