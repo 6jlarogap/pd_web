@@ -22,7 +22,7 @@ class ProductsSerializer(serializers.HyperlinkedModelSerializer):
     
     class Meta:
         model = Product
-        fields = ('id', 'photo', 'measure', 'price', 'currency', 'sku', 'supplier', )
+        fields = ('id', 'name', 'description', 'photo', 'measure', 'price', 'currency', 'sku', 'supplier', )
 
 
 class SupplierSerializer(serializers.HyperlinkedModelSerializer):
@@ -42,5 +42,5 @@ class ProductInfoSerializer(serializers.HyperlinkedModelSerializer):
     
     class Meta:
         model = Product
-        fields = ('id', 'photo', 'price', 'currency', 'sku', 'category', 'description', 'supplier', )
+        fields = ('id', 'photo', 'price', 'currency', 'name', 'description', 'sku', 'category', 'supplier', )
 
