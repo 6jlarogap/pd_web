@@ -6,12 +6,13 @@ from django.db import models, connection
 from django.db.models.deletion import ProtectedError
 from django.utils.translation import ugettext_lazy as _
 from django.db.models.query_utils import Q
-from pd.models import UnclearDateModelField, BaseModel, Files, Photo, GetLogsMixin, validate_gt0
+from pd.models import UnclearDateModelField, BaseModel, Files, GetLogsMixin, validate_gt0
 
 from persons.models import DeadPerson, SafeDeleteMixin, DeathCertificate
 from reports.models import Report
 from users.models import Org, Profile, Dover, ProfileLORU
 from logs.models import Log
+from geo.models import GeoPointModel
 
 
 class Cemetery(GetLogsMixin, BaseModel):
@@ -47,7 +48,7 @@ class Cemetery(GetLogsMixin, BaseModel):
     time_slots = models.TextField(_(u"Время для захоронения"), default='', blank=True,
                                   help_text=_(u'В формате ЧЧ:ММ, по одному на строку'))
 
-    creator = models.ForeignKey('auth.User', verbose_name=_(u"Владелец"), editable=False,
+    creator = models.ForeignKey('auth.User', verbose_name=_(u"Владелец"),
                                 on_delete=models.PROTECT)
     ugh = models.ForeignKey(Org, verbose_name=_(u"УГХ"), null=True, limit_choices_to={'type': Org.PROFILE_UGH},
                             on_delete=models.PROTECT)
@@ -106,7 +107,7 @@ class Area(BaseModel):
     )
 
     cemetery = models.ForeignKey(Cemetery, verbose_name=_(u"Кладбище"), on_delete=models.PROTECT)
-    name = models.CharField(_(u"Название"), max_length=255, blank=True)
+    name = models.CharField(_(u"Название"), max_length=255)
     availability = models.CharField(_(u"Открытость"), max_length=32, choices=AVAILABILITY_CHOICES, null=True)
     purpose = models.ForeignKey(AreaPurpose, verbose_name=_(u"Назначение"), null=True, on_delete=models.PROTECT)
     places_count = models.PositiveIntegerField(_(u"Макс. кол-во могил в месте"), default=1)
@@ -115,6 +116,7 @@ class Area(BaseModel):
         verbose_name = _(u"Участок")
         verbose_name_plural = _(u"Участки")
         ordering = ['name']
+        unique_together = ('cemetery', 'name',)
 
     def __unicode__(self):
         return _(u'%s (%s, %s, %s могил)') % (
@@ -128,13 +130,14 @@ class Area(BaseModel):
             self.name=''
         return super(Area, self).save(*args, **kwargs)
 
-class Place(SafeDeleteMixin, BaseModel):
+class Place(SafeDeleteMixin, GeoPointModel):
     cemetery = models.ForeignKey(Cemetery, verbose_name=_(u"Кладбище"), on_delete=models.PROTECT)
     area = models.ForeignKey(Area, verbose_name=_(u"Участок"), blank=True, null=True,
                              on_delete=models.PROTECT)
     row = models.CharField(_(u"Ряд"), max_length=255, blank=True, null=True)
     oldplace = models.CharField(_(u"Старое место"), max_length=255, blank=True, null=True)
     place = models.CharField(_(u"Место"), max_length=255, blank=True, null=True)
+    available_count = models.PositiveSmallIntegerField(_(u"Число свободных мест"), default=0)
     responsible = models.ForeignKey('persons.AlivePerson', verbose_name=_(u"Ответственный"), blank=True, null=True,
                                     on_delete=models.PROTECT)
     place_length = models.DecimalField(_(u"Длина, м."), max_digits=5, decimal_places=2,
@@ -287,20 +290,20 @@ class PlaceStatus(BaseModel):
     creator = models.ForeignKey('auth.User', verbose_name=_(u"Создатель"), editable=False,
                                 on_delete=models.PROTECT)
     
-class Grave(BaseModel):
+class Grave(GeoPointModel):
 
     class Meta:
         unique_together = ('place', 'grave_number',)
 
     place = models.ForeignKey(Place, verbose_name=_(u"Место"))
     grave_number = models.PositiveSmallIntegerField(_(u"Номер"), default=1)
-    lat = models.FloatField(_(u"Широта"), blank=True, null=True)
-    lng = models.FloatField(_(u"Долгота"), blank=True, null=True)
+    is_wrong_fio = models.BooleanField(_(u"Неверное ФИО"), default=False)
+    is_military = models.BooleanField(_(u"Воинская могила"), default=False)
 
-class GravePhoto(Photo):
-    """
-    Файлы, связанные с захоронением
-    """
+class AreaPhoto(Files, GeoPointModel):
+    area = models.ForeignKey(Area)
+
+class GravePhoto(Files, GeoPointModel):
     grave = models.ForeignKey(Grave)
 
 class Burial(SafeDeleteMixin, GetLogsMixin, BaseModel):
@@ -461,6 +464,15 @@ class Burial(SafeDeleteMixin, GetLogsMixin, BaseModel):
 
     def is_ugh(self):
         return self.is_ugh_only() or self.is_archive()
+
+    def is_new(self):
+        return self.burial_type == self.BURIAL_NEW
+
+    def is_add(self):
+        return self.burial_type == self.BURIAL_ADD
+
+    def is_over(self):
+        return self.burial_type == self.BURIAL_OVER
 
     def is_bio(self):
         return self.burial_container == self.CONTAINER_BIO

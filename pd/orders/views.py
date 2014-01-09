@@ -260,7 +260,7 @@ class OrderCreate(LORURequiredMixin, RequestToFormMixin, CreateView):
                     raise Http404
             return View.dispatch(self, request, *args, **kwargs)
         else:
-            redirect('/')
+            raise Http404
         
     def get_context_data(self, **kwargs):
         data = super(OrderCreate, self).get_context_data(**kwargs)
