@@ -29,7 +29,7 @@
     	   </div>
             <div class="modal-footer" >
                 <div class="badge pull-left" ng-show="cemeteryEditForm.$invalid">Исправьте ошибке в форме кладбища</div>
-                <button class="btn btn-primary" ng-disabled="cemeteryEditForm.$invalid" ng-click="saveEditForm()">Сохранить</button>
+                <button id="edit_save_btn" class="btn btn-primary" ng-disabled="cemeteryEditForm.$invalid" ng-click="saveEditForm()">Сохранить</button>
                 <button class="btn cancel" ng-click="closeEditForm()">Отменить</button>
             </div>
         </form>
