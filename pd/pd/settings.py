@@ -253,7 +253,8 @@ THUMBNAILS_STORAGE_BASE_PATH = '/thumb/'
 THUMBNAILS_PROXY_BASE_URL = '/thumb/'
 #THUMBNAILS_STORAGE_BACKEND = 'testsuite.storages.TemporaryStorage'
 THUMBNAILS_STORAGE_ROOT = os.path.join(MEDIA_ROOT, 'thumbnails')
-THUMBNAILS_ALLOWED_SIZES = ([120, 100], [233, 134],)
+# возможные длины и высоты:
+THUMBNAILS_ALLOWED_SIZE_RANGE = range(20, 2001)
 
 # REST framework
 REST_FRAMEWORK = {
