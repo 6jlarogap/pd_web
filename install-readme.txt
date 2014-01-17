@@ -96,6 +96,8 @@ install-readme.txt, utf8 code page
             WSGIDaemonProcess SERVER.ORG.COM display-name=%{GROUP} processes=1 threads=2
             WSGIProcessGroup  SERVER.ORG.COM
             WSGIScriptAlias / /home/www-data/django/pd_web/pd/pd/wsgi.py
+            # Чтобы работала restframework_token_authorization
+            WSGIPassAuthorization On
 
             <Directory /home/www-data/static/pd_web>
                 # ВНИМАНИЕ!
