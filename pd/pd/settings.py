@@ -123,6 +123,7 @@ INSTALLED_APPS = (
     'django.contrib.admindocs',
 
     'rest_framework',
+    'rest_framework.authtoken',
 
     'south',
     'pytils',
@@ -186,8 +187,11 @@ ACCOUNT_ACTIVATION_DAYS = 7
 LOGIN_URL = "/login/"
 
 # Это регулярные выражения!!! :
+# URLs, не требующие регистрации в системе:
 REGISTER_URLS_REGEX = r'^/?register(?:/|$)'
 SUPPORT_URLS_REGEX = r'^/?support(?:/|$)'
+# URLs, требующие регистрации, но она проходит посредством tokens:
+API_URLS_REGEX = r'^/?api(?:/|$)'
 
 LOGOUT_URL = "/logout/"
 LOGIN_REDIRECT_URL = "/"
@@ -262,6 +266,7 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_api.authentication.SessionAuthentication',
         'rest_framework.authentication.BasicAuthentication',
+        'rest_framework.authentication.TokenAuthentication',
     ),
     'DEFAULT_RENDERER_CLASSES': (
         'rest_framework.renderers.JSONRenderer',

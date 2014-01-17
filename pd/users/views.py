@@ -21,7 +21,10 @@ from django.utils.translation import ugettext_lazy as _
 from django.views.generic.base import View, TemplateView
 from django.views.generic.edit import UpdateView, CreateView, FormView
 from django.views.generic.detail import DetailView
+from django.views.decorators.csrf import csrf_exempt
     
+from rest_framework.authtoken.models import Token
+
 from burials.views import UGHRequiredMixin, LoginRequiredMixin, SupervisorRequiredMixin
 from logs.models import Log, write_log, LoginLog
 from users.forms import UserAddForm, RegisterForm, LoruFormset, ProfileForm, UserProfileForm, \
@@ -31,6 +34,46 @@ from users.models import Profile, Org, RegisterProfile, ProfileLORU
 from burials.models import Burial
 from pd.views import PaginateListView, RequestToFormMixin, FormInvalidMixin
 
+class AuthGetTokenView(View):
+    """
+    Проверка имени и пароля, (создать и) отдать token
+    
+    Проверка работы представления:
+    curl -X POST http://host/api/signin -d 'username=USERNAME' -d 'password=PASSWORD'
+    """
+    
+    @csrf_exempt
+    def dispatch(self, *args, **kwargs):
+        return super(AuthGetTokenView, self).dispatch(*args, **kwargs)
+
+    def get(self, request, *args, **kwargs):
+        raise Http404
+
+    def post(self, request, *args, **kwargs):
+        print request
+        token = None
+        username = request.POST.get('username')
+        password = request.POST.get('password')
+        if username and password:
+            user = authenticate(username=username, password=password)
+            print user
+            if user and user.is_active:
+                try:
+                    user.customerprofile
+                except CustomerProfile.DoesNotExist:
+                    pass
+                else:
+                    token, created = Token.objects.get_or_create(user=user)
+        mimetype = 'application/json'
+        if token:
+            data = { 'token': token.key }
+            status = 200
+        else:
+            data = { 'status': 'error', 'message': 'Wrong username or password' }
+            status = 400
+        return HttpResponse(json.dumps(data), mimetype=mimetype, status=status)
+
+auth_get_token = AuthGetTokenView.as_view()
 
 class LoginView(View):
     """
