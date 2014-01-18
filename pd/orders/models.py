@@ -8,12 +8,12 @@ from django.utils.translation import ugettext as _
 
 from reports.models import Report
 from users.models import Org
-from pd.models import BaseModel, GetLogsMixin
+from pd.models import BaseModel, GetLogsMixin, upload_slugified
 
 
 class ProductCategory(models.Model):
     name = models.CharField(_(u"Название"), max_length=255)
-    icon = models.FileField(u"Иконка", upload_to='icons', blank=True, null=True)
+    icon = models.FileField(u"Иконка", upload_to=upload_slugified, blank=True, null=True)
 
     def __unicode__(self):
         return self.name
@@ -37,7 +37,7 @@ class Product(models.Model):
     price = models.DecimalField(_(u"Цена"), max_digits=20, decimal_places=2)
     ptype = models.CharField(_(u"Тип"), max_length=255, choices=PRODUCT_TYPES, null=True, blank=True)
     default = models.BooleanField(_(u"По умолчанию"), default=False, blank=True)
-    photo = models.FileField(u"Фото", upload_to='product-photo', blank=True, null=True)
+    photo = models.FileField(u"Фото", upload_to=upload_slugified, blank=True, null=True)
     productcategory = models.ForeignKey(ProductCategory, verbose_name=_(u"Категория"),
                       null=True, blank=True)
     currency = models.ForeignKey('billing.Currency', verbose_name=_(u"Валюта"))
@@ -46,6 +46,7 @@ class Product(models.Model):
     class Meta:
         verbose_name = _(u"Товар")
         verbose_name_plural = _(u"Товары")
+        ordering = ['name']
 
     def __unicode__(self):
         return u'%s (%s р.)' % (self.name, self.price)

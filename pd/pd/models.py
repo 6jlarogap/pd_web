@@ -203,6 +203,22 @@ class BaseModel(models.Model):
     dt_created = models.DateTimeField(_(u"Дата/время создания"), auto_now_add=True)
     dt_modified = models.DateTimeField(_(u"Дата/время модификации"), auto_now=True)
 
+def upload_slugified(instance, filename):
+    """
+    Загрузка файлов из models.FileField
+    
+    Полагается, что файлы загружаются в одну кучу в каталоге в зависимости
+    от класса модели с FileField.
+    Нелатинские символы и знаки препинания преобразуются в такое,
+    что не вызывает 'нареканий' у Django
+    """
+    fname = u'.'.join(map(pytils.translit.slugify, filename.rsplit('.', 1)))
+    if isinstance(instance, get_model('orders', 'Product')):
+        return os.path.join('product-photo', fname)
+    if isinstance(instance, get_model('orders', 'ProductCategory')) or \
+       isinstance(instance, get_model('billing', 'Currency')):
+        return os.path.join('icons', fname)
+
 def files_upload_to(instance, filename):
     instance.original_name = filename
     fname = u'.'.join(map(pytils.translit.slugify, filename.rsplit('.', 1)))
