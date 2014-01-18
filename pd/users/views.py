@@ -56,14 +56,8 @@ class AuthGetTokenView(View):
         password = request.POST.get('password')
         if username and password:
             user = authenticate(username=username, password=password)
-            print user
             if user and user.is_active:
-                try:
-                    user.customerprofile
-                except CustomerProfile.DoesNotExist:
-                    pass
-                else:
-                    token, created = Token.objects.get_or_create(user=user)
+                token, created = Token.objects.get_or_create(user=user)
         mimetype = 'application/json'
         if token:
             data = { 'token': token.key }
