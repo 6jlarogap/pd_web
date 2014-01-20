@@ -70,9 +70,9 @@ install-readme.txt, utf8 code page
  
 Настройка сервера Apache:
 
-    * Должен быть установлен Apache mod_xsendfile.
+    * Должен быть установлен Apache mod_wsgi и mod_xsendfile.
         - В Debian/Ubuntu выполнить:
-            sudo apt-get install libapache2-mod-xsendfile
+            sudo apt-get install libapache2-mod-wsgi libapache2-mod-xsendfile
     
     * пример настройки виртуального хоста Apache
         (имя сервера, каталоги могут отличаться)
