@@ -21,7 +21,6 @@ from django.utils.translation import ugettext_lazy as _
 from django.views.generic.base import View, TemplateView
 from django.views.generic.edit import UpdateView, CreateView, FormView
 from django.views.generic.detail import DetailView
-from django.views.decorators.csrf import csrf_exempt
     
 from rest_framework.parsers import JSONParser
 from rest_framework.response import Response
