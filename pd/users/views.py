@@ -23,7 +23,7 @@ from django.views.generic.edit import UpdateView, CreateView, FormView
 from django.views.generic.detail import DetailView
 from django.views.decorators.csrf import csrf_exempt
     
-from rest_framework.parsers import YAMLParser
+from rest_framework.parsers import JSONParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -45,7 +45,7 @@ class AuthGetTokenView(APIView):
     Проверка работы представления:
     curl -X POST http://host/api/signin -d 'username=USERNAME' -d 'password=PASSWORD'
     """
-    parser_classes = (YAMLParser,)
+    parser_classes = (JSONParser,)
 
     def post(self, request, format=None):
         token = None
