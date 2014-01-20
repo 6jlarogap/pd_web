@@ -23,6 +23,10 @@ from django.views.generic.edit import UpdateView, CreateView, FormView
 from django.views.generic.detail import DetailView
 from django.views.decorators.csrf import csrf_exempt
     
+from rest_framework.parsers import YAMLParser
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
 from rest_framework.authtoken.models import Token
 
 from burials.views import UGHRequiredMixin, LoginRequiredMixin, SupervisorRequiredMixin
@@ -34,26 +38,19 @@ from users.models import Profile, Org, RegisterProfile, ProfileLORU
 from burials.models import Burial
 from pd.views import PaginateListView, RequestToFormMixin, FormInvalidMixin
 
-class AuthGetTokenView(View):
+class AuthGetTokenView(APIView):
     """
     Проверка имени и пароля, (создать и) отдать token
     
     Проверка работы представления:
     curl -X POST http://host/api/signin -d 'username=USERNAME' -d 'password=PASSWORD'
     """
-    
-    @csrf_exempt
-    def dispatch(self, *args, **kwargs):
-        return super(AuthGetTokenView, self).dispatch(*args, **kwargs)
+    parser_classes = (YAMLParser,)
 
-    def get(self, request, *args, **kwargs):
-        raise Http404
-
-    def post(self, request, *args, **kwargs):
-        print request
+    def post(self, request, format=None):
         token = None
-        username = request.POST.get('username')
-        password = request.POST.get('password')
+        username = request.DATA.get('username')
+        password = request.DATA.get('password')
         if username and password:
             user = authenticate(username=username, password=password)
             if user and user.is_active:
@@ -65,7 +62,7 @@ class AuthGetTokenView(View):
         else:
             data = { 'status': 'error', 'message': 'Wrong username or password' }
             status = 400
-        return HttpResponse(json.dumps(data), mimetype=mimetype, status=status)
+        return Response(data=data, status=status)
 
 auth_get_token = AuthGetTokenView.as_view()
 
