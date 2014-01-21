@@ -189,6 +189,10 @@ class LoginLog(models.Model):
         user = request.user
         if user:
             # Пользователь может не иметь еще профиля при первом входе в систему
-            org = user.profile and user.profile.org or None
+            Profile = get_model('users', 'Profile')
+            try:
+                org = user.profile.org
+            except Profile.DoesNotExist:
+                org = None
             rec = cls(user=user, org = org, ip=request.META.get('REMOTE_ADDR'))
             rec.save()
