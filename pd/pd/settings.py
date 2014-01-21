@@ -88,8 +88,9 @@ MIDDLEWARE_CLASSES = (
     'debug_toolbar.middleware.DebugToolbarMiddleware',
     'users.middleware.ProfileMiddleware',
     'pd.middleware.LoginRequiredMiddleware',
-    'pd.middleware_cors.XsSharing',
+    'corsheaders.middleware.CorsMiddleware',
 )
+
 
 TEMPLATE_CONTEXT_PROCESSORS = (
     "django.contrib.auth.context_processors.auth",
@@ -110,7 +111,6 @@ WSGI_APPLICATION = 'pd.wsgi.application'
 TEMPLATE_DIRS = (
     os.path.join(ROOT_DIR, 'templates/'),
 )
-
 
 INSTALLED_APPS = (
     'django.contrib.auth',
@@ -250,6 +250,10 @@ PRODUCTION_SITE = False
 #
 # SUPERVISOR_ORG_INN = 'строка'
 
+# CORS:
+# Переопределить в False в local_settings.py на production server
+#
+CORS_ORIGIN_ALLOW_ALL = True
 
 # THUMB
 THUMBNAILS_FILE_SIGNATURE = '%(source)s/%(size)s~%(method)s~%(secret)s.%(extension)s'
