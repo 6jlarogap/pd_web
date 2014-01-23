@@ -22,7 +22,6 @@ from django.views.generic.base import View, TemplateView
 from django.views.generic.edit import UpdateView, CreateView, FormView
 from django.views.generic.detail import DetailView
     
-from rest_framework.parsers import JSONParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -44,8 +43,6 @@ class AuthGetTokenView(APIView):
     Проверка работы представления:
     curl -X POST http://host/api/signin -d 'username=USERNAME' -d 'password=PASSWORD'
     """
-    parser_classes = (JSONParser,)
-
     def post(self, request, format=None):
         token = None
         username = request.DATA.get('username')
