@@ -33,6 +33,7 @@ from users.forms import UserAddForm, RegisterForm, LoruFormset, ProfileForm, Use
                         UserDataForm, ChangePasswordForm, BankAccountFormset, OrgForm, \
                         OrgLogForm, LoginLogForm, OrgBurialStatsForm, SupportForm
 from users.models import Profile, Org, RegisterProfile, ProfileLORU
+from orders.models import ProductStatus, ProductHistory
 from burials.models import Burial
 from pd.views import PaginateListView, RequestToFormMixin, FormInvalidMixin
 
@@ -168,6 +169,16 @@ class LoruRegistryView(UGHRequiredMixin, View):
                     profile.area = None
                     profile.cemetery = None
                     profile.save()
+            for p_status in ProductStatus.objects.filter(ugh=request.user.profile.org,
+                                                         product__loru__in=removed_lorus):
+                ProductHistory.objects.create(
+                    product=p_status.product,
+                    ugh=p_status.ugh,
+                    operation=ProductHistory.PRODUCT_OPERATION_DELETE,
+                    dt=datetime.datetime.now(),
+                    publish_cost=0.0,
+                    currency=p_status.ugh.currency,
+                )
 
             messages.success(self.request, _(u"Данные сохранены"))
             write_log(self.request, self.request.user.profile.org, _(u'Изменены данные реестра ЛОРУ'))

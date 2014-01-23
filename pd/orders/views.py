@@ -823,7 +823,7 @@ class LoruProductPlaces(UserLoruMixin, APIView):
                                            else ugh.publish_cost
                         ProductHistory.objects.create(
                                         product_id=p['id'],
-                                        ugh_id=o['id'],
+                                        ugh=ugh,
                                         operation=o['status'],
                                         dt=dt,
                                         publish_cost=publish_cost,
