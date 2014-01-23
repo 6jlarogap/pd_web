@@ -240,7 +240,7 @@ ReasonFormset = inlineformset_factory(Org, Reason, formset=BaseInlineFormSet, ca
 class OrgForm(BaseOrgForm):
     class Meta:
         model = Org
-        exclude = ['off_address', ]
+        exclude = ('off_address', 'publish_cost', 'currency', )
 
     def __init__(self, request, *args, **kwargs):
         super(OrgForm, self).__init__(request, *args, **kwargs)

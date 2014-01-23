@@ -147,7 +147,7 @@ class Org(GetLogsMixin, BaseModel):
                                 validators=[validate_gt0])
     worktime = models.CharField(_(u"Время работы (ЧЧ:ММ - ЧЧ:ММ)"), max_length=255, default='', blank=True)
     site = models.URLField(_(u"Сайт"), default='', blank=True)
-    publish_cost = models.DecimalField(_(u"Цена"), max_digits=20, decimal_places=2, default=0.00)
+    publish_cost = models.DecimalField(_(u"Стоимость добавления продукта"), max_digits=20, decimal_places=2, default=0.00)
     currency = models.ForeignKey('billing.Currency', verbose_name=_(u"Валюта"), default=1)
 
     class Meta:
