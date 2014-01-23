@@ -24,7 +24,7 @@ from burials.views import CemeteryViewSet, AreaViewSet, PlaceViewSet, \
 from persons.views import AlivePersonViewSet, DeadPersonViewSet, PhoneViewSet 
 from logs.views import LogViewSet
 from orders.views import ProductCategoryViewSet, CatalogFiltersViewSet, ProductsViewSet, \
-                         ProductInfoViewSet, CabinetViewSet
+                         ProductInfoViewSet, CabinetViewSet, loru_product_places
 from users.views import auth_get_token
 
 # Burial
@@ -73,6 +73,9 @@ urlpatterns += patterns('pd.views',
     url(r'^import/', include('import_burials.urls')),
     
     url(r'^api/auth/signin/?$', auth_get_token),
+    
+    url(r'^api/loru/product_places/?$', loru_product_places),
+    
     url(r'^api/', include('rest_api.urls')),
     url(r'^', include(router.urls)),
 )

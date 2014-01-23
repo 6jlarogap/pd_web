@@ -30,6 +30,7 @@ from pd.views import PaginateListView, RequestToFormMixin
 from reports.models import make_report
 
 from rest_framework import viewsets
+from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from serializers import ProductCategorySerializer, ProductsSerializer, ProductInfoSerializer
@@ -748,3 +749,57 @@ class CabinetViewSet(CustomerDataMixin, viewsets.ViewSet):
             data['places'].append(place)           
             
         return Response(status=200, data=data)
+
+class UserLoruMixin:
+    ivalid_user_data = { "detail": "User denied access: not LORU" }
+    
+    def check_if_loru(self, request):
+        try:
+            request.user and request.user.profile
+        except (AttributeError, Profile.DoesNotExist):
+            return False
+        else:
+            return request.user.profile.is_loru()
+
+class LoruProductPlaces(UserLoruMixin, APIView):
+    """
+    Обновление статусов продуктов на площадках (ОМС)
+
+    Пример:
+    [
+        {
+            “id”: 1,
+            “places”: [
+            {
+                “id”: 5, 
+                “status”: “disable”
+            },
+            {
+                “id”: 8, 
+                “status”: “up”
+            }
+            ]
+        },
+        {
+            “id”: 2,
+            “places”: [
+            {
+                “id”: 5, 
+                “status”: “enable”
+            }
+            ]
+        }
+    ]
+    """
+    
+    permission_classes = (IsAuthenticated,)
+
+    def post(self, request, format=None):
+        if not self.check_if_loru(request):
+            return Response(data=self.ivalid_user_data, status=403)
+        for p in request.DATA:
+            pass
+        return Response(data={}, status=200)
+
+loru_product_places = LoruProductPlaces.as_view()
+
