@@ -74,8 +74,8 @@ class ProductHistory(models.Model):
 
     product = models.ForeignKey(Product, verbose_name=_(u"Продукт"), on_delete=models.PROTECT)
     ugh = models.ForeignKey(Org, limit_choices_to={'type': Org.PROFILE_UGH}, verbose_name=_(u"ОМС"))
-    dt = models.DateTimeField(_(u"Дата/время создания"), auto_now_add=True)
-    operation = models.CharField(_(u"Тип"), max_length=255, choices=PRODUCT_OPERATIONS)
+    dt = models.DateTimeField(_(u"Дата/время создания"))
+    operation = models.CharField(_(u"Операция"), max_length=255, choices=PRODUCT_OPERATIONS)
     publish_cost = models.DecimalField(_(u"Цена"), max_digits=20, decimal_places=2)
     currency = models.ForeignKey('billing.Currency', verbose_name=_(u"Валюта"))
 

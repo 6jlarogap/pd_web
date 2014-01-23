@@ -5,6 +5,7 @@ import json
 
 from django.contrib import messages
 from django.core.urlresolvers import reverse
+from django.db import transaction
 from django.db.models.aggregates import Count, Sum
 from django.db.models.query_utils import Q
 from django.http import HttpResponse, Http404
@@ -21,10 +22,10 @@ from django.shortcuts import get_object_or_404
 from logs.models import write_log
 from burials.forms import AddOrgForm, AddAgentForm, AddDoverForm, AddDocTypeForm
 from burials.models import Burial, Place, Grave, GravePhoto
-from users.models import CustomerProfile, CustomerProfilePhoto
+from users.models import CustomerProfile, CustomerProfilePhoto, Org, ProfileLORU
 from orders.forms import ProductForm, OrderForm, OrderItemFormset, CoffinForm, CatafalqueForm, \
                          AddInfoForm, OrderSearchForm, OrderBurialForm
-from orders.models import Product, Order, OrderItem, ProductCategory
+from orders.models import Product, Order, OrderItem, ProductCategory, ProductStatus, ProductHistory
 from pd.forms import CommentForm
 from pd.views import PaginateListView, RequestToFormMixin
 from reports.models import make_report
@@ -794,12 +795,42 @@ class LoruProductPlaces(UserLoruMixin, APIView):
     
     permission_classes = (IsAuthenticated,)
 
+    @transaction.commit_on_success
     def post(self, request, format=None):
         if not self.check_if_loru(request):
             return Response(data=self.ivalid_user_data, status=403)
+        data = []
         for p in request.DATA:
-            pass
-        return Response(data={}, status=200)
+            if Product.objects.filter(pk=p['id'], loru=request.user.profile.org).count():
+                data_p = { 'id': p['id'], 'places': [] }
+                for o in p['places']:
+                    if ProfileLORU.objects.filter(ugh_id=o['id'], loru=request.user.profile.org).count():
+                        ugh = Org.objects.get(pk=o['id'])
+                        data_p['places'].append(o)
+                        dt = datetime.datetime.now()
+                        status, created = ProductStatus.objects.get_or_create(
+                                            product_id=p['id'],
+                                            ugh=ugh,
+                                            defaults={'status': o['status'],
+                                                      'dt': dt,
+                                            }
+                        )
+                        if not created:
+                            status.status=o['status']
+                            status.dt=dt
+                            status.save()
+                        publish_cost = 0.0 if o['status'] == ProductHistory.PRODUCT_OPERATION_DISABLE \
+                                           else ugh.publish_cost
+                        ProductHistory.objects.create(
+                                        product_id=p['id'],
+                                        ugh_id=o['id'],
+                                        operation=o['status'],
+                                        dt=dt,
+                                        publish_cost=publish_cost,
+                                        currency=ugh.currency,
+                        )
+                data.append(data_p)
+        return Response(data=data, status=200)
 
 loru_product_places = LoruProductPlaces.as_view()
 

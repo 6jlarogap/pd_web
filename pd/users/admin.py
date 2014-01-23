@@ -26,7 +26,7 @@ admin.site.register(CustomerProfile, CustomerProfileAdmin)
 
 class OrgAdmin(admin.ModelAdmin):
     inlines = [ProfileLORUInline, ]
-    list_display = ['name', 'type']
+    list_display = ['id', 'name', 'type']
     readonly_fields =  ['off_address', ]
     search_fields = ['name']
 

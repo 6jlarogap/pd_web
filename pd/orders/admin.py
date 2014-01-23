@@ -4,7 +4,7 @@ from orders.models import Product, Order, OrderItem, ProductCategory, ProductSta
 
 
 class ProductAdmin(admin.ModelAdmin):
-    pass
+    list_display = ('id', 'loru', 'name', )
 
 admin.site.register(Product, ProductAdmin)
 
