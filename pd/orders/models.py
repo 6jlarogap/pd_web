@@ -87,7 +87,7 @@ class ProductStatus(models.Model):
     product = models.ForeignKey(Product, verbose_name=_(u"Продукт"), on_delete=models.PROTECT)
     ugh = models.ForeignKey(Org, limit_choices_to={'type': Org.PROFILE_UGH}, verbose_name=_(u"ОМС"))
     # Из ProductHistory.PRODUCT_OPERATIONS здесь будут применяться только enable, disable, up:
-    status = models.CharField(_(u"Тип"), max_length=255, choices=ProductHistory.PRODUCT_OPERATIONS)
+    status = models.CharField(_(u"Статус"), max_length=255, choices=ProductHistory.PRODUCT_OPERATIONS)
     dt = models.DateTimeField(_(u"Дата/время модификации"))
 
     class Meta:
