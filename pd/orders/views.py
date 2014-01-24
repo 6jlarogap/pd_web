@@ -834,3 +834,24 @@ class LoruProductPlaces(UserLoruMixin, APIView):
 
 loru_product_places = LoruProductPlaces.as_view()
 
+class UghPublishedProductsViewSet(viewsets.ViewSet):
+    queryset = Product.objects.none()
+    permission_classes = (IsAuthenticated,)
+    
+    def list(self, request):
+        data=[]
+        try:
+            profile=request.user.profile
+        except AttributeError:
+            return Response(status=400, data=data)
+        if not profile.is_loru():
+            return Response(status=400, data=data)
+        ugh_list = [ pl.ugh for pl in ProfileLORU.objects.filter(loru=profile.org)]
+        for p in Product.objects.filter(loru=profile.org).order_by('pk'):
+            data_p = { 'id': p.pk, 'name': p.name, 'availableOnPlaces': [] }
+            for ps in ProductStatus.objects.filter(product=p, ugh__in=ugh_list):
+                if ps.status in (ProductHistory.PRODUCT_OPERATION_ENABLE,
+                                 ProductHistory.PRODUCT_OPERATION_UP):
+                    data_p['availableOnPlaces'].append(ps.ugh.pk)
+            data.append(data_p)
+        return Response(status=200, data=data)
