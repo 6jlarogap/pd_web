@@ -22,10 +22,11 @@ from django.views.generic.base import View, TemplateView
 from django.views.generic.edit import UpdateView, CreateView, FormView
 from django.views.generic.detail import DetailView
     
+from rest_framework import viewsets
 from rest_framework.response import Response
 from rest_framework.views import APIView
-
 from rest_framework.authtoken.models import Token
+from rest_framework.permissions import IsAuthenticated
 
 from burials.views import UGHRequiredMixin, LoginRequiredMixin, SupervisorRequiredMixin
 from logs.models import Log, write_log, LoginLog
@@ -33,6 +34,7 @@ from users.forms import UserAddForm, RegisterForm, LoruFormset, ProfileForm, Use
                         UserDataForm, ChangePasswordForm, BankAccountFormset, OrgForm, \
                         OrgLogForm, LoginLogForm, OrgBurialStatsForm, SupportForm
 from users.models import Profile, Org, RegisterProfile, ProfileLORU
+from users.serializers import UghPublishCostSerializer
 from orders.models import ProductStatus, ProductHistory
 from burials.models import Burial
 from pd.views import PaginateListView, RequestToFormMixin, FormInvalidMixin
@@ -755,3 +757,15 @@ class SupportThanks(TemplateView):
                                         'html_message': html_message})
 
 support_thanks = SupportThanks.as_view()
+
+class UghPublishCostViewSet(viewsets.ModelViewSet):
+    model = Org
+    serializer_class = UghPublishCostSerializer
+    permission_classes = (IsAuthenticated,)
+
+    def get_queryset(self):
+        try:
+            return Org.objects.filter(loru_list__loru=self.request.user.profile.org)
+        except AttributeError:
+            # user without profile
+            return Org.objects.none()
