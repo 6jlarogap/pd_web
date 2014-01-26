@@ -71,7 +71,7 @@ class AuthGetTokenView(APIView):
                     if user.profile.is_loru():
                         role = u'ROLE_LORU'
                     elif user.profile.is_ugh():
-                        role = u'ROLE_UGH'
+                        role = u'ROLE_OMS'
             else:
                 role = 'ROLE_CLIENT'
             if not role:
