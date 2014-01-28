@@ -152,6 +152,8 @@ class AlivePersonForm(ValidDataMixin, StrippedStringsMixin, forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super(AlivePersonForm, self).__init__(*args, **kwargs)
         self.fields['phones'].widget = forms.TextInput()
+        # Это требуется только для ответственного:
+        del self.fields['login_phone']
 
     def is_valid_data(self):
         return self.is_valid() and self.cleaned_data.get('last_name') # last name should be present
