@@ -18,10 +18,13 @@ from django.http import HttpResponse, Http404
 from django.shortcuts import redirect, render, get_object_or_404
 from django.template.loader import render_to_string
 from django.utils.translation import ugettext_lazy as _
+from django.utils.encoding import smart_unicode
 from django.views.generic.base import View, TemplateView
 from django.views.generic.edit import UpdateView, CreateView, FormView
 from django.views.generic.detail import DetailView
     
+from captcha.client import submit
+
 from rest_framework import viewsets
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -32,13 +35,31 @@ from burials.views import UGHRequiredMixin, LoginRequiredMixin, SupervisorRequir
 from logs.models import Log, write_log, LoginLog
 from users.forms import UserAddForm, RegisterForm, LoruFormset, ProfileForm, UserProfileForm, \
                         UserDataForm, ChangePasswordForm, BankAccountFormset, OrgForm, \
-                        OrgLogForm, LoginLogForm, OrgBurialStatsForm, SupportForm
+                        OrgLogForm, LoginLogForm, OrgBurialStatsForm, SupportForm, TestCaptchaForm
 from users.models import Profile, Org, RegisterProfile, ProfileLORU
 from users.serializers import UghPublishCostSerializer
 from orders.models import ProductStatus, ProductHistory
 from burials.models import Burial
 from pd.views import PaginateListView, RequestToFormMixin, FormInvalidMixin
 
+class CheckRecaptchaMixin(object):
+    
+    def check_recaptcha(self, request, challenge, response):
+        forwarded_ip = request.META.get('HTTP_X_FORWARDED_FOR', '')
+        if forwarded_ip:
+            remote_ip = forwarded_ip
+        else:
+            remote_ip = request.META.get('REMOTE_ADDR', '')
+        use_ssl = getattr(settings, 'RECAPTCHA_USE_SSL', False)
+        private_key = settings.RECAPTCHA_PRIVATE_KEY
+        return submit(
+                smart_unicode(challenge),
+                smart_unicode(response),
+                private_key=private_key,
+                remoteip=remote_ip,
+                use_ssl=use_ssl
+        ).is_valid
+    
 class AuthGetTokenView(APIView):
     """
     Проверка имени и пароля, (создать и) отдать token
@@ -54,7 +75,6 @@ class AuthGetTokenView(APIView):
             user = authenticate(username=username, password=password)
             if user and user.is_active:
                 token, created = Token.objects.get_or_create(user=user)
-        mimetype = 'application/json'
         if token:
             data = { 'token': token.key }
             status = 200
@@ -64,6 +84,39 @@ class AuthGetTokenView(APIView):
         return Response(data=data, status=status)
 
 auth_get_token = AuthGetTokenView.as_view()
+
+class AuthGetPasswordBySMSView(CheckRecaptchaMixin, APIView):
+    """
+    Замена пользователю пароля, отправка пароля по СМС
+    
+    Input example:
+    {
+        "phoneNumber": “375291234567”,
+        "recaptchaData": {
+            "response": "foo bar",
+            "challenge": "03AHJ_VuvQ5p0AdejIw4W6"
+        }
+    }
+    Output examples:
+    {
+        "status: "success",
+        "message": "SMS с кодом отправлена, укажите его в поле пароль выше"
+    }
+    {
+        "status: "error",
+        "message": "Ваш номер телефона не указан в списке для входа. Обратитесь в администрацию кладбища."
+        # or       "Введена не верная captcha"
+    }
+    """
+    def post(self, request, format=None):
+        phone_number = request.DATA['phoneNumber']
+        recaptcha_data = request.DATA['recaptchaData']
+        print self.check_recaptcha(self.request, recaptcha_data['challenge'], recaptcha_data['response'])
+        data = { 'status': 'ok', }
+        status = 200
+        return Response(data=recaptcha_data, status=status)
+
+auth_get_password_by_sms = AuthGetPasswordBySMSView.as_view()
 
 class LoginView(View):
     """
@@ -769,3 +822,21 @@ class UghPublishCostViewSet(viewsets.ModelViewSet):
         except AttributeError:
             # user without profile
             return Org.objects.none()
+
+class TestCaptchaView(FormView):
+    """
+    Форма тестирования captcha
+    
+    Без этой простой страницы трудно, если не невозможно
+    увидеть и challenge-код капчи и правильный ответ пользователя.
+    Правильный ответ -- в графике! И еще: повтор правильных
+    challenge и ответа приведет к неверному срабатыванию капчи.
+    """
+    form_class = TestCaptchaForm
+    template_name = 'testcaptcha.html'
+
+    def get_success_url(self):
+        return reverse('testcaptcha')
+
+testcaptcha = TestCaptchaView.as_view()
+
