@@ -3,6 +3,7 @@ import json
 import datetime
 import random
 import string
+import decimal
 import hashlib
 
 from django.conf import settings
@@ -38,6 +39,7 @@ from users.forms import UserAddForm, RegisterForm, LoruFormset, ProfileForm, Use
                         UserDataForm, ChangePasswordForm, BankAccountFormset, OrgForm, \
                         OrgLogForm, LoginLogForm, OrgBurialStatsForm, SupportForm, TestCaptchaForm
 from users.models import Profile, Org, RegisterProfile, ProfileLORU, CustomerProfile
+from burials.models import Place
 from users.serializers import UghPublishCostSerializer
 from orders.models import ProductStatus, ProductHistory
 from burials.models import Burial
@@ -139,10 +141,13 @@ class AuthGetPasswordBySMSView(CheckRecaptchaMixin, APIView):
         if not self.check_recaptcha(self.request, recaptcha_data['challenge'], recaptcha_data['response']):
             message = _(u'Введена не верная captcha')
         else:
-            chars = string.ascii_uppercase + string.ascii_lowercase + string.digits
-            password = ''.join(random.choice(chars) for x in range(random.randrange(5, 11)))
-            status = 'success'
-            message = _(u'Пароль установлен')
+            if not Place.objects.filter(responsible__login_phone=decimal.Decimal(phone_number)).count():
+                message = _(u'Ваш номер телефона не указан в списке для входа. Обратитесь в администрацию кладбища')
+            else:
+                chars = string.ascii_uppercase + string.ascii_lowercase + string.digits
+                password = ''.join(random.choice(chars) for x in range(random.randrange(5, 11)))
+                status = 'success'
+                message = _(u'Пароль установлен')
         data = { 'status': status, 'password': password, 'message': message }
         return Response(data=data, status=200)
 
