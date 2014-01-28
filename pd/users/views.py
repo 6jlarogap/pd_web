@@ -36,7 +36,7 @@ from logs.models import Log, write_log, LoginLog
 from users.forms import UserAddForm, RegisterForm, LoruFormset, ProfileForm, UserProfileForm, \
                         UserDataForm, ChangePasswordForm, BankAccountFormset, OrgForm, \
                         OrgLogForm, LoginLogForm, OrgBurialStatsForm, SupportForm, TestCaptchaForm
-from users.models import Profile, Org, RegisterProfile, ProfileLORU
+from users.models import Profile, Org, RegisterProfile, ProfileLORU, CustomerProfile
 from users.serializers import UghPublishCostSerializer
 from orders.models import ProductStatus, ProductHistory
 from burials.models import Burial
@@ -76,7 +76,27 @@ class AuthGetTokenView(APIView):
             if user and user.is_active:
                 token, created = Token.objects.get_or_create(user=user)
         if token:
-            data = { 'token': token.key }
+            data = { 'token': token.key,
+                    'sessionId': request.session._get_or_create_session_key(),
+                   }
+            role = None
+            try:
+                user.customerprofile
+            except CustomerProfile.DoesNotExist:
+                try:
+                    user.profile
+                except Profile.DoesNotExist:
+                    pass
+                else:
+                    if user.profile.is_loru():
+                        role = u'ROLE_LORU'
+                    elif user.profile.is_ugh():
+                        role = u'ROLE_OMS'
+            else:
+                role = 'ROLE_CLIENT'
+            if not role:
+                raise Exception(u'Unknown role')
+            data['role'] = role
             status = 200
         else:
             data = { 'status': 'error', 'message': 'Wrong username or password' }
