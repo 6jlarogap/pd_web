@@ -19,6 +19,18 @@ class GeoPointModel(BaseModel):
         abstract = True
 
 
+class CoordinatesModel(models.Model):
+    """
+    Базовая модель для списка координат объекта: вершин многоугольника
+    """
+    angle_number = models.PositiveIntegerField(_(u"Порядок следования углов многоугольника"))
+    lat = models.FloatField(_(u"Широта"))
+    lng = models.FloatField(_(u"Долгота"))
+
+    class Meta:
+        abstract = True
+
+
 class Country(models.Model):
     """
     Страна.

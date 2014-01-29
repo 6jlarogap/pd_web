@@ -72,7 +72,8 @@ class ThumbnailFile(ThumbnailFileBase):
         if self._source_exists():
             if not self._exists():
                 # work only with allowed sizes
-                if self.size not in settings.THUMBNAILS_ALLOWED_SIZES:
+                if self.size[0] not in settings.THUMBNAILS_ALLOWED_SIZE_RANGE or \
+                   self.size[1] not in settings.THUMBNAILS_ALLOWED_SIZE_RANGE:
                     return False
 
                 im = processors.get_image(self.source_storage.open(self.source))
