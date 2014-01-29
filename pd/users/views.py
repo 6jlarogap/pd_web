@@ -134,21 +134,29 @@ class AuthGetPasswordBySMSView(CheckRecaptchaMixin, APIView):
     """
     def post(self, request, format=None):
         status = 'error'
+        status_code = 400
         password = None
         message = ''
         phone_number = request.DATA['phoneNumber']
         recaptcha_data = request.DATA['recaptchaData']
         if not self.check_recaptcha(self.request, recaptcha_data['challenge'], recaptcha_data['response']):
-            message = _(u'Введена не верная captcha')
+            message = _(u'Введена неверная captcha')
         else:
             if not Place.objects.filter(responsible__login_phone=decimal.Decimal(phone_number)).count():
                 message = _(u'Ваш номер телефона не указан в списке для входа. Обратитесь в администрацию кладбища')
             else:
+                user, created = User.objects.get_or_create(username=phone_number)
+                if created:
+                    user.is_active = True
                 chars = string.ascii_uppercase + string.ascii_lowercase + string.digits
                 password = ''.join(random.choice(chars) for x in range(random.randrange(5, 11)))
+                user.set_password(password)
+                user.save()
+                customprofile = CustomerProfile.objects.get_or_create(user=user)
                 status = 'success'
+                status_code = 200
                 message = _(u'Пароль установлен')
-        data = { 'status': status, 'password': password, 'message': message }
+        data = { 'status': status_code, 'password': password, 'message': message }
         return Response(data=data, status=200)
 
 auth_get_password_by_sms = AuthGetPasswordBySMSView.as_view()
