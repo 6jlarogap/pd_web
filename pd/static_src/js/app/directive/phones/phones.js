@@ -10,7 +10,7 @@ app.controller('PhonesController', ['$scope', 'Phone', function($scope, Phone) {
     $scope.maxlength = 12;
     $scope.old = {};
     $scope.phone = new Phone({is_new:true, phonetype:DEFAULT_PHONETYPE});
-    
+
     $scope.phoneNumberPattern = (function() {
         var regexp = /^\(?(\d{3})\)?[ .-]?(\d{3})[ .-]?(\d{4})$/;
         return {
@@ -44,14 +44,16 @@ app.controller('PhonesController', ['$scope', 'Phone', function($scope, Phone) {
             $scope.isPhoneAddOpen = true;
             $scope.isStaticBlock = true;
         }
+		if(!$scope.phones){
+			$scope.phones = [];
+		}
 		$('#edit_save_btn').hide();
-		$scope.old = {phonetype:$scope.phone.phonetype, number:$scope.phone.number};
+		$scope.old = angular.copy($scope.phone);
 	};
 	$scope.close = function(form) {
 		$scope.phone.phonetype = $scope.old.phonetype; 
 		$scope.phone.number = $scope.old.number;
-
-		$scope.update();
+		//$scope.update();
 		$scope.isPhoneEditOpen = false;
         $scope.isPhoneAddOpen = false;
         $scope.isStaticBlock = false;
@@ -64,7 +66,7 @@ app.controller('PhonesController', ['$scope', 'Phone', function($scope, Phone) {
     };
         
     $scope.save = function() {
-		if($scope.phone.is_new){
+		if($scope.phone.is_new && $scope.phone.number.length){
 			$scope.phone.is_new = false;
 			$scope.phones.push($scope.phone);
             $scope.isPhoneEditOpen = false;

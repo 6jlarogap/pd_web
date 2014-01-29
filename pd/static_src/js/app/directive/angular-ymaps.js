@@ -1,5 +1,5 @@
 var map, ymaps;
-var YMAPS_URL = '//api-maps.yandex.ru/2.0-stable/?load=package.standard,package.clusters,package.geoObjects&mode=release&lang=ru-RU&ns=ymaps',
+var YMAPS_URL = '//api-maps.yandex.ru/2.0/?load=package.standard,package.clusters,package.geoObjects&mode=release&lang=ru-RU&ns=ymaps',
 
 ymapModule = angular.module('ymaps', [])
 .factory('$script', ['$q', '$rootScope', function ($q, $rootScope) {

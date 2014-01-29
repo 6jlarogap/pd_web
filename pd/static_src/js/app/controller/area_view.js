@@ -105,6 +105,7 @@ function AreaViewCtrl($scope, $rootScope, $http, $routeParams, $resource, $locat
     $scope.gridOptions = { 
         data: 'place_list_filtered', //|filter:search
         enableRowSelection:false,
+        showGroupPanel: true,
         columnDefs: [
         	{field: 'row', displayName: 'Ряд'},
         	{field: 'place', displayName: 'Место'},

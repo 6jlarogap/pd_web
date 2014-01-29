@@ -127,8 +127,8 @@ function($scope, $dialog, $http, $resource, $parse, Place) {
 						$scope.close();
 					});
 				}else{
-				    $scope.$parent.responsible.address = obj.id;
-				    $scope.$parent.item.address = obj.id;
+				    $scope.$parent.editor.responsible.address = obj.id;
+				    $scope.$parent.editor.item.address = obj.id;
 				    //$scope.$parent.saveResponsibleEditForm(form);
 				    /*
 					$scope.$parent.item.$update({

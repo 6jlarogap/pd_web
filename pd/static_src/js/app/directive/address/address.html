@@ -1,8 +1,12 @@
 <div class="address_block">
 	<div ng-hide="isAddressEditorOpen">
-		<h2>Адрес</h2>
+		<h2>
+		    Адрес
+            <button class="btn btn-success btn-mini" ng-click="open()">
+                    <i class="icon-edit"></i>
+            </button>
+		</h2>
 		<div ng-include src="'/static/js/app/directive/address/static_block.html'"></div>
-    	<button class="btn" ng-click="open()">Редактировать</button>
 	</div>
 
 	<div ng-show="isAddressEditorOpen">

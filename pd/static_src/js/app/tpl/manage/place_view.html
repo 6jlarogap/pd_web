@@ -13,6 +13,23 @@
                 <dd>{{ item.row }}</dd>
                 <dt>Место:</dt>
                 <dd>{{ item.place }}</dd>
+                <dt>Могил всего</dt>
+                <dd>{{item.graves_count}}</dd>
+                <!-- dt>Свободно</dt>
+                <dd>{{item.available_count}}</dd -->
+                
+                <dt>Координаты</dt>
+                <dd>широта: {{item.lat || '-'}}, долгота: {{item.lng || '-'}}</dd>
+                <dt>Размеры</dt>
+                <dd>длина {{item.place_length || '-'}}м, ширина {{item.place_width || '-'}}м</dd>
+            </dl>
+            <dl class="dl-horizontal">
+                <dd><a href="#" class="btn btn-success"
+                    ng-disabled="loading"
+                    ng-click="openEditForm('isPlaceEditorOpen')">Редактировать</a></dd -->
+            </dl>
+            <hr />
+            <dl class="dl-horizontal">
                 <dt>Ответственный:</dt>
                 <dd>
                     {{ responsible.last_name + ' ' + responsible.first_name + ' ' + responsible.middle_name }}
@@ -28,20 +45,8 @@
                         <span class="icon-remove"></span>
                     </button>
                 </dd>
-                <dt>Могил всего</dt>
-                <dd>{{item.graves_count}}</dd>
-                <!-- dt>Свободно</dt>
-                <dd>{{item.available_count}}</dd -->
-                
-                <dt>Координаты</dt>
-                <dd>широта: {{item.lat || '-'}}, долгота: {{item.lng || '-'}}</dd>
-                <dt>Размеры</dt>
-                <dd>длина {{item.place_length || '-'}}м, ширина {{item.place_width || '-'}}м</dd>
-                <!-- dt></dt>
-                <dd><a href="#" class="btn btn-success"
-                    ng-disabled="loading"
-                    ng-click="openEditForm('isPlaceEditorOpen')">Редактировать</a></dd -->
             </dl>
+
         </div>
 	    <yandex-map id="yandex-map" class="span5" coordinates="placeCoordinates" points="placePoints">
 	    </yandex-map>
@@ -107,11 +112,12 @@
                                     href="/burials/{{burial.id}}/exhumate/" target="_new">
                                     <i class="icon-arrow-up"></i>
                                 </a>
-                                <a class="btn btn-mini" popover="Отмена эксгумации" popover-trigger="mouseenter"
-                                    href="/places/{{item.id}}/" target="_new"
+                                <div class="btn btn-mini" popover="Отмена эксгумации" popover-trigger="mouseenter"
+                                    off-href="/places/{{item.id}}/" target="_new"
+                                    ng-click="cancelExhumation(burial)"
                                     ng-show="burial.status==BURIAL_STATUS_EXHUMATED">
                                     <i class="icon-arrow-down"></i>
-                                </a>
+                                </div>
                                 <a class="btn btn-mini" popover="Печать справки" popover-trigger="mouseenter"
                                     href="/burials/{{burial.id}}/spravka/" target="_new"
                                     ng-hide="burial.status==BURIAL_STATUS_EXHUMATED">

@@ -88,3 +88,18 @@
       'Grave':'Могила',
       'Country':'Страна'
     };
+    
+window.ngGrid.i18n['en'] = {
+	    ngAggregateLabel: 'элементы',
+	    ngGroupPanelDescription: 'Для группировки по колонке перетащите сюда ее заголовок',
+	    ngSearchPlaceHolder: 'Поиск...',
+	    ngMenuText: 'Выберите колонку:',
+	    ngShowingItemsLabel: 'Показываемые элементы:',
+	    ngTotalItemsLabel: 'Всего элементов:',
+	    ngSelectedItemsLabel: 'Выбранные элементы:',
+	    ngPageSizeLabel: 'Размер страницы:',
+	    ngPagerFirstTitle: 'Первая страница',
+	    ngPagerNextTitle: 'Следующая страница',
+	    ngPagerPrevTitle: 'Предыдущая страница',
+	    ngPagerLastTitle: 'Последняя страница'
+	};

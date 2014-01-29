@@ -14,6 +14,7 @@
     $scope.log_page = 1;
     $scope.loading = false;
     $scope.edit_resp = false;
+    $scope.editor = {};
     
     var item_params;
 	//setup
@@ -221,10 +222,30 @@
 		dialogFade : true
 	};
 
+	$scope.cancelExhumation = function(burial) {
+		var item_params = {
+				placeID : $routeParams.place_id,
+				cemetery_id : $routeParams.cemetery_id,
+				area_id : $routeParams.area_id,
+				burial_id:burial.id
+			};
+			Place.cancelExhumation(item_params, function(result) {
+				$scope.updateGraves();
+			});
+	};
+	
 	$scope.openEditForm = function(form, data) {
 		$scope[form] = true;
 		$('body').css('overflow-y','hidden');
+		$scope.editor.action = form;
 		switch (form) {
+			case 'isResponsibleEditorOpen':
+				$scope.editor.item = angular.copy($scope.item);
+				$scope.editor.responsible = angular.copy($scope.responsible);
+				break;
+		    case 'isPlaceEditorOpen':
+		    	$scope.editor.item = angular.copy($scope.item);
+		    	break;
 			case 'isBurialEditorOpen':
 				if (data) {
 					Burial.get({
@@ -235,6 +256,7 @@
 					}, function(result) {
 						result.plan_time = result.plan_time || '';
 						$scope.selectedBurial = result;
+						$scope.editor.item = $scope.selectedBurial;
 					});
 				}
 				break;
@@ -255,6 +277,7 @@
 				if (data) {
 					$scope.selectedGrave = data;
 					$scope.originGraveNumber = data.grave_number;
+					$scope.editor.gave = data;
 				}
 				break;
 			case 'isGraveGalleryOpen':
@@ -273,7 +296,10 @@
 	$scope.closeEditForm = function(form) {
 		$scope[form] = false;
 		$('body').css('overflow-y','auto');
-		$scope.update();
+		// $scope.update();
+		/*for(var i in $scope.editor){
+			delete $scope.editor[i]
+		}*/
 	};
 
 	//Place
@@ -282,7 +308,7 @@
 		if (form.$valid) {
 			var url = '/manage/cemetery/{0}/area/{1}/place/{2}'.format($scope.item.cemetery, $scope.item.area, $scope.item.id);
 			$scope.loading = true;
-			$scope.item.$update({
+			$scope.editor.item.$update({
 				cemetery_id : $routeParams.cemetery_id,
 				area_id : $routeParams.area_id
 			}, function() {
@@ -301,11 +327,11 @@
 	$scope.isResponsibleEditorOpen = false;
 	$scope.saveResponsibleEditForm = function(form) {
 		if (form.$valid || true) { //TODO: check this
-			$scope.item.obj_responsible = $scope.responsible;
-			$scope.item.obj_responsible_phones = $scope.responsible_phones; 
+			$scope.editor.item.obj_responsible = $scope.editor.responsible;
+			$scope.editor.item.obj_responsible_phones = $scope.editor.responsible_phones; 
 			
 			$scope.loading = true;
-			$scope.item.$update({
+			$scope.editor.item.$update({
 				cemetery_id : $routeParams.cemetery_id,
 				area_id : $routeParams.area_id
 			}, function(response) {
@@ -343,7 +369,7 @@
 			if (confirm("Открепить " + fio + '?')) {
 				delete $scope.item.responsible;
 				$scope.loading = true;
-				$scope.item.$update({placeID : $routeParams.place_id,
+				$scope.editor.item.$update({placeID : $routeParams.place_id,
 										cemetery_id : $routeParams.cemetery_id,
 										area_id : $routeParams.area_id
 					},function() {

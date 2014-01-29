@@ -20,6 +20,9 @@ from geo.models import GeoPointModel
 
 from logs.models import write_log
 
+from managers import PlaceManager
+
+
 class Cemetery(GetLogsMixin, BaseModel, PhonesMixin):
     PLACE_AREA = 'area'
     PLACE_ROW = 'row'
@@ -176,6 +179,8 @@ class Place(SafeDeleteMixin, GeoPointModel):
                                        null=True, blank=True, validators=[validate_gt0])
     place_width = models.DecimalField(_(u"Ширина, м."), max_digits=5, decimal_places=2,
                                         null=True, blank=True, validators=[validate_gt0])
+    
+    objects = PlaceManager()
     
     class Meta:
         verbose_name = _(u"Место")

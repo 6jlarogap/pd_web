@@ -480,6 +480,21 @@ class PlaceViewSet(viewsets.ModelViewSet):
         responcible = request.GET.get('responcible')
         return Response(status=200)
 
+        
+    @action(methods=['GET',])
+    def cancel_exhumation(self, request, pk=None):
+        cemetery = getCemetery(self.request)
+        if self.request.GET.get('area_id'):
+            area  = getArea(self.request)
+        place = get_object_or_404(Place, pk=pk, cemetery=cemetery, area=area)
+
+        burial_id = request.GET.get('burial_id')
+        burial = get_object_or_404(Burial, pk=burial_id, cemetery=cemetery)
+        burial.place = place
+        Place.objects.cancel_exhumation(request,  burial)
+        return Response(status=200)
+
+
 
 class AreaPurposeViewSet(viewsets.ModelViewSet):
     model = AreaPurpose
@@ -634,7 +649,7 @@ class BurialViewSet(viewsets.ModelViewSet):
             footer = None
         log_object(self.request, obj=object.place, old=old, new=object, reason=_(u'Захоронение изменено'))        
         return object
-        
+
 
 class AreaPhotoViewSet(viewsets.ModelViewSet):
     model = AreaPhoto

@@ -11,20 +11,20 @@
                     <label for="id_responsible_set-last_name">Фамилия:</label>
                 </dt>
                 <dd>
-                    {{responsible.last_name}}
-                    <span class="error" ng-show="!responsible.last_name.length">Не указана</span>
+                    {{editor.responsible.last_name}}
+                    <span class="error" ng-show="!editor.responsible.last_name.length">Не указана</span>
                 </dd>
                 <dt>
                     <label for="id_responsible_set-first_name">Имя:</label>
                 </dt>
                 <dd>
-                    {{responsible.first_name}}
+                    {{editor.responsible.first_name}}
                 </dd>
                 <dt>
                     <label for="id_responsible_set-middle_name">Отчество:</label>
                 </dt>
                 <dd>
-                    {{responsible.middle_name}}
+                    {{editor.responsible.middle_name}}
                 </dd>
                 <dt></dt>
                 <dd>
@@ -36,22 +36,22 @@
 	                <label for="id_responsible_set-last_name">Фамилия:</label>
 	            </dt>
 	            <dd>
-	                <input name="placeCemetery" id="id_responsible_set-last_name" type="text" ng-model="responsible.last_name"
+	                <input name="placeCemetery" id="id_responsible_set-last_name" type="text" ng-model="editor.responsible.last_name"
 	                       name="last_name" required maxlength="255"/>
-                    <span class="error" ng-show="!responsible.last_name.length">Не указана</span>
+                    <span class="error" ng-show="!editor.responsible.last_name.length">Не указана</span>
 	            </dd>
 	            <dt>
 	                <label for="id_responsible_set-first_name">Имя:</label>
 	            </dt>
 	            <dd>
-	                <input name="placeArea" id="id_responsible_set-first_name" type="text" ng-model="responsible.first_name"
+	                <input name="placeArea" id="id_responsible_set-first_name" type="text" ng-model="editor.responsible.first_name"
 	                       maxlength="255"/>
 	            </dd>
 	            <dt>
 	                <label for="id_responsible_set-middle_name">Отчество:</label>
 	            </dt>
 	            <dd>
-	                <input name="placeRow" id="id_responsible_set-middle_name" type="text" ng-model="responsible.middle_name"
+	                <input name="placeRow" id="id_responsible_set-middle_name" type="text" ng-model="editor.responsible.middle_name"
 	                       maxlength="255" />
 	            </dd>
 	            <dt></dt>
@@ -71,10 +71,10 @@
     </tab>
     <tab heading="Адрес">
     	<form name="responsibleEditForm1" >
-    		<address address_class="address_class" address="responsible.address" 
+    		<address address_class="address_class" address="editor.responsible.address" 
 	    		save_action="saveEditForm"></address>
 		    <div class="modal-footer">
-    			<span ng-hide="responsible.last_name">Необходимо указать фамилию ответственного</span>
+    			<span ng-hide="editor.responsible.last_name">Необходимо указать фамилию ответственного</span>
 		        <button class="btn btn-primary" ng-disabled="is_responsible_disabled(responsibleEditForm)" ng-click="saveResponsibleEditForm(responsibleEditForm)">
 		            Сохранить
 		        </button>
@@ -83,11 +83,11 @@
 		</form>    	
     </tab>
 	<tab heading="Телефоны">
-		<span ng-hide="responsible.last_name">Заполните страницу личных данных</span>
-		<phones phones="responsible_phones"></phones>
+		<span ng-hide="editor.responsible.last_name">Заполните страницу личных данных</span>
+		<phones phones="editor.responsible_phones"></phones>
 		<form name="responsibleEditForm2" >
 		    <div class="modal-footer">
-		    	<span ng-hide="responsible.last_name">Необходимо указать фамилию ответственного</span>
+		    	<span ng-hide="editor.responsible.last_name">Необходимо указать фамилию ответственного</span>
 		        <button id="edit_save_btn" class="btn btn-primary" ng-disabled="is_responsible_disabled(responsibleEditForm)" ng-click="saveResponsibleEditForm(responsibleEditForm)">
 		            Сохранить
 		        </button>
