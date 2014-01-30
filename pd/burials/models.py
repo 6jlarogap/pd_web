@@ -14,7 +14,7 @@ from persons.models import DeadPerson, SafeDeleteMixin, DeathCertificate, Phones
 from reports.models import Report
 from users.models import Org, Profile, Dover, ProfileLORU
 from logs.models import Log
-from geo.models import GeoPointModel
+from geo.models import GeoPointModel, CoordinatesModel
 
 from geo.models import GeoPointModel
 
@@ -101,6 +101,12 @@ class Cemetery(GetLogsMixin, BaseModel, PhonesMixin):
 
 
 
+class CemeteryCoordinates(CoordinatesModel):
+    cemetery = models.ForeignKey(Cemetery, verbose_name=_(u"Кладбище"), on_delete=models.PROTECT)
+
+    class Meta:
+        unique_together = ('cemetery', 'angle_number',)
+
 class AreaPurpose(models.Model):
     name = models.CharField(_(u"Название"), max_length=255)
 
@@ -146,6 +152,12 @@ class Area(BaseModel):
         if not self.name.strip():
             self.name=''
         return super(Area, self).save(*args, **kwargs)
+
+class AreaCoordinates(CoordinatesModel):
+    area = models.ForeignKey(Area, verbose_name=_(u"Участок"), on_delete=models.PROTECT)
+
+    class Meta:
+        unique_together = ('area', 'angle_number',)
 
 class Place(SafeDeleteMixin, GeoPointModel):
     cemetery = models.ForeignKey(Cemetery, verbose_name=_(u"Кладбище"), on_delete=models.PROTECT)
