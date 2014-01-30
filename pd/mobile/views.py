@@ -218,19 +218,38 @@ def mobile_upload_cemetery(request):
     org = request.user.profile.org    
     if request.method == 'POST':
         listInsertedCemetery = []
+        listGPS = [] 
         cemeteryId = int(request.POST['cemeteryId'])
         cemeteryName = request.POST['cemeteryName']
+        gpsJSON = request.POST['gps']
+        isGPSChange = False
+        if gpsJSON :
+            isGPSChange = True
+            gpsGenerator = serializers.deserialize("json", gpsJSON)                       
+            for obj in gpsGenerator:
+                listGPS.append(obj.object)        
+        cem = None
         try:
             prevCem = Cemetery.objects.get(pk = cemeteryId)
             if prevCem.name != cemeteryName :
                 prevCem.name = cemeteryName
                 prevCem.save()
+            cem = prevCem
         except Cemetery.DoesNotExist:
             prevCem = None
             cem = Cemetery(name = cemeteryName, creator = request.user, ugh = org)
             cem.save()
             listInsertedCemetery.append(cem)
-        data = serializers.serialize("json", listInsertedCemetery, fields=('name'))
+        if isGPSChange == True :
+            CemeteryCoordinates.objects.filter(cemetery__pk = cem.pk).delete()
+            for gps in listGPS:
+                gps.pk = None
+                gps.cemetery = cem
+                gps.save()                 
+            all_objects = list(listInsertedCemetery) + list(listGPS)
+        else :
+            all_objects = list(listInsertedCemetery)
+        data = serializers.serialize("json", all_objects, fields=('name', 'cemetery', 'angle_number', 'lat', 'lng'))        
         return HttpResponse(data, mimetype='application/json')
     return render_to_response('mobile_upload_cemetery.html', {'message': _(u"Загрузите название кладбища:")})
     
