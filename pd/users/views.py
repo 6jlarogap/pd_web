@@ -74,13 +74,25 @@ class AuthGetTokenView(APIView):
         token = None
         username = request.DATA.get('username')
         password = request.DATA.get('password')
+        status = 'error'
+        status_code = 400
         if username and password:
             user = authenticate(username=username, password=password)
             if user and user.is_active:
                 token, created = Token.objects.get_or_create(user=user)
         if token:
+            # Пользовательское соглашение проверяется, если правильны имя и пароль
+            if not request.DATA.get('acceptTC'):
+                return Response(data={ 'status': status,
+                                       'errorCode': 'not_accepted_tc',
+                                       'message': 'User agreement not accepted',
+                                     },
+                                status=status_code,
+                               )
+
             data = { 'token': token.key,
-                    'sessionId': request.session._get_or_create_session_key(),
+                     'sessionId': request.session._get_or_create_session_key(),
+                     'status': 'success',
                    }
             role = None
             try:
@@ -100,11 +112,13 @@ class AuthGetTokenView(APIView):
             if not role:
                 raise Exception(u'Unknown role')
             data['role'] = role
-            status = 200
+            status_code = 200
         else:
-            data = { 'status': 'error', 'message': 'Wrong username or password' }
-            status = 400
-        return Response(data=data, status=status)
+            data = { 'status': status,
+                     'errorCode': 'access_denied',
+                     'message': 'Wrong username or password',
+                   }
+        return Response(data=data, status=status_code)
 
 auth_get_token = AuthGetTokenView.as_view()
 
