@@ -89,7 +89,7 @@ class AuthGetTokenView(APIView):
                                      },
                                 status=status_code,
                                )
-
+            login(request, user)
             data = { 'token': token.key,
                      'sessionId': request.session._get_or_create_session_key(),
                      'status': 'success',
