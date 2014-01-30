@@ -257,9 +257,18 @@ def mobile_upload_cemetery(request):
 def mobile_upload_area(request):    
     if request.method == 'POST':
         listInsertedArea = []
+        listGPS = []
         areaName = request.POST['areaName']
         areaId = int(request.POST['areaId'])
         cemeteryId = int(request.POST['cemeteryId'])
+        gpsJSON = request.POST['gps']
+        isGPSChange = False
+        if gpsJSON :
+            isGPSChange = True
+            gpsGenerator = serializers.deserialize("json", gpsJSON)                       
+            for obj in gpsGenerator:
+                listGPS.append(obj.object)
+        area = None
         try:
             cemetery = Cemetery.objects.get(pk = cemeteryId)
             prevArea = Area.objects.get(pk = areaId)
@@ -267,6 +276,7 @@ def mobile_upload_area(request):
                 prevArea.name = areaName
                 prevArea.cemetery = cemetery                
                 prevArea.save()
+            area = prevArea
         except Cemetery.DoesNotExist:
             raise Http404
         except Area.DoesNotExist:
@@ -274,7 +284,16 @@ def mobile_upload_area(request):
             area = Area(cemetery = cemetery, name = areaName)            
             area.save()
             listInsertedArea.append(area)
-        data = serializers.serialize("json", listInsertedArea, fields=('cemetery','name'))
+        if isGPSChange == True :
+            AreaCoordinates.objects.filter(area__pk = area.pk).delete()
+            for gps in listGPS:
+                gps.pk = None
+                gps.area = area
+                gps.save()               
+            all_objects = list(listInsertedArea) + list(listGPS)
+        else :
+            all_objects = list(listInsertedArea)
+        data = serializers.serialize("json", all_objects, fields=('cemetery','name', 'area', 'angle_number', 'lat', 'lng'))
         return HttpResponse(data, mimetype='application/json')        
     return render_to_response('mobile_upload_area.html', {'message': _(u"Загрузите название участка:")})
 
