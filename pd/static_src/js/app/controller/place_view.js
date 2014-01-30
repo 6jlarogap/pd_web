@@ -369,7 +369,7 @@
 			if (confirm("Открепить " + fio + '?')) {
 				delete $scope.item.responsible;
 				$scope.loading = true;
-				$scope.editor.item.$update({placeID : $routeParams.place_id,
+				$scope.item.$update({placeID : $routeParams.place_id,
 										cemetery_id : $routeParams.cemetery_id,
 										area_id : $routeParams.area_id
 					},function() {
@@ -541,8 +541,8 @@
 		}
 	});
 	$scope.is_responsible_disabled = function(responsibleEditForm){
-		var valid = responsibleEditForm.$valid && ($scope.responsible.address || 
-				($scope.responsible_phones && $scope.responsible_phones.length));
+		var valid = responsibleEditForm.$valid && ($scope.editor.responsible.address || 
+				($scope.responsible_phones && $scope.editor.responsible_phones.length));
 		return !valid;
 	};
 	ymapData.markers = [];
