@@ -66,9 +66,6 @@ class CheckRecaptchaMixin(object):
 class AuthGetTokenView(APIView):
     """
     Проверка имени и пароля, (создать и) отдать token
-    
-    Проверка работы представления:
-    curl -X POST http://host/api/signin -d 'username=USERNAME' -d 'password=PASSWORD'
     """
     def post(self, request, format=None):
         token = None
@@ -81,19 +78,6 @@ class AuthGetTokenView(APIView):
             if user and user.is_active:
                 token, created = Token.objects.get_or_create(user=user)
         if token:
-            # Пользовательское соглашение проверяется, если правильны имя и пароль
-            if not request.DATA.get('acceptTC'):
-                return Response(data={ 'status': status,
-                                       'errorCode': 'not_accepted_tc',
-                                       'message': 'User agreement not accepted',
-                                     },
-                                status=status_code,
-                               )
-            login(request, user)
-            data = { 'token': token.key,
-                     'sessionId': request.session._get_or_create_session_key(),
-                     'status': 'success',
-                   }
             role = None
             try:
                 user.customerprofile
@@ -111,11 +95,15 @@ class AuthGetTokenView(APIView):
                 role = 'ROLE_CLIENT'
             if not role:
                 raise Exception(u'Unknown role')
-            data['role'] = role
+            login(request, user)
+            data = { 'status': 'success',
+                     'token': token.key,
+                     'sessionId': request.session._get_or_create_session_key(),
+                     'role': role,
+                   }
             status_code = 200
         else:
             data = { 'status': status,
-                     'errorCode': 'access_denied',
                      'message': 'Wrong username or password',
                    }
         return Response(data=data, status=status_code)
