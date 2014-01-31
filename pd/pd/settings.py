@@ -87,8 +87,10 @@ MIDDLEWARE_CLASSES = (
     'django.contrib.messages.middleware.MessageMiddleware',
     'debug_toolbar.middleware.DebugToolbarMiddleware',
     'users.middleware.ProfileMiddleware',
-    'pd.middleware.LoginRequiredMiddleware'
+    'pd.middleware.LoginRequiredMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
 )
+
 
 TEMPLATE_CONTEXT_PROCESSORS = (
     "django.contrib.auth.context_processors.auth",
@@ -110,7 +112,6 @@ TEMPLATE_DIRS = (
     os.path.join(ROOT_DIR, 'templates/'),
 )
 
-
 INSTALLED_APPS = (
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -122,6 +123,7 @@ INSTALLED_APPS = (
     'django.contrib.admindocs',
 
     'rest_framework',
+    'rest_framework.authtoken',
 
     'south',
     'pytils',
@@ -131,6 +133,7 @@ INSTALLED_APPS = (
 
     'geo',
     'burials',
+    'billing',
     'persons',
     'users',
     'orders',
@@ -184,8 +187,11 @@ ACCOUNT_ACTIVATION_DAYS = 7
 LOGIN_URL = "/login/"
 
 # Это регулярные выражения!!! :
+# URLs, не требующие регистрации в системе:
 REGISTER_URLS_REGEX = r'^/?register(?:/|$)'
 SUPPORT_URLS_REGEX = r'^/?support(?:/|$)'
+# URLs, требующие регистрации, но она проходит посредством tokens:
+API_URLS_REGEX = r'^/?api(?:/|$)'
 
 LOGOUT_URL = "/logout/"
 LOGIN_REDIRECT_URL = "/"
@@ -244,6 +250,10 @@ PRODUCTION_SITE = False
 #
 # SUPERVISOR_ORG_INN = 'строка'
 
+# CORS:
+# Переопределить в False в local_settings.py на production server
+#
+CORS_ORIGIN_ALLOW_ALL = True
 
 # THUMB
 THUMBNAILS_FILE_SIGNATURE = '%(source)s/%(size)s~%(method)s~%(secret)s.%(extension)s'
@@ -261,10 +271,14 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_api.authentication.SessionAuthentication',
         'rest_framework.authentication.BasicAuthentication',
+        'rest_framework.authentication.TokenAuthentication',
     ),
     'DEFAULT_RENDERER_CLASSES': (
         'rest_framework.renderers.JSONRenderer',
         'rest_framework.renderers.BrowsableAPIRenderer',
+    ),
+    'DEFAULT_PARSER_CLASSES': (
+        'rest_framework.parsers.JSONParser',
     ),
 }
 
@@ -274,6 +288,13 @@ ASSETS_MODULES = [
     'pd.assets'
 ]
 ASSETS_DEBUG = False
+
+# Cross-origin resource sharing. Нам это и не надо, но
+# чтобы наше api выходило на front-end другого домена,
+# надо добавить в список XS_SHARING_ALLOWED_ORIGINS
+# front-end домен(ы) или '*'
+
+XS_SHARING_ALLOWED_ORIGINS = []
 
 try:
     from local_settings import *
