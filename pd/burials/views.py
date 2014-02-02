@@ -305,6 +305,9 @@ class CommentView(BurialsListGenericMixin, LoginRequiredMixin, DetailView):
     def get_queryset(self):
         return Burial.objects.filter(self.get_qs_filter()).distinct()
 
+    def get(self, request, *args, **kwargs):
+        return redirect('view_burial', self.get_object().pk)
+
     def post(self, request, *args, **kwargs):
         comment = request.POST.get('comment').strip()
         if comment:
