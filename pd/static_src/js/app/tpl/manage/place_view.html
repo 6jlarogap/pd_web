@@ -5,7 +5,15 @@
     <div class="row-fluid">
         <div class="span7">
             <dl class="dl-horizontal">
-                <dt>Кладбище:</dt>
+                <dt>
+                    <a href="#" class="btn btn-success btn-mini"
+                            ng-disabled="loading"
+                            alt="Редактировать"
+                            ng-click="openEditForm('isPlaceEditorOpen')">
+                        <span class="icon-edit"></span>
+                    </a>
+                    Кладбище:
+                </dt>
                 <dd>{{ item.name }}</dd>
                 <dt>Участок:</dt>
                 <dd>{{ area.name }}</dd>
@@ -23,16 +31,14 @@
                 <dt>Размеры</dt>
                 <dd>длина {{item.place_length || '-'}}м, ширина {{item.place_width || '-'}}м</dd>
             </dl>
-            <dl class="dl-horizontal">
+            <!-- dl class="dl-horizontal">
                 <dd><a href="#" class="btn btn-success"
                     ng-disabled="loading"
                     ng-click="openEditForm('isPlaceEditorOpen')">Редактировать</a></dd -->
-            </dl>
+            </dl -->
             <hr />
             <dl class="dl-horizontal">
-                <dt>Ответственный:</dt>
-                <dd>
-                    {{ responsible.last_name + ' ' + responsible.first_name + ' ' + responsible.middle_name }}
+                <dt>
                     <button class="btn btn-success btn-mini"
                             ng-disabled="loading"
                             ng-click="openEditForm('isResponsibleEditorOpen')">
@@ -44,8 +50,14 @@
                             ng-click="removeResponsible()">
                         <span class="icon-remove"></span>
                     </button>
+                    Ответственный:
+                    </dt>
+                <dd>
+                    {{ responsible.last_name + ' ' + responsible.first_name + ' ' + responsible.middle_name }}
                 </dd>
             </dl>
+            
+            
 
         </div>
 	    <yandex-map id="yandex-map" class="span5" coordinates="placeCoordinates" points="placePoints">

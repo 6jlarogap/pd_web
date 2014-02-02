@@ -1,27 +1,9 @@
 <form name="graveEditForm" novalidate>
     <div class="modal-header">
-        <h3>Изменение могилы</h3>
+        <h3>Изменение могилы № {{ selectedGrave.grave_number }}</h3>
     </div>
     <div class="modal-body">
         <dl class="dl-horizontal">
-            <dt>Номер могилы:</dt>
-            <dd>
-                   {{ selectedGrave.grave_number }} 
-                <!-- input name="graveNumber" id="id_new_grave_number" type="number" ng-model="selectedGrave.grave_number"
-                       required maxlength="255"
-                       min="1" max="{{max_grave_number}}"/ -->
-                <span class="error" ng-show="graveEditForm.graveNumber.$error.required">Не указан номер могилы</span>
-            </dd>
-            <dt>Широта:</dt>
-            <dd>
-                {{selectedGrave.lat||'-'}}
-                <!--input disabled="disabled" name="graveLatitude" id="id_new_grave_latitude" type="text" ng-model="selectedGrave.lat" maxlength="255"/-->
-            </dd>
-            <dt>Долгота:</dt>
-            <dd>
-                {{selectedGrave.lng||'-'}}
-                <!--input disabled="disabled" name="graveLongitude" id="id_new_grave_longitude" type="text" ng-model="selectedGrave.lng" maxlength="255"/-->
-            </dd>
             <dt>Неверное ФИО:</dt>
             <dd>
                 <input name="is_wrong_fio" id="id_is_wrong_fio" type="checkbox" ng-model="selectedGrave.is_wrong_fio"/>
