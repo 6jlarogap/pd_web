@@ -60,7 +60,11 @@ def api_root(request, format=None):
             'gravephoto-list':'/api/grave-photo', #reverse('gravephoto-list', request=request),
             'placephoto-list':'/api/place-photo', #reverse('gravephoto-list', request=request),
             'areapurpose-list': '/api/areapurpose', #reverse('areapurpose-list', request=request),
-            'placesize-list': '/api/placesize',
+            # 'placesize-list': '/api/placesize',
+
+        },
+        'orders':{
+            'product_category': '/api/product_category',
         },
     })
     #'cemetery-detail': reverse('cemetery-detail', request=request),

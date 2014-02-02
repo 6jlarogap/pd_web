@@ -15,7 +15,6 @@ class CemeterySerializer(serializers.HyperlinkedModelSerializer):
 
 
 
-
 import copy
 import json
 from django import forms

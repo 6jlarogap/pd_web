@@ -23,9 +23,13 @@ from burials.views import CemeteryViewSet, AreaViewSet, PlaceViewSet, \
 
 from persons.views import AlivePersonViewSet, DeadPersonViewSet, PhoneViewSet 
 from logs.views import LogViewSet
- 
-from orders.views import CategoryViewSet, ProductViewSet 
- 
+
+from orders.views import ProductCategoryViewSet, CatalogFiltersViewSet, ProductsViewSet, \
+                         ProductInfoViewSet, CabinetViewSet, loru_product_places, \
+                         UghPublishedProductsViewSet
+from users.views import auth_get_token, UghPublishCostViewSet, auth_get_password_by_sms
+
+
 # Burial
 router.register(r'^api/catalog/category', CategoryViewSet)
 router.register(r'^api/catalog/product', ProductViewSet)
@@ -48,7 +52,15 @@ router.register(r'^api/dead-person', DeadPersonViewSet)
 router.register(r'^api/alive-person-phone', PhoneViewSet)
 router.register(r'^api/placesize', PlaceSizeViewSet)
 
+# Orders
+router.register(r'^api/product_category', ProductCategoryViewSet)
+router.register(r'^api/catalog_filters', CatalogFiltersViewSet)
+router.register(r'^api/products', ProductsViewSet)
+router.register(r'^api/product', ProductInfoViewSet)
+router.register(r'^api/cabinet', CabinetViewSet)
 
+router.register(r'^api/loru/places', UghPublishCostViewSet)
+router.register(r'^api/loru/products', UghPublishedProductsViewSet)
 
 # Geo
 router.register(r'^api/geo/location', LocationViewSet)
@@ -69,6 +81,11 @@ urlpatterns += patterns('pd.views',
     url(r'^', include('mobile.urls')),
     url(r'^geo/', include('geo.urls')),
     url(r'^import/', include('import_burials.urls')),
+    
+    url(r'^api/auth/signin/?$', auth_get_token),
+    url(r'^api/auth/get_password_by_sms/?$', auth_get_password_by_sms),
+    
+    url(r'^api/loru/product_places/?$', loru_product_places),
     
     url(r'^api/', include('rest_api.urls')),
     url(r'^', include(router.urls)),
