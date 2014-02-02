@@ -16,8 +16,10 @@ pytils==0.2.3
 raven==3.1.4
 wsgiref==0.1.2
 djangorestframework==2.3.6
+# Using pd/rest-thumbnails, patched varsion of:
 # git+https://github.com/hcarvalhoalves/django-rest-thumbnails.git
 django_assets
 rjsmin
 cssmin
 django-recaptcha==0.0.6
+git+https://github.com/ottoyiu/django-cors-headers.git

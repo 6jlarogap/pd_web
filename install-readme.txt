@@ -98,6 +98,8 @@ install-readme.txt, utf8 code page
             WSGIScriptAlias / /home/www-data/django/pd_web/pd/pd/wsgi.py
             # Чтобы работала restframework_token_authorization
             WSGIPassAuthorization On
+            # Во избежание ошибок: premature end of script headers wsgi.py
+            WSGIApplicationGroup %{GLOBAL}
 
             <Directory /home/www-data/static/pd_web>
                 # ВНИМАНИЕ!

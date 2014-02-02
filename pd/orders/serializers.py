@@ -1,23 +1,48 @@
+
 # coding=utf-8
 
 from django.contrib.auth.models import Group, Permission
-from django.core.exceptions import ValidationError
 from rest_framework import serializers
-from rest_framework.fields import Field, TimeField
+from rest_framework.fields import Field
 
-from orders.models import Category, Product
+from rest_api.fields import HyperlinkedFileField
+from orders.models import ProductCategory, Product
+from users.models import Org
 
 
-class CategorySerializer(serializers.HyperlinkedModelSerializer):
+class ProductCategorySerializer(serializers.HyperlinkedModelSerializer):
+    icon = HyperlinkedFileField()
+    
+    class Meta:
+        model = ProductCategory
+        fields = ('id', 'name', 'icon', )
+
+
+class ProductsSerializer(serializers.HyperlinkedModelSerializer):
+    photo = HyperlinkedFileField()
+    currency = serializers.RelatedField(source='currency')
+    supplier = serializers.RelatedField(source='loru')
+    
     class Meta:
         model = Product
-        fields = ('id', 'name')
+        fields = ('id', 'name', 'description', 'photo', 'measure', 'price', 'currency', 'sku', 'supplier', )
 
 
-class ProductSerializer(serializers.HyperlinkedModelSerializer):
-    loru = Field('loru')
-    category = serializers.PrimaryKeyRelatedField()
-    price = serializers.DecimalField()
+class SupplierSerializer(serializers.HyperlinkedModelSerializer):
+    address = serializers.RelatedField(source='off_address')
+    phone = Field(source='phones')
+    
+    class Meta:
+        model = Org
+        fields = ('id', 'name', 'address', 'phone', 'worktime', 'site', )
+
+
+class ProductInfoSerializer(serializers.HyperlinkedModelSerializer):
+    photo = HyperlinkedFileField()
+    currency = serializers.RelatedField(source='currency')
+    category = serializers.RelatedField(source='productcategory')
+    supplier = SupplierSerializer(source='loru')
+    
     class Meta:
         model = Product
-        fields = ('id', 'category', 'loru', 'name', 'measure', 'price')
+        fields = ('id', 'photo', 'price', 'currency', 'name', 'description', 'sku', 'category', 'supplier', )

@@ -18,3 +18,4 @@ pd/static_src/pd*
 backup
 #restthumbnails
 pd/rest_framework/
+2-precommit/

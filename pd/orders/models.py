@@ -8,19 +8,15 @@ from django.utils.translation import ugettext as _
 
 from reports.models import Report
 from users.models import Org
-from pd.models import BaseModel, GetLogsMixin
+from pd.models import BaseModel, GetLogsMixin, upload_slugified
 
 
-class Category(models.Model):
+class ProductCategory(models.Model):
     name = models.CharField(_(u"Название"), max_length=255)
-
-    class Meta:
-        verbose_name = _(u"Категория")
-        verbose_name_plural = _(u"Категории")
+    icon = models.FileField(u"Иконка", upload_to=upload_slugified, blank=True, null=True)
 
     def __unicode__(self):
         return self.name
-
 
 class Product(models.Model):
     PRODUCT_CATAFALQUE = 'catafalque'
@@ -37,20 +33,67 @@ class Product(models.Model):
     category = models.ForeignKey(Category, blank=True, null=True, verbose_name=_(u"Категория"))
     loru = models.ForeignKey(Org, limit_choices_to={'type': Org.PROFILE_LORU}, null=True, verbose_name=_(u"ЛОРУ"))
     name = models.CharField(_(u"Название"), max_length=255)
+    description = models.TextField(_(u"Описание"), blank=True, default='')
     measure = models.CharField(_(u"Ед. изм."), max_length=255, default=_(u"шт"))
     price = models.DecimalField(_(u"Цена"), max_digits=20, decimal_places=2)
     ptype = models.CharField(_(u"Тип"), max_length=255, choices=PRODUCT_TYPES, null=True, blank=True)
     default = models.BooleanField(_(u"По умолчанию"), default=False, blank=True)
+    photo = models.FileField(u"Фото", upload_to=upload_slugified, blank=True, null=True)
+    productcategory = models.ForeignKey(ProductCategory, verbose_name=_(u"Категория"),
+                      null=True, blank=True)
+    currency = models.ForeignKey('billing.Currency', verbose_name=_(u"Валюта"))
+    sku = models.CharField(_(u"Артикул"), max_length=255, blank=True, default='')
 
     class Meta:
         verbose_name = _(u"Товар")
         verbose_name_plural = _(u"Товары")
+        ordering = ['name']
 
     def __unicode__(self):
         return u'%s (%s р.)' % (self.name, self.price)
 
     def is_burial(self):
         return self.ptype == self.PRODUCT_BURIAL
+
+
+class ProductHistory(models.Model):
+    """
+    Журнал добавления/удаления/поднятия статусов продуктов
+    (товаров и услуг) ЛОРУ у соответствующего ОМС
+    """
+    PRODUCT_OPERATION_ENABLE = 'enable'
+    PRODUCT_OPERATION_DISABLE = 'disable'
+    PRODUCT_OPERATION_UP = 'up'
+    # Если ОМС удалит ЛОРУ из реестра:
+    PRODUCT_OPERATION_DELETE = 'delete'
+    PRODUCT_OPERATIONS = (
+        (PRODUCT_OPERATION_ENABLE, _(u"Добавление")),
+        (PRODUCT_OPERATION_DISABLE, _(u"Изъятие")),
+        # Это поднятие статуса продукта в каталоге (обновление даты/времени)
+        (PRODUCT_OPERATION_UP, _(u"Обновление")),
+        (PRODUCT_OPERATION_DELETE, _(u"Удаление")),
+    )
+
+    product = models.ForeignKey(Product, verbose_name=_(u"Продукт"), on_delete=models.PROTECT)
+    ugh = models.ForeignKey(Org, limit_choices_to={'type': Org.PROFILE_UGH}, verbose_name=_(u"ОМС"))
+    dt = models.DateTimeField(_(u"Дата/время создания"))
+    operation = models.CharField(_(u"Операция"), max_length=255, choices=PRODUCT_OPERATIONS)
+    publish_cost = models.DecimalField(_(u"Цена"), max_digits=20, decimal_places=2)
+    currency = models.ForeignKey('billing.Currency', verbose_name=_(u"Валюта"))
+
+class ProductStatus(models.Model):
+    """
+    Состояние продукта (товара или услуги) ЛОРУ у соответствующего ОМС
+    """
+
+    product = models.ForeignKey(Product, verbose_name=_(u"Продукт"), on_delete=models.PROTECT)
+    ugh = models.ForeignKey(Org, limit_choices_to={'type': Org.PROFILE_UGH}, verbose_name=_(u"ОМС"))
+    # Из ProductHistory.PRODUCT_OPERATIONS здесь будут применяться только enable, disable, up:
+    status = models.CharField(_(u"Статус"), max_length=255, choices=ProductHistory.PRODUCT_OPERATIONS)
+    dt = models.DateTimeField(_(u"Дата/время модификации"))
+
+    class Meta:
+        unique_together = ('product', 'ugh',)
 
 
 class Order(GetLogsMixin, BaseModel):
