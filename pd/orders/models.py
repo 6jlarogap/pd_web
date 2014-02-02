@@ -30,7 +30,6 @@ class Product(models.Model):
         (PRODUCT_SIGN, _(u"Написание надмогильной таблички")),
     )
 
-    category = models.ForeignKey(Category, blank=True, null=True, verbose_name=_(u"Категория"))
     loru = models.ForeignKey(Org, limit_choices_to={'type': Org.PROFILE_LORU}, null=True, verbose_name=_(u"ЛОРУ"))
     name = models.CharField(_(u"Название"), max_length=255)
     description = models.TextField(_(u"Описание"), blank=True, default='')
@@ -54,7 +53,6 @@ class Product(models.Model):
 
     def is_burial(self):
         return self.ptype == self.PRODUCT_BURIAL
-
 
 class ProductHistory(models.Model):
     """
@@ -94,7 +92,6 @@ class ProductStatus(models.Model):
 
     class Meta:
         unique_together = ('product', 'ugh',)
-
 
 class Order(GetLogsMixin, BaseModel):
     PAYMENT_CASH = 'cash'

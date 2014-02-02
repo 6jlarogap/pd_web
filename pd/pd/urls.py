@@ -23,17 +23,12 @@ from burials.views import CemeteryViewSet, AreaViewSet, PlaceViewSet, \
 
 from persons.views import AlivePersonViewSet, DeadPersonViewSet, PhoneViewSet 
 from logs.views import LogViewSet
-
 from orders.views import ProductCategoryViewSet, CatalogFiltersViewSet, ProductsViewSet, \
                          ProductInfoViewSet, CabinetViewSet, loru_product_places, \
                          UghPublishedProductsViewSet
 from users.views import auth_get_token, UghPublishCostViewSet, auth_get_password_by_sms
 
-
 # Burial
-router.register(r'^api/catalog/category', CategoryViewSet)
-router.register(r'^api/catalog/product', ProductViewSet)
-
 router.register(r'^api/log', LogViewSet)
 router.register(r'^api/cemetery', CemeteryViewSet)
 router.register(r'^api/area', AreaViewSet)
@@ -50,7 +45,6 @@ router.register(r'^api/alive-person', AlivePersonViewSet)
 router.register(r'^api/dead-person', DeadPersonViewSet)
 
 router.register(r'^api/alive-person-phone', PhoneViewSet)
-router.register(r'^api/placesize', PlaceSizeViewSet)
 
 # Orders
 router.register(r'^api/product_category', ProductCategoryViewSet)
