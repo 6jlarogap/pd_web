@@ -88,7 +88,8 @@
 	        
 		    <div class="modal-footer">
                 <span ng-show="is_responsible_disabled(responsibleEditForm)">Необходимо указать адрес или телефон</span>
-		        <button class="btn btn-primary" ng-disabled="is_responsible_disabled(responsibleEditForm)" ng-click="saveResponsibleEditForm(responsibleEditForm)">
+		        <button class="btn btn-primary" ng-disabled="is_responsible_disabled(responsibleEditForm)"
+		            ng-click="saveResponsibleEditForm(responsibleEditForm)">
 		            Сохранить
 		        </button>
 		        <button class="btn cancel" ng-click="closeEditForm('isResponsibleEditorOpen')">Отменить</button>
@@ -101,7 +102,8 @@
 	    		save_action="saveEditForm"></address>
 		    <div class="modal-footer">
     			<span ng-hide="editor.responsible.last_name">Необходимо указать фамилию ответственного</span>
-		        <button class="btn btn-primary" ng-disabled="is_responsible_disabled(responsibleEditForm)" ng-click="saveResponsibleEditForm(responsibleEditForm)">
+		        <button class="btn btn-primary" ng-disabled="is_responsible_disabled(responsibleEditForm)"
+		            ng-click="saveResponsibleEditForm(responsibleEditForm)">
 		            Сохранить
 		        </button>
 		        <button class="btn cancel" ng-click="closeEditForm('isResponsibleEditorOpen')">Отменить</button>
@@ -116,7 +118,8 @@
 		<form name="responsibleEditForm2" >
 		    <div class="modal-footer">
 		    	<span ng-hide="editor.responsible.last_name">Необходимо указать фамилию ответственного</span>
-		        <button id="edit_save_btn" class="btn btn-primary" ng-disabled="is_responsible_disabled(responsibleEditForm)" ng-click="saveResponsibleEditForm(responsibleEditForm)">
+		        <button id="edit_save_btn" class="btn btn-primary" ng-disabled="is_responsible_disabled(responsibleEditForm)" 
+    		        ng-click="saveResponsibleEditForm(responsibleEditForm)">
 		            Сохранить
 		        </button>
 		        <button class="btn cancel" ng-click="closeEditForm('isResponsibleEditorOpen')">Отменить</button>
