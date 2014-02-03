@@ -45,6 +45,7 @@ router.register(r'^api/alive-person', AlivePersonViewSet)
 router.register(r'^api/dead-person', DeadPersonViewSet)
 
 router.register(r'^api/alive-person-phone', PhoneViewSet)
+router.register(r'^api/placesize', PlaceSizeViewSet)
 
 # Orders
 router.register(r'^api/product_category', ProductCategoryViewSet)
