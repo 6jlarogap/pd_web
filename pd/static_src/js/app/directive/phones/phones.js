@@ -91,8 +91,7 @@ app.controller('PhonesController', ['$scope', 'Phone', function($scope, Phone) {
 	    //return value && value.length>0 && value.match(/^(\d{1,5}?)?(\(?\d{2,3}\)?[\- ]?)?[\d\- ]{5,12}$/) != null
 	    return value && value.replace('-','').match(/^[\d]{10,12}$/) != null
 	};
-	
-	
+
 	if(!($scope.phones && $scope.phones.length)){
 		$scope.open();
 	}

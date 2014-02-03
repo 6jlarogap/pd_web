@@ -10,12 +10,14 @@
 	$scope.STATUS_CHOICES = STATUS_CHOICES;
 	$scope.BURIAL_STATUS_EXHUMATED = BURIAL_STATUS_EXHUMATED;
     $scope.STATUS_CHOICES = STATUS_CHOICES;
+    $scope.PHONETYPE_CHOICES = PHONETYPE_CHOICES;
 	$scope.grave_page = 1;
     $scope.log_page = 1;
     $scope.loading = false;
     $scope.edit_resp = false;
     $scope.editor = {};
-    
+    $scope.isLoginFormOpen = false;
+
     var item_params;
 	//setup
 	$scope.updateMap = function() {
@@ -242,6 +244,7 @@
 			case 'isResponsibleEditorOpen':
 				$scope.editor.item = angular.copy($scope.item);
 				$scope.editor.responsible = angular.copy($scope.responsible);
+				$scope.editor.responsible_phones = angular.copy($scope.responsible_phones); 
 				break;
 		    case 'isPlaceEditorOpen':
 		    	$scope.editor.item = angular.copy($scope.item);
@@ -542,9 +545,14 @@
 	});
 	$scope.is_responsible_disabled = function(responsibleEditForm){
 		var valid = responsibleEditForm.$valid && ($scope.editor.responsible.address || 
-				($scope.responsible_phones && $scope.editor.responsible_phones.length));
+				($scope.editor.responsible_phones && $scope.editor.responsible_phones.length));
 		return !valid;
 	};
+	
+	$scope.validatePhone = function(value) {
+	    return value && value.replace('-','').match(/^[\d]{10,12}$/) != null
+	};
+	
 	ymapData.markers = [];
 	ymapData.points = [];
     $scope.$broadcast('handleMapChanged');

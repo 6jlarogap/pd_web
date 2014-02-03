@@ -56,6 +56,23 @@
                     {{ responsible.last_name + ' ' + responsible.first_name + ' ' + responsible.middle_name }}
                 </dd>
             </dl>
+                
+                <table>
+                <tr>
+                    <td width="200px"><b>Адрес:</b></td>
+                    <td>{{responsible.address_str}}</td>
+                </tr>
+                <tr>
+                    <td><b>Телефоны:</b></td>
+                    <td>
+                            <div ng-repeat="phone in responsible_phones">
+                                {{phone.phonetype | objList:PHONETYPE_CHOICES}}:
+                                    <span ng-show="phone.number.length>7">+</span>
+                                    {{phone.number}}
+                            </div><br/>
+                    </td>
+                </tr>
+                </table>
             
             
 

@@ -7,6 +7,7 @@
     <tab heading="Личные данные">
 		<form name="responsibleEditForm" >
 	        <dl class="dl-horizontal" ng-hide="edit_resp">
+
                 <dt>
                     <label for="id_responsible_set-last_name">Фамилия:</label>
                 </dt>
@@ -14,23 +15,35 @@
                     {{editor.responsible.last_name}}
                     <span class="error" ng-show="!editor.responsible.last_name.length">Не указана</span>
                 </dd>
+
                 <dt>
                     <label for="id_responsible_set-first_name">Имя:</label>
                 </dt>
                 <dd>
                     {{editor.responsible.first_name}}
                 </dd>
+
                 <dt>
                     <label for="id_responsible_set-middle_name">Отчество:</label>
                 </dt>
                 <dd>
                     {{editor.responsible.middle_name}}
                 </dd>
-                <dt></dt>
-                <dd>
-                    <button class="btn" ng-click="edit_resp=true">Редактировать</button>
-                </dd>
             </dl>
+            <hr ng-hide="edit_resp" />
+            <dl class="dl-horizontal" ng-hide="edit_resp">
+                <dt>
+                    <label for="id_responsible_login_phone">Телефон для логина:</label>
+                </dt>
+                <dd>
+            ﻿           {{editor.responsible.login_phone || 'не указан'}}
+                </dd>
+                <dt>
+                        <button class="btn" ng-click="edit_resp=true">Редактировать</button>
+                </dt>
+                <dd></dd>
+            </dl>
+            
 	        <dl class="dl-horizontal" ng-show="edit_resp">
                 <dt>
 	                <label for="id_responsible_set-last_name">Фамилия:</label>
@@ -54,6 +67,19 @@
 	                <input name="placeRow" id="id_responsible_set-middle_name" type="text" ng-model="editor.responsible.middle_name"
 	                       maxlength="255" />
 	            </dd>
+                <dt>
+                    <label for="id_responsible_responsible_phone">Телефон для логина:</label>
+                </dt>
+                <dd>
+                    <input name="responsible_login_phone" 
+                            id="id_responsible_login_phone" type="text" 
+                            ng-model="editor.responsible.login_phone"
+                            ui-validate="{validPhone : 'validatePhone($value)' }"
+                            popover-placement="top" popover='Введите номер телефона в международном формате без "+" и без "8". Пример: 74996772043'
+                            required
+                            maxlength="15" />
+                        <p class="error" ng-show="responsibleEditForm.responsible_login_phone.$error.validPhone">Неверный номер телефона</p>
+                </dd>
 	            <dt></dt>
                 <dd>
                     <button class="btn" ng-click="edit_resp=false" ng-disabled="responsibleEditForm.$invalid">Сохранить</button>
@@ -84,7 +110,9 @@
     </tab>
 	<tab heading="Телефоны">
 		<span ng-hide="editor.responsible.last_name">Заполните страницу личных данных</span>
-		<phones phones="editor.responsible_phones"></phones>
+
+		    <phones phones="editor.responsible_phones"></phones>
+
 		<form name="responsibleEditForm2" >
 		    <div class="modal-footer">
 		    	<span ng-hide="editor.responsible.last_name">Необходимо указать фамилию ответственного</span>

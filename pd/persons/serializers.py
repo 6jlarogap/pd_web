@@ -18,9 +18,10 @@ class AlivePersonSerializer(serializers.HyperlinkedModelSerializer):
     #address = Field(source='address_id')
     address = serializers.PrimaryKeyRelatedField()
     phones = Field(source='phones')
+    address_str = Field(source='address')
     class Meta:
         model = AlivePerson
-        fields = ('id', 'first_name', 'last_name', 'middle_name', 'address', 'phones')
+        fields = ('id', 'first_name', 'last_name', 'middle_name', 'address', 'phones', 'login_phone', 'address_str')
 
 
 class DeadPersonSerializer(serializers.HyperlinkedModelSerializer):
