@@ -87,7 +87,7 @@
 	        </dl>
 	        
 		    <div class="modal-footer">
-                <span ng-show="is_responsible_disabled(responsibleEditForm)">Необходимо указать адрес или телефон</span>
+                <span ng-show="is_responsible_disabled(responsibleEditForm)">Необходимо указать фамилию, адрес или телефон</span>
 		        <button class="btn btn-primary" ng-disabled="is_responsible_disabled(responsibleEditForm)"
 		            ng-click="saveResponsibleEditForm(responsibleEditForm)">
 		            Сохранить
@@ -101,7 +101,8 @@
     		<address address_class="address_class" address="editor.responsible.address" 
 	    		save_action="saveEditForm"></address>
 		    <div class="modal-footer">
-    			<span ng-hide="editor.responsible.last_name">Необходимо указать фамилию ответственного</span>
+    			<!-- span ng-hide="editor.responsible.last_name">Необходимо указать фамилию ответственного</span -->
+    			<span ng-show="is_responsible_disabled(responsibleEditForm)">Необходимо указать фамилию, адрес или телефон</span>
 		        <button class="btn btn-primary" ng-disabled="is_responsible_disabled(responsibleEditForm)"
 		            ng-click="saveResponsibleEditForm(responsibleEditForm)">
 		            Сохранить
@@ -117,7 +118,7 @@
 
 		<form name="responsibleEditForm2" >
 		    <div class="modal-footer">
-		    	<span ng-hide="editor.responsible.last_name">Необходимо указать фамилию ответственного</span>
+		    	<span ng-show="is_responsible_disabled(responsibleEditForm)">Необходимо указать фамилию, адрес или телефон</span>
 		        <button id="edit_save_btn" class="btn btn-primary" ng-disabled="is_responsible_disabled(responsibleEditForm)" 
     		        ng-click="saveResponsibleEditForm(responsibleEditForm)">
 		            Сохранить
