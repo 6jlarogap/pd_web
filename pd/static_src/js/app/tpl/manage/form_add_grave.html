@@ -13,16 +13,6 @@
                        min="1" max="{{max_grave_number+1}}"/ -->
                 <span class="error" ng-show="graveAddForm.graveNumber.$error.required">Не указан номер могилы</span>
             </dd>
-            <dt>Широта:</dt>
-            <dd>
-                {{newGrave.lat||'-'}}
-                <!--input disabled="disabled" name="graveLatitude" id="id_new_grave_latitude" type="text" ng-model="newGrave.lat" maxlength="255"/-->
-            </dd>
-            <dt>Долгота:</dt>
-            <dd>
-                {{newGrave.lng||'-'}}
-                <!--input disabled="disabled" name="graveLongitude" id="id_new_grave_longitude" type="text" ng-model="newGrave.lng" maxlength="255"/-->
-            </dd>
             <dt>Неверное ФИО:</dt>
             <dd>
                 <input name="is_wrong_fio" id="id_is_wrong_fio" type="checkbox" ng-model="newGrave.is_wrong_fio"/>
