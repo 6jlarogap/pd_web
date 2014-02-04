@@ -544,11 +544,13 @@
 		}
 	});
 	$scope.is_responsible_disabled = function(responsibleEditForm){
-		var valid = responsibleEditForm.$valid && ($scope.editor.responsible.address || 
-				($scope.editor.responsible_phones && $scope.editor.responsible_phones.length) ||
-				($scope.editor.responsible.login_phone && $scope.editor.responsible.login_phone.length)
-		);
-		return !valid;
+		var o = $scope.editor;
+		var form1_valid = responsibleEditForm.$valid && 
+							o.responsible.login_phone && o.responsible.login_phone.length>0,
+			  form2_valid = o.responsible.address != null,
+			  form3_valid = !o.isPhoneEdited &&
+			  				o.responsible_phones && o.responsible_phones.length>0;
+		return !(form1_valid && (form2_valid || form3_valid));
 	};
 	
 	$scope.validatePhone = function(value) {

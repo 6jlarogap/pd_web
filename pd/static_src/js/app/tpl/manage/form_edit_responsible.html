@@ -31,20 +31,23 @@
                 </dd>
             </dl>
             <hr ng-hide="edit_resp" />
-            <dl class="dl-horizontal" ng-hide="edit_resp">
-                <dt>
-                    <label for="id_responsible_login_phone">Мобильный телефон для логина:</label>
-                </dt>
-                <dd>
-                       <span ng-show="editor.responsible && editor.responsible.login_phone && editor.responsible.login_phone.length">+</span>
-            ﻿           {{editor.responsible.login_phone}}
-                    <span class="label label-important" ng-hide="editor.responsible.login_phone">Не указан</span>
-                </dd>
-                <dt>
+            
+            <table ng-hide="edit_resp" class="pd-form" >
+                <tr>
+                    <th width="200px">
+                        <label>Мобильный телефон<br/> для входа в кабинет:</label >
+                    </th>
+                    <td>
+                           <span ng-show="editor.responsible && editor.responsible.login_phone && editor.responsible.login_phone.length">+</span>
+                ﻿           {{editor.responsible.login_phone}}
+                        <span class="label label-important" ng-hide="editor.responsible.login_phone">Не указан</span>
+                    </td>
+                </tr><tr>
+                    <td colspan="2">
                         <button class="btn" ng-click="[edit_resp=true, responsible_edit()]">Редактировать</button>
-                </dt>
-                <dd></dd>
-            </dl>
+                    </td>
+                </tr>
+            </table>
             
 	        <dl class="dl-horizontal" ng-show="edit_resp">
                 <dt>
@@ -69,10 +72,15 @@
 	                <input name="placeRow" id="id_responsible_set-middle_name" type="text" ng-model="editor.responsible.middle_name"
 	                       maxlength="255" />
 	            </dd>
-                <dt>
-                    <label for="id_responsible_responsible_phone">Мобильный телефон<br/> для логина:</label>
-                </dt>
-                <dd>+
+               </dl>
+ 
+ 
+             <table ng-show="edit_resp" class="pd-form" >
+                <tr>
+                    <th width="200px">
+                        <label>Мобильный телефон<br/> для входа в кабинет:</label >
+                    </th>
+                    <td>+
                     <input name="responsible_login_phone" 
                             id="id_responsible_login_phone" type="text" 
                             ng-model="editor.responsible.login_phone"
@@ -81,13 +89,17 @@
                             popover='Введите номер телефона в международном формате без "+" и без "8". Пример: 74996772043'
                             maxlength="15" style="width:200px;"/>
                         <p class="error" ng-show="responsibleEditForm.responsible_login_phone.$error.validPhone">Неверный номер телефона</p>
-                </dd>
-	            <dt>
-    	            <button class="btn" ng-click="edit_resp=false" ng-disabled="responsibleEditForm.$invalid">Сохранить</button>
-    	            <button class="btn" ng-click="[edit_resp=false, responsible_edit_cancel()]" ng-disabled="responsibleEditForm.$invalid">Закрыть</button>
-	            </dt>
-                <dd></dd>
-	        </dl>
+                    </td>
+	            </tr>
+	            <tr>
+	               <td colspan="2">
+        	            <button class="btn" ng-click="edit_resp=false" ng-disabled="responsibleEditForm.$invalid">Сохранить</button>
+        	            <button class="btn" ng-click="[edit_resp=false, responsible_edit_cancel()]" ng-disabled="responsibleEditForm.$invalid">Отмена</button>
+                    </td>
+                </tr>
+	            </table>
+	            <br/>
+
 	        
 		    <div class="modal-footer">
                 <span ng-show="is_responsible_disabled(responsibleEditForm)">Необходимо указать фамилию, адрес или телефон</span>
@@ -116,7 +128,6 @@
     </tab>
 	<tab heading="Телефоны">
 		<span ng-hide="editor.responsible.last_name">Заполните страницу личных данных</span>
-
 		    <phones phones="editor.responsible_phones"></phones>
 
 		<form name="responsibleEditForm2" >

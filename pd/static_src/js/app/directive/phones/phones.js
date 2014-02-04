@@ -47,9 +47,8 @@ app.controller('PhonesController', ['$scope', 'Phone', function($scope, Phone) {
 		if(!$scope.phones){
 			$scope.phones = [];
 		}
-		$('#edit_save_btn').data('disabled',$('#edit_save_btn').attr('disabled'));
-		$('#edit_save_btn').attr('disabled','disabled');
 		$scope.old = angular.copy($scope.phone);
+		$scope.$parent.$parent.editor.isPhoneEdited = true;
 	};
 	$scope.close = function(form) {
 		$scope.phone.phonetype = $scope.old.phonetype; 
@@ -59,9 +58,7 @@ app.controller('PhonesController', ['$scope', 'Phone', function($scope, Phone) {
         $scope.isPhoneAddOpen = false;
         $scope.isStaticBlock = false;
         //$('#edit_save_btn').removeAttr('disabled');
-        if( $('#edit_save_btn').data('disabled')){
-        	$('#edit_save_btn').removeAttr('disabled');
-        }
+        delete $scope.$parent.$parent.editor.isPhoneEdited;
 	};
         
     $scope.destroy = function(index){
@@ -87,10 +84,7 @@ app.controller('PhonesController', ['$scope', 'Phone', function($scope, Phone) {
             $scope.isPhoneAddOpen = false;
             $scope.isStaticBlock = false;
         }
-		//$('#edit_save_btn').removeAttr('disabled');
-        if( $('#edit_save_btn').data('disabled')){
-        	$('#edit_save_btn').removeAttr('disabled');
-        }
+		delete $scope.$parent.$parent.editor.isPhoneEdited;
 	};
 	
 	$scope.validatePhone = function(value) {
