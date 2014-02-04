@@ -162,7 +162,7 @@
                         <br />{{ b.get_responsible.address }}
                     {% endif %}
                     {% if b.get_responsible.login_phone %}
-                        <br />Мобильный телефон для входа в кабинет: {{ b.get_responsible.login_phone }}
+                        <br />{% trans "Мобильный телефон для входа в кабинет" %}: {{ b.get_responsible.login_phone }}
                     {% endif %}
                 {% endif %}
             {% else %}
