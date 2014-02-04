@@ -156,10 +156,15 @@
         <dt>{% trans "Ответственный" %}:</dt>
         <dd>
             {% if show_private_data %}
-                {{ b.get_responsible|default:"не указан" }}
-                {% if b.get_responsible.address %}
-                     <br />{{ b.get_responsible.address }}
-                 {% endif %}
+                {% if b.get_responsible %}
+                    {{ b.get_responsible }}
+                    {% if b.get_responsible.address %}
+                        <br />{{ b.get_responsible.address }}
+                    {% endif %}
+                    {% if b.get_responsible.login_phone %}
+                        <br />Мобильный телефон для входа в кабинет: {{ b.get_responsible.login_phone }}
+                    {% endif %}
+                {% endif %}
             {% else %}
                 {% if b.get_responsible %}
                     {% trans "имеется" %}

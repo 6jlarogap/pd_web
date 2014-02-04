@@ -212,7 +212,7 @@ class AlivePerson(BasePerson, PhonesMixin):
     Живое ФЛ с телефоном
     """
     phones = models.TextField(_(u"Телефоны"), blank=True, null=True)
-    login_phone = models.DecimalField(_(u"Мобильный телефон для личного кабинета"), max_digits=15, decimal_places=0,
+    login_phone = models.DecimalField(_(u"Мобильный телефон для входа в кабинет"), max_digits=15, decimal_places=0,
                   blank=True, null=True, db_index=True)
 
 class DocumentSource(models.Model):
