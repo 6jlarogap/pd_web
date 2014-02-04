@@ -342,29 +342,29 @@
 				$scope.closeEditForm('isResponsibleEditorOpen');
 				$scope.update();
 			});
-
-			/*if ($scope.responsible.is_new) {
-				$scope.responsible.$save(function(data) {
-					$scope.item.responsible = data.id;
-					$scope.item.$update({placeID : $routeParams.place_id,
-										cemetery_id : $routeParams.cemetery_id,
-										area_id : $routeParams.area_id
-					},function() {
-						noty({text: 'Изменения сохранены', type:'success', layout:'topRight'});
-						$scope.update();
-					});
-				});
-			} else {
-				$scope.responsible.$update(function() {
-					$scope.update();
-					noty({text: 'Изменения сохранены', type:'success', layout:'topRight'});
-				});
-			}*/
 		}else{
             var msg = "Исправьте ошибки в форме";
             noty({text: msg, type:'error', layout:'topRight'});
         }
 	};
+	$scope.responsible_edit = function(){
+		// https://trello.com/c/eyBZRdiM/803--
+		var o = $scope.editor.responsible;
+		$scope.editor.responsible_copy = {
+				last_name: o.last_name,
+				first_name: o.first_name,
+				middle_name: o.middle_name,
+				login_phone: o.login_phone
+		}
+	};
+		$scope.responsible_edit_cancel = function(){
+			// https://trello.com/c/eyBZRdiM/803--
+			var o = $scope.editor.responsible_copy;
+			$scope.editor.responsible.last_name= o.last_name;
+			$scope.editor.responsible.first_name = o.first_name;
+			$scope.editor.responsible.middle_name = o.middle_name;
+			$scope.editor.responsible.login_phone = o.login_phone;
+		};
 
 	$scope.removeResponsible = function() {
 		if ($scope.responsible.last_name || $scope.responsible.first_name || $scope.responsible.middle_name) {
@@ -545,12 +545,14 @@
 	});
 	$scope.is_responsible_disabled = function(responsibleEditForm){
 		var valid = responsibleEditForm.$valid && ($scope.editor.responsible.address || 
-				($scope.editor.responsible_phones && $scope.editor.responsible_phones.length));
+				($scope.editor.responsible_phones && $scope.editor.responsible_phones.length) ||
+				($scope.editor.responsible.login_phone && $scope.editor.responsible.login_phone.length)
+		);
 		return !valid;
 	};
 	
 	$scope.validatePhone = function(value) {
-	    return value && value.replace('-','').match(/^[\d]{10,12}$/) != null
+	    return !(value && value.length) || (value && value.replace('-','').match(/^[\d]{10,12}$/) != null)
 	};
 	
 	ymapData.markers = [];

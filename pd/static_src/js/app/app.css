@@ -135,3 +135,8 @@ form .error{
 form .error {
 margin: -5px 0 0 60px;
 }
+
+.pd-form th{
+    vertical-align: top;
+    text-align: left;
+}

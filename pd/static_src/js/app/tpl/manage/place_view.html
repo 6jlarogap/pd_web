@@ -4,41 +4,48 @@
 <div class="place-view">
     <div class="row-fluid">
         <div class="span7">
-            <dl class="dl-horizontal">
-                <dt>
+            <table class="pd-form" colspan="2">
+            <tr>
+                <th colspan="2">
                     <a href="#" class="btn btn-success btn-mini"
                             ng-disabled="loading"
                             alt="Редактировать"
                             ng-click="openEditForm('isPlaceEditorOpen')">
                         <span class="icon-edit"></span>
                     </a>
+                    Место:
+                </th>
+              </tr><tr>
+                <th>
                     Кладбище:
-                </dt>
-                <dd>{{ item.name }}</dd>
-                <dt>Участок:</dt>
-                <dd>{{ area.name }}</dd>
-                <dt>Ряд:</dt>
-                <dd>{{ item.row }}</dd>
-                <dt>Место:</dt>
-                <dd>{{ item.place }}</dd>
-                <dt>Могил всего</dt>
-                <dd>{{item.graves_count}}</dd>
+                </th>
+                <td>{{ item.name }}</td>
+            </tr><tr>
+                <th>Участок:</ht>
+                <td>{{ area.name }}</td>
+            </tr><tr>
+                <th>Ряд:</th>
+                <td>{{ item.row }}</td>
+            </tr><tr>
+                <th>Место:</th>
+                <td>{{ item.place }}</td>
+            </tr><tr>
+                <th>Могил всего</th>
+                <td>{{item.graves_count}}</td>
+            </tr><tr>
                 <!-- dt>Свободно</dt>
                 <dd>{{item.available_count}}</dd -->
                 
-                <dt>Координаты</dt>
-                <dd>широта: {{item.lat || '-'}}, долгота: {{item.lng || '-'}}</dd>
-                <dt>Размеры</dt>
-                <dd>длина {{item.place_length || '-'}}м, ширина {{item.place_width || '-'}}м</dd>
-            </dl>
-            <!-- dl class="dl-horizontal">
-                <dd><a href="#" class="btn btn-success"
-                    ng-disabled="loading"
-                    ng-click="openEditForm('isPlaceEditorOpen')">Редактировать</a></dd -->
-            </dl -->
-            <hr />
-            <dl class="dl-horizontal">
-                <dt>
+                <th>Координаты</th>
+                <td>широта: {{item.lat || '-'}}, долгота: {{item.lng || '-'}}</dt>
+            </tr><tr>
+                <th>Размеры</th>
+                <td>длина {{item.place_length || '-'}}м, ширина {{item.place_width || '-'}}м</td>
+            </tr>
+            </tr><tr>
+            <td colspan="2"><hr /></td>
+            </tr><tr>
+                <th>
                     <button class="btn btn-success btn-mini"
                             ng-disabled="loading"
                             ng-click="openEditForm('isResponsibleEditorOpen')">
@@ -51,19 +58,24 @@
                         <span class="icon-remove"></span>
                     </button>
                     Ответственный:
-                    </dt>
-                <dd>
+                    </th>
+                <td>
                     {{ responsible.last_name + ' ' + responsible.first_name + ' ' + responsible.middle_name }}
-                </dd>
-            </dl>
-                
-                <table>
-                <tr>
-                    <td width="200px"><b>Адрес:</b></td>
+                </td>
+            </tr><tr>
+                    <th width="200px">Адрес:</th>
                     <td>{{responsible.address_str || '-'}}</td>
-                </tr>
-                <tr>
-                    <td><b>Телефоны:</b></td>
+                </tr><tr>
+                    <th>Мобильный телефон для логина:</th>
+                    <td ng-hide="responsible.login_phone">
+                        <span class="label label-important">Не указан</span>
+                    </td>
+                    <td ng-show="responsible.login_phone">
+                                <span ng-show="responsible.login_phone && responsible.login_phone.length">+</span>
+                                {{responsible.login_phone}}:
+                    </td>
+                </tr><tr>
+                    <th>Телефоны:</th>
                     <td>
                             <div ng-repeat="phone in responsible_phones">
                                 {{phone.phonetype | objList:PHONETYPE_CHOICES}}:
@@ -73,10 +85,8 @@
                     </td>
                 </tr>
                 </table>
-            
-            
-
         </div>
+
 	    <yandex-map id="yandex-map" class="span5" coordinates="placeCoordinates" points="placePoints">
 	    </yandex-map>
     </div>
