@@ -545,11 +545,13 @@
 	});
 	$scope.is_responsible_disabled = function(responsibleEditForm){
 		var o = $scope.editor;
-		var form1_valid = responsibleEditForm.$valid && 
-							o.responsible.login_phone && o.responsible.login_phone.length>0,
+		var form1_valid = responsibleEditForm.$valid,
 			  form2_valid = o.responsible.address != null,
 			  form3_valid = !o.isPhoneEdited &&
-			  				o.responsible_phones && o.responsible_phones.length>0;
+			  				(  
+			  					(o.responsible_phones && o.responsible_phones.length>0) ||
+			  					(o.responsible.login_phone && o.responsible.login_phone.length>0)
+			  				);
 		return !(form1_valid && (form2_valid || form3_valid));
 	};
 	
