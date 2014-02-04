@@ -332,7 +332,7 @@
 		if (form.$valid || true) { //TODO: check this
 			$scope.editor.item.obj_responsible = $scope.editor.responsible;
 			$scope.editor.item.obj_responsible_phones = $scope.editor.responsible_phones; 
-			
+
 			$scope.loading = true;
 			$scope.editor.item.$update({
 				cemetery_id : $routeParams.cemetery_id,

@@ -153,8 +153,8 @@ class CemeteryViewSet(viewsets.ModelViewSet):
         #write_log(self.request, obj, _(u'Кладбище изменено'))
 
         # TODO: send signal
-        phone = self.request.DATA.get('obj_phones')
-        if obj.pk and phone:
+        phone = self.request.DATA.get('obj_phones', [])
+        if obj.pk:
             id_binds = {}
             ct = ContentType.objects.get_for_model(obj)
 
@@ -354,27 +354,27 @@ class PlaceViewSet(viewsets.ModelViewSet):
         if object.responsible:
             old_phones = [i for i in object.responsible.phone_set.all()]
             
-            phone = self.request.DATA.get('obj_responsible_phones')
+            phone = self.request.DATA.get('obj_responsible_phones', [])
             id_binds = {}
             ct = ContentType.objects.get_for_model(object.responsible)
-            if phone:
-                for i in phone:
-                    i["ct"] = ct.pk
-                    try:
-                        phone_obj = object.responsible.phone_set.get(pk=i['id'])
-                    except:
-                        phone_obj = None
-                    phone_serializer = PhoneSerializer(phone_obj, data=i)
-                    if not phone_serializer.is_valid():
-                        return Response(status=400, data=phone_serializer.errors)
-                    res = phone_serializer.save()
-                    res.obj_id = object.responsible.pk
-                    res.save()                
-                    id_binds[res.id] = 1
-                object.responsible.phone_set.exclude(pk__in=id_binds.keys()).delete()
-            
-                phone_set = object.responsible.phone_set.all()
-                self.new_msg += prepare_m2m_log(_(u'Телефон'), old_phones,  phone_set)
+
+            for i in phone:
+                i["ct"] = ct.pk
+                try:
+                    phone_obj = object.responsible.phone_set.get(pk=i['id'])
+                except:
+                    phone_obj = None
+                phone_serializer = PhoneSerializer(phone_obj, data=i)
+                if not phone_serializer.is_valid():
+                    return Response(status=400, data=phone_serializer.errors)
+                res = phone_serializer.save()
+                res.obj_id = object.responsible.pk
+                res.save()                
+                id_binds[res.id] = 1
+            object.responsible.phone_set.exclude(pk__in=id_binds.keys()).delete()
+        
+            phone_set = object.responsible.phone_set.all()
+            self.new_msg += prepare_m2m_log(_(u'Телефон'), old_phones,  phone_set)
                 
         try:
             old_address = self.old_object.responsible.address

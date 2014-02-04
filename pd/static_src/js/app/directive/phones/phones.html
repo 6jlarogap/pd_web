@@ -47,7 +47,8 @@
                    ui-validate="{validPhone : 'validatePhone($value)' }"
                    ng-model="phone.number"
                    required
-                   popover-placement="right" popover='Введите номер телефона в международном формате без "+" и без "8". Пример: 74996772043'
+                   popover-placement="right" popover-trigger="mouseenter"
+                   popover='Введите номер телефона в международном формате без "+" и без "8". Пример: 74996772043'
                    ng-maxlength="maxlength">
                 <p class="error" ng-show="form_phone.phone_number.$error.validPhone">Неверный номер телефона</p>
                 <!--p class="error" ng-show="add_phone.phone_number.$error.required">Укажите номер телефона</p-->
