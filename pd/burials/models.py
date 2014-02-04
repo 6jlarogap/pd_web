@@ -1067,11 +1067,13 @@ def relocate_grave_numbers(sender, instance, **kwargs):
             row.grave_number = i
             row.save()
         i += 1
+    arr = [_(u'Могила №%d удалена') % instance.grave_number,]
     if relocated > 0:
         if relocated < i-1:
-            write_log(None, instance.place, _(u'Могилы %d-%d перенумерованы') % (relocated, i-1))
+            arr.append( _(u'Могилы %d-%d перенумерованы') % (relocated, i-1))
         else:
-            write_log(None, instance.place, _(u'Могила %d перенумерована') % relocated)
+            arr.append( _(u'Могила %d перенумерована') % relocated)
+    write_log(None, instance.place,u"<br/>".join(arr))
 models.signals.post_delete.connect(relocate_grave_numbers, sender=Grave)
 
 

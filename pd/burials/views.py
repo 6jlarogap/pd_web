@@ -514,9 +514,9 @@ class GraveViewSet(viewsets.ModelViewSet):
     permission_classes = (IsAuthenticated,)
     paginate_by = 1
 
-    def delete(self, request, *args, **kwargs):
-        write_log(self.request, self.get_object(), _(u'Могила №%d удалена') % object.grave_number)
-        return super(GraveViewSet, self).delete(request, *args, **kwargs)
+    #def delete(self, request, *args, **kwargs):
+    #    write_log(self.request, self.get_object(), _(u'Могила №%d удалена') % object.grave_number)
+      #  return super(GraveViewSet, self).delete(request, *args, **kwargs)
 
     def get_queryset(self):
         place = getPlace(self.request)
@@ -599,7 +599,7 @@ class GraveViewSet(viewsets.ModelViewSet):
     def destroy(self, request, pk=None):
         try:
             object = self.model.objects.get(pk=int(pk))
-            write_log(self.request, object.place, _(u'Могила №%d удалена') % object.grave_number)
+            #write_log(self.request, object.place, _(u'Могила №%d удалена') % object.grave_number)
             object.delete()
         except:
             raise Http404()
