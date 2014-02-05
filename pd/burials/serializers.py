@@ -20,12 +20,6 @@ from rest_api.fields import UnclearDateFieldSerializer
 from django.core.exceptions import ValidationError
 
 
-def validate_area_places_count(value):
-    if value<1 or value>10:
-        raise ValidationError(u'Количество могил должно быть от 1 до 10')
-
-
-
 class SubCemeterySerializer(serializers.ModelSerializer):
     """
     area subelement
@@ -69,7 +63,7 @@ class CemeterySerializer(serializers.ModelSerializer):
 class AreaSerializer(serializers.ModelSerializer):
     purpose = serializers.PrimaryKeyRelatedField()
     cemetery = serializers.PrimaryKeyRelatedField()
-    places_count = serializers.IntegerField(required=True) #validators=[validate_area_places_count],\
+    places_count = serializers.IntegerField(required=True)
 
     class Meta:
         model = Area
@@ -78,7 +72,7 @@ class AreaSerializer(serializers.ModelSerializer):
     def is_valid(self):
         valid = not self.errors
         if not self.many and self.object:
-            max_graves_count = self.context['request'].user.profile.org.max_graves_count or 10
+            max_graves_count = self.context['request'].user.profile.org.max_graves_count
             if self.object.places_count<=0 or self.object.places_count>max_graves_count:
                 self._errors = self._errors or {}
                 self._errors["__all__"] = [_(u"Количество могил должно быть от 1 до %d") % max_graves_count,]
