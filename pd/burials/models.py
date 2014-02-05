@@ -60,6 +60,7 @@ class Cemetery(GetLogsMixin, BaseModel):
         verbose_name = _(u"Кладбище")
         verbose_name_plural = _(u"Кладбища")
         ordering = ['name']
+        unique_together = ('ugh', 'name',)
 
     def __unicode__(self):
         return self.name
