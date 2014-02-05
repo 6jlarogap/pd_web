@@ -14,7 +14,6 @@ class Migration(DataMigration):
         # Повторяющиеся имена получат суффиксы из чисел
         
         print "*** Creating unique names for cemeteries if neccessary"
-        Org = orm['users.Org']
         Cemetery = orm['burials.Cemetery']
         count_all = count_doubles = 0
         fake_num = 0
