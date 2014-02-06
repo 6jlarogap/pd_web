@@ -246,7 +246,11 @@ class ResponsibleForm(AlivePersonForm):
                                   widget=forms.RadioSelect, required=True, initial=WHERE_NEW)
     place = forms.ModelChoiceField(queryset=Place.objects.all(), widget=forms.HiddenInput, required=False)
     order = forms.ModelChoiceField(queryset=Order.objects.all().select_related('loru'), widget=forms.HiddenInput, required=False)
-    login_phone_ = forms.DecimalField(label=AlivePerson._meta.get_field('login_phone').verbose_name, required=False)
+    login_phone_ = forms.DecimalField(label=AlivePerson._meta.get_field('login_phone').verbose_name,
+                                      max_digits=AlivePerson._meta.get_field('login_phone').max_digits,
+                                      decimal_places=AlivePerson._meta.get_field('login_phone').decimal_places,
+                                      help_text=AlivePerson._meta.get_field('login_phone').help_text,
+                                      required=False)
 
     def __init__(self, *args, **kwargs):
         super(ResponsibleForm, self).__init__(*args, **kwargs)
@@ -255,6 +259,7 @@ class ResponsibleForm(AlivePersonForm):
             self.initial['login_phone_'] = self.instance.login_phone
         else:
             self.fields.keyOrder.insert(0, self.fields.keyOrder.pop(-4))
+        self.fields.keyOrder.insert(-3, self.fields.keyOrder.pop(-1))
 
         self.initial.setdefault('take_from', self.WHERE_NEW)
 
