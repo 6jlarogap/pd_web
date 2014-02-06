@@ -294,7 +294,7 @@ def validate_phone_as_number(value):
         raise ValidationError(_(u'Неверный первый знак в телефоне'))
     min_digits = 10
     if value < 10**(min_digits-1):
-        raise ValidationError(_(u'Мало цифр в телефоне'))
+        raise ValidationError(_(u'Мало цифр в телефоне. Минимум: %d цифр') % min_digits)
 
 class  GetLogsMixin(object):
     """
