@@ -18,6 +18,7 @@ from django.utils.translation import ugettext_lazy as _
 from django.db.models.query_utils import Q
 
 from burials.models import Cemetery, Area, Burial, Place, ExhumationRequest, BurialFiles, Grave, PlaceSize
+from persons.models import AlivePerson
 from geo.forms import LocationForm
 from orders.models import Order
 from pd.forms import PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, CommentForm, StrippedStringsMixin, CustomUploadModelForm
@@ -245,13 +246,20 @@ class ResponsibleForm(AlivePersonForm):
                                   widget=forms.RadioSelect, required=True, initial=WHERE_NEW)
     place = forms.ModelChoiceField(queryset=Place.objects.all(), widget=forms.HiddenInput, required=False)
     order = forms.ModelChoiceField(queryset=Order.objects.all().select_related('loru'), widget=forms.HiddenInput, required=False)
+    login_phone_ = forms.DecimalField(label=AlivePerson._meta.get_field('login_phone').verbose_name,
+                                      max_digits=AlivePerson._meta.get_field('login_phone').max_digits,
+                                      decimal_places=AlivePerson._meta.get_field('login_phone').decimal_places,
+                                      help_text=AlivePerson._meta.get_field('login_phone').help_text,
+                                      required=False)
 
     def __init__(self, *args, **kwargs):
         super(ResponsibleForm, self).__init__(*args, **kwargs)
         if self.instance.pk:
             del self.fields['take_from']
+            self.initial['login_phone_'] = self.instance.login_phone
         else:
-            self.fields.keyOrder.insert(0, self.fields.keyOrder.pop(-3))
+            self.fields.keyOrder.insert(0, self.fields.keyOrder.pop(-4))
+        self.fields.keyOrder.insert(-3, self.fields.keyOrder.pop(-1))
 
         self.initial.setdefault('take_from', self.WHERE_NEW)
 
@@ -264,6 +272,8 @@ class ResponsibleForm(AlivePersonForm):
         return self.cleaned_data
 
     def save(self, *args, **kwargs):
+        if 'login_phone_' in self.fields:
+            self.instance.login_phone = self.cleaned_data['login_phone_']
         if self.instance.pk:
             return super(ResponsibleForm, self).save(*args, **kwargs)
         elif self.cleaned_data.get('take_from') == self.WHERE_FROM_PLACE:
@@ -472,6 +482,8 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
 
         responsible = self.instance and self.instance.get_responsible()
         self.responsible_form = ResponsibleForm(data=data, prefix='responsible', instance=responsible)
+        if self.request.user.profile.is_loru():
+            del self.responsible_form.fields['login_phone_']
         resp_addr = responsible and responsible.address
         self.responsible_address_form = LocationForm(data=data, prefix='responsible-address', instance=resp_addr)
 
@@ -1397,9 +1409,11 @@ class AddDoverForm(StrippedStringsMixin, forms.ModelForm):
 class AddOrgForm(BaseOrgForm):
     class Meta:
         model = Org
-        exclude = ['off_address', 'numbers_algo',
+        exclude = ('off_address', 'numbers_algo',
                    'opf_order', 'opf_order_customer_mandatory',
-                   'plan_date_days_before', 'max_graves_count' ]
+                   'plan_date_days_before', 'max_graves_count',
+                   'worktime', 'site',
+                   'publish_cost', 'currency', )
     
     def __init__(self, request, *args, **kwargs):
         super(AddOrgForm, self).__init__(request, *args, **kwargs)

@@ -70,9 +70,9 @@ install-readme.txt, utf8 code page
  
 Настройка сервера Apache:
 
-    * Должен быть установлен Apache mod_xsendfile.
+    * Должен быть установлен Apache mod_wsgi и mod_xsendfile.
         - В Debian/Ubuntu выполнить:
-            sudo apt-get install libapache2-mod-xsendfile
+            sudo apt-get install libapache2-mod-wsgi libapache2-mod-xsendfile
     
     * пример настройки виртуального хоста Apache
         (имя сервера, каталоги могут отличаться)
@@ -96,6 +96,10 @@ install-readme.txt, utf8 code page
             WSGIDaemonProcess SERVER.ORG.COM display-name=%{GROUP} processes=1 threads=2
             WSGIProcessGroup  SERVER.ORG.COM
             WSGIScriptAlias / /home/www-data/django/pd_web/pd/pd/wsgi.py
+            # Чтобы работала restframework_token_authorization
+            WSGIPassAuthorization On
+            # Во избежание ошибок: premature end of script headers wsgi.py
+            WSGIApplicationGroup %{GLOBAL}
 
             <Directory /home/www-data/static/pd_web>
                 # ВНИМАНИЕ!
