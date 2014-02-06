@@ -286,6 +286,16 @@ def validate_gt0(value):
     if value <= 0:
         raise ValidationError(_(u'Должно быть больше нуля'))
 
+def validate_phone_as_number(value):
+    """
+    Проверка поля телефона, если оно задается как число, например Decimal
+    """
+    if value < 0:
+        raise ValidationError(_(u'Неверный первый знак в телефоне'))
+    min_digits = 10
+    if value < 10**(min_digits-1):
+        raise ValidationError(_(u'Мало цифр в телефоне'))
+
 class  GetLogsMixin(object):
     """
     Для функция get_logs(), применяемой во многих моделях
