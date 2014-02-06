@@ -170,7 +170,7 @@ class MobileGetBurial(UGHRequiredMixin, View):
         listPerson = BasePerson.objects.filter(queryPerson)
                 
         all_objects = list(listBurial) + list(listPerson)
-        data = serializers.serialize("json", all_objects, fields=('grave', 'fact_date', 'deadman', 'first_name', 'last_name', 'middle_name'))
+        data = serializers.serialize("json", all_objects, fields=('grave', 'fact_date', 'deadman', 'first_name', 'last_name', 'middle_name', 'burial_container'))
         return HttpResponse(data, mimetype='application/json')
         
 mobile_get_burial = MobileGetBurial.as_view()
