@@ -1,3 +1,5 @@
+# coding=utf-8
+
 from django.http import HttpResponseRedirect
 from django.conf import settings
 import re
@@ -9,7 +11,13 @@ exempt_urls = [re.compile(re.escape(url.lstrip('/')), flags=re.I) \
                            )
               ]
 
-for regex in (settings.REGISTER_URLS_REGEX, settings.SUPPORT_URLS_REGEX):
+for regex in (settings.REGISTER_URLS_REGEX,
+              settings.SUPPORT_URLS_REGEX,
+              # Эти URLs требуют регистрации, но она через tokens,
+              # ! За исключение /api/signin,
+              #   которая регистрации не требует, а проверяет имя/пароль
+              settings.API_URLS_REGEX,
+             ):
     exempt_urls.append(re.compile(regex, flags=re.I))
 
 class LoginRequiredMiddleware:

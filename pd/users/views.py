@@ -2,6 +2,8 @@
 import json
 import datetime
 import random
+import string
+import decimal
 import hashlib
 
 from django.conf import settings
@@ -18,19 +20,148 @@ from django.http import HttpResponse, Http404
 from django.shortcuts import redirect, render, get_object_or_404
 from django.template.loader import render_to_string
 from django.utils.translation import ugettext_lazy as _
+from django.utils.encoding import smart_unicode
 from django.views.generic.base import View, TemplateView
 from django.views.generic.edit import UpdateView, CreateView, FormView
 from django.views.generic.detail import DetailView
     
+from captcha.client import submit
+
+from rest_framework import viewsets
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from rest_framework.authtoken.models import Token
+from rest_framework.permissions import IsAuthenticated
+
 from burials.views import UGHRequiredMixin, LoginRequiredMixin, SupervisorRequiredMixin
 from logs.models import Log, write_log, LoginLog
 from users.forms import UserAddForm, RegisterForm, LoruFormset, ProfileForm, UserProfileForm, \
                         UserDataForm, ChangePasswordForm, BankAccountFormset, OrgForm, \
-                        OrgLogForm, LoginLogForm, OrgBurialStatsForm, SupportForm
-from users.models import Profile, Org, RegisterProfile, ProfileLORU
+                        OrgLogForm, LoginLogForm, OrgBurialStatsForm, SupportForm, TestCaptchaForm
+from users.models import Profile, Org, RegisterProfile, ProfileLORU, CustomerProfile
+from burials.models import Place
+from users.serializers import UghPublishCostSerializer
+from orders.models import ProductStatus, ProductHistory
 from burials.models import Burial
 from pd.views import PaginateListView, RequestToFormMixin, FormInvalidMixin
 
+class CheckRecaptchaMixin(object):
+    
+    def check_recaptcha(self, request, challenge, response):
+        forwarded_ip = request.META.get('HTTP_X_FORWARDED_FOR', '')
+        if forwarded_ip:
+            remote_ip = forwarded_ip
+        else:
+            remote_ip = request.META.get('REMOTE_ADDR', '')
+        use_ssl = getattr(settings, 'RECAPTCHA_USE_SSL', False)
+        private_key = settings.RECAPTCHA_PRIVATE_KEY
+        return submit(
+                smart_unicode(challenge),
+                smart_unicode(response),
+                private_key=private_key,
+                remoteip=remote_ip,
+                use_ssl=use_ssl
+        ).is_valid
+    
+class AuthGetTokenView(APIView):
+    """
+    Проверка имени и пароля, (создать и) отдать token
+    """
+    def post(self, request, format=None):
+        token = None
+        username = request.DATA.get('username')
+        password = request.DATA.get('password')
+        status = 'error'
+        status_code = 400
+        if username and password:
+            user = authenticate(username=username, password=password)
+            if user and user.is_active:
+                token, created = Token.objects.get_or_create(user=user)
+        if token:
+            role = None
+            try:
+                user.customerprofile
+            except CustomerProfile.DoesNotExist:
+                try:
+                    user.profile
+                except Profile.DoesNotExist:
+                    pass
+                else:
+                    if user.profile.is_loru():
+                        role = u'ROLE_LORU'
+                    elif user.profile.is_ugh():
+                        role = u'ROLE_OMS'
+            else:
+                role = 'ROLE_CLIENT'
+            if not role:
+                raise Exception(u'Unknown role')
+            login(request, user)
+            data = { 'status': 'success',
+                     'token': token.key,
+                     'sessionId': request.session._get_or_create_session_key(),
+                     'role': role,
+                   }
+            status_code = 200
+        else:
+            data = { 'status': status,
+                     'message': 'Wrong username or password',
+                   }
+        return Response(data=data, status=status_code)
+
+auth_get_token = AuthGetTokenView.as_view()
+
+class AuthGetPasswordBySMSView(CheckRecaptchaMixin, APIView):
+    """
+    Замена пользователю пароля, отправка пароля по СМС
+    
+    Input example:
+    {
+        "phoneNumber": “375291234567”,
+        "recaptchaData": {
+            "response": "foo bar",
+            "challenge": "03AHJ_VuvQ5p0AdejIw4W6"
+        }
+    }
+    Output examples:
+    {
+        "status: "success",
+        "message": "Пароль установлен"
+        "password": "new_password"
+    }
+    {
+        "status: "error",
+        "message": "Ваш номер телефона не указан в списке для входа. Обратитесь в администрацию кладбища."
+        # or       "Введена не верная captcha"
+    }
+    """
+    def post(self, request, format=None):
+        status = 'error'
+        status_code = 400
+        password = None
+        message = ''
+        phone_number = request.DATA['phoneNumber']
+        recaptcha_data = request.DATA['recaptchaData']
+        if not self.check_recaptcha(self.request, recaptcha_data['challenge'], recaptcha_data['response']):
+            message = _(u'Введена неверная captcha')
+        else:
+            if not Place.objects.filter(responsible__login_phone=decimal.Decimal(phone_number)).count():
+                message = _(u'Ваш номер телефона не указан в списке для входа. Обратитесь в администрацию кладбища')
+            else:
+                user, created = User.objects.get_or_create(username=phone_number)
+                if created:
+                    user.is_active = True
+                chars = string.ascii_uppercase + string.ascii_lowercase + string.digits
+                password = ''.join(random.choice(chars) for x in range(random.randrange(5, 11)))
+                user.set_password(password)
+                user.save()
+                customprofile = CustomerProfile.objects.get_or_create(user=user)
+                status = 'success'
+                status_code = 200
+                message = _(u'Пароль установлен')
+        data = { 'status': status, 'password': password, 'message': message }
+        return Response(data=data, status=status_code)
+
+auth_get_password_by_sms = AuthGetPasswordBySMSView.as_view()
 
 class LoginView(View):
     """
@@ -138,6 +269,16 @@ class LoruRegistryView(UGHRequiredMixin, View):
                     profile.area = None
                     profile.cemetery = None
                     profile.save()
+            for p_status in ProductStatus.objects.filter(ugh=request.user.profile.org,
+                                                         product__loru__in=removed_lorus):
+                ProductHistory.objects.create(
+                    product=p_status.product,
+                    ugh=p_status.ugh,
+                    operation=ProductHistory.PRODUCT_OPERATION_DELETE,
+                    dt=datetime.datetime.now(),
+                    publish_cost=0.0,
+                    currency=p_status.ugh.currency,
+                )
 
             messages.success(self.request, _(u"Данные сохранены"))
             write_log(self.request, self.request.user.profile.org, _(u'Изменены данные реестра ЛОРУ'))
@@ -714,3 +855,33 @@ class SupportThanks(TemplateView):
                                         'html_message': html_message})
 
 support_thanks = SupportThanks.as_view()
+
+class UghPublishCostViewSet(viewsets.ModelViewSet):
+    model = Org
+    serializer_class = UghPublishCostSerializer
+    permission_classes = (IsAuthenticated,)
+
+    def get_queryset(self):
+        try:
+            return Org.objects.filter(loru_list__loru=self.request.user.profile.org)
+        except AttributeError:
+            # user without profile
+            return Org.objects.none()
+
+class TestCaptchaView(FormView):
+    """
+    Форма тестирования captcha
+    
+    Без этой простой страницы трудно, если не невозможно
+    увидеть и challenge-код капчи и правильный ответ пользователя.
+    Правильный ответ -- в графике! И еще: повтор правильных
+    challenge и ответа приведет к неверному срабатыванию капчи.
+    """
+    form_class = TestCaptchaForm
+    template_name = 'testcaptcha.html'
+
+    def get_success_url(self):
+        return reverse('testcaptcha')
+
+testcaptcha = TestCaptchaView.as_view()
+

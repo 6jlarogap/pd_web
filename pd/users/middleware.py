@@ -22,5 +22,6 @@ class ProfileMiddleware():
                     return
                 if request.path.startswith('/admin/'):
                     return
-                messages.error(request, _(u"Пожалуйста, для продолжения работы создайте организацию"))
-                return redirect('profile')
+                # Для входа пользователей- ответственных
+                #messages.error(request, _(u"Пожалуйста, для продолжения работы создайте организацию"))
+                #return redirect('profile')

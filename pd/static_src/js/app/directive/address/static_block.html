@@ -1,0 +1,41 @@
+<div class="row-fluid">
+	<div class="span6">
+	    <div class="full_address">
+			<dl class="dl-horizontal">
+			  <dt>Страна</dt>
+			  <dd>{{item.country || '-'}}</dd>
+			
+			  <dt>Регион</dt>
+			  <dd>{{item.region || '-'}}</dd>
+			
+			  <dt>Город</dt>
+			  <dd>{{item.city || '-'}}</dd>
+			
+			  <dt>Улица</dt>
+			  <dd>{{item.street || '-'}}</dd>
+			
+			  <dt>Почтовый индекс</dt>
+			  <dd>{{item.post_index || '-'}}</dd>
+			</dl>
+	    </div>
+	</div>
+	<div class="span6">
+		<dl class="dl-horizontal">
+		  <dt>Дом</dt>
+		  <dd>{{item.house || '-'}}</dd>
+		
+		  <dt>Корпус</dt>
+		  <dd>{{item.block || '-'}}</dd>
+		
+		  <dt>Строение</dt>
+		  <dd>{{item.building || '-'}}</dd>
+		
+		  <dt>Квартира</dt>
+		  <dd>{{item.flat || '-'}}</dd>
+		
+		  <dt>Дополнительная информация</dt>
+		  <dd>{{item.info}}</dd>
+		</dl>
+	</div>
+</div>
+			
