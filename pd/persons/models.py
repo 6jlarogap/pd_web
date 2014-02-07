@@ -9,7 +9,7 @@ from django.contrib.contenttypes.models import ContentType
 
 import datetime
 from geo.models import Location
-from pd.models import UnclearDate, UnclearDateModelField, BaseModel, Files
+from pd.models import UnclearDate, UnclearDateModelField, BaseModel, Files, validate_phone_as_number
 from users.models import Org
 
 class SafeDeleteMixin(object):
@@ -214,7 +214,8 @@ class AlivePerson(BasePerson, PhonesMixin):
     phones = models.TextField(_(u"Телефоны"), blank=True, null=True)
     login_phone = models.DecimalField(_(u"Мобильный телефон для входа в кабинет"), max_digits=15, decimal_places=0,
                   blank=True, null=True, db_index=True,
-                  help_text=_(u'В международном формате, без "+" и без "8". Пример: 74990123456'))
+                  help_text=_(u'В международном формате, без "+" и без "8". Пример: 74990123456'),
+                  validators = [validate_phone_as_number, ])
 
 class DocumentSource(models.Model):
     name = models.CharField(_(u"Наименование органа"), max_length=255, unique=True)
