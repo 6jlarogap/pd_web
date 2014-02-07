@@ -49,9 +49,24 @@
         container_urn:    'Урна',
         container_ash:    'Прах',
         container_bio:    'Биоотходы'
+    },
+
+    STATUS_CHOICES = {
+            backed: "Отозвано",
+            declined: "Отклонено",
+            draft: "Черновик",
+            ready: "На согласовании",
+            inspecting: "На обследовании",
+            approved: "Согласовано",
+            closed: "",
+            exhumated: "Эксгумировано"
     };
+
 	// EOF Burial model
 
+
+
+    
     PHONE_TYPE_MOBILE = 0,
     PHONE_TYPE_CITY = 1,
     PHONE_TYPE_FAX = 2,
@@ -62,4 +77,29 @@
         {id:2, name:'Факс'}
     ],
     
-    RESPONCIBLE_CT = 20;
+    RESPONCIBLE_CT = 20,
+
+    BURIAL_STATUS_EXHUMATED = 'exhumated',
+    
+    
+    TRANSLATIONS = {
+      '__ALL__':'',
+      'places_count':'Количество могил в месте',
+      'Grave':'Могила',
+      'Country':'Страна'
+    };
+    
+window.ngGrid.i18n['en'] = {
+	    ngAggregateLabel: 'элементы',
+	    ngGroupPanelDescription: 'Для группировки по колонке перетащите сюда ее заголовок',
+	    ngSearchPlaceHolder: 'Поиск...',
+	    ngMenuText: 'Выберите колонку:',
+	    ngShowingItemsLabel: 'Показываемые элементы:',
+	    ngTotalItemsLabel: 'Всего элементов:',
+	    ngSelectedItemsLabel: 'Выбранные элементы:',
+	    ngPageSizeLabel: 'Размер страницы:',
+	    ngPagerFirstTitle: 'Первая страница',
+	    ngPagerNextTitle: 'Следующая страница',
+	    ngPagerPrevTitle: 'Предыдущая страница',
+	    ngPagerLastTitle: 'Последняя страница'
+	};

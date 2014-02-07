@@ -1,4 +1,5 @@
 # coding=utf-8
+
 import datetime
 import decimal
 import json
@@ -35,6 +36,7 @@ from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from serializers import ProductCategorySerializer, ProductsSerializer, ProductInfoSerializer
+
 
 class LORURequiredMixin:
     def is_loru(self, request):
@@ -580,6 +582,7 @@ class OrderBurialView(LORURequiredMixin, RequestToFormMixin, UpdateView):
         return redirect(reverse('create_burial') + '?order=%s' % self.object.pk)
 
 order_burial = OrderBurialView.as_view()
+
 
 class ProductCategoryViewSet(viewsets.ModelViewSet):
     model = ProductCategory

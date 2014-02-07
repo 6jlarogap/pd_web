@@ -120,3 +120,28 @@ form .error{
 #noty_topRight_layout_container .noty_message{
     background: transparent url('/static/delete.png') right center no-repeat;
 }
+
+
+.data_loading_form{
+    position:fixed;
+    top: 0px;
+    right:340px;
+    width:31px;
+    height:31px;
+    z-index:10000;
+}
+
+
+form .error {
+margin: -5px 0 0 60px;
+}
+
+.pd-form th{
+    vertical-align: top;
+    text-align: left;
+}
+
+
+.footer-info{
+    margin-right:5px;
+}

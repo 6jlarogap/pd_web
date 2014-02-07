@@ -4,31 +4,44 @@
 
 	//Constants
 	//todo put all constants in constant provider
+	$scope.version_str = version_str;
 	$scope.BURIAL_CONTAINERS = BURIAL_CONTAINERS;
 	$scope.BURIAL_TYPES = BURIAL_TYPES;
 	$scope.STATUS_CHOICES = STATUS_CHOICES;
-    $scope.grave_page = 1;
+	$scope.BURIAL_STATUS_EXHUMATED = BURIAL_STATUS_EXHUMATED;
+    $scope.STATUS_CHOICES = STATUS_CHOICES;
+    $scope.PHONETYPE_CHOICES = PHONETYPE_CHOICES;
+	$scope.grave_page = 1;
     $scope.log_page = 1;
     $scope.loading = false;
-  
+    $scope.edit_resp = false;
+    $scope.editor = {};
+    $scope.isLoginFormOpen = false;
+
     var item_params;
 	//setup
 	$scope.updateMap = function() {
 		if($scope.item){
 		  ymapData.markers = [{
-				point: [$scope.item.lat, $scope.item.lng],
+				point: [
+				        geo.getLat($scope.item.lat),
+				        geo.getLng($scope.item.lng)
+				        ],
 				caption: 'Место: "{0}"'.format($scope.item.place),
 				content: "Кл. {0}, уч. {1}, ряд {2}, место {3}".format(
 														$scope.cemetery.name, 
 														$scope.area.name, 
-														$scope.item.row || DEFAULT_MESSAGES.no_data, 
+														$scope.item.row || '-', 
 														$scope.item.place),
 
 				obj_type : 'place',
 				id: $scope.item.id
 			}];
     		$scope.placeCoordinates = [{
-    			point : [$scope.item.lat, $scope.item.lng],
+    			point : [
+                         geo.getLat($scope.item.lat),
+                         geo.getLng($scope.item.lng)
+    			        ],
     			title : $scope.item.name,
     			obj_type : 'place',
     			id: $scope.item.id
@@ -41,7 +54,10 @@
 		angular.forEach($scope.graves, function(grave, key) {
 			if (grave.lat && grave.lng) {
 				ymapData.points.push({
-					point : [grave.lat, grave.lng],
+					point : [
+		                        geo.getLat(grave.lat || $scope.item.lat),
+		                        geo.getLng(grave.lng || $scope.item.lng)
+					         ],
 					caption : 'Могила {0}'.format(grave.grave_number),
 					content : '',
 					obj_type : 'grave',
@@ -70,7 +86,9 @@
 			$scope.cemetery = new Cemetery(result.cemetery);
 			$scope.area = new Area(result.area);
 			$scope.item = new Place(result.place);
-			
+			$scope.item.place_length = parseFloat($scope.item.place_length); // html5 input[type=number]
+			$scope.item.place_width = parseFloat($scope.item.place_width);
+
 			$scope.place_log = [];
 			angular.forEach(result.log, function(item) {
                   $scope.place_log.push(new Log(item));
@@ -95,9 +113,22 @@
 				});
 			}
 
-			$scope.item.name = "Кл. {0}, уч. {1}, ряд {2}, место {3}".format($scope.cemetery.name, $scope.area.name, $scope.item.row || DEFAULT_MESSAGES.no_data, $scope.item.place)
+			$scope.item.name = $scope.cemetery.name;
 			$scope.loading = false;
-			$scope.updateGraves();
+			
+			$scope.grave_count = result.grave_count;
+	       if ($scope.placeCoordinates) {
+	           var lat = $scope.placeCoordinates.lat, lng = $scope.placeCoordinates.lng;
+	       }
+	       $scope.newGrave = new Grave({
+	           place : $scope.item.id,
+	           is_wrong_fio:false,
+	           is_military:false,
+	           grave_number : $scope.grave_count + 1 //todo add way to count next grave_number or add validation of grave_number
+	           //lat :geo.getLat(lat || $scope.item.lat),
+	           //lng :geo.getLng(lng || $scope.item.lng )
+	       });
+	       $scope.updateGraves();
 		},function(data){
 		    $scope.loading = false;
 			if(data.status==404){
@@ -109,7 +140,7 @@
 
 	$scope.updateGraves = function() {
 	   $scope.loading = true;
-	   
+
        item_params.grave_page = $scope.grave_page;
 	   
 	   Place.getGraves(item_params, function(graves) {
@@ -149,13 +180,18 @@
 			$scope.updateMap(); 
 			$scope.loading = false;
             return;
-		    
+            
+            if ($scope.placeCoordinates) {
+                var lat = $scope.placeCoordinates.lat, lng = $scope.placeCoordinates.lng;
+            }		    
 			// New element with default data
 			$scope.newGrave = new Grave({
+			    is_wrong_fio:false,
+			    is_military:false,
 				place : $scope.item.id,
-				grave_number : $scope.graves.length + 1, //todo add way to count next grave_number or add validation of grave_number
-				//lat: lat || 0,
-				//lng: lng || 0
+				grave_number : $scope.graves.length + 1 //todo add way to count next grave_number or add validation of grave_number
+	            //lat :geo.getLat(lat || $scope.item.lat),
+	            //lng :geo.getLng(lng || $scope.item.lng )
 			});
 		},function(data){
             $scope.loading = false;
@@ -188,10 +224,31 @@
 		dialogFade : true
 	};
 
+	$scope.cancelExhumation = function(burial) {
+		var item_params = {
+				placeID : $routeParams.place_id,
+				cemetery_id : $routeParams.cemetery_id,
+				area_id : $routeParams.area_id,
+				burial_id:burial.id
+			};
+			Place.cancelExhumation(item_params, function(result) {
+				$scope.updateGraves();
+			});
+	};
+	
 	$scope.openEditForm = function(form, data) {
 		$scope[form] = true;
 		$('body').css('overflow-y','hidden');
+		$scope.editor.action = form;
 		switch (form) {
+			case 'isResponsibleEditorOpen':
+				$scope.editor.item = angular.copy($scope.item);
+				$scope.editor.responsible = angular.copy($scope.responsible);
+				$scope.editor.responsible_phones = angular.copy($scope.responsible_phones); 
+				break;
+		    case 'isPlaceEditorOpen':
+		    	$scope.editor.item = angular.copy($scope.item);
+		    	break;
 			case 'isBurialEditorOpen':
 				if (data) {
 					Burial.get({
@@ -202,6 +259,7 @@
 					}, function(result) {
 						result.plan_time = result.plan_time || '';
 						$scope.selectedBurial = result;
+						$scope.editor.item = $scope.selectedBurial;
 					});
 				}
 				break;
@@ -210,16 +268,19 @@
 					var lat = $scope.placeCoordinates.lat, lng = $scope.placeCoordinates.lng;
 				}
 				$scope.newGrave = new Grave({
+	                is_wrong_fio:false,
+	                is_military:false,
 					place : $scope.item.id,
-					grave_number : $scope.graves.length + 1, //todo add way to count next grave_number or add validation of grave_number
-					lat : lat || 0,
-					lng : lng || 0
+					grave_number : $scope.grave_count + 1 //todo add way to count next grave_number or add validation of grave_number
+					//lat :geo.getLat(lat || $scope.item.lat),
+                    //lng :geo.getLng(lng || $scope.item.lng )
 				});
 				break;
 			case 'isGraveEditOpen':
 				if (data) {
 					$scope.selectedGrave = data;
 					$scope.originGraveNumber = data.grave_number;
+					$scope.editor.gave = data;
 				}
 				break;
 			case 'isGraveGalleryOpen':
@@ -238,6 +299,10 @@
 	$scope.closeEditForm = function(form) {
 		$scope[form] = false;
 		$('body').css('overflow-y','auto');
+		// $scope.update();
+		/*for(var i in $scope.editor){
+			delete $scope.editor[i]
+		}*/
 	};
 
 	//Place
@@ -245,7 +310,8 @@
 	$scope.savePlaceEditForm = function(form) {
 		if (form.$valid) {
 			var url = '/manage/cemetery/{0}/area/{1}/place/{2}'.format($scope.item.cemetery, $scope.item.area, $scope.item.id);
-			$scope.item.$update({
+			$scope.loading = true;
+			$scope.editor.item.$update({
 				cemetery_id : $routeParams.cemetery_id,
 				area_id : $routeParams.area_id
 			}, function() {
@@ -264,45 +330,48 @@
 	$scope.isResponsibleEditorOpen = false;
 	$scope.saveResponsibleEditForm = function(form) {
 		if (form.$valid || true) { //TODO: check this
-			$scope.item.obj_responsible = $scope.responsible;
-			$scope.item.obj_responsible_phones = $scope.responsible_phones; 
-			
-			$scope.item.$update({
+			$scope.editor.item.obj_responsible = $scope.editor.responsible;
+			$scope.editor.item.obj_responsible_phones = $scope.editor.responsible_phones; 
+
+			$scope.loading = true;
+			$scope.editor.item.$update({
 				cemetery_id : $routeParams.cemetery_id,
 				area_id : $routeParams.area_id
-			}, function() {
+			}, function(response) {
 				noty({text: 'Изменения сохранены', type:'success', layout:'topRight'});
+				$scope.closeEditForm('isResponsibleEditorOpen');
 				$scope.update();
 			});
-
-			/*if ($scope.responsible.is_new) {
-				$scope.responsible.$save(function(data) {
-					$scope.item.responsible = data.id;
-					$scope.item.$update({placeID : $routeParams.place_id,
-										cemetery_id : $routeParams.cemetery_id,
-										area_id : $routeParams.area_id
-					},function() {
-						noty({text: 'Изменения сохранены', type:'success', layout:'topRight'});
-						$scope.update();
-					});
-				});
-			} else {
-				$scope.responsible.$update(function() {
-					$scope.update();
-					noty({text: 'Изменения сохранены', type:'success', layout:'topRight'});
-				});
-			}*/
-			
-			
-			$scope.closeEditForm('isResponsibleEditorOpen');
+		}else{
+            var msg = "Исправьте ошибки в форме";
+            noty({text: msg, type:'error', layout:'topRight'});
+        }
+	};
+	$scope.responsible_edit = function(){
+		// https://trello.com/c/eyBZRdiM/803--
+		var o = $scope.editor.responsible;
+		$scope.editor.responsible_copy = {
+				last_name: o.last_name,
+				first_name: o.first_name,
+				middle_name: o.middle_name,
+				login_phone: o.login_phone
 		}
 	};
+		$scope.responsible_edit_cancel = function(){
+			// https://trello.com/c/eyBZRdiM/803--
+			var o = $scope.editor.responsible_copy;
+			$scope.editor.responsible.last_name= o.last_name;
+			$scope.editor.responsible.first_name = o.first_name;
+			$scope.editor.responsible.middle_name = o.middle_name;
+			$scope.editor.responsible.login_phone = o.login_phone;
+		};
 
 	$scope.removeResponsible = function() {
 		if ($scope.responsible.last_name || $scope.responsible.first_name || $scope.responsible.middle_name) {
 			var fio = "{0} {1} {2}".format($scope.responsible.last_name, $scope.responsible.first_name, $scope.responsible.middle_name);
 			if (confirm("Открепить " + fio + '?')) {
 				delete $scope.item.responsible;
+				$scope.loading = true;
 				$scope.item.$update({placeID : $routeParams.place_id,
 										cemetery_id : $routeParams.cemetery_id,
 										area_id : $routeParams.area_id
@@ -336,6 +405,7 @@
 	//Grave
 	
 	$scope.graveMove = function(direction, grave){
+	    $scope.loading = true;
 		grave.$move({
 				cemetery_id : $routeParams.cemetery_id,
 				area_id : $routeParams.area_id,
@@ -351,6 +421,7 @@
 
 	$scope.addGrave = function(form) {
 		if (form.$valid) {
+		    $scope.loading = true;
 			$scope.newGrave.$save(function() {
 				$scope.closeEditForm('isGraveAddOpen');
 				$scope.updateGraves();
@@ -358,36 +429,44 @@
 				noty({text: msg, type:'success', layout:'topRight'});
 				$scope.update();
 			});
+		}else{
+            var msg = "Исправьте ошибки в форме";
+            noty({text: msg, type:'error', layout:'topRight'});
 		}
 	};
 
 	$scope.isGraveEditOpen = false;
 	$scope.saveGraveEditForm = function(form) {
 		if (form.$valid) {
-			var graveUpdateHandler = function() {
-				$scope.closeEditForm('isGraveEditOpen');
-				$scope.updateGraves();
-				var msg = "Изменения сохранены.";
-				noty({text: msg, type:'success', layout:'topRight'});
-			};
-
-			var targetGrave = _.find($scope.graves, function(grave) {
+			/*var targetGrave = _.find($scope.graves, function(grave) {
 				return grave.grave_number == $scope.selectedGrave.grave_number && grave.id !== $scope.selectedGrave.id;
 			});
 
 			if (targetGrave) {
 				targetGrave.grave_number = $scope.originGraveNumber;
-			}
-
-			$scope.selectedGrave.$update(function(targetGrave) {
-				if (targetGrave) {
-					targetGrave.$update(graveUpdateHandler);
+			}*/
+			$scope.loading = true;
+			$scope.selectedGrave.$update({
+                cemetery_id : $routeParams.cemetery_id,
+                area_id : $routeParams.area_id,
+                place_id : $routeParams.place_id
+            }, function(targetGrave) {
+			    //graveUpdateHandler();
+			    //TODO: E.St.: is it necessary?
+				/*if (targetGrave) {
+					//targetGrave.$update(graveUpdateHandler);
 				} else {
 					graveUpdateHandler();
-				}
+				}*/
+			    $scope.closeEditForm('isGraveEditOpen');
+	             var msg = "Изменения сохранены.";
+	                noty({text: msg, type:'success', layout:'topRight'});
 				$scope.update();
 			});
-		}
+		}else{
+            var msg = "Исправьте ошибки в форме";
+            noty({text: msg, type:'error', layout:'topRight'});
+        }
 	};
 
 	$scope.deleteGrave = function(grave) {
@@ -402,7 +481,12 @@
                .then(function(result){
 					if (result=='ok') {
 						//var grave = new Grave($scope.grave_to_delete);
-						$scope.grave_to_delete.$delete(function(){
+						$scope.grave_to_delete.$delete({
+			                cemetery_id : $routeParams.cemetery_id,
+			                area_id : $routeParams.area_id,
+			                place_id : $routeParams.place_id,
+			                graveID:grave.id
+			            },function(){
 							$scope.updateGraves();
 							var msg = "Могила удалена.";
 							noty({text: msg, type:'success', layout:'topRight'});
@@ -459,7 +543,22 @@
 			});
 		}
 	});
-
+	$scope.is_responsible_disabled = function(responsibleEditForm){
+		var o = $scope.editor;
+		var form1_valid = responsibleEditForm.$valid,
+			  form2_valid = o.responsible.address != null,
+			  form3_valid = !o.isPhoneEdited &&
+			  				(  
+			  					(o.responsible_phones && o.responsible_phones.length>0) ||
+			  					(o.responsible.login_phone && o.responsible.login_phone.length>0)
+			  				);
+		return !(form1_valid && (form2_valid || form3_valid));
+	};
+	
+	$scope.validatePhone = function(value) {
+	    return !(value && value.length) || (value && value.replace('-','').match(/^[\d]{10,12}$/) != null)
+	};
+	
 	ymapData.markers = [];
 	ymapData.points = [];
     $scope.$broadcast('handleMapChanged');

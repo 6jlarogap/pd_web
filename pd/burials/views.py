@@ -21,11 +21,11 @@ from django.contrib.contenttypes.models import ContentType
 from pd.views import RequestToFormMixin, FormInvalidMixin
 
 from burials.forms import CemeteryForm, AreaFormset, PlaceEditForm, AddOrgForm, AreaMergeForm, BurialfileCommentEditForm
-from burials.models import Cemetery, Place, Area, BurialFiles, Grave, Burial, AreaPhoto, GravePhoto, ExhumationRequest, AreaPurpose
+from burials.models import Cemetery, Place, Area, BurialFiles, Grave, Burial, AreaPhoto, GravePhoto, ExhumationRequest, AreaPurpose, PlaceSize
 from burials.burials_views import *
-from logs.models import write_log, log_object
+from logs.models import write_log, log_object, prepare_m2m_log, compare_obj
 from users.models import Profile, Org
-from persons.models import Phone 
+from persons.models import Phone, AlivePerson
 from geo.models import Location
 
 # REST import
@@ -40,7 +40,7 @@ from django.db import transaction
 
 
 from serializers import CemeterySerializer, AreaSerializer, PlaceSerializer, AreaPurposeSerializer, \
-    GraveSerializer, BurialSerializer, BurialListSerializer, AreaPhotoSerializer, GravePhotoSerializer, ExhumationRequestSerializer
+    GraveSerializer, BurialSerializer, BurialListSerializer, AreaPhotoSerializer, GravePhotoSerializer, ExhumationRequestSerializer, PlaceSizeSerializer
 
 from persons.serializers import AlivePersonSerializer, PhoneSerializer
 from geo.serializers import LocationSerializer, LocationStaticSerializer
@@ -73,7 +73,7 @@ def getPlace(request):
     try:
         # PUT request issue
         place_id = int(request.GET.get('place_id'))
-        assert palce_id>0, u'Wrong id'
+        assert place_id>0, u'Wrong id'
     except:
         raise Http404()
     else:
@@ -106,6 +106,30 @@ class CemeteryViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         return  Cemetery.objects.filter(ugh=self.request.user.profile.org).all()
 
+    
+    def create(self, request, *args, **kwargs):
+        """
+        Add "unique together" check in parent class 
+        """
+        name = request.DATA.get('name').upper()
+        if self.get_queryset().filter(ugh=self.request.user.profile.org).extra(where=['upper(name)=%s'], params=[name]).exists():
+            data = {"__all__":[u"Кладбище с таким названием уже существует",]}
+            return Response(status=400, data=data)
+        return super(CemeteryViewSet, self).create(request, *args, **kwargs)
+    
+    
+    def update(self, request, *args, **kwargs):
+        try:
+            pk = int(request.DATA.get('id'))
+        except:
+            return Response(status=400)
+        name = request.DATA.get('name').upper()
+        if self.get_queryset().exclude(pk=pk).filter(ugh=self.request.user.profile.org).extra(where=['upper(name)=%s'], params=[name]).exists():
+            data = {"__all__":[u"Кладбище с таким названием уже существует",]}
+            return Response(status=400, data=data)
+        return super(CemeteryViewSet, self).update(request, *args, **kwargs)
+    
+
     def pre_save(self, obj):
         if not obj.address:
             location_id = self.request.GET.get('address_id')
@@ -120,31 +144,34 @@ class CemeteryViewSet(viewsets.ModelViewSet):
         obj.creator = self.request.user
         obj.ugh = self.request.user.profile.org
         try:
-            old = self.model.objects.get(pk=object.pk)
+            old = self.model.objects.get(pk=obj.pk)
         except self.model.DoesNotExist:
             old = None
         except AttributeError:
             old = None
-        log_object(self.request, obj=object, old=old, new=object, reason=_(u'Кладбище изменено'))
+        log_object(self.request, obj=obj, old=old, new=obj, reason=_(u'Кладбище изменено'))
         #write_log(self.request, obj, _(u'Кладбище изменено'))
 
         # TODO: send signal
+        phone = self.request.DATA.get('obj_phones', [])
         if obj.pk:
-            phone = self.request.DATA.get('obj_phones')
-            phone_set = obj.phone_set.all()
-            phone_serializer = PhoneSerializer(
-                                            phone_set, 
-                                            data=phone,
-                                            many=True,
-                                            allow_add_remove=True,)
-            if  not phone_serializer.is_valid():
-                return Response(status=400, data=phone_serializer.errors)
-            res = phone_serializer.save()
+            id_binds = {}
             ct = ContentType.objects.get_for_model(obj)
-            for i in res:
-                i.obj_id = obj.pk
-                i.ct = ct
-                i.save() 
+
+            for i in phone:
+                i["ct"] = ct.pk
+                try:
+                    phone_obj = obj.phone_set.get(pk=i['id'])
+                except:
+                    phone_obj = None
+                phone_serializer = PhoneSerializer(phone_obj, data=i)
+                if not phone_serializer.is_valid():
+                    return Response(status=400, data=phone_serializer.errors)
+                res = phone_serializer.save()
+                res.obj_id = obj.pk
+                res.save()                
+                id_binds[res.id] = 1
+            obj.phone_set.exclude(pk__in=id_binds.keys()).delete()
 
 
     @action(methods=['GET',])
@@ -157,6 +184,7 @@ class CemeteryViewSet(viewsets.ModelViewSet):
                 }
         phone_set = cemetery.phone_set.all()
         data["phones"] = PhoneSerializer(phone_set).data
+        data["cemetery"]["max_graves_count"] = request.user.profile.org.max_graves_count
         if cemetery.address:
             data["address"] = LocationStaticSerializer(cemetery.address).data
         return Response(status=200, data=data)
@@ -170,6 +198,7 @@ class SupervisorRequiredMixin:
             return View.dispatch(self, request, *args, **kwargs)
         raise Http404
 
+
 class CemeteryList(UGHRequiredMixin, ListView):
     template_name = 'cemetery_list.html'
     model = Cemetery
@@ -178,6 +207,7 @@ class CemeteryList(UGHRequiredMixin, ListView):
         return Cemetery.objects.filter(ugh=self.request.user.profile.org)
 
 manage_cemeteries = CemeteryList.as_view()
+
 
 class CemeteryCreate(UGHRequiredMixin, RequestToFormMixin, FormInvalidMixin, CreateView):
     template_name = 'cemetery_create.html'
@@ -216,8 +246,6 @@ class CemeteryEdit(UGHRequiredMixin, RequestToFormMixin, FormInvalidMixin, Updat
         return redirect('manage_cemeteries')
 
 
-
-
 class AreaViewSet(viewsets.ModelViewSet):
     model = Area
     serializer_class = AreaSerializer
@@ -232,6 +260,7 @@ class AreaViewSet(viewsets.ModelViewSet):
     def pre_save(self, object):
         item = getCemetery(self.request)
         object.cemetery = item
+
         try:
             old = self.model.objects.get(pk=object.pk)
         except self.model.DoesNotExist:
@@ -240,6 +269,16 @@ class AreaViewSet(viewsets.ModelViewSet):
             old = None
         log_object(self.request, obj=object, old=old, new=object, reason=_(u'Участок изменен'))
 
+
+    def retrieve(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        serializer = self.get_serializer(self.object)
+        data = serializer.data
+        data["max_graves_count"] = request.user.profile.org.max_graves_count
+        return Response(data)
+
+
+
 class PlaceViewSet(viewsets.ModelViewSet):
     model = Place
     serializer_class = PlaceSerializer
@@ -247,7 +286,6 @@ class PlaceViewSet(viewsets.ModelViewSet):
     paginate_by = None
 
     def get_queryset(self):
-        # import pudb; pudb.set_trace()
         item = getCemetery(self.request)
         qs = self.model.objects.filter(cemetery=item)
         if self.request.GET.get('area_id'):
@@ -256,25 +294,47 @@ class PlaceViewSet(viewsets.ModelViewSet):
         return  qs.all()
 
     def pre_save(self, object):
+        
         item = getArea(self.request) # TODO: check this
         object.area = item
+        self.new_msg = []
+        self.old_responsible = object.responsible
+        self.old_object = None
+        
         #if item.pk:
         #    write_log(self.request, object, _(u'Место №%s изменено' % object.place))
-        
+
+        max_graves_count = self.request.user.profile.org.max_graves_count or 10
+        try:
+            self.places_count = int(self.request.DATA.get('places_count',1))
+            assert self.places_count>0 and self.places_count<=max_graves_count
+        except:
+            data = {"__all__":[_(u"Количество могил должно быть от 1 до %d") % max_graves_count,]}
+            return Response(status=400, data=data)
+
         responsible = self.request.DATA.get('obj_responsible')
         if object.pk and responsible:
+            
             responsible_serializer =  AlivePersonSerializer(object.responsible, data=responsible, partial=True)
             if not responsible_serializer.is_valid():
                 return Response(status=400, data=responsible_serializer.errors) 
+            
+            try:
+                self.old_responsible = AlivePerson.objects.get(pk=object.responsible.pk)
+            except AlivePerson.DoesNotExist:
+                self.old_responsible = None
+            except AttributeError:
+                self.old_responsible = None
             object.responsible = responsible_serializer.save()
-        
+
+            #object.responsible.address_id = responsible.address
+
         try:
-            old = self.model.objects.get(pk=object.pk)
+            self.old_object = self.model.objects.get(pk=object.pk)
         except self.model.DoesNotExist:
-            old = None
+            self.old_object = None
         except AttributeError:
-            old = None
-        log_object(self.request, obj=object, old=old, new=object, reason=_(u'Место изменено'))
+            self.old_object = None
         
         # Update grave point coords
         items = Grave.objects.filter(place=object).all()
@@ -285,29 +345,61 @@ class PlaceViewSet(viewsets.ModelViewSet):
         return object
 
     def post_save(self, object, created=False):
-        #if created: 
-        #    write_log(self.request, object, _(u'Место №%s создано')% object.place)
+        if created: 
+            #    write_log(self.request, object, _(u'Место №%s создано')% object.place)
+            for i in xrange(1,self.places_count+1):
+                item = Grave(place=object, grave_number=i)
+                item.save()
+
         if object.responsible:
-            phone = self.request.DATA.get('obj_responsible_phones')
-            phone_set = object.responsible.phone_set.all()
-            phone_serializer = PhoneSerializer(
-                                            phone_set, 
-                                            data=phone,
-                                            many=True,
-                                            allow_add_remove=True,)
-            if  not phone_serializer.is_valid():
-                return Response(status=400, data=phone_serializer.errors)
-            res = phone_serializer.save()
+            old_phones = [i for i in object.responsible.phone_set.all()]
+            
+            phone = self.request.DATA.get('obj_responsible_phones', [])
+            id_binds = {}
             ct = ContentType.objects.get_for_model(object.responsible)
-            for i in res:
-                i.obj_id = object.responsible.pk
-                i.ct = ct
-                i.save() 
+
+            for i in phone:
+                i["ct"] = ct.pk
+                try:
+                    phone_obj = object.responsible.phone_set.get(pk=i['id'])
+                except:
+                    phone_obj = None
+                phone_serializer = PhoneSerializer(phone_obj, data=i)
+                if not phone_serializer.is_valid():
+                    return Response(status=400, data=phone_serializer.errors)
+                res = phone_serializer.save()
+                res.obj_id = object.responsible.pk
+                res.save()                
+                id_binds[res.id] = 1
+            object.responsible.phone_set.exclude(pk__in=id_binds.keys()).delete()
+        
+            phone_set = object.responsible.phone_set.all()
+            self.new_msg += prepare_m2m_log(_(u'Телефон'), old_phones,  phone_set)
+                
+        try:
+            old_address = self.old_object.responsible.address
+        except AttributeError:
+            old_address = None
+
+        try:   
+            new_address = object.responsible.address
+        except AttributeError:
+            new_address = None
+        
+        if unicode(old_address)!= unicode(new_address):
+            self.new_msg += [compare_obj(_(u'Адрес'), old_address, new_address)]
+        
+        if self.old_responsible and unicode(self.old_responsible) != unicode(object.responsible):
+            self.new_msg += [compare_obj(_(u'Ответственный'), self.old_responsible, object.responsible)]
+
+        log_object(self.request, obj=object, old=self.old_object, new=object, reason=_(u'Место %s изменено') % object.place, new_msg=self.new_msg)
+
+        if object.responsible:
+            object.responsible.save()
 
 
     @action(methods=['GET',])
     def getform(self, request, pk=None):
-        #import pudb; pudb.set_trace()
         cemetery = getCemetery(self.request)
         if self.request.GET.get('area_id'):
             area  = getArea(self.request)
@@ -328,15 +420,16 @@ class PlaceViewSet(viewsets.ModelViewSet):
             grave_list = paginator.page(grave_page)
         except:
             grave_list = paginator.page(1)
-            
-        burial_list = place.burial_set.filter(grave__in=grave_list).all()
-
+        grave_count = place.grave_set.count()
+        
+        #burial_list = Burial.objects.filter(grave__place=place, grave__in=grave_list).all()
         data = {
                 "cemetery" : CemeterySerializer(cemetery).data,
                 "area" : AreaSerializer(area).data,
                 "place" : PlaceSerializer(place).data,
                 "graves" : GraveSerializer(grave_list, many=True).data,
-                "burials" : BurialSerializer(burial_list, many=True).data,
+                "grave_count" : grave_count,
+                #"burials" : BurialSerializer(burial_list, many=True).data,
                 "responsible" : {},
                 "responsible_phones" : [],
                 "responsible_address" : {},
@@ -344,6 +437,8 @@ class PlaceViewSet(viewsets.ModelViewSet):
                 "log_page":page.number,
                 "log_pages":page.paginator._num_pages,
                 }
+        data["place"]["graves_count"] = place.get_graves_count()
+        data["place"]["available_count"] = place.available_count
         if place.responsible:
             phone_set = place.responsible.phone_set.all()
             data["responsible_phones"] = PhoneSerializer(phone_set).data
@@ -367,8 +462,7 @@ class PlaceViewSet(viewsets.ModelViewSet):
         except:
             grave_list = paginator.page(1)
         
-        burial_list = place.burial_set.filter(grave__in=grave_list).all()
-        
+        burial_list = Burial.objects.filter(grave__place=place, grave__in=grave_list).all()
         return Response({
                          'count': place.grave_set.count(),
                          'page': grave_list.number,
@@ -386,6 +480,19 @@ class PlaceViewSet(viewsets.ModelViewSet):
         responcible = request.GET.get('responcible')
         return Response(status=200)
 
+        
+    @action(methods=['GET',])
+    def cancel_exhumation(self, request, pk=None):
+        cemetery = getCemetery(self.request)
+        if self.request.GET.get('area_id'):
+            area  = getArea(self.request)
+        place = get_object_or_404(Place, pk=pk, cemetery=cemetery, area=area)
+
+        burial_id = request.GET.get('burial_id')
+        burial = get_object_or_404(Burial, pk=burial_id, cemetery=cemetery)
+        burial.place = place
+        Place.objects.cancel_exhumation(request,  burial)
+        return Response(status=200)
 
 
 
@@ -407,17 +514,13 @@ class GraveViewSet(viewsets.ModelViewSet):
     permission_classes = (IsAuthenticated,)
     paginate_by = 1
 
-    def delete(self, request, *args, **kwargs):
-        write_log(self.request, self.get_object(), _(u'Могила №%d удалена') % object.grave_number)
-        return super(GraveViewSet, self).delete(request, *args, **kwargs)
+    #def delete(self, request, *args, **kwargs):
+    #    write_log(self.request, self.get_object(), _(u'Могила №%d удалена') % object.grave_number)
+      #  return super(GraveViewSet, self).delete(request, *args, **kwargs)
 
     def get_queryset(self):
-        qs = self.model.objects.filter(place__cemetery__ugh=self.request.user.profile.org)
-        id = self.request.GET.get('place_id')
-        if id:
-            item = get_object_or_404(Place, id=id)
-            qs = qs.filter(place=item)
-        return  qs.order_by('grave_number').all()
+        place = getPlace(self.request)
+        return self.model.objects.filter(place=place).order_by('grave_number').all()
 
     def pre_save(self, object):
         # Update placer point coords
@@ -426,21 +529,43 @@ class GraveViewSet(viewsets.ModelViewSet):
         object.place.lat = res["lat"]
         object.place.lng = res["lng"]  
         object.place.save()
+        
+        """
+        TODO: Newd review this. Replacement for "def move(self, request, pk=None):"
+        current_qs = Grave.objects.filter(place__cemetery__ugh=self.request.user.profile.org)
+        if current.filter(pk=pk).count():
+            current = current_qs.get(pk=pk)
+            if current.grave_number != object.grave_number:
+                 current_qs = current_qs.filter(grave_number__gte=current.grave_number).all()
+                 ind = object.grave_number
+                 for row in current_qs:
+                     ind += 1
+                     row.grave_number = ind
+                     row.save()
+        """
+        
+        footer = ''
         try:
             old = self.model.objects.get(pk=object.pk)
         except self.model.DoesNotExist:
+            footer = []
             old = None
+            if object.is_wrong_fio:
+                footer.append(u"Неверное ФИО")
+            if object.is_military:
+                footer.append(u"Воинская могила")
+            if len(footer):
+                footer = ", ".join(footer)
         except AttributeError:
             old = None
-        log_object(self.request, obj=object.place, old=old, new=object, reason=_(u'Могила изменена'))        
+        log_object(self.request, obj=object.place, old=old, footer=footer, \
+                   new=object, reason="", \
+                   create_text=_(u"Могила %d создана") % object.grave_number)        
         return object
-        
-    #def post_save(self, object, created=False):
-    #    if created:
-    #        write_log(self.request, object, _(u'Могила №%d создана') % object.grave_number)
 
 
-    @action(methods=['GET',])
+    """
+    #@action(methods=['GET',])
     def move(self, request, pk=None):
         direction = request.GET.get('direction','forward')
         try:
@@ -457,7 +582,7 @@ class GraveViewSet(viewsets.ModelViewSet):
             swapped = Grave.objects.get(place=current.place, grave_number = current.grave_number+direction)
             t = current.grave_number
             t1 = swapped.grave_number
-            write_log(self.request, current, _(u'Могила перемещена %s c №%d на №%d' % (direction_text, t, t1)))
+            write_log(self.request, current, _(u'Могила №%d  перемещена %s c №%d на №%d' % (t1, direction_text, t, t1)))
             #TODO: Transaction level?
             current.grave_number = 32767
             current.save()
@@ -468,14 +593,14 @@ class GraveViewSet(viewsets.ModelViewSet):
         except:
             pass
         return Response(status=200)
-
+    """
 
 
     def destroy(self, request, pk=None):
         try:
             object = self.model.objects.get(pk=int(pk))
-            write_log(self.request, object.place, _(u'Могила №%d удалена') % object.pk)
-            object.delete();
+            #write_log(self.request, object.place, _(u'Могила №%d удалена') % object.grave_number)
+            object.delete()
         except:
             raise Http404()
         return Response(status=200)
@@ -492,10 +617,8 @@ class BurialViewSet(viewsets.ModelViewSet):
         return self.model.objects.filter(cemetery__ugh=self.request.user.profile.org)
 
     def filter_queryset(self, queryset):
-        id = self.request.GET.get('place_id')
-        item = get_object_or_404(Place, id=id)
-        queryset = queryset.filter(place=item)
-        
+        # place_id filter removed. Exhumation issue
+
         item = getCemetery(self.request)
         queryset = queryset.filter(cemetery=item)
         
@@ -523,9 +646,10 @@ class BurialViewSet(viewsets.ModelViewSet):
             old = None
         except AttributeError:
             old = None
+            footer = None
         log_object(self.request, obj=object.place, old=old, new=object, reason=_(u'Захоронение изменено'))        
         return object
-        
+
 
 class AreaPhotoViewSet(viewsets.ModelViewSet):
     model = AreaPhoto
@@ -551,6 +675,16 @@ class GravePhotoViewSet(viewsets.ModelViewSet):
         if id:
             item = get_object_or_404(Grave, id=id)
             qs = qs.filter(grave=item)
+        return  qs.all()
+
+
+class PlaceSizeViewSet(viewsets.ModelViewSet):
+    model = PlaceSize
+    serializer_class = PlaceSizeSerializer
+    permission_classes = (IsAuthenticated,)
+    paginate_by = None
+    def get_queryset(self):
+        qs = self.model.objects.filter(org=self.request.user.profile.org)
         return  qs.all()
 
 

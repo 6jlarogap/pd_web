@@ -1,18 +1,6 @@
 <alert ng-repeat="alert in alerts" type="alert.type" close="closeAlert($index)">{{alert.msg}}</alert>
-
-<ul class="breadcrumb">
-  	<li><h3 class="brand" href="#">Участок "{{area.name}}"</h3></li>
-    <li><span class="divider">|</span></li>
-    <li><a href="/manage/cemetery/">Список кладбищ</a></li>
-    <li><span class="divider">|</span></li>
-    <li><a href="/manage/cemetery/{{area.cemetery}}">Назад к кладбищу</a></li>
-    <li><span class="divider">|</span></li>
-    <li><a href="#" ng-click="openEditForm()">Редактировать</a></li>
-    <li><span class="divider">|</span></li>
-    <li><a href="#" ng-click="openAddModal()">Добавить место</a></li>
-    <li><span class="divider">|</span></li>
-    <!-- li><a href="#" ng-click="openUploadImageModal()">Загрузить фотографии</a></li -->
-</ul>
+<div ng-include src="'/static/js/app/tpl/loading-indicator.html'+version_str"></div>
+<div ng-include src="'/static/js/app/tpl/manage/area_view_header.html'+version_str"></div>
 
 <div class="row-fluid">
 	<dl class="dl-horizontal">
@@ -32,55 +20,48 @@
 <!-- removed style full-size-grid -->
 <div class="row-fluid">
 	<div class="span12" style="width:auto !important">
-	    Найти <input ng-model="search.$"><br/> 
+	    Найти <input ng-model="search">
+	    <br/> 
 		<div class="gridStyle" ng-grid="gridOptions" style="height:300px !important;"></div>
 	</div>
 </div>
 
 
-<ul class="breadcrumb">
-  	<li><h3 class="brand" href="#">Участок "{{area.name}}"</h3></li>
-    <li><span class="divider">|</span></li>
-    <li><a href="/manage/cemetery/">Список кладбищ</a></li>
-    <li><span class="divider">|</span></li>
-    <li><a href="/manage/cemetery/{{area.cemetery}}">Назад к кладбищу</a></li>
-    <li><span class="divider">|</span></li>
-    <li><a href="#" ng-click="openEditForm()">Редактировать</a></li>
-    <li><span class="divider">|</span></li>
-    <li><a href="#" ng-click="openAddModal()">Добавить место</a></li>
-    <li><span class="divider">|</span></li>
-    <!-- li><a href="#" ng-click="openUploadImageModal()">Загрузить фотографии</a></li -->
-</ul>
+<div ng-include src="'/static/js/app/tpl/manage/area_view_header.html'+version_str"></div>
 
 
 <!-- POPUP form -->
 <div modal="isEditorOpen" close="closeEditForm()">
-    <div class="modal-header">
-        <h3>Редактировать участок "{{area.name}}"</h3>
-    </div>
-    <div class="modal-body">
-    	<div ng-include src="'/static/js/app/tpl/manage/form_edit_area.html'"></div>
-    </div>
-    <div class="modal-footer">
-    	<button class="btn btn-primary" ng-disabled="areaEditForm.$invalid" ng-click="saveEditForm()">Сохранить</button>
-        <button class="btn cancel" ng-click="closeEditForm()">Отменить</button>
-    </div>
+    <form name="areaEditForm" novalidate>
+        <div class="modal-header">
+            <h3>Редактировать участок "{{area.name}}"</h3>
+        </div>
+        <div class="modal-body">
+        	<div ng-include src="'/static/js/app/tpl/manage/form_edit_area.html'+version_str"></div>
+        </div>
+        <div class="modal-footer">
+        	<button class="btn btn-primary" ng-disabled="areaEditForm.$invalid" ng-click="saveEditForm()">Сохранить</button>
+            <button class="btn cancel" ng-click="closeEditForm()">Отменить</button>
+        </div>
+    </form>
 </div>
 <!-- EOF POPUP form -->
 
     
 
 <div modal="addModalOpened" close="closeAddModal()" options="addOpts">
+    <form name="placeEditForm">
     <div class="modal-header">
         <h3>Добавить место</h3>
     </div>
     <div class="modal-body">
-        <div ng-include src="'/static/js/app/tpl/manage/form_add_place.html'"></div>
+        <div ng-include src="'/static/js/app/tpl/manage/form_add_place.html'+version_str"></div>
     </div>
     <div class="modal-footer">
-        <button ng-click="addElement(addItem)" class="btn btn-primary" ng-disabled="createForm.$invalid">Добавить</button>
+        <button ng-click="addElement(addItem)" class="btn btn-primary" ng-disabled="placeEditForm.$invalid">Добавить</button>
         <button ng-click="closeAddModal()" class="btn" >Отменить</button>
     </div>
+    </form>
 </div>
 
 
@@ -115,15 +96,15 @@
 	        <h3>Загрузка файлов</h3>
 	    </div>
 	    <div class="modal-body">
-			<form id="fileupload" action="{{gallery_url}}" method="POST" enctype="multipart/form-data">
+			<form id="fileupload" action="{{gallery_url}}" novalidate method="POST" enctype="multipart/form-data">
 	    		<dl class="row-fluid">
 					<dt>Широта:</dt>
 					<dd>
-						<input type="text" name="lat" ng-model="gallery_data.lat" value="{{default_lat}}" maxlength="10"/>
+						<input disabled="disabled" type="text" name="lat" ng-model="gallery_data.lat" value="{{default_lat}}" maxlength="10"/>
 					</dd>
 					<dt>Долгота:</dt>
 					<dd>
-						<input type="text" name="lng" ng-model="gallery_data.lng" value="{{default_lng}}"/>
+						<input disabled="disabled" type="text" name="lng" ng-model="gallery_data.lng" value="{{default_lng}}"/>
 					</dd>
 					<dt>Коментарий:</dt>
 					<dd>
@@ -153,7 +134,3 @@
 	        <button ng-click="closeUploadImageModal()" class="btn" >Отменить</button>
 	    </div>
 </div>
-
-
-
-

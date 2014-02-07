@@ -79,40 +79,100 @@ def write_log(request, obj=None, msg='', reason=None, code=None):
     )
 
 
-LOG_STOP_FIELDS = ['pk', 'dt_created', 'dt_updated']
 
-def log_object(request, obj=None, old=None, new=None, reason=None, code=None):
+
+def compare_obj(verbose_name, old_val, new_val):
+    if isinstance(old_val, bool) or isinstance(new_val, bool):
+         if old_val:
+             old_val=_(u'Да')
+         else:
+             old_val=_(u'Нет')
+         if new_val:
+             new_val=_(u'Да')
+         else:
+             new_val=_(u'Нет')
+    old_val = old_val is None and u'<пусто>' or unicode(old_val) #.__unicode__()
+    new_val = new_val is None and u'<пусто>' or unicode(new_val)
+    if old_val=="None":
+        res = _(u"'%s': добавлено '%s'") % (verbose_name, new_val)
+    elif new_val=="None":
+        res = _(u"'%s': удалено '%s'") % (verbose_name, old_val)
+    elif old_val != new_val:
+        res = _(u"'%s': '%s' -> '%s'") % (verbose_name, old_val, new_val)
+    else: 
+        return
+    return res
+
+
+LOG_STOP_FIELDS = ['pk', 'obj', 'ct', 'obj_id', 'dt_created', 'dt_modified', 'dt_updated']
+
+def log_object(request, obj=None, old=None, new=None, reason=None, footer=None, \
+               code=None, create_text=None, delete_text=None, obj_stop_fields=None, new_msg = []):
     msg = []
-    if old.__class__ != new.__class__:
+    if old is not None and old.__class__ != new.__class__:
         return False
-    
     if reason:
         msg.append(reason)
     
     if old is None:
-        msg.append(_(u'Создан "%s"' % new))
+        msg.append(create_text or _(u'Создан "%s"') % new.__unicode__())
     elif new is None:
-        msg.append(_(u'Удален "%s"' % old))
+        msg.append(delete_text or _(u'Удален "%s"') % old.__unicode__())
     else:
         for field in new._meta.fields:
-            if field.name not in LOG_STOP_FIELDS and getattr(old,field.name) != getattr(new,field.name):
-                old_val = unicode(getattr(old,field.name)) #.__unicode__()
-                new_val = unicode(getattr(new,field.name))
-                if old_val=="None":
-                    msg.append(_(u'"%s": добавлено "%s"') % (field.verbose_name, new_val))
-                elif new_val=="None":
-                    msg.append(_(u'"%s": удалено "%s"') % (field.verbose_name, old_val))
-                else:
-                    msg.append(_(u'"%s": "%s" -> "%s"') % (field.verbose_name, old_val, new_val))
+            if field.name not in LOG_STOP_FIELDS and getattr(old,field.name) != getattr(new,field.name) \
+                and (obj_stop_fields is None or (obj_stop_fields is not None and  field.name not in obj_stop_fields)):
+                old_val = getattr(old,field.name)
+                new_val = getattr(new,field.name)
+                res = compare_obj(field.verbose_name, old_val, new_val)
+                if res:
+                    msg.append(res)
 
     user = request and request.user.is_authenticated() and request.user or None
-    Log.objects.create(
+    if footer:
+        msg.append(footer)
+
+    log = Log.objects.create(
         user=user,
         ct=obj and ContentType.objects.get_for_model(obj) or None,
         obj_id=obj and obj.pk or None,
-        msg = "<br/>".join(msg),
+        msg = u"<br/>".join(msg + new_msg),
         code=code or '',
     )
+    del msg
+
+
+def prepare_m2m_log(verbose_name="", old_set = [], new_set=[]):
+    """
+    """
+    old_arr = {}
+    new_arr = {}
+    msg = []
+    
+    for i in new_set:
+        new_arr[i.id] = i
+    new_arr_keys = new_arr.keys()
+    
+    for i in old_set:
+        old_arr[i.id] = i
+        if i.id not in new_arr_keys:
+            res  = compare_obj(verbose_name, i, None)
+            if res:
+                msg.append(res)
+        
+    old_arr_keys = old_arr.keys()
+    
+    for i in new_set:
+        if i.id not in old_arr_keys:
+            res = compare_obj(verbose_name, None, i)
+            if res:
+                msg.append(res)
+        else:
+            res = compare_obj(verbose_name, old_arr[i.id], i)
+            if res:
+                msg.append(res)
+
+    return msg
 
 
 class LoginLog(models.Model):

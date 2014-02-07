@@ -23,12 +23,6 @@ app.factory('Grave', function($resource, $routeParams){
             method: 'POST',
             params: {
             }
-        },
-        move: {
-            method: 'GET',
-            params: {
-            	action: 'move',
-            }
         }
 	});
 });

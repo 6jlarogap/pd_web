@@ -1,3 +1,6 @@
+
+# coding=utf-8
+
 from django.contrib.auth.models import Group, Permission
 from rest_framework import serializers
 from rest_framework.fields import Field
@@ -43,4 +46,3 @@ class ProductInfoSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = Product
         fields = ('id', 'photo', 'price', 'currency', 'name', 'description', 'sku', 'category', 'supplier', )
-

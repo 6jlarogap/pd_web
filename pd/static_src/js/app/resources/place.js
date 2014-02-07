@@ -14,6 +14,13 @@ app.factory('Place', function($resource,$routeParams){
             },
             isArray: false
         },
+        cancelExhumation: {
+            method: 'GET',
+            params: {
+                action: 'cancel_exhumation',
+            },
+            isArray: false
+        },
         getGraves: {
             method: 'GET',
             params: {

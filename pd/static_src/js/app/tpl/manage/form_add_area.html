@@ -16,14 +16,15 @@
 	<select ng-model="area.purpose" ng-options="value.id as value.name for value in PURPOSE_LIST">
 	</select>
 </div>
-<div class="row-fluid">
-    <label for="id_area_set-0-places_count">Кол-во могил в месте:</label>
-    <input type="number" name="places_count" min="1" max="{{area.max_graves_count}}" required ng-model="area.places_count"/>
-    <span class="error" ng-show="areaEditForm.places_count.$error.required">Не указано количество мест</span>
-    <span class="error" ng-show="areaEditForm.places_count.$error.min">Число должно быть больше 0</span> 
-    <span class="error" ng-show="areaEditForm.places_count.$error.max">Число должно быть меньше, либо равным {{area_max_places}}</span>
-</div>
-<!--div class="row-fluid">
+<div class="row-fluid" ng-hide="area.id">
 	<label for="id_area_set-0-places_count">Кол-во могил в месте:</label>
-	{{area.places_count}}
-</div-->
+	<input type="number" name="places_count" min="1" max="{{cemetery.max_graves_count}}" required ng-model="area.places_count"/>
+	<span class="error" ng-show="areaEditForm.places_count.$error.required">Не указано количество мест</span>
+    <span class="error" ng-show="areaEditForm.places_count.$error.min">Число должно быть больше 0</span> 
+    <span class="error" ng-show="areaEditForm.places_count.$error.max">Число должно быть меньше, либо равным {{cemetery.max_graves_count}}</span> 
+</div>
+
+<div class="row-fluid" ng-show="area.id">
+    <label for="id_area_set-0-places_count">Кол-во могил в месте:</label>
+    {{area.places_count}}
+</div>

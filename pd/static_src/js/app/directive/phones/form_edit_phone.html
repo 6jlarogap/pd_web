@@ -1,16 +1,23 @@
-﻿<form name="form_phone" novalidate>
+<form novalidate name="form_phone">
 	<h2>Редактировать телефон</h2>
 
 	<label for="phonetype">Тип:</label>
 
-	<select ng-model="phone.phonetype" name="phonetype" ng-options="value.id as value.name for value in PHONETYPE_CHOICES" required></select>
+	<select ng-model="phone.phonetype" name="phonetype" ng-options="value.id as value.name for value in PHONETYPE_CHOICES"></select>
 	<span class="error" ng-show="form_phone.phonetype.$error.required">Выберите тип телефона</span>
 	<label for="phone_number">Номер:</label>
 
-	<input type="text" name="phone_number" ui-mask="{{'+7 (999) 999-9999'}}" ng-model="phone.number" maxlength="20" required>
-	<span class="error" ng-show="form_phone.phone_number.$error.required">Укажите номер телефона</span>
+	<input type="text" name="phone_number" 
+	   ng-model="phone.number"  off-ui-mask="{{'+9 (999) 999-9999'}}"
+	   ui-validate="{validPhone : 'validatePhone($value)' }"
+	   required
+	   ng-maxlength="maxlength">
+        <p class="info" >Введите номер в одном из форматов: +страна(код)номер, 8(код)номер, номер. Допустимы пробелы и '-'</p>
+        <p class="error" ng-show="form_phone.phone_number.$error.validPhone">Неверный номер телефона</p>
+        <p class="error" ng-show="form_phone.phone_number.$error.required">Укажите номер телефона</p>
+
 	<div class="row-fluid">
-		<button ng-click="save(phone)" off-ng-disabled="!form_phone.$valid" class="btn btn-primary">
+		<button ng-click="save(phone)" ng-disabled="form_phone.phone_number.$invalid" class="btn btn-primary">
 			Сохранить
 		</button>
 		<button ng-click="[destroy(phone), close()]" class="btn btn-danger">

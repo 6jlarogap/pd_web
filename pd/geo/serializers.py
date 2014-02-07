@@ -1,3 +1,5 @@
+# coding=utf-8
+
 from django.contrib.auth.models import Group, Permission
 from rest_framework import serializers
 from rest_framework.fields import Field
@@ -41,13 +43,31 @@ class StreetSerializer(serializers.ModelSerializer):
 
 
 # Nested tables fields serializer
+class CountrySlugRelatedField(serializers.SlugRelatedField):
+    def from_native(self, data):
+        if self.queryset is None:
+            raise Exception('Writable related fields must include a `queryset` argument')
+        
+        try:
+            name = self.parent.init_data.get(u"country"," ")
+            item, created = Country.objects.get_or_create(name=name, defaults={})
+        except (TypeError, ValueError):
+            msg = self.error_messages['invalid']
+            raise ValidationError(msg)
+        else:
+            return item
+
+
 class RegionSlugRelatedField(serializers.SlugRelatedField):
     def from_native(self, data):
         if self.queryset is None:
             raise Exception('Writable related fields must include a `queryset` argument')
         
-        name = self.parent.init_data.get(u"country"," ")
-        country, created = Country.objects.get_or_create(name=name, defaults={})
+        try:
+            name = self.parent.init_data.get(u"country"," ")
+            country, created = Country.objects.get_or_create(name=name, defaults={})
+        except:
+            raise ValidationError(_(u'Страна не найдена'))
 
         try:
             name = self.parent.init_data.get(u"region"," ")
@@ -107,7 +127,7 @@ class StreetSlugRelatedField(serializers.SlugRelatedField):
 
 
 class LocationSerializer(serializers.ModelSerializer):
-    country = serializers.SlugRelatedField(many=False, required=False, read_only=False, slug_field='name')
+    country = CountrySlugRelatedField(many=False, required=False, read_only=False, slug_field='name')
     region  = RegionSlugRelatedField(many=False, required=False,read_only=False, slug_field='name')
     city    = CitySlugRelatedField(many=False, required=False, read_only=False, slug_field='name')
     street  = StreetSlugRelatedField(many=False, required=False, read_only=False, slug_field='name')

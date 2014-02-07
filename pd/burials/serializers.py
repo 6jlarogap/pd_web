@@ -1,10 +1,13 @@
+# coding=utf-8
+
 from django.contrib.auth.models import Group, Permission
+from django.utils.translation import ugettext as _
 from rest_framework import serializers
 from rest_framework.fields import Field, TimeField
 
 
 from burials.models import Cemetery, Place, Area, Grave, Burial, AreaPhoto, GravePhoto, BurialFiles, ExhumationRequest, \
-    AreaPurpose
+    AreaPurpose, PlaceSize
 
 
 from geo.models import Location
@@ -13,6 +16,8 @@ from geo.serializers import LocationSerializer
 from persons.serializers import AlivePersonSerializer, DeadPersonSerializer, PhoneSerializer
 
 from rest_api.fields import UnclearDateFieldSerializer
+
+from django.core.exceptions import ValidationError
 
 
 class SubCemeterySerializer(serializers.ModelSerializer):
@@ -58,11 +63,21 @@ class CemeterySerializer(serializers.ModelSerializer):
 class AreaSerializer(serializers.ModelSerializer):
     purpose = serializers.PrimaryKeyRelatedField()
     cemetery = serializers.PrimaryKeyRelatedField()
+    places_count = serializers.IntegerField(required=True)
+
     class Meta:
         model = Area
         fields = ('id', 'cemetery', 'name', 'availability', 'places_count', 'purpose')
 
-
+    def is_valid(self):
+        valid = not self.errors
+        if not self.many and self.object:
+            max_graves_count = self.context['request'].user.profile.org.max_graves_count
+            if self.object.places_count<=0 or self.object.places_count>max_graves_count:
+                self._errors = self._errors or {}
+                self._errors["__all__"] = [_(u"Количество могил должно быть от 1 до %d") % max_graves_count,]
+                valid = False
+        return valid
 
 
 
@@ -70,24 +85,38 @@ class PlaceSerializer(serializers.ModelSerializer):
     cemetery = serializers.PrimaryKeyRelatedField()
     area = serializers.PrimaryKeyRelatedField()
     responsible = serializers.PrimaryKeyRelatedField(required=False)
-    available_count = Field(source='available_count')
+    #available_count = Field(source='available_count')
     responsible_txt = serializers.SerializerMethodField('responsible_str')
+
     class Meta:
         model = Place
-        fields = ('id', 'cemetery', 'lat', 'lng', 'area', 'row', 'place', 'responsible', 'responsible_txt', 
-                  'available_count', 'place_length', 'place_width')
+        fields = ('id', 'cemetery', 'lat', 'lng', 'area', 'row', 'place', 'responsible', 'responsible_txt', \
+                  'place_length', 'place_width') 
 
     def responsible_str(self, obj):
         if obj.responsible:
             return "%s %s %s" % (obj.responsible.first_name, obj.responsible.middle_name, obj.responsible.last_name)
 
-
+    def is_valid(self):
+        valid = not self.errors
+        if not self.many and self.object:
+            max_graves_count = self.context['request'].user.profile.org.max_graves_count or 10
+            try:
+                places_count = int(self.context['request'].DATA.get('places_count',1))
+                assert places_count>0 and places_count<=max_graves_count
+            except:
+                self._errors = self._errors or {}
+                self._errors["__all__"] = [_(u"Количество могил должно быть от 1 до %d") % max_graves_count,]
+                valid = False
+        return valid
+        
 
 class GraveSerializer(serializers.ModelSerializer):
     place = serializers.PrimaryKeyRelatedField()
+
     class Meta:
         model = Grave
-        fields = ('id', 'place', 'grave_number', 'lat', 'lng')
+        fields = ('id', 'place', 'grave_number', 'lat', 'lng', 'is_wrong_fio', 'is_military')
 
 
 class BurialListSerializer(serializers.ModelSerializer):
@@ -134,7 +163,6 @@ class AreaPhotoSerializer(serializers.ModelSerializer):
         fields = ('id', 'area', 'bfile', 'comment', 'original_name', 'lat', 'lng', 'date_of_creation') 
 
 
-
 class ExhumationRequestSerializer(serializers.ModelSerializer):
     burial = serializers.PrimaryKeyRelatedField()
     place = serializers.PrimaryKeyRelatedField()
@@ -146,3 +174,9 @@ class ExhumationRequestSerializer(serializers.ModelSerializer):
                   'applicant_organization',)
         #agent_director, agent, dover
 
+
+class PlaceSizeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PlaceSize
+        fields = ('graves_count', 'place_length', 'place_width')
+      

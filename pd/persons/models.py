@@ -330,4 +330,6 @@ class Phone(BaseModel):
         verbose_name_plural = _(u"Телефоны")
 
     def __unicode__(self):
-        return _(u"Телефон: %s") % self.number
+         for k, v in PHONE_TYPE_CHOICES:  
+             if k == self.phonetype:  
+                 return _(u"%s: %s") % (v, self.number)

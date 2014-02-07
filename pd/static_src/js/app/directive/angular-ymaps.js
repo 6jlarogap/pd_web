@@ -1,5 +1,5 @@
 var map, ymaps;
-var YMAPS_URL = '//api-maps.yandex.ru/2.0-stable/?load=package.standard,package.clusters,package.geoObjects&mode=release&lang=ru-RU&ns=ymaps',
+var YMAPS_URL = '//api-maps.yandex.ru/2.0/?load=package.standard,package.clusters,package.geoObjects&mode=release&lang=ru-RU&ns=ymaps',
 
 ymapModule = angular.module('ymaps', [])
 .factory('$script', ['$q', '$rootScope', function ($q, $rootScope) {
@@ -166,8 +166,10 @@ ymapModule = angular.module('ymaps', [])
                         var map = new ymaps.Map(element[0], {
                             center   : $scope.center || [ymaps.geolocation.latitude, ymaps.geolocation.longitude],
                             zoom     : $scope.zoom || 12,
-                            behaviors: config.mapBehaviors,
+                            behaviors: config.mapBehaviors
                         });
+                        
+                        
                         var obj,
                         	control_list = ['mapTools', 'typeSelector', 'zoomControl'];
 						for(var i=0;i<control_list.length;i++){

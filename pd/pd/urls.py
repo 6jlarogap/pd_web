@@ -19,7 +19,7 @@ router = DefaultRouter(trailing_slash=False)
 from geo.views import LocationViewSet, LocationStaticViewSet
 
 from burials.views import CemeteryViewSet, AreaViewSet, PlaceViewSet, \
-    GraveViewSet, BurialViewSet, AreaPhotoViewSet, GravePhotoViewSet, AreaPurposeViewSet
+    GraveViewSet, BurialViewSet, AreaPhotoViewSet, GravePhotoViewSet, AreaPurposeViewSet, PlaceSizeViewSet
 
 from persons.views import AlivePersonViewSet, DeadPersonViewSet, PhoneViewSet 
 from logs.views import LogViewSet
@@ -45,6 +45,7 @@ router.register(r'^api/alive-person', AlivePersonViewSet)
 router.register(r'^api/dead-person', DeadPersonViewSet)
 
 router.register(r'^api/alive-person-phone', PhoneViewSet)
+router.register(r'^api/placesize', PlaceSizeViewSet)
 
 # Orders
 router.register(r'^api/product_category', ProductCategoryViewSet)

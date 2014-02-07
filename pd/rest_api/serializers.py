@@ -31,7 +31,6 @@ from rest_framework.settings import api_settings
 from rest_framework.request import clone_request
 from rest_framework.utils import encoders
 from rest_framework.utils.breadcrumbs import get_breadcrumbs
-from rest_framework.utils.formatting import get_view_name, get_view_description
 from rest_framework import exceptions, parsers, status, VERSION
 
 

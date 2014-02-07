@@ -18,6 +18,7 @@ js_app = Bundle(
         "js/app/resources/person.js",
         "js/app/resources/phone.js",
         "js/app/resources/log.js",
+        "js/app/resources/placesize.js",
     
         "js/app/directive/address/address.js",
         "js/app/directive/phones/phones.js",
@@ -56,6 +57,7 @@ js_angular = Bundle(
         "angular-bootstrap/ui-bootstrap-tpls.min.js",
 
         "angular-ui-utils/modules/mask/mask.js",
+        "angular-ui-utils/modules/validate/validate.js",
 
         "select2/select2.min.js",
         "select2/select2_locale_ru.js",

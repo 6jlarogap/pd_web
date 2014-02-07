@@ -5,18 +5,13 @@ function CemeteryCtrl($rootScope, $scope, $http, $location, $resource, naturalSe
     "use strict";
 	var object_url = '/api/cemetery';
     $scope.cemetery_list = [];
-	$scope.cemetery = {
-		time_begin: new Date('0 8:00'),
-		time_end: new Date('0 17:00'),
-		places_algo:'area',
-		time_slots:''
-	};
-
+	$scope.version_str = version_str;
 	var Cemetery = $resource('/api/cemetery/:cemeteryID', {cemeteryID:'@id'},{});
 
 	var tplButtonEdit = '<a class="btn btn-small" ng-href="/manage/cemetery/{{row.getProperty(\'id\')}}">Открыть</a>';
 	var tplLinkOpen = '<a ng-class="col.colIndex()" ng-href="/manage/cemetery/{{row.getProperty(\'id\')}}">{{row.getProperty(\'name\')}}</a>';
-    $scope.gridOptions = { 
+	$scope.search = {name:''};
+	$scope.gridOptions = { 
         data: '(cemetery_list|filter:search)',
         enableRowSelection:false,
         columnDefs: [
@@ -28,9 +23,16 @@ function CemeteryCtrl($rootScope, $scope, $http, $location, $resource, naturalSe
     };
 	
 	
-  $scope.alerts = [];$scope.closeAlert = function(index){$scope.alerts.splice(index,1);};
+    $scope.alerts = [];$scope.closeAlert = function(index){$scope.alerts.splice(index,1);};
     
     $scope.update = function() {
+        $scope.cemetery = {
+                time_begin: new Date('0 8:00'),
+                time_end: new Date('0 17:00'),
+                places_algo:'area',
+                time_slots:''
+            };
+
 		Cemetery.query(function(result) {
 			$scope.cemetery_list = result;
 			$scope.cemetery_list.sort(function(a,b){return naturalService.naturalSortField(a,b,'name')});
@@ -53,6 +55,7 @@ function CemeteryCtrl($rootScope, $scope, $http, $location, $resource, naturalSe
     $scope.closeAddModal = function () {
         $scope.addModalOpened = false;
 		$('body').css('overflow-y','auto');
+		$scope.update();
     };
 	$scope.addElement = function(){
 		var data = {
@@ -66,7 +69,7 @@ function CemeteryCtrl($rootScope, $scope, $http, $location, $resource, naturalSe
 			$scope.closeAddModal();
    			$location.path('/manage/cemetery/'+result.id);
    			$location.replace();
-        });
+        }, default_display_response_error);
 	};
 	// EOF ADD form
 	

@@ -1,25 +1,16 @@
 <alert ng-repeat="alert in alerts" type="alert.type" close="closeAlert($index)">{{alert.msg}}</alert>
-
-<ul class="breadcrumb">
-  	<li><h3 class="brand" href="#">Кладбища</h3></li>
-    <li><span class="divider">|</span></li>
-  	<li><a ng-click="openAddModal()">Создать</a></li>
-</ul>
-          
+<div ng-include src="'/static/js/app/tpl/loading-indicator.html'+version_str"></div>
+<div ng-include src="'/static/js/app/tpl/manage/cemetery_list_header.html'+version_str"></div>    
 
 <div class="row-fluid">
 	<div class="span12" style="width:auto !important">
-		Найти <input ng-model="search.$"><br/>	
+		Найти <input ng-model="search.name"><br/>	
 		<div class="gridStyle full-size-grid" ng-grid="gridOptions"></div>
 	</div>
 </div>
 <hr/>
 
-<ul class="breadcrumb">
-  	<li><h3 class="brand" href="#">Кладбища</h3></li>
-    <li><span class="divider">|</span></li>
-  	<li><a ng-click="openAddModal()">Создать</a></li>
-</ul>
+<div ng-include src="'/static/js/app/tpl/manage/cemetery_list_header.html'+version_str"></div>
 
 
 
@@ -27,14 +18,17 @@
 </style>
 
 <div modal="addModalOpened" close="closeAddModal()" options="addOpts">
-    <div class="modal-header">
-        <h3>Добавить новое кладбище</h3>
-    </div>
-    <div class="modal-body">
-		<div ng-include src="'/static/js/app/tpl/manage/form_edit_cemetery.html'"></div>
-    </div>
-    <div class="modal-footer">
-        <button ng-click="addElement(item)" class="btn btn-primary" ng-disabled="cemeteryEditForm.$invalid">Добавить</button>
-        <button ng-click="closeAddModal()" class="btn" >Отменить</button>
-    </div>
+    <form name="cemeteryEditForm">
+        <div class="modal-header">
+            <h3>Добавить новое кладбище</h3>
+        </div>
+        
+        <div class="modal-body">
+    		<div ng-include src="'/static/js/app/tpl/manage/form_edit_cemetery_main.html'+version_str"></div>
+        </div>
+        <div class="modal-footer">
+            <button ng-click="addElement(item)" class="btn btn-primary" ng-disabled="cemeteryEditForm.$invalid">Добавить</button>
+            <button ng-click="closeAddModal()" class="btn" >Отменить</button>
+        </div>
+    </form>
 </div>

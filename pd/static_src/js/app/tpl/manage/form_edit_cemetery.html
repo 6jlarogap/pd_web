@@ -1,51 +1,37 @@
 <tabset>
     <tab heading="Кладбище">
-		<form name="cemeteryEditForm">
-			<p><label for="id_name">Название кладбища:</label> 
-				<input id="id_name" required name="cemetery_name" type="text" name="name" ng-model="cemetery.name" maxlength="255">
-				<span class="error" ng-show="cemeteryEditForm.cemetery_name.$error.required">Не указано название кладбища</span>	
-			</p>
-			<table>
-			<tr><td>
-				<label for="id_time_begin">Начало работы:</label>
-			    <timepicker ng-model="cemetery.time_begin" show-meridian="false"></timepicker>
-			</td><td>&nbsp;</td><td>
-				<label for="id_time_end">Окончание работы:</label>
-				<timepicker ng-model="cemetery.time_end" show-meridian="false"></timepicker>
-			</td></tr>
-			</table>
-			<p><label for="id_places_algo">Расстановка номеров мест:</label>
-				 <select ng-model="cemetery.places_algo" id="id_places_algo">
-					<option value="cemetery">По кладбищу</option>
-					<option value="area">По участку</option>
-					<option value="row">По ряду</option>
-					<option value="cem_year">Кладбище + год</option>
-					<option value="burial_account_number">По рег. номеру захоронения</option>
-					<option value="manual">Ручное</option>
-				</select>
-			</p>
-		
-		
-			<p><label for="id_archive_burial_fact_date_required">Дата архивного захоронения обязательна:</label> 
-				<input id="id_archive_burial_fact_date_required" type="checkbox" name="name" ng-model="cemetery.archive_burial_fact_date_required" maxlength="255">
-			</p>
-			<p><label for="id_archive_burial_account_number_required">Номер архивного захоронения обязателен:</label> 
-				<input id="id_archive_burial_account_number_required" type="checkbox" name="name" ng-model="cemetery.archive_burial_account_number_required" maxlength="255">
-			</p>
-		
-			
-			<p><label for="id_time_slots">Время для захоронения:</label> 
-				<textarea ng-model="cemetery.time_slots" id="id_time_slots" rows="10" cols="40" name="time_slots">
-					
-				</textarea>
-				<span class="helptext">В формате ЧЧ:ММ, по одному на строку</span>
-			</p>
-		</form>
+	    <form name="cemeteryEditForm">
+            <div class="modal-body">
+                <div ng-include src="'/static/js/app/tpl/manage/form_edit_cemetery_main.html'+version_str"></div>
+            </div>        
+            <div class="modal-footer">
+                <button class="btn btn-primary" ng-disabled="cemeteryEditForm.$invalid" ng-click="saveEditForm()">Сохранить</button>
+                <button class="btn cancel" ng-click="closeEditForm()">Отменить</button>
+            </div>
+        </form>
 	</tab>
     <tab heading="Адрес">
-    	<address address_class="address_class" address="cemetery.address" save_action="saveEditForm"></address>
+        <form name="cemeteryaddrEditForm">
+            <div class="modal-body">
+            	<address address_class="address_class" address="cemetery.address" save_action="saveEditForm"></address>
+            </div>
+            <div class="modal-footer" >
+                <div class="badge pull-left" ng-show="cemeteryEditForm.$invalid">Исправьте ошибке в форме кладбища</div>
+                <button class="btn btn-primary" ng-disabled="cemeteryEditForm.$invalid" ng-click="saveEditForm()">Сохранить</button>
+                <button class="btn cancel" ng-click="closeEditForm()">Отменить</button>
+            </div>
+        </form>
     </tab>
 	<tab heading="Телефоны">
-		<phones phones="phones"></phones>
+       <form name="cemeteryPhoneEditForm">
+    	   <div class="modal-body">
+    	       <phones phones="phones"></phones>
+    	   </div>
+            <div class="modal-footer" >
+                <div class="badge pull-left" ng-show="cemeteryEditForm.$invalid">Исправьте ошибке в форме кладбища</div>
+                <button id="edit_save_btn" class="btn btn-primary" ng-disabled="cemeteryEditForm.$invalid" ng-click="saveEditForm()">Сохранить</button>
+                <button class="btn cancel" ng-click="closeEditForm()">Отменить</button>
+            </div>
+        </form>
     </tab>
-    </tabset>
+</tabset>

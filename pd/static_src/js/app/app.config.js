@@ -1,7 +1,23 @@
-﻿$(function(){
-	$.ajaxSetup({
-    	headers: { 'X-CSRFToken': getCookie('csrftoken') || csrf }
-	});
+﻿var geo = { 
+        getLat:function(val){
+            if(val)
+                return val;
+            else
+                return ymaps && ymaps.geolocation ? ymaps.geolocation.latitude : 0;
+        },
+        getLng:function(val){
+            if(val)
+                return val;
+            else
+                return ymaps && ymaps.geolocation ? ymaps.geolocation.longitude:0;
+        }
+    };
+
+
+$(function(){
+    $.ajaxSetup({
+        headers: { 'X-CSRFToken': getCookie('csrftoken') || csrf }
+    });
 });
 
 $.noty.defaults = {
@@ -10,17 +26,17 @@ $.noty.defaults = {
     type: 'alert',
     text: '',
     dismissQueue: true, // If you want to use queue feature set this true
-    template: '<div class="noty_message"><span class="noty_text"></span><div class="noty_close">X</div>X</div>',
+    template: '<div class="noty_message"><span class="noty_text"></span></div>',
     animation: {
         open: {height: 'toggle'},
         close: {height: 'toggle'},
         easing: 'swing',
         speed: 500 // opening & closing animation speed
     },
-    timeout: 2500, // delay for closing event. Set false for sticky notifications
+    timeout: 25000, // delay for closing event. Set false for sticky notifications
     force: false, // adds notification to the beginning of queue when set to true
     modal: false,
-    maxVisible: 5, // you can set max visible notification for dismissQueue true option
+    maxVisible: 10, // you can set max visible notification for dismissQueue true option
     closeWith: ['click', 'hover'], // ['click', 'button', 'hover']
     callback: {
         onShow: function() {},
@@ -40,11 +56,11 @@ app.config(["$httpProvider", function($httpProvider) {
     //$httpProvider.defaults.headers.put['X-CSRF-Token'] = csrfToken;
     //$httpProvider.defaults.headers.patch['X-CSRF-Token'] = csrfToken;
     //$httpProvider.defaults.headers['delete']['X-CSRF-Token'] = csrfToken;
-}])
+}]);
 
-.config(['$httpProvider', function($httpProvider) {
+app.config(function($httpProvider) {
 	/* HTTP Interceptor*/
-	$httpProvider.responseInterceptors.push(['$q', '$location' function($q, $location) {
+	$httpProvider.responseInterceptors.push(function($q, $location) {
 		return function(promise) {
 			return promise.then(function(response) { // The HTTP request was successful.
 				// response.status >= 200 && response.status <= 299
@@ -58,17 +74,21 @@ app.config(["$httpProvider", function($httpProvider) {
 			            $location.path('/login');
 			            break;
 					case 404:
-						//console.log(response);
 						//noty({text: 'Объект не найден', timeout:false, type:'warning', layout:'topRight'});
 						$location.path('/manage/404?title=Объект не найден');
 			            break;
 					case 400:
 						var error = '';
-						for(var i in response.data){
-							if(i){ 
-								var error = '{0}: {1}\n'.format(i, response.data[i]);
-			            		noty({text: error, timeout:false, type:'warning', layout:'topRight'});
-			            	}
+						if(response.data.__all__ && response.data.__all__.length){
+						    var error = response.data.__all__[0];
+                            noty({text: error, timeout:false, type:'warning', layout:'topRight'});
+						}else{
+						    for(var i in response.data){
+    							if(i){ 
+    								var error = '{0}: {1}\n'.format(TRANSLATIONS[i]||i, response.data[i]);
+    			            		noty({text: error, timeout:false, type:'warning', layout:'topRight'});
+    			            	}
+						    }
 						}
 			            break;
 					case 500:
@@ -76,11 +96,11 @@ app.config(["$httpProvider", function($httpProvider) {
 			            $location.path('/manage/500');
 			            break;
 					default:
-						noty({text: 'Ошибка выполнения', type:'warning', layout:'topRight'});
+						//noty({text: 'Ошибка выполнения', type:'warning', layout:'topRight'});
 			            break;
 				}
 				return $q.reject(response);
 			});
 		}
-	}]);
-}]);
+	});
+});

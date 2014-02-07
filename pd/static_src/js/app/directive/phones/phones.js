@@ -6,7 +6,20 @@ app.controller('PhonesController', ['$scope', 'Phone', function($scope, Phone) {
     $scope.isPhoneEditorOpen = false;
     $scope.isPhoneAddOpen = false;
     $scope.isStaticBlock = false;
+    $scope.requireTel = true;
+    $scope.maxlength = 12;
+    $scope.old = {};
+    $scope.phone = new Phone({is_new:true, phonetype:DEFAULT_PHONETYPE});
 
+    $scope.phoneNumberPattern = (function() {
+        var regexp = /^\(?(\d{3})\)?[ .-]?(\d{3})[ .-]?(\d{4})$/;
+        return {
+            test: function(value) {
+                if( $scope.requireTel === false ) return true;
+                else return regexp.test(value);
+            }
+        };
+    })();
         
     $scope.update = function(obj) {
         /*if (!$scope.phones){
@@ -31,13 +44,21 @@ app.controller('PhonesController', ['$scope', 'Phone', function($scope, Phone) {
             $scope.isPhoneAddOpen = true;
             $scope.isStaticBlock = true;
         }
+		if(!$scope.phones){
+			$scope.phones = [];
+		}
+		$scope.old = angular.copy($scope.phone);
+		$scope.$parent.$parent.editor.isPhoneEdited = true;
 	};
-	$scope.close = function() {
-    //    $scope.phones = undefined;
-		$scope.update();
+	$scope.close = function(form) {
+		$scope.phone.phonetype = $scope.old.phonetype; 
+		$scope.phone.number = $scope.old.number;
+		//$scope.update();
 		$scope.isPhoneEditOpen = false;
         $scope.isPhoneAddOpen = false;
         $scope.isStaticBlock = false;
+        //$('#edit_save_btn').removeAttr('disabled');
+        delete $scope.$parent.$parent.editor.isPhoneEdited;
 	};
         
     $scope.destroy = function(index){
@@ -46,7 +67,7 @@ app.controller('PhonesController', ['$scope', 'Phone', function($scope, Phone) {
     };
         
     $scope.save = function() {
-		if($scope.phone.is_new){
+		if($scope.phone.is_new && $scope.phone.number.length){
 			$scope.phone.is_new = false;
 			$scope.phones.push($scope.phone);
             $scope.isPhoneEditOpen = false;
@@ -63,10 +84,20 @@ app.controller('PhonesController', ['$scope', 'Phone', function($scope, Phone) {
             $scope.isPhoneAddOpen = false;
             $scope.isStaticBlock = false;
         }
+		delete $scope.$parent.$parent.editor.isPhoneEdited;
 	};
 	
-	if(!$scope.phones.length){
-		$scope.open();
+	$scope.validatePhone = function(value) {
+	    //return value && value.length>0 && value.match(/^(\d{1,5}?)(\(?\d{2,3}\)?[\- ]?)[\d\- ]{7,12}$/) != null 
+	    //return value && value.length>0 && value.match(/^(\d{1,5}?)?(\(?\d{2,3}\)?[\- ]?)?[\d\- ]{5,12}$/) != null
+
+		//return value && value.replace('-','').match(/^[\d]{10,12}$/) != null
+	    return !value || (value && value.replace('-','').match(/^[\d]{10,12}$/) != null)
+	};
+	//var parent_editor = $scope.$parent.$parent.editor;
+	//(parent_editor && parent_editor.responsible &&!parent_editor.responsible.login_phone)
+	if(!$scope.phones && $scope.phones.length){
+		// $scope.open();
 	}
 }]);
 

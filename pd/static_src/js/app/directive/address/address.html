@@ -1,8 +1,12 @@
 <div class="address_block">
 	<div ng-hide="isAddressEditorOpen">
-		<h2>Адрес</h2>
+		<h2>
+            <button class="btn btn-success btn-mini" ng-click="open()">
+                    <i class="icon-edit"></i>
+            </button>
+		    Адрес
+		</h2>
 		<div ng-include src="'/static/js/app/directive/address/static_block.html'"></div>
-    	<button class="btn" ng-click="open()">Редактировать</button>
 	</div>
 
 	<div ng-show="isAddressEditorOpen">
@@ -62,8 +66,9 @@
 				</form>
 	  
 	  <div class="row-fluid">
-	    	<button class="btn btn-primary" ng-click="save()" ng-disabled="address_editor.$invalid">Сохранить</button>
-	        <button class="btn cancel" ng-click="close()">Закрыть</button>
+	    	<button class="btn btn-primary" ng-click="save(address_editor)" 
+	    	ng-disabled="address_editor.$invalid || form_disabled()">Сохранить</button>
+	        <button class="btn cancel" ng-click="close()">Отмена</button>
 	  </div>
 	</div>
 	
