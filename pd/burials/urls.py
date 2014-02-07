@@ -3,7 +3,11 @@
 from django.conf.urls import patterns, include, url
 from django.conf import settings
 
+#from django.views.generic import TemplateView # Django v1.5
+from django.views.generic.simple import direct_to_template 
+
 from users.models import Org
+
 
 urlpatterns = patterns('burials.views',
     url(r'^$', 'dashboard', name='dashboard'),
@@ -37,13 +41,17 @@ urlpatterns = patterns('burials.views',
     url(r'^places/(?P<pk>\d+)/$', 'view_place', name='view_place'),
     url(r'^places/(?P<pk>\d+)/responsible/remove/$', 'rm_responsible', name='rm_responsible'),
 
-    url(r'^manage/cemetery/$', 'manage_cemeteries', name='manage_cemeteries'),
-    url(r'^manage/cemetery/create/$', 'manage_cemeteries_create', name='manage_cemeteries_create'),
-    url(r'^manage/cemetery/(?P<pk>\d+)/edit/$', 'manage_cemeteries_edit', name='manage_cemeteries_edit'),
+    #url(r'^manage/cemetery/$', 'manage_cemeteries', name='manage_cemeteries'),
+    #url(r'^manage/cemetery/create/$', 'manage_cemeteries_create', name='manage_cemeteries_create'),
+    #url(r'^manage/cemetery/(?P<pk>\d+)/edit/$', 'manage_cemeteries_edit', name='manage_cemeteries_edit'),
     url(r'^manage/cemetery/(?P<pk>\d+)/merge/$', 'manage_cemeteries_merge', name='manage_cemeteries_merge'),
 
     url(r'^cemetery_times/', 'cemetery_times', name='cemetery_times'),
     url(r'^autocomplete/cemeteries/', 'autocomplete_cemeteries', name='autocomplete_cemeteries'),
     url(r'^autocomplete/areas/', 'autocomplete_areas', name='autocomplete_areas'),
 
+
+    # REST API
+    #url(r'^$', TemplateView.as_view(template_name='base_angular.html'),), # v1.5
+    url(r'^manage/cemetery$', direct_to_template, {'template': 'base_angular.html'}, name='manage_cemeteries'),
 )

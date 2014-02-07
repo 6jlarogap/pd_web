@@ -1,8 +1,5 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="ru" lang="ru">
-
-{% load i18n %}
-
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="ru" lang="ru">{% load i18n assets%}
 <head>
     <title>{% block title %}{% endblock %}</title>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
@@ -31,11 +28,22 @@
             }
         </style>
     </noscript>
-    <link type="text/css" href="{{ STATIC_URL }}css/custom-theme/jquery-ui-1.8.16.custom.css" rel="stylesheet" />
-    <link type="text/css" href="{{ STATIC_URL }}css/jquery-ui-timepicker.css" rel="stylesheet" />
 
-    <link href="{{ STATIC_URL }}css/base.css" rel="stylesheet">
-    <link href="{{ STATIC_URL }}css/print.css" rel="stylesheet" media="print">
+	{% block jquery %}
+   	<link type="text/css" href="{{ STATIC_URL }}css/custom-theme/jquery-ui-1.8.16.custom.css" rel="stylesheet" />
+    <link type="text/css" href="{{ STATIC_URL }}css/jquery-ui-timepicker.css" rel="stylesheet" />
+    <script type="text/javascript" src="{{ STATIC_URL }}jquery/jquery.js"></script>
+	<script type="text/javascript" src="{{ STATIC_URL }}jquery-ui/ui/minified/jquery.ui.datepicker.min.js"></script>
+    <script type="text/javascript" src="{{ STATIC_URL }}js/jquery-ui-1.8.6.custom.min.js"></script>
+    <script type="text/javascript" src="{{ STATIC_URL }}js/jquery.ui.timepicker.js"></script>
+	{% endblock %}
+
+	{% assets "css_static" %}
+	<link rel="stylesheet" type="text/css" href="{{ ASSET_URL }}" />{% endassets %}
+	{% assets "css_print" %}
+	<link rel="stylesheet" type="text/css" href="{{ ASSET_URL }}" media="print" />{% endassets %}
+
+
 
     <!-- favicon for Internet Explorer -->
     <link rel="shortcut icon" href="{{ STATIC_URL }}img/favicon16x16.ico" />
@@ -49,16 +57,12 @@
 
     {% if close %} <script type="text/javascript">top.close();</script> {% endif %}
 
-    <script type="text/javascript" src="{{ STATIC_URL }}js/jquery-1.7.2.min.js"></script>
-    <script type="text/javascript" src="{{ STATIC_URL }}js/jquery-ui-1.8.6.custom.min.js"></script>
-    <script type="text/javascript" src="{{ STATIC_URL }}js/jquery.ui.timepicker.js"></script>
+	{% assets "js_bootstrap_static" %}
+	<script type="text/javascript" src="{{ ASSET_URL }}"></script>{% endassets %}
 
-    <script type="text/javascript" src="{{ STATIC_URL }}js/bootstrap-dropdown.js"></script>
-    <script type="text/javascript" src="{{ STATIC_URL }}js/bootstrap-modal.js"></script>
-    <script type="text/javascript" src="{{ STATIC_URL }}js/bootstrap-typeahead-ajax.js"></script>
     <script type="text/javascript" src="{{ STATIC_URL }}js/utils.js"></script>
     <script type="text/javascript"
-            src="{% if request.is_secure %}https{% else %}http{% endif %}://maps.googleapis.com/maps/api/js?libraries=places&key=AIzaSyCr1PI2Q-8hxtstv5kka-8w0xxuPUEHNDA&sensor=false&language=ru">
+            src="{% if request.is_secure %}https{% else %}http{% endif %}://maps.googleapis.com/maps/api/js?libraries=places&key=AIzaSyCr1PI2Q-8hxtstv5kka-8w0xxuPUEHNDA&sensor=true&language=ru">
     </script>
 
     <script type="text/javascript">
@@ -96,7 +100,6 @@
                             </a>
                             <ul class="dropdown-menu">
                                 {% if user.profile.is_ugh %}
-                                    <li><a href="{% url manage_cemeteries %}">{% trans "Кладбища" %}</a></li>
                                     <li><a href="{% url loru_registry %}">{% trans "Реестр ЛОРУ" %}</a></li>
                                 {% endif %}
                                 {% if user.profile.org.pk %}
@@ -126,6 +129,15 @@
                             {# <a class="btn" href="{% url register %}">{% trans "Зарегистрироваться (для ЮЛ)" %}</a> #}
                         {% endif %}
                     </div>
+                    {% if user.profile.is_ugh %}
+                        <div class="pull-right nav-collapse">
+                            <ul class="nav">
+                                <li>
+                                    <a href="{% url manage_cemeteries %}">{% trans "Кладбища" %}</a>
+                                </li>
+                            </ul>
+                        </div>
+                    {% endif %}
                     <div class="nav-collapse">
                         <ul class="nav">
                             {% if user.profile.is_loru or user.profile.is_ugh %}
@@ -167,7 +179,11 @@
             </div>
         </div>
 
-        <div class="container-fluid">
+
+
+
+
+		<div class="container-fluid" {% block container_attr_extra %}{% endblock %}>
             {% if messages %}
                 <ul class="messages no-print">
                     {% for m in messages %}
@@ -178,7 +194,7 @@
 
             {% block content %}{% endblock %}
         </div>
-        
+
         {% if global_context_PRODUCTION_SITE %}
             {% include "yandex_metrika.html" %}
         {% endif %}

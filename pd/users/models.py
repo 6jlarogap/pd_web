@@ -8,6 +8,20 @@ from pd.models import BaseModel, Files, GetLogsMixin, validate_gt0
 from pd.utils import DigitsValidator, LengthValidator, NotEmptyValidator
 
 
+class CustomerProfile(models.Model):
+    user = models.OneToOneField('auth.User', null=True)
+    user_last_name = models.CharField(_(u"Фамилия"), max_length=255, null=True, blank=True)
+    user_first_name = models.CharField(_(u"Имя"), max_length=255, null=True, blank=True)
+    user_middle_name = models.CharField(_(u"Отчество"), max_length=255, null=True, blank=True)
+
+    def __unicode__(self):
+        return self.user and self.user_last_name and \
+               "%s %s %s" % (self.user_last_name, self.user_first_name, self.user_middle_name) or \
+               u'%s' % self.pk
+
+class CustomerProfilePhoto(Files):
+    customerprofile = models.OneToOneField(CustomerProfile)
+
 class Profile(models.Model):
     user = models.OneToOneField('auth.User', null=True)
     user_first_name = models.CharField(_(u"Имя"), max_length=255, null=True, blank=True)
@@ -131,6 +145,10 @@ class Org(GetLogsMixin, BaseModel):
     plan_date_days_before = models.PositiveIntegerField(_(u"Кол-во дней для ввода плановой даты захоронения в прошлом"), default=0)
     max_graves_count = models.PositiveIntegerField(_(u"Максимальное число могил в месте"), default=5,
                                 validators=[validate_gt0])
+    worktime = models.CharField(_(u"Время работы (ЧЧ:ММ - ЧЧ:ММ)"), max_length=255, default='', blank=True)
+    site = models.URLField(_(u"Сайт"), default='', blank=True)
+    publish_cost = models.DecimalField(_(u"Стоимость добавления продукта"), max_digits=20, decimal_places=2, default=0.00)
+    currency = models.ForeignKey('billing.Currency', verbose_name=_(u"Валюта"), default=1)
 
     class Meta:
         verbose_name = _(u'Организация')

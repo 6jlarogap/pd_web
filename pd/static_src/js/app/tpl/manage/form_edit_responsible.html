@@ -1,0 +1,143 @@
+    <div class="modal-header">
+        <h3>Редактировать ответственного</h3>
+    </div>
+    
+    <div class="modal-body">
+    <tabset>
+    <tab heading="Личные данные">
+		<form novalidate name="responsibleEditForm" >
+	        <dl class="dl-horizontal" ng-hide="edit_resp">
+
+                <dt>
+                    <label for="id_responsible_set-last_name">Фамилия:</label>
+                </dt>
+                <dd>
+                    {{editor.responsible.last_name}}
+                    <span class="error" ng-show="!editor.responsible.last_name.length">Не указана</span>
+                </dd>
+
+                <dt>
+                    <label for="id_responsible_set-first_name">Имя:</label>
+                </dt>
+                <dd>
+                    {{editor.responsible.first_name}}
+                </dd>
+
+                <dt>
+                    <label for="id_responsible_set-middle_name">Отчество:</label>
+                </dt>
+                <dd>
+                    {{editor.responsible.middle_name}}
+                </dd>
+            </dl>
+            <hr ng-hide="edit_resp" />
+            
+            <table ng-hide="edit_resp" class="pd-form" >
+                <tr>
+                    <th width="200px">
+                        <label>Мобильный телефон<br/> для входа в кабинет:</label >
+                    </th>
+                    <td>
+                           <span ng-show="editor.responsible && editor.responsible.login_phone && editor.responsible.login_phone.length">+</span>
+                ﻿           {{editor.responsible.login_phone}}
+                        <span class="label label-important" ng-hide="editor.responsible.login_phone">Не указан</span>
+                    </td>
+                </tr><tr>
+                    <td colspan="2">
+                        <button class="btn" ng-click="[edit_resp=true, responsible_edit()]">Редактировать</button>
+                    </td>
+                </tr>
+            </table>
+            
+	        <dl class="dl-horizontal" ng-show="edit_resp">
+                <dt>
+	                <label for="id_responsible_set-last_name">Фамилия:</label>
+	            </dt>
+	            <dd>
+	                <input name="placeCemetery" id="id_responsible_set-last_name" type="text" ng-model="editor.responsible.last_name"
+	                       name="last_name" required maxlength="255"/>
+                    <span class="error" ng-show="!editor.responsible.last_name.length">Не указана</span>
+	            </dd>
+	            <dt>
+	                <label for="id_responsible_set-first_name">Имя:</label>
+	            </dt>
+	            <dd>
+	                <input name="placeArea" id="id_responsible_set-first_name" type="text" ng-model="editor.responsible.first_name"
+	                       maxlength="255"/>
+	            </dd>
+	            <dt>
+	                <label for="id_responsible_set-middle_name">Отчество:</label>
+	            </dt>
+	            <dd>
+	                <input name="placeRow" id="id_responsible_set-middle_name" type="text" ng-model="editor.responsible.middle_name"
+	                       maxlength="255" />
+	            </dd>
+               </dl>
+ 
+ 
+             <table ng-show="edit_resp" class="pd-form" >
+                <tr>
+                    <th width="200px">
+                        <label>Мобильный телефон<br/> для входа в кабинет:</label >
+                    </th>
+                    <td>+
+                    <input name="responsible_login_phone" 
+                            id="id_responsible_login_phone" type="text" 
+                            ng-model="editor.responsible.login_phone"
+                            ui-validate="{validPhone : 'validatePhone($value)' }"
+                            popover-placement="top" popover-trigger="mouseenter"
+                            popover='Введите номер телефона в международном формате без "+" и без "8". Пример: 74996772043'
+                            maxlength="15" style="width:200px;"/>
+                        <p class="error" ng-show="responsibleEditForm.responsible_login_phone.$error.validPhone">Неверный номер телефона</p>
+                    </td>
+	            </tr>
+	            <tr>
+	               <td colspan="2">
+        	            <button class="btn" ng-click="edit_resp=false" ng-disabled="responsibleEditForm.$invalid">Сохранить</button>
+        	            <button class="btn" ng-click="[edit_resp=false, responsible_edit_cancel()]">Отмена</button>
+                    </td>
+                </tr>
+	            </table>
+	            <br/>
+
+	        
+		    <div class="modal-footer">
+                <span class="footer-info" ng-show="is_responsible_disabled(responsibleEditForm)">Необходимо указать фамилию, адрес или телефон</span>
+		        <button class="btn btn-primary" ng-disabled="is_responsible_disabled(responsibleEditForm)"
+		            ng-click="saveResponsibleEditForm(responsibleEditForm)">
+		            Сохранить
+		        </button>
+		        <button class="btn cancel" ng-click="closeEditForm('isResponsibleEditorOpen')">Отменить</button>
+		    </div>
+		</form>
+    </tab>
+    <tab heading="Адрес">
+    	<form novalidate name="responsibleEditForm1" >
+    		<address address_class="address_class" address="editor.responsible.address" 
+	    		save_action="saveEditForm"></address>
+		    <div class="modal-footer">
+                <span class="footer-info" ng-show="is_responsible_disabled(responsibleEditForm)">Необходимо указать фамилию, адрес или телефон</span>
+		        <button class="btn btn-primary" ng-disabled="is_responsible_disabled(responsibleEditForm)"
+		            ng-click="saveResponsibleEditForm(responsibleEditForm)">
+		            Сохранить
+		        </button>
+		        <button class="btn cancel" ng-click="closeEditForm('isResponsibleEditorOpen')">Отменить</button>
+		    </div>
+		</form>    	
+    </tab>
+	<tab heading="Телефоны">
+		<span ng-hide="editor.responsible.last_name">Заполните страницу личных данных</span>
+		    <phones phones="editor.responsible_phones"></phones>
+
+		<form novalidate name="responsibleEditForm2" >
+		    <div class="modal-footer">
+		    	<span class="footer-info" ng-show="is_responsible_disabled(responsibleEditForm)">Необходимо указать фамилию, адрес или телефон</span>
+		        <button id="edit_save_btn" class="btn btn-primary" ng-disabled="is_responsible_disabled(responsibleEditForm)" 
+    		        ng-click="saveResponsibleEditForm(responsibleEditForm)">
+		            Сохранить
+		        </button>
+		        <button class="btn cancel" ng-click="closeEditForm('isResponsibleEditorOpen')">Отменить</button>
+		    </div>
+		</form>
+    </tab>
+    </tabset>

@@ -1,0 +1,14 @@
+<div class="address_block">
+	<div ng-hide="isAddressEditorOpen">
+
+		<div ng-include="'/static/js/app/directive/address/static_block.html'"></div>
+
+	</div>
+
+	<div ng-show="isAddressEditorOpen">
+		<div ng-include="'/static/js/app/directive/address/edit_block.html'"></div>
+	    <br/>
+    	<button class="btn btn-warning" ng-click="save()">Сохранить</button>
+        <button class="btn cancel" ng-click="close()">Отменить</button>
+	</div>
+</div>

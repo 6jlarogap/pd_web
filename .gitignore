@@ -6,3 +6,15 @@ ENV
 build
 pd/media
 pd/static
+.env
+
+pd/asset_src/
+pd/.project
+pd/.pydevproject
+pd/.settings/
+pd/fixtures/
+pd/thumbnails/
+pd/static_src/pd*
+backup
+#restthumbnails
+pd/rest_framework/

@@ -155,6 +155,7 @@ class Location(models.Model):
         else:
             return _(u"незаполненный адрес")
 
+
 class LocationFIAS(models.Model):
     loc = models.ForeignKey(Location, related_name='fias_parents')
     guid = models.CharField(max_length=255, db_index=True)
