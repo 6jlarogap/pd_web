@@ -10,7 +10,7 @@ class Migration(SchemaMigration):
     def forwards(self, orm):
         # Adding field 'Org.publish_cost'
         db.add_column('users_org', 'publish_cost',
-                      self.gf('django.db.models.fields.DecimalField')(default=0.0, max_digits=20, decimal_places=2),
+                      self.gf('django.db.models.fields.DecimalField')(default='0.0', max_digits=20, decimal_places=2),
                       keep_default=False)
 
         # Adding field 'Org.currency'
