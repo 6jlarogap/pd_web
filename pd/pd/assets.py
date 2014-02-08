@@ -7,6 +7,7 @@ js_app = Bundle(
         "js/app/app.config.js",
         "js/app/app.filter.js",
 
+        "js/app/resources/address.js",
         "js/app/resources/place.js",
         "js/app/resources/cemetery.js",
         "js/app/resources/grave.js",

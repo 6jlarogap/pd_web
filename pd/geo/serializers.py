@@ -137,13 +137,20 @@ class LocationSerializer(serializers.ModelSerializer):
                  'post_index', 'house', 'block', 'building', 'flat', 'gps_x', 'gps_y', 'info' ) 
 
 class LocationStaticSerializer(serializers.ModelSerializer):
-    country = CountrySerializer()
-    region  = RegionSerializer()
-    city    = CitySerializer()
+    country = CountrySerializer(many=False, required=False,)
+    region  = RegionSerializer(many=False, required=False,)
+    city    = CitySerializer(many=False, required=False,)
     street  = StreetSerializer()
     class Meta:
         model = Location
         fields = ('id','country', 'region', 'city', 'street', \
                  'post_index', 'house', 'block', 'building', 'flat', 'gps_x', 'gps_y', 'info' ) 
+
+
+
+class LocationDataSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Location
+        fields = ('id', 'post_index', 'house', 'block', 'building', 'flat', 'gps_x', 'gps_y', 'info' ) 
 
 

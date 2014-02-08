@@ -1,6 +1,4 @@
 app.controller('PhonesController', ['$scope', 'Phone', function($scope, Phone) {
-	var self = this;
-
     var DEFAULT_PHONETYPE = PHONE_TYPE_MOBILE;
 	$scope.PHONETYPE_CHOICES = PHONETYPE_CHOICES;
     $scope.isPhoneEditorOpen = false;
@@ -9,7 +7,7 @@ app.controller('PhonesController', ['$scope', 'Phone', function($scope, Phone) {
     $scope.requireTel = true;
     $scope.maxlength = 12;
     $scope.old = {};
-    $scope.phone = new Phone({is_new:true, phonetype:DEFAULT_PHONETYPE});
+    // $scope.phone = new Phone({is_new:true, phonetype:DEFAULT_PHONETYPE});
 
     $scope.phoneNumberPattern = (function() {
         var regexp = /^\(?(\d{3})\)?[ .-]?(\d{3})[ .-]?(\d{4})$/;

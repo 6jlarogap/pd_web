@@ -136,7 +136,7 @@ class Location(models.Model):
         return addr
 
     def __unicode__(self):
-        if self.street or self.region:
+        if self.street or self.region or self.country:
             addr = u''
             if self.street:
                 addr += u'%s' % self.street
@@ -146,7 +146,12 @@ class Location(models.Model):
                 addr += u', %s' % (self.city or self.street and self.street.city or '')
             else:
                 addr += u'%s' % (self.city or self.street and self.street.city or '')
-            addr += u', %s' % (self.region or self.street and self.street.city.region or '')
+            
+            if addr:
+                addr += u', %s' % (self.region or self.street and self.street.city.region or '')
+            else:
+                addr += u'%s' % (self.region or self.street and self.street.city.region or '')
+
             addr += u', %s' % (self.country or self.street and self.street.city.region.country or '')
             return addr.replace(', ,', ', ')
         elif self.fias_parents.all():
@@ -154,6 +159,31 @@ class Location(models.Model):
             return self.get_local_addr(addr)
         else:
             return _(u"незаполненный адрес")
+
+    def set_related_addr(self, data):
+            name = data['country'].get('name')
+            if name:
+                self.country, created = Country.objects.get_or_create(name=name)
+                name = data['region'].get('name')
+                if name:
+                     self.region, created = Region.objects.get_or_create(name=name, country=self.country)
+
+                     name = data['city'].get('name')
+                     if name:
+                         self.city, created = City.objects.get_or_create(name=name, region=self.region)
+    
+                         name = data['street'].get('name')
+                         if name:
+                             self.street, created = Street.objects.get_or_create(name=name, city=self.city)
+                         else:
+                             self.street = None
+                     else:
+                         self.city = None
+                else:
+                    self.region = None
+            else:
+                self.country = None
+            self.save()
 
 
 class LocationFIAS(models.Model):
