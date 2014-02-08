@@ -73,10 +73,10 @@
 						if (!item)
 							return;
 						var res = 
-								item.region.name && !item.country.name && !item.city.name && !item.street.name
-								|| item.region.name && item.country.name && !item.city.name && !item.street.name
-								|| item.region.name && item.country.name && item.city.name && !item.street.name
-								|| item.region.name && item.country.name && item.city.name && item.street.name;
+								   item.country.name && !item.region.name && !item.city.name && !item.street.name
+								|| item.country.name && item.region.name && !item.city.name && !item.street.name
+								|| item.country.name && item.region.name && item.city.name && !item.street.name
+								|| item.country.name && item.region.name && item.city.name && item.street.name;
 						$scope.$parent.$parent.editor.isAddressValid = res;
 						return !res;
 					}

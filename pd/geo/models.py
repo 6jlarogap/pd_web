@@ -152,7 +152,11 @@ class Location(models.Model):
             else:
                 addr += u'%s' % (self.region or self.street and self.street.city.region or '')
 
-            addr += u', %s' % (self.country or self.street and self.street.city.region.country or '')
+            if addr:
+                addr += u', %s' % (self.country or self.street and self.street.city.region.country or '')
+            else:
+                addr += u'%s' % (self.country or self.street and self.street.city.region.country or '')
+
             return addr.replace(', ,', ', ')
         elif self.fias_parents.all():
             addr = u", ".join(map(unicode, self.fias_parents.all()))
@@ -161,6 +165,10 @@ class Location(models.Model):
             return _(u"незаполненный адрес")
 
     def set_related_addr(self, data):
+            self.country = None
+            self.region = None
+            self.city = None
+            self.street = None
             name = data['country'].get('name')
             if name:
                 self.country, created = Country.objects.get_or_create(name=name)
@@ -175,14 +183,6 @@ class Location(models.Model):
                          name = data['street'].get('name')
                          if name:
                              self.street, created = Street.objects.get_or_create(name=name, city=self.city)
-                         else:
-                             self.street = None
-                     else:
-                         self.city = None
-                else:
-                    self.region = None
-            else:
-                self.country = None
             self.save()
 
 
