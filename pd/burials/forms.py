@@ -250,6 +250,7 @@ class ResponsibleForm(AlivePersonForm):
                                       max_digits=AlivePerson._meta.get_field('login_phone').max_digits,
                                       decimal_places=AlivePerson._meta.get_field('login_phone').decimal_places,
                                       help_text=AlivePerson._meta.get_field('login_phone').help_text,
+                                      validators=AlivePerson._meta.get_field('login_phone').validators,
                                       required=False)
 
     def __init__(self, *args, **kwargs):
