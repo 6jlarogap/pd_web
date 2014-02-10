@@ -612,7 +612,7 @@ class GraveViewSet(viewsets.ModelViewSet):
         try:
             object = self.model.objects.get(pk=int(pk))
             #write_log(self.request, object.place, _(u'Могила №%d удалена') % object.grave_number)
-            object.delete()
+            object.delete(request=request)
         except:
             raise Http404()
         return Response(status=200)
