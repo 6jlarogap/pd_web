@@ -26,7 +26,7 @@ from logs.views import LogViewSet
 from orders.views import ProductCategoryViewSet, CatalogFiltersViewSet, ProductsViewSet, \
                          ProductInfoViewSet, CabinetViewSet, loru_product_places, \
                          UghPublishedProductsViewSet
-from users.views import auth_get_token, UghPublishCostViewSet, auth_get_password_by_sms
+from users.views import auth_get_token, UghPublishCostViewSet, auth_get_password_by_sms, auth_api_logout
 
 # Burial
 router.register(r'^api/log', LogViewSet)
@@ -78,6 +78,7 @@ urlpatterns += patterns('pd.views',
     url(r'^import/', include('import_burials.urls')),
     
     url(r'^api/auth/signin/?$', auth_get_token),
+    url(r'^api/auth/signout/?$', auth_api_logout),
     url(r'^api/auth/get_password_by_sms/?$', auth_get_password_by_sms),
     
     url(r'^api/loru/product_places/?$', loru_product_places),

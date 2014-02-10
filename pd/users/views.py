@@ -110,6 +110,15 @@ class AuthGetTokenView(APIView):
 
 auth_get_token = AuthGetTokenView.as_view()
 
+class AuthApiLogout(APIView):
+    permission_classes = (IsAuthenticated,)
+    
+    def post(self, request, format=None):
+        logout(request)
+        return Response(data={}, status=200)
+
+auth_api_logout = AuthApiLogout.as_view()
+
 class AuthGetPasswordBySMSView(CheckRecaptchaMixin, APIView):
     """
     Замена пользователю пароля, отправка пароля по СМС
