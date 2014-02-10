@@ -122,6 +122,7 @@ class GraveSerializer(serializers.ModelSerializer):
 class BurialListSerializer(serializers.ModelSerializer):
     grave = serializers.PrimaryKeyRelatedField()
     deadman = DeadPersonSerializer()
+    plan_date = serializers.DateField(format=u"%d.%m.%Y")
     fact_date = UnclearDateFieldSerializer()
     class Meta:
         model = Burial
@@ -140,7 +141,9 @@ class BurialSerializer(serializers.ModelSerializer):
     responsible = AlivePersonSerializer(source='responsible')
     applicant = AlivePersonSerializer(source='applicant')  
     # applicant_organization dover agent_director
-    fact_date = UnclearDateFieldSerializer()  
+    fact_date = UnclearDateFieldSerializer()
+    plan_date = serializers.DateField(format=u"%d.%m.%Y")
+    
     class Meta:
         model = Burial
         fields = ('id', 'deadman', 'burial_type', 'burial_container', \
@@ -151,6 +154,7 @@ class BurialSerializer(serializers.ModelSerializer):
 
 class GravePhotoSerializer(serializers.ModelSerializer):
     grave = serializers.PrimaryKeyRelatedField()
+    date_of_creation = serializers.DateField(format=u"%d.%m.%Y")
     class Meta:
         model = GravePhoto
         fields = ('id', 'grave', 'bfile', 'comment', 'original_name', 'lat', 'lng', 'date_of_creation') 
@@ -158,6 +162,7 @@ class GravePhotoSerializer(serializers.ModelSerializer):
 
 class AreaPhotoSerializer(serializers.ModelSerializer):
     area = serializers.PrimaryKeyRelatedField()
+    date_of_creation = serializers.DateField(format=u"%d.%m.%Y")
     class Meta:
         model = AreaPhoto
         fields = ('id', 'area', 'bfile', 'comment', 'original_name', 'lat', 'lng', 'date_of_creation') 
