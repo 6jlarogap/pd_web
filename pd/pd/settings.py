@@ -254,6 +254,12 @@ PRODUCTION_SITE = False
 # Переопределить в False в local_settings.py на production server
 #
 CORS_ORIGIN_ALLOW_ALL = True
+#
+# Задать в local_settings.py на production server:
+#
+#CORS_ORIGIN_WHITELIST = (
+#   'pohoronnoedelo.ru',
+#)
 
 # THUMB
 THUMBNAILS_FILE_SIGNATURE = '%(source)s/%(size)s~%(method)s~%(secret)s.%(extension)s'
@@ -288,13 +294,6 @@ ASSETS_MODULES = [
     'pd.assets'
 ]
 ASSETS_DEBUG = False
-
-# Cross-origin resource sharing. Нам это и не надо, но
-# чтобы наше api выходило на front-end другого домена,
-# надо добавить в список XS_SHARING_ALLOWED_ORIGINS
-# front-end домен(ы) или '*'
-
-XS_SHARING_ALLOWED_ORIGINS = []
 
 # Начальная страница. Пользователь попадает на pd.ru. Это front-end,
 # использующий ссылки на org.pd.ru, что является back-end.
