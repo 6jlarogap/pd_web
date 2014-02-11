@@ -129,11 +129,15 @@
                             {# <a class="btn" href="{% url register %}">{% trans "Зарегистрироваться (для ЮЛ)" %}</a> #}
                         {% endif %}
                     </div>
-                    {% if user.profile.is_ugh %}
+                    {% if user.profile.is_ugh or user.profile.is_loru %}
                         <div class="pull-right nav-collapse">
                             <ul class="nav">
                                 <li>
-                                    <a href="{% url manage_cemeteries %}">{% trans "Кладбища" %}</a>
+                                    {% if user.profile.is_ugh %}
+                                        <a href="{% url manage_cemeteries %}">{% trans "Кладбища" %}</a>
+                                    {% elif user.profile.is_loru %}
+                                        <a href="{{ global_context_FRONT_END_URL }}#/loru/advertisement">{% trans "Реклама" %}</a>
+                                    {% endif %}
                                 </li>
                             </ul>
                         </div>

@@ -296,6 +296,12 @@ ASSETS_DEBUG = False
 
 XS_SHARING_ALLOWED_ORIGINS = []
 
+# Начальная страница. Пользователь попадает на pd.ru. Это front-end,
+# использующий ссылки на org.pd.ru, что является back-end.
+# Иногда потребуется внутри back-end вычислять адрес front-end,
+# для чего:
+BACK_END_PREFIX = 'org.'
+
 try:
     from local_settings import *
 except ImportError:
