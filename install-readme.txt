@@ -11,11 +11,14 @@ install-readme.txt, utf8 code page
     * Д.б. установлено на Linux:
         - средства разработки:
             * python, не ниже 2.6
-            * C /C++
+              - пакеты python, которые могут не быть в его "стандартной поставке":
+                  * python-dev
+                  * python-virtualenv
+                  * python-pycurl
+            * C/C++
             * g++
-        - python-virtualenv
-        - postgresql,           в т.ч. для разработчика
-        - mysql,                в т.ч. для разработчика
+.        - postgresql,           в т.ч. для разработчика
+         - библиотеки для графики, включая jpeg, в Ubuntu 12.04: libjpeg-dev
     
         - bower
             * скачать NodeJS: http://nodejs.org/
@@ -46,16 +49,6 @@ install-readme.txt, utf8 code page
 
            (create database '<database>' encoding 'UTF-8' owned by '<user>';)
             
-        - fias db:
-            echo 'create database fias' | mysql -u root
-            # качаем, разархивируем, вносим в базу fias:
-            wget -q -O - http://basicdata.ru/data/fias/fias_socrbase_table.sql.bz2 | bzcat | mysql -u root fias
-            wget -q -O - http://basicdata.ru/data/fias/fias_socrbase_data.sql.bz2 | bzcat | mysql -u root fias
-            wget -q -O - http://basicdata.ru/data/fias/fias_addrobj_table.sql.bz2 | bzcat | mysql -u root fias
-            wget -q -O - http://basicdata.ru/data/fias/fias_addrobj_index.sql.bz2 | bzcat | mysql -u root fias
-            wget -q -O - http://basicdata.ru/data/fias/fias_addrobj_data.sql.bz2 | bzcat | mysql -u root fias
-            (последнее надолго, можно продолжать... :)
- 
         - MEDIA_ROOT:
             это дело вкуса, но в соответствии с local_settings.py.example:
             mkdir -p ~/projects/MEDIA/pd_web

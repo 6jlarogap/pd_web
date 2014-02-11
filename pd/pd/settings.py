@@ -301,6 +301,11 @@ ASSETS_DEBUG = False
 # для чего:
 BACK_END_PREFIX = 'org.'
 
+# Подлежат замене в local_settings.py production сервера:
+#
+SMS_SERVICE_USER = 'user@mail.org'
+SMS_SERVICE_PASSWORD = 'SECRET'
+
 try:
     from local_settings import *
 except ImportError:
