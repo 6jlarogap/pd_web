@@ -302,7 +302,7 @@ ASSETS_DEBUG = False
 BACK_END_PREFIX = 'org.'
 # В отладочных целях может использоваться (в local_settings.py):
 FRONT_END_URL = None
-# Если задан, например, FRONT_END_URL = 'http://localhost:8000/',
+# Если задан, например, FRONT_END_URL = 'http://localhost/api/',
 # то действие BACK_END_PREFIX отменяется
 
 # Подлежат замене в local_settings.py production сервера:
