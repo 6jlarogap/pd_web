@@ -107,25 +107,34 @@ class CemeteryViewSet(viewsets.ModelViewSet):
         return  Cemetery.objects.filter(ugh=self.request.user.profile.org).all()
 
     
+    def check_semetery_name(self, request, pk=None):
+        name = request.DATA.get('name')
+        if not name:
+            return {"__all__":[u"Название кладбища обязательно",]}
+        qs = self.get_queryset().filter(ugh=self.request.user.profile.org, name__iexact= name)
+        if pk:
+            qs = qs.exclude(pk=pk)
+        if qs.exists():
+            return {"__all__":[u"Кладбище с таким названием уже существует",]}
+
+    
     def create(self, request, *args, **kwargs):
         """
         Add "unique together" check in parent class 
         """
-        name = request.DATA.get('name').upper()
-        if self.get_queryset().filter(ugh=self.request.user.profile.org).extra(where=['upper(name)=%s'], params=[name]).exists():
-            data = {"__all__":[u"Кладбище с таким названием уже существует",]}
+        data = self.check_semetery_name(request)
+        if data:
             return Response(status=400, data=data)
         return super(CemeteryViewSet, self).create(request, *args, **kwargs)
-    
-    
+
+
     def update(self, request, *args, **kwargs):
         try:
             pk = int(request.DATA.get('id'))
         except:
             return Response(status=400)
-        name = request.DATA.get('name').upper()
-        if self.get_queryset().exclude(pk=pk).filter(ugh=self.request.user.profile.org).extra(where=['upper(name)=%s'], params=[name]).exists():
-            data = {"__all__":[u"Кладбище с таким названием уже существует",]}
+        data = self.check_semetery_name(request, pk)
+        if data:
             return Response(status=400, data=data)
         return super(CemeteryViewSet, self).update(request, *args, **kwargs)
     
@@ -133,6 +142,10 @@ class CemeteryViewSet(viewsets.ModelViewSet):
     def pre_save(self, obj):
         address = self.request.DATA.get('obj_address')
         address_serializer = LocationDataSerializer(obj.address, data=address, partial=True)
+        
+        obj.creator = self.request.user
+        obj.ugh = self.request.user.profile.org
+        
         if not address_serializer.is_valid():
             return Response(status=400, data=address_serializer.errors)
         
@@ -140,8 +153,6 @@ class CemeteryViewSet(viewsets.ModelViewSet):
         obj.address.set_related_addr(data=address)
         obj.address.save()
         
-        obj.creator = self.request.user
-        obj.ugh = self.request.user.profile.org
         try:
             old = self.model.objects.get(pk=obj.pk)
         except self.model.DoesNotExist:
