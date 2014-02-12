@@ -716,6 +716,9 @@ class CreateBurial(BurialGetOrderMixin, FormInvalidMixin, CreateView):
                     row=place.row,
                     place_number=place.place,
                     responsible=place.responsible,
+                    grave_number= int(self.request.REQUEST.get('grave_number')) \
+                        if self.request.REQUEST.get('grave_number') \
+                        else 1,
                 )
         data['request'] = self.request
         return data
