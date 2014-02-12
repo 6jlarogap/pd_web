@@ -384,9 +384,9 @@ class Grave(GeoPointModel):
                 i += 1
             if relocated > 0:
                 if relocated < i-1:
-                    arr.append( _(u'Могилы %d-%d перенумерованы') % (relocated, i-1))
+                    arr.append( _(u'Могилы %d-%d перенумерованы') % ((relocated+1), i))
                 else:
-                    arr.append( _(u'Могила %d перенумерована') % relocated)
+                    arr.append( _(u'Могила %d перенумерована') % (relocated+1))
             write_log(request, self.place, u"<br/>".join(arr))
         else:
             print 'Warning: Burial::delete - Request param is undefined'
