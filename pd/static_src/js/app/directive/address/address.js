@@ -60,23 +60,28 @@
 
 					$scope.close = function() {
 						$scope.isAddressEditorOpen = false;
+						$scope.$parent.$parent.editor.isAddressEdited = false;
 						$scope.data = $scope.backup;
-						delete $scope.$parent.$parent.editor.isAddressEdited;
 					};
 
 					$scope.save = function(form) {
 						$scope.isAddressEditorOpen = false;
+						$scope.$parent.$parent.editor.isAddressEdited = false;
 					};
 
 					$scope.form_disabled = function() {
 						var item = $scope.data;
 						if (!item)
 							return;
+						var c = item.country.name && item.country.name.length>0,
+							r = item.region.name && item.region.name.length>0,
+							ci = item.city.name && item.city.name.length>0, 
+							s = item.street.name && item.street.name.length>0;
 						var res = 
-								   item.country.name && !item.region.name && !item.city.name && !item.street.name
-								|| item.country.name && item.region.name && !item.city.name && !item.street.name
-								|| item.country.name && item.region.name && item.city.name && !item.street.name
-								|| item.country.name && item.region.name && item.city.name && item.street.name;
+								   c && !r && !ci && !s
+								|| c && r &&  !ci && !s
+								|| c && r &&   ci && !s
+								|| c && r &&   ci &&  s;
 						$scope.$parent.$parent.editor.isAddressValid = res;
 						return !res;
 					}
