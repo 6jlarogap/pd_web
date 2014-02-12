@@ -123,9 +123,13 @@ class CemeteryViewSet(viewsets.ModelViewSet):
             pk = int(request.DATA.get('id'))
         except:
             return Response(status=400)
-        name = request.DATA.get('name').upper()
-        if self.get_queryset().exclude(pk=pk).filter(ugh=self.request.user.profile.org).extra(where=['upper(name)=%s'], params=[name]).exists():
+        name = request.DATA.get('name')
+        data = None
+        if not name:
+            data = {"__all__":[u"Название кладбища обязательно",]}
+        elif self.get_queryset().exclude(pk=pk).filter(ugh=self.request.user.profile.org, name__iexact= name).exists():
             data = {"__all__":[u"Кладбище с таким названием уже существует",]}
+        if data:
             return Response(status=400, data=data)
         return super(CemeteryViewSet, self).update(request, *args, **kwargs)
     

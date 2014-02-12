@@ -30,22 +30,8 @@ DATABASES = {
             'autocommit': True,
             },
         },
-    'fias': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'fias',
-        'USER': 'root',
-        'PASSWORD': '',
-        'HOST': '',
-        'PORT': '',
-    }
 }
 
-TEST_FIAS = {
-    'ENGINE': 'django.db.backends.mysql',
-    'NAME': 'fias',
-    'USER': 'root',
-    'PASSWORD': '',
-}
 SENTRY_DSN = ''
 
 TEMPLATE_DIRS = (
@@ -71,3 +57,9 @@ EMAIL_HOST_PASSWORD = 'SECRET'
 EMAIL_USE_TLS = True
 EMAIL_USE_SSL = False
 DEFAULT_FROM_EMAIL = 'EMAIL-HOST-USER@gmail.com'
+
+# Подлежат замене в production сервере:
+#
+SMS_SERVICE_USER = 'user@mail.org'
+SMS_SERVICE_PASSWORD = 'SECRET'
+
