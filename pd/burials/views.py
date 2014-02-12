@@ -111,7 +111,7 @@ class CemeteryViewSet(viewsets.ModelViewSet):
         """
         Add "unique together" check in parent class 
         """
-        name = request.DATA.get('name').upper()
+        name = request.DATA.get('name','').upper()
         if self.get_queryset().filter(ugh=self.request.user.profile.org).extra(where=['upper(name)=%s'], params=[name]).exists():
             data = {"__all__":[u"Кладбище с таким названием уже существует",]}
             return Response(status=400, data=data)
@@ -133,6 +133,10 @@ class CemeteryViewSet(viewsets.ModelViewSet):
     def pre_save(self, obj):
         address = self.request.DATA.get('obj_address')
         address_serializer = LocationDataSerializer(obj.address, data=address, partial=True)
+        
+        obj.creator = self.request.user
+        obj.ugh = self.request.user.profile.org
+        
         if not address_serializer.is_valid():
             return Response(status=400, data=address_serializer.errors)
         
@@ -140,8 +144,6 @@ class CemeteryViewSet(viewsets.ModelViewSet):
         obj.address.set_related_addr(data=address)
         obj.address.save()
         
-        obj.creator = self.request.user
-        obj.ugh = self.request.user.profile.org
         try:
             old = self.model.objects.get(pk=obj.pk)
         except self.model.DoesNotExist:
