@@ -43,7 +43,7 @@ from burials.models import Place
 from users.serializers import UghPublishCostSerializer
 from orders.models import ProductStatus, ProductHistory
 from burials.models import Burial
-from pd.views import PaginateListView, RequestToFormMixin, FormInvalidMixin
+from pd.views import PaginateListView, RequestToFormMixin, FormInvalidMixin, get_front_end_url
 
 class CheckRecaptchaMixin(object):
     
@@ -210,8 +210,7 @@ class LogoutView(View):
             return redirect('/')
         write_log(request, request.user, _(u'Выход из системы'))
         logout(request)
-        next_url = request.GET.get("next", "/")
-        return redirect(next_url)
+        return redirect(request.GET.get("next") if request.GET.get("next") else get_front_end_url(request))
 
 ulogout = LogoutView.as_view()
 

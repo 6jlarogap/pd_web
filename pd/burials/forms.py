@@ -174,7 +174,7 @@ class PlaceEditForm(ChildrenJSONMixin, forms.ModelForm):
             deleted_ = 0
             for grave_number in range(graves_count, new_graves_count, -1):
                 try:
-                    Grave.objects.filter(place=self.instance, grave_number=grave_number)[0].delete()
+                    Grave.objects.filter(place=self.instance, grave_number=grave_number)[0].delete(request=self.request)
                 except (IndexError, ProtectedError):
                     break
                 deleted_ += 1 

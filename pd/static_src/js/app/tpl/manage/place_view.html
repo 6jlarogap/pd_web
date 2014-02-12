@@ -79,10 +79,15 @@
                     <td>
                             <div ng-repeat="phone in responsible_phones">
                                 {{phone.phonetype | objList:PHONETYPE_CHOICES}}:
-                                    <span ng-show="phone.number.length>7">+</span>
-                                    {{phone.number}}
-                            </div><br/>
+                                <span ng-show="phone.number.length>7">+</span>
+                                {{phone.number}}
+                                <br/ ng-show="!$last">
+                            </div>
                     </td>
+                </tr>
+                <tr ng-show="responsible.phones">
+                    <th>Текстовые телефоны:</th>
+                    <td>{{responsible.phones}}</td>
                 </tr>
                 </table>
         </div>
@@ -131,11 +136,12 @@
 	                    <li ng-repeat="burial in burials | filter :{grave : grave.id}"
 	                    	class="well burial {{burial.status}}">
 	                    	<div ng-click="openEditForm('isBurialEditorOpen', burial)">
-	                    	<span>{{burial.status|list:STATUS_CHOICES}}</span>
-	                        <h4 style="text-align: left">{{burial.deadman.last_name}}</h4>
-	                        <h4 style="text-align: left">{{burial.deadman.first_name}}</h4>
-	                        <h4 style="text-align: left">{{burial.deadman.middle_name}}</h4>
-	                        <div>{{burial.fact_date || burial.plan_date}}</div>
+    	                    	<span>{{burial.status|list:STATUS_CHOICES}}</span>
+    	                        <h4 style="text-align: left">{{burial.deadman.last_name}}</h4>
+    	                        <h4 style="text-align: left">{{burial.deadman.first_name}}</h4>
+    	                        <h4 style="text-align: left">{{burial.deadman.middle_name}}</h4>
+    	                        <div ng-show="burial.deadman.birth_date">{{burial.deadman.birth_date}}</div>
+    	                        <div>{{burial.deadman.death_date || burial.fact_date || burial.plan_date}}</div>
 	                        </div>
                             <div class="btn-group pull-right">
                                 <a class="btn btn-mini" popover="Просмотр" popover-trigger="mouseenter"
@@ -173,7 +179,7 @@
 	                
 	                <div class="unstyled well burial" style="padding:10px;"> 
 	                	<a class="span12" target="_current" 
-	                		href="/burials/create/?place_id={{item.id}}&grave_id={{grave.id}}">
+	                		href="/burials/create/?place_id={{item.id}}&grave_id={{grave.id}}&grave_number={{grave.grave_number}}">
 	                		<h4>+ Добавить</h4>
 	                	</a>
 	                </div>
