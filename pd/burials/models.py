@@ -353,6 +353,8 @@ class PlaceStatus(BaseModel):
     comment = models.TextField(verbose_name=_(u"Примечание"), blank=True, null=True)
     creator = models.ForeignKey('auth.User', verbose_name=_(u"Создатель"), editable=False,
                                 on_delete=models.PROTECT)
+
+
 class Grave(GeoPointModel):
     place = models.ForeignKey(Place, verbose_name=_(u"Место"))
     grave_number = models.PositiveSmallIntegerField(_(u"Номер"), default=1)
@@ -365,6 +367,29 @@ class Grave(GeoPointModel):
 
     def __unicode__(self):
         return _(u'Могила. место: %s номер:%d') % (self.place, self.grave_number)
+
+    def delete(self, using=None, request=None):
+        super(Grave, self).delete(using=using)
+        if request:
+            arr = [_(u'Могила №%d удалена') % self.grave_number,]
+            # Reorder grave numbers
+            i = 1
+            relocated = False
+            for row in self.place.grave_set.order_by('grave_number').all():
+                if row.grave_number != i: 
+                    if not relocated:
+                        relocated = i
+                    row.grave_number = i
+                    row.save()
+                i += 1
+            if relocated > 0:
+                if relocated < i-1:
+                    arr.append( _(u'Могилы %d-%d перенумерованы') % (relocated+1, i))
+                else:
+                    arr.append( _(u'Могила %d перенумерована') % (relocated+1))
+            write_log(request, self.place, u"<br/>".join(arr))
+        else:
+            raise Exception('Warning: Grave::delete - "request" param is undefined')
 
 
 class AreaPhoto(Files, GeoPointModel):
@@ -1056,44 +1081,23 @@ models.signals.post_delete.connect(calculate_free_burial_count, sender=Grave)
 models.signals.post_delete.connect(calculate_free_burial_count, sender=Burial)
 
 
-def relocate_grave_numbers(sender, instance, **kwargs):
-    # Reorder grave numbers
-    i = 1
-    relocated = False
-    for row in instance.place.grave_set.order_by('grave_number').all():
-        if row.grave_number != i: 
-            if not relocated:
-                relocated = i
-            row.grave_number = i
-            row.save()
-        i += 1
-    arr = [_(u'Могила №%d удалена') % instance.grave_number,]
-    if relocated > 0:
-        if relocated < i-1:
-            arr.append( _(u'Могилы %d-%d перенумерованы') % (relocated, i-1))
-        else:
-            arr.append( _(u'Могила %d перенумерована') % relocated)
-    write_log(None, instance.place,u"<br/>".join(arr))
-models.signals.post_delete.connect(relocate_grave_numbers, sender=Grave)
-
-
-
 def update_grave_place_coords(sender, instance, **kwargs):
     #if 'created' in kwargs.keys() and kwargs['created']:
     # Update grave point coords
     grave = instance.grave
     res = GravePhoto.objects.filter(grave=grave, lng__isnull=False, lat__isnull=False).\
         aggregate(lng=Avg('lng'), lat=Avg('lat')) #, cnt=Count('id')
-    grave.lng = res["lng"]
-    grave.lat = res["lat"]
+    grave.lng = round(res["lng"], 10)
+    grave.lat = round(res["lat"], 10)
     grave.save()
 
     # Update place point coords
     place = instance.grave.place
     res = Grave.objects.filter(place=place, lng__isnull=False, lat__isnull=False).\
         aggregate(lng=Avg('lng'), lat=Avg('lat')) #, cnt=Count('id')
-    place.lng = res["lng"]
-    place.lat = res["lat"]
+    place.lng = round(res["lng"], 10)
+    place.lat = round(res["lat"], 10)
     place.save()
+    
 
 models.signals.post_save.connect(update_grave_place_coords, sender=GravePhoto)
