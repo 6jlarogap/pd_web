@@ -389,7 +389,7 @@ class Grave(GeoPointModel):
                     arr.append( _(u'Могила %d перенумерована') % (relocated+1))
             write_log(request, self.place, u"<br/>".join(arr))
         else:
-            raise Exception('Warning: Burial::delete - "request" param is undefined')
+            raise Exception('Warning: Grave::delete - "request" param is undefined')
 
 
 class AreaPhoto(Files, GeoPointModel):
