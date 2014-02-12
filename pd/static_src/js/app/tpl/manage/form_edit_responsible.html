@@ -30,7 +30,6 @@
                     {{editor.responsible.middle_name}}
                 </dd>
             </dl>
-            <hr ng-hide="edit_resp" />
             
             <table ng-hide="edit_resp" class="pd-form" >
                 <tr>
@@ -113,8 +112,9 @@
     </tab>
     <tab heading="Адрес">
     	<form novalidate name="responsibleEditForm1" >
-    		<address address_class="address_class" address="editor.responsible.address" 
-	    		save_action="saveEditForm"></address>
+    		<address
+    		      data = "editor.responsible_address"
+    		      address_class="address_class"></address>
 		    <div class="modal-footer">
                 <span class="footer-info" ng-show="is_responsible_disabled(responsibleEditForm)">Необходимо указать фамилию, адрес или телефон</span>
 		        <button class="btn btn-primary" ng-disabled="is_responsible_disabled(responsibleEditForm)"

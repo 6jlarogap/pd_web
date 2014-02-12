@@ -1,7 +1,7 @@
 ﻿var qqq;//'use strict';
 app.controller('CemeteryViewCtrl',
 function CemeteryViewCtrl($scope, $http, $resource, $location,  $routeParams, 
-						Cemetery, Area, AreaPurpose, Place, Phone, ymapData, naturalService) {
+						Cemetery, Area, AreaPurpose, Place, Phone, Address, ymapData, naturalService) {
     "use strict";
     $scope.version_str = version_str;
 	var tplButtonEdit = '<a class="btn btn-small" ng-href="/manage/cemetery/'+$routeParams.cemetery_id+
@@ -16,6 +16,7 @@ function CemeteryViewCtrl($scope, $http, $resource, $location,  $routeParams,
 	AreaPurpose.get(function(result) {
 		$scope.PURPOSE_LIST = result;
 	});
+	$scope.editor = {};
 	$scope.area_max_places = 10;
     $scope.gridOptions = { 
         data: 'area_list|filter:search',
@@ -51,7 +52,7 @@ function CemeteryViewCtrl($scope, $http, $resource, $location,  $routeParams,
                 $location.replace();
 		    }
 			$scope.cemetery = new Cemetery(result.cemetery);
-			$scope.address = result.address;
+			$scope.cemetery_address = new Address(result.address);
 			$scope.cemetery.time_begin = new Date('0 '+ $scope.cemetery.time_begin);
 			$scope.cemetery.time_end = new Date('0 '+ $scope.cemetery.time_end);
 			
@@ -66,36 +67,6 @@ function CemeteryViewCtrl($scope, $http, $resource, $location,  $routeParams,
 			$scope.area_list = result;
 			$scope.area_list.sort(function(a,b){return naturalService.naturalSortField(a,b,'name')});
 		});
-		
-		
-		/*Place.list_cemetery({cemetery_id:$routeParams.cemetery_id},function(result) {
-			var data = [];
-			for(var i=0; i<result.length;i++){
-				if(result[i].lng && result[i].lat){
-					var title = "Кл. {0}, уч. {1}, ряд {2}, место {3}".format(
-									($scope.cemetery && $scope.cemetery.name) || '',
-			            			//'area.name',
-			            			'?',
-			            			result[i].row || DEFAULT_MESSAGES.no_data,
-			            			result[i].place
-			            		);
-					data.push({
-							id: result[i].id,
-							point:[
-							       result[i].lat || ymaps.geolocation.latitude, 
-							       result[i].lng || ymaps.geolocation.longitude
-							       ],
-							title:title,
-							caption: 'Место: "{0}"'.format(result[i].place),
-							content: title,
-
-						});
-				}
-			}
-			ymapData.markers = data;
-			ymapData.points = [];
-		    $scope.$broadcast('handleMapChanged');
-		});*/
 	};
 
 
@@ -118,6 +89,7 @@ function CemeteryViewCtrl($scope, $http, $resource, $location,  $routeParams,
 		$scope.cemetery.time_begin = date2time($scope.cemetery.time_begin);
 		$scope.cemetery.time_end = date2time($scope.cemetery.time_end);
 		$scope.cemetery.obj_phones = $scope.phones;
+		$scope.cemetery.obj_address = $scope.cemetery_address;
 		$scope.cemetery.$update(function(){
 			$scope.closeEditForm();
 			$scope.update();

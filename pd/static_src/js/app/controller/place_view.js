@@ -1,5 +1,5 @@
 ﻿app.controller('PlaceViewCtrl', function PlaceViewCtrl($scope, $routeParams, $location, 
-	Place, Cemetery, Grave, GravePhoto, Burial, Area, AlivePerson, Phone, Log, ymapData, $dialog) {
+	Place, Cemetery, Grave, GravePhoto, Burial, Area, AlivePerson, Phone, Address, Log, ymapData, $dialog) {
 	"use strict";
 
 	//Constants
@@ -97,6 +97,7 @@
 			$scope.log_page = result.log_page;
 			$scope.log_pages = result.log_pages; 
 			
+			$scope.responsible_address = new Address(result.responsible_address);
 			$scope.responsible_phones = [];
 			angular.forEach(result.responsible_phones, function(item) {
                   $scope.responsible_phones.push(new Phone(item));
@@ -244,7 +245,16 @@
 			case 'isResponsibleEditorOpen':
 				$scope.editor.item = angular.copy($scope.item);
 				$scope.editor.responsible = angular.copy($scope.responsible);
-				$scope.editor.responsible_phones = angular.copy($scope.responsible_phones); 
+				$scope.editor.responsible_phones = angular.copy($scope.responsible_phones);
+				$scope.editor.responsible_address = angular.copy($scope.responsible_address);
+				if(!$scope.editor.responsible_address.region)
+					$scope.editor.responsible_address.region = {};
+				if(!$scope.editor.responsible_address.country)
+					$scope.editor.responsible_address.country = {};
+				if(!$scope.editor.responsible_address.city)
+					$scope.editor.responsible_address.city = {};
+				if(!$scope.editor.responsible_address.street)
+					$scope.editor.responsible_address.street = {};
 				break;
 		    case 'isPlaceEditorOpen':
 		    	$scope.editor.item = angular.copy($scope.item);
@@ -299,10 +309,6 @@
 	$scope.closeEditForm = function(form) {
 		$scope[form] = false;
 		$('body').css('overflow-y','auto');
-		// $scope.update();
-		/*for(var i in $scope.editor){
-			delete $scope.editor[i]
-		}*/
 	};
 
 	//Place
@@ -331,7 +337,8 @@
 	$scope.saveResponsibleEditForm = function(form) {
 		if (form.$valid || true) { //TODO: check this
 			$scope.editor.item.obj_responsible = $scope.editor.responsible;
-			$scope.editor.item.obj_responsible_phones = $scope.editor.responsible_phones; 
+			$scope.editor.item.obj_responsible_phones = $scope.editor.responsible_phones;
+			$scope.editor.item.obj_responsible_address = $scope.editor.responsible_address;
 
 			$scope.loading = true;
 			$scope.editor.item.$update({
@@ -438,13 +445,6 @@
 	$scope.isGraveEditOpen = false;
 	$scope.saveGraveEditForm = function(form) {
 		if (form.$valid) {
-			/*var targetGrave = _.find($scope.graves, function(grave) {
-				return grave.grave_number == $scope.selectedGrave.grave_number && grave.id !== $scope.selectedGrave.id;
-			});
-
-			if (targetGrave) {
-				targetGrave.grave_number = $scope.originGraveNumber;
-			}*/
 			$scope.loading = true;
 			$scope.selectedGrave.$update({
                 cemetery_id : $routeParams.cemetery_id,
@@ -546,7 +546,7 @@
 	$scope.is_responsible_disabled = function(responsibleEditForm){
 		var o = $scope.editor;
 		var form1_valid = responsibleEditForm.$valid,
-			  form2_valid = o.responsible.address != null,
+			  form2_valid = !o.isAddressEdited && o.isAddressValid,
 			  form3_valid = !o.isPhoneEdited &&
 			  				(  
 			  					(o.responsible_phones && o.responsible_phones.length>0) ||

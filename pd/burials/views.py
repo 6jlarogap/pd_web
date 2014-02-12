@@ -16,7 +16,7 @@ from django.views.generic.list import ListView
 
 from django.contrib.contenttypes.models import ContentType
 
-
+from geo.models import Country, Region, Street, City
 
 from pd.views import RequestToFormMixin, FormInvalidMixin
 
@@ -43,7 +43,7 @@ from serializers import CemeterySerializer, AreaSerializer, PlaceSerializer, Are
     GraveSerializer, BurialSerializer, BurialListSerializer, AreaPhotoSerializer, GravePhotoSerializer, ExhumationRequestSerializer, PlaceSizeSerializer
 
 from persons.serializers import AlivePersonSerializer, PhoneSerializer
-from geo.serializers import LocationSerializer, LocationStaticSerializer
+from geo.serializers import LocationSerializer, LocationStaticSerializer, LocationDataSerializer
 from logs.serializers import LogSerializer
 
 from logs.views import getLogQuerySet
@@ -131,16 +131,15 @@ class CemeteryViewSet(viewsets.ModelViewSet):
     
 
     def pre_save(self, obj):
-        if not obj.address:
-            location_id = self.request.GET.get('address_id')
-            if location_id:
-                # Если адрес привязан к другой ugh - выйти
-                if Cemetery.objects.exclude(ugh=self.request.user.profile.org).filter(address_id=location_id).count()>0:
-                    #return Http404()
-                    return Response(status=400, data={u"Адрес":u"Привязан к другому объекту"})
-    
-                if location_id:
-                    obj.address = get_object_or_404(Location, pk=location_id)
+        address = self.request.DATA.get('obj_address')
+        address_serializer = LocationDataSerializer(obj.address, data=address, partial=True)
+        if not address_serializer.is_valid():
+            return Response(status=400, data=address_serializer.errors)
+        
+        obj.address = address_serializer.save()
+        obj.address.set_related_addr(data=address)
+        obj.address.save()
+        
         obj.creator = self.request.user
         obj.ugh = self.request.user.profile.org
         try:
@@ -174,6 +173,8 @@ class CemeteryViewSet(viewsets.ModelViewSet):
             obj.phone_set.exclude(pk__in=id_binds.keys()).delete()
 
 
+
+
     @action(methods=['GET',])
     def getform(self, request, pk=None):
         cemetery = get_object_or_404(self.get_queryset(), pk=pk)
@@ -187,6 +188,7 @@ class CemeteryViewSet(viewsets.ModelViewSet):
         data["cemetery"]["max_graves_count"] = request.user.profile.org.max_graves_count
         if cemetery.address:
             data["address"] = LocationStaticSerializer(cemetery.address).data
+
         return Response(status=200, data=data)
 
 
@@ -352,6 +354,14 @@ class PlaceViewSet(viewsets.ModelViewSet):
                 item.save()
 
         if object.responsible:
+            address = self.request.DATA.get('obj_responsible_address')
+            address_serializer = LocationDataSerializer(object.responsible.address, data=address, partial=True)
+            if not address_serializer.is_valid():
+                return Response(status=400, data=address_serializer.errors)
+            
+            object.responsible.address = address_serializer.save()
+            object.responsible.address.set_related_addr(data=address)
+
             old_phones = [i for i in object.responsible.phone_set.all()]
             
             phone = self.request.DATA.get('obj_responsible_phones', [])
@@ -375,6 +385,8 @@ class PlaceViewSet(viewsets.ModelViewSet):
         
             phone_set = object.responsible.phone_set.all()
             self.new_msg += prepare_m2m_log(_(u'Телефон'), old_phones,  phone_set)
+            
+          
                 
         try:
             old_address = self.old_object.responsible.address
@@ -600,7 +612,7 @@ class GraveViewSet(viewsets.ModelViewSet):
         try:
             object = self.model.objects.get(pk=int(pk))
             #write_log(self.request, object.place, _(u'Могила №%d удалена') % object.grave_number)
-            object.delete()
+            object.delete(request=request)
         except:
             raise Http404()
         return Response(status=200)

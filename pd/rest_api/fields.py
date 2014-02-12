@@ -18,7 +18,7 @@ class UnclearDateFieldSerializer(serializers.Field):
     """
     def to_native(self, obj):
         try:
-            return obj.strftime('%Y.%m.%d')
+            return obj.strftime('%d.%m.%Y')
         except:
             return obj
 

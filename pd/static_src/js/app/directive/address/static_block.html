@@ -3,38 +3,38 @@
 	    <div class="full_address">
 			<dl class="dl-horizontal">
 			  <dt>Страна</dt>
-			  <dd>{{item.country || '-'}}</dd>
+			  <dd>{{data.country.name || '-'}}</dd>
 			
 			  <dt>Регион</dt>
-			  <dd>{{item.region || '-'}}</dd>
+			  <dd>{{data.region.name || '-'}}</dd>
 			
 			  <dt>Город</dt>
-			  <dd>{{item.city || '-'}}</dd>
+			  <dd>{{data.city.name || '-'}}</dd>
 			
 			  <dt>Улица</dt>
-			  <dd>{{item.street || '-'}}</dd>
+			  <dd>{{data.street.name || '-'}}</dd>
 			
 			  <dt>Почтовый индекс</dt>
-			  <dd>{{item.post_index || '-'}}</dd>
+			  <dd>{{data.post_index || '-'}}</dd>
 			</dl>
 	    </div>
 	</div>
 	<div class="span6">
 		<dl class="dl-horizontal">
 		  <dt>Дом</dt>
-		  <dd>{{item.house || '-'}}</dd>
+		  <dd>{{data.house || '-'}}</dd>
 		
 		  <dt>Корпус</dt>
-		  <dd>{{item.block || '-'}}</dd>
+		  <dd>{{data.block || '-'}}</dd>
 		
 		  <dt>Строение</dt>
-		  <dd>{{item.building || '-'}}</dd>
+		  <dd>{{data.building || '-'}}</dd>
 		
 		  <dt>Квартира</dt>
-		  <dd>{{item.flat || '-'}}</dd>
+		  <dd>{{data.flat || '-'}}</dd>
 		
 		  <dt>Дополнительная информация</dt>
-		  <dd>{{item.info}}</dd>
+		  <dd>{{data.info}}</dd>
 		</dl>
 	</div>
 </div>
