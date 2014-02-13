@@ -107,7 +107,7 @@ class CemeteryViewSet(viewsets.ModelViewSet):
         return  Cemetery.objects.filter(ugh=self.request.user.profile.org).all()
 
     
-    def check_semetery_name(self, request, pk=None):
+    def check_cemetery_name(self, request, pk=None):
         name = request.DATA.get('name')
         if not name:
             return {"__all__":[u"Название кладбища обязательно",]}
@@ -122,7 +122,7 @@ class CemeteryViewSet(viewsets.ModelViewSet):
         """
         Add "unique together" check in parent class 
         """
-        data = self.check_semetery_name(request)
+        data = self.check_cemetery_name(request)
         if data:
             return Response(status=400, data=data)
         return super(CemeteryViewSet, self).create(request, *args, **kwargs)
@@ -133,7 +133,7 @@ class CemeteryViewSet(viewsets.ModelViewSet):
             pk = int(request.DATA.get('id'))
         except:
             return Response(status=400)
-        data = self.check_semetery_name(request, pk)
+        data = self.check_cemetery_name(request, pk)
         if data:
             return Response(status=400, data=data)
         return super(CemeteryViewSet, self).update(request, *args, **kwargs)
