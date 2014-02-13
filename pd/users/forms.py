@@ -380,15 +380,19 @@ class OrgBurialStatsForm(forms.Form):
 class SupportForm(forms.Form):
     subject = forms.CharField(label=_(u'Тема (необязательно)'), max_length=100, required=False)
     message = forms.CharField(label=_(u'Вопрос'), widget=forms.Textarea, required=True)
-    sender = forms.EmailField(label=_(u'Ваш Email'), required=True)
+    sender = forms.EmailField(label=_(u'Ваш Email (для получения ответа)'), required=True)
     captcha = OurReCaptchaField(label='', required=True)
 
     def __init__(self, request, *args, **kwargs):
         super(SupportForm, self).__init__(*args, **kwargs)
         self.request = request
+        self.save_user_email = False
         if request.user.is_authenticated():
             del self.fields['captcha']
             self.initial['sender'] = request.user.email or request.user.profile.org.email or ''
+            if not self.initial['sender']:
+                self.fields['sender'].label = _(u'Ваш Email (пожалуйста, задайте, и он будет сохранен как Ваш контактный)')
+                self.save_user_email = True
 
     def save(self):
         if self.cleaned_data.get('subject'):
@@ -397,6 +401,10 @@ class SupportForm(forms.Form):
             email_subject = _(u'Вопрос в поддержку')
         email_text = self.cleaned_data['message']
         headers = {}
+        email_from = self.cleaned_data['sender']
+        if self.save_user_email and email_from:
+            self.request.user.email = email_from
+            self.request.user.save()
         if self.request.user.is_authenticated():
             email_text += _(u'\n\n'
                             u'Пользователь: %s / %s\n'
@@ -409,11 +417,10 @@ class SupportForm(forms.Form):
                                 self.request.user.profile.org,
                                 self.request.user.profile.org.email,
                                )
-        email_from = self.cleaned_data['sender']
         email_to = (settings.DEFAULT_FROM_EMAIL, )
         # Некоторые почтовые серверы подменяют поле From: письма
         # на тот почтовый ящик, через который шла аутентификация
-        # при отправке письма (settings.EMAIL_HOST_USER
+        # при отправке письма (settings.EMAIL_HOST_USER)
         #
         headers = {'Reply-To': email_from, }
         EmailMessage(email_subject, email_text, email_from, email_to, headers=headers, ).send()
