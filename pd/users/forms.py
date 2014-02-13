@@ -380,7 +380,7 @@ class OrgBurialStatsForm(forms.Form):
 class SupportForm(forms.Form):
     subject = forms.CharField(label=_(u'Тема (необязательно)'), max_length=100, required=False)
     message = forms.CharField(label=_(u'Вопрос'), widget=forms.Textarea, required=True)
-    sender = forms.EmailField(label=_(u'Ваш Email (для получения ответа)'), required=True)
+    sender = forms.EmailField(label=_(u'Email для получения ответа'), required=True)
     captcha = OurReCaptchaField(label='', required=True)
 
     def __init__(self, request, *args, **kwargs):
@@ -391,7 +391,7 @@ class SupportForm(forms.Form):
             del self.fields['captcha']
             self.initial['sender'] = request.user.email or request.user.profile.org.email or ''
             if not self.initial['sender']:
-                self.fields['sender'].label = _(u'Ваш Email (пожалуйста, задайте, и он будет сохранен как Ваш контактный)')
+                self.fields['sender'].label = _(u'Email для получения ответа (будет сохранен как Ваш контактный)')
                 self.save_user_email = True
 
     def save(self):
