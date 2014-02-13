@@ -52,7 +52,6 @@ function CemeteryViewCtrl($scope, $http, $resource, $location,  $routeParams,
                 $location.replace();
 		    }
 			$scope.cemetery = new Cemetery(result.cemetery);
-			$scope.cemetery_address = new Address(result.address);
 			$scope.cemetery.time_begin = new Date('0 '+ $scope.cemetery.time_begin);
 			$scope.cemetery.time_end = new Date('0 '+ $scope.cemetery.time_end);
 			
@@ -60,6 +59,17 @@ function CemeteryViewCtrl($scope, $http, $resource, $location,  $routeParams,
 			angular.forEach(result.phones, function(item) {
                   $scope.phones.push(new Phone(item));
             });
+
+
+			$scope.cemetery_address = new Address(result.address);
+			if(!$scope.cemetery_address.region)
+				$scope.cemetery_address.region = {};
+			if(!$scope.cemetery_address.country)
+				$scope.cemetery_address.country = {};
+			if(!$scope.cemetery_address.city)
+				$scope.cemetery_address.city = {};
+			if(!$scope.cemetery_address.street)
+				$scope.cemetery_address.street = {};
 
 		});
 
