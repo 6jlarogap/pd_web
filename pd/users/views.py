@@ -228,7 +228,8 @@ class LogoutView(View):
             return redirect('/')
         write_log(request, request.user, _(u'Выход из системы'))
         logout(request)
-        return redirect(request.GET.get("next") if request.GET.get("next") else get_front_end_url(request))
+        return redirect(request.GET.get("next") if request.GET.get("next") \
+                                                else get_front_end_url(request) + '#/signout')
 
 ulogout = LogoutView.as_view()
 
