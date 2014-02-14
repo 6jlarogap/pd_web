@@ -24,16 +24,14 @@
 		
 		
 			<p><label for="id_archive_burial_fact_date_required">Дата архивного захоронения обязательна:</label> 
-				<input id="id_archive_burial_fact_date_required" type="checkbox" name="name" ng-model="cemetery.archive_burial_fact_date_required" maxlength="255">
+				<input id="id_archive_burial_fact_date_required" type="checkbox" name="name" ng-model="cemetery.archive_burial_fact_date_required" />
 			</p>
 			<p><label for="id_archive_burial_account_number_required">Номер архивного захоронения обязателен:</label> 
-				<input id="id_archive_burial_account_number_required" type="checkbox" name="name" ng-model="cemetery.archive_burial_account_number_required" maxlength="255">
+				<input id="id_archive_burial_account_number_required" type="checkbox" name="name" ng-model="cemetery.archive_burial_account_number_required" />
 			</p>
 		
 			
 			<p><label for="id_time_slots">Время для захоронения:</label> 
-				<textarea ng-model="cemetery.time_slots" id="id_time_slots" rows="10" cols="40" name="time_slots">
-					
-				</textarea>
+				<textarea ng-model="cemetery.time_slots" id="id_time_slots" rows="10" cols="40" name="time_slots"></textarea>
 				<span class="helptext">В формате ЧЧ:ММ, по одному на строку</span>
 			</p>

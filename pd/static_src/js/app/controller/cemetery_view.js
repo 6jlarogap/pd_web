@@ -1,4 +1,4 @@
-﻿var qqq;//'use strict';
+﻿//'use strict';
 app.controller('CemeteryViewCtrl',
 function CemeteryViewCtrl($scope, $http, $resource, $location,  $routeParams, 
 						Cemetery, Area, AreaPurpose, Place, Phone, Address, ymapData, naturalService) {

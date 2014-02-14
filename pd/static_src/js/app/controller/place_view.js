@@ -357,6 +357,7 @@
 	$scope.responsible_edit = function(){
 		// https://trello.com/c/eyBZRdiM/803--
 		var o = $scope.editor.responsible;
+		$scope.editor.isResponsibleEdited = true;
 		$scope.editor.responsible_copy = {
 				last_name: o.last_name,
 				first_name: o.first_name,
@@ -367,6 +368,7 @@
 		$scope.responsible_edit_cancel = function(){
 			// https://trello.com/c/eyBZRdiM/803--
 			var o = $scope.editor.responsible_copy;
+			$scope.editor.isResponsibleEdited = false;
 			$scope.editor.responsible.last_name= o.last_name;
 			$scope.editor.responsible.first_name = o.first_name;
 			$scope.editor.responsible.middle_name = o.middle_name;
@@ -545,7 +547,7 @@
 	});
 	$scope.is_responsible_disabled = function(responsibleEditForm){
 		var o = $scope.editor;
-		var form1_valid = responsibleEditForm.$valid,
+		var form1_valid =!o.isResponsibleEdited && responsibleEditForm.$valid,
 			  form2_valid = !o.isAddressEdited && o.isAddressValid,
 			  form3_valid = !o.isPhoneEdited &&
 			  				(  
