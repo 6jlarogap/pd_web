@@ -11,7 +11,7 @@ from django.db.models.query_utils import Q
 
 from geo.forms import LocationForm
 # from geo.models import DFiasAddrobj
-from pd.forms import ChildrenJSONMixin, LoggingFormMixin, OurReCaptchaField
+from pd.forms import ChildrenJSONMixin, LoggingFormMixin, OurReCaptchaField, StrippedStringsMixin
 from burials.models import Cemetery, PlaceSize, Reason, Burial
 
 from users.models import Profile, ProfileLORU, Org, BankAccount, RegisterProfile
@@ -105,7 +105,7 @@ class ProfileForm(ChildrenJSONMixin, forms.ModelForm):
             obj.save()
         return obj
 
-class UserProfileForm(ChildrenJSONMixin, forms.ModelForm):
+class UserProfileForm(ChildrenJSONMixin, StrippedStringsMixin, forms.ModelForm):
     # region = forms.ModelChoiceField(label=_(u"Регион"), queryset=FIAS_REGIONS, required=False)
 
     class Meta:
@@ -118,7 +118,8 @@ class UserProfileForm(ChildrenJSONMixin, forms.ModelForm):
             Q(ugh__isnull=True) |
             Q(ugh__loru_list__loru=self.instance.org) |
             Q(ugh=self.instance.org)
-        ).distinct()    
+        ).distinct()
+        self.fields['user_last_name'].required = True
         #if self.instance.region_fias:
             #self.initial['region'] = self.instance.get_region()
 

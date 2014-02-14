@@ -305,10 +305,18 @@ FRONT_END_URL = None
 # Если задан, например, FRONT_END_URL = 'http://localhost/api/',
 # то действие BACK_END_PREFIX отменяется
 
+# Учетные записи для SMS- службы рассылки СМС-сообщений,
+# на разные страны могут быть разные учетные записи
+# в службе рассылки сообщений. Если кода страны получателя
+# сообщения нет в словарях списка SMS_SERVICE, то действует
+# учетная запись с 'country_code': 'default'.
+# Если и таковой нет, то отправка будет невозможна.
 # Подлежат замене в local_settings.py production сервера:
-#
-SMS_SERVICE_USER = 'user@mail.org'
-SMS_SERVICE_PASSWORD = 'SECRET'
+SMS_SERVICE = [
+    { 'country_code': '7', 'user': 'user7@email.org', 'password': 'secret7', },
+    { 'country_code': '375', 'user': 'user375@email.org', 'password': 'secret375', },
+    { 'country_code': 'default', 'user': 'default@email.org', 'password': 'default-secret', },
+]
 
 try:
     from local_settings import *
