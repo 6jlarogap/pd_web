@@ -3,7 +3,7 @@
 
 
     var PLACE_TYPES = {
-        cemetery: 'По кладбищу',
+        //cemetery: 'По кладбищу',
         area: 'По участку',
         row: 'По ряду',
         cem_year: 'Кладбище + год',

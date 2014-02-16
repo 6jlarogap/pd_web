@@ -15,7 +15,11 @@
     $scope.log_page = 1;
     $scope.loading = false;
     $scope.edit_resp = false;
-    $scope.editor = {};
+    $scope.editor = {
+    		isAddressEdited: false,
+    		isResponsibleEdited: false,
+    		isPhoneEdited: false
+    };
     $scope.isLoginFormOpen = false;
 
     var item_params;
@@ -554,7 +558,10 @@
 			  					(o.responsible_phones && o.responsible_phones.length>0) ||
 			  					(o.responsible.login_phone && o.responsible.login_phone.length>0)
 			  				);
-		return !(form1_valid && (form2_valid || form3_valid));
+		return !(   
+						!(o.isResponsibleEdited || o.isAddressEdited || o.isPhoneEdited) &&
+						form1_valid && (form2_valid || form3_valid) 
+					);
 	};
 	
 	$scope.validatePhone = function(value) {
