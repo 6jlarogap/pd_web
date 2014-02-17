@@ -298,7 +298,7 @@ class LoruRegistryView(UGHRequiredMixin, View):
                     ugh=p_status.ugh,
                     operation=ProductHistory.PRODUCT_OPERATION_DELETE,
                     dt=datetime.datetime.now(),
-                    publish_cost=0.0,
+                    publish_cost='0.0',
                     currency=p_status.ugh.currency,
                 )
 
