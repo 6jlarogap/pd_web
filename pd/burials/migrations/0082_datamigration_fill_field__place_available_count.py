@@ -4,37 +4,15 @@ from south.db import db
 from south.v2 import DataMigration
 from django.db import models
 
+from django.core.management import call_command
+
+
 class Migration(DataMigration):
 
     def forwards(self, orm):
-        """
-        Fill place vith grave available count
-        Data:
-            place: [
-                grave1  burial1
-                grave1  burial2
-                grave1  <free>
-                grave2  <free>
-                ]
-        Ecspected:
-            place.available_count = 2 
-        """
-        Place = orm['burials.Place']
-        Grave = orm['burials.Grave']
-        Burial = orm['burials.Burial']
-        cnt = Place.objects.count()
-        print "Apply migration on %d objects" % cnt
-        
-        row=0
-        for place in Place.objects.all():
-            place.available_count = max(0, place.get_graves_count() - place.burial_count())
-            place.save()
-            
-            row = row+1
-            if row % 500 == 0:
-                sys.stdout.write("\r%d%%" % int(row*100/cnt))
-                sys.stdout.flush()
-        print 'Done'
+        "Update burial_count field"
+        call_command('update_place_free_burial_count')
+
 
     def backwards(self, orm):
         "Write your backwards methods here."
