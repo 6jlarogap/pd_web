@@ -196,8 +196,8 @@ class LoginView(View):
         return super(LoginView, self).dispatch(request, *args, **kwargs)
 
     def get(self, request, *args, **kwargs):
-        if request.GET.get("next"):
-            next_url = "?next=%s" % request.GET.get("next")
+        if request.GET.get("redirectUrl"):
+            next_url = "?redirectUrl=%s" % request.GET.get("redirectUrl")
         else:
             next_url = ''
         return redirect('%s#/%s' % (get_front_end_url(request), next_url))
@@ -213,8 +213,8 @@ class LogoutView(View):
             return redirect('/')
         write_log(request, request.user, _(u'Выход из системы'))
         logout(request)
-        return redirect(request.GET.get("next") if request.GET.get("next") \
-                                                else get_front_end_url(request) + '#/signout')
+        return redirect(request.GET.get("redirectUrl") if request.GET.get("redirectUrl") \
+                                                       else get_front_end_url(request) + '#/signout')
 
 ulogout = LogoutView.as_view()
 
