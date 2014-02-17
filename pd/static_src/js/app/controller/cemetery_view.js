@@ -1,4 +1,4 @@
-﻿var qqq;//'use strict';
+﻿//'use strict';
 app.controller('CemeteryViewCtrl',
 function CemeteryViewCtrl($scope, $http, $resource, $location,  $routeParams, 
 						Cemetery, Area, AreaPurpose, Place, Phone, Address, ymapData, naturalService) {
@@ -12,11 +12,12 @@ function CemeteryViewCtrl($scope, $http, $resource, $location,  $routeParams,
 		item = {
 			address:false
 		};
-	
-	AreaPurpose.get(function(result) {
-		$scope.PURPOSE_LIST = result;
-	});
-	$scope.editor = {};
+
+	$scope.editor = {
+			isAddressEdited: false,
+			isResponsibleEdited: false,
+			isPhoneEdited: false
+	};
 	$scope.area_max_places = 10;
     $scope.gridOptions = { 
         data: 'area_list|filter:search',
@@ -33,6 +34,10 @@ function CemeteryViewCtrl($scope, $http, $resource, $location,  $routeParams,
 	$scope.PLACE_TYPES = PLACE_TYPES;	
 	$scope.AVAILABILITY_CHOICES = AVAILABILITY_CHOICES;
 
+	AreaPurpose.get(function(result) {
+		$scope.PURPOSE_LIST = result;
+	});
+	
 	$scope.alerts = [];$scope.closeAlert = function(index){$scope.alerts.splice(index,1);};
 	
 	$scope.coordinates = false;
@@ -139,6 +144,16 @@ function CemeteryViewCtrl($scope, $http, $resource, $location,  $routeParams,
 	};
 	// EOF ADD form
 
+	$scope.is_editor_disabled = function(form){
+		var o = $scope.editor;
+		var form1_valid = form.$valid,
+			  form2_valid = o.isAddressValid===true,
+			  form3_valid = $scope.phones && $scope.phones.length>0;
+		return !(   
+						!(o.isAddressEdited || o.isPhoneEdited) &&
+						form1_valid && (form2_valid || form3_valid) 
+					);
+	};
 
 
 	// RUN

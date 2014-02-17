@@ -6,7 +6,7 @@
     <tabset>
     <tab heading="Личные данные">
 		<form novalidate name="responsibleEditForm" >
-	        <dl class="dl-horizontal" ng-hide="edit_resp">
+	        <dl class="dl-horizontal" ng-hide="editor.isResponsibleEdited">
 
                 <dt>
                     <label for="id_responsible_set-last_name">Фамилия:</label>
@@ -31,7 +31,7 @@
                 </dd>
             </dl>
             
-            <table ng-hide="edit_resp" class="pd-form" >
+            <table ng-hide="editor.isResponsibleEdited" class="pd-form" >
                 <tr>
                     <th width="200px">
                         <label>Мобильный телефон<br/> для входа в кабинет:</label >
@@ -43,12 +43,12 @@
                     </td>
                 </tr><tr>
                     <td colspan="2">
-                        <button class="btn" ng-click="[edit_resp=true, responsible_edit()]">Редактировать</button>
+                        <button class="btn" ng-click="responsible_edit()">Редактировать</button>
                     </td>
                 </tr>
             </table>
             
-	        <dl class="dl-horizontal" ng-show="edit_resp">
+	        <dl class="dl-horizontal" ng-show="editor.isResponsibleEdited">
                 <dt>
 	                <label for="id_responsible_set-last_name">Фамилия:</label>
 	            </dt>
@@ -74,7 +74,7 @@
                </dl>
  
  
-             <table ng-show="edit_resp" class="pd-form" >
+             <table ng-show="editor.isResponsibleEdited" class="pd-form" >
                 <tr>
                     <th width="200px">
                         <label>Мобильный телефон<br/> для входа в кабинет:</label >
@@ -92,8 +92,8 @@
 	            </tr>
 	            <tr>
 	               <td colspan="2">
-        	            <button class="btn" ng-click="edit_resp=false" ng-disabled="responsibleEditForm.$invalid">Сохранить</button>
-        	            <button class="btn" ng-click="[edit_resp=false, responsible_edit_cancel()]">Отмена</button>
+        	            <button class="btn" ng-click="editor.isResponsibleEdited=false" ng-disabled="responsibleEditForm.$invalid">Сохранить</button>
+        	            <button class="btn" ng-click="responsible_edit_cancel()">Отмена</button>
                     </td>
                 </tr>
 	            </table>
