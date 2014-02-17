@@ -98,19 +98,14 @@ class AuthGetTokenView(APIView):
             login(request, user)
 
             profile = { 'email': user.email or None }
-            org = { 'id': None, 'name': None }
+            pr = user.customerprofile if role == 'ROLE_CLIENT' else user.profile
+            profile['lastname'] = pr.user_last_name or user.last_name or None
+            profile['firstname'] = pr.user_first_name or user.first_name or None
+            profile['middlename'] = pr.user_middle_name or None
             if role == 'ROLE_CLIENT':
-                profile['lastname'] = user.customerprofile.user_last_name or \
-                                      user.last_name or None
-                profile['firstname'] = user.customerprofile.user_first_name or \
-                                       user.first_name or None
+                org = { 'id': None, 'name': None }
             else:
-                profile['lastname'] = user.profile.user_last_name or \
-                                      user.last_name or None
-                profile['firstname'] = user.profile.user_first_name or \
-                                       user.first_name or None
-                org['id'] = user.profile.org.pk
-                org['name'] = user.profile.org.name or None
+                org = { 'id': user.profile.org.pk, 'name': user.profile.org.name or None }
 
             data = { 'status': 'success',
                      'token': token.key,

@@ -26,14 +26,15 @@ function CemeteryCtrl($rootScope, $scope, $http, $location, $resource, naturalSe
     $scope.alerts = [];$scope.closeAlert = function(index){$scope.alerts.splice(index,1);};
     
     $scope.update = function() {
-        $scope.cemetery = {
+        $scope.cemetery = new Cemetery({
                 time_begin: new Date('0 8:00'),
                 time_end: new Date('0 17:00'),
                 places_algo:'area',
-                time_slots:''
-            };
-
-		Cemetery.query(function(result) {
+                time_slots:'',
+	            archive_burial_fact_date_required:false,
+	            archive_burial_account_number_required:false
+            });
+        Cemetery.query(function(result) {
 			$scope.cemetery_list = result;
 			$scope.cemetery_list.sort(function(a,b){return naturalService.naturalSortField(a,b,'name')});
 		});
@@ -58,14 +59,10 @@ function CemeteryCtrl($rootScope, $scope, $http, $location, $resource, naturalSe
 		$scope.update();
     };
 	$scope.addElement = function(){
-		var data = {
-				name:$scope.cemetery.name,
-				places_algo: $scope.cemetery.places_algo,
-				time_begin: date2time($scope.cemetery.time_begin),
-				time_end:   date2time($scope.cemetery.time_end)
-			};
-		var newCemetery = new Cemetery(data);
-		newCemetery.$save(function(result){
+		$scope.cemetery.time_begin = date2time($scope.cemetery.time_begin);
+		$scope.cemetery.time_end = date2time($scope.cemetery.time_end);
+		
+		$scope.cemetery.$save(function(result){
 			$scope.closeAddModal();
    			$location.path('/manage/cemetery/'+result.id);
    			$location.replace();

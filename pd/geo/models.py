@@ -169,20 +169,23 @@ class Location(models.Model):
             self.region = None
             self.city = None
             self.street = None
-            name = data['country'].get('name')
-            if name:
-                self.country, created = Country.objects.get_or_create(name=name)
-                name = data['region'].get('name')
+            try:
+                name = data['country'].get('name')
                 if name:
-                     self.region, created = Region.objects.get_or_create(name=name, country=self.country)
-
-                     name = data['city'].get('name')
-                     if name:
-                         self.city, created = City.objects.get_or_create(name=name, region=self.region)
+                    self.country, created = Country.objects.get_or_create(name=name)
+                    name = data['region'].get('name')
+                    if name:
+                         self.region, created = Region.objects.get_or_create(name=name, country=self.country)
     
-                         name = data['street'].get('name')
+                         name = data['city'].get('name')
                          if name:
-                             self.street, created = Street.objects.get_or_create(name=name, city=self.city)
+                             self.city, created = City.objects.get_or_create(name=name, region=self.region)
+        
+                             name = data['street'].get('name')
+                             if name:
+                                 self.street, created = Street.objects.get_or_create(name=name, city=self.city)
+            except ValueError:
+                pass
             self.save()
 
 
