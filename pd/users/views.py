@@ -115,6 +115,8 @@ class AuthGetTokenView(APIView):
                      'role': role,
                    }
             status_code = 200
+            write_log(request, request.user, _(u'Вход в систему'))
+            LoginLog.write(request)
         else:
             data = { 'status': status,
                      'message': 'Wrong username or password',
