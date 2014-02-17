@@ -27,8 +27,7 @@ class Migration(DataMigration):
         
         row=0
         for place in Place.objects.all():
-            exclude_pk_list = [i.grave.pk for i in Burial.objects.filter(place=place).all() if i.grave]
-            place.available_count = Grave.objects.filter(place=place).exclude(pk__in=exclude_pk_list).count()
+            place.available_count = max(0, place.get_graves_count() - place.burial_count())
             place.save()
             
             row = row+1
