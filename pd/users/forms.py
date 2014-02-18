@@ -416,7 +416,7 @@ class SupportForm(forms.Form):
                                 self.request.user.profile.full_name(),
                                 self.request.user.email,
                                 self.request.user.profile.org,
-                                self.request.user.profile.org.email,
+                                self.request.user.profile.org and self.request.user.profile.org.email,
                                )
         email_to = (settings.DEFAULT_FROM_EMAIL, )
         # Некоторые почтовые серверы подменяют поле From: письма

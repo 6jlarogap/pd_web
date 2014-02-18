@@ -231,14 +231,23 @@ class ApiFeedBack(CheckRecaptchaMixin, APIView):
                 email_text += _(u'\n\n'
                                 u'Пользователь: %s / %s\n'
                                 u'Email: %s\n'
-                                u'Организация: %s\n'
-                                u'Email организации: %s\n'
-                            ) % (   request.user.username,
+                            ) % (
+                                    request.user.username,
                                     request.user.profile.full_name(),
                                     request.user.email,
-                                    request.user.profile.org,
-                                    request.user.profile.org.email,
                                 )
+                try:
+                    request.user.profile
+                except Profile.DoesNotExist:
+                    pass
+                else:
+                    email_text += _(u'\n\n'
+                                    u'Организация: %s\n'
+                                    u'Email организации: %s\n'
+                                ) % (
+                                        request.user.profile.org,
+                                        request.user.profile.org and request.user.profile.org.email,
+                                    )
             headers = {'Reply-To': email_from, }
             EmailMessage(email_subject, email_text, email_from, email_to, headers=headers, ).send()
             status_code = 200
