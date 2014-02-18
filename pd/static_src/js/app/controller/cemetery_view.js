@@ -151,7 +151,7 @@ function CemeteryViewCtrl($scope, $http, $resource, $location,  $routeParams,
 			  form3_valid = $scope.phones && $scope.phones.length>0;
 		return !(   
 						!(o.isAddressEdited || o.isPhoneEdited) &&
-						form1_valid && (form2_valid || form3_valid) 
+						form1_valid //&& (form2_valid || form3_valid) 
 					);
 	};
 
