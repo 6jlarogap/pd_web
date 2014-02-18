@@ -40,7 +40,7 @@ from logs.models import Log, write_log, LoginLog
 from users.forms import UserAddForm, RegisterForm, LoruFormset, ProfileForm, UserProfileForm, \
                         UserDataForm, ChangePasswordForm, BankAccountFormset, OrgForm, \
                         OrgLogForm, LoginLogForm, OrgBurialStatsForm, SupportForm, TestCaptchaForm
-from users.models import Profile, Org, RegisterProfile, ProfileLORU, CustomerProfile
+from users.models import Profile, Org, RegisterProfile, ProfileLORU, CustomerProfile, get_mail_footer
 from burials.models import Place
 from users.serializers import UghPublishCostSerializer
 from orders.models import ProductStatus, ProductHistory
@@ -226,19 +226,7 @@ class ApiFeedBack(CheckRecaptchaMixin, APIView):
             if not email_subject or not email_subject.strip():
                 email_subject = _(u'Вопрос в поддержку')
             email_to = (settings.DEFAULT_FROM_EMAIL, )
-            email_text = request.DATA.get('text')
-            if request.user.is_authenticated():
-                email_text += _(u'\n\n'
-                                u'Пользователь: %s / %s\n'
-                                u'Email: %s\n'
-                                u'Организация: %s\n'
-                                u'Email организации: %s\n'
-                            ) % (   request.user.username,
-                                    request.user.profile.full_name(),
-                                    request.user.email,
-                                    request.user.profile.org,
-                                    request.user.profile.org.email,
-                                )
+            email_text = request.DATA.get('text') + get_mail_footer(request.user)
             headers = {'Reply-To': email_from, }
             EmailMessage(email_subject, email_text, email_from, email_to, headers=headers, ).send()
             status_code = 200

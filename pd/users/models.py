@@ -8,54 +8,17 @@ from pd.models import BaseModel, Files, GetLogsMixin, validate_gt0
 from pd.utils import DigitsValidator, LengthValidator, NotEmptyValidator
 
 
-class CustomerProfile(models.Model):
+class CommonProfile(models.Model):
     user = models.OneToOneField('auth.User', null=True)
     user_last_name = models.CharField(_(u"Фамилия"), max_length=255, null=True, blank=True)
     user_first_name = models.CharField(_(u"Имя"), max_length=255, null=True, blank=True)
     user_middle_name = models.CharField(_(u"Отчество"), max_length=255, null=True, blank=True)
 
-    def __unicode__(self):
-        return self.user and self.user_last_name and \
-               "%s %s %s" % (self.user_last_name, self.user_first_name, self.user_middle_name) or \
-               u'%s' % self.pk
-
-class CustomerProfilePhoto(Files):
-    customerprofile = models.OneToOneField(CustomerProfile)
-
-class Profile(models.Model):
-    user = models.OneToOneField('auth.User', null=True)
-    user_first_name = models.CharField(_(u"Имя"), max_length=255, null=True, blank=True)
-    user_middle_name = models.CharField(_(u"Отчество"), max_length=255, null=True, blank=True)
-    user_last_name = models.CharField(_(u"Фамилия"), max_length=255, null=True, blank=True)
-    org = models.ForeignKey('users.Org', null=True)
-
-    is_agent = models.BooleanField(_(u"Агент"), default=False, blank=True)
-
-    cemetery = models.ForeignKey('burials.Cemetery', verbose_name=_(u"Кладбище"), blank=True, null=True)
-    area = models.ForeignKey('burials.Area', verbose_name=_(u"Участок"), blank=True, null=True)
-
-    country = models.ForeignKey('geo.Country', verbose_name=_(u"Страна"), blank=True, null=True)
-    region_fias = models.CharField(_(u"Регион"), blank=True, null=True, max_length=255)
-
-    lat = models.DecimalField(max_digits=30, decimal_places=27, blank=True, null=True)
-    lng = models.DecimalField(max_digits=30, decimal_places=27, blank=True, null=True)
+    class Meta:
+        abstract = True
 
     def __unicode__(self):
         return self.user and (self.full_name() or self.user.username) or u'%s' % self.pk
-
-    def is_loru(self):
-        return self.org and self.org.type == Org.PROFILE_LORU
-
-    def is_ugh(self):
-        return self.org and self.org.type == Org.PROFILE_UGH
-
-    def is_supervisor(self):
-        return hasattr(settings, 'SUPERVISOR_ORG_INN') and \
-               self.org and \
-               self.org.inn == settings.SUPERVISOR_ORG_INN
-
-    def can_create_burials(self):
-        return self.is_ugh() or self.is_loru()
 
     def full_name(self):
         name = ""
@@ -82,6 +45,40 @@ class Profile(models.Model):
                 name = u"{0} {1}.".format(name, self.user.first_name[0])
         return self.user and (name or self.user.username) or u'%s' % self.pk
 
+class CustomerProfile(CommonProfile):
+    pass
+
+class CustomerProfilePhoto(Files):
+    customerprofile = models.OneToOneField(CustomerProfile)
+
+class Profile(CommonProfile):
+    org = models.ForeignKey('users.Org', null=True)
+
+    is_agent = models.BooleanField(_(u"Агент"), default=False, blank=True)
+
+    cemetery = models.ForeignKey('burials.Cemetery', verbose_name=_(u"Кладбище"), blank=True, null=True)
+    area = models.ForeignKey('burials.Area', verbose_name=_(u"Участок"), blank=True, null=True)
+
+    country = models.ForeignKey('geo.Country', verbose_name=_(u"Страна"), blank=True, null=True)
+    region_fias = models.CharField(_(u"Регион"), blank=True, null=True, max_length=255)
+
+    lat = models.DecimalField(max_digits=30, decimal_places=27, blank=True, null=True)
+    lng = models.DecimalField(max_digits=30, decimal_places=27, blank=True, null=True)
+
+    def is_loru(self):
+        return self.org and self.org.type == Org.PROFILE_LORU
+
+    def is_ugh(self):
+        return self.org and self.org.type == Org.PROFILE_UGH
+
+    def is_supervisor(self):
+        return hasattr(settings, 'SUPERVISOR_ORG_INN') and \
+               self.org and \
+               self.org.inn == settings.SUPERVISOR_ORG_INN
+
+    def can_create_burials(self):
+        return self.is_ugh() or self.is_loru()
+
     def get_region(self):
         if self.region_fias:
             return DFiasAddrobj.objects.get(parentguid='', aoguid=self.region_fias)
@@ -90,6 +87,34 @@ class Profile(models.Model):
         if self.lat and self.lng:
             return ','.join([self.lat, self.lng])
         return ''
+
+def get_mail_footer(user):
+    footer = ''
+    if user.is_authenticated():
+        try:
+            pr = user.customerprofile
+            is_customer = True
+        except CustomerProfile.DoesNotExist:
+            pr = user.profile
+            is_customer = False
+        footer = _(     u'\n\n'
+                        u'Пользователь: %s %s %s\n'
+                        u'Email: %s\n'
+                  ) % (
+                        user.username,
+                        '/' if pr.full_name() else '',
+                        pr.full_name(),
+                        user.email,
+                       )
+        if not is_customer:
+            footer += _(    u'\n\n'
+                            u'Организация: %s\n'
+                            u'Email организации: %s\n'
+                        ) % (
+                                pr.org,
+                                pr.org and pr.org.email,
+                            )
+    return footer
 
 class Org(GetLogsMixin, BaseModel):
     NUM_EMPTY = 'empty'

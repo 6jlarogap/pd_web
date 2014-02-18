@@ -14,7 +14,7 @@ from geo.forms import LocationForm
 from pd.forms import ChildrenJSONMixin, LoggingFormMixin, OurReCaptchaField, StrippedStringsMixin
 from burials.models import Cemetery, PlaceSize, Reason, Burial
 
-from users.models import Profile, ProfileLORU, Org, BankAccount, RegisterProfile
+from users.models import Profile, ProfileLORU, Org, BankAccount, RegisterProfile, get_mail_footer
 
 
 class UserAddForm(forms.ModelForm):
@@ -400,24 +400,12 @@ class SupportForm(forms.Form):
             email_subject = self.cleaned_data['subject']
         else:
             email_subject = _(u'Вопрос в поддержку')
-        email_text = self.cleaned_data['message']
-        headers = {}
         email_from = self.cleaned_data['sender']
         if self.save_user_email and email_from:
             self.request.user.email = email_from
             self.request.user.save()
-        if self.request.user.is_authenticated():
-            email_text += _(u'\n\n'
-                            u'Пользователь: %s / %s\n'
-                            u'Email: %s\n'
-                            u'Организация: %s\n'
-                            u'Email организации: %s\n'
-                           ) % (self.request.user.username,
-                                self.request.user.profile.full_name(),
-                                self.request.user.email,
-                                self.request.user.profile.org,
-                                self.request.user.profile.org.email,
-                               )
+        email_text = self.cleaned_data['message'] + get_mail_footer(self.request.user)
+        headers = {}
         email_to = (settings.DEFAULT_FROM_EMAIL, )
         # Некоторые почтовые серверы подменяют поле From: письма
         # на тот почтовый ящик, через который шла аутентификация
