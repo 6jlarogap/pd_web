@@ -3,6 +3,7 @@ import datetime
 from south.db import db
 from south.v2 import DataMigration
 from django.db import models
+from django.core.management import call_command
 
 class Migration(DataMigration):
 
@@ -10,11 +11,13 @@ class Migration(DataMigration):
         "Write your forwards methods here."
         # Note: Remember to use orm['appname.ModelName'] rather than "from appname.models..."
         
-        # Добавить хоть что-то (а именно памятники) в ProductCategory,
-        # если там ничего нет
-        ProductCategory = orm['orders.ProductCategory']
-        if not ProductCategory.objects.count():
-            ProductCategory.objects.create(name=u'Памятники')
+        # Заполнить категории продуктов по умолчанию
+        #
+        # NB:   Изначально стояла задача внести в ProductCategory только памятники,
+        #       отсюда и название миграции (monument_...). Потом решили
+        #       внести и остальные категории, см. вызываемую ./manage.py- команду
+        #
+        call_command('fill_product_category_defaults')
 
     def backwards(self, orm):
         "Write your backwards methods here."
