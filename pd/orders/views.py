@@ -822,7 +822,7 @@ class LoruProductPlaces(UserLoruMixin, APIView):
                             status.status=o['status']
                             status.dt=dt
                             status.save()
-                        publish_cost = 0.0 if o['status'] == ProductHistory.PRODUCT_OPERATION_DISABLE \
+                        publish_cost = '0.0' if o['status'] == ProductHistory.PRODUCT_OPERATION_DISABLE \
                                            else ugh.publish_cost
                         ProductHistory.objects.create(
                                         product_id=p['id'],
