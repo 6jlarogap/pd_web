@@ -12,7 +12,9 @@ from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.models import User
 from django.contrib.auth.hashers import make_password
-from django.core.mail import send_mail
+from django.core.mail import send_mail, EmailMessage
+from django.core.validators import validate_email
+from django.core.exceptions import ValidationError
 from django.core.urlresolvers import reverse
 from django.db.models.query_utils import Q
 from django.db.models.aggregates import Count
@@ -67,7 +69,7 @@ class AuthGetTokenView(APIView):
     """
     Проверка имени и пароля, (создать и) отдать token
     """
-    def post(self, request, format=None):
+    def post(self, request):
         token = None
         username = request.DATA.get('username')
         password = request.DATA.get('password')
@@ -128,7 +130,7 @@ auth_get_token = AuthGetTokenView.as_view()
 class AuthApiLogout(APIView):
     permission_classes = (IsAuthenticated,)
     
-    def post(self, request, format=None):
+    def post(self, request):
         logout(request)
         return Response(data={}, status=200)
 
@@ -158,7 +160,7 @@ class AuthGetPasswordBySMSView(CheckRecaptchaMixin, APIView):
         # or       "Введена не верная captcha"
     }
     """
-    def post(self, request, format=None):
+    def post(self, request):
         status = 'error'
         status_code = 400
         password = None
@@ -186,6 +188,63 @@ class AuthGetPasswordBySMSView(CheckRecaptchaMixin, APIView):
         return Response(data=data, status=status_code)
 
 auth_get_password_by_sms = AuthGetPasswordBySMSView.as_view()
+
+class ApiFeedBack(CheckRecaptchaMixin, APIView):
+    """
+    Вопрос в поддержку от front-end api. Отправка письма.
+    
+    Пример входных данных:
+    {
+        "subject": "Тема",
+        "text": "Текст вопроса",
+        "email": "email@email.ru",
+        "recaptchaData": {
+            "response": "foo bar",
+            "challenge": "03AHJ_VuvQ5p0AdejIw4W6"
+        }
+    }
+    recaptchaData передается, если пользователь незарегистрирован
+    
+    Status codes:
+        200 - если все нормально
+        400 - если произошла ошибка валидации входных данных
+    """
+    def post(self, request):
+        status_code = 400
+        recaptcha_data = request.DATA.get('recaptchaData')
+        if not request.user.is_authenticated():
+            if not recaptcha_data or \
+               not self.check_recaptcha(self.request, recaptcha_data['challenge'], recaptcha_data['response']):
+                return Response(data={}, status=status_code)
+        email_from = request.DATA.get('email')
+        try:
+            validate_email(email_from)
+        except ValidationError:
+            pass
+        else:
+            email_subject = request.DATA.get('subject')
+            if not email_subject or not email_subject.strip():
+                email_subject = _(u'Вопрос в поддержку')
+            email_to = (settings.DEFAULT_FROM_EMAIL, )
+            email_text = request.DATA.get('text')
+            if request.user.is_authenticated():
+                email_text += _(u'\n\n'
+                                u'Пользователь: %s / %s\n'
+                                u'Email: %s\n'
+                                u'Организация: %s\n'
+                                u'Email организации: %s\n'
+                            ) % (   request.user.username,
+                                    request.user.profile.full_name(),
+                                    request.user.email,
+                                    request.user.profile.org,
+                                    request.user.profile.org.email,
+                                )
+            headers = {'Reply-To': email_from, }
+            EmailMessage(email_subject, email_text, email_from, email_to, headers=headers, ).send()
+            status_code = 200
+        return Response(data={}, status=status_code)
+
+api_feedback = ApiFeedBack.as_view()
 
 class LoginView(View):
     """
