@@ -22,7 +22,6 @@ from logs.models import write_log
 from pd.models import UnclearDate
 from users.models import Profile, Dover
 
-
 class ChildrenJSONMixin:
     def universal_children_json(self, parent, ch_model, ch_rel, filter_kw=None, related=None):
         parents = {}
