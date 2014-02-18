@@ -115,6 +115,8 @@ class AuthGetTokenView(APIView):
                      'role': role,
                    }
             status_code = 200
+            write_log(request, request.user, _(u'Вход в систему'))
+            LoginLog.write(request)
         else:
             data = { 'status': status,
                      'message': 'Wrong username or password',
@@ -187,30 +189,20 @@ auth_get_password_by_sms = AuthGetPasswordBySMSView.as_view()
 
 class LoginView(View):
     """
-    Страница логина.
+    Страница логина. Перенаправление на страницу логина front-end
     """
     def dispatch(self, request, *args, **kwargs):
         if request.user.is_authenticated():
+            print 'here'
             return redirect('/')
         return super(LoginView, self).dispatch(request, *args, **kwargs)
 
-    def post(self, request, *args, **kwargs):
-        form = AuthenticationForm(request, data=request.POST)
-        if form.is_valid():
-            user = form.get_user()
-            login(request, user)
-            write_log(request, request.user, _(u'Вход в систему'))
-            LoginLog.write(request)
-            next_url = request.GET.get("next", "/")
-            if next_url == '/logout/':
-                next_url = '/'
-            return redirect(next_url)
-        return self.get(request, *args, **kwargs)
-
     def get(self, request, *args, **kwargs):
-        form = AuthenticationForm()
-        request.session.set_test_cookie()
-        return render(request, 'login.html', {'form':form})
+        if request.GET.get("redirectUrl"):
+            next_url = "?redirectUrl=%s" % request.GET.get("redirectUrl")
+        else:
+            next_url = ''
+        return redirect('%s#/%s' % (get_front_end_url(request), next_url))
 
 ulogin = LoginView.as_view()
 
@@ -223,8 +215,8 @@ class LogoutView(View):
             return redirect('/')
         write_log(request, request.user, _(u'Выход из системы'))
         logout(request)
-        return redirect(request.GET.get("next") if request.GET.get("next") \
-                                                else get_front_end_url(request) + '#/signout')
+        return redirect(request.GET.get("redirectUrl") if request.GET.get("redirectUrl") \
+                                                       else get_front_end_url(request) + '#/signout')
 
 ulogout = LogoutView.as_view()
 
@@ -298,7 +290,7 @@ class LoruRegistryView(UGHRequiredMixin, View):
                     ugh=p_status.ugh,
                     operation=ProductHistory.PRODUCT_OPERATION_DELETE,
                     dt=datetime.datetime.now(),
-                    publish_cost=0.0,
+                    publish_cost='0.0',
                     currency=p_status.ugh.currency,
                 )
 
