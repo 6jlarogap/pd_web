@@ -189,20 +189,38 @@ auth_get_password_by_sms = AuthGetPasswordBySMSView.as_view()
 
 class LoginView(View):
     """
-    Страница логина. Перенаправление на страницу логина front-end
+    Страница логина. Перенаправление на страницу логина front-end,
+    если задан параметр settings.REDIRECT_LOGIN_TO_FRONT_END
     """
     def dispatch(self, request, *args, **kwargs):
         if request.user.is_authenticated():
-            print 'here'
             return redirect('/')
         return super(LoginView, self).dispatch(request, *args, **kwargs)
 
     def get(self, request, *args, **kwargs):
-        if request.GET.get("redirectUrl"):
-            next_url = "?redirectUrl=%s" % request.GET.get("redirectUrl")
+        if settings.REDIRECT_LOGIN_TO_FRONT_END:
+            if request.GET.get("redirectUrl"):
+                next_url = "?redirectUrl=%s" % request.GET.get("redirectUrl")
+            else:
+                next_url = ''
+            return redirect('%s#/%s' % (get_front_end_url(request), next_url))
         else:
-            next_url = ''
-        return redirect('%s#/%s' % (get_front_end_url(request), next_url))
+            form = AuthenticationForm()
+            request.session.set_test_cookie()
+            return render(request, 'login.html', {'form':form})
+
+    def post(self, request, *args, **kwargs):
+        form = AuthenticationForm(request, data=request.POST)
+        if form.is_valid():
+            user = form.get_user()
+            login(request, user)
+            write_log(request, request.user, _(u'Вход в систему'))
+            LoginLog.write(request)
+            next_url = request.GET.get("redirectUrl", "/")
+            if next_url == '/logout/':
+                next_url = '/'
+            return redirect(next_url)
+        return self.get(request, *args, **kwargs)
 
 ulogin = LoginView.as_view()
 
@@ -215,8 +233,12 @@ class LogoutView(View):
             return redirect('/')
         write_log(request, request.user, _(u'Выход из системы'))
         logout(request)
-        return redirect(request.GET.get("redirectUrl") if request.GET.get("redirectUrl") \
-                                                       else get_front_end_url(request) + '#/signout')
+        if request.GET.get("redirectUrl"):
+            return redirect(request.GET.get("redirectUrl"))
+        elif settings.REDIRECT_LOGIN_TO_FRONT_END:
+            return redirect(get_front_end_url(request) + '#/signout')
+        else:
+            return redirect('/')
 
 ulogout = LogoutView.as_view()
 
