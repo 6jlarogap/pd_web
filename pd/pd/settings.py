@@ -295,6 +295,14 @@ ASSETS_MODULES = [
 ]
 ASSETS_DEBUG = False
 
+# На production, а также на разработческих серверах,
+# где налажена связка frontend - backend,
+# установить этот параметр в True
+#
+REDIRECT_LOGIN_TO_FRONT_END = False
+
+# Если работаем с налаженным front-end:
+# ------------------------------------
 # Начальная страница. Пользователь попадает на pd.ru. Это front-end,
 # использующий ссылки на org.pd.ru, что является back-end.
 # Иногда потребуется внутри back-end вычислять адрес front-end,
