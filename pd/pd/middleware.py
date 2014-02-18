@@ -28,4 +28,4 @@ class LoginRequiredMiddleware:
             path = request.path_info.lstrip('/')
             if not any(m.match(path) for m in exempt_urls):
                 next = '' if not path or exempt_urls[0].match(path) else '?redirectUrl='+request.build_absolute_uri()
-                return HttpResponseRedirect(get_front_end_url(request) + "#/" +next)
+                return HttpResponseRedirect(settings.LOGIN_URL+next)
