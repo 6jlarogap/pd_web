@@ -22,10 +22,12 @@ class CommonProfile(models.Model):
 
     def full_name(self):
         name = ""
-        if self.user_last_name and self.user_first_name:
-            name = u"{0} {1}".format(self.user_last_name, self.user_first_name)
-            if self.user_middle_name:
-                name = u"{0} {1}".format(name, self.user_middle_name)
+        if self.user_last_name:
+            name = self.user_last_name
+            if self.user_first_name:
+                name = u"{0} {1}".format(name, self.user_first_name)
+                if self.user_middle_name:
+                    name = u"{0} {1}".format(name, self.user_middle_name)
         if not name:
             name = self.user.get_full_name()
         return name
@@ -35,14 +37,12 @@ class CommonProfile(models.Model):
         Фамилия И.О.
         """
         name = ""
-        if self.user_last_name and self.user_first_name:
-            name = u"{0} {1}.".format(self.user_last_name, self.user_first_name[0])
-            if self.user_middle_name:
-                name = u"{0}{1}.".format(name, self.user_middle_name[0])
-        if not name:
-            name = self.user.last_name
-            if name and self.user.first_name:
-                name = u"{0} {1}.".format(name, self.user.first_name[0])
+        if self.user_last_name:
+            name = self.user_last_name
+            if self.user_first_name:
+                name = u"{0} {1}.".format(name, self.user_first_name[0])
+                if self.user_middle_name:
+                    name = u"{0}{1}.".format(name, self.user_middle_name[0])
         return self.user and (name or self.user.username) or u'%s' % self.pk
 
 class CustomerProfile(CommonProfile):
@@ -88,15 +88,18 @@ class Profile(CommonProfile):
             return ','.join([self.lat, self.lng])
         return ''
 
+def is_cabinet_user(user):
+    try:
+        user.customerprofile
+        return True
+    except CustomerProfile.DoesNotExist:
+        return False
+    
 def get_mail_footer(user):
     footer = ''
     if user.is_authenticated():
-        try:
-            pr = user.customerprofile
-            is_customer = True
-        except CustomerProfile.DoesNotExist:
-            pr = user.profile
-            is_customer = False
+        is_customer = is_cabinet_user(user)
+        pr = user.customerprofile if is_customer else user.profile
         footer = _(     u'\n\n'
                         u'Пользователь: %s %s %s\n'
                         u'Email: %s\n'
