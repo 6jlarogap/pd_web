@@ -264,7 +264,7 @@ class LoginView(View):
             write_log(request, request.user, _(u'Вход в систему'))
             LoginLog.write(request)
             # Пользователь-ответственный в любом случае отправляется на
-            # front-end api, настроено оно на сервере или нет.
+            # front-end api, настроено front-end api на сервере или нет.
             # В коде Django для этого пользователя ничего нет
             next_url_default = get_front_end_url(request) if is_cabinet_user(user) else '/'
             next_url = request.GET.get("redirectUrl", next_url_default)

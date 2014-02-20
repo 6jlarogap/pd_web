@@ -1202,9 +1202,13 @@ class BurialApproveCloseForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelFor
                 Area.objects.filter(Q(cemetery__ugh=request.user.profile.org) & \
                                     Q(availability=Area.AVAILABILITY_OPEN)). \
                     aggregate(m=Max('places_count'))['m'] or 1
+            place = self.instance.get_place()
+            if place:
+                place_graves_count = place.get_graves_count()
+                max_grave_number = max(max_grave_number, place_graves_count)
             max_grave_choices = [(i,i) for i in range(1, max_grave_number+1)]
 
-        if self.instance.can_finish() and request.user.profile.is_ugh():
+        if request.user.profile.is_ugh() and self.instance.can_finish():
             # Закрытие
             if not self.instance.fact_date:
                 self.initial['fact_date'] = self.instance.plan_date
@@ -1215,6 +1219,10 @@ class BurialApproveCloseForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelFor
                 self.fields['place_number'].required = False
             self.fields['cemetery'].queryset = Cemetery.objects.filter(cemetery_qs)
             self.fields['desired_graves_count'].widget = forms.Select(choices=max_grave_choices)
+            if place:
+                self.initial['desired_graves_count'] = place_graves_count
+                self.initial['place_length'] = place.place_length
+                self.initial['place_width'] = place.place_width
 
         elif self.instance.can_approve():
             # отправленное на согласование или после этого отправленное на обследование в угх
