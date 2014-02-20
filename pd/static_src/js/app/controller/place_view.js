@@ -251,6 +251,10 @@
 				$scope.editor.responsible = angular.copy($scope.responsible);
 				$scope.editor.responsible_phones = angular.copy($scope.responsible_phones);
 				$scope.editor.responsible_address = angular.copy($scope.responsible_address);
+			    $scope.editor.isAddressEdited = false;
+			    $scope.editor.isResponsibleEdited = false;
+			    $scope.editor.isPhoneEdited = false;
+
 				if(!$scope.editor.responsible_address.region)
 					$scope.editor.responsible_address.region = {};
 				if(!$scope.editor.responsible_address.country)

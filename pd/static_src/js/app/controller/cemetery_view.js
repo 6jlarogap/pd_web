@@ -15,8 +15,8 @@ function CemeteryViewCtrl($scope, $http, $resource, $location,  $routeParams,
 
 	$scope.editor = {
 			isAddressEdited: false,
-			isResponsibleEdited: false,
-			isPhoneEdited: false
+			isPhoneEdited: false,
+			isEditorOpen: false
 	};
 	$scope.area_max_places = 10;
     $scope.gridOptions = { 
@@ -92,11 +92,13 @@ function CemeteryViewCtrl($scope, $http, $resource, $location,  $routeParams,
 	}; 
 	$scope.isEditorOpen = false;
 	$scope.openEditForm = function() {
-		$scope.isEditorOpen = true;
+		$scope.editor.isEditorOpen = true;
+		$scope.editor.isAddressEdited =  false;
+		$scope.editor.isPhoneEdited = false;
 		$('body').css('overflow-y','hidden');
 	};
 	$scope.closeEditForm = function() {
-		$scope.isEditorOpen = false;
+		$scope.editor.isEditorOpen = false;
 		$('body').css('overflow-y','auto');
 		$scope.update();
 	};
