@@ -40,7 +40,7 @@ from logs.models import Log, write_log, LoginLog
 from users.forms import UserAddForm, RegisterForm, LoruFormset, ProfileForm, UserProfileForm, \
                         UserDataForm, ChangePasswordForm, BankAccountFormset, OrgForm, \
                         OrgLogForm, LoginLogForm, OrgBurialStatsForm, SupportForm, TestCaptchaForm
-from users.models import Profile, Org, RegisterProfile, ProfileLORU, CustomerProfile, get_mail_footer
+from users.models import Profile, Org, RegisterProfile, ProfileLORU, CustomerProfile, get_mail_footer, is_cabinet_user
 from burials.models import Place
 from users.serializers import UghPublishCostSerializer
 from orders.models import ProductStatus, ProductHistory
@@ -263,9 +263,13 @@ class LoginView(View):
             login(request, user)
             write_log(request, request.user, _(u'Вход в систему'))
             LoginLog.write(request)
-            next_url = request.GET.get("redirectUrl", "/")
+            # Пользователь-ответственный в любом случае отправляется на
+            # front-end api, настроено оно на сервере или нет.
+            # В коде Django для этого пользователя ничего нет
+            next_url_default = get_front_end_url(request) if is_cabinet_user(user) else '/'
+            next_url = request.GET.get("redirectUrl", next_url_default)
             if next_url == '/logout/':
-                next_url = '/'
+                next_url = next_url_default
             return redirect(next_url)
         return self.get(request, *args, **kwargs)
 
