@@ -19,40 +19,40 @@
 						<hr/>
 						<div class="row-fluid">
 					    		<input id="id_address-post_index" class="" type="text" maxlength="255"
-					    		ng-model="data.post_index" placeholder="Индекс" />
+					    		ng-model="editor.post_index" placeholder="Индекс" />
 						</div>
 					    <table class="row-fluid">
 					    <tr>
 					    	<td>
-								<input type="text"  class="span12 country" ng-model="data.country.name" placeholder="Страна" 
-									ng-required="data.street.name.length || data.city.name.length || data.region.length"/>
+								<input type="text"  class="span12 country" ng-model="editor.country.name" placeholder="Страна" 
+									ng-required="editor.street.name.length || editor.city.name.length || editor.region.length"/>
 					    	</td>
 					    	<td>
-								<input type="text" class="span12 region" ng-model="data.region.name" placeholder="Регион" 
-									ng-required="data.street.name.length || data.city.name.length"/>
+								<input type="text" class="span12 region" ng-model="editor.region.name" placeholder="Регион" 
+									ng-required="editor.street.name.length || editor.city.name.length"/>
 					    	</td>
 					    	<td>
-								<input type="text" ng-model="data.city.name" class="span12 city" placeholder="Город" 
-								ng-required="data.street.name.length"/>
+								<input type="text" ng-model="editor.city.name" class="span12 city" placeholder="Город" 
+								ng-required="editor.street.name.length"/>
 					    	</td>
 					    	<td>
-								<input type="text" ng-model="data.street.name" class="span12 street" placeholder="Улица"/>
+								<input type="text" ng-model="editor.street.name" class="span12 street" placeholder="Улица"/>
 					    	</td>
 						</tr>
 						</table>
 					    <table class="row-fluid">
 					    <tr>
 					    	<td>
-						    	<input  placeholder="Дом" id="id_address-house" type="text" ng-model="data.house" class="span12" maxlength="255"/>
+						    	<input  placeholder="Дом" id="id_address-house" type="text" ng-model="editor.house" class="span12" maxlength="255"/>
 						    </td>
 						    <td>
-						    	<input placeholder="Корпус" id="id_address-block" type="text" ng-model="data.block" class="span12" maxlength="255"/>
+						    	<input placeholder="Корпус" id="id_address-block" type="text" ng-model="editor.block" class="span12" maxlength="255"/>
 						    </td>
 						    <td>
-						    	<input placeholder="Строение" id="id_address-building" type="text" ng-model="data.building" class="span12" maxlength="255"/>
+						    	<input placeholder="Строение" id="id_address-building" type="text" ng-model="editor.building" class="span12" maxlength="255"/>
 						    </td>
 						    <td>
-						    	<input placeholder="Квартира" id="id_address-flat" type="text" ng-model="data.flat" class="span12" maxlength="255"/>
+						    	<input placeholder="Квартира" id="id_address-flat" type="text" ng-model="editor.flat" class="span12" maxlength="255"/>
 					    	</td>
 						</tr>
 						</table>
@@ -60,7 +60,7 @@
 				<hr/>
 				<div class="row-fluid">
 					<div class="span12">
-				    	<input placeholder="Дополнительная информация" class="span12" type="text" ng-model="data.info" id="id_address-info" />
+				    	<input placeholder="Дополнительная информация" class="span12" type="text" ng-model="editor.info" id="id_address-info" />
 					</div>
 				</div>
 				</form>

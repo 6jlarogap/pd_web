@@ -1,12 +1,12 @@
 ﻿'use strict';
 
-function CemeteryCtrl($rootScope, $scope, $http, $location, $resource, naturalService) {
+function CemeteryCtrl($rootScope, $scope, $http, $location, $resource, naturalService, Cemetery) {
 
     "use strict";
 	var object_url = '/api/cemetery';
     $scope.cemetery_list = [];
 	$scope.version_str = version_str;
-	var Cemetery = $resource('/api/cemetery/:cemeteryID', {cemeteryID:'@id'},{});
+	$scope.editor = {};
 
 	var tplButtonEdit = '<a class="btn btn-small" ng-href="/manage/cemetery/{{row.getProperty(\'id\')}}">Открыть</a>';
 	var tplLinkOpen = '<a ng-class="col.colIndex()" ng-href="/manage/cemetery/{{row.getProperty(\'id\')}}">{{row.getProperty(\'name\')}}</a>';
@@ -26,7 +26,7 @@ function CemeteryCtrl($rootScope, $scope, $http, $location, $resource, naturalSe
     $scope.alerts = [];$scope.closeAlert = function(index){$scope.alerts.splice(index,1);};
     
     $scope.update = function() {
-        $scope.cemetery = new Cemetery({
+        $scope.editor.cemetery = new Cemetery({
                 time_begin: new Date('0 8:00'),
                 time_end: new Date('0 17:00'),
                 places_algo:'area',
@@ -59,10 +59,10 @@ function CemeteryCtrl($rootScope, $scope, $http, $location, $resource, naturalSe
 		$scope.update();
     };
 	$scope.addElement = function(){
-		$scope.cemetery.time_begin = date2time($scope.cemetery.time_begin);
-		$scope.cemetery.time_end = date2time($scope.cemetery.time_end);
+		$scope.editor.cemetery.time_begin = date2time($scope.editor.cemetery.time_begin);
+		$scope.editor.cemetery.time_end = date2time($scope.editor.cemetery.time_end);
 		
-		$scope.cemetery.$save(function(result){
+		$scope.editor.cemetery.$save(function(result){
 			$scope.closeAddModal();
    			$location.path('/manage/cemetery/'+result.id);
    			$location.replace();
