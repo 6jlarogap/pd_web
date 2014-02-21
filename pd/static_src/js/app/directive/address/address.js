@@ -55,22 +55,23 @@
 					$scope.open = function() {
 						$scope.isAddressEditorOpen = true;
 						$scope.$parent.$parent.editor.isAddressEdited = true;
-						$scope.backup = angular.copy($scope.data);
+						$scope.editor = angular.copy($scope.data);
 					};
 
 					$scope.close = function() {
 						$scope.isAddressEditorOpen = false;
 						$scope.$parent.$parent.editor.isAddressEdited = false;
-						$scope.data = $scope.backup;
+						$scope.editor = angular.copy($scope.data);
 					};
 
 					$scope.save = function(form) {
+						$scope.data = $scope.editor;
 						$scope.isAddressEditorOpen = false;
 						$scope.$parent.$parent.editor.isAddressEdited = false;
 					};
 
 					$scope.form_disabled = function() {
-						var item = $scope.data;
+						var item = $scope.editor;
 						if (!item)
 							return;
 						var c = item.country.name && item.country.name.length>0,
