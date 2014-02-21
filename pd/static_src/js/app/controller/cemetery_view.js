@@ -95,6 +95,9 @@ function CemeteryViewCtrl($scope, $http, $resource, $location,  $routeParams,
 		$scope.editor.isEditorOpen = true;
 		$scope.editor.isAddressEdited =  false;
 		$scope.editor.isPhoneEdited = false;
+		$scope.editor.cemetery = angular.copy($scope.cemetery);
+		$scope.editor.phones = angular.copy($scope.phones);
+		$scope.editor.cemetery_address = angular.copy($scope.cemetery_address); 
 		$('body').css('overflow-y','hidden');
 	};
 	$scope.closeEditForm = function() {
@@ -103,11 +106,11 @@ function CemeteryViewCtrl($scope, $http, $resource, $location,  $routeParams,
 		$scope.update();
 	};
 	$scope.saveEditForm = function() {
-		$scope.cemetery.time_begin = date2time($scope.cemetery.time_begin);
-		$scope.cemetery.time_end = date2time($scope.cemetery.time_end);
-		$scope.cemetery.obj_phones = $scope.phones;
-		$scope.cemetery.obj_address = $scope.cemetery_address;
-		$scope.cemetery.$update(function(){
+		$scope.editor.cemetery.time_begin = date2time($scope.editor.cemetery.time_begin);
+		$scope.editor.cemetery.time_end = date2time($scope.editor.cemetery.time_end);
+		$scope.editor.cemetery.obj_phones = $scope.editor.phones;
+		$scope.editor.cemetery.obj_address = $scope.editor.cemetery_address;
+		$scope.editor.cemetery.$update(function(){
 			$scope.closeEditForm();
 			$scope.update();
 			noty({text: 'Изменения сохранены', type:'success', layout:'topRight'});
