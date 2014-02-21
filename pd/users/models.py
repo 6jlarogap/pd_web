@@ -88,15 +88,18 @@ class Profile(CommonProfile):
             return ','.join([self.lat, self.lng])
         return ''
 
+def is_cabinet_user(user):
+    try:
+        user.customerprofile
+        return True
+    except CustomerProfile.DoesNotExist:
+        return False
+    
 def get_mail_footer(user):
     footer = ''
     if user.is_authenticated():
-        try:
-            pr = user.customerprofile
-            is_customer = True
-        except CustomerProfile.DoesNotExist:
-            pr = user.profile
-            is_customer = False
+        is_customer = is_cabinet_user(user)
+        pr = user.customerprofile if is_customer else user.profile
         footer = _(     u'\n\n'
                         u'Пользователь: %s %s %s\n'
                         u'Email: %s\n'
