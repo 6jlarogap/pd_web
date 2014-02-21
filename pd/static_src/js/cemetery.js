@@ -656,7 +656,7 @@ $(function() {
 
     old_grave_value = $('#id_grave_number').val();
 
-    $('#cont_place #id_cemetery, #cont_place #id_area, #cont_place #id_row, #cont_place #id_place_number, #id_desired_graves_count').change(function() {
+    $('#cont_place #id_cemetery, #cont_place #id_area, #cont_place #id_row, #cont_place #id_place_number, #cont_place #id_desired_graves_count').change(function() {
         $('#id_responsible-take_from_0').removeAttr('checked').closest('li').hide();
 
         var data = $('#id_cemetery, #id_area, #id_row, #id_place_number, #id_desired_graves_count').serialize();
