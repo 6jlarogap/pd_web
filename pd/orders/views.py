@@ -716,7 +716,7 @@ class CabinetViewSet(CustomerDataMixin, viewsets.ViewSet):
             place={'id': p.pk}
             place['address'] = p.cemetery.address and p.cemetery.address.__unicode__() or ''
             place['location'] = {
-                'latititude': p.lat,
+                'latitude': p.lat,
                 'longitude': p.lng,
             }
             place['graves'] = []
