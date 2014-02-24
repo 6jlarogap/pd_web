@@ -22,7 +22,7 @@ from django.shortcuts import get_object_or_404
 
 from logs.models import write_log
 from burials.forms import AddOrgForm, AddAgentForm, AddDoverForm, AddDocTypeForm
-from burials.models import Burial, Place, Grave, GravePhoto
+from burials.models import Burial, Place, Grave, GravePhoto, PlacePhoto
 from users.models import CustomerProfile, CustomerProfilePhoto, Org, ProfileLORU
 from orders.forms import ProductForm, OrderForm, OrderItemFormset, CoffinForm, CatafalqueForm, \
                          AddInfoForm, OrderSearchForm, OrderBurialForm
@@ -720,20 +720,22 @@ class CabinetViewSet(CustomerDataMixin, viewsets.ViewSet):
                 'longitude': p.lng,
             }
             place['graves'] = []
-            place['gallery'] = []
-            place['photo'] = None
-            grave_photo_last_id = -1
+            gallery = []
+            for pph in PlacePhoto.objects.filter(place=p):
+                if pph.bfile:
+                    gallery.append(
+                        {
+                            'photo': request.build_absolute_uri(pph.bfile.url),
+                            'addedAt': pph.date_of_creation,
+                        }
+                    )
             for g in Grave.objects.filter(place=p).order_by('grave_number'):
                 grave = {'graveNumber': g.grave_number}
                 for gph in GravePhoto.objects.filter(grave=g):
                     if gph.bfile:
-                        photo = request.build_absolute_uri(gph.bfile.url)
-                        if gph.pk > grave_photo_last_id:
-                            place['photo'] = photo
-                            grave_photo_last_id = gph.pk
-                        place['gallery'].append(
+                        gallery.append(
                             {
-                                'photo': photo,
+                                'photo': request.build_absolute_uri(gph.bfile.url),
                                 'addedAt': gph.date_of_creation,
                             }
                         )
@@ -750,6 +752,8 @@ class CabinetViewSet(CustomerDataMixin, viewsets.ViewSet):
                     )
                 grave['burials'] = burials
                 place['graves'].append(grave)
+            place['gallery'] = sorted(gallery, key=lambda photo: photo['addedAt'], reverse=True)
+            place['photo'] = place['gallery'][0]['photo'] if place['gallery'] else None
             data['places'].append(place)           
             
         return Response(status=200, data=data)
