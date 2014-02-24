@@ -170,7 +170,8 @@ class AuthGetPasswordBySMSView(CheckRecaptchaMixin, APIView):
         if not self.check_recaptcha(self.request, recaptcha_data['challenge'], recaptcha_data['response']):
             message = _(u'Введена неверная captcha')
         else:
-            if not Place.objects.filter(responsible__login_phone=decimal.Decimal(phone_number)).count():
+            places = Place.objects.filter(responsible__login_phone=decimal.Decimal(phone_number))
+            if not places.count():
                 message = _(u'Ваш номер телефона не указан в списке для входа. Обратитесь в администрацию кладбища')
             else:
                 user, created = User.objects.get_or_create(username=phone_number)
@@ -180,7 +181,14 @@ class AuthGetPasswordBySMSView(CheckRecaptchaMixin, APIView):
                 password = ''.join(random.choice(chars) for x in range(random.randrange(5, 11)))
                 user.set_password(password)
                 user.save()
-                customprofile = CustomerProfile.objects.get_or_create(user=user)
+                r = places[0].responsible
+                customprofile, created = CustomerProfile.objects.get_or_create(user=user,
+                                            defaults={
+                                                'user_last_name': r.last_name,
+                                                'user_first_name': r.first_name,
+                                                'user_middle_name': r.middle_name,
+                                            }
+                                         )
                 status = 'success'
                 status_code = 200
                 message = _(u'Пароль установлен')
