@@ -43,6 +43,11 @@ form .error{
     display: block;
 }
 
+form .pd-control-group.error {
+    display: inline;
+    margin: 0;
+}
+
 .gallery.modal{
     width: 980px;
     margin: -310px 0 0 -490px;
