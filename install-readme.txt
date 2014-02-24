@@ -17,7 +17,15 @@ install-readme.txt, utf8 code page
                   * python-pycurl
             * C/C++
             * g++
-.        - postgresql,           в т.ч. для разработчика
+         - postgresql,           в т.ч. для разработчика
+            полагаем, что используется база postgresql на localhost,
+            в которой пользователю postgres всё дозволено. Это достигается
+            правкой pg_hba.conf (на ubuntu 12.04 в /etc/postgresql/9.1/main/)
+            заменой строки:
+                local all all peer
+            на:
+                local all all trust
+            с перезагрузкой postgresql (service postgresql restart)
          - библиотеки для графики, включая jpeg, в Ubuntu 12.04: libjpeg-dev
     
         - bower

@@ -392,6 +392,9 @@ class Grave(GeoPointModel):
             raise Exception('Warning: Grave::delete - "request" param is undefined')
 
 
+class PlacePhoto(Files, GeoPointModel):
+    place = models.ForeignKey(Place)
+
 class AreaPhoto(Files, GeoPointModel):
     area = models.ForeignKey(Area)
 
