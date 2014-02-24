@@ -26,19 +26,19 @@
 					$scope.search_callback = function(data) {
 						if (!data)
 							return;
-						$scope.data.country.name = data.country;
-						$scope.data.region.name = data.region;
-						$scope.data.city.name = data.city;
-						$scope.data.street.name = data.street;
-						$scope.data.post_index = data.postal_code;
+						$scope.editor.country.name = data.country;
+						$scope.editor.region.name = data.region;
+						$scope.editor.city.name = data.city;
+						$scope.editor.street.name = data.street;
+						$scope.editor.post_index = data.postal_code;
 						// $scope.data.house = data.house;
-						$scope.data.flat = data.flat;
-						$("input.country").val($scope.data.country.name);
-						$("input.region").val($scope.data.region.name);
-						$("input.city").val($scope.data.city.name);
-						$("input.street").val($scope.data.street.name);
-						$("input.house").val($scope.data.house);
-						$("input.flat").val($scope.data.flat);
+						$scope.editor.flat = data.flat;
+						$("input.country").val($scope.editor.country.name);
+						$("input.region").val($scope.editor.region.name);
+						$("input.city").val($scope.editor.city.name);
+						$("input.street").val($scope.editor.street.name);
+						$("input.house").val($scope.editor.house);
+						$("input.flat").val($scope.editor.flat);
 						var fields = [ 'block', 'flat', 'house', 'street', 'city', 'region', 'country', 'postal_code' ];
 						for (var i = 1; i < fields.length; i++) {
 							if (data[fields[i]] != undefined) {
