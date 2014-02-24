@@ -1207,6 +1207,8 @@ class BurialApproveCloseForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelFor
                 place_graves_count = place.get_graves_count()
                 max_grave_number = max(max_grave_number, place_graves_count)
             max_grave_choices = [(i,i) for i in range(1, max_grave_number+1)]
+            self.fields['place_length'].label = _(u'Длина нового места')
+            self.fields['place_width'].label = _(u'Ширина нового места')
 
         if request.user.profile.is_ugh() and self.instance.can_finish():
             # Закрытие
