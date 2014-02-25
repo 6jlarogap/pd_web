@@ -449,7 +449,7 @@ class PlaceViewSet(viewsets.ModelViewSet):
         data = {
                 "cemetery" : CemeterySerializer(cemetery).data,
                 "area" : AreaSerializer(area).data,
-                "place" : PlaceSerializer(place).data,
+                "place" : PlaceSerializer(place, context={ 'request': request, }).data,
                 "graves" : GraveSerializer(grave_list, many=True).data,
                 "grave_count" : grave_count,
                 #"burials" : BurialSerializer(burial_list, many=True).data,
