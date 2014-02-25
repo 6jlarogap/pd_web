@@ -216,6 +216,10 @@ class ApiFeedBack(CheckRecaptchaMixin, APIView):
     Status codes:
         200 - если все нормально
         400 - если произошла ошибка валидации входных данных
+
+    Если отправляет аутентифицированный пользователь и у него нет
+    в свойствах почтового адреса, то он устанавливается в email
+    из входных данных
     """
     def post(self, request):
         status_code = 400
@@ -234,6 +238,9 @@ class ApiFeedBack(CheckRecaptchaMixin, APIView):
             if not email_subject or not email_subject.strip():
                 email_subject = _(u'Вопрос в поддержку')
             email_to = (settings.DEFAULT_FROM_EMAIL, )
+            if request.user.is_authenticated() and not request.user.email:
+                request.user.email = email_from
+                request.user.save()
             email_text = request.DATA.get('text') + get_mail_footer(request.user)
             headers = {'Reply-To': email_from, }
             EmailMessage(email_subject, email_text, email_from, email_to, headers=headers, ).send()
