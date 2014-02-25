@@ -720,25 +720,9 @@ class CabinetViewSet(CustomerDataMixin, viewsets.ViewSet):
                 'longitude': p.lng,
             }
             place['graves'] = []
-            gallery = []
-            for pph in PlacePhoto.objects.filter(place=p):
-                if pph.bfile:
-                    gallery.append(
-                        {
-                            'photo': request.build_absolute_uri(pph.bfile.url),
-                            'addedAt': pph.date_of_creation,
-                        }
-                    )
+            gallery = p.get_photo_gallery(request)
             for g in Grave.objects.filter(place=p).order_by('grave_number'):
                 grave = {'graveNumber': g.grave_number}
-                for gph in GravePhoto.objects.filter(grave=g):
-                    if gph.bfile:
-                        gallery.append(
-                            {
-                                'photo': request.build_absolute_uri(gph.bfile.url),
-                                'addedAt': gph.date_of_creation,
-                            }
-                        )
                 burials = []
                 for b in g.burial_set.all():
                     burials.append(

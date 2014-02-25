@@ -317,6 +317,34 @@ class Place(SafeDeleteMixin, GeoPointModel):
                 break
         return result
 
+    def get_photo_gallery(self, request):
+        """
+        Получить все фото, относящиеся к месту.
+        
+        Выбираются все PlacePhoto, все GravePhoto этого места,
+        сортируются по дате создания в порядке убывания
+        """
+        gallery = []
+        for pph in PlacePhoto.objects.filter(place=self):
+            if pph.bfile:
+                gallery.append(
+                    {
+                        'photo': request.build_absolute_uri(pph.bfile.url),
+                        'addedAt': pph.date_of_creation,
+                    }
+                )
+        for g in Grave.objects.filter(place=self).order_by('grave_number'):
+            for gph in GravePhoto.objects.filter(grave=g):
+                if gph.bfile:
+                    gallery.append(
+                        {
+                            'photo': request.build_absolute_uri(gph.bfile.url),
+                            'addedAt': gph.date_of_creation,
+                        }
+                    )
+        gallery = sorted(gallery, key=lambda photo: photo['addedAt'], reverse=True)
+        return gallery
+        
 class PlaceSize(models.Model):
     org = models.ForeignKey(Org, verbose_name=_(u"Организация"), editable=False, on_delete=models.PROTECT) 
     graves_count = models.PositiveSmallIntegerField(_(u"Число могил"), )

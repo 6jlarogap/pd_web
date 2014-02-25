@@ -87,12 +87,17 @@ class PlaceSerializer(serializers.ModelSerializer):
     responsible = serializers.PrimaryKeyRelatedField(required=False)
     #available_count = Field(source='available_count')
     responsible_txt = serializers.SerializerMethodField('responsible_str')
+    gallery = serializers.SerializerMethodField('gallery_func')
 
     class Meta:
         model = Place
         fields = ('id', 'cemetery', 'lat', 'lng', 'area', 'row', 'place', 'responsible', 'responsible_txt', \
-                  'place_length', 'place_width') 
+                  'place_length', 'place_width', 'gallery', ) 
 
+    def gallery_func(self, obj):
+        request = self.context.get('request')
+        return obj.get_photo_gallery(request) if request else []
+        
     def responsible_str(self, obj):
         if obj.responsible:
             return "%s %s %s" % (obj.responsible.first_name, obj.responsible.middle_name, obj.responsible.last_name)
