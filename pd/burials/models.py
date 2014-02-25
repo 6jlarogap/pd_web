@@ -322,7 +322,7 @@ class Place(SafeDeleteMixin, GeoPointModel):
         Получить все фото, относящиеся к месту.
         
         Выбираются все PlacePhoto, все GravePhoto этого места,
-        сортируютсмя по дате создания в порядке убывания
+        сортируются по дате создания в порядке убывания
         """
         gallery = []
         for pph in PlacePhoto.objects.filter(place=self):
@@ -334,7 +334,6 @@ class Place(SafeDeleteMixin, GeoPointModel):
                     }
                 )
         for g in Grave.objects.filter(place=self).order_by('grave_number'):
-            grave = {'graveNumber': g.grave_number}
             for gph in GravePhoto.objects.filter(grave=g):
                 if gph.bfile:
                     gallery.append(
