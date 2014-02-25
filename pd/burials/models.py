@@ -191,9 +191,18 @@ class Place(SafeDeleteMixin, GeoPointModel):
                                        null=True, blank=True, validators=[validate_gt0])
     place_width = models.DecimalField(_(u"Ширина, м."), max_digits=5, decimal_places=2,
                                         null=True, blank=True, validators=[validate_gt0])
-    
+
+    # Следующие поля DateTimeField будут содержать дату установки
+    # соответствующего признака, но служат еще и как BooleanField:
+    # если поле установлено в какую-то дату, то это True; если NULL, то False
+    dt_wrong_fio = models.DateTimeField(_(u"Неверное ФИО"), null=True, editable=False)
+    dt_military = models.DateTimeField(_(u"Воинское"), null=True, editable=False)
+    dt_size_violated = models.DateTimeField(_(u"Нарушение размеров"), null=True, editable=False)
+    dt_unowned = models.DateTimeField(_(u"Заброшенное"), null=True, editable=False)
+    dt_unindentified = models.DateTimeField(_(u"Неопознанное"), null=True, editable=False)
+
     objects = PlaceManager()
-    
+
     class Meta:
         verbose_name = _(u"Место")
         verbose_name_plural = _(u"Место")
