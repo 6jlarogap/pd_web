@@ -83,6 +83,13 @@ function get_thumbnail_url(url, width, height, method){
 	 method: [crop, scale, smart]
 	 */
 	if(!url) return '';
+
+  // Split image full url by "/media/" predicate
+  var urlChunks = url.split('/media/');
+  if (2 == urlChunks.length) {
+    url = urlChunks[1];
+  }
+
 	return '/thumb/{0}/{1}x{2}~{3}~12.jpg'.format(url, width.toString(), height.toString(), method)
 }
 
