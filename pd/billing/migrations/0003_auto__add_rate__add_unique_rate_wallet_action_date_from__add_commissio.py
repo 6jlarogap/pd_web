@@ -13,13 +13,13 @@ class Migration(SchemaMigration):
             ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
             ('wallet', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['billing.Wallet'])),
             ('action', self.gf('django.db.models.fields.CharField')(max_length=255)),
-            ('version', self.gf('django.db.models.fields.PositiveIntegerField')()),
+            ('date_from', self.gf('django.db.models.fields.DateField')()),
             ('rate', self.gf('django.db.models.fields.DecimalField')(max_digits=20, decimal_places=2)),
         ))
         db.send_create_signal('billing', ['Rate'])
 
-        # Adding unique constraint on 'Rate', fields ['wallet', 'action', 'version']
-        db.create_unique('billing_rate', ['wallet_id', 'action', 'version'])
+        # Adding unique constraint on 'Rate', fields ['wallet', 'action', 'date_from']
+        db.create_unique('billing_rate', ['wallet_id', 'action', 'date_from'])
 
         # Adding model 'Commission'
         db.create_table('billing_commission', (
@@ -84,8 +84,8 @@ class Migration(SchemaMigration):
         # Removing unique constraint on 'Wallet', fields ['org', 'currency']
         db.delete_unique('billing_wallet', ['org_id', 'currency_id'])
 
-        # Removing unique constraint on 'Rate', fields ['wallet', 'action', 'version']
-        db.delete_unique('billing_rate', ['wallet_id', 'action', 'version'])
+        # Removing unique constraint on 'Rate', fields ['wallet', 'action', 'date_from']
+        db.delete_unique('billing_rate', ['wallet_id', 'action', 'date_from'])
 
         # Deleting model 'Rate'
         db.delete_table('billing_rate')
@@ -152,11 +152,11 @@ class Migration(SchemaMigration):
             'wallet_to': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'payment_to'", 'null': 'True', 'to': "orm['billing.Wallet']"})
         },
         'billing.rate': {
-            'Meta': {'unique_together': "(('wallet', 'action', 'version'),)", 'object_name': 'Rate'},
+            'Meta': {'unique_together': "(('wallet', 'action', 'date_from'),)", 'object_name': 'Rate'},
             'action': ('django.db.models.fields.CharField', [], {'max_length': '255'}),
+            'date_from': ('django.db.models.fields.DateField', [], {}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'rate': ('django.db.models.fields.DecimalField', [], {'max_digits': '20', 'decimal_places': '2'}),
-            'version': ('django.db.models.fields.PositiveIntegerField', [], {}),
             'wallet': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['billing.Wallet']"})
         },
         'billing.wallet': {

@@ -3,16 +3,13 @@ import datetime
 from south.db import db
 from south.v2 import DataMigration
 from django.db import models
-from django.utils.translation import ugettext_lazy as _
-
-from django.conf import settings
 
 class Migration(DataMigration):
 
     def forwards(self, orm):
         "Write your forwards methods here."
         # Note: Remember to use orm['appname.ModelName'] rather than "from appname.models..."
-        
+
         print "*** Filling short name for RUR"
         Currency = orm['billing.Currency']
         # Рубль уже был первым создан. Но мало ли что...
@@ -91,11 +88,11 @@ class Migration(DataMigration):
             'wallet_to': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'payment_to'", 'null': 'True', 'to': "orm['billing.Wallet']"})
         },
         'billing.rate': {
-            'Meta': {'unique_together': "(('wallet', 'action', 'version'),)", 'object_name': 'Rate'},
+            'Meta': {'unique_together': "(('wallet', 'action', 'date_from'),)", 'object_name': 'Rate'},
             'action': ('django.db.models.fields.CharField', [], {'max_length': '255'}),
+            'date_from': ('django.db.models.fields.DateField', [], {}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'rate': ('django.db.models.fields.DecimalField', [], {'max_digits': '20', 'decimal_places': '2'}),
-            'version': ('django.db.models.fields.PositiveIntegerField', [], {}),
             'wallet': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['billing.Wallet']"})
         },
         'billing.wallet': {

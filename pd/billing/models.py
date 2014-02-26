@@ -30,24 +30,24 @@ class Wallet(models.Model):
         unique_together = ('org', 'currency',)
 
 class Rate(models.Model):
-    RATE_ACTION_SHOW = 'show'
+    RATE_ACTION_PUBLISH = 'publish'
     RATE_ACTION_UPDATE = 'update'
     RATE_ACTION_DISABLE = 'disable'
     RATE_ACTIONS = (
-        (RATE_ACTION_SHOW, _(u"Показ")),
+        (RATE_ACTION_PUBLISH, _(u"Показ")),
         (RATE_ACTION_UPDATE, _(u"Обновление")),
         (RATE_ACTION_DISABLE, _(u"Снятие с показа")),
     )
 
     wallet = models.ForeignKey(Wallet, verbose_name=_(u"Кошелек"))
     action = models.CharField(_(u"Действие"), max_length=255, choices=RATE_ACTIONS[:2])
-    version = models.PositiveIntegerField(_(u"Версия"))
+    date_from = models.DateField(_(u"Дата начала действия тарифа"))
     rate = models.DecimalField(_(u"Тариф"), max_digits=20, decimal_places=2)
 
     class Meta:
         verbose_name = _(u"Тариф")
         verbose_name_plural = _(u"Тарифы")
-        unique_together = ('wallet', 'action', 'version')
+        unique_together = ('wallet', 'action', 'date_from')
 
 class Payment(models.Model):
     dt = models.DateTimeField(_(u"Дата/время"), auto_now_add=True)
