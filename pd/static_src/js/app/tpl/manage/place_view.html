@@ -127,14 +127,6 @@
       <tr>
         <td class="" ng-repeat="grave in graves" valign="top">
           <div class="grave well well-large">
-            <div class="btn-toolbar">
-              <div class="btn-group" style="margin: 0 -7px;">
-                <button class="btn btn-success btn-mini" ng-click="openEditForm('isGraveEditOpen', grave)">
-                  №{{ grave.grave_number }} Редактировать
-                </button>
-              </div>
-            </div>
-
             <p style="text-align: left">Захоронения
               <i class="icon-question-sign" ng-show="grave.is_wrong_fio"></i>
               <i class="icon-star" ng-show="grave.is_military"></i>
