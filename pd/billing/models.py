@@ -51,8 +51,8 @@ class Rate(models.Model):
 
 class Payment(models.Model):
     dt = models.DateTimeField(_(u"Дата/время"), auto_now_add=True)
-    wallet_from = models.ForeignKey(Wallet, verbose_name=_(u"Кошелек откуда"), null=True)
-    wallet_to = models.ForeignKey(Wallet, verbose_name=_(u"Кошелек куда"), null=True)
+    wallet_from = models.ForeignKey(Wallet, verbose_name=_(u"Кошелек откуда"), related_name='payment_from', null=True)
+    wallet_to = models.ForeignKey(Wallet, verbose_name=_(u"Кошелек куда"), related_name='payment_to', null=True)
     amount = models.DecimalField(_(u"Сумма"), max_digits=20, decimal_places=2)
     comment = models.TextField(verbose_name=_(u"Примечание"), default='')
     ct = models.ForeignKey('contenttypes.ContentType', verbose_name=_(u"Вид платежа"))
@@ -67,9 +67,10 @@ class Ad(models.Model):
     ugh = models.ForeignKey(Org, limit_choices_to={'type': Org.PROFILE_UGH}, verbose_name=_(u"ОМС"))
     product = models.ForeignKey('orders.Product', verbose_name=_(u"Продукт"))
     action = models.CharField(_(u"Действие"), max_length=255, choices=Rate.RATE_ACTIONS)
-    # снятие с показа - тариф, null=True:
+    # снятие с показа - тариф, в котором null=True:
     rate = models.ForeignKey(Rate, verbose_name=_(u"Тариф"), null=True)
 
 class Commission(models.Model):
     payment = models.OneToOneField(Payment)
     share = models.FloatField(_(u"Процент"))
+    ad = models.ForeignKey(Ad, verbose_name=_(u"Реклама"))
