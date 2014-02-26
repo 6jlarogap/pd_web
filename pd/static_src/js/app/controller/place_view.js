@@ -89,6 +89,11 @@
 
 
     Place.getForm(item_params, function (result) {
+      // Prepare place gallery
+      if (result.place.gallery.length) {
+        $scope.placeGallery = _.sortBy(result.place.gallery, 'addedAt');
+        $scope.placeGalleryFirstPhoto = $scope.placeGallery[0];
+      }
 
       $scope.cemetery = new Cemetery(result.cemetery);
       $scope.area = new Area(result.area);
