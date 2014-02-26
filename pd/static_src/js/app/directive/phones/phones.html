@@ -1,0 +1,101 @@
+﻿<div class="phones_block">
+	<div ng-hide="isStaticBlock">
+		<table class="table table-striped">
+			<tr>
+				<th>Тип</th>
+				<th>Номер</th>
+				<th>
+				<button class="btn btn-success btn-mini"
+				ng-click="open()">
+					<span class="icon-plus"></span>
+				</button></th>
+			</tr>
+			<tr ng-repeat="phone in phones">
+				<td>{{phone.phonetype | objList:PHONETYPE_CHOICES}}</td>
+				<td>
+				    <span ng-show="phone.number.length">+</span>
+				    {{phone.number}}
+				</td>
+				<td>
+				<button class="btn btn-success btn-mini" ng-click="open(phone)">
+					<span class="icon-edit"></span>
+				</button>
+                <button class="btn btn-mini" ng-click="destroy($index)">
+                    <span class="icon-remove"></span>
+                </button>
+				</td>
+			</tr>
+		</table>
+		<p ng-show="responsible.phones"><b>Старые записи телефонов:</b>
+			{{responsible.phones}}
+		</p>
+	</div>
+
+	<!-- Phone add form -->
+	<div ng-show="isPhoneAddOpen">
+            ﻿<form novalidate name="add_phone">
+                <h2>Добавить телефон</h2>
+            
+                <label for="phonetype">Тип:</label>
+            
+                <select ng-model="phone.phonetype" name="phonetype" ng-options="value.id as value.name for value in PHONETYPE_CHOICES"></select>
+                <span class="error" ng-show="add_phone.phonetype.$error.required">Выберите тип телефона</span>
+                <label for="phone_number">Номер:</label>
+            
+                <span>+</span>
+                <input type="text" name="phone_number" off-ui-mask="{{'+9 (999) 999-9999'}}"
+                   ui-validate="{validPhone : 'validatePhone($value)' }"
+                   ng-model="phone.number"
+                   popover-placement="right" popover-trigger="mouseenter"
+                   popover='Введите номер телефона в международном формате без "+" и без "8". Пример: 74996772043'
+                   ng-maxlength="maxlength">
+                <p class="error" ng-show="add_phone.phone_number.$invalid">Неверный номер телефона</p>
+               
+                <div class="row-fluid">
+                    <button ng-click="save()" 
+                        ng-disabled="add_phone.phone_number.$invalid || !phone.number"
+                        class="btn btn-primary">
+                        Сохранить
+                    </button>
+                    <button ng-click="close()" class="btn">
+                        Отмена
+                    </button>
+                </div>
+            </form>
+
+	</div>
+	<!-- EOF add form -->
+
+	<!-- Phone edit form -->
+	<div ng-show="isPhoneEditOpen">
+            ﻿<form novalidate name="form_phone">
+                <h2>Редактировать телефон</h2>
+            
+                <label for="phonetype">Тип:</label>
+            
+                <select ng-model="phone.phonetype" name="phonetype" ng-options="value.id as value.name for value in PHONETYPE_CHOICES"></select>
+                <span class="error" ng-show="form_phone.phonetype.$error.required">Выберите тип телефона</span>
+                <label for="phone_number">Номер:</label>
+                
+                <span>+</span>
+                <input type="text" name="phone_number" 
+                   ng-model="phone.number"  off-ui-mask="{{'+9 (999) 999-9999'}}"
+                   ui-validate="{validPhone : 'validatePhone($value)' }"
+				   popover-placement="right" popover='Введите номер телефона в международном формате без "+" и без "8". Пример: 74996772043'
+                   ng-maxlength="maxlength">
+                <p class="error" ng-show="form_phone.phone_number.$invalid">Неверный номер телефона</p>
+            
+                <div class="row-fluid">
+                    <button ng-click="save(phone)"
+                        ng-disabled="form_phone.phone_number.$invalid || !phone.number"
+                        class="btn btn-primary">
+                        Сохранить
+                    </button>
+                    <button ng-click="close(form_phone)" class="btn">
+                        Отмена
+                    </button>
+                </div>
+            </form>	</div>
+	<!-- EOF edit form -->
+</div>
+

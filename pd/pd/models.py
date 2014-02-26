@@ -4,6 +4,7 @@ import os
 import pytils
 import datetime
 
+from django.conf import settings
 from django.db import models
 from django.contrib.contenttypes.models import ContentType
 from django.db.models.loading import get_model
@@ -37,6 +38,17 @@ class UnclearDate:
 
     def __unicode__(self):
         return self.strftime('%d.%m.%Y')
+
+    def str_safe(self):
+        """
+        YYYY or YYYY-MM or YYYY-MM-DD
+        """
+        result = str(self.d.year)
+        if not self.no_month:
+            result += '-%02d' % self.d.month
+        if not self.no_day:
+            result += '-%02d' % self.d.day
+        return result
 
     @property
     def month(self):
@@ -191,6 +203,22 @@ class BaseModel(models.Model):
     dt_created = models.DateTimeField(_(u"Дата/время создания"), auto_now_add=True)
     dt_modified = models.DateTimeField(_(u"Дата/время модификации"), auto_now=True)
 
+def upload_slugified(instance, filename):
+    """
+    Загрузка файлов из models.FileField
+    
+    Полагается, что файлы загружаются в одну кучу в каталоге в зависимости
+    от класса модели с FileField.
+    Нелатинские символы и знаки препинания преобразуются в такое,
+    что не вызывает 'нареканий' у Django
+    """
+    fname = u'.'.join(map(pytils.translit.slugify, filename.rsplit('.', 1)))
+    if isinstance(instance, get_model('orders', 'Product')):
+        return os.path.join('product-photo', fname)
+    if isinstance(instance, get_model('orders', 'ProductCategory')) or \
+       isinstance(instance, get_model('billing', 'Currency')):
+        return os.path.join('icons', fname)
+
 def files_upload_to(instance, filename):
     instance.original_name = filename
     fname = u'.'.join(map(pytils.translit.slugify, filename.rsplit('.', 1)))
@@ -216,14 +244,24 @@ def files_upload_to(instance, filename):
     elif isinstance(instance, get_model('persons', 'DeathCertificateScan')):
         return os.path.join('death-certificates',
                 today_pk_dir % instance.deathcertificate.person.pk, fname)
+    elif isinstance(instance, get_model('burials', 'PlacePhoto')):
+        return os.path.join('place-photos',
+                today_pk_dir % instance.pk, fname)
+    elif isinstance(instance, get_model('burials', 'AreaPhoto')):
+        return os.path.join('area-photos',
+                today_pk_dir % instance.cemetery.pk, fname)
     elif isinstance(instance, get_model('burials', 'GravePhoto')):
         return os.path.join('grave-photos',
                 today_pk_dir % instance.grave.place.pk, fname)
     elif isinstance(instance, get_model('users', 'RegisterProfileScan')):
         return os.path.join('register-profile',
                 today_pk_dir % instance.registerprofile.pk, fname)
+    elif isinstance(instance, get_model('users', 'CustomerProfilePhoto')):
+        return os.path.join('customer-profile',
+                today_pk_dir % instance.customerprofile.user.pk, fname)
     else:
         return os.path.join('files', fname)
+
 
 class Files(models.Model):
     """
@@ -242,6 +280,9 @@ class Files(models.Model):
     def delete_from_media(self):
         if self.bfile and os.path.exists(self.bfile.path):
             os.remove(self.bfile.path)
+            thmb = os.path.join(settings.THUMBNAILS_STORAGE_ROOT, self.bfile.name)
+            if os.path.exists(thmb):
+                os.shutil.rmtree(thmb)
 
     def delete(self):
         self.delete_from_media()
@@ -250,6 +291,16 @@ class Files(models.Model):
 def validate_gt0(value):
     if value <= 0:
         raise ValidationError(_(u'Должно быть больше нуля'))
+
+def validate_phone_as_number(value):
+    """
+    Проверка поля телефона, если оно задается как число, например Decimal
+    """
+    if value < 0:
+        raise ValidationError(_(u'Неверный первый знак в телефоне'))
+    min_digits = 10
+    if value < 10**(min_digits-1):
+        raise ValidationError(_(u'Мало цифр в телефоне. Минимум: %d цифр') % min_digits)
 
 class  GetLogsMixin(object):
     """

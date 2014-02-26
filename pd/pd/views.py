@@ -69,20 +69,25 @@ def media_xsendfile(request, path, document_root):
         # Должны получить две группы: 'death-certificates' и  '5998'
         #
         m= re.search(r'^/?([^/]+).*/(\d+)/[^/]+$',path)
-        if not m:
-            raise Http404
-        what = m.group(1)
-        pk = m.group(2)
-        if what == 'death-certificates':
-            try:
-                burial = get_model('burials', 'Burial').objects.filter(deadman__pk=pk)[0]
+        if m:
+            what = m.group(1)
+            pk = m.group(2)
+            if what == 'death-certificates':
+                try:
+                    burial = get_model('burials', 'Burial').objects.filter(deadman__pk=pk)[0]
+                    if not burial.is_accessible(request.user):
+                        raise Http404
+                except IndexError:
+                    raise Http404
+            elif what == 'bfiles':
+                burial = get_object_or_404(get_model('burials', 'Burial'), pk=pk)
                 if not burial.is_accessible(request.user):
                     raise Http404
-            except IndexError:
-                raise Http404
-        elif what == 'bfiles':
-            burial = get_object_or_404(get_model('burials', 'Burial'), pk=pk)
-            if not burial.is_accessible(request.user):
+        else:
+            # Для товаров и их категорий: открыто всем
+            if re.search(r'^(?:product\-photo|icons)/',path):
+                pass
+            else:
                 raise Http404
         # Файлы остальных обхъектов пока отдаем без проверки, имеет ли к ним доступ
         # пользователь request.user
@@ -110,3 +115,18 @@ class FormInvalidMixin(BaseFormView):
         messages.error(self.request, _(u'Обнаружены ошибки, их необходимо исправить'))
         return super(FormInvalidMixin, self).form_invalid(form, *args, **kwargs)
 
+def get_front_end_url(request):
+    if settings.FRONT_END_URL:
+        result = settings.FRONT_END_URL
+        if not result.endswith('/'):
+            result += '/'
+    else:
+        back_end_prefix = settings.BACK_END_PREFIX if settings.BACK_END_PREFIX.endswith('.') \
+                                                else settings.BACK_END_PREFIX + '.'
+        host = request.get_host()
+        result = '/'
+        if host.startswith(back_end_prefix):
+            result = 'https://' if request.is_secure() else 'http://'
+            # ВНИМАНИЕ: заканчиваем на '/'
+            result += host[len(back_end_prefix):] + '/'
+    return result

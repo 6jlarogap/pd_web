@@ -142,9 +142,9 @@
             {% if place %}{% trans "Свободно" %}: {{ place.get_available_count }}<br/>{% endif %}
             {% if user.profile.is_ugh %}
                 {% if b.exhumated and b.exhumationrequest.place %}
-                    <a href="{% url view_place b.exhumationrequest.place.pk %}" class="btn">{% trans "карточка" %}</a>
+                    <a href="/manage/cemetery/{{ b.exhumationrequest.place.cemetery.pk }}/area/{{ b.exhumationrequest.place.area.pk }}/place/{{ b.exhumationrequest.place.pk }}" class="btn">{% trans "карточка" %}</a>
                 {% elif place %}
-                    <a href="{% url view_place place.pk %}" class="btn">{% trans "карточка" %}</a>
+                    <a href="/manage/cemetery/{{ b.cemetery.pk }}/area/{{ b.area.pk }}/place/{{ place.pk }}" class="btn">{% trans "карточка" %}</a>
                 {% endif %}
             {% endif %}
             {% if user.profile.is_loru and not b.is_closed and not b.exhumated %} 
@@ -166,10 +166,15 @@
         <dt>{% trans "Ответственный" %}:</dt>
         <dd>
             {% if show_private_data %}
-                {{ b.get_responsible|default:"не указан" }}
-                {% if b.get_responsible.address %}
-                     <br />{{ b.get_responsible.address }}
-                 {% endif %}
+                {% if b.get_responsible %}
+                    {{ b.get_responsible }}
+                    {% if b.get_responsible.address %}
+                        <br />{{ b.get_responsible.address }}
+                    {% endif %}
+                    {% if b.get_responsible.login_phone %}
+                        <br />{% trans "Мобильный телефон для входа в кабинет" %}: {{ b.get_responsible.login_phone }}
+                    {% endif %}
+                {% endif %}
             {% else %}
                 {% if b.get_responsible %}
                     {% trans "имеется" %}

@@ -159,7 +159,8 @@
                     <a class="btn" href="{% url edit_burial b.pk %}">{% trans "правка" %}</a>
                 {% endif %}
                 {% if b.get_place %}
-                    <a class="btn" href="{% url view_place b.get_place.pk %}">{% trans "место" %}</a>
+                    {# Эксгумированое зх не имеет b.place, но его место можно найти как b.get_place #}
+                    <a class="btn" href="/manage/cemetery/{{ b.cemetery.pk}}/area/{{ b.area.pk }}/place/{{ b.get_place.pk }}">{% trans "место" %}</a>
                 {% endif %}
             {% endif %}
             {% if not b.is_bio and not b.dc_filled %}

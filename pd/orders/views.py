@@ -1,9 +1,12 @@
 # coding=utf-8
+
 import datetime
+import decimal
 import json
 
 from django.contrib import messages
 from django.core.urlresolvers import reverse
+from django.db import transaction
 from django.db.models.aggregates import Count, Sum
 from django.db.models.query_utils import Q
 from django.http import HttpResponse, Http404
@@ -19,13 +22,20 @@ from django.shortcuts import get_object_or_404
 
 from logs.models import write_log
 from burials.forms import AddOrgForm, AddAgentForm, AddDoverForm, AddDocTypeForm
-from burials.models import Burial
+from burials.models import Burial, Place, Grave, GravePhoto, PlacePhoto
+from users.models import CustomerProfile, CustomerProfilePhoto, Org, ProfileLORU
 from orders.forms import ProductForm, OrderForm, OrderItemFormset, CoffinForm, CatafalqueForm, \
                          AddInfoForm, OrderSearchForm, OrderBurialForm
-from orders.models import Product, Order, OrderItem
+from orders.models import Product, Order, OrderItem, ProductCategory, ProductStatus, ProductHistory
 from pd.forms import CommentForm
 from pd.views import PaginateListView, RequestToFormMixin
 from reports.models import make_report
+
+from rest_framework import viewsets
+from rest_framework.views import APIView
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from serializers import ProductCategorySerializer, ProductsSerializer, ProductInfoSerializer
 
 
 class LORURequiredMixin:
@@ -572,3 +582,267 @@ class OrderBurialView(LORURequiredMixin, RequestToFormMixin, UpdateView):
         return redirect(reverse('create_burial') + '?order=%s' % self.object.pk)
 
 order_burial = OrderBurialView.as_view()
+
+
+class ProductCategoryViewSet(viewsets.ModelViewSet):
+    model = ProductCategory
+    serializer_class = ProductCategorySerializer
+    permission_classes = (IsAuthenticated,)
+
+class CustomerDataMixin:
+    def get_customer_data(self, request):
+        username = request.user.username
+        places = []
+        lorus = set()
+        is_customer = True
+        try:
+            request.user.customerprofile
+        except CustomerProfile.DoesNotExist:
+            is_customer = False
+        else:
+            try:
+                login_phone = decimal.Decimal(username)
+            except decimal.InvalidOperation:
+                is_customer = False
+            else:
+                lorus = set()
+                for p in Place.objects.filter(responsible__login_phone=login_phone):
+                    places.append(p)
+                    lorus.update(p.cemetery.ugh.get_loru_list())
+        return is_customer, places, lorus
+        
+
+class CatalogFiltersViewSet(CustomerDataMixin, viewsets.ViewSet):
+    queryset = Place.objects.none()
+    permission_classes = (IsAuthenticated,)
+    
+    def list(self, request):
+        is_customer, places, lorus = self.get_customer_data(request)
+        places = [{'id': p.pk, 'place': p.place, } for p in places]
+        suppliers = [{'id': l.pk, 'name': l.name, } for l in lorus]
+        data = {
+            'supplier': suppliers,
+            'place': places,
+        }
+        return Response(status=200 if is_customer else 400, data=data)
+
+class ProductsViewSet(CustomerDataMixin, viewsets.ModelViewSet):
+    model = Product
+    serializer_class = ProductsSerializer
+    permission_classes = (IsAuthenticated,)
+
+    def get_queryset(self):
+        is_customer, places, lorus = self.get_customer_data(self.request)
+        if not is_customer or not places:
+            return Product.objects.none()
+
+        place_id = self.request.GET.get('filter[place]')
+        loru_id = self.request.GET.get('filter[supplier]')
+        qs = Q(loru__in=lorus) if not place_id and not loru_id else Q()
+
+        if place_id:
+            for p in places:
+                if p.pk == int(place_id):
+                    place = p
+                    break
+            else:
+                return Product.objects.none()
+            qs &= Q(loru__ugh_list__ugh=place.cemetery.ugh)
+
+        if loru_id:
+            for l in lorus:
+                if l.pk == int(loru_id):
+                    loru = l
+                    break
+            else:
+                return Product.objects.none()
+            qs &= Q(loru=loru)
+
+        if self.request.GET.get('filter[price_from]'):
+            qs &= Q(price__gte=self.request.GET.get('filter[price_from]'))
+        if self.request.GET.get('filter[price_to]'):
+            qs &= Q(price__lte=self.request.GET.get('filter[price_to]'))
+        if self.request.GET.get('filter[category]'):
+            qs &= Q(productcategory__pk=self.request.GET.get('filter[category]'))
+        
+        offset = self.request.GET.get('offset') and int(self.request.GET.get('offset'))
+        limit = self.request.GET.get('limit') and int(self.request.GET.get('limit'))
+        
+        filter = Product.objects.filter(qs)
+        if offset and limit:
+            filter = filter[offset:offset+limit]
+        elif offset:
+            filter = filter[offset:]
+        elif limit:
+            filter = filter[:limit]
+        
+        return filter
+        
+class ProductInfoViewSet(CustomerDataMixin, viewsets.ModelViewSet):
+    model = Product
+    serializer_class = ProductInfoSerializer
+    permission_classes = (IsAuthenticated,)
+
+    def get_queryset(self):
+        is_customer, places, lorus = self.get_customer_data(self.request)
+        if not is_customer or not places or not self.request.GET.get('id'):
+            return Product.objects.none()
+        return Product.objects.filter(loru__in=lorus, pk=self.request.GET.get('id'))
+
+class CabinetViewSet(CustomerDataMixin, viewsets.ViewSet):
+    queryset = CustomerProfile.objects.none()
+    permission_classes = (IsAuthenticated,)
+    
+    def list(self, request):
+        is_customer, places, lorus = self.get_customer_data(request)
+        if not is_customer:
+            return Response(status=400, data=[])
+        profile = request.user.customerprofile
+        data = {
+            'id': request.user.pk,
+        }
+        try:
+            photo = request.build_absolute_uri(profile.customerprofilephoto.bfile.url) \
+                if profile.customerprofilephoto.bfile else None
+        except CustomerProfilePhoto.DoesNotExist:
+            photo = None
+        data['photo'] = photo
+        data['lastName'] = profile.user_last_name
+        data['firstName'] = profile.user_first_name
+        data['middleName'] = profile.user_middle_name
+        data['loginPhone'] = request.user.username
+        data['places'] = []
+        for p in places:
+            place={'id': p.pk}
+            place['address'] = p.cemetery.address and p.cemetery.address.__unicode__() or ''
+            place['location'] = {
+                'latitude': p.lat,
+                'longitude': p.lng,
+            }
+            place['graves'] = []
+            gallery = p.get_photo_gallery(request)
+            for g in Grave.objects.filter(place=p).order_by('grave_number'):
+                grave = {'graveNumber': g.grave_number}
+                burials = []
+                for b in g.burial_set.all():
+                    burials.append(
+                        {
+                            'id': b.pk,
+                            'fio': b.deadman and b.deadman.full_name_complete() or _(u"Неизвестный"),
+                            'photo': None,
+                            'birthDate': b.deadman and b.deadman.birth_date and b.deadman.birth_date.str_safe() or None,
+                            'deathDate': b.deadman and b.deadman.death_date and b.deadman.death_date.str_safe() or None,
+                        }
+                    )
+                grave['burials'] = burials
+                place['graves'].append(grave)
+            place['gallery'] = sorted(gallery, key=lambda photo: photo['addedAt'], reverse=True)
+            place['photo'] = place['gallery'][0]['photo'] if place['gallery'] else None
+            data['places'].append(place)           
+            
+        return Response(status=200, data=data)
+
+class UserLoruMixin:
+    ivalid_user_data = { "detail": "User denied access: not LORU" }
+    
+    def check_if_loru(self, request):
+        try:
+            request.user and request.user.profile
+        except (AttributeError, Profile.DoesNotExist):
+            return False
+        else:
+            return request.user.profile.is_loru()
+
+class LoruProductPlaces(UserLoruMixin, APIView):
+    """
+    Обновление статусов продуктов на площадках (ОМС)
+
+    Пример:
+    [
+        {
+            “id”: 1,
+            “places”: [
+            {
+                “id”: 5, 
+                “status”: “disable”
+            },
+            {
+                “id”: 8, 
+                “status”: “up”
+            }
+            ]
+        },
+        {
+            “id”: 2,
+            “places”: [
+            {
+                “id”: 5, 
+                “status”: “enable”
+            }
+            ]
+        }
+    ]
+    """
+    
+    permission_classes = (IsAuthenticated,)
+
+    @transaction.commit_on_success
+    def post(self, request, format=None):
+        if not self.check_if_loru(request):
+            return Response(data=self.ivalid_user_data, status=403)
+        data = []
+        for p in request.DATA:
+            if Product.objects.filter(pk=p['id'], loru=request.user.profile.org).count():
+                data_p = { 'id': p['id'], 'places': [] }
+                for o in p['places']:
+                    if ProfileLORU.objects.filter(ugh_id=o['id'], loru=request.user.profile.org).count():
+                        ugh = Org.objects.get(pk=o['id'])
+                        data_p['places'].append(o)
+                        dt = datetime.datetime.now()
+                        status, created = ProductStatus.objects.get_or_create(
+                                            product_id=p['id'],
+                                            ugh=ugh,
+                                            defaults={'status': o['status'],
+                                                      'dt': dt,
+                                            }
+                        )
+                        if not created:
+                            status.status=o['status']
+                            status.dt=dt
+                            status.save()
+                        publish_cost = '0.0' if o['status'] == ProductHistory.PRODUCT_OPERATION_DISABLE \
+                                           else ugh.publish_cost
+                        ProductHistory.objects.create(
+                                        product_id=p['id'],
+                                        ugh=ugh,
+                                        operation=o['status'],
+                                        dt=dt,
+                                        publish_cost=publish_cost,
+                                        currency=ugh.currency,
+                        )
+                data.append(data_p)
+        return Response(data=data, status=200)
+
+loru_product_places = LoruProductPlaces.as_view()
+
+class UghPublishedProductsViewSet(viewsets.ViewSet):
+    queryset = Product.objects.none()
+    permission_classes = (IsAuthenticated,)
+    
+    def list(self, request):
+        data=[]
+        try:
+            profile=request.user.profile
+        except AttributeError:
+            return Response(status=400, data=data)
+        if not profile.is_loru():
+            return Response(status=400, data=data)
+        ugh_list = [ pl.ugh for pl in ProfileLORU.objects.filter(loru=profile.org)]
+        for p in Product.objects.filter(loru=profile.org).order_by('pk'):
+            data_p = { 'id': p.pk, 'name': p.name, 'availableOnPlaces': [] }
+            for ps in ProductStatus.objects.filter(product=p, ugh__in=ugh_list):
+                if ps.status in (ProductHistory.PRODUCT_OPERATION_ENABLE,
+                                 ProductHistory.PRODUCT_OPERATION_UP):
+                    data_p['availableOnPlaces'].append(ps.ugh.pk)
+            data.append(data_p)
+        return Response(status=200, data=data)

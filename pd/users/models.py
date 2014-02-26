@@ -8,11 +8,50 @@ from pd.models import BaseModel, Files, GetLogsMixin, validate_gt0
 from pd.utils import DigitsValidator, LengthValidator, NotEmptyValidator
 
 
-class Profile(models.Model):
+class CommonProfile(models.Model):
     user = models.OneToOneField('auth.User', null=True)
+    user_last_name = models.CharField(_(u"Фамилия"), max_length=255, null=True, blank=True)
     user_first_name = models.CharField(_(u"Имя"), max_length=255, null=True, blank=True)
     user_middle_name = models.CharField(_(u"Отчество"), max_length=255, null=True, blank=True)
-    user_last_name = models.CharField(_(u"Фамилия"), max_length=255, null=True, blank=True)
+
+    class Meta:
+        abstract = True
+
+    def __unicode__(self):
+        return self.user and (self.full_name() or self.user.username) or u'%s' % self.pk
+
+    def full_name(self):
+        name = ""
+        if self.user_last_name:
+            name = self.user_last_name
+            if self.user_first_name:
+                name = u"{0} {1}".format(name, self.user_first_name)
+                if self.user_middle_name:
+                    name = u"{0} {1}".format(name, self.user_middle_name)
+        if not name:
+            name = self.user.get_full_name()
+        return name
+
+    def last_name_initials(self):
+        """
+        Фамилия И.О.
+        """
+        name = ""
+        if self.user_last_name:
+            name = self.user_last_name
+            if self.user_first_name:
+                name = u"{0} {1}.".format(name, self.user_first_name[0])
+                if self.user_middle_name:
+                    name = u"{0}{1}.".format(name, self.user_middle_name[0])
+        return self.user and (name or self.user.username) or u'%s' % self.pk
+
+class CustomerProfile(CommonProfile):
+    pass
+
+class CustomerProfilePhoto(Files):
+    customerprofile = models.OneToOneField(CustomerProfile)
+
+class Profile(CommonProfile):
     org = models.ForeignKey('users.Org', null=True)
 
     is_agent = models.BooleanField(_(u"Агент"), default=False, blank=True)
@@ -25,9 +64,6 @@ class Profile(models.Model):
 
     lat = models.DecimalField(max_digits=30, decimal_places=27, blank=True, null=True)
     lng = models.DecimalField(max_digits=30, decimal_places=27, blank=True, null=True)
-
-    def __unicode__(self):
-        return self.user and (self.full_name() or self.user.username) or u'%s' % self.pk
 
     def is_loru(self):
         return self.org and self.org.type == Org.PROFILE_LORU
@@ -43,31 +79,6 @@ class Profile(models.Model):
     def can_create_burials(self):
         return self.is_ugh() or self.is_loru()
 
-    def full_name(self):
-        name = ""
-        if self.user_last_name and self.user_first_name:
-            name = u"{0} {1}".format(self.user_last_name, self.user_first_name)
-            if self.user_middle_name:
-                name = u"{0} {1}".format(name, self.user_middle_name)
-        if not name:
-            name = self.user.get_full_name()
-        return name
-
-    def last_name_initials(self):
-        """
-        Фамилия И.О.
-        """
-        name = ""
-        if self.user_last_name and self.user_first_name:
-            name = u"{0} {1}.".format(self.user_last_name, self.user_first_name[0])
-            if self.user_middle_name:
-                name = u"{0}{1}.".format(name, self.user_middle_name[0])
-        if not name:
-            name = self.user.last_name
-            if name and self.user.first_name:
-                name = u"{0} {1}.".format(name, self.user.first_name[0])
-        return self.user and (name or self.user.username) or u'%s' % self.pk
-
     def get_region(self):
         if self.region_fias:
             return DFiasAddrobj.objects.get(parentguid='', aoguid=self.region_fias)
@@ -76,6 +87,37 @@ class Profile(models.Model):
         if self.lat and self.lng:
             return ','.join([self.lat, self.lng])
         return ''
+
+def is_cabinet_user(user):
+    try:
+        user.customerprofile
+        return True
+    except CustomerProfile.DoesNotExist:
+        return False
+    
+def get_mail_footer(user):
+    footer = ''
+    if user.is_authenticated():
+        is_customer = is_cabinet_user(user)
+        pr = user.customerprofile if is_customer else user.profile
+        footer = _(     u'\n\n'
+                        u'Пользователь: %s %s %s\n'
+                        u'Email: %s\n'
+                  ) % (
+                        user.username,
+                        '/' if pr.full_name() else '',
+                        pr.full_name(),
+                        user.email,
+                       )
+        if not is_customer:
+            footer += _(    u'\n\n'
+                            u'Организация: %s\n'
+                            u'Email организации: %s\n'
+                        ) % (
+                                pr.org,
+                                pr.org and pr.org.email,
+                            )
+    return footer
 
 class Org(GetLogsMixin, BaseModel):
     NUM_EMPTY = 'empty'
@@ -131,6 +173,10 @@ class Org(GetLogsMixin, BaseModel):
     plan_date_days_before = models.PositiveIntegerField(_(u"Кол-во дней для ввода плановой даты захоронения в прошлом"), default=0)
     max_graves_count = models.PositiveIntegerField(_(u"Максимальное число могил в месте"), default=5,
                                 validators=[validate_gt0])
+    worktime = models.CharField(_(u"Время работы (ЧЧ:ММ - ЧЧ:ММ)"), max_length=255, default='', blank=True)
+    site = models.URLField(_(u"Сайт"), default='', blank=True)
+    publish_cost = models.DecimalField(_(u"Стоимость добавления продукта"), max_digits=20, decimal_places=2, default='0.00')
+    currency = models.ForeignKey('billing.Currency', verbose_name=_(u"Валюта"), default=1)
 
     class Meta:
         verbose_name = _(u'Организация')

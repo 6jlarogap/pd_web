@@ -9,6 +9,8 @@ urlpatterns = patterns('users.views',
 
     url(r'^registration-old/$', 'registration_old', name='registration_old'),
     
+    url(r'^testcaptcha/$', 'testcaptcha', name='testcaptcha'),
+
     url(r'^register/$', 'register', name='register'),
     url(r'^register/(?P<key>[A-Za-z0-9]+)/activation/$', 'register_activation',
         name='register_activation'),

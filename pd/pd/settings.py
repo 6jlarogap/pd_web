@@ -1,11 +1,11 @@
 # coding: utf-8
 
+import os
+
 DEBUG = False
 TEMPLATE_DEBUG = DEBUG
 
-ADMINS = (
-    ('Arcady Chumachenko', 'arcady.chumachenko@gmail.com'),
-)
+ADMINS = ()
 
 MANAGERS = ADMINS
 
@@ -53,14 +53,18 @@ DATE_INPUT_FORMATS = (
     '%d.%m.%Y', '%Y-%m-%d',
 )
 
-MEDIA_ROOT = './media/'
+ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+
+MEDIA_ROOT = os.path.join(ROOT_DIR, 'media/')
 MEDIA_URL = '/media/'
 
-STATIC_ROOT = './static/'
+STATIC_ROOT = os.path.join(ROOT_DIR, 'static/')
 STATIC_URL = '/static/'
 
+
 STATICFILES_DIRS = (
-    './static_src/',
+    os.path.join(ROOT_DIR, 'static_src/'),
+    os.path.join(ROOT_DIR, 'asset_src/'),
 )
 
 STATICFILES_FINDERS = (
@@ -83,8 +87,10 @@ MIDDLEWARE_CLASSES = (
     'django.contrib.messages.middleware.MessageMiddleware',
     'debug_toolbar.middleware.DebugToolbarMiddleware',
     'users.middleware.ProfileMiddleware',
-    'pd.middleware.LoginRequiredMiddleware'
+    'pd.middleware.LoginRequiredMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
 )
+
 
 TEMPLATE_CONTEXT_PROCESSORS = (
     "django.contrib.auth.context_processors.auth",
@@ -103,10 +109,8 @@ ROOT_URLCONF = 'pd.urls'
 WSGI_APPLICATION = 'pd.wsgi.application'
 
 TEMPLATE_DIRS = (
-    './templates/',
+    os.path.join(ROOT_DIR, 'templates/'),
 )
-
-SENTRY_DSN = 'https://3d969464fe0c413f8394d2a045afc2d9:ab5346a1afbc43ceb131bd02c1f2ed53@app.getsentry.com/4786'
 
 INSTALLED_APPS = (
     'django.contrib.auth',
@@ -118,6 +122,9 @@ INSTALLED_APPS = (
     'django.contrib.admin',
     'django.contrib.admindocs',
 
+    'rest_framework',
+    'rest_framework.authtoken',
+
     'south',
     'pytils',
     'debug_toolbar',
@@ -126,6 +133,7 @@ INSTALLED_APPS = (
 
     'geo',
     'burials',
+    'billing',
     'persons',
     'users',
     'orders',
@@ -133,6 +141,9 @@ INSTALLED_APPS = (
     'reports',
     'import_burials',
     'mobile',
+    'rest_api',
+    'restthumbnails',
+    'django_assets',
 )
 
 from pd.logging import skip_unreadable_post
@@ -176,8 +187,11 @@ ACCOUNT_ACTIVATION_DAYS = 7
 LOGIN_URL = "/login/"
 
 # Это регулярные выражения!!! :
+# URLs, не требующие регистрации в системе:
 REGISTER_URLS_REGEX = r'^/?register(?:/|$)'
 SUPPORT_URLS_REGEX = r'^/?support(?:/|$)'
+# URLs, требующие регистрации, но она проходит посредством tokens:
+API_URLS_REGEX = r'^/?api(?:/|$)'
 
 LOGOUT_URL = "/logout/"
 LOGIN_REDIRECT_URL = "/"
@@ -235,6 +249,82 @@ PRODUCTION_SITE = False
 # только таковой с организации с этим ИНН
 #
 # SUPERVISOR_ORG_INN = 'строка'
+
+# CORS:
+# Переопределить в False в local_settings.py на production server
+#
+CORS_ORIGIN_ALLOW_ALL = True
+#
+# Задать в local_settings.py на production server:
+#
+#CORS_ORIGIN_WHITELIST = (
+#   'pohoronnoedelo.ru',
+#)
+
+# THUMB
+THUMBNAILS_FILE_SIGNATURE = '%(source)s/%(size)s~%(method)s~%(secret)s.%(extension)s'
+THUMBNAILS_STORAGE_BASE_PATH = '/thumb/'
+THUMBNAILS_PROXY_BASE_URL = '/thumb/'
+#THUMBNAILS_STORAGE_BACKEND = 'testsuite.storages.TemporaryStorage'
+THUMBNAILS_STORAGE_ROOT = os.path.join(MEDIA_ROOT, 'thumbnails')
+# возможные длины и высоты:
+THUMBNAILS_ALLOWED_SIZE_RANGE = range(20, 2001)
+
+# REST framework
+REST_FRAMEWORK = {
+    'PAGINATE_BY': 50,
+    'PAGINATE_BY_PARAM': 'page_size',
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_api.authentication.SessionAuthentication',
+        'rest_framework.authentication.BasicAuthentication',
+        'rest_framework.authentication.TokenAuthentication',
+    ),
+    'DEFAULT_RENDERER_CLASSES': (
+        'rest_framework.renderers.JSONRenderer',
+        'rest_framework.renderers.BrowsableAPIRenderer',
+    ),
+    'DEFAULT_PARSER_CLASSES': (
+        'rest_framework.parsers.JSONParser',
+    ),
+}
+
+
+#ASSETS_URL = STATIC_URL
+ASSETS_MODULES = [
+    'pd.assets'
+]
+ASSETS_DEBUG = False
+
+# На production, а также на разработческих серверах,
+# где налажена связка frontend - backend,
+# установить этот параметр в True
+#
+REDIRECT_LOGIN_TO_FRONT_END = False
+
+# Если работаем с налаженным front-end:
+# ------------------------------------
+# Начальная страница. Пользователь попадает на pd.ru. Это front-end,
+# использующий ссылки на org.pd.ru, что является back-end.
+# Иногда потребуется внутри back-end вычислять адрес front-end,
+# для чего:
+BACK_END_PREFIX = 'org.'
+# В отладочных целях может использоваться (в local_settings.py):
+FRONT_END_URL = None
+# Если задан, например, FRONT_END_URL = 'http://localhost/api/',
+# то действие BACK_END_PREFIX отменяется
+
+# Учетные записи для SMS- службы рассылки СМС-сообщений,
+# на разные страны могут быть разные учетные записи
+# в службе рассылки сообщений. Если кода страны получателя
+# сообщения нет в словарях списка SMS_SERVICE, то действует
+# учетная запись с 'country_code': 'default'.
+# Если и таковой нет, то отправка будет невозможна.
+# Подлежат замене в local_settings.py production сервера:
+SMS_SERVICE = [
+    { 'country_code': '7', 'user': 'user7@email.org', 'password': 'secret7', },
+    { 'country_code': '375', 'user': 'user375@email.org', 'password': 'secret375', },
+    { 'country_code': 'default', 'user': 'default@email.org', 'password': 'default-secret', },
+]
 
 try:
     from local_settings import *
