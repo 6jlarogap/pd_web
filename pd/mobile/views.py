@@ -99,19 +99,9 @@ class MobileGetPlace(UGHRequiredMixin, View):
             argSyncDate = datetime.fromtimestamp(int(argSyncDateUnix))
             queryPlace &= Q(dt_modified__gte = argSyncDate)
         listPlace = Place.objects.filter(queryPlace).order_by('cemetery', 'area', 'id')
-                                
-        queryPlaceStatus = 'select ps.* from burials_placestatus ps inner join burials_place p on ps.place_id = p.id inner join burials_cemetery c on p.cemetery_id = c.id inner join users_org org on c.ugh_id = org.id where org.id = %d and ps.dt_created = (select max(ps2.dt_created) from burials_placestatus ps2 where ps2.place_id = ps.place_id) ' % request.user.profile.org.pk
-        if argAreaId :
-            queryPlaceStatus = queryPlaceStatus + ' and p.area_id = %s'% argAreaId
-        if argCemeteryId :
-            queryPlaceStatus = queryPlaceStatus + ' and p.cemetery_id = %s'% argCemeteryId
-        if argSyncDateUnix :
-            queryPlaceStatus = queryPlaceStatus + ' and extract (epoch from p.dt_modified) >= %s'% argSyncDateUnix
-        listPlaceStatus = PlaceStatus.objects.raw(queryPlaceStatus) 
-                
-        all_objects = list(listPlace) + list(listPlaceStatus)
-        data = serializers.serialize("json", all_objects, fields=('cemetery','area','row','place','oldplace', 'place_width', 'place_length', \
-            'dt_wrong_fio', 'dt_military', 'dt_size_violated', 'dt_unowned','dt_unindentified', 'status'))     
+        
+        data = serializers.serialize("json", listPlace, fields=('cemetery','area','row','place','oldplace', 'place_width', 'place_length', \
+            'dt_wrong_fio', 'dt_military', 'dt_size_violated', 'dt_unowned','dt_unindentified'))     
         return HttpResponse(data, mimetype='application/json')
         
 mobile_get_place = MobileGetPlace.as_view()
@@ -341,7 +331,6 @@ def mobile_upload_area(request):
 @csrf_exempt
 def mobile_upload_place(request):
     if request.method == 'POST':
-#        'dt_wrong_fio', 'dt_military', 'dt_size_violated', 'dt_unowned','dt_unindentified'
         rowName = request.POST['rowName']
         placeName = request.POST['placeName']
         oldPlaceName = request.POST['oldPlaceName']
@@ -368,8 +357,7 @@ def mobile_upload_place(request):
         if request.POST['dtUnowned'] :
             dtUnowned = datetime.strptime(request.POST['dtUnowned'], templateDateTime)
         if request.POST['dtUnindentified'] :
-            dtUnindentified = datetime.strptime(request.POST['dtUnindentified'], templateDateTime)
-        psFoundUnowned = int(request.POST['psFoundUnowned'])
+            dtUnindentified = datetime.strptime(request.POST['dtUnindentified'], templateDateTime)     
 
         user = request.user
         listPlaceForResponse = []
@@ -442,27 +430,9 @@ def mobile_upload_place(request):
                     dt_wrong_fio = dtWrongFio, dt_military = dtMilitary, dt_size_violated = dtSizeViolated, dt_unowned = dtUnowned, dt_unindentified = dtUnindentified)  
                 place.save()
             listPlaceForResponse.append(place)
-               
-        try:
-            curPlaceStatus = PlaceStatus.objects.filter(place__cemetery__ugh=request.user.profile.org, place__pk = placeId ).order_by('-dt_created')[0]
-        except IndexError:
-            curPlaceStatus = None        
-        if psFoundUnowned == 1 :
-            if curPlaceStatus :                
-                if curPlaceStatus.status != PlaceStatus.PS_FOUND_UNOWNED :
-                    curPlaceStatus = PlaceStatus.objects.create(place = place, status = PlaceStatus.PS_FOUND_UNOWNED, creator = request.user)
-            else :
-                curPlaceStatus = PlaceStatus.objects.create(place = place, status = PlaceStatus.PS_FOUND_UNOWNED, creator = request.user)
-        else:
-            if curPlaceStatus :
-                if curPlaceStatus.status == PlaceStatus.PS_FOUND_UNOWNED :
-                    curPlaceStatus = PlaceStatus.objects.create(place = place, status = PlaceStatus.PS_ACTUAL, creator = request.user)
-            else :
-                curPlaceStatus = PlaceStatus.objects.create(place = place, status = PlaceStatus.PS_ACTUAL, creator = request.user)
         
-        listPlaceForResponse.append(curPlaceStatus)
         data = serializers.serialize("json", listPlaceForResponse, fields=('cemetery', 'area', 'row', 'place', 'oldplace', 'place_length', 'place_width', \
-            'dt_wrong_fio', 'dt_military', 'dt_size_violated', 'dt_unowned','dt_unindentified', 'status'))
+            'dt_wrong_fio', 'dt_military', 'dt_size_violated', 'dt_unowned','dt_unindentified'))
         return HttpResponse(data, mimetype='application/json')
     return render_to_response('mobile_upload_place.html', {'message': _(u"Загрузите название места:")})
     
