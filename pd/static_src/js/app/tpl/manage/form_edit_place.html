@@ -73,7 +73,9 @@
       <div class="controls">
         <input pd-dt-checkbox type="checkbox" id="sizeViolated" name="sizeViolated"
                ng-model="editor.item.dt_size_violated" />
-        <span class="help-inline" ng-show="editor.item.dt_size_violated">{{ editor.item.dt_size_violated }}</span>
+        <span class="help-inline" ng-show="editor.item.dt_size_violated">
+          {{ editor.item.dt_size_violated|momentDate:'DD-MM-YYYY HH:mm' }}
+        </span>
       </div>
     </div>
 
@@ -81,7 +83,9 @@
       <label class="control-label" for="unowned">Заброшенное</label>
       <div class="controls">
         <input pd-dt-checkbox type="checkbox" id="unowned" name="unowned" ng-model="editor.item.dt_unowned" />
-        <span class="help-inline" ng-show="editor.item.dt_unowned">{{ editor.item.dt_unowned }}</span>
+        <span class="help-inline" ng-show="editor.item.dt_unowned">
+          {{ editor.item.dt_unowned|momentDate:'DD-MM-YYYY HH:mm' }}
+        </span>
       </div>
     </div>
 
@@ -90,7 +94,9 @@
       <div class="controls">
         <input pd-dt-checkbox type="checkbox" id="unindentified" name="unindentified"
                ng-model="editor.item.dt_unindentified" />
-        <span class="help-inline" ng-show="editor.item.dt_unindentified">{{ editor.item.dt_unindentified }}</span>
+        <span class="help-inline" ng-show="editor.item.dt_unindentified">
+          {{ editor.item.dt_unindentified|momentDate:'DD-MM-YYYY HH:mm' }}
+        </span>
       </div>
     </div>
 
@@ -98,7 +104,9 @@
       <label class="control-label" for="military">Воинское</label>
       <div class="controls">
         <input pd-dt-checkbox type="checkbox" id="military" name="military" ng-model="editor.item.dt_military" />
-        <span class="help-inline" ng-show="editor.item.dt_military">{{ editor.item.dt_military }}</span>
+        <span class="help-inline" ng-show="editor.item.dt_military">
+          {{ editor.item.dt_military|momentDate:'DD-MM-YYYY HH:mm' }}
+        </span>
       </div>
     </div>
 
@@ -106,7 +114,9 @@
       <label class="control-label" for="wrongFIO">Неверные ФИО</label>
       <div class="controls">
         <input pd-dt-checkbox type="checkbox" id="wrongFIO" name="wrongFIO" ng-model="editor.item.dt_wrong_fio" />
-        <span class="help-inline" ng-show="editor.item.dt_wrong_fio">{{ editor.item.dt_wrong_fio }}</span>
+        <span class="help-inline" ng-show="editor.item.dt_wrong_fio">
+          {{ editor.item.dt_wrong_fio|momentDate:'DD-MM-YYYY HH:mm' }}
+        </span>
       </div>
     </div>
 
