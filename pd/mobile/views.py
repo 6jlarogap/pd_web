@@ -20,6 +20,7 @@ from burials.models import Place
 from burials.models import PlaceStatus
 from burials.models import Grave
 from burials.models import GravePhoto
+from burials.models import PlacePhoto
 from burials.models import Burial
 from persons.models import DeadPerson
 from persons.models import BasePerson
@@ -109,7 +110,8 @@ class MobileGetPlace(UGHRequiredMixin, View):
         listPlaceStatus = PlaceStatus.objects.raw(queryPlaceStatus) 
                 
         all_objects = list(listPlace) + list(listPlaceStatus)
-        data = serializers.serialize("json", all_objects, fields=('cemetery','area','row','place','oldplace', 'place_width', 'place_length','status'))     
+        data = serializers.serialize("json", all_objects, fields=('cemetery','area','row','place','oldplace', 'place_width', 'place_length', \
+            'dt_wrong_fio', 'dt_military', 'dt_size_violated', 'dt_unowned','dt_unindentified', 'status'))     
         return HttpResponse(data, mimetype='application/json')
         
 mobile_get_place = MobileGetPlace.as_view()
@@ -176,7 +178,7 @@ class MobileGetBurial(UGHRequiredMixin, View):
 mobile_get_burial = MobileGetBurial.as_view()
 
 @csrf_exempt
-def mobile_upload_photo(request):
+def mobile_upload_gravephoto(request):
     if request.method == 'POST':
         graveId = request.POST['grave']
         lat = request.POST['lat']
@@ -199,10 +201,36 @@ def mobile_upload_photo(request):
         except Grave.DoesNotExist:
             grave = None
             raise Http404
-    return render_to_response('mobile_upload_photo.html', {'message': _(u"Загрузите фотографию к могиле:")})
+    return render_to_response('mobile_upload_gravephoto.html', {'message': _(u"Загрузите фотографию к могиле:")})
+    
+@csrf_exempt
+def mobile_upload_placephoto(request):
+    if request.method == 'POST':
+        placeId = request.POST['place']
+        lat = request.POST['lat']
+        lng = request.POST['lng'] 
+        data = ""
+        listPhoto = []
+        try:
+            place = Place.objects.get(id = placeId)            
+            photo_content = ContentFile(request.FILES['photo'].read())
+            photo = PlacePhoto(place=place, lat = lat, lng = lng, comment = '', creator = request.user)
+            photo.save()
+            photo.bfile.save(request.FILES['photo'].name, photo_content)            
+            if lat and lat :
+                place.lat = lat
+                place.lng = lng
+                place.save()
+            listPhoto.append(photo)
+            data = serializers.serialize("json", listPhoto, fields=('place','lat','lng'))
+            return HttpResponse(data, mimetype='application/json')
+        except Place.DoesNotExist:
+            place = None
+            raise Http404
+    return render_to_response('mobile_upload_placephoto.html', {'message': _(u"Загрузите фотографию к месту:")})
 	
 @csrf_exempt
-def mobile_remove_photo(request):
+def mobile_remove_gravephoto(request):
     if request.method == 'POST':
         gravePhotoId = request.POST['gravePhotoId']
         try :
@@ -212,6 +240,18 @@ def mobile_remove_photo(request):
         except GravePhoto.DoesNotExist:
             return HttpResponse("Ok", mimetype='application/json')                
     return render_to_response('mobile_remove_photo.html', {'message': _(u"Удалить фотографию к могиле:")})
+    
+@csrf_exempt
+def mobile_remove_placephoto(request):
+    if request.method == 'POST':
+        placePhotoId = request.POST['placePhotoId']
+        try :
+            placePhoto = PlacePhoto.objects.get(id = placePhotoId)
+            placePhoto.delete()
+            return HttpResponse("Ok", mimetype='application/json')
+        except PlacePhoto.DoesNotExist:
+            return HttpResponse("Ok", mimetype='application/json')                
+    return render_to_response('mobile_remove_placephoto.html', {'message': _(u"Удалить фотографию к месту:")})
     
 @csrf_exempt
 def mobile_upload_cemetery(request):    
@@ -301,6 +341,7 @@ def mobile_upload_area(request):
 @csrf_exempt
 def mobile_upload_place(request):
     if request.method == 'POST':
+#        'dt_wrong_fio', 'dt_military', 'dt_size_violated', 'dt_unowned','dt_unindentified'
         rowName = request.POST['rowName']
         placeName = request.POST['placeName']
         oldPlaceName = request.POST['oldPlaceName']
@@ -308,17 +349,37 @@ def mobile_upload_place(request):
         placeId = int(request.POST['placeId'])
         placeLength = None
         placeWidth = None
+        dtWrongFio = None
+        dtMilitary = None
+        dtSizeViolated = None
+        dtUnowned = None
+        dtUnindentified = None        
         if request.POST['placeLength'] :
             placeLength = Decimal(request.POST['placeLength'])
         if request.POST['placeWidth'] :
             placeWidth = Decimal(request.POST['placeWidth'])
+        templateDateTime = '%Y-%m-%dT%H:%M:%S.%f'
+        if request.POST['dtWrongFio'] :
+            dtWrongFio = datetime.strptime(request.POST['dtWrongFio'], templateDateTime)
+        if request.POST['dtMilitary'] :
+            dtMilitary = datetime.strptime(request.POST['dtMilitary'], templateDateTime)
+        if request.POST['dtSizeViolated'] :
+            dtSizeViolated = datetime.strptime(request.POST['dtSizeViolated'], templateDateTime)
+        if request.POST['dtUnowned'] :
+            dtUnowned = datetime.strptime(request.POST['dtUnowned'], templateDateTime)
+        if request.POST['dtUnindentified'] :
+            dtUnindentified = datetime.strptime(request.POST['dtUnindentified'], templateDateTime)
         psFoundUnowned = int(request.POST['psFoundUnowned'])
+
         user = request.user
         listPlaceForResponse = []
         try:
             area = Area.objects.get(pk = areaId)
             prevPlace = Place.objects.get(pk = placeId)
-            if (prevPlace.place or "") != placeName or (prevPlace.oldplace or "") != oldPlaceName or (prevPlace.row or "") != rowName or prevPlace.area != area or prevPlace.place_length != placeLength or prevPlace.place_width != placeWidth:
+            if (prevPlace.place or "") != placeName or (prevPlace.oldplace or "") != oldPlaceName or (prevPlace.row or "") != rowName or prevPlace.area != area or \
+                prevPlace.place_length != placeLength or prevPlace.place_width != placeWidth or (prevPlace.dt_wrong_fio is None) != (dtWrongFio is None) or \
+                (prevPlace.dt_military is None) != (dtMilitary is None) or (prevPlace.dt_size_violated is None) != (dtSizeViolated is None) or \
+                (prevPlace.dt_unowned is None) != (dtUnowned is None) or (prevPlace.dt_unindentified is None) != (dtUnindentified is None) :
                 if (prevPlace.oldplace or "") != oldPlaceName :
                     write_log(request, prevPlace, _(u'Переименование места (place=%s, oldplace=%s) в (place=%s, oldplace=%s)' % (prevPlace.place, prevPlace.oldplace, placeName, oldPlaceName)))
                     prevPlace.oldplace = oldPlaceName
@@ -328,6 +389,16 @@ def mobile_upload_place(request):
                 prevPlace.cemetery = area.cemetery
                 prevPlace.place_length = placeLength
                 prevPlace.place_width = placeWidth
+                if (prevPlace.dt_wrong_fio is None) != (dtWrongFio is None) :
+                    prevPlace.dt_wrong_fio = dtWrongFio
+                if (prevPlace.dt_military is None) != (dtMilitary is None) :
+                    prevPlace.dt_military = dtMilitary
+                if (prevPlace.dt_size_violated is None) != (dtSizeViolated is None) :
+                    prevPlace.dt_size_violated = dtSizeViolated
+                if (prevPlace.dt_unowned is None) != (dtUnowned is None) :
+                    prevPlace.dt_unowned = dtUnowned
+                if (prevPlace.dt_unindentified is None) != (dtUnindentified is None) :
+                    prevPlace.dt_unindentified = dtUnindentified
                 prevPlace.save()                
             place = prevPlace    
         except Area.DoesNotExist:
@@ -354,10 +425,21 @@ def mobile_upload_place(request):
                 prevPlace.row = rowName
                 prevPlace.place_length = placeLength
                 prevPlace.place_width = placeWidth
+                if (prevPlace.dt_wrong_fio is None) != (dtWrongFio is None) :
+                    prevPlace.dt_wrong_fio = dtWrongFio
+                if (prevPlace.dt_military is None) != (dtMilitary is None) :
+                    prevPlace.dt_military = dtMilitary
+                if (prevPlace.dt_size_violated is None) != (dtSizeViolated is None) :
+                    prevPlace.dt_size_violated = dtSizeViolated
+                if (prevPlace.dt_unowned is None) != (dtUnowned is None) :
+                    prevPlace.dt_unowned = dtUnowned
+                if (prevPlace.dt_unindentified is None) != (dtUnindentified is None) :
+                    prevPlace.dt_unindentified = dtUnindentified
                 prevPlace.save()
                 place = prevPlace                
             else :
-                place = Place(cemetery = area.cemetery, area = area, place = placeName, row = rowName, oldplace = oldPlaceName, place_length = placeLength, place_width = placeWidth)  
+                place = Place(cemetery = area.cemetery, area = area, place = placeName, row = rowName, oldplace = oldPlaceName, place_length = placeLength, place_width = placeWidth, \
+                    dt_wrong_fio = dtWrongFio, dt_military = dtMilitary, dt_size_violated = dtSizeViolated, dt_unowned = dtUnowned, dt_unindentified = dtUnindentified)  
                 place.save()
             listPlaceForResponse.append(place)
                
@@ -379,7 +461,8 @@ def mobile_upload_place(request):
                 curPlaceStatus = PlaceStatus.objects.create(place = place, status = PlaceStatus.PS_ACTUAL, creator = request.user)
         
         listPlaceForResponse.append(curPlaceStatus)
-        data = serializers.serialize("json", listPlaceForResponse, fields=('cemetery','area','row','place','oldplace','place_length','place_width','status'))
+        data = serializers.serialize("json", listPlaceForResponse, fields=('cemetery', 'area', 'row', 'place', 'oldplace', 'place_length', 'place_width', \
+            'dt_wrong_fio', 'dt_military', 'dt_size_violated', 'dt_unowned','dt_unindentified', 'status'))
         return HttpResponse(data, mimetype='application/json')
     return render_to_response('mobile_upload_place.html', {'message': _(u"Загрузите название места:")})
     
