@@ -60,10 +60,11 @@ class Migration(DataMigration):
         },
         'billing.commission': {
             'Meta': {'object_name': 'Commission'},
-            'ad': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['billing.Ad']"}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'payment': ('django.db.models.fields.related.OneToOneField', [], {'to': "orm['billing.Payment']", 'unique': 'True'}),
-            'share': ('django.db.models.fields.FloatField', [], {})
+            'share': ('django.db.models.fields.FloatField', [], {}),
+            'source_ct': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['contenttypes.ContentType']"}),
+            'source_id': ('django.db.models.fields.PositiveIntegerField', [], {'db_index': 'True'})
         },
         'billing.currency': {
             'Meta': {'object_name': 'Currency'},
