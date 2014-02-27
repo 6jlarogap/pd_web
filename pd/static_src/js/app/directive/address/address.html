@@ -8,34 +8,37 @@
   <div ng-show="isAddressEditorOpen">
     <h2>Редактирование адреса</h2>
 
-    <form name="address_editor">
+    <ng-form name="addressEditorForm">
       <div class="row-fluid">
         <google-search class="span12" location="location"></google-search>
       </div>
       <hr/>
       <div class="row-fluid">
-        <input id="id_address-post_index" class="" type="text" maxlength="255"
-               ng-model="editor.post_index" placeholder="Индекс"/>
+        <input id="id_address-post_index" type="text" maxlength="255" ng-model="editor.post_index"
+               placeholder="Индекс"/>
       </div>
-      <table class="row-fluid">
-        <tr>
-          <td>
-            <input type="text" class="span12 country" ng-model="editor.country.name" placeholder="Страна"
-                   ng-required="editor.street.name.length || editor.city.name.length || editor.region.length"/>
-          </td>
-          <td>
-            <input type="text" class="span12 region" ng-model="editor.region.name" placeholder="Регион"
-                   ng-required="editor.street.name.length || editor.city.name.length"/>
-          </td>
-          <td class="control-group pd-control-group" ng-class="{error: $parent.cemeteryaddrEditForm.city.$invalid}">
-            <input type="text" ng-model="editor.city.name" class="span12 city" placeholder="Город" name="city"
-                   required />
-          </td>
-          <td>
-            <input type="text" ng-model="editor.street.name" class="span12 street" placeholder="Улица"/>
-          </td>
-        </tr>
-      </table>
+
+      <div class="row-fluid">
+        <div class="span3 control-group pd-control-group"
+            ng-class="{error: addressEditorForm.$dirty && addressEditorForm.country.$invalid}">
+          <input type="text" class="span12 country" ng-model="editor.country.name" placeholder="Страна"
+                 name="country" required />
+        </div>
+        <div class="span3 control-group pd-control-group"
+            ng-class="{error: addressEditorForm.$dirty && addressEditorForm.region.$invalid}">
+          <input type="text" class="span12 region" ng-model="editor.region.name" placeholder="Регион"
+                 name="region" ng-required="editor.street.name || editor.city.name"/>
+        </div>
+        <div class="span3 control-group pd-control-group"
+            ng-class="{error: addressEditorForm.$dirty && addressEditorForm.city.$invalid}">
+          <input type="text" ng-model="editor.city.name" class="span12 city" placeholder="Город" name="city"
+                 ng-required="editor.street.name" />
+        </div>
+        <div class="span3 control-group pd-control-group">
+          <input type="text" ng-model="editor.street.name" class="span12 street" placeholder="Улица"/>
+        </div>
+      </div>
+
       <table class="row-fluid">
         <tr>
           <td>
@@ -64,11 +67,10 @@
                  id="id_address-info"/>
         </div>
       </div>
-    </form>
+    </ng-form>
 
     <div class="row-fluid">
-      <button class="btn btn-primary" ng-click="save(address_editor)"
-              ng-disabled="form_disabled()">Сохранить
+      <button class="btn btn-primary" ng-click="save(addressEditorForm)" ng-disabled="addressEditorForm.$invalid">Сохранить
       </button>
       <button class="btn cancel" ng-click="close()">Отмена</button>
     </div>
