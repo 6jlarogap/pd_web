@@ -30,22 +30,10 @@
           $scope.editor.region.name = data.region;
           $scope.editor.city.name = data.city;
           $scope.editor.street.name = data.street;
-          $scope.editor.post_index = data.postal_code;
+          $scope.editor.post_index = data.postal_code || '';
           // $scope.data.house = data.house;
           $scope.editor.flat = data.flat;
-          $("input.country").val($scope.editor.country.name);
-          $("input.region").val($scope.editor.region.name);
-          $("input.city").val($scope.editor.city.name);
-          $("input.street").val($scope.editor.street.name);
-          $("input.house").val($scope.editor.house);
-          $("input.flat").val($scope.editor.flat);
-          var fields = [ 'block', 'flat', 'house', 'street', 'city', 'region', 'country', 'postal_code' ];
-          for (var i = 1; i < fields.length; i++) {
-            if (data[fields[i]] != undefined) {
-              $('#id_address-' + fields[i]).focus();
-              break;
-            }
-          }
+          $scope.addressEditorForm.$setDirty();
         };
 
         // Diallog
