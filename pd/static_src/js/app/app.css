@@ -43,6 +43,10 @@ form .error{
     display: block;
 }
 
+form.form-horizontal .control-group.error {
+    margin-top: 0;
+    margin-left: 0;
+}
 form .pd-control-group.error {
     display: inline;
     margin-top: 0;
