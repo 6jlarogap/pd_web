@@ -45,7 +45,7 @@ from pd.models import validate_phone_as_number
 from burials.models import Burial, Place
 from users.serializers import UghPublishCostSerializer
 from orders.models import ProductStatus, ProductHistory
-from pd.views import PaginateListView, RequestToFormMixin, FormInvalidMixin, get_front_end_url
+from pd.views import PaginateListView, RequestToFormMixin, FormInvalidMixin, get_front_end_url, ServiceException
 
 from sms_service import sms24x7
 
@@ -147,26 +147,33 @@ class ApiAuthSettings(APIView):
         
         Input data
         {
+           # avatar, пока не применяем
            "loginPhone": "375297542270",
             "oldPassword": "1234567",
             "newPassword": "7654321"
          }
         """
-        status = 'error'
-        message = ''
-        status_code = 400
         login_phone = request.DATA.get('loginPhone')
         try:
-            validate_phone_as_number(decimal.Decimal(login_phone))
-        except (TypeError, decimal.InvalidOperation, ValidationError, ):
-            message = _(u'Неверный формат телефона')
+            try:
+                validate_phone_as_number(decimal.Decimal(login_phone))
+            except (TypeError, decimal.InvalidOperation, ValidationError, ):
+                raise ServiceException(_(u'Неверный формат телефона'))
+            if request.user.username != login_phone:
+                raise ServiceException(_(u'Указанный телефон не принадлежит этому пользователю'))
+            user = authenticate(username=login_phone, password=request.DATA.get('oldPassword'))
+            if not user:
+                raise ServiceException(_(u'Неверно указан действующий пароль'))
+            user.set_password(request.DATA.get('newPassword'))
+            user.save()
+        except ServiceException as excpt:
+            data = { 'status': 'error',
+                     'message': excpt.message,
+                   }
+            status_code = 400
         else:
-            pass
-            # valiate loginPhone and oldPassword
-        
-        data = { 'status': status,
-                 'message': message,
-                }
+            data = {}
+            status_code = 200
         return Response(data=data, status=status_code)
 
 api_auth_settings = ApiAuthSettings.as_view()
