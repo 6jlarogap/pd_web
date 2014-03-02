@@ -21,23 +21,7 @@ DATABASES = {
             'autocommit': True,
         },
     },
-    'fias': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'fias',                      # Or path to database file if using sqlite3.
-        'USER': '',                      # Not used with sqlite3.
-        'PASSWORD': '',                  # Not used with sqlite3.
-        'HOST': '',                      # Set to empty string for localhost. Not used with sqlite3.
-        'PORT': '',                      # Set to empty string for default. Not used with sqlite3.
-    }
 }
-
-TEST_FIAS = {
-    'ENGINE': 'django.db.backends.mysql',
-    'NAME': 'fias',                      # Or path to database file if using sqlite3.
-    'USER': '',                      # Not used with sqlite3.
-    'PASSWORD': '',                  # Not used with sqlite3.
-}
-
 
 TIME_ZONE = 'Europe/Moscow'
 
@@ -323,8 +307,38 @@ FRONT_END_URL = None
 SMS_SERVICE = [
     { 'country_code': '7', 'user': 'user7@email.org', 'password': 'secret7', },
     { 'country_code': '375', 'user': 'user375@email.org', 'password': 'secret375', },
-    { 'country_code': 'default', 'user': 'default@email.org', 'password': 'default-secret', },
+    # Чтобы сразу нарваться на "Абонент не обслуживается", а не ждать, пока после установки
+    # пароля об этом сообщит СМС служба:
+    # { 'country_code': 'default', 'user': 'default@email.org', 'password': 'default-secret', },
 ]
+
+# Получатели доходов от рекламы.
+#
+# NB    Подобраны ИНН для этих организаций, чтоб уменьшить риск совпадения
+#       с ИНН имеющимихся организаций в разработческих сайтах.
+#       Если же будет совпадение, то этим организациям в соотв. б.д.
+#       придется играть соотв. роль.
+#       На production site совпадений быть не должно.
+#
+# Организация, принимающая, затем распределяющая доход:
+#
+ORG_AD_PAY_RECIPIENT = {
+    'name': 'AD Recipient',
+    # Подлежит замене в local_settings.py для production site.
+    'inn': '9999999991',
+    # Доля, оставляемая в этой организации после распределения дохода между
+    # ОМС и ORG_PD_FUND
+    'share': 0.33,
+}
+#
+# Фонд похоронного дела, получает свою долю от полученного ORG_AD_PAY_RECIPIENT'ом:
+#
+ORG_PD_FUND = {
+    'name': 'PD Fund',
+    # подлежит замене в local_settings.py, когда появится этот фонд с соотв. ИНН
+    'inn': '9999999992',
+    'share': 0.34,
+}
 
 try:
     from local_settings import *

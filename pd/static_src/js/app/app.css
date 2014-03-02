@@ -45,7 +45,7 @@ form .error{
 
 form .pd-control-group.error {
     display: inline;
-    margin: 0;
+    margin-top: 0;
 }
 
 .gallery.modal{

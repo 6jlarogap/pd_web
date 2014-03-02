@@ -8,6 +8,7 @@
         <tr>
             <th>{% trans "Название" %}</th>
             <th>{% trans "Тип" %}</th>
+            <th>{% trans "Категория" %}</th>
             <th>{% trans "Ед. изм." %}</th>
             <th>{% trans "По умолчанию" %}</th>
             <th>{% trans "Цена" %}</th>
@@ -17,6 +18,7 @@
             <tr>
                 <td>{{ c.name }}</td>
                 <td>{{ c.get_ptype_display|default:"" }}</td>
+                <td>{{ c.productcategory|default_if_none:"" }}</td>
                 <td>{{ c.measure }}</td>
                 <td>{{ c.default|yesno }}</td>
                 <td>{{ c.price }}</td>
