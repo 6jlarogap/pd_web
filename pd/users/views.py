@@ -41,11 +41,11 @@ from users.forms import UserAddForm, RegisterForm, LoruFormset, ProfileForm, Use
                         UserDataForm, ChangePasswordForm, BankAccountFormset, OrgForm, \
                         OrgLogForm, LoginLogForm, OrgBurialStatsForm, SupportForm, TestCaptchaForm
 from users.models import Profile, Org, RegisterProfile, ProfileLORU, CustomerProfile, get_mail_footer, is_cabinet_user
-from burials.models import Place
+from pd.models import validate_phone_as_number
+from burials.models import Burial, Place
 from users.serializers import UghPublishCostSerializer
 from orders.models import ProductStatus, ProductHistory
-from burials.models import Burial
-from pd.views import PaginateListView, RequestToFormMixin, FormInvalidMixin, get_front_end_url
+from pd.views import PaginateListView, RequestToFormMixin, FormInvalidMixin, get_front_end_url, ServiceException
 
 from sms_service import sms24x7
 
@@ -137,6 +137,46 @@ class AuthApiLogout(APIView):
         return Response(data={}, status=200)
 
 auth_api_logout = AuthApiLogout.as_view()
+
+class ApiAuthSettings(APIView):
+    permission_classes = (IsAuthenticated,)
+    
+    def put(self, request):
+        """
+        Поменять пароль и фотку пользователя
+        
+        Input data
+        {
+           # avatar, пока не применяем
+           "loginPhone": "375297542270",
+            "oldPassword": "1234567",
+            "newPassword": "7654321"
+         }
+        """
+        login_phone = request.DATA.get('loginPhone')
+        try:
+            try:
+                validate_phone_as_number(decimal.Decimal(login_phone))
+            except (TypeError, decimal.InvalidOperation, ValidationError, ):
+                raise ServiceException(_(u'Неверный формат телефона'))
+            if request.user.username != login_phone:
+                raise ServiceException(_(u'Указанный телефон не принадлежит этому пользователю'))
+            user = authenticate(username=login_phone, password=request.DATA.get('oldPassword'))
+            if not user:
+                raise ServiceException(_(u'Неверно указан действующий пароль'))
+            user.set_password(request.DATA.get('newPassword'))
+            user.save()
+        except ServiceException as excpt:
+            data = { 'status': 'error',
+                     'message': excpt.message,
+                   }
+            status_code = 400
+        else:
+            data = {}
+            status_code = 200
+        return Response(data=data, status=status_code)
+
+api_auth_settings = ApiAuthSettings.as_view()
 
 class AuthGetPasswordBySMSView(CheckRecaptchaMixin, APIView):
     """

@@ -113,7 +113,7 @@ class Cemetery(GetLogsMixin, BaseModel, PhonesMixin):
 
 
 class CemeteryCoordinates(CoordinatesModel):
-    cemetery = models.ForeignKey(Cemetery, verbose_name=_(u"Кладбище"), on_delete=models.PROTECT)
+    cemetery = models.ForeignKey(Cemetery, verbose_name=_(u"Кладбище"), on_delete=models.PROTECT, related_name='coordinates')
 
     class Meta:
         unique_together = ('cemetery', 'angle_number',)
@@ -172,7 +172,7 @@ class Area(BaseModel):
         return super(Area, self).save(*args, **kwargs)
 
 class AreaCoordinates(CoordinatesModel):
-    area = models.ForeignKey(Area, verbose_name=_(u"Участок"), on_delete=models.PROTECT)
+    area = models.ForeignKey(Area, verbose_name=_(u"Участок"), on_delete=models.PROTECT, related_name='coordinates')
 
     class Meta:
         unique_together = ('area', 'angle_number',)
