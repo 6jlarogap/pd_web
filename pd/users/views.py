@@ -41,10 +41,10 @@ from users.forms import UserAddForm, RegisterForm, LoruFormset, ProfileForm, Use
                         UserDataForm, ChangePasswordForm, BankAccountFormset, OrgForm, \
                         OrgLogForm, LoginLogForm, OrgBurialStatsForm, SupportForm, TestCaptchaForm
 from users.models import Profile, Org, RegisterProfile, ProfileLORU, CustomerProfile, get_mail_footer, is_cabinet_user
-from burials.models import Place
+from pd.models import validate_phone_as_number
+from burials.models import Burial, Place
 from users.serializers import UghPublishCostSerializer
 from orders.models import ProductStatus, ProductHistory
-from burials.models import Burial
 from pd.views import PaginateListView, RequestToFormMixin, FormInvalidMixin, get_front_end_url
 
 from sms_service import sms24x7
@@ -137,6 +137,39 @@ class AuthApiLogout(APIView):
         return Response(data={}, status=200)
 
 auth_api_logout = AuthApiLogout.as_view()
+
+class ApiAuthSettings(APIView):
+    permission_classes = (IsAuthenticated,)
+    
+    def put(self, request):
+        """
+        Поменять пароль и фотку пользователя
+        
+        Input data
+        {
+           "loginPhone": "375297542270",
+            "oldPassword": "1234567",
+            "newPassword": "7654321"
+         }
+        """
+        status = 'error'
+        message = ''
+        status_code = 400
+        login_phone = request.DATA.get('loginPhone')
+        try:
+            validate_phone_as_number(decimal.Decimal(login_phone))
+        except (TypeError, decimal.InvalidOperation, ValidationError, ):
+            message = _(u'Неверный формат телефона')
+        else:
+            pass
+            # valiate loginPhone and oldPassword
+        
+        data = { 'status': status,
+                 'message': message,
+                }
+        return Response(data=data, status=status_code)
+
+api_auth_settings = ApiAuthSettings.as_view()
 
 class AuthGetPasswordBySMSView(CheckRecaptchaMixin, APIView):
     """
