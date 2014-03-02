@@ -67,20 +67,9 @@
 
     <div class="container-fluid">
         <h1>{{ message }}</h1>
-        <form action="/mobile/uploadplace/" enctype="multipart/form-data" method="post">
-	    Id (Area): <input type="text" name="areaId"><br>
-        Id (Place): <input type="text" name="placeId"><br>
-        Old place name: <input type="text" name="oldPlaceName"><br>
-        Place name: <input type="text" name="placeName"><br> 
-        Row name: <input type="text" name="rowName"><br>          
-        placeLength: <input type="text" name="placeLength"><br> 
-        placeWidth: <input type="text" name="placeWidth"><br>
-        dtWrongFio: <input type="text" name="dtWrongFio"><br>
-        dtMilitary: <input type="text" name="dtMilitary"><br>
-        dtSizeViolated: <input type="text" name="dtSizeViolated"><br>
-        dtUnowned: <input type="text" name="dtUnowned"><br>
-        dtUnindentified: <input type="text" name="dtUnindentified"><br>
-        <p><input type="submit" value="Отправить"></p>
+        <form action="/mobile/removeplacephoto/" enctype="multipart/form-data" method="post">
+	    Id фото места: <input type="text" name="placePhotoId"><br>
+        <p><input type="submit" value="Удалить"></p>
         </form> 
     </div>
 </body>

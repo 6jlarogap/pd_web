@@ -12,6 +12,7 @@ from django.views.decorators.csrf import csrf_exempt, csrf_protect
 from django.http import HttpResponse
 
 from django.utils import simplejson
+from geo.models import CoordinatesModel
 from burials.models import Cemetery
 from burials.models import CemeteryCoordinates
 from burials.models import Area
@@ -20,15 +21,14 @@ from burials.models import Place
 from burials.models import PlaceStatus
 from burials.models import Grave
 from burials.models import GravePhoto
+from burials.models import PlacePhoto
 from burials.models import Burial
 from persons.models import DeadPerson
 from persons.models import BasePerson
 from users.models import Profile
 from users.models import Org
 from logs.models import write_log
-from django.core import serializers
 
-from cStringIO import StringIO
 from django.utils.dateparse import parse_datetime
 from django.core.files.base import ContentFile
 from django.http import Http404
@@ -36,24 +36,123 @@ from django.db.models import Q
 from datetime import datetime
 from decimal import Decimal
 
+from StringIO import StringIO
+from rest_framework import serializers
+from rest_framework.renderers import JSONRenderer
+from rest_framework.parsers import JSONParser
+
+class BaseSerializer(serializers.Serializer):	
+    pk = serializers.Field()    
+
+class CoordinatesSerializer(BaseSerializer):
+    lat = serializers.CharField(required=True)
+    lng = serializers.CharField(required=True)
+    angle_number = serializers.CharField(required=True)
+    
+    def restore_object(self, attrs, instance=None):
+        if instance is not None:
+            instance.pk = attrs.get('pk', instance.pk)
+            instance.lat = attrs.get('lat', instance.lat)
+            instance.lng = attrs.get('lng', instance.lng)
+            instance.angle_number = attrs.get('angle_number', instance.angle_number)
+            return instance
+        return CoordinatesModel(**attrs)
+        
+class CemeterySerializer(BaseSerializer):	
+    name = serializers.CharField(required=True)
+
+class CemeteryWithNestedObjectSerializer(CemeterySerializer):	
+    coordinates = CoordinatesSerializer(many=True)
+
+class AreaSerializer(BaseSerializer):
+    cemetery = BaseSerializer(required=True)
+    name = serializers.CharField(required=True)
+    
+class AreaWithNestedObjectSerializer(AreaSerializer):    
+    coordinates = CoordinatesSerializer(many=True)
+
+class RegionSerializer(serializers.Serializer):    
+    name = serializers.CharField(required=False)
+
+class CitySerializer(serializers.Serializer):    
+    name = serializers.CharField(required=False)
+    
+class StreetSerializer(serializers.Serializer):    
+    name = serializers.CharField(required=False)
+    
+class CountrySerializer(serializers.Serializer):    
+    name = serializers.CharField(required=False)
+    
+class LocationSerializer(serializers.Serializer):    
+    house = serializers.CharField(required=False)
+    block = serializers.CharField(required=False)
+    building = serializers.CharField(required=False)
+    flat = serializers.CharField(required=False)
+    country = CountrySerializer(required=False)
+    region = RegionSerializer(required=False)
+    city = CitySerializer(required=False)
+    street = StreetSerializer(required=False)
+
+class BasePersonSerializer(serializers.Serializer):    
+    last_name = serializers.CharField(required=False)
+    first_name = serializers.CharField(required=False)
+    middle_name = serializers.CharField(required=False)    
+    
+class AlivePersonSerializer(BasePersonSerializer):    
+    phones = serializers.CharField(required=False)
+    login_phone = serializers.CharField(required=False)
+    address = LocationSerializer(required=False)
+    
+class PlaceWithNestedObjectSerializer(BaseSerializer):    
+    cemetery = BaseSerializer(required=False)
+    area = BaseSerializer(required=True)    
+    row = serializers.CharField(required=False)
+    place = serializers.CharField(required=True)
+    oldplace = serializers.CharField(required=False)
+    place_width = serializers.CharField(required=False)
+    place_length = serializers.CharField(required=False)
+    dt_wrong_fio = serializers.DateTimeField(required=False)
+    dt_military = serializers.DateTimeField(required=False)
+    dt_size_violated = serializers.DateTimeField(required=False)
+    dt_unowned = serializers.DateTimeField(required=False)
+    dt_unindentified = serializers.DateTimeField(required=False)    
+    responsible = AlivePersonSerializer(required=False)
+    
+class GraveSerializer(BaseSerializer):    
+    place = BaseSerializer(required=True)    
+    grave_number = serializers.CharField(required=True)
+    is_military = serializers.CharField(required=False)
+    is_wrong_fio = serializers.CharField(required=False)
+    
+class BurialSerializer(BaseSerializer):    
+    grave = BaseSerializer(required=True)    
+    fact_date = serializers.CharField(required=False)
+    burial_container = serializers.CharField(required=False)
+    deadman = BasePersonSerializer(required=False)
+    
+class GravePhotoSerializer(BaseSerializer):  
+    grave = BaseSerializer(required=False)    
+    lat = serializers.CharField(required=False)
+    lng = serializers.CharField(required=False)
+
+class PlacePhotoSerializer(BaseSerializer):  
+    place = BaseSerializer(required=False)    
+    lat = serializers.CharField(required=False)
+    lng = serializers.CharField(required=False)    
 
 class MobileGetCemetery(UGHRequiredMixin, View):
     def get(self, request, *args, **kwargs):
         argCemeteryId = request.GET.get('cemeteryId', None)
         argSyncDateUnix = request.GET.get('syncDate', None)        
-        queryCemetery = Q(ugh = request.user.profile.org)
-        queryCemeteryCoordinates = Q(cemetery__ugh = request.user.profile.org)
+        queryCemetery = Q(ugh = request.user.profile.org)        
         if argCemeteryId :
-            queryCemetery &= Q(pk = argCemeteryId)
-            queryCemeteryCoordinates &= Q(cemetery__pk = argCemeteryId)
+            queryCemetery &= Q(pk = argCemeteryId)            
         if argSyncDateUnix :
             argSyncDate = datetime.fromtimestamp(int(argSyncDateUnix))
-            queryCemetery &= Q(dt_modified__gte = argSyncDate)
-            queryCemeteryCoordinates &= Q(cemetery__dt_modified__gte = argSyncDate)
-        listCemetery = Cemetery.objects.filter(queryCemetery).order_by('id')
-        listCemeteryCoordinates = CemeteryCoordinates.objects.filter(queryCemeteryCoordinates).order_by('cemetery')
-        all_objects = list(listCemetery) + list(listCemeteryCoordinates)        
-        data = serializers.serialize("json", all_objects, fields=('name', 'cemetery', 'angle_number', 'lat', 'lng'))
+            queryCemetery &= Q(dt_modified__gte = argSyncDate)            
+        listCemetery = Cemetery.objects.filter(queryCemetery).order_by('id')               
+        serializer = CemeteryWithNestedObjectSerializer(listCemetery)
+        data = JSONRenderer().render(serializer.data)
         return HttpResponse(data, mimetype='application/json')   
         
 mobile_get_cemetery = MobileGetCemetery.as_view()
@@ -64,31 +163,26 @@ class MobileGetArea(UGHRequiredMixin, View):
         argCemeteryId = request.GET.get('cemeteryId', None)
         argAreaId = request.GET.get('areaId', None)        
         queryArea = Q(cemetery__ugh = request.user.profile.org)
-        queryAreaCoordinates = Q(area__cemetery__ugh = request.user.profile.org)
         if argCemeteryId :
-            queryArea &= Q(cemetery__pk = argCemeteryId)
-            queryAreaCoordinates &= Q(area__cemetery__pk = argCemeteryId)
+            queryArea &= Q(cemetery__pk = argCemeteryId)            
         if argSyncDateUnix :
             argSyncDate = datetime.fromtimestamp(int(argSyncDateUnix))
-            queryArea &= Q(dt_modified__gte = argSyncDate)
-            queryAreaCoordinates &= Q(area__dt_modified__gte = argSyncDate)
+            queryArea &= Q(dt_modified__gte = argSyncDate)            
         if argAreaId :
-            queryArea &= Q(pk = argAreaId)
-            queryAreaCoordinates &= Q(area__pk = argAreaId)
+            queryArea &= Q(pk = argAreaId)            
         listArea = Area.objects.filter(queryArea).order_by('cemetery', 'id')
-        listAreaCoordinates = AreaCoordinates.objects.filter(queryAreaCoordinates).order_by('area')
-        all_objects = list(listArea) + list(listAreaCoordinates)
-        data = serializers.serialize("json", all_objects, fields=('cemetery','name', 'area', 'angle_number', 'lat', 'lng'))
+        serializer = AreaWithNestedObjectSerializer(listArea)
+        data = JSONRenderer().render(serializer.data)        
         return HttpResponse(data, mimetype='application/json')
                 
 mobile_get_area = MobileGetArea.as_view()
+
 
 class MobileGetPlace(UGHRequiredMixin, View):
     def get(self, request, *args, **kwargs):
         argSyncDateUnix = request.GET.get('syncDate', None) 
         argAreaId = request.GET.get('areaId', None)
-        argCemeteryId = request.GET.get('cemeteryId', None)
-        
+        argCemeteryId = request.GET.get('cemeteryId', None)        
         queryPlace = Q(cemetery__ugh = request.user.profile.org)
         if argCemeteryId :
             queryPlace &= Q(cemetery__pk = argCemeteryId)
@@ -96,20 +190,10 @@ class MobileGetPlace(UGHRequiredMixin, View):
             queryPlace &= Q(area__pk = argAreaId)
         if argSyncDateUnix :
             argSyncDate = datetime.fromtimestamp(int(argSyncDateUnix))
-            queryPlace &= Q(dt_modified__gte = argSyncDate)
-        listPlace = Place.objects.filter(queryPlace).order_by('cemetery', 'area', 'id')
-                                
-        queryPlaceStatus = 'select ps.* from burials_placestatus ps inner join burials_place p on ps.place_id = p.id inner join burials_cemetery c on p.cemetery_id = c.id inner join users_org org on c.ugh_id = org.id where org.id = %d and ps.dt_created = (select max(ps2.dt_created) from burials_placestatus ps2 where ps2.place_id = ps.place_id) ' % request.user.profile.org.pk
-        if argAreaId :
-            queryPlaceStatus = queryPlaceStatus + ' and p.area_id = %s'% argAreaId
-        if argCemeteryId :
-            queryPlaceStatus = queryPlaceStatus + ' and p.cemetery_id = %s'% argCemeteryId
-        if argSyncDateUnix :
-            queryPlaceStatus = queryPlaceStatus + ' and extract (epoch from p.dt_modified) >= %s'% argSyncDateUnix
-        listPlaceStatus = PlaceStatus.objects.raw(queryPlaceStatus) 
-                
-        all_objects = list(listPlace) + list(listPlaceStatus)
-        data = serializers.serialize("json", all_objects, fields=('cemetery','area','row','place','oldplace', 'place_width', 'place_length','status'))     
+            queryPlace &= Q(dt_modified__gte = argSyncDate)        
+        listPlace = Place.objects.filter(queryPlace).order_by('cemetery', 'area', 'id')		
+        serializer = PlaceWithNestedObjectSerializer(listPlace)
+        data = JSONRenderer().render(serializer.data)
         return HttpResponse(data, mimetype='application/json')
         
 mobile_get_place = MobileGetPlace.as_view()
@@ -119,8 +203,7 @@ class MobileGetGrave(UGHRequiredMixin, View):
         argSyncDateUnix = request.GET.get('syncDate', None) 
         argPlaceId = request.GET.get('placeId', None)
         argCemeteryId = request.GET.get('cemeteryId', None)
-        argAreaId = request.GET.get('areaId', None)
-        
+        argAreaId = request.GET.get('areaId', None)        
         queryGrave = Q(place__cemetery__ugh = request.user.profile.org)
         if argCemeteryId :
             queryGrave &= Q(place__cemetery__pk = argCemeteryId)
@@ -132,8 +215,8 @@ class MobileGetGrave(UGHRequiredMixin, View):
             argSyncDate = datetime.fromtimestamp(int(argSyncDateUnix))
             queryGrave &= Q(dt_modified__gte = argSyncDate)        
         listGrave = Grave.objects.filter(queryGrave).order_by('id')
-        
-        data = serializers.serialize("json", listGrave, fields=('place','grave_number','is_military','is_wrong_fio'))
+        serializer = GraveSerializer(listGrave)
+        data = JSONRenderer().render(serializer.data)
         return HttpResponse(data, mimetype='application/json')
         
 mobile_get_grave = MobileGetGrave.as_view()
@@ -143,8 +226,7 @@ class MobileGetBurial(UGHRequiredMixin, View):
         argSyncDateUnix = request.GET.get('syncDate', None) 
         argGraveId = request.GET.get('graveId', None)
         argCemeteryId = request.GET.get('cemeteryId', None)
-        argAreaId = request.GET.get('areaId', None)
-        
+        argAreaId = request.GET.get('areaId', None)        
         queryBurial = Q(grave__place__cemetery__ugh = request.user.profile.org)
         if argCemeteryId :
             queryBurial &= Q(grave__place__cemetery__pk = argCemeteryId)
@@ -156,27 +238,14 @@ class MobileGetBurial(UGHRequiredMixin, View):
             argSyncDate = datetime.fromtimestamp(int(argSyncDateUnix))
             queryBurial &= Q(dt_modified__gte = argSyncDate)        
         listBurial = Burial.objects.filter(queryBurial).order_by('id')
-
-        queryPerson = Q(deadperson__burial__cemetery__ugh=request.user.profile.org)
-        if argGraveId :
-            queryPerson &= Q(deadperson__burial__grave__pk=argGraveId) 
-        if argCemeteryId :
-            queryPerson &= Q(deadperson__burial__cemetery__pk=argCemeteryId)
-        if argAreaId :
-            queryPerson &= Q(deadperson__burial__area__pk = argAreaId)
-        if argSyncDateUnix :
-            argSyncDate = datetime.fromtimestamp(int(argSyncDateUnix))
-            queryBurial &= Q(deadperson__burial__dt_modified__gte = argSyncDate)
-        listPerson = BasePerson.objects.filter(queryPerson)
-                
-        all_objects = list(listBurial) + list(listPerson)
-        data = serializers.serialize("json", all_objects, fields=('grave', 'fact_date', 'deadman', 'first_name', 'last_name', 'middle_name', 'burial_container'))
+        serializer = BurialSerializer(listBurial)
+        data = JSONRenderer().render(serializer.data)
         return HttpResponse(data, mimetype='application/json')
         
 mobile_get_burial = MobileGetBurial.as_view()
 
 @csrf_exempt
-def mobile_upload_photo(request):
+def mobile_upload_gravephoto(request):
     if request.method == 'POST':
         graveId = request.POST['grave']
         lat = request.POST['lat']
@@ -194,15 +263,43 @@ def mobile_upload_photo(request):
                 grave.lng = lng
                 grave.save()
             listPhoto.append(photo)
-            data = serializers.serialize("json", listPhoto, fields=('grave','lat','lng'))
+            serializer = GravePhotoSerializer(listPhoto)
+            data = JSONRenderer().render(serializer.data)            
             return HttpResponse(data, mimetype='application/json')
         except Grave.DoesNotExist:
             grave = None
             raise Http404
-    return render_to_response('mobile_upload_photo.html', {'message': _(u"Загрузите фотографию к могиле:")})
+    return render_to_response('mobile_upload_gravephoto.html', {'message': _(u"Загрузите фотографию к могиле:")})
+    
+@csrf_exempt
+def mobile_upload_placephoto(request):
+    if request.method == 'POST':
+        placeId = request.POST['place']
+        lat = request.POST['lat']
+        lng = request.POST['lng'] 
+        data = ""
+        listPhoto = []
+        try:
+            place = Place.objects.get(id = placeId)            
+            photo_content = ContentFile(request.FILES['photo'].read())
+            photo = PlacePhoto(place=place, lat = lat, lng = lng, comment = '', creator = request.user)
+            photo.save()
+            photo.bfile.save(request.FILES['photo'].name, photo_content)            
+            if lat and lat :
+                place.lat = lat
+                place.lng = lng
+                place.save()
+            listPhoto.append(photo)
+            serializer = PlacePhotoSerializer(listPhoto)
+            data = JSONRenderer().render(serializer.data) 
+            return HttpResponse(data, mimetype='application/json')
+        except Place.DoesNotExist:
+            place = None
+            raise Http404
+    return render_to_response('mobile_upload_placephoto.html', {'message': _(u"Загрузите фотографию к месту:")})
 	
 @csrf_exempt
-def mobile_remove_photo(request):
+def mobile_remove_gravephoto(request):
     if request.method == 'POST':
         gravePhotoId = request.POST['gravePhotoId']
         try :
@@ -212,6 +309,20 @@ def mobile_remove_photo(request):
         except GravePhoto.DoesNotExist:
             return HttpResponse("Ok", mimetype='application/json')                
     return render_to_response('mobile_remove_photo.html', {'message': _(u"Удалить фотографию к могиле:")})
+    
+@csrf_exempt
+def mobile_remove_placephoto(request):
+    if request.method == 'POST':
+        placePhotoId = request.POST['placePhotoId']
+        try :
+            placePhoto = PlacePhoto.objects.get(id = placePhotoId)
+            placePhoto.delete()
+            return HttpResponse("Ok", mimetype='application/json')
+        except PlacePhoto.DoesNotExist:
+            return HttpResponse("Ok", mimetype='application/json')                
+    return render_to_response('mobile_remove_placephoto.html', {'message': _(u"Удалить фотографию к месту:")})
+
+
     
 @csrf_exempt
 def mobile_upload_cemetery(request):    
@@ -225,9 +336,12 @@ def mobile_upload_cemetery(request):
         isGPSChange = False
         if gpsJSON :
             isGPSChange = True
-            gpsGenerator = serializers.deserialize("json", gpsJSON)                       
-            for obj in gpsGenerator:
-                listGPS.append(obj.object)        
+            stream = StringIO(gpsJSON)
+            data = JSONParser().parse(stream)
+            serializer = CoordinatesSerializer(data=data)
+            isValid = serializer.is_valid()            
+            for obj in serializer.object:
+                listGPS.append(obj)
         cem = None
         try:
             prevCem = Cemetery.objects.get(pk = cemeteryId)
@@ -243,13 +357,15 @@ def mobile_upload_cemetery(request):
         if isGPSChange == True :
             CemeteryCoordinates.objects.filter(cemetery__pk = cem.pk).delete()
             for gps in listGPS:
-                gps.pk = None
-                gps.cemetery = cem
-                gps.save()                 
-            all_objects = list(listInsertedCemetery) + list(listGPS)
-        else :
-            all_objects = list(listInsertedCemetery)
-        data = serializers.serialize("json", all_objects, fields=('name', 'cemetery', 'angle_number', 'lat', 'lng'))        
+                cemeteryCoordinates = CemeteryCoordinates(gps)
+                cemeteryCoordinates.pk = None
+                cemeteryCoordinates.cemetery = cem
+                cemeteryCoordinates.lat = gps.lat
+                cemeteryCoordinates.lng = gps.lng
+                cemeteryCoordinates.angle_number = gps.angle_number
+                cemeteryCoordinates.save()                 
+        serializer = CemeteryWithNestedObjectSerializer(listInsertedCemetery)
+        data = JSONRenderer().render(serializer.data)
         return HttpResponse(data, mimetype='application/json')
     return render_to_response('mobile_upload_cemetery.html', {'message': _(u"Загрузите название кладбища:")})
     
@@ -265,9 +381,12 @@ def mobile_upload_area(request):
         isGPSChange = False
         if gpsJSON :
             isGPSChange = True
-            gpsGenerator = serializers.deserialize("json", gpsJSON)                       
-            for obj in gpsGenerator:
-                listGPS.append(obj.object)
+            stream = StringIO(gpsJSON)
+            data = JSONParser().parse(stream)
+            serializer = CoordinatesSerializer(data=data)
+            isValid = serializer.is_valid()            
+            for obj in serializer.object:
+                listGPS.append(obj)
         area = None
         try:
             cemetery = Cemetery.objects.get(pk = cemeteryId)
@@ -287,13 +406,15 @@ def mobile_upload_area(request):
         if isGPSChange == True :
             AreaCoordinates.objects.filter(area__pk = area.pk).delete()
             for gps in listGPS:
-                gps.pk = None
-                gps.area = area
-                gps.save()               
-            all_objects = list(listInsertedArea) + list(listGPS)
-        else :
-            all_objects = list(listInsertedArea)
-        data = serializers.serialize("json", all_objects, fields=('cemetery','name', 'area', 'angle_number', 'lat', 'lng'))
+                areaCoordinates = AreaCoordinates(gps)
+                areaCoordinates.pk = None
+                areaCoordinates.area = area
+                areaCoordinates.lat = gps.lat
+                areaCoordinates.lng = gps.lng
+                areaCoordinates.angle_number = gps.angle_number
+                areaCoordinates.save()                 
+        serializer = AreaWithNestedObjectSerializer(listInsertedArea)
+        data = JSONRenderer().render(serializer.data)
         return HttpResponse(data, mimetype='application/json')        
     return render_to_response('mobile_upload_area.html', {'message': _(u"Загрузите название участка:")})
 
@@ -308,17 +429,36 @@ def mobile_upload_place(request):
         placeId = int(request.POST['placeId'])
         placeLength = None
         placeWidth = None
+        dtWrongFio = None
+        dtMilitary = None
+        dtSizeViolated = None
+        dtUnowned = None
+        dtUnindentified = None        
         if request.POST['placeLength'] :
             placeLength = Decimal(request.POST['placeLength'])
         if request.POST['placeWidth'] :
             placeWidth = Decimal(request.POST['placeWidth'])
-        psFoundUnowned = int(request.POST['psFoundUnowned'])
+        templateDateTime = '%Y-%m-%dT%H:%M:%S.%f'
+        if request.POST['dtWrongFio'] :
+            dtWrongFio = datetime.strptime(request.POST['dtWrongFio'], templateDateTime)
+        if request.POST['dtMilitary'] :
+            dtMilitary = datetime.strptime(request.POST['dtMilitary'], templateDateTime)
+        if request.POST['dtSizeViolated'] :
+            dtSizeViolated = datetime.strptime(request.POST['dtSizeViolated'], templateDateTime)
+        if request.POST['dtUnowned'] :
+            dtUnowned = datetime.strptime(request.POST['dtUnowned'], templateDateTime)
+        if request.POST['dtUnindentified'] :
+            dtUnindentified = datetime.strptime(request.POST['dtUnindentified'], templateDateTime)     
+
         user = request.user
         listPlaceForResponse = []
         try:
             area = Area.objects.get(pk = areaId)
             prevPlace = Place.objects.get(pk = placeId)
-            if (prevPlace.place or "") != placeName or (prevPlace.oldplace or "") != oldPlaceName or (prevPlace.row or "") != rowName or prevPlace.area != area or prevPlace.place_length != placeLength or prevPlace.place_width != placeWidth:
+            if (prevPlace.place or "") != placeName or (prevPlace.oldplace or "") != oldPlaceName or (prevPlace.row or "") != rowName or prevPlace.area != area or \
+                prevPlace.place_length != placeLength or prevPlace.place_width != placeWidth or (prevPlace.dt_wrong_fio is None) != (dtWrongFio is None) or \
+                (prevPlace.dt_military is None) != (dtMilitary is None) or (prevPlace.dt_size_violated is None) != (dtSizeViolated is None) or \
+                (prevPlace.dt_unowned is None) != (dtUnowned is None) or (prevPlace.dt_unindentified is None) != (dtUnindentified is None) :
                 if (prevPlace.oldplace or "") != oldPlaceName :
                     write_log(request, prevPlace, _(u'Переименование места (place=%s, oldplace=%s) в (place=%s, oldplace=%s)' % (prevPlace.place, prevPlace.oldplace, placeName, oldPlaceName)))
                     prevPlace.oldplace = oldPlaceName
@@ -328,6 +468,16 @@ def mobile_upload_place(request):
                 prevPlace.cemetery = area.cemetery
                 prevPlace.place_length = placeLength
                 prevPlace.place_width = placeWidth
+                if (prevPlace.dt_wrong_fio is None) != (dtWrongFio is None) :
+                    prevPlace.dt_wrong_fio = dtWrongFio
+                if (prevPlace.dt_military is None) != (dtMilitary is None) :
+                    prevPlace.dt_military = dtMilitary
+                if (prevPlace.dt_size_violated is None) != (dtSizeViolated is None) :
+                    prevPlace.dt_size_violated = dtSizeViolated
+                if (prevPlace.dt_unowned is None) != (dtUnowned is None) :
+                    prevPlace.dt_unowned = dtUnowned
+                if (prevPlace.dt_unindentified is None) != (dtUnindentified is None) :
+                    prevPlace.dt_unindentified = dtUnindentified
                 prevPlace.save()                
             place = prevPlace    
         except Area.DoesNotExist:
@@ -354,32 +504,26 @@ def mobile_upload_place(request):
                 prevPlace.row = rowName
                 prevPlace.place_length = placeLength
                 prevPlace.place_width = placeWidth
+                if (prevPlace.dt_wrong_fio is None) != (dtWrongFio is None) :
+                    prevPlace.dt_wrong_fio = dtWrongFio
+                if (prevPlace.dt_military is None) != (dtMilitary is None) :
+                    prevPlace.dt_military = dtMilitary
+                if (prevPlace.dt_size_violated is None) != (dtSizeViolated is None) :
+                    prevPlace.dt_size_violated = dtSizeViolated
+                if (prevPlace.dt_unowned is None) != (dtUnowned is None) :
+                    prevPlace.dt_unowned = dtUnowned
+                if (prevPlace.dt_unindentified is None) != (dtUnindentified is None) :
+                    prevPlace.dt_unindentified = dtUnindentified
                 prevPlace.save()
                 place = prevPlace                
             else :
-                place = Place(cemetery = area.cemetery, area = area, place = placeName, row = rowName, oldplace = oldPlaceName, place_length = placeLength, place_width = placeWidth)  
+                place = Place(cemetery = area.cemetery, area = area, place = placeName, row = rowName, oldplace = oldPlaceName, place_length = placeLength, place_width = placeWidth, \
+                    dt_wrong_fio = dtWrongFio, dt_military = dtMilitary, dt_size_violated = dtSizeViolated, dt_unowned = dtUnowned, dt_unindentified = dtUnindentified)  
                 place.save()
             listPlaceForResponse.append(place)
-               
-        try:
-            curPlaceStatus = PlaceStatus.objects.filter(place__cemetery__ugh=request.user.profile.org, place__pk = placeId ).order_by('-dt_created')[0]
-        except IndexError:
-            curPlaceStatus = None        
-        if psFoundUnowned == 1 :
-            if curPlaceStatus :                
-                if curPlaceStatus.status != PlaceStatus.PS_FOUND_UNOWNED :
-                    curPlaceStatus = PlaceStatus.objects.create(place = place, status = PlaceStatus.PS_FOUND_UNOWNED, creator = request.user)
-            else :
-                curPlaceStatus = PlaceStatus.objects.create(place = place, status = PlaceStatus.PS_FOUND_UNOWNED, creator = request.user)
-        else:
-            if curPlaceStatus :
-                if curPlaceStatus.status == PlaceStatus.PS_FOUND_UNOWNED :
-                    curPlaceStatus = PlaceStatus.objects.create(place = place, status = PlaceStatus.PS_ACTUAL, creator = request.user)
-            else :
-                curPlaceStatus = PlaceStatus.objects.create(place = place, status = PlaceStatus.PS_ACTUAL, creator = request.user)
-        
-        listPlaceForResponse.append(curPlaceStatus)
-        data = serializers.serialize("json", listPlaceForResponse, fields=('cemetery','area','row','place','oldplace','place_length','place_width','status'))
+            
+        serializer = PlaceWithNestedObjectSerializer(listPlaceForResponse)
+        data = JSONRenderer().render(serializer.data)       
         return HttpResponse(data, mimetype='application/json')
     return render_to_response('mobile_upload_place.html', {'message': _(u"Загрузите название места:")})
     
@@ -412,7 +556,8 @@ def mobile_upload_grave(request):
             grave = Grave(place = place, grave_number = graveName, is_military = isMilitary, is_wrong_fio = isWrongFIO)
             grave.save()
             write_log(request, grave, _(u"Могила '%s' создана через мобильное приложение") % graveName )
-            listInsertedGrave.append(grave)
-        data = serializers.serialize("json", listInsertedGrave, fields=('place','grave_number','is_military','is_wrong_fio'))
+            listInsertedGrave.append(grave)            
+        serializer = GraveSerializer(listInsertedGrave)
+        data = JSONRenderer().render(serializer.data)        
         return HttpResponse(data, mimetype='application/json')
     return render_to_response('mobile_upload_grave.html', {'message': _(u"Загрузите название могилы:")})
