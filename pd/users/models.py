@@ -216,6 +216,28 @@ class Org(GetLogsMixin, BaseModel):
             pass
         return email
 
+    @classmethod
+    def get_add_pay_recipient(cls):
+        """
+        Возвращает организацию-получателя (и распределителя ;) доходов от рекламы
+        """
+        result = None
+        try:
+            return cls.objects.filter(inn=settings.ORG_AD_PAY_RECIPIENT['inn'])[0]
+        except IndexError:
+            return None
+
+    @classmethod
+    def get_pd_fund(cls):
+        """
+        Возвращает организацию-получателя (и распределителя ;) доходов от рекламы
+        """
+        result = None
+        try:
+            return cls.objects.filter(inn=settings.ORG_PD_FUND['inn'])[0]
+        except IndexError:
+            return None
+
 class BankAccount(models.Model):
     """
     Банковские реквизиты
