@@ -714,10 +714,10 @@ class CabinetViewSet(CustomerDataMixin, viewsets.ViewSet):
         data['places'] = []
         for p in places:
             place={'id': p.pk}
-            place['address'] = _(u'Место %s') % p.place
+            place['address'] = _(u'Кладбище %s, участок %s') % (p.cemetery.name, p.area.name, )
             if p.row:
                 place['address'] += _(u', ряд %s') % p.row
-            place['address'] += _(u', участок %s') % p.area.name
+            place['address'] += _(u', место %s') % p.place
             cemetery_address = p.cemetery.address and p.cemetery.address.__unicode__() or ''
             if cemetery_address:
                 place['address'] += _(u', %s') % cemetery_address
