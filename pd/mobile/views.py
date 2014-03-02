@@ -65,7 +65,7 @@ class CemeteryWithNestedObjectSerializer(CemeterySerializer):
     coordinates = CoordinatesSerializer(many=True)
 
 class AreaSerializer(BaseSerializer):
-    cemetery = CemeterySerializer(required=True)
+    cemetery = BaseSerializer(required=True)
     name = serializers.CharField(required=True)
     
 class AreaWithNestedObjectSerializer(AreaSerializer):    
@@ -104,8 +104,8 @@ class AlivePersonSerializer(BasePersonSerializer):
     address = LocationSerializer(required=False)
     
 class PlaceWithNestedObjectSerializer(BaseSerializer):    
-    cemetery = CemeterySerializer(required=False)
-    area = AreaSerializer(required=True)    
+    cemetery = BaseSerializer(required=False)
+    area = BaseSerializer(required=True)    
     row = serializers.CharField(required=False)
     place = serializers.CharField(required=True)
     oldplace = serializers.CharField(required=False)
