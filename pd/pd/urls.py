@@ -27,7 +27,7 @@ from orders.views import ProductCategoryViewSet, CatalogFiltersViewSet, Products
                          ProductInfoViewSet, CabinetViewSet, loru_product_places, \
                          UghPublishedProductsViewSet
 from users.views import auth_get_token, UghPublishCostViewSet, auth_get_password_by_sms, auth_api_logout, \
-                        api_feedback, api_auth_settings
+                        api_feedback, api_auth_settings, api_auth_user
 
 # Burial
 router.register(r'^api/log', LogViewSet)
@@ -79,6 +79,7 @@ urlpatterns += patterns('pd.views',
     url(r'^import/', include('import_burials.urls')),
     
     url(r'^api/feedback/?$', api_feedback),
+    url(r'^api/user/?$', api_auth_user),
     url(r'^api/settings/?$', api_auth_settings),
     url(r'^api/auth/signin/?$', auth_get_token),
     url(r'^api/auth/signout/?$', auth_api_logout),
