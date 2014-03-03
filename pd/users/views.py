@@ -178,6 +178,33 @@ class ApiAuthSettings(APIView):
 
 api_auth_settings = ApiAuthSettings.as_view()
 
+class ApiAuthUser(APIView):
+    permission_classes = (IsAuthenticated,)
+    
+    def delete(self, request):
+        request.user.is_active = False
+        try:
+            request.user.customerprofile
+        except CustomerProfile.DoesNotExist:
+            pass
+        else:
+            # Пользователь кабинета
+            request.user.customerprofile.user_last_name = ''
+            request.user.customerprofile.user_first_name = ''
+            request.user.customerprofile.user_middle_name = ''
+            request.user.customerprofile.save()
+            request.user.email = ''
+            chars = string.ascii_uppercase + string.ascii_lowercase + string.digits
+            while True:
+                new_username  = 'deleted-' + ''.join(random.choice(chars) for x in range(10))
+                if not User.objects.filter(username=new_username).count():
+                    request.user.username = new_username
+                    break
+        request.user.save()
+        return Response(data={}, status=200)
+
+api_auth_user = ApiAuthUser.as_view()
+
 class AuthGetPasswordBySMSView(CheckRecaptchaMixin, APIView):
     """
     Замена пользователю пароля, отправка пароля по СМС
