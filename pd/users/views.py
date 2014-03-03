@@ -43,7 +43,7 @@ from users.forms import UserAddForm, RegisterForm, LoruFormset, ProfileForm, Use
 from users.models import Profile, Org, RegisterProfile, ProfileLORU, CustomerProfile, get_mail_footer, is_cabinet_user
 from pd.models import validate_phone_as_number
 from burials.models import Burial, Place
-from users.serializers import UghPublishCostSerializer
+from billing.models import Rate
 from orders.models import ProductStatus, ProductHistory
 from pd.views import PaginateListView, RequestToFormMixin, FormInvalidMixin, get_front_end_url, ServiceException
 
@@ -350,6 +350,36 @@ class ApiFeedBack(CheckRecaptchaMixin, APIView):
         return Response(data={}, status=status_code)
 
 api_feedback = ApiFeedBack.as_view()
+
+class ApiLoruPlaces(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request):
+        data = []
+        for ugh in Org.objects.filter(loru_list__loru=self.request.user.profile.org):
+            d = {
+                    'id': ugh.pk,
+                    'name': ugh.name,
+                    'currency': {
+                        'name': ugh.currency.name,
+                        'shortName': ugh.currency.short_name,
+                        'code': ugh.currency.code,
+                    }
+            }
+            for action, costFor in (
+                                        (Rate.RATE_ACTION_PUBLISH, 'costForEnable'),
+                                        (Rate.RATE_ACTION_UPDATE, 'costForUp'),
+                                   ):
+                d[costFor] = decimal.Decimal('0.00')
+                for rate in Rate.objects.filter(wallet__org=ugh,
+                                                wallet__currency=ugh.currency,
+                                                action=action,
+                                                ).order_by('-date_from')[:1]:
+                        d['costFor'] = rate.rate
+            data.append(d)
+        return Response(data=data, status=200)
+
+api_loru_places = ApiLoruPlaces.as_view()
 
 class LoginView(View):
     """
@@ -1059,18 +1089,6 @@ class SupportThanks(TemplateView):
                                         'html_message': html_message})
 
 support_thanks = SupportThanks.as_view()
-
-class UghPublishCostViewSet(viewsets.ModelViewSet):
-    model = Org
-    serializer_class = UghPublishCostSerializer
-    permission_classes = (IsAuthenticated,)
-
-    def get_queryset(self):
-        try:
-            return Org.objects.filter(loru_list__loru=self.request.user.profile.org)
-        except AttributeError:
-            # user without profile
-            return Org.objects.none()
 
 class TestCaptchaView(FormView):
     """
