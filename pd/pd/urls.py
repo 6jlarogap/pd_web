@@ -55,6 +55,8 @@ router.register(r'^api/products', ProductsViewSet)
 router.register(r'^api/product', ProductInfoViewSet)
 router.register(r'^api/cabinet', CabinetViewSet)
 
+router.register(r'^api/loru/products', UghPublishedProductsViewSet)
+
 # Geo
 router.register(r'^api/geo/location', LocationViewSet)
 router.register(r'^api/geo/location/static', LocationStaticViewSet)
