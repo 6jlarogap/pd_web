@@ -26,8 +26,8 @@ from logs.views import LogViewSet
 from orders.views import ProductCategoryViewSet, CatalogFiltersViewSet, ProductsViewSet, \
                          ProductInfoViewSet, CabinetViewSet, loru_product_places, \
                          UghPublishedProductsViewSet
-from users.views import auth_get_token, UghPublishCostViewSet, auth_get_password_by_sms, auth_api_logout, \
-                        api_feedback
+from users.views import auth_get_token, auth_get_password_by_sms, auth_api_logout, \
+                        api_feedback, api_auth_settings, api_auth_user, api_loru_places
 
 # Burial
 router.register(r'^api/log', LogViewSet)
@@ -55,7 +55,6 @@ router.register(r'^api/products', ProductsViewSet)
 router.register(r'^api/product', ProductInfoViewSet)
 router.register(r'^api/cabinet', CabinetViewSet)
 
-router.register(r'^api/loru/places', UghPublishCostViewSet)
 router.register(r'^api/loru/products', UghPublishedProductsViewSet)
 
 # Geo
@@ -79,11 +78,14 @@ urlpatterns += patterns('pd.views',
     url(r'^import/', include('import_burials.urls')),
     
     url(r'^api/feedback/?$', api_feedback),
+    url(r'^api/user/?$', api_auth_user),
+    url(r'^api/settings/?$', api_auth_settings),
     url(r'^api/auth/signin/?$', auth_get_token),
     url(r'^api/auth/signout/?$', auth_api_logout),
     url(r'^api/auth/get_password_by_sms/?$', auth_get_password_by_sms),
     
     url(r'^api/loru/product_places/?$', loru_product_places),
+    url(r'^api/loru/places', api_loru_places),
     
     url(r'^api/', include('rest_api.urls')),
     url(r'^', include(router.urls)),

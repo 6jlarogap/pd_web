@@ -241,7 +241,7 @@ ReasonFormset = inlineformset_factory(Org, Reason, formset=BaseInlineFormSet, ca
 class OrgForm(BaseOrgForm):
     class Meta:
         model = Org
-        exclude = ('off_address', 'publish_cost', 'currency', )
+        exclude = ('off_address', 'publish_cost', )
 
     def __init__(self, request, *args, **kwargs):
         super(OrgForm, self).__init__(request, *args, **kwargs)
@@ -255,6 +255,8 @@ class OrgForm(BaseOrgForm):
         if not self.is_own_org or not self.request.user.profile.is_loru():
             del self.fields['opf_order']
             del self.fields['opf_order_customer_mandatory']
+        if not self.is_own_org:
+            del self.fields['currency']
         if self.is_own_org and request.user.profile.is_ugh():
             self.placesize_formset = PlaceSizeFormset(data=request.POST or None, instance=self.instance)
         else:

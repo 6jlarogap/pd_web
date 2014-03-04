@@ -41,5 +41,19 @@ function($routeProvider, $locationProvider, $dialogProvider) {
 	    	controller: 'SupportViewCtrl',
 	        templateUrl: STATIC_TPL_URL+'/page404.html'+version_str
 	    });
-})
-;
+});
+
+app.directive('pdDtCheckbox', function () {
+  return {
+    restrict: 'A',
+    require: 'ngModel',
+    link: function (scope, iElement, iAttrs, ngModelController) {
+      ngModelController.$formatters.push(function (value) {
+        return !!value;
+      });
+      ngModelController.$parsers.push(function (value) {
+        return true === value ? (new Date()).toISOString() : null;
+      });
+    }
+  };
+});

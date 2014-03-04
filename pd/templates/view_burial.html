@@ -129,17 +129,20 @@
             {% endif %}
             {% if b.row %}{% trans "Ряд" %}: {{ b.row }}<br/>{% endif %}
             {% if b.place_number %}{% trans "Место" %}: {{ b.place_number }}<br/>{% endif %}
+            {% if b.grave_number %}{% trans "№ могилы" %}: {{ b.grave_number }}<br/>{% endif %}
             {% if place %}
-                {% trans "Размер, м." %}: 
+                {% trans "Размер места, м." %}: 
                 {% if place.place_width and place.place_length %}
                     {{ place.place_length }} x {{ place.place_width }}
                 {% else %}
                     {% trans "не указан" %}
                 {% endif %}
                 <br/>
+                {% trans "Количество могил" %}: {{ place.get_graves_count }}
+                <br/>
+                {% trans "Свободно" %}: {{ place.get_available_count }}
+                <br/>
             {% endif %}
-            {% if b.grave_number %}{% trans "Могила" %}: {{ b.grave_number }}<br/>{% endif %}
-            {% if place %}{% trans "Свободно" %}: {{ place.get_available_count }}<br/>{% endif %}
             {% if user.profile.is_ugh %}
                 {% if b.exhumated and b.exhumationrequest.place %}
                     <a href="/manage/cemetery/{{ b.exhumationrequest.place.cemetery.pk }}/area/{{ b.exhumationrequest.place.area.pk }}/place/{{ b.exhumationrequest.place.pk }}" class="btn">{% trans "карточка" %}</a>

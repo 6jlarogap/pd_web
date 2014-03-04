@@ -87,7 +87,6 @@
     $scope.address_class = 'Place';
     $scope.address_class_params = item_params;
 
-
     Place.getForm(item_params, function (result) {
       // Prepare place gallery
       if (result.place.gallery.length) {

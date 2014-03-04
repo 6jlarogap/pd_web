@@ -41,11 +41,11 @@ from users.forms import UserAddForm, RegisterForm, LoruFormset, ProfileForm, Use
                         UserDataForm, ChangePasswordForm, BankAccountFormset, OrgForm, \
                         OrgLogForm, LoginLogForm, OrgBurialStatsForm, SupportForm, TestCaptchaForm
 from users.models import Profile, Org, RegisterProfile, ProfileLORU, CustomerProfile, get_mail_footer, is_cabinet_user
-from burials.models import Place
-from users.serializers import UghPublishCostSerializer
+from pd.models import validate_phone_as_number
+from burials.models import Burial, Place
+from billing.models import Rate
 from orders.models import ProductStatus, ProductHistory
-from burials.models import Burial
-from pd.views import PaginateListView, RequestToFormMixin, FormInvalidMixin, get_front_end_url
+from pd.views import PaginateListView, RequestToFormMixin, FormInvalidMixin, get_front_end_url, ServiceException
 
 from sms_service import sms24x7
 
@@ -137,6 +137,73 @@ class AuthApiLogout(APIView):
         return Response(data={}, status=200)
 
 auth_api_logout = AuthApiLogout.as_view()
+
+class ApiAuthSettings(APIView):
+    permission_classes = (IsAuthenticated,)
+    
+    def put(self, request):
+        """
+        Поменять пароль и фотку пользователя
+        
+        Input data
+        {
+           # avatar, пока не применяем
+           "loginPhone": "375297542270",
+            "oldPassword": "1234567",
+            "newPassword": "7654321"
+         }
+        """
+        login_phone = request.DATA.get('loginPhone')
+        try:
+            try:
+                validate_phone_as_number(decimal.Decimal(login_phone))
+            except (TypeError, decimal.InvalidOperation, ValidationError, ):
+                raise ServiceException(_(u'Неверный формат телефона'))
+            if request.user.username != login_phone:
+                raise ServiceException(_(u'Указанный телефон не принадлежит этому пользователю'))
+            user = authenticate(username=login_phone, password=request.DATA.get('oldPassword'))
+            if not user:
+                raise ServiceException(_(u'Неверно указан действующий пароль'))
+            user.set_password(request.DATA.get('newPassword'))
+            user.save()
+        except ServiceException as excpt:
+            data = { 'status': 'error',
+                     'message': excpt.message,
+                   }
+            status_code = 400
+        else:
+            data = {}
+            status_code = 200
+        return Response(data=data, status=status_code)
+
+api_auth_settings = ApiAuthSettings.as_view()
+
+class ApiAuthUser(APIView):
+    permission_classes = (IsAuthenticated,)
+    
+    def delete(self, request):
+        request.user.is_active = False
+        try:
+            request.user.customerprofile
+        except CustomerProfile.DoesNotExist:
+            pass
+        else:
+            # Пользователь кабинета
+            request.user.customerprofile.user_last_name = ''
+            request.user.customerprofile.user_first_name = ''
+            request.user.customerprofile.user_middle_name = ''
+            request.user.customerprofile.save()
+            request.user.email = ''
+            chars = string.ascii_uppercase + string.ascii_lowercase + string.digits
+            while True:
+                new_username  = 'deleted-' + ''.join(random.choice(chars) for x in range(10))
+                if not User.objects.filter(username=new_username).count():
+                    request.user.username = new_username
+                    break
+        request.user.save()
+        return Response(data={}, status=200)
+
+api_auth_user = ApiAuthUser.as_view()
 
 class AuthGetPasswordBySMSView(CheckRecaptchaMixin, APIView):
     """
@@ -283,6 +350,36 @@ class ApiFeedBack(CheckRecaptchaMixin, APIView):
         return Response(data={}, status=status_code)
 
 api_feedback = ApiFeedBack.as_view()
+
+class ApiLoruPlaces(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request):
+        data = []
+        for ugh in Org.objects.filter(loru_list__loru=self.request.user.profile.org):
+            d = {
+                    'id': ugh.pk,
+                    'name': ugh.name,
+                    'currency': {
+                        'name': ugh.currency.name,
+                        'shortName': ugh.currency.short_name,
+                        'code': ugh.currency.code,
+                    }
+            }
+            for action, costFor in (
+                                        (Rate.RATE_ACTION_PUBLISH, 'costForEnable'),
+                                        (Rate.RATE_ACTION_UPDATE, 'costForUp'),
+                                   ):
+                d[costFor] = decimal.Decimal('0.00')
+                for rate in Rate.objects.filter(wallet__org=ugh,
+                                                wallet__currency=ugh.currency,
+                                                action=action,
+                                                ).order_by('-date_from')[:1]:
+                        d['costFor'] = rate.rate
+            data.append(d)
+        return Response(data=data, status=200)
+
+api_loru_places = ApiLoruPlaces.as_view()
 
 class LoginView(View):
     """
@@ -992,18 +1089,6 @@ class SupportThanks(TemplateView):
                                         'html_message': html_message})
 
 support_thanks = SupportThanks.as_view()
-
-class UghPublishCostViewSet(viewsets.ModelViewSet):
-    model = Org
-    serializer_class = UghPublishCostSerializer
-    permission_classes = (IsAuthenticated,)
-
-    def get_queryset(self):
-        try:
-            return Org.objects.filter(loru_list__loru=self.request.user.profile.org)
-        except AttributeError:
-            # user without profile
-            return Org.objects.none()
 
 class TestCaptchaView(FormView):
     """
