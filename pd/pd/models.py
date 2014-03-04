@@ -3,6 +3,7 @@
 import os
 import pytils
 import datetime
+import re
 
 from django.conf import settings
 from django.db import models
@@ -299,8 +300,9 @@ def validate_phone_as_number(value):
     if value < 0:
         raise ValidationError(_(u'Неверный первый знак в телефоне'))
     min_digits = 10
-    if value < 10**(min_digits-1):
-        raise ValidationError(_(u'Мало цифр в телефоне. Минимум: %d цифр') % min_digits)
+    max_digits = 12
+    if not re.search(r'^\d{%d,%s}$' % (min_digits, max_digits, ), str(value)):
+        raise ValidationError(_(u'Неверный номер телефона, надо от %d до %d цифр') % (min_digits, max_digits, ))
 
 class  GetLogsMixin(object):
     """

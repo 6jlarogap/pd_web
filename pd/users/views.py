@@ -101,15 +101,17 @@ class AuthGetTokenView(APIView):
                 raise Exception(u'Unknown role')
             login(request, user)
 
-            profile = { 'email': user.email or None }
+            profile = { 'email': user.email or None, 'photo': None }
             pr = user.customerprofile if role == 'ROLE_CLIENT' else user.profile
             profile['lastname'] = pr.user_last_name or user.last_name or None
             profile['firstname'] = pr.user_first_name or user.first_name or None
             profile['middlename'] = pr.user_middle_name or None
             if role == 'ROLE_CLIENT':
                 org = { 'id': None, 'name': None }
+                profile['mainPhone'] = username
             else:
                 org = { 'id': user.profile.org.pk, 'name': user.profile.org.name or None }
+                profile['mainPhone'] = None
 
             data = { 'status': 'success',
                      'token': token.key,
