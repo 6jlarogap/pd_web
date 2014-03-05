@@ -45,7 +45,7 @@ from users.models import Profile, Org, RegisterProfile, ProfileLORU, CustomerPro
 from pd.models import validate_phone_as_number
 from persons.models import AlivePerson
 from burials.models import Burial, Place
-from billing.models import Rate
+from billing.models import Wallet, Rate
 from orders.models import ProductStatus, ProductHistory
 from pd.views import PaginateListView, RequestToFormMixin, FormInvalidMixin, get_front_end_url, ServiceException
 
@@ -373,7 +373,7 @@ class ApiLoruPlaces(APIView):
 
     def get(self, request):
         data = []
-        for ugh in Org.objects.filter(loru_list__loru=self.request.user.profile.org):
+        for ugh in Org.objects.filter(loru_list__loru=request.user.profile.org):
             d = {
                     'id': ugh.pk,
                     'name': ugh.name,
@@ -397,6 +397,28 @@ class ApiLoruPlaces(APIView):
         return Response(data=data, status=200)
 
 api_loru_places = ApiLoruPlaces.as_view()
+
+class ApiBalance(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request):
+        data = []
+        for wallet in Wallet.objects.filter(org=request.user.profile.org):
+            d = {
+                    'amount': wallet.amount,
+                    'currency': {
+                        'name': wallet.currency.name,
+                        'shortName': wallet.currency.short_name,
+                        'code': wallet.currency.code,
+                    }
+            }
+            data.append(d)
+            data = {
+                'currentBalance': data,
+            }
+        return Response(data=data, status=200)
+
+api_balance = ApiBalance.as_view()
 
 class LoginView(View):
     """
