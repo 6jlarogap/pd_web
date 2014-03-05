@@ -194,10 +194,13 @@ class Org(GetLogsMixin, BaseModel):
     def get_loru_list(self):
         return [ul.loru for ul in self.loru_list.all()]
 
-    def create_wallet_rate(self, currency):
+    def create_wallet_rate(self, currency=None):
         """
         Создать кошелек и тарифы (тарифы -- только для ОМС) для организации
         """
+        if not currency:
+            Currency = models.get_model('billing', 'Currency')
+            currency = Currency.objects.get(code='RUR')
         Wallet = models.get_model('billing', 'Wallet')
         wallet, created = Wallet.objects.get_or_create(
             org=self,

@@ -27,7 +27,6 @@ from persons.models import DeathCertificate, PersonID, IDDocumentType, SafeDelet
 from users.forms import BaseOrgForm
 from users.models import Org, Profile, Dover
 from logs.models import write_log
-from billing.models import Currency
 
 OPF_CHOICES = (('person', _(u'ФЛ')), ('org', _(u'ЮЛ')))
 
@@ -1453,7 +1452,7 @@ class AddOrgForm(BaseOrgForm):
         if commit:
             org.save()
             if org.type == Org.PROFILE_LORU:
-                org.create_wallet_rate(currency=Currency.RUR())
+                org.create_wallet_rate()
             self.put_log_data(msg=_(u'Добавлена организация'))
         return org
 

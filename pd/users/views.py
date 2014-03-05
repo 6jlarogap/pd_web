@@ -45,7 +45,7 @@ from users.models import Profile, Org, RegisterProfile, ProfileLORU, CustomerPro
 from pd.models import validate_phone_as_number
 from persons.models import AlivePerson
 from burials.models import Burial, Place
-from billing.models import Currency, Rate
+from billing.models import Rate
 from orders.models import ProductStatus, ProductHistory
 from pd.views import PaginateListView, RequestToFormMixin, FormInvalidMixin, get_front_end_url, ServiceException
 
@@ -990,7 +990,7 @@ class RegistrantApprove(SupervisorRequiredMixin, View):
                     email = registrant.user_email,
                     phones = registrant.org_phones,
         )
-        org.create_wallet_rate(currency=Currency.RUR())
+        org.create_wallet_rate()
         profile=Profile.objects.create(
                     user_last_name=registrant.user_last_name,
                     user_first_name=registrant.user_first_name,
