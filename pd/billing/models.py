@@ -20,6 +20,10 @@ class Currency(models.Model):
     def __unicode__(self):
         return self.code
 
+    @classmethod
+    def RUR(cls):
+        return cls.objects.get(code='RUR')
+
 class Wallet(models.Model):
     org = models.ForeignKey(Org, verbose_name=_(u"Организация"))
     currency = models.ForeignKey(Currency, verbose_name=_(u"Валюта"))
