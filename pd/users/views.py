@@ -16,6 +16,7 @@ from django.core.mail import send_mail, EmailMessage
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
 from django.core.urlresolvers import reverse
+from django.db import transaction
 from django.db.models.query_utils import Q
 from django.db.models.aggregates import Count
 from django.http import HttpResponse, Http404
@@ -42,6 +43,7 @@ from users.forms import UserAddForm, RegisterForm, LoruFormset, ProfileForm, Use
                         OrgLogForm, LoginLogForm, OrgBurialStatsForm, SupportForm, TestCaptchaForm
 from users.models import Profile, Org, RegisterProfile, ProfileLORU, CustomerProfile, get_mail_footer, is_cabinet_user
 from pd.models import validate_phone_as_number
+from persons.models import AlivePerson
 from burials.models import Burial, Place
 from billing.models import Currency, Rate
 from orders.models import ProductStatus, ProductHistory
@@ -143,6 +145,7 @@ auth_api_logout = AuthApiLogout.as_view()
 class ApiAuthSettings(APIView):
     permission_classes = (IsAuthenticated,)
     
+    @transaction.commit_on_success
     def put(self, request):
         """
         Поменять пароль и фотку пользователя
@@ -155,19 +158,31 @@ class ApiAuthSettings(APIView):
             "newPassword": "7654321"
          }
         """
-        login_phone = request.DATA.get('loginPhone')
         try:
-            try:
-                validate_phone_as_number(decimal.Decimal(login_phone))
-            except (TypeError, decimal.InvalidOperation, ValidationError, ):
-                raise ServiceException(_(u'Неверный формат телефона'))
-            if request.user.username != login_phone:
-                raise ServiceException(_(u'Указанный телефон не принадлежит этому пользователю'))
-            user = authenticate(username=login_phone, password=request.DATA.get('oldPassword'))
-            if not user:
-                raise ServiceException(_(u'Неверно указан действующий пароль'))
-            user.set_password(request.DATA.get('newPassword'))
-            user.save()
+            user = request.user
+            old_username = user.username
+            old_password = request.DATA.get('oldPassword')
+            if old_password:
+                user = authenticate(username=old_username, password=old_password)
+                if not user:
+                    raise ServiceException(_(u'Неверно указан действующий пароль'))
+
+            login_phone = request.DATA.get('loginPhone')
+            if login_phone:
+                try:
+                    validate_phone_as_number(decimal.Decimal(login_phone))
+                except (TypeError, decimal.InvalidOperation, ValidationError, ):
+                    raise ServiceException(_(u'Неверный формат телефона'))
+                user.username = login_phone
+
+            new_password = request.DATA.get('newPassword')
+            if new_password:
+                user.set_password(new_password)
+
+            if new_password or login_phone:
+                user.save()
+            if login_phone and login_phone != old_username:
+                AlivePerson.objects.filter(login_phone=old_username).update(login_phone=login_phone)
         except ServiceException as excpt:
             data = { 'status': 'error',
                      'message': excpt.message,
