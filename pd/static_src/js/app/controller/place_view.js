@@ -90,7 +90,10 @@
     Place.getForm(item_params, function (result) {
       // Prepare place gallery
       if (result.place.gallery.length) {
-        $scope.placeGallery = _.sortBy(result.place.gallery, 'addedAt');
+        $scope.placeGallery = _(result.place.gallery)
+          .sortBy('addedAt')
+          .reverse()
+          .value();
         $scope.placeGalleryFirstPhoto = $scope.placeGallery[0];
       }
 
