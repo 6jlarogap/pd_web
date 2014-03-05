@@ -1,4 +1,7 @@
 # coding=utf-8
+import datetime
+import decimal
+
 from django.conf import settings
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
@@ -190,6 +193,30 @@ class Org(GetLogsMixin, BaseModel):
 
     def get_loru_list(self):
         return [ul.loru for ul in self.loru_list.all()]
+
+    def create_wallet_rate(self, currency=None):
+        """
+        Создать кошелек и тарифы (тарифы -- только для ОМС) для организации
+        """
+        if not currency:
+            Currency = models.get_model('billing', 'Currency')
+            currency = Currency.objects.get(code='RUR')
+        Wallet = models.get_model('billing', 'Wallet')
+        wallet, created = Wallet.objects.get_or_create(
+            org=self,
+            currency=currency,
+        )
+        if self.type == self.PROFILE_UGH:
+            Rate = models.get_model('billing', 'Rate')
+            for action in (Rate.RATE_ACTION_PUBLISH, Rate.RATE_ACTION_UPDATE, ):
+                rate, created = Rate.objects.get_or_create(
+                    wallet=wallet,
+                    action=action,
+                    defaults = dict(
+                        date_from=datetime.date.today(),
+                        rate=decimal.Decimal('0.00'),
+                    )
+                )
 
     @classmethod
     def get_supervisor(cls):

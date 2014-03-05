@@ -27,7 +27,8 @@ from orders.views import ProductCategoryViewSet, CatalogFiltersViewSet, Products
                          ProductInfoViewSet, CabinetViewSet, loru_product_places, \
                          UghPublishedProductsViewSet
 from users.views import auth_get_token, auth_get_password_by_sms, auth_api_logout, \
-                        api_feedback, api_auth_settings, api_auth_user, api_loru_places
+                        api_feedback, api_auth_settings, api_auth_user, api_loru_places, \
+                        api_balance
 
 # Burial
 router.register(r'^api/log', LogViewSet)
@@ -87,6 +88,8 @@ urlpatterns += patterns('pd.views',
     url(r'^api/loru/product_places/?$', loru_product_places),
     url(r'^api/loru/places', api_loru_places),
     
+    url(r'^api/balance', api_balance),
+
     url(r'^api/', include('rest_api.urls')),
     url(r'^', include(router.urls)),
 )
