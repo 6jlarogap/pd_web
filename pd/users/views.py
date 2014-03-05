@@ -181,8 +181,13 @@ class ApiAuthSettings(APIView):
 
             if new_password or login_phone:
                 user.save()
-            if login_phone and login_phone != old_username:
-                AlivePerson.objects.filter(login_phone=old_username).update(login_phone=login_phone)
+            try:
+                # это только для клиента кабинета!
+                user.customprofile
+                if login_phone and login_phone != old_username:
+                    AlivePerson.objects.filter(login_phone=old_username).update(login_phone=login_phone)
+            except CustomerProfile.DoesNotExist:
+                pass
         except ServiceException as excpt:
             data = { 'status': 'error',
                      'message': excpt.message,
