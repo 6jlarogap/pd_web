@@ -419,6 +419,7 @@ class PlaceViewSet(viewsets.ModelViewSet):
         
         if self.old_responsible and unicode(self.old_responsible) != unicode(object.responsible):
             self.new_msg += [compare_obj(_(u'Ответственный'), self.old_responsible, object.responsible)]
+
         log_object(self.request, obj=object, old=self.old_object, new=object, reason=_(u'Место %s изменено') % object.place, new_msg=self.new_msg)
 
         if object.responsible:
