@@ -195,11 +195,11 @@ class Place(SafeDeleteMixin, GeoPointModel):
     # Следующие поля DateTimeField будут содержать дату установки
     # соответствующего признака, но служат еще и как BooleanField:
     # если поле установлено в какую-то дату, то это True; если NULL, то False
-    dt_wrong_fio = models.DateTimeField(_(u"Неверное ФИО"), null=True, editable=False)
-    dt_military = models.DateTimeField(_(u"Воинское"), null=True, editable=False)
-    dt_size_violated = models.DateTimeField(_(u"Нарушение размеров"), null=True, editable=False)
-    dt_unowned = models.DateTimeField(_(u"Заброшенное"), null=True, editable=False)
-    dt_unindentified = models.DateTimeField(_(u"Неопознанное"), null=True, editable=False)
+    dt_wrong_fio = models.DateTimeField(_(u"Неверное ФИО /дата установки признака/"), null=True, editable=False)
+    dt_military = models.DateTimeField(_(u"Воинское /дата установки признака/"), null=True, editable=False)
+    dt_size_violated = models.DateTimeField(_(u"Нарушение размеров /дата установки признака/"), null=True, editable=False)
+    dt_unowned = models.DateTimeField(_(u"Заброшенное /дата установки признака/"), null=True, editable=False)
+    dt_unindentified = models.DateTimeField(_(u"Неопознанное /дата установки признака/"), null=True, editable=False)
 
     objects = PlaceManager()
 

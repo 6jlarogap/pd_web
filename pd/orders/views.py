@@ -845,7 +845,15 @@ class UghPublishedProductsViewSet(viewsets.ViewSet):
             return Response(status=400, data=data)
         ugh_list = [ pl.ugh for pl in ProfileLORU.objects.filter(loru=profile.org)]
         for p in Product.objects.filter(loru=profile.org).order_by('pk'):
-            data_p = { 'id': p.pk, 'name': p.name, 'availableOnPlaces': [] }
+            data_p = {
+                'id': p.pk,
+                'name': p.name,
+                'availableOnPlaces': [],
+                'category': {
+                    'id': p.productcategory.pk,
+                    'name': p.productcategory.name,
+                },
+            }
             for ps in ProductStatus.objects.filter(product=p, ugh__in=ugh_list):
                 if ps.status in (ProductHistory.PRODUCT_OPERATION_ENABLE,
                                  ProductHistory.PRODUCT_OPERATION_UP):
