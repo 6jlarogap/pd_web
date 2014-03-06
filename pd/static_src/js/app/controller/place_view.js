@@ -575,7 +575,7 @@
   };
 
   $scope.validatePhone = function (value) {
-    return !(value && value.length) || (value && value.replace('-', '').match(/^[\d]{10,12}$/) != null)
+    return !(value && value.length) || (value && value.replace('-', '').match(/^[1-9][\d]{9,11}$/) != null)
   };
 
   ymapData.markers = [];

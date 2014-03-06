@@ -23,7 +23,6 @@ class AlivePersonSerializer(serializers.HyperlinkedModelSerializer):
         model = AlivePerson
         fields = ('id', 'first_name', 'last_name', 'middle_name', 'address', 'phones', 'login_phone', 'address_str')
 
-
 class DeadPersonSerializer(serializers.HyperlinkedModelSerializer):
     birth_date = UnclearDateFieldSerializer()
     death_date = UnclearDateFieldSerializer()
