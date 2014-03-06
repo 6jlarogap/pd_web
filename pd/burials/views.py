@@ -1,7 +1,5 @@
 # coding=utf-8
 
-import decimal
-
 from django.contrib import messages
 from django.core.urlresolvers import reverse
 from django.core.paginator import Paginator
