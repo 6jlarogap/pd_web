@@ -852,7 +852,7 @@ class UghPublishedProductsViewSet(viewsets.ViewSet):
                 'category': {
                     'id': p.productcategory.pk,
                     'name': p.productcategory.name,
-                }
+                },
             }
             for ps in ProductStatus.objects.filter(product=p, ugh__in=ugh_list):
                 if ps.status in (ProductHistory.PRODUCT_OPERATION_ENABLE,
