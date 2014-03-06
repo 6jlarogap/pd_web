@@ -38,8 +38,7 @@ class Product(models.Model):
     ptype = models.CharField(_(u"Тип"), max_length=255, choices=PRODUCT_TYPES, null=True, blank=True)
     default = models.BooleanField(_(u"По умолчанию"), default=False, blank=True)
     photo = models.FileField(u"Фото", upload_to=upload_slugified, blank=True, null=True)
-    productcategory = models.ForeignKey(ProductCategory, verbose_name=_(u"Категория"),
-                      null=True, blank=True)
+    productcategory = models.ForeignKey(ProductCategory, verbose_name=_(u"Категория"), on_delete=models.PROTECT)
     currency = models.ForeignKey('billing.Currency', verbose_name=_(u"Валюта"))
     sku = models.CharField(_(u"Артикул"), max_length=255, blank=True, default='')
 
