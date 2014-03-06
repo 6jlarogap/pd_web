@@ -16,6 +16,7 @@ from django.core.mail import send_mail, EmailMessage
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
 from django.core.urlresolvers import reverse
+from django.db import transaction
 from django.db.models.query_utils import Q
 from django.db.models.aggregates import Count
 from django.http import HttpResponse, Http404
@@ -42,10 +43,11 @@ from users.forms import UserAddForm, RegisterForm, LoruFormset, ProfileForm, Use
                         OrgLogForm, LoginLogForm, OrgBurialStatsForm, SupportForm, TestCaptchaForm
 from users.models import Profile, Org, RegisterProfile, ProfileLORU, CustomerProfile, get_mail_footer, is_cabinet_user
 from pd.models import validate_phone_as_number
+from persons.models import AlivePerson
 from burials.models import Burial, Place
-from users.serializers import UghPublishCostSerializer
+from billing.models import Wallet, Rate
 from orders.models import ProductStatus, ProductHistory
-from pd.views import PaginateListView, RequestToFormMixin, FormInvalidMixin, get_front_end_url
+from pd.views import PaginateListView, RequestToFormMixin, FormInvalidMixin, get_front_end_url, ServiceException
 
 from sms_service import sms24x7
 
@@ -101,15 +103,17 @@ class AuthGetTokenView(APIView):
                 raise Exception(u'Unknown role')
             login(request, user)
 
-            profile = { 'email': user.email or None }
+            profile = { 'email': user.email or None, 'photo': None }
             pr = user.customerprofile if role == 'ROLE_CLIENT' else user.profile
             profile['lastname'] = pr.user_last_name or user.last_name or None
             profile['firstname'] = pr.user_first_name or user.first_name or None
             profile['middlename'] = pr.user_middle_name or None
             if role == 'ROLE_CLIENT':
                 org = { 'id': None, 'name': None }
+                profile['mainPhone'] = username
             else:
                 org = { 'id': user.profile.org.pk, 'name': user.profile.org.name or None }
+                profile['mainPhone'] = None
 
             data = { 'status': 'success',
                      'token': token.key,
@@ -141,35 +145,87 @@ auth_api_logout = AuthApiLogout.as_view()
 class ApiAuthSettings(APIView):
     permission_classes = (IsAuthenticated,)
     
+    @transaction.commit_on_success
     def put(self, request):
         """
         Поменять пароль и фотку пользователя
         
         Input data
         {
+           # avatar, пока не применяем
            "loginPhone": "375297542270",
             "oldPassword": "1234567",
             "newPassword": "7654321"
          }
         """
-        status = 'error'
-        message = ''
-        status_code = 400
-        login_phone = request.DATA.get('loginPhone')
         try:
-            validate_phone_as_number(decimal.Decimal(login_phone))
-        except (TypeError, decimal.InvalidOperation, ValidationError, ):
-            message = _(u'Неверный формат телефона')
+            user = request.user
+            old_username = user.username
+            old_password = request.DATA.get('oldPassword')
+            if old_password:
+                user = authenticate(username=old_username, password=old_password)
+                if not user:
+                    raise ServiceException(_(u'Неверно указан действующий пароль'))
+
+            login_phone = request.DATA.get('loginPhone')
+            if login_phone:
+                try:
+                    validate_phone_as_number(decimal.Decimal(login_phone))
+                except (TypeError, decimal.InvalidOperation, ValidationError, ):
+                    raise ServiceException(_(u'Неверный формат телефона'))
+                user.username = login_phone
+
+            new_password = request.DATA.get('newPassword')
+            if new_password:
+                user.set_password(new_password)
+
+            if new_password or login_phone:
+                user.save()
+            try:
+                # это только для клиента кабинета!
+                user.customprofile
+                if login_phone and login_phone != old_username:
+                    AlivePerson.objects.filter(login_phone=old_username).update(login_phone=login_phone)
+            except CustomerProfile.DoesNotExist:
+                pass
+        except ServiceException as excpt:
+            data = { 'status': 'error',
+                     'message': excpt.message,
+                   }
+            status_code = 400
         else:
-            pass
-            # valiate loginPhone and oldPassword
-        
-        data = { 'status': status,
-                 'message': message,
-                }
+            data = {}
+            status_code = 200
         return Response(data=data, status=status_code)
 
 api_auth_settings = ApiAuthSettings.as_view()
+
+class ApiAuthUser(APIView):
+    permission_classes = (IsAuthenticated,)
+    
+    def delete(self, request):
+        request.user.is_active = False
+        try:
+            request.user.customerprofile
+        except CustomerProfile.DoesNotExist:
+            pass
+        else:
+            # Пользователь кабинета
+            request.user.customerprofile.user_last_name = ''
+            request.user.customerprofile.user_first_name = ''
+            request.user.customerprofile.user_middle_name = ''
+            request.user.customerprofile.save()
+            request.user.email = ''
+            chars = string.ascii_uppercase + string.ascii_lowercase + string.digits
+            while True:
+                new_username  = 'deleted-' + ''.join(random.choice(chars) for x in range(10))
+                if not User.objects.filter(username=new_username).count():
+                    request.user.username = new_username
+                    break
+        request.user.save()
+        return Response(data={}, status=200)
+
+api_auth_user = ApiAuthUser.as_view()
 
 class AuthGetPasswordBySMSView(CheckRecaptchaMixin, APIView):
     """
@@ -316,6 +372,58 @@ class ApiFeedBack(CheckRecaptchaMixin, APIView):
         return Response(data={}, status=status_code)
 
 api_feedback = ApiFeedBack.as_view()
+
+class ApiLoruPlaces(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request):
+        data = []
+        for ugh in Org.objects.filter(loru_list__loru=request.user.profile.org):
+            d = {
+                    'id': ugh.pk,
+                    'name': ugh.name,
+                    'currency': {
+                        'name': ugh.currency.name,
+                        'shortName': ugh.currency.short_name,
+                        'code': ugh.currency.code,
+                    }
+            }
+            for action, costFor in (
+                                        (Rate.RATE_ACTION_PUBLISH, 'costForEnable'),
+                                        (Rate.RATE_ACTION_UPDATE, 'costForUp'),
+                                   ):
+                d[costFor] = decimal.Decimal('0.00')
+                for rate in Rate.objects.filter(wallet__org=ugh,
+                                                wallet__currency=ugh.currency,
+                                                action=action,
+                                                ).order_by('-date_from')[:1]:
+                        d['costFor'] = rate.rate
+            data.append(d)
+        return Response(data=data, status=200)
+
+api_loru_places = ApiLoruPlaces.as_view()
+
+class ApiBalance(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request):
+        data = []
+        for wallet in Wallet.objects.filter(org=request.user.profile.org):
+            d = {
+                    'amount': wallet.amount,
+                    'currency': {
+                        'name': wallet.currency.name,
+                        'shortName': wallet.currency.short_name,
+                        'code': wallet.currency.code,
+                    }
+            }
+            data.append(d)
+            data = {
+                'currentBalance': data,
+            }
+        return Response(data=data, status=200)
+
+api_balance = ApiBalance.as_view()
 
 class LoginView(View):
     """
@@ -909,6 +1017,7 @@ class RegistrantApprove(SupervisorRequiredMixin, View):
                     email = registrant.user_email,
                     phones = registrant.org_phones,
         )
+        org.create_wallet_rate()
         profile=Profile.objects.create(
                     user_last_name=registrant.user_last_name,
                     user_first_name=registrant.user_first_name,
@@ -1025,18 +1134,6 @@ class SupportThanks(TemplateView):
                                         'html_message': html_message})
 
 support_thanks = SupportThanks.as_view()
-
-class UghPublishCostViewSet(viewsets.ModelViewSet):
-    model = Org
-    serializer_class = UghPublishCostSerializer
-    permission_classes = (IsAuthenticated,)
-
-    def get_queryset(self):
-        try:
-            return Org.objects.filter(loru_list__loru=self.request.user.profile.org)
-        except AttributeError:
-            # user without profile
-            return Org.objects.none()
 
 class TestCaptchaView(FormView):
     """

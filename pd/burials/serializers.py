@@ -88,6 +88,11 @@ class PlaceSerializer(serializers.ModelSerializer):
     #available_count = Field(source='available_count')
     responsible_txt = serializers.SerializerMethodField('responsible_str')
     gallery = serializers.SerializerMethodField('gallery_func')
+    dt_wrong_fio = serializers.DateTimeField(required=False)
+    dt_military = serializers.DateTimeField(required=False)
+    dt_size_violated = serializers.DateTimeField(required=False)
+    dt_unowned = serializers.DateTimeField(required=False)
+    dt_unindentified = serializers.DateTimeField(required=False)
 
     class Meta:
         model = Place

@@ -130,3 +130,23 @@ def get_front_end_url(request):
             # ВНИМАНИЕ: заканчиваем на '/'
             result += host[len(back_end_prefix):] + '/'
     return result
+
+class ServiceException(Exception):
+    """
+    Чтобы не плодить депочки if (try) else ... if (try) ... else
+    
+    Пример:
+    try:
+        if not condition1:
+            raise ServiceException('Condition 1 failed')
+        try:
+            # some code
+        except SomeException:
+            raise ServiceException('Condition 2 failed')
+        # all good, going further
+    except ServiceException as excpt:
+        print excpt.message
+    else:
+        # all good
+    """
+    pass

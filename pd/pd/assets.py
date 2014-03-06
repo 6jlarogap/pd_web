@@ -62,6 +62,8 @@ js_angular = Bundle(
 
         "select2/select2.min.js",
         "select2/select2_locale_ru.js",
+
+        "momentjs/moment.js",
         #"ng-grid/ng-grid-2.0.7.debug.js",
     
         "js/bootstrap-typeahead.js",

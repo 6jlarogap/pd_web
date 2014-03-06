@@ -18,7 +18,7 @@ class Currency(models.Model):
         verbose_name_plural = _(u"Валюты")
 
     def __unicode__(self):
-        return self.name
+        return self.code
 
 class Wallet(models.Model):
     org = models.ForeignKey(Org, verbose_name=_(u"Организация"))

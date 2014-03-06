@@ -157,6 +157,9 @@ class Location(models.Model):
             else:
                 addr += u'%s' % (self.country or self.street and self.street.city.region.country or '')
 
+            if addr and self.post_index:
+                addr += u' %s' % self.post_index
+
             return addr.replace(', ,', ', ')
         elif self.fias_parents.all():
             addr = u", ".join(map(unicode, self.fias_parents.all()))
