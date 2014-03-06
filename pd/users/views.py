@@ -183,7 +183,7 @@ class ApiAuthSettings(APIView):
                 user.save()
             try:
                 # это только для клиента кабинета!
-                user.customprofile
+                user.customerprofile
                 if login_phone and login_phone != old_username:
                     AlivePerson.objects.filter(login_phone=old_username).update(login_phone=login_phone)
             except CustomerProfile.DoesNotExist:
