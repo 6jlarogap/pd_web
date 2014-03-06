@@ -375,11 +375,9 @@ class PlaceViewSet(viewsets.ModelViewSet):
         if object.responsible:
             address = self.request.DATA.get('obj_responsible_address')
             address_serializer = LocationDataSerializer(object.responsible.address, data=address, partial=True)
-            if not address_serializer.is_valid():
-                return Response(status=400, data=address_serializer.errors)
-            
-            object.responsible.address = address_serializer.save()
-            object.responsible.address.set_related_addr(data=address)
+            if address_serializer.is_valid():
+                object.responsible.address = address_serializer.save()
+                object.responsible.address.set_related_addr(data=address)
 
             old_phones = [i for i in object.responsible.phone_set.all()]
             
@@ -394,12 +392,11 @@ class PlaceViewSet(viewsets.ModelViewSet):
                 except:
                     phone_obj = None
                 phone_serializer = PhoneSerializer(phone_obj, data=i)
-                if not phone_serializer.is_valid():
-                    return Response(status=400, data=phone_serializer.errors)
-                res = phone_serializer.save()
-                res.obj_id = object.responsible.pk
-                res.save()                
-                id_binds[res.id] = 1
+                if phone_serializer.is_valid():
+                    res = phone_serializer.save()
+                    res.obj_id = object.responsible.pk
+                    res.save()                
+                    id_binds[res.id] = 1
             object.responsible.phone_set.exclude(pk__in=id_binds.keys()).delete()
         
             phone_set = object.responsible.phone_set.all()
@@ -422,7 +419,6 @@ class PlaceViewSet(viewsets.ModelViewSet):
         
         if self.old_responsible and unicode(self.old_responsible) != unicode(object.responsible):
             self.new_msg += [compare_obj(_(u'Ответственный'), self.old_responsible, object.responsible)]
-
         log_object(self.request, obj=object, old=self.old_object, new=object, reason=_(u'Место %s изменено') % object.place, new_msg=self.new_msg)
 
         if object.responsible:
