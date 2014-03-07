@@ -803,12 +803,7 @@ class LoruProductPlaces(UserLoruMixin, APIView):
             'enable': Rate.RATE_ACTION_PUBLISH,
             'up': Rate.RATE_ACTION_UPDATE,
         }
-        product_history_operation = {
-            'disable': ProductHistory.PRODUCT_OPERATION_DISABLE,
-            'enable': ProductHistory.PRODUCT_OPERATION_ENABLE,
-            'up': ProductHistory.PRODUCT_OPERATION_UP,
-        }
-        product_status = product_history_operation
+        product_history_operation =  product_status = rate_action
         data = []
         for p in request.DATA:
             if Product.objects.filter(pk=p['id'], loru=request.user.profile.org).count():
@@ -877,8 +872,8 @@ class UghPublishedProductsViewSet(viewsets.ViewSet):
                 },
             }
             for ps in ProductStatus.objects.filter(product=p, ugh__in=ugh_list):
-                if ps.status in (ProductHistory.PRODUCT_OPERATION_ENABLE,
-                                 ProductHistory.PRODUCT_OPERATION_UP):
+                if ps.status in (ProductHistory.PRODUCT_OPERATION_PUBLISH,
+                                 ProductHistory.PRODUCT_OPERATION_UPDATE):
                     data_p['availableOnPlaces'].append(ps.ugh.pk)
             data.append(data_p)
         return Response(status=200, data=data)
