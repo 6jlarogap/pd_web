@@ -3,6 +3,7 @@
 from django.contrib import messages
 from django.core.urlresolvers import reverse
 from django.core.paginator import Paginator
+from django.core.exceptions import ValidationError
 from django.db.models.query_utils import Q
 from django.db.models import Count, Avg
 from django.shortcuts import redirect, render, get_object_or_404
@@ -19,6 +20,7 @@ from django.contrib.contenttypes.models import ContentType
 from geo.models import Country, Region, Street, City
 
 from pd.views import RequestToFormMixin, FormInvalidMixin
+from pd.models import validate_phone_as_number
 
 from burials.forms import CemeteryForm, AreaFormset, PlaceEditForm, AddOrgForm, AreaMergeForm, BurialfileCommentEditForm
 from burials.models import Cemetery, Place, Area, BurialFiles, Grave, Burial, AreaPhoto, GravePhoto, ExhumationRequest, AreaPurpose, PlaceSize
@@ -326,6 +328,12 @@ class PlaceViewSet(viewsets.ModelViewSet):
             return Response(status=400, data=data)
 
         responsible = self.request.DATA.get('obj_responsible')
+        if responsible and responsible.get('login_phone'):
+            try:
+                validate_phone_as_number(responsible['login_phone'])
+            except (TypeError, ValidationError, ):
+                return Response(status=400, data={"__all__":[_(u'Неверный формат телефона'),]})
+
         if object.pk and responsible:
             
             responsible_serializer =  AlivePersonSerializer(object.responsible, data=responsible, partial=True)
@@ -367,11 +375,9 @@ class PlaceViewSet(viewsets.ModelViewSet):
         if object.responsible:
             address = self.request.DATA.get('obj_responsible_address')
             address_serializer = LocationDataSerializer(object.responsible.address, data=address, partial=True)
-            if not address_serializer.is_valid():
-                return Response(status=400, data=address_serializer.errors)
-            
-            object.responsible.address = address_serializer.save()
-            object.responsible.address.set_related_addr(data=address)
+            if address_serializer.is_valid():
+                object.responsible.address = address_serializer.save()
+                object.responsible.address.set_related_addr(data=address)
 
             old_phones = [i for i in object.responsible.phone_set.all()]
             
@@ -386,12 +392,11 @@ class PlaceViewSet(viewsets.ModelViewSet):
                 except:
                     phone_obj = None
                 phone_serializer = PhoneSerializer(phone_obj, data=i)
-                if not phone_serializer.is_valid():
-                    return Response(status=400, data=phone_serializer.errors)
-                res = phone_serializer.save()
-                res.obj_id = object.responsible.pk
-                res.save()                
-                id_binds[res.id] = 1
+                if phone_serializer.is_valid():
+                    res = phone_serializer.save()
+                    res.obj_id = object.responsible.pk
+                    res.save()                
+                    id_binds[res.id] = 1
             object.responsible.phone_set.exclude(pk__in=id_binds.keys()).delete()
         
             phone_set = object.responsible.phone_set.all()
