@@ -58,16 +58,16 @@ class ProductHistory(models.Model):
     Журнал добавления/удаления/поднятия статусов продуктов
     (товаров и услуг) ЛОРУ у соответствующего ОМС
     """
-    PRODUCT_OPERATION_ENABLE = 'enable'
+    PRODUCT_OPERATION_PUBLISH = 'publish'
     PRODUCT_OPERATION_DISABLE = 'disable'
-    PRODUCT_OPERATION_UP = 'up'
+    PRODUCT_OPERATION_UPDATE = 'update'
     # Если ОМС удалит ЛОРУ из реестра:
     PRODUCT_OPERATION_DELETE = 'delete'
     PRODUCT_OPERATIONS = (
-        (PRODUCT_OPERATION_ENABLE, _(u"Добавление")),
+        (PRODUCT_OPERATION_PUBLISH, _(u"Добавление")),
         (PRODUCT_OPERATION_DISABLE, _(u"Изъятие")),
         # Это поднятие статуса продукта в каталоге (обновление даты/времени)
-        (PRODUCT_OPERATION_UP, _(u"Обновление")),
+        (PRODUCT_OPERATION_UPDATE, _(u"Обновление")),
         (PRODUCT_OPERATION_DELETE, _(u"Удаление")),
     )
 
