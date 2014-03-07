@@ -5,6 +5,9 @@ from south.v2 import DataMigration
 from django.db import models
 
 class Migration(DataMigration):
+    depends_on = (
+        ('users', '0030_auto__add_field_org_max_graves_count', ),
+    )
 
     def forwards(self, orm):
         "Write your forwards methods here."
@@ -20,7 +23,7 @@ class Migration(DataMigration):
         for c in Cemetery.objects.all():
             count_all += 1
             fake_str = ''
-            while Cemetery.objects.filter(ugh_id=c.ugh_id, name=c.name + fake_str).exclude(pk=c.pk).exists():
+            while Cemetery.objects.filter(ugh=c.ugh, name=c.name + fake_str).exclude(pk=c.pk).exists():
                 fake_num += 1
                 fake_str = ' %d' % fake_num
             if fake_str:
