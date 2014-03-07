@@ -559,15 +559,18 @@
       });
     }
   });
-  $scope.is_responsible_disabled = function (responsibleEditForm) {
+  $scope.is_responsible_disabled = function (responsibleEditForm, responsibleEditFormAddr) {
     var o = $scope.editor;
     var form1_valid = !o.isResponsibleEdited && responsibleEditForm.$valid,
-      form2_valid = !o.isAddressEdited && o.isAddressValid,
+      form2_valid = !o.isAddressEdited &&
+        (o.isAddressValid ||
+          (responsibleEditFormAddr && responsibleEditFormAddr.$valid)),
       form3_valid = !o.isPhoneEdited &&
         (
           (o.responsible_phones && o.responsible_phones.length > 0) ||
             (o.responsible.login_phone && o.responsible.login_phone.length > 0)
           );
+
     return !(
       !(o.isResponsibleEdited || o.isAddressEdited || o.isPhoneEdited) &&
         form1_valid && (form2_valid || form3_valid)

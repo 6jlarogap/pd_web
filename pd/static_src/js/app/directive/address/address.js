@@ -81,32 +81,32 @@
       // Address autopopulate
       function completeCountry(event, ui) {
         var data = ui.item.value.split("/");
-        $scope.data.country.name = data[0];
-        $(this).val($scope.data.country.name);
+        $scope.editor.country.name = data[0];
+        $scope.$digest();
         return false;
       };
       function completeRegion(event, ui) {
         var data = ui.item.value.split("/");
-        $scope.data.country.name = data[1];
-        $scope.data.region.name = data[0];
-        $(this).val($scope.data.region.name);
+        $scope.editor.country.name = data[1];
+        $scope.editor.region.name = data[0];
+        $scope.$digest();
         return false;
       };
       function completeCity(event, ui) {
         var data = ui.item.value.split("/");
-        $scope.data.country.name = data[2];
-        $scope.data.region.name = data[1];
-        $scope.data.city.name = data[0];
-        $(this).val($scope.data.city.name);
+        $scope.editor.country.name = data[2];
+        $scope.editor.region.name = data[1];
+        $scope.editor.city.name = data[0];
+        $scope.$digest();
         return false;
       };
       function completeStreet(event, ui) {
         var data = ui.item.value.split("/");
-        $scope.data.country.name = data[3];
-        $scope.data.region.name = data[2];
-        $scope.data.city.name = data[1];
-        $scope.data.street.name = data[0];
-        $(this).val($scope.data.street.name);
+        $scope.editor.country.name = data[3];
+        $scope.editor.region.name = data[2];
+        $scope.editor.city.name = data[1];
+        $scope.editor.street.name = data[0];
+        $scope.$digest();
         return false;
       };
       elem.find("input.country").autocomplete({
@@ -125,7 +125,7 @@
       elem.find("input.region").autocomplete({
         source: function (term, callback) {
           var url = "/geo/autocomplete/region/?query=" + term.term;
-          url += "&country=" + $scope.data.country.name;
+          url += "&country=" + $scope.editor.country.name;
           $.getJSON(url, function (data) {
             callback(data);
           });
@@ -139,7 +139,7 @@
       elem.find("input.city").autocomplete({
         source: function (term, callback) {
           var url = "/geo/autocomplete/city/?query=" + term.term;
-          with ($scope.data)
+          with ($scope.editor)
             url += "&region=" + region.name + "&country=" + country.name;
           $.getJSON(url, function (data) {
             callback(data);
@@ -154,7 +154,7 @@
       elem.find("input.street").autocomplete({
         source: function (term, callback) {
           var url = "/geo/autocomplete/street/?query=" + term.term;
-          with ($scope.data)
+          with ($scope.editor)
             url += "&country=" + country.name + "&region=" + region.name + "&city=" + city.name;
           $.getJSON(url, function (data) {
             callback(data);
