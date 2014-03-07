@@ -1,6 +1,5 @@
 # coding=utf-8
 
-#from burials.models import Cemetery, Place, Area, Grave, Burial, AreaPhoto, GravePhoto
 from rest_framework import serializers
 
 class BaseSerializer(serializers.Serializer):	
