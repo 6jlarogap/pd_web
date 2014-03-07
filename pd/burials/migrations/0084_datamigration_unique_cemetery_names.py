@@ -20,7 +20,7 @@ class Migration(DataMigration):
         for c in Cemetery.objects.all():
             count_all += 1
             fake_str = ''
-            while Cemetery.objects.filter(ugh=c.ugh, name=c.name + fake_str).exclude(pk=c.pk).exists():
+            while Cemetery.objects.filter(ugh_id=c.ugh_id, name=c.name + fake_str).exclude(pk=c.pk).exists():
                 fake_num += 1
                 fake_str = ' %d' % fake_num
             if fake_str:
