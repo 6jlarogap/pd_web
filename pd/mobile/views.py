@@ -43,22 +43,28 @@ from rest_framework.parsers import JSONParser
 from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
+from rest_framework.views import APIView
+from rest_framework.permissions import IsAuthenticated
 
 from serializers import BaseSerializer, CoordinatesSerializer, CemeterySerializer, CemeteryWithNestedObjectSerializer, \
     AreaSerializer, AreaWithNestedObjectSerializer, RegionSerializer, CitySerializer, StreetSerializer, CountrySerializer, LocationSerializer, \
     BasePersonSerializer, AlivePersonSerializer, PlaceWithNestedObjectSerializer, GraveSerializer, BurialSerializer, \
     GravePhotoSerializer, PlacePhotoSerializer
-
-@api_view(['GET'])
-def cemetery_list(request):
-    if request.method == 'GET':
+        
+class ApiCemeteryList(APIView):
+    permission_classes = (IsAuthenticated,)
+    def get(self, request) :
         listCemetery = Cemetery.objects.all()               
         serializer = CemeteryWithNestedObjectSerializer(listCemetery)
         return Response(serializer.data)
+        
+cemetery_list = ApiCemeteryList.as_view()
 
-@api_view(['GET','POST'])
-def cemetery_upload(request):    
-    if request.method == 'POST':
+class ApiCemeteryUpload(APIView):
+    permission_classes = (IsAuthenticated,)
+    def get(self, request) :
+        return render_to_response('mobile_upload_cemetery.html', {'message': _(u"Загрузите название кладбища:")})
+    def post(self, request) :
         org = request.user.profile.org
         listInsertedCemetery = []
         listGPS = [] 
@@ -98,11 +104,12 @@ def cemetery_upload(request):
                 cemeteryCoordinates.save()                 
         serializer = CemeteryWithNestedObjectSerializer(listInsertedCemetery)        
         return Response(serializer.data)
-    return render_to_response('mobile_upload_cemetery.html', {'message': _(u"Загрузите название кладбища:")})
-
-@api_view(['GET'])
-def area_list(request):
-    if request.method == 'GET':
+        
+cemetery_upload = ApiCemeteryUpload.as_view()
+        
+class ApiAreaList(APIView):
+    permission_classes = (IsAuthenticated,)
+    def get(self, request) : 
         argSyncDateUnix = request.GET.get('syncDate', None) 
         argCemeteryId = request.GET.get('cemeteryId', None)
         argAreaId = request.GET.get('areaId', None)        
@@ -117,10 +124,14 @@ def area_list(request):
         listArea = Area.objects.filter(queryArea).order_by('cemetery', 'id')
         serializer = AreaWithNestedObjectSerializer(listArea)
         return Response(serializer.data)
+        
+area_list = ApiAreaList.as_view()
 
-@api_view(['GET','POST'])
-def area_upload(request):    
-    if request.method == 'POST':
+class ApiAreaUpload(APIView):
+    permission_classes = (IsAuthenticated,)
+    def get(self, request) : 
+        return render_to_response('mobile_upload_area.html', {'message': _(u"Загрузите название участка:")})
+    def post(self, request) : 
         listInsertedArea = []
         listGPS = []
         areaName = request.POST['areaName']
@@ -163,12 +174,13 @@ def area_upload(request):
                 areaCoordinates.angle_number = gps.angle_number
                 areaCoordinates.save()                 
         serializer = AreaWithNestedObjectSerializer(listInsertedArea)
-        return Response(serializer.data)      
-    return render_to_response('mobile_upload_area.html', {'message': _(u"Загрузите название участка:")})
+        return Response(serializer.data)
 
-@api_view(['GET'])
-def place_list(request):
-    if request.method == 'GET':
+area_upload = ApiAreaUpload.as_view()
+
+class ApiPlaceList(APIView):
+    permission_classes = (IsAuthenticated,)
+    def get(self, request) : 
         argSyncDateUnix = request.GET.get('syncDate', None) 
         argAreaId = request.GET.get('areaId', None)
         argCemeteryId = request.GET.get('cemeteryId', None)        
@@ -183,10 +195,14 @@ def place_list(request):
         listPlace = Place.objects.filter(queryPlace).order_by('cemetery', 'area', 'id')		
         serializer = PlaceWithNestedObjectSerializer(listPlace)
         return Response(serializer.data)
-        
-@api_view(['GET','POST'])
-def place_upload(request):    
-    if request.method == 'POST':
+
+place_list = ApiPlaceList.as_view()
+
+class ApiPlaceUpload(APIView):
+    permission_classes = (IsAuthenticated,)
+    def get(self, request) : 
+        return render_to_response('mobile_upload_place.html', {'message': _(u"Загрузите название места:")})    
+    def post(self, request) : 
         rowName = request.POST['rowName']
         placeName = request.POST['placeName']
         oldPlaceName = request.POST['oldPlaceName']
@@ -213,8 +229,7 @@ def place_upload(request):
         if request.POST['dtUnowned'] :
             dtUnowned = datetime.strptime(request.POST['dtUnowned'], templateDateTime)
         if request.POST['dtUnindentified'] :
-            dtUnindentified = datetime.strptime(request.POST['dtUnindentified'], templateDateTime)     
-
+            dtUnindentified = datetime.strptime(request.POST['dtUnindentified'], templateDateTime)
         user = request.user
         listPlaceForResponse = []
         try:
@@ -289,11 +304,12 @@ def place_upload(request):
             
         serializer = PlaceWithNestedObjectSerializer(listPlaceForResponse)
         return Response(serializer.data)
-    return render_to_response('mobile_upload_place.html', {'message': _(u"Загрузите название места:")})
+    
+place_upload = ApiPlaceUpload.as_view()
 
-@api_view(['GET'])
-def grave_list(request):
-    if request.method == 'GET':
+class ApiGraveList(APIView):
+    permission_classes = (IsAuthenticated,)
+    def get(self, request) : 
         argSyncDateUnix = request.GET.get('syncDate', None) 
         argPlaceId = request.GET.get('placeId', None)
         argCemeteryId = request.GET.get('cemeteryId', None)
@@ -311,10 +327,14 @@ def grave_list(request):
         listGrave = Grave.objects.filter(queryGrave).order_by('id')
         serializer = GraveSerializer(listGrave)
         return Response(serializer.data)
-        
-@api_view(['GET','POST'])
-def grave_upload(request):    
-    if request.method == 'POST':
+    
+grave_list = ApiGraveList.as_view()
+
+class ApiGraveUpload(APIView):
+    permission_classes = (IsAuthenticated,)
+    def get(self, request) :
+        return render_to_response('mobile_upload_grave.html', {'message': _(u"Загрузите название могилы:")})
+    def post(self, request) :
         graveName = request.POST['graveName']
         graveId = int(request.POST['graveId'])
         placeId = int(request.POST['placeId'])
@@ -344,11 +364,12 @@ def grave_upload(request):
             listInsertedGrave.append(grave)            
         serializer = GraveSerializer(listInsertedGrave)
         return Response(serializer.data)
-    return render_to_response('mobile_upload_grave.html', {'message': _(u"Загрузите название могилы:")})
+    
+grave_upload = ApiGraveUpload.as_view()
 
-@api_view(['GET'])
-def burial_list(request):
-    if request.method == 'GET':
+class ApiBurialList(APIView):
+    permission_classes = (IsAuthenticated,)
+    def get(self, request) :
         argSyncDateUnix = request.GET.get('syncDate', None) 
         argGraveId = request.GET.get('graveId', None)
         argCemeteryId = request.GET.get('cemeteryId', None)
@@ -367,9 +388,14 @@ def burial_list(request):
         serializer = BurialSerializer(listBurial)
         return Response(serializer.data)
 
-@api_view(['GET','POST'])
-def gravephoto_upload(request):    
-    if request.method == 'POST':
+burial_list = ApiBurialList.as_view()
+
+
+class ApiGravePhotoUpload(APIView):
+    permission_classes = (IsAuthenticated,)
+    def get(self, request) :
+        return render_to_response('mobile_upload_gravephoto.html', {'message': _(u"Загрузите фотографию к могиле:")})
+    def post(self, request) :
         graveId = request.POST['grave']
         lat = request.POST['lat']
         lng = request.POST['lng'] 
@@ -391,11 +417,14 @@ def gravephoto_upload(request):
         except Grave.DoesNotExist:
             grave = None
             raise Http404
-    return render_to_response('mobile_upload_gravephoto.html', {'message': _(u"Загрузите фотографию к могиле:")})
 
-@api_view(['GET','POST'])
-def placephoto_upload(request):    
-    if request.method == 'POST':
+gravephoto_upload = ApiGravePhotoUpload.as_view()
+
+class ApiPlacePhotoUpload(APIView):
+    permission_classes = (IsAuthenticated,)
+    def get(self, request) :
+        return render_to_response('mobile_upload_placephoto.html', {'message': _(u"Загрузите фотографию к месту:")})
+    def post(self, request) :
         placeId = request.POST['place']
         lat = request.POST['lat']
         lng = request.POST['lng'] 
@@ -417,28 +446,35 @@ def placephoto_upload(request):
         except Place.DoesNotExist:
             place = None
             raise Http404
-    return render_to_response('mobile_upload_placephoto.html', {'message': _(u"Загрузите фотографию к месту:")})
+    
+placephoto_upload = ApiPlacePhotoUpload.as_view()
 
-@api_view(['GET','POST'])
-def gravephoto_delete(request):    
-    if request.method == 'POST':
+class ApiGravePhotoDelete(APIView):
+    permission_classes = (IsAuthenticated,)
+    def get(self, request) :
+        return render_to_response('mobile_remove_photo.html', {'message': _(u"Удалить фотографию к могиле:")})
+    def post(self, request) :
         gravePhotoId = request.POST['gravePhotoId']
         try :
             gravePhoto = GravePhoto.objects.get(id = gravePhotoId)
             gravePhoto.delete()
             return Response("Ok")
         except GravePhoto.DoesNotExist:
-            return Response("Ok")                
-    return render_to_response('mobile_remove_photo.html', {'message': _(u"Удалить фотографию к могиле:")})
-    
-@api_view(['GET','POST'])
-def placephoto_delete(request):    
-    if request.method == 'POST':
+            return Response("Ok")
+            
+gravephoto_delete = ApiGravePhotoDelete.as_view()
+
+class ApiPlacePhotoDelete(APIView):
+    permission_classes = (IsAuthenticated,)
+    def get(self, request) :
+        return render_to_response('mobile_remove_placephoto.html', {'message': _(u"Удалить фотографию к месту:")})
+    def post(self, request) :
         placePhotoId = request.POST['placePhotoId']
         try :
             placePhoto = PlacePhoto.objects.get(id = placePhotoId)
             placePhoto.delete()
             return Response("Ok")
         except PlacePhoto.DoesNotExist:
-            return Response("Ok")             
-    return render_to_response('mobile_remove_placephoto.html', {'message': _(u"Удалить фотографию к месту:")})
+            return Response("Ok")
+    
+placephoto_delete = ApiPlacePhotoDelete.as_view()
