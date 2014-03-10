@@ -8,6 +8,9 @@ from django.utils.translation import ugettext_lazy as _
 from django.conf import settings
 
 class Migration(DataMigration):
+    depends_on = (
+       ('users', '0033_auto__add_field_org_publish_cost__add_field_org_currency.py', ),
+    )
 
     def forwards(self, orm):
         "Write your forwards methods here."

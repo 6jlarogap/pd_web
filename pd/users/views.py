@@ -179,7 +179,15 @@ class ApiAuthSettings(APIView):
             if new_password:
                 user.set_password(new_password)
 
-            if new_password or login_phone:
+            email = request.DATA.get('email')
+            if email:
+                try:
+                    validate_email(email)
+                except ValidationError:
+                    raise ServiceException(_(u'Неверный формат адреса электронной почты'))
+                user.email = email
+
+            if new_password or login_phone or email:
                 user.save()
             try:
                 # это только для клиента кабинета!

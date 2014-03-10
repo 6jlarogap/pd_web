@@ -3,16 +3,34 @@ import datetime, sys
 from south.db import db
 from south.v2 import DataMigration
 from django.db import models
-
-from django.core.management import call_command
+from django.db.models.query_utils import Q
 
 
 class Migration(DataMigration):
 
     def forwards(self, orm):
-        "Update burial_count field"
-        call_command('update_place_free_burial_count')
-
+        """
+        Update burial_count field
+        """
+        Place = orm['burials.Place']
+        Burial = orm['burials.Burial']
+        
+        cnt = Place.objects.count()
+        print "Apply migration on %d objects" % cnt
+        
+        row=0
+        q_ex = Q(status='exhumated') | Q(annulated=True)
+        for place in Place.objects.all():
+            total = place.grave_set.count()
+            filled = place.burial_set.exclude(q_ex).distinct('grave').count()
+            place.available_count = max(0, total - filled)
+            place.save()
+            
+            row = row+1
+            if row % 500 == 0:
+                sys.stdout.write("\r%d%%" % int(row*100/cnt))
+                sys.stdout.flush()
+        print '\nDone'
 
     def backwards(self, orm):
         "Write your backwards methods here."
