@@ -24,6 +24,7 @@ from logs.models import write_log
 from burials.forms import AddOrgForm, AddAgentForm, AddDoverForm, AddDocTypeForm
 from burials.models import Burial, Place, Grave, GravePhoto, PlacePhoto
 from users.models import CustomerProfile, CustomerProfilePhoto, Org, ProfileLORU
+from billing.models import Rate
 from orders.forms import ProductForm, OrderForm, OrderItemFormset, CoffinForm, CatafalqueForm, \
                          AddInfoForm, OrderSearchForm, OrderBurialForm
 from orders.models import Product, Order, OrderItem, ProductCategory, ProductStatus, ProductHistory
@@ -766,24 +767,24 @@ class LoruProductPlaces(UserLoruMixin, APIView):
     Пример:
     [
         {
-            “id”: 1,
-            “places”: [
+            "id": 1,
+            "places": [
             {
-                “id”: 5, 
-                “status”: “disable”
+                "id": 5, 
+                "status": "disable"
             },
             {
-                “id”: 8, 
-                “status”: “up”
+                "id": 8, 
+                "status": "up"
             }
             ]
         },
         {
-            “id”: 2,
-            “places”: [
+            "id": 2,
+            "places": [
             {
-                “id”: 5, 
-                “status”: “enable”
+                "id": 5, 
+                "status": "enable"
             }
             ]
         }
@@ -796,34 +797,50 @@ class LoruProductPlaces(UserLoruMixin, APIView):
     def post(self, request, format=None):
         if not self.check_if_loru(request):
             return Response(data=self.ivalid_user_data, status=403)
+        # Соответствие команды "status" из входных данных строкам в полях соответствующих таблиц:
+        rate_action = {
+            'disable': Rate.RATE_ACTION_DISABLE,
+            'enable': Rate.RATE_ACTION_PUBLISH,
+            'up': Rate.RATE_ACTION_UPDATE,
+        }
+        product_history_operation =  product_status = rate_action
         data = []
         for p in request.DATA:
             if Product.objects.filter(pk=p['id'], loru=request.user.profile.org).count():
                 data_p = { 'id': p['id'], 'places': [] }
                 for o in p['places']:
-                    if ProfileLORU.objects.filter(ugh_id=o['id'], loru=request.user.profile.org).count():
+                    if o['status'] in rate_action.keys() and \
+                       ProfileLORU.objects.filter(ugh_id=o['id'], loru=request.user.profile.org).count():
                         ugh = Org.objects.get(pk=o['id'])
                         data_p['places'].append(o)
                         dt = datetime.datetime.now()
                         status, created = ProductStatus.objects.get_or_create(
                                             product_id=p['id'],
                                             ugh=ugh,
-                                            defaults={'status': o['status'],
+                                            defaults={'status': product_status[o['status']],
                                                       'dt': dt,
                                             }
                         )
                         if not created:
-                            status.status=o['status']
+                            status.status=product_status[o['status']]
                             status.dt=dt
                             status.save()
-                        publish_cost = '0.0' if o['status'] == ProductHistory.PRODUCT_OPERATION_DISABLE \
-                                           else ugh.publish_cost
+                        rate = '0.0'
+                        if o['status'] in ('enable', 'up', ):
+                            try:
+                                rate = Rate.objects.filter(
+                                    wallet__org=ugh,
+                                    wallet__currency=ugh.currency,
+                                    action=rate_action[o['status']],
+                                ).order_by('-date_from')[0].rate
+                            except IndexError:
+                                pass
                         ProductHistory.objects.create(
                                         product_id=p['id'],
                                         ugh=ugh,
-                                        operation=o['status'],
+                                        operation=product_history_operation[o['status']],
                                         dt=dt,
-                                        publish_cost=publish_cost,
+                                        publish_cost=rate,
                                         currency=ugh.currency,
                         )
                 data.append(data_p)
@@ -855,8 +872,8 @@ class UghPublishedProductsViewSet(viewsets.ViewSet):
                 },
             }
             for ps in ProductStatus.objects.filter(product=p, ugh__in=ugh_list):
-                if ps.status in (ProductHistory.PRODUCT_OPERATION_ENABLE,
-                                 ProductHistory.PRODUCT_OPERATION_UP):
+                if ps.status in (ProductHistory.PRODUCT_OPERATION_PUBLISH,
+                                 ProductHistory.PRODUCT_OPERATION_UPDATE):
                     data_p['availableOnPlaces'].append(ps.ugh.pk)
             data.append(data_p)
         return Response(status=200, data=data)

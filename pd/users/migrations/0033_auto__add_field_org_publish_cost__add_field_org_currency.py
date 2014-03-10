@@ -6,6 +6,9 @@ from django.db import models
 
 
 class Migration(SchemaMigration):
+    depends_on = (
+        ('billing', '0002_datamigration_currency_initials', ),
+    )
 
     def forwards(self, orm):
         # Adding field 'Org.publish_cost'
