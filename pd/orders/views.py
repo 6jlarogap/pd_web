@@ -671,10 +671,11 @@ class ProductsViewSet(CustomerDataMixin, viewsets.ModelViewSet):
         if self.request.GET.get('filter[category]'):
             qs &= Q(productcategory__pk=self.request.GET.get('filter[category]'))
         
+        filter = Product.objects.filter(qs).distinct()
+
         offset = self.request.GET.get('offset') and int(self.request.GET.get('offset'))
         limit = self.request.GET.get('limit') and int(self.request.GET.get('limit'))
-        
-        filter = Product.objects.filter(qs)
+
         if offset and limit:
             filter = filter[offset:offset+limit]
         elif offset:
