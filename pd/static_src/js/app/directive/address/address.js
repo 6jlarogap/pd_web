@@ -4,7 +4,8 @@
     templateUrl: STATIC_APP_URL + '/directive/address/address.html' + version_str,
     scope: {
       data: '=',
-      save_action: '&'
+      save_action: '&',
+      required: '='
     },
 
     controller: ['$scope', '$dialog', '$http', '$resource', 'Place',

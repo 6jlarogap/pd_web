@@ -563,10 +563,8 @@
   });
   $scope.is_responsible_disabled = function (responsibleEditForm, responsibleEditFormAddr) {
     var o = $scope.editor;
-    var form1_valid = !o.isResponsibleEdited && responsibleEditForm.$valid,
-      form2_valid = !o.isAddressEdited &&
-        (o.isAddressValid ||
-          (responsibleEditFormAddr && responsibleEditFormAddr.$valid)),
+    var form1_valid = responsibleEditForm.$valid,
+      form2_valid = o.isAddressValid || (responsibleEditFormAddr && responsibleEditFormAddr.$valid),
       form3_valid = !o.isPhoneEdited &&
         (
           (o.responsible_phones && o.responsible_phones.length > 0) ||
