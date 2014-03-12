@@ -525,7 +525,6 @@
   $scope.isBurialEditorOpen = false;
   $scope.saveBurialEditForm = function (form) {
     if (form.graveNumber.$dirty && form.$valid) {
-      $scope.selectedBurial.grave_number = $scope.selectedBurial.grave_number;
       $scope.selectedBurial.grave = $scope.selectedBurial.grave.id;
       $scope.selectedBurial.$update({
         cemetery_id: $routeParams.cemetery_id,
