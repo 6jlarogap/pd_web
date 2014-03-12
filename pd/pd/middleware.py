@@ -4,10 +4,12 @@ import re
 
 
 exempt_urls = [re.compile(re.escape(url.lstrip('/')), flags=re.I) \
-                for url in (settings.LOGIN_URL,
-                            'favicon.ico',
-                           )
-              ]
+                for url in (
+                    settings.LOGOUT_URL,
+                    settings.LOGIN_URL,
+                    'favicon.ico',
+                )
+]
 
 for regex in (settings.REGISTER_URLS_REGEX, settings.SUPPORT_URLS_REGEX):
     exempt_urls.append(re.compile(regex, flags=re.I))
