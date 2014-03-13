@@ -78,7 +78,6 @@
           </dd>
         </dl>
 
-
         <table ng-show="editor.isResponsibleEdited" class="pd-form">
           <tr>
             <th width="200px">
@@ -91,8 +90,7 @@
                      ui-validate="{validPhone : 'validatePhone($value)' }"
                      popover-placement="top" popover-trigger="mouseenter"
                      popover='Введите номер телефона в международном формате без "+" и без "8". Пример: 74996772043'
-                     maxlength="15" style="width:200px;"
-                     ng-required="responsibleEditForm1.$invalid && !editor.responsible_phones.length" />
+                     maxlength="15" style="width:200px;"/>
 
               <p class="error" ng-show="responsibleEditForm.responsible_login_phone.$error.validPhone">Неверный номер
                 телефона</p>
@@ -107,52 +105,41 @@
             </td>
           </tr>
         </table>
-        <br/>
-
-
-        <div class="modal-footer">
-          <span class="footer-info" ng-show="is_responsible_disabled(responsibleEditForm, responsibleEditForm1)">Необходимо указать фамилию, адрес или телефон</span>
-          <button class="btn btn-primary"
-                  ng-disabled="is_responsible_disabled(responsibleEditForm, responsibleEditForm1)"
-                  ng-click="saveResponsibleEditForm(responsibleEditForm)">
-            Сохранить
-          </button>
-          <button class="btn cancel" ng-click="closeEditForm('isResponsibleEditorOpen')">Отменить</button>
-        </div>
       </form>
     </tab>
     <tab heading="Адрес">
-      <form novalidate name="responsibleEditForm1">
+      <form novalidate name="responsibleEditAddressForm">
         <address
             data="editor.responsible_address"
-            address_class="address_class"
-            required="!responsibleEditForm.responsible_login_phone.$viewValue"></address>
-        <div class="modal-footer">
-          <span class="footer-info" ng-show="is_responsible_disabled(responsibleEditForm, responsibleEditForm1)">Необходимо указать фамилию, адрес или телефон</span>
-          <button class="btn btn-primary"
-                  ng-disabled="is_responsible_disabled(responsibleEditForm, responsibleEditForm1)"
-                  ng-click="saveResponsibleEditForm(responsibleEditForm)">
-            Сохранить
-          </button>
-          <button class="btn cancel" ng-click="closeEditForm('isResponsibleEditorOpen')">Отменить</button>
-        </div>
+            address_class="address_class"></address>
       </form>
     </tab>
     <tab heading="Телефоны">
-      <form novalidate name="responsibleEditForm2">
+      <form novalidate name="responsibleEditPhonesForm">
         <span ng-hide="editor.responsible.last_name">Заполните страницу личных данных</span>
         <phones phones="editor.responsible_phones"></phones>
-
-        <div class="modal-footer">
-          <span class="footer-info" ng-show="is_responsible_disabled(responsibleEditForm, responsibleEditForm1)">Необходимо указать фамилию, адрес или телефон</span>
-          <button id="edit_save_btn" class="btn btn-primary"
-                  ng-disabled="is_responsible_disabled(responsibleEditForm, responsibleEditForm1)"
-                  ng-click="saveResponsibleEditForm(responsibleEditForm)">
-            Сохранить
-          </button>
-          <button class="btn cancel" ng-click="closeEditForm('isResponsibleEditorOpen')">Отменить</button>
-        </div>
       </form>
     </tab>
   </tabset>
+</div>
+
+<div class="modal-footer">
+  <span class="footer-info"
+        ng-hide="responsibleEditForm.$valid
+          && (editor.responsible_phones.length
+            || responsibleEditForm.responsible_login_phone.$viewValue
+            || responsibleEditAddressForm.addressEditorForm.country.$viewValue)">
+    Необходимо указать фамилию, адрес или телефон
+  </span>
+
+  <button class="btn btn-primary"
+          ng-disabled="!(responsibleEditForm.$valid
+            && (editor.responsible_phones.length
+              || responsibleEditForm.responsible_login_phone.$viewValue
+              || responsibleEditAddressForm.addressEditorForm.country.$viewValue)
+            )"
+          ng-click="saveResponsibleEditForm(responsibleEditForm)">
+    Сохранить
+  </button>
+  <button class="btn cancel" ng-click="closeEditForm('isResponsibleEditorOpen')">Отменить</button>
 </div>
