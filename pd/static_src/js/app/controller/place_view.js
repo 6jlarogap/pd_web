@@ -184,7 +184,10 @@
         burial = new Burial(row);
         $scope.burials.push(burial);
       });
-
+      $scope.burials = _($scope.burials)
+        .sortBy('fact_date')
+        .reverse()
+        .value();
 
       $scope.updateMap();
       $scope.loading = false;
@@ -525,7 +528,6 @@
   $scope.isBurialEditorOpen = false;
   $scope.saveBurialEditForm = function (form) {
     if (form.graveNumber.$dirty && form.$valid) {
-      $scope.selectedBurial.grave_number = $scope.selectedBurial.grave_number;
       $scope.selectedBurial.grave = $scope.selectedBurial.grave.id;
       $scope.selectedBurial.$update({
         cemetery_id: $routeParams.cemetery_id,
@@ -561,10 +563,8 @@
   });
   $scope.is_responsible_disabled = function (responsibleEditForm, responsibleEditFormAddr) {
     var o = $scope.editor;
-    var form1_valid = !o.isResponsibleEdited && responsibleEditForm.$valid,
-      form2_valid = !o.isAddressEdited &&
-        (o.isAddressValid ||
-          (responsibleEditFormAddr && responsibleEditFormAddr.$valid)),
+    var form1_valid = responsibleEditForm.$valid,
+      form2_valid = o.isAddressValid || (responsibleEditFormAddr && responsibleEditFormAddr.$valid),
       form3_valid = !o.isPhoneEdited &&
         (
           (o.responsible_phones && o.responsible_phones.length > 0) ||
