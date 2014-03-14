@@ -1,0 +1,83 @@
+<div class="address_block">
+  <div ng-hide="isAddressEditorOpen">
+    <h2>Адрес</h2>
+    <div ng-include src="'/static/js/app/directive/address/static_block.html'"></div>
+    <button class="btn" ng-click="open()">Редактировать</button>
+  </div>
+
+  <div ng-show="isAddressEditorOpen">
+    <h2>Редактирование адреса</h2>
+
+    <ng-form name="addressEditorForm">
+      <div class="row-fluid">
+        <google-search class="span12" location="location"></google-search>
+      </div>
+      <hr/>
+      <div class="row-fluid">
+        <input id="id_address-post_index" type="text" maxlength="255" ng-model="editor.post_index"
+               placeholder="Индекс"/>
+      </div>
+
+      <div class="row-fluid">
+        <div class="span3 control-group pd-control-group"
+            ng-class="{error: addressEditorForm.$dirty && addressEditorForm.country.$invalid}">
+          <input type="text" class="span12 country" ng-model="editor.country.name" placeholder="Страна"
+                 name="country" ng-required="required || editor.region.name" />
+        </div>
+        <div class="span3 control-group pd-control-group"
+            ng-class="{error: addressEditorForm.$dirty && addressEditorForm.region.$invalid}">
+          <input type="text" class="span12 region" ng-model="editor.region.name" placeholder="Регион"
+                 name="region" ng-required="editor.street.name || editor.city.name"/>
+        </div>
+        <div class="span3 control-group pd-control-group"
+            ng-class="{error: addressEditorForm.$dirty && addressEditorForm.city.$invalid}">
+          <input type="text" ng-model="editor.city.name" class="span12 city" placeholder="Город" name="city"
+                 ng-required="editor.street.name" />
+        </div>
+        <div class="span3 control-group pd-control-group">
+          <input type="text" ng-model="editor.street.name" class="span12 street" placeholder="Улица"/>
+        </div>
+      </div>
+
+      <table class="row-fluid">
+        <tr>
+          <td>
+            <input placeholder="Дом" id="id_address-house" type="text" ng-model="editor.house" class="span12"
+                   maxlength="255"/>
+          </td>
+          <td>
+            <input placeholder="Корпус" id="id_address-block" type="text" ng-model="editor.block" class="span12"
+                   maxlength="255"/>
+          </td>
+          <td>
+            <input placeholder="Строение" id="id_address-building" type="text" ng-model="editor.building" class="span12"
+                   maxlength="255"/>
+          </td>
+          <td>
+            <input placeholder="Квартира" id="id_address-flat" type="text" ng-model="editor.flat" class="span12"
+                   maxlength="255"/>
+          </td>
+        </tr>
+      </table>
+
+      <hr/>
+      <div class="row-fluid">
+        <div class="span12">
+          <input placeholder="Дополнительная информация" class="span12" type="text" ng-model="editor.info"
+                 id="id_address-info"/>
+        </div>
+      </div>
+    </ng-form>
+
+    <div class="row-fluid">
+      <button class="btn btn-primary" ng-click="save(addressEditorForm)" ng-disabled="addressEditorForm.$invalid">Сохранить
+      </button>
+      <button class="btn cancel" ng-click="close()">Отмена</button>
+    </div>
+  </div>
+</div>
+
+
+
+
+

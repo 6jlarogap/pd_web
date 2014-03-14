@@ -11,11 +11,22 @@ install-readme.txt, utf8 code page
     * Д.б. установлено на Linux:
         - средства разработки:
             * python, не ниже 2.6
-            * C /C++
+              - пакеты python, которые могут не быть в его "стандартной поставке":
+                  * python-dev
+                  * python-virtualenv
+                  * python-pycurl
+            * C/C++
             * g++
-        - python-virtualenv
-        - postgresql,           в т.ч. для разработчика
-        - mysql,                в т.ч. для разработчика
+         - postgresql,           в т.ч. для разработчика
+            полагаем, что используется база postgresql на localhost,
+            в которой пользователю postgres всё дозволено. Это достигается
+            правкой pg_hba.conf (на ubuntu 12.04 в /etc/postgresql/9.1/main/)
+            заменой строки:
+                local all all peer
+            на:
+                local all all trust
+            с перезагрузкой postgresql (service postgresql restart)
+         - библиотеки для графики, включая jpeg, в Ubuntu 12.04: libjpeg-dev
     
         - bower
             * скачать NodeJS: http://nodejs.org/
@@ -26,8 +37,9 @@ install-readme.txt, utf8 code page
  
     * mkdir ~/venv; cd ~/venv; virtualenv --no-site-packages pdweb
     * mkdir ~/projects; cd ~/projects
-    * cd ~/projects/pd_web
     * git clone https://USERNAME@bitbucket.org/USERNAME/pd_web.git
+    * cd ~/projects/pd_web
+    * bower install
     * source ~/venv/pdweb/bin/activate
     * export VIRTUALENV_DISTRIBUTE=true
     * curl http://python-distribute.org/distribute_setup.py | python
@@ -42,17 +54,9 @@ install-readme.txt, utf8 code page
           (пусть это: pd.psql.gz)
             createdb pd
             zcat pd.psql.gz | psql -U postgres pd
- 
-        - fias db:
-            echo 'create database fias' | mysql -u root
-            # качаем, разархивируем, вносим в базу fias:
-            wget -q -O - http://basicdata.ru/data/fias/fias_socrbase_table.sql.bz2 | bzcat | mysql -u root fias
-            wget -q -O - http://basicdata.ru/data/fias/fias_socrbase_data.sql.bz2 | bzcat | mysql -u root fias
-            wget -q -O - http://basicdata.ru/data/fias/fias_addrobj_table.sql.bz2 | bzcat | mysql -u root fias
-            wget -q -O - http://basicdata.ru/data/fias/fias_addrobj_index.sql.bz2 | bzcat | mysql -u root fias
-            wget -q -O - http://basicdata.ru/data/fias/fias_addrobj_data.sql.bz2 | bzcat | mysql -u root fias
-            (последнее надолго, можно продолжать... :)
- 
+
+           (create database '<database>' encoding 'UTF-8' owned by '<user>';)
+            
         - MEDIA_ROOT:
             это дело вкуса, но в соответствии с local_settings.py.example:
             mkdir -p ~/projects/MEDIA/pd_web
@@ -67,9 +71,9 @@ install-readme.txt, utf8 code page
  
 Настройка сервера Apache:
 
-    * Должен быть установлен Apache mod_xsendfile.
+    * Должен быть установлен Apache mod_wsgi и mod_xsendfile.
         - В Debian/Ubuntu выполнить:
-            sudo apt-get install libapache2-mod-xsendfile
+            sudo apt-get install libapache2-mod-wsgi libapache2-mod-xsendfile
     
     * пример настройки виртуального хоста Apache
         (имя сервера, каталоги могут отличаться)
@@ -93,6 +97,11 @@ install-readme.txt, utf8 code page
             WSGIDaemonProcess SERVER.ORG.COM display-name=%{GROUP} processes=1 threads=2
             WSGIProcessGroup  SERVER.ORG.COM
             WSGIScriptAlias / /home/www-data/django/pd_web/pd/pd/wsgi.py
+            WSGIChunkedRequest On
+            # Чтобы работала restframework_token_authorization
+            WSGIPassAuthorization On
+            # Во избежание ошибок: premature end of script headers wsgi.py
+            WSGIApplicationGroup %{GLOBAL}
 
             <Directory /home/www-data/static/pd_web>
                 # ВНИМАНИЕ!

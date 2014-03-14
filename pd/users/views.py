@@ -2,6 +2,8 @@
 import json
 import datetime
 import random
+import string
+import decimal
 import hashlib
 
 from django.conf import settings
@@ -10,36 +12,448 @@ from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.models import User
 from django.contrib.auth.hashers import make_password
-from django.core.mail import send_mail
+from django.core.mail import send_mail, EmailMessage
+from django.core.validators import validate_email
+from django.core.exceptions import ValidationError
 from django.core.urlresolvers import reverse
+from django.db import transaction
 from django.db.models.query_utils import Q
 from django.db.models.aggregates import Count
 from django.http import HttpResponse, Http404
 from django.shortcuts import redirect, render, get_object_or_404
 from django.template.loader import render_to_string
 from django.utils.translation import ugettext_lazy as _
+from django.utils.encoding import smart_unicode
 from django.views.generic.base import View, TemplateView
 from django.views.generic.edit import UpdateView, CreateView, FormView
 from django.views.generic.detail import DetailView
     
+from captcha.client import submit
+
+from rest_framework import viewsets
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from rest_framework.authtoken.models import Token
+from rest_framework.permissions import IsAuthenticated
+
 from burials.views import UGHRequiredMixin, LoginRequiredMixin, SupervisorRequiredMixin
 from logs.models import Log, write_log, LoginLog
 from users.forms import UserAddForm, RegisterForm, LoruFormset, ProfileForm, UserProfileForm, \
                         UserDataForm, ChangePasswordForm, BankAccountFormset, OrgForm, \
-                        OrgLogForm, LoginLogForm, OrgBurialStatsForm, SupportForm
-from users.models import Profile, Org, RegisterProfile, ProfileLORU
-from burials.models import Burial
-from pd.views import PaginateListView, RequestToFormMixin, FormInvalidMixin
+                        OrgLogForm, LoginLogForm, OrgBurialStatsForm, SupportForm, TestCaptchaForm
+from users.models import Profile, Org, RegisterProfile, ProfileLORU, CustomerProfile, get_mail_footer, is_cabinet_user
+from pd.models import validate_phone_as_number
+from persons.models import AlivePerson
+from burials.models import Burial, Place
+from billing.models import Wallet, Rate
+from orders.models import ProductStatus, ProductHistory
+from pd.views import PaginateListView, RequestToFormMixin, FormInvalidMixin, get_front_end_url, ServiceException
 
+from sms_service import sms24x7
+
+class CheckRecaptchaMixin(object):
+    
+    def check_recaptcha(self, request, challenge, response):
+        forwarded_ip = request.META.get('HTTP_X_FORWARDED_FOR', '')
+        if forwarded_ip:
+            remote_ip = forwarded_ip
+        else:
+            remote_ip = request.META.get('REMOTE_ADDR', '')
+        use_ssl = getattr(settings, 'RECAPTCHA_USE_SSL', False)
+        private_key = settings.RECAPTCHA_PRIVATE_KEY
+        return submit(
+                smart_unicode(challenge),
+                smart_unicode(response),
+                private_key=private_key,
+                remoteip=remote_ip,
+                use_ssl=use_ssl
+        ).is_valid
+    
+class AuthGetTokenView(APIView):
+    """
+    Проверка имени и пароля, (создать и) отдать token
+    """
+    def post(self, request):
+        token = None
+        username = request.DATA.get('username')
+        password = request.DATA.get('password')
+        status = 'error'
+        status_code = 400
+        if username and password:
+            user = authenticate(username=username, password=password)
+            if user and user.is_active:
+                token, created = Token.objects.get_or_create(user=user)
+        if token:
+            role = None
+            try:
+                user.customerprofile
+            except CustomerProfile.DoesNotExist:
+                try:
+                    user.profile
+                except Profile.DoesNotExist:
+                    pass
+                else:
+                    if user.profile.is_loru():
+                        role = u'ROLE_LORU'
+                    elif user.profile.is_ugh():
+                        role = u'ROLE_OMS'
+            else:
+                role = 'ROLE_CLIENT'
+            if not role:
+                raise Exception(u'Unknown role')
+            login(request, user)
+
+            profile = { 'email': user.email or None, 'photo': None }
+            pr = user.customerprofile if role == 'ROLE_CLIENT' else user.profile
+            profile['lastname'] = pr.user_last_name or user.last_name or None
+            profile['firstname'] = pr.user_first_name or user.first_name or None
+            profile['middlename'] = pr.user_middle_name or None
+            if role == 'ROLE_CLIENT':
+                org = { 'id': None, 'name': None }
+                profile['mainPhone'] = username
+            else:
+                org = { 'id': user.profile.org.pk, 'name': user.profile.org.name or None }
+                profile['mainPhone'] = None
+
+            data = { 'status': 'success',
+                     'token': token.key,
+                     'sessionId': request.session._get_or_create_session_key(),
+                     'profile': profile,
+                     'org': org,
+                     'role': role,
+                   }
+            status_code = 200
+            write_log(request, request.user, _(u'Вход в систему'))
+            LoginLog.write(request)
+        else:
+            data = { 'status': status,
+                     'message': 'Wrong username or password',
+                   }
+        return Response(data=data, status=status_code)
+
+auth_get_token = AuthGetTokenView.as_view()
+
+class AuthApiLogout(APIView):
+    permission_classes = (IsAuthenticated,)
+    
+    def post(self, request):
+        logout(request)
+        return Response(data={}, status=200)
+
+auth_api_logout = AuthApiLogout.as_view()
+
+class ApiAuthSettings(APIView):
+    permission_classes = (IsAuthenticated,)
+    
+    @transaction.commit_on_success
+    def put(self, request):
+        """
+        Поменять пароль и фотку пользователя
+        
+        Input data
+        {
+           # avatar, пока не применяем
+           "loginPhone": "375297542270",
+            "oldPassword": "1234567",
+            "newPassword": "7654321"
+         }
+        """
+        try:
+            user = request.user
+            old_username = user.username
+            old_password = request.DATA.get('oldPassword')
+            if old_password:
+                user = authenticate(username=old_username, password=old_password)
+                if not user:
+                    raise ServiceException(_(u'Неверно указан действующий пароль'))
+
+            login_phone = request.DATA.get('loginPhone')
+            if login_phone:
+                try:
+                    validate_phone_as_number(decimal.Decimal(login_phone))
+                except (TypeError, decimal.InvalidOperation, ValidationError, ):
+                    raise ServiceException(_(u'Неверный формат телефона'))
+                user.username = login_phone
+
+            new_password = request.DATA.get('newPassword')
+            if new_password:
+                user.set_password(new_password)
+
+            email = request.DATA.get('email')
+            if email:
+                try:
+                    validate_email(email)
+                except ValidationError:
+                    raise ServiceException(_(u'Неверный формат адреса электронной почты'))
+                user.email = email
+
+            if new_password or login_phone or email:
+                user.save()
+            try:
+                # это только для клиента кабинета!
+                user.customerprofile
+                if login_phone and login_phone != old_username:
+                    AlivePerson.objects.filter(login_phone=old_username).update(login_phone=login_phone)
+            except CustomerProfile.DoesNotExist:
+                pass
+        except ServiceException as excpt:
+            data = { 'status': 'error',
+                     'message': excpt.message,
+                   }
+            status_code = 400
+        else:
+            data = {}
+            status_code = 200
+        return Response(data=data, status=status_code)
+
+api_auth_settings = ApiAuthSettings.as_view()
+
+class ApiAuthUser(APIView):
+    permission_classes = (IsAuthenticated,)
+    
+    def delete(self, request):
+        request.user.is_active = False
+        try:
+            request.user.customerprofile
+        except CustomerProfile.DoesNotExist:
+            pass
+        else:
+            # Пользователь кабинета
+            request.user.customerprofile.user_last_name = ''
+            request.user.customerprofile.user_first_name = ''
+            request.user.customerprofile.user_middle_name = ''
+            request.user.customerprofile.save()
+            request.user.email = ''
+            chars = string.ascii_uppercase + string.ascii_lowercase + string.digits
+            while True:
+                new_username  = 'deleted-' + ''.join(random.choice(chars) for x in range(10))
+                if not User.objects.filter(username=new_username).count():
+                    request.user.username = new_username
+                    break
+        request.user.save()
+        return Response(data={}, status=200)
+
+api_auth_user = ApiAuthUser.as_view()
+
+class AuthGetPasswordBySMSView(CheckRecaptchaMixin, APIView):
+    """
+    Замена пользователю пароля, отправка пароля по СМС
+    
+    Input example:
+    {
+        "phoneNumber": “375291234567”,
+        "recaptchaData": {
+            "response": "foo bar",
+            "challenge": "03AHJ_VuvQ5p0AdejIw4W6"
+        }
+    }
+    Output examples:
+    {
+        "status: "success",
+        "message": "Пароль установлен"
+        "password": "new_password"
+    }
+    {
+        "status: "error",
+        "message": "Ваш номер телефона не указан в списке для входа. Обратитесь в администрацию кладбища."
+        # or       "Введена не верная captcha"
+    }
+    """
+    def post(self, request):
+        status = 'error'
+        status_code = 400
+        password = None
+        message = ''
+        phone_number = request.DATA['phoneNumber']
+        recaptcha_data = request.DATA['recaptchaData']
+        if not self.check_recaptcha(self.request, recaptcha_data['challenge'], recaptcha_data['response']):
+            message = _(u'Введена неверная captcha')
+        else:
+            places = Place.objects.filter(responsible__login_phone=decimal.Decimal(phone_number))
+            if not places.count():
+                message = _(u'Ваш номер телефона не указан в списке для входа. Обратитесь в администрацию кладбища')
+            else:
+                default_serv = your_serv = None
+                if not settings.DEBUG:
+                    for serv in settings.SMS_SERVICE:
+                        if serv['country_code'] == 'default':
+                            default_serv = serv
+                        if phone_number.startswith(serv['country_code']):
+                            your_serv = serv
+                    if not your_serv:
+                        if default_serv:
+                            your_serv = default_serv
+                        else:
+                            message = _(u"Оператор телефона не обслуживается")
+                if not message:
+                    user, created = User.objects.get_or_create(username=phone_number)
+                    if created:
+                        user.is_active = True
+                    chars = string.ascii_uppercase + string.ascii_lowercase + string.digits
+                    password = ''.join(random.choice(chars) for x in range(random.randrange(5, 11)))
+                    user.set_password(password)
+                    user.save()
+                    r = places[0].responsible
+                    customprofile, created = CustomerProfile.objects.get_or_create(user=user,
+                                                defaults={
+                                                    'user_last_name': r.last_name,
+                                                    'user_first_name': r.first_name,
+                                                    'user_middle_name': r.middle_name,
+                                                }
+                                            )
+                    if your_serv:
+                        try:
+                            smsapi = sms24x7.smsapi(your_serv['user'], your_serv['password'])
+                            smsapi.push_msg(
+                                _(u'Vash parol na PohoronnoeDelo: %s') % password,
+                                phone_number,
+                                # 11 chars max
+                                sender_name=u'PohoronnoeD',
+                                nologin = True
+                            )
+                        except sms24x7.smsapi_nogate_exception:
+                            message = _(u"Оператор телефона не обслуживается")
+                        except sms24x7.smsapi_exception:
+                            message = _(u"Произошла ошибка. Мы известим Вас о восстановлении сервиса")
+                            email_from = settings.DEFAULT_FROM_EMAIL
+                            email_to = (settings.DEFAULT_FROM_EMAIL, )
+                            email_subject = _(u'Ошибка СМС сервиса')
+                            email_text = _(u"Пользователь %s не смог получить пароль" % (phone_number,))
+                            EmailMessage(email_subject, email_text, email_from, email_to, ).send()
+                    if not message:
+                        status = 'success'
+                        status_code = 200
+                        message = _(u'Пароль установлен')
+        data = { 'status': status, 'password': password, 'message': message }
+        return Response(data=data, status=status_code)
+
+auth_get_password_by_sms = AuthGetPasswordBySMSView.as_view()
+
+class ApiFeedBack(CheckRecaptchaMixin, APIView):
+    """
+    Вопрос в поддержку от front-end api. Отправка письма.
+    
+    Пример входных данных:
+    {
+        "subject": "Тема",
+        "text": "Текст вопроса",
+        "email": "email@email.ru",
+        "recaptchaData": {
+            "response": "foo bar",
+            "challenge": "03AHJ_VuvQ5p0AdejIw4W6"
+        }
+    }
+    recaptchaData передается, если пользователь незарегистрирован
+    
+    Status codes:
+        200 - если все нормально
+        400 - если произошла ошибка валидации входных данных
+
+    Если отправляет аутентифицированный пользователь и у него нет
+    в свойствах почтового адреса, то он устанавливается в email
+    из входных данных
+    """
+    def post(self, request):
+        status_code = 400
+        recaptcha_data = request.DATA.get('recaptchaData')
+        if not request.user.is_authenticated():
+            if not recaptcha_data or \
+               not self.check_recaptcha(self.request, recaptcha_data['challenge'], recaptcha_data['response']):
+                return Response(data={}, status=status_code)
+        email_from = request.DATA.get('email')
+        try:
+            validate_email(email_from)
+        except ValidationError:
+            pass
+        else:
+            email_subject = request.DATA.get('subject')
+            if not email_subject or not email_subject.strip():
+                email_subject = _(u'Вопрос в поддержку')
+            email_to = (settings.DEFAULT_FROM_EMAIL, )
+            if request.user.is_authenticated() and not request.user.email:
+                request.user.email = email_from
+                request.user.save()
+            email_text = request.DATA.get('text') + get_mail_footer(request.user)
+            headers = {'Reply-To': email_from, }
+            EmailMessage(email_subject, email_text, email_from, email_to, headers=headers, ).send()
+            status_code = 200
+        return Response(data={}, status=status_code)
+
+api_feedback = ApiFeedBack.as_view()
+
+class ApiLoruPlaces(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request):
+        data = []
+        for ugh in Org.objects.filter(loru_list__loru=request.user.profile.org):
+            d = {
+                    'id': ugh.pk,
+                    'name': ugh.name,
+                    'currency': {
+                        'name': ugh.currency.name,
+                        'shortName': ugh.currency.short_name,
+                        'code': ugh.currency.code,
+                    }
+            }
+            for action, costFor in (
+                                        (Rate.RATE_ACTION_PUBLISH, 'costForEnable'),
+                                        (Rate.RATE_ACTION_UPDATE, 'costForUp'),
+                                   ):
+                d[costFor] = decimal.Decimal('0.00')
+                for rate in Rate.objects.filter(wallet__org=ugh,
+                                                wallet__currency=ugh.currency,
+                                                action=action,
+                                                ).order_by('-date_from')[:1]:
+                        d['costFor'] = rate.rate
+            data.append(d)
+        return Response(data=data, status=200)
+
+api_loru_places = ApiLoruPlaces.as_view()
+
+class ApiBalance(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request):
+        data = []
+        for wallet in Wallet.objects.filter(org=request.user.profile.org):
+            d = {
+                    'amount': wallet.amount,
+                    'currency': {
+                        'name': wallet.currency.name,
+                        'shortName': wallet.currency.short_name,
+                        'code': wallet.currency.code,
+                    }
+            }
+            data.append(d)
+            data = {
+                'currentBalance': data,
+            }
+        return Response(data=data, status=200)
+
+api_balance = ApiBalance.as_view()
 
 class LoginView(View):
     """
-    Страница логина.
+    Страница логина. Перенаправление на страницу логина front-end,
+    если задан параметр settings.REDIRECT_LOGIN_TO_FRONT_END
     """
     def dispatch(self, request, *args, **kwargs):
         if request.user.is_authenticated():
             return redirect('/')
         return super(LoginView, self).dispatch(request, *args, **kwargs)
+
+    def get(self, request, *args, **kwargs):
+        if settings.REDIRECT_LOGIN_TO_FRONT_END:
+            if request.GET.get("redirectUrl"):
+                next_url = "?redirectUrl=%s" % request.GET.get("redirectUrl")
+            else:
+                next_url = ''
+            return redirect('%s#/%s' % (get_front_end_url(request), next_url))
+        else:
+            form = AuthenticationForm()
+            request.session.set_test_cookie()
+            return render(request, 'login.html', {'form':form})
 
     def post(self, request, *args, **kwargs):
         form = AuthenticationForm(request, data=request.POST)
@@ -48,16 +462,15 @@ class LoginView(View):
             login(request, user)
             write_log(request, request.user, _(u'Вход в систему'))
             LoginLog.write(request)
-            next_url = request.GET.get("next", "/")
+            # Пользователь-ответственный в любом случае отправляется на
+            # front-end api, настроено front-end api на сервере или нет.
+            # В коде Django для этого пользователя ничего нет
+            next_url_default = get_front_end_url(request) if is_cabinet_user(user) else '/'
+            next_url = request.GET.get("redirectUrl", next_url_default)
             if next_url == '/logout/':
-                next_url = '/'
+                next_url = next_url_default
             return redirect(next_url)
         return self.get(request, *args, **kwargs)
-
-    def get(self, request, *args, **kwargs):
-        form = AuthenticationForm()
-        request.session.set_test_cookie()
-        return render(request, 'login.html', {'form':form})
 
 ulogin = LoginView.as_view()
 
@@ -70,8 +483,12 @@ class LogoutView(View):
             return redirect('/')
         write_log(request, request.user, _(u'Выход из системы'))
         logout(request)
-        next_url = request.GET.get("next", "/")
-        return redirect(next_url)
+        if request.GET.get("redirectUrl"):
+            return redirect(request.GET.get("redirectUrl"))
+        elif settings.REDIRECT_LOGIN_TO_FRONT_END:
+            return redirect(get_front_end_url(request) + '#/signout')
+        else:
+            return redirect('/')
 
 ulogout = LogoutView.as_view()
 
@@ -138,6 +555,16 @@ class LoruRegistryView(UGHRequiredMixin, View):
                     profile.area = None
                     profile.cemetery = None
                     profile.save()
+            for p_status in ProductStatus.objects.filter(ugh=request.user.profile.org,
+                                                         product__loru__in=removed_lorus):
+                ProductHistory.objects.create(
+                    product=p_status.product,
+                    ugh=p_status.ugh,
+                    operation=ProductHistory.PRODUCT_OPERATION_DELETE,
+                    dt=datetime.datetime.now(),
+                    publish_cost='0.0',
+                    currency=p_status.ugh.currency,
+                )
 
             messages.success(self.request, _(u"Данные сохранены"))
             write_log(self.request, self.request.user.profile.org, _(u'Изменены данные реестра ЛОРУ'))
@@ -598,6 +1025,7 @@ class RegistrantApprove(SupervisorRequiredMixin, View):
                     email = registrant.user_email,
                     phones = registrant.org_phones,
         )
+        org.create_wallet_rate()
         profile=Profile.objects.create(
                     user_last_name=registrant.user_last_name,
                     user_first_name=registrant.user_first_name,
@@ -714,3 +1142,29 @@ class SupportThanks(TemplateView):
                                         'html_message': html_message})
 
 support_thanks = SupportThanks.as_view()
+
+class Tutorial(TemplateView):
+    template_name = 'tutorial.html'
+
+    def get(self, request, *args, **kwargs):
+        return self.render_to_response({})
+
+tutorial = Tutorial.as_view()
+
+class TestCaptchaView(FormView):
+    """
+    Форма тестирования captcha
+    
+    Без этой простой страницы трудно, если не невозможно
+    увидеть и challenge-код капчи и правильный ответ пользователя.
+    Правильный ответ -- в графике! И еще: повтор правильных
+    challenge и ответа приведет к неверному срабатыванию капчи.
+    """
+    form_class = TestCaptchaForm
+    template_name = 'testcaptcha.html'
+
+    def get_success_url(self):
+        return reverse('testcaptcha')
+
+testcaptcha = TestCaptchaView.as_view()
+

@@ -3,7 +3,9 @@
 import os
 import pytils
 import datetime
+import re
 
+from django.conf import settings
 from django.db import models
 from django.contrib.contenttypes.models import ContentType
 from django.db.models.loading import get_model
@@ -38,6 +40,17 @@ class UnclearDate:
     def __unicode__(self):
         return self.strftime('%d.%m.%Y')
 
+    def str_safe(self):
+        """
+        YYYY or YYYY-MM or YYYY-MM-DD
+        """
+        result = str(self.d.year)
+        if not self.no_month:
+            result += '-%02d' % self.d.month
+        if not self.no_day:
+            result += '-%02d' % self.d.day
+        return result
+
     @property
     def month(self):
         return self.d.month
@@ -49,6 +62,56 @@ class UnclearDate:
     @property
     def day(self):
         return self.d.day
+
+    def prepare_compare(self, other):
+        """
+        Подготовить даты к сравнению
+        
+        Возвращает строки обеих дат
+        1999 и 7.7.1999 дожны стать обе '1999-07-07'
+        """
+        if isinstance(other, datetime.date):
+            other = UnclearDate(other.year, other.month, other.day)
+
+        if not self.no_month and not other.no_month:
+            self_month = self.month
+            other_month = other.month
+        elif not self.no_month and other.no_month:
+            other_month = self_month = self.month
+        elif self.no_month and not other.no_month:
+            self_month = other_month = other.month
+        elif self.no_month and other.no_month:
+            self_month = other_month = 0
+
+        if not self.no_day and not other.no_day:
+            self_day = self.day
+            other_day = other.day
+        elif not self.no_day and other.no_day:
+            other_day = self_day = self.day
+        elif self.no_day and not other.no_day:
+            self_day = other_day = other.day
+        elif self.no_day and other.no_day:
+            self_day = other_day = 0
+
+        fmt = "%d-%02d-%02d"
+        self_date = fmt % (self.year, self_month, self_day)
+        other_date = fmt % (other.year, other_month, other_day)
+        return (self_date , other_date, )
+    
+    # Было бы удобнее воспользоваться __cmp__(), но 
+    # нам эти даты надо сравнивать на больше или меньше,
+    # а сравнивать на равенство 07.07.1999 и 1999?
+    # Пока такой потребности не было.
+    # Кроме того, cmp() is deprecated в python 3
+
+    def __lt__(self, other):
+        self_date, other_date = self.prepare_compare(other)
+        return self_date < other_date
+
+    def __gt__(self, other):
+        self_date, other_date = self.prepare_compare(other)
+        return self_date > other_date
+
 
 class UnclearDateCreator(object):
     # http://blog.elsdoerfer.name/2008/01/08/fuzzydates-or-one-django-model-field-multiple-database-columns/
@@ -141,6 +204,22 @@ class BaseModel(models.Model):
     dt_created = models.DateTimeField(_(u"Дата/время создания"), auto_now_add=True)
     dt_modified = models.DateTimeField(_(u"Дата/время модификации"), auto_now=True)
 
+def upload_slugified(instance, filename):
+    """
+    Загрузка файлов из models.FileField
+    
+    Полагается, что файлы загружаются в одну кучу в каталоге в зависимости
+    от класса модели с FileField.
+    Нелатинские символы и знаки препинания преобразуются в такое,
+    что не вызывает 'нареканий' у Django
+    """
+    fname = u'.'.join(map(pytils.translit.slugify, filename.rsplit('.', 1)))
+    if isinstance(instance, get_model('orders', 'Product')):
+        return os.path.join('product-photo', fname)
+    if isinstance(instance, get_model('orders', 'ProductCategory')) or \
+       isinstance(instance, get_model('billing', 'Currency')):
+        return os.path.join('icons', fname)
+
 def files_upload_to(instance, filename):
     instance.original_name = filename
     fname = u'.'.join(map(pytils.translit.slugify, filename.rsplit('.', 1)))
@@ -166,14 +245,24 @@ def files_upload_to(instance, filename):
     elif isinstance(instance, get_model('persons', 'DeathCertificateScan')):
         return os.path.join('death-certificates',
                 today_pk_dir % instance.deathcertificate.person.pk, fname)
+    elif isinstance(instance, get_model('burials', 'PlacePhoto')):
+        return os.path.join('place-photos',
+                today_pk_dir % instance.pk, fname)
+    elif isinstance(instance, get_model('burials', 'AreaPhoto')):
+        return os.path.join('area-photos',
+                today_pk_dir % instance.cemetery.pk, fname)
     elif isinstance(instance, get_model('burials', 'GravePhoto')):
         return os.path.join('grave-photos',
                 today_pk_dir % instance.grave.place.pk, fname)
     elif isinstance(instance, get_model('users', 'RegisterProfileScan')):
         return os.path.join('register-profile',
                 today_pk_dir % instance.registerprofile.pk, fname)
+    elif isinstance(instance, get_model('users', 'CustomerProfilePhoto')):
+        return os.path.join('customer-profile',
+                today_pk_dir % instance.customerprofile.user.pk, fname)
     else:
         return os.path.join('files', fname)
+
 
 class Files(models.Model):
     """
@@ -192,6 +281,9 @@ class Files(models.Model):
     def delete_from_media(self):
         if self.bfile and os.path.exists(self.bfile.path):
             os.remove(self.bfile.path)
+            thmb = os.path.join(settings.THUMBNAILS_STORAGE_ROOT, self.bfile.name)
+            if os.path.exists(thmb):
+                os.shutil.rmtree(thmb)
 
     def delete(self):
         self.delete_from_media()
@@ -200,6 +292,18 @@ class Files(models.Model):
 def validate_gt0(value):
     if value <= 0:
         raise ValidationError(_(u'Должно быть больше нуля'))
+
+def validate_phone_as_number(value):
+    """
+    Проверка поля телефона
+    """
+    min_digits = 10
+    max_digits = 12
+    if not re.search(r'^\d{%d,%d}$' % (min_digits, max_digits, ), str(value)):
+        raise ValidationError(_(u'Неверный номер телефона, надо от %d до %d цифр') % (min_digits, max_digits, ))
+    # Могут приходить и из json rest запросов, просто строки, а не десятичные числа из формы
+    if isinstance(value, basestring) and value.startswith('0'):
+        raise ValidationError(_(u'Неверный первый знак в телефоне'))
 
 class  GetLogsMixin(object):
     """

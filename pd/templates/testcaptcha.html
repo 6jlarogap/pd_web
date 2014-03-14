@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% load i18n %}
+
+{% block content %}
+    <h1>{% trans "Проверка Captcha" %}</h1>
+    <h3>{% trans "При успешной проверке не увидите сообщения об ошибке" %}</h3>
+    <form action="" method="POST">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <p>
+            <input type="submit" class="btn  btn-primary" value="{% trans "Проверить" %}"/>
+        </p>
+        <br />
+    </form>
+{% endblock %}

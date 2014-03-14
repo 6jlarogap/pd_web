@@ -11,10 +11,10 @@ from django.db.models.query_utils import Q
 
 from geo.forms import LocationForm
 # from geo.models import DFiasAddrobj
-from pd.forms import ChildrenJSONMixin, LoggingFormMixin, OurReCaptchaField
+from pd.forms import ChildrenJSONMixin, LoggingFormMixin, OurReCaptchaField, StrippedStringsMixin
 from burials.models import Cemetery, PlaceSize, Reason, Burial
 
-from users.models import Profile, ProfileLORU, Org, BankAccount, RegisterProfile
+from users.models import Profile, ProfileLORU, Org, BankAccount, RegisterProfile, get_mail_footer
 
 
 class UserAddForm(forms.ModelForm):
@@ -105,7 +105,7 @@ class ProfileForm(ChildrenJSONMixin, forms.ModelForm):
             obj.save()
         return obj
 
-class UserProfileForm(ChildrenJSONMixin, forms.ModelForm):
+class UserProfileForm(ChildrenJSONMixin, StrippedStringsMixin, forms.ModelForm):
     # region = forms.ModelChoiceField(label=_(u"Регион"), queryset=FIAS_REGIONS, required=False)
 
     class Meta:
@@ -118,7 +118,8 @@ class UserProfileForm(ChildrenJSONMixin, forms.ModelForm):
             Q(ugh__isnull=True) |
             Q(ugh__loru_list__loru=self.instance.org) |
             Q(ugh=self.instance.org)
-        ).distinct()    
+        ).distinct()
+        self.fields['user_last_name'].required = True
         #if self.instance.region_fias:
             #self.initial['region'] = self.instance.get_region()
 
@@ -240,7 +241,7 @@ ReasonFormset = inlineformset_factory(Org, Reason, formset=BaseInlineFormSet, ca
 class OrgForm(BaseOrgForm):
     class Meta:
         model = Org
-        exclude = ['off_address', ]
+        exclude = ('off_address', 'publish_cost', 'currency', )
 
     def __init__(self, request, *args, **kwargs):
         super(OrgForm, self).__init__(request, *args, **kwargs)
@@ -250,6 +251,7 @@ class OrgForm(BaseOrgForm):
         if not self.is_own_org or not self.request.user.profile.is_ugh():
             del self.fields['numbers_algo']
             del self.fields['plan_date_days_before']
+            del self.fields['max_graves_count']
         if not self.is_own_org or not self.request.user.profile.is_loru():
             del self.fields['opf_order']
             del self.fields['opf_order_customer_mandatory']
@@ -379,40 +381,38 @@ class OrgBurialStatsForm(forms.Form):
 class SupportForm(forms.Form):
     subject = forms.CharField(label=_(u'Тема (необязательно)'), max_length=100, required=False)
     message = forms.CharField(label=_(u'Вопрос'), widget=forms.Textarea, required=True)
-    sender = forms.EmailField(label=_(u'Ваш Email'), required=True)
+    sender = forms.EmailField(label=_(u'Email для получения ответа'), required=True)
     captcha = OurReCaptchaField(label='', required=True)
 
     def __init__(self, request, *args, **kwargs):
         super(SupportForm, self).__init__(*args, **kwargs)
         self.request = request
+        self.save_user_email = False
         if request.user.is_authenticated():
             del self.fields['captcha']
             self.initial['sender'] = request.user.email or request.user.profile.org.email or ''
+            if not self.initial['sender']:
+                self.fields['sender'].label = _(u'Email для получения ответа (будет сохранен как Ваш контактный)')
+                self.save_user_email = True
 
     def save(self):
         if self.cleaned_data.get('subject'):
             email_subject = self.cleaned_data['subject']
         else:
             email_subject = _(u'Вопрос в поддержку')
-        email_text = self.cleaned_data['message']
-        headers = {}
-        if self.request.user.is_authenticated():
-            email_text += _(u'\n\n'
-                            u'Пользователь: %s / %s\n'
-                            u'Email: %s\n'
-                            u'Организация: %s\n'
-                            u'Email организации: %s\n'
-                           ) % (self.request.user.username,
-                                self.request.user.profile.full_name(),
-                                self.request.user.email,
-                                self.request.user.profile.org,
-                                self.request.user.profile.org.email,
-                               )
         email_from = self.cleaned_data['sender']
+        if self.save_user_email and email_from:
+            self.request.user.email = email_from
+            self.request.user.save()
+        email_text = self.cleaned_data['message'] + get_mail_footer(self.request.user)
+        headers = {}
         email_to = (settings.DEFAULT_FROM_EMAIL, )
         # Некоторые почтовые серверы подменяют поле From: письма
         # на тот почтовый ящик, через который шла аутентификация
-        # при отправке письма (settings.EMAIL_HOST_USER
+        # при отправке письма (settings.EMAIL_HOST_USER)
         #
         headers = {'Reply-To': email_from, }
         EmailMessage(email_subject, email_text, email_from, email_to, headers=headers, ).send()
+
+class TestCaptchaForm(forms.Form):
+    captcha = OurReCaptchaField(label='')

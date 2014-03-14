@@ -3,19 +3,27 @@ import datetime
 import re
 from django.contrib.contenttypes.models import ContentType
 from django.db import models, connection
+from django.db.models import Count, Avg
 from django.db.models.deletion import ProtectedError
 from django.utils.translation import ugettext_lazy as _
 from django.db.models.query_utils import Q
+from django.conf import settings
 from pd.models import UnclearDateModelField, BaseModel, Files, GetLogsMixin, validate_gt0
 
-from persons.models import DeadPerson, SafeDeleteMixin, DeathCertificate
+from persons.models import DeadPerson, SafeDeleteMixin, DeathCertificate, PhonesMixin
 from reports.models import Report
 from users.models import Org, Profile, Dover, ProfileLORU
 from logs.models import Log
+from geo.models import GeoPointModel, CoordinatesModel
+
 from geo.models import GeoPointModel
 
+from logs.models import write_log
 
-class Cemetery(GetLogsMixin, BaseModel):
+from managers import PlaceManager
+
+
+class Cemetery(GetLogsMixin, BaseModel, PhonesMixin):
     PLACE_AREA = 'area'
     PLACE_ROW = 'row'
     PLACE_CEM_YEAR = 'cem_year'
@@ -60,9 +68,17 @@ class Cemetery(GetLogsMixin, BaseModel):
         verbose_name = _(u"Кладбище")
         verbose_name_plural = _(u"Кладбища")
         ordering = ['name']
+        unique_together = ('ugh', 'name',)
 
     def __unicode__(self):
         return self.name
+
+    def unique_error_message(self, model_class, unique_check):
+        if len(unique_check) == 1:
+            return super(Cemetery, self).unique_error_message(model_class, unique_check)
+        # unique_together
+        else:
+            return _(u"Кладбище с таким названием уже существует")
 
     def get_time_choices(self, date, request):
         others = Burial.objects.none()
@@ -84,6 +100,23 @@ class Cemetery(GetLogsMixin, BaseModel):
                     v = u'%s (резерв кладб. %s)' % (s, len(planned)+len(approved))
                 result.append((s, v))
         return result
+    
+    @property
+    def area_cnt(self):
+        # TODO: replace with field, updated trought signals 
+        return self.area_set.count()
+
+    @property
+    def work_time(self):
+        return "%s-%s" % (self.time_begin or u'00:00:00', self.time_end or u'00:00:00')
+
+
+
+class CemeteryCoordinates(CoordinatesModel):
+    cemetery = models.ForeignKey(Cemetery, verbose_name=_(u"Кладбище"), on_delete=models.PROTECT, related_name='coordinates')
+
+    class Meta:
+        unique_together = ('cemetery', 'angle_number',)
 
 class AreaPurpose(models.Model):
     name = models.CharField(_(u"Название"), max_length=255)
@@ -94,6 +127,7 @@ class AreaPurpose(models.Model):
 
     def __unicode__(self):
         return self.name
+
 
 class Area(BaseModel):
     AVAILABILITY_OPEN = 'open'
@@ -125,10 +159,23 @@ class Area(BaseModel):
             self.places_count
         )
 
+    def unique_error_message(self, model_class, unique_check):
+        if len(unique_check) == 1:
+            return super(Area, self).unique_error_message(model_class, unique_check)
+        # unique_together
+        else:
+            return _(u"Участок с таким названием уже существует")
+
     def save(self, *args, **kwargs):
         if not self.name.strip():
             self.name=''
         return super(Area, self).save(*args, **kwargs)
+
+class AreaCoordinates(CoordinatesModel):
+    area = models.ForeignKey(Area, verbose_name=_(u"Участок"), on_delete=models.PROTECT, related_name='coordinates')
+
+    class Meta:
+        unique_together = ('area', 'angle_number',)
 
 class Place(SafeDeleteMixin, GeoPointModel):
     cemetery = models.ForeignKey(Cemetery, verbose_name=_(u"Кладбище"), on_delete=models.PROTECT)
@@ -145,13 +192,34 @@ class Place(SafeDeleteMixin, GeoPointModel):
     place_width = models.DecimalField(_(u"Ширина, м."), max_digits=5, decimal_places=2,
                                         null=True, blank=True, validators=[validate_gt0])
 
+    # Следующие поля DateTimeField будут содержать дату установки
+    # соответствующего признака, но служат еще и как BooleanField:
+    # если поле установлено в какую-то дату, то это True; если NULL, то False
+    dt_wrong_fio = models.DateTimeField(_(u"Неверное ФИО /дата установки признака/"), null=True, editable=False)
+    dt_military = models.DateTimeField(_(u"Воинское /дата установки признака/"), null=True, editable=False)
+    dt_size_violated = models.DateTimeField(_(u"Нарушение размеров /дата установки признака/"), null=True, editable=False)
+    dt_unowned = models.DateTimeField(_(u"Заброшенное /дата установки признака/"), null=True, editable=False)
+    dt_unindentified = models.DateTimeField(_(u"Неопознанное /дата установки признака/"), null=True, editable=False)
+
+    objects = PlaceManager()
+
     class Meta:
         verbose_name = _(u"Место")
         verbose_name_plural = _(u"Место")
         unique_together = ('cemetery', 'area', 'row', 'place',)
+        ordering = ['row', 'place']
 
     def __unicode__(self):
         return _(u'Кл. %s, уч. %s, ряд %s, место %s') % (self.cemetery, self.area and self.area.name or '', self.row, self.place)
+
+
+    def unique_error_message(self, model_class, unique_check):
+        if len(unique_check) == 1:
+            return super(Place, self).unique_error_message(model_class, unique_check)
+        # unique_together
+        else:
+            return _(u"Место с таким номером уже существует")
+
 
     def burials_available(self):
         q_ex = Q(status=Burial.STATUS_EXHUMATED) | Q(annulated=True)
@@ -164,7 +232,12 @@ class Place(SafeDeleteMixin, GeoPointModel):
         return self.grave_set.count()
 
     def get_available_count(self):
-        return max(0, self.get_graves_count() - self.burial_count())
+        """
+        Deprecated func
+        please use 'self.available_count' which is updated via signals
+        """
+        return self.available_count
+        #return max(0, self.get_graves_count() - self.burial_count())
 
     def set_next_number(self, new_place_for_archive=False):
         if new_place_for_archive:
@@ -253,6 +326,34 @@ class Place(SafeDeleteMixin, GeoPointModel):
                 break
         return result
 
+    def get_photo_gallery(self, request):
+        """
+        Получить все фото, относящиеся к месту.
+        
+        Выбираются все PlacePhoto, все GravePhoto этого места,
+        сортируются по дате создания в порядке убывания
+        """
+        gallery = []
+        for pph in PlacePhoto.objects.filter(place=self):
+            if pph.bfile:
+                gallery.append(
+                    {
+                        'photo': request.build_absolute_uri(pph.bfile.url),
+                        'addedAt': pph.date_of_creation,
+                    }
+                )
+        for g in Grave.objects.filter(place=self).order_by('grave_number'):
+            for gph in GravePhoto.objects.filter(grave=g):
+                if gph.bfile:
+                    gallery.append(
+                        {
+                            'photo': request.build_absolute_uri(gph.bfile.url),
+                            'addedAt': gph.date_of_creation,
+                        }
+                    )
+        gallery = sorted(gallery, key=lambda photo: photo['addedAt'], reverse=True)
+        return gallery
+        
 class PlaceSize(models.Model):
     org = models.ForeignKey(Org, verbose_name=_(u"Организация"), editable=False, on_delete=models.PROTECT) 
     graves_count = models.PositiveSmallIntegerField(_(u"Число могил"), )
@@ -289,16 +390,47 @@ class PlaceStatus(BaseModel):
     comment = models.TextField(verbose_name=_(u"Примечание"), blank=True, null=True)
     creator = models.ForeignKey('auth.User', verbose_name=_(u"Создатель"), editable=False,
                                 on_delete=models.PROTECT)
-    
+
+
 class Grave(GeoPointModel):
-
-    class Meta:
-        unique_together = ('place', 'grave_number',)
-
     place = models.ForeignKey(Place, verbose_name=_(u"Место"))
     grave_number = models.PositiveSmallIntegerField(_(u"Номер"), default=1)
     is_wrong_fio = models.BooleanField(_(u"Неверное ФИО"), default=False)
     is_military = models.BooleanField(_(u"Воинская могила"), default=False)
+
+    class Meta:
+        unique_together = ('place', 'grave_number',)
+        ordering = ['grave_number']
+
+    def __unicode__(self):
+        return _(u'Могила. место: %s номер:%d') % (self.place, self.grave_number)
+
+    def delete(self, using=None, request=None):
+        super(Grave, self).delete(using=using)
+        if request:
+            arr = [_(u'Могила №%d удалена') % self.grave_number,]
+            # Reorder grave numbers
+            i = 1
+            relocated = False
+            for row in self.place.grave_set.order_by('grave_number').all():
+                if row.grave_number != i: 
+                    if not relocated:
+                        relocated = i
+                    row.grave_number = i
+                    row.save()
+                i += 1
+            if relocated > 0:
+                if relocated < i-1:
+                    arr.append( _(u'Могилы %d-%d перенумерованы') % (relocated+1, i))
+                else:
+                    arr.append( _(u'Могила %d перенумерована') % (relocated+1))
+            write_log(request, self.place, u"<br/>".join(arr))
+        else:
+            raise Exception('Warning: Grave::delete - "request" param is undefined')
+
+
+class PlacePhoto(Files, GeoPointModel):
+    place = models.ForeignKey(Place)
 
 class AreaPhoto(Files, GeoPointModel):
     area = models.ForeignKey(Area)
@@ -967,3 +1099,36 @@ def apply_exhumation(instance, created, **kwargs):
         instance.apply()
 
 models.signals.post_save.connect(apply_exhumation, sender=ExhumationRequest)
+
+
+def calculate_free_burial_count(sender, instance, **kwargs):
+    if instance.place:
+        instance.place.available_count = max(0, instance.place.get_graves_count() - instance.place.burial_count())
+        instance.place.save()
+
+models.signals.post_save.connect(calculate_free_burial_count, sender=Grave)
+models.signals.post_save.connect(calculate_free_burial_count, sender=Burial)
+models.signals.post_delete.connect(calculate_free_burial_count, sender=Grave)
+models.signals.post_delete.connect(calculate_free_burial_count, sender=Burial)
+
+
+def update_grave_place_coords(sender, instance, **kwargs):
+    #if 'created' in kwargs.keys() and kwargs['created']:
+    # Update grave point coords
+    grave = instance.grave
+    res = GravePhoto.objects.filter(grave=grave, lng__isnull=False, lat__isnull=False).\
+        aggregate(lng=Avg('lng'), lat=Avg('lat')) #, cnt=Count('id')
+    grave.lng = round(res["lng"], 10)
+    grave.lat = round(res["lat"], 10)
+    grave.save()
+
+    # Update place point coords
+    place = instance.grave.place
+    res = Grave.objects.filter(place=place, lng__isnull=False, lat__isnull=False).\
+        aggregate(lng=Avg('lng'), lat=Avg('lat')) #, cnt=Count('id')
+    place.lng = round(res["lng"], 10)
+    place.lat = round(res["lat"], 10)
+    place.save()
+    
+
+models.signals.post_save.connect(update_grave_place_coords, sender=GravePhoto)
