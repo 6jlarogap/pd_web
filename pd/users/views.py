@@ -1143,6 +1143,14 @@ class SupportThanks(TemplateView):
 
 support_thanks = SupportThanks.as_view()
 
+class Tutorial(TemplateView):
+    template_name = 'tutorial.html'
+
+    def get(self, request, *args, **kwargs):
+        return self.render_to_response({})
+
+tutorial = Tutorial.as_view()
+
 class TestCaptchaView(FormView):
     """
     Форма тестирования captcha

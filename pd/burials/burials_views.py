@@ -1020,8 +1020,15 @@ class GetCemeteryTimes(View):
         if not request.user.is_authenticated():
             messages.error(request, _(u"Доступно только для пользователей"))
             return redirect('/')
-        c = Cemetery.objects.get(pk=request.GET.get('cem'))
-        date = datetime.datetime.strptime(request.GET.get('date'), '%d.%m.%Y').date
+        try:
+            c = Cemetery.objects.get(pk=request.GET.get('cem'))
+        except (ValueError, Cemetery.DoesNotExist, ):
+            return HttpResponse(json.dumps({}), mimetype='application/json')
+        try:
+            date = datetime.datetime.strptime(request.GET.get('date'), '%d.%m.%Y').date
+        except ValueError:
+            # Есть таки возможность пользователю ввести плановую дату типа 30 февраля:
+            return HttpResponse(json.dumps({c.pk: []}), mimetype='application/json')
         data = c.get_time_choices(date=date, request=request)
         return HttpResponse(json.dumps({c.pk: data}), mimetype='application/json')
 

@@ -42,7 +42,8 @@ from django.db import transaction
 
 
 from serializers import CemeterySerializer, AreaSerializer, PlaceSerializer, AreaPurposeSerializer, \
-    GraveSerializer, BurialSerializer, BurialListSerializer, AreaPhotoSerializer, GravePhotoSerializer, ExhumationRequestSerializer, PlaceSizeSerializer
+    GraveSerializer, BurialSerializer, BurialListSerializer, BurialPutGraveSerializer, \
+    AreaPhotoSerializer, GravePhotoSerializer, ExhumationRequestSerializer, PlaceSizeSerializer
 
 from persons.serializers import AlivePersonSerializer, PhoneSerializer
 from geo.serializers import LocationSerializer, LocationStaticSerializer, LocationDataSerializer
@@ -638,6 +639,7 @@ class BurialViewSet(viewsets.ModelViewSet):
     model = Burial
     serializer_class = BurialSerializer
     serializer_list_class = BurialListSerializer
+    serializer_put_grave_class = BurialPutGraveSerializer
     permission_classes = (IsAuthenticated,)
     paginate_by = None
 
@@ -662,6 +664,8 @@ class BurialViewSet(viewsets.ModelViewSet):
         """
         if self.action == 'list':
             serializer_class = self.serializer_list_class
+        elif self.action == 'update':
+            serializer_class = self.serializer_put_grave_class
         else:
             serializer_class = self.serializer_class
         return serializer_class
@@ -670,11 +674,11 @@ class BurialViewSet(viewsets.ModelViewSet):
     def pre_save(self, object):
         try:
             old = self.model.objects.get(pk=object.pk)
-        except self.model.DoesNotExist:
+        except (AttributeError, self.model.DoesNotExist):
             old = None
-        except AttributeError:
-            old = None
-            footer = None
+        if old and old.grave_number != object.grave_number:
+            grave = Grave.objects.get(place=object.place, grave_number=object.grave_number)
+            self.object.grave = grave
         log_object(self.request, obj=object.place, old=old, new=object, reason=_(u'Захоронение изменено'))        
         return object
 

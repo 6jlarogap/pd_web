@@ -22,7 +22,7 @@
         <div class="span3 control-group pd-control-group"
             ng-class="{error: addressEditorForm.$dirty && addressEditorForm.country.$invalid}">
           <input type="text" class="span12 country" ng-model="editor.country.name" placeholder="Страна"
-                 name="country" required />
+                 name="country" ng-required="required || editor.region.name" />
         </div>
         <div class="span3 control-group pd-control-group"
             ng-class="{error: addressEditorForm.$dirty && addressEditorForm.region.$invalid}">

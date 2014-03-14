@@ -91,11 +91,18 @@
                         <span class="icon-bar"></span>
                     </a>
                     <a class="brand" href="/">Похоронное Дело</a>
-                    <div class="pull-right nav-collapse">
-                        <ul class="nav">
+                    <div class="btn-group pull-right dropdown" id="support_menu">
+                        <a class="btn dropdown-toggle" data-toggle="dropdown" href="#support_menu"><big>?</big>
+                        </a>
+                        <ul class="dropdown-menu">
                             <li>
-                                <a href="{% url support %}" title="{% trans "Служба поддержки" %}"><big><b>?</b></big></a>
+                                <a href="{% url support %}">{% trans "Служба поддержки" %}</a>
                             </li>
+                            {% if user.is_authenticated %}
+                                <li>
+                                    <a href="{% url tutorial %}">{% trans "Курс обучения" %}</a>
+                                </li>
+                            {% endif %}
                         </ul>
                     </div>
                     <div class="btn-group pull-right dropdown" id="auth_menu">
