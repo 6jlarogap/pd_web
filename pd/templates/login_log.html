@@ -63,7 +63,13 @@
         {% for log in logs %}
             <tr>
                 <td>{{ log.dt }}</td>
-                <td>{{ log.user.username }} / {{ log.user.profile.last_name_initials }}</td>
+                <td>{{ log.user.username }} / 
+                    {% if log.user.customerprofile %}
+                        {{ log.user.customerprofile.last_name_initials }}
+                    {% else %}
+                        {{ log.user.profile.last_name_initials }}
+                    {% endif %}
+                    </td>
                 <td>{{ log.org|default_if_none:"" }}</td>
                 <td>{{ log.ip|default_if_none:"" }}</td>
             </tr>
