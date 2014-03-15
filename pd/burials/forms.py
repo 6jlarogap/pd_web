@@ -482,8 +482,6 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
 
         responsible = self.instance and self.instance.get_responsible()
         self.responsible_form = ResponsibleForm(data=data, prefix='responsible', instance=responsible)
-        if self.request.user.profile.is_loru():
-            del self.responsible_form.fields['login_phone_']
         resp_addr = responsible and responsible.address
         self.responsible_address_form = LocationForm(data=data, prefix='responsible-address', instance=resp_addr)
 
