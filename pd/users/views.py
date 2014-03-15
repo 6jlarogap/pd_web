@@ -484,11 +484,13 @@ class LogoutView(View):
         write_log(request, request.user, _(u'Выход из системы'))
         logout(request)
         if request.GET.get("redirectUrl"):
-            return redirect(request.GET.get("redirectUrl"))
+            response = redirect(request.GET.get("redirectUrl"))
         elif settings.REDIRECT_LOGIN_TO_FRONT_END:
-            return redirect(get_front_end_url(request) + '#/signout')
+            response = redirect(get_front_end_url(request) + '#/signout')
+            response.delete_cookie('pdsession')
         else:
-            return redirect('/')
+            response = redirect('/')
+        return response
 
 ulogout = LogoutView.as_view()
 
