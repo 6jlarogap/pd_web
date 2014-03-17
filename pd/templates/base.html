@@ -92,11 +92,11 @@
                     </a>
                     <a class="brand" href="/">Похоронное Дело</a>
                     <div class="btn-group pull-right dropdown" id="support_menu">
-                        <a class="btn dropdown-toggle" data-toggle="dropdown" href="#support_menu"><big>?</big>
+                        <a data-toggle="dropdown" href="#support_menu" title="{% trans "Служба поддержки" %}"><img src="/static/help-question.png">
                         </a>
                         <ul class="dropdown-menu">
                             <li>
-                                <a href="{% url support %}">{% trans "Служба поддержки" %}</a>
+                                <a href="{% url support %}">{% trans "Задать вопрос" %}</a>
                             </li>
                             {% if user.is_authenticated %}
                                 <li>
