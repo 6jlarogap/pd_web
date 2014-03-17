@@ -10,11 +10,32 @@
         <th>
             {% if sort == 'org' %}
                 {% if sort == 'org' %}<i class="icon icon-arrow-up"></i>{% endif %}
-                <a href="?{{ GET_PARAMS }}&sort=-org">{% trans "Организация (ОМС)" %}</a>
+                <a href="?{{ GET_PARAMS }}&sort=-org">{% trans "ОМС" %}</a>
             {% else %}
                 {% if sort == '-org' %}<i class="icon icon-arrow-down"></i>{% endif %}
-                <a href="?{{ GET_PARAMS }}&sort=org">{% trans "Организация (ОМС)" %}</a>
+                <a href="?{{ GET_PARAMS }}&sort=org">{% trans "ОМС" %}</a>
             {% endif %}
+        </th>
+        <th>
+            {% if sort == 'city' %}
+                {% if sort == 'city' %}<i class="icon icon-arrow-up"></i>{% endif %}
+                <a href="?{{ GET_PARAMS }}&sort=-city">{% trans "ОМС" %}</a>
+            {% else %}
+                {% if sort == '-city' %}<i class="icon icon-arrow-down"></i>{% endif %}
+                <a href="?{{ GET_PARAMS }}&sort=city">{% trans "ОМС" %}</a>
+            {% endif %}
+        </th>
+        <th style="text-align:right;">
+            {% trans "Кладбищ" %}
+        </th>
+        <th style="text-align:right;">
+            {% trans "Участков" %}
+        </th>
+        <th style="text-align:right;">
+            {% trans "Мест" %}
+        </th>
+        <th style="text-align:right;">
+            {% trans "Закрытых<br />захоронений" %}
         </th>
     </tr>
     {% for org in orgs %}
@@ -22,11 +43,40 @@
             <td>
                 {{ org.name }}
             </td>
+            <td>
+                {{ org.city }}
+            </td>
+            <td style="text-align:right;">
+                {{ org.num_cemeteries }}
+            </td>
+            <td style="text-align:right;">
+                {{ org.num_areas }}
+            </td>
+            <td style="text-align:right;">
+                {{ org.num_places }}
+            </td>
+            <td style="text-align:right;">
+                {{ org.num_burials }}
+            </td>
         </tr>
     {% endfor %}
         <tr>
             <td>
-                <b>{% trans "Итого" %}</b>
+                <b>{% trans "Итого" %} {{ total.oms_count }} {% trans "ОМС"%}</b>
+            </td>
+            <td>
+            </td>
+            <td style="text-align:right;">
+                <b>{{ total.cemeteries_count }}</b>
+            </td>
+            <td style="text-align:right;">
+                <b>{{ total.areas_count }}</b>
+            </td>
+            <td style="text-align:right;">
+                <b>{{ total.places_count }}</b>
+            </td>
+            <td style="text-align:right;">
+                <b>{{ total.burials_count }}</b>
             </td>
         </tr>
     </table>

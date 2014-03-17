@@ -44,7 +44,7 @@ from users.forms import UserAddForm, RegisterForm, LoruFormset, ProfileForm, Use
 from users.models import Profile, Org, RegisterProfile, ProfileLORU, CustomerProfile, get_mail_footer, is_cabinet_user
 from pd.models import validate_phone_as_number
 from persons.models import AlivePerson
-from burials.models import Burial, Place
+from burials.models import Cemetery, Area, Burial, Place
 from billing.models import Wallet, Rate
 from orders.models import ProductStatus, ProductHistory
 from pd.views import PaginateListView, RequestToFormMixin, FormInvalidMixin, get_front_end_url, ServiceException
@@ -1130,6 +1130,8 @@ class OrgCurrentStatsView(SupervisorRequiredMixin, TemplateView):
         SORT_FIELDS = {
             'org': 'name',
             '-org': '-name',
+            'city': 'off_address__city',
+            '-city': '-off_address__city',
        }
         s = SORT_FIELDS[sort]
         if not isinstance(s, list):
@@ -1139,21 +1141,21 @@ class OrgCurrentStatsView(SupervisorRequiredMixin, TemplateView):
         total={}
         for source_type in Burial.SOURCE_TYPES:
             total[source_type[0]] = 0
-        total['all'] = 0
+        total['oms_count'] = total['cemeteries_count'] = \
+        total['areas_count'] = total['places_count'] = \
+        total['burials_count'] = 0
         for o in Org.objects.filter(type=Org.PROFILE_UGH).order_by(*s):
-            org = {'name': o.name, 'all': 0}
-            for source_type in Burial.SOURCE_TYPES:
-                org[source_type[0]] = Burial.objects.filter(
-                    q &
-                    Q(
-                      ugh=o,
-                      source_type=source_type[0],
-                      annulated=False,
-                     )
-                ).count()
-                total[source_type[0]] += org[source_type[0]]
-                org['all'] += org[source_type[0]]
-                total['all'] += org[source_type[0]]
+            total['oms_count'] += 1
+            org = {'name': o.name}
+            org['city'] = o.off_address and o.off_address.city or ''
+            org['num_cemeteries'] = Cemetery.objects.filter(ugh=o).count()
+            total['cemeteries_count'] += org['num_cemeteries']
+            org['num_areas'] = Area.objects.filter(cemetery__ugh=o).count()
+            total['areas_count'] += org['num_areas']
+            org['num_places'] = Place.objects.filter(cemetery__ugh=o).count()
+            total['places_count'] += org['num_places']
+            org['num_burials'] = Burial.objects.filter(ugh=o, status=Burial.STATUS_CLOSED).count()
+            total['burials_count'] += org['num_burials']
             orgs.append(org)
 
         return {
