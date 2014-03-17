@@ -1124,8 +1124,6 @@ class OrgCurrentStatsView(SupervisorRequiredMixin, TemplateView):
     template_name = 'org_current_stats.html'
 
     def get_context_data(self, **kwargs):
-        q = Q(status__in=(Burial.STATUS_CLOSED, Burial.STATUS_EXHUMATED, ))
-
         sort = self.request.GET.get('sort', 'org')
         SORT_FIELDS = {
             'org': 'name',
@@ -1197,9 +1195,6 @@ class OrgCurrentStatsView(SupervisorRequiredMixin, TemplateView):
             'total': total,
             'sort': sort,
         }
-
-    def get_form(self):
-        return OrgCurrentStatsForm(data=self.request.GET or None)
 
 org_current_stats = OrgCurrentStatsView.as_view()
 
