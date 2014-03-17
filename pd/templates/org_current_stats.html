@@ -35,7 +35,13 @@
             {% trans "Мест" %}
         </th>
         <th style="text-align:right;">
+            {% trans "Мест<br />с телефоном<br />кабинета" %}
+        </th>
+        <th style="text-align:right;">
             {% trans "Закрытых<br />захоронений" %}
+        </th>
+        <th style="text-align:right;">
+            {% trans "Кол-во ЛОРУ в<br />реестре" %}
         </th>
     </tr>
     {% for org in orgs %}
@@ -56,7 +62,13 @@
                 {{ org.num_places }}
             </td>
             <td style="text-align:right;">
+                {{ org.num_places_cabinet }}
+            </td>
+            <td style="text-align:right;">
                 {{ org.num_burials }}
+            </td>
+            <td style="text-align:right;">
+                {{ org.num_lorus }}
             </td>
         </tr>
     {% endfor %}
@@ -76,7 +88,13 @@
                 <b>{{ total.places_count }}</b>
             </td>
             <td style="text-align:right;">
+                <b>{{ total.places_cabinet_count }}</b>
+            </td>
+            <td style="text-align:right;">
                 <b>{{ total.burials_count }}</b>
+            </td>
+            <td>
+                <b>{% trans "Всего ЛОРУ" %}: {{ total.lorus_count }}</b>
             </td>
         </tr>
     </table>

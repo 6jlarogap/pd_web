@@ -1143,19 +1143,36 @@ class OrgCurrentStatsView(SupervisorRequiredMixin, TemplateView):
             total[source_type[0]] = 0
         total['oms_count'] = total['cemeteries_count'] = \
         total['areas_count'] = total['places_count'] = \
-        total['burials_count'] = 0
+        total['burials_count'] = total['places_cabinet_count'] = 0
         for o in Org.objects.filter(type=Org.PROFILE_UGH).order_by(*s):
             total['oms_count'] += 1
             org = {'name': o.name}
             org['city'] = o.off_address and o.off_address.city or ''
+
             org['num_cemeteries'] = Cemetery.objects.filter(ugh=o).count()
             total['cemeteries_count'] += org['num_cemeteries']
+
             org['num_areas'] = Area.objects.filter(cemetery__ugh=o).count()
             total['areas_count'] += org['num_areas']
+
             org['num_places'] = Place.objects.filter(cemetery__ugh=o).count()
             total['places_count'] += org['num_places']
-            org['num_burials'] = Burial.objects.filter(ugh=o, status=Burial.STATUS_CLOSED).count()
+
+            org['num_places_cabinet'] = Place.objects.filter(
+                cemetery__ugh=o,
+                responsible__login_phone__gt='0',
+            ).count()
+            total['places_cabinet_count'] += org['num_places_cabinet']
+
+            org['num_burials'] = Burial.objects.filter(
+                ugh=o,
+                status=Burial.STATUS_CLOSED
+            ).count()
             total['burials_count'] += org['num_burials']
+
+            org['num_lorus'] = ProfileLORU.objects.filter(ugh=o).count()
+            total['lorus_count'] = Org.objects.filter(type=Org.PROFILE_LORU).count()
+
             orgs.append(org)
 
         return {
