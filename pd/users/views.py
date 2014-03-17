@@ -16,7 +16,7 @@ from django.core.mail import send_mail, EmailMessage
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
 from django.core.urlresolvers import reverse
-from django.db import transaction
+from django.db import transaction, connection
 from django.db.models.query_utils import Q
 from django.db.models.aggregates import Count
 from django.http import HttpResponse, Http404
@@ -1173,7 +1173,26 @@ class OrgCurrentStatsView(SupervisorRequiredMixin, TemplateView):
             org['num_places_cabinet'] = cabinets.count()
             total['places_cabinet_count'] += org['num_places_cabinet']
 
-            org['num_cabinets'] = cabinets.distinct('responsible__login_phone').count()
+            # вместо:
+            # User.objects.filter(username__in=\
+            #    cabinets.distinct('responsible__login_phone').
+            #    order_by('responsible__login_phone').
+            #    values_list('responsible__login_phone')
+            # )
+            # применяем этот сырой запрос из-за cast(string to decimal)
+            #
+            query = r"""SELECT COUNT(*) FROM "auth_user"
+                        WHERE "auth_user"."username" ~ E'^\\d+$'
+                        and cast("auth_user"."username" as decimal) IN 
+                        (SELECT DISTINCT ON (U1."login_phone") U1."login_phone" FROM 
+                        "burials_place" U0 LEFT OUTER JOIN "persons_aliveperson" U1 
+                        ON (U0."responsible_id" = U1."baseperson_ptr_id") 
+                        INNER JOIN "burials_cemetery" U2 ON (U0."cemetery_id" = U2."id")
+                        WHERE (U1."login_phone" IS NOT NULL AND U2."ugh_id" = %s ))
+                     """ % o.pk
+            cursor = connection.cursor()
+            cursor.execute(query)
+            org['num_cabinets'] = cursor.fetchone()[0]
 
             org['num_lorus'] = ProfileLORU.objects.filter(ugh=o).count()
             
@@ -1182,6 +1201,7 @@ class OrgCurrentStatsView(SupervisorRequiredMixin, TemplateView):
             org['num_published_products'] = products.filter(q_published).distinct().count()
 
             orgs.append(org)
+
         lorus = Org.objects.filter(type=Org.PROFILE_LORU)
         total['lorus_count'] = lorus.count()
         total['active_lorus_count'] = lorus.filter(profile__user__is_active=True).count()
