@@ -44,9 +44,9 @@ from users.forms import UserAddForm, RegisterForm, LoruFormset, ProfileForm, Use
 from users.models import Profile, Org, RegisterProfile, ProfileLORU, CustomerProfile, get_mail_footer, is_cabinet_user
 from pd.models import validate_phone_as_number
 from persons.models import AlivePerson
-from burials.models import Burial, Place
+from burials.models import Cemetery, Area, Burial, Place
 from billing.models import Wallet, Rate
-from orders.models import ProductStatus, ProductHistory
+from orders.models import Product, ProductStatus, ProductHistory
 from pd.views import PaginateListView, RequestToFormMixin, FormInvalidMixin, get_front_end_url, ServiceException
 
 from sms_service import sms24x7
@@ -1119,6 +1119,84 @@ class OrgBurialStatsView(SupervisorRequiredMixin, TemplateView):
         return OrgBurialStatsForm(data=self.request.GET or None)
 
 org_burial_stats = OrgBurialStatsView.as_view()
+
+class OrgCurrentStatsView(SupervisorRequiredMixin, TemplateView):
+    template_name = 'org_current_stats.html'
+
+    def get_context_data(self, **kwargs):
+        sort = self.request.GET.get('sort', 'org')
+        SORT_FIELDS = {
+            'org': 'name',
+            '-org': '-name',
+            'city': 'off_address__city',
+            '-city': '-off_address__city',
+       }
+        s = SORT_FIELDS[sort]
+        if not isinstance(s, list):
+            s = [s]
+
+        orgs = []
+        total={}
+        for source_type in Burial.SOURCE_TYPES:
+            total[source_type[0]] = 0
+        total['oms_count'] = total['cemeteries_count'] = \
+        total['areas_count'] = total['places_count'] = \
+        total['burials_count'] = total['places_cabinet_count'] = 0
+        q_published = Q(
+            productstatus__status__in=\
+            (ProductHistory.PRODUCT_OPERATION_PUBLISH, ProductHistory.PRODUCT_OPERATION_UPDATE, )
+        )
+        for o in Org.objects.filter(type=Org.PROFILE_UGH).order_by(*s):
+            total['oms_count'] += 1
+            org = {'name': o.name}
+            org['city'] = o.off_address and o.off_address.city or ''
+
+            org['num_cemeteries'] = Cemetery.objects.filter(ugh=o).count()
+            total['cemeteries_count'] += org['num_cemeteries']
+
+            org['num_areas'] = Area.objects.filter(cemetery__ugh=o).count()
+            total['areas_count'] += org['num_areas']
+
+            org['num_places'] = Place.objects.filter(cemetery__ugh=o).count()
+            total['places_count'] += org['num_places']
+
+            org['num_burials'] = Burial.objects.filter(
+                ugh=o,
+                status=Burial.STATUS_CLOSED
+            ).count()
+            total['burials_count'] += org['num_burials']
+
+            cabinets = Place.objects.filter(
+                cemetery__ugh=o,
+                responsible__login_phone__isnull=False,
+            )
+            org['num_places_cabinet'] = cabinets.count()
+            total['places_cabinet_count'] += org['num_places_cabinet']
+
+            org['num_cabinets'] = cabinets.distinct('responsible__login_phone').count()
+
+            org['num_lorus'] = ProfileLORU.objects.filter(ugh=o).count()
+            
+            products = Product.objects.filter(loru__ugh_list__ugh=o)
+            org['num_products'] = products.distinct().count()
+            org['num_published_products'] = products.filter(q_published).distinct().count()
+
+            orgs.append(org)
+        lorus = Org.objects.filter(type=Org.PROFILE_LORU)
+        total['lorus_count'] = lorus.count()
+        total['active_lorus_count'] = lorus.filter(profile__user__is_active=True).count()
+        
+        total['cabinets_count'] = CustomerProfile.objects.all().count()
+        total['products_count'] = Product.objects.all().count()
+        total['published_products_count'] = Product.objects.filter(q_published).distinct().count()
+
+        return {
+            'orgs':orgs,
+            'total': total,
+            'sort': sort,
+        }
+
+org_current_stats = OrgCurrentStatsView.as_view()
 
 class SupportView(RequestToFormMixin, FormView):
     form_class = SupportForm
