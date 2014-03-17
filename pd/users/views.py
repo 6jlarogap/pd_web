@@ -1120,6 +1120,53 @@ class OrgBurialStatsView(SupervisorRequiredMixin, TemplateView):
 
 org_burial_stats = OrgBurialStatsView.as_view()
 
+class OrgCurrentStatsView(SupervisorRequiredMixin, TemplateView):
+    template_name = 'org_current_stats.html'
+
+    def get_context_data(self, **kwargs):
+        q = Q(status__in=(Burial.STATUS_CLOSED, Burial.STATUS_EXHUMATED, ))
+
+        sort = self.request.GET.get('sort', 'org')
+        SORT_FIELDS = {
+            'org': 'name',
+            '-org': '-name',
+       }
+        s = SORT_FIELDS[sort]
+        if not isinstance(s, list):
+            s = [s]
+
+        orgs = []
+        total={}
+        for source_type in Burial.SOURCE_TYPES:
+            total[source_type[0]] = 0
+        total['all'] = 0
+        for o in Org.objects.filter(type=Org.PROFILE_UGH).order_by(*s):
+            org = {'name': o.name, 'all': 0}
+            for source_type in Burial.SOURCE_TYPES:
+                org[source_type[0]] = Burial.objects.filter(
+                    q &
+                    Q(
+                      ugh=o,
+                      source_type=source_type[0],
+                      annulated=False,
+                     )
+                ).count()
+                total[source_type[0]] += org[source_type[0]]
+                org['all'] += org[source_type[0]]
+                total['all'] += org[source_type[0]]
+            orgs.append(org)
+
+        return {
+            'orgs':orgs,
+            'total': total,
+            'sort': sort,
+        }
+
+    def get_form(self):
+        return OrgCurrentStatsForm(data=self.request.GET or None)
+
+org_current_stats = OrgCurrentStatsView.as_view()
+
 class SupportView(RequestToFormMixin, FormView):
     form_class = SupportForm
     template_name = 'support.html'
