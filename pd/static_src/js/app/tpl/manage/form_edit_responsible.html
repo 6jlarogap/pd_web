@@ -125,19 +125,30 @@
 
 <div class="modal-footer">
   <span class="footer-info"
-        ng-hide="responsibleEditForm.$valid
-          && (editor.responsible_phones.length
+        ng-hide="
+          !(editor.isResponsibleEdited || editor.isAddressEdited || editor.isPhoneEdited)
+          && responsibleEditForm.$valid
+          && (
+            editor.responsible_phones.length
             || responsibleEditForm.responsible_login_phone.$viewValue
-            || responsibleEditAddressForm.addressEditorForm.country.$viewValue)">
+            || editor.responsible_address.country.name
+          )
+        ">
     Необходимо указать фамилию, адрес или телефон
   </span>
 
   <button class="btn btn-primary"
-          ng-disabled="!(responsibleEditForm.$valid
-            && (editor.responsible_phones.length
-              || responsibleEditForm.responsible_login_phone.$viewValue
-              || responsibleEditAddressForm.addressEditorForm.country.$viewValue)
-            )"
+          ng-disabled="
+            !(
+              !(editor.isResponsibleEdited || editor.isAddressEdited || editor.isPhoneEdited)
+              && responsibleEditForm.$valid
+              && (
+                editor.responsible_phones.length
+                || responsibleEditForm.responsible_login_phone.$viewValue
+                || editor.responsible_address.country.name
+              )
+            )
+          "
           ng-click="saveResponsibleEditForm(responsibleEditForm)">
     Сохранить
   </button>
