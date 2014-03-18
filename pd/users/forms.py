@@ -453,7 +453,7 @@ class SupportForm(forms.Form):
         if self.cleaned_data.get('callback'):
             email_text += u"\n\n%s\n%s %s" % (
                 _(u'ЗАКАЗАН ОБРАТНЫЙ ЗВОНОК'),
-                _(u'телефон:'),
+                _(u'телефон'),
                 self.cleaned_data['phone'],
             ) + get_mail_footer(self.request.user)
         headers = {}
