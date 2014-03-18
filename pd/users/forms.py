@@ -4,6 +4,7 @@ import re
 from django.conf import settings
 from django import forms
 from django.core.mail import EmailMessage
+from django.core.exceptions import ValidationError
 from django.contrib.auth.models import User
 from django.forms.models import inlineformset_factory, BaseInlineFormSet
 from django.utils.translation import ugettext_lazy as _
@@ -12,6 +13,7 @@ from django.db.models.query_utils import Q
 from geo.forms import LocationForm
 # from geo.models import DFiasAddrobj
 from pd.forms import ChildrenJSONMixin, LoggingFormMixin, OurReCaptchaField, StrippedStringsMixin
+from pd.models import validate_phone_as_number
 from burials.models import Cemetery, PlaceSize, Reason, Burial
 
 from users.models import Profile, ProfileLORU, Org, BankAccount, RegisterProfile, get_mail_footer
@@ -379,39 +381,87 @@ class OrgBurialStatsForm(forms.Form):
     status = forms.TypedChoiceField(required=False, label=_(u"Статус"), choices=EMPTY + Burial.STATUS_CHOICES)
 
 class SupportForm(forms.Form):
-    subject = forms.CharField(label=_(u'Тема (необязательно)'), max_length=100, required=False)
-    message = forms.CharField(label=_(u'Вопрос'), widget=forms.Textarea, required=True)
-    sender = forms.EmailField(label=_(u'Email для получения ответа'), required=True)
+    user_last_name = forms.CharField(label=_(u"Фамилия"), max_length=100, required=True)
+    user_first_name = forms.CharField(label=_(u"Имя"), max_length=100, required=False)
+    user_middle_name = forms.CharField(label=_(u"Отчество"), max_length=255, required=False)
+    subject = forms.CharField(label=_(u'Тема'), max_length=100, required=False)
+    message = forms.CharField(label=_(u'Вопрос'), widget=forms.Textarea, required=False)
+    phones = forms.CharField( label=_(u"Телефоны, по одному в строке"), widget=forms.Textarea(attrs={'rows': 3,}), required=False)
+    sender = forms.EmailField(label=_(u'Email для получения ответа'), required=False)
+    callback = forms.BooleanField(label=_(u"Заказать обратный звонок"), required=False)
     captcha = OurReCaptchaField(label='', required=True)
 
     def __init__(self, request, *args, **kwargs):
         super(SupportForm, self).__init__(*args, **kwargs)
         self.request = request
         self.save_user_email = False
+        self.save_org_phones = False
+        self.fio = ('user_last_name', 'user_first_name', 'user_middle_name', )
         if request.user.is_authenticated():
             del self.fields['captcha']
             self.initial['sender'] = request.user.email or request.user.profile.org.email or ''
             if not self.initial['sender']:
                 self.fields['sender'].label = _(u'Email для получения ответа (будет сохранен как Ваш контактный)')
                 self.save_user_email = True
+            self.initial['phones'] = request.user.profile.org.phones or ''
+            if not self.initial['phones']:
+                self.fields['phones'].label = _(u'Телефоны, по одному в строке. (Будут сохранены как телефоны Вашей организации)')
+                self.save_org_phones = True
+            for f in self.fio:
+                self.initial[f] = getattr(request.user.profile, f)
 
+    def clean(self):
+        if self.is_valid():
+            if self.cleaned_data.get('callback'):
+                for phone in self.cleaned_data.get('phones', '').split("\n"):
+                    try:
+                        validate_phone_as_number(phone.lstrip('+'))
+                    except ValidationError:
+                        raise forms.ValidationError(_(u"Не указан или неверен телефон для обратного звонка"))
+            elif not self.cleaned_data.get('message') or not self.cleaned_data.get('sender'):
+                raise forms.ValidationError(_(u"Если не требуется обратный звонок, то задайте вопрос и укажите Email"))
+        return self.cleaned_data
+        
     def save(self):
         if self.cleaned_data.get('subject'):
             email_subject = self.cleaned_data['subject']
         else:
             email_subject = _(u'Вопрос в поддержку')
-        email_from = self.cleaned_data['sender']
+        email_from = self.cleaned_data.get('sender')
         if self.save_user_email and email_from:
             self.request.user.email = email_from
             self.request.user.save()
-        email_text = self.cleaned_data['message'] + get_mail_footer(self.request.user)
+        org_phones = self.cleaned_data.get('phones')
+        if self.save_org_phones and org_phones:
+            self.request.user.profile.org.phones = org_phones
+            self.request.user.profile.org.save()
+        if self.request.user.is_authenticated():
+            changed_ = False
+            for f in self.fio:
+                if f in self.changed_data:
+                    changed_ = True
+                    break
+            if changed_:
+                self.request.user.profile.user_last_name = self.cleaned_data.get('user_last_name', '')
+                self.request.user.profile.user_first_name = self.cleaned_data.get('user_first_name', '')
+                self.request.user.profile.user_middle_name = self.cleaned_data.get('user_middle_name', '')
+                self.request.user.profile.save()
+        email_text = self.cleaned_data.get('message', '')
+        if self.cleaned_data.get('callback'):
+            email_text += u"\n\n%s\n%s\n%s" % (
+                _(u'ЗАКАЗАН ОБРАТНЫЙ ЗВОНОК'),
+                _(u'телефон(ы)'),
+                self.cleaned_data['phones'],
+            ) + get_mail_footer(self.request.user)
         headers = {}
         email_to = (settings.DEFAULT_FROM_EMAIL, )
         # Некоторые почтовые серверы подменяют поле From: письма
         # на тот почтовый ящик, через который шла аутентификация
         # при отправке письма (settings.EMAIL_HOST_USER)
         #
-        headers = {'Reply-To': email_from, }
+        headers = {}
+        if email_from:
+            headers['Reply-To'] = email_from
         EmailMessage(email_subject, email_text, email_from, email_to, headers=headers, ).send()
 
 class TestCaptchaForm(forms.Form):
