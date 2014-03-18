@@ -386,16 +386,20 @@ class SupportForm(forms.Form):
     user_middle_name = forms.CharField(label=_(u"Отчество"), max_length=255, required=False)
     subject = forms.CharField(label=_(u'Тема'), max_length=100, required=False)
     message = forms.CharField(label=_(u'Вопрос'), widget=forms.Textarea, required=False)
-    phones = forms.CharField( label=_(u"Телефоны, по одному в строке"), widget=forms.Textarea(attrs={'rows': 3,}), required=False)
     sender = forms.EmailField(label=_(u'Email для получения ответа'), required=False)
     callback = forms.BooleanField(label=_(u"Заказать обратный звонок"), required=False)
+    phone = forms.CharField(
+        label=_(u"Телефон"),
+        help_text=_(u'В международном формате: +код-страны-код-города-номер-телефона'),
+        required=False,
+    )
     captcha = OurReCaptchaField(label='', required=True)
 
     def __init__(self, request, *args, **kwargs):
         super(SupportForm, self).__init__(*args, **kwargs)
         self.request = request
         self.save_user_email = False
-        self.save_org_phones = False
+        self.save_org_phone = False
         self.fio = ('user_last_name', 'user_first_name', 'user_middle_name', )
         if request.user.is_authenticated():
             del self.fields['captcha']
@@ -403,21 +407,20 @@ class SupportForm(forms.Form):
             if not self.initial['sender']:
                 self.fields['sender'].label = _(u'Email для получения ответа (будет сохранен как Ваш контактный)')
                 self.save_user_email = True
-            self.initial['phones'] = request.user.profile.org.phones or ''
-            if not self.initial['phones']:
-                self.fields['phones'].label = _(u'Телефоны, по одному в строке. (Будут сохранены как телефоны Вашей организации)')
-                self.save_org_phones = True
+            self.initial['phone'] = request.user.profile.org.phones or ''
+            if not self.initial['phone']:
+                self.fields['phone'].label = _(u'Телефон (будет сохранен как телефон Вашей организации)')
+                self.save_org_phone = True
             for f in self.fio:
                 self.initial[f] = getattr(request.user.profile, f)
 
     def clean(self):
         if self.is_valid():
             if self.cleaned_data.get('callback'):
-                for phone in self.cleaned_data.get('phones', '').split("\n"):
-                    try:
-                        validate_phone_as_number(phone.lstrip('+'))
-                    except ValidationError:
-                        raise forms.ValidationError(_(u"Не указан или неверен телефон для обратного звонка"))
+                try:
+                    validate_phone_as_number(self.cleaned_data.get('phone', '').lstrip('+'))
+                except ValidationError:
+                    raise forms.ValidationError(_(u"Не указан или неверен телефон для обратного звонка"))
             elif not self.cleaned_data.get('message') or not self.cleaned_data.get('sender'):
                 raise forms.ValidationError(_(u"Если не требуется обратный звонок, то задайте вопрос и укажите Email"))
         return self.cleaned_data
@@ -431,9 +434,9 @@ class SupportForm(forms.Form):
         if self.save_user_email and email_from:
             self.request.user.email = email_from
             self.request.user.save()
-        org_phones = self.cleaned_data.get('phones')
-        if self.save_org_phones and org_phones:
-            self.request.user.profile.org.phones = org_phones
+        org_phone = self.cleaned_data.get('phone')
+        if self.save_org_phone and org_phone:
+            self.request.user.profile.org.phones = org_phone
             self.request.user.profile.org.save()
         if self.request.user.is_authenticated():
             changed_ = False
@@ -448,10 +451,10 @@ class SupportForm(forms.Form):
                 self.request.user.profile.save()
         email_text = self.cleaned_data.get('message', '')
         if self.cleaned_data.get('callback'):
-            email_text += u"\n\n%s\n%s\n%s" % (
+            email_text += u"\n\n%s\n%s %s" % (
                 _(u'ЗАКАЗАН ОБРАТНЫЙ ЗВОНОК'),
-                _(u'телефон(ы)'),
-                self.cleaned_data['phones'],
+                _(u'телефон:'),
+                self.cleaned_data['phone'],
             ) + get_mail_footer(self.request.user)
         headers = {}
         email_to = (settings.DEFAULT_FROM_EMAIL, )
