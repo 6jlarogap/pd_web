@@ -5,9 +5,12 @@ import decimal
 from django.conf import settings
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
+from django.contrib.contenttypes.models import ContentType
 
 from geo.models import DFiasAddrobj
 from pd.models import BaseModel, Files, GetLogsMixin, validate_gt0
+from logs.models import Log
+
 from pd.utils import DigitsValidator, LengthValidator, NotEmptyValidator
 
 
