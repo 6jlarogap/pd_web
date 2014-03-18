@@ -56,6 +56,7 @@ function CemeteryViewCtrl($scope, $http, $resource, $location,  $routeParams,
 	            $location.path('/manage/404');
                 $location.replace();
 		    }
+
 			$scope.cemetery = new Cemetery(result.cemetery);
 			$scope.cemetery.time_begin = new Date('0 '+ $scope.cemetery.time_begin);
 			$scope.cemetery.time_end = new Date('0 '+ $scope.cemetery.time_end);
@@ -76,12 +77,28 @@ function CemeteryViewCtrl($scope, $http, $resource, $location,  $routeParams,
 			if(!$scope.cemetery_address.street)
 				$scope.cemetery_address.street = {};
 
+      if (!result.address) {
+        return;
+      }
+
       $scope.markers = [];
       if (result.address.gps_x && result.address.gps_y) {
         $scope.markers.push([result.address.gps_x, result.address.gps_y]);
       } else {
-        pdYandex.geocode('Москва').then(function (point) {
-          $scope.markers.push(point);
+        var addressString = _.reduce($scope.cemetery_address, function (addrStr, addrComponent, key) {
+          if ('id' === key || !addrComponent) {
+            return addrStr;
+          }
+
+          if (_.has(addrComponent, 'name')) {
+            addrComponent = addrComponent.name;
+          }
+
+          return addrStr + (addrStr ? ', ' : '') + addrComponent;
+        }, '');
+
+        pdYandex.geocode(addressString).then(function (point) {
+          $scope.markers = [point];
         });
       }
 		});
