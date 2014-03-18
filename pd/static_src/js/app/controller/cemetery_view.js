@@ -1,7 +1,7 @@
 ﻿//'use strict';
 app.controller('CemeteryViewCtrl',
 function CemeteryViewCtrl($scope, $http, $resource, $location,  $routeParams, 
-						Cemetery, Area, AreaPurpose, Place, Phone, Address, ymapData, naturalService) {
+						Cemetery, Area, AreaPurpose, Place, Phone, Address, ymapData, naturalService, pdYandex) {
     "use strict";
     $scope.version_str = version_str;
 	var tplButtonEdit = '<a class="btn btn-small" ng-href="/manage/cemetery/'+$routeParams.cemetery_id+
@@ -76,6 +76,14 @@ function CemeteryViewCtrl($scope, $http, $resource, $location,  $routeParams,
 			if(!$scope.cemetery_address.street)
 				$scope.cemetery_address.street = {};
 
+      $scope.markers = [];
+      if (result.address.gps_x && result.address.gps_y) {
+        $scope.markers.push([result.address.gps_x, result.address.gps_y]);
+      } else {
+        pdYandex.geocode('Москва').then(function (point) {
+          $scope.markers.push(point);
+        });
+      }
 		});
 
 		Area.list({cemetery_id: $routeParams.cemetery_id}, function(result) {
