@@ -9,7 +9,7 @@ from django.utils.translation import ugettext as _
 
 from burials.models import Burial
 from geo.forms import LocationForm
-from orders.models import Product, Order, OrderItem, CatafalqueData, CoffinData, AddInfoData
+from orders.models import Product, Order, OrderItem, CatafalqueData, CoffinData, AddInfoData, ProductCategory
 from burials.forms import EMPTY
 from pd.forms import ChildrenJSONMixin
 from persons.forms import AlivePersonForm, PersonIDForm
@@ -20,6 +20,17 @@ class ProductForm(forms.ModelForm):
     class Meta:
         model = Product
         exclude = ['loru', ]
+
+    def __init__(self, *args, **kwargs):
+        super(ProductForm, self).__init__(*args, **kwargs)
+        if not self.instance or not self.instance.pk:
+            try:
+                category_default = ProductCategory.objects.get(
+                    name=_(u'Прочие товары и услуги'),
+                )
+                self.initial.update({'productcategory': category_default})
+            except ProductCategory.DoesNotExist:
+                pass
 
 class OrderForm(ChildrenJSONMixin, SafeDeleteMixin, forms.ModelForm):
 
@@ -189,7 +200,7 @@ class BaseOrderItemFormset(BaseInlineFormSet):
     #def save_new(self, form, commit=True):
         #return self.get_same_product(form) or super(BaseOrderItemFormset, self).save_new(form, commit)
 
-OrderItemFormset = inlineformset_factory(Order, OrderItem, form=OrderItemForm, formset=BaseOrderItemFormset, extra=0)
+OrderItemFormset = inlineformset_factory(Order, OrderItem, form=OrderItemForm, formset=BaseOrderItemFormset, extra=1)
 
 class CatafalqueForm(forms.ModelForm):
     class Meta:

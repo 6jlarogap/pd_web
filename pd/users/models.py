@@ -1,18 +1,60 @@
 # coding=utf-8
+import datetime
+import decimal
+
 from django.conf import settings
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
 
 from geo.models import DFiasAddrobj
-from pd.models import BaseModel, Files, GetLogsMixin
+from pd.models import BaseModel, Files, GetLogsMixin, validate_gt0
 from pd.utils import DigitsValidator, LengthValidator, NotEmptyValidator
 
 
-class Profile(models.Model):
+class CommonProfile(models.Model):
     user = models.OneToOneField('auth.User', null=True)
+    user_last_name = models.CharField(_(u"Фамилия"), max_length=255, null=True, blank=True)
     user_first_name = models.CharField(_(u"Имя"), max_length=255, null=True, blank=True)
     user_middle_name = models.CharField(_(u"Отчество"), max_length=255, null=True, blank=True)
-    user_last_name = models.CharField(_(u"Фамилия"), max_length=255, null=True, blank=True)
+
+    class Meta:
+        abstract = True
+
+    def __unicode__(self):
+        return self.user and (self.full_name() or self.user.username) or u'%s' % self.pk
+
+    def full_name(self):
+        name = ""
+        if self.user_last_name:
+            name = self.user_last_name
+            if self.user_first_name:
+                name = u"{0} {1}".format(name, self.user_first_name)
+                if self.user_middle_name:
+                    name = u"{0} {1}".format(name, self.user_middle_name)
+        if not name:
+            name = self.user.get_full_name()
+        return name
+
+    def last_name_initials(self):
+        """
+        Фамилия И.О.
+        """
+        name = ""
+        if self.user_last_name:
+            name = self.user_last_name
+            if self.user_first_name:
+                name = u"{0} {1}.".format(name, self.user_first_name[0])
+                if self.user_middle_name:
+                    name = u"{0}{1}.".format(name, self.user_middle_name[0])
+        return self.user and (name or self.user.username) or u'%s' % self.pk
+
+class CustomerProfile(CommonProfile):
+    pass
+
+class CustomerProfilePhoto(Files):
+    customerprofile = models.OneToOneField(CustomerProfile)
+
+class Profile(CommonProfile):
     org = models.ForeignKey('users.Org', null=True)
 
     is_agent = models.BooleanField(_(u"Агент"), default=False, blank=True)
@@ -25,9 +67,6 @@ class Profile(models.Model):
 
     lat = models.DecimalField(max_digits=30, decimal_places=27, blank=True, null=True)
     lng = models.DecimalField(max_digits=30, decimal_places=27, blank=True, null=True)
-
-    def __unicode__(self):
-        return self.user and (self.full_name() or self.user.username) or u'%s' % self.pk
 
     def is_loru(self):
         return self.org and self.org.type == Org.PROFILE_LORU
@@ -43,31 +82,6 @@ class Profile(models.Model):
     def can_create_burials(self):
         return self.is_ugh() or self.is_loru()
 
-    def full_name(self):
-        name = ""
-        if self.user_last_name and self.user_first_name:
-            name = u"{0} {1}".format(self.user_last_name, self.user_first_name)
-            if self.user_middle_name:
-                name = u"{0} {1}".format(name, self.user_middle_name)
-        if not name:
-            name = self.user.get_full_name()
-        return name
-
-    def last_name_initials(self):
-        """
-        Фамилия И.О.
-        """
-        name = ""
-        if self.user_last_name and self.user_first_name:
-            name = u"{0} {1}.".format(self.user_last_name, self.user_first_name[0])
-            if self.user_middle_name:
-                name = u"{0}{1}.".format(name, self.user_middle_name[0])
-        if not name:
-            name = self.user.last_name
-            if name and self.user.first_name:
-                name = u"{0} {1}.".format(name, self.user.first_name[0])
-        return self.user and (name or self.user.username) or u'%s' % self.pk
-
     def get_region(self):
         if self.region_fias:
             return DFiasAddrobj.objects.get(parentguid='', aoguid=self.region_fias)
@@ -76,6 +90,37 @@ class Profile(models.Model):
         if self.lat and self.lng:
             return ','.join([self.lat, self.lng])
         return ''
+
+def is_cabinet_user(user):
+    try:
+        user.customerprofile
+        return True
+    except CustomerProfile.DoesNotExist:
+        return False
+    
+def get_mail_footer(user):
+    footer = ''
+    if user.is_authenticated():
+        is_customer = is_cabinet_user(user)
+        pr = user.customerprofile if is_customer else user.profile
+        footer = _(     u'\n\n'
+                        u'Пользователь: %s %s %s\n'
+                        u'Email: %s\n'
+                  ) % (
+                        user.username,
+                        '/' if pr.full_name() else '',
+                        pr.full_name(),
+                        user.email,
+                       )
+        if not is_customer:
+            footer += _(    u'\n\n'
+                            u'Организация: %s\n'
+                            u'Email организации: %s\n'
+                        ) % (
+                                pr.org,
+                                pr.org and pr.org.email,
+                            )
+    return footer
 
 class Org(GetLogsMixin, BaseModel):
     NUM_EMPTY = 'empty'
@@ -129,6 +174,12 @@ class Org(GetLogsMixin, BaseModel):
                                     default=True)
     # название поля не заканчивается на date, чтоб не угодить под специфический datePicker widget для дат:
     plan_date_days_before = models.PositiveIntegerField(_(u"Кол-во дней для ввода плановой даты захоронения в прошлом"), default=0)
+    max_graves_count = models.PositiveIntegerField(_(u"Максимальное число могил в месте"), default=5,
+                                validators=[validate_gt0])
+    worktime = models.CharField(_(u"Время работы (ЧЧ:ММ - ЧЧ:ММ)"), max_length=255, default='', blank=True)
+    site = models.URLField(_(u"Сайт"), default='', blank=True)
+    publish_cost = models.DecimalField(_(u"Стоимость добавления продукта"), max_digits=20, decimal_places=2, default='0.00')
+    currency = models.ForeignKey('billing.Currency', verbose_name=_(u"Валюта"), default=1)
 
     class Meta:
         verbose_name = _(u'Организация')
@@ -142,6 +193,30 @@ class Org(GetLogsMixin, BaseModel):
 
     def get_loru_list(self):
         return [ul.loru for ul in self.loru_list.all()]
+
+    def create_wallet_rate(self, currency=None):
+        """
+        Создать кошелек и тарифы (тарифы -- только для ОМС) для организации
+        """
+        if not currency:
+            Currency = models.get_model('billing', 'Currency')
+            currency = Currency.objects.get(code='RUR')
+        Wallet = models.get_model('billing', 'Wallet')
+        wallet, created = Wallet.objects.get_or_create(
+            org=self,
+            currency=currency,
+        )
+        if self.type == self.PROFILE_UGH:
+            Rate = models.get_model('billing', 'Rate')
+            for action in (Rate.RATE_ACTION_PUBLISH, Rate.RATE_ACTION_UPDATE, ):
+                rate, created = Rate.objects.get_or_create(
+                    wallet=wallet,
+                    action=action,
+                    defaults = dict(
+                        date_from=datetime.date.today(),
+                        rate=decimal.Decimal('0.00'),
+                    )
+                )
 
     @classmethod
     def get_supervisor(cls):
@@ -167,6 +242,28 @@ class Org(GetLogsMixin, BaseModel):
         except AttributeError:
             pass
         return email
+
+    @classmethod
+    def get_add_pay_recipient(cls):
+        """
+        Возвращает организацию-получателя (и распределителя ;) доходов от рекламы
+        """
+        result = None
+        try:
+            return cls.objects.filter(inn=settings.ORG_AD_PAY_RECIPIENT['inn'])[0]
+        except IndexError:
+            return None
+
+    @classmethod
+    def get_pd_fund(cls):
+        """
+        Возвращает организацию-получателя (и распределителя ;) доходов от рекламы
+        """
+        result = None
+        try:
+            return cls.objects.filter(inn=settings.ORG_PD_FUND['inn'])[0]
+        except IndexError:
+            return None
 
 class BankAccount(models.Model):
     """

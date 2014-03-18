@@ -1,0 +1,43 @@
+<tabset>
+  <tab heading="Кладбище">
+    <form name="cemeteryEditForm">
+      <div class="modal-body">
+        <div ng-include src="'/static/js/app/tpl/manage/form_edit_cemetery_main.html'+version_str"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary" ng-disabled="is_editor_disabled(cemeteryEditForm)" ng-click="saveEditForm()">
+          Сохранить
+        </button>
+        <button class="btn cancel" ng-click="closeEditForm()">Отменить</button>
+      </div>
+    </form>
+  </tab>
+  <tab heading="Адрес">
+    <form name="cemeteryaddrEditForm" novalidate>
+      <div class="modal-body">
+        <address data="editor.cemetery_address" save_action="saveEditForm"></address>
+      </div>
+      <div class="modal-footer">
+        <div class="badge pull-left" ng-show="cemeteryEditForm.$invalid">Исправьте ошибке в форме кладбища</div>
+        <button class="btn btn-primary" ng-disabled="is_editor_disabled(cemeteryEditForm)" ng-click="saveEditForm()">
+          Сохранить
+        </button>
+        <button class="btn cancel" ng-click="closeEditForm()">Отменить</button>
+      </div>
+    </form>
+  </tab>
+  <tab heading="Телефоны">
+    <form name="cemeteryPhoneEditForm">
+      <div class="modal-body">
+        <phones phones="editor.phones"></phones>
+      </div>
+      <div class="modal-footer">
+        <div class="badge pull-left" ng-show="cemeteryEditForm.$invalid">Исправьте ошибке в форме кладбища</div>
+        <button id="edit_save_btn" class="btn btn-primary" ng-disabled="is_editor_disabled(cemeteryEditForm)"
+                ng-click="saveEditForm()">Сохранить
+        </button>
+        <button class="btn cancel" ng-click="closeEditForm()">Отменить</button>
+      </div>
+    </form>
+  </tab>
+</tabset>

@@ -9,12 +9,15 @@ urlpatterns = patterns('users.views',
 
     url(r'^registration-old/$', 'registration_old', name='registration_old'),
     
+    url(r'^testcaptcha/$', 'testcaptcha', name='testcaptcha'),
+
     url(r'^register/$', 'register', name='register'),
     url(r'^register/(?P<key>[A-Za-z0-9]+)/activation/$', 'register_activation',
         name='register_activation'),
         
     url(r'^support/$', 'support', name='support'),
     url(r'^support/thanks/$', 'support_thanks', name='support_thanks'),
+    url(r'^tutorial$', 'tutorial', name='tutorial'),
     
     url(r'^registrants/$', 'registrants', name='registrants'),
     url(r'^registrant/(?P<pk>\d+)/delete/$', 'registrant_delete', name='registrant_delete'),
@@ -22,6 +25,7 @@ urlpatterns = patterns('users.views',
     url(r'^registrant/(?P<pk>\d+)/decline/$', 'registrant_decline', name='registrant_decline'),
     
     url(r'^orgburialstats/', 'org_burial_stats', name='org_burial_stats'),
+    url(r'^currentstats/', 'org_current_stats', name='org_current_stats'),
         
     url(r'^profile/', 'profile', name='profile'),
     url(r'^loruregistry/', 'loru_registry', name='loru_registry'),

@@ -341,6 +341,7 @@ def do_import_burials_minsk(csv_fileobj, cemetery, user):
             ugh=ugh,
             status=Burial.STATUS_CLOSED,
             changed_by=user,
+            flag_no_applicant_doc_required = True,
         )
         
         request = HttpRequest()
@@ -349,19 +350,20 @@ def do_import_burials_minsk(csv_fileobj, cemetery, user):
             write_log(request, burial, row[comment])
         write_log(request, burial, _(u"Импорт"))
         
-        files = row[file_names].split('\n')
-        fcomments = row[file_comments].split('\t')
-        for i, f in enumerate(files):
-            f = f.replace('ofiles/','bfiles/%s/' % burial.pk)
-            try:
-                fcomment = fcomments[i] if fcomments[i] else _(u'Без комментария')
-            except IndexError:
-                fcomment = _(u'Без комментария')
-            BurialFiles.objects.create(
-                burial=burial,
-                bfile=f,
-                comment=fcomment,
-            )
+        if row[file_names]:
+            files = row[file_names].split('\n')
+            fcomments = row[file_comments].split('\t')
+            for i, f in enumerate(files):
+                f = f.replace('ofiles/','bfiles/%s/' % burial.pk)
+                try:
+                    fcomment = fcomments[i] if fcomments[i] else _(u'Без комментария')
+                except IndexError:
+                    fcomment = _(u'Без комментария')
+                BurialFiles.objects.create(
+                    burial=burial,
+                    bfile=f,
+                    comment=fcomment,
+                )
         
     # Будут несколько проходов по считанному файлу импорта, надо бы сохранить
     tmp_file = os.path.join(settings.MEDIA_ROOT, 'csv_minsk.tmp')
