@@ -455,7 +455,8 @@ class SupportForm(forms.Form):
                 _(u'ЗАКАЗАН ОБРАТНЫЙ ЗВОНОК'),
                 _(u'телефон'),
                 self.cleaned_data['phone'],
-            ) + get_mail_footer(self.request.user)
+            )
+        email_text += get_mail_footer(self.request.user)
         headers = {}
         email_to = (settings.DEFAULT_FROM_EMAIL, )
         # Некоторые почтовые серверы подменяют поле From: письма
