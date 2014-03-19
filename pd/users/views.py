@@ -356,16 +356,18 @@ class ApiFeedBack(CheckRecaptchaMixin, APIView):
     def post(self, request):
         status_code = 400
         recaptcha_data = request.DATA.get('recaptchaData')
-        if not request.user.is_authenticated():
-            if not recaptcha_data or \
-               not self.check_recaptcha(self.request, recaptcha_data['challenge'], recaptcha_data['response']):
-                return Response(data={}, status=status_code)
-        email_from = request.DATA.get('email')
         try:
-            validate_email(email_from)
-        except ValidationError:
-            pass
-        else:
+            if not request.user.is_authenticated():
+                if not recaptcha_data:
+                    raise ServiceException('No captcha for non authorized user')
+                print 'here'
+                if not self.check_recaptcha(self.request, recaptcha_data['challenge'], recaptcha_data['response']):
+                    raise ServiceException('Captcha ckeck failed for non authorized user')
+            email_from = request.DATA.get('email')
+            try:
+                validate_email(email_from)
+            except ValidationError:
+                raise ServiceException('Invalid email')
             email_subject = request.DATA.get('subject')
             if not email_subject or not email_subject.strip():
                 email_subject = _(u'Вопрос в поддержку')
@@ -376,8 +378,16 @@ class ApiFeedBack(CheckRecaptchaMixin, APIView):
             email_text = request.DATA.get('text') + get_mail_footer(request.user)
             headers = {'Reply-To': email_from, }
             EmailMessage(email_subject, email_text, email_from, email_to, headers=headers, ).send()
+            data = { 'status': 'success',
+                     'message': '',
+                   }
             status_code = 200
-        return Response(data={}, status=status_code)
+        except ServiceException as excpt:
+            data = { 'status': 'error',
+                     'message': excpt.message,
+                   }
+            status_code = 400
+        return Response(data=data, status=status_code)
 
 api_feedback = ApiFeedBack.as_view()
 
