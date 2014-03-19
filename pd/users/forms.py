@@ -406,7 +406,7 @@ class SupportForm(forms.Form):
             self.initial['sender'] = request.user.email or request.user.profile.org.email or ''
             if not self.initial['sender']:
                 self.fields['sender'].label = _(u'Email для получения ответа (будет сохранен как Ваш контактный)')
-                self.save_user_email = True
+                self.save_user_email = not request.user.email
             self.initial['phone'] = re.split(r'\s+', request.user.profile.org.phones or '')[0]
             if not self.initial['phone']:
                 self.fields['phone'].label = _(u'Телефон (будет сохранен как телефон Вашей организации)')
@@ -466,7 +466,6 @@ class SupportForm(forms.Form):
                 self.cleaned_data['phone'],
             )
         email_text += get_mail_footer(self.request.user)
-        headers = {}
         email_to = (settings.DEFAULT_FROM_EMAIL, )
         # Некоторые почтовые серверы подменяют поле From: письма
         # на тот почтовый ящик, через который шла аутентификация

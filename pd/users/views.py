@@ -362,10 +362,12 @@ class ApiFeedBack(CheckRecaptchaMixin, APIView):
                     raise ServiceException(_(u'Не задана captcha'))
                 if not self.check_recaptcha(self.request, recaptcha_data['challenge'], recaptcha_data['response']):
                     raise ServiceException(_(u'Ошибка проверки captcha'))
-            email_from = request.DATA.get('email')
+
+            email_from = request.DATA.get('email', '').strip()
             callback = request.DATA.get('requestBackCall')
             phone = request.DATA.get('phoneNumber')
             email_text = request.DATA.get('text', '').strip()
+
             if callback:
                 try:
                     validate_phone_as_number(phone.lstrip('+'))
@@ -393,8 +395,8 @@ class ApiFeedBack(CheckRecaptchaMixin, APIView):
             
             if request.user.is_authenticated():
                 if not request.user.email and email_from:
-                    self.request.user.email = email_from
-                    self.request.user.save()
+                    request.user.email = email_from
+                    request.user.save()
 
                 if is_cabinet_user(request.user):
                     profile = request.user.customerprofile
@@ -412,14 +414,28 @@ class ApiFeedBack(CheckRecaptchaMixin, APIView):
                     profile.user_middle_name = user_middle_name
                     profile.save()
 
-                if  not request.user.email:
+                if not request.user.email and email_from:
                     request.user.email = email_from
                     request.user.save()
 
-            email_text = request.DATA.get('text') + get_mail_footer(request.user)
+                email_text += u"\n----------\n\n%s: %s %s %s" % (
+                                _(u'Запрос от'),
+                                user_last_name,
+                                user_first_name,
+                                user_middle_name,
+                            )
+            if callback:
+                email_text += u"\n\n%s\n%s %s" % (
+                    _(u'ЗАКАЗАН ОБРАТНЫЙ ЗВОНОК'),
+                    _(u'телефон'),
+                    phone,
+                )
+            email_text += get_mail_footer(request.user)
 
             email_to = (settings.DEFAULT_FROM_EMAIL, )
-            headers = {'Reply-To': email_from, }
+            headers = {}
+            if email_from:
+                headers['Reply-To'] = email_from
             EmailMessage(email_subject, email_text, email_from, email_to, headers=headers, ).send()
             data = { 'status': 'success',
                      'message': '',
