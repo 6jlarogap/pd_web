@@ -450,6 +450,12 @@ class SupportForm(forms.Form):
                 self.request.user.profile.user_middle_name = self.cleaned_data.get('user_middle_name', '')
                 self.request.user.profile.save()
         email_text = self.cleaned_data.get('message', '')
+        email_text += u"\n----------\n\n%s: %s %s %s" % (
+                        _(u'Запрос от'),
+                        self.cleaned_data.get('user_last_name', ''),
+                        self.cleaned_data.get('user_first_name', ''),
+                        self.cleaned_data.get('user_middle_name', ''),
+                      )
         if self.cleaned_data.get('callback'):
             email_text += u"\n\n%s\n%s %s" % (
                 _(u'ЗАКАЗАН ОБРАТНЫЙ ЗВОНОК'),
