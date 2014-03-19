@@ -407,7 +407,7 @@ class SupportForm(forms.Form):
             if not self.initial['sender']:
                 self.fields['sender'].label = _(u'Email для получения ответа (будет сохранен как Ваш контактный)')
                 self.save_user_email = True
-            self.initial['phone'] = request.user.profile.org.phones or ''
+            self.initial['phone'] = re.split(r'\s+', request.user.profile.org.phones or '')[0]
             if not self.initial['phone']:
                 self.fields['phone'].label = _(u'Телефон (будет сохранен как телефон Вашей организации)')
                 self.save_org_phone = True
