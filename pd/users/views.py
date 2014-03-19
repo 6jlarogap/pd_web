@@ -365,7 +365,7 @@ class ApiFeedBack(CheckRecaptchaMixin, APIView):
 
             email_from = request.DATA.get('email', '').strip()
             callback = request.DATA.get('requestBackCall')
-            phone = request.DATA.get('phoneNumber')
+            phone = request.DATA.get('phoneNumber', '').strip()
             email_text = request.DATA.get('text', '').strip()
 
             if callback:
@@ -389,8 +389,8 @@ class ApiFeedBack(CheckRecaptchaMixin, APIView):
             if not user_first_name and user_middle_name:
                 raise ServiceException(_(u"Не указано имя при указанном отчестве"))
 
-            email_subject = request.DATA.get('subject')
-            if not email_subject or not email_subject.strip():
+            email_subject = request.DATA.get('subject', '')
+            if not email_subject.strip():
                 email_subject = _(u'Вопрос в поддержку')
             
             if request.user.is_authenticated():
