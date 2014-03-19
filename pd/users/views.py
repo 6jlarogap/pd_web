@@ -360,17 +360,46 @@ class ApiFeedBack(CheckRecaptchaMixin, APIView):
             if not request.user.is_authenticated():
                 if not recaptcha_data:
                     raise ServiceException('No captcha for non authorized user')
-                print 'here'
                 if not self.check_recaptcha(self.request, recaptcha_data['challenge'], recaptcha_data['response']):
                     raise ServiceException('Captcha ckeck failed for non authorized user')
             email_from = request.DATA.get('email')
-            try:
-                validate_email(email_from)
-            except ValidationError:
-                raise ServiceException('Invalid email')
+            callback = request.DATA.get('requestBackCall')
+            phone = request.DATA.get('phoneNumber')
+            if callback:
+                try:
+                    validate_phone_as_number(phone.lstrip('+'))
+                except ValidationError:
+                    raise ServiceException('Invalid phone number (callback requested)')
+            else:
+                try:
+                    validate_email(email_from)
+                except ValidationError:
+                    raise ServiceException('Invalid email (no callback requested)')
+
+            user_last_name = request.DATA.get('lastName', '')
+            if not user_last_name:
+                raise ServiceException('lastName is empty ')
+            user_first_name = request.DATA.get('firstName', '')
+            user_middle_name = request.DATA.get('middleName', '')
+
             email_subject = request.DATA.get('subject')
             if not email_subject or not email_subject.strip():
                 email_subject = _(u'Вопрос в поддержку')
+            
+            if request.user.is_authenticated():
+                if not request.user.email and email_from:
+                    self.request.user.email = email_from
+                    self.request.user.save()
+                profile = request.user.customerprofile if is_cabinet_user(request.user) \
+                          else request.user.profile
+                if profile.user_last_name != user_last_name or \
+                   profile.user_first_name != user_first_name or \
+                   profile.user_middle_name != user_middle_name:
+                    profile.user_last_name = user_last_name
+                    profile.user_first_name = user_first_name
+                    profile.user_middle_name = user_middle_name
+                    profile.save()
+
             email_to = (settings.DEFAULT_FROM_EMAIL, )
             if request.user.is_authenticated() and not request.user.email:
                 request.user.email = email_from

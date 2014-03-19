@@ -423,6 +423,8 @@ class SupportForm(forms.Form):
                     raise forms.ValidationError(_(u"Не указан или неверен телефон для обратного звонка"))
             elif not self.cleaned_data.get('message') or not self.cleaned_data.get('sender'):
                 raise forms.ValidationError(_(u"Если не требуется обратный звонок, то задайте вопрос и укажите Email"))
+            if not self.cleaned_data.get('user_first_name') and self.cleaned_data.get('user_middle_name'):
+                raise forms.ValidationError(_(u"Не указано имя при указанном отчестве"))
         return self.cleaned_data
         
     def save(self):
