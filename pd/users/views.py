@@ -359,30 +359,33 @@ class ApiFeedBack(CheckRecaptchaMixin, APIView):
         try:
             if not request.user.is_authenticated():
                 if not recaptcha_data:
-                    raise ServiceException('No captcha for non authorized user')
+                    raise ServiceException(_(u'Не задана captcha'))
                 if not self.check_recaptcha(self.request, recaptcha_data['challenge'], recaptcha_data['response']):
-                    raise ServiceException('Captcha ckeck failed for non authorized user')
+                    raise ServiceException(_(u'Ошибка проверки captcha'))
             email_from = request.DATA.get('email')
             callback = request.DATA.get('requestBackCall')
             phone = request.DATA.get('phoneNumber')
+            email_text = request.DATA.get('text', '').strip()
             if callback:
                 try:
                     validate_phone_as_number(phone.lstrip('+'))
                 except ValidationError:
-                    raise ServiceException('Invalid phone number (callback requested)')
+                    raise ServiceException(_(u"Не указан или неверен телефон для обратного звонка"))
             else:
                 try:
                     validate_email(email_from)
                 except ValidationError:
-                    raise ServiceException('Invalid email (no callback requested)')
-
+                    raise ServiceException(_(u"Неверный адрес электронной почты"))
+                if not email_text:
+                    raise ServiceException(_(u"Если не требуется обратный звонок, то задайте вопрос"))
+                
             user_last_name = request.DATA.get('lastName', '').strip()
             if not user_last_name:
-                raise ServiceException('lastName is empty ')
+                raise ServiceException(_(u"Не задана фамилия"))
             user_first_name = request.DATA.get('firstName', '').strip()
             user_middle_name = request.DATA.get('middleName', '').strip()
             if not user_first_name and user_middle_name:
-                raise ServiceException('firstName is empty and middleName is not empty')
+                raise ServiceException(_(u"Не указано имя при указанном отчестве"))
 
             email_subject = request.DATA.get('subject')
             if not email_subject or not email_subject.strip():
