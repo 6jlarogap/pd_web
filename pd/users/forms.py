@@ -435,7 +435,7 @@ class SupportForm(forms.Form):
             self.request.user.email = email_from
             self.request.user.save()
         org_phone = self.cleaned_data.get('phone')
-        if self.save_org_phone and org_phone:
+        if self.save_org_phone and org_phone and self.cleaned_data.get('callback'):
             self.request.user.profile.org.phones = org_phone
             self.request.user.profile.org.save()
         if self.request.user.is_authenticated():
