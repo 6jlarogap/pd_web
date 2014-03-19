@@ -414,16 +414,12 @@ class ApiFeedBack(CheckRecaptchaMixin, APIView):
                     profile.user_middle_name = user_middle_name
                     profile.save()
 
-                if not request.user.email and email_from:
-                    request.user.email = email_from
-                    request.user.save()
-
-                email_text += u"\n----------\n\n%s: %s %s %s" % (
-                                _(u'Запрос от'),
-                                user_last_name,
-                                user_first_name,
-                                user_middle_name,
-                            )
+            email_text += u"\n----------\n\n%s: %s %s %s" % (
+                            _(u'Запрос от'),
+                            user_last_name,
+                            user_first_name,
+                            user_middle_name,
+                        )
             if callback:
                 email_text += u"\n\n%s\n%s %s" % (
                     _(u'ЗАКАЗАН ОБРАТНЫЙ ЗВОНОК'),
