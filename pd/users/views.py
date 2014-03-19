@@ -376,11 +376,13 @@ class ApiFeedBack(CheckRecaptchaMixin, APIView):
                 except ValidationError:
                     raise ServiceException('Invalid email (no callback requested)')
 
-            user_last_name = request.DATA.get('lastName', '')
+            user_last_name = request.DATA.get('lastName', '').strip()
             if not user_last_name:
                 raise ServiceException('lastName is empty ')
-            user_first_name = request.DATA.get('firstName', '')
-            user_middle_name = request.DATA.get('middleName', '')
+            user_first_name = request.DATA.get('firstName', '').strip()
+            user_middle_name = request.DATA.get('middleName', '').strip()
+            if not user_first_name and user_middle_name:
+                raise ServiceException('firstName is empty and middleName is not empty')
 
             email_subject = request.DATA.get('subject')
             if not email_subject or not email_subject.strip():
@@ -390,8 +392,15 @@ class ApiFeedBack(CheckRecaptchaMixin, APIView):
                 if not request.user.email and email_from:
                     self.request.user.email = email_from
                     self.request.user.save()
-                profile = request.user.customerprofile if is_cabinet_user(request.user) \
-                          else request.user.profile
+
+                if is_cabinet_user(request.user):
+                    profile = request.user.customerprofile
+                else:
+                    profile = request.user.profile
+                    if callback and not request.user.profile.org.phones:
+                        request.user.profile.org.phones = phone
+                        request.user.profile.org.save()
+
                 if profile.user_last_name != user_last_name or \
                    profile.user_first_name != user_first_name or \
                    profile.user_middle_name != user_middle_name:
@@ -400,11 +409,13 @@ class ApiFeedBack(CheckRecaptchaMixin, APIView):
                     profile.user_middle_name = user_middle_name
                     profile.save()
 
-            email_to = (settings.DEFAULT_FROM_EMAIL, )
-            if request.user.is_authenticated() and not request.user.email:
-                request.user.email = email_from
-                request.user.save()
+                if  not request.user.email:
+                    request.user.email = email_from
+                    request.user.save()
+
             email_text = request.DATA.get('text') + get_mail_footer(request.user)
+
+            email_to = (settings.DEFAULT_FROM_EMAIL, )
             headers = {'Reply-To': email_from, }
             EmailMessage(email_subject, email_text, email_from, email_to, headers=headers, ).send()
             data = { 'status': 'success',
