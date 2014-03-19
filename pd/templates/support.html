@@ -7,7 +7,7 @@
     <p></p>
     <h4>{% trans "Задайте Ваш вопрос, мы постараемся на него ответить." %}</h4>
     <p></p>
-    <form action="" method="POST">
+    <form action="" id="callback_form" method="POST">
         {% csrf_token %}
         {{ form.as_p }}
         <p>
