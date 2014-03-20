@@ -659,6 +659,11 @@ class ProductsViewSet(CustomerDataMixin, viewsets.ModelViewSet):
                 return Product.objects.none()
             qs &= Q(loru=loru)
 
+        qs  &= Q(
+            productstatus__status__in=\
+                (ProductHistory.PRODUCT_OPERATION_PUBLISH, ProductHistory.PRODUCT_OPERATION_UPDATE, )
+        )
+        
         if self.request.GET.get('filter[price_from]'):
             qs &= Q(price__gte=self.request.GET.get('filter[price_from]'))
         if self.request.GET.get('filter[price_to]'):
@@ -666,10 +671,11 @@ class ProductsViewSet(CustomerDataMixin, viewsets.ModelViewSet):
         if self.request.GET.get('filter[category]'):
             qs &= Q(productcategory__pk=self.request.GET.get('filter[category]'))
         
+        filter = Product.objects.filter(qs).distinct()
+
         offset = self.request.GET.get('offset') and int(self.request.GET.get('offset'))
         limit = self.request.GET.get('limit') and int(self.request.GET.get('limit'))
-        
-        filter = Product.objects.filter(qs)
+
         if offset and limit:
             filter = filter[offset:offset+limit]
         elif offset:

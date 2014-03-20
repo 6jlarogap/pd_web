@@ -16,7 +16,7 @@ from django.core.mail import send_mail, EmailMessage
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
 from django.core.urlresolvers import reverse
-from django.db import transaction
+from django.db import transaction, connection
 from django.db.models.query_utils import Q
 from django.db.models.aggregates import Count
 from django.http import HttpResponse, Http404
@@ -44,9 +44,9 @@ from users.forms import UserAddForm, RegisterForm, LoruFormset, ProfileForm, Use
 from users.models import Profile, Org, RegisterProfile, ProfileLORU, CustomerProfile, get_mail_footer, is_cabinet_user
 from pd.models import validate_phone_as_number
 from persons.models import AlivePerson
-from burials.models import Burial, Place
+from burials.models import Cemetery, Area, Burial, Place
 from billing.models import Wallet, Rate
-from orders.models import ProductStatus, ProductHistory
+from orders.models import Product, ProductStatus, ProductHistory
 from pd.views import PaginateListView, RequestToFormMixin, FormInvalidMixin, get_front_end_url, ServiceException
 
 from sms_service import sms24x7
@@ -356,28 +356,93 @@ class ApiFeedBack(CheckRecaptchaMixin, APIView):
     def post(self, request):
         status_code = 400
         recaptcha_data = request.DATA.get('recaptchaData')
-        if not request.user.is_authenticated():
-            if not recaptcha_data or \
-               not self.check_recaptcha(self.request, recaptcha_data['challenge'], recaptcha_data['response']):
-                return Response(data={}, status=status_code)
-        email_from = request.DATA.get('email')
         try:
-            validate_email(email_from)
-        except ValidationError:
-            pass
-        else:
-            email_subject = request.DATA.get('subject')
-            if not email_subject or not email_subject.strip():
+            if not request.user.is_authenticated():
+                if not recaptcha_data:
+                    raise ServiceException(_(u'Не задана captcha'))
+                if not self.check_recaptcha(self.request, recaptcha_data['challenge'], recaptcha_data['response']):
+                    raise ServiceException(_(u'Ошибка проверки captcha'))
+
+            email_from = request.DATA.get('email', '').strip()
+            callback = request.DATA.get('requestBackCall')
+            phone = request.DATA.get('phoneNumber', '').strip()
+            email_text = request.DATA.get('text', '').strip()
+
+            if callback:
+                try:
+                    validate_phone_as_number(phone.lstrip('+'))
+                except ValidationError:
+                    raise ServiceException(_(u"Не указан или неверен телефон для обратного звонка"))
+            else:
+                try:
+                    validate_email(email_from)
+                except ValidationError:
+                    raise ServiceException(_(u"Неверный адрес электронной почты"))
+                if not email_text:
+                    raise ServiceException(_(u"Если не требуется обратный звонок, то задайте вопрос"))
+                
+            user_last_name = request.DATA.get('lastName', '').strip()
+            if not user_last_name:
+                raise ServiceException(_(u"Не задана фамилия"))
+            user_first_name = request.DATA.get('firstName', '').strip()
+            user_middle_name = request.DATA.get('middleName', '').strip()
+            if not user_first_name and user_middle_name:
+                raise ServiceException(_(u"Не указано имя при указанном отчестве"))
+
+            email_subject = request.DATA.get('subject', '')
+            if not email_subject.strip():
                 email_subject = _(u'Вопрос в поддержку')
+            
+            if request.user.is_authenticated():
+                if not request.user.email and email_from:
+                    request.user.email = email_from
+                    request.user.save()
+
+                if is_cabinet_user(request.user):
+                    profile = request.user.customerprofile
+                else:
+                    profile = request.user.profile
+                    if callback and not request.user.profile.org.phones:
+                        request.user.profile.org.phones = phone
+                        request.user.profile.org.save()
+
+                if profile.user_last_name != user_last_name or \
+                   profile.user_first_name != user_first_name or \
+                   profile.user_middle_name != user_middle_name:
+                    profile.user_last_name = user_last_name
+                    profile.user_first_name = user_first_name
+                    profile.user_middle_name = user_middle_name
+                    profile.save()
+
+            email_text += u"\n----------\n\n%s: %s %s %s" % (
+                            _(u'Запрос от'),
+                            user_last_name,
+                            user_first_name,
+                            user_middle_name,
+                        )
+            if callback:
+                email_text += u"\n\n%s\n%s %s" % (
+                    _(u'ЗАКАЗАН ОБРАТНЫЙ ЗВОНОК'),
+                    _(u'телефон'),
+                    phone,
+                )
+            email_text += get_mail_footer(request.user)
+
             email_to = (settings.DEFAULT_FROM_EMAIL, )
-            if request.user.is_authenticated() and not request.user.email:
-                request.user.email = email_from
-                request.user.save()
-            email_text = request.DATA.get('text') + get_mail_footer(request.user)
-            headers = {'Reply-To': email_from, }
+            headers = {}
+            if email_from:
+                headers['Reply-To'] = email_from
             EmailMessage(email_subject, email_text, email_from, email_to, headers=headers, ).send()
+            data = { 'status': 'success',
+                     'message': '',
+                   }
             status_code = 200
-        return Response(data={}, status=status_code)
+        except ServiceException as excpt:
+            data = { 'status': 'error',
+                     'message': excpt.message,
+                   }
+            status_code = 400
+        return Response(data=data, status=status_code)
 
 api_feedback = ApiFeedBack.as_view()
 
@@ -484,11 +549,13 @@ class LogoutView(View):
         write_log(request, request.user, _(u'Выход из системы'))
         logout(request)
         if request.GET.get("redirectUrl"):
-            return redirect(request.GET.get("redirectUrl"))
+            response = redirect(request.GET.get("redirectUrl"))
         elif settings.REDIRECT_LOGIN_TO_FRONT_END:
-            return redirect(get_front_end_url(request) + '#/signout')
+            response = redirect(get_front_end_url(request) + '#/signout')
+            response.delete_cookie('pdsession')
         else:
-            return redirect('/')
+            response = redirect('/')
+        return response
 
 ulogout = LogoutView.as_view()
 
@@ -1118,6 +1185,104 @@ class OrgBurialStatsView(SupervisorRequiredMixin, TemplateView):
 
 org_burial_stats = OrgBurialStatsView.as_view()
 
+class OrgCurrentStatsView(SupervisorRequiredMixin, TemplateView):
+    template_name = 'org_current_stats.html'
+
+    def get_context_data(self, **kwargs):
+        sort = self.request.GET.get('sort', 'org')
+        SORT_FIELDS = {
+            'org': 'name',
+            '-org': '-name',
+            'city': 'off_address__city',
+            '-city': '-off_address__city',
+       }
+        s = SORT_FIELDS[sort]
+        if not isinstance(s, list):
+            s = [s]
+
+        orgs = []
+        total={}
+        for source_type in Burial.SOURCE_TYPES:
+            total[source_type[0]] = 0
+        total['oms_count'] = total['cemeteries_count'] = \
+        total['areas_count'] = total['places_count'] = \
+        total['burials_count'] = total['places_cabinet_count'] = 0
+        q_published = Q(
+            productstatus__status__in=\
+            (ProductHistory.PRODUCT_OPERATION_PUBLISH, ProductHistory.PRODUCT_OPERATION_UPDATE, )
+        )
+        for o in Org.objects.filter(type=Org.PROFILE_UGH).order_by(*s):
+            total['oms_count'] += 1
+            org = {'name': o.name}
+            org['city'] = o.off_address and o.off_address.city or ''
+
+            org['num_cemeteries'] = Cemetery.objects.filter(ugh=o).count()
+            total['cemeteries_count'] += org['num_cemeteries']
+
+            org['num_areas'] = Area.objects.filter(cemetery__ugh=o).count()
+            total['areas_count'] += org['num_areas']
+
+            org['num_places'] = Place.objects.filter(cemetery__ugh=o).count()
+            total['places_count'] += org['num_places']
+
+            org['num_burials'] = Burial.objects.filter(
+                ugh=o,
+                status=Burial.STATUS_CLOSED
+            ).count()
+            total['burials_count'] += org['num_burials']
+
+            cabinets = Place.objects.filter(
+                cemetery__ugh=o,
+                responsible__login_phone__isnull=False,
+            )
+            org['num_places_cabinet'] = cabinets.count()
+            total['places_cabinet_count'] += org['num_places_cabinet']
+
+            # вместо:
+            # User.objects.filter(username__in=\
+            #    cabinets.distinct('responsible__login_phone').
+            #    order_by('responsible__login_phone').
+            #    values_list('responsible__login_phone')
+            # )
+            # применяем этот сырой запрос из-за cast(string to decimal)
+            #
+            query = r"""SELECT COUNT(*) FROM "auth_user"
+                        WHERE "auth_user"."username" ~ E'^\\d+$'
+                        and cast("auth_user"."username" as decimal) IN 
+                        (SELECT DISTINCT ON (U1."login_phone") U1."login_phone" FROM 
+                        "burials_place" U0 LEFT OUTER JOIN "persons_aliveperson" U1 
+                        ON (U0."responsible_id" = U1."baseperson_ptr_id") 
+                        INNER JOIN "burials_cemetery" U2 ON (U0."cemetery_id" = U2."id")
+                        WHERE (U1."login_phone" IS NOT NULL AND U2."ugh_id" = %s ))
+                     """ % o.pk
+            cursor = connection.cursor()
+            cursor.execute(query)
+            org['num_cabinets'] = cursor.fetchone()[0]
+
+            org['num_lorus'] = ProfileLORU.objects.filter(ugh=o).count()
+            
+            products = Product.objects.filter(loru__ugh_list__ugh=o)
+            org['num_products'] = products.distinct().count()
+            org['num_published_products'] = products.filter(q_published).distinct().count()
+
+            orgs.append(org)
+
+        lorus = Org.objects.filter(type=Org.PROFILE_LORU)
+        total['lorus_count'] = lorus.count()
+        total['active_lorus_count'] = lorus.filter(profile__user__is_active=True).count()
+        
+        total['cabinets_count'] = CustomerProfile.objects.all().count()
+        total['products_count'] = Product.objects.all().count()
+        total['published_products_count'] = Product.objects.filter(q_published).distinct().count()
+
+        return {
+            'orgs':orgs,
+            'total': total,
+            'sort': sort,
+        }
+
+org_current_stats = OrgCurrentStatsView.as_view()
+
 class SupportView(RequestToFormMixin, FormView):
     form_class = SupportForm
     template_name = 'support.html'
@@ -1142,6 +1307,14 @@ class SupportThanks(TemplateView):
                                         'html_message': html_message})
 
 support_thanks = SupportThanks.as_view()
+
+class Tutorial(TemplateView):
+    template_name = 'tutorial.html'
+
+    def get(self, request, *args, **kwargs):
+        return self.render_to_response({})
+
+tutorial = Tutorial.as_view()
 
 class TestCaptchaView(FormView):
     """

@@ -164,6 +164,13 @@ class BurialSerializer(serializers.ModelSerializer):
                   'place', 'cemetery', 'area', 'grave', 'responsible', 'applicant')
 
 
+class BurialPutGraveSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Burial
+        fields = ('id', 'grave_number',)
+
+
 class GravePhotoSerializer(serializers.ModelSerializer):
     grave = serializers.PrimaryKeyRelatedField()
     date_of_creation = serializers.DateField(format=u"%d.%m.%Y")
