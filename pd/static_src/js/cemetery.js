@@ -463,9 +463,9 @@ $(function() {
 
     $('#callback_form input[name=callback]').change(function() {
         if ($('#callback_form input[name=callback]:checked').val() == 'on') {
-            $('#callback_form #id_phone').closest('p').show();
+            $('#callback_form #id_phone').removeAttr("disabled");
         } else {
-            $('#callback_form #id_phone').closest('p').hide();
+            $('#callback_form #id_phone').attr("disabled", "disabled");
         }
     });
     $('#callback_form input[name=callback]').change();
