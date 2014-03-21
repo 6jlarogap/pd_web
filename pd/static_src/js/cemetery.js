@@ -461,6 +461,15 @@ $(function() {
         }
     });
 
+    $('#callback_form input[name=callback]').change(function() {
+        if ($('#callback_form input[name=callback]:checked').val() == 'on') {
+            $('#callback_form #id_phone').removeAttr("disabled");
+        } else {
+            $('#callback_form #id_phone').attr("disabled", "disabled");
+        }
+    });
+    $('#callback_form input[name=callback]').change();
+
     $('input[name=opf]').change(function() {
         var resp_id = '#id_responsible-take_from_';
         $(resp_id+'1').removeAttr('checked').closest('li').hide();

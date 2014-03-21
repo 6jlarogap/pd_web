@@ -356,28 +356,93 @@ class ApiFeedBack(CheckRecaptchaMixin, APIView):
     def post(self, request):
         status_code = 400
         recaptcha_data = request.DATA.get('recaptchaData')
-        if not request.user.is_authenticated():
-            if not recaptcha_data or \
-               not self.check_recaptcha(self.request, recaptcha_data['challenge'], recaptcha_data['response']):
-                return Response(data={}, status=status_code)
-        email_from = request.DATA.get('email')
         try:
-            validate_email(email_from)
-        except ValidationError:
-            pass
-        else:
-            email_subject = request.DATA.get('subject')
-            if not email_subject or not email_subject.strip():
+            if not request.user.is_authenticated():
+                if not recaptcha_data:
+                    raise ServiceException(_(u'Не задана captcha'))
+                if not self.check_recaptcha(self.request, recaptcha_data['challenge'], recaptcha_data['response']):
+                    raise ServiceException(_(u'Ошибка проверки captcha'))
+
+            email_from = request.DATA.get('email', '').strip()
+            callback = request.DATA.get('requestBackCall')
+            phone = request.DATA.get('phoneNumber', '').strip()
+            email_text = request.DATA.get('text', '').strip()
+
+            if callback:
+                try:
+                    validate_phone_as_number(phone.lstrip('+'))
+                except ValidationError:
+                    raise ServiceException(_(u"Не указан или неверен телефон для обратного звонка"))
+            else:
+                try:
+                    validate_email(email_from)
+                except ValidationError:
+                    raise ServiceException(_(u"Неверный адрес электронной почты"))
+                if not email_text:
+                    raise ServiceException(_(u"Если не требуется обратный звонок, то задайте вопрос"))
+                
+            user_last_name = request.DATA.get('lastName', '').strip()
+            if not user_last_name:
+                raise ServiceException(_(u"Не задана фамилия"))
+            user_first_name = request.DATA.get('firstName', '').strip()
+            user_middle_name = request.DATA.get('middleName', '').strip()
+            if not user_first_name and user_middle_name:
+                raise ServiceException(_(u"Не указано имя при указанном отчестве"))
+
+            email_subject = request.DATA.get('subject', '')
+            if not email_subject.strip():
                 email_subject = _(u'Вопрос в поддержку')
+            
+            if request.user.is_authenticated():
+                if not request.user.email and email_from:
+                    request.user.email = email_from
+                    request.user.save()
+
+                if is_cabinet_user(request.user):
+                    profile = request.user.customerprofile
+                else:
+                    profile = request.user.profile
+                    if callback and not request.user.profile.org.phones:
+                        request.user.profile.org.phones = phone
+                        request.user.profile.org.save()
+
+                if profile.user_last_name != user_last_name or \
+                   profile.user_first_name != user_first_name or \
+                   profile.user_middle_name != user_middle_name:
+                    profile.user_last_name = user_last_name
+                    profile.user_first_name = user_first_name
+                    profile.user_middle_name = user_middle_name
+                    profile.save()
+
+            email_text += u"\n----------\n\n%s: %s %s %s" % (
+                            _(u'Запрос от'),
+                            user_last_name,
+                            user_first_name,
+                            user_middle_name,
+                        )
+            if callback:
+                email_text += u"\n\n%s\n%s %s" % (
+                    _(u'ЗАКАЗАН ОБРАТНЫЙ ЗВОНОК'),
+                    _(u'телефон'),
+                    phone,
+                )
+            email_text += get_mail_footer(request.user)
+
             email_to = (settings.DEFAULT_FROM_EMAIL, )
-            if request.user.is_authenticated() and not request.user.email:
-                request.user.email = email_from
-                request.user.save()
-            email_text = request.DATA.get('text') + get_mail_footer(request.user)
-            headers = {'Reply-To': email_from, }
+            headers = {}
+            if email_from:
+                headers['Reply-To'] = email_from
             EmailMessage(email_subject, email_text, email_from, email_to, headers=headers, ).send()
+            data = { 'status': 'success',
+                     'message': '',
+                   }
             status_code = 200
-        return Response(data={}, status=status_code)
+        except ServiceException as excpt:
+            data = { 'status': 'error',
+                     'message': excpt.message,
+                   }
+            status_code = 400
+        return Response(data=data, status=status_code)
 
 api_feedback = ApiFeedBack.as_view()
 
@@ -449,7 +514,9 @@ class LoginView(View):
                 next_url = "?redirectUrl=%s" % request.GET.get("redirectUrl")
             else:
                 next_url = ''
-            return redirect('%s#/%s' % (get_front_end_url(request), next_url))
+            response = redirect('%s#/signout%s' % (get_front_end_url(request), next_url))
+            response.delete_cookie('pdsession')
+            return response
         else:
             form = AuthenticationForm()
             request.session.set_test_cookie()
