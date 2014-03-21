@@ -514,7 +514,9 @@ class LoginView(View):
                 next_url = "?redirectUrl=%s" % request.GET.get("redirectUrl")
             else:
                 next_url = ''
-            return redirect('%s#/signout%s' % (get_front_end_url(request), next_url))
+            response = redirect('%s#/signout%s' % (get_front_end_url(request), next_url))
+            response.delete_cookie('pdsession')
+            return response
         else:
             form = AuthenticationForm()
             request.session.set_test_cookie()
