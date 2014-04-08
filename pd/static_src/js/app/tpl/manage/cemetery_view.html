@@ -7,14 +7,12 @@
     <dl class="dl-horizontal">
       <dt>Время работы</dt>
       <dd>{{cemetery.work_time}}</dd>
-      <dt>Расстановка номеров</dt>
-      <dd><b>мест новых ручных и электронных захоронений:</b> {{cemetery.places_algo| list: PLACE_TYPES}}</dd>
-      <dt>Расстановка номеров</dt>
-      <dd><b>существующих, но неучтенных мест:</b> {{ cemetery.places_algo_archive| list: PLACE_ARCHIVE_TYPES }}</dd>
       <dt>Время для захоронения</dt>
       <dd>{{cemetery.time_slots}}</dd>
     </dl>
-    <p ng-show="cemetery.archive_burial_fact_date_required">Дата архивного захоронения обязательна</p>
+   <p><b>Расстановка номеров мест новых ручных и электронных захоронений:</b> {{cemetery.places_algo| list: PLACE_TYPES}}</p>
+   <p><b>Расстановка номеров существующих, но неучтенных мест:</b> {{ cemetery.places_algo_archive| list: PLACE_ARCHIVE_TYPES }}</p>
+   <p ng-show="cemetery.archive_burial_fact_date_required">Дата архивного захоронения обязательна</p>
 
     <p ng-show="cemetery.archive_burial_account_number_required">Номер архивного захоронения обязателен</p>
     <!-- address address_class="address_class" address="cemetery.address" save_action="saveEditForm"></address -->
