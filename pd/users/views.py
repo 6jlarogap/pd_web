@@ -323,10 +323,11 @@ class AuthGetPasswordBySMSView(CheckRecaptchaMixin, APIView):
                     if not message:
                         status = 'success'
                         status_code = 200
-                        message = _(u'Пароль установлен')
+                        if settings.DEBUG:
+                            message = _(u'Ваш пароль: %s') % password
+                        else:
+                            message = _(u'Пароль установлен, СМС с паролем отправлено')
         data = { 'status': status, 'message': message }
-        if settings.DEBUG:
-            data['password'] = password
         return Response(data=data, status=status_code)
 
 auth_get_password_by_sms = AuthGetPasswordBySMSView.as_view()
