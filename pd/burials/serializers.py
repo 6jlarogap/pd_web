@@ -52,7 +52,8 @@ class CemeterySerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Cemetery
-        fields = ('id', 'name', 'work_time', 'area_cnt', 'time_begin', 'time_end', 'places_algo', \
+        fields = ('id', 'name', 'work_time', 'area_cnt', 'time_begin', 'time_end', \
+                  'places_algo', 'places_algo_archive', \
                   'archive_burial_fact_date_required', 'archive_burial_account_number_required', \
                   'address', 'time_slots')
     

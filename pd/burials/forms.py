@@ -910,6 +910,13 @@ class BurialCommitForm(BurialForm):
         area = self.cleaned_data.get('area')
         row = self.cleaned_data.get('row')
         place_number = self.cleaned_data.get('place_number') or ''
+        burial_type = self.cleaned_data.get('burial_type')
+        for k, v in Burial.BURIAL_TYPES:
+            if k == burial_type:
+                burial_type_str = v
+                break
+        else:
+            burial_type_str = burial_type
 
         fact_date  = self.cleaned_data.get('fact_date')
         if is_ugh:
@@ -947,8 +954,17 @@ class BurialCommitForm(BurialForm):
         if not place_number.strip() and \
            (self.instance.is_archive() or self.request.REQUEST.get('archive')) and \
            cemetery and cemetery.places_algo_archive == Cemetery.PLACE_ARCHIVE_MANUAL:
-            msg = _(u"Нельзя закрывать архивное захоронение без указания номера места")
+            msg = _(u"Нельзя закрывать архивное захоронение без указания номера места для этого кладбища")
             raise forms.ValidationError(msg)
+        elif not place_number.strip() and \
+           (burial_type in (Burial.BURIAL_ADD, Burial.BURIAL_OVER,)) and \
+           cemetery and cemetery.places_algo_archive == Cemetery.PLACE_ARCHIVE_MANUAL:
+            if is_ugh:
+                msg = _(u"Нельзя закрывать %s без указания номера места для этого кладбища") % burial_type_str.lower()
+                raise forms.ValidationError(msg)
+            elif self.request.REQUEST.get('ready'):
+                msg = _(u"Нельзя отправлять на согласование %s без указания номера места для этого кладбища") % burial_type_str.lower()
+                raise forms.ValidationError(msg)
         elif not place_number.strip() and area and area.availability == Area.AVAILABILITY_CLOSED:
             if is_ugh:
                 msg = _(u"Не указано место для закрытого участка. Нельзя закрывать захоронение")
@@ -959,7 +975,14 @@ class BurialCommitForm(BurialForm):
         elif not place_number.strip() and \
              cemetery and \
              cemetery.ugh.numbers_algo == Org.NUM_EMPTY and \
-             cemetery.places_algo == Cemetery.PLACE_BURIAL_ACCOUNT_NUMBER:
+             (
+              (cemetery.places_algo == Cemetery.PLACE_BURIAL_ACCOUNT_NUMBER and \
+               burial_type in (Burial.BURIAL_NEW,)
+              ) or \
+              (cemetery.places_algo_archive == Cemetery.PLACE_ARCHIVE_BURIAL_ACCOUNT_NUMBER and \
+               burial_type in (Burial.BURIAL_ADD, Burial.BURIAL_OVER,)
+              )
+             ):
             # Такого не может быть, ибо проверяется в свойствах организации-угх,
             # чтобы не оказалось: номер зх оставить пустым, а есть кладбища
             # с расстановкой мест по номеру зх. Но fool-proof не помешает...
@@ -1007,19 +1030,6 @@ class BurialCommitForm(BurialForm):
                 not self.cleaned_data.get('place_width') and self.cleaned_data.get('place_length')
                ):
                 raise forms.ValidationError(_(u"Надо указывать и длину, и ширину нового места"))
-
-
-        burial_type = self.cleaned_data.get('burial_type')
-        if burial_type in (Burial.BURIAL_ADD, Burial.BURIAL_OVER,) and \
-           not (cemetery and area and place_number.strip()):
-            for k, v in Burial.BURIAL_TYPES:
-                if k == burial_type:
-                    burial_type_str = v
-                    break
-            else:
-                burial_type_str = burial_type
-            msg = _(u"%s возможно только c указанием кладбища, участка и места") % burial_type_str
-            raise forms.ValidationError(msg)
 
         if self.instance.is_closed() and not place_number.strip():
             raise forms.ValidationError(_(u"Не указан номер места закрытого захоронения"))
