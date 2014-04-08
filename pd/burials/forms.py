@@ -958,13 +958,9 @@ class BurialCommitForm(BurialForm):
             raise forms.ValidationError(msg)
         elif not place_number.strip() and \
            (burial_type in (Burial.BURIAL_ADD, Burial.BURIAL_OVER,)) and \
-           cemetery and cemetery.places_algo_archive == Cemetery.PLACE_ARCHIVE_MANUAL:
-            if is_ugh:
-                msg = _(u"Нельзя закрывать %s без указания номера места для этого кладбища") % burial_type_str.lower()
-                raise forms.ValidationError(msg)
-            elif self.request.REQUEST.get('ready'):
-                msg = _(u"Нельзя отправлять на согласование %s без указания номера места для этого кладбища") % burial_type_str.lower()
-                raise forms.ValidationError(msg)
+           cemetery and cemetery.places_algo_archive == Cemetery.PLACE_ARCHIVE_MANUAL and is_ugh:
+            msg = _(u"Нельзя закрывать %s без указания номера места для этого кладбища") % burial_type_str.lower()
+            raise forms.ValidationError(msg)
         elif not place_number.strip() and area and area.availability == Area.AVAILABILITY_CLOSED:
             if is_ugh:
                 msg = _(u"Не указано место для закрытого участка. Нельзя закрывать захоронение")
@@ -1222,10 +1218,8 @@ class BurialApproveCloseForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelFor
             if not self.instance.fact_date:
                 self.initial['fact_date'] = self.instance.plan_date
             for f in self.fields:
-                if f not in ['row', ]:
+                if f not in ['row', 'place_number']:
                     self.fields[f].required = True
-            if cemetery and cemetery.places_algo != Cemetery.PLACE_MANUAL:
-                self.fields['place_number'].required = False
             self.fields['cemetery'].queryset = Cemetery.objects.filter(cemetery_qs)
             self.fields['desired_graves_count'].widget = forms.Select(choices=max_grave_choices)
             if place:
@@ -1304,6 +1298,20 @@ class BurialApproveCloseForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelFor
            not self.cleaned_data['row'].strip():
             raise forms.ValidationError(_(u"На кладбище с нумерацией мест по ряду не указан номер ряда"))
         return self.cleaned_data
+
+    def clean_place_number(self):
+        cemetery = self.cleaned_data.get('cemetery')
+        place_number = self.cleaned_data.get('place_number')
+        if self.request.user.profile.is_ugh() and self.instance.can_finish() and cemetery and \
+           (
+                (self.instance.burial_type in (Burial.BURIAL_NEW,) and \
+                 cemetery.places_algo == Cemetery.PLACE_MANUAL) \
+            or \
+                (self.instance.burial_type in (Burial.BURIAL_ADD, Burial.BURIAL_OVER,) and \
+                 cemetery.places_algo_archive == Cemetery.PLACE_ARCHIVE_MANUAL)
+           ):
+            raise forms.ValidationError(_(u'Номер места обязателен для кладбища с ручной нумерацией мест'))
+        return place_number
 
     def clean_area(self):
         """
