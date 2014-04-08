@@ -7,8 +7,10 @@
     <dl class="dl-horizontal">
       <dt>Время работы</dt>
       <dd>{{cemetery.work_time}}</dd>
-      <dt>Расстановка номеров мест</dt>
-      <dd>{{cemetery.places_algo| list: PLACE_TYPES}}</dd>
+      <dt>Расстановка номеров</dt>
+      <dd><b>мест новых ручных и электронных захоронений:</b> {{cemetery.places_algo| list: PLACE_TYPES}}</dd>
+      <dt>Расстановка номеров</dt>
+      <dd><b>существующих, но неучтенных мест:</b> {{ cemetery.places_algo_archive| list: PLACE_ARCHIVE_TYPES }}</dd>
       <dt>Время для захоронения</dt>
       <dd>{{cemetery.time_slots}}</dd>
     </dl>

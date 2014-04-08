@@ -31,7 +31,8 @@ function CemeteryViewCtrl($scope, $http, $resource, $location,  $routeParams,
         ]
     };
 
-	$scope.PLACE_TYPES = PLACE_TYPES;	
+    $scope.PLACE_TYPES = PLACE_TYPES;   
+    $scope.PLACE_ARCHIVE_TYPES = PLACE_ARCHIVE_TYPES;   
 	$scope.AVAILABILITY_CHOICES = AVAILABILITY_CHOICES;
 
 	AreaPurpose.get(function(result) {
