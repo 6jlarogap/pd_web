@@ -1301,8 +1301,9 @@ class BurialApproveCloseForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelFor
 
     def clean_place_number(self):
         cemetery = self.cleaned_data.get('cemetery')
-        place_number = self.cleaned_data.get('place_number')
+        place_number = self.cleaned_data.get('place_number', '')
         if self.request.user.profile.is_ugh() and self.instance.can_finish() and cemetery and \
+           not place_number.strip() and \
            (
                 (self.instance.burial_type in (Burial.BURIAL_NEW,) and \
                  cemetery.places_algo == Cemetery.PLACE_MANUAL) \
