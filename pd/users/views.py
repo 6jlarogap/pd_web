@@ -1079,44 +1079,51 @@ registrant_delete = RegistrantDelete.as_view()
 class RegistrantApprove(SupervisorRequiredMixin, View):
     def get(self, request, *args, **kwargs):
         registrant = get_object_or_404(RegisterProfile, pk=self.kwargs['pk'])
-        registrant.status = RegisterProfile.STATUS_APPROVED
-        registrant.save()
-        write_log(request, registrant, _(u'%s : одобрена') % registrant)
-        user = User.objects.create(
-                    username=registrant.user_name,
-                    password=registrant.user_password,
-                    email=registrant.user_email,
-        )
-        org=Org.objects.create(
-                    type=registrant.org_type,
-                    name=registrant.org_name,
-                    full_name=registrant.org_full_name,
-                    inn = registrant.org_inn,
-                    director = registrant.org_director,
-                    email = registrant.user_email,
-                    phones = registrant.org_phones,
-        )
-        org.create_wallet_rate()
-        profile=Profile.objects.create(
-                    user_last_name=registrant.user_last_name,
-                    user_first_name=registrant.user_first_name,
-                    user_middle_name=registrant.user_middle_name,
-                    is_agent=True,
-                    user=user,
-                    org=org,
-        )
-        email_subject = unicode(_(u"Заявка на регистрацию одобрена"))
-        email_text = render_to_string(
-                        'register_approved_email.txt',
-                        { 'host': '%s://%s' % (self.request.is_secure() and 'https' or 'http',
-                                               self.request.get_host(),
-                                              ),
-                          'obj': registrant,
-                        }
-                    )
-        email_from = settings.DEFAULT_FROM_EMAIL
-        email_to = (registrant.user_email, )
-        send_mail(email_subject, email_text, email_from, email_to )
+        if registrant.status == RegisterProfile.STATUS_APPROVED:
+            messages.error(request, _(u'Заявка уже одобрена'))
+        elif registrant.status != RegisterProfile.STATUS_CONFIRMED:
+            messages.error(request, _(u'Статус заявки (%s) не соответствует ее одобрению') % \
+                registrant.get_status_display()
+            )
+        else:
+            registrant.status = RegisterProfile.STATUS_APPROVED
+            registrant.save()
+            write_log(request, registrant, _(u'%s : одобрена') % registrant)
+            user = User.objects.create(
+                        username=registrant.user_name,
+                        password=registrant.user_password,
+                        email=registrant.user_email,
+            )
+            org=Org.objects.create(
+                        type=registrant.org_type,
+                        name=registrant.org_name,
+                        full_name=registrant.org_full_name,
+                        inn = registrant.org_inn,
+                        director = registrant.org_director,
+                        email = registrant.user_email,
+                        phones = registrant.org_phones,
+            )
+            org.create_wallet_rate()
+            profile=Profile.objects.create(
+                        user_last_name=registrant.user_last_name,
+                        user_first_name=registrant.user_first_name,
+                        user_middle_name=registrant.user_middle_name,
+                        is_agent=True,
+                        user=user,
+                        org=org,
+            )
+            email_subject = unicode(_(u"Заявка на регистрацию одобрена"))
+            email_text = render_to_string(
+                            'register_approved_email.txt',
+                            { 'host': '%s://%s' % (self.request.is_secure() and 'https' or 'http',
+                                                self.request.get_host(),
+                                                ),
+                            'obj': registrant,
+                            }
+                        )
+            email_from = settings.DEFAULT_FROM_EMAIL
+            email_to = (registrant.user_email, )
+            send_mail(email_subject, email_text, email_from, email_to )
         return redirect('registrants')
 
 registrant_approve = RegistrantApprove.as_view()
