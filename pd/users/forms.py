@@ -16,7 +16,7 @@ from pd.forms import ChildrenJSONMixin, LoggingFormMixin, OurReCaptchaField, Str
 from pd.models import validate_phone_as_number
 from burials.models import Cemetery, PlaceSize, Reason, Burial
 
-from users.models import Profile, ProfileLORU, Org, BankAccount, RegisterProfile, get_mail_footer
+from users.models import Profile, ProfileLORU, Org, BankAccount, RegisterProfile, get_mail_footer, is_cabinet_user
 
 
 class UserAddForm(forms.ModelForm):
@@ -403,7 +403,9 @@ class SupportForm(forms.Form):
         self.fio = ('user_last_name', 'user_first_name', 'user_middle_name', )
         if request.user.is_authenticated():
             del self.fields['captcha']
-            self.initial['sender'] = request.user.email or request.user.profile.org.email or ''
+            self.initial['sender'] = request.user.email or \
+                                     not is_cabinet_user(request.user) and request.user.profile.org.email or \
+                                     ''
             if not self.initial['sender']:
                 self.fields['sender'].label = _(u'Email для получения ответа (будет сохранен как Ваш контактный)')
                 self.save_user_email = not request.user.email
