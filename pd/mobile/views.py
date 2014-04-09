@@ -54,7 +54,8 @@ from serializers import BaseSerializer, CoordinatesSerializer, CemeterySerialize
 class ApiCemeteryList(APIView):
     permission_classes = (IsAuthenticated,)
     def get(self, request) :
-        listCemetery = Cemetery.objects.all()               
+        queryCemetery = Q(ugh = request.user.profile.org)
+        listCemetery = Cemetery.objects.filter(queryCemetery).order_by('id')                      
         serializer = CemeteryWithNestedObjectSerializer(listCemetery)
         return Response(serializer.data)
         
