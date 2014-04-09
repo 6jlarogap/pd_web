@@ -15,7 +15,7 @@
 
 from persons.models import AlivePerson
 
-for person in AlivePerson.objects.filter(login_phone__isnull=False).order_by('login_phone').distinct('login_phone'):
+for person in AlivePerson.objects.filter(login_phone__isnull=False)
     login_phone = str(person.login_phone)
     if len(login_phone) == 11 and login_phone.startswith('8'):
         person.login_phone = '7' + login_phone[1:]
