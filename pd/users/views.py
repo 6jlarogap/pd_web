@@ -928,6 +928,7 @@ class RegisterView(CreateView):
         salt = hashlib.sha1(str(random.random())).hexdigest()[:5]
         obj.user_activation_key = hashlib.sha1(salt+obj.user_name).hexdigest()
         obj.status = RegisterProfile.STATUS_TO_CONFIRM
+        obj.org_address = form.address_form.save()
         obj.save()
         write_log(None, obj, _(u'%s : получена. Ожидание подтверждения') % obj)
         email_subject = "%s %s" % (unicode(_(u"Подтверждение заявки на регистрацию на")),

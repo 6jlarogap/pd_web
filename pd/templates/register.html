@@ -7,6 +7,12 @@
     <form action="" method="POST">
         {% csrf_token %}
         {{ form.as_p }}
+
+        <h2>{% trans "Адрес" %}</h2>
+        {% with form.address_form as form %}
+            {% include "location_form.html" %}
+        {% endwith %}
+
         <p>
             <input type="submit" class="btn  btn-primary" value="{% trans "Зарегистрироваться" %}"/>
         </p>

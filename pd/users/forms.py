@@ -347,6 +347,13 @@ class RegisterForm(forms.ModelForm):
     password1 = forms.CharField(label=_(u"Пароль"), widget=forms.PasswordInput())
     password2 = forms.CharField(label=_(u"Пароль (повторите)"), widget=forms.PasswordInput())
 
+    def __init__(self, *args, **kwargs):
+        super(RegisterForm, self).__init__(*args, **kwargs)
+        self.address_form = LocationForm(data=self.data or None, prefix='address', instance=self.instance.org_address)
+        self.address_form.fields['country_name'].required = True
+        self.address_form.fields['region_name'].required = True
+        self.address_form.fields['city_name'].required = True
+        
     def clean_user_name(self):
         user_name=self.cleaned_data['user_name'].strip()
         if not re.match(r'^[A-Za-z0-9_-]+$', user_name):
@@ -371,6 +378,9 @@ class RegisterForm(forms.ModelForm):
               isinstance(cleaned_data[field], basestring):
                 cleaned_data[field] = cleaned_data[field].strip()
         return cleaned_data
+
+    def is_valid(self):
+        return super(RegisterForm, self).is_valid() and self.address_form.is_valid()
 
 class OrgBurialStatsForm(forms.Form):
 
