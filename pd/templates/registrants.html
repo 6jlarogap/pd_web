@@ -83,6 +83,9 @@
                 {% endif %}
                 {% trans "ИНН" %}: {{ r.org_inn }}<br />
                 {% trans "Тел." %}: {{ r.org_phones|linebreaksbr }}<br />
+                {% if r.org_address %}
+                    {% trans "Адр." %}: {{ r.org_address }}<br />
+                {% endif %}
             </td>
             <td>
                 {{ r.org_director }}
