@@ -43,6 +43,11 @@
   <input id="id_archive_burial_account_number_required" type="checkbox" name="name"
          ng-model="editor.cemetery.archive_burial_account_number_required"
       ng-disabled="'burial_account_number' == editor.cemetery.places_algo_archive" />
+  <i class="icon-question-sign"
+     ng-show="'burial_account_number' == editor.cemetery.places_algo_archive"
+     popover-placement="right"
+     popover-trigger="mouseenter"
+     popover='Редактировать запрещено так как "расстановка номеров существующих, но не учтенных мест" установлена "по рег. номеру захоронения"'></i>
 </p>
 
 <p>
