@@ -186,6 +186,11 @@ function CemeteryViewCtrl($scope, $http, $resource, $location,  $routeParams,
 					);
 	};
 
+  $scope.$watch('editor', function (editorData) {
+    if (editorData.cemetery && 'burial_account_number' === editorData.cemetery.places_algo_archive) {
+      $scope.editor.cemetery.archive_burial_account_number_required = true;
+    }
+  }, true);
 
 	// RUN
 	$scope.$on("$routeChangeSuccess",function(event){
