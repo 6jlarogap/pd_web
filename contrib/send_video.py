@@ -36,19 +36,25 @@
 # Требования:
 # -----------
 # * python-odfpy
+# * python-pytils
 # * ffmpeg, для конвертации mp4 в webm, ogg
+# * ssh connect to remote host via openssl keys
 
 DESCRIPTION_ODS='tablica.ods'
 DESCRIPTION_CSV='description.csv'
 
-import sys, os, subprocess, re
+REMOTE_HOST = 'pohoronnoedelo.ru'
+REMOTE_USER = 'suprune20'
+REMOTE_DIR = '/home/suprune20/support'
+
+import sys, os, subprocess, re, csv
 
 from odf.opendocument import load
 from odf.opendocument import Spreadsheet
 from odf.text import P
 from odf.table import TableRow, TableCell
 
-import csv
+import pytils
 
 def main():
     
@@ -74,27 +80,50 @@ def main():
             fname = ods_cell(cells[4])
         except IndexError:
             fname = ''
+        fname_slug = fname
+        if fname:
+            if not re.search(r'\.mp4$', fname, flags=re.IGNORECASE):
+                fname += '.mp4'
+            fname_mp4_orig = fname
+            fname = fname_slug = u'.'.join(map(pytils.translit.slugify, fname.rsplit('.', 1)))
+            fname_mp4_orig = os.path.join(folder, 'video', type_, fname_mp4_orig)
+            print 'Processing %s' % fname_mp4_orig
+            if not os.path.exists(fname_mp4_orig):
+                scram('Failed to stat %s' % fname_mp4_orig)
+            fname = os.path.join(folder, 'video', type_, fname)
+            os.rename(fname_mp4_orig, fname)
+            fname_webm = re.sub(r'\.mp4$', r'.webm', fname, flags=re.IGNORECASE)
+            fname_ogg = re.sub(r'\.mp4$', r'.ogg', fname, flags=re.IGNORECASE)
+            stat_fname = os.stat(fname)
+            try:
+                stat_fname_webm = os.stat(fname_webm)
+            except OSError:
+                stat_fname_webm = None
+            if not stat_fname_webm or stat_fname_webm.st_mtime < stat_fname.st_mtime:
+                do_cmd(
+                    'ffmpeg -y -i %s -c:v libvpx -crf 10 -b:v 1M -c:a libvorbis %s' % \
+                    (fname, fname_webm,)
+                )
+            try:
+                stat_fname_ogg = os.stat(fname_ogg)
+            except OSError:
+                stat_fname_ogg = None
+            if not stat_fname_ogg or stat_fname_ogg.st_mtime < stat_fname.st_mtime:
+                do_cmd(
+                    'ffmpeg -y -i %s -acodec libvorbis -vcodec libtheora -f ogg %s' % \
+                    (fname, fname_ogg,)
+                )
         csv_writer.writerow(map(lambda u: u.encode("utf8").strip(),[
             type_,
             title,
             text,
-            fname,
+            fname_slug,
         ]))
-        if fname:
-            if not re.search(r'\.mp4$', fname, flags=re.IGNORECASE):
-                fname += '.mp4'
-            fname = os.path.join(folder, 'video', type_, fname)
-            fname_webm = re.sub(r'\.mp4$', r'.webm', fname, flags=re.IGNORECASE)
-            fname_ogg = re.sub(r'\.mp4$', r'.ogg', fname, flags=re.IGNORECASE)
-            # TODO Сравнить даты
-            do_cmd(
-                'ffmpeg -y -i %s -c:v libvpx -crf 10 -b:v 1M -c:a libvorbis %s' % \
-                (fname, fname_webm,)
-            )
-            do_cmd(
-                'ffmpeg -y -i %s -acodec libvorbis -vcodec libtheora -f ogg %s' % \
-                (fname, fname_ogg,)
-            )
+    ofile.close()
+    do_cmd(
+        'rsync -avz  --delete -e ssh  %s %s@%s:%s' % \
+        ( folder, REMOTE_USER, REMOTE_HOST, REMOTE_DIR,)
+    )
 
 def ods_cell(cell):
     return "".join([unicode(data) for data in cell.getElementsByType(P)])
