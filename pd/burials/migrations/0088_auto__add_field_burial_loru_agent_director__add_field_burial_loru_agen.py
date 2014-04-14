@@ -65,6 +65,14 @@ class Migration(SchemaMigration):
             'user_permissions': ('django.db.models.fields.related.ManyToManyField', [], {'to': "orm['auth.Permission']", 'symmetrical': 'False', 'blank': 'True'}),
             'username': ('django.db.models.fields.CharField', [], {'unique': 'True', 'max_length': '30'})
         },
+        'billing.currency': {
+            'Meta': {'object_name': 'Currency'},
+            'code': ('django.db.models.fields.CharField', [], {'max_length': '10'}),
+            'icon': ('django.db.models.fields.files.FileField', [], {'max_length': '100', 'null': 'True', 'blank': 'True'}),
+            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'name': ('django.db.models.fields.CharField', [], {'max_length': '255'}),
+            'short_name': ('django.db.models.fields.CharField', [], {'max_length': '255'})
+        },
         'burials.area': {
             'Meta': {'ordering': "['name']", 'unique_together': "(('cemetery', 'name'),)", 'object_name': 'Area'},
             'availability': ('django.db.models.fields.CharField', [], {'max_length': '32', 'null': 'True'}),
@@ -75,6 +83,14 @@ class Migration(SchemaMigration):
             'name': ('django.db.models.fields.CharField', [], {'max_length': '255'}),
             'places_count': ('django.db.models.fields.PositiveIntegerField', [], {'default': '1'}),
             'purpose': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['burials.AreaPurpose']", 'null': 'True', 'on_delete': 'models.PROTECT'})
+        },
+        'burials.areacoordinates': {
+            'Meta': {'unique_together': "(('area', 'angle_number'),)", 'object_name': 'AreaCoordinates'},
+            'angle_number': ('django.db.models.fields.PositiveIntegerField', [], {}),
+            'area': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'coordinates'", 'on_delete': 'models.PROTECT', 'to': "orm['burials.Area']"}),
+            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'lat': ('django.db.models.fields.FloatField', [], {}),
+            'lng': ('django.db.models.fields.FloatField', [], {})
         },
         'burials.areaphoto': {
             'Meta': {'object_name': 'AreaPhoto'},
@@ -147,7 +163,7 @@ class Migration(SchemaMigration):
             'original_name': ('django.db.models.fields.CharField', [], {'max_length': '255'})
         },
         'burials.cemetery': {
-            'Meta': {'ordering': "['name']", 'object_name': 'Cemetery'},
+            'Meta': {'ordering': "['name']", 'unique_together': "(('ugh', 'name'),)", 'object_name': 'Cemetery'},
             'address': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['geo.Location']", 'null': 'True'}),
             'archive_burial_account_number_required': ('django.db.models.fields.BooleanField', [], {'default': 'True'}),
             'archive_burial_fact_date_required': ('django.db.models.fields.BooleanField', [], {'default': 'True'}),
@@ -162,6 +178,14 @@ class Migration(SchemaMigration):
             'time_end': ('django.db.models.fields.TimeField', [], {'null': 'True', 'blank': 'True'}),
             'time_slots': ('django.db.models.fields.TextField', [], {'default': "''", 'blank': 'True'}),
             'ugh': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['users.Org']", 'null': 'True', 'on_delete': 'models.PROTECT'})
+        },
+        'burials.cemeterycoordinates': {
+            'Meta': {'unique_together': "(('cemetery', 'angle_number'),)", 'object_name': 'CemeteryCoordinates'},
+            'angle_number': ('django.db.models.fields.PositiveIntegerField', [], {}),
+            'cemetery': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'coordinates'", 'on_delete': 'models.PROTECT', 'to': "orm['burials.Cemetery']"}),
+            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'lat': ('django.db.models.fields.FloatField', [], {}),
+            'lng': ('django.db.models.fields.FloatField', [], {})
         },
         'burials.exhumationrequest': {
             'Meta': {'object_name': 'ExhumationRequest'},
@@ -178,7 +202,7 @@ class Migration(SchemaMigration):
             'plan_time': ('django.db.models.fields.TimeField', [], {'null': 'True', 'blank': 'True'})
         },
         'burials.grave': {
-            'Meta': {'unique_together': "(('place', 'grave_number'),)", 'object_name': 'Grave'},
+            'Meta': {'ordering': "['grave_number']", 'unique_together': "(('place', 'grave_number'),)", 'object_name': 'Grave'},
             'dt_created': ('django.db.models.fields.DateTimeField', [], {'auto_now_add': 'True', 'blank': 'True'}),
             'dt_modified': ('django.db.models.fields.DateTimeField', [], {'auto_now': 'True', 'blank': 'True'}),
             'grave_number': ('django.db.models.fields.PositiveSmallIntegerField', [], {'default': '1'}),
@@ -204,12 +228,17 @@ class Migration(SchemaMigration):
             'original_name': ('django.db.models.fields.CharField', [], {'max_length': '255'})
         },
         'burials.place': {
-            'Meta': {'unique_together': "(('cemetery', 'area', 'row', 'place'),)", 'object_name': 'Place'},
+            'Meta': {'ordering': "['row', 'place']", 'unique_together': "(('cemetery', 'area', 'row', 'place'),)", 'object_name': 'Place'},
             'area': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['burials.Area']", 'null': 'True', 'on_delete': 'models.PROTECT', 'blank': 'True'}),
             'available_count': ('django.db.models.fields.PositiveSmallIntegerField', [], {'default': '0'}),
             'cemetery': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['burials.Cemetery']", 'on_delete': 'models.PROTECT'}),
             'dt_created': ('django.db.models.fields.DateTimeField', [], {'auto_now_add': 'True', 'blank': 'True'}),
+            'dt_military': ('django.db.models.fields.DateTimeField', [], {'null': 'True'}),
             'dt_modified': ('django.db.models.fields.DateTimeField', [], {'auto_now': 'True', 'blank': 'True'}),
+            'dt_size_violated': ('django.db.models.fields.DateTimeField', [], {'null': 'True'}),
+            'dt_unindentified': ('django.db.models.fields.DateTimeField', [], {'null': 'True'}),
+            'dt_unowned': ('django.db.models.fields.DateTimeField', [], {'null': 'True'}),
+            'dt_wrong_fio': ('django.db.models.fields.DateTimeField', [], {'null': 'True'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'lat': ('django.db.models.fields.FloatField', [], {'null': 'True', 'blank': 'True'}),
             'lng': ('django.db.models.fields.FloatField', [], {'null': 'True', 'blank': 'True'}),
@@ -219,6 +248,20 @@ class Migration(SchemaMigration):
             'place_width': ('django.db.models.fields.DecimalField', [], {'null': 'True', 'max_digits': '5', 'decimal_places': '2', 'blank': 'True'}),
             'responsible': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['persons.AlivePerson']", 'null': 'True', 'on_delete': 'models.PROTECT', 'blank': 'True'}),
             'row': ('django.db.models.fields.CharField', [], {'max_length': '255', 'null': 'True', 'blank': 'True'})
+        },
+        'burials.placephoto': {
+            'Meta': {'object_name': 'PlacePhoto'},
+            'bfile': ('django.db.models.fields.files.FileField', [], {'max_length': '100', 'blank': 'True'}),
+            'comment': ('django.db.models.fields.CharField', [], {'max_length': '96', 'blank': 'True'}),
+            'creator': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['auth.User']", 'null': 'True', 'on_delete': 'models.PROTECT'}),
+            'date_of_creation': ('django.db.models.fields.DateTimeField', [], {'auto_now_add': 'True', 'blank': 'True'}),
+            'dt_created': ('django.db.models.fields.DateTimeField', [], {'auto_now_add': 'True', 'blank': 'True'}),
+            'dt_modified': ('django.db.models.fields.DateTimeField', [], {'auto_now': 'True', 'blank': 'True'}),
+            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'lat': ('django.db.models.fields.FloatField', [], {'null': 'True', 'blank': 'True'}),
+            'lng': ('django.db.models.fields.FloatField', [], {'null': 'True', 'blank': 'True'}),
+            'original_name': ('django.db.models.fields.CharField', [], {'max_length': '255'}),
+            'place': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['burials.Place']"})
         },
         'burials.placesize': {
             'Meta': {'ordering': "('graves_count',)", 'unique_together': "(('org', 'graves_count'),)", 'object_name': 'PlaceSize'},
@@ -305,6 +348,7 @@ class Migration(SchemaMigration):
         'persons.aliveperson': {
             'Meta': {'ordering': "['last_name', 'first_name', 'middle_name']", 'object_name': 'AlivePerson', '_ormbases': ['persons.BasePerson']},
             'baseperson_ptr': ('django.db.models.fields.related.OneToOneField', [], {'to': "orm['persons.BasePerson']", 'unique': 'True', 'primary_key': 'True'}),
+            'login_phone': ('django.db.models.fields.DecimalField', [], {'db_index': 'True', 'null': 'True', 'max_digits': '15', 'decimal_places': '0', 'blank': 'True'}),
             'phones': ('django.db.models.fields.TextField', [], {'null': 'True', 'blank': 'True'})
         },
         'persons.baseperson': {
@@ -337,6 +381,7 @@ class Migration(SchemaMigration):
         },
         'users.org': {
             'Meta': {'object_name': 'Org'},
+            'currency': ('django.db.models.fields.related.ForeignKey', [], {'default': '1', 'to': "orm['billing.Currency']"}),
             'director': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '255'}),
             'dt_created': ('django.db.models.fields.DateTimeField', [], {'auto_now_add': 'True', 'blank': 'True'}),
             'dt_modified': ('django.db.models.fields.DateTimeField', [], {'auto_now': 'True', 'blank': 'True'}),
@@ -345,6 +390,7 @@ class Migration(SchemaMigration):
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'inn': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '255'}),
             'kpp': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '255', 'blank': 'True'}),
+            'max_graves_count': ('django.db.models.fields.PositiveIntegerField', [], {'default': '5'}),
             'name': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '255'}),
             'numbers_algo': ('django.db.models.fields.CharField', [], {'default': "'empty'", 'max_length': '255'}),
             'off_address': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['geo.Location']", 'null': 'True', 'blank': 'True'}),
@@ -353,7 +399,10 @@ class Migration(SchemaMigration):
             'opf_order_customer_mandatory': ('django.db.models.fields.BooleanField', [], {'default': 'True'}),
             'phones': ('django.db.models.fields.TextField', [], {'null': 'True', 'blank': 'True'}),
             'plan_date_days_before': ('django.db.models.fields.PositiveIntegerField', [], {'default': '0'}),
-            'type': ('django.db.models.fields.CharField', [], {'max_length': '255'})
+            'publish_cost': ('django.db.models.fields.DecimalField', [], {'default': "'0.00'", 'max_digits': '20', 'decimal_places': '2'}),
+            'site': ('django.db.models.fields.URLField', [], {'default': "''", 'max_length': '200', 'blank': 'True'}),
+            'type': ('django.db.models.fields.CharField', [], {'max_length': '255'}),
+            'worktime': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '255', 'blank': 'True'})
         },
         'users.profile': {
             'Meta': {'object_name': 'Profile'},
