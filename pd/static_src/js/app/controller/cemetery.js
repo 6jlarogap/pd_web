@@ -75,5 +75,9 @@ function CemeteryCtrl($rootScope, $scope, $http, $location, $resource, naturalSe
 	$scope.$on("$routeChangeSuccess",function(event){
 		$scope.update();
 	});
-
+  $scope.$watch('editor', function (editorData) {
+    if ('burial_account_number' === editorData.cemetery.places_algo_archive) {
+      $scope.editor.cemetery.archive_burial_account_number_required = true;
+    }
+  }, true);
 }

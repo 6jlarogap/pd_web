@@ -5,9 +5,12 @@ import decimal
 from django.conf import settings
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
+from django.contrib.contenttypes.models import ContentType
 
-from geo.models import DFiasAddrobj
+from geo.models import DFiasAddrobj, Location
 from pd.models import BaseModel, Files, GetLogsMixin, validate_gt0
+from logs.models import Log
+
 from pd.utils import DigitsValidator, LengthValidator, NotEmptyValidator
 
 
@@ -338,6 +341,7 @@ class RegisterProfile(BaseModel):
     org_phones = models.TextField(_(u"Телефоны"),
                                   help_text=_(u'В международном формате: +код-страны-код-города-номер-телефона')
                                  )
+    org_address = models.ForeignKey(Location, editable=False, null=True)
 
     def __unicode__(self):
         fio = u'%s %s.' % (self.user_last_name, self.user_first_name[0].upper(), )

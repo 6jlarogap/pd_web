@@ -158,14 +158,6 @@
                 {% endif %}
             {% endif %}
         </dd>
-        <dt>{% trans "Правило создания номера места" %}:</dt>
-        <dd>
-            {% if b.is_archive %}
-                {{ b.cemetery.get_places_algo_archive_display }}
-            {% else %}
-                {{ b.cemetery.get_places_algo_display }}
-            {% endif %}
-        </dd>
         <dt>{% trans "Ответственный" %}:</dt>
         <dd>
             {% if show_private_data %}

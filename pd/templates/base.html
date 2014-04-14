@@ -62,7 +62,7 @@
 
     <script type="text/javascript" src="{{ STATIC_URL }}js/utils.js"></script>
     <script type="text/javascript"
-            src="{% if request.is_secure %}https{% else %}http{% endif %}://maps.googleapis.com/maps/api/js?libraries=places&key=AIzaSyCr1PI2Q-8hxtstv5kka-8w0xxuPUEHNDA&sensor=true&language=ru">
+            src="//maps.googleapis.com/maps/api/js?libraries=places&key=AIzaSyCr1PI2Q-8hxtstv5kka-8w0xxuPUEHNDA&sensor=true&language=ru">
     </script>
 
     <script type="text/javascript">
@@ -92,11 +92,11 @@
                     </a>
                     <a class="brand" href="/">Похоронное Дело</a>
                     <div class="btn-group pull-right dropdown" id="support_menu">
-                        <a class="btn dropdown-toggle" data-toggle="dropdown" href="#support_menu"><big>?</big>
+                        <a data-toggle="dropdown" href="#support_menu" title="{% trans "Служба поддержки" %}"><img src="/static/help-question.png">
                         </a>
                         <ul class="dropdown-menu">
                             <li>
-                                <a href="{% url support %}">{% trans "Служба поддержки" %}</a>
+                                <a href="{% url support %}">{% trans "Задать вопрос" %}</a>
                             </li>
                             {% if user.is_authenticated %}
                                 <li>
@@ -134,6 +134,7 @@
                                     <li><a href="{% url registration_old %}">{% trans "Регистрация (старый вариант)" %}</a></li>
                                     <li><a href="{% url login_log %}">{% trans "Журнал входов в систему" %}</a></li>
                                     <li><a href="{% url org_burial_stats %}">{% trans "Статистика захоронений" %}</a></li>
+                                    <li><a href="{% url org_current_stats %}">{% trans "Текущая статистика" %}</a></li>
                                 {% endif %}
                                 <li class="divider"></li>
                                 <li><a href="{% url ulogout %}">{% trans "Выйти" %}</a></li>

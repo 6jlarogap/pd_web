@@ -49,9 +49,11 @@ class Cemetery(GetLogsMixin, BaseModel, PhonesMixin):
     name = models.CharField(_(u"Название"), max_length=255)
     time_begin = models.TimeField(_(u"Начало работы"), null=True, blank=True)
     time_end = models.TimeField(_(u"Окончание работы"), null=True, blank=True)
-    places_algo = models.CharField(_(u"Расстановка номеров мест захоронений (кроме архивных)"),
+    places_algo = models.CharField(_(u"Расстановка номеров мест новых ручных и электронных захоронений"),
                                 max_length=255, choices=PLACE_TYPES, default=PLACE_AREA)
-    places_algo_archive = models.CharField(_(u"Расстановка номеров мест архивных захоронений"),
+    # - все архивные захоронения (новые, подзахоронения, захоронения в существующиую)
+    # - ручные и электронные подзахоронения и захоронения в существующиую
+    places_algo_archive = models.CharField(_(u"Расстановка номеров существующих, но неучтенных мест"),
                                 max_length=255, choices=PLACE_ARCHIVE_TYPES, default=PLACE_ARCHIVE_MANUAL)
     time_slots = models.TextField(_(u"Время для захоронения"), default='', blank=True,
                                   help_text=_(u'В формате ЧЧ:ММ, по одному на строку'))
@@ -865,7 +867,7 @@ class Burial(SafeDeleteMixin, GetLogsMixin, BaseModel):
         if new_place:
             place.place_length = self.place_length
             place.place_width = self.place_width
-        place.save(new_place_for_archive=self.is_archive())
+        place.save(new_place_for_archive=self.is_archive() or self.is_over() or self.is_add())
         if new_place:
             graves_count = self.desired_graves_count or 1
             # fool-proof, чтоб не пропустили могилу с номером,

@@ -6,7 +6,57 @@
     <h1>{% trans "Регистрация" %}</h1>
     <form action="" method="POST">
         {% csrf_token %}
-        {{ form.as_p }}
+        {{ form.user_name.errors }}
+        <p>{{ form.user_name.label_tag }} {{ form.user_name }}<span class="helptext">{{ form.user_name.help_text }}</span></p>
+
+        {{ form.password1.errors }}
+        <p>{{ form.password1.label_tag }} {{ form.password1 }}<span class="helptext">{{ form.password1.help_text }}</span></p>
+
+        {{ form.password2.errors }}
+        <p>{{ form.password2.label_tag }} {{ form.password2 }}<span class="helptext">{{ form.password2.help_text }}</span></p>
+
+        {{ form.user_last_name.errors }}
+        <p>{{ form.user_last_name.label_tag }} {{ form.user_last_name }}<span class="helptext">{{ form.user_last_name.help_text }}</span></p>
+
+        {{ form.user_first_name.errors }}
+        <p>{{ form.user_first_name.label_tag }} {{ form.user_first_name }}<span class="helptext">{{ form.user_first_name.help_text }}</span></p>
+
+        {{ form.user_middle_name.errors }}
+        <p>{{ form.user_middle_name.label_tag }} {{ form.user_middle_name }}<span class="helptext">{{ form.user_middle_name.help_text }}</span></p>
+
+        {{ form.user_email.errors }}
+        <p>{{ form.user_email.label_tag }} {{ form.user_email }}<span class="helptext">{{ form.user_email.help_text }}</span></p>
+
+        {{ form.org_type.errors }}
+        <p>{{ form.org_type.label_tag }} {{ form.org_type }}<span class="helptext">{{ form.org_type.help_text }}</span></p>
+
+        {{ form.org_name.errors }}
+        <p>{{ form.org_name.label_tag }} {{ form.org_name }}<span class="helptext">{{ form.org_name.help_text }}</span></p>
+
+        {{ form.org_full_name.errors }}
+        <p>{{ form.org_full_name.label_tag }} {{ form.org_full_name }}<span class="helptext">{{ form.org_full_name.help_text }}</span></p>
+
+        {{ form.org_inn.errors }}
+        <p>{{ form.org_inn.label_tag }} {{ form.org_inn }}<span class="helptext">{{ form.org_inn.help_text }}</span></p>
+
+        {{ form.org_director.errors }}
+        <p>{{ form.org_director.label_tag }} {{ form.org_director }}<span class="helptext">{{ form.org_director.help_text }}</span></p>
+
+        {{ form.org_phones.errors }}
+        <p>{{ form.org_phones.label_tag }} {{ form.org_phones }}<span class="helptext">{{ form.org_phones.help_text }}</span></p>
+
+        <h3>{% trans "Адрес" %}</h3>
+        {% with form.address_form as form %}
+            {% include "location_form.html" %}
+        {% endwith %}
+        
+        <br />
+
+        {{ form.captcha.errors }}
+        <p>{{ form.captcha.label_tag }} {{ form.captcha }}<span class="helptext">{{ form.captcha.help_text }}</span></p>
+
+        <br />
+
         <p>
             <input type="submit" class="btn  btn-primary" value="{% trans "Зарегистрироваться" %}"/>
         </p>
