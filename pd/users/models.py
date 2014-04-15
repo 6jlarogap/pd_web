@@ -1,8 +1,11 @@
 # coding=utf-8
 import datetime
 import decimal
+import random
+import string
 
 from django.conf import settings
+from django.contrib.auth.models import User
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
 from django.contrib.contenttypes.models import ContentType
@@ -52,11 +55,32 @@ class CommonProfile(models.Model):
         return self.user and (name or self.user.username) or u'%s' % self.pk
 
 class CustomerProfile(CommonProfile):
-    pass
+
+    @classmethod
+    def create_cabinet(cls, responsible):
+        assert responsible and \
+               hasattr(responsible, 'login_phone') and \
+               responsible.login_phone, \
+               u'Cannot create cabinet user for the specified responsible'
+        user, created = User.objects.get_or_create(username=responsible.login_phone)
+        if created:
+            user.is_active = True
+        chars = string.ascii_uppercase + string.ascii_lowercase + string.digits
+        password = ''.join(random.choice(chars) for x in range(random.randrange(5, 11)))
+        user.set_password(password)
+        user.save()
+        customprofile, created = cls.objects.get_or_create(user=user,
+                                    defaults={
+                                        'user_last_name': responsible.last_name,
+                                        'user_first_name': responsible.first_name,
+                                        'user_middle_name': responsible.middle_name,
+                                    }
+                                )
+        return password
 
 class CustomerProfilePhoto(Files):
     customerprofile = models.OneToOneField(CustomerProfile)
-
+    
 class Profile(CommonProfile):
     org = models.ForeignKey('users.Org', null=True)
 

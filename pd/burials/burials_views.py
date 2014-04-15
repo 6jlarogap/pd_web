@@ -297,8 +297,7 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
                 if b.is_ugh():
                     return redirect(reverse('edit_burial', args=[b.pk]) + '?action=complete')
                 else:
-                    b.status = Burial.STATUS_CLOSED
-                    b.close()
+                    b.close(old_status=b.status)
                     write_log(request, b, _(u'Захоронение закрыто'))
                     messages.success(request, _(u"<a href='%s'>Захоронение %s</a> закрыто") % (
                         reverse('view_burial', args=[b.pk]), b.pk,
@@ -794,9 +793,8 @@ class CreateBurial(BurialGetOrderMixin, FormInvalidMixin, CreateView):
                 ))
 
             if action == 'complete' and self.request.user.profile.is_ugh() and b.can_finish() and b.is_ugh():
-                b.status = Burial.STATUS_CLOSED
                 b.changed_by = self.request.user
-                b.close()
+                b.close(old_status=b.status)
                 write_log(self.request, b, _(u'Захоронение закрыто'))
                 messages.success(self.request, _(u"<a href='%s'>Захоронение %s</a> закрыто") % (
                     reverse('view_burial', args=[b.pk]), b.pk,

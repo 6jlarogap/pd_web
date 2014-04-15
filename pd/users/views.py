@@ -261,7 +261,6 @@ class AuthGetPasswordBySMSView(CheckRecaptchaMixin, APIView):
     def post(self, request):
         status = 'error'
         status_code = 400
-        password = None
         message = ''
         phone_number = request.DATA['phoneNumber']
         recaptcha_data = request.DATA['recaptchaData']
@@ -272,26 +271,12 @@ class AuthGetPasswordBySMSView(CheckRecaptchaMixin, APIView):
             if not places.count():
                 message = _(u'Ваш номер телефона не указан в списке для входа. Обратитесь в администрацию кладбища')
             else:
-                user, created = User.objects.get_or_create(username=phone_number)
-                if created:
-                    user.is_active = True
-                chars = string.ascii_uppercase + string.ascii_lowercase + string.digits
-                password = ''.join(random.choice(chars) for x in range(random.randrange(5, 11)))
-                user.set_password(password)
-                user.save()
-                r = places[0].responsible
-                customprofile, created = CustomerProfile.objects.get_or_create(user=user,
-                                            defaults={
-                                                'user_last_name': r.last_name,
-                                                'user_first_name': r.first_name,
-                                                'user_middle_name': r.middle_name,
-                                            }
-                                        )
+                password = CustomerProfile.create_cabinet(places[0].responsible)
                 if not settings.DEBUG:
                     sent, message = send_sms(
                         phone_number=phone_number,
                         text=_(u'Vash parol na PohoronnoeDelo: %s') % password,
-                        email_error_text = _(u"Пользователь %s не смог получить пароль" % (phone_number,)),
+                        email_error_text = _(u"Пользователь %s не смог получить или заменить пароль" % (phone_number,)),
                     )
                 if not message:
                     status = 'success'

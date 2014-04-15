@@ -2,6 +2,7 @@
 
 from django.conf import settings
 from django.core.mail import EmailMessage
+from django.utils.translation import ugettext_lazy as _
 
 from sms_service import sms24x7
 

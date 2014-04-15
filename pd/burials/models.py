@@ -12,7 +12,7 @@ from pd.models import UnclearDateModelField, BaseModel, Files, GetLogsMixin, val
 
 from persons.models import DeadPerson, SafeDeleteMixin, DeathCertificate, PhonesMixin
 from reports.models import Report
-from users.models import Org, Profile, Dover, ProfileLORU
+from users.models import Org, Profile, Dover, ProfileLORU, CustomerProfile
 from logs.models import Log
 from geo.models import GeoPointModel, CoordinatesModel
 
@@ -22,6 +22,7 @@ from logs.models import write_log
 
 from managers import PlaceManager
 
+from sms_service.utils import send_sms
 
 class Cemetery(GetLogsMixin, BaseModel, PhonesMixin):
     PLACE_AREA = 'area'
@@ -814,7 +815,7 @@ class Burial(SafeDeleteMixin, GetLogsMixin, BaseModel):
     def approved_dt(self):
         return self.dt_modified
 
-    def close(self, old_place=None):
+    def close(self, old_place=None, old_status=STATUS_CLOSED):
         if not self.account_number:
             self.set_account_number(user=self.changed_by)
 
@@ -887,7 +888,21 @@ class Burial(SafeDeleteMixin, GetLogsMixin, BaseModel):
         self.responsible = None
         self.place = place
         self.place_number = place.place
+        self.status = self.STATUS_CLOSED
         self.save()
+        
+        if not settings.DEBUG and \
+           place.responsible and \
+           place.responsible.login_phone and \
+           (not old_status or old_status != self.STATUS_CLOSED) and \
+           not CustomerProfile.objects.filter(user__username=place.responsible.login_phone).count():
+            password = CustomerProfile.create_cabinet(place.responsible)
+            sent, message = send_sms(
+                phone_number=place.responsible.login_phone,
+                text=_(u'https://pohoronnoedelo.ru login: %s parol: %s') % (place.responsible.login_phone, password,),
+                email_error_text = _(u"Пользователь %s не смог получить пароль после закрытия захоронения" % \
+                                    (place.responsible.login_phone,)),
+            )
 
         # Очистим "пустышку" свидетельства о смерти, где
         # не все обязательные поля заполнены
