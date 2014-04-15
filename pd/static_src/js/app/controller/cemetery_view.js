@@ -59,10 +59,10 @@ function CemeteryViewCtrl($scope, $http, $resource, $location,  $routeParams,
 		    }
 
 			$scope.cemetery = new Cemetery(result.cemetery);
-			$scope.cemetery.time_begin = new Date('0 '+ $scope.cemetery.time_begin);
-			$scope.cemetery.time_end = new Date('0 '+ $scope.cemetery.time_end);
-			
-			$scope.phones = [];
+      $scope.cemetery.time_begin = moment($scope.cemetery.time_begin, 'HH:mm:ss').toDate();
+      $scope.cemetery.time_end = moment($scope.cemetery.time_end, 'HH:mm:ss').toDate();
+
+      $scope.phones = [];
 			angular.forEach(result.phones, function(item) {
                   $scope.phones.push(new Phone(item));
             });
@@ -186,11 +186,13 @@ function CemeteryViewCtrl($scope, $http, $resource, $location,  $routeParams,
 					);
 	};
 
-  $scope.$watch('editor', function (editorData) {
-    if (editorData.cemetery && 'burial_account_number' === editorData.cemetery.places_algo_archive) {
+  $scope.$watch(function () {
+    return $scope.editor.cemetery ? $scope.editor.cemetery.places_algo_archive : null;
+  }, function (placesAlgoArchive, oldPlacesAlgoArchive) {
+    if (placesAlgoArchive !== oldPlacesAlgoArchive && 'burial_account_number' === placesAlgoArchive) {
       $scope.editor.cemetery.archive_burial_account_number_required = true;
     }
-  }, true);
+  });
 
 	// RUN
 	$scope.$on("$routeChangeSuccess",function(event){
