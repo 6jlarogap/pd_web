@@ -794,7 +794,8 @@ view_place = PlaceView.as_view()
 
 class AddDoverView(LoginRequiredMixin, View):
     def post(self, request, *args, **kwargs):
-        f = AddDoverForm(data=request.POST, prefix='dover')
+        prefix = kwargs.get('prefix') or ''
+        f = AddDoverForm(data=request.POST, prefix='%sdover' % prefix)
         try:
             agent = Profile.objects.get(pk=request.GET['agent'], is_agent=True)
         except Profile.DoesNotExist:
@@ -809,7 +810,7 @@ class AddDoverView(LoginRequiredMixin, View):
             return HttpResponse(json.dumps({'pk': dover.pk, 'label': u'%s' % dover}), mimetype='application/json')
         else:
             err_str = _(u'Ошибка:\n%s')
-            errors = '\n'.join([u'%s' % v[0] for k,v in f.errors.items() if k == '__all__'])
+            errors = '\n'.join([u'%s' % v for v in f.non_field_errors()])
             if "\n" in errors:
                 err_str = _(u'Ошибки:\n%s')
             return HttpResponse(err_str % errors, mimetype='text/plain')
@@ -818,10 +819,17 @@ add_dover = AddDoverView.as_view()
 
 class AddAgentView(LoginRequiredMixin, View):
     def post(self, request, *args, **kwargs):
-        fa = AddAgentForm(data=request.POST, prefix='agent')
-        fd = AddDoverForm(data=request.POST, prefix='agent_dover')
+        prefix = kwargs.get('prefix') or ''
+        fa = AddAgentForm(data=request.POST, prefix='%sagent' % prefix)
+        fd = AddDoverForm(data=request.POST, prefix='%sagent_dover' % prefix)
+        if request.GET.get('org'):
+            q = Q(pk=request.GET['org'])
+        elif request.GET.get('org_name'):
+            q = Q(name=request.GET['org_name'])
+        else:
+            return HttpResponse(_(u'Ошибка'), mimetype='text/plain')
         try:
-            org = Org.objects.get(pk=request.GET['org'])
+            org = Org.objects.get(q)
         except KeyError:
             return HttpResponse(_(u'Ошибка'), mimetype='text/plain')
         except Org.DoesNotExist:
@@ -833,13 +841,15 @@ class AddAgentView(LoginRequiredMixin, View):
             dover.agent = agent
             dover.save()
             return HttpResponse(json.dumps({
+                'org_pk': org.pk,
                 'pk': agent.pk, 'label': u'%s' % agent,
                 'dover_pk': dover.pk, 'dover_label': u'%s' % dover
             }), mimetype='application/json')
         else:
+            print fa.non_field_errors()
             err_str = _(u'Ошибка:\n%s')
-            errors = '\n'.join([u'%s' % v[0] for k,v in fa.errors.items()] + \
-                               [u'%s' % v[0] for k,v in fd.errors.items()])
+            errors = '\n'.join([u'%s' % v for v in fa.non_field_errors()] + \
+                               [u'%s' % v for v in fd.non_field_errors()])
             if "\n" in errors:
                 err_str = _(u'Ошибки:\n%s')
             return HttpResponse(err_str % errors, mimetype='text/plain')

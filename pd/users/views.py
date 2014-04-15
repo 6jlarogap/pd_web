@@ -823,7 +823,7 @@ class AutocompleteOrg(View):
         else:
             orgs = Org.objects.none()
 
-        return HttpResponse(json.dumps([{'value': c.name} for c in orgs[:20]]), mimetype='text/javascript')
+        return HttpResponse(json.dumps([{'value': c.pk if exact else c.name} for c in orgs[:20]]), mimetype='text/javascript')
 
 autocomplete_org = AutocompleteOrg.as_view()
 

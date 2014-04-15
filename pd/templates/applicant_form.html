@@ -22,7 +22,7 @@
         <div class="inline">
             {{ form.applicant_organization.label_tag }} {{ form.applicant_organization }}<span class="helptext">{{ form.applicant_organization.help_text }}</span>
             <p class="inline">
-                <a href="#add_loru" role="button" class="btn btn-loru" data-toggle="modal">
+                <a href="#add_org" role="button" class="btn btn-loru" data-toggle="modal">
                     {% trans "добавить юрлицо" %}
                 </a>
                 <a href="#" class="btn btn-edit-org" target="_blank">
@@ -96,7 +96,7 @@
             </script>
         </div>
 
-        <h2>{% trans "Агент" %}</h2>
+        <h3>{% trans "Агент" %}</h3>
 
         {{ form.agent_director.errors }}
         <p>{{ form.agent_director.label_tag }} {{ form.agent_director }}<span class="helptext">{{ form.agent_director.help_text }}</span></p>

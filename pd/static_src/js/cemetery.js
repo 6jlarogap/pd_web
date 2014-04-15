@@ -88,6 +88,23 @@ function setup_address_autocompletes() {
         }
     });
 
+    $('input[id=id_loru]').attr('autocomplete', 'off').typeahead({
+        items: 100,
+        onselect: function() {
+            $('input[id=id_loru]').change();
+        },
+        source: function (typeahead, query) {
+            if (query.length < 2) { return }
+            $.ajax({
+                url: ORG_URL + "?query=" + query + "&type=loru",
+                dataType: 'json',
+                success: function(data) {
+                    typeahead.process(data);
+                }
+            });
+        }
+    });
+
     $('#mainform #id_applicant_person, #mainform #id_responsible').attr('autocomplete', 'off').typeahead({
         items: 100,
         source: function (typeahead, query) {
@@ -289,7 +306,11 @@ function setup_address_autocompletes() {
 }
 
 function updateAnything(parent, children, data) {
-    var cem = parent.val();
+    // В качестве parent может передаваться:
+    // - объект select, тогда берем значение соответствующего select
+    // - первичный ключ, который и есть значение этого "мнимого" select,
+    //   например, если организацию нашли по имени, а от нее первичный ключ
+    var cem = typeof(parent) == "number" ? parent.toString() : parent.val();
     var val = children.val();
     var options = '<option value="">----------</option>';
     var area_list = data[cem] || [];
@@ -317,6 +338,23 @@ function updateDover() {
         // есть агент и доверенность, т.е. где в выпадающем
         // списке доверенностей есть уже выбранное значение
         $('#id_dover').find('option').each(function() {
+            if (ACTUAL_DOVER.indexOf(parseInt(this.value)) > -1) {
+                this.selected = 'selected';
+            }
+        });
+    }
+}
+
+function updateLoruDover() {
+    updateAnything($('#id_loru_agent'), $('#id_loru_dover'), AGENT_DOVER);
+    if (!$('#id_dover').val()) {
+        // Когда пользователь прыгает от одного агента к другому,
+        // ему предлагается из доверенностей соответствующего агента
+        // последняя из актуальных. Это нельзя делать при
+        // загрузке страницы зх (заказа...), в котором уже
+        // есть агент и доверенность, т.е. где в выпадающем
+        // списке доверенностей есть уже выбранное значение
+        $('#id_loru_dover').find('option').each(function() {
             if (ACTUAL_DOVER.indexOf(parseInt(this.value)) > -1) {
                 this.selected = 'selected';
             }
@@ -461,6 +499,50 @@ $(function() {
         }
     });
 
+    old_loru_value = '';
+
+    $('input[id=id_loru]').change(function() {
+        var loru_inp =$(this);
+        var val = loru_inp.val();
+        if (val != '' && val != old_loru_value) {
+            old_loru_value = val;
+            $.ajax({
+                url: ORG_URL + "?query=" + val + "&type=loru&exact=1",
+                dataType: 'json',
+                success: function(data) {
+                    if (data.length == 0) {
+                        alert("Нет такого ЛОРУ");
+                        loru_inp.val('');
+                        old_loru_value = '';
+                        $('#loru_title').html('');
+                        updateAnything(0, $('#id_loru_agent'), ORG_AGENTS);
+                        $('.btn-loru_agent').closest('p').hide();
+                        // $('.btn-loru_dover').closest('p').hide();
+                    } else {
+                        updateAnything(data[0]['value'], $('#id_loru_agent'), ORG_AGENTS);
+                    }
+                }
+            });
+        } else {
+            old_loru_value = '';
+            updateAnything(0, $('#id_loru_agent'), ORG_AGENTS);
+        }
+        $('#loru_title').html(loru_inp.val());
+        if (!$('#id_loru_agent_director').is(':checked')) {
+            if (loru_inp.val()) {
+                $('.btn-loru_agent').closest('p').show();
+                $('.btn-loru_dover').closest('p').show();
+            } else {
+                $('.btn-loru_agent').closest('p').hide();
+                $('.btn-loru_dover').closest('p').hide();
+            }
+        }
+    });
+    $('#id_loru').change();
+
+    $('#id_loru_agent').change(updateLoruDover);
+    $('#id_loru_agent').change();
+
     $('#callback_form input[name=callback]').change(function() {
         if ($('#callback_form input[name=callback]:checked').val() == 'on') {
             $('#callback_form #id_phone').removeAttr("disabled");
@@ -561,6 +643,17 @@ $(function() {
     });
     $('#id_agent_director:visible').change();
 
+    $('#id_loru_agent_director').change(function() {
+        if ($(this).is(':checked')) {
+            $('#id_loru_dover').closest('div').hide();
+            $('#id_loru_agent').closest('div').hide();
+        } else {
+            $('#id_loru_dover').closest('div').show();
+            $('#id_loru_agent').closest('div').show();
+        }
+    });
+    $('#id_loru_agent_director').change();
+
     $('#add_agent').find('.btn-primary').click(function() {
         var org_pk = $('#id_applicant_organization').val();
         if (!org_pk) {
@@ -583,6 +676,39 @@ $(function() {
                 AGENT_DOVER[data.pk].push([data.dover_pk, data.dover_label])
                 $('#add_agent').modal('hide');
                 $('#add_agent form :input').val('');
+                if ($('#id_loru').length && old_loru_value) {
+                    old_loru_value='';
+                    $('#id_loru').change();
+                }
+            } else {
+                alert(data);
+            }
+        })
+    });
+
+    $('#add_loru_agent').find('.btn-primary').click(function() {
+        var org_name = $('#id_loru').val();
+        if (!org_name) {
+            return alert('Выберите организацию');
+        }
+        var data = $('#add_loru_agent form').serialize();
+        $.post('/burials/add_loru_agent/?org_name='+org_name, data, function(data){
+            if (data.pk) {
+                $('#id_loru_agent').append('<option value="'+data.pk+'">'+data.label+'</option>');
+                $('#id_loru_dover').append('<option value="'+data.dover_pk+'">'+data.dover_label+'</option>');
+                $('#id_loru_agent').val(data.pk);
+                $('#id_loru_dover').val(data.dover_pk);
+                if (!ORG_AGENTS[data.org_pk]) {
+                    ORG_AGENTS[data.org_pk] = [];
+                }
+                ORG_AGENTS[data.org_pk].push([data.pk, data.label])
+                if (!AGENT_DOVER[data.pk]) {
+                    AGENT_DOVER[data.pk] = [];
+                }
+                AGENT_DOVER[data.pk].push([data.dover_pk, data.dover_label])
+                $('#add_loru_agent').modal('hide');
+                $('#add_loru_agent form :input').val('');
+                $('#id_applicant_organization').change();
             } else {
                 alert(data);
             }
@@ -619,14 +745,40 @@ $(function() {
                 AGENT_DOVER[agent_pk].push([data.pk, data.label])
                 $('#add_dover').modal('hide');
                 $('#add_dover form :input').val('');
+                if ($('#id_loru_agent').length) {
+                    $('#id_loru_agent').change();
+                }
             } else {
                 alert(data);
             }
         })
     });
 
-    $('#add_loru').find('.btn-primary').click(function() {
-        var data = $('#add_loru form').serialize();
+    $('#add_loru_dover').find('.btn-primary').click(function() {
+        var agent_pk = $('#id_loru_agent').val();
+        if (!agent_pk) {
+            return alert('Выберите агента');
+        }
+        var data = $('#add_loru_dover form').serialize();
+        $.post('/burials/add_loru_dover/?agent='+agent_pk, data, function(data){
+            if (data.pk) {
+                $('#id_loru_dover').append('<option value="'+data.pk+'">'+data.label+'</option>');
+                $('#id_loru_dover').val(data.pk);
+                if (!AGENT_DOVER[agent_pk]) {
+                    AGENT_DOVER[agent_pk] = [];
+                }
+                AGENT_DOVER[agent_pk].push([data.pk, data.label])
+                $('#add_loru_dover').modal('hide');
+                $('#add_loru_dover form :input').val('');
+                $('#id_agent').change();
+            } else {
+                alert(data);
+            }
+        })
+    });
+
+    $('#add_org').find('.btn-primary').click(function() {
+        var data = $('#add_org form').serialize();
         //TODO validation on client!
         $.post('/burials/add_org/', data, function(data){
             if (data.pk) {
@@ -634,8 +786,8 @@ $(function() {
                 var select = $('#id_applicant_organization');
                 select.append('<option value="'+data.pk+'" selected="selected">'+data.label+'</option>');
                 select.val(data.pk);
-                $('#add_loru').modal('hide');
-                $('#add_loru form :input').val('');
+                $('#add_org').modal('hide');
+                $('#add_org form :input').val('');
                 $("#applicant_form_org div.inline input").val(data.label);
                 $("#applicant_form_org div.inline input").data('typeahead').source.push(data.label);
                 select.change();
@@ -657,6 +809,24 @@ $(function() {
                 }
                 $('#add_zags').modal('hide');
                 $('#id_deadman-dc-zags').val(data.label);
+            } else {
+                alert(data);
+            }
+        })
+    });
+
+    $('#add_loru').find('.btn-primary').click(function() {
+        var data = $('#add_loru form').serialize();
+        $.post('/burials/add_loru/', data, function(data){
+            if (data.pk) {
+                if (typeof ORGS_INACTIVE != "undefined") {
+                    ORGS_INACTIVE.push(data.pk.toString());
+                    ORGS_LIST.push(data.label);
+                    var select = $('#id_applicant_organization');
+                    select.append('<option value="'+data.pk+'" selected="selected">'+data.label+'</option>');
+                }
+                $('#add_loru').modal('hide');
+                $('#id_loru').val(data.label);
             } else {
                 alert(data);
             }
