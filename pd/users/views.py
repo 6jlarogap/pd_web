@@ -265,7 +265,7 @@ class AuthGetPasswordBySMSView(CheckRecaptchaMixin, APIView):
         message = ''
         phone_number = request.DATA['phoneNumber']
         recaptcha_data = request.DATA['recaptchaData']
-        if False: # not self.check_recaptcha(self.request, recaptcha_data['challenge'], recaptcha_data['response']):
+        if not self.check_recaptcha(self.request, recaptcha_data['challenge'], recaptcha_data['response']):
             message = _(u'Введена неверная captcha')
         else:
             places = Place.objects.filter(responsible__login_phone=decimal.Decimal(phone_number))
