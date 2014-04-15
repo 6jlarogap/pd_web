@@ -36,7 +36,6 @@
 # Требования:
 # -----------
 # * python-odfpy
-# * python-pytils
 # * ffmpeg, для конвертации mp4 в webm, ogg
 # * ssh connect to remote host via openssl keys
 
@@ -53,8 +52,6 @@ from odf.opendocument import load
 from odf.opendocument import Spreadsheet
 from odf.text import P
 from odf.table import TableRow, TableCell
-
-import pytils
 
 def main():
     
@@ -80,18 +77,19 @@ def main():
             fname = ods_cell(cells[4])
         except IndexError:
             fname = ''
-        fname_slug = fname
+        csv_writer.writerow(map(lambda u: u.encode("utf8").strip(),[
+            type_,
+            title,
+            text,
+            fname,
+        ]))
         if fname:
             if not re.search(r'\.mp4$', fname, flags=re.IGNORECASE):
                 fname += '.mp4'
-            fname_mp4_orig = fname
-            fname = fname_slug = u'.'.join(map(pytils.translit.slugify, fname.rsplit('.', 1)))
-            fname_mp4_orig = os.path.join(folder, 'video', type_, fname_mp4_orig)
-            print 'Processing %s' % fname_mp4_orig
-            if not os.path.exists(fname_mp4_orig):
-                scram('Failed to stat %s' % fname_mp4_orig)
+            print 'Processing %s' % fname
             fname = os.path.join(folder, 'video', type_, fname)
-            os.rename(fname_mp4_orig, fname)
+            if not os.path.exists(fname):
+                scram('Failed to stat %s' % fname)
             fname_webm = re.sub(r'\.mp4$', r'.webm', fname, flags=re.IGNORECASE)
             fname_ogg = re.sub(r'\.mp4$', r'.ogg', fname, flags=re.IGNORECASE)
             stat_fname = os.stat(fname)
@@ -113,12 +111,6 @@ def main():
                     'ffmpeg -y -i %s -acodec libvorbis -vcodec libtheora -f ogg %s' % \
                     (fname, fname_ogg,)
                 )
-        csv_writer.writerow(map(lambda u: u.encode("utf8").strip(),[
-            type_,
-            title,
-            text,
-            fname_slug,
-        ]))
     ofile.close()
     do_cmd(
         'rsync -avz  --delete -e ssh  %s %s@%s:%s' % \
