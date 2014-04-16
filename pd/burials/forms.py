@@ -333,10 +333,12 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
     burial_container = forms.ChoiceField(label=_(u"Тип захоронения"), choices=Burial.BURIAL_CONTAINERS, widget=forms.RadioSelect,  required=False)
     burial_type = forms.ChoiceField(label=_(u"Вид захоронения"), choices=Burial.BURIAL_TYPES, widget=forms.RadioSelect,  required=False)
     opf = forms.ChoiceField(label='', choices=OPF_CHOICES, widget=forms.RadioSelect)
+    loru = forms.CharField(required=False, label=_(u'Посредник'))
 
     class Meta:
         model = Burial
-        exclude = ['place', 'deadman', 'responsible', 'applicant', 'annulated', ]
+        exclude = ('place', 'deadman', 'responsible', 'applicant', 'annulated',
+                  )
 
     def __init__(self, request, *args, **kwargs):
         super(BurialForm, self).__init__(*args, **kwargs)
@@ -452,6 +454,16 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
                 except PlaceSize.DoesNotExist:
                     pass
 
+        if self.request.user.profile.is_loru() or \
+           self.request.REQUEST.get('archive') or \
+           self.instance.pk and not self.instance.is_ugh_only():
+            del self.fields['loru']
+            del self.fields['loru_agent_director']
+            del self.fields['loru_agent']
+            del self.fields['loru_dover']
+        else:
+            self.initial['loru'] = self.instance.pk and self.instance.loru and self.instance.loru.name or ''
+
         if self.instance.is_finished() and self.instance.place:
             self.initial.update(
                 cemetery=self.instance.place.cemetery,
@@ -552,6 +564,16 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
     def clean_plan_time(self):
         return self.cleaned_data['plan_time'] or None
 
+    def clean_loru(self):
+        loru = None
+        loru_str = self.cleaned_data.get('loru').strip()
+        if loru_str:
+            try:
+                loru = Org.objects.filter(name=loru_str, type=Org.PROFILE_LORU)[0]
+            except IndexError:
+                raise forms.ValidationError(_(u'Нет такого ЛОРУ'))
+        return loru
+
     def clean(self):
         
         StrippedStringsMixin.clean(self)
@@ -600,6 +622,14 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
         if self.cleaned_data.get('agent_director'):
             self.instance.agent = None
             self.instance.dover = None
+
+        if self.cleaned_data.get('loru_agent_director'):
+            self.instance.loru_agent = None
+            self.instance.loru_dover = None
+        if 'loru' in self.fields and not self.cleaned_data.get('loru'):
+            self.instance.loru_agent_director = False
+            self.instance.loru_agent = None
+            self.instance.loru_dover = None
 
         self.instance.changed_by = request.user
 
@@ -899,6 +929,22 @@ class BurialCommitForm(BurialForm):
                             if dover_end_date < today.date() :
                                 msg = _(u"Срок действия доверенности не может быть меньше текущей даты")
                                 raise forms.ValidationError(msg)
+
+        if self.cleaned_data.get('loru'):
+            if not self.cleaned_data.get('loru_agent_director'):
+                if not self.cleaned_data.get('loru_agent') and not self.cleaned_data.get('loru_dover'):
+                    msg = _(u"Посредник: нужно указать Агента и Доверенность или указать, что Агент - Директор")
+                    raise forms.ValidationError(msg)
+                if not self.instance.is_closed():
+                    dover_begin_date = self.cleaned_data.get('loru_dover').begin
+                    dover_end_date = self.cleaned_data.get('loru_dover').end
+                    today = datetime.datetime.today()
+                    if dover_begin_date > today.date():
+                        msg = _(u"Посредник: дата выдачи доверенности не может быть позже текущей даты")
+                        raise forms.ValidationError(msg)
+                    if dover_end_date < today.date() :
+                        msg = _(u"Посредник: срок действия доверенности не может быть меньше текущей даты")
+                        raise forms.ValidationError(msg)
 
         is_ugh = False
         if self.instance and self.instance.is_ugh():

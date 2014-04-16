@@ -218,15 +218,18 @@ var YMAPS_URL = '//api-maps.yandex.ru/2.0/?load=package.standard,package.cluster
 
             ymaps.ready(function () {
               ymaps.geocode(address, { results: 1 }).then(function (res) {
-                var firstGeoObject = res.geoObjects.get(0),
-                  result = firstGeoObject.geometry.getCoordinates();
-                deferred.resolve(result);
+                var firstGeoObject = res.geoObjects.get(0);
+                if (!firstGeoObject) {
+                  deferred.reject();
+                  return;
+                }
+
+                deferred.resolve(firstGeoObject.geometry.getCoordinates());
                 $rootScope.$digest();
               }, function (err) {
                 deferred.reject(err);
               });
             });
-
 
             return deferred.promise;
           });

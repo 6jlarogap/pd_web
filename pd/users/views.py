@@ -49,7 +49,7 @@ from billing.models import Wallet, Rate
 from orders.models import Product, ProductStatus, ProductHistory
 from pd.views import PaginateListView, RequestToFormMixin, FormInvalidMixin, get_front_end_url, ServiceException
 
-from sms_service import sms24x7
+from sms_service.utils import send_sms
 
 class CheckRecaptchaMixin(object):
     
@@ -241,7 +241,7 @@ class AuthGetPasswordBySMSView(CheckRecaptchaMixin, APIView):
     
     Input example:
     {
-        "phoneNumber": “375291234567”,
+        "phoneNumber": "375291234567",
         "recaptchaData": {
             "response": "foo bar",
             "challenge": "03AHJ_VuvQ5p0AdejIw4W6"
@@ -251,7 +251,6 @@ class AuthGetPasswordBySMSView(CheckRecaptchaMixin, APIView):
     {
         "status: "success",
         "message": "Пароль установлен"
-        "password": "new_password"
     }
     {
         "status: "error",
@@ -262,7 +261,6 @@ class AuthGetPasswordBySMSView(CheckRecaptchaMixin, APIView):
     def post(self, request):
         status = 'error'
         status_code = 400
-        password = None
         message = ''
         phone_number = request.DATA['phoneNumber']
         recaptcha_data = request.DATA['recaptchaData']
@@ -273,60 +271,20 @@ class AuthGetPasswordBySMSView(CheckRecaptchaMixin, APIView):
             if not places.count():
                 message = _(u'Ваш номер телефона не указан в списке для входа. Обратитесь в администрацию кладбища')
             else:
-                default_serv = your_serv = None
+                password = CustomerProfile.create_cabinet(places[0].responsible)
                 if not settings.DEBUG:
-                    for serv in settings.SMS_SERVICE:
-                        if serv['country_code'] == 'default':
-                            default_serv = serv
-                        if phone_number.startswith(serv['country_code']):
-                            your_serv = serv
-                    if not your_serv:
-                        if default_serv:
-                            your_serv = default_serv
-                        else:
-                            message = _(u"Оператор телефона не обслуживается")
+                    sent, message = send_sms(
+                        phone_number=phone_number,
+                        text=_(u'Vash parol na PohoronnoeDelo: %s') % password,
+                        email_error_text = _(u"Пользователь %s не смог получить или заменить пароль" % (phone_number,)),
+                    )
                 if not message:
-                    user, created = User.objects.get_or_create(username=phone_number)
-                    if created:
-                        user.is_active = True
-                    chars = string.ascii_uppercase + string.ascii_lowercase + string.digits
-                    password = ''.join(random.choice(chars) for x in range(random.randrange(5, 11)))
-                    user.set_password(password)
-                    user.save()
-                    r = places[0].responsible
-                    customprofile, created = CustomerProfile.objects.get_or_create(user=user,
-                                                defaults={
-                                                    'user_last_name': r.last_name,
-                                                    'user_first_name': r.first_name,
-                                                    'user_middle_name': r.middle_name,
-                                                }
-                                            )
-                    if your_serv:
-                        try:
-                            smsapi = sms24x7.smsapi(your_serv['user'], your_serv['password'])
-                            smsapi.push_msg(
-                                _(u'Vash parol na PohoronnoeDelo: %s') % password,
-                                phone_number,
-                                # 11 chars max
-                                sender_name=u'PohoronnoeD',
-                                nologin = True
-                            )
-                        except sms24x7.smsapi_nogate_exception:
-                            message = _(u"Оператор телефона не обслуживается")
-                        except sms24x7.smsapi_exception:
-                            message = _(u"Произошла ошибка. Мы известим Вас о восстановлении сервиса")
-                            email_from = settings.DEFAULT_FROM_EMAIL
-                            email_to = (settings.DEFAULT_FROM_EMAIL, )
-                            email_subject = _(u'Ошибка СМС сервиса')
-                            email_text = _(u"Пользователь %s не смог получить пароль" % (phone_number,))
-                            EmailMessage(email_subject, email_text, email_from, email_to, ).send()
-                    if not message:
-                        status = 'success'
-                        status_code = 200
-                        if settings.DEBUG:
-                            message = _(u'Ваш пароль: %s') % password
-                        else:
-                            message = _(u'Пароль установлен, СМС с паролем отправлено')
+                    status = 'success'
+                    status_code = 200
+                    if settings.DEBUG:
+                        message = _(u'Ваш пароль: %s') % password
+                    else:
+                        message = _(u'Пароль установлен, СМС с паролем отправлено')
         data = { 'status': status, 'message': message }
         return Response(data=data, status=status_code)
 
@@ -823,7 +781,7 @@ class AutocompleteOrg(View):
         else:
             orgs = Org.objects.none()
 
-        return HttpResponse(json.dumps([{'value': c.name} for c in orgs[:20]]), mimetype='text/javascript')
+        return HttpResponse(json.dumps([{'value': c.pk if exact else c.name} for c in orgs[:20]]), mimetype='text/javascript')
 
 autocomplete_org = AutocompleteOrg.as_view()
 
