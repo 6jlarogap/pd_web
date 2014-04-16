@@ -12,15 +12,16 @@ function CemeteryCtrl($rootScope, $scope, $http, $location, $resource, naturalSe
 	var tplLinkOpen = '<a ng-class="col.colIndex()" ng-href="/manage/cemetery/{{row.getProperty(\'id\')}}">{{row.getProperty(\'name\')}}</a>';
 	$scope.search = {name:''};
 	$scope.gridOptions = { 
-        data: '(cemetery_list|filter:search)',
-        enableRowSelection:false,
-        columnDefs: [
-        	{field: 'name', cellTemplate:tplLinkOpen, displayName:'Наименование'},
-        	{field: 'work_time', displayName: 'Часы работы'},
-        	{field: 'area_cnt', displayName: 'Участков'},
-            {displayName:'Действие',cellTemplate:tplButtonEdit}
-        ]
-    };
+    data: 'cemetery_list',
+    enableRowSelection:false,
+    columnDefs: [
+      {field: 'name', cellTemplate:tplLinkOpen, displayName:'Наименование'},
+      {field: 'work_time', displayName: 'Часы работы'},
+      {field: 'area_cnt', displayName: 'Участков'},
+        {displayName:'Действие',cellTemplate:tplButtonEdit}
+    ],
+    showFilter: true
+  };
 	
 	
     $scope.alerts = [];$scope.closeAlert = function(index){$scope.alerts.splice(index,1);};

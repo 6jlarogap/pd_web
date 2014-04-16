@@ -19,20 +19,21 @@ function CemeteryViewCtrl($scope, $http, $resource, $location,  $routeParams,
 			isEditorOpen: false
 	};
 	$scope.area_max_places = 10;
-    $scope.gridOptions = { 
-        data: 'area_list|filter:search',
-        enableRowSelection:false,
-        columnDefs: [
-        	{field: 'name', displayName: 'Наименование'},
-        	{cellTemplate:tplAvailability, displayName: 'Открытость'},
-        	{cellTemplate:tplPurpose, displayName: 'Назначение'},
-        	{field: 'places_count', displayName: 'Кол-во могил в месте'},
-            {displayName:'Действие',cellTemplate:tplButtonEdit}
-        ]
-    };
+  $scope.gridOptions = {
+    data: 'area_list',
+    enableRowSelection:false,
+    columnDefs: [
+      {field: 'name', displayName: 'Наименование'},
+      {cellTemplate:tplAvailability, displayName: 'Открытость'},
+      {cellTemplate:tplPurpose, displayName: 'Назначение'},
+      {field: 'places_count', displayName: 'Кол-во могил в месте'},
+        {displayName:'Действие',cellTemplate:tplButtonEdit}
+    ],
+    showFilter: true
+  };
 
-    $scope.PLACE_TYPES = PLACE_TYPES;   
-    $scope.PLACE_ARCHIVE_TYPES = PLACE_ARCHIVE_TYPES;   
+  $scope.PLACE_TYPES = PLACE_TYPES;
+  $scope.PLACE_ARCHIVE_TYPES = PLACE_ARCHIVE_TYPES;
 	$scope.AVAILABILITY_CHOICES = AVAILABILITY_CHOICES;
 
 	AreaPurpose.get(function(result) {
