@@ -77,13 +77,15 @@ class AuthGetTokenView(APIView):
         token = None
         username = request.DATA.get('username')
         password = request.DATA.get('password')
-        status = 'error'
+        confirm_tc = request.DATA.get('confirmTC')
+        data = dict(status='error')
         status_code = 400
         if username and password:
             user = authenticate(username=username, password=password)
             if user and user.is_active:
                 token, created = Token.objects.get_or_create(user=user)
         if token:
+            tc_confirmed = True
             role = None
             try:
                 user.customerprofile
@@ -99,36 +101,39 @@ class AuthGetTokenView(APIView):
                         role = u'ROLE_OMS'
             else:
                 role = 'ROLE_CLIENT'
+                tc_confirmed = user.customerprofile.tc_confirmed or confirm_tc
             if not role:
                 raise Exception(u'Unknown role')
-            login(request, user)
+            if tc_confirmed:
+                login(request, user)
 
-            profile = { 'email': user.email or None, 'photo': None }
-            pr = user.customerprofile if role == 'ROLE_CLIENT' else user.profile
-            profile['lastname'] = pr.user_last_name or user.last_name or None
-            profile['firstname'] = pr.user_first_name or user.first_name or None
-            profile['middlename'] = pr.user_middle_name or None
-            if role == 'ROLE_CLIENT':
-                org = { 'id': None, 'name': None }
-                profile['mainPhone'] = username
+                profile = { 'email': user.email or None, 'photo': None }
+                pr = user.customerprofile if role == 'ROLE_CLIENT' else user.profile
+                profile['lastname'] = pr.user_last_name or user.last_name or None
+                profile['firstname'] = pr.user_first_name or user.first_name or None
+                profile['middlename'] = pr.user_middle_name or None
+                if role == 'ROLE_CLIENT':
+                    org = { 'id': None, 'name': None }
+                    profile['mainPhone'] = username
+                else:
+                    org = { 'id': user.profile.org.pk, 'name': user.profile.org.name or None }
+                    profile['mainPhone'] = None
+
+                data.update({
+                    'status': 'success',
+                    'token': token.key,
+                    'sessionId': request.session._get_or_create_session_key(),
+                    'profile': profile,
+                    'org': org,
+                    'role': role,
+                 })
+                status_code = 200
+                write_log(request, request.user, _(u'Вход в систему'))
+                LoginLog.write(request)
             else:
-                org = { 'id': user.profile.org.pk, 'name': user.profile.org.name or None }
-                profile['mainPhone'] = None
-
-            data = { 'status': 'success',
-                     'token': token.key,
-                     'sessionId': request.session._get_or_create_session_key(),
-                     'profile': profile,
-                     'org': org,
-                     'role': role,
-                   }
-            status_code = 200
-            write_log(request, request.user, _(u'Вход в систему'))
-            LoginLog.write(request)
+                data['message'] = 'unconfirmed_tc'
         else:
-            data = { 'status': status,
-                     'message': 'Wrong username or password',
-                   }
+            data['message'] = 'Wrong username or password'
         return Response(data=data, status=status_code)
 
 auth_get_token = AuthGetTokenView.as_view()

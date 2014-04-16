@@ -55,6 +55,8 @@ class CommonProfile(models.Model):
         return self.user and (name or self.user.username) or u'%s' % self.pk
 
 class CustomerProfile(CommonProfile):
+    # Дата/время согласия с пользовательским соглашением, служит еще как BooleanField:
+    tc_confirmed = models.DateTimeField(_(u"Подтверждено пользовательское соглашение"), null=True, editable=False)
 
     @classmethod
     def create_cabinet(cls, responsible):
@@ -66,6 +68,10 @@ class CustomerProfile(CommonProfile):
         if created:
             user.is_active = True
         chars = string.ascii_uppercase + string.ascii_lowercase + string.digits
+        # Очень трудно эти символы различать в смс-ках. Да и на экране, если без copy-paste
+        # Удалим их из возможных в пароле:
+        for c in '0OlI1':
+            chars = chars.replace(c, '')
         password = ''.join(random.choice(chars) for x in range(random.randrange(5, 11)))
         user.set_password(password)
         user.save()
