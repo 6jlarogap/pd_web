@@ -10,7 +10,8 @@ def send_sms(phone_number, text, email_error_text=''):
     """
     Отправить СМС с текстом text на номер phone_number (Decimal or string!)
     
-    *   email_text - текст сообщения в службу поддержки, если передача СМС не получилась
+    *   email_error_text - текст сообщения в службу поддержки, если передача СМС не получилась.
+        К нему добавляется сообщение СМС-сервиса
     *   функцию вызывать, если not settings.DEBUG!
     
     *   Возвращает кортеж:
@@ -29,7 +30,7 @@ def send_sms(phone_number, text, email_error_text=''):
         if default_serv:
             your_serv = default_serv
         else:
-            message = _(u"Оператор телефона не обслуживается")
+            message = _(u"Оператора телефона нет в настройках PohoronnoeDeloRu")
     if not message:
         try:
             smsapi = sms24x7.smsapi(your_serv['user'], your_serv['password'])
@@ -55,11 +56,12 @@ def send_sms(phone_number, text, email_error_text=''):
         # Все остальные идут с нормальной тестовой расшифрровкой
         except sms24x7.smsapi_exception as excpt:
             message = _(u"Ошибка СМС-сервиса, %s") % excpt
-        if message:
-            email_error_text += "\n" + message
-            email_from = settings.DEFAULT_FROM_EMAIL
-            email_to = (settings.DEFAULT_FROM_EMAIL, )
-            email_subject = _(u'Ошибка СМС-сервиса при отправке на %s') % phone_number
-            email_text = email_error_text
-            EmailMessage(email_subject, email_text, email_from, email_to, ).send()
+    if message:
+        email_error_text += "\n" + message + \
+                            "\n" + _u("Справка по числовому коду: https://outbox.sms24x7.ru/api_manual/errors.html")
+        email_from = settings.DEFAULT_FROM_EMAIL
+        email_to = (settings.DEFAULT_FROM_EMAIL, )
+        email_subject = _(u'Ошибка СМС-сервиса при отправке на %s') % phone_number
+        email_text = email_error_text
+        EmailMessage(email_subject, email_text, email_from, email_to, ).send()
     return bool(not message), message
