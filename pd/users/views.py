@@ -115,6 +115,9 @@ class AuthGetTokenView(APIView):
                 if role == 'ROLE_CLIENT':
                     org = { 'id': None, 'name': None }
                     profile['mainPhone'] = username
+                    if not user.customerprofile.tc_confirmed and confirm_tc:
+                        user.customerprofile.tc_confirmed = datetime.datetime.now()
+                        user.customerprofile.save()
                 else:
                     org = { 'id': user.profile.org.pk, 'name': user.profile.org.name or None }
                     profile['mainPhone'] = None
