@@ -55,6 +55,8 @@ class CommonProfile(models.Model):
         return self.user and (name or self.user.username) or u'%s' % self.pk
 
 class CustomerProfile(CommonProfile):
+    # Дата/время согласия с пользовательским соглашением, служит еще как BooleanField:
+    tc_confirmed = models.DateTimeField(_(u"Подтверждено пользовательское соглашение"), null=True, editable=False)
 
     @classmethod
     def create_cabinet(cls, responsible):
