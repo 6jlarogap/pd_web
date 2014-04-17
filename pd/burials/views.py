@@ -1,5 +1,6 @@
 # coding=utf-8
 
+from django.conf import settings
 from django.contrib import messages
 from django.core.urlresolvers import reverse
 from django.core.paginator import Paginator
@@ -26,7 +27,7 @@ from burials.forms import CemeteryForm, AreaFormset, PlaceEditForm, AddOrgForm, 
 from burials.models import Cemetery, Place, Area, BurialFiles, Grave, Burial, AreaPhoto, GravePhoto, ExhumationRequest, AreaPurpose, PlaceSize
 from burials.burials_views import *
 from logs.models import write_log, log_object, prepare_m2m_log, compare_obj
-from users.models import Profile, Org
+from users.models import Profile, Org, CustomerProfile
 from persons.models import Phone, AlivePerson
 from geo.models import Location
 
@@ -50,6 +51,8 @@ from geo.serializers import LocationSerializer, LocationStaticSerializer, Locati
 from logs.serializers import LogSerializer
 
 from logs.views import getLogQuerySet
+
+from sms_service.utils import send_sms
 
 def getCemetery(request):
     try:
@@ -348,6 +351,18 @@ class PlaceViewSet(viewsets.ModelViewSet):
             except AttributeError:
                 self.old_responsible = None
             object.responsible = responsible_serializer.save()
+
+            if not settings.DEBUG and \
+               object.responsible.login_phone and \
+               not self.old_responsible and \
+               not CustomerProfile.objects.filter(user__username=object.responsible.login_phone).count():
+                password = CustomerProfile.create_cabinet(object.responsible)
+                sent, message = send_sms(
+                    phone_number=object.responsible.login_phone,
+                    text=_(u'https://pohoronnoedelo.ru login: %s parol: %s') % (object.responsible.login_phone, password,),
+                    email_error_text = _(u"Пользователь %s не смог получить пароль после закрытия захоронения" % \
+                                        (object.responsible.login_phone,)),
+                )
 
             #object.responsible.address_id = responsible.address
 
