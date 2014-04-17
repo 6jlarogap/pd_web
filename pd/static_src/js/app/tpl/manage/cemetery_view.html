@@ -6,7 +6,7 @@
   <div class="span7">
     <dl class="dl-horizontal">
       <dt>Время работы</dt>
-      <dd>{{cemetery.work_time}}</dd>
+      <dd>{{cemetery.time_begin|momentDate:'HH:mm'}} - {{cemetery.time_end|momentDate:'HH:mm'}}</dd>
       <dt>Время для захоронения</dt>
       <dd>{{cemetery.time_slots}}</dd>
     </dl>
@@ -65,10 +65,10 @@
 
 <h3>Участки</h3>
 <div class="row-fluid">
-  <div class="span12" style="width:auto !important">
-    Найти <input ng-model="search.name"><br/>
+  <div class="span12">
+    <!--Найти <input ng-model="search.name"><br/>-->
 
-    <div class="gridStyle " ng-grid="gridOptions"></div>
+    <div class="gridStyle" ng-grid="gridOptions"></div>
   </div>
 </div>
 
