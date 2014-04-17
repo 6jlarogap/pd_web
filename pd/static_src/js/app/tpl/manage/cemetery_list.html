@@ -27,8 +27,12 @@
     		<div ng-include src="'/static/js/app/tpl/manage/form_edit_cemetery_main.html'+version_str"></div>
         </div>
         <div class="modal-footer">
-            <button ng-click="addElement(item)" class="btn btn-primary" ng-disabled="cemeteryEditForm.$invalid">Добавить</button>
-            <button ng-click="closeAddModal()" class="btn" >Отменить</button>
+            <button ng-click="addElement(item)"
+                    class="btn btn-primary"
+                    ng-disabled="cemeteryEditForm.$invalid || editor.cemetery.time_end <= editor.cemetery.time_begin">
+              Добавить
+            </button>
+            <button ng-click="closeAddModal()" class="btn">Отменить</button>
         </div>
     </form>
 </div>
