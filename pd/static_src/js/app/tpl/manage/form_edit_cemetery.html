@@ -5,7 +5,9 @@
         <div ng-include src="'/static/js/app/tpl/manage/form_edit_cemetery_main.html'+version_str"></div>
       </div>
       <div class="modal-footer">
-        <button class="btn btn-primary" ng-disabled="is_editor_disabled(cemeteryEditForm)" ng-click="saveEditForm()">
+        <button class="btn btn-primary"
+                ng-disabled="is_editor_disabled(cemeteryEditForm) || editor.cemetery.time_end <= editor.cemetery.time_begin"
+                ng-click="saveEditForm()">
           Сохранить
         </button>
         <button class="btn cancel" ng-click="closeEditForm()">Отменить</button>
@@ -33,7 +35,9 @@
       </div>
       <div class="modal-footer">
         <div class="badge pull-left" ng-show="cemeteryEditForm.$invalid">Исправьте ошибке в форме кладбища</div>
-        <button id="edit_save_btn" class="btn btn-primary" ng-disabled="is_editor_disabled(cemeteryEditForm)"
+        <button id="edit_save_btn"
+                class="btn btn-primary"
+                ng-disabled="is_editor_disabled(cemeteryEditForm)"
                 ng-click="saveEditForm()">Сохранить
         </button>
         <button class="btn cancel" ng-click="closeEditForm()">Отменить</button>

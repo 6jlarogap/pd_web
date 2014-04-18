@@ -7,12 +7,17 @@
   <tr>
     <td>
       <label for="id_time_begin">Начало работы:</label>
-      <timepicker ng-model="editor.cemetery.time_begin" show-meridian="false"></timepicker>
+      <timepicker ng-model="editor.cemetery.time_begin" show-meridian="false" readonly-input="true"></timepicker>
     </td>
     <td>&nbsp;</td>
     <td>
       <label for="id_time_end">Окончание работы:</label>
-      <timepicker ng-model="editor.cemetery.time_end" show-meridian="false"></timepicker>
+      <timepicker ng-model="editor.cemetery.time_end" show-meridian="false" readonly-input="true"></timepicker>
+    </td>
+  </tr>
+  <tr ng-show="editor.cemetery.time_end <= editor.cemetery.time_begin">
+    <td colspan="3">
+      <span class="text-error">Время завершения должно быть больше времени начала</span>
     </td>
   </tr>
 </table>
