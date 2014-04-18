@@ -1,6 +1,6 @@
-.gridStyle {
-    height: 500px;
-}
+/*.gridStyle {*/
+    /*height: 500px;*/
+/*}*/
 
 
 .dl-horizontal dt {
@@ -27,10 +27,10 @@
 }
 
 
-.gridStyle.full-size-grid, .gridStyle.full-size-grid .ngViewport{
-	height: auto !important;
-	overflow:hidden !important;
-}
+/*.gridStyle.full-size-grid, .gridStyle.full-size-grid .ngViewport{*/
+	/*height: auto !important;*/
+	/*overflow:hidden !important;*/
+/*}*/
 
 #yandex-map{
     height: 310px;
