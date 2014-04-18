@@ -94,6 +94,9 @@
 
               <p class="error" ng-show="responsibleEditForm.responsible_login_phone.$error.validPhone">Неверный номер
                 телефона</p>
+              <p class="text-info" ng-show="!responsible.login_phone && editor.responsible.login_phone">
+                <i class="icon-info-sign"></i> Пожалуйста, предупредите, что придет СМС
+              </p>
             </td>
           </tr>
           <tr>
