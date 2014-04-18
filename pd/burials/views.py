@@ -354,7 +354,7 @@ class PlaceViewSet(viewsets.ModelViewSet):
 
             if not settings.DEBUG and \
                object.responsible.login_phone and \
-               not self.old_responsible and \
+               (not self.old_responsible or not self.old_responsible.login_phone) and  \
                not CustomerProfile.objects.filter(user__username=object.responsible.login_phone).count():
                 password = CustomerProfile.create_cabinet(object.responsible)
                 sent, message = send_sms(
