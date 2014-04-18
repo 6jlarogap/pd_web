@@ -192,7 +192,41 @@
 <a href="#" onclick="return contShowHide('#cont_responsible', '#a_cont_responsible', '{% trans 'развернуть' %}', '{% trans 'свернуть' %}');"
     class="slider" data-id="cont_responsible" id="a_cont_responsible">{% trans "развернуть" %}</a>
     <div id="cont_responsible" {% if not form.responsible_form.errors %}style="display: none"{% endif %}>
-        {{ form.responsible_form.as_p }}
+
+        {% if form.responsible_form.take_from %}
+            {{ form.responsible_form.take_from.errors }}
+            <p>{{ form.responsible_form.take_from.label_tag }} {{ form.responsible_form.take_from }}<span class="helptext">{{ form.responsible_form.take_from.help_text }}</span></p>
+        {% endif %}
+
+        {{ form.responsible_form.last_name.errors }}
+        <p>{{ form.responsible_form.last_name.label_tag }} {{ form.responsible_form.last_name }}<span class="helptext">{{ form.responsible_form.last_name.help_text }}</span></p>
+
+        {{ form.responsible_form.first_name.errors }}
+        <p>{{ form.responsible_form.first_name.label_tag }} {{ form.responsible_form.first_name }}<span class="helptext">{{ form.responsible_form.first_name.help_text }}</span></p>
+
+        {{ form.responsible_form.middle_name.errors }}
+        <p>{{ form.responsible_form.middle_name.label_tag }} {{ form.responsible_form.middle_name }}<span class="helptext">{{ form.responsible_form.middle_name.help_text }}</span></p>
+
+        {% if form.responsible_form.login_phone_ %}
+            {{ form.responsible_form.login_phone_.errors }}
+            <p>
+            {{ form.responsible_form.login_phone_.label_tag }}
+            {% if not form.instance or form.instance.is_draft %}
+                {% if request.user.profile.is_ugh %}
+                    <span style="color:blue">{% trans "Пожалуйста, предупредите, что придет СМС" %}</span>
+                {% endif %}
+            {% endif %}
+            </p>
+            {{ form.responsible_form.login_phone_ }}<span class="helptext">{{ form.responsible_form.login_phone_.help_text }}</span></p>
+        {% endif %}
+
+        {{ form.responsible_form.phones.errors }}
+        <p>{{ form.responsible_form.phones.label_tag }} {{ form.responsible_form.phones }}<span class="helptext">{{ form.responsible_form.phones.help_text }}</span></p>
+
+        {# hidden responsible_form fields #}
+            {{ form.responsible_form.place }}
+            {{ form.responsible_form.order }}
+
         <div id="cont_responsible_address">
             <h3>{% trans "Адрес" %}</h3>
             <div class="form_block">

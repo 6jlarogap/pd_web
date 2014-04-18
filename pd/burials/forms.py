@@ -494,6 +494,9 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
 
         responsible = self.instance and self.instance.get_responsible()
         self.responsible_form = ResponsibleForm(data=data, prefix='responsible', instance=responsible)
+        if 'login_phone_' in self.responsible_form.fields and \
+            self.instance and (self.instance.is_closed() or self.instance.is_exhumated()):
+            self.responsible_form.fields['login_phone_'].widget.attrs.update({'readonly':'True'})
         resp_addr = responsible and responsible.address
         self.responsible_address_form = LocationForm(data=data, prefix='responsible-address', instance=resp_addr)
 

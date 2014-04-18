@@ -245,7 +245,7 @@ api_auth_user = ApiAuthUser.as_view()
 
 class AuthGetPasswordBySMSView(CheckRecaptchaMixin, APIView):
     """
-    Замена пользователю пароля, отправка пароля по СМС
+    Замена существующему пользователю-кабинетчику пароля, отправка пароля по СМС
     
     Input example:
     {
@@ -275,24 +275,23 @@ class AuthGetPasswordBySMSView(CheckRecaptchaMixin, APIView):
         if not self.check_recaptcha(self.request, recaptcha_data['challenge'], recaptcha_data['response']):
             message = _(u'Введена неверная captcha')
         else:
-            places = Place.objects.filter(responsible__login_phone=decimal.Decimal(phone_number))
-            if not places.count():
-                message = _(u'Ваш номер телефона не указан в списке для входа. Обратитесь в администрацию кладбища')
+            if not CustomerProfile.objects.filter(user__username=phone_number).count():
+                message = _(u'Вы не зарегистрированы в системе. Обратитесь в администрацию кладбища')
             else:
-                password = CustomerProfile.create_cabinet(places[0].responsible)
+                password = CustomerProfile.generate_password()
                 if not settings.DEBUG:
                     sent, message = send_sms(
                         phone_number=phone_number,
                         text=_(u'Vash parol na PohoronnoeDelo: %s') % password,
                         email_error_text = _(u"Пользователь %s не смог получить или заменить пароль" % (phone_number,)),
                     )
-                if not message:
-                    status = 'success'
-                    status_code = 200
-                    if settings.DEBUG:
-                        message = _(u'Ваш пароль: %s') % password
-                    else:
-                        message = _(u'Пароль установлен, СМС с паролем отправлено')
+        if not message:
+            status = 'success'
+            status_code = 200
+            if settings.DEBUG:
+                message = _(u'Ваш пароль: %s') % password
+            else:
+                message = _(u'Пароль установлен, СМС с паролем отправлено')
         data = { 'status': status, 'message': message }
         return Response(data=data, status=status_code)
 
