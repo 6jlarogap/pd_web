@@ -1,7 +1,6 @@
-/*.gridStyle {*/
-    /*height: 500px;*/
-/*}*/
-
+.gridStyle {
+    height: 500px;
+}
 
 .dl-horizontal dt {
 	float: left;
