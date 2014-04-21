@@ -136,7 +136,7 @@ def log_object(request, obj=None, old=None, new=None, reason=None, footer=None, 
         user=user,
         ct=obj and ContentType.objects.get_for_model(obj) or None,
         obj_id=obj and obj.pk or None,
-        msg = u"<br/>".join(msg + new_msg),
+        msg = "\n".join(msg + new_msg),
         code=code or '',
     )
     del msg
