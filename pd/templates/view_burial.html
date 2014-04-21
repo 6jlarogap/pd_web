@@ -64,6 +64,16 @@
             <dt>{% trans "Заявитель" %}:</dt>
                 <dd>не указан</dd>
         {% endif %}
+        {% if user.profile.is_ugh and not b.is_archive and b.loru %} 
+            <dt>{% trans "Посредник (ЛОРУ)" %}:</dt>
+                <dd>{{ b.loru }}</dd>
+                {% if b.loru_agent %}
+                    <dd>{% trans "Агент" %}: {{ b.loru_agent }}</dd>
+                    <dd>{% trans "Доверенность" %}: {{ b.loru_dover|default_if_none:"не указана" }}</dd>
+                {% elif b.loru_agent_director %}
+                    <dd>{% trans "Агент" %}: {% trans "Директор" %}</dd>
+                {% endif %}
+        {% endif %}
         <dt>{% trans "Усопший" %}:</dt>
         <dd>
             {{ b.deadman|default:"не указан" }}
@@ -146,14 +156,6 @@
                 {% elif b.cemetery and b.area and b.place_number and not b.is_new %}
                     <span style="color:red"><b>{% trans "Место отсутствует в архиве" %}!</b></span><br />
                 {% endif %}
-            {% endif %}
-        </dd>
-        <dt>{% trans "Правило создания номера места" %}:</dt>
-        <dd>
-            {% if b.is_archive %}
-                {{ b.cemetery.get_places_algo_archive_display }}
-            {% else %}
-                {{ b.cemetery.get_places_algo_display }}
             {% endif %}
         </dd>
         <dt>{% trans "Ответственный" %}:</dt>
