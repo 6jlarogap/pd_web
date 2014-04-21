@@ -19,19 +19,21 @@ function CemeteryViewCtrl($scope, $http, $resource, $location,  $routeParams,
 			isEditorOpen: false
 	};
 	$scope.area_max_places = 10;
-    $scope.gridOptions = { 
-        data: 'area_list|filter:search',
-        enableRowSelection:false,
-        columnDefs: [
-        	{field: 'name', displayName: 'Наименование'},
-        	{cellTemplate:tplAvailability, displayName: 'Открытость'},
-        	{cellTemplate:tplPurpose, displayName: 'Назначение'},
-        	{field: 'places_count', displayName: 'Кол-во могил в месте'},
-            {displayName:'Действие',cellTemplate:tplButtonEdit}
-        ]
-    };
+  $scope.gridOptions = {
+    data: 'area_list',
+    enableRowSelection:false,
+    columnDefs: [
+      {field: 'name', displayName: 'Наименование'},
+      {cellTemplate:tplAvailability, displayName: 'Открытость'},
+      {cellTemplate:tplPurpose, displayName: 'Назначение'},
+      {field: 'places_count', displayName: 'Кол-во могил в месте'},
+        {displayName:'Действие',cellTemplate:tplButtonEdit}
+    ],
+    showFilter: true
+  };
 
-	$scope.PLACE_TYPES = PLACE_TYPES;	
+  $scope.PLACE_TYPES = PLACE_TYPES;
+  $scope.PLACE_ARCHIVE_TYPES = PLACE_ARCHIVE_TYPES;
 	$scope.AVAILABILITY_CHOICES = AVAILABILITY_CHOICES;
 
 	AreaPurpose.get(function(result) {
@@ -58,10 +60,10 @@ function CemeteryViewCtrl($scope, $http, $resource, $location,  $routeParams,
 		    }
 
 			$scope.cemetery = new Cemetery(result.cemetery);
-			$scope.cemetery.time_begin = new Date('0 '+ $scope.cemetery.time_begin);
-			$scope.cemetery.time_end = new Date('0 '+ $scope.cemetery.time_end);
-			
-			$scope.phones = [];
+      $scope.cemetery.time_begin = moment($scope.cemetery.time_begin, 'HH:mm:ss').toDate();
+      $scope.cemetery.time_end = moment($scope.cemetery.time_end, 'HH:mm:ss').toDate();
+
+      $scope.phones = [];
 			angular.forEach(result.phones, function(item) {
                   $scope.phones.push(new Phone(item));
             });
@@ -185,6 +187,13 @@ function CemeteryViewCtrl($scope, $http, $resource, $location,  $routeParams,
 					);
 	};
 
+  $scope.$watch(function () {
+    return $scope.editor.cemetery ? $scope.editor.cemetery.places_algo_archive : null;
+  }, function (placesAlgoArchive, oldPlacesAlgoArchive) {
+    if (placesAlgoArchive !== oldPlacesAlgoArchive && 'burial_account_number' === placesAlgoArchive) {
+      $scope.editor.cemetery.archive_burial_account_number_required = true;
+    }
+  });
 
 	// RUN
 	$scope.$on("$routeChangeSuccess",function(event){

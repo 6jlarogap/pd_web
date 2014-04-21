@@ -8,7 +8,12 @@
         row: 'По ряду',
         cem_year: 'Кладбище + год',
         burial_account_number: 'По рег. номеру захоронения',
-        manual: 'Ручное'
+        manual: 'Вручную'
+   },
+    PLACE_ARCHIVE_TYPES = {
+        '-area': 'По порядку в пределах участка (-0001 -0002...)',
+        burial_account_number: 'По рег. номеру захоронения',
+        manual: 'Вручную'
    },
     AVAILABILITY_CHOICES = {
         open:	'Открыт',

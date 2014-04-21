@@ -74,3 +74,10 @@ li.thumbnail-preview-col img{
 	overflow-x:hidden;
 	overflow-y: scroll;
 }
+
+.text-error {
+    color: #b94a48;
+}
+.text-info {
+    color: #3a87ad;
+}

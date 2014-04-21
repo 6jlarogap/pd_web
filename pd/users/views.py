@@ -49,7 +49,7 @@ from billing.models import Wallet, Rate
 from orders.models import Product, ProductStatus, ProductHistory
 from pd.views import PaginateListView, RequestToFormMixin, FormInvalidMixin, get_front_end_url, ServiceException
 
-from sms_service import sms24x7
+from sms_service.utils import send_sms
 
 class CheckRecaptchaMixin(object):
     
@@ -77,13 +77,15 @@ class AuthGetTokenView(APIView):
         token = None
         username = request.DATA.get('username')
         password = request.DATA.get('password')
-        status = 'error'
+        confirm_tc = request.DATA.get('confirmTC')
+        data = dict(status='error')
         status_code = 400
         if username and password:
             user = authenticate(username=username, password=password)
             if user and user.is_active:
                 token, created = Token.objects.get_or_create(user=user)
         if token:
+            tc_confirmed = True
             role = None
             try:
                 user.customerprofile
@@ -99,36 +101,42 @@ class AuthGetTokenView(APIView):
                         role = u'ROLE_OMS'
             else:
                 role = 'ROLE_CLIENT'
+                tc_confirmed = user.customerprofile.tc_confirmed or confirm_tc
             if not role:
                 raise Exception(u'Unknown role')
-            login(request, user)
+            if tc_confirmed:
+                login(request, user)
 
-            profile = { 'email': user.email or None, 'photo': None }
-            pr = user.customerprofile if role == 'ROLE_CLIENT' else user.profile
-            profile['lastname'] = pr.user_last_name or user.last_name or None
-            profile['firstname'] = pr.user_first_name or user.first_name or None
-            profile['middlename'] = pr.user_middle_name or None
-            if role == 'ROLE_CLIENT':
-                org = { 'id': None, 'name': None }
-                profile['mainPhone'] = username
+                profile = { 'email': user.email or None, 'photo': None }
+                pr = user.customerprofile if role == 'ROLE_CLIENT' else user.profile
+                profile['lastname'] = pr.user_last_name or user.last_name or None
+                profile['firstname'] = pr.user_first_name or user.first_name or None
+                profile['middlename'] = pr.user_middle_name or None
+                if role == 'ROLE_CLIENT':
+                    org = { 'id': None, 'name': None }
+                    profile['mainPhone'] = username
+                    if not user.customerprofile.tc_confirmed and confirm_tc:
+                        user.customerprofile.tc_confirmed = datetime.datetime.now()
+                        user.customerprofile.save()
+                else:
+                    org = { 'id': user.profile.org.pk, 'name': user.profile.org.name or None }
+                    profile['mainPhone'] = None
+
+                data.update({
+                    'status': 'success',
+                    'token': token.key,
+                    'sessionId': request.session._get_or_create_session_key(),
+                    'profile': profile,
+                    'org': org,
+                    'role': role,
+                 })
+                status_code = 200
+                write_log(request, request.user, _(u'Вход в систему'))
+                LoginLog.write(request)
             else:
-                org = { 'id': user.profile.org.pk, 'name': user.profile.org.name or None }
-                profile['mainPhone'] = None
-
-            data = { 'status': 'success',
-                     'token': token.key,
-                     'sessionId': request.session._get_or_create_session_key(),
-                     'profile': profile,
-                     'org': org,
-                     'role': role,
-                   }
-            status_code = 200
-            write_log(request, request.user, _(u'Вход в систему'))
-            LoginLog.write(request)
+                data['message'] = 'unconfirmed_tc'
         else:
-            data = { 'status': status,
-                     'message': 'Wrong username or password',
-                   }
+            data['message'] = 'Wrong username or password'
         return Response(data=data, status=status_code)
 
 auth_get_token = AuthGetTokenView.as_view()
@@ -237,11 +245,11 @@ api_auth_user = ApiAuthUser.as_view()
 
 class AuthGetPasswordBySMSView(CheckRecaptchaMixin, APIView):
     """
-    Замена пользователю пароля, отправка пароля по СМС
+    Замена существующему пользователю-кабинетчику пароля, отправка пароля по СМС
     
     Input example:
     {
-        "phoneNumber": “375291234567”,
+        "phoneNumber": "375291234567",
         "recaptchaData": {
             "response": "foo bar",
             "challenge": "03AHJ_VuvQ5p0AdejIw4W6"
@@ -251,7 +259,6 @@ class AuthGetPasswordBySMSView(CheckRecaptchaMixin, APIView):
     {
         "status: "success",
         "message": "Пароль установлен"
-        "password": "new_password"
     }
     {
         "status: "error",
@@ -262,71 +269,33 @@ class AuthGetPasswordBySMSView(CheckRecaptchaMixin, APIView):
     def post(self, request):
         status = 'error'
         status_code = 400
-        password = None
         message = ''
         phone_number = request.DATA['phoneNumber']
         recaptcha_data = request.DATA['recaptchaData']
         if not self.check_recaptcha(self.request, recaptcha_data['challenge'], recaptcha_data['response']):
             message = _(u'Введена неверная captcha')
         else:
-            places = Place.objects.filter(responsible__login_phone=decimal.Decimal(phone_number))
-            if not places.count():
-                message = _(u'Ваш номер телефона не указан в списке для входа. Обратитесь в администрацию кладбища')
+            if not CustomerProfile.objects.filter(user__username=phone_number).count():
+                message = _(u'Вы не зарегистрированы в системе. Обратитесь в администрацию кладбища')
             else:
-                default_serv = your_serv = None
+                password = CustomerProfile.generate_password()
+                user = User.objects.get(username=phone_number)
+                user.set_password(password)
+                user.save()
                 if not settings.DEBUG:
-                    for serv in settings.SMS_SERVICE:
-                        if serv['country_code'] == 'default':
-                            default_serv = serv
-                        if phone_number.startswith(serv['country_code']):
-                            your_serv = serv
-                    if not your_serv:
-                        if default_serv:
-                            your_serv = default_serv
-                        else:
-                            message = _(u"Оператор телефона не обслуживается")
-                if not message:
-                    user, created = User.objects.get_or_create(username=phone_number)
-                    if created:
-                        user.is_active = True
-                    chars = string.ascii_uppercase + string.ascii_lowercase + string.digits
-                    password = ''.join(random.choice(chars) for x in range(random.randrange(5, 11)))
-                    user.set_password(password)
-                    user.save()
-                    r = places[0].responsible
-                    customprofile, created = CustomerProfile.objects.get_or_create(user=user,
-                                                defaults={
-                                                    'user_last_name': r.last_name,
-                                                    'user_first_name': r.first_name,
-                                                    'user_middle_name': r.middle_name,
-                                                }
-                                            )
-                    if your_serv:
-                        try:
-                            smsapi = sms24x7.smsapi(your_serv['user'], your_serv['password'])
-                            smsapi.push_msg(
-                                _(u'Vash parol na PohoronnoeDelo: %s') % password,
-                                phone_number,
-                                # 11 chars max
-                                sender_name=u'PohoronnoeD',
-                                nologin = True
-                            )
-                        except sms24x7.smsapi_nogate_exception:
-                            message = _(u"Оператор телефона не обслуживается")
-                        except sms24x7.smsapi_exception:
-                            message = _(u"Произошла ошибка. Мы известим Вас о восстановлении сервиса")
-                            email_from = settings.DEFAULT_FROM_EMAIL
-                            email_to = (settings.DEFAULT_FROM_EMAIL, )
-                            email_subject = _(u'Ошибка СМС сервиса')
-                            email_text = _(u"Пользователь %s не смог получить пароль" % (phone_number,))
-                            EmailMessage(email_subject, email_text, email_from, email_to, ).send()
-                    if not message:
-                        status = 'success'
-                        status_code = 200
-                        message = _(u'Пароль установлен')
+                    sent, message = send_sms(
+                        phone_number=phone_number,
+                        text=_(u'Vash parol na PohoronnoeDelo: %s') % password,
+                        email_error_text = _(u"Пользователь %s не смог получить или заменить пароль" % (phone_number,)),
+                    )
+        if not message:
+            status = 'success'
+            status_code = 200
+            if settings.DEBUG:
+                message = _(u'Ваш пароль: %s') % password
+            else:
+                message = _(u'Пароль установлен, СМС с паролем отправлено')
         data = { 'status': status, 'message': message }
-        if settings.DEBUG:
-            data['password'] = password
         return Response(data=data, status=status_code)
 
 auth_get_password_by_sms = AuthGetPasswordBySMSView.as_view()
@@ -822,7 +791,7 @@ class AutocompleteOrg(View):
         else:
             orgs = Org.objects.none()
 
-        return HttpResponse(json.dumps([{'value': c.name} for c in orgs[:20]]), mimetype='text/javascript')
+        return HttpResponse(json.dumps([{'value': c.pk if exact else c.name} for c in orgs[:20]]), mimetype='text/javascript')
 
 autocomplete_org = AutocompleteOrg.as_view()
 
@@ -927,6 +896,10 @@ class RegisterView(CreateView):
         salt = hashlib.sha1(str(random.random())).hexdigest()[:5]
         obj.user_activation_key = hashlib.sha1(salt+obj.user_name).hexdigest()
         obj.status = RegisterProfile.STATUS_TO_CONFIRM
+        # Поля адреса вплоть до города обязательны, но
+        # вдруг мы от этой обязательности откажемся, посему if...:
+        if form.address_form.cleaned_data.get('country_name'):
+            obj.org_address = form.address_form.save()
         obj.save()
         write_log(None, obj, _(u'%s : получена. Ожидание подтверждения') % obj)
         email_subject = "%s %s" % (unicode(_(u"Подтверждение заявки на регистрацию на")),
