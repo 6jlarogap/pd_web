@@ -279,6 +279,9 @@ class AuthGetPasswordBySMSView(CheckRecaptchaMixin, APIView):
                 message = _(u'Вы не зарегистрированы в системе. Обратитесь в администрацию кладбища')
             else:
                 password = CustomerProfile.generate_password()
+                user = User.objects.get(username=phone_number)
+                user.set_password(password)
+                user.save()
                 if not settings.DEBUG:
                     sent, message = send_sms(
                         phone_number=phone_number,
