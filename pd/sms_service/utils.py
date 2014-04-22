@@ -57,7 +57,7 @@ def send_sms(phone_number, text, email_error_text=''):
         except sms24x7.smsapi_exception as excpt:
             message = _(u"Ошибка СМС-сервиса, %s") % excpt
     if message:
-        email_error_text += "\n%s\n%s" % \
+        email_error_text += u"\n%s\n%s" % \
                             (message, _(u"Справка по числовому коду: https://outbox.sms24x7.ru/api_manual/errors.html"), )
         email_from = settings.DEFAULT_FROM_EMAIL
         email_to = (settings.DEFAULT_FROM_EMAIL, )
