@@ -894,14 +894,20 @@ class Burial(SafeDeleteMixin, GetLogsMixin, BaseModel):
         if not settings.DEBUG and \
            place.responsible and \
            place.responsible.login_phone and \
-           (not old_status or old_status != self.STATUS_CLOSED) and \
-           not CustomerProfile.objects.filter(user__username=place.responsible.login_phone).count():
-            password = CustomerProfile.create_cabinet(place.responsible)
+           (not old_status or old_status != self.STATUS_CLOSED):
+            if CustomerProfile.objects.filter(user__username=place.responsible.login_phone).count():
+                text=_(u'Место %s прикреплено. pohoronnoedelo.ru') % place.pk
+                email_error_text = _(u"Пользователь %s не смог получить СМС после прикрепления места %s" % \
+                                    (place.responsible.login_phone, place.pk,))
+            else:
+                password = CustomerProfile.create_cabinet(place.responsible)
+                text=_(u'https://pohoronnoedelo.ru login: %s parol: %s') % (place.responsible.login_phone, password,)
+                email_error_text = _(u"Пользователь %s не смог получить пароль после закрытия захоронения" % \
+                                    (place.responsible.login_phone,))
             sent, message = send_sms(
                 phone_number=place.responsible.login_phone,
-                text=_(u'https://pohoronnoedelo.ru login: %s parol: %s') % (place.responsible.login_phone, password,),
-                email_error_text = _(u"Пользователь %s не смог получить пароль после закрытия захоронения" % \
-                                    (place.responsible.login_phone,)),
+                text=text,
+                email_error_text=email_error_text,
             )
 
         # Очистим "пустышку" свидетельства о смерти, где
