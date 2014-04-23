@@ -17,6 +17,10 @@
                 <source src="{{ src.url }}"  type="video/{{ src.type }}" />
             {% endfor %}
             </video>
+            <br /><br /><br />
+            {% if item.text %}
+                <textarea style="width:640px;height:120px;resize:none" readonly >{{ item.text }}</textarea>
+            {% endif %}
             </center>
         <br />
         {% endfor %}
