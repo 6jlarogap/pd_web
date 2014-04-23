@@ -1400,14 +1400,14 @@ class ApiEducation(APIView):
                                 'order': order_titles + 1,
                                 'items': []
                             })
-                            cur_titles = data[order_titles]
+                            cur_title = data[order_titles]
                             order_titles += 1
                             order_items = 0
                         else:
                             append_to = cur_title['items'] if cur_title else data
                             url =  u"%s/media/%s/video/%s/%s" % (host, cls.FOLDER_EDU, type_, row[3], ), 
                             append_to.append({
-                                'type': 'category', 
+                                'type': 'item', 
                                 'title': row[1],
                                 'text': row[2],
                                 'url':  [
