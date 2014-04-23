@@ -1363,6 +1363,8 @@ class ApiEducation(APIView):
     """
     
     permission_classes = (IsAuthenticated,)
+    
+    FOLDER_EDU = 'support'
 
     @classmethod
     def get_description(cls, request):
@@ -1381,8 +1383,9 @@ class ApiEducation(APIView):
         try:
             request.user.profile
             type_ = 'oms' if request.user.profile.is_ugh() else 'loru'
+            host = u"%s://%s" % ('https' if request.is_secure() else 'http', request.get_host(), )
             try:
-                f_description = open(os.path.join(settings.MEDIA_ROOT, 'support', 'description.csv'), "rb")
+                f_description = open(os.path.join(settings.MEDIA_ROOT, cls.FOLDER_EDU, 'description.csv'), "rb")
                 csv_reader = csv.reader(f_description)
                 # 
                 order_titles = 0
@@ -1402,11 +1405,16 @@ class ApiEducation(APIView):
                             order_items = 0
                         else:
                             append_to = cur_title['items'] if cur_title else data
+                            url =  u"%s/media/%s/video/%s/%s" % (host, cls.FOLDER_EDU, type_, row[3], ), 
                             append_to.append({
                                 'type': 'category', 
                                 'title': row[1],
                                 'text': row[2],
-                                'url':  row[3],
+                                'url':  [
+                                    u"%s.mp4" % url,
+                                    u"%s.webm" % url,
+                                    u"%s.ogg" % url,
+                                 ],
                                 'order': order_items + 1 if cur_title else order_titles + 1
                             })
                             if cur_title:
