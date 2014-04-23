@@ -5,6 +5,8 @@ import random
 import string
 import decimal
 import hashlib
+import os
+import csv
 
 from django.conf import settings
 from django.contrib import messages
@@ -1317,3 +1319,108 @@ class TestCaptchaView(FormView):
 
 testcaptcha = TestCaptchaView.as_view()
 
+class ApiEducation(APIView):
+    """
+    Передать json- массив пунктов видеокурса
+
+    Примерный вид получаемого массива:    
+    [
+        {
+            “type”: "category",
+            “title”: "Вступление”,
+            “order”: 1,
+            “items”: [
+                {
+                    “type”: “item”,
+                    “title”: “Начало работы”,
+                    “text”: “Речь диктора...”,
+                    “url”:
+                        [
+                            “http://example.com/video.mp4”,
+                            “http://example.com/video.webm”,
+                            “http://example.com/video.ogg”
+                        ],
+                    “order”: 1
+                },
+                ... # следующий пункт
+         },
+         ... # следующая категория (заголовок)
+     ]
+     
+    Структура двухуровневая:
+        заголовок (category)
+            пункт (item)
+            пункт (item)
+            ...
+        заголовок (category)
+            пункт (item)
+            ...
+    Теоретически может начинаться с пунктов:
+        пункт
+        пункт
+        заголовок
+            пункт
+    """
+    
+    permission_classes = (IsAuthenticated,)
+
+    @classmethod
+    def get_description(cls, request):
+        """
+        получить массив заголовков и пунктов
+        
+        Читаем csv файл со следующими полями:
+            0   тип пользователя, для которого курс, loru или oms (вычисляется из request)
+            1   заголовок или краткое описание пункта
+            2   текст диктора, если это пункт (не учитывается, если заголовок:)
+            3   имя_файла.mp4 с видеороликом (если пусто, значит это заголовок, иначе пункт)
+            
+        Параметр host: http(s)://hostname.org
+        """
+        data = []
+        try:
+            request.user.profile
+            type_ = 'oms' if request.user.profile.is_ugh() else 'loru'
+            try:
+                f_description = open(os.path.join(settings.MEDIA_ROOT, 'support', 'description.csv'), "rb")
+                csv_reader = csv.reader(f_description)
+                # 
+                order_titles = 0
+                order_items = 0
+                cur_title = None
+                for row in csv_reader:
+                    if row[0] == type_:
+                        if not row[3]:
+                            data.append({
+                                'type': 'category', 
+                                'title': row[1],
+                                'order': order_titles + 1,
+                                'items': []
+                            })
+                            cur_titles = data[order_titles]
+                            order_titles += 1
+                            order_items = 0
+                        else:
+                            append_to = cur_title['items'] if cur_title else data
+                            append_to.append({
+                                'type': 'category', 
+                                'title': row[1],
+                                'text': row[2],
+                                'url':  row[3],
+                                'order': order_items + 1 if cur_title else order_titles + 1
+                            })
+                            if cur_title:
+                                order_items += 1
+                            else:
+                                order_titles += 1
+                f_description.close()
+            except IOError:
+                pass
+        except (AttributeError, Profile.DoesNotExist, ):
+            pass
+        return data
+
+    def get(self, request):
+        return Response(data=ApiEducation.get_description(request), status=200)
+    
+api_education = ApiEducation.as_view()
