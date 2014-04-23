@@ -61,7 +61,7 @@ class CommonProfile(models.Model):
         # Удалим их из возможных в пароле:
         for c in '0OlI1':
             chars = chars.replace(c, '')
-        password = ''.join(random.choice(chars) for x in range(random.randrange(5, 11)))
+        password = ''.join(random.choice(chars) for x in range(5))
         return password
 
 class CustomerProfile(CommonProfile):
