@@ -1294,14 +1294,6 @@ class SupportThanks(TemplateView):
 
 support_thanks = SupportThanks.as_view()
 
-class Tutorial(TemplateView):
-    template_name = 'tutorial.html'
-
-    def get(self, request, *args, **kwargs):
-        return self.render_to_response({})
-
-tutorial = Tutorial.as_view()
-
 class TestCaptchaView(FormView):
     """
     Форма тестирования captcha
@@ -1410,10 +1402,10 @@ class ApiEducation(APIView):
                                 'type': 'item', 
                                 'title': row[1],
                                 'text': row[2],
-                                'url':  [
-                                    u"%s.mp4" % url,
-                                    u"%s.webm" % url,
-                                    u"%s.ogg" % url,
+                                'urls':  [
+                                    { 'url': u"%s.mp4" % url, 'type': 'mp4' },
+                                    { 'url': u"%s.webm" % url, 'type': 'webm' },
+                                    { 'url': u"%s.ogg" % url, 'type': 'ogg' },
                                  ],
                                 'order': order_items + 1 if cur_title else order_titles + 1
                             })
@@ -1432,3 +1424,13 @@ class ApiEducation(APIView):
         return Response(data=ApiEducation.get_description(request), status=200)
     
 api_education = ApiEducation.as_view()
+
+class Tutorial(TemplateView):
+    template_name = 'tutorial.html'
+
+    def get(self, request, *args, **kwargs):
+        data = ApiEducation.get_description(request)
+        return self.render_to_response({'data': data})
+
+tutorial = Tutorial.as_view()
+
