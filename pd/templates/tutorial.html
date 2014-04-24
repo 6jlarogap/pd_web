@@ -3,24 +3,41 @@
 {% load i18n %}
 
 {% block content %}
+    <a name="begin"></a>
     <h1><u>{% trans "Курс обучения" %}</u></h1>
-    <br /><br />
+    <br />
+    
     {% for d in data %}
-        <h2>{{ d.title }}</h2>
+        <a href="#chapter{{ d.order }}"><big><big>{{ d.title }}</big></big></a>
+        <br />
+        {% for item in d.items %}
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+            <a href="#chapter{{ d.order }}{{ item.order }}"><big>{{ item.title }}</big></a>
+            <br />
+        {% endfor %}
+    {% endfor %}
+    <br />
+    
+    {% for d in data %}
+        <a name="chapter{{ d.order }}"></a><h2>{{ d.title }}</h2>
         <br />
         {% for item in d.items %}
             <center>
-            <h3>{{ item.title }}</h3>
+            <a name="chapter{{ d.order }}{{ item.order }}"></a><h3>{{ item.title }}</h3>
             <br />
             <video width="640" height="360" controls="controls" >
             {% for src in item.urls %}
                 <source src="{{ src.url }}"  type="video/{{ src.type }}" />
             {% endfor %}
             </video>
-            <br /><br /><br />
-            {% if item.text %}
-                <textarea style="width:640px;height:120px;resize:none" readonly >{{ item.text }}</textarea>
-            {% endif %}
+            {% comment %}
+                {% if item.text %}
+                    <textarea style="width:640px;height:120px;resize:none" readonly >{{ item.text }}</textarea>
+                {% endif %}
+            {% endcomment %}
+            <br /><br />
+            <a href="#begin">{% trans "К оглавлению" %}</a>
+            <br />
             </center>
         <br />
         {% endfor %}
