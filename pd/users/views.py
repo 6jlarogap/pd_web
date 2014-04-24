@@ -797,6 +797,22 @@ class AutocompleteOrg(View):
 
 autocomplete_org = AutocompleteOrg.as_view()
 
+class AutocompleteLoruInBurials(View):
+    def get(self, request, *args, **kwargs):
+        query = request.GET.get('query')
+        if query and request.user.profile.is_ugh():
+            lorus = Burial.objects.filter(ugh=request.user.profile.org, loru__name__icontains=query).\
+                                  order_by('loru__name').values('loru__name').distinct()
+        else:
+            lorus = Org.objects.none()
+
+        return HttpResponse(
+            json.dumps([{'value': loru['loru__name']} for loru in lorus[:20]]),
+            mimetype='text/javascript',
+        )
+
+autocomplete_loru_in_burials = AutocompleteLoruInBurials.as_view()
+
 class OrgLogView(LoginRequiredMixin, PaginateListView):
     template_name = 'org_log.html'
     context_object_name = 'logs'

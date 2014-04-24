@@ -43,4 +43,5 @@ urlpatterns = patterns('users.views',
     url(r'^loginlog/$', 'login_log', name='login_log'),
 
     url(r'^autocomplete/org/', 'autocomplete_org', name='autocomplete_org'),
+    url(r'^autocomplete/loru_in_burials/', 'autocomplete_loru_in_burials', name='autocomplete_loru_in_burials'),
 )
