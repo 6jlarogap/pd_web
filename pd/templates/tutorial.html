@@ -18,9 +18,11 @@
             {% endfor %}
             </video>
             <br /><br /><br />
-            {% if item.text %}
-                <textarea style="width:640px;height:120px;resize:none" readonly >{{ item.text }}</textarea>
-            {% endif %}
+            {% comment %}
+                {% if item.text %}
+                    <textarea style="width:640px;height:120px;resize:none" readonly >{{ item.text }}</textarea>
+                {% endif %}
+            {% endcomment %}
             </center>
         <br />
         {% endfor %}
