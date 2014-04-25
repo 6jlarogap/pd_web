@@ -17,7 +17,7 @@ from logs.models import Log
 from pd.utils import DigitsValidator, LengthValidator, NotEmptyValidator
 
 
-class CommonProfile(models.Model):
+class CommonProfile(BaseModel):
     user = models.OneToOneField('auth.User', null=True)
     user_last_name = models.CharField(_(u"Фамилия"), max_length=255, null=True, blank=True)
     user_first_name = models.CharField(_(u"Имя"), max_length=255, null=True, blank=True)
