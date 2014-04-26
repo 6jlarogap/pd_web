@@ -613,22 +613,23 @@ class CustomerDataMixin:
         return is_customer, places, lorus
         
 
-class CatalogFiltersViewSet(CustomerDataMixin, viewsets.ViewSet):
+class CatalogSuppliersViewSet(CustomerDataMixin, viewsets.ViewSet):
     queryset = Place.objects.none()
     permission_classes = (IsAuthenticated,)
     
     def list(self, request):
+        categories = request.GET.getlist('categories[]')
         is_customer, places, lorus = self.get_customer_data(request)
-        places = [{'id': p.pk, 'place': p.place, } for p in places]
         suppliers = []
         for l in lorus:
+            if categories and not Product.objects.filter(loru=l, productcategory__pk__in=categories).count():
+                continue
             supplier = {'id': l.pk, 'name': l.name, 'location': None }
             if l.off_address and l.off_address.gps_x and l.off_address.gps_y:
                 supplier['location'] = {'longitude': l.off_address.gps_x, 'latitude': l.off_address.gps_y}
             suppliers.append(supplier)
         data = {
             'supplier': suppliers,
-            'place': places,
         }
         return Response(status=200 if is_customer else 400, data=data)
 
