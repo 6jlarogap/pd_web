@@ -334,10 +334,10 @@ class ApiFeedBack(CheckRecaptchaMixin, APIView):
                 if not self.check_recaptcha(self.request, recaptcha_data['challenge'], recaptcha_data['response']):
                     raise ServiceException(_(u'Ошибка проверки captcha'))
 
-            email_from = request.DATA.get('email', '').strip()
+            email_from = (request.DATA.get('email') or '').strip()
             callback = request.DATA.get('requestBackCall')
-            phone = request.DATA.get('phoneNumber', '').strip()
-            email_text = request.DATA.get('text', '').strip()
+            phone = (request.DATA.get('phoneNumber') or '').strip()
+            email_text = (request.DATA.get('text') or '').strip()
 
             if callback:
                 try:
@@ -352,16 +352,16 @@ class ApiFeedBack(CheckRecaptchaMixin, APIView):
                 if not email_text:
                     raise ServiceException(_(u"Если не требуется обратный звонок, то задайте вопрос"))
                 
-            user_last_name = request.DATA.get('lastName', '').strip()
+            user_last_name = (request.DATA.get('lastName') or '').strip()
             if not user_last_name:
                 raise ServiceException(_(u"Не задана фамилия"))
-            user_first_name = request.DATA.get('firstName', '').strip()
-            user_middle_name = request.DATA.get('middleName', '').strip()
+            user_first_name = (request.DATA.get('firstName') or '').strip()
+            user_middle_name = (request.DATA.get('middleName') or '').strip()
             if not user_first_name and user_middle_name:
                 raise ServiceException(_(u"Не указано имя при указанном отчестве"))
 
-            email_subject = request.DATA.get('subject', '')
-            if not email_subject.strip():
+            email_subject = (request.DATA.get('subject') or '').strip()
+            if not email_subject:
                 email_subject = _(u'Вопрос в поддержку')
             
             if request.user.is_authenticated():
