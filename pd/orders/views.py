@@ -624,7 +624,16 @@ class CatalogSuppliersViewSet(CustomerDataMixin, viewsets.ViewSet):
         for l in lorus:
             if categories and not Product.objects.filter(loru=l, productcategory__pk__in=categories).count():
                 continue
-            supplier = {'id': l.pk, 'name': l.name, 'location': None }
+            loru_categories = [
+                pc['productcategory__pk'] for pc in \
+                Product.objects.filter(loru=l).order_by('productcategory__pk').values('productcategory__pk').distinct()
+            ]
+            supplier = {
+                'id': l.pk,
+                'name': l.name,
+                'categories': loru_categories,
+                'location': None
+            }
             if l.off_address and l.off_address.gps_x and l.off_address.gps_y:
                 supplier['location'] = {'longitude': l.off_address.gps_x, 'latitude': l.off_address.gps_y}
             suppliers.append(supplier)
