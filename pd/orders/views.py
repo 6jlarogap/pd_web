@@ -618,12 +618,9 @@ class CatalogSuppliersViewSet(CustomerDataMixin, viewsets.ViewSet):
     permission_classes = (IsAuthenticated,)
     
     def list(self, request):
-        categories = request.GET.getlist('categories[]')
         is_customer, places, lorus = self.get_customer_data(request)
         suppliers = []
         for l in lorus:
-            if categories and not Product.objects.filter(loru=l, productcategory__pk__in=categories).count():
-                continue
             loru_categories = [
                 pc['productcategory__pk'] for pc in \
                 Product.objects.filter(loru=l).order_by('productcategory__pk').values('productcategory__pk').distinct()
