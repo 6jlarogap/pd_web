@@ -84,8 +84,8 @@ def media_xsendfile(request, path, document_root):
                 if not burial.is_accessible(request.user):
                     raise Http404
         else:
-            # Для товаров и их категорий: открыто всем
-            if re.search(r'^(?:product\-photo|icons)/',path):
+            # Для товаров, их категорий, поддержки: открыто всем
+            if re.search(r'^(?:product\-photo|icons|support)/',path):
                 pass
             else:
                 raise Http404
