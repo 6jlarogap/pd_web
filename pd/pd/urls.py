@@ -24,7 +24,7 @@ from burials.views import CemeteryViewSet, AreaViewSet, PlaceViewSet, \
 from persons.views import AlivePersonViewSet, DeadPersonViewSet, PhoneViewSet 
 from logs.views import LogViewSet
 from orders.views import ProductCategoryViewSet, CatalogSuppliersViewSet, ProductsViewSet, \
-                         ProductInfoViewSet, CabinetViewSet, loru_product_places, \
+                         ProductInfoViewSet, ApiProfileViewSet, loru_product_places, \
                          UghPublishedProductsViewSet
 from users.views import auth_get_token, auth_get_password_by_sms, auth_api_logout, \
                         api_feedback, api_auth_settings, api_auth_user, api_loru_places, \
@@ -54,7 +54,7 @@ router.register(r'^api/product_category', ProductCategoryViewSet)
 router.register(r'^api/catalog/suppliers', CatalogSuppliersViewSet)
 router.register(r'^api/products', ProductsViewSet)
 router.register(r'^api/product', ProductInfoViewSet)
-router.register(r'^api/cabinet', CabinetViewSet)
+router.register(r'^api/profile', ApiProfileViewSet)
 
 router.register(r'^api/loru/products', UghPublishedProductsViewSet)
 

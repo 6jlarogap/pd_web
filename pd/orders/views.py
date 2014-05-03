@@ -708,7 +708,7 @@ class ProductInfoViewSet(CustomerDataMixin, viewsets.ModelViewSet):
             return Product.objects.none()
         return Product.objects.filter(loru__in=lorus, pk=self.request.GET.get('id'))
 
-class CabinetViewSet(CustomerDataMixin, viewsets.ViewSet):
+class ApiProfileViewSet(CustomerDataMixin, viewsets.ViewSet):
     queryset = CustomerProfile.objects.none()
     permission_classes = (IsAuthenticated,)
     
