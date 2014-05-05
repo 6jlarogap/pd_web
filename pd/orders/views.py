@@ -620,7 +620,12 @@ class CatalogFiltersViewSet(CustomerDataMixin, viewsets.ViewSet):
     def list(self, request):
         is_customer, places, lorus = self.get_customer_data(request)
         places = [{'id': p.pk, 'place': p.place, } for p in places]
-        suppliers = [{'id': l.pk, 'name': l.name, } for l in lorus]
+        suppliers = []
+        for l in lorus:
+            supplier = {'id': l.pk, 'name': l.name, 'location': None }
+            if l.off_address and l.off_address.gps_x and l.off_address.gps_y:
+                supplier['location'] = {'longitude': l.off_address.gps_x, 'latitude': l.off_address.gps_y}
+            suppliers.append(supplier)
         data = {
             'supplier': suppliers,
             'place': places,

@@ -218,6 +218,7 @@ class BurialSearchForm(forms.Form):
     account_number_to = forms.IntegerField(required=False, label=_(u"по"))
     applicant_org = forms.CharField(required=False, max_length=60, label=_(u"Заявитель-ЮЛ"))
     applicant_person = forms.CharField(required=False, max_length=40, label=_(u"Заявитель-ФЛ"))
+    loru_in_burials = forms.CharField(required=False, max_length=60, label=_(u"Посредник (ЛОРУ)"))
     responsible = forms.CharField(required=False, max_length=40, label=_(u"Ответственный"))
     operation = forms.ChoiceField(required=False, choices=EMPTY + Burial.BURIAL_TYPES, label=_(u"Вид захоронения"))
     burial_container = forms.TypedChoiceField(required=False, label=_(u"Тип захоронения"), choices=EMPTY + Burial.BURIAL_CONTAINERS)

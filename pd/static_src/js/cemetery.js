@@ -31,6 +31,7 @@ function setup_address_autocompletes() {
     FIRST_NAME_URL = '/autocomplete/firstname/';
     MIDDLE_NAME_URL = '/autocomplete/middlename/';
     ORG_URL = '/autocomplete/org/';
+    LORU_IN_BURIALS_URL = '/autocomplete/loru_in_burials/';
     DOCSOURCE_URL = '/autocomplete/docsources/';
 
 
@@ -97,6 +98,23 @@ function setup_address_autocompletes() {
             if (query.length < 2) { return }
             $.ajax({
                 url: ORG_URL + "?query=" + query + "&type=loru",
+                dataType: 'json',
+                success: function(data) {
+                    typeahead.process(data);
+                }
+            });
+        }
+    });
+
+    $('input[id=id_loru_in_burials]').attr('autocomplete', 'off').typeahead({
+        items: 100,
+        onselect: function() {
+            $('input[id=id_loru_in_burials]').change();
+        },
+        source: function (typeahead, query) {
+            if (query.length < 2) { return }
+            $.ajax({
+                url: LORU_IN_BURIALS_URL + "?query=" + query,
                 dataType: 'json',
                 success: function(data) {
                     typeahead.process(data);

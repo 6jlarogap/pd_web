@@ -17,7 +17,7 @@ from logs.models import Log
 from pd.utils import DigitsValidator, LengthValidator, NotEmptyValidator
 
 
-class CommonProfile(models.Model):
+class CommonProfile(BaseModel):
     user = models.OneToOneField('auth.User', null=True)
     user_last_name = models.CharField(_(u"Фамилия"), max_length=255, null=True, blank=True)
     user_first_name = models.CharField(_(u"Имя"), max_length=255, null=True, blank=True)
@@ -317,6 +317,16 @@ class BankAccount(models.Model):
 class ProfileLORU(models.Model):
     ugh = models.ForeignKey(Org, related_name='loru_list', limit_choices_to={'type': Org.PROFILE_UGH}, verbose_name=_(u"ОМС"))
     loru = models.ForeignKey(Org, related_name='ugh_list', limit_choices_to={'type': Org.PROFILE_LORU}, verbose_name=_(u"ЛОРУ"))
+
+def add_loru_to_public_catalog(sender, instance, created, **kwargs):
+    if created and instance.type == Org.PROFILE_LORU:
+        add_pay_recipient = Org.objects.get(
+            inn=settings.ORG_AD_PAY_RECIPIENT['inn'],
+            type=Org.PROFILE_UGH,
+        )
+        ProfileLORU.objects.create(ugh=add_pay_recipient, loru=instance)
+
+models.signals.post_save.connect(add_loru_to_public_catalog, sender=Org)
 
 class Dover(models.Model):
     agent = models.ForeignKey(Profile, verbose_name=_(u"Агент"), limit_choices_to={'is_agent': True})

@@ -498,6 +498,8 @@ class BurialsListView(PaginateListView):
                 burials = burials.filter(status=form.cleaned_data['status'])
             if form.cleaned_data['applicant_org']:
                 burials = burials.filter(applicant_organization__name__istartswith=form.cleaned_data['applicant_org'])
+            if form.cleaned_data['loru_in_burials']:
+                burials = burials.filter(loru__name__istartswith=form.cleaned_data['loru_in_burials'])
             if form.cleaned_data['applicant_person']:
                 fio = [f.strip('.') for f in form.cleaned_data['applicant_person'].split(' ')]
                 qa = Q()
