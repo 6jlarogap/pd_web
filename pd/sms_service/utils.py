@@ -44,7 +44,7 @@ def send_sms(phone_number, text, email_error_text=''):
         # Некоторые ошибки идут с нормальной расшифровкой, но иные только
         # с цифровыми кодами, приходится перечислять
         except sms24x7.smsapi_nogate_exception:
-            message = _(u"Ошибка СМС-сервиса: оператор телефона не обслуживается")
+            message = _(u"Ошибка СМС-сервиса: сотовый оператор не подключен")
         except sms24x7.smsapi_auth_exception as excpt:
             message = _(u"Ошибка СМС-сервиса: аутентификация, код: %s") % excpt
         except sms24x7.smsapi_spam_exception as excpt:
