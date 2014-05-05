@@ -51,7 +51,7 @@ router.register(r'^api/placesize', PlaceSizeViewSet)
 
 # Orders
 router.register(r'^api/catalog/suppliers', CatalogSuppliersViewSet)
-router.register(r'^api/catalog/suppliers/categories', ProductCategoryViewSet)
+router.register(r'^api/catalog/categories', ProductCategoryViewSet)
 router.register(r'^api/products', ProductsViewSet)
 router.register(r'^api/product', ProductInfoViewSet)
 router.register(r'^api/profile', ApiProfileViewSet)
