@@ -53,7 +53,7 @@ router.register(r'^api/placesize', PlaceSizeViewSet)
 router.register(r'^api/catalog/suppliers', CatalogSuppliersViewSet)
 router.register(r'^api/catalog/categories', ProductCategoryViewSet)
 router.register(r'^api/products', ProductsViewSet)
-router.register(r'^api/product', ProductInfoViewSet)
+router.register(r'^api/catalog/products/(?P<product_id>\d+)', ProductInfoViewSet)
 router.register(r'^api/profile', ApiProfileViewSet)
 
 router.register(r'^api/loru/products', UghPublishedProductsViewSet)

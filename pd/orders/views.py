@@ -704,9 +704,9 @@ class ProductInfoViewSet(CustomerDataMixin, viewsets.ModelViewSet):
 
     def get_queryset(self):
         is_customer, places, lorus = self.get_customer_data(self.request)
-        if not is_customer or not places or not self.request.GET.get('id'):
+        if not is_customer or not places or not self.kwargs.get('product_id'):
             return Product.objects.none()
-        return Product.objects.filter(loru__in=lorus, pk=self.request.GET.get('id'))
+        return Product.objects.filter(loru__in=lorus, pk=self.kwargs.get('product_id'))
 
 class ApiProfileViewSet(CustomerDataMixin, viewsets.ViewSet):
     queryset = CustomerProfile.objects.none()
