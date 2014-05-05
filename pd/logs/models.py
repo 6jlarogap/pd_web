@@ -122,8 +122,12 @@ def log_object(request, obj=None, old=None, new=None, reason=None, footer=None, 
         for field in new._meta.fields:
             if field.name not in LOG_STOP_FIELDS and getattr(old,field.name) != getattr(new,field.name) \
                 and (obj_stop_fields is None or (obj_stop_fields is not None and  field.name not in obj_stop_fields)):
-                old_val = getattr(old,field.name)
-                new_val = getattr(new,field.name)
+                if hasattr(field, 'choices') and getattr(field, 'choices'):
+                    old_val = old._get_FIELD_display(field)
+                    new_val = new._get_FIELD_display(field)
+                else:
+                    old_val = getattr(old,field.name)
+                    new_val = getattr(new,field.name)
                 res = compare_obj(field.verbose_name, old_val, new_val)
                 if res:
                     msg.append(res)
@@ -136,7 +140,7 @@ def log_object(request, obj=None, old=None, new=None, reason=None, footer=None, 
         user=user,
         ct=obj and ContentType.objects.get_for_model(obj) or None,
         obj_id=obj and obj.pk or None,
-        msg = u"<br/>".join(msg + new_msg),
+        msg = "\n".join(msg + new_msg),
         code=code or '',
     )
     del msg

@@ -218,6 +218,7 @@ class BurialSearchForm(forms.Form):
     account_number_to = forms.IntegerField(required=False, label=_(u"по"))
     applicant_org = forms.CharField(required=False, max_length=60, label=_(u"Заявитель-ЮЛ"))
     applicant_person = forms.CharField(required=False, max_length=40, label=_(u"Заявитель-ФЛ"))
+    loru_in_burials = forms.CharField(required=False, max_length=60, label=_(u"Посредник (ЛОРУ)"))
     responsible = forms.CharField(required=False, max_length=40, label=_(u"Ответственный"))
     operation = forms.ChoiceField(required=False, choices=EMPTY + Burial.BURIAL_TYPES, label=_(u"Вид захоронения"))
     burial_container = forms.TypedChoiceField(required=False, label=_(u"Тип захоронения"), choices=EMPTY + Burial.BURIAL_CONTAINERS)
@@ -333,10 +334,12 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
     burial_container = forms.ChoiceField(label=_(u"Тип захоронения"), choices=Burial.BURIAL_CONTAINERS, widget=forms.RadioSelect,  required=False)
     burial_type = forms.ChoiceField(label=_(u"Вид захоронения"), choices=Burial.BURIAL_TYPES, widget=forms.RadioSelect,  required=False)
     opf = forms.ChoiceField(label='', choices=OPF_CHOICES, widget=forms.RadioSelect)
+    loru = forms.CharField(required=False, label=_(u'Посредник'))
 
     class Meta:
         model = Burial
-        exclude = ['place', 'deadman', 'responsible', 'applicant', 'annulated', ]
+        exclude = ('place', 'deadman', 'responsible', 'applicant', 'annulated',
+                  )
 
     def __init__(self, request, *args, **kwargs):
         super(BurialForm, self).__init__(*args, **kwargs)
@@ -452,6 +455,16 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
                 except PlaceSize.DoesNotExist:
                     pass
 
+        if self.request.user.profile.is_loru() or \
+           self.request.REQUEST.get('archive') or \
+           self.instance.pk and not self.instance.is_ugh_only():
+            del self.fields['loru']
+            del self.fields['loru_agent_director']
+            del self.fields['loru_agent']
+            del self.fields['loru_dover']
+        else:
+            self.initial['loru'] = self.instance.pk and self.instance.loru and self.instance.loru.name or ''
+
         if self.instance.is_finished() and self.instance.place:
             self.initial.update(
                 cemetery=self.instance.place.cemetery,
@@ -482,6 +495,9 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
 
         responsible = self.instance and self.instance.get_responsible()
         self.responsible_form = ResponsibleForm(data=data, prefix='responsible', instance=responsible)
+        if 'login_phone_' in self.responsible_form.fields and \
+           self.instance and (self.instance.is_closed() or self.instance.is_exhumated()):
+            self.responsible_form.fields['login_phone_'].widget.attrs.update({'readonly':'True'})
         resp_addr = responsible and responsible.address
         self.responsible_address_form = LocationForm(data=data, prefix='responsible-address', instance=resp_addr)
 
@@ -552,6 +568,16 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
     def clean_plan_time(self):
         return self.cleaned_data['plan_time'] or None
 
+    def clean_loru(self):
+        loru = None
+        loru_str = self.cleaned_data.get('loru').strip()
+        if loru_str:
+            try:
+                loru = Org.objects.filter(name=loru_str, type=Org.PROFILE_LORU)[0]
+            except IndexError:
+                raise forms.ValidationError(_(u'Нет такого ЛОРУ'))
+        return loru
+
     def clean(self):
         
         StrippedStringsMixin.clean(self)
@@ -600,6 +626,14 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
         if self.cleaned_data.get('agent_director'):
             self.instance.agent = None
             self.instance.dover = None
+
+        if self.cleaned_data.get('loru_agent_director'):
+            self.instance.loru_agent = None
+            self.instance.loru_dover = None
+        if 'loru' in self.fields and not self.cleaned_data.get('loru'):
+            self.instance.loru_agent_director = False
+            self.instance.loru_agent = None
+            self.instance.loru_dover = None
 
         self.instance.changed_by = request.user
 
@@ -900,6 +934,22 @@ class BurialCommitForm(BurialForm):
                                 msg = _(u"Срок действия доверенности не может быть меньше текущей даты")
                                 raise forms.ValidationError(msg)
 
+        if self.cleaned_data.get('loru'):
+            if not self.cleaned_data.get('loru_agent_director'):
+                if not self.cleaned_data.get('loru_agent') and not self.cleaned_data.get('loru_dover'):
+                    msg = _(u"Посредник: нужно указать Агента и Доверенность или указать, что Агент - Директор")
+                    raise forms.ValidationError(msg)
+                if not self.instance.is_closed():
+                    dover_begin_date = self.cleaned_data.get('loru_dover').begin
+                    dover_end_date = self.cleaned_data.get('loru_dover').end
+                    today = datetime.datetime.today()
+                    if dover_begin_date > today.date():
+                        msg = _(u"Посредник: дата выдачи доверенности не может быть позже текущей даты")
+                        raise forms.ValidationError(msg)
+                    if dover_end_date < today.date() :
+                        msg = _(u"Посредник: срок действия доверенности не может быть меньше текущей даты")
+                        raise forms.ValidationError(msg)
+
         is_ugh = False
         if self.instance and self.instance.is_ugh():
             is_ugh = True
@@ -910,6 +960,13 @@ class BurialCommitForm(BurialForm):
         area = self.cleaned_data.get('area')
         row = self.cleaned_data.get('row')
         place_number = self.cleaned_data.get('place_number') or ''
+        burial_type = self.cleaned_data.get('burial_type')
+        for k, v in Burial.BURIAL_TYPES:
+            if k == burial_type:
+                burial_type_str = v
+                break
+        else:
+            burial_type_str = burial_type
 
         fact_date  = self.cleaned_data.get('fact_date')
         if is_ugh:
@@ -947,7 +1004,12 @@ class BurialCommitForm(BurialForm):
         if not place_number.strip() and \
            (self.instance.is_archive() or self.request.REQUEST.get('archive')) and \
            cemetery and cemetery.places_algo_archive == Cemetery.PLACE_ARCHIVE_MANUAL:
-            msg = _(u"Нельзя закрывать архивное захоронение без указания номера места")
+            msg = _(u"Нельзя закрывать архивное захоронение без указания номера места для этого кладбища")
+            raise forms.ValidationError(msg)
+        elif not place_number.strip() and \
+           (burial_type in (Burial.BURIAL_ADD, Burial.BURIAL_OVER,)) and \
+           cemetery and cemetery.places_algo_archive == Cemetery.PLACE_ARCHIVE_MANUAL and is_ugh:
+            msg = _(u"Нельзя закрывать %s без указания номера места для этого кладбища") % burial_type_str.lower()
             raise forms.ValidationError(msg)
         elif not place_number.strip() and area and area.availability == Area.AVAILABILITY_CLOSED:
             if is_ugh:
@@ -959,7 +1021,14 @@ class BurialCommitForm(BurialForm):
         elif not place_number.strip() and \
              cemetery and \
              cemetery.ugh.numbers_algo == Org.NUM_EMPTY and \
-             cemetery.places_algo == Cemetery.PLACE_BURIAL_ACCOUNT_NUMBER:
+             (
+              (cemetery.places_algo == Cemetery.PLACE_BURIAL_ACCOUNT_NUMBER and \
+               burial_type in (Burial.BURIAL_NEW,)
+              ) or \
+              (cemetery.places_algo_archive == Cemetery.PLACE_ARCHIVE_BURIAL_ACCOUNT_NUMBER and \
+               burial_type in (Burial.BURIAL_ADD, Burial.BURIAL_OVER,)
+              )
+             ):
             # Такого не может быть, ибо проверяется в свойствах организации-угх,
             # чтобы не оказалось: номер зх оставить пустым, а есть кладбища
             # с расстановкой мест по номеру зх. Но fool-proof не помешает...
@@ -1007,19 +1076,6 @@ class BurialCommitForm(BurialForm):
                 not self.cleaned_data.get('place_width') and self.cleaned_data.get('place_length')
                ):
                 raise forms.ValidationError(_(u"Надо указывать и длину, и ширину нового места"))
-
-
-        burial_type = self.cleaned_data.get('burial_type')
-        if burial_type in (Burial.BURIAL_ADD, Burial.BURIAL_OVER,) and \
-           not (cemetery and area and place_number.strip()):
-            for k, v in Burial.BURIAL_TYPES:
-                if k == burial_type:
-                    burial_type_str = v
-                    break
-            else:
-                burial_type_str = burial_type
-            msg = _(u"%s возможно только c указанием кладбища, участка и места") % burial_type_str
-            raise forms.ValidationError(msg)
 
         if self.instance.is_closed() and not place_number.strip():
             raise forms.ValidationError(_(u"Не указан номер места закрытого захоронения"))
@@ -1212,10 +1268,8 @@ class BurialApproveCloseForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelFor
             if not self.instance.fact_date:
                 self.initial['fact_date'] = self.instance.plan_date
             for f in self.fields:
-                if f not in ['row', ]:
+                if f not in ['row', 'place_number']:
                     self.fields[f].required = True
-            if cemetery and cemetery.places_algo != Cemetery.PLACE_MANUAL:
-                self.fields['place_number'].required = False
             self.fields['cemetery'].queryset = Cemetery.objects.filter(cemetery_qs)
             self.fields['desired_graves_count'].widget = forms.Select(choices=max_grave_choices)
             if place:
@@ -1289,11 +1343,27 @@ class BurialApproveCloseForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelFor
                     pass
 
     def clean(self):
-        if 'row' in self.fields and \
+        if self.is_valid() and \
+           'row' in self.fields and \
            self.cleaned_data['cemetery'].places_algo == Cemetery.PLACE_ROW and \
            not self.cleaned_data['row'].strip():
             raise forms.ValidationError(_(u"На кладбище с нумерацией мест по ряду не указан номер ряда"))
         return self.cleaned_data
+
+    def clean_place_number(self):
+        cemetery = self.cleaned_data.get('cemetery')
+        place_number = self.cleaned_data.get('place_number', '')
+        if self.request.user.profile.is_ugh() and self.instance.can_finish() and cemetery and \
+           not place_number.strip() and \
+           (
+                (self.instance.burial_type in (Burial.BURIAL_NEW,) and \
+                 cemetery.places_algo == Cemetery.PLACE_MANUAL) \
+            or \
+                (self.instance.burial_type in (Burial.BURIAL_ADD, Burial.BURIAL_OVER,) and \
+                 cemetery.places_algo_archive == Cemetery.PLACE_ARCHIVE_MANUAL)
+           ):
+            raise forms.ValidationError(_(u'Номер места обязателен для кладбища с ручной нумерацией мест'))
+        return place_number
 
     def clean_area(self):
         """

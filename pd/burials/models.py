@@ -12,7 +12,7 @@ from pd.models import UnclearDateModelField, BaseModel, Files, GetLogsMixin, val
 
 from persons.models import DeadPerson, SafeDeleteMixin, DeathCertificate, PhonesMixin
 from reports.models import Report
-from users.models import Org, Profile, Dover, ProfileLORU
+from users.models import Org, Profile, Dover, ProfileLORU, CustomerProfile
 from logs.models import Log
 from geo.models import GeoPointModel, CoordinatesModel
 
@@ -22,6 +22,7 @@ from logs.models import write_log
 
 from managers import PlaceManager
 
+from sms_service.utils import send_sms
 
 class Cemetery(GetLogsMixin, BaseModel, PhonesMixin):
     PLACE_AREA = 'area'
@@ -49,9 +50,11 @@ class Cemetery(GetLogsMixin, BaseModel, PhonesMixin):
     name = models.CharField(_(u"Название"), max_length=255)
     time_begin = models.TimeField(_(u"Начало работы"), null=True, blank=True)
     time_end = models.TimeField(_(u"Окончание работы"), null=True, blank=True)
-    places_algo = models.CharField(_(u"Расстановка номеров мест захоронений (кроме архивных)"),
+    places_algo = models.CharField(_(u"Расстановка номеров мест новых ручных и электронных захоронений"),
                                 max_length=255, choices=PLACE_TYPES, default=PLACE_AREA)
-    places_algo_archive = models.CharField(_(u"Расстановка номеров мест архивных захоронений"),
+    # - все архивные захоронения (новые, подзахоронения, захоронения в существующиую)
+    # - ручные и электронные подзахоронения и захоронения в существующиую
+    places_algo_archive = models.CharField(_(u"Расстановка номеров существующих, но неучтенных мест"),
                                 max_length=255, choices=PLACE_ARCHIVE_TYPES, default=PLACE_ARCHIVE_MANUAL)
     time_slots = models.TextField(_(u"Время для захоронения"), default='', blank=True,
                                   help_text=_(u'В формате ЧЧ:ММ, по одному на строку'))
@@ -526,8 +529,14 @@ class Burial(SafeDeleteMixin, GetLogsMixin, BaseModel):
                                   related_name='applied_burials', on_delete=models.PROTECT)
     ugh = models.ForeignKey(Org, verbose_name=_(u"УГХ"), null=True, editable=False, related_name='ugh_created',
                             limit_choices_to={'type': Org.PROFILE_UGH}, on_delete=models.PROTECT)
-    loru = models.ForeignKey(Org, verbose_name=_(u"ЛОРУ"), null=True, editable=False, 
+    loru = models.ForeignKey(Org, verbose_name=_(u"Посредник"), null=True, 
                              limit_choices_to={'type': Org.PROFILE_LORU}, on_delete=models.PROTECT)
+    loru_agent_director = models.BooleanField(_(u"Директор-Агент"), default=False, blank=True)
+    loru_agent = models.ForeignKey(Profile, verbose_name=_(u"Агент"), null=True, blank=True,
+                              limit_choices_to={'is_agent': True}, on_delete=models.PROTECT,
+                              related_name='agent_burials',)
+    loru_dover = models.ForeignKey(Dover, verbose_name=_(u"Доверенность"), null=True, blank=True,
+                              related_name='dover_burials', on_delete=models.PROTECT)
     applicant_organization = models.ForeignKey(Org, verbose_name=_(u"Заявитель-ЮЛ"), null=True, blank=True,
                                                related_name='loru_created', on_delete=models.PROTECT)
     agent_director = models.BooleanField(_(u"Директор-Агент"), default=False, blank=True)
@@ -806,7 +815,7 @@ class Burial(SafeDeleteMixin, GetLogsMixin, BaseModel):
     def approved_dt(self):
         return self.dt_modified
 
-    def close(self, old_place=None):
+    def close(self, old_place=None, old_status=STATUS_CLOSED):
         if not self.account_number:
             self.set_account_number(user=self.changed_by)
 
@@ -859,7 +868,7 @@ class Burial(SafeDeleteMixin, GetLogsMixin, BaseModel):
         if new_place:
             place.place_length = self.place_length
             place.place_width = self.place_width
-        place.save(new_place_for_archive=self.is_archive())
+        place.save(new_place_for_archive=self.is_archive() or self.is_over() or self.is_add())
         if new_place:
             graves_count = self.desired_graves_count or 1
             # fool-proof, чтоб не пропустили могилу с номером,
@@ -879,7 +888,27 @@ class Burial(SafeDeleteMixin, GetLogsMixin, BaseModel):
         self.responsible = None
         self.place = place
         self.place_number = place.place
+        self.status = self.STATUS_CLOSED
         self.save()
+        
+        if not settings.DEBUG and \
+           place.responsible and \
+           place.responsible.login_phone and \
+           (not old_status or old_status != self.STATUS_CLOSED):
+            if CustomerProfile.objects.filter(user__username=place.responsible.login_phone).count():
+                text=_(u'Место %s прикреплено. pohoronnoedelo.ru') % place.pk
+                email_error_text = _(u"Пользователь %s не смог получить СМС после прикрепления места %s" % \
+                                    (place.responsible.login_phone, place.pk,))
+            else:
+                password = CustomerProfile.create_cabinet(place.responsible)
+                text=_(u'https://pohoronnoedelo.ru login: %s parol: %s') % (place.responsible.login_phone, password,)
+                email_error_text = _(u"Пользователь %s не смог получить пароль после закрытия захоронения" % \
+                                    (place.responsible.login_phone,))
+            sent, message = send_sms(
+                phone_number=place.responsible.login_phone,
+                text=text,
+                email_error_text=email_error_text,
+            )
 
         # Очистим "пустышку" свидетельства о смерти, где
         # не все обязательные поля заполнены

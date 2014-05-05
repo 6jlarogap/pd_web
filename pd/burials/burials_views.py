@@ -297,8 +297,7 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
                 if b.is_ugh():
                     return redirect(reverse('edit_burial', args=[b.pk]) + '?action=complete')
                 else:
-                    b.status = Burial.STATUS_CLOSED
-                    b.close()
+                    b.close(old_status=b.status)
                     write_log(request, b, _(u'Захоронение закрыто'))
                     messages.success(request, _(u"<a href='%s'>Захоронение %s</a> закрыто") % (
                         reverse('view_burial', args=[b.pk]), b.pk,
@@ -499,6 +498,8 @@ class BurialsListView(PaginateListView):
                 burials = burials.filter(status=form.cleaned_data['status'])
             if form.cleaned_data['applicant_org']:
                 burials = burials.filter(applicant_organization__name__istartswith=form.cleaned_data['applicant_org'])
+            if form.cleaned_data['loru_in_burials']:
+                burials = burials.filter(loru__name__istartswith=form.cleaned_data['loru_in_burials'])
             if form.cleaned_data['applicant_person']:
                 fio = [f.strip('.') for f in form.cleaned_data['applicant_person'].split(' ')]
                 qa = Q()
@@ -693,9 +694,13 @@ class CreateBurial(BurialGetOrderMixin, FormInvalidMixin, CreateView):
         data.update({
             'b': self.get_object(),
             'agent_form': AddAgentForm(prefix='agent'),
+            'loru_agent_form': AddAgentForm(prefix='loru_agent'),
             'agent_dover_form': AddDoverForm(prefix='agent_dover'),
+            'loru_agent_dover_form': AddDoverForm(prefix='loru_agent_dover'),
             'dover_form': AddDoverForm(prefix='dover'),
+            'loru_dover_form': AddDoverForm(prefix='loru_dover'),
             'org_form': AddOrgForm(request=self.request, prefix='org'),
+            'loru_form': AddOrgForm(request=self.request, prefix='loru', instance=Org(type=Org.PROFILE_LORU)),
             'zags_form': AddOrgForm(request=self.request, prefix='zags', instance=Org(type=Org.PROFILE_ZAGS)),
             'doc_type_form': AddDocTypeForm(prefix='doctype'),
             'order': self.get_order(),
@@ -790,9 +795,8 @@ class CreateBurial(BurialGetOrderMixin, FormInvalidMixin, CreateView):
                 ))
 
             if action == 'complete' and self.request.user.profile.is_ugh() and b.can_finish() and b.is_ugh():
-                b.status = Burial.STATUS_CLOSED
                 b.changed_by = self.request.user
-                b.close()
+                b.close(old_status=b.status)
                 write_log(self.request, b, _(u'Захоронение закрыто'))
                 messages.success(self.request, _(u"<a href='%s'>Захоронение %s</a> закрыто") % (
                     reverse('view_burial', args=[b.pk]), b.pk,

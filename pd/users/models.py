@@ -1,20 +1,23 @@
 # coding=utf-8
 import datetime
 import decimal
+import random
+import string
 
 from django.conf import settings
+from django.contrib.auth.models import User
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
 from django.contrib.contenttypes.models import ContentType
 
-from geo.models import DFiasAddrobj
+from geo.models import DFiasAddrobj, Location
 from pd.models import BaseModel, Files, GetLogsMixin, validate_gt0
 from logs.models import Log
 
 from pd.utils import DigitsValidator, LengthValidator, NotEmptyValidator
 
 
-class CommonProfile(models.Model):
+class CommonProfile(BaseModel):
     user = models.OneToOneField('auth.User', null=True)
     user_last_name = models.CharField(_(u"Фамилия"), max_length=255, null=True, blank=True)
     user_first_name = models.CharField(_(u"Имя"), max_length=255, null=True, blank=True)
@@ -51,12 +54,44 @@ class CommonProfile(models.Model):
                     name = u"{0}{1}.".format(name, self.user_middle_name[0])
         return self.user and (name or self.user.username) or u'%s' % self.pk
 
+    @classmethod
+    def generate_password(cls):
+        chars = string.ascii_uppercase + string.ascii_lowercase + string.digits
+        # Очень трудно эти символы различать в смс-ках. Да и на экране, если без copy-paste
+        # Удалим их из возможных в пароле:
+        for c in '0OlI1':
+            chars = chars.replace(c, '')
+        password = ''.join(random.choice(chars) for x in range(5))
+        return password
+
 class CustomerProfile(CommonProfile):
-    pass
+    # Дата/время согласия с пользовательским соглашением, служит еще как BooleanField:
+    tc_confirmed = models.DateTimeField(_(u"Подтверждено пользовательское соглашение"), null=True, editable=False)
+
+    @classmethod
+    def create_cabinet(cls, responsible):
+        assert responsible and \
+               hasattr(responsible, 'login_phone') and \
+               responsible.login_phone, \
+               u'Cannot create cabinet user for the specified responsible'
+        user, created = User.objects.get_or_create(username=responsible.login_phone)
+        if created:
+            user.is_active = True
+        password = cls.generate_password()
+        user.set_password(password)
+        user.save()
+        customprofile, created = cls.objects.get_or_create(user=user,
+                                    defaults={
+                                        'user_last_name': responsible.last_name,
+                                        'user_first_name': responsible.first_name,
+                                        'user_middle_name': responsible.middle_name,
+                                    }
+                                )
+        return password
 
 class CustomerProfilePhoto(Files):
     customerprofile = models.OneToOneField(CustomerProfile)
-
+    
 class Profile(CommonProfile):
     org = models.ForeignKey('users.Org', null=True)
 
@@ -283,6 +318,16 @@ class ProfileLORU(models.Model):
     ugh = models.ForeignKey(Org, related_name='loru_list', limit_choices_to={'type': Org.PROFILE_UGH}, verbose_name=_(u"ОМС"))
     loru = models.ForeignKey(Org, related_name='ugh_list', limit_choices_to={'type': Org.PROFILE_LORU}, verbose_name=_(u"ЛОРУ"))
 
+def add_loru_to_public_catalog(sender, instance, created, **kwargs):
+    if created and instance.type == Org.PROFILE_LORU:
+        add_pay_recipient = Org.objects.get(
+            inn=settings.ORG_AD_PAY_RECIPIENT['inn'],
+            type=Org.PROFILE_UGH,
+        )
+        ProfileLORU.objects.create(ugh=add_pay_recipient, loru=instance)
+
+models.signals.post_save.connect(add_loru_to_public_catalog, sender=Org)
+
 class Dover(models.Model):
     agent = models.ForeignKey(Profile, verbose_name=_(u"Агент"), limit_choices_to={'is_agent': True})
     target_org = models.ForeignKey(Org, null=True, editable=False)
@@ -341,6 +386,7 @@ class RegisterProfile(BaseModel):
     org_phones = models.TextField(_(u"Телефоны"),
                                   help_text=_(u'В международном формате: +код-страны-код-города-номер-телефона')
                                  )
+    org_address = models.ForeignKey(Location, editable=False, null=True)
 
     def __unicode__(self):
         fio = u'%s %s.' % (self.user_last_name, self.user_first_name[0].upper(), )

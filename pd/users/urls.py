@@ -7,6 +7,8 @@ urlpatterns = patterns('users.views',
     url(r'^login/', 'ulogin', name='ulogin'),
     url(r'^logout/', 'ulogout', name='ulogout'),
 
+    url(r'^api/education/?$', 'api_education', name='api_education'),
+
     url(r'^registration-old/$', 'registration_old', name='registration_old'),
     
     url(r'^testcaptcha/$', 'testcaptcha', name='testcaptcha'),
@@ -41,4 +43,5 @@ urlpatterns = patterns('users.views',
     url(r'^loginlog/$', 'login_log', name='login_log'),
 
     url(r'^autocomplete/org/', 'autocomplete_org', name='autocomplete_org'),
+    url(r'^autocomplete/loru_in_burials/', 'autocomplete_loru_in_burials', name='autocomplete_loru_in_burials'),
 )

@@ -5,6 +5,8 @@ import random
 import string
 import decimal
 import hashlib
+import os
+import csv
 
 from django.conf import settings
 from django.contrib import messages
@@ -49,7 +51,7 @@ from billing.models import Wallet, Rate
 from orders.models import Product, ProductStatus, ProductHistory
 from pd.views import PaginateListView, RequestToFormMixin, FormInvalidMixin, get_front_end_url, ServiceException
 
-from sms_service import sms24x7
+from sms_service.utils import send_sms
 
 class CheckRecaptchaMixin(object):
     
@@ -77,13 +79,15 @@ class AuthGetTokenView(APIView):
         token = None
         username = request.DATA.get('username')
         password = request.DATA.get('password')
-        status = 'error'
+        confirm_tc = request.DATA.get('confirmTC')
+        data = dict(status='error')
         status_code = 400
         if username and password:
             user = authenticate(username=username, password=password)
             if user and user.is_active:
                 token, created = Token.objects.get_or_create(user=user)
         if token:
+            tc_confirmed = True
             role = None
             try:
                 user.customerprofile
@@ -99,36 +103,42 @@ class AuthGetTokenView(APIView):
                         role = u'ROLE_OMS'
             else:
                 role = 'ROLE_CLIENT'
+                tc_confirmed = user.customerprofile.tc_confirmed or confirm_tc
             if not role:
                 raise Exception(u'Unknown role')
-            login(request, user)
+            if tc_confirmed:
+                login(request, user)
 
-            profile = { 'email': user.email or None, 'photo': None }
-            pr = user.customerprofile if role == 'ROLE_CLIENT' else user.profile
-            profile['lastname'] = pr.user_last_name or user.last_name or None
-            profile['firstname'] = pr.user_first_name or user.first_name or None
-            profile['middlename'] = pr.user_middle_name or None
-            if role == 'ROLE_CLIENT':
-                org = { 'id': None, 'name': None }
-                profile['mainPhone'] = username
+                profile = { 'email': user.email or None, 'photo': None }
+                pr = user.customerprofile if role == 'ROLE_CLIENT' else user.profile
+                profile['lastname'] = pr.user_last_name or user.last_name or None
+                profile['firstname'] = pr.user_first_name or user.first_name or None
+                profile['middlename'] = pr.user_middle_name or None
+                if role == 'ROLE_CLIENT':
+                    org = { 'id': None, 'name': None }
+                    profile['mainPhone'] = username
+                    if not user.customerprofile.tc_confirmed and confirm_tc:
+                        user.customerprofile.tc_confirmed = datetime.datetime.now()
+                        user.customerprofile.save()
+                else:
+                    org = { 'id': user.profile.org.pk, 'name': user.profile.org.name or None }
+                    profile['mainPhone'] = None
+
+                data.update({
+                    'status': 'success',
+                    'token': token.key,
+                    'sessionId': request.session._get_or_create_session_key(),
+                    'profile': profile,
+                    'org': org,
+                    'role': role,
+                 })
+                status_code = 200
+                write_log(request, request.user, _(u'Вход в систему'))
+                LoginLog.write(request)
             else:
-                org = { 'id': user.profile.org.pk, 'name': user.profile.org.name or None }
-                profile['mainPhone'] = None
-
-            data = { 'status': 'success',
-                     'token': token.key,
-                     'sessionId': request.session._get_or_create_session_key(),
-                     'profile': profile,
-                     'org': org,
-                     'role': role,
-                   }
-            status_code = 200
-            write_log(request, request.user, _(u'Вход в систему'))
-            LoginLog.write(request)
+                data['message'] = 'unconfirmed_tc'
         else:
-            data = { 'status': status,
-                     'message': 'Wrong username or password',
-                   }
+            data['message'] = 'Wrong username or password'
         return Response(data=data, status=status_code)
 
 auth_get_token = AuthGetTokenView.as_view()
@@ -237,11 +247,11 @@ api_auth_user = ApiAuthUser.as_view()
 
 class AuthGetPasswordBySMSView(CheckRecaptchaMixin, APIView):
     """
-    Замена пользователю пароля, отправка пароля по СМС
+    Замена существующему пользователю-кабинетчику пароля, отправка пароля по СМС
     
     Input example:
     {
-        "phoneNumber": “375291234567”,
+        "phoneNumber": "375291234567",
         "recaptchaData": {
             "response": "foo bar",
             "challenge": "03AHJ_VuvQ5p0AdejIw4W6"
@@ -251,7 +261,6 @@ class AuthGetPasswordBySMSView(CheckRecaptchaMixin, APIView):
     {
         "status: "success",
         "message": "Пароль установлен"
-        "password": "new_password"
     }
     {
         "status: "error",
@@ -262,69 +271,33 @@ class AuthGetPasswordBySMSView(CheckRecaptchaMixin, APIView):
     def post(self, request):
         status = 'error'
         status_code = 400
-        password = None
         message = ''
         phone_number = request.DATA['phoneNumber']
         recaptcha_data = request.DATA['recaptchaData']
         if not self.check_recaptcha(self.request, recaptcha_data['challenge'], recaptcha_data['response']):
             message = _(u'Введена неверная captcha')
         else:
-            places = Place.objects.filter(responsible__login_phone=decimal.Decimal(phone_number))
-            if not places.count():
-                message = _(u'Ваш номер телефона не указан в списке для входа. Обратитесь в администрацию кладбища')
+            if not CustomerProfile.objects.filter(user__username=phone_number).count():
+                message = _(u'Вы не зарегистрированы в системе. Обратитесь в администрацию кладбища')
             else:
-                default_serv = your_serv = None
+                password = CustomerProfile.generate_password()
+                user = User.objects.get(username=phone_number)
+                user.set_password(password)
+                user.save()
                 if not settings.DEBUG:
-                    for serv in settings.SMS_SERVICE:
-                        if serv['country_code'] == 'default':
-                            default_serv = serv
-                        if phone_number.startswith(serv['country_code']):
-                            your_serv = serv
-                    if not your_serv:
-                        if default_serv:
-                            your_serv = default_serv
-                        else:
-                            message = _(u"Оператор телефона не обслуживается")
-                if not message:
-                    user, created = User.objects.get_or_create(username=phone_number)
-                    if created:
-                        user.is_active = True
-                    chars = string.ascii_uppercase + string.ascii_lowercase + string.digits
-                    password = ''.join(random.choice(chars) for x in range(random.randrange(5, 11)))
-                    user.set_password(password)
-                    user.save()
-                    r = places[0].responsible
-                    customprofile, created = CustomerProfile.objects.get_or_create(user=user,
-                                                defaults={
-                                                    'user_last_name': r.last_name,
-                                                    'user_first_name': r.first_name,
-                                                    'user_middle_name': r.middle_name,
-                                                }
-                                            )
-                    if your_serv:
-                        try:
-                            smsapi = sms24x7.smsapi(your_serv['user'], your_serv['password'])
-                            smsapi.push_msg(
-                                _(u'Vash parol na PohoronnoeDelo: %s') % password,
-                                phone_number,
-                                # 11 chars max
-                                sender_name=u'PohoronnoeD',
-                                nologin = True
-                            )
-                        except sms24x7.smsapi_nogate_exception:
-                            message = _(u"Оператор телефона не обслуживается")
-                        except sms24x7.smsapi_exception:
-                            message = _(u"Произошла ошибка. Мы известим Вас о восстановлении сервиса")
-                            email_from = settings.DEFAULT_FROM_EMAIL
-                            email_to = (settings.DEFAULT_FROM_EMAIL, )
-                            email_subject = _(u'Ошибка СМС сервиса')
-                            email_text = _(u"Пользователь %s не смог получить пароль" % (phone_number,))
-                            EmailMessage(email_subject, email_text, email_from, email_to, ).send()
-                    if not message:
-                        status = 'success'
-                        status_code = 200
-                        message = _(u'Пароль установлен')
-        data = { 'status': status, 'password': password, 'message': message }
+                    sent, message = send_sms(
+                        phone_number=phone_number,
+                        text=_(u'Vash parol na PohoronnoeDelo: %s') % password,
+                        email_error_text = _(u"Пользователь %s не смог получить или заменить пароль" % (phone_number,)),
+                    )
+        if not message:
+            status = 'success'
+            status_code = 200
+            if settings.DEBUG:
+                message = _(u'Ваш пароль: %s') % password
+            else:
+                message = _(u'Пароль установлен, СМС с паролем отправлено')
+        data = { 'status': status, 'message': message }
         return Response(data=data, status=status_code)
 
 auth_get_password_by_sms = AuthGetPasswordBySMSView.as_view()
@@ -363,10 +336,10 @@ class ApiFeedBack(CheckRecaptchaMixin, APIView):
                 if not self.check_recaptcha(self.request, recaptcha_data['challenge'], recaptcha_data['response']):
                     raise ServiceException(_(u'Ошибка проверки captcha'))
 
-            email_from = request.DATA.get('email', '').strip()
+            email_from = (request.DATA.get('email') or '').strip()
             callback = request.DATA.get('requestBackCall')
-            phone = request.DATA.get('phoneNumber', '').strip()
-            email_text = request.DATA.get('text', '').strip()
+            phone = (request.DATA.get('phoneNumber') or '').strip()
+            email_text = (request.DATA.get('text') or '').strip()
 
             if callback:
                 try:
@@ -381,16 +354,16 @@ class ApiFeedBack(CheckRecaptchaMixin, APIView):
                 if not email_text:
                     raise ServiceException(_(u"Если не требуется обратный звонок, то задайте вопрос"))
                 
-            user_last_name = request.DATA.get('lastName', '').strip()
+            user_last_name = (request.DATA.get('lastName') or '').strip()
             if not user_last_name:
                 raise ServiceException(_(u"Не задана фамилия"))
-            user_first_name = request.DATA.get('firstName', '').strip()
-            user_middle_name = request.DATA.get('middleName', '').strip()
+            user_first_name = (request.DATA.get('firstName') or '').strip()
+            user_middle_name = (request.DATA.get('middleName') or '').strip()
             if not user_first_name and user_middle_name:
                 raise ServiceException(_(u"Не указано имя при указанном отчестве"))
 
-            email_subject = request.DATA.get('subject', '')
-            if not email_subject.strip():
+            email_subject = (request.DATA.get('subject') or '').strip()
+            if not email_subject:
                 email_subject = _(u'Вопрос в поддержку')
             
             if request.user.is_authenticated():
@@ -514,7 +487,9 @@ class LoginView(View):
                 next_url = "?redirectUrl=%s" % request.GET.get("redirectUrl")
             else:
                 next_url = ''
-            return redirect('%s#/%s' % (get_front_end_url(request), next_url))
+            response = redirect('%s#/signout%s' % (get_front_end_url(request), next_url))
+            response.delete_cookie('pdsession')
+            return response
         else:
             form = AuthenticationForm()
             request.session.set_test_cookie()
@@ -818,9 +793,25 @@ class AutocompleteOrg(View):
         else:
             orgs = Org.objects.none()
 
-        return HttpResponse(json.dumps([{'value': c.name} for c in orgs[:20]]), mimetype='text/javascript')
+        return HttpResponse(json.dumps([{'value': c.pk if exact else c.name} for c in orgs[:20]]), mimetype='text/javascript')
 
 autocomplete_org = AutocompleteOrg.as_view()
+
+class AutocompleteLoruInBurials(View):
+    def get(self, request, *args, **kwargs):
+        query = request.GET.get('query')
+        if query and request.user.profile.is_ugh():
+            lorus = Burial.objects.filter(ugh=request.user.profile.org, loru__name__icontains=query).\
+                                  order_by('loru__name').values('loru__name').distinct()
+        else:
+            lorus = Org.objects.none()
+
+        return HttpResponse(
+            json.dumps([{'value': loru['loru__name']} for loru in lorus[:20]]),
+            mimetype='text/javascript',
+        )
+
+autocomplete_loru_in_burials = AutocompleteLoruInBurials.as_view()
 
 class OrgLogView(LoginRequiredMixin, PaginateListView):
     template_name = 'org_log.html'
@@ -923,6 +914,10 @@ class RegisterView(CreateView):
         salt = hashlib.sha1(str(random.random())).hexdigest()[:5]
         obj.user_activation_key = hashlib.sha1(salt+obj.user_name).hexdigest()
         obj.status = RegisterProfile.STATUS_TO_CONFIRM
+        # Поля адреса вплоть до города обязательны, но
+        # вдруг мы от этой обязательности откажемся, посему if...:
+        if form.address_form.cleaned_data.get('country_name'):
+            obj.org_address = form.address_form.save()
         obj.save()
         write_log(None, obj, _(u'%s : получена. Ожидание подтверждения') % obj)
         email_subject = "%s %s" % (unicode(_(u"Подтверждение заявки на регистрацию на")),
@@ -1075,44 +1070,51 @@ registrant_delete = RegistrantDelete.as_view()
 class RegistrantApprove(SupervisorRequiredMixin, View):
     def get(self, request, *args, **kwargs):
         registrant = get_object_or_404(RegisterProfile, pk=self.kwargs['pk'])
-        registrant.status = RegisterProfile.STATUS_APPROVED
-        registrant.save()
-        write_log(request, registrant, _(u'%s : одобрена') % registrant)
-        user = User.objects.create(
-                    username=registrant.user_name,
-                    password=registrant.user_password,
-                    email=registrant.user_email,
-        )
-        org=Org.objects.create(
-                    type=registrant.org_type,
-                    name=registrant.org_name,
-                    full_name=registrant.org_full_name,
-                    inn = registrant.org_inn,
-                    director = registrant.org_director,
-                    email = registrant.user_email,
-                    phones = registrant.org_phones,
-        )
-        org.create_wallet_rate()
-        profile=Profile.objects.create(
-                    user_last_name=registrant.user_last_name,
-                    user_first_name=registrant.user_first_name,
-                    user_middle_name=registrant.user_middle_name,
-                    is_agent=True,
-                    user=user,
-                    org=org,
-        )
-        email_subject = unicode(_(u"Заявка на регистрацию одобрена"))
-        email_text = render_to_string(
-                        'register_approved_email.txt',
-                        { 'host': '%s://%s' % (self.request.is_secure() and 'https' or 'http',
-                                               self.request.get_host(),
-                                              ),
-                          'obj': registrant,
-                        }
-                    )
-        email_from = settings.DEFAULT_FROM_EMAIL
-        email_to = (registrant.user_email, )
-        send_mail(email_subject, email_text, email_from, email_to )
+        if registrant.status == RegisterProfile.STATUS_APPROVED:
+            messages.error(request, _(u'Заявка уже одобрена'))
+        elif registrant.status != RegisterProfile.STATUS_CONFIRMED:
+            messages.error(request, _(u'Статус заявки (%s) не соответствует ее одобрению') % \
+                registrant.get_status_display()
+            )
+        else:
+            registrant.status = RegisterProfile.STATUS_APPROVED
+            registrant.save()
+            write_log(request, registrant, _(u'%s : одобрена') % registrant)
+            user = User.objects.create(
+                        username=registrant.user_name,
+                        password=registrant.user_password,
+                        email=registrant.user_email,
+            )
+            org=Org.objects.create(
+                        type=registrant.org_type,
+                        name=registrant.org_name,
+                        full_name=registrant.org_full_name,
+                        inn = registrant.org_inn,
+                        director = registrant.org_director,
+                        email = registrant.user_email,
+                        phones = registrant.org_phones,
+            )
+            org.create_wallet_rate()
+            profile=Profile.objects.create(
+                        user_last_name=registrant.user_last_name,
+                        user_first_name=registrant.user_first_name,
+                        user_middle_name=registrant.user_middle_name,
+                        is_agent=True,
+                        user=user,
+                        org=org,
+            )
+            email_subject = unicode(_(u"Заявка на регистрацию одобрена"))
+            email_text = render_to_string(
+                            'register_approved_email.txt',
+                            { 'host': '%s://%s' % (self.request.is_secure() and 'https' or 'http',
+                                                self.request.get_host(),
+                                                ),
+                            'obj': registrant,
+                            }
+                        )
+            email_from = settings.DEFAULT_FROM_EMAIL
+            email_to = (registrant.user_email, )
+            send_mail(email_subject, email_text, email_from, email_to )
         return redirect('registrants')
 
 registrant_approve = RegistrantApprove.as_view()
@@ -1308,14 +1310,6 @@ class SupportThanks(TemplateView):
 
 support_thanks = SupportThanks.as_view()
 
-class Tutorial(TemplateView):
-    template_name = 'tutorial.html'
-
-    def get(self, request, *args, **kwargs):
-        return self.render_to_response({})
-
-tutorial = Tutorial.as_view()
-
 class TestCaptchaView(FormView):
     """
     Форма тестирования captcha
@@ -1332,4 +1326,127 @@ class TestCaptchaView(FormView):
         return reverse('testcaptcha')
 
 testcaptcha = TestCaptchaView.as_view()
+
+class ApiEducation(APIView):
+    """
+    Передать json- массив пунктов видеокурса
+
+    Примерный вид получаемого массива:    
+    [
+        {
+            “type”: "category",
+            “title”: "Вступление”,
+            “order”: 1,
+            “items”: [
+                {
+                    “type”: “item”,
+                    “title”: “Начало работы”,
+                    “text”: “Речь диктора...”,
+                    “url”:
+                        [
+                            “http://example.com/video.mp4”,
+                            “http://example.com/video.webm”,
+                            “http://example.com/video.ogg”
+                        ],
+                    “order”: 1
+                },
+                ... # следующий пункт
+         },
+         ... # следующая категория (заголовок)
+     ]
+     
+    Структура двухуровневая:
+        заголовок (category)
+            пункт (item)
+            пункт (item)
+            ...
+        заголовок (category)
+            пункт (item)
+            ...
+    Теоретически может начинаться с пунктов:
+        пункт
+        пункт
+        заголовок
+            пункт
+    """
+    
+    permission_classes = (IsAuthenticated,)
+    
+    FOLDER_EDU = 'support'
+
+    @classmethod
+    def get_description(cls, request):
+        """
+        получить массив заголовков и пунктов
+        
+        Читаем csv файл со следующими полями:
+            0   тип пользователя, для которого курс, loru или oms (вычисляется из request)
+            1   заголовок или краткое описание пункта
+            2   текст диктора, если это пункт (не учитывается, если заголовок:)
+            3   имя_файла.mp4 с видеороликом (если пусто, значит это заголовок, иначе пункт)
+            
+        Параметр host: http(s)://hostname.org
+        """
+        data = []
+        try:
+            request.user.profile
+            type_ = 'oms' if request.user.profile.is_ugh() else 'loru'
+            host = u"%s://%s" % ('https' if request.is_secure() else 'http', request.get_host(), )
+            try:
+                f_description = open(os.path.join(settings.MEDIA_ROOT, cls.FOLDER_EDU, 'description.csv'), "rb")
+                csv_reader = csv.reader(f_description)
+                # 
+                order_titles = 0
+                order_items = 0
+                cur_title = None
+                for row in csv_reader:
+                    if row[0] == type_:
+                        if not row[3]:
+                            data.append({
+                                'type': 'category', 
+                                'title': row[1],
+                                'order': order_titles + 1,
+                                'items': []
+                            })
+                            cur_title = data[order_titles]
+                            order_titles += 1
+                            order_items = 0
+                        else:
+                            append_to = cur_title['items'] if cur_title else data
+                            url =  u"%s/media/%s/video/%s/%s" % (host, cls.FOLDER_EDU, type_, row[3], ), 
+                            append_to.append({
+                                'type': 'item', 
+                                'title': row[1],
+                                'text': row[2],
+                                'urls':  [
+                                    { 'url': u"%s.mp4" % url, 'type': 'mp4' },
+                                    { 'url': u"%s.webm" % url, 'type': 'webm' },
+                                    { 'url': u"%s.ogg" % url, 'type': 'ogg' },
+                                 ],
+                                'order': order_items + 1 if cur_title else order_titles + 1
+                            })
+                            if cur_title:
+                                order_items += 1
+                            else:
+                                order_titles += 1
+                f_description.close()
+            except IOError:
+                pass
+        except (AttributeError, Profile.DoesNotExist, ):
+            pass
+        return data
+
+    def get(self, request):
+        return Response(data=ApiEducation.get_description(request), status=200)
+    
+api_education = ApiEducation.as_view()
+
+class Tutorial(TemplateView):
+    template_name = 'tutorial.html'
+
+    def get(self, request, *args, **kwargs):
+        data = ApiEducation.get_description(request)
+        return self.render_to_response({'data': data})
+
+tutorial = Tutorial.as_view()
 

@@ -1006,13 +1006,25 @@ ODF styles with no properties representable as CSS
     <td style="text-align:left;width:0.7984in; " class="Default"> </td>
 </tr>
 <tr class="ro7">
-    <td style="text-align:left;width:1.6752in; " class="ce8"> </td>
-    <td style="text-align:left;width:0.6173in; " class="ce18"> </td>
-    <td style="text-align:left;width:0.7681in; " class="ce18"> </td>
-    <td colspan="2" style="text-align:left;width:0.6547in; " class="ce21"><p>(подпись)</p></td>
-    <td colspan="4" style="text-align:center;width:0.8189in; " class="ce29"><p>(расшифровка подписи)</p></td>
-    <td style="text-align:left;width:0.7984in; " class="ce36"> </td>
+    <td style="text-align:left;width:1.6752in; border-bottom-style: none;" class="ce8"> </td>
+    <td style="text-align:left;width:0.6173in; border-bottom-style: none;" class="ce18"> </td>
+    <td style="text-align:left;width:0.7681in; border-bottom-style: none;" class="ce18"> </td>
+    <td colspan="2" style="text-align:left;width:0.6547in; border-bottom-style: none;" class="ce21"><p>(подпись)</p></td>
+    <td colspan="4" style="text-align:center;width:0.8189in; border-bottom-style: none;" class="ce29"><p>(расшифровка подписи)</p></td>
+    <td style="text-align:left;width:0.7984in; border-bottom-style: none;" class="ce36"> </td>
 </tr>
+<tr class="ro7">
+    <td colspan="8" style="text-align:left;width:0.01in;" class="ce8">
+    {% if burial.place.responsible.login_phone %}
+        Для входа в личный кабинет ответственного за место захоронения в информационной системе <b><u>pohoronnoedelo.ru</u></b>
+        введите в качестве логина номер {{ burial.place.responsible.login_phone }} и получите пароль по смс.
+    {% else %}
+        Для получения доступа к личному кабинету ответственного за место захоронения
+        в информационной системе <b><u>pohoronnoedelo.ru</u></b> обратитесь в администрацию кладбища.
+    {% endif %}
+    </td>
+    <td style="text-align:center;width:0.01in;" class="ce29"></td>
+    <td style="text-align:left;width:0.01in; " class="ce36"> </td>
 </tr>
 </table>
 

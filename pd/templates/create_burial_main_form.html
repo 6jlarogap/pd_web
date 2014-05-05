@@ -42,6 +42,58 @@
     {% endif %}
     });
 </script>
+{% if request.user.profile.is_ugh and not request.REQUEST.archive and not form.instance.is_archive %}
+    {% if form.instance.is_full or form.instance.is_transferred %}
+        <h2>{% trans "Посредник" %}</h2>
+        <p><big>
+        {% if form.instance.loru %}
+            {{ form.instance.loru.name }}
+        {% else %}
+            ({% trans "не указан" %})
+        {% endif %}
+        </big></p>
+    {% else %}
+        <h2>{% trans "Посредник" %} <span id="loru_title">{{ form.instance.loru|default_if_none:"" }}</span></h2>
+        <a href="#" onclick="return contShowHide('#cont_loru', '#a_cont_loru', '{% trans 'развернуть' %}', '{% trans 'свернуть' %}');"
+        class="slider" data-id="cont_loru" id="a_cont_loru">{% trans "развернуть" %}</a>
+        <div id="cont_loru" style="display: none">
+            <br />
+            {{ form.loru.errors }}
+            {{ form.loru }}<span class="helptext">{{ form.loru.help_text }}</span>
+            <p class="inline">
+                <a href="#add_loru" role="button" class="btn btn-loru" data-toggle="modal">
+                    {% trans "добавить ЛОРУ" %}
+                </a>
+            </p>
+            
+            <h3>{% trans "Агент" %}</h3>
+
+            {{ form.loru_agent_director.errors }}
+            <p>{{ form.loru_agent_director.label_tag }} {{ form.loru_agent_director }}<span class="helptext">{{ form.loru_agent_director.help_text }}</span></p>
+
+            <div class="inline">
+                {{ form.loru_agent.errors }}
+                {{ form.loru_agent.label_tag }} {{ form.loru_agent }}<span class="helptext">{{ form.loru_agent.help_text }}</span>
+                <p>
+                    <a href="#add_loru_agent" role="button" class="btn btn-loru_agent" data-toggle="modal">
+                        {% trans "добавить агента" %}
+                    </a>
+                </p>
+            </div>
+
+            <div class="inline">
+                {{ form.loru_dover.errors }}
+                {{ form.loru_dover.label_tag }} {{ form.loru_dover }}<span class="helptext">{{ form.loru_dover.help_text }}</span>
+                <p>
+                    <a href="#add_loru_dover" role="button" class="btn btn-loru_dover" data-toggle="modal">
+                        {% trans "добавить доверенность" %}
+                    </a>
+                </p>
+            </div>
+            <br/>
+        </div>
+    {% endif %}
+{% endif %}
 {{ form.burial_container.errors }}
 <div id="burial_container">
     <h2>{{ form.burial_container.label}}</h2>
@@ -140,7 +192,41 @@
 <a href="#" onclick="return contShowHide('#cont_responsible', '#a_cont_responsible', '{% trans 'развернуть' %}', '{% trans 'свернуть' %}');"
     class="slider" data-id="cont_responsible" id="a_cont_responsible">{% trans "развернуть" %}</a>
     <div id="cont_responsible" {% if not form.responsible_form.errors %}style="display: none"{% endif %}>
-        {{ form.responsible_form.as_p }}
+
+        {% if form.responsible_form.take_from %}
+            {{ form.responsible_form.take_from.errors }}
+            <p>{{ form.responsible_form.take_from.label_tag }} {{ form.responsible_form.take_from }}<span class="helptext">{{ form.responsible_form.take_from.help_text }}</span></p>
+        {% endif %}
+
+        {{ form.responsible_form.last_name.errors }}
+        <p>{{ form.responsible_form.last_name.label_tag }} {{ form.responsible_form.last_name }}<span class="helptext">{{ form.responsible_form.last_name.help_text }}</span></p>
+
+        {{ form.responsible_form.first_name.errors }}
+        <p>{{ form.responsible_form.first_name.label_tag }} {{ form.responsible_form.first_name }}<span class="helptext">{{ form.responsible_form.first_name.help_text }}</span></p>
+
+        {{ form.responsible_form.middle_name.errors }}
+        <p>{{ form.responsible_form.middle_name.label_tag }} {{ form.responsible_form.middle_name }}<span class="helptext">{{ form.responsible_form.middle_name.help_text }}</span></p>
+
+        {% if form.responsible_form.login_phone_ %}
+            {{ form.responsible_form.login_phone_.errors }}
+            <p>
+            {{ form.responsible_form.login_phone_.label_tag }}
+            {% if not form.instance or form.instance.is_draft %}
+                {% if request.user.profile.is_ugh %}
+                    <span style="color:blue">{% trans "Пожалуйста, предупредите, что придет СМС" %}</span>
+                {% endif %}
+            {% endif %}
+            </p>
+            {{ form.responsible_form.login_phone_ }}<span class="helptext">{{ form.responsible_form.login_phone_.help_text }}</span></p>
+        {% endif %}
+
+        {{ form.responsible_form.phones.errors }}
+        <p>{{ form.responsible_form.phones.label_tag }} {{ form.responsible_form.phones }}<span class="helptext">{{ form.responsible_form.phones.help_text }}</span></p>
+
+        {# hidden responsible_form fields #}
+            {{ form.responsible_form.place }}
+            {{ form.responsible_form.order }}
+
         <div id="cont_responsible_address">
             <h3>{% trans "Адрес" %}</h3>
             <div class="form_block">
