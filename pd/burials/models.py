@@ -1,6 +1,7 @@
 # coding=utf-8
 import datetime
 import re
+from django.contrib import messages
 from django.contrib.contenttypes.models import ContentType
 from django.db import models, connection
 from django.db.models import Count, Avg
@@ -815,7 +816,7 @@ class Burial(SafeDeleteMixin, GetLogsMixin, BaseModel):
     def approved_dt(self):
         return self.dt_modified
 
-    def close(self, old_place=None, old_status=STATUS_CLOSED):
+    def close(self, old_place=None, old_status=STATUS_CLOSED, request=None):
         if not self.account_number:
             self.set_account_number(user=self.changed_by)
 
@@ -891,24 +892,29 @@ class Burial(SafeDeleteMixin, GetLogsMixin, BaseModel):
         self.status = self.STATUS_CLOSED
         self.save()
         
-        if not settings.DEBUG and \
-           place.responsible and \
+        if place.responsible and \
            place.responsible.login_phone and \
            (not old_status or old_status != self.STATUS_CLOSED):
             if CustomerProfile.objects.filter(user__username=place.responsible.login_phone).count():
-                text=_(u'Место %s прикреплено. pohoronnoedelo.ru') % place.pk
+                text = _(u'Место %s прикреплено. pohoronnoedelo.ru') % place.pk
                 email_error_text = _(u"Пользователь %s не смог получить СМС после прикрепления места %s" % \
                                     (place.responsible.login_phone, place.pk,))
             else:
                 password = CustomerProfile.create_cabinet(place.responsible)
-                text=_(u'https://pohoronnoedelo.ru login: %s parol: %s') % (place.responsible.login_phone, password,)
+                text = _(u'https://pohoronnoedelo.ru login: %s parol: %s') % (place.responsible.login_phone, password,)
                 email_error_text = _(u"Пользователь %s не смог получить пароль после закрытия захоронения" % \
                                     (place.responsible.login_phone,))
-            sent, message = send_sms(
-                phone_number=place.responsible.login_phone,
-                text=text,
-                email_error_text=email_error_text,
-            )
+                if request and settings.DEBUG:
+                    messages.warning(
+                        request,
+                        _(u"Создан пользователь кабинета %s, пароль %s") % (place.responsible.login_phone, password, ),
+                    )
+            if not settings.DEBUG:
+                sent, message = send_sms(
+                    phone_number=place.responsible.login_phone,
+                    text=text,
+                    email_error_text=email_error_text,
+                )
 
         # Очистим "пустышку" свидетельства о смерти, где
         # не все обязательные поля заполнены
