@@ -616,10 +616,15 @@ class CatalogSuppliersView(APIView):
     
     def get(self, request):
         suppliers = []
+        qs = Q(
+            productstatus__status__in=\
+                (ProductHistory.PRODUCT_OPERATION_PUBLISH, ProductHistory.PRODUCT_OPERATION_UPDATE, )
+        )
         for l in Org.objects.filter(type=Org.PROFILE_LORU):
+            q = qs & Q(loru=l)
             loru_categories = [
                 pc['productcategory__pk'] for pc in \
-                Product.objects.filter(loru=l).order_by('productcategory__pk').values('productcategory__pk').distinct()
+                Product.objects.filter(q).order_by('productcategory__pk').values('productcategory__pk').distinct()
             ]
             supplier = {
                 'id': l.pk,
