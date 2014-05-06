@@ -588,7 +588,6 @@ order_burial = OrderBurialView.as_view()
 class ProductCategoryViewSet(viewsets.ModelViewSet):
     model = ProductCategory
     serializer_class = ProductCategorySerializer
-    permission_classes = (IsAuthenticated,)
 
 class CustomerDataMixin:
     def get_customer_data(self, request):
@@ -613,14 +612,11 @@ class CustomerDataMixin:
         return is_customer, places, lorus
         
 
-class CatalogSuppliersViewSet(CustomerDataMixin, viewsets.ViewSet):
-    queryset = Place.objects.none()
-    permission_classes = (IsAuthenticated,)
+class CatalogSuppliersView(APIView):
     
-    def list(self, request):
-        is_customer, places, lorus = self.get_customer_data(request)
+    def get(self, request):
         suppliers = []
-        for l in lorus:
+        for l in Org.objects.filter(type=Org.PROFILE_LORU):
             loru_categories = [
                 pc['productcategory__pk'] for pc in \
                 Product.objects.filter(loru=l).order_by('productcategory__pk').values('productcategory__pk').distinct()
@@ -637,39 +633,21 @@ class CatalogSuppliersViewSet(CustomerDataMixin, viewsets.ViewSet):
         data = {
             'supplier': suppliers,
         }
-        return Response(status=200 if is_customer else 400, data=data)
+        return Response(status=200, data=data)
 
-class ProductsViewSet(CustomerDataMixin, viewsets.ModelViewSet):
+api_catalog_suppliers = CatalogSuppliersView.as_view()
+
+class ProductsViewSet(viewsets.ModelViewSet):
     model = Product
     serializer_class = ProductsSerializer
-    permission_classes = (IsAuthenticated,)
 
     def get_queryset(self):
-        is_customer, places, lorus = self.get_customer_data(self.request)
-        if not is_customer or not places:
+        loru_ids = self.request.GET.getlist('filter[supplier]')
+
+        if loru_ids:
+            qs = Q(loru__pk__in=loru_ids)
+        else:
             return Product.objects.none()
-
-        place_id = self.request.GET.get('filter[place]')
-        loru_id = self.request.GET.get('filter[supplier]')
-        qs = Q(loru__in=lorus) if not place_id and not loru_id else Q()
-
-        if place_id:
-            for p in places:
-                if p.pk == int(place_id):
-                    place = p
-                    break
-            else:
-                return Product.objects.none()
-            qs &= Q(loru__ugh_list__ugh=place.cemetery.ugh)
-
-        if loru_id:
-            for l in lorus:
-                if l.pk == int(loru_id):
-                    loru = l
-                    break
-            else:
-                return Product.objects.none()
-            qs &= Q(loru=loru)
 
         qs  &= Q(
             productstatus__status__in=\
@@ -680,10 +658,23 @@ class ProductsViewSet(CustomerDataMixin, viewsets.ModelViewSet):
             qs &= Q(price__gte=self.request.GET.get('filter[price_from]'))
         if self.request.GET.get('filter[price_to]'):
             qs &= Q(price__lte=self.request.GET.get('filter[price_to]'))
-        if self.request.GET.get('filter[category]'):
-            qs &= Q(productcategory__pk=self.request.GET.get('filter[category]'))
+        category_ids = self.request.GET.getlist('filter[category]')
+        if category_ids:
+            qs &= Q(productcategory__pk__in=category_ids)
+
+        ordered = None
+        orders = {'price': 'price', 'date': 'productstatus__dt', }
+        directions = {'asc': '', 'desc': '-', }
+        for order in orders:
+            direction = self.request.GET.get('order[%s]' % order)
+            if direction and direction in directions:
+                ordered = directions[direction] + orders[order]
+                break
         
-        filter = Product.objects.filter(qs).distinct()
+        filter = Product.objects.filter(qs)
+        if ordered:
+            filter = filter.order_by(ordered)
+        filter = filter.distinct()
 
         offset = self.request.GET.get('offset') and int(self.request.GET.get('offset'))
         limit = self.request.GET.get('limit') and int(self.request.GET.get('limit'))
@@ -697,16 +688,12 @@ class ProductsViewSet(CustomerDataMixin, viewsets.ModelViewSet):
         
         return filter
         
-class ProductInfoViewSet(CustomerDataMixin, viewsets.ModelViewSet):
+class ProductInfoViewSet(viewsets.ModelViewSet):
     model = Product
     serializer_class = ProductInfoSerializer
-    permission_classes = (IsAuthenticated,)
 
     def get_queryset(self):
-        is_customer, places, lorus = self.get_customer_data(self.request)
-        if not is_customer or not places or not self.kwargs.get('product_id'):
-            return Product.objects.none()
-        return Product.objects.filter(loru__in=lorus, pk=self.kwargs.get('product_id'))
+        return Product.objects.filter(pk=self.kwargs.get('product_id'))
 
 class ApiProfileViewSet(CustomerDataMixin, viewsets.ViewSet):
     queryset = CustomerProfile.objects.none()

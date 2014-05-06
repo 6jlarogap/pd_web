@@ -20,5 +20,7 @@ urlpatterns = patterns('orders.views',
     url(r'^order/(?P<pk>\d+)/comment/$', 'order_comment', name='order_comment'),
     url(r'^order/(?P<pk>\d+)/annulate/$', 'order_annulate', name='order_annulate'),
 
+    url(r'^api/catalog/suppliers/?$', 'api_catalog_suppliers', name='api_catalog_suppliers'),
+
     url(r'^order/product/ajax_get_product_price/$', 'ajax_product_price', name='ajax_product_price'),
 )
