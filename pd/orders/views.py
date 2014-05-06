@@ -644,6 +644,9 @@ class ProductsViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         loru_ids = self.request.GET.getlist('filter[supplier]')
 
+        # Возможно: filter[supplier]=
+        while loru_ids.count(u''):
+            loru_ids.remove(u'')
         if loru_ids:
             qs = Q(loru__pk__in=loru_ids)
         else:
@@ -659,6 +662,8 @@ class ProductsViewSet(viewsets.ModelViewSet):
         if self.request.GET.get('filter[price_to]'):
             qs &= Q(price__lte=self.request.GET.get('filter[price_to]'))
         category_ids = self.request.GET.getlist('filter[category]')
+        while category_ids.count(u''):
+            category_ids.remove(u'')
         if category_ids:
             qs &= Q(productcategory__pk__in=category_ids)
 
