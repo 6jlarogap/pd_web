@@ -7,5 +7,4 @@ urlpatterns = patterns('geo.views',
     url(r'^autocomplete/region/$', 'autocomplete_regions', name='autocomplete_regions'),
     url(r'^autocomplete/city/$', 'autocomplete_cities', name='autocomplete_cities'),
     url(r'^autocomplete/street/$', 'autocomplete_streets', name='autocomplete_streets'),
-    url(r'^autocomplete/fias/$', 'autocomplete_fias', name='autocomplete_fias'),
 )
