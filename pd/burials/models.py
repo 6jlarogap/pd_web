@@ -67,6 +67,7 @@ class Cemetery(GetLogsMixin, BaseModel, PhonesMixin):
     address = models.ForeignKey('geo.Location', editable=False, null=True)
     archive_burial_fact_date_required = models.BooleanField(_(u"Дата архивного захоронения обязательна"), default=True)
     archive_burial_account_number_required = models.BooleanField(_(u"Номер архивного захоронения обязателен"), default=True)
+    square = models.FloatField(_(u"Площадь"), null=True, editable=False)
 
     class Meta:
         verbose_name = _(u"Кладбище")
@@ -149,6 +150,7 @@ class Area(BaseModel):
     availability = models.CharField(_(u"Открытость"), max_length=32, choices=AVAILABILITY_CHOICES, null=True)
     purpose = models.ForeignKey(AreaPurpose, verbose_name=_(u"Назначение"), null=True, on_delete=models.PROTECT)
     places_count = models.PositiveIntegerField(_(u"Макс. кол-во могил в месте"), default=1)
+    square = models.FloatField(_(u"Площадь"), null=True, editable=False)
 
     class Meta:
         verbose_name = _(u"Участок")
