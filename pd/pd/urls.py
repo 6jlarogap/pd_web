@@ -27,7 +27,7 @@ from logs.views import LogViewSet
 from orders.views import ProductCategoryViewSet, CatalogFiltersViewSet, ProductsViewSet, \
                          ProductInfoViewSet, CabinetViewSet, loru_product_places, \
                          UghPublishedProductsViewSet
-from users.views import auth_get_token, auth_get_password_by_sms, auth_api_logout, \
+from users.views import auth_get_password_by_sms, \
                         api_feedback, api_auth_settings, api_auth_user, api_loru_places, \
                         api_balance
 
@@ -83,8 +83,6 @@ urlpatterns += patterns('pd.views',
     url(r'^api/feedback/?$', api_feedback),
     url(r'^api/user/?$', api_auth_user),
     url(r'^api/settings/?$', api_auth_settings),
-    url(r'^api/auth/signin/?$', auth_get_token),
-    url(r'^api/auth/signout/?$', auth_api_logout),
     url(r'^api/auth/get_password_by_sms/?$', auth_get_password_by_sms),
     
     url(r'^api/loru/product_places/?$', loru_product_places),
