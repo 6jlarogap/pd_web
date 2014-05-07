@@ -45,7 +45,7 @@ from django.db import transaction
 from serializers import CemeterySerializer, AreaSerializer, PlaceSerializer, AreaPurposeSerializer, \
     GraveSerializer, BurialSerializer, BurialListSerializer, BurialPutGraveSerializer, \
     AreaPhotoSerializer, GravePhotoSerializer, ExhumationRequestSerializer, PlaceSizeSerializer, \
-    ApiPlacesSerializer
+    ApiOmsPlacesSerializer
 
 from persons.serializers import AlivePersonSerializer, PhoneSerializer
 from geo.serializers import LocationSerializer, LocationStaticSerializer, LocationDataSerializer
@@ -301,7 +301,7 @@ class AreaViewSet(viewsets.ModelViewSet):
 
 class ApiOmsPlacesViewSet(viewsets.ReadOnlyModelViewSet):
     model = Place
-    serializer_class = ApiPlacesSerializer
+    serializer_class = ApiOmsPlacesSerializer
     permission_classes = (IsAuthenticated,)
 
     def list(self, request, *args, **kwargs):

@@ -82,7 +82,7 @@ class AreaSerializer(serializers.ModelSerializer):
 
 
 
-class ApiPlacesSerializer(serializers.ModelSerializer):
+class ApiOmsPlacesSerializer(serializers.ModelSerializer):
     cemeteryId = serializers.PrimaryKeyRelatedField(source='cemetery')
     areaId = serializers.PrimaryKeyRelatedField(source='area')
     location = serializers.SerializerMethodField('location_func')
