@@ -303,6 +303,7 @@ class ApiOmsPlacesViewSet(viewsets.ReadOnlyModelViewSet):
     model = Place
     serializer_class = ApiOmsPlacesSerializer
     permission_classes = (IsAuthenticated,)
+    paginate_by = None
 
     def list(self, request, *args, **kwargs):
         if not is_ugh_user(request.user):

@@ -10,7 +10,7 @@ from django.db import models
 from django.utils.translation import ugettext_lazy as _
 from django.contrib.contenttypes.models import ContentType
 
-from geo.models import DFiasAddrobj, Location
+from geo.models import Location
 from pd.models import BaseModel, Files, GetLogsMixin, validate_gt0
 from logs.models import Log
 
@@ -100,9 +100,6 @@ class Profile(CommonProfile):
     cemetery = models.ForeignKey('burials.Cemetery', verbose_name=_(u"Кладбище"), blank=True, null=True)
     area = models.ForeignKey('burials.Area', verbose_name=_(u"Участок"), blank=True, null=True)
 
-    country = models.ForeignKey('geo.Country', verbose_name=_(u"Страна"), blank=True, null=True)
-    region_fias = models.CharField(_(u"Регион"), blank=True, null=True, max_length=255)
-
     lat = models.DecimalField(max_digits=30, decimal_places=27, blank=True, null=True)
     lng = models.DecimalField(max_digits=30, decimal_places=27, blank=True, null=True)
 
@@ -119,10 +116,6 @@ class Profile(CommonProfile):
 
     def can_create_burials(self):
         return self.is_ugh() or self.is_loru()
-
-    def get_region(self):
-        if self.region_fias:
-            return DFiasAddrobj.objects.get(parentguid='', aoguid=self.region_fias)
 
     def get_coords(self):
         if self.lat and self.lng:

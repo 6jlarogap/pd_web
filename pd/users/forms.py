@@ -11,7 +11,6 @@ from django.utils.translation import ugettext_lazy as _
 from django.db.models.query_utils import Q
 
 from geo.forms import LocationForm
-# from geo.models import DFiasAddrobj
 from pd.forms import ChildrenJSONMixin, LoggingFormMixin, OurReCaptchaField, StrippedStringsMixin
 from pd.models import validate_phone_as_number
 from burials.models import Cemetery, PlaceSize, Reason, Burial
@@ -60,8 +59,6 @@ LoruFormset = inlineformset_factory(Org, ProfileLORU, fk_name='ugh', formset=Bas
 
 BankAccountFormset = inlineformset_factory(Org, BankAccount, formset=BaseLoruFormset, extra=2)
 
-# FIAS_REGIONS = DFiasAddrobj.objects.filter(parentguid='').order_by('formalname')
-
 class ProfileForm(ChildrenJSONMixin, forms.ModelForm):
 
     org_type = forms.ChoiceField(label=_(u"Тип"), choices=Org.PROFILE_TYPES)
@@ -76,7 +73,7 @@ class ProfileForm(ChildrenJSONMixin, forms.ModelForm):
 
     class Meta:
         model = Profile
-        exclude = ['org', 'is_agent', 'region_fias', 'user', 'country', 'cemetery', 'area', ]
+        exclude = ['org', 'is_agent', 'user', 'cemetery', 'area', ]
 
     def __init__(self, *args, **kwargs):
         super(ProfileForm, self).__init__(*args, **kwargs)
@@ -108,7 +105,6 @@ class ProfileForm(ChildrenJSONMixin, forms.ModelForm):
         return obj
 
 class UserProfileForm(ChildrenJSONMixin, StrippedStringsMixin, forms.ModelForm):
-    # region = forms.ModelChoiceField(label=_(u"Регион"), queryset=FIAS_REGIONS, required=False)
 
     class Meta:
         model = Profile
@@ -122,16 +118,6 @@ class UserProfileForm(ChildrenJSONMixin, StrippedStringsMixin, forms.ModelForm):
             Q(ugh=self.instance.org)
         ).distinct()
         self.fields['user_last_name'].required = True
-        #if self.instance.region_fias:
-            #self.initial['region'] = self.instance.get_region()
-
-    #def save(self, commit=True, *args, **kwargs):
-        #obj = super(UserProfileForm, self).save(commit=False, *args, **kwargs)
-        #if self.cleaned_data['region']:
-            #obj.region_fias = self.cleaned_data['region'].aoguid
-        #if commit:
-            #obj.save()
-        #return obj
 
 class UserDataForm(forms.ModelForm):
     is_agent = forms.BooleanField(label=_(u"Агент"), required=False)
