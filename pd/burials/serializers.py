@@ -7,7 +7,7 @@ from rest_framework.fields import Field, TimeField
 
 
 from burials.models import Cemetery, Place, Area, Grave, Burial, AreaPhoto, GravePhoto, BurialFiles, ExhumationRequest, \
-    AreaPurpose, PlaceSize
+    AreaPurpose, PlaceSize, PlaceStatus
 
 
 from geo.models import Location
@@ -80,6 +80,33 @@ class AreaSerializer(serializers.ModelSerializer):
                 valid = False
         return valid
 
+
+
+class ApiOmsPlacesSerializer(serializers.ModelSerializer):
+    cemeteryId = serializers.PrimaryKeyRelatedField(source='cemetery')
+    areaId = serializers.PrimaryKeyRelatedField(source='area')
+    location = serializers.SerializerMethodField('location_func')
+    status = serializers.SerializerMethodField('status_func')
+
+    class Meta:
+        model = Place
+        fields = ('id', 'cemeteryId', 'areaId', 'location', 'status', )
+
+    def location_func(self, obj):
+        if obj.lat and obj.lng:
+            return {
+                'latitude': obj.lat,
+                'longitude': obj.lng,
+            }
+        else:
+            return None
+ 
+    def status_func(self, obj):
+        try:
+            placestatus = PlaceStatus.objects.filter(place=obj).order_by('-dt_created')[0]
+        except IndexError:
+            placestatus = PlaceStatus.PS_ACTUAL
+        return placestatus
 
 
 class PlaceSerializer(serializers.ModelSerializer):

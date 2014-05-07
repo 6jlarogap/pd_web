@@ -27,7 +27,7 @@ from burials.forms import CemeteryForm, AreaFormset, PlaceEditForm, AddOrgForm, 
 from burials.models import Cemetery, Place, Area, BurialFiles, Grave, Burial, AreaPhoto, GravePhoto, ExhumationRequest, AreaPurpose, PlaceSize
 from burials.burials_views import *
 from logs.models import write_log, log_object, prepare_m2m_log, compare_obj
-from users.models import Profile, Org, CustomerProfile
+from users.models import Profile, Org, CustomerProfile, is_ugh_user
 from persons.models import Phone, AlivePerson
 from geo.models import Location
 
@@ -44,7 +44,8 @@ from django.db import transaction
 
 from serializers import CemeterySerializer, AreaSerializer, PlaceSerializer, AreaPurposeSerializer, \
     GraveSerializer, BurialSerializer, BurialListSerializer, BurialPutGraveSerializer, \
-    AreaPhotoSerializer, GravePhotoSerializer, ExhumationRequestSerializer, PlaceSizeSerializer
+    AreaPhotoSerializer, GravePhotoSerializer, ExhumationRequestSerializer, PlaceSizeSerializer, \
+    ApiOmsPlacesSerializer
 
 from persons.serializers import AlivePersonSerializer, PhoneSerializer
 from geo.serializers import LocationSerializer, LocationStaticSerializer, LocationDataSerializer
@@ -297,6 +298,19 @@ class AreaViewSet(viewsets.ModelViewSet):
         return Response(data)
 
 
+
+class ApiOmsPlacesViewSet(viewsets.ReadOnlyModelViewSet):
+    model = Place
+    serializer_class = ApiOmsPlacesSerializer
+    permission_classes = (IsAuthenticated,)
+
+    def list(self, request, *args, **kwargs):
+        if not is_ugh_user(request.user):
+            return Response(data={ "detail": "User denied access: not OMS" }, status=403)
+        return super(ApiOmsPlacesViewSet, self).list(request, *args, **kwargs)
+        
+    def get_queryset(self):
+        return Place.objects.filter(cemetery__ugh=self.request.user.profile.org)
 
 class PlaceViewSet(viewsets.ModelViewSet):
     model = Place

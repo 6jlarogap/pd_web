@@ -133,7 +133,19 @@ def is_cabinet_user(user):
     try:
         user.customerprofile
         return True
-    except CustomerProfile.DoesNotExist:
+    except (AttributeError, CustomerProfile.DoesNotExist, ):
+        return False
+    
+def is_loru_user(user):
+    try:
+        return user.profile.is_loru()
+    except (AttributeError, Profile.DoesNotExist, ):
+        return False
+    
+def is_ugh_user(user):
+    try:
+        return user.profile.is_ugh()
+    except (AttributeError, Profile.DoesNotExist, ):
         return False
     
 def get_mail_footer(user):

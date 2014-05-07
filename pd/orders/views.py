@@ -23,7 +23,7 @@ from django.shortcuts import get_object_or_404
 from logs.models import write_log
 from burials.forms import AddOrgForm, AddAgentForm, AddDoverForm, AddDocTypeForm
 from burials.models import Burial, Place, Grave, GravePhoto, PlacePhoto
-from users.models import CustomerProfile, CustomerProfilePhoto, Org, ProfileLORU
+from users.models import CustomerProfile, CustomerProfilePhoto, Org, ProfileLORU, is_loru_user
 from billing.models import Rate
 from orders.forms import ProductForm, OrderForm, OrderItemFormset, CoffinForm, CatafalqueForm, \
                          AddInfoForm, OrderSearchForm, OrderBurialForm
@@ -760,18 +760,7 @@ class CabinetViewSet(CustomerDataMixin, viewsets.ViewSet):
             
         return Response(status=200, data=data)
 
-class UserLoruMixin:
-    ivalid_user_data = { "detail": "User denied access: not LORU" }
-    
-    def check_if_loru(self, request):
-        try:
-            request.user and request.user.profile
-        except (AttributeError, Profile.DoesNotExist):
-            return False
-        else:
-            return request.user.profile.is_loru()
-
-class LoruProductPlaces(UserLoruMixin, APIView):
+class LoruProductPlaces(APIView):
     """
     Обновление статусов продуктов на площадках (ОМС)
 
@@ -806,8 +795,8 @@ class LoruProductPlaces(UserLoruMixin, APIView):
 
     @transaction.commit_on_success
     def post(self, request, format=None):
-        if not self.check_if_loru(request):
-            return Response(data=self.ivalid_user_data, status=403)
+        if not is_loru_user(request.user):
+            return Response(data={ "detail": "User denied access: not LORU" }, status=403)
         # Соответствие команды "status" из входных данных строкам в полях соответствующих таблиц:
         rate_action = {
             'disable': Rate.RATE_ACTION_DISABLE,
@@ -865,14 +854,10 @@ class UghPublishedProductsViewSet(viewsets.ViewSet):
     
     def list(self, request):
         data=[]
-        try:
-            profile=request.user.profile
-        except AttributeError:
+        if not is_loru_user(request.user):
             return Response(status=400, data=data)
-        if not profile.is_loru():
-            return Response(status=400, data=data)
-        ugh_list = [ pl.ugh for pl in ProfileLORU.objects.filter(loru=profile.org)]
-        for p in Product.objects.filter(loru=profile.org).order_by('pk'):
+        ugh_list = [ pl.ugh for pl in ProfileLORU.objects.filter(loru=request.user.profile.org)]
+        for p in Product.objects.filter(loru=request.user.profile.org).order_by('pk'):
             data_p = {
                 'id': p.pk,
                 'name': p.name,
