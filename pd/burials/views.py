@@ -367,8 +367,7 @@ class PlaceViewSet(viewsets.ModelViewSet):
                 self.old_responsible = None
             object.responsible = responsible_serializer.save()
 
-            if not settings.DEBUG and \
-               object.responsible.login_phone and \
+            if object.responsible.login_phone and \
                (not self.old_responsible or not self.old_responsible.login_phone):
                 if CustomerProfile.objects.filter(user__username=object.responsible.login_phone).count():
                     text=_(u'Место %s прикреплено. pohoronnoedelo.ru') % object.pk
@@ -379,11 +378,12 @@ class PlaceViewSet(viewsets.ModelViewSet):
                     text=_(u'https://pohoronnoedelo.ru login: %s parol: %s') % (object.responsible.login_phone, password,)
                     email_error_text = _(u"Пользователь %s не смог получить пароль после закрытия захоронения" % \
                                         (object.responsible.login_phone,))
-                sent, message = send_sms(
-                    phone_number=object.responsible.login_phone,
-                    text=text,
-                    email_error_text=email_error_text,
-                )
+                if not settings.DEBUG:
+                    sent, message = send_sms(
+                        phone_number=object.responsible.login_phone,
+                        text=text,
+                        email_error_text=email_error_text,
+                    )
 
             #object.responsible.address_id = responsible.address
 

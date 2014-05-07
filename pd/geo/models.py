@@ -118,6 +118,11 @@ class Location(models.Model):
     gps_x = models.FloatField(_(u"Координата X"), blank=True, null=True, editable=False)
     gps_y = models.FloatField(_(u"Координата Y"), blank=True, null=True, editable=False)
     info = models.TextField(_(u"Дополнительная информация"), blank=True, null=True)
+    # Строка адреса в произвольной форме. Такая может приходить при входе в систему
+    # пользователя лору, если его организация не имела доселе адреса и пользователь
+    # этот адрес заполнил вручную. Преобразовать подобный адрес а структуру
+    # страна, регион и т.д не всегда возможно, отсюда и необходимость в таком поле
+    addr_str = models.CharField(_(u"Адрес"), max_length=255, blank=True, editable=False)
 
     def get_local_addr(self, addr):
         if self.house:
@@ -136,7 +141,9 @@ class Location(models.Model):
         return addr
 
     def __unicode__(self):
-        if self.street or self.region or self.country:
+        if self.addr_str and self.addr_str.strip():
+            return self.addr_str.strip()
+        elif self.street or self.region or self.country:
             addr = u''
             if self.street:
                 addr += u'%s' % self.street

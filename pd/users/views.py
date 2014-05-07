@@ -72,7 +72,7 @@ class CheckRecaptchaMixin(object):
                 use_ssl=use_ssl
         ).is_valid
     
-class AuthGetTokenView(APIView):
+class ApiAuthSigninView(APIView):
     """
     Проверка имени и пароля, (создать и) отдать token
     """
@@ -142,16 +142,16 @@ class AuthGetTokenView(APIView):
             data['message'] = 'Wrong username or password'
         return Response(data=data, status=status_code)
 
-auth_get_token = AuthGetTokenView.as_view()
+api_auth_signin = ApiAuthSigninView.as_view()
 
-class AuthApiLogout(APIView):
+class ApiAuthSignoutView(APIView):
     permission_classes = (IsAuthenticated,)
     
     def post(self, request):
         logout(request)
         return Response(data={}, status=200)
 
-auth_api_logout = AuthApiLogout.as_view()
+api_auth_signout = ApiAuthSignoutView.as_view()
 
 class ApiAuthSettings(APIView):
     permission_classes = (IsAuthenticated,)
