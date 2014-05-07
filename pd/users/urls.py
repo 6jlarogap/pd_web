@@ -7,6 +7,9 @@ urlpatterns = patterns('users.views',
     url(r'^login/', 'ulogin', name='ulogin'),
     url(r'^logout/', 'ulogout', name='ulogout'),
 
+    url(r'^api/auth/signin/?$', 'api_auth_signin', name='api_auth_signin'),
+    url(r'^api/auth/signout/?$', 'api_auth_signout', name='api_auth_signout'),
+
     url(r'^api/education/?$', 'api_education', name='api_education'),
 
     url(r'^registration-old/$', 'registration_old', name='registration_old'),
