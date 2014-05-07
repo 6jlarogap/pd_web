@@ -43,7 +43,8 @@ from logs.models import Log, write_log, LoginLog
 from users.forms import UserAddForm, RegisterForm, LoruFormset, ProfileForm, UserProfileForm, \
                         UserDataForm, ChangePasswordForm, BankAccountFormset, OrgForm, \
                         OrgLogForm, LoginLogForm, OrgBurialStatsForm, SupportForm, TestCaptchaForm
-from users.models import Profile, Org, RegisterProfile, ProfileLORU, CustomerProfile, get_mail_footer, is_cabinet_user
+from users.models import Profile, Org, RegisterProfile, ProfileLORU, CustomerProfile, get_mail_footer, \
+                         is_cabinet_user, is_loru_user
 from pd.models import validate_phone_as_number
 from persons.models import AlivePerson
 from burials.models import Cemetery, Area, Burial, Place
@@ -429,6 +430,8 @@ class ApiLoruPlaces(APIView):
     permission_classes = (IsAuthenticated,)
 
     def get(self, request):
+        if not is_loru_user(request.user):
+            return Response(data={ "detail": "User denied access: not LORU" }, status=403)
         data = []
         idx_public_catalog = None
         for i, ugh in enumerate(Org.objects.filter(loru_list__loru=request.user.profile.org)):
