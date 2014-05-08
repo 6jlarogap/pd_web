@@ -27,7 +27,7 @@ from burials.forms import CemeteryForm, AreaFormset, PlaceEditForm, AddOrgForm, 
 from burials.models import Cemetery, Place, Area, BurialFiles, Grave, Burial, AreaPhoto, GravePhoto, ExhumationRequest, AreaPurpose, PlaceSize
 from burials.burials_views import *
 from logs.models import write_log, log_object, prepare_m2m_log, compare_obj
-from users.models import Profile, Org, CustomerProfile
+from users.models import Profile, Org, CustomerProfile, is_ugh_user
 from persons.models import Phone, AlivePerson
 from geo.models import Location
 
@@ -44,7 +44,8 @@ from django.db import transaction
 
 from serializers import CemeterySerializer, AreaSerializer, PlaceSerializer, AreaPurposeSerializer, \
     GraveSerializer, BurialSerializer, BurialListSerializer, BurialPutGraveSerializer, \
-    AreaPhotoSerializer, GravePhotoSerializer, ExhumationRequestSerializer, PlaceSizeSerializer
+    AreaPhotoSerializer, GravePhotoSerializer, ExhumationRequestSerializer, PlaceSizeSerializer, \
+    ApiOmsPlacesSerializer
 
 from persons.serializers import AlivePersonSerializer, PhoneSerializer
 from geo.serializers import LocationSerializer, LocationStaticSerializer, LocationDataSerializer
@@ -298,6 +299,20 @@ class AreaViewSet(viewsets.ModelViewSet):
 
 
 
+class ApiOmsPlacesViewSet(viewsets.ReadOnlyModelViewSet):
+    model = Place
+    serializer_class = ApiOmsPlacesSerializer
+    permission_classes = (IsAuthenticated,)
+    paginate_by = None
+
+    def list(self, request, *args, **kwargs):
+        if not is_ugh_user(request.user):
+            return Response(data={ "detail": "User denied access: not OMS" }, status=403)
+        return super(ApiOmsPlacesViewSet, self).list(request, *args, **kwargs)
+        
+    def get_queryset(self):
+        return Place.objects.filter(cemetery__ugh=self.request.user.profile.org)
+
 class PlaceViewSet(viewsets.ModelViewSet):
     model = Place
     serializer_class = PlaceSerializer
@@ -352,8 +367,7 @@ class PlaceViewSet(viewsets.ModelViewSet):
                 self.old_responsible = None
             object.responsible = responsible_serializer.save()
 
-            if not settings.DEBUG and \
-               object.responsible.login_phone and \
+            if object.responsible.login_phone and \
                (not self.old_responsible or not self.old_responsible.login_phone):
                 if CustomerProfile.objects.filter(user__username=object.responsible.login_phone).count():
                     text=_(u'Место %s прикреплено. pohoronnoedelo.ru') % object.pk
@@ -364,11 +378,12 @@ class PlaceViewSet(viewsets.ModelViewSet):
                     text=_(u'https://pohoronnoedelo.ru login: %s parol: %s') % (object.responsible.login_phone, password,)
                     email_error_text = _(u"Пользователь %s не смог получить пароль после закрытия захоронения" % \
                                         (object.responsible.login_phone,))
-                sent, message = send_sms(
-                    phone_number=object.responsible.login_phone,
-                    text=text,
-                    email_error_text=email_error_text,
-                )
+                if not settings.DEBUG:
+                    sent, message = send_sms(
+                        phone_number=object.responsible.login_phone,
+                        text=text,
+                        email_error_text=email_error_text,
+                    )
 
             #object.responsible.address_id = responsible.address
 

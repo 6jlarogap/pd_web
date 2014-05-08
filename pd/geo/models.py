@@ -118,6 +118,11 @@ class Location(models.Model):
     gps_x = models.FloatField(_(u"Координата X"), blank=True, null=True, editable=False)
     gps_y = models.FloatField(_(u"Координата Y"), blank=True, null=True, editable=False)
     info = models.TextField(_(u"Дополнительная информация"), blank=True, null=True)
+    # Строка адреса в произвольной форме. Такая может приходить при входе в систему
+    # пользователя лору, если его организация не имела доселе адреса и пользователь
+    # этот адрес заполнил вручную. Преобразовать подобный адрес а структуру
+    # страна, регион и т.д не всегда возможно, отсюда и необходимость в таком поле
+    addr_str = models.CharField(_(u"Адрес"), max_length=255, blank=True, editable=False)
 
     def get_local_addr(self, addr):
         if self.house:
@@ -136,7 +141,9 @@ class Location(models.Model):
         return addr
 
     def __unicode__(self):
-        if self.street or self.region or self.country:
+        if self.addr_str and self.addr_str.strip():
+            return self.addr_str.strip()
+        elif self.street or self.region or self.country:
             addr = u''
             if self.street:
                 addr += u'%s' % self.street
@@ -161,9 +168,6 @@ class Location(models.Model):
                 addr += u' %s' % self.post_index
 
             return addr.replace(', ,', ', ')
-        elif self.fias_parents.all():
-            addr = u", ".join(map(unicode, self.fias_parents.all()))
-            return self.get_local_addr(addr)
         else:
             return _(u"незаполненный адрес")
 
@@ -191,135 +195,3 @@ class Location(models.Model):
                 pass
             self.save()
 
-
-class LocationFIAS(models.Model):
-    loc = models.ForeignKey(Location, related_name='fias_parents')
-    guid = models.CharField(max_length=255, db_index=True)
-    name = models.CharField(max_length=255)
-    level = models.PositiveSmallIntegerField(db_index=True)
-
-    class Meta:
-        ordering = ['level', ]
-
-    def __unicode__(self):
-        return self.name
-
-class FiasManager(models.Manager):
-    def get_query_set(self):
-        return super(FiasManager, self).get_query_set().filter(actstatus=1).using('fias')
-
-    def clear_data(self, data, words):
-        data = data.lower()
-        for w in words:
-            data = data.replace(w.lower(), '')
-        return data.strip()
-
-    def get_streets(self, country, region, city, street):
-        TO_CLEAN = DFiasSocrbase.objects.all().values_list('socrname', flat=True)
-
-        clear_region = self.clear_data(region, TO_CLEAN)
-        fias_region = self.get(formalname=clear_region, aolevel=1)
-
-        clear_city = self.clear_data(city, TO_CLEAN)
-        areacode = '000'
-        citycode = '000'
-        placecode = '000'
-
-        try:
-            fias_city = self.get(formalname=clear_city, regioncode=fias_region.regioncode, ctarcode='000', placecode='000', streetcode='0000')
-            citycode = fias_city.citycode
-            areacode = fias_city.areacode
-        except DFiasAddrobj.DoesNotExist:
-            try:
-                fias_city = self.get(formalname=clear_city, regioncode=fias_region.regioncode, streetcode='0000')
-                placecode = fias_city.placecode
-                areacode = fias_city.areacode
-            except DFiasAddrobj.DoesNotExist:
-                pass
-            except DFiasAddrobj.MultipleObjectsReturned:
-                pass
-
-        clear_street = self.clear_data(street, TO_CLEAN)
-        fias_streets = self.filter(
-            Q(formalname=clear_street) | Q(formalname=clear_street.replace('. ', '.')),
-            regioncode=fias_region.regioncode, areacode=areacode, citycode=citycode, placecode=placecode
-        ).exclude(streetcode='0000')
-
-        for socr in DFiasSocrbase.objects.all():
-            if socr.socrname.lower() in street.lower():
-                fias_streets = fias_streets.filter(shortname=socr.scname)
-
-        return fias_streets
-
-class DFiasAddrobj(models.Model):
-    """
-    Импорт из ФИАС
-    """
-    aoid = models.CharField(max_length=108)
-    formalname = models.CharField(max_length=360)
-    regioncode = models.CharField(max_length=6)
-    autocode = models.CharField(max_length=3)
-    areacode = models.CharField(max_length=9)
-    citycode = models.CharField(max_length=9)
-    ctarcode = models.CharField(max_length=9)
-    placecode = models.CharField(max_length=9)
-    streetcode = models.CharField(max_length=12)
-    extrcode = models.CharField(max_length=12)
-    sextcode = models.CharField(max_length=9)
-    offname = models.CharField(max_length=360)
-    postalcode = models.CharField(max_length=18)
-    ifnsfl = models.CharField(max_length=12)
-    terrifnsfl = models.CharField(max_length=12)
-    ifnsul = models.CharField(max_length=12)
-    terrifnsul = models.CharField(max_length=12)
-    okato = models.CharField(max_length=33)
-    oktmo = models.CharField(max_length=24)
-    updatedate = models.DateField()
-    shortname = models.CharField(max_length=30)
-    aolevel = models.IntegerField()
-    parentguid = models.CharField(max_length=108)
-    aoguid = models.CharField(max_length=108, primary_key=True)
-    previd = models.CharField(max_length=108)
-    nextid = models.CharField(max_length=108)
-    code = models.CharField(max_length=51)
-    plaincode = models.CharField(max_length=45)
-    actstatus = models.IntegerField()
-    centstatus = models.IntegerField()
-    operstatus = models.IntegerField()
-    currstatus = models.IntegerField()
-    startdate = models.DateField()
-    enddate = models.DateField()
-    normdoc = models.CharField(max_length=108)
-
-    objects = FiasManager()
-
-    class Meta:
-        db_table = u'd_fias_addrobj'
-
-    def __unicode__(self):
-        parent = self.get_parent()
-        if parent:
-            return u'%s. %s, %s' % (self.shortname, self.offname, parent)
-        else:
-            return u'%s. %s' % (self.shortname, self.offname, )
-
-    def get_parent(self):
-        if self.parentguid:
-            return DFiasAddrobj.objects.get(aoguid=self.parentguid, actstatus=1)
-        else:
-            return
-
-class FiasManagerLite(models.Manager):
-    def get_query_set(self):
-        return super(FiasManagerLite, self).get_query_set().using('fias')
-
-class DFiasSocrbase(models.Model):
-    level = models.IntegerField()
-    scname = models.CharField(max_length=30)
-    socrname = models.CharField(max_length=150)
-    kod_t_st = models.IntegerField(primary_key=True)
-
-    objects = FiasManagerLite()
-
-    class Meta:
-        db_table = u'd_fias_socrbase'

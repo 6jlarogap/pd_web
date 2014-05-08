@@ -7,7 +7,7 @@ from django.shortcuts import get_object_or_404
 
 from burials.models import Cemetery
  
-from geo.models import Country, Street, City, Region, Location, DFiasAddrobj
+from geo.models import Country, Street, City, Region, Location
 from geo.serializers import CountrySerializer, RegionSerializer, CitySerializer, StreetSerializer, \
     LocationSerializer, LocationStaticSerializer
 
@@ -70,33 +70,6 @@ def autocomplete_streets(request):
         'region': s.city.region.name,
         'country': s.city.region.country.name
     } for s in streets[:20]]), mimetype='text/javascript')
-
-def autocomplete_fias(request):
-    country = request.GET['country']
-    region = request.GET['region']
-    city = request.GET['city']
-    street = request.GET['street']
-
-    additional = (
-        ('house', u'д.'),
-        ('block', u'к.'),
-        ('building', u'стр.'),
-        ('flat', u'кв.'),
-    )
-
-    try:
-        sf = DFiasAddrobj.objects.get_streets(country, region, city, street)[0]
-        info_bits = unicode(sf).split(',', 1)
-        info = ''
-        for k,v in additional:
-            if request.GET.get(k):
-                info += ', %s %s' % (v, request.GET.get(k))
-        info = info_bits[0] + info + ', ' + info_bits[1] + (country and (', %s' % country) or '')
-        return HttpResponse(json.dumps({'ok': 1, 'id': sf.aoguid, 'info': info }), mimetype='application/json')
-    except IndexError:
-        return HttpResponse(json.dumps({}), mimetype='application/json')
-
-
 
 # REST API
 
@@ -168,7 +141,7 @@ class StreetList(generics.ListCreateAPIView):
 
 class LocationViewSet(viewsets.ModelViewSet):
     """
-    TODO: fias: add empty field validators
+    TODO: add empty field validators
     """
     model = Location
     serializer_class = LocationSerializer

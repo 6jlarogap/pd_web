@@ -43,7 +43,8 @@ from logs.models import Log, write_log, LoginLog
 from users.forms import UserAddForm, RegisterForm, LoruFormset, ProfileForm, UserProfileForm, \
                         UserDataForm, ChangePasswordForm, BankAccountFormset, OrgForm, \
                         OrgLogForm, LoginLogForm, OrgBurialStatsForm, SupportForm, TestCaptchaForm
-from users.models import Profile, Org, RegisterProfile, ProfileLORU, CustomerProfile, get_mail_footer, is_cabinet_user
+from users.models import Profile, Org, RegisterProfile, ProfileLORU, CustomerProfile, get_mail_footer, \
+                         is_cabinet_user, is_loru_user
 from pd.models import validate_phone_as_number
 from persons.models import AlivePerson
 from burials.models import Cemetery, Area, Burial, Place
@@ -71,7 +72,7 @@ class CheckRecaptchaMixin(object):
                 use_ssl=use_ssl
         ).is_valid
     
-class AuthGetTokenView(APIView):
+class ApiAuthSigninView(APIView):
     """
     Проверка имени и пароля, (создать и) отдать token
     """
@@ -115,13 +116,23 @@ class AuthGetTokenView(APIView):
                 profile['firstname'] = pr.user_first_name or user.first_name or None
                 profile['middlename'] = pr.user_middle_name or None
                 if role == 'ROLE_CLIENT':
-                    org = { 'id': None, 'name': None }
+                    org = { 'id': None, 'name': None, 'location': None }
                     profile['mainPhone'] = username
                     if not user.customerprofile.tc_confirmed and confirm_tc:
                         user.customerprofile.tc_confirmed = datetime.datetime.now()
                         user.customerprofile.save()
                 else:
                     org = { 'id': user.profile.org.pk, 'name': user.profile.org.name or None }
+                    if user.profile.org.off_address:
+                        org['location'] = {
+                            'address': unicode(user.profile.org.off_address),
+                            'coords': {
+                                'longitude': user.profile.org.off_address.gps_x,
+                                'latitude': user.profile.org.off_address.gps_y,
+                           },
+                        }
+                    else:
+                        org['location'] = None
                     profile['mainPhone'] = None
 
                 data.update({
@@ -141,16 +152,16 @@ class AuthGetTokenView(APIView):
             data['message'] = 'Wrong username or password'
         return Response(data=data, status=status_code)
 
-auth_get_token = AuthGetTokenView.as_view()
+api_auth_signin = ApiAuthSigninView.as_view()
 
-class AuthApiLogout(APIView):
+class ApiAuthSignoutView(APIView):
     permission_classes = (IsAuthenticated,)
     
     def post(self, request):
         logout(request)
         return Response(data={}, status=200)
 
-auth_api_logout = AuthApiLogout.as_view()
+api_auth_signout = ApiAuthSignoutView.as_view()
 
 class ApiAuthSettings(APIView):
     permission_classes = (IsAuthenticated,)
@@ -423,6 +434,8 @@ class ApiLoruPlaces(APIView):
     permission_classes = (IsAuthenticated,)
 
     def get(self, request):
+        if not is_loru_user(request.user):
+            return Response(data={ "detail": "User denied access: not LORU" }, status=403)
         data = []
         for ugh in Org.objects.filter(loru_list__loru=request.user.profile.org):
             d = {
