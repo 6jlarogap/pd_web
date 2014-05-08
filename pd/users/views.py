@@ -116,13 +116,23 @@ class ApiAuthSigninView(APIView):
                 profile['firstname'] = pr.user_first_name or user.first_name or None
                 profile['middlename'] = pr.user_middle_name or None
                 if role == 'ROLE_CLIENT':
-                    org = { 'id': None, 'name': None }
+                    org = { 'id': None, 'name': None, 'location': None }
                     profile['mainPhone'] = username
                     if not user.customerprofile.tc_confirmed and confirm_tc:
                         user.customerprofile.tc_confirmed = datetime.datetime.now()
                         user.customerprofile.save()
                 else:
                     org = { 'id': user.profile.org.pk, 'name': user.profile.org.name or None }
+                    if user.profile.org.off_address:
+                        org['location'] = {
+                            'address': unicode(user.profile.org.off_address),
+                            'coords': {
+                                'longitude': user.profile.org.off_address.gps_x,
+                                'latitude': user.profile.org.off_address.gps_y,
+                           },
+                        }
+                    else:
+                        org['location'] = None
                     profile['mainPhone'] = None
 
                 data.update({
