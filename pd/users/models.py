@@ -308,6 +308,16 @@ class Org(GetLogsMixin, BaseModel):
         except IndexError:
             return None
 
+class Store(models.Model):
+    """
+    Склады, магазины у ЛОРУ
+    """
+    loru = models.ForeignKey(
+        Org, verbose_name=_(u"ЛОРУ"), limit_choices_to={'type': Org.PROFILE_LORU},
+        on_delete=models.PROTECT,
+    )
+    address = models.ForeignKey('geo.Location', verbose_name=_(u"Адрес"))
+
 class BankAccount(models.Model):
     """
     Банковские реквизиты
