@@ -4,6 +4,7 @@ from rest_framework import serializers
 
 from geo.models import Location
 from users.models import Store
+from persons.models import Phone
 
 class StoreSerializer(serializers.ModelSerializer):
     address = serializers.SerializerMethodField('address_func')
