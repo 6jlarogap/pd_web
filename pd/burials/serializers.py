@@ -86,7 +86,7 @@ class ApiOmsPlacesSerializer(serializers.ModelSerializer):
     cemeteryId = serializers.PrimaryKeyRelatedField(source='cemetery')
     areaId = serializers.PrimaryKeyRelatedField(source='area')
     location = serializers.SerializerMethodField('location_func')
-    status = serializers.SerializerMethodField('status_func')
+    status = serializers.Field(source='status_list')
 
     class Meta:
         model = Place
@@ -100,14 +100,8 @@ class ApiOmsPlacesSerializer(serializers.ModelSerializer):
             }
         else:
             return None
- 
-    def status_func(self, obj):
-        try:
-            placestatus = PlaceStatus.objects.filter(place=obj).order_by('-dt_created')[0]
-        except IndexError:
-            placestatus = PlaceStatus.PS_ACTUAL
-        return placestatus
 
+ 
 
 class PlaceSerializer(serializers.ModelSerializer):
     cemetery = serializers.PrimaryKeyRelatedField()
