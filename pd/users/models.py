@@ -7,6 +7,7 @@ import string
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.db import models
+from django.db.models.loading import get_model
 from django.utils.translation import ugettext_lazy as _
 from django.contrib.contenttypes.models import ContentType
 
@@ -15,6 +16,14 @@ from pd.models import BaseModel, Files, GetLogsMixin, validate_gt0
 from logs.models import Log
 
 from pd.utils import DigitsValidator, LengthValidator, NotEmptyValidator
+
+
+class PhonesMixin(object):
+    @property
+    def phone_set(self):
+        ct = ContentType.objects.get_for_model(self)
+        Phone = get_model('persons', 'Phone')
+        return Phone.objects.filter(obj_id=self.pk, ct=ct)
 
 
 class CommonProfile(BaseModel):
@@ -308,15 +317,17 @@ class Org(GetLogsMixin, BaseModel):
         except IndexError:
             return None
 
-class Store(models.Model):
+class Store(models.Model, PhonesMixin):
     """
     Склады, магазины у ЛОРУ
     """
+    name = models.CharField(_(u"Название"), max_length=255, default='')
     loru = models.ForeignKey(
         Org, verbose_name=_(u"ЛОРУ"), limit_choices_to={'type': Org.PROFILE_LORU},
         on_delete=models.PROTECT,
     )
     address = models.ForeignKey('geo.Location', verbose_name=_(u"Адрес"))
+    # phones: могут быть разных типов, пользуемся моделью persons.Phone
 
 class BankAccount(models.Model):
     """

@@ -29,6 +29,7 @@ from django.utils.encoding import smart_unicode
 from django.views.generic.base import View, TemplateView
 from django.views.generic.edit import UpdateView, CreateView, FormView
 from django.views.generic.detail import DetailView
+from django.contrib.contenttypes.models import ContentType
     
 from captcha.client import submit
 
@@ -43,14 +44,16 @@ from logs.models import Log, write_log, LoginLog
 from users.forms import UserAddForm, RegisterForm, LoruFormset, ProfileForm, UserProfileForm, \
                         UserDataForm, ChangePasswordForm, BankAccountFormset, OrgForm, \
                         OrgLogForm, LoginLogForm, OrgBurialStatsForm, SupportForm, TestCaptchaForm
-from users.models import Profile, Org, RegisterProfile, ProfileLORU, CustomerProfile, get_mail_footer, \
-                         is_cabinet_user, is_loru_user
+from users.models import Profile, Org, RegisterProfile, ProfileLORU, CustomerProfile, Store, \
+                         get_mail_footer, is_cabinet_user, is_loru_user
 from pd.models import validate_phone_as_number
-from persons.models import AlivePerson
+from persons.models import AlivePerson, Phone
 from burials.models import Cemetery, Area, Burial, Place
 from billing.models import Wallet, Rate
 from orders.models import Product, ProductStatus, ProductHistory
 from pd.views import PaginateListView, RequestToFormMixin, FormInvalidMixin, get_front_end_url, ServiceException
+
+from users.serializers import StoreSerializer
 
 from sms_service.utils import send_sms
 
@@ -1474,3 +1477,25 @@ class Tutorial(TemplateView):
 
 tutorial = Tutorial.as_view()
 
+class StoreList(APIView):
+    """
+    List all stores, or create a new store.
+    """
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request, format=None):
+        stores = Store.objects.all()
+        serializer = StoreSerializer(stores, many=True)
+        return Response(serializer.data)
+
+    def post(self, request, format=None):
+        serializer = StoreSerializer(data=request.DATA, context={ 'request': request, })
+        if serializer.is_valid():
+            serializer.save()
+            phones = request.DATA.get('phones')
+            if phones is not None:
+                Phone.create_default_phones(serializer.object, phones)
+            return Response(serializer.data, status=200)
+        return Response(serializer.errors, status=400)
+    
+api_loru_stores = StoreList.as_view()
