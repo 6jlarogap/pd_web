@@ -433,7 +433,7 @@ class ApiFeedBack(CheckRecaptchaMixin, APIView):
 api_feedback = ApiFeedBack.as_view()
 
 class ApiLoruPlaces(APIView):
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (PermitIfLoru,)
 
     def get(self, request):
         data = []
