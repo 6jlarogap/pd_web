@@ -29,7 +29,6 @@ from django.utils.encoding import smart_unicode
 from django.views.generic.base import View, TemplateView
 from django.views.generic.edit import UpdateView, CreateView, FormView
 from django.views.generic.detail import DetailView
-from django.contrib.contenttypes.models import ContentType
     
 from captcha.client import submit
 
@@ -45,7 +44,7 @@ from users.forms import UserAddForm, RegisterForm, LoruFormset, ProfileForm, Use
                         UserDataForm, ChangePasswordForm, BankAccountFormset, OrgForm, \
                         OrgLogForm, LoginLogForm, OrgBurialStatsForm, SupportForm, TestCaptchaForm
 from users.models import Profile, Org, RegisterProfile, ProfileLORU, CustomerProfile, Store, \
-                         get_mail_footer, is_cabinet_user, is_loru_user
+                         get_mail_footer, is_cabinet_user, PermitIfLoru
 from pd.models import validate_phone_as_number
 from persons.models import AlivePerson, Phone
 from burials.models import Cemetery, Area, Burial, Place
@@ -443,8 +442,6 @@ class ApiLoruPlaces(APIView):
     permission_classes = (IsAuthenticated,)
 
     def get(self, request):
-        if not is_loru_user(request.user):
-            return Response(data={ "detail": "User denied access: not LORU" }, status=403)
         data = []
         idx_public_catalog = None
         for i, ugh in enumerate(Org.objects.filter(loru_list__loru=request.user.profile.org)):
@@ -1481,10 +1478,10 @@ class StoreList(APIView):
     """
     List all stores, or create a new store.
     """
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (PermitIfLoru,)
 
     def get(self, request, format=None):
-        stores = Store.objects.all()
+        stores = Store.objects.filter(loru=request.user.profile.org)
         serializer = StoreSerializer(stores, many=True)
         return Response(serializer.data)
 
