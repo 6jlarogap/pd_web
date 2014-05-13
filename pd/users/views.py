@@ -1497,29 +1497,31 @@ class StoreDetail(APIView):
     """
     permission_classes = (PermitIfLoru,)
 
-    def get_object(self, pk):
+    def get_object(self, request, pk):
         try:
-            return Store.objects.get(pk=pk)
+            return Store.objects.get(loru=request.user.profile.org, pk=pk)
         except Store.DoesNotExist:
             raise Http404
 
     def get(self, request, pk, format=None):
-        store = self.get_object(pk)
+        store = self.get_object(request, pk)
         serializer = StoreSerializer(store)
         return Response(serializer.data)
 
     def put(self, request, pk, format=None):
-        store = self.get_object(pk)
-        serializer = StoreSerializer(store, data=request.DATA)
+        store = self.get_object(request, pk)
+        serializer = StoreSerializer(store, data=request.DATA, context={ 'request': request, })
         if serializer.is_valid():
             serializer.save()
             phones = request.DATA.get('phones')
             if phones is not None:
                 Phone.create_default_phones(serializer.object, phones)
-            return Response(serializer.data)
+            return Response(serializer.data, status=200)
         return Response(serializer.errors, status=400)
 
     def delete(self, request, pk, format=None):
-        store = self.get_object(pk)
+        store = self.get_object(request, pk)
         store.delete()
-        return Response(status=200)
+        return Response(status=200, data={})
+
+api_loru_store_detail = StoreDetail.as_view()
