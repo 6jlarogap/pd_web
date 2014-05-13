@@ -1485,3 +1485,36 @@ class StoreList(APIView):
         return Response(serializer.errors, status=400)
     
 api_loru_stores = StoreList.as_view()
+
+class StoreDetail(APIView):
+    """
+    Retrieve, update or delete a store instance.
+    """
+    permission_classes = (PermitIfLoru,)
+
+    def get_object(self, pk):
+        try:
+            return Store.objects.get(pk=pk)
+        except Store.DoesNotExist:
+            raise Http404
+
+    def get(self, request, pk, format=None):
+        store = self.get_object(pk)
+        serializer = StoreSerializer(store)
+        return Response(serializer.data)
+
+    def put(self, request, pk, format=None):
+        store = self.get_object(pk)
+        serializer = StoreSerializer(store, data=request.DATA)
+        if serializer.is_valid():
+            serializer.save()
+            phones = request.DATA.get('phones')
+            if phones is not None:
+                Phone.create_default_phones(serializer.object, phones)
+            return Response(serializer.data)
+        return Response(serializer.errors, status=400)
+
+    def delete(self, request, pk, format=None):
+        store = self.get_object(pk)
+        store.delete()
+        return Response(status=200)
