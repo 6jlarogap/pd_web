@@ -433,12 +433,6 @@ class ApiFeedBack(CheckRecaptchaMixin, APIView):
 api_feedback = ApiFeedBack.as_view()
 
 class ApiLoruPlaces(APIView):
-    """
-    Поиск всех ОМС, подключенных к этому лору
-
-    При этом ОМС, отмеченный в settings.ORG_AD_PAY_RECIPIENT,
-    ставится первым в списке
-    """
     permission_classes = (IsAuthenticated,)
 
     def get(self, request):
