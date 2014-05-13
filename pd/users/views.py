@@ -29,7 +29,6 @@ from django.utils.encoding import smart_unicode
 from django.views.generic.base import View, TemplateView
 from django.views.generic.edit import UpdateView, CreateView, FormView
 from django.views.generic.detail import DetailView
-from django.contrib.contenttypes.models import ContentType
     
 from captcha.client import submit
 
@@ -45,7 +44,7 @@ from users.forms import UserAddForm, RegisterForm, LoruFormset, ProfileForm, Use
                         UserDataForm, ChangePasswordForm, BankAccountFormset, OrgForm, \
                         OrgLogForm, LoginLogForm, OrgBurialStatsForm, SupportForm, TestCaptchaForm
 from users.models import Profile, Org, RegisterProfile, ProfileLORU, CustomerProfile, Store, \
-                         get_mail_footer, is_cabinet_user, is_loru_user
+                         get_mail_footer, is_cabinet_user, PermitIfLoru
 from pd.models import validate_phone_as_number
 from persons.models import AlivePerson, Phone
 from burials.models import Cemetery, Area, Burial, Place
@@ -434,11 +433,9 @@ class ApiFeedBack(CheckRecaptchaMixin, APIView):
 api_feedback = ApiFeedBack.as_view()
 
 class ApiLoruPlaces(APIView):
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (PermitIfLoru,)
 
     def get(self, request):
-        if not is_loru_user(request.user):
-            return Response(data={ "detail": "User denied access: not LORU" }, status=403)
         data = []
         for ugh in Org.objects.filter(loru_list__loru=request.user.profile.org):
             d = {
@@ -1470,10 +1467,10 @@ class StoreList(APIView):
     """
     List all stores, or create a new store.
     """
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (PermitIfLoru,)
 
     def get(self, request, format=None):
-        stores = Store.objects.all()
+        stores = Store.objects.filter(loru=request.user.profile.org)
         serializer = StoreSerializer(stores, many=True)
         return Response(serializer.data)
 
@@ -1488,3 +1485,36 @@ class StoreList(APIView):
         return Response(serializer.errors, status=400)
     
 api_loru_stores = StoreList.as_view()
+
+class StoreDetail(APIView):
+    """
+    Retrieve, update or delete a store instance.
+    """
+    permission_classes = (PermitIfLoru,)
+
+    def get_object(self, pk):
+        try:
+            return Store.objects.get(pk=pk)
+        except Store.DoesNotExist:
+            raise Http404
+
+    def get(self, request, pk, format=None):
+        store = self.get_object(pk)
+        serializer = StoreSerializer(store)
+        return Response(serializer.data)
+
+    def put(self, request, pk, format=None):
+        store = self.get_object(pk)
+        serializer = StoreSerializer(store, data=request.DATA)
+        if serializer.is_valid():
+            serializer.save()
+            phones = request.DATA.get('phones')
+            if phones is not None:
+                Phone.create_default_phones(serializer.object, phones)
+            return Response(serializer.data)
+        return Response(serializer.errors, status=400)
+
+    def delete(self, request, pk, format=None):
+        store = self.get_object(pk)
+        store.delete()
+        return Response(status=200)

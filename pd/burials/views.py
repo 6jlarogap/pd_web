@@ -27,7 +27,7 @@ from burials.forms import CemeteryForm, AreaFormset, PlaceEditForm, AddOrgForm, 
 from burials.models import Cemetery, Place, Area, BurialFiles, Grave, Burial, AreaPhoto, GravePhoto, ExhumationRequest, AreaPurpose, PlaceSize
 from burials.burials_views import *
 from logs.models import write_log, log_object, prepare_m2m_log, compare_obj
-from users.models import Profile, Org, CustomerProfile, is_ugh_user
+from users.models import Profile, Org, CustomerProfile, PermitIfUgh
 from persons.models import Phone, AlivePerson
 from geo.models import Location
 
@@ -302,14 +302,9 @@ class AreaViewSet(viewsets.ModelViewSet):
 class ApiOmsPlacesViewSet(viewsets.ReadOnlyModelViewSet):
     model = Place
     serializer_class = ApiOmsPlacesSerializer
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (PermitIfUgh,)
     paginate_by = None
 
-    def list(self, request, *args, **kwargs):
-        if not is_ugh_user(request.user):
-            return Response(data={ "detail": "User denied access: not OMS" }, status=403)
-        return super(ApiOmsPlacesViewSet, self).list(request, *args, **kwargs)
-        
     def get_queryset(self):
         return Place.objects.filter(cemetery__ugh=self.request.user.profile.org)
 

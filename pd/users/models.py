@@ -11,6 +11,8 @@ from django.db.models.loading import get_model
 from django.utils.translation import ugettext_lazy as _
 from django.contrib.contenttypes.models import ContentType
 
+from rest_framework import permissions
+
 from geo.models import Location
 from pd.models import BaseModel, Files, GetLogsMixin, validate_gt0
 from logs.models import Log
@@ -150,6 +152,14 @@ def is_ugh_user(user):
     except (AttributeError, Profile.DoesNotExist, ):
         return False
     
+class PermitIfLoru(permissions.BasePermission):
+    def has_permission(self, request, view):
+        return is_loru_user(request.user)
+
+class PermitIfUgh(permissions.BasePermission):
+    def has_permission(self, request, view):
+        return is_ugh_user(request.user)
+
 def get_mail_footer(user):
     footer = ''
     if user.is_authenticated():

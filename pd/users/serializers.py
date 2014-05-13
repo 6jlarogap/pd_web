@@ -4,20 +4,20 @@ from rest_framework import serializers
 
 from geo.models import Location
 from users.models import Store
-from persons.models import Phone
 
 class StoreSerializer(serializers.ModelSerializer):
     address = serializers.SerializerMethodField('address_func')
     phones = serializers.SerializerMethodField('phones_func')
+    location = serializers.SerializerMethodField('location_func')
 
     class Meta:
         model = Store
-        fields = ('name', 'address', 'phones')
+        fields = ('id', 'name', 'address', 'location', 'phones', )
 
     def restore_object(self, attrs, instance=None):
         data = self.context['request'].DATA
         name = data.get('name', instance and instance.name or '')
-        address = data.get('address')
+        address = data.get('address', '')
         location = data.get('location')
         phones = data.get('phones')
         
@@ -36,7 +36,13 @@ class StoreSerializer(serializers.ModelSerializer):
             return instance
 
         # Create new instance
-        address = Location.objects.create(addr_str=address)
+        kwargs = dict(addr_str=address)
+        if location:
+            kwargs.update({
+                'gps_y': location.get('latitude'),
+                'gps_x': location.get('longitude'),
+            })
+        address = Location.objects.create(**kwargs)
         store = Store(
             loru=self.context['request'].user.profile.org,
             name=name,
@@ -52,3 +58,12 @@ class StoreSerializer(serializers.ModelSerializer):
         for phone in instance.phone_set:
             phones.append(phone.number)
         return phones
+
+    def location_func(self, instance):
+        if instance.address.gps_x is not None and instance.address.gps_y is not None:
+            return {
+                'latitude': instance.address.gps_y,
+                'longitude': instance.address.gps_x,
+            }
+        else:
+            return None
