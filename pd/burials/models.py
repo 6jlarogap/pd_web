@@ -11,9 +11,9 @@ from django.db.models.query_utils import Q
 from django.conf import settings
 from pd.models import UnclearDateModelField, BaseModel, Files, GetLogsMixin, validate_gt0
 
-from persons.models import DeadPerson, SafeDeleteMixin, DeathCertificate, PhonesMixin
+from persons.models import DeadPerson, SafeDeleteMixin, DeathCertificate
 from reports.models import Report
-from users.models import Org, Profile, Dover, ProfileLORU, CustomerProfile
+from users.models import Org, Profile, Dover, ProfileLORU, CustomerProfile, PhonesMixin
 from logs.models import Log
 from geo.models import GeoPointModel, CoordinatesModel
 
