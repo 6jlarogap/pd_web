@@ -42,7 +42,11 @@ class ProductInfoSerializer(serializers.HyperlinkedModelSerializer):
     currency = serializers.RelatedField(source='currency')
     category = serializers.RelatedField(source='productcategory')
     supplier = SupplierSerializer(source='loru')
+    model3d = serializers.SerializerMethodField('model3d_func')
     
     class Meta:
         model = Product
-        fields = ('id', 'photo', 'price', 'currency', 'name', 'description', 'sku', 'category', 'supplier', )
+        fields = ('id', 'photo', 'price', 'currency', 'name', 'description', 'sku', 'category', 'supplier', 'model3d', )
+
+    def model3d_func(self, obj):
+        return None

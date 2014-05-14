@@ -24,8 +24,8 @@ from burials.views import CemeteryViewSet, AreaViewSet, PlaceViewSet, \
 
 from persons.views import AlivePersonViewSet, DeadPersonViewSet, PhoneViewSet 
 from logs.views import LogViewSet
-from orders.views import ProductCategoryViewSet, CatalogFiltersViewSet, ProductsViewSet, \
-                         ProductInfoViewSet, CabinetViewSet, loru_product_places, \
+from orders.views import ProductCategoryViewSet, ProductsViewSet, \
+                         ProductInfoViewSet, ApiProfileViewSet, loru_product_places, \
                          UghPublishedProductsViewSet
 from users.views import auth_get_password_by_sms, \
                         api_feedback, api_auth_settings, api_auth_user, api_loru_places, \
@@ -52,11 +52,10 @@ router.register(r'^api/alive-person-phone', PhoneViewSet)
 router.register(r'^api/placesize', PlaceSizeViewSet)
 
 # Orders
-router.register(r'^api/product_category', ProductCategoryViewSet)
-router.register(r'^api/catalog_filters', CatalogFiltersViewSet)
-router.register(r'^api/products', ProductsViewSet)
-router.register(r'^api/product', ProductInfoViewSet)
-router.register(r'^api/cabinet', CabinetViewSet)
+router.register(r'^api/catalog/categories', ProductCategoryViewSet)
+router.register(r'^api/catalog/products/?$', ProductsViewSet)
+router.register(r'^api/catalog/products/(?P<product_id>\d+)', ProductInfoViewSet)
+router.register(r'^api/profile', ApiProfileViewSet)
 
 router.register(r'^api/loru/products', UghPublishedProductsViewSet)
 
