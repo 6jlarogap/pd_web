@@ -437,7 +437,8 @@ class ApiLoruPlaces(APIView):
 
     def get(self, request):
         data = []
-        for ugh in Org.objects.filter(loru_list__loru=request.user.profile.org):
+        idx_public_catalog = None
+        for i, ugh in enumerate(Org.objects.filter(loru_list__loru=request.user.profile.org)):
             d = {
                     'id': ugh.pk,
                     'name': ugh.name,
@@ -447,6 +448,8 @@ class ApiLoruPlaces(APIView):
                         'code': ugh.currency.code,
                     }
             }
+            if ugh.inn == settings.ORG_AD_PAY_RECIPIENT['inn']:
+                idx_public_catalog = i
             for action, costFor in (
                                         (Rate.RATE_ACTION_PUBLISH, 'costForEnable'),
                                         (Rate.RATE_ACTION_UPDATE, 'costForUp'),
@@ -458,6 +461,8 @@ class ApiLoruPlaces(APIView):
                                                 ).order_by('-date_from')[:1]:
                         d['costFor'] = rate.rate
             data.append(d)
+        if idx_public_catalog:
+            data.insert(0, data.pop(idx_public_catalog))
         return Response(data=data, status=200)
 
 api_loru_places = ApiLoruPlaces.as_view()
