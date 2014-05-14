@@ -10,7 +10,7 @@ from django.contrib.contenttypes.models import ContentType
 import datetime
 from geo.models import Location
 from pd.models import UnclearDate, UnclearDateModelField, BaseModel, Files, validate_phone_as_number
-from users.models import Org
+from users.models import Org, PhonesMixin
 
 class SafeDeleteMixin(object):
     
@@ -32,13 +32,6 @@ class SafeDeleteMixin(object):
                 field_to_delete.delete()
             except ProtectedError:
                 pass
-
-
-class PhonesMixin(object):
-    @property
-    def phone_set(self):
-        ct = ContentType.objects.get_for_model(self)
-        return Phone.objects.filter(obj_id=self.pk, ct=ct)
 
 
 class IDDocumentType(models.Model):
@@ -333,3 +326,17 @@ class Phone(BaseModel):
          for k, v in PHONE_TYPE_CHOICES:  
              if k == self.phonetype:  
                  return _(u"%s: %s") % (v, self.number)
+
+    @classmethod
+    def create_default_phones(cls, instance, phones):
+        """
+        Создать массив телефонов с типом по умолчанию
+        """
+        instance.phone_set.delete()
+        ct = ContentType.objects.get_for_model(instance)
+        for phone in phones:
+            cls.objects.create(
+                ct=ct,
+                obj_id=instance.pk,
+                number=phone.lstrip('+'),
+            )

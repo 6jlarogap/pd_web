@@ -43,14 +43,16 @@ from logs.models import Log, write_log, LoginLog
 from users.forms import UserAddForm, RegisterForm, LoruFormset, ProfileForm, UserProfileForm, \
                         UserDataForm, ChangePasswordForm, BankAccountFormset, OrgForm, \
                         OrgLogForm, LoginLogForm, OrgBurialStatsForm, SupportForm, TestCaptchaForm
-from users.models import Profile, Org, RegisterProfile, ProfileLORU, CustomerProfile, get_mail_footer, \
-                         is_cabinet_user, is_loru_user
+from users.models import Profile, Org, RegisterProfile, ProfileLORU, CustomerProfile, Store, \
+                         get_mail_footer, is_cabinet_user, PermitIfLoru
 from pd.models import validate_phone_as_number
-from persons.models import AlivePerson
+from persons.models import AlivePerson, Phone
 from burials.models import Cemetery, Area, Burial, Place
 from billing.models import Wallet, Rate
 from orders.models import Product, ProductStatus, ProductHistory
 from pd.views import PaginateListView, RequestToFormMixin, FormInvalidMixin, get_front_end_url, ServiceException
+
+from users.serializers import StoreSerializer
 
 from sms_service.utils import send_sms
 
@@ -431,13 +433,12 @@ class ApiFeedBack(CheckRecaptchaMixin, APIView):
 api_feedback = ApiFeedBack.as_view()
 
 class ApiLoruPlaces(APIView):
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (PermitIfLoru,)
 
     def get(self, request):
-        if not is_loru_user(request.user):
-            return Response(data={ "detail": "User denied access: not LORU" }, status=403)
         data = []
-        for ugh in Org.objects.filter(loru_list__loru=request.user.profile.org):
+        idx_public_catalog = None
+        for i, ugh in enumerate(Org.objects.filter(loru_list__loru=request.user.profile.org)):
             d = {
                     'id': ugh.pk,
                     'name': ugh.name,
@@ -447,6 +448,8 @@ class ApiLoruPlaces(APIView):
                         'code': ugh.currency.code,
                     }
             }
+            if ugh.inn == settings.ORG_AD_PAY_RECIPIENT['inn']:
+                idx_public_catalog = i
             for action, costFor in (
                                         (Rate.RATE_ACTION_PUBLISH, 'costForEnable'),
                                         (Rate.RATE_ACTION_UPDATE, 'costForUp'),
@@ -458,6 +461,8 @@ class ApiLoruPlaces(APIView):
                                                 ).order_by('-date_from')[:1]:
                         d['costFor'] = rate.rate
             data.append(d)
+        if idx_public_catalog:
+            data.insert(0, data.pop(idx_public_catalog))
         return Response(data=data, status=200)
 
 api_loru_places = ApiLoruPlaces.as_view()
@@ -1463,3 +1468,60 @@ class Tutorial(TemplateView):
 
 tutorial = Tutorial.as_view()
 
+class StoreList(APIView):
+    """
+    List all stores, or create a new store.
+    """
+    permission_classes = (PermitIfLoru,)
+
+    def get(self, request, format=None):
+        stores = Store.objects.filter(loru=request.user.profile.org)
+        serializer = StoreSerializer(stores, many=True)
+        return Response(serializer.data)
+
+    def post(self, request, format=None):
+        serializer = StoreSerializer(data=request.DATA, context={ 'request': request, })
+        if serializer.is_valid():
+            serializer.save()
+            phones = request.DATA.get('phones')
+            if phones is not None:
+                Phone.create_default_phones(serializer.object, phones)
+            return Response(serializer.data, status=200)
+        return Response(serializer.errors, status=400)
+    
+api_loru_stores = StoreList.as_view()
+
+class StoreDetail(APIView):
+    """
+    Retrieve, update or delete a store instance.
+    """
+    permission_classes = (PermitIfLoru,)
+
+    def get_object(self, request, pk):
+        try:
+            return Store.objects.get(loru=request.user.profile.org, pk=pk)
+        except Store.DoesNotExist:
+            raise Http404
+
+    def get(self, request, pk, format=None):
+        store = self.get_object(request, pk)
+        serializer = StoreSerializer(store)
+        return Response(serializer.data)
+
+    def put(self, request, pk, format=None):
+        store = self.get_object(request, pk)
+        serializer = StoreSerializer(store, data=request.DATA, context={ 'request': request, })
+        if serializer.is_valid():
+            serializer.save()
+            phones = request.DATA.get('phones')
+            if phones is not None:
+                Phone.create_default_phones(serializer.object, phones)
+            return Response(serializer.data, status=200)
+        return Response(serializer.errors, status=400)
+
+    def delete(self, request, pk, format=None):
+        store = self.get_object(request, pk)
+        store.delete()
+        return Response(status=200, data={})
+
+api_loru_store_detail = StoreDetail.as_view()

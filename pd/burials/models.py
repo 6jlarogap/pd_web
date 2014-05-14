@@ -11,9 +11,9 @@ from django.db.models.query_utils import Q
 from django.conf import settings
 from pd.models import UnclearDateModelField, BaseModel, Files, GetLogsMixin, validate_gt0
 
-from persons.models import DeadPerson, SafeDeleteMixin, DeathCertificate, PhonesMixin
+from persons.models import DeadPerson, SafeDeleteMixin, DeathCertificate
 from reports.models import Report
-from users.models import Org, Profile, Dover, ProfileLORU, CustomerProfile
+from users.models import Org, Profile, Dover, ProfileLORU, CustomerProfile, PhonesMixin
 from logs.models import Log
 from geo.models import GeoPointModel, CoordinatesModel
 
@@ -360,6 +360,17 @@ class Place(SafeDeleteMixin, GeoPointModel):
         gallery = sorted(gallery, key=lambda photo: photo['addedAt'], reverse=True)
         return gallery
         
+    def status_list(self):
+        """
+        Вернуть список статусов, например ['dt_wrong_fio', 'dt_unindentified', ]
+        """
+        result  = []
+        for f in ('dt_wrong_fio', 'dt_military', 'dt_size_violated', 'dt_unowned', 'dt_unindentified', ):
+            value = getattr(self,f)
+            if value:
+                result.append(f)
+        return result
+
 class PlaceSize(models.Model):
     org = models.ForeignKey(Org, verbose_name=_(u"Организация"), editable=False, on_delete=models.PROTECT) 
     graves_count = models.PositiveSmallIntegerField(_(u"Число могил"), )

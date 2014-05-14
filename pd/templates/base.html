@@ -114,6 +114,7 @@
                             </a>
                             <ul class="dropdown-menu">
                                 {% if user.profile.is_ugh %}
+                                    <li><a href="{{ global_context_FRONT_END_URL }}#/oms/placesmap">{% trans "Карта захоронений" %}</a></li>
                                     <li><a href="{% url loru_registry %}">{% trans "Реестр ЛОРУ" %}</a></li>
                                 {% endif %}
                                 {% if user.profile.org.pk %}
