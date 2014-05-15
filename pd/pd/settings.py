@@ -174,8 +174,10 @@ LOGIN_URL = "/login/"
 # URLs, не требующие регистрации в системе:
 REGISTER_URLS_REGEX = r'^/?register(?:/|$)'
 SUPPORT_URLS_REGEX = r'^/?support(?:/|$)'
-# URLs, требующие регистрации, но она проходит посредством tokens:
+# URLs, доступ к которым регулируется в соответствующих классах.as_view():
 API_URLS_REGEX = r'^/?api(?:/|$)'
+# URLs, доступные анонимным пользователям, например в публичном каталоге:
+ANONYMOUS_URLS_REGEX = r'^/?thumb/product-photo/'
 
 LOGOUT_URL = "/logout/"
 LOGIN_REDIRECT_URL = "/"

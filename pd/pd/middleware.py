@@ -16,9 +16,10 @@ exempt_urls = [re.compile(re.escape(url.lstrip('/')), flags=re.I) \
 
 for regex in (settings.REGISTER_URLS_REGEX,
               settings.SUPPORT_URLS_REGEX,
-              # Эти URLs требуют регистрации, но она через tokens,
-              # ! За исключение /api/signin,
-              #   которая регистрации не требует, а проверяет имя/пароль
+              settings.ANONYMOUS_URLS_REGEX,
+              # Эти URLs требуют или не требуют (для анонимного пользователя)
+              # регистрации, но это устанавливается в 
+              # соответствующих класссах.as_view():
               settings.API_URLS_REGEX,
              ):
     exempt_urls.append(re.compile(regex, flags=re.I))
