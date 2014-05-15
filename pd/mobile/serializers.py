@@ -1,5 +1,5 @@
 # coding=utf-8
-
+from geo.models import CoordinatesModel 
 from rest_framework import serializers
 
 class BaseSerializer(serializers.Serializer):	
@@ -21,6 +21,7 @@ class CoordinatesSerializer(BaseSerializer):
         
 class CemeterySerializer(BaseSerializer):	
     name = serializers.CharField(required=True)
+    square = serializers.CharField(required=True)
 
 class CemeteryWithNestedObjectSerializer(CemeterySerializer):	
     coordinates = CoordinatesSerializer(many=True)
@@ -28,6 +29,7 @@ class CemeteryWithNestedObjectSerializer(CemeterySerializer):
 class AreaSerializer(BaseSerializer):
     cemetery = BaseSerializer(required=True)
     name = serializers.CharField(required=True)
+    square = serializers.CharField(required=True)
     
 class AreaWithNestedObjectSerializer(AreaSerializer):    
     coordinates = CoordinatesSerializer(many=True)

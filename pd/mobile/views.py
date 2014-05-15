@@ -72,6 +72,9 @@ class ApiCemeteryUpload(APIView):
         cemeteryId = int(request.POST['cemeteryId'])
         cemeteryName = request.POST['cemeteryName']
         gpsJSON = request.POST['gps']
+        square = None
+        if request.POST['square'] :
+            square = request.POST['square']
         isGPSChange = False
         if gpsJSON :
             isGPSChange = True
@@ -84,13 +87,14 @@ class ApiCemeteryUpload(APIView):
         cem = None
         try:
             prevCem = Cemetery.objects.get(pk = cemeteryId)
-            if prevCem.name != cemeteryName :
+            if prevCem.name != cemeteryName or prevCem.square != square :
                 prevCem.name = cemeteryName
+                prevCem.square = square
                 prevCem.save()
             cem = prevCem
         except Cemetery.DoesNotExist:
             prevCem = None
-            cem = Cemetery(name = cemeteryName, creator = request.user, ugh = org)
+            cem = Cemetery(name = cemeteryName, square = square, creator = request.user, ugh = org)
             cem.save()
             listInsertedCemetery.append(cem)
         if isGPSChange == True :
@@ -139,6 +143,9 @@ class ApiAreaUpload(APIView):
         areaId = int(request.POST['areaId'])
         cemeteryId = int(request.POST['cemeteryId'])
         gpsJSON = request.POST['gps']
+        square = None
+        if request.POST['square'] :
+            square = request.POST['square']
         isGPSChange = False
         if gpsJSON :
             isGPSChange = True
@@ -152,16 +159,17 @@ class ApiAreaUpload(APIView):
         try:
             cemetery = Cemetery.objects.get(pk = cemeteryId)
             prevArea = Area.objects.get(pk = areaId)
-            if prevArea.name != areaName or prevArea.cemetery != cemetery :
+            if prevArea.name != areaName or prevArea.cemetery != cemetery or prevArea.square != square :
                 prevArea.name = areaName
-                prevArea.cemetery = cemetery                
+                prevArea.cemetery = cemetery
+                prevArea.square = square
                 prevArea.save()
             area = prevArea
         except Cemetery.DoesNotExist:
             raise Http404
         except Area.DoesNotExist:
             prevArea = None
-            area = Area(cemetery = cemetery, name = areaName)            
+            area = Area(cemetery = cemetery, name = areaName, square = square)            
             area.save()
             listInsertedArea.append(area)
         if isGPSChange == True :
