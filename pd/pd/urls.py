@@ -20,7 +20,7 @@ from geo.views import LocationViewSet, LocationStaticViewSet
 
 from burials.views import CemeteryViewSet, AreaViewSet, PlaceViewSet, \
     GraveViewSet, BurialViewSet, AreaPhotoViewSet, GravePhotoViewSet, AreaPurposeViewSet, \
-    PlaceSizeViewSet, ApiOmsPlacesViewSet
+    PlaceSizeViewSet, ApiOmsPlacesViewSet, ApiCatalogPlacesViewSet
 
 from persons.views import AlivePersonViewSet, DeadPersonViewSet, PhoneViewSet 
 from logs.views import LogViewSet
@@ -44,6 +44,7 @@ router.register(r'^api/grave-photo', GravePhotoViewSet)
 router.register(r'^api/area-photo', AreaPhotoViewSet)
 router.register(r'^api/area-purpose', AreaPurposeViewSet)
 router.register(r'^api/oms/places', ApiOmsPlacesViewSet)
+router.register(r'^api/catalog/places', ApiCatalogPlacesViewSet)
 
 router.register(r'^api/alive-person', AlivePersonViewSet)
 router.register(r'^api/dead-person', DeadPersonViewSet)

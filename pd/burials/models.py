@@ -184,6 +184,8 @@ class AreaCoordinates(CoordinatesModel):
         unique_together = ('area', 'angle_number',)
 
 class Place(SafeDeleteMixin, GeoPointModel):
+    STATUS_LIST = ('dt_wrong_fio', 'dt_military', 'dt_size_violated', 'dt_unowned', 'dt_unindentified', )
+
     cemetery = models.ForeignKey(Cemetery, verbose_name=_(u"Кладбище"), on_delete=models.PROTECT)
     area = models.ForeignKey(Area, verbose_name=_(u"Участок"), blank=True, null=True,
                              on_delete=models.PROTECT)
@@ -365,7 +367,7 @@ class Place(SafeDeleteMixin, GeoPointModel):
         Вернуть список статусов, например ['dt_wrong_fio', 'dt_unindentified', ]
         """
         result  = []
-        for f in ('dt_wrong_fio', 'dt_military', 'dt_size_violated', 'dt_unowned', 'dt_unindentified', ):
+        for f in Place.STATUS_LIST:
             value = getattr(self,f)
             if value:
                 result.append(f)
