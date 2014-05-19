@@ -82,15 +82,9 @@ class AreaSerializer(serializers.ModelSerializer):
 
 
 
-class ApiOmsPlacesSerializer(serializers.ModelSerializer):
-    cemeteryId = serializers.PrimaryKeyRelatedField(source='cemetery')
-    areaId = serializers.PrimaryKeyRelatedField(source='area')
+class ApiPlacesSerializer(serializers.ModelSerializer):
     location = serializers.SerializerMethodField('location_func')
     status = serializers.Field(source='status_list')
-
-    class Meta:
-        model = Place
-        fields = ('id', 'cemeteryId', 'areaId', 'location', 'status', )
 
     def location_func(self, obj):
         if obj.lat and obj.lng:
@@ -102,6 +96,22 @@ class ApiOmsPlacesSerializer(serializers.ModelSerializer):
             return None
 
  
+
+class ApiOmsPlacesSerializer(ApiPlacesSerializer):
+    cemeteryId = serializers.PrimaryKeyRelatedField(source='cemetery')
+    areaId = serializers.PrimaryKeyRelatedField(source='area')
+
+    class Meta:
+        model = Place
+        fields = ('id', 'cemeteryId', 'areaId', 'location', 'status', )
+
+
+class ApiCatalogPlacesSerializer(ApiPlacesSerializer):
+
+    class Meta:
+        model = Place
+        fields = ('id', 'location', 'status', )
+
 
 class PlaceSerializer(serializers.ModelSerializer):
     cemetery = serializers.PrimaryKeyRelatedField()
