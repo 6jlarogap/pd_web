@@ -626,7 +626,16 @@ class CatalogSuppliersView(APIView):
                 pc['productcategory__pk'] for pc in \
                 Product.objects.filter(q).order_by('productcategory__pk').values('productcategory__pk').distinct()
             ]
-            loru_stores = [ store.pk for store in Store.objects.filter(loru=l) ]
+            loru_stores = []
+            for store in Store.objects.filter(loru=l):
+                loru_stores.append(dict(
+                    id=store.pk,
+                    name=store.name,
+                    location = store.address.gps_x is not None and store.address.gps_y is not None and dict(
+                        longitude=store.address.gps_x,
+                        latitude=store.address.gps_y
+                    ) or None,
+                ))
             supplier = {
                 'id': l.pk,
                 'name': l.name,
