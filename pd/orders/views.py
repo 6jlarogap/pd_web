@@ -23,7 +23,7 @@ from django.shortcuts import get_object_or_404
 from logs.models import write_log
 from burials.forms import AddOrgForm, AddAgentForm, AddDoverForm, AddDocTypeForm
 from burials.models import Burial, Place, Grave, GravePhoto, PlacePhoto
-from users.models import CustomerProfile, CustomerProfilePhoto, Org, ProfileLORU, is_loru_user
+from users.models import CustomerProfile, CustomerProfilePhoto, Org, ProfileLORU, Store, is_loru_user
 from billing.models import Rate
 from orders.forms import ProductForm, OrderForm, OrderItemFormset, CoffinForm, CatafalqueForm, \
                          AddInfoForm, OrderSearchForm, OrderBurialForm
@@ -626,11 +626,22 @@ class CatalogSuppliersView(APIView):
                 pc['productcategory__pk'] for pc in \
                 Product.objects.filter(q).order_by('productcategory__pk').values('productcategory__pk').distinct()
             ]
+            loru_stores = []
+            for store in Store.objects.filter(loru=l):
+                loru_stores.append(dict(
+                    id=store.pk,
+                    name=store.name,
+                    location = store.address.gps_x is not None and store.address.gps_y is not None and dict(
+                        longitude=store.address.gps_x,
+                        latitude=store.address.gps_y
+                    ) or None,
+                ))
             supplier = {
                 'id': l.pk,
                 'name': l.name,
                 'categories': loru_categories,
-                'location': None
+                'stores': loru_stores,
+                'location': None,
             }
             if l.off_address and l.off_address.gps_x and l.off_address.gps_y:
                 supplier['location'] = {'longitude': l.off_address.gps_x, 'latitude': l.off_address.gps_y}
