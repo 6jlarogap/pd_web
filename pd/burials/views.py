@@ -337,6 +337,7 @@ class ApiCatalogPlacesViewSet(viewsets.ReadOnlyModelViewSet):
             q &= qs
         return Place.objects.filter(q).distinct()
 
+
 class PlaceViewSet(viewsets.ModelViewSet):
     model = Place
     serializer_class = PlaceSerializer

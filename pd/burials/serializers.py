@@ -20,6 +20,12 @@ from rest_api.fields import UnclearDateFieldSerializer
 from django.core.exceptions import ValidationError
 
 
+class GetGalleryMixin(object):
+
+    def gallery_func(self, obj):
+        request = self.context.get('request')
+        return obj.get_photo_gallery(request) if request else []
+
 class SubCemeterySerializer(serializers.ModelSerializer):
     """
     area subelement
@@ -106,14 +112,16 @@ class ApiOmsPlacesSerializer(ApiPlacesSerializer):
         fields = ('id', 'cemeteryId', 'areaId', 'location', 'status', )
 
 
-class ApiCatalogPlacesSerializer(ApiPlacesSerializer):
+class ApiCatalogPlacesSerializer(GetGalleryMixin, ApiPlacesSerializer):
+    photos = serializers.SerializerMethodField('gallery_func')
 
     class Meta:
         model = Place
-        fields = ('id', 'location', 'status', )
+        fields = ('id', 'location', 'status',  'photos', )
 
 
-class PlaceSerializer(serializers.ModelSerializer):
+
+class PlaceSerializer(GetGalleryMixin, serializers.ModelSerializer):
     cemetery = serializers.PrimaryKeyRelatedField()
     area = serializers.PrimaryKeyRelatedField()
     responsible = serializers.PrimaryKeyRelatedField(required=False)
@@ -133,10 +141,6 @@ class PlaceSerializer(serializers.ModelSerializer):
                   'dt_wrong_fio', 'dt_military', 'dt_size_violated', 'dt_unowned', 'dt_unindentified', 
                  ) 
 
-    def gallery_func(self, obj):
-        request = self.context.get('request')
-        return obj.get_photo_gallery(request) if request else []
-        
     def responsible_str(self, obj):
         if obj.responsible:
             return "%s %s %s" % (obj.responsible.first_name, obj.responsible.middle_name, obj.responsible.last_name)
