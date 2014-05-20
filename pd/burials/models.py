@@ -337,12 +337,9 @@ class Place(SafeDeleteMixin, GeoPointModel):
     def get_photo_gallery(self, request):
         """
         Получить все фото, относящиеся к месту.
-        
-        Выбираются все PlacePhoto, все GravePhoto этого места,
-        сортируются по дате создания в порядке убывания
         """
         gallery = []
-        for pph in PlacePhoto.objects.filter(place=self):
+        for pph in PlacePhoto.objects.filter(place=self).order_by('-date_of_creation'):
             if pph.bfile:
                 gallery.append(
                     {
@@ -350,16 +347,6 @@ class Place(SafeDeleteMixin, GeoPointModel):
                         'addedAt': pph.date_of_creation,
                     }
                 )
-        for g in Grave.objects.filter(place=self).order_by('grave_number'):
-            for gph in GravePhoto.objects.filter(grave=g):
-                if gph.bfile:
-                    gallery.append(
-                        {
-                            'photo': request.build_absolute_uri(gph.bfile.url),
-                            'addedAt': gph.date_of_creation,
-                        }
-                    )
-        gallery = sorted(gallery, key=lambda photo: photo['addedAt'], reverse=True)
         return gallery
         
     def status_list(self):
