@@ -12,7 +12,7 @@ from django.db.models.query_utils import Q
 
 from geo.forms import LocationForm
 from pd.forms import ChildrenJSONMixin, LoggingFormMixin, OurReCaptchaField, StrippedStringsMixin
-from pd.models import validate_phone_as_number
+from pd.models import validate_phone_as_number, validate_username
 from burials.models import Cemetery, PlaceSize, Reason, Burial
 
 from users.models import Profile, ProfileLORU, Org, BankAccount, RegisterProfile, get_mail_footer, is_cabinet_user
@@ -23,7 +23,8 @@ class UserAddForm(forms.ModelForm):
         model = User
         fields = ['username', 'email']
 
-    username = forms.SlugField(label=_(u"Логин"))
+    username = forms.CharField(label=_(u"Логин"), validators=[validate_username],
+                               help_text=Profile.USERNAME_HELPTEXT)
     password1 = forms.CharField(label=_(u"Пароль"), widget=forms.PasswordInput())
     password2 = forms.CharField(label=_(u"Пароль (повторите)"), widget=forms.PasswordInput())
 
@@ -132,6 +133,7 @@ class UserDataForm(forms.ModelForm):
             self.initial['is_agent'] = self.instance.profile.is_agent
         if self.instance and self.instance.profile and self.instance.profile.is_ugh():
             del self.fields['is_agent']
+        self.fields['username'].help_text=Profile.USERNAME_HELPTEXT
 
     def save(self, *args, **kwargs):
         user = super(UserDataForm, self).save(*args, **kwargs)
@@ -140,6 +142,12 @@ class UserDataForm(forms.ModelForm):
             user.profile.save()
         return user
 
+    def clean_username(self):
+        username = self.cleaned_data.get('username')
+        if username:
+            validate_username(username)
+        return username
+        
 class ChangePasswordForm(forms.ModelForm):
     class Meta:
         model = User
@@ -341,10 +349,7 @@ class RegisterForm(forms.ModelForm):
         self.address_form.fields['city_name'].required = True
         
     def clean_user_name(self):
-        user_name=self.cleaned_data['user_name'].strip()
-        if not re.match(r'^[A-Za-z0-9_-]+$', user_name):
-            raise forms.ValidationError(_(u"Имя может состоять только из латинских букв, "
-                                          u"цифр, знаков подчеркивания или дефиса"))
+        user_name=self.cleaned_data['user_name']
         if User.objects.filter(username=user_name).exists():
             raise forms.ValidationError(_(u"Это имя уже используется в системе"))
         q = Q(user_name=user_name) & \

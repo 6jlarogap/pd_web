@@ -293,6 +293,12 @@ def validate_gt0(value):
     if value <= 0:
         raise ValidationError(_(u'Должно быть больше нуля'))
 
+def validate_username(value):
+    if not re.match(r'^[A-Za-z0-9_-]+$', value):
+        raise ValidationError(_(u"Может состоять только из латинских букв, "
+                                u"цифр, знаков подчеркивания или дефиса"
+        ))
+
 def validate_phone_as_number(value):
     """
     Проверка поля телефона
