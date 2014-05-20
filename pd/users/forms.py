@@ -349,7 +349,7 @@ class RegisterForm(forms.ModelForm):
         self.address_form.fields['city_name'].required = True
         
     def clean_user_name(self):
-        user_name=self.cleaned_data['user_name'].strip()
+        user_name=self.cleaned_data['user_name']
         if User.objects.filter(username=user_name).exists():
             raise forms.ValidationError(_(u"Это имя уже используется в системе"))
         q = Q(user_name=user_name) & \
