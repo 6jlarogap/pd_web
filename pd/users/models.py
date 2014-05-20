@@ -14,7 +14,7 @@ from django.contrib.contenttypes.models import ContentType
 from rest_framework import permissions
 
 from geo.models import Location
-from pd.models import BaseModel, Files, GetLogsMixin, validate_gt0
+from pd.models import BaseModel, Files, GetLogsMixin, validate_gt0, validate_username
 from logs.models import Log
 
 from pd.utils import DigitsValidator, LengthValidator, NotEmptyValidator
@@ -29,6 +29,8 @@ class PhonesMixin(object):
 
 
 class CommonProfile(BaseModel):
+    USERNAME_HELPTEXT = _(u'До 30 символов: латинские буквы, цифры, дефис, знак подчеркивания')
+
     user = models.OneToOneField('auth.User', null=True)
     user_last_name = models.CharField(_(u"Фамилия"), max_length=255, null=True, blank=True)
     user_first_name = models.CharField(_(u"Имя"), max_length=255, null=True, blank=True)
@@ -406,7 +408,8 @@ class RegisterProfile(BaseModel):
     CLEAR_PROCESSED = 30
 
     status = models.CharField(_(u"Статус заявки"), max_length=255, choices=STATUS_CHOICES, editable=False)
-    user_name = models.CharField(_(u"Имя для входа в систему (login)"), max_length=30)
+    user_name = models.CharField(_(u"Имя для входа в систему (login)"), max_length=30,
+                                 validators=[validate_username], help_text=Profile.USERNAME_HELPTEXT)
     user_last_name = models.CharField(_(u"Фамилия"), max_length=255)
     user_first_name = models.CharField(_(u"Имя"), max_length=255)
     user_middle_name = models.CharField(_(u"Отчество (необязательно)"), max_length=255, null=True, blank=True)
