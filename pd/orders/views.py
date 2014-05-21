@@ -658,15 +658,19 @@ class ProductsViewSet(viewsets.ModelViewSet):
     serializer_class = ProductsSerializer
 
     def get_queryset(self):
-        loru_ids = self.request.GET.getlist('filter[supplier]')
+        store_ids = self.request.GET.getlist('filter[supplierStore]')
+        while store_ids.count(u''):
+            store_ids.remove(u'')
+        if store_ids:
+            qs = Q(loru__store__pk__in=store_ids)
+        else:
+            return Product.objects.none()
 
-        # Возможно: filter[supplier]=
+        loru_ids = self.request.GET.getlist('filter[supplier]')
         while loru_ids.count(u''):
             loru_ids.remove(u'')
         if loru_ids:
-            qs = Q(loru__pk__in=loru_ids)
-        else:
-            return Product.objects.none()
+            qs &= Q(loru__pk__in=loru_ids)
 
         qs  &= Q(
             productstatus__status__in=\
@@ -677,6 +681,7 @@ class ProductsViewSet(viewsets.ModelViewSet):
             qs &= Q(price__gte=self.request.GET.get('filter[price_from]'))
         if self.request.GET.get('filter[price_to]'):
             qs &= Q(price__lte=self.request.GET.get('filter[price_to]'))
+
         category_ids = self.request.GET.getlist('filter[category]')
         while category_ids.count(u''):
             category_ids.remove(u'')
