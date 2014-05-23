@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from django.db.models.query_utils import Q
-from django.views.generic.base import View, TemplateView
+from django.views.generic.base import TemplateView
 
 from rest_framework import generics
 from rest_framework.decorators import api_view, permission_classes
