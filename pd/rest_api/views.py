@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from django.db.models.query_utils import Q
+from django.views.generic.base import View, TemplateView
 
 from rest_framework import generics
 from rest_framework.decorators import api_view, permission_classes
@@ -8,11 +9,7 @@ from rest_framework.reverse import reverse
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 
-from django.middleware.csrf import get_token
-from django.views.decorators.csrf import csrf_protect
 from django.http import Http404
-
-from django.shortcuts import render_to_response
 
 from django.conf import settings
 from serializers import CemeterySerializer
@@ -69,13 +66,21 @@ def api_root(request, format=None):
     #'cemetery-detail': reverse('cemetery-detail', request=request),
 
 
+# *     Зачем здесь понадобилось прежнему разработчику передавать контекст
+#       только из 3 ключей, которые и так есть в "стандартном" контексте ?
+# *     Зачем @csrf_protect, если это по умолчанию, когда
+#       'django.middleware.csrf.CsrfViewMiddleware' in settingsMIDDLEWARE_CLASSES ?
 
-@csrf_protect
-def base_page(request, id=None):
-    c = {
-        'STATIC_URL': settings.STATIC_URL,
-        'csrf_token': get_token(request),
-        'user':request.user
-    }
-    return render_to_response("base_angular.html", c)
+#@csrf_protect
+#def base_page(request, id=None):
+    #c = {
+        #'STATIC_URL': settings.STATIC_URL,
+        #'csrf_token': get_token(request),
+        #'user':request.user
+    #}
+    #return render_to_response("base_angular.html", c)
 
+class BasePageAngularView(TemplateView):
+    template_name = 'base_angular.html'
+
+base_page = BasePageAngularView.as_view()
