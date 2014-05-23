@@ -177,7 +177,7 @@ SUPPORT_URLS_REGEX = r'^/?support(?:/|$)'
 # URLs, доступ к которым регулируется в соответствующих классах.as_view():
 API_URLS_REGEX = r'^/?api(?:/|$)'
 # URLs, доступные анонимным пользователям, например в публичном каталоге:
-ANONYMOUS_URLS_REGEX = r'^/?thumb/product-photo/'
+ANONYMOUS_URLS_REGEX = r'^/?thumb/(?:product\-photo|place\-photo)/'
 
 LOGOUT_URL = "/logout/"
 LOGIN_REDIRECT_URL = "/"
