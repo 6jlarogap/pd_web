@@ -439,6 +439,12 @@ class Grave(GeoPointModel):
 class PlacePhoto(Files, GeoPointModel):
     place = models.ForeignKey(Place)
 
+    def is_accessible_anonymous(self):
+        """
+        Доступно ли анонимному пользователю
+        """
+        return bool(self.place.dt_unowned)
+
     def is_accessible(self, user):
         """
         Доступность фото места:
@@ -448,15 +454,14 @@ class PlacePhoto(Files, GeoPointModel):
         * Анонимный пользователь, если место бесхозное
         """
         result = False
-        place = self.place
-        if place.dt_unowned:
+        if self.is_accessible_anonymous():
             result = True
         elif is_ugh_user(user):
-            result = place.cemetery.ugh == user.profile.org
+            result = self.place.cemetery.ugh == user.profile.org
         elif is_cabinet_user(user):
-            result = place. responsible and \
-                        place.responsible.login_phone and \
-                        str(place.responsible.login_phone) == user.username
+            result = self.place.responsible and \
+                     self.place.responsible.login_phone and \
+                     str(self.place.responsible.login_phone) == user.username
         return result
         
 
