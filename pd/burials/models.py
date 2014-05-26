@@ -13,7 +13,8 @@ from pd.models import UnclearDateModelField, BaseModel, Files, GetLogsMixin, val
 
 from persons.models import DeadPerson, SafeDeleteMixin, DeathCertificate
 from reports.models import Report
-from users.models import Org, Profile, Dover, ProfileLORU, CustomerProfile, PhonesMixin
+from users.models import Org, Profile, Dover, ProfileLORU, CustomerProfile, PhonesMixin, \
+                         is_ugh_user, is_cabinet_user
 from logs.models import Log
 from geo.models import GeoPointModel, CoordinatesModel
 
@@ -437,6 +438,32 @@ class Grave(GeoPointModel):
 
 class PlacePhoto(Files, GeoPointModel):
     place = models.ForeignKey(Place)
+
+    def is_accessible_anonymous(self):
+        """
+        Доступно ли анонимному пользователю
+        """
+        return bool(self.place.dt_unowned)
+
+    def is_accessible(self, user):
+        """
+        Доступность фото места:
+        
+        * ОМС, чье кладбище, где место
+        * Пользователь кабинета, если это его место
+        * Анонимный пользователь, если место бесхозное
+        """
+        result = False
+        if self.is_accessible_anonymous():
+            result = True
+        elif is_ugh_user(user):
+            result = self.place.cemetery.ugh == user.profile.org
+        elif is_cabinet_user(user):
+            result = self.place.responsible and \
+                     self.place.responsible.login_phone and \
+                     str(self.place.responsible.login_phone) == user.username
+        return result
+        
 
 class AreaPhoto(Files, GeoPointModel):
     area = models.ForeignKey(Area)
