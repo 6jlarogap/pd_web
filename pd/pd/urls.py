@@ -65,7 +65,7 @@ router.register(r'^api/geo/location', LocationViewSet)
 router.register(r'^api/geo/location/static', LocationStaticViewSet)
 
 urlpatterns = patterns('',
-    url(r'^thumb/', include('restthumbnails.urls')),
+    url(r'^thumb/', include('pd.restthumbnails_urls')),
 )
 
 urlpatterns += patterns('pd.views',

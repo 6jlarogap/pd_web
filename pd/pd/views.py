@@ -13,6 +13,26 @@ from django.contrib import messages
 
 from django.conf import settings
 
+from restthumbnails.views import ThumbnailView
+
+class OurThumbnailView(ThumbnailView):
+    def get(self, request, *args, **kwargs):
+        m= re.search(r'^/?thumb/([^/]+).*/(\d+)/[^/]+/',request.path)
+        if m:
+            what = m.group(1)
+            pk = m.group(2)
+            if what == 'place-photos':
+                try:
+                    place_photo = get_model('burials', 'PlacePhoto').objects.filter(pk=pk)[0]
+                    if not place_photo.is_accessible(request.user):
+                        raise Http404
+                except IndexError:
+                    raise Http404
+        else:
+            raise Http404
+        return super(OurThumbnailView, self).get(request, *args, **kwargs)
+
+
 class PaginateListView(ListView):
     """
     Общий класс для постраничного табличного просмотра
