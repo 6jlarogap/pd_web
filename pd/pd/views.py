@@ -76,7 +76,7 @@ class RequestToFormMixin(BaseFormView):
         data['request'] = self.request
         return data
 
-def is_accessible_anonymous(request, path):
+def is_url_accessible_anonymous(request):
     """
     Давать ли доступ анонимному пользователю?
     """
@@ -86,7 +86,7 @@ def is_accessible_anonymous(request, path):
     # * /media/death-certificates/2013/11/06/5998/1376137215179.jpg
     # * /thumb/place-photos/2014/04/21/101/1398082582212.jpg/500x300~crop~12.jpg
     #
-    m= re.search(r'^/?(?:thumb|media)/([^/]+).*/(\d+)/[^/]+/?',path)
+    m= re.search(r'^/?(?:thumb|media)/([^/]+).*/(\d+)/[^/]+/?', request.path)
     if m:
         what = m.group(1)
         pk = m.group(2)
@@ -101,7 +101,7 @@ def media_xsendfile(request, path, document_root):
         raise Http404
 
     server_software = request.META.get('SERVER_SOFTWARE')
-    if True: # server_software and re.search(r'apache', server_software, flags=re.I):
+    if server_software and re.search(r'apache', server_software, flags=re.I):
         # Нижеследующее отработает только под сервером Apache с mod_xsendfile
         #
         # Например: death-certificates/2013/11/06/5998/1376137215179.jpg
