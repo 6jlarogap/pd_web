@@ -83,9 +83,11 @@ def media_xsendfile(request, path, document_root):
                 burial = get_object_or_404(get_model('burials', 'Burial'), pk=pk)
                 if not burial.is_accessible(request.user):
                     raise Http404
+            elif what == 'place-photos':
+                pass
         else:
             # Для товаров, их категорий, поддержки и др.: открыто всем
-            if re.search(r'^(?:product\-photo|place\-photo|icons|support)/',path):
+            if re.search(r'^(?:product\-photo|icons|support)/',path):
                 pass
             else:
                 raise Http404
