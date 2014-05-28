@@ -186,6 +186,10 @@ def get_mail_footer(user):
                             )
     return footer
 
+def get_default_currency():
+    Currency = models.get_model('billing', 'Currency')
+    return Currency.objects.get(code=settings.CURRENCY_DEFAULT_CODE)
+
 class Org(GetLogsMixin, BaseModel):
     NUM_EMPTY = 'empty'
     NUM_YEAR_UGH = 'year_ugh'
@@ -242,8 +246,7 @@ class Org(GetLogsMixin, BaseModel):
                                 validators=[validate_gt0])
     worktime = models.CharField(_(u"Время работы (ЧЧ:ММ - ЧЧ:ММ)"), max_length=255, default='', blank=True)
     site = models.URLField(_(u"Сайт"), default='', blank=True)
-    publish_cost = models.DecimalField(_(u"Стоимость добавления продукта"), max_digits=20, decimal_places=2, default='0.00')
-    currency = models.ForeignKey('billing.Currency', verbose_name=_(u"Валюта"), default=1)
+    currency = models.ForeignKey('billing.Currency', verbose_name=_(u"Валюта"), default=get_default_currency)
 
     class Meta:
         verbose_name = _(u'Организация')
@@ -263,8 +266,7 @@ class Org(GetLogsMixin, BaseModel):
         Создать кошелек и тарифы (тарифы -- только для ОМС) для организации
         """
         if not currency:
-            Currency = models.get_model('billing', 'Currency')
-            currency = Currency.objects.get(code='RUR')
+            currency = self.currency
         Wallet = models.get_model('billing', 'Wallet')
         wallet, created = Wallet.objects.get_or_create(
             org=self,
