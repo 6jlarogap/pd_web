@@ -16,6 +16,7 @@ class Currency(models.Model):
     class Meta:
         verbose_name = _(u"Валюта")
         verbose_name_plural = _(u"Валюты")
+        unique_together = ('code',)
 
     def __unicode__(self):
         return self.code
