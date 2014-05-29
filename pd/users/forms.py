@@ -416,6 +416,14 @@ class SupportForm(forms.Form):
                 self.save_org_phone = True
             for f in self.fio:
                 self.initial[f] = getattr(request.user.profile, f)
+            user_request = request.GET.get('request')
+            if user_request and user_request == u'add_doctype':
+                self.initial['subject'] = _(u'Добавить тип документа')
+                self.initial['message'] = _(u'Прошу добавить следующий тип документа:\n'
+                                            u'___________________________.\n\n'
+                                            u'Пока новый тип не добавлен, вношу запись о документе '
+                                            u'физического лица как об удостоверении.'
+                )
 
     def clean(self):
         if self.is_valid():

@@ -145,7 +145,11 @@
                 <span class="helptext">{{ form.applicant_id_form.id_type.help_text }}</span>
             </p>
             <p class="inline">
-                <a href="#add_doctype" role="button" class="btn" data-toggle="modal">
+                {% if user.profile.is_supervisor %}
+                    <a href="#add_doctype" role="button" class="btn" data-toggle="modal">
+                {% else %}
+                    <a href="{% url support %}?request=add_doctype" role="button" class="btn">
+                {% endif %}
                     {% trans "добавить тип" %}
                 </a>
             </p>

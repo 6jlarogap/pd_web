@@ -35,7 +35,7 @@ class SafeDeleteMixin(object):
 
 
 class IDDocumentType(models.Model):
-    name = models.CharField(_(u"Тип документа"), max_length=255)
+    name = models.CharField(_(u"Тип документа"), max_length=255, db_index=True)
 
     def __unicode__(self):
         return self.name
@@ -43,6 +43,7 @@ class IDDocumentType(models.Model):
     class Meta:
         verbose_name = (_(u"тип документа"))
         verbose_name_plural = (_(u"типы документов"))
+        ordering = ('name', )
 
 class BasePerson(models.Model):
     """
