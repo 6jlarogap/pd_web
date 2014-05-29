@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<django-objects version="1.0">
+    <object pk="1" model="orders.productcategory">
+        <field type="CharField" name="name">Памятники</field>
+        <field type="FileField" name="icon"></field>
+    </object>
+    <object pk="2" model="orders.productcategory">
+        <field type="CharField" name="name">Ограды</field>
+        <field type="FileField" name="icon"></field>
+    </object>
+    <object pk="3" model="orders.productcategory">
+        <field type="CharField" name="name">Гробы</field>
+        <field type="FileField" name="icon"></field>
+    </object>
+    <object pk="4" model="orders.productcategory">
+        <field type="CharField" name="name">Урны</field>
+        <field type="FileField" name="icon"></field>
+    </object>
+    <object pk="5" model="orders.productcategory">
+        <field type="CharField" name="name">Венки</field>
+        <field type="FileField" name="icon"></field>
+    </object>
+    <object pk="6" model="orders.productcategory">
+        <field type="CharField" name="name">Цветы искусственные</field>
+        <field type="FileField" name="icon"></field>
+    </object>
+    <object pk="7" model="orders.productcategory">
+        <field type="CharField" name="name">Цветы живые</field>
+        <field type="FileField" name="icon"></field>
+    </object>
+    <object pk="8" model="orders.productcategory">
+        <field type="CharField" name="name">Цветочницы</field>
+        <field type="FileField" name="icon"></field>
+    </object>
+    <object pk="9" model="orders.productcategory">
+        <field type="CharField" name="name">Траурные ленты</field>
+        <field type="FileField" name="icon"></field>
+    </object>
+    <object pk="10" model="orders.productcategory">
+        <field type="CharField" name="name">Надмогильные таблички</field>
+        <field type="FileField" name="icon"></field>
+    </object>
+    <object pk="11" model="orders.productcategory">
+        <field type="CharField" name="name">Кресты</field>
+        <field type="FileField" name="icon"></field>
+    </object>
+    <object pk="12" model="orders.productcategory">
+        <field type="CharField" name="name">Автокатафалки</field>
+        <field type="FileField" name="icon"></field>
+    </object>
+    <object pk="13" model="orders.productcategory">
+        <field type="CharField" name="name">Грузчики</field>
+        <field type="FileField" name="icon"></field>
+    </object>
+    <object pk="14" model="orders.productcategory">
+        <field type="CharField" name="name">Погребение</field>
+        <field type="FileField" name="icon"></field>
+    </object>
+    <object pk="15" model="orders.productcategory">
+        <field type="CharField" name="name">Доставка принадлежностей</field>
+        <field type="FileField" name="icon"></field>
+    </object>
+    <object pk="16" model="orders.productcategory">
+        <field type="CharField" name="name">Благоустройство (установка памятника и ограды...)</field>
+        <field type="FileField" name="icon"></field>
+    </object>
+    <object pk="17" model="orders.productcategory">
+        <field type="CharField" name="name">Уход/уборка</field>
+        <field type="FileField" name="icon"></field>
+    </object>
+    <object pk="20" model="orders.productcategory">
+        <field type="CharField" name="name">Прочие товары и услуги</field>
+        <field type="FileField" name="icon"></field>
+    </object>
+</django-objects>
