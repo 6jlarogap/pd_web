@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<django-objects version="1.0">
+    <object pk="1" model="persons.iddocumenttype">
+        <field type="CharField" name="name">паспорт гражданина РФ</field>
+    </object>
+    <object pk="2" model="persons.iddocumenttype">
+        <field type="CharField" name="name">удостоверение</field>
+    </object>
+    <object pk="3" model="persons.iddocumenttype">
+        <field type="CharField" name="name">паспорт гражданина Узбекистана</field>
+    </object>
+    <object pk="4" model="persons.iddocumenttype">
+        <field type="CharField" name="name">паспорт гражданина РБ</field>
+    </object>
+    <object pk="5" model="persons.iddocumenttype">
+        <field type="CharField" name="name">паспорт гражданина Украины</field>
+    </object>
+</django-objects>
