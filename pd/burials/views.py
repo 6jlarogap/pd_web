@@ -941,7 +941,7 @@ class AddOrgView(LoginRequiredMixin, View):
 
 add_org = AddOrgView.as_view()
 
-class AddDocTypeView(LoginRequiredMixin, View):
+class AddDocTypeView(SupervisorRequiredMixin, View):
     def post(self, request, *args, **kwargs):
         f = AddDocTypeForm(data=request.POST, prefix='doctype')
         if f.is_valid():
