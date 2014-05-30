@@ -435,21 +435,22 @@ api_feedback = ApiFeedBack.as_view()
 class ApiLoruPlaces(APIView):
     permission_classes = (PermitIfLoru,)
 
+    """
+    Вернуть массив, в котором только "ОМС" публичного каталога
+    """
     def get(self, request):
         data = []
-        idx_public_catalog = None
-        for i, ugh in enumerate(Org.objects.filter(loru_list__loru=request.user.profile.org)):
+        try:
+            ugh = Org.objects.filter(inn=settings.ORG_AD_PAY_RECIPIENT['inn'])[0]
             d = {
-                    'id': ugh.pk,
-                    'name': ugh.name,
-                    'currency': {
-                        'name': ugh.currency.name,
-                        'shortName': ugh.currency.short_name,
-                        'code': ugh.currency.code,
-                    }
+                'id': ugh.pk,
+                'name': _(u'Каталог'),
+                'currency': {
+                    'name': ugh.currency.name,
+                    'shortName': ugh.currency.short_name,
+                    'code': ugh.currency.code,
+                }
             }
-            if ugh.inn == settings.ORG_AD_PAY_RECIPIENT['inn']:
-                idx_public_catalog = i
             for action, costFor in (
                                         (Rate.RATE_ACTION_PUBLISH, 'costForEnable'),
                                         (Rate.RATE_ACTION_UPDATE, 'costForUp'),
@@ -461,8 +462,8 @@ class ApiLoruPlaces(APIView):
                                                 ).order_by('-date_from')[:1]:
                         d['costFor'] = rate.rate
             data.append(d)
-        if idx_public_catalog:
-            data.insert(0, data.pop(idx_public_catalog))
+        except IndexError:
+            pass
         return Response(data=data, status=200)
 
 api_loru_places = ApiLoruPlaces.as_view()
