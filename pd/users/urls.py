@@ -10,6 +10,7 @@ urlpatterns = patterns('users.views',
     url(r'^api/auth/signin/?$', 'api_auth_signin', name='api_auth_signin'),
     url(r'^api/auth/signout/?$', 'api_auth_signout', name='api_auth_signout'),
 
+    url(r'^api/loru/places/?$', 'api_loru_places', name='api_loru_places'),
     url(r'^api/loru/stores/?$', 'api_loru_stores', name='api_loru_stores'),
     url(r'^api/loru/stores/(?P<pk>\d+)/?$', 'api_loru_store_detail', name='api_loru_store_detail'),
 
