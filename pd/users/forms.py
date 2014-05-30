@@ -420,10 +420,19 @@ class SupportForm(forms.Form):
             if user_request and user_request == u'add_doctype':
                 self.initial['subject'] = _(u'Добавить тип документа')
                 self.initial['message'] = _(u'Прошу добавить следующий тип документа:\n'
-                                            u'___________________________.\n\n'
+                                            u'________________________.\n\n'
                                             u'Пока новый тип не добавлен, вношу запись о документе '
-                                            u'физического лица как об удостоверении.'
+                                            u'физического лица как об удостоверении.\n'
                 )
+                burial_path = request.GET.get('burial_path')
+                if burial_path:
+                    burial_path = u"%s://%s%s" % (
+                        'https' if request.is_secure() else 'http',
+                        request.get_host(),
+                        burial_path,
+                    )
+                    self.initial['message'] = u"%sПравилось захоронение:\n%s\n" % \
+                        (self.initial['message'], burial_path, )
 
     def clean(self):
         if self.is_valid():
