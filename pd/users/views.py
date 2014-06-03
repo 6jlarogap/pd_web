@@ -44,7 +44,7 @@ from users.forms import UserAddForm, RegisterForm, LoruFormset, ProfileForm, Use
                         UserDataForm, ChangePasswordForm, BankAccountFormset, OrgForm, \
                         OrgLogForm, LoginLogForm, OrgBurialStatsForm, SupportForm, TestCaptchaForm
 from users.models import Profile, Org, RegisterProfile, ProfileLORU, CustomerProfile, Store, \
-                         get_mail_footer, is_cabinet_user, PermitIfLoru
+                         get_mail_footer, is_cabinet_user, PermitIfLoru, Oauth
 from pd.models import validate_phone_as_number
 from persons.models import AlivePerson, Phone
 from burials.models import Cemetery, Area, Burial, Place
@@ -165,6 +165,35 @@ class ApiAuthSignoutView(APIView):
 
 api_auth_signout = ApiAuthSignoutView.as_view()
 
+class ApiAuthSignupView(ApiAuthSigninView):
+    """
+    Регистрация пользователя-кабинетчика (физического лица)
+    """
+    def post(self, request):
+        data = dict(status='error')
+        status_code = 400
+        username = request.DATA.get('username')
+        password = request.DATA.get('password')
+        profile = request.DATA.get('profile')
+        oauth = request.DATA.get('oauth')
+        if oauth:
+            user, message = Oauth.check_token(
+                provider=oauth['provider'],
+                token=oauth['accessToken'],
+                username=username,
+                password=password,
+                profile=profile,
+            )
+            if message:
+                data['message']=message
+            else:
+                return super(ApiAuthSignupView, self).post(request)
+        else:
+            data['message'] = _(u'Регистрация без проверки у провайдера (Facebook, Google и т.д.) пока не реализована')
+        return Response(data=data, status=status_code)
+
+api_auth_signup = ApiAuthSignupView.as_view()
+    
 class ApiAuthSettings(APIView):
     permission_classes = (IsAuthenticated,)
     
