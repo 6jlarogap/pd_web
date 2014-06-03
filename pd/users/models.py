@@ -3,6 +3,8 @@ import datetime
 import decimal
 import random
 import string
+import urllib2
+import json
 
 from django.conf import settings
 from django.contrib.auth.models import User
@@ -27,6 +29,72 @@ class PhonesMixin(object):
         Phone = get_model('persons', 'Phone')
         return Phone.objects.filter(obj_id=self.pk, ct=ct)
 
+
+class Oauth(models.Model):
+    PROVIDER_YANDEX = 'yandex'
+    PROVIDER_FACEBOOK = 'facebook'
+    PROVIDER_GOOGLE = 'google'
+    OAUTH_PROVIDERS = (
+        (PROVIDER_YANDEX, _(u"Яндекс")),
+        (PROVIDER_FACEBOOK, _(u"Facebook")),
+        (PROVIDER_GOOGLE, _(u"Google")),
+    )
+    
+    OAUTH_URLS = {
+        PROVIDER_YANDEX: "https://login.yandex.ru/info?format=json&oauth_token=%s",
+        PROVIDER_FACEBOOK: "https://graph.facebook.com/me?access_token=%s",
+        PROVIDER_GOOGLE: "https://www.googleapis.com/oauth2/v1/userinfo?alt=json&access_token=%s",
+    }
+
+    user = models.OneToOneField('auth.User')
+    provider = models.CharField(_(u"Провайдер"), max_length=100, choices=OAUTH_PROVIDERS)
+    uid = models.CharField(_(u"Ид пользователя у провайдера"), max_length=255,)
+    
+    class Meta:
+        unique_together = ('user', 'provider',)
+
+    @classmethod
+    def check_token(cls, provider, token, username=None):
+        """
+        Проверить token у провайдера. Если задан username, то создать пользователя
+        
+        Возвращает user, status: 
+            user:   объект пользователя или None при неуспешной аутентификации/регистрации,
+            status: сообщение об ошибке, если таковая произошла
+        """
+        user = message = None
+        if isinstance(token, unicode):
+            token = token.encode('utf-8')
+        token=urllib2.quote(token)
+        try:
+            url = Oauth.OAUTH_URLS[provider] % token
+            r = urllib2.urlopen(url)
+            data = json.loads(r.read().decode(r.info().getparam('charset') or 'utf-8'))
+            uid = unicode(data['id'])
+            if uid:
+                if username:
+                    # Регистрация нового пользователя
+                    user, created = User.objects.get_or_create(username=username)
+                    if created:
+                        oauth, created = cls.objects.create(
+                            user=user,
+                            provider=provider,
+                            uid=uid,
+                        )
+                    else:
+                        message = _(u'Есть уже такой пользователь')
+                else:
+                    # Проверка, есть ли такой пользовательским
+                    user = cls.objects.filter(provider=provider, uid=uid)[0].user
+        except KeyError:
+            message = _(u'Провайдер Oauth, %s, не поддерживается' % provider)
+        except urllib2.URLError:
+            message = _(u'Ошибка связи с провайдером %s' % provider)
+        except ValueError:
+            message = _(u'Ошибка интерпретации ответа от провайдера %s' % provider)
+        except IndexError:
+            message = _(u'Пользователь не найден среди зарегистрированных у провайдера %s' % provider)
+        return user, message
 
 class CommonProfile(BaseModel):
     USERNAME_HELPTEXT = _(u'До 30 символов: латинские буквы, цифры, дефис, знак подчеркивания')
