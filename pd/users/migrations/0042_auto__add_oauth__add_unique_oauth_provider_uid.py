@@ -17,13 +17,13 @@ class Migration(SchemaMigration):
         ))
         db.send_create_signal('users', ['Oauth'])
 
-        # Adding unique constraint on 'Oauth', fields ['user', 'provider']
-        db.create_unique('users_oauth', ['user_id', 'provider'])
+        # Adding unique constraint on 'Oauth', fields ['provider', 'uid']
+        db.create_unique('users_oauth', ['provider', 'uid'])
 
 
     def backwards(self, orm):
-        # Removing unique constraint on 'Oauth', fields ['user', 'provider']
-        db.delete_unique('users_oauth', ['user_id', 'provider'])
+        # Removing unique constraint on 'Oauth', fields ['provider', 'uid']
+        db.delete_unique('users_oauth', ['provider', 'uid'])
 
         # Deleting model 'Oauth'
         db.delete_table('users_oauth')
@@ -191,7 +191,7 @@ class Migration(SchemaMigration):
             'target_org': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['users.Org']", 'null': 'True'})
         },
         'users.oauth': {
-            'Meta': {'unique_together': "(('user', 'provider'),)", 'object_name': 'Oauth'},
+            'Meta': {'unique_together': "(('provider', 'uid'),)", 'object_name': 'Oauth'},
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'provider': ('django.db.models.fields.CharField', [], {'max_length': '100'}),
             'uid': ('django.db.models.fields.CharField', [], {'max_length': '255'}),

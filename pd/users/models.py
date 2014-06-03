@@ -8,7 +8,7 @@ import json
 
 from django.conf import settings
 from django.contrib.auth.models import User
-from django.db import models
+from django.db import models, IntegrityError
 from django.db.models.loading import get_model
 from django.utils.translation import ugettext_lazy as _
 from django.contrib.contenttypes.models import ContentType
@@ -20,7 +20,7 @@ from pd.models import BaseModel, Files, GetLogsMixin, validate_gt0, validate_use
 from logs.models import Log
 
 from pd.utils import DigitsValidator, LengthValidator, NotEmptyValidator
-
+from pd.views import ServiceException
 
 class PhonesMixin(object):
     @property
@@ -213,7 +213,8 @@ class Oauth(models.Model):
     uid = models.CharField(_(u"Ид пользователя у провайдера"), max_length=255,)
     
     class Meta:
-        unique_together = ('user', 'provider',)
+        # Не может быть двух пользователей с одним uid у того же провайдера!
+        unique_together = ('provider', 'uid')
 
     @classmethod
     def check_token(cls, provider, token, signup_dict=None, bind_dict=None):
@@ -248,6 +249,7 @@ class Oauth(models.Model):
         if isinstance(token, unicode):
             token = token.encode('utf-8')
         token=urllib2.quote(token)
+        msg_intergrity_error = _(u'Есть уже пользователь, прикрепленный к этой учетной записи %s') % provider
         try:
             url = Oauth.OAUTH_URLS[provider] % token
             r = urllib2.urlopen(url)
@@ -256,6 +258,8 @@ class Oauth(models.Model):
             if uid:
                 if signup_dict:
                     # Регистрация нового пользователя
+                    if cls.objects.filter(provider=provider, uid=uid):
+                        raise ServiceException(msg_intergrity_error)
                     username = signup_dict['username']
                     password = signup_dict.get('password')
                     profile = signup_dict.get('profile')
@@ -289,6 +293,7 @@ class Oauth(models.Model):
                     else:
                         message = _(u'Такой пользователь, %s, уже имеется') % username
                 elif bind_dict:
+                    # Привязка существующего пользователя к провайдеру
                     user = bind_dict['user']
                     oauth, created = cls.objects.get_or_create(
                         user=user,
@@ -299,8 +304,12 @@ class Oauth(models.Model):
                         oauth.uid = uid
                         oauth.save()
                 else:
-                    # Проверка, есть ли такой пользовательским
+                    # Проверка, есть ли такой пользователь
                     user = cls.objects.filter(provider=provider, uid=uid)[0].user
+        except ServiceException as excpt:
+            message = excpt.message
+        except IntegrityError:
+            message = msg_intergrity_error
         except KeyError:
             message = _(u'Провайдер Oauth, %s, не поддерживается') % provider
         except urllib2.URLError:
