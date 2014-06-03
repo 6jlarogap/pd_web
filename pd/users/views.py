@@ -175,25 +175,66 @@ class ApiAuthSignupView(ApiAuthSigninView):
         username = request.DATA.get('username')
         password = request.DATA.get('password')
         profile = request.DATA.get('profile')
-        oauth = request.DATA.get('oauth')
-        if oauth:
-            user, message = Oauth.check_token(
-                provider=oauth['provider'],
-                token=oauth['accessToken'],
-                username=username,
-                password=password,
-                profile=profile,
-            )
-            if message:
-                data['message']=message
+        try:
+            try:
+                validate_phone_as_number(decimal.Decimal(username))
+            except (TypeError, decimal.InvalidOperation, ValidationError, ):
+                raise ServiceException(_(u'Неверный формат телефона как имени пользователя'))
+            if profile and profile.get('email'):
+                try:
+                    validate_email(profile['email'])
+                except ValidationError:
+                    raise ServiceException(_(u'Неверный формат адреса электронной почты'))
+            oauth = request.DATA.get('oauth')
+            if oauth:
+                user, message = Oauth.check_token(
+                    provider=oauth['provider'],
+                    token=oauth['accessToken'],
+                    signup_dict=dict(
+                        username=username,
+                        password=password,
+                        profile=profile,
+                    ),
+                )
+                if message:
+                    data['message']=message
+                else:
+                    return super(ApiAuthSignupView, self).post(request)
             else:
-                return super(ApiAuthSignupView, self).post(request)
-        else:
-            data['message'] = _(u'Регистрация без проверки у провайдера (Facebook, Google и т.д.) пока не реализована')
+                data['message'] = _(u'Регистрация без проверки у провайдера (Facebook, Google и т.д.) пока не реализована')
+        except ServiceException as excpt:
+            data['message'] = excpt.message
         return Response(data=data, status=status_code)
 
 api_auth_signup = ApiAuthSignupView.as_view()
     
+class ApiSettingsOauthProviderView(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def post(self, request):
+        data = dict(status='error')
+        status_code = 400
+        provider = request.DATA.get('provider')
+        token=request.DATA.get('accessToken')
+        if token and provider:
+            user, message = Oauth.check_token(
+                provider=provider,
+                token=token,
+                bind_dict=dict(
+                    user=request.user,
+                ),
+            )
+            if message:
+                data['message']=message
+            else:
+               status_code = 200
+               data['status']='success'
+        else:
+            data['message'] = _(u'Не заданы исходные данные')
+        return Response(data=data, status=status_code)
+        
+api_settings_oauth_provider = ApiSettingsOauthProviderView.as_view()
+
 class ApiAuthSettings(APIView):
     permission_classes = (IsAuthenticated,)
     

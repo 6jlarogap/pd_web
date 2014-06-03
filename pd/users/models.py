@@ -216,12 +216,30 @@ class Oauth(models.Model):
         unique_together = ('user', 'provider',)
 
     @classmethod
-    def check_token(cls, provider, token, username=None, password=None, profile=None):
+    def check_token(cls, provider, token, signup_dict=None, bind_dict=None):
         """
-        Проверить token у провайдера.
+        Проверить token у провайдера Oauth.
         
-        Если задан username, то создать пользователя с паролем password и
-        атрибутами профиля profile
+        Кроме того:
+        *   Если задан signup_dict:
+                {
+                    'username': <username>,
+                    'password': <password>,
+                    'profile': {
+                        'lastname':
+                        'firstname':
+                        'middlename':
+                        'email':
+                    }
+                }
+            то создать пользователя username c паролем password и атрибутами профиля profile
+         *   Если задан bind_dict:
+                {
+                    'user': <объект user>,
+                },
+             то привязываем этого пользователя в таблице Oauth
+         *  В остальных случаях проверка, что у нас есть такая запись в таблице Oauth
+
         Возвращает user, status: 
             user:   объект пользователя или None при неуспешной аутентификации/регистрации,
             status: сообщение об ошибке, если таковая произошла
@@ -236,8 +254,11 @@ class Oauth(models.Model):
             data = json.loads(r.read().decode(r.info().getparam('charset') or 'utf-8'))
             uid = unicode(data['id'])
             if uid:
-                if username:
+                if signup_dict:
                     # Регистрация нового пользователя
+                    username = signup_dict['username']
+                    password = signup_dict.get('password')
+                    profile = signup_dict.get('profile')
                     user, created = User.objects.get_or_create(
                         username=username,
                         defaults = {
@@ -267,6 +288,16 @@ class Oauth(models.Model):
                         )
                     else:
                         message = _(u'Такой пользователь, %s, уже имеется') % username
+                elif bind_dict:
+                    user = bind_dict['user']
+                    oauth, created = cls.objects.get_or_create(
+                        user=user,
+                        provider=provider,
+                        defaults={ 'uid': uid }
+                    )
+                    if not created and oauth.uid != uid:
+                        oauth.uid = uid
+                        oauth.save()
                 else:
                     # Проверка, есть ли такой пользовательским
                     user = cls.objects.filter(provider=provider, uid=uid)[0].user
