@@ -44,7 +44,7 @@ from users.forms import UserAddForm, RegisterForm, LoruFormset, ProfileForm, Use
                         UserDataForm, ChangePasswordForm, BankAccountFormset, OrgForm, \
                         OrgLogForm, LoginLogForm, OrgBurialStatsForm, SupportForm, TestCaptchaForm
 from users.models import Profile, Org, RegisterProfile, ProfileLORU, CustomerProfile, Store, \
-                         get_mail_footer, is_cabinet_user, PermitIfLoru
+                         get_mail_footer, is_cabinet_user, PermitIfLoru, Oauth
 from pd.models import validate_phone_as_number
 from persons.models import AlivePerson, Phone
 from burials.models import Cemetery, Area, Burial, Place
@@ -78,18 +78,39 @@ class ApiAuthSigninView(APIView):
     """
     Проверка имени и пароля, (создать и) отдать token
     """
-    def post(self, request):
+    def do_post(self, request, user=None):
+        """
+        Выполнить 'обычную' авторизацию, если не задан объект user как параметр,
+        иначе только создать при необходимости token и вернуть данные
+        """
         token = None
-        username = request.DATA.get('username')
-        password = request.DATA.get('password')
-        confirm_tc = request.DATA.get('confirmTC')
         data = dict(status='error')
         status_code = 400
-        if username and password:
-            user = authenticate(username=username, password=password)
-            if user and user.is_active:
+         # Так надо для login() без предварительного authenticate()
+        user_backend = 'django.contrib.auth.backends.ModelBackend'
+        confirm_tc = request.DATA.get('confirmTC')
+        oauth = request.DATA.get('oauth')
+        if user:
+            user.backend = user_backend
+        else:
+            username = request.DATA.get('username')
+            password = request.DATA.get('password')
+            if username and password:
+                user = authenticate(username=username, password=password)
+            elif oauth:
+                user, oauth_message = Oauth.check_token(
+                    provider=oauth['provider'],
+                    token=oauth['accessToken'],
+                )
+                if user:
+                    user.backend = user_backend
+        if user:
+            if user.is_active:
                 token, created = Token.objects.get_or_create(user=user)
+            else:
+                data['message'] = _(u'Пользователь %s не активен') % user.username
         if token:
+            username = user.username
             tc_confirmed = True
             role = None
             try:
@@ -150,9 +171,14 @@ class ApiAuthSigninView(APIView):
                 LoginLog.write(request)
             else:
                 data['message'] = 'unconfirmed_tc'
+        elif oauth and not user:
+            data['message'] = oauth_message or ''
         else:
             data['message'] = 'Wrong username or password'
         return Response(data=data, status=status_code)
+
+    def post(self, request):
+        return self.do_post(request)
 
 api_auth_signin = ApiAuthSigninView.as_view()
 
@@ -164,6 +190,76 @@ class ApiAuthSignoutView(APIView):
         return Response(data={}, status=200)
 
 api_auth_signout = ApiAuthSignoutView.as_view()
+
+class ApiAuthSignupView(ApiAuthSigninView):
+    """
+    Регистрация пользователя-кабинетчика (физического лица)
+    """
+    def post(self, request):
+        data = dict(status='error')
+        status_code = 400
+        username = request.DATA.get('username')
+        password = request.DATA.get('password')
+        profile = request.DATA.get('profile')
+        try:
+            try:
+                validate_phone_as_number(decimal.Decimal(username))
+            except (TypeError, decimal.InvalidOperation, ValidationError, ):
+                raise ServiceException(_(u'Неверный формат телефона как имени пользователя'))
+            if profile and profile.get('email'):
+                try:
+                    validate_email(profile['email'])
+                except ValidationError:
+                    raise ServiceException(_(u'Неверный формат адреса электронной почты'))
+            oauth = request.DATA.get('oauth')
+            if oauth:
+                user, message = Oauth.check_token(
+                    provider=oauth['provider'],
+                    token=oauth['accessToken'],
+                    signup_dict=dict(
+                        username=username,
+                        password=password,
+                        profile=profile,
+                    ),
+                )
+                if message:
+                    data['message']=message
+                else:
+                    return super(ApiAuthSignupView, self).do_post(request, user)
+            else:
+                data['message'] = _(u'Регистрация без проверки у провайдера (Facebook, Google и т.д.) пока не реализована')
+        except ServiceException as excpt:
+            data['message'] = excpt.message
+        return Response(data=data, status=status_code)
+
+api_auth_signup = ApiAuthSignupView.as_view()
+    
+class ApiSettingsOauthProviderView(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def post(self, request):
+        data = dict(status='error')
+        status_code = 400
+        provider = request.DATA.get('provider')
+        token=request.DATA.get('accessToken')
+        if token and provider:
+            user, message = Oauth.check_token(
+                provider=provider,
+                token=token,
+                bind_dict=dict(
+                    user=request.user,
+                ),
+            )
+            if message:
+                data['message']=message
+            else:
+               status_code = 200
+               data['status']='success'
+        else:
+            data['message'] = _(u'Не заданы исходные данные')
+        return Response(data=data, status=status_code)
+        
+api_settings_oauth_provider = ApiSettingsOauthProviderView.as_view()
 
 class ApiAuthSettings(APIView):
     permission_classes = (IsAuthenticated,)
