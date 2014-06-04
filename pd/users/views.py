@@ -86,11 +86,12 @@ class ApiAuthSigninView(APIView):
         token = None
         data = dict(status='error')
         status_code = 400
+         # Так надо для login() без предварительного authenticate()
+        user_backend = 'django.contrib.auth.backends.ModelBackend'
         confirm_tc = request.DATA.get('confirmTC')
         oauth = request.DATA.get('oauth')
         if user:
-            # Так надо для login() без предварительного authenticate()
-            user.backend = 'django.contrib.auth.backends.ModelBackend'
+            user.backend = user_backend
         else:
             username = request.DATA.get('username')
             password = request.DATA.get('password')
@@ -101,6 +102,8 @@ class ApiAuthSigninView(APIView):
                     provider=oauth['provider'],
                     token=oauth['accessToken'],
                 )
+                if user:
+                    user.backend = user_backend
         if user:
             if user.is_active:
                 token, created = Token.objects.get_or_create(user=user)

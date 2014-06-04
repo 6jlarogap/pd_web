@@ -8,7 +8,7 @@ import json
 
 from django.conf import settings
 from django.contrib.auth.models import User
-from django.db import models, IntegrityError
+from django.db import models, transaction, IntegrityError
 from django.db.models.loading import get_model
 from django.utils.translation import ugettext_lazy as _
 from django.contrib.contenttypes.models import ContentType
@@ -217,6 +217,7 @@ class Oauth(models.Model):
         unique_together = ('provider', 'uid')
 
     @classmethod
+    @transaction.commit_on_success
     def check_token(cls, provider, token, signup_dict=None, bind_dict=None):
         """
         Проверить token у провайдера Oauth.
@@ -298,7 +299,7 @@ class Oauth(models.Model):
                     oauth, created = cls.objects.get_or_create(
                         user=user,
                         provider=provider,
-                        defaults={ 'uid': uid }
+                        uid=uid,
                     )
                     if not created and oauth.uid != uid:
                         oauth.uid = uid
