@@ -3,10 +3,12 @@ import datetime
 import decimal
 import random
 import string
+import urllib2
+import json
 
 from django.conf import settings
 from django.contrib.auth.models import User
-from django.db import models
+from django.db import models, transaction, IntegrityError
 from django.db.models.loading import get_model
 from django.utils.translation import ugettext_lazy as _
 from django.contrib.contenttypes.models import ContentType
@@ -18,7 +20,7 @@ from pd.models import BaseModel, Files, GetLogsMixin, validate_gt0, validate_use
 from logs.models import Log
 
 from pd.utils import DigitsValidator, LengthValidator, NotEmptyValidator
-
+from pd.views import ServiceException
 
 class PhonesMixin(object):
     @property
@@ -189,6 +191,138 @@ def get_mail_footer(user):
 def get_default_currency():
     Currency = models.get_model('billing', 'Currency')
     return Currency.objects.get(code=settings.CURRENCY_DEFAULT_CODE)
+
+class Oauth(models.Model):
+    PROVIDER_YANDEX = 'yandex'
+    PROVIDER_FACEBOOK = 'facebook'
+    PROVIDER_GOOGLE = 'google'
+    PROVIDER_VKONTAKTE = 'vk'
+    OAUTH_PROVIDERS = (
+        (PROVIDER_YANDEX, _(u"Яндекс")),
+        (PROVIDER_FACEBOOK, _(u"Facebook")),
+        (PROVIDER_GOOGLE, _(u"Google")),
+        (PROVIDER_VKONTAKTE, _(u"VKontakte")),
+    )
+    
+    OAUTH_URLS = {
+        PROVIDER_YANDEX: "https://login.yandex.ru/info?format=json&oauth_token=%s",
+        PROVIDER_FACEBOOK: "https://graph.facebook.com/me?access_token=%s",
+        PROVIDER_GOOGLE: "https://www.googleapis.com/oauth2/v1/userinfo?alt=json&access_token=%s",
+        PROVIDER_VKONTAKTE: "https://api.vk.com/method/getProfiles?access_token=%s",
+    }
+
+    user = models.OneToOneField('auth.User')
+    provider = models.CharField(_(u"Провайдер"), max_length=100, choices=OAUTH_PROVIDERS)
+    uid = models.CharField(_(u"Ид пользователя у провайдера"), max_length=255,)
+    
+    class Meta:
+        # Не может быть двух пользователей с одним uid у того же провайдера!
+        unique_together = ('provider', 'uid')
+
+    @classmethod
+    @transaction.commit_on_success
+    def check_token(cls, provider, token, signup_dict=None, bind_dict=None):
+        """
+        Проверить token у провайдера Oauth.
+        
+        Кроме того:
+        *   Если задан signup_dict:
+                {
+                    'username': <username>,
+                    'password': <password>,
+                    'profile': {
+                        'lastname':
+                        'firstname':
+                        'middlename':
+                        'email':
+                    }
+                }
+            то создать пользователя username c паролем password и атрибутами профиля profile
+         *   Если задан bind_dict:
+                {
+                    'user': <объект user>,
+                },
+             то привязываем этого пользователя в таблице Oauth
+         *  В остальных случаях проверка, что у нас есть такая запись в таблице Oauth
+
+        Возвращает user, status: 
+            user:   объект пользователя или None при неуспешной аутентификации/регистрации,
+            status: сообщение об ошибке, если таковая произошла
+        """
+        user = message = None
+        if isinstance(token, unicode):
+            token = token.encode('utf-8')
+        token=urllib2.quote(token)
+        msg_intergrity_error = _(u'Есть уже пользователь, прикрепленный к этой учетной записи %s') % provider
+        try:
+            url = Oauth.OAUTH_URLS[provider] % token
+            r = urllib2.urlopen(url)
+            data = json.loads(r.read().decode(r.info().getparam('charset') or 'utf-8'))
+            uid = unicode(data['id'])
+            if uid:
+                if signup_dict:
+                    # Регистрация нового пользователя
+                    if cls.objects.filter(provider=provider, uid=uid):
+                        raise ServiceException(msg_intergrity_error)
+                    username = signup_dict['username']
+                    password = signup_dict.get('password')
+                    profile = signup_dict.get('profile')
+                    user, created = User.objects.get_or_create(
+                        username=username,
+                        defaults = {
+                            'email': profile and profile.get('email') or '',
+                        }
+                    )
+                    if created:
+                        cls.objects.create(
+                            user=user,
+                            provider=provider,
+                            uid=uid,
+                        )
+                        if password:
+                            user.set_password(password)
+                            user.save()
+                        kwargs = {}
+                        if profile:
+                            kwargs.update({
+                                'user_last_name': profile.get('lastname', ''),
+                                'user_first_name': profile.get('firstname', ''),
+                                'user_middle_name': profile.get('middlename', ''),
+                            })
+                        CustomerProfile.objects.create(
+                            user=user,
+                            tc_confirmed = datetime.datetime.now(),
+                            **kwargs
+                        )
+                    else:
+                        message = _(u'Такой пользователь, %s, уже имеется') % username
+                elif bind_dict:
+                    # Привязка существующего пользователя к провайдеру
+                    user = bind_dict['user']
+                    oauth, created = cls.objects.get_or_create(
+                        user=user,
+                        provider=provider,
+                        uid=uid,
+                    )
+                    if not created and oauth.uid != uid:
+                        oauth.uid = uid
+                        oauth.save()
+                else:
+                    # Проверка, есть ли такой пользователь
+                    user = cls.objects.filter(provider=provider, uid=uid)[0].user
+        except ServiceException as excpt:
+            message = excpt.message
+        except IntegrityError:
+            message = msg_intergrity_error
+        except KeyError:
+            message = _(u'Провайдер Oauth, %s, не поддерживается') % provider
+        except urllib2.URLError:
+            message = _(u'Ошибка связи с провайдером %s') % provider
+        except ValueError:
+            message = _(u'Ошибка интерпретации ответа от провайдера %s') % provider
+        except IndexError:
+            message = _(u'Пользователь не найден среди зарегистрированных у провайдера %s') % provider
+        return user, message
 
 class Org(GetLogsMixin, BaseModel):
     NUM_EMPTY = 'empty'
