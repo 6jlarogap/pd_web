@@ -196,16 +196,19 @@ class Oauth(models.Model):
     PROVIDER_YANDEX = 'yandex'
     PROVIDER_FACEBOOK = 'facebook'
     PROVIDER_GOOGLE = 'google'
+    PROVIDER_VKONTAKTE = 'vk'
     OAUTH_PROVIDERS = (
         (PROVIDER_YANDEX, _(u"Яндекс")),
         (PROVIDER_FACEBOOK, _(u"Facebook")),
         (PROVIDER_GOOGLE, _(u"Google")),
+        (PROVIDER_VKONTAKTE, _(u"VKontakte")),
     )
     
     OAUTH_URLS = {
         PROVIDER_YANDEX: "https://login.yandex.ru/info?format=json&oauth_token=%s",
         PROVIDER_FACEBOOK: "https://graph.facebook.com/me?access_token=%s",
         PROVIDER_GOOGLE: "https://www.googleapis.com/oauth2/v1/userinfo?alt=json&access_token=%s",
+        PROVIDER_VKONTAKTE: "https://api.vk.com/method/getProfiles?access_token=%s",
     }
 
     user = models.OneToOneField('auth.User')
