@@ -304,9 +304,6 @@ class Oauth(models.Model):
                         provider=provider,
                         uid=uid,
                     )
-                    if not created and oauth.uid != uid:
-                        oauth.uid = uid
-                        oauth.save()
                 else:
                     # Проверка, есть ли такой пользователь
                     user = cls.objects.filter(provider=provider, uid=uid)[0].user
