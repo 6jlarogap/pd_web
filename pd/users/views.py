@@ -191,7 +191,7 @@ class ApiAuthSignoutView(APIView):
 
 api_auth_signout = ApiAuthSignoutView.as_view()
 
-class ApiAuthSignupView(ApiAuthSigninView):
+class ApiAuthSignupView(CheckRecaptchaMixin, ApiAuthSigninView):
     """
     Регистрация пользователя-кабинетчика (физического лица)
     """
@@ -212,6 +212,7 @@ class ApiAuthSignupView(ApiAuthSigninView):
                 except ValidationError:
                     raise ServiceException(_(u'Неверный формат адреса электронной почты'))
             oauth = request.DATA.get('oauth')
+            recaptcha_data = request.DATA.get('captchaData')
             if oauth:
                 user, message = Oauth.check_token(
                     provider=oauth['provider'],
@@ -226,8 +227,37 @@ class ApiAuthSignupView(ApiAuthSigninView):
                     data['message']=message
                 else:
                     return super(ApiAuthSignupView, self).do_post(request, user)
+            elif recaptcha_data:
+                if self.check_recaptcha(request, recaptcha_data['captcha'], recaptcha_data['response']):
+                    user, created = User.objects.get_or_create(
+                        username=username,
+                        defaults = {
+                            'email': profile and profile.get('email') or '',
+                        }
+                    )
+                    if created:
+                        if password:
+                            user.set_password(password)
+                            user.save()
+                        kwargs = {}
+                        if profile:
+                            kwargs.update({
+                                'user_last_name': profile.get('lastname', ''),
+                                'user_first_name': profile.get('firstname', ''),
+                                'user_middle_name': profile.get('middlename', ''),
+                            })
+                        CustomerProfile.objects.create(
+                            user=user,
+                            tc_confirmed = datetime.datetime.now(),
+                            **kwargs
+                        )
+                        return super(ApiAuthSignupView, self).do_post(request)
+                    else:
+                        data['message'] = _(u'Такой пользователь, %s, уже имеется') % username
+                else:
+                    data['message'] = _(u'Введена неверная captcha')
             else:
-                data['message'] = _(u'Регистрация без проверки у провайдера (Facebook, Google и т.д.) пока не реализована')
+                data['message'] = _(u'Регистрация пользователя без captcha или стороннего провайдера не предусмотрена')
         except ServiceException as excpt:
             data['message'] = excpt.message
         return Response(data=data, status=status_code)
@@ -361,9 +391,9 @@ class AuthGetPasswordBySMSView(CheckRecaptchaMixin, APIView):
     Input example:
     {
         "phoneNumber": "375291234567",
-        "recaptchaData": {
+        "captchaData": {
             "response": "foo bar",
-            "challenge": "03AHJ_VuvQ5p0AdejIw4W6"
+            "captcha": "03AHJ_VuvQ5p0AdejIw4W6"
         }
     }
     Output examples:
@@ -382,8 +412,10 @@ class AuthGetPasswordBySMSView(CheckRecaptchaMixin, APIView):
         status_code = 400
         message = ''
         phone_number = request.DATA['phoneNumber']
-        recaptcha_data = request.DATA['recaptchaData']
-        if not self.check_recaptcha(self.request, recaptcha_data['challenge'], recaptcha_data['response']):
+        recaptcha_data = request.DATA.get('captchaData')
+        if not recaptcha_data:
+            message = _(u'Не данных по captcha')
+        elif not self.check_recaptcha(self.request, recaptcha_data['captcha'], recaptcha_data['response']):
             message = _(u'Введена неверная captcha')
         else:
             if not CustomerProfile.objects.filter(user__username=phone_number).count():
@@ -420,12 +452,12 @@ class ApiFeedBack(CheckRecaptchaMixin, APIView):
         "subject": "Тема",
         "text": "Текст вопроса",
         "email": "email@email.ru",
-        "recaptchaData": {
+        "captchaData": {
             "response": "foo bar",
-            "challenge": "03AHJ_VuvQ5p0AdejIw4W6"
+            "captcha": "03AHJ_VuvQ5p0AdejIw4W6"
         }
     }
-    recaptchaData передается, если пользователь незарегистрирован
+    captchaData передается, если пользователь незарегистрирован
     
     Status codes:
         200 - если все нормально
@@ -437,12 +469,12 @@ class ApiFeedBack(CheckRecaptchaMixin, APIView):
     """
     def post(self, request):
         status_code = 400
-        recaptcha_data = request.DATA.get('recaptchaData')
+        recaptcha_data = request.DATA.get('captchaData')
         try:
             if not request.user.is_authenticated():
                 if not recaptcha_data:
-                    raise ServiceException(_(u'Не задана captcha'))
-                if not self.check_recaptcha(self.request, recaptcha_data['challenge'], recaptcha_data['response']):
+                    raise ServiceException(_(u'Не данных по captcha'))
+                if not self.check_recaptcha(self.request, recaptcha_data['captcha'], recaptcha_data['response']):
                     raise ServiceException(_(u'Ошибка проверки captcha'))
 
             email_from = (request.DATA.get('email') or '').strip()
