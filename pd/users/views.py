@@ -306,7 +306,7 @@ class ApiSettingsOauthProvidersDeleteView(APIView):
     permission_classes = (IsAuthenticated,)
 
     def delete(self, request, provider):
-        providers = Oauth.objects.filter(provider=provider)
+        providers = Oauth.objects.filter(user=request.user, provider=provider)
         if providers:
             providers.delete()
             return Response(data={'status': 'success'}, status=200)
