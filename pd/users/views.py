@@ -302,6 +302,22 @@ class ApiSettingsOauthProvidersView(APIView):
         
 api_settings_oauth_providers = ApiSettingsOauthProvidersView.as_view()
 
+class ApiSettingsOauthProvidersDeleteView(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def delete(self, request, provider):
+        providers = Oauth.objects.filter(provider=provider)
+        if providers:
+            providers.delete()
+            return Response(data={'status': 'success'}, status=200)
+        else:
+            return Response(
+                data={'status': 'error', 'message': _(u'Нет такого провайдера')},
+                status=400,
+            )
+
+api_settings_oauth_providers_delete = ApiSettingsOauthProvidersDeleteView.as_view()
+
 class ApiAuthSettings(APIView):
     permission_classes = (IsAuthenticated,)
     
