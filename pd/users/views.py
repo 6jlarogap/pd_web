@@ -98,7 +98,7 @@ class ApiAuthSigninView(APIView):
             if username and password:
                 user = authenticate(username=username, password=password)
             elif oauth:
-                user, oauth_message = Oauth.check_token(
+                user, oauth_rec, message = Oauth.check_token(
                     provider=oauth['provider'],
                     token=oauth['accessToken'],
                 )
@@ -214,7 +214,7 @@ class ApiAuthSignupView(CheckRecaptchaMixin, ApiAuthSigninView):
             oauth = request.DATA.get('oauth')
             recaptcha_data = request.DATA.get('recaptchaData')
             if oauth:
-                user, message = Oauth.check_token(
+                user, oauth_rec, message = Oauth.check_token(
                     provider=oauth['provider'],
                     token=oauth['accessToken'],
                     signup_dict=dict(
@@ -267,13 +267,23 @@ api_auth_signup = ApiAuthSignupView.as_view()
 class ApiSettingsOauthProvidersView(APIView):
     permission_classes = (IsAuthenticated,)
 
+    def get(self, request):
+        data = dict(oauthProviders=[])
+        for provider in Oauth.objects.filter(user=request.user):
+            info = {
+                'provider': provider.provider,
+                'username': provider.get_display_name(),
+            }
+        data['oauthProviders'].append(info)
+        return Response(data=data, status=200)
+        
     def post(self, request):
         data = dict(status='error')
         status_code = 400
         provider = request.DATA.get('provider')
         token=request.DATA.get('accessToken')
         if token and provider:
-            user, message = Oauth.check_token(
+            user, oauth_rec, message = Oauth.check_token(
                 provider=provider,
                 token=token,
                 bind_dict=dict(
@@ -285,6 +295,7 @@ class ApiSettingsOauthProvidersView(APIView):
             else:
                status_code = 200
                data['status']='success'
+               data['username'] = oauth_rec.get_display_name()
         else:
             data['message'] = _(u'Не заданы исходные данные')
         return Response(data=data, status=status_code)
