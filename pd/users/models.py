@@ -280,9 +280,6 @@ class Oauth(models.Model):
             status: сообщение об ошибке, если таковая произошла
         """
         
-        def user_details_dict(data, provider):
-            return result
-
         user = oauth = message = None
         if isinstance(token, unicode):
             token = token.encode('utf-8')
