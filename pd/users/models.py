@@ -196,7 +196,7 @@ class Oauth(models.Model):
     PROVIDER_YANDEX = 'yandex'
     PROVIDER_FACEBOOK = 'facebook'
     PROVIDER_GOOGLE = 'google'
-    PROVIDER_VKONTAKTE = 'vk'
+    PROVIDER_VKONTAKTE = 'vkontakte'
     OAUTH_PROVIDERS = (
         (PROVIDER_YANDEX, _(u"Яндекс")),
         (PROVIDER_FACEBOOK, _(u"Facebook")),
@@ -258,6 +258,7 @@ class Oauth(models.Model):
             url = Oauth.OAUTH_URLS[provider] % token
             r = urllib2.urlopen(url)
             data = json.loads(r.read().decode(r.info().getparam('charset') or 'utf-8'))
+            print data
             uid = unicode(data['id'])
             if uid:
                 if signup_dict:
