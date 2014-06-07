@@ -271,7 +271,7 @@ class ApiSettingsOauthProvidersView(APIView):
         data = dict(oauthProviders=[])
         for provider in Oauth.objects.filter(user=request.user):
             info = {
-                'provider': provider.provider,
+                'id': provider.provider,
                 'username': provider.get_display_name(),
             }
             data['oauthProviders'].append(info)
