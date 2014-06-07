@@ -201,23 +201,52 @@ class Oauth(models.Model):
         (PROVIDER_YANDEX, _(u"Яндекс")),
         (PROVIDER_FACEBOOK, _(u"Facebook")),
         (PROVIDER_GOOGLE, _(u"Google")),
-        (PROVIDER_VKONTAKTE, _(u"VKontakte")),
     )
-    
-    OAUTH_URLS = {
-        PROVIDER_YANDEX: "https://login.yandex.ru/info?format=json&oauth_token=%s",
-        PROVIDER_FACEBOOK: "https://graph.facebook.com/me?access_token=%s",
-        PROVIDER_GOOGLE: "https://www.googleapis.com/oauth2/v1/userinfo?alt=json&access_token=%s",
-        PROVIDER_VKONTAKTE: "https://api.vk.com/method/getProfiles?access_token=%s",
+
+    # Куда идти для получения данных от провайдера и имена возвращаемых полей,
+    # например, кото-то из провайдеров возвращает фамилию в last_name,
+    # кто-то в family_name, а кто-то вообще не возвращает фамилию,
+    # а только типа display_name. Если провайдер не возвращает, например,
+    # first_name, то в соответствующей profile_detail будет 'first_name': None
+    #
+    PROVIDER_DETAILS = {
+        PROVIDER_YANDEX: {
+            'url': "https://login.yandex.ru/info?format=json&oauth_token=%s",
+            'uid': 'id',
+            'first_name': "first_name",
+            'last_name': "last_name",
+            'display_name': "real_name",
+        },
+        PROVIDER_FACEBOOK: {
+            'url': "https://graph.facebook.com/me?access_token=%s",
+            'uid': 'id',
+            'first_name': "first_name",
+            'last_name': "last_name",
+            'display_name': "name",
+        },
+        PROVIDER_GOOGLE: {
+            'url': "https://www.googleapis.com/oauth2/v1/userinfo?alt=json&access_token=%s",
+            'uid': 'id',
+            'first_name': "given_name",
+            'last_name': "family_name",
+            'display_name': "name",
+        },
     }
 
     user = models.OneToOneField('auth.User')
     provider = models.CharField(_(u"Провайдер"), max_length=100, choices=OAUTH_PROVIDERS)
     uid = models.CharField(_(u"Ид пользователя у провайдера"), max_length=255,)
+    last_name = models.CharField(_(u"Фамилия у провайдера"), max_length=255, default='')
+    first_name = models.CharField(_(u"Имя у провайдера"), max_length=255, default='')
+    display_name = models.CharField(_(u"Отображаемое имя у провайдера"), max_length=255, default='')
     
     class Meta:
         # Не может быть двух пользователей с одним uid у того же провайдера!
         unique_together = ('provider', 'uid')
+
+    def get_display_name(self):
+        return self.display_name or \
+               " ".join((self.first_name, self.last_name, )).lstrip()
 
     @classmethod
     @transaction.commit_on_success
@@ -245,21 +274,27 @@ class Oauth(models.Model):
              то привязываем этого пользователя в таблице Oauth
          *  В остальных случаях проверка, что у нас есть такая запись в таблице Oauth
 
-        Возвращает user, status: 
+        Возвращает user, oauth, status: 
             user:   объект пользователя или None при неуспешной аутентификации/регистрации,
+            oauth:  соответствующий этому пользователю только что созданный объект в таблице Oauth
             status: сообщение об ошибке, если таковая произошла
         """
-        user = message = None
+        
+        user = oauth = message = None
         if isinstance(token, unicode):
             token = token.encode('utf-8')
         token=urllib2.quote(token)
         msg_intergrity_error = _(u'Есть уже пользователь, прикрепленный к этой учетной записи %s') % provider
         try:
-            url = Oauth.OAUTH_URLS[provider] % token
+            url = Oauth.PROVIDER_DETAILS[provider]['url'] % token
             r = urllib2.urlopen(url)
             data = json.loads(r.read().decode(r.info().getparam('charset') or 'utf-8'))
-            print data
-            uid = unicode(data['id'])
+            user_details = {}
+            for key in ('first_name', 'last_name', 'display_name'):
+                real_key = Oauth.PROVIDER_DETAILS[provider][key]
+                if real_key:
+                    user_details[key] = data.get(real_key) or ''
+            uid = unicode(data[Oauth.PROVIDER_DETAILS[provider]['uid']])
             if uid:
                 if signup_dict:
                     # Регистрация нового пользователя
@@ -275,10 +310,11 @@ class Oauth(models.Model):
                         }
                     )
                     if created:
-                        cls.objects.create(
+                        oauth = cls.objects.create(
                             user=user,
                             provider=provider,
                             uid=uid,
+                            **user_details
                         )
                         if password:
                             user.set_password(password)
@@ -304,7 +340,12 @@ class Oauth(models.Model):
                         user=user,
                         provider=provider,
                         uid=uid,
+                        defaults=user_details
                     )
+                    if not created:
+                        for key in user_details:
+                            setattr(oauth, key, user_details[key])
+                        oauth.save()
                 else:
                     # Проверка, есть ли такой пользователь
                     user = cls.objects.filter(provider=provider, uid=uid)[0].user
@@ -320,7 +361,7 @@ class Oauth(models.Model):
             message = _(u'Ошибка интерпретации ответа от провайдера %s') % provider
         except IndexError:
             message = _(u'Пользователь не найден среди зарегистрированных у провайдера %s') % provider
-        return user, message
+        return user, oauth, message
 
 class Org(GetLogsMixin, BaseModel):
     NUM_EMPTY = 'empty'
