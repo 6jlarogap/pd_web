@@ -264,7 +264,7 @@ class ApiAuthSignupView(CheckRecaptchaMixin, ApiAuthSigninView):
 
 api_auth_signup = ApiAuthSignupView.as_view()
     
-class ApiSettingsOauthProviderView(APIView):
+class ApiSettingsOauthProvidersView(APIView):
     permission_classes = (IsAuthenticated,)
 
     def post(self, request):
@@ -289,7 +289,7 @@ class ApiSettingsOauthProviderView(APIView):
             data['message'] = _(u'Не заданы исходные данные')
         return Response(data=data, status=status_code)
         
-api_settings_oauth_provider = ApiSettingsOauthProviderView.as_view()
+api_settings_oauth_providers = ApiSettingsOauthProvidersView.as_view()
 
 class ApiAuthSettings(APIView):
     permission_classes = (IsAuthenticated,)
