@@ -346,7 +346,9 @@ class Oauth(models.Model):
                         defaults=user_details
                     )
                     if not created:
-                        Oauth.objects.filter(pk=oauth.pk).update(**user_details)
+                        for key in user_details:
+                            setattr(oauth, key, user_details[key])
+                        oauth.save()
                 else:
                     # Проверка, есть ли такой пользователь
                     user = cls.objects.filter(provider=provider, uid=uid)[0].user

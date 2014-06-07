@@ -274,7 +274,7 @@ class ApiSettingsOauthProvidersView(APIView):
                 'provider': provider.provider,
                 'username': provider.get_display_name(),
             }
-        data['oauthProviders'].append(info)
+            data['oauthProviders'].append(info)
         return Response(data=data, status=200)
         
     def post(self, request):
