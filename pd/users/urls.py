@@ -11,6 +11,8 @@ urlpatterns = patterns('users.views',
     url(r'^api/auth/signup/?$', 'api_auth_signup', name='api_auth_signup'),
     url(r'^api/auth/signout/?$', 'api_auth_signout', name='api_auth_signout'),
 
+    url(r'^api/settings/?$', 'api_settings', name='api_settings'),
+
     url(r'^api/settings/oauth_providers/?$', 'api_settings_oauth_providers', name='api_settings_oauth_providers'),
     url(r'^api/settings/oauth_providers/(?P<provider>[A-Za-z0-9]+)$', 'api_settings_oauth_providers_delete',
          name='api_settings_oauth_providers_delete'),
