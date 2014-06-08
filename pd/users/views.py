@@ -171,7 +171,7 @@ class ApiAuthSigninView(APIView):
             else:
                 data['message'] = 'unconfirmed_tc'
         elif oauth and not user:
-            data['message'] = oauth_message or ''
+            data['message'] = message or ''
         else:
             data['message'] = 'Wrong username or password'
         return Response(data=data, status=status_code)
