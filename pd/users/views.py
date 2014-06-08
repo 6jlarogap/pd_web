@@ -99,8 +99,7 @@ class ApiAuthSigninView(APIView):
                 user = authenticate(username=username, password=password)
             elif oauth:
                 user, oauth_rec, message = Oauth.check_token(
-                    provider=oauth['provider'],
-                    token=oauth['accessToken'],
+                    oauth,
                 )
                 if user:
                     user.backend = user_backend
@@ -215,8 +214,7 @@ class ApiAuthSignupView(CheckRecaptchaMixin, ApiAuthSigninView):
             recaptcha_data = request.DATA.get('recaptchaData')
             if oauth:
                 user, oauth_rec, message = Oauth.check_token(
-                    provider=oauth['provider'],
-                    token=oauth['accessToken'],
+                    oauth,
                     signup_dict=dict(
                         username=username,
                         password=password,
@@ -267,37 +265,21 @@ api_auth_signup = ApiAuthSignupView.as_view()
 class ApiSettingsOauthProvidersView(APIView):
     permission_classes = (IsAuthenticated,)
 
-    def get(self, request):
-        data = dict(oauthProviders=[])
-        for provider in Oauth.objects.filter(user=request.user):
-            info = {
-                'id': provider.provider,
-                'username': provider.get_display_name(),
-            }
-            data['oauthProviders'].append(info)
-        return Response(data=data, status=200)
-        
     def post(self, request):
         data = dict(status='error')
         status_code = 400
-        provider = request.DATA.get('provider')
-        token=request.DATA.get('accessToken')
-        if token and provider:
-            user, oauth_rec, message = Oauth.check_token(
-                provider=provider,
-                token=token,
-                bind_dict=dict(
-                    user=request.user,
-                ),
-            )
-            if message:
-                data['message']=message
-            else:
-               status_code = 200
-               data['status']='success'
-               data['username'] = oauth_rec.get_display_name()
+        user, oauth_rec, message = Oauth.check_token(
+            request.DATA,
+            bind_dict=dict(
+                user=request.user,
+            ),
+        )
+        if message:
+            data['message'] = message
         else:
-            data['message'] = _(u'Не заданы исходные данные')
+            status_code = 200
+            data['status'] = 'success'
+            data['username'] = oauth_rec.get_display_name()
         return Response(data=data, status=status_code)
         
 api_settings_oauth_providers = ApiSettingsOauthProvidersView.as_view()
@@ -318,9 +300,19 @@ class ApiSettingsOauthProvidersDeleteView(APIView):
 
 api_settings_oauth_providers_delete = ApiSettingsOauthProvidersDeleteView.as_view()
 
-class ApiAuthSettings(APIView):
+class ApiSettings(APIView):
     permission_classes = (IsAuthenticated,)
     
+    def get(self, request):
+        data = dict(oauthProviders=[])
+        for provider in Oauth.objects.filter(user=request.user):
+            info = {
+                'id': provider.provider,
+                'username': provider.get_display_name(),
+            }
+            data['oauthProviders'].append(info)
+        return Response(data=data, status=200)
+        
     @transaction.commit_on_success
     def put(self, request):
         """
@@ -382,7 +374,7 @@ class ApiAuthSettings(APIView):
             status_code = 200
         return Response(data=data, status=status_code)
 
-api_auth_settings = ApiAuthSettings.as_view()
+api_settings = ApiSettings.as_view()
 
 class ApiAuthUser(APIView):
     permission_classes = (IsAuthenticated,)
