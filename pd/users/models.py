@@ -294,9 +294,10 @@ class Oauth(models.Model):
         """
         
         user = oauth = message = None
-        if isinstance(oauth_dict['accessToken'], unicode):
-            oauth_dict['accessToken'] = oauth_dict['accessToken'].encode('utf-8')
-        oauth_dict['accessToken']=urllib2.quote(oauth_dict['accessToken'])
+        for parm in ('accessToken', ):
+            if isinstance(oauth_dict[parm], unicode):
+                oauth_dict[parm] = oauth_dict[parm].encode('utf-8')
+            oauth_dict[parm]=urllib2.quote(oauth_dict[parm])
         provider = oauth_dict['provider']
         msg_intergrity_error = _(u'Есть уже пользователь, прикрепленный к этой учетной записи %s') % provider
         try:
