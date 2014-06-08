@@ -201,6 +201,7 @@ class Oauth(models.Model):
         (PROVIDER_YANDEX, _(u"Яндекс")),
         (PROVIDER_FACEBOOK, _(u"Facebook")),
         (PROVIDER_GOOGLE, _(u"Google")),
+        (PROVIDER_VKONTAKTE, _(u"VKontakte")),
     )
 
     # Куда идти для получения данных от провайдера и имена возвращаемых полей,
@@ -211,25 +212,32 @@ class Oauth(models.Model):
     #
     PROVIDER_DETAILS = {
         PROVIDER_YANDEX: {
-            'url': "https://login.yandex.ru/info?format=json&oauth_token=%s",
+            'url': "https://login.yandex.ru/info?format=json&oauth_token=%(accessToken)s",
             'uid': 'id',
             'first_name': "first_name",
             'last_name': "last_name",
             'display_name': "real_name",
         },
         PROVIDER_FACEBOOK: {
-            'url': "https://graph.facebook.com/me?access_token=%s",
+            'url': "https://graph.facebook.com/me?access_token=%(accessToken)s",
             'uid': 'id',
             'first_name': "first_name",
             'last_name': "last_name",
             'display_name': "name",
         },
         PROVIDER_GOOGLE: {
-            'url': "https://www.googleapis.com/oauth2/v1/userinfo?alt=json&access_token=%s",
+            'url': "https://www.googleapis.com/oauth2/v1/userinfo?alt=json&access_token=%(accessToken)s",
             'uid': 'id',
             'first_name': "given_name",
             'last_name': "family_name",
             'display_name': "name",
+        },
+        PROVIDER_VKONTAKTE: {
+            'url': "https://api.vk.com/method/getProfiles?access_token=%(accessToken)s",
+            'uid': 'uid',
+            'first_name': "first_name",
+            'last_name': "last_name",
+            'display_name': None,
         },
     }
 
@@ -246,14 +254,19 @@ class Oauth(models.Model):
 
     def get_display_name(self):
         return self.display_name or \
-               " ".join((self.first_name, self.last_name, )).lstrip()
+               " ".join((self.first_name, self.last_name, )).strip()
 
     @classmethod
     @transaction.commit_on_success
-    def check_token(cls, provider, token, signup_dict=None, bind_dict=None):
+    def check_token(cls, oauth_dict, signup_dict=None, bind_dict=None):
         """
-        Проверить token у провайдера Oauth.
+        Проверить token у провайдера Oauth. Token & provider в входном oauth_dict
         
+        oauth_dict:
+        {
+            "provider": "yandex",
+            "accessToken": "....."
+        }
         Кроме того:
         *   Если задан signup_dict:
                 {
@@ -281,14 +294,18 @@ class Oauth(models.Model):
         """
         
         user = oauth = message = None
-        if isinstance(token, unicode):
-            token = token.encode('utf-8')
-        token=urllib2.quote(token)
+        for parm in ('accessToken', ):
+            if isinstance(oauth_dict[parm], unicode):
+                oauth_dict[parm] = oauth_dict[parm].encode('utf-8')
+            oauth_dict[parm]=urllib2.quote(oauth_dict[parm])
+        provider = oauth_dict['provider']
         msg_intergrity_error = _(u'Есть уже пользователь, прикрепленный к этой учетной записи %s') % provider
         try:
-            url = Oauth.PROVIDER_DETAILS[provider]['url'] % token
+            url = Oauth.PROVIDER_DETAILS[provider]['url'] % oauth_dict
             r = urllib2.urlopen(url)
             data = json.loads(r.read().decode(r.info().getparam('charset') or 'utf-8'))
+            if provider == 'vkontakte' and data.get('response'):
+                data = data['response'][0]
             user_details = {}
             for key in ('first_name', 'last_name', 'display_name'):
                 real_key = Oauth.PROVIDER_DETAILS[provider][key]
