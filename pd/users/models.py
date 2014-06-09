@@ -165,6 +165,10 @@ class PermitIfUgh(permissions.BasePermission):
     def has_permission(self, request, view):
         return is_ugh_user(request.user)
 
+class PermitIfCabinet(permissions.BasePermission):
+    def has_permission(self, request, view):
+        return is_cabinet_user(request.user)
+
 def get_mail_footer(user):
     footer = ''
     if user.is_authenticated():
