@@ -345,7 +345,7 @@ class Phone(BaseModel):
 
 class CustomPlace(BaseModel):
     address = models.ForeignKey(Location, verbose_name=_(u"Адрес"), null=True)
-    user = models.OneToOneField('auth.User', verbose_name=_(u"Владелец или указавший место"))
+    user = models.ForeignKey('auth.User', verbose_name=_(u"Владелец или указавший место"))
 
 class CustomPerson(BaseModel):
     """
@@ -359,5 +359,5 @@ class CustomPerson(BaseModel):
     middle_name = models.CharField(_(u"Отчество"), max_length=255, blank=True)
     birth_date = UnclearDateModelField(_(u"Дата рождения"), blank=True, null=True)
     death_date = UnclearDateModelField(_(u"Дата смерти"), blank=True, null=True)
-    is_dead = models.BooleanField(_(u"Уопший"), default=True)
+    is_dead = models.BooleanField(_(u"Уcопший"), default=True)
     customplace = models.ForeignKey(CustomPlace, verbose_name=_(u"Место захоронения"), blank=True, null=True)
