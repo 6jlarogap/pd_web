@@ -5,6 +5,7 @@ import random
 import string
 import urllib2
 import json
+import hashlib
 
 from django.conf import settings
 from django.contrib.auth.models import User
@@ -197,11 +198,13 @@ class Oauth(models.Model):
     PROVIDER_FACEBOOK = 'facebook'
     PROVIDER_GOOGLE = 'google'
     PROVIDER_VKONTAKTE = 'vkontakte'
+    PROVIDER_ODNOKLASSNIKI = 'odnoklassniki'
     OAUTH_PROVIDERS = (
         (PROVIDER_YANDEX, _(u"Яндекс")),
         (PROVIDER_FACEBOOK, _(u"Facebook")),
         (PROVIDER_GOOGLE, _(u"Google")),
-        (PROVIDER_VKONTAKTE, _(u"VKontakte")),
+        (PROVIDER_VKONTAKTE, _(u"ВКонтакте")),
+        (PROVIDER_ODNOKLASSNIKI, _(u"Одноклассники")),
     )
 
     # Куда идти для получения данных от провайдера и имена возвращаемых полей,
@@ -234,6 +237,17 @@ class Oauth(models.Model):
         },
         PROVIDER_VKONTAKTE: {
             'url': "https://api.vk.com/method/getProfiles?access_token=%(accessToken)s",
+            'uid': 'uid',
+            'first_name': "first_name",
+            'last_name': "last_name",
+            'display_name': None,
+        },
+        PROVIDER_ODNOKLASSNIKI: {
+            'url': "https://api.odnoklassniki.ru/fb.do?method=users.getCurrentUser&"
+                   "access_token=%(accessToken)s&"
+                   "application_key=%(public_key)s&"
+                   "format=json&"
+                   "sig=%(signature)s",
             'uid': 'uid',
             'first_name': "first_name",
             'last_name': "last_name",
@@ -294,24 +308,50 @@ class Oauth(models.Model):
         """
         
         user = oauth = message = None
-        for parm in ('accessToken', ):
-            if isinstance(oauth_dict[parm], unicode):
-                oauth_dict[parm] = oauth_dict[parm].encode('utf-8')
-            oauth_dict[parm]=urllib2.quote(oauth_dict[parm])
         provider = oauth_dict['provider']
         msg_intergrity_error = _(u'Есть уже пользователь, прикрепленный к этой учетной записи %s') % provider
         try:
-            url = Oauth.PROVIDER_DETAILS[provider]['url'] % oauth_dict
+            provider_details = Oauth.PROVIDER_DETAILS[provider]
+
+            if provider == Oauth.PROVIDER_ODNOKLASSNIKI:
+                oauth_dict['public_key'] = settings.OAUTH_PROVIDERS_KEYS[provider]['public_key']
+                #
+                # <signature> = md5(
+                #    "application_key={$public_key}format=jsonmethod=users.getCurrentUser" .
+                #     md5("{$tokenInfo['access_token']}{$client_secret}")) (php код)
+                #
+                m = hashlib.md5()
+                m.update("%s%s" % (
+                        oauth_dict['accessToken'],
+                        settings.OAUTH_PROVIDERS_KEYS[provider]['private_key'],
+                    )
+                )
+                m2 = m.hexdigest()
+                m.update(
+                    "application_key=%sformat=jsonmethod=users.getCurrentUser%s" % (
+                        settings.OAUTH_PROVIDERS_KEYS[provider]['public_key'],
+                        m2,
+                    )
+                )
+                oauth_dict['signature'] = m.hexdigest()
+
+            for parm in ('accessToken', 'public_key', 'signature', ):
+                if oauth_dict.get(parm) and isinstance(oauth_dict[parm], unicode):
+                    oauth_dict[parm] = urllib2.quote(oauth_dict[parm].encode('utf-8'))
+            url = provider_details['url'] % oauth_dict
+
             r = urllib2.urlopen(url)
             data = json.loads(r.read().decode(r.info().getparam('charset') or 'utf-8'))
-            if provider == 'vkontakte' and data.get('response'):
+
+            if provider == Oauth.PROVIDER_VKONTAKTE and data.get('response'):
                 data = data['response'][0]
+
             user_details = {}
             for key in ('first_name', 'last_name', 'display_name'):
-                real_key = Oauth.PROVIDER_DETAILS[provider][key]
+                real_key = provider_details[key]
                 if real_key:
                     user_details[key] = data.get(real_key) or ''
-            uid = unicode(data[Oauth.PROVIDER_DETAILS[provider]['uid']])
+            uid = unicode(data[provider_details['uid']])
             if uid:
                 if signup_dict:
                     # Регистрация нового пользователя
