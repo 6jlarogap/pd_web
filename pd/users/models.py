@@ -251,7 +251,7 @@ class Oauth(models.Model):
             'uid': 'uid',
             'first_name': "first_name",
             'last_name': "last_name",
-            'display_name': None,
+            'display_name': "name",
         },
     }
 
