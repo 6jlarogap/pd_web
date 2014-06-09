@@ -44,7 +44,7 @@ from users.forms import UserAddForm, RegisterForm, LoruFormset, ProfileForm, Use
                         UserDataForm, ChangePasswordForm, BankAccountFormset, OrgForm, \
                         OrgLogForm, LoginLogForm, OrgBurialStatsForm, SupportForm, TestCaptchaForm
 from users.models import Profile, Org, RegisterProfile, ProfileLORU, CustomerProfile, Store, \
-                         get_mail_footer, is_cabinet_user, PermitIfLoru
+                         get_mail_footer, is_cabinet_user, PermitIfLoru, Oauth
 from pd.models import validate_phone_as_number
 from persons.models import AlivePerson, Phone
 from burials.models import Cemetery, Area, Burial, Place
@@ -78,18 +78,38 @@ class ApiAuthSigninView(APIView):
     """
     Проверка имени и пароля, (создать и) отдать token
     """
-    def post(self, request):
+    def do_post(self, request, user=None):
+        """
+        Выполнить 'обычную' авторизацию, если не задан объект user как параметр,
+        иначе только создать при необходимости token и вернуть данные
+        """
         token = None
-        username = request.DATA.get('username')
-        password = request.DATA.get('password')
-        confirm_tc = request.DATA.get('confirmTC')
         data = dict(status='error')
         status_code = 400
-        if username and password:
-            user = authenticate(username=username, password=password)
-            if user and user.is_active:
+         # Так надо для login() без предварительного authenticate()
+        user_backend = 'django.contrib.auth.backends.ModelBackend'
+        confirm_tc = request.DATA.get('confirmTC')
+        oauth = request.DATA.get('oauth')
+        if user:
+            user.backend = user_backend
+        else:
+            username = request.DATA.get('username')
+            password = request.DATA.get('password')
+            if username and password:
+                user = authenticate(username=username, password=password)
+            elif oauth:
+                user, oauth_rec, message = Oauth.check_token(
+                    oauth,
+                )
+                if user:
+                    user.backend = user_backend
+        if user:
+            if user.is_active:
                 token, created = Token.objects.get_or_create(user=user)
+            else:
+                data['message'] = _(u'Пользователь %s не активен') % user.username
         if token:
+            username = user.username
             tc_confirmed = True
             role = None
             try:
@@ -150,9 +170,14 @@ class ApiAuthSigninView(APIView):
                 LoginLog.write(request)
             else:
                 data['message'] = 'unconfirmed_tc'
+        elif oauth and not user:
+            data['message'] = message or ''
         else:
             data['message'] = 'Wrong username or password'
         return Response(data=data, status=status_code)
+
+    def post(self, request):
+        return self.do_post(request)
 
 api_auth_signin = ApiAuthSigninView.as_view()
 
@@ -165,9 +190,129 @@ class ApiAuthSignoutView(APIView):
 
 api_auth_signout = ApiAuthSignoutView.as_view()
 
-class ApiAuthSettings(APIView):
+class ApiAuthSignupView(CheckRecaptchaMixin, ApiAuthSigninView):
+    """
+    Регистрация пользователя-кабинетчика (физического лица)
+    """
+    def post(self, request):
+        data = dict(status='error')
+        status_code = 400
+        username = request.DATA.get('username')
+        password = request.DATA.get('password')
+        profile = request.DATA.get('profile')
+        try:
+            try:
+                validate_phone_as_number(decimal.Decimal(username))
+            except (TypeError, decimal.InvalidOperation, ValidationError, ):
+                raise ServiceException(_(u'Неверный формат телефона как имени пользователя'))
+            if profile and profile.get('email'):
+                try:
+                    validate_email(profile['email'])
+                except ValidationError:
+                    raise ServiceException(_(u'Неверный формат адреса электронной почты'))
+            oauth = request.DATA.get('oauth')
+            recaptcha_data = request.DATA.get('recaptchaData')
+            if oauth:
+                user, oauth_rec, message = Oauth.check_token(
+                    oauth,
+                    signup_dict=dict(
+                        username=username,
+                        password=password,
+                        profile=profile,
+                    ),
+                )
+                if message:
+                    data['message']=message
+                else:
+                    return super(ApiAuthSignupView, self).do_post(request, user)
+            elif recaptcha_data:
+                if self.check_recaptcha(request, recaptcha_data['challenge'], recaptcha_data['response']):
+                    user, created = User.objects.get_or_create(
+                        username=username,
+                        defaults = {
+                            'email': profile and profile.get('email') or '',
+                        }
+                    )
+                    if created:
+                        if password:
+                            user.set_password(password)
+                            user.save()
+                        kwargs = {}
+                        if profile:
+                            kwargs.update({
+                                'user_last_name': profile.get('lastname', ''),
+                                'user_first_name': profile.get('firstname', ''),
+                                'user_middle_name': profile.get('middlename', ''),
+                            })
+                        CustomerProfile.objects.create(
+                            user=user,
+                            tc_confirmed = datetime.datetime.now(),
+                            **kwargs
+                        )
+                        return super(ApiAuthSignupView, self).do_post(request)
+                    else:
+                        data['message'] = _(u'Такой пользователь, %s, уже имеется') % username
+                else:
+                    data['message'] = _(u'Введена неверная captcha')
+            else:
+                data['message'] = _(u'Регистрация пользователя без captcha или стороннего провайдера не предусмотрена')
+        except ServiceException as excpt:
+            data['message'] = excpt.message
+        return Response(data=data, status=status_code)
+
+api_auth_signup = ApiAuthSignupView.as_view()
+    
+class ApiSettingsOauthProvidersView(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def post(self, request):
+        data = dict(status='error')
+        status_code = 400
+        user, oauth_rec, message = Oauth.check_token(
+            request.DATA,
+            bind_dict=dict(
+                user=request.user,
+            ),
+        )
+        if message:
+            data['message'] = message
+        else:
+            status_code = 200
+            data['status'] = 'success'
+            data['username'] = oauth_rec.get_display_name()
+        return Response(data=data, status=status_code)
+        
+api_settings_oauth_providers = ApiSettingsOauthProvidersView.as_view()
+
+class ApiSettingsOauthProvidersDeleteView(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def delete(self, request, provider):
+        providers = Oauth.objects.filter(user=request.user, provider=provider)
+        if providers:
+            providers.delete()
+            return Response(data={'status': 'success'}, status=200)
+        else:
+            return Response(
+                data={'status': 'error', 'message': _(u'Нет такого провайдера')},
+                status=400,
+            )
+
+api_settings_oauth_providers_delete = ApiSettingsOauthProvidersDeleteView.as_view()
+
+class ApiSettings(APIView):
     permission_classes = (IsAuthenticated,)
     
+    def get(self, request):
+        data = dict(oauthProviders=[])
+        for provider in Oauth.objects.filter(user=request.user):
+            info = {
+                'id': provider.provider,
+                'username': provider.get_display_name(),
+            }
+            data['oauthProviders'].append(info)
+        return Response(data=data, status=200)
+        
     @transaction.commit_on_success
     def put(self, request):
         """
@@ -229,7 +374,7 @@ class ApiAuthSettings(APIView):
             status_code = 200
         return Response(data=data, status=status_code)
 
-api_auth_settings = ApiAuthSettings.as_view()
+api_settings = ApiSettings.as_view()
 
 class ApiAuthUser(APIView):
     permission_classes = (IsAuthenticated,)
@@ -286,8 +431,10 @@ class AuthGetPasswordBySMSView(CheckRecaptchaMixin, APIView):
         status_code = 400
         message = ''
         phone_number = request.DATA['phoneNumber']
-        recaptcha_data = request.DATA['recaptchaData']
-        if not self.check_recaptcha(self.request, recaptcha_data['challenge'], recaptcha_data['response']):
+        recaptcha_data = request.DATA.get('recaptchaData')
+        if not recaptcha_data:
+            message = _(u'Не данных по captcha')
+        elif not self.check_recaptcha(self.request, recaptcha_data['challenge'], recaptcha_data['response']):
             message = _(u'Введена неверная captcha')
         else:
             if not CustomerProfile.objects.filter(user__username=phone_number).count():
@@ -345,7 +492,7 @@ class ApiFeedBack(CheckRecaptchaMixin, APIView):
         try:
             if not request.user.is_authenticated():
                 if not recaptcha_data:
-                    raise ServiceException(_(u'Не задана captcha'))
+                    raise ServiceException(_(u'Не данных по captcha'))
                 if not self.check_recaptcha(self.request, recaptcha_data['challenge'], recaptcha_data['response']):
                     raise ServiceException(_(u'Ошибка проверки captcha'))
 
@@ -435,21 +582,22 @@ api_feedback = ApiFeedBack.as_view()
 class ApiLoruPlaces(APIView):
     permission_classes = (PermitIfLoru,)
 
+    """
+    Вернуть массив, в котором только "ОМС" публичного каталога
+    """
     def get(self, request):
         data = []
-        idx_public_catalog = None
-        for i, ugh in enumerate(Org.objects.filter(loru_list__loru=request.user.profile.org)):
+        try:
+            ugh = Org.objects.filter(inn=settings.ORG_AD_PAY_RECIPIENT['inn'])[0]
             d = {
-                    'id': ugh.pk,
-                    'name': ugh.name,
-                    'currency': {
-                        'name': ugh.currency.name,
-                        'shortName': ugh.currency.short_name,
-                        'code': ugh.currency.code,
-                    }
+                'id': ugh.pk,
+                'name': _(u'Каталог'),
+                'currency': {
+                    'name': ugh.currency.name,
+                    'shortName': ugh.currency.short_name,
+                    'code': ugh.currency.code,
+                }
             }
-            if ugh.inn == settings.ORG_AD_PAY_RECIPIENT['inn']:
-                idx_public_catalog = i
             for action, costFor in (
                                         (Rate.RATE_ACTION_PUBLISH, 'costForEnable'),
                                         (Rate.RATE_ACTION_UPDATE, 'costForUp'),
@@ -461,8 +609,8 @@ class ApiLoruPlaces(APIView):
                                                 ).order_by('-date_from')[:1]:
                         d['costFor'] = rate.rate
             data.append(d)
-        if idx_public_catalog:
-            data.insert(0, data.pop(idx_public_catalog))
+        except IndexError:
+            pass
         return Response(data=data, status=200)
 
 api_loru_places = ApiLoruPlaces.as_view()

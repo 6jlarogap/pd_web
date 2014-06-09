@@ -3,10 +3,12 @@ import datetime
 import decimal
 import random
 import string
+import urllib2
+import json
 
 from django.conf import settings
 from django.contrib.auth.models import User
-from django.db import models
+from django.db import models, transaction, IntegrityError
 from django.db.models.loading import get_model
 from django.utils.translation import ugettext_lazy as _
 from django.contrib.contenttypes.models import ContentType
@@ -14,11 +16,11 @@ from django.contrib.contenttypes.models import ContentType
 from rest_framework import permissions
 
 from geo.models import Location
-from pd.models import BaseModel, Files, GetLogsMixin, validate_gt0
+from pd.models import BaseModel, Files, GetLogsMixin, validate_gt0, validate_username
 from logs.models import Log
 
 from pd.utils import DigitsValidator, LengthValidator, NotEmptyValidator
-
+from pd.views import ServiceException
 
 class PhonesMixin(object):
     @property
@@ -29,6 +31,8 @@ class PhonesMixin(object):
 
 
 class CommonProfile(BaseModel):
+    USERNAME_HELPTEXT = _(u'До 30 символов: латинские буквы, цифры, дефис, знак подчеркивания')
+
     user = models.OneToOneField('auth.User', null=True)
     user_last_name = models.CharField(_(u"Фамилия"), max_length=255, null=True, blank=True)
     user_first_name = models.CharField(_(u"Имя"), max_length=255, null=True, blank=True)
@@ -184,6 +188,198 @@ def get_mail_footer(user):
                             )
     return footer
 
+def get_default_currency():
+    Currency = models.get_model('billing', 'Currency')
+    return Currency.objects.get(code=settings.CURRENCY_DEFAULT_CODE)
+
+class Oauth(models.Model):
+    PROVIDER_YANDEX = 'yandex'
+    PROVIDER_FACEBOOK = 'facebook'
+    PROVIDER_GOOGLE = 'google'
+    PROVIDER_VKONTAKTE = 'vkontakte'
+    OAUTH_PROVIDERS = (
+        (PROVIDER_YANDEX, _(u"Яндекс")),
+        (PROVIDER_FACEBOOK, _(u"Facebook")),
+        (PROVIDER_GOOGLE, _(u"Google")),
+        (PROVIDER_VKONTAKTE, _(u"VKontakte")),
+    )
+
+    # Куда идти для получения данных от провайдера и имена возвращаемых полей,
+    # например, кото-то из провайдеров возвращает фамилию в last_name,
+    # кто-то в family_name, а кто-то вообще не возвращает фамилию,
+    # а только типа display_name. Если провайдер не возвращает, например,
+    # first_name, то в соответствующей profile_detail будет 'first_name': None
+    #
+    PROVIDER_DETAILS = {
+        PROVIDER_YANDEX: {
+            'url': "https://login.yandex.ru/info?format=json&oauth_token=%(accessToken)s",
+            'uid': 'id',
+            'first_name': "first_name",
+            'last_name': "last_name",
+            'display_name': "real_name",
+        },
+        PROVIDER_FACEBOOK: {
+            'url': "https://graph.facebook.com/me?access_token=%(accessToken)s",
+            'uid': 'id',
+            'first_name': "first_name",
+            'last_name': "last_name",
+            'display_name': "name",
+        },
+        PROVIDER_GOOGLE: {
+            'url': "https://www.googleapis.com/oauth2/v1/userinfo?alt=json&access_token=%(accessToken)s",
+            'uid': 'id',
+            'first_name': "given_name",
+            'last_name': "family_name",
+            'display_name': "name",
+        },
+        PROVIDER_VKONTAKTE: {
+            'url': "https://api.vk.com/method/getProfiles?access_token=%(accessToken)s",
+            'uid': 'uid',
+            'first_name': "first_name",
+            'last_name': "last_name",
+            'display_name': None,
+        },
+    }
+
+    user = models.OneToOneField('auth.User')
+    provider = models.CharField(_(u"Провайдер"), max_length=100, choices=OAUTH_PROVIDERS)
+    uid = models.CharField(_(u"Ид пользователя у провайдера"), max_length=255,)
+    last_name = models.CharField(_(u"Фамилия у провайдера"), max_length=255, default='')
+    first_name = models.CharField(_(u"Имя у провайдера"), max_length=255, default='')
+    display_name = models.CharField(_(u"Отображаемое имя у провайдера"), max_length=255, default='')
+    
+    class Meta:
+        # Не может быть двух пользователей с одним uid у того же провайдера!
+        unique_together = ('provider', 'uid')
+
+    def get_display_name(self):
+        return self.display_name or \
+               " ".join((self.first_name, self.last_name, )).strip()
+
+    @classmethod
+    @transaction.commit_on_success
+    def check_token(cls, oauth_dict, signup_dict=None, bind_dict=None):
+        """
+        Проверить token у провайдера Oauth. Token & provider в входном oauth_dict
+        
+        oauth_dict:
+        {
+            "provider": "yandex",
+            "accessToken": "....."
+        }
+        Кроме того:
+        *   Если задан signup_dict:
+                {
+                    'username': <username>,
+                    'password': <password>,
+                    'profile': {
+                        'lastname':
+                        'firstname':
+                        'middlename':
+                        'email':
+                    }
+                }
+            то создать пользователя username c паролем password и атрибутами профиля profile
+         *   Если задан bind_dict:
+                {
+                    'user': <объект user>,
+                },
+             то привязываем этого пользователя в таблице Oauth
+         *  В остальных случаях проверка, что у нас есть такая запись в таблице Oauth
+
+        Возвращает user, oauth, status: 
+            user:   объект пользователя или None при неуспешной аутентификации/регистрации,
+            oauth:  соответствующий этому пользователю только что созданный объект в таблице Oauth
+            status: сообщение об ошибке, если таковая произошла
+        """
+        
+        user = oauth = message = None
+        for parm in ('accessToken', ):
+            if isinstance(oauth_dict[parm], unicode):
+                oauth_dict[parm] = oauth_dict[parm].encode('utf-8')
+            oauth_dict[parm]=urllib2.quote(oauth_dict[parm])
+        provider = oauth_dict['provider']
+        msg_intergrity_error = _(u'Есть уже пользователь, прикрепленный к этой учетной записи %s') % provider
+        try:
+            url = Oauth.PROVIDER_DETAILS[provider]['url'] % oauth_dict
+            r = urllib2.urlopen(url)
+            data = json.loads(r.read().decode(r.info().getparam('charset') or 'utf-8'))
+            if provider == 'vkontakte' and data.get('response'):
+                data = data['response'][0]
+            user_details = {}
+            for key in ('first_name', 'last_name', 'display_name'):
+                real_key = Oauth.PROVIDER_DETAILS[provider][key]
+                if real_key:
+                    user_details[key] = data.get(real_key) or ''
+            uid = unicode(data[Oauth.PROVIDER_DETAILS[provider]['uid']])
+            if uid:
+                if signup_dict:
+                    # Регистрация нового пользователя
+                    if cls.objects.filter(provider=provider, uid=uid):
+                        raise ServiceException(msg_intergrity_error)
+                    username = signup_dict['username']
+                    password = signup_dict.get('password')
+                    profile = signup_dict.get('profile')
+                    user, created = User.objects.get_or_create(
+                        username=username,
+                        defaults = {
+                            'email': profile and profile.get('email') or '',
+                        }
+                    )
+                    if created:
+                        oauth = cls.objects.create(
+                            user=user,
+                            provider=provider,
+                            uid=uid,
+                            **user_details
+                        )
+                        if password:
+                            user.set_password(password)
+                            user.save()
+                        kwargs = {}
+                        if profile:
+                            kwargs.update({
+                                'user_last_name': profile.get('lastname', ''),
+                                'user_first_name': profile.get('firstname', ''),
+                                'user_middle_name': profile.get('middlename', ''),
+                            })
+                        CustomerProfile.objects.create(
+                            user=user,
+                            tc_confirmed = datetime.datetime.now(),
+                            **kwargs
+                        )
+                    else:
+                        message = _(u'Такой пользователь, %s, уже имеется') % username
+                elif bind_dict:
+                    # Привязка существующего пользователя к провайдеру
+                    user = bind_dict['user']
+                    oauth, created = cls.objects.get_or_create(
+                        user=user,
+                        provider=provider,
+                        uid=uid,
+                        defaults=user_details
+                    )
+                    if not created:
+                        for key in user_details:
+                            setattr(oauth, key, user_details[key])
+                        oauth.save()
+                else:
+                    # Проверка, есть ли такой пользователь
+                    user = cls.objects.filter(provider=provider, uid=uid)[0].user
+        except ServiceException as excpt:
+            message = excpt.message
+        except IntegrityError:
+            message = msg_intergrity_error
+        except KeyError:
+            message = _(u'Провайдер Oauth, %s, не поддерживается') % provider
+        except urllib2.URLError:
+            message = _(u'Ошибка связи с провайдером %s') % provider
+        except ValueError:
+            message = _(u'Ошибка интерпретации ответа от провайдера %s') % provider
+        except IndexError:
+            message = _(u'Пользователь не найден среди зарегистрированных у провайдера %s') % provider
+        return user, oauth, message
+
 class Org(GetLogsMixin, BaseModel):
     NUM_EMPTY = 'empty'
     NUM_YEAR_UGH = 'year_ugh'
@@ -240,8 +436,7 @@ class Org(GetLogsMixin, BaseModel):
                                 validators=[validate_gt0])
     worktime = models.CharField(_(u"Время работы (ЧЧ:ММ - ЧЧ:ММ)"), max_length=255, default='', blank=True)
     site = models.URLField(_(u"Сайт"), default='', blank=True)
-    publish_cost = models.DecimalField(_(u"Стоимость добавления продукта"), max_digits=20, decimal_places=2, default='0.00')
-    currency = models.ForeignKey('billing.Currency', verbose_name=_(u"Валюта"), default=1)
+    currency = models.ForeignKey('billing.Currency', verbose_name=_(u"Валюта"), default=get_default_currency)
 
     class Meta:
         verbose_name = _(u'Организация')
@@ -261,8 +456,7 @@ class Org(GetLogsMixin, BaseModel):
         Создать кошелек и тарифы (тарифы -- только для ОМС) для организации
         """
         if not currency:
-            Currency = models.get_model('billing', 'Currency')
-            currency = Currency.objects.get(code='RUR')
+            currency = self.currency
         Wallet = models.get_model('billing', 'Wallet')
         wallet, created = Wallet.objects.get_or_create(
             org=self,
@@ -406,7 +600,8 @@ class RegisterProfile(BaseModel):
     CLEAR_PROCESSED = 30
 
     status = models.CharField(_(u"Статус заявки"), max_length=255, choices=STATUS_CHOICES, editable=False)
-    user_name = models.CharField(_(u"Имя для входа в систему (login)"), max_length=30)
+    user_name = models.CharField(_(u"Имя для входа в систему (login)"), max_length=30,
+                                 validators=[validate_username], help_text=Profile.USERNAME_HELPTEXT)
     user_last_name = models.CharField(_(u"Фамилия"), max_length=255)
     user_first_name = models.CharField(_(u"Имя"), max_length=255)
     user_middle_name = models.CharField(_(u"Отчество (необязательно)"), max_length=255, null=True, blank=True)

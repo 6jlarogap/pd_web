@@ -45,7 +45,7 @@ from django.db import transaction
 from serializers import CemeterySerializer, AreaSerializer, PlaceSerializer, AreaPurposeSerializer, \
     GraveSerializer, BurialSerializer, BurialListSerializer, BurialPutGraveSerializer, \
     AreaPhotoSerializer, GravePhotoSerializer, ExhumationRequestSerializer, PlaceSizeSerializer, \
-    ApiOmsPlacesSerializer
+    ApiOmsPlacesSerializer, ApiCatalogPlacesSerializer
 
 from persons.serializers import AlivePersonSerializer, PhoneSerializer
 from geo.serializers import LocationSerializer, LocationStaticSerializer, LocationDataSerializer
@@ -306,7 +306,37 @@ class ApiOmsPlacesViewSet(viewsets.ReadOnlyModelViewSet):
     paginate_by = None
 
     def get_queryset(self):
-        return Place.objects.filter(cemetery__ugh=self.request.user.profile.org)
+        return Place.objects.filter(
+            cemetery__ugh=self.request.user.profile.org,
+            lat__isnull=False,
+            lng__isnull=False,
+        ).distinct()
+
+class ApiCatalogPlacesViewSet(viewsets.ReadOnlyModelViewSet):
+    model = Place
+    serializer_class = ApiCatalogPlacesSerializer
+    paginate_by = None
+
+    def get_queryset(self):
+        q = Q(
+            lat__isnull=False,
+            lng__isnull=False,
+        )
+        statuses = self.request.GET.getlist('filter[status]')
+        while statuses.count(u''):
+            statuses.remove(u'')
+        qs = None
+        for status in statuses:
+            if status in Place.STATUS_LIST:
+                this_status = { "%s__isnull" % status: False }
+                if qs is None:
+                    qs = Q(**this_status)
+                else:
+                    qs |= Q(**this_status)
+        if qs is not None:
+            q &= qs
+        return Place.objects.filter(q).distinct()
+
 
 class PlaceViewSet(viewsets.ModelViewSet):
     model = Place
@@ -911,7 +941,7 @@ class AddOrgView(LoginRequiredMixin, View):
 
 add_org = AddOrgView.as_view()
 
-class AddDocTypeView(LoginRequiredMixin, View):
+class AddDocTypeView(SupervisorRequiredMixin, View):
     def post(self, request, *args, **kwargs):
         f = AddDocTypeForm(data=request.POST, prefix='doctype')
         if f.is_valid():

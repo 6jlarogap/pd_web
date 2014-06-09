@@ -13,7 +13,8 @@ from pd.models import UnclearDateModelField, BaseModel, Files, GetLogsMixin, val
 
 from persons.models import DeadPerson, SafeDeleteMixin, DeathCertificate
 from reports.models import Report
-from users.models import Org, Profile, Dover, ProfileLORU, CustomerProfile, PhonesMixin
+from users.models import Org, Profile, Dover, ProfileLORU, CustomerProfile, PhonesMixin, \
+                         is_ugh_user, is_cabinet_user
 from logs.models import Log
 from geo.models import GeoPointModel, CoordinatesModel
 
@@ -184,6 +185,8 @@ class AreaCoordinates(CoordinatesModel):
         unique_together = ('area', 'angle_number',)
 
 class Place(SafeDeleteMixin, GeoPointModel):
+    STATUS_LIST = ('dt_wrong_fio', 'dt_military', 'dt_size_violated', 'dt_unowned', 'dt_unindentified', )
+
     cemetery = models.ForeignKey(Cemetery, verbose_name=_(u"Кладбище"), on_delete=models.PROTECT)
     area = models.ForeignKey(Area, verbose_name=_(u"Участок"), blank=True, null=True,
                              on_delete=models.PROTECT)
@@ -335,12 +338,9 @@ class Place(SafeDeleteMixin, GeoPointModel):
     def get_photo_gallery(self, request):
         """
         Получить все фото, относящиеся к месту.
-        
-        Выбираются все PlacePhoto, все GravePhoto этого места,
-        сортируются по дате создания в порядке убывания
         """
         gallery = []
-        for pph in PlacePhoto.objects.filter(place=self):
+        for pph in PlacePhoto.objects.filter(place=self).order_by('-date_of_creation'):
             if pph.bfile:
                 gallery.append(
                     {
@@ -348,16 +348,6 @@ class Place(SafeDeleteMixin, GeoPointModel):
                         'addedAt': pph.date_of_creation,
                     }
                 )
-        for g in Grave.objects.filter(place=self).order_by('grave_number'):
-            for gph in GravePhoto.objects.filter(grave=g):
-                if gph.bfile:
-                    gallery.append(
-                        {
-                            'photo': request.build_absolute_uri(gph.bfile.url),
-                            'addedAt': gph.date_of_creation,
-                        }
-                    )
-        gallery = sorted(gallery, key=lambda photo: photo['addedAt'], reverse=True)
         return gallery
         
     def status_list(self):
@@ -365,7 +355,7 @@ class Place(SafeDeleteMixin, GeoPointModel):
         Вернуть список статусов, например ['dt_wrong_fio', 'dt_unindentified', ]
         """
         result  = []
-        for f in ('dt_wrong_fio', 'dt_military', 'dt_size_violated', 'dt_unowned', 'dt_unindentified', ):
+        for f in Place.STATUS_LIST:
             value = getattr(self,f)
             if value:
                 result.append(f)
@@ -448,6 +438,32 @@ class Grave(GeoPointModel):
 
 class PlacePhoto(Files, GeoPointModel):
     place = models.ForeignKey(Place)
+
+    def is_accessible_anonymous(self):
+        """
+        Доступно ли анонимному пользователю
+        """
+        return bool(self.place.dt_unowned)
+
+    def is_accessible(self, user):
+        """
+        Доступность фото места:
+        
+        * ОМС, чье кладбище, где место
+        * Пользователь кабинета, если это его место
+        * Анонимный пользователь, если место бесхозное
+        """
+        result = False
+        if self.is_accessible_anonymous():
+            result = True
+        elif is_ugh_user(user):
+            result = self.place.cemetery.ugh == user.profile.org
+        elif is_cabinet_user(user):
+            result = self.place.responsible and \
+                     self.place.responsible.login_phone and \
+                     str(self.place.responsible.login_phone) == user.username
+        return result
+        
 
 class AreaPhoto(Files, GeoPointModel):
     area = models.ForeignKey(Area)

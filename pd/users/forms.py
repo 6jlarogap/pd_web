@@ -12,7 +12,7 @@ from django.db.models.query_utils import Q
 
 from geo.forms import LocationForm
 from pd.forms import ChildrenJSONMixin, LoggingFormMixin, OurReCaptchaField, StrippedStringsMixin
-from pd.models import validate_phone_as_number
+from pd.models import validate_phone_as_number, validate_username
 from burials.models import Cemetery, PlaceSize, Reason, Burial
 
 from users.models import Profile, ProfileLORU, Org, BankAccount, RegisterProfile, get_mail_footer, is_cabinet_user
@@ -23,7 +23,8 @@ class UserAddForm(forms.ModelForm):
         model = User
         fields = ['username', 'email']
 
-    username = forms.SlugField(label=_(u"Логин"))
+    username = forms.CharField(label=_(u"Логин"), validators=[validate_username],
+                               help_text=Profile.USERNAME_HELPTEXT)
     password1 = forms.CharField(label=_(u"Пароль"), widget=forms.PasswordInput())
     password2 = forms.CharField(label=_(u"Пароль (повторите)"), widget=forms.PasswordInput())
 
@@ -132,6 +133,7 @@ class UserDataForm(forms.ModelForm):
             self.initial['is_agent'] = self.instance.profile.is_agent
         if self.instance and self.instance.profile and self.instance.profile.is_ugh():
             del self.fields['is_agent']
+        self.fields['username'].help_text=Profile.USERNAME_HELPTEXT
 
     def save(self, *args, **kwargs):
         user = super(UserDataForm, self).save(*args, **kwargs)
@@ -140,6 +142,12 @@ class UserDataForm(forms.ModelForm):
             user.profile.save()
         return user
 
+    def clean_username(self):
+        username = self.cleaned_data.get('username')
+        if username:
+            validate_username(username)
+        return username
+        
 class ChangePasswordForm(forms.ModelForm):
     class Meta:
         model = User
@@ -229,7 +237,7 @@ ReasonFormset = inlineformset_factory(Org, Reason, formset=BaseInlineFormSet, ca
 class OrgForm(BaseOrgForm):
     class Meta:
         model = Org
-        exclude = ('off_address', 'publish_cost', 'currency', )
+        exclude = ('off_address', 'currency', )
 
     def __init__(self, request, *args, **kwargs):
         super(OrgForm, self).__init__(request, *args, **kwargs)
@@ -341,10 +349,7 @@ class RegisterForm(forms.ModelForm):
         self.address_form.fields['city_name'].required = True
         
     def clean_user_name(self):
-        user_name=self.cleaned_data['user_name'].strip()
-        if not re.match(r'^[A-Za-z0-9_-]+$', user_name):
-            raise forms.ValidationError(_(u"Имя может состоять только из латинских букв, "
-                                          u"цифр, знаков подчеркивания или дефиса"))
+        user_name=self.cleaned_data['user_name']
         if User.objects.filter(username=user_name).exists():
             raise forms.ValidationError(_(u"Это имя уже используется в системе"))
         q = Q(user_name=user_name) & \
@@ -411,6 +416,23 @@ class SupportForm(forms.Form):
                 self.save_org_phone = True
             for f in self.fio:
                 self.initial[f] = getattr(request.user.profile, f)
+            user_request = request.GET.get('request')
+            if user_request and user_request == u'add_doctype':
+                self.initial['subject'] = _(u'Добавить тип документа')
+                self.initial['message'] = _(u'Прошу добавить следующий тип документа:\n'
+                                            u'________________________.\n\n'
+                                            u'Пока новый тип не добавлен, вношу запись о документе '
+                                            u'физического лица как об удостоверении.\n'
+                )
+                burial_path = request.GET.get('burial_path')
+                if burial_path:
+                    burial_path = u"%s://%s%s" % (
+                        'https' if request.is_secure() else 'http',
+                        request.get_host(),
+                        burial_path,
+                    )
+                    self.initial['message'] = u"%sПравилось захоронение:\n%s\n" % \
+                        (self.initial['message'], burial_path, )
 
     def clean(self):
         if self.is_valid():

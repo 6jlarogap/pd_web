@@ -174,8 +174,12 @@ LOGIN_URL = "/login/"
 # URLs, не требующие регистрации в системе:
 REGISTER_URLS_REGEX = r'^/?register(?:/|$)'
 SUPPORT_URLS_REGEX = r'^/?support(?:/|$)'
-# URLs, требующие регистрации, но она проходит посредством tokens:
+# URLs, доступ к которым регулируется в соответствующих классах.as_view():
 API_URLS_REGEX = r'^/?api(?:/|$)'
+# URLs, доступные анонимным пользователям, например в публичном каталоге:
+ANONYMOUS_URLS_REGEX = r'^/?(?:thumb|media)/product\-photo/'
+# URLs, доступные анонимным пользователям, но при определенных условиях
+ANONYMOUS_LIMITED_URLS_REGEX = r'^/?(?:thumb|media)/place\-photos/'
 
 LOGOUT_URL = "/logout/"
 LOGIN_REDIRECT_URL = "/"
@@ -187,6 +191,9 @@ PAGINATION_PER_PAGE = 50
 
 # Кодировка для файлов обмена.
 CSV_ENCODING = "utf8"
+
+# Валюта по умолчанию, код:
+CURRENCY_DEFAULT_CODE = 'RUR'
 
 # Настройки пэйджинации.
 PAGINATION_USER_PER_PAGE_MAX = 50

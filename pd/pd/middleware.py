@@ -3,7 +3,7 @@
 from django.http import HttpResponseRedirect
 from django.conf import settings
 import re
-from pd.views import get_front_end_url
+from pd.views import get_front_end_url, is_url_accessible_anonymous
 
 
 exempt_urls = [re.compile(re.escape(url.lstrip('/')), flags=re.I) \
@@ -16,9 +16,10 @@ exempt_urls = [re.compile(re.escape(url.lstrip('/')), flags=re.I) \
 
 for regex in (settings.REGISTER_URLS_REGEX,
               settings.SUPPORT_URLS_REGEX,
-              # Эти URLs требуют регистрации, но она через tokens,
-              # ! За исключение /api/signin,
-              #   которая регистрации не требует, а проверяет имя/пароль
+              settings.ANONYMOUS_URLS_REGEX,
+              # Эти URLs требуют или не требуют (для анонимного пользователя)
+              # регистрации, но это устанавливается в 
+              # соответствующих класссах.as_view():
               settings.API_URLS_REGEX,
              ):
     exempt_urls.append(re.compile(regex, flags=re.I))
@@ -28,6 +29,8 @@ class LoginRequiredMiddleware:
     def process_request(self, request):
         if not request.user.is_authenticated():
             path = request.path_info.lstrip('/')
-            if not any(m.match(path) for m in exempt_urls):
+            no_login = any(m.match(path) for m in exempt_urls) or \
+                       is_url_accessible_anonymous(request)
+            if not no_login:
                 next = '' if not path or exempt_urls[0].match(path) else '?redirectUrl='+request.build_absolute_uri()
                 return HttpResponseRedirect(settings.LOGIN_URL+next)

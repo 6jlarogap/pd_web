@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<django-objects version="1.0">
+    <object pk="1" model="burials.areapurpose">
+        <field type="CharField" name="name">общественный</field>
+    </object>
+    <object pk="2" model="burials.areapurpose">
+        <field type="CharField" name="name">вероисповедальный</field>
+    </object>
+    <object pk="3" model="burials.areapurpose">
+        <field type="CharField" name="name">воинский</field>
+    </object>
+    <object pk="4" model="burials.areapurpose">
+        <field type="CharField" name="name">почетный</field>
+    </object>
+</django-objects>

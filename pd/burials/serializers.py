@@ -20,6 +20,12 @@ from rest_api.fields import UnclearDateFieldSerializer
 from django.core.exceptions import ValidationError
 
 
+class GetGalleryMixin(object):
+
+    def gallery_func(self, obj):
+        request = self.context.get('request')
+        return obj.get_photo_gallery(request) if request else []
+
 class SubCemeterySerializer(serializers.ModelSerializer):
     """
     area subelement
@@ -82,15 +88,9 @@ class AreaSerializer(serializers.ModelSerializer):
 
 
 
-class ApiOmsPlacesSerializer(serializers.ModelSerializer):
-    cemeteryId = serializers.PrimaryKeyRelatedField(source='cemetery')
-    areaId = serializers.PrimaryKeyRelatedField(source='area')
+class ApiPlacesSerializer(serializers.ModelSerializer):
     location = serializers.SerializerMethodField('location_func')
     status = serializers.Field(source='status_list')
-
-    class Meta:
-        model = Place
-        fields = ('id', 'cemeteryId', 'areaId', 'location', 'status', )
 
     def location_func(self, obj):
         if obj.lat and obj.lng:
@@ -103,7 +103,25 @@ class ApiOmsPlacesSerializer(serializers.ModelSerializer):
 
  
 
-class PlaceSerializer(serializers.ModelSerializer):
+class ApiOmsPlacesSerializer(ApiPlacesSerializer):
+    cemeteryId = serializers.PrimaryKeyRelatedField(source='cemetery')
+    areaId = serializers.PrimaryKeyRelatedField(source='area')
+
+    class Meta:
+        model = Place
+        fields = ('id', 'cemeteryId', 'areaId', 'location', 'status', )
+
+
+class ApiCatalogPlacesSerializer(GetGalleryMixin, ApiPlacesSerializer):
+    photos = serializers.SerializerMethodField('gallery_func')
+
+    class Meta:
+        model = Place
+        fields = ('id', 'location', 'status',  'photos', )
+
+
+
+class PlaceSerializer(GetGalleryMixin, serializers.ModelSerializer):
     cemetery = serializers.PrimaryKeyRelatedField()
     area = serializers.PrimaryKeyRelatedField()
     responsible = serializers.PrimaryKeyRelatedField(required=False)
@@ -123,10 +141,6 @@ class PlaceSerializer(serializers.ModelSerializer):
                   'dt_wrong_fio', 'dt_military', 'dt_size_violated', 'dt_unowned', 'dt_unindentified', 
                  ) 
 
-    def gallery_func(self, obj):
-        request = self.context.get('request')
-        return obj.get_photo_gallery(request) if request else []
-        
     def responsible_str(self, obj):
         if obj.responsible:
             return "%s %s %s" % (obj.responsible.first_name, obj.responsible.middle_name, obj.responsible.last_name)

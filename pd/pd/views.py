@@ -13,6 +13,26 @@ from django.contrib import messages
 
 from django.conf import settings
 
+from restthumbnails.views import ThumbnailView
+
+class OurThumbnailView(ThumbnailView):
+    def get(self, request, *args, **kwargs):
+        m= re.search(r'^/?thumb/([^/]+).*/(\d+)/[^/]+/',request.path)
+        if m:
+            what = m.group(1)
+            pk = m.group(2)
+            if what == 'place-photos':
+                try:
+                    place_photo = get_model('burials', 'PlacePhoto').objects.filter(pk=pk)[0]
+                    if not place_photo.is_accessible(request.user):
+                        raise Http404
+                except IndexError:
+                    raise Http404
+        else:
+            raise Http404
+        return super(OurThumbnailView, self).get(request, *args, **kwargs)
+
+
 class PaginateListView(ListView):
     """
     Общий класс для постраничного табличного просмотра
@@ -56,6 +76,25 @@ class RequestToFormMixin(BaseFormView):
         data['request'] = self.request
         return data
 
+def is_url_accessible_anonymous(request):
+    """
+    Давать ли доступ анонимному пользователю?
+    """
+    result = False
+
+    # Подходит под:
+    # * /media/death-certificates/2013/11/06/5998/1376137215179.jpg
+    # * /thumb/place-photos/2014/04/21/101/1398082582212.jpg/500x300~crop~12.jpg
+    #
+    m= re.search(r'^/?(?:thumb|media)/([^/]+).*/(\d+)/[^/]+/?', request.path)
+    if m:
+        what = m.group(1)
+        pk = m.group(2)
+        if what == 'place-photos':
+            place_photo = get_model('burials', 'PlacePhoto').objects.filter(pk=pk)[0]
+            result = place_photo.is_accessible_anonymous()
+    return result
+
 def media_xsendfile(request, path, document_root):
     filename = os.path.join(settings.MEDIA_ROOT, path)
     if not os.path.exists(filename):
@@ -83,8 +122,15 @@ def media_xsendfile(request, path, document_root):
                 burial = get_object_or_404(get_model('burials', 'Burial'), pk=pk)
                 if not burial.is_accessible(request.user):
                     raise Http404
+            elif what == 'place-photos':
+                try:
+                    place_photo = get_model('burials', 'PlacePhoto').objects.filter(pk=pk)[0]
+                    if not place_photo.is_accessible(request.user):
+                        raise Http404
+                except IndexError:
+                    raise Http404
         else:
-            # Для товаров, их категорий, поддержки: открыто всем
+            # Для товаров, их категорий, поддержки и др.: открыто всем
             if re.search(r'^(?:product\-photo|icons|support)/',path):
                 pass
             else:
