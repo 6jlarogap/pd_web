@@ -346,6 +346,16 @@ ORG_PD_FUND = {
     'inn': '9999999992',
     'share': 0.34,
 }
+# При авторизации посредством Oauth некоторые социальные сети, в частности одноклассники,
+# требуют публичный и секретный ключ приложения. Разумеется, эта конфиденциальная информация
+# должна быть заменена на реальную в local_settings.py
+#
+OAUTH_PROVIDERS_KEYS = {
+    'odnoklassniki': {
+        'public_key': 'PublicStuff',
+        'private_key': 'PrivateStuff',
+    },
+}
 
 try:
     from local_settings import *
