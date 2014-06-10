@@ -387,33 +387,32 @@ class Oauth(models.Model):
                         'email': profile and profile.get('email') or '',
                     }
                 )
-                if created:
-                    try:
-                        oauth = cls.objects.create(
-                            user=user,
-                            provider=provider,
-                            uid=uid,
-                            **user_details
-                        )
-                    except IntegrityError:
-                        raise ServiceException(msg_intergrity_error)
-                    if password:
-                        user.set_password(password)
-                        user.save()
-                    kwargs = {}
-                    if profile:
-                        kwargs.update({
-                            'user_last_name': profile.get('lastname', ''),
-                            'user_first_name': profile.get('firstname', ''),
-                            'user_middle_name': profile.get('middlename', ''),
-                        })
-                    CustomerProfile.objects.create(
+                if not created:
+                    raise ServiceException(_(u'Такой пользователь, %s, уже имеется') % username)
+                try:
+                    oauth = cls.objects.create(
                         user=user,
-                        tc_confirmed = datetime.datetime.now(),
-                        **kwargs
+                        provider=provider,
+                        uid=uid,
+                        **user_details
                     )
-                else:
-                    message = _(u'Такой пользователь, %s, уже имеется') % username
+                except IntegrityError:
+                    raise ServiceException(msg_intergrity_error)
+                if password:
+                    user.set_password(password)
+                    user.save()
+                kwargs = {}
+                if profile:
+                    kwargs.update({
+                        'user_last_name': profile.get('lastname', ''),
+                        'user_first_name': profile.get('firstname', ''),
+                        'user_middle_name': profile.get('middlename', ''),
+                    })
+                CustomerProfile.objects.create(
+                    user=user,
+                    tc_confirmed = datetime.datetime.now(),
+                    **kwargs
+                )
             elif bind_dict:
                 # Привязка существующего пользователя к провайдеру
                 user = bind_dict['user']
