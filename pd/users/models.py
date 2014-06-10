@@ -318,7 +318,7 @@ class Oauth(models.Model):
         try:
             try:
                 provider_details = Oauth.PROVIDER_DETAILS[provider]
-            except IndexError:
+            except KeyError:
                 raise ServiceException(_(u'Провайдер Oauth, %s, не поддерживается') % provider)
 
             if provider == Oauth.PROVIDER_ODNOKLASSNIKI:
@@ -344,8 +344,10 @@ class Oauth(models.Model):
                 oauth_dict['signature'] = m.hexdigest()
 
             for parm in ('accessToken', 'public_key', 'signature', ):
-                if oauth_dict.get(parm) and isinstance(oauth_dict[parm], unicode):
-                    oauth_dict[parm] = urllib2.quote(oauth_dict[parm].encode('utf-8'))
+                if oauth_dict.get(parm):
+                    if isinstance(oauth_dict[parm], unicode):
+                        oauth_dict[parm] = oauth_dict[parm].encode('utf-8')
+                    oauth_dict[parm] = urllib2.quote(oauth_dict[parm])
             url = provider_details['url'] % oauth_dict
 
             try:
