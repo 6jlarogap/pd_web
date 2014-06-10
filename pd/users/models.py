@@ -260,7 +260,7 @@ class Oauth(models.Model):
         },
     }
 
-    user = models.OneToOneField('auth.User')
+    user = models.ForeignKey('auth.User')
     provider = models.CharField(_(u"Провайдер"), max_length=100, choices=OAUTH_PROVIDERS)
     uid = models.CharField(_(u"Ид пользователя у провайдера"), max_length=255,)
     last_name = models.CharField(_(u"Фамилия у провайдера"), max_length=255, default='')
