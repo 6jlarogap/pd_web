@@ -247,7 +247,8 @@ class Oauth(models.Model):
             'display_name': None,
         },
         PROVIDER_ODNOKLASSNIKI: {
-            'url': "https://api.odnoklassniki.ru/fb.do?method=users.getCurrentUser&"
+            # Внимание! Именно http://
+            'url': "http://api.odnoklassniki.ru/fb.do?method=users.getCurrentUser&"
                    "access_token=%(accessToken)s&"
                    "application_key=%(public_key)s&"
                    "format=json&"
@@ -315,7 +316,10 @@ class Oauth(models.Model):
         provider = oauth_dict['provider']
         msg_intergrity_error = _(u'Есть уже пользователь, прикрепленный к этой учетной записи %s') % provider
         try:
-            provider_details = Oauth.PROVIDER_DETAILS[provider]
+            try:
+                provider_details = Oauth.PROVIDER_DETAILS[provider]
+            except KeyError:
+                raise ServiceException(_(u'Провайдер Oauth, %s, не поддерживается') % provider)
 
             if provider == Oauth.PROVIDER_ODNOKLASSNIKI:
                 oauth_dict['public_key'] = settings.OAUTH_PROVIDERS_KEYS[provider]['public_key']
@@ -340,88 +344,102 @@ class Oauth(models.Model):
                 oauth_dict['signature'] = m.hexdigest()
 
             for parm in ('accessToken', 'public_key', 'signature', ):
-                if oauth_dict.get(parm) and isinstance(oauth_dict[parm], unicode):
-                    oauth_dict[parm] = urllib2.quote(oauth_dict[parm].encode('utf-8'))
+                if oauth_dict.get(parm):
+                    if isinstance(oauth_dict[parm], unicode):
+                        oauth_dict[parm] = oauth_dict[parm].encode('utf-8')
+                    oauth_dict[parm] = urllib2.quote(oauth_dict[parm])
             url = provider_details['url'] % oauth_dict
 
-            r = urllib2.urlopen(url)
-            data = json.loads(r.read().decode(r.info().getparam('charset') or 'utf-8'))
+            try:
+                r = urllib2.urlopen(url)
+                raw_data = r.read().decode(r.info().getparam('charset') or 'utf-8')
+            except urllib2.URLError:
+                raise ServiceException(_(u'Ошибка связи с провайдером %s') % provider)
 
-            if provider == Oauth.PROVIDER_VKONTAKTE and data.get('response'):
-                data = data['response'][0]
+            try:
+                data = json.loads(raw_data)
+                if provider == Oauth.PROVIDER_VKONTAKTE and data.get('response'):
+                    data = data['response'][0]
+                user_details = {}
+                for key in ('first_name', 'last_name', 'display_name'):
+                    real_key = provider_details[key]
+                    if real_key:
+                        user_details[key] = data[real_key]
+                uid = data[provider_details['uid']]
+            except (KeyError, ValueError, ):
+                msg_debug = u" DEBUG: Request: %s. Response: %s" % (url, raw_data, ) \
+                            if settings.DEBUG else u""
+                raise ServiceException(_(u"Ошибка интерпретации ответа от провайдера %s.%s") % \
+                                        (provider, msg_debug, ))
+                
+            if not uid:
+                raise ServiceException(_(u'Получен пустой uid от провайдера'))
+            uid = unicode(uid)
 
-            user_details = {}
-            for key in ('first_name', 'last_name', 'display_name'):
-                real_key = provider_details[key]
-                if real_key:
-                    user_details[key] = data.get(real_key) or ''
-            uid = unicode(data[provider_details['uid']])
-            if uid:
-                if signup_dict:
-                    # Регистрация нового пользователя
-                    if cls.objects.filter(provider=provider, uid=uid):
-                        raise ServiceException(msg_intergrity_error)
-                    username = signup_dict['username']
-                    password = signup_dict.get('password')
-                    profile = signup_dict.get('profile')
-                    user, created = User.objects.get_or_create(
-                        username=username,
-                        defaults = {
-                            'email': profile and profile.get('email') or '',
-                        }
+            if signup_dict:
+                # Регистрация нового пользователя
+                if cls.objects.filter(provider=provider, uid=uid):
+                    raise ServiceException(msg_intergrity_error)
+                username = signup_dict['username']
+                password = signup_dict.get('password')
+                profile = signup_dict.get('profile')
+                user, created = User.objects.get_or_create(
+                    username=username,
+                    defaults = {
+                        'email': profile and profile.get('email') or '',
+                    }
+                )
+                if not created:
+                    raise ServiceException(_(u'Такой пользователь, %s, уже имеется') % username)
+                try:
+                    oauth = cls.objects.create(
+                        user=user,
+                        provider=provider,
+                        uid=uid,
+                        **user_details
                     )
-                    if created:
-                        oauth = cls.objects.create(
-                            user=user,
-                            provider=provider,
-                            uid=uid,
-                            **user_details
-                        )
-                        if password:
-                            user.set_password(password)
-                            user.save()
-                        kwargs = {}
-                        if profile:
-                            kwargs.update({
-                                'user_last_name': profile.get('lastname', ''),
-                                'user_first_name': profile.get('firstname', ''),
-                                'user_middle_name': profile.get('middlename', ''),
-                            })
-                        CustomerProfile.objects.create(
-                            user=user,
-                            tc_confirmed = datetime.datetime.now(),
-                            **kwargs
-                        )
-                    else:
-                        message = _(u'Такой пользователь, %s, уже имеется') % username
-                elif bind_dict:
-                    # Привязка существующего пользователя к провайдеру
-                    user = bind_dict['user']
+                except IntegrityError:
+                    raise ServiceException(msg_intergrity_error)
+                if password:
+                    user.set_password(password)
+                    user.save()
+                kwargs = {}
+                if profile:
+                    kwargs.update({
+                        'user_last_name': profile.get('lastname', ''),
+                        'user_first_name': profile.get('firstname', ''),
+                        'user_middle_name': profile.get('middlename', ''),
+                    })
+                CustomerProfile.objects.create(
+                    user=user,
+                    tc_confirmed = datetime.datetime.now(),
+                    **kwargs
+                )
+            elif bind_dict:
+                # Привязка существующего пользователя к провайдеру
+                user = bind_dict['user']
+                try:
                     oauth, created = cls.objects.get_or_create(
                         user=user,
                         provider=provider,
                         uid=uid,
                         defaults=user_details
                     )
-                    if not created:
-                        for key in user_details:
-                            setattr(oauth, key, user_details[key])
-                        oauth.save()
-                else:
-                    # Проверка, есть ли такой пользователь
+                except IntegrityError:
+                    raise ServiceException(msg_intergrity_error)
+
+                if not created:
+                    for key in user_details:
+                        setattr(oauth, key, user_details[key])
+                    oauth.save()
+            else:
+                # Проверка, есть ли такой пользователь
+                try:
                     user = cls.objects.filter(provider=provider, uid=uid)[0].user
+                except IndexError:
+                    raise ServiceException(_(u'Пользователь не найден среди зарегистрированных у провайдера %s') % provider)
         except ServiceException as excpt:
             message = excpt.message
-        except IntegrityError:
-            message = msg_intergrity_error
-        except KeyError:
-            message = _(u'Провайдер Oauth, %s, не поддерживается') % provider
-        except urllib2.URLError:
-            message = _(u'Ошибка связи с провайдером %s') % provider
-        except ValueError:
-            message = _(u'Ошибка интерпретации ответа от провайдера %s') % provider
-        except IndexError:
-            message = _(u'Пользователь не найден среди зарегистрированных у провайдера %s') % provider
         return user, oauth, message
 
 class Org(GetLogsMixin, BaseModel):
