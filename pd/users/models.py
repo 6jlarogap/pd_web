@@ -335,6 +335,7 @@ class Oauth(models.Model):
                     )
                 )
                 m2 = m.hexdigest()
+                m = hashlib.md5()
                 m.update(
                     "application_key=%sformat=jsonmethod=users.getCurrentUser%s" % (
                         settings.OAUTH_PROVIDERS_KEYS[provider]['public_key'],
