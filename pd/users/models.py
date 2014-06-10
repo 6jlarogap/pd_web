@@ -201,7 +201,7 @@ class Oauth(models.Model):
     PROVIDER_YANDEX = 'yandex'
     PROVIDER_FACEBOOK = 'facebook'
     PROVIDER_GOOGLE = 'google'
-    PROVIDER_VKONTAKTE = 'vkontakte'
+    PROVIDER_VKONTAKTE = 'vk'
     PROVIDER_ODNOKLASSNIKI = 'odnoklassniki'
     OAUTH_PROVIDERS = (
         (PROVIDER_YANDEX, _(u"Яндекс")),
