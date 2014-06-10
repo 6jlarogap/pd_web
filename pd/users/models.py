@@ -351,14 +351,16 @@ class Oauth(models.Model):
             url = provider_details['url'] % oauth_dict
 
             try:
+                msg_debug = u", url: %s" % url if settings.DEBUG else ""
                 r = urllib2.urlopen(url)
                 raw_data = r.read().decode(r.info().getparam('charset') or 'utf-8')
             except urllib2.HTTPError as excpt:
-                raise ServiceException(_(u'Ошибка в ответе от провайдера %s, код: %s, статус: %s') % \
-                                        (provider, excpt.getcode(), excpt.reason,))
+                raise ServiceException(_(u'Ошибка в ответе от провайдера %s, код: %s, статус: %s%s') % \
+                                        (provider, excpt.getcode(), excpt.reason, msg_debug))
             except urllib2.URLError as excpt:
                 reason = u": %s" % excpt.reason if excpt.reason else ''
-                raise ServiceException(_(u'Ошибка связи с провайдером%s') % reason)
+                raise ServiceException(_(u'Ошибка связи с провайдером%s%s') % \
+                                        (reason, msg_debug))
 
             try:
                 data = json.loads(raw_data)
