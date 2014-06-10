@@ -353,8 +353,12 @@ class Oauth(models.Model):
             try:
                 r = urllib2.urlopen(url)
                 raw_data = r.read().decode(r.info().getparam('charset') or 'utf-8')
-            except urllib2.URLError:
-                raise ServiceException(_(u'Ошибка связи с провайдером %s') % provider)
+            except urllib2.HTTPError as excpt:
+                raise ServiceException(_(u'Ошибка в ответе от провайдера %s, код: %s, статус: %s') % \
+                                        (provider, excpt.getcode(), excpt.reason,))
+            except urllib2.URLError as excpt:
+                reason = u": %s" % excpt.reason if excpt.reason else ''
+                raise ServiceException(_(u'Ошибка связи с провайдером%s') % reason)
 
             try:
                 data = json.loads(raw_data)
