@@ -306,13 +306,15 @@ class Oauth(models.Model):
              то привязываем этого пользователя в таблице Oauth
          *  В остальных случаях проверка, что у нас есть такая запись в таблице Oauth
 
-        Возвращает user, oauth, status: 
-            user:   объект пользователя или None при неуспешной аутентификации/регистрации,
-            oauth:  соответствующий этому пользователю только что созданный объект в таблице Oauth
-            status: сообщение об ошибке, если таковая произошла
+        Возвращает user, oauth, message: 
+            user:       объект пользователя или None при неуспешной аутентификации/регистрации,
+            oauth:      соответствующий этому пользователю только что созданный объект в таблице Oauth
+            message:    словарь, который может состоять из { 'message': 'Сообщение об ошибке',
+                        'errorCode': 'символический_код_ошибки' }
         """
         
-        user = oauth = message = None
+        user = oauth = None
+        message = {}
         provider = oauth_dict['provider']
         msg_intergrity_error = _(u'Есть уже пользователь, прикрепленный к этой учетной записи %s') % provider
         try:
@@ -444,9 +446,10 @@ class Oauth(models.Model):
                 try:
                     user = cls.objects.filter(provider=provider, uid=uid)[0].user
                 except IndexError:
-                    raise ServiceException(u"oauth_provider_not_attached")
+                    message['errorCode'] = u"oauth_provider_not_attached"
+                    raise ServiceException(_(u'Пользователь не найден среди зарегистрированных у провайдера %s') % provider)
         except ServiceException as excpt:
-            message = excpt.message
+            message['message'] = excpt.message
         return user, oauth, message
 
 class Org(GetLogsMixin, BaseModel):
