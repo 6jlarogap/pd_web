@@ -444,7 +444,7 @@ class Oauth(models.Model):
                 try:
                     user = cls.objects.filter(provider=provider, uid=uid)[0].user
                 except IndexError:
-                    raise ServiceException(_(u'Пользователь не найден среди зарегистрированных у провайдера %s') % provider)
+                    raise ServiceException(u"oauth_provider_not_attached")
         except ServiceException as excpt:
             message = excpt.message
         return user, oauth, message
