@@ -171,7 +171,7 @@ class ApiAuthSigninView(APIView):
             else:
                 data['message'] = 'unconfirmed_tc'
         elif oauth and not user:
-            data['message'] = message or ''
+            data.update(message)
         else:
             data['message'] = 'Wrong username or password'
         return Response(data=data, status=status_code)
@@ -222,7 +222,7 @@ class ApiAuthSignupView(CheckRecaptchaMixin, ApiAuthSigninView):
                     ),
                 )
                 if message:
-                    data['message']=message
+                    data.update(message)
                 else:
                     return super(ApiAuthSignupView, self).do_post(request, user)
             elif recaptcha_data:
@@ -275,7 +275,7 @@ class ApiSettingsOauthProvidersView(APIView):
             ),
         )
         if message:
-            data['message'] = message
+            data.update(message)
         else:
             status_code = 200
             data['status'] = 'success'
