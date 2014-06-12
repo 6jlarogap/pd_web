@@ -32,7 +32,7 @@ class PhonesMixin(object):
 
 
 class CommonProfile(BaseModel):
-    USERNAME_HELPTEXT = _(u'До 30 символов: латинские буквы, цифры, дефис, знак подчеркивания')
+    USERNAME_HELPTEXT = _(u'До 30 символов: латинские буквы, цифры, дефисы, знаки подчеркивания, @')
 
     user = models.OneToOneField('auth.User', null=True)
     user_last_name = models.CharField(_(u"Фамилия"), max_length=255, null=True, blank=True)

@@ -295,8 +295,8 @@ def validate_gt0(value):
 
 def validate_username(value):
     if not re.match(r'^[A-Za-z0-9_-]+$', value):
-        raise ValidationError(_(u"Может состоять только из латинских букв, "
-                                u"цифр, знаков подчеркивания или дефиса"
+        raise ValidationError(_(u"Может включать только латинские буквы, "
+                                u"цифры, знаки подчеркивания, дефисы, @"
         ))
 
 def validate_phone_as_number(value):
