@@ -762,7 +762,7 @@ class ApiProfileViewSet(CustomerDataMixin, viewsets.ViewSet):
             for g in Grave.objects.filter(place=p).order_by('grave_number'):
                 grave = {'graveNumber': g.grave_number}
                 burials = []
-                for b in g.burial_set.all():
+                for b in g.burial_set.exclude(burial_container=Burial.CONTAINER_BIO):
                     burials.append(
                         {
                             'id': b.pk,
