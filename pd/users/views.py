@@ -37,6 +37,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.authtoken.models import Token
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.parsers import MultiPartParser
 
 from burials.views import UGHRequiredMixin, LoginRequiredMixin, SupervisorRequiredMixin
 from logs.models import Log, write_log, LoginLog
@@ -51,6 +52,7 @@ from burials.models import Cemetery, Area, Burial, Place
 from billing.models import Wallet, Rate
 from orders.models import Product, ProductStatus, ProductHistory
 from pd.views import PaginateListView, RequestToFormMixin, FormInvalidMixin, get_front_end_url, ServiceException
+from geo.models import Location
 
 from users.serializers import StoreSerializer
 
@@ -1673,3 +1675,69 @@ class StoreDetail(APIView):
         return Response(status=200, data={})
 
 api_loru_store_detail = StoreDetail.as_view()
+
+class ApiLoruSignupView(CheckRecaptchaMixin, APIView):
+    """
+    Регистрация ЛОРУ (нового поставщика)
+    """
+    parser_classes = (MultiPartParser,)
+    
+    @transaction.commit_on_success
+    def post(self, request):
+        print request.POST
+        print request.FILES
+        try:
+            status_code=200
+            data = dict(status='success')
+            recaptcha_data = request.DATA.get('recaptchaData')
+            if not recaptcha_data:
+                raise ServiceException(_(u'Нет captcha'))
+            if self.check_recaptcha(request, recaptcha_data['challenge'], recaptcha_data['response']):
+                raise ServiceException(_(u'Введена неверная captcha'))
+
+            director = request.DATA.get('directorFullname') or ''
+            username = request.DATA.get('username')
+            email = request.DATA.get('email', '')
+            user, created = User.objects.get_or_create(
+                username=username,
+                email=email,
+            )
+            if not created:
+                raise ServiceException(_(u'Такой пользователь, %s, уже имеется') % username)
+            password = request.DATA.get('password')
+            if password:
+                user.set_password(password)
+                user.save()
+            addr_str = request.DATA.get('registredOfficeAddress')
+            off_address = None
+            if addr_str:
+                off_address = Location.objects.create(addr_str=addr_str)
+            name = request.DATA.get('orgName', '')
+            director = request.DATA.get('directorFullname', '')
+            inn = request.DATA.get('tin', '')
+            ogrn = request.DATA.get('OGRN', '')
+            fax = request.DATA.get('fax', '')
+            org = Org.objects.create(
+                name=name,
+                full_name=name,
+                type=Org.PROFILE_LORU,
+                off_address=off_address,
+                director=director,
+                inn=inn,
+                ogrn=ogrn,
+                email=email,
+            )
+            profile = Profile.objects.create(
+                user=user,
+                org=org,
+            )
+            
+        except ServiceException as excpt:
+            data['message'] = excpt.message
+            status_code = 400
+            data['status'] = 'error'
+        
+        return Response(data=data, status=status_code)
+
+api_loru_signup = ApiLoruSignupView.as_view()
+
