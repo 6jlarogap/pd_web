@@ -45,7 +45,8 @@ from users.forms import UserAddForm, RegisterForm, LoruFormset, ProfileForm, Use
                         UserDataForm, ChangePasswordForm, BankAccountFormset, OrgForm, \
                         OrgLogForm, LoginLogForm, OrgBurialStatsForm, SupportForm, TestCaptchaForm
 from users.models import Profile, Org, RegisterProfile, ProfileLORU, CustomerProfile, Store, \
-                         get_mail_footer, is_cabinet_user, PermitIfLoru, Oauth
+                         get_mail_footer, is_cabinet_user, PermitIfLoru, Oauth, \
+                         OrgCertificate
 from pd.models import validate_phone_as_number
 from persons.models import AlivePerson, Phone
 from burials.models import Cemetery, Area, Burial, Place
@@ -1684,11 +1685,10 @@ class ApiLoruSignupView(CheckRecaptchaMixin, APIView):
     
     @transaction.commit_on_success
     def post(self, request):
-        print request.POST
-        print request.FILES
         try:
             status_code=200
             data = dict(status='success')
+
             recaptcha_data = request.DATA.get('recaptchaData')
             if not recaptcha_data:
                 raise ServiceException(_(u'Нет captcha'))
@@ -1731,6 +1731,12 @@ class ApiLoruSignupView(CheckRecaptchaMixin, APIView):
                 user=user,
                 org=org,
             )
+            cert = request.FILES.get('certificatePhoto')
+            if cert:
+                OrgCertificate.objects.create(
+                    bfile=cert,
+                    org=org,
+                )
             
         except ServiceException as excpt:
             data['message'] = excpt.message
