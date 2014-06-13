@@ -495,6 +495,7 @@ class Org(GetLogsMixin, BaseModel):
     director = models.CharField(_(u"Директор"), max_length=255, default='')
     email = models.EmailField(_(u"Email"), null=True, blank=True)
     phones = models.TextField(_(u"Телефоны"), blank=True, null=True)
+    fax = models.CharField(_(u"Факс"), max_length=20, default='')
     off_address = models.ForeignKey('geo.Location', verbose_name=_(u"Юр. адрес"), null=True, blank=True)
     numbers_algo = models.CharField(_(u"Заполнение номера захоронения"), max_length=255, choices=NUM_TYPES,
                                     default=NUM_EMPTY)
@@ -592,6 +593,18 @@ class Org(GetLogsMixin, BaseModel):
             return cls.objects.filter(inn=settings.ORG_PD_FUND['inn'])[0]
         except IndexError:
             return None
+
+class OrgCertificate(Files):
+    """
+    Сканы свидетельств о регистрации
+    """
+    org = models.OneToOneField(Org)
+
+class OrgContract(Files):
+    """
+    Сгенерированный pdf договора с заказчиком
+    """
+    org = models.OneToOneField(Org)
 
 class Store(models.Model, PhonesMixin):
     """
