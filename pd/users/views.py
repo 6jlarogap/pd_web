@@ -1693,9 +1693,9 @@ class ApiLoruSignupView(CheckRecaptchaMixin, APIView):
             data = dict(status='success')
 
             recaptcha_data = request.DATA.get('recaptchaData')
-            if False: # not recaptcha_data:
+            if not recaptcha_data:
                 raise ServiceException(_(u'Нет captcha'))
-            if False: # self.check_recaptcha(request, recaptcha_data['challenge'], recaptcha_data['response']):
+            if self.check_recaptcha(request, recaptcha_data['challenge'], recaptcha_data['response']):
                 raise ServiceException(_(u'Введена неверная captcha'))
 
             username = request.DATA.get('username')
