@@ -17,6 +17,7 @@ install-readme.txt, utf8 code page
                   * python-pycurl
             * C/C++
             * g++
+
          - postgresql,           в т.ч. для разработчика
             полагаем, что используется база postgresql на localhost,
             в которой пользователю postgres всё дозволено. Это достигается
@@ -26,12 +27,26 @@ install-readme.txt, utf8 code page
             на:
                 local all all trust
             с перезагрузкой postgresql (service postgresql restart)
+
          - библиотеки для графики, включая jpeg, в Ubuntu 12.04: libjpeg-dev
     
         - bower
             * скачать NodeJS: http://nodejs.org/
             * распаковать, cd node-<VERSION>; ./configure; make; sudo make install
             * sudo npm install -g bower
+
+        - программы:
+            * wkhtmltopdf (конвертация в pdf, от Google):
+                (хорошая программа, но тянет за собой Qt & X Server)
+                 Однако разработчик поддерживает static- compiled
+                 программы wkhtmltopdf для linux 32 & 64 bit:
+                 - скачать wkhtmltopdf-архив для 32 или 64 bit,
+                   http://wkhtmltopdf.org/downloads.html
+                 - tar xf wkhtmltox-linux-<i386|amd64>_<версия>.tar.xz
+                 - sudo rsync -a wkhtmltox /usr/local/bin && rm -rf wkhtmltox
+                 - Проверка:
+                    /usr/local/bin/wkhtmltox/bin/wkhtmltopdf http://www.google.com musor.pdf
+                    musor.pdf должен демонстрировать начальную страницу Google
  
     * Д.б. запущены postgresql & mysql серверы
  

@@ -357,6 +357,8 @@ OAUTH_PROVIDERS_KEYS = {
     },
 }
 
+WKHTMLTOPDF_CMD = '/usr/local/bin/wkhtmltox/bin/wkhtmltopdf'
+
 try:
     from local_settings import *
 except ImportError:
