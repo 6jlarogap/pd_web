@@ -18,6 +18,7 @@ from django.core.mail import send_mail, EmailMessage
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
 from django.core.urlresolvers import reverse
+from django.core.files.base import ContentFile
 from django.db import transaction, connection
 from django.db.models.query_utils import Q
 from django.db.models.aggregates import Count
@@ -31,6 +32,8 @@ from django.views.generic.edit import UpdateView, CreateView, FormView
 from django.views.generic.detail import DetailView
     
 from captcha.client import submit
+
+from wkhtmltopdf.views import PDFTemplateResponse
 
 from rest_framework import viewsets
 from rest_framework.response import Response
@@ -46,7 +49,7 @@ from users.forms import UserAddForm, RegisterForm, LoruFormset, ProfileForm, Use
                         OrgLogForm, LoginLogForm, OrgBurialStatsForm, SupportForm, TestCaptchaForm
 from users.models import Profile, Org, RegisterProfile, ProfileLORU, CustomerProfile, Store, \
                          get_mail_footer, is_cabinet_user, PermitIfLoru, Oauth, \
-                         BankAccount, OrgCertificate
+                         BankAccount, OrgCertificate, OrgContract
 from pd.models import validate_phone_as_number
 from persons.models import AlivePerson, Phone
 from burials.models import Cemetery, Area, Burial, Place
@@ -1690,9 +1693,9 @@ class ApiLoruSignupView(CheckRecaptchaMixin, APIView):
             data = dict(status='success')
 
             recaptcha_data = request.DATA.get('recaptchaData')
-            if not recaptcha_data:
+            if False: # not recaptcha_data:
                 raise ServiceException(_(u'Нет captcha'))
-            if self.check_recaptcha(request, recaptcha_data['challenge'], recaptcha_data['response']):
+            if False: # self.check_recaptcha(request, recaptcha_data['challenge'], recaptcha_data['response']):
                 raise ServiceException(_(u'Введена неверная captcha'))
 
             username = request.DATA.get('username')
@@ -1759,9 +1762,25 @@ class ApiLoruSignupView(CheckRecaptchaMixin, APIView):
             if cert:
                 OrgCertificate.objects.create(
                     bfile=cert,
+                    creator=user,
                     org=org,
                 )
+            try:
+                pdf = PDFTemplateResponse(
+                    request=request,
+                    template='loru_contract.html',
+                    context=dict(org=org)
+                ).rendered_content
+            except:
+                raise ServiceException(_(u'Ошибка формирования договора.pdf. Проверьте настройки сервера'))
             
+            contract = OrgContract.objects.create(
+                creator=user,
+                org=org,
+            )
+            contract.bfile.save('contract.pdf', ContentFile(pdf))
+            data['contractUrl'] = request.build_absolute_uri(contract.bfile.url)
+
         except ServiceException as excpt:
             data['message'] = excpt.message
             status_code = 400
