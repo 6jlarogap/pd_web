@@ -260,6 +260,12 @@ def files_upload_to(instance, filename):
     elif isinstance(instance, get_model('users', 'CustomerProfilePhoto')):
         return os.path.join('customer-profile',
                 today_pk_dir % instance.customerprofile.user.pk, fname)
+    elif isinstance(instance, get_model('users', 'OrgCertificate')):
+        return os.path.join('org-certificates',
+                today_pk_dir % instance.org.pk, fname)
+    elif isinstance(instance, get_model('users', 'OrgContract')):
+        return os.path.join('org-contracts',
+                today_pk_dir % instance.org.pk, fname)
     else:
         return os.path.join('files', fname)
 
