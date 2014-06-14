@@ -46,7 +46,7 @@ from users.forms import UserAddForm, RegisterForm, LoruFormset, ProfileForm, Use
                         OrgLogForm, LoginLogForm, OrgBurialStatsForm, SupportForm, TestCaptchaForm
 from users.models import Profile, Org, RegisterProfile, ProfileLORU, CustomerProfile, Store, \
                          get_mail_footer, is_cabinet_user, PermitIfLoru, Oauth, \
-                         OrgCertificate
+                         BankAccount, OrgCertificate
 from pd.models import validate_phone_as_number
 from persons.models import AlivePerson, Phone
 from burials.models import Cemetery, Area, Burial, Place
@@ -1695,12 +1695,11 @@ class ApiLoruSignupView(CheckRecaptchaMixin, APIView):
             if self.check_recaptcha(request, recaptcha_data['challenge'], recaptcha_data['response']):
                 raise ServiceException(_(u'Введена неверная captcha'))
 
-            director = request.DATA.get('directorFullname') or ''
             username = request.DATA.get('username')
             email = request.DATA.get('email', '')
             user, created = User.objects.get_or_create(
                 username=username,
-                email=email,
+                defaults=dict(email=email),
             )
             if not created:
                 raise ServiceException(_(u'Такой пользователь, %s, уже имеется') % username)
@@ -1708,6 +1707,7 @@ class ApiLoruSignupView(CheckRecaptchaMixin, APIView):
             if password:
                 user.set_password(password)
                 user.save()
+
             addr_str = request.DATA.get('registredOfficeAddress')
             off_address = None
             if addr_str:
@@ -1716,6 +1716,12 @@ class ApiLoruSignupView(CheckRecaptchaMixin, APIView):
             director = request.DATA.get('directorFullname', '')
             inn = request.DATA.get('tin', '')
             ogrn = request.DATA.get('OGRN', '')
+            phones = request.DATA.get('phones')
+            if phones:
+                try:
+                    phones = "\n".join(json.loads(phones))
+                except ValueError:
+                    raise ServiceException(_(u'Неверный формат телефонов (phones)'))
             fax = request.DATA.get('fax', '')
             org = Org.objects.create(
                 name=name,
@@ -1723,6 +1729,8 @@ class ApiLoruSignupView(CheckRecaptchaMixin, APIView):
                 type=Org.PROFILE_LORU,
                 off_address=off_address,
                 director=director,
+                phones=phones,
+                fax=fax,
                 inn=inn,
                 ogrn=ogrn,
                 email=email,
@@ -1731,6 +1739,22 @@ class ApiLoruSignupView(CheckRecaptchaMixin, APIView):
                 user=user,
                 org=org,
             )
+
+            banks = request.DATA.get('bankAccounts')
+            if banks:
+                try:
+                    banks = json.loads(banks)
+                except ValueError:
+                    raise ServiceException(_(u'Неверный формат банковских счетов (bankAccounts)'))
+                for bank in banks:
+                    BankAccount.objects.create(
+                        organization=org,
+                        bankname=bank['name'],
+                        rs=bank['account'],
+                        bik=bank['bik'],
+                        ks=bank['correspondent'],
+                    )
+
             cert = request.FILES.get('certificatePhoto')
             if cert:
                 OrgCertificate.objects.create(
