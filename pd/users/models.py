@@ -449,6 +449,7 @@ class Oauth(models.Model):
                     message['errorCode'] = u"oauth_provider_not_attached"
                     raise ServiceException(_(u'Пользователь не найден среди зарегистрированных у провайдера %s') % provider)
         except ServiceException as excpt:
+            transaction.rollback()
             message['message'] = excpt.message
         return user, oauth, message
 

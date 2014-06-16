@@ -371,6 +371,7 @@ class ApiSettings(APIView):
             except CustomerProfile.DoesNotExist:
                 pass
         except ServiceException as excpt:
+            transaction.rollback()
             data = { 'status': 'error',
                      'message': excpt.message,
                    }
@@ -1784,6 +1785,7 @@ class ApiOrgSignupView(CheckRecaptchaMixin, APIView):
             data['contractUrl'] = request.build_absolute_uri(contract.bfile.url)
 
         except ServiceException as excpt:
+            transaction.rollback()
             data['message'] = excpt.message
             status_code = 400
             data['status'] = 'error'

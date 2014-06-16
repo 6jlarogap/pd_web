@@ -163,32 +163,30 @@ class ApiClientCustomplacesView(APIView):
     @transaction.commit_on_success
     def post(self, request):
         deadmen = request.DATA.get('deadmens')
-        if deadmen:
-            address = None
-            location = request.DATA.get('location')
-            addr_str = request.DATA.get('address')
-            if addr_str or location:
-                address = Location.objects.create(
-                    addr_str=addr_str or '',
-                    gps_x=location and location['longitude'] or None,
-                    gps_y=location and location['latitude'] or None,
+        address = None
+        location = request.DATA.get('location')
+        addr_str = request.DATA.get('address')
+        if addr_str or location:
+            address = Location.objects.create(
+                addr_str=addr_str or '',
+                gps_x=location and location['longitude'] or None,
+                gps_y=location and location['latitude'] or None,
+            )
+        place = CustomPlace.objects.create(user=request.user,address=address)
+        for deadman in deadmen:
+            try:
+                CustomPerson.objects.create(
+                    customplace=place,
+                    last_name=deadman.get('lastname') or '',
+                    first_name=deadman.get('firstname') or '',
+                    middle_name=deadman.get('middlename') or '',
+                    is_dead=True,
+                    birth_date=deadman.get('birthDate') and UnclearDate.from_str_safe(deadman['birthDate']) or None,
+                    death_date=deadman.get('deathDate') and UnclearDate.from_str_safe(deadman['deathDate']) or None,
                 )
-            place = CustomPlace.objects.create(user=request.user,address=address)
-            for deadman in deadmen:
-                try:
-                    CustomPerson.objects.create(
-                        customplace=place,
-                        last_name=deadman.get('lastname') or '',
-                        first_name=deadman.get('firstname') or '',
-                        middle_name=deadman.get('middlename') or '',
-                        is_dead=True,
-                        birth_date=deadman.get('birthDate') and UnclearDate.from_str_safe(deadman['birthDate']) or None,
-                        death_date=deadman.get('deathDate') and UnclearDate.from_str_safe(deadman['deathDate']) or None,
-                    )
-                except ValueError:
-                    return Response({"status": "error", "message": "Invalid death or birth date"}, 400)
-        else:
-            return Response({"status": "error", "message": "No deadmen in input data"}, 400)
+            except ValueError:
+                transaction.rollback()
+                return Response({"status": "error", "message": "Invalid death or birth date"}, 400)
         return Response({"status": "success"}, 200)
 
     def get(self, request):
@@ -223,8 +221,9 @@ class ApiClientCustomplacesDetailView(APIView):
     """
     Edit or delete CustomPlace
     """
+
+    @transaction.commit_on_success
     def put(self, request, pk):
-        print pk
-        return Response({}, 200)
+        return Response({"status": "success"}, 200)
 
 api_client_customplaces_detail = ApiClientCustomplacesDetailView.as_view()
