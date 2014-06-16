@@ -4,7 +4,7 @@ import json
 
 from django.db import transaction
 from django.db.models.query_utils import Q
-from django.http import HttpResponse
+from django.http import Http404, HttpResponse
 from django.views.generic.base import View
 from django.utils.translation import ugettext as _
 
@@ -22,6 +22,8 @@ from burials.models import Place
 from logs.models import write_log
 from users.models import PermitIfCabinet
 from geo.models import Location
+
+from pd.views import ServiceException
 
 
 class AutocompleteFIO(View):
@@ -129,7 +131,24 @@ class PhoneViewSet(viewsets.ModelViewSet):
         else:
             write_log(self.request, object, _(u'Телефон создан'))
 
-class ApiClientCustomplacesView(APIView):
+class ApiClientCustomplacesMixin(object):
+
+    def create_deadmen(self,deadmen, customplace):
+        for deadman in deadmen:
+            try:
+                CustomPerson.objects.create(
+                    customplace=customplace,
+                    last_name=deadman.get('lastname') or '',
+                    first_name=deadman.get('firstname') or '',
+                    middle_name=deadman.get('middlename') or '',
+                    is_dead=True,
+                    birth_date=deadman.get('birthDate') and UnclearDate.from_str_safe(deadman['birthDate']) or None,
+                    death_date=deadman.get('deathDate') and UnclearDate.from_str_safe(deadman['deathDate']) or None,
+                )
+            except ValueError:
+                raise ServiceException("Invalid death or birth date")
+
+class ApiClientCustomplacesView(ApiClientCustomplacesMixin, APIView):
     """
     Создать CustomPlace (post) with CustomBurials или вернуть массив CustomPlaces (get)
 
@@ -172,21 +191,12 @@ class ApiClientCustomplacesView(APIView):
                 gps_x=location and location['longitude'] or None,
                 gps_y=location and location['latitude'] or None,
             )
-        place = CustomPlace.objects.create(user=request.user,address=address)
-        for deadman in deadmen:
-            try:
-                CustomPerson.objects.create(
-                    customplace=place,
-                    last_name=deadman.get('lastname') or '',
-                    first_name=deadman.get('firstname') or '',
-                    middle_name=deadman.get('middlename') or '',
-                    is_dead=True,
-                    birth_date=deadman.get('birthDate') and UnclearDate.from_str_safe(deadman['birthDate']) or None,
-                    death_date=deadman.get('deathDate') and UnclearDate.from_str_safe(deadman['deathDate']) or None,
-                )
-            except ValueError:
-                transaction.rollback()
-                return Response({"status": "error", "message": "Invalid death or birth date"}, 400)
+        customplace = CustomPlace.objects.create(user=request.user,address=address)
+        try:
+            self.create_deadmen(deadmen, customplace)
+        except ServiceException as excpt:
+            transaction.rollback()
+            return Response({"status": "error", "message": excpt.message}, 400)
         return Response({"status": "success"}, 200)
 
     def get(self, request):
@@ -217,13 +227,39 @@ class ApiClientCustomplacesView(APIView):
 
 api_client_customplaces = ApiClientCustomplacesView.as_view()
 
-class ApiClientCustomplacesDetailView(APIView):
+class ApiClientCustomplacesDetailView(ApiClientCustomplacesMixin, APIView):
     """
     Edit or delete CustomPlace
     """
 
     @transaction.commit_on_success
     def put(self, request, pk):
+        try:
+            customplace = CustomPlace.objects.get(pk=pk)
+        except CustomPlace.DoesNotExist:
+            raise Http404
+        address = None
+        location = request.DATA.get('location')
+        addr_str = request.DATA.get('address')
+        if addr_str or location:
+            address = Location.objects.get(pk=customplace.address.pk) if customplace.address else Location()
+            fields=dict()
+            if addr_str is not None:
+                fields['addr_str'] = addr_str
+            if location is not None:
+                fields['gps_x'] = location['longitude']
+                fields['gps_y'] = location['latitude']
+            for f in fields:
+                setattr(address, f, fields[f])
+            address.save()
+        deadmen = request.DATA.get('deadmens')
+        if deadmen:
+            CustomPerson.objects.filter(customplace=customplace).delete()
+            try:
+                self.create_deadmen(deadmen, customplace)
+            except ServiceException as excpt:
+                transaction.rollback()
+                return Response({"status": "error", "message": excpt.message}, 400)
         return Response({"status": "success"}, 200)
 
 api_client_customplaces_detail = ApiClientCustomplacesDetailView.as_view()
