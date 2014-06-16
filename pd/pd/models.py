@@ -51,6 +51,23 @@ class UnclearDate:
             result += '-%02d' % self.d.day
         return result
 
+    @classmethod
+    def from_str_safe(cls, s):
+        """
+        Сделать UnclearDate из yyyy-mm-dd, yyyy-mm, yyyy
+        """
+        m = re.search(r'^(\d{4})(?:\-(\d{2}))?(?:\-(\d{2}))?$', s)
+        if not m:
+            raise ValueError('Invalid data to make an UnclearDate object')
+        day = m.group(3)
+        month = m.group(2)
+        year = m.group(1)
+        return cls(
+            int(year),
+            month and int(month) or None,
+            day and int(day) or None,
+        )
+
     @property
     def month(self):
         return self.d.month

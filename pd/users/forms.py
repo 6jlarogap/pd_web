@@ -68,7 +68,8 @@ class ProfileForm(ChildrenJSONMixin, forms.ModelForm):
     org_inn = forms.CharField(label=_(u"ИНН организации"))
     org_kpp = forms.CharField(label=_(u"КПП организации"), required=False)
     org_ogrn = forms.CharField(label=_(u"ОГРН организации"), required=False)
-    org_director = forms.CharField(label=_(u"Директор"), required=False)
+    org_director = forms.CharField(label=_(u"Директор (в родительном падеже, например, Иванова Ивана Ивановича)"),
+                                   required=False)
     org_email = forms.EmailField(label=_(u"Email"), required=False)
     org_phones = forms.CharField(label=_(u"Телефоны"), required=False)
 
@@ -208,8 +209,9 @@ class BaseOrgForm(LoggingFormMixin, forms.ModelForm):
         type_posted = request.POST.get("%s-type" % self.prefix if self.prefix else "type")
         if type_posted and type_posted == Org.PROFILE_ZAGS or \
            add_org_with_type and add_org_with_type == Org.PROFILE_ZAGS:
-            for f in ('full_name', 'inn', 'director', ):
-                self.fields[f].required = False
+            for f in ('full_name', 'inn', ):
+                if f in self.fields:
+                    self.fields[f].required = False
 
     def clean_inn(self):
         inn = self.cleaned_data.get('inn')
@@ -237,7 +239,7 @@ ReasonFormset = inlineformset_factory(Org, Reason, formset=BaseInlineFormSet, ca
 class OrgForm(BaseOrgForm):
     class Meta:
         model = Org
-        exclude = ('off_address', 'currency', )
+        exclude = ('off_address', )
 
     def __init__(self, request, *args, **kwargs):
         super(OrgForm, self).__init__(request, *args, **kwargs)

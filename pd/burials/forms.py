@@ -1491,12 +1491,12 @@ class AddOrgForm(BaseOrgForm):
                    'opf_order', 'opf_order_customer_mandatory',
                    'plan_date_days_before', 'max_graves_count',
                    'worktime', 'site', 
-                   'currency', )
+                   'currency', 'director', )
     
     def __init__(self, request, *args, **kwargs):
         super(AddOrgForm, self).__init__(request, *args, **kwargs)
         self.required_fields = []
-        for field in ('name', 'full_name', 'inn', 'director', ):
+        for field in ('name', 'full_name', 'inn', ):
             if self.fields[field].required:
                 self.required_fields.append(field)
             self.fields[field].required = False
