@@ -449,6 +449,7 @@ class Oauth(models.Model):
                     message['errorCode'] = u"oauth_provider_not_attached"
                     raise ServiceException(_(u'Пользователь не найден среди зарегистрированных у провайдера %s') % provider)
         except ServiceException as excpt:
+            transaction.rollback()
             message['message'] = excpt.message
         return user, oauth, message
 
@@ -503,7 +504,8 @@ class Org(GetLogsMixin, BaseModel):
     inn = models.CharField(_(u"ИНН"), max_length=255, default='')
     kpp = models.CharField(_(u"КПП"), max_length=255, default='', blank=True)
     ogrn = models.CharField(_(u"ОГРН/ОГРЮЛ"), max_length=255, default='', blank=True)
-    director = models.CharField(_(u"Директор (в родительном падеже, например Беляка И.И.)"), max_length=255, default='')
+    director = models.CharField(_(u"Директор (в родительном падеже, например, Иванова Ивана Ивановича)"),
+                                max_length=255, default='')
     basis = models.CharField(_(u"Основание действия директора"), max_length=255, 
                              choices=BASIS_CHOICES, default=BASIS_CHARTER)
     email = models.EmailField(_(u"Email"), null=True, blank=True)

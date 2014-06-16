@@ -68,7 +68,8 @@ class ProfileForm(ChildrenJSONMixin, forms.ModelForm):
     org_inn = forms.CharField(label=_(u"ИНН организации"))
     org_kpp = forms.CharField(label=_(u"КПП организации"), required=False)
     org_ogrn = forms.CharField(label=_(u"ОГРН организации"), required=False)
-    org_director = forms.CharField(label=_(u"Директор (в родительном падеже, например, Беляка И.И.)"), required=False)
+    org_director = forms.CharField(label=_(u"Директор (в родительном падеже, например, Иванова Ивана Ивановича)"),
+                                   required=False)
     org_email = forms.EmailField(label=_(u"Email"), required=False)
     org_phones = forms.CharField(label=_(u"Телефоны"), required=False)
 
