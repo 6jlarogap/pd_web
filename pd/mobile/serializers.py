@@ -98,9 +98,13 @@ class GravePhotoSerializer(BaseSerializer):
     lat = serializers.CharField(required=False)
     lng = serializers.CharField(required=False)
     original_name = serializers.CharField(required=False)
+    bfile = serializers.FileField(max_length=None, allow_empty_file=False)
+    date_of_creation = serializers.CharField(required=False)
 
 class PlacePhotoSerializer(BaseSerializer):  
     place = BaseSerializer(required=False)    
     lat = serializers.CharField(required=False)
     lng = serializers.CharField(required=False)
     original_name = serializers.CharField(required=False)
+    bfile = serializers.FileField(max_length=None, allow_empty_file=False)
+    date_of_creation = serializers.CharField(required=False)
