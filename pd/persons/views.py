@@ -9,7 +9,7 @@ from django.views.generic.base import View
 from django.utils.translation import ugettext as _
 
 from persons.models import DeadPerson, AlivePerson, BasePerson, DocumentSource, Phone, \
-                           CustomPlace, CustomPerson
+                           CustomPlace, CustomPerson, SafeDeleteMixin
 from serializers import AlivePersonSerializer, DeadPersonSerializer, PhoneSerializer
 
 from rest_framework.response import Response
@@ -227,17 +227,21 @@ class ApiClientCustomplacesView(ApiClientCustomplacesMixin, APIView):
 
 api_client_customplaces = ApiClientCustomplacesView.as_view()
 
-class ApiClientCustomplacesDetailView(ApiClientCustomplacesMixin, APIView):
+class ApiClientCustomplacesDetailView(ApiClientCustomplacesMixin, SafeDeleteMixin, APIView):
     """
     Edit or delete CustomPlace
     """
 
-    @transaction.commit_on_success
-    def put(self, request, pk):
+    def get_object(self, pk):
         try:
             customplace = CustomPlace.objects.get(pk=pk)
         except CustomPlace.DoesNotExist:
             raise Http404
+        return customplace
+
+    @transaction.commit_on_success
+    def put(self, request, pk):
+        customplace = self.get_object(pk=pk)
         address = None
         location = request.DATA.get('location')
         addr_str = request.DATA.get('address')
@@ -260,6 +264,14 @@ class ApiClientCustomplacesDetailView(ApiClientCustomplacesMixin, APIView):
             except ServiceException as excpt:
                 transaction.rollback()
                 return Response({"status": "error", "message": excpt.message}, 400)
+        return Response({"status": "success"}, 200)
+
+    @transaction.commit_on_success
+    def delete(self, request, pk):
+        customplace = self.get_object(pk=pk)
+        self.safe_delete('address', customplace)
+        CustomPerson.objects.filter(customplace=customplace).delete()
+        customplace.delete()
         return Response({"status": "success"}, 200)
 
 api_client_customplaces_detail = ApiClientCustomplacesDetailView.as_view()
