@@ -1,7 +1,6 @@
 # coding=utf-8
 
 import json
-import iso8601
 
 from django.db.models.query_utils import Q
 from django.http import HttpResponse
@@ -17,6 +16,7 @@ from rest_framework.views import APIView
 from rest_framework import generics, viewsets
 from rest_framework.permissions import IsAuthenticated
 
+from pd.models import UnclearDate
 from burials.models import Place 
 from logs.models import write_log
 from users.models import PermitIfCabinet
@@ -173,15 +173,18 @@ class ApiClientCustomplacesView(APIView):
                 )
             place = CustomPlace.objects.create(user=request.user,address=address)
             for deadman in deadmen:
-                CustomPerson.objects.create(
-                    customplace=place,
-                    last_name=deadman.get('lastname') or '',
-                    first_name=deadman.get('firstname') or '',
-                    middle_name=deadman.get('middlename') or '',
-                    is_dead=True,
-                    birth_date=deadman.get('birthDate') and iso8601.parse_date(deadman['birthDate']) or None,
-                    death_date=deadman.get('deathDate') and iso8601.parse_date(deadman['deathDate']) or None,
-                )
+                try:
+                    CustomPerson.objects.create(
+                        customplace=place,
+                        last_name=deadman.get('lastname') or '',
+                        first_name=deadman.get('firstname') or '',
+                        middle_name=deadman.get('middlename') or '',
+                        is_dead=True,
+                        birth_date=deadman.get('birthDate') and UnclearDate.from_str_safe(deadman['birthDate']) or None,
+                        death_date=deadman.get('deathDate') and UnclearDate.from_str_safe(deadman['deathDate']) or None,
+                    )
+                except ValueError:
+                    return Response({"status": "error", "message": "Invalid death or birth date"}, 400)
         else:
             return Response({"status": "error", "message": "No deadmen in input data"}, 400)
         return Response({"status": "success"}, 200)
@@ -204,8 +207,8 @@ class ApiClientCustomplacesView(APIView):
                     lastname=d.last_name,
                     firstname=d.first_name,
                     middlename=d.middle_name,
-                    birthDate=d.birth_date and d.birth_date.isoformat() or None,
-                    deathDate=d.death_date and d.death_date.isoformat() or None,
+                    birthDate=d.birth_date and d.birth_date.str_safe() or None,
+                    deathDate=d.death_date and d.death_date.str_safe() or None,
                 )
                 deadmen.append(deadman)
             place['deadmens'] = deadmen
@@ -213,3 +216,12 @@ class ApiClientCustomplacesView(APIView):
         return Response(data, 200)
 
 api_client_customplaces = ApiClientCustomplacesView.as_view()
+
+class ApiClientCustomplacesDetailView(APIView):
+    """
+    Edit or delete CustomPlace
+    """
+    def put(self, request, pk):
+        return Response({}, 200)
+
+api_client_customplaces_detail = ApiClientCustomplacesDetailView.as_view()
