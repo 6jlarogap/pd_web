@@ -2,6 +2,7 @@
 
 import json
 
+from django.db import transaction
 from django.db.models.query_utils import Q
 from django.http import HttpResponse
 from django.views.generic.base import View
@@ -158,7 +159,8 @@ class ApiClientCustomplacesView(APIView):
     }
     """
     permission_classes = (PermitIfCabinet,)
-
+    
+    @transaction.commit_on_success
     def post(self, request):
         deadmen = request.DATA.get('deadmens')
         if deadmen:
@@ -222,6 +224,7 @@ class ApiClientCustomplacesDetailView(APIView):
     Edit or delete CustomPlace
     """
     def put(self, request, pk):
+        print pk
         return Response({}, 200)
 
 api_client_customplaces_detail = ApiClientCustomplacesDetailView.as_view()
