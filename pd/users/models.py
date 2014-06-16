@@ -486,13 +486,26 @@ class Org(GetLogsMixin, BaseModel):
         (OPF_PERSON, _(u'ФЛ')),
     )
    
+    BASIS_CHARTER = 'charter'
+    BASIS_CONDITION = 'condition'
+    BASIS_CERTIFICATE = 'charter'
+    BASIS_PROXY = 'proxy'
+    BASIS_CHOICES = (
+        (BASIS_CHARTER, _(u'устава')),
+        (BASIS_CONDITION, _(u'положения')),
+        (BASIS_CERTIFICATE, _(u'свидетельства')),
+        (BASIS_PROXY, _(u'доверенности')),
+    )
+    
     type = models.CharField(_(u"Тип"), max_length=255, choices=PROFILE_TYPES)
     name = models.CharField(_(u"Название организации"), max_length=255, default='')
     full_name = models.CharField(_(u"Полное название"), max_length=255, default='')
     inn = models.CharField(_(u"ИНН"), max_length=255, default='')
     kpp = models.CharField(_(u"КПП"), max_length=255, default='', blank=True)
     ogrn = models.CharField(_(u"ОГРН/ОГРЮЛ"), max_length=255, default='', blank=True)
-    director = models.CharField(_(u"Директор"), max_length=255, default='')
+    director = models.CharField(_(u"Директор (в родительном падеже, например Беляка И.И.)"), max_length=255, default='')
+    basis = models.CharField(_(u"Основание действия директора"), max_length=255, 
+                             choices=BASIS_CHOICES, default=BASIS_CHARTER)
     email = models.EmailField(_(u"Email"), null=True, blank=True)
     phones = models.TextField(_(u"Телефоны"), blank=True, null=True)
     fax = models.CharField(_(u"Факс"), max_length=20, default='')

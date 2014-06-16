@@ -1680,7 +1680,7 @@ class StoreDetail(APIView):
 
 api_loru_store_detail = StoreDetail.as_view()
 
-class ApiLoruSignupView(CheckRecaptchaMixin, APIView):
+class ApiOrgSignupView(CheckRecaptchaMixin, APIView):
     """
     Регистрация ЛОРУ (нового поставщика)
     """
@@ -1716,6 +1716,8 @@ class ApiLoruSignupView(CheckRecaptchaMixin, APIView):
             if addr_str:
                 off_address = Location.objects.create(addr_str=addr_str)
             name = request.DATA.get('orgName', '')
+            org_types = dict(loru=Org.PROFILE_LORU, oms=Org.PROFILE_UGH)
+            type_ = org_types[request.DATA.get('orgType', org_types['loru'])]
             director = request.DATA.get('directorFullname', '')
             inn = request.DATA.get('tin', '')
             ogrn = request.DATA.get('OGRN', '')
@@ -1729,7 +1731,7 @@ class ApiLoruSignupView(CheckRecaptchaMixin, APIView):
             org = Org.objects.create(
                 name=name,
                 full_name=name,
-                type=Org.PROFILE_LORU,
+                type=type_,
                 off_address=off_address,
                 director=director,
                 phones=phones,
@@ -1788,5 +1790,5 @@ class ApiLoruSignupView(CheckRecaptchaMixin, APIView):
         
         return Response(data=data, status=status_code)
 
-api_loru_signup = ApiLoruSignupView.as_view()
+api_org_signup = ApiOrgSignupView.as_view()
 
