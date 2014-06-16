@@ -12,6 +12,6 @@ urlpatterns = patterns('persons.views',
     url(r'^autocomplete/docsources/', 'autocomplete_docsources', name='autocomplete_docsources'),
 
     url(r'^api/client/customplaces/?$', 'api_client_customplaces', name='api_client_customplaces'),
-    url(r'^api/client/customplaces/(?P<pk>\d+)?$', 'api_client_customplaces_detail', name='api_client_customplaces_Detail'),
+    url(r'^api/client/customplaces/(?P<pk>\d+)/?$', 'api_client_customplaces_detail', name='api_client_customplaces_Detail'),
    
 )

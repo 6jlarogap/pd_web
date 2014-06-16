@@ -242,7 +242,6 @@ class ApiClientCustomplacesDetailView(ApiClientCustomplacesMixin, SafeDeleteMixi
     @transaction.commit_on_success
     def put(self, request, pk):
         customplace = self.get_object(pk=pk)
-        address = None
         location = request.DATA.get('location')
         addr_str = request.DATA.get('address')
         if addr_str or location:
@@ -257,7 +256,7 @@ class ApiClientCustomplacesDetailView(ApiClientCustomplacesMixin, SafeDeleteMixi
                 setattr(address, f, fields[f])
             address.save()
         deadmen = request.DATA.get('deadmens')
-        if deadmen:
+        if deadmen is not None:
             CustomPerson.objects.filter(customplace=customplace).delete()
             try:
                 self.create_deadmen(deadmen, customplace)
