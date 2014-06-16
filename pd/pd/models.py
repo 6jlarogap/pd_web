@@ -51,6 +51,9 @@ class UnclearDate:
             result += '-%02d' % self.d.day
         return result
 
+    # iso 8601:
+    isoformat = str_safe
+
     @property
     def month(self):
         return self.d.month

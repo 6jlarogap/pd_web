@@ -128,38 +128,38 @@ class PhoneViewSet(viewsets.ModelViewSet):
         else:
             write_log(self.request, object, _(u'Телефон создан'))
 
-class ApiPlacesView(APIView):
+class ApiClientCustomplacesView(APIView):
+    """
+    Создать CustomPlace (post) with CustomBurials или вернуть массив CustomPlaces (get)
+
+    CustomPlace:
+    {
+        "address": "Строка адреса",
+        "location": {
+            "longitude": 54.12331,
+            "latitude": 28.54334
+        },
+        "deadmens": [
+            {
+                "lastname": "Петров",
+                "firstname": "Петр",
+                "middlename": "Петрович",
+                "birthDate": "1995-01-02T21:00:00.000Z",
+                "deathDate": "2014-05-10T21:00:00.000Z"
+            },
+            {
+                "lastname": "Иванов",
+                "firstname": "Иван",
+                "middlename": "Иванович",
+                "birthDate": "1995-07-02T21:00:00.000Z",
+                "deathDate": "2013-05-09T21:00:00.000Z"
+            }
+        ]
+    }
+    """
     permission_classes = (PermitIfCabinet,)
 
     def post(self, request):
-        """
-        Создать CustomPlace with CustomBurials
-
-        Входные данные:
-        {
-            "address": "Строка адреса",
-            "location": {
-                "longitude": 54.12331,
-                "latitude": 28.54334
-            },
-            "deadmens": [
-                {
-                    "lastname": "Петров",
-                    "firstname": "Петр",
-                    "middlename": "Петрович",
-                    "birthDate": "1995-01-02T21:00:00.000Z",
-                    "deathDate": "2014-05-10T21:00:00.000Z"
-                },
-                {
-                    "lastname": "Иванов",
-                    "firstname": "Иван",
-                    "middlename": "Иванович",
-                    "birthDate": "1995-07-02T21:00:00.000Z",
-                    "deathDate": "2013-05-09T21:00:00.000Z"
-                }
-            ]
-        }
-        """
         deadmen = request.DATA.get('deadmens')
         if deadmen:
             address = None
@@ -174,6 +174,7 @@ class ApiPlacesView(APIView):
             place = CustomPlace.objects.create(user=request.user,address=address)
             for deadman in deadmen:
                 CustomPerson.objects.create(
+                    customplace=place,
                     last_name=deadman.get('lastname') or '',
                     first_name=deadman.get('firstname') or '',
                     middle_name=deadman.get('middlename') or '',
@@ -185,4 +186,30 @@ class ApiPlacesView(APIView):
             return Response({"status": "error", "message": "No deadmen in input data"}, 400)
         return Response({"status": "success"}, 200)
 
-api_places = ApiPlacesView.as_view()
+    def get(self, request):
+        data = []
+        for p in CustomPlace.objects.filter(user=request.user).order_by('pk'):
+            place=dict(
+                id=p.pk,
+                address=p.address and unicode(p.address) or None,
+                location=p.address and dict(
+                    longitude=p.address.gps_x,
+                    latitude=p.address.gps_y,
+                ) or None,
+            )
+            deadmen=[]
+            for d in CustomPerson.objects.filter(customplace=p).order_by('pk'):
+                deadman = dict(
+                    id=d.pk,
+                    lastname=d.last_name,
+                    firstname=d.first_name,
+                    middlename=d.middle_name,
+                    birthDate=d.birth_date and d.birth_date.isoformat() or None,
+                    deathDate=d.death_date and d.death_date.isoformat() or None,
+                )
+                deadmen.append(deadman)
+            place['deadmens'] = deadmen
+            data.append(place)
+        return Response(data, 200)
+
+api_client_customplaces = ApiClientCustomplacesView.as_view()
