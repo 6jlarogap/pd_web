@@ -699,6 +699,9 @@ class ProductsViewSet(viewsets.ModelViewSet):
         if category_ids:
             qs &= Q(productcategory__pk__in=category_ids)
 
+        if not is_loru_user(self.request.user):
+            qs &= ~Q(productcategory__pk__in=settings.PRODUCT_CATEGORY_LORU_ONLY_PKS)
+
         ordered = None
         orders = {'price': 'price', 'date': 'productstatus__dt', }
         directions = {'asc': '', 'desc': '-', }
@@ -730,7 +733,9 @@ class ProductInfoViewSet(viewsets.ModelViewSet):
     serializer_class = ProductInfoSerializer
 
     def get_queryset(self):
-        return Product.objects.filter(pk=self.kwargs.get('product_id'))
+        q_exclude = Q() if is_loru_user(self.request.user)  \
+                        else Q(productcategory__pk__in=settings.PRODUCT_CATEGORY_LORU_ONLY_PKS)
+        return Product.objects.filter(pk=self.kwargs.get('product_id')).exclude(q_exclude)
 
 class ApiProfileViewSet(CustomerDataMixin, viewsets.ViewSet):
     queryset = CustomerProfile.objects.none()
