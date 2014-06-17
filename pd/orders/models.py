@@ -15,6 +15,11 @@ class ProductCategory(models.Model):
     name = models.CharField(_(u"Название"), max_length=255)
     icon = models.FileField(u"Иконка", upload_to=upload_slugified, blank=True, null=True)
 
+    class Meta:
+        verbose_name = _(u"Категория")
+        verbose_name_plural = _(u"Категории")
+        ordering = ('name', )
+
     def __unicode__(self):
         return self.name
 
