@@ -4,6 +4,7 @@ import datetime
 import decimal
 import json
 
+from django.conf import settings
 from django.contrib import messages
 from django.core.urlresolvers import reverse
 from django.db import transaction
@@ -589,6 +590,10 @@ class ProductCategoryViewSet(viewsets.ModelViewSet):
     model = ProductCategory
     serializer_class = ProductCategorySerializer
 
+    def get_queryset(self):
+        q_exclude = Q() if is_loru_user(self.request.user) else Q(pk__in=settings.PRODUCT_CATEGORY_LORU_ONLY_PKS)
+        return  ProductCategory.objects.exclude(q_exclude)
+
 class CustomerDataMixin:
     def get_customer_data(self, request):
         username = request.user.username
@@ -612,7 +617,7 @@ class CustomerDataMixin:
         return is_customer, places, lorus
         
 
-class CatalogSuppliersView(APIView):
+class ApiCatalogSuppliersView(APIView):
     
     def get(self, request):
         suppliers = []
@@ -626,6 +631,12 @@ class CatalogSuppliersView(APIView):
                 pc['productcategory__pk'] for pc in \
                 Product.objects.filter(q).order_by('productcategory__pk').values('productcategory__pk').distinct()
             ]
+            if not is_loru_user(request.user):
+                for category in settings.PRODUCT_CATEGORY_LORU_ONLY_PKS:
+                    try:
+                        loru_categories.remove(category)
+                    except ValueError:
+                        pass
             loru_stores = []
             for store in Store.objects.filter(loru=l):
                 loru_stores.append(dict(
@@ -651,7 +662,7 @@ class CatalogSuppliersView(APIView):
         }
         return Response(status=200, data=data)
 
-api_catalog_suppliers = CatalogSuppliersView.as_view()
+api_catalog_suppliers = ApiCatalogSuppliersView.as_view()
 
 class ProductsViewSet(viewsets.ModelViewSet):
     model = Product
@@ -688,6 +699,9 @@ class ProductsViewSet(viewsets.ModelViewSet):
         if category_ids:
             qs &= Q(productcategory__pk__in=category_ids)
 
+        if not is_loru_user(self.request.user):
+            qs &= ~Q(productcategory__pk__in=settings.PRODUCT_CATEGORY_LORU_ONLY_PKS)
+
         ordered = None
         orders = {'price': 'price', 'date': 'productstatus__dt', }
         directions = {'asc': '', 'desc': '-', }
@@ -719,7 +733,9 @@ class ProductInfoViewSet(viewsets.ModelViewSet):
     serializer_class = ProductInfoSerializer
 
     def get_queryset(self):
-        return Product.objects.filter(pk=self.kwargs.get('product_id'))
+        q_exclude = Q() if is_loru_user(self.request.user)  \
+                        else Q(productcategory__pk__in=settings.PRODUCT_CATEGORY_LORU_ONLY_PKS)
+        return Product.objects.filter(pk=self.kwargs.get('product_id')).exclude(q_exclude)
 
 class ApiProfileViewSet(CustomerDataMixin, viewsets.ViewSet):
     queryset = CustomerProfile.objects.none()
@@ -780,7 +796,7 @@ class ApiProfileViewSet(CustomerDataMixin, viewsets.ViewSet):
             
         return Response(status=200, data=data)
 
-class LoruProductPlaces(APIView):
+class ApiLoruProductPlaces(APIView):
     """
     Обновление статусов продуктов на площадках (ОМС)
 
@@ -866,7 +882,7 @@ class LoruProductPlaces(APIView):
                 data.append(data_p)
         return Response(data=data, status=200)
 
-loru_product_places = LoruProductPlaces.as_view()
+api_loru_product_places = ApiLoruProductPlaces.as_view()
 
 class UghPublishedProductsViewSet(viewsets.ViewSet):
     queryset = Product.objects.none()
