@@ -133,20 +133,21 @@ class PhoneViewSet(viewsets.ModelViewSet):
 
 class ApiClientCustomplacesMixin(object):
 
-    def create_deadmen(self,deadmen, customplace):
-        for deadman in deadmen:
-            try:
-                CustomPerson.objects.create(
-                    customplace=customplace,
-                    last_name=deadman.get('lastname') or '',
-                    first_name=deadman.get('firstname') or '',
-                    middle_name=deadman.get('middlename') or '',
-                    is_dead=True,
-                    birth_date=deadman.get('birthDate') and UnclearDate.from_str_safe(deadman['birthDate']) or None,
-                    death_date=deadman.get('deathDate') and UnclearDate.from_str_safe(deadman['deathDate']) or None,
-                )
-            except ValueError:
-                raise ServiceException("Invalid death or birth date")
+    def create_deadmen(self, deadmen, customplace):
+        if deadmen is not None:
+            for deadman in deadmen:
+                try:
+                    CustomPerson.objects.create(
+                        customplace=customplace,
+                        last_name=deadman.get('lastname') or '',
+                        first_name=deadman.get('firstname') or '',
+                        middle_name=deadman.get('middlename') or '',
+                        is_dead=True,
+                        birth_date=deadman.get('birthDate') and UnclearDate.from_str_safe(deadman['birthDate']) or None,
+                        death_date=deadman.get('deathDate') and UnclearDate.from_str_safe(deadman['deathDate']) or None,
+                    )
+                except ValueError:
+                    raise ServiceException("Invalid death or birth date")
 
 class ApiClientCustomplacesView(ApiClientCustomplacesMixin, APIView):
     """
