@@ -18,6 +18,7 @@ from django.core.mail import send_mail, EmailMessage
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
 from django.core.urlresolvers import reverse
+from django.core.files.base import ContentFile
 from django.db import transaction, connection
 from django.db.models.query_utils import Q
 from django.db.models.aggregates import Count
@@ -32,11 +33,14 @@ from django.views.generic.detail import DetailView
     
 from captcha.client import submit
 
+from wkhtmltopdf.views import PDFTemplateResponse
+
 from rest_framework import viewsets
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.authtoken.models import Token
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.parsers import MultiPartParser
 
 from burials.views import UGHRequiredMixin, LoginRequiredMixin, SupervisorRequiredMixin
 from logs.models import Log, write_log, LoginLog
@@ -44,13 +48,15 @@ from users.forms import UserAddForm, RegisterForm, LoruFormset, ProfileForm, Use
                         UserDataForm, ChangePasswordForm, BankAccountFormset, OrgForm, \
                         OrgLogForm, LoginLogForm, OrgBurialStatsForm, SupportForm, TestCaptchaForm
 from users.models import Profile, Org, RegisterProfile, ProfileLORU, CustomerProfile, Store, \
-                         get_mail_footer, is_cabinet_user, PermitIfLoru, Oauth
+                         get_mail_footer, is_cabinet_user, PermitIfLoru, Oauth, \
+                         BankAccount, OrgCertificate, OrgContract
 from pd.models import validate_phone_as_number
 from persons.models import AlivePerson, Phone
 from burials.models import Cemetery, Area, Burial, Place
 from billing.models import Wallet, Rate
 from orders.models import Product, ProductStatus, ProductHistory
 from pd.views import PaginateListView, RequestToFormMixin, FormInvalidMixin, get_front_end_url, ServiceException
+from geo.models import Location
 
 from users.serializers import StoreSerializer
 
@@ -171,7 +177,7 @@ class ApiAuthSigninView(APIView):
             else:
                 data['message'] = 'unconfirmed_tc'
         elif oauth and not user:
-            data['message'] = message or ''
+            data.update(message)
         else:
             data['message'] = 'Wrong username or password'
         return Response(data=data, status=status_code)
@@ -222,7 +228,7 @@ class ApiAuthSignupView(CheckRecaptchaMixin, ApiAuthSigninView):
                     ),
                 )
                 if message:
-                    data['message']=message
+                    data.update(message)
                 else:
                     return super(ApiAuthSignupView, self).do_post(request, user)
             elif recaptcha_data:
@@ -275,7 +281,7 @@ class ApiSettingsOauthProvidersView(APIView):
             ),
         )
         if message:
-            data['message'] = message
+            data.update(message)
         else:
             status_code = 200
             data['status'] = 'success'
@@ -365,6 +371,7 @@ class ApiSettings(APIView):
             except CustomerProfile.DoesNotExist:
                 pass
         except ServiceException as excpt:
+            transaction.rollback()
             data = { 'status': 'error',
                      'message': excpt.message,
                    }
@@ -1673,3 +1680,117 @@ class StoreDetail(APIView):
         return Response(status=200, data={})
 
 api_loru_store_detail = StoreDetail.as_view()
+
+class ApiOrgSignupView(CheckRecaptchaMixin, APIView):
+    """
+    Регистрация ЛОРУ (нового поставщика)
+    """
+    parser_classes = (MultiPartParser,)
+    
+    @transaction.commit_on_success
+    def post(self, request):
+        try:
+            status_code=200
+            data = dict(status='success')
+
+            recaptcha_data = request.DATA.get('recaptchaData')
+            if not recaptcha_data:
+                raise ServiceException(_(u'Нет captcha'))
+            if self.check_recaptcha(request, recaptcha_data['challenge'], recaptcha_data['response']):
+                raise ServiceException(_(u'Введена неверная captcha'))
+
+            username = request.DATA.get('username')
+            email = request.DATA.get('email', '')
+            user, created = User.objects.get_or_create(
+                username=username,
+                defaults=dict(email=email),
+            )
+            if not created:
+                raise ServiceException(_(u'Такой пользователь, %s, уже имеется') % username)
+            password = request.DATA.get('password')
+            if password:
+                user.set_password(password)
+                user.save()
+
+            addr_str = request.DATA.get('registredOfficeAddress')
+            off_address = None
+            if addr_str:
+                off_address = Location.objects.create(addr_str=addr_str)
+            name = request.DATA.get('orgName', '')
+            org_types = dict(loru=Org.PROFILE_LORU, oms=Org.PROFILE_UGH)
+            type_ = org_types[request.DATA.get('orgType', org_types['loru'])]
+            director = request.DATA.get('directorFullname', '')
+            inn = request.DATA.get('tin', '')
+            ogrn = request.DATA.get('OGRN', '')
+            phones = request.DATA.get('phones')
+            if phones:
+                try:
+                    phones = "\n".join(json.loads(phones))
+                except ValueError:
+                    raise ServiceException(_(u'Неверный формат телефонов (phones)'))
+            fax = request.DATA.get('fax', '')
+            org = Org.objects.create(
+                name=name,
+                full_name=name,
+                type=type_,
+                off_address=off_address,
+                director=director,
+                phones=phones,
+                fax=fax,
+                inn=inn,
+                ogrn=ogrn,
+                email=email,
+            )
+            profile = Profile.objects.create(
+                user=user,
+                org=org,
+            )
+
+            banks = request.DATA.get('bankAccounts')
+            if banks:
+                try:
+                    banks = json.loads(banks)
+                except ValueError:
+                    raise ServiceException(_(u'Неверный формат банковских счетов (bankAccounts)'))
+                for bank in banks:
+                    BankAccount.objects.create(
+                        organization=org,
+                        bankname=bank['name'],
+                        rs=bank['account'],
+                        bik=bank['bik'],
+                        ks=bank['correspondent'],
+                    )
+
+            cert = request.FILES.get('certificatePhoto')
+            if cert:
+                OrgCertificate.objects.create(
+                    bfile=cert,
+                    creator=user,
+                    org=org,
+                )
+            try:
+                pdf = PDFTemplateResponse(
+                    request=request,
+                    template='loru_contract.html',
+                    context=dict(org=org)
+                ).rendered_content
+            except:
+                raise ServiceException(_(u'Ошибка формирования договора.pdf. Проверьте настройки сервера'))
+            
+            contract = OrgContract.objects.create(
+                creator=user,
+                org=org,
+            )
+            contract.bfile.save('contract.pdf', ContentFile(pdf))
+            data['contractUrl'] = request.build_absolute_uri(contract.bfile.url)
+
+        except ServiceException as excpt:
+            transaction.rollback()
+            data['message'] = excpt.message
+            status_code = 400
+            data['status'] = 'error'
+        
+        return Response(data=data, status=status_code)
+
+api_org_signup = ApiOrgSignupView.as_view()
+

@@ -122,7 +122,7 @@ class Location(models.Model):
     # пользователя лору, если его организация не имела доселе адреса и пользователь
     # этот адрес заполнил вручную. Преобразовать подобный адрес а структуру
     # страна, регион и т.д не всегда возможно, отсюда и необходимость в таком поле
-    addr_str = models.CharField(_(u"Адрес"), max_length=255, blank=True, editable=False)
+    addr_str = models.CharField(_(u"Адрес"), max_length=255, blank=True)
 
     def get_local_addr(self, addr):
         if self.house:

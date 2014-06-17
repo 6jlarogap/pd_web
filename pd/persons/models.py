@@ -6,6 +6,7 @@ from django.utils.translation import ugettext as _
 from django.db.models.deletion import ProtectedError
 from django.contrib.contenttypes import generic
 from django.contrib.contenttypes.models import ContentType
+from django.contrib.auth.models import User
 
 import datetime
 from geo.models import Location
@@ -341,3 +342,22 @@ class Phone(BaseModel):
                 obj_id=instance.pk,
                 number=phone.lstrip('+'),
             )
+
+class CustomPlace(BaseModel):
+    address = models.ForeignKey(Location, verbose_name=_(u"Адрес"), null=True)
+    user = models.ForeignKey('auth.User', verbose_name=_(u"Владелец или указавший место"))
+
+class CustomPerson(BaseModel):
+    """
+    Человек, чаще усопший, но возможно живой
+    """
+    class Meta:
+        ordering = ('last_name', 'first_name', 'middle_name', )
+
+    last_name = models.CharField(_(u"Фамилия"), max_length=255, blank=True)
+    first_name = models.CharField(_(u"Имя"), max_length=255, blank=True)
+    middle_name = models.CharField(_(u"Отчество"), max_length=255, blank=True)
+    birth_date = UnclearDateModelField(_(u"Дата рождения"), blank=True, null=True)
+    death_date = UnclearDateModelField(_(u"Дата смерти"), blank=True, null=True)
+    is_dead = models.BooleanField(_(u"Уcопший"), default=True)
+    customplace = models.ForeignKey(CustomPlace, verbose_name=_(u"Место захоронения"), blank=True, null=True)
