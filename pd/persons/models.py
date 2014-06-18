@@ -361,3 +361,22 @@ class CustomPerson(BaseModel):
     death_date = UnclearDateModelField(_(u"Дата смерти"), blank=True, null=True)
     is_dead = models.BooleanField(_(u"Уcопший"), default=True)
     customplace = models.ForeignKey(CustomPlace, verbose_name=_(u"Место захоронения"), blank=True, null=True)
+    memory_text = models.TextField(_(u"Памятный текст"), null=True)
+
+class MemoryGallery(Files):
+    """
+    Страницы памяти у CustomPerson
+    """
+    TYPE_IMAGE = 'image'
+    TYPE_VIDEO = 'video'
+    TYPE_TEXT = 'text'
+    TYPE_CHOICES = (
+        (TYPE_IMAGE, _(u"Фото")),
+        (TYPE_VIDEO, _(u"Видео")),
+        (TYPE_TEXT, _(u"Текст"))
+    )
+
+    customperson = models.ForeignKey(CustomPerson)
+    type = models.CharField(_(u"Тип"), max_length=255, choices=TYPE_CHOICES)
+    text = models.TextField(_(u"Текст"), null=True)
+    event_date = UnclearDateModelField(_(u"Дата события"), null=True)
