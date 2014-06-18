@@ -288,9 +288,38 @@ class ApiCustompersonMixin(object):
             raise Http404
         return customperson
 
-class ApiCustompersonMemoryView(ApiCustompersonMixin, APIView):
+class ApiMemoryGalleryMixin(object):
+
+    def gallery_dict(self, m, request):
+        return {
+            'type': m.type,
+            'text': m.text,
+            'mediaContent': m.bfile and request.build_absolute_uri(m.bfile.url) or None,
+            'eventDate': m.event_date and UnclearDate.str_safe(m.event_date) or None,
+            'createdAt': utcisoformat(m.date_of_creation),
+        }
+
+class ApiCustompersonMemoryView(ApiCustompersonMixin, ApiMemoryGalleryMixin, APIView):
     permission_classes = (PermitIfCabinet,)
 
+    def get(self, request, pk):
+        customperson = self.get_object(pk)
+        data = {
+            'photo': None,
+            'lasttname' : customperson.last_name,
+            'firstname' : customperson.first_name,
+            'middlename' : customperson.middle_name,
+            'dob' : customperson.birth_date and customperson.birth_date.str_safe() or None,
+            'dod' : customperson.death_date and customperson.death_date.str_safe() or None,
+            'commonText': customperson.memory_text,
+        }
+        gallery = []
+        for m in MemoryGallery.objects.filter(customperson=customperson):
+            item = self.gallery_dict(m, request)
+            gallery.append(item)
+        data['gallery'] = gallery
+        return Response(data, 200)
+        
     def patch(self, request, pk):
         customperson = self.get_object(pk)
         mapping = dict(
@@ -312,7 +341,7 @@ class ApiCustompersonMemoryView(ApiCustompersonMixin, APIView):
 
 api_customperson_memory = ApiCustompersonMemoryView.as_view()
 
-class ApiCustompersonMemoryGalleryView(ApiCustompersonMixin, APIView):
+class ApiCustompersonMemoryGalleryView(ApiCustompersonMixin, ApiMemoryGalleryMixin, APIView):
     permission_classes = (PermitIfCabinet,)
     parser_classes = (MultiPartParser,)
     
@@ -320,19 +349,13 @@ class ApiCustompersonMemoryGalleryView(ApiCustompersonMixin, APIView):
         customperson = self.get_object(pk)
         data = []
         for m in MemoryGallery.objects.filter(customperson=customperson):
-            item = {
-                'type': m.type,
-                'text': m.text,
-                'mediaContent': m.bfile and request.build_absolute_uri(m.bfile.url) or None,
-                'eventDate': m.event_date and UnclearDate.str_safe(m.event_date) or None,
-                'createdAt': utcisoformat(m.date_of_creation),
-                'createdBy': {
+            item = self.gallery_dict(m, request)
+            item['createdBy'] = {
                     'id': request.user.pk,
                     'lastname': m.creator.customerprofile.user_last_name,
                     'firstname': m.creator.customerprofile.user_first_name,
                     'middlename': m.creator.customerprofile.user_middle_name,
                  }
-            }
             data.append(item)
         return Response(data, 200)
 
