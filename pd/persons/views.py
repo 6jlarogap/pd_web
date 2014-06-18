@@ -347,8 +347,19 @@ class ApiCustompersonMemoryGalleryView(ApiCustompersonMixin, ApiMemoryGalleryMix
     
     def get(self, request, pk):
         customperson = self.get_object(pk)
+
+        offset = self.request.GET.get('offset') and int(self.request.GET.get('offset'))
+        limit = self.request.GET.get('limit') and int(self.request.GET.get('limit'))
+        filter = MemoryGallery.objects.filter(customperson=customperson)
+        if offset and limit:
+            filter = filter[offset:offset+limit]
+        elif offset:
+            filter = filter[offset:]
+        elif limit:
+            filter = filter[:limit]
+
         data = []
-        for m in MemoryGallery.objects.filter(customperson=customperson):
+        for m in filter:
             item = self.gallery_dict(m, request)
             item['createdBy'] = {
                     'id': request.user.pk,
