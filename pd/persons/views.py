@@ -24,6 +24,7 @@ from logs.models import write_log
 from users.models import PermitIfCabinet
 from geo.models import Location
 
+from pd.utils import utcisoformat
 from pd.views import ServiceException
 
 
@@ -324,7 +325,7 @@ class ApiCustompersonMemoryGalleryView(ApiCustompersonMixin, APIView):
                 'text': m.text,
                 'mediaContent': m.bfile and request.build_absolute_uri(m.bfile.url) or None,
                 'eventDate': m.event_date and UnclearDate.str_safe(m.event_date) or None,
-                'createdAt': m.date_of_creation.isoformat(),
+                'createdAt': utcisoformat(m.date_of_creation),
                 'createdBy': {
                     'id': request.user.pk,
                     'lastname': m.creator.customerprofile.user_last_name,
