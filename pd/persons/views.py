@@ -9,7 +9,7 @@ from django.views.generic.base import View
 from django.utils.translation import ugettext as _
 
 from persons.models import DeadPerson, AlivePerson, BasePerson, DocumentSource, Phone, \
-                           CustomPlace, CustomPerson, SafeDeleteMixin
+                           CustomPlace, CustomPerson, MemoryGallery, SafeDeleteMixin
 from serializers import AlivePersonSerializer, DeadPersonSerializer, PhoneSerializer
 
 from rest_framework.response import Response
@@ -233,6 +233,7 @@ class ApiClientCustomplacesDetailView(ApiClientCustomplacesMixin, SafeDeleteMixi
     """
     Edit or delete CustomPlace
     """
+    permission_classes = (PermitIfCabinet,)
 
     def get_object(self, pk):
         try:
@@ -286,8 +287,8 @@ class ApiCustompersonMixin(object):
             raise Http404
         return customperson
 
-
 class ApiCustompersonMemoryView(ApiCustompersonMixin, APIView):
+    permission_classes = (PermitIfCabinet,)
 
     def patch(self, request, pk):
         customperson = self.get_object(pk)
@@ -311,10 +312,22 @@ class ApiCustompersonMemoryView(ApiCustompersonMixin, APIView):
 api_customperson_memory = ApiCustompersonMemoryView.as_view()
 
 class ApiCustompersonMemoryGalleryView(ApiCustompersonMixin, APIView):
+    permission_classes = (PermitIfCabinet,)
     parser_classes = (MultiPartParser,)
     
     def post(self, request, pk):
         customperson = self.get_object(pk)
+        fields = {
+            'customperson': customperson,
+            'type': request.DATA.get('type'),
+            'text': request.DATA.get('text'),
+            'event_date': request.DATA.get('eventDate') and UnclearDate.from_str_safe(request.DATA['eventDate']) or None,
+            'creator': request.user,
+        }
+        file_ = request.FILES.get('mediaContent')
+        if file:
+            fields['bfile'] = file_
+        MemoryGallery.objects.create(**fields)
         return Response({"status": "success"}, 200)
 
 api_customperson_memory_gallery = ApiCustompersonMemoryGalleryView.as_view()
