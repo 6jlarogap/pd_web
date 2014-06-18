@@ -25,8 +25,7 @@ from burials.views import CemeteryViewSet, AreaViewSet, PlaceViewSet, \
 from persons.views import AlivePersonViewSet, DeadPersonViewSet, PhoneViewSet 
 from logs.views import LogViewSet
 from orders.views import ProductCategoryViewSet, ProductsViewSet, \
-                         ProductInfoViewSet, ApiProfileViewSet, loru_product_places, \
-                         UghPublishedProductsViewSet
+                         ProductInfoViewSet, ApiProfileViewSet, UghPublishedProductsViewSet
 from users.views import auth_get_password_by_sms, \
                         api_feedback, api_auth_user, api_balance
 
@@ -82,8 +81,6 @@ urlpatterns += patterns('pd.views',
     url(r'^api/feedback/?$', api_feedback),
     url(r'^api/user/?$', api_auth_user),
     url(r'^api/auth/get_password_by_sms/?$', auth_get_password_by_sms),
-    
-    url(r'^api/loru/product_places/?$', loru_product_places),
     
     url(r'^api/balance', api_balance),
 
