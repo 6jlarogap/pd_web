@@ -16,6 +16,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework import generics, viewsets
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.parsers import MultiPartParser
 
 from pd.models import UnclearDate
 from burials.models import Place 
@@ -275,3 +276,45 @@ class ApiClientCustomplacesDetailView(ApiClientCustomplacesMixin, SafeDeleteMixi
         return Response({"status": "success"}, 200)
 
 api_client_customplaces_detail = ApiClientCustomplacesDetailView.as_view()
+
+class ApiCustompersonMixin(object):
+
+    def get_object(self, pk):
+        try:
+            customperson = CustomPerson.objects.get(pk=pk)
+        except CustomPerson.DoesNotExist:
+            raise Http404
+        return customperson
+
+
+class ApiCustompersonMemoryView(ApiCustompersonMixin, APIView):
+
+    def patch(self, request, pk):
+        customperson = self.get_object(pk)
+        mapping = dict(
+           lastname='last_name',
+           firstname='first_name',
+           middlename='middle_name',
+           commonText='memory_text',
+        )
+        fields = dict()
+        for f in mapping:
+            got = request.DATA.get(f)
+            if got is not None:
+                fields[mapping[f]] = got
+        if fields:
+            for f in fields:
+                setattr(customperson, f, fields[f])
+            customperson.save()
+        return Response({"status": "success"}, 200)
+
+api_customperson_memory = ApiCustompersonMemoryView.as_view()
+
+class ApiCustompersonMemoryGalleryView(ApiCustompersonMixin, APIView):
+    parser_classes = (MultiPartParser,)
+    
+    def post(self, request, pk):
+        customperson = self.get_object(pk)
+        return Response({"status": "success"}, 200)
+
+api_customperson_memory_gallery = ApiCustompersonMemoryGalleryView.as_view()
