@@ -72,4 +72,8 @@
         <field type="CharField" name="name">Прочие товары и услуги</field>
         <field type="FileField" name="icon"></field>
     </object>
+    <object pk="21" model="orders.productcategory">
+        <field type="CharField" name="name">Комплектующие</field>
+        <field type="FileField" name="icon"></field>
+    </object>
 </django-objects>
