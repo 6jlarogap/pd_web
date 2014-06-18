@@ -370,7 +370,7 @@ class ApiCustompersonMemoryGalleryView(ApiCustompersonMixin, ApiMemoryGalleryMix
             'creator': request.user,
         }
         file_ = request.FILES.get('mediaContent')
-        if file:
+        if file_:
             fields['bfile'] = file_
         MemoryGallery.objects.create(**fields)
         return Response({"status": "success"}, 200)
