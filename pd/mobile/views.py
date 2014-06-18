@@ -399,6 +399,29 @@ class ApiBurialList(APIView):
 
 burial_list = ApiBurialList.as_view()
 
+class ApiPlacePhotoList(APIView):
+    permission_classes = (IsAuthenticated,)
+    def get(self, request) :
+        argSyncDateUnix = request.GET.get('syncDate', None)
+        argPlaceId = request.GET.get('placeId', None)
+        argCemeteryId = request.GET.get('cemeteryId', None)
+        argAreaId = request.GET.get('areaId', None)        
+        queryPlacePhoto = Q(place__cemetery__ugh = request.user.profile.org)
+        if argCemeteryId :
+            queryPlacePhoto &= Q(place__cemetery__pk = argCemeteryId)
+        if argAreaId :
+            queryPlacePhoto &= Q(place__area__pk = argAreaId)
+        if argPlaceId :
+            queryPlacePhoto &= Q(place__pk = argPlaceId)
+        if argSyncDateUnix :
+            argSyncDate = datetime.fromtimestamp(int(argSyncDateUnix))
+            queryPlacePhoto &= Q(dt_modified__gte = argSyncDate)        
+        listPlacePhoto = PlacePhoto.objects.filter(queryPlacePhoto).order_by('id')
+        serializer = PlacePhotoSerializer(listPlacePhoto)
+        return Response(serializer.data)
+
+placephoto_list = ApiPlacePhotoList.as_view()
+
 
 class ApiGravePhotoUpload(APIView):
     permission_classes = (IsAuthenticated,)

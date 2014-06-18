@@ -283,6 +283,9 @@ def files_upload_to(instance, filename):
     elif isinstance(instance, get_model('users', 'OrgContract')):
         return os.path.join('org-contracts',
                 today_pk_dir % instance.org.pk, fname)
+    elif isinstance(instance, get_model('persons', 'MemoryGallery')):
+        return os.path.join('memory-gallery',
+                today_pk_dir % instance.creator.pk, fname)
     else:
         return os.path.join('files', fname)
 

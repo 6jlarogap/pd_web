@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
 
+from django.conf import settings
 from django.core.validators import RegexValidator, MinLengthValidator
 from django.utils.translation import ugettext_lazy as _
 
 import datetime
+from pytz import timezone, utc
 
 class DigitsValidator(RegexValidator):
     regex = '^\d+$'
@@ -28,3 +30,14 @@ class NotEmptyValidator(MinLengthValidator):
     clean = lambda self, x: unicode(x).strip()
     message = _(u'Не пусто')
     code = 'not_empty'
+
+def utcisoformat(dt, remove_mcsec=True):
+    """
+    Return a datetime object in ISO 8601 format in UTC, without microseconds
+    or time zone offset other than 'Z', e.g. '2011-06-28T00:00:00Z'.
+    """
+    # Convert datetime to UTC, remove microseconds, remove timezone, convert to string
+    TZ = timezone(settings.TIME_ZONE)
+    if remove_mcsec:
+        dt = dt.replace(microsecond=0)
+    return TZ.localize(dt).astimezone(utc).replace(tzinfo=None).isoformat() + 'Z'
