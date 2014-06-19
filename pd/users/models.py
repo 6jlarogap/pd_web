@@ -88,6 +88,9 @@ class CustomerProfile(CommonProfile):
                   help_text=_(u'В международном формате, начиная с кода страны, без "+", например 79101234567'),
                   validators = [validate_phone_as_number, ])
 
+    class Meta:
+        unique_together = ('login_phone', )
+
     @classmethod
     def create_cabinet(cls, responsible):
         assert responsible and \
@@ -105,6 +108,7 @@ class CustomerProfile(CommonProfile):
                                         'user_last_name': responsible.last_name,
                                         'user_first_name': responsible.first_name,
                                         'user_middle_name': responsible.middle_name,
+                                        'login_phone': decimal.Decimal(responsible.login_phone)
                                     }
                                 )
         return password
@@ -293,7 +297,7 @@ class Oauth(models.Model):
         Кроме того:
         *   Если задан signup_dict:
                 {
-                    'username': <username>,
+                    'username': <username>, если нет, то генерируем имя
                     'password': <password>,
                     'profile': {
                         'lastname':
@@ -393,17 +397,29 @@ class Oauth(models.Model):
                 # Регистрация нового пользователя
                 if cls.objects.filter(provider=provider, uid=uid):
                     raise ServiceException(msg_intergrity_error)
-                username = signup_dict['username']
+                username = signup_dict.get('username')
                 password = signup_dict.get('password')
                 profile = signup_dict.get('profile')
-                user, created = User.objects.get_or_create(
-                    username=username,
-                    defaults = {
-                        'email': profile and profile.get('email') or '',
-                    }
-                )
-                if not created:
-                    raise ServiceException(_(u'Такой пользователь, %s, уже имеется') % username)
+                if username:
+                    user, created = User.objects.get_or_create(
+                        username=username,
+                        defaults = {
+                            'email': profile and profile.get('email') or '',
+                        }
+                    )
+                    if not created:
+                        raise ServiceException(_(u'Такой пользователь, %s, уже имеется') % username)
+                else:
+                    chars = string.ascii_lowercase + string.digits
+                    while True:
+                        username  = ''.join(random.choice(chars) for x in range(8))
+                        try:
+                            user = User.objects.create(username=username)
+                        except IntegrityError:
+                            pass
+                        else:
+                            break
+                    password = CommonProfile.generate_password()
                 try:
                     oauth = cls.objects.create(
                         user=user,
@@ -514,7 +530,7 @@ class Org(GetLogsMixin, BaseModel):
                              choices=BASIS_CHOICES, default=BASIS_CHARTER)
     email = models.EmailField(_(u"Email"), null=True, blank=True)
     phones = models.TextField(_(u"Телефоны"), blank=True, null=True)
-    fax = models.CharField(_(u"Факс"), max_length=20, default='')
+    fax = models.CharField(_(u"Факс"), max_length=20, default='', blank=True)
     off_address = models.ForeignKey('geo.Location', verbose_name=_(u"Юр. адрес"), null=True, blank=True)
     numbers_algo = models.CharField(_(u"Заполнение номера захоронения"), max_length=255, choices=NUM_TYPES,
                                     default=NUM_EMPTY)

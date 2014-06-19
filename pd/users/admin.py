@@ -20,7 +20,8 @@ class ProfileAdmin(admin.ModelAdmin):
 admin.site.register(Profile, ProfileAdmin)
 
 class CustomerProfileAdmin(admin.ModelAdmin):
-    pass
+    list_display = [ 'login_phone', 'last_name_initials', ]
+    search_fields = ['user__username', 'user_last_name', 'login_phone']
 
 admin.site.register(CustomerProfile, CustomerProfileAdmin)
 
