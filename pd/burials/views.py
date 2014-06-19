@@ -394,11 +394,12 @@ class PlaceViewSet(viewsets.ModelViewSet):
 
             if object.responsible.login_phone and \
                (not self.old_responsible or not self.old_responsible.login_phone):
-                if CustomerProfile.objects.filter(login_phone=object.responsible.login_phone).count():
+                try:
+                    customerprofile = CustomerProfile.objects.get(login_phone=object.responsible.login_phone)
                     text=_(u'Место %s прикреплено. pohoronnoedelo.ru') % object.pk
-                    email_error_text = _(u"Пользователь %s не смог получить СМС после прикрепления места %s" % \
-                                        (object.responsible.login_phone, object.pk,))
-                else:
+                    email_error_text = _(u"Пользователь %s (телефон %s) не смог получить СМС после прикрепления места %s" % \
+                                        (customerprofile.user.username, object.responsible.login_phone, object.pk,))
+                except CustomerProfile.DoesNotExist:
                     password = CustomerProfile.create_cabinet(object.responsible)
                     text=_(u'https://pohoronnoedelo.ru login: %s parol: %s') % (object.responsible.login_phone, password,)
                     email_error_text = _(u"Пользователь %s не смог получить пароль после закрытия захоронения" % \
