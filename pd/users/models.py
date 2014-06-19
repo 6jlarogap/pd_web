@@ -17,7 +17,7 @@ from django.contrib.contenttypes.models import ContentType
 from rest_framework import permissions
 
 from geo.models import Location
-from pd.models import BaseModel, Files, GetLogsMixin, validate_gt0, validate_username
+from pd.models import BaseModel, Files, GetLogsMixin, validate_gt0, validate_username, validate_phone_as_number
 from logs.models import Log
 
 from pd.utils import DigitsValidator, LengthValidator, NotEmptyValidator
@@ -83,6 +83,10 @@ class CommonProfile(BaseModel):
 class CustomerProfile(CommonProfile):
     # Дата/время согласия с пользовательским соглашением, служит еще как BooleanField:
     tc_confirmed = models.DateTimeField(_(u"Подтверждено пользовательское соглашение"), null=True, editable=False)
+    login_phone = models.DecimalField(_(u"Мобильный телефон для входа в кабинет"), max_digits=15, decimal_places=0,
+                  blank=True, null=True, db_index=True,
+                  help_text=_(u'В международном формате, начиная с кода страны, без "+", например 79101234567'),
+                  validators = [validate_phone_as_number, ])
 
     @classmethod
     def create_cabinet(cls, responsible):
