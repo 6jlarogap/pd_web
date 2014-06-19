@@ -1681,7 +1681,7 @@ class StoreDetail(APIView):
 
 api_loru_store_detail = StoreDetail.as_view()
 
-class ApiOrgSignupView(CheckRecaptchaMixin, APIView):
+class ApiOrgSignupView(CheckRecaptchaMixin, ApiAuthSigninView):
     """
     Регистрация ЛОРУ (нового поставщика)
     """
@@ -1690,9 +1690,6 @@ class ApiOrgSignupView(CheckRecaptchaMixin, APIView):
     @transaction.commit_on_success
     def post(self, request):
         try:
-            status_code=200
-            data = dict(status='success')
-
             recaptcha_data = request.DATA.get('recaptchaData')
             if not recaptcha_data:
                 raise ServiceException(_(u'Нет captcha'))
@@ -1795,15 +1792,11 @@ class ApiOrgSignupView(CheckRecaptchaMixin, APIView):
                 org=org,
             )
             contract.bfile.save('contract.pdf', ContentFile(pdf))
-            data['contractUrl'] = request.build_absolute_uri(contract.bfile.url)
+            return self.do_post(request)
 
         except ServiceException as excpt:
             transaction.rollback()
-            data['message'] = excpt.message
-            status_code = 400
-            data['status'] = 'error'
-        
-        return Response(data=data, status=status_code)
+            return Response(dict(status='error', message=excpt.message), status=400)
 
 api_org_signup = ApiOrgSignupView.as_view()
 
