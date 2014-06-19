@@ -414,7 +414,10 @@ class Oauth(models.Model):
                     while True:
                         username  = ''.join(random.choice(chars) for x in range(8))
                         try:
-                            user = User.objects.create(username=username)
+                            user = User.objects.create(
+                                username=username,
+                                email=profile and profile.get('email') or '',
+                            )
                         except IntegrityError:
                             pass
                         else:
