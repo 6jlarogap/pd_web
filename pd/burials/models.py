@@ -461,7 +461,7 @@ class PlacePhoto(Files, GeoPointModel):
         elif is_cabinet_user(user):
             result = self.place.responsible and \
                      self.place.responsible.login_phone and \
-                     str(self.place.responsible.login_phone) == user.username
+                     self.place.responsible.login_phone == user.customerprofile.login_phone
         return result
         
 
@@ -924,11 +924,12 @@ class Burial(SafeDeleteMixin, GetLogsMixin, BaseModel):
         if place.responsible and \
            place.responsible.login_phone and \
            (not old_status or old_status != self.STATUS_CLOSED):
-            if CustomerProfile.objects.filter(user__username=place.responsible.login_phone).count():
+            try:
+                customerprofile = CustomerProfile.objects.get(login_phone=place.responsible.login_phone)
                 text = _(u'Место %s прикреплено. pohoronnoedelo.ru') % place.pk
-                email_error_text = _(u"Пользователь %s не смог получить СМС после прикрепления места %s" % \
-                                    (place.responsible.login_phone, place.pk,))
-            else:
+                email_error_text = _(u"Пользователь %s (телефон %s) не смог получить СМС после прикрепления места %s" % \
+                                    (customerprofile.user.username, place.responsible.login_phone, place.pk,))
+            except CustomerProfile.DoesNotExist:
                 password = CustomerProfile.create_cabinet(place.responsible)
                 text = _(u'https://pohoronnoedelo.ru login: %s parol: %s') % (place.responsible.login_phone, password,)
                 email_error_text = _(u"Пользователь %s не смог получить пароль после закрытия захоронения" % \
