@@ -1716,10 +1716,19 @@ class ApiOrgSignupView(CheckRecaptchaMixin, APIView):
                 user.set_password(password)
                 user.save()
 
-            addr_str = request.DATA.get('registredOfficeAddress')
+            location = request.DATA.get('registredOffice')
+            try:
+                location = json.loads(location)
+            except ValueError:
+                raise ServiceException(_(u'Неверный формат registredOffice'))
             off_address = None
-            if addr_str:
-                off_address = Location.objects.create(addr_str=addr_str)
+            if location:
+                coords = location.get('location')
+                off_address = Location.objects.create(
+                    addr_str=location.get('address', ''),
+                    gps_x= coords and coords.get('longitude'),
+                    gps_y= coords and coords.get('latitude'),
+                )
             name = request.DATA.get('orgName', '')
             org_types = dict(loru=Org.PROFILE_LORU, oms=Org.PROFILE_UGH)
             type_ = org_types[request.DATA.get('orgType', org_types['loru'])]
