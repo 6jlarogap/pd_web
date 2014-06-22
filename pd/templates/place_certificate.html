@@ -1,0 +1,191 @@
+﻿<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//RU">
+{% load thumbnail %}
+<HTML>
+<HEAD>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<script src="http://api-maps.yandex.ru/0.8/?key=AObGplMBAAAAuFr-WQIADlv2OrFxt6jLCsvlWYiJgtv7YDMAAAAAAAAAAABOAIr3zG31LfU7pllJzun2eZhJmg=="
+type="text/javascript">
+</script>
+<script type="text/javascript">
+    var map;
+    function init () {
+        map = new YMaps.Map( document.getElementById("YMapsID") );
+        map.setCenter(new YMaps.GeoPoint(27.6644500607,53.9386702591), 13,
+        YMaps.MapType.MAP);
+        // Создает метку и добавляет ее на карту
+        var placemark = new YMaps.Placemark(new YMaps.GeoPoint(27.6644500607,53.9386702591));
+        placemark.name = "Here";
+        placemark.description = "Here";
+        map.addOverlay(placemark);
+        // Открывает балун
+        // placemark.openBalloon();
+    }
+</script>
+<TITLE>Заголовок документа</TITLE>
+<style type="text/css">
+  .topheader { 
+    font-size: 110%; 
+    font-family: Verdana, Arial, Helvetica, sans-serif; 
+    color: #7d1416;
+	text-align: left;
+    padding: 1em;
+   }
+   
+  .header { 
+    font-size: 100%; 
+    font-family: Verdana, Arial, Helvetica, sans-serif; 
+    color: #7d1416;
+	font-weight: bold;
+	text-align: left;
+    padding: 1em;
+   }
+   
+  .maintext { 
+    font-size: 80%; 
+    font-family: Verdana, Arial, Helvetica, sans-serif; 
+    color: #7d1416;
+	text-align: left;
+    margin:0px;
+	font-style:italic;
+   }
+</style>
+</HEAD>
+<BODY bgcolor="#f8f1de" onload="init();">
+
+<TABLE border="0" width="900px" height="100%" cellspacing="3px" cellpadding="3px" align="center">
+<TR class="topheader">
+<TD align="left" valign="top"><img src="http://localhost:8000{{ STATIC_URL}}img/place_passport/lefttop.jpg" width="100px" height="115px"></TD>
+<TD align="center">ПАСПОРТ МЕСТА<BR> ЗАХОРОНЕНИЯ<BR>№ (((placeID)))</TD>
+<TD></TD>
+<TD align="right" valign="top"><img src="http://localhost:8000{{ STATIC_URL}}img/place_passport/righttop.jpg" width="100px" height="115px"></TD>
+</TR>
+
+<TR class="header">
+<TD width="100px"></TD>
+<TD width="350px" align="center">ВЫДАН </TD>
+<TD width="350px" align="center">ДАННЫЕ ЗАХОРОНЕНИЙ</TD>
+<TD width="100px"></TD>
+</TR>
+
+<TR class="maintext">
+<TD></TD>
+<TD>(((Наименование OMC!!)))</TD>
+<TD>(((Номер захоронения, ФИО, Даты рождения, смерти, похорон)))</TD>
+<TD></TD>
+</TR>
+
+<TR class="maintext" >
+<TD></TD>
+<TD>(((Адрес OMC)))</TD>
+<TD>(((Номер захоронения, ФИО, Даты рождения, смерти, похорон)))</TD>
+<TD></TD>
+</TR>
+
+<TR class="maintext" >
+<TD></TD>
+<TD></TD>
+<TD>(((Номер захоронения, ФИО, Даты рождения, смерти, похорон)))</TD>
+<TD></TD>
+</TR>
+
+<TR class="maintext" >
+<TD></TD>
+<TD></TD>
+<TD>(((Номер захоронения, ФИО, Даты рождения, смерти, похорон)))</TD>
+<TD></TD>
+</TR>
+
+<TR class="maintext" >
+<TD></TD>
+<TD></TD>
+<TD>(((Номер захоронения, ФИО, Даты рождения, смерти, похорон)))</TD>
+<TD></TD>
+</TR>
+
+<TR class="maintext" >
+<TD></TD>
+<TD></TD>
+<TD>(((Номер захоронения, ФИО, Даты рождения, смерти, похорон)))</TD>
+<TD></TD>
+</TR>
+
+<TR class="maintext">
+<TD></TD>
+<TD>(((Телефоны OMC)))</TD>
+<TD></TD>
+<TD></TD>
+</TR>
+
+<TR class="maintext" >
+<TD></TD>
+<TD>(((Время работы OMC)))</TD>
+<TD></TD>
+<TD></TD>
+</TR>
+
+<TR class="maintext" >
+</TR>
+<TR class="maintext" >
+</TR>
+
+<TR class="header">
+ <TD></TD>
+ <TD align="center"> ОТВЕТСТВЕННЫЙ ЗА МЕСТО <BR> ЗАХОРОНЕНИЯ</TD>
+ <TD valign="top" align="center">АДРЕС МЕСТА ЗАХОРОНЕНИЯ</TD>
+ <TD></TD>
+</TR>
+
+<TR class="maintext" >
+ <TD></TD>
+ <TD>Фамилия</TD>
+ <TD>(((Название кладбища)))</TD>
+ <TD></TD>
+</TR>
+
+<TR class="maintext">
+ <TD></TD>
+ <TD>Имя</TD>
+ <TD>(((Адрес кладбища onestring)))</TD>
+ <TD></TD>
+ <TD></TD>
+</TR>
+
+<TR class="maintext" >
+ <TD></TD>
+ <TD>Отчество</TD>
+ <TD>(((участок))) (((ряд))) (((Место)))</TD>
+ <TD></TD>
+</TR>
+
+<TR class="maintext" >
+ <TD></TD>
+ <TD>Телефон для входа в личный кабинет на сайте pohoronnoedelo.ru</TD>
+ <TD>Координаты GPS/ГЛОНАСС</TD>
+ <TD></TD>
+</TR>
+
+<TR class="header">
+ <TD></TD>
+ <TD align="center">ФОТОГРАФИЯ</TD>
+ <TD valign="top" align="center">КАРТА</TD>
+ <TD></TD>
+</TR>
+
+<TR >
+ <TD></TD>
+ {% thumbnail "place-photos/2014/03/03/1/1393789300102.jpg" "200x200" "scale" "jpg" as thumb %}
+ <TD class="maintext" > <img src="http://localhost:8000{{ thumb.url }}"></TD>
+ <TD class="maintext" ><div id="YMapsID" style="height:350px; width:500px;"></div></TD>
+ <TD></TD>
+</TR>
+
+<TR>
+ <TD align="left" valign="bottom"  ><img src="http://localhost:8000{{ STATIC_URL}}img/place_passport/leftbottom.jpg" width="100px" height="115px"></TD>
+ <TD></TD>
+ <TD></TD>
+ <TD align="right" valign="bottom"><img src="http://localhost:8000{{ STATIC_URL}}img/place_passport/rightbottom.jpg" width="100px" height="115px"></TD>
+</TR>
+</TABLE>
+
+</BODY>
+</HTML>
