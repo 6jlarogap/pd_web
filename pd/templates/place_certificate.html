@@ -54,10 +54,10 @@ type="text/javascript">
 
 <TABLE border="0" width="900px" height="100%" cellspacing="3px" cellpadding="3px" align="center">
 <TR class="topheader">
-<TD align="left" valign="top"><img src="http://localhost:8000{{ STATIC_URL}}img/place_passport/lefttop.jpg" width="100px" height="115px"></TD>
+<TD align="left" valign="top"><img src="{{ STATIC_URL}}img/place_passport/lefttop.jpg" width="100px" height="115px"></TD>
 <TD align="center">ПАСПОРТ МЕСТА<BR> ЗАХОРОНЕНИЯ<BR>№ (((placeID)))</TD>
 <TD></TD>
-<TD align="right" valign="top"><img src="http://localhost:8000{{ STATIC_URL}}img/place_passport/righttop.jpg" width="100px" height="115px"></TD>
+<TD align="right" valign="top"><img src="{{ STATIC_URL}}img/place_passport/righttop.jpg" width="100px" height="115px"></TD>
 </TR>
 
 <TR class="header">
@@ -174,16 +174,16 @@ type="text/javascript">
 <TR >
  <TD></TD>
  {% thumbnail "place-photos/2014/03/03/1/1393789300102.jpg" "200x200" "scale" "jpg" as thumb %}
- <TD class="maintext" > <img src="http://localhost:8000{{ thumb.url }}"></TD>
+ <TD class="maintext" > <img src="{{ thumb.url }}"></TD>
  <TD class="maintext" ><div id="YMapsID" style="height:350px; width:500px;"></div></TD>
  <TD></TD>
 </TR>
 
 <TR>
- <TD align="left" valign="bottom"  ><img src="http://localhost:8000{{ STATIC_URL}}img/place_passport/leftbottom.jpg" width="100px" height="115px"></TD>
+ <TD align="left" valign="bottom"  ><img src="{{ STATIC_URL}}img/place_passport/leftbottom.jpg" width="100px" height="115px"></TD>
  <TD></TD>
  <TD></TD>
- <TD align="right" valign="bottom"><img src="http://localhost:8000{{ STATIC_URL}}img/place_passport/rightbottom.jpg" width="100px" height="115px"></TD>
+ <TD align="right" valign="bottom"><img src="{{ STATIC_URL}}img/place_passport/rightbottom.jpg" width="100px" height="115px"></TD>
 </TR>
 </TABLE>
 

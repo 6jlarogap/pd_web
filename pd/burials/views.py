@@ -41,8 +41,6 @@ from rest_framework.permissions import IsAuthenticated
 
 from django.db import transaction
 
-from wkhtmltopdf.views import PDFTemplateResponse
-
 from serializers import CemeterySerializer, AreaSerializer, PlaceSerializer, AreaPurposeSerializer, \
     GraveSerializer, BurialSerializer, BurialListSerializer, BurialPutGraveSerializer, \
     AreaPhotoSerializer, GravePhotoSerializer, ExhumationRequestSerializer, PlaceSizeSerializer, \
@@ -1093,16 +1091,11 @@ class BurialfileCommentEdit(LoginRequiredMixin, UpdateView):
 
 edit_burialfile_comment = BurialfileCommentEdit.as_view()
 
-class PlaceCertificateView(UGHRequiredMixin, TemplateView):
+class PlaceCertificateView(UGHRequiredMixin, DetailView):
     template_name = 'place_certificate.html'
-
-    #def get(self, request, *args, **kwargs):
-        #response=PDFTemplateResponse(request=request,
-                                     #template=self.template_name,
-                                     #filename ="place_certificate.pdf",
-                                     #context=self.get_context_data,
-                                     #show_content_in_browser=False,
-                                     #)
-        #return response
+    
+    def get_object(self):
+        place =  get_object_or_404(Place, pk=self.kwargs['pk'], cemetery__ugh=self.request.user.profile.org)
+        return place
 
 place_certificate = PlaceCertificateView.as_view()
