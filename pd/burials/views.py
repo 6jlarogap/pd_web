@@ -20,7 +20,7 @@ from django.contrib.contenttypes.models import ContentType
 
 from geo.models import Country, Region, Street, City
 
-from pd.views import RequestToFormMixin, FormInvalidMixin
+from pd.views import RequestToFormMixin, FormInvalidMixin, get_front_end_url
 from pd.models import validate_phone_as_number
 
 from burials.forms import CemeteryForm, AreaFormset, PlaceEditForm, AddOrgForm, AreaMergeForm, BurialfileCommentEditForm
@@ -1103,6 +1103,22 @@ class PlaceCertificateView(UGHRequiredMixin, DetailView):
         return place
 
     def get_context_data(self, **kwargs):
+        
+        def make_table(left, right):
+            table = []
+            for i in range(max(len(left), len(right))):
+                item = (dict(left='', right=''))
+                try:
+                    item['left'] = left[i]
+                except IndexError:
+                    pass
+                try:
+                    item['right'] = right[i]
+                except IndexError:
+                    pass
+                table.append(item)
+            return table
+            
         place = self.object
         ugh = place.cemetery.ugh
         left = [ ugh, ]
@@ -1112,6 +1128,7 @@ class PlaceCertificateView(UGHRequiredMixin, DetailView):
             left.append(u"%s: %s" % (_(u'Телефоны'), ", ".join(ugh.phones.split()), ))
         if ugh.worktime:
             left.append(u"%s: %s" % (_(u'Время работы'), ugh.worktime, ))
+
         right = []
         for burial in place.burials_available():
             if burial.deadman.birth_date or burial.deadman.death_date:
@@ -1126,20 +1143,48 @@ class PlaceCertificateView(UGHRequiredMixin, DetailView):
             else:
                 fact_date = _(u"дата похорон неизвестна")
             right.append(_(u"№: %s, %s, %s") % (burial.pk, burial.deadman, lived, fact_date ))
-        table = []
-        for i in range(max(len(left), len(right))):
-            item = (dict(left='', right=''))
-            try:
-                item['left'] = left[i]
-            except IndexError:
-                pass
-            try:
-                item['right'] = right[i]
-            except IndexError:
-                pass
-            table.append(item)
+        if not right:
+            right.append(_(u"Нет захоронений"))
+        table1 = make_table(left, right)
+
+        left = []
+        if place.responsible:
+            left.append(place.responsible.user_last_name)
+            if place.responsible.user_first_name:
+                left.append(place.responsible.user_first_name)
+            if place.responsible.user_middle_name:
+                left.append(place.responsible.user_middle_name)
+            if place.responsible.login_phone:
+                try:
+                    customerprofile = CustomerProfile.objects.get(login_phone=place.responsible.login_phone)
+                except CustomerProfile.DoesNotExist:
+                    customerprofile = None
+                    left.append(_(u"Вход на сайт %s, логин: %s") % (
+                        get_front_end_url(request),
+                        customerprofile.user.username if customerprofile else place.responsible.login_phone,
+                    ))
+        else:
+            left.append(_(u"не указан"))
+        right=[u"%s: %s" % (_(u'Кладбище'), place.cemetery, ), ]
+        if place.cemetery.address:
+            right.append(u"%s: %s" % (_(u'Адрес'), place.cemetery.address, ))
+        urm = u"%s: %s" % (_(u'Участок'), place.area.name, )
+        if place.row:
+            urm = u"%s, %s: %s" % (urm, _(u"ряд"), place.row, )
+        if place.place:
+            urm = u"%s, %s: %s" % (urm, _(u"место"), place.place, )
+        right.append(urm)
+        if place.cemetery.address and \
+           place.cemetery.address.gps_x is not None and place.cemetery.address.gps_x is not None:
+            right.append(_(u"Координаты GPS/ГЛОНАСС: ш. %s, д. %s") % (
+                place.cemetery.address.gps_y,
+                place.cemetery.address.gps_x,
+            ))
+
+        table2 = make_table(left, right)
         return dict(
-            table=table,
+            table1=table1,
+            table2=table2,
             place=place,
             request=self.request,
         )

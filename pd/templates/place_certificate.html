@@ -68,7 +68,7 @@ type="text/javascript">
 <TD width="100px"></TD>
 </TR>
 
-{% for item in table %}
+{% for item in table1 %}
     <TR class="maintext">
     <TD></TD>
     <TD>{{ item.left }}</TD>
@@ -79,8 +79,6 @@ type="text/javascript">
 
 <TR class="maintext" >
 </TR>
-<TR class="maintext" >
-</TR>
 
 <TR class="header">
  <TD></TD>
@@ -89,33 +87,16 @@ type="text/javascript">
  <TD></TD>
 </TR>
 
-<TR class="maintext" >
- <TD></TD>
- <TD>Фамилия</TD>
- <TD>(((Название кладбища)))</TD>
- <TD></TD>
-</TR>
-
-<TR class="maintext">
- <TD></TD>
- <TD>Имя</TD>
- <TD>(((Адрес кладбища onestring)))</TD>
- <TD></TD>
- <TD></TD>
-</TR>
+{% for item in table2 %}
+    <TR class="maintext">
+    <TD></TD>
+    <TD>{{ item.left }}</TD>
+    <TD>{{ item.right }}</TD>
+    <TD></TD>
+    </TR>
+{% endfor %}
 
 <TR class="maintext" >
- <TD></TD>
- <TD>Отчество</TD>
- <TD>(((участок))) (((ряд))) (((Место)))</TD>
- <TD></TD>
-</TR>
-
-<TR class="maintext" >
- <TD></TD>
- <TD>Телефон для входа в личный кабинет на сайте pohoronnoedelo.ru</TD>
- <TD>Координаты GPS/ГЛОНАСС</TD>
- <TD></TD>
 </TR>
 
 <TR class="header">
