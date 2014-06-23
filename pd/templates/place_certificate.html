@@ -1,8 +1,9 @@
 ﻿<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//RU">
-{% load thumbnail %}
+{% load thumbnail i18n %}
 <HTML>
 <HEAD>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+{# Ключ yandex api взят от pohoronnoedelo@yandex.ru, действует, если обращаться от *.pohoronnoedelo.ru #}
 <script src="http://api-maps.yandex.ru/0.8/?key=AObGplMBAAAAuFr-WQIADlv2OrFxt6jLCsvlWYiJgtv7YDMAAAAAAAAAAABOAIr3zG31LfU7pllJzun2eZhJmg=="
 type="text/javascript">
 </script>
@@ -21,7 +22,7 @@ type="text/javascript">
         // placemark.openBalloon();
     }
 </script>
-<TITLE>Заголовок документа</TITLE>
+<TITLE>{% trans "Паспорт места" %}</TITLE>
 <style type="text/css">
   .topheader { 
     font-size: 110%; 
@@ -55,7 +56,7 @@ type="text/javascript">
 <TABLE border="0" width="900px" height="100%" cellspacing="3px" cellpadding="3px" align="center">
 <TR class="topheader">
 <TD align="left" valign="top"><img src="{{ STATIC_URL}}img/place_passport/lefttop.jpg" width="100px" height="115px"></TD>
-<TD align="center">ПАСПОРТ МЕСТА<BR> ЗАХОРОНЕНИЯ<BR>№ (((placeID)))</TD>
+<TD align="center">ПАСПОРТ МЕСТА<BR> ЗАХОРОНЕНИЯ<BR>№ {{ place.pk }}</TD>
 <TD></TD>
 <TD align="right" valign="top"><img src="{{ STATIC_URL}}img/place_passport/righttop.jpg" width="100px" height="115px"></TD>
 </TR>
@@ -67,61 +68,14 @@ type="text/javascript">
 <TD width="100px"></TD>
 </TR>
 
-<TR class="maintext">
-<TD></TD>
-<TD>(((Наименование OMC!!)))</TD>
-<TD>(((Номер захоронения, ФИО, Даты рождения, смерти, похорон)))</TD>
-<TD></TD>
-</TR>
-
-<TR class="maintext" >
-<TD></TD>
-<TD>(((Адрес OMC)))</TD>
-<TD>(((Номер захоронения, ФИО, Даты рождения, смерти, похорон)))</TD>
-<TD></TD>
-</TR>
-
-<TR class="maintext" >
-<TD></TD>
-<TD></TD>
-<TD>(((Номер захоронения, ФИО, Даты рождения, смерти, похорон)))</TD>
-<TD></TD>
-</TR>
-
-<TR class="maintext" >
-<TD></TD>
-<TD></TD>
-<TD>(((Номер захоронения, ФИО, Даты рождения, смерти, похорон)))</TD>
-<TD></TD>
-</TR>
-
-<TR class="maintext" >
-<TD></TD>
-<TD></TD>
-<TD>(((Номер захоронения, ФИО, Даты рождения, смерти, похорон)))</TD>
-<TD></TD>
-</TR>
-
-<TR class="maintext" >
-<TD></TD>
-<TD></TD>
-<TD>(((Номер захоронения, ФИО, Даты рождения, смерти, похорон)))</TD>
-<TD></TD>
-</TR>
-
-<TR class="maintext">
-<TD></TD>
-<TD>(((Телефоны OMC)))</TD>
-<TD></TD>
-<TD></TD>
-</TR>
-
-<TR class="maintext" >
-<TD></TD>
-<TD>(((Время работы OMC)))</TD>
-<TD></TD>
-<TD></TD>
-</TR>
+{% for item in table %}
+    <TR class="maintext">
+    <TD></TD>
+    <TD>{{ item.left }}</TD>
+    <TD>{{ item.right }}</TD>
+    <TD></TD>
+    </TR>
+{% endfor %}
 
 <TR class="maintext" >
 </TR>

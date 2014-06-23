@@ -1095,7 +1095,53 @@ class PlaceCertificateView(UGHRequiredMixin, DetailView):
     template_name = 'place_certificate.html'
     
     def get_object(self):
-        place =  get_object_or_404(Place, pk=self.kwargs['pk'], cemetery__ugh=self.request.user.profile.org)
+        place =  get_object_or_404(
+            Place,
+            pk=self.kwargs['pk'],
+            cemetery__ugh=self.request.user.profile.org
+        )
         return place
+
+    def get_context_data(self, **kwargs):
+        place = self.object
+        ugh = place.cemetery.ugh
+        left = [ ugh, ]
+        if ugh.off_address:
+            left.append(u"%s: %s" % (_(u'Адрес'), ugh.off_address, ))
+        if ugh.phones:
+            left.append(u"%s: %s" % (_(u'Телефоны'), ", ".join(ugh.phones.split()), ))
+        if ugh.worktime:
+            left.append(u"%s: %s" % (_(u'Время работы'), ugh.worktime, ))
+        right = []
+        for burial in place.burials_available():
+            if burial.deadman.birth_date or burial.deadman.death_date:
+                lived = u", %s — %s" % (
+                    burial.deadman.birth_date or u"...",
+                    burial.deadman.death_date or u"...",
+                )
+            else:
+                lived = _(u"годы жизни неизвестны")
+            if burial.fact_date:
+                fact_date = _(u"похоронен %s") % burial.fact_date
+            else:
+                fact_date = _(u"дата похорон неизвестна")
+            right.append(_(u"№: %s, %s, %s") % (burial.pk, burial.deadman, lived, fact_date ))
+        table = []
+        for i in range(max(len(left), len(right))):
+            item = (dict(left='', right=''))
+            try:
+                item['left'] = left[i]
+            except IndexError:
+                pass
+            try:
+                item['right'] = right[i]
+            except IndexError:
+                pass
+            table.append(item)
+        return dict(
+            table=table,
+            place=place,
+            request=self.request,
+        )
 
 place_certificate = PlaceCertificateView.as_view()
