@@ -36,7 +36,7 @@ class LoginRequiredMiddleware:
 
     def process_request(self, request):
         path = request.path_info.lstrip('/')
-        if any(m.match(path) for m in exempt_urls) or is_url_accessible_anonymous(request)
+        if any(m.match(path) for m in exempt_urls) or is_url_accessible_anonymous(request):
             return
         if is_cabinet_user(request.user):
             #
