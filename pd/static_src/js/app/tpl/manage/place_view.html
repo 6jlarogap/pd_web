@@ -76,6 +76,10 @@
         <th>Размеры</th>
         <td>длина {{item.place_length || '-'}}м, ширина {{item.place_width || '-'}}м</td>
       </tr>
+      <tr>
+        <th><a href="/places/{{item.id}}/certificate" target="_blank">Паспорт места</a></th>
+        <td></td>
+      </tr>
 
       <tr ng-show="placeGalleryFirstPhoto">
         <td colspan="2">
@@ -143,7 +147,6 @@
   <yandex-map id="yandex-map" class="span5" coordinates="placeCoordinates" points="placePoints">
   </yandex-map>
 </div>
-
 
 <div class="graves row-fluid clearfix">
   <h2>Могилы</h2>
