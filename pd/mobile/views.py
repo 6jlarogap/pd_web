@@ -28,6 +28,7 @@ from persons.models import BasePerson
 from users.models import Profile
 from users.models import Org
 from logs.models import write_log
+from pd.models import UnclearDate
 
 from django.utils.dateparse import parse_datetime
 from django.core.files.base import ContentFile
@@ -366,8 +367,8 @@ class ApiGraveUpload(APIView):
         except Place.DoesNotExist:
             raise Http404            
         except Grave.DoesNotExist:
-            prevGrave = None
-            grave = Grave(place = place, grave_number = graveName, is_military = isMilitary, is_wrong_fio = isWrongFIO)
+            prevGrave = None            
+            grave = Grave(place = place, grave_number = place.get_graves_count() + 1, is_military = isMilitary, is_wrong_fio = isWrongFIO)
             grave.save()
             write_log(request, grave, _(u"Могила '%s' создана через мобильное приложение") % graveName )
             listInsertedGrave.append(grave)            
@@ -382,14 +383,17 @@ class ApiBurialList(APIView):
         argSyncDateUnix = request.GET.get('syncDate', None) 
         argGraveId = request.GET.get('graveId', None)
         argCemeteryId = request.GET.get('cemeteryId', None)
-        argAreaId = request.GET.get('areaId', None)        
-        queryBurial = Q(grave__place__cemetery__ugh = request.user.profile.org)
+        argAreaId = request.GET.get('areaId', None)
+        argStatus = request.GET.get('status', None)        
+        queryBurial = Q(cemetery__ugh = request.user.profile.org)
         if argCemeteryId :
-            queryBurial &= Q(grave__place__cemetery__pk = argCemeteryId)
+            queryBurial &= Q(cemetery__pk = argCemeteryId)
         if argAreaId :
-            queryBurial &= Q(grave__place__area__pk = argAreaId)
+            queryBurial &= Q(area__pk = argAreaId)
         if argGraveId :
             queryBurial &= Q(grave__pk = argGraveId)
+        if argStatus :
+            queryBurial &= Q(status = argStatus)
         if argSyncDateUnix :
             argSyncDate = datetime.fromtimestamp(int(argSyncDateUnix))
             queryBurial &= Q(dt_modified__gte = argSyncDate)        
@@ -398,6 +402,38 @@ class ApiBurialList(APIView):
         return Response(serializer.data)
 
 burial_list = ApiBurialList.as_view()
+
+class ApiBurialUpload(APIView):
+    permission_classes = (IsAuthenticated,)
+    def get(self, request) :
+        return render_to_response('mobile_upload_burial.html', {'message': _(u"Загрузите захоронение:")})
+    def post(self, request) :
+        graveId = int(request.POST['graveId'])
+        burialId = int(request.POST['burialId'])        
+        templateDateTime = '%Y-%m-%dT%H:%M:%S.%f'
+        if request.POST['factDate'] :
+            factDate = datetime.strptime(request.POST['factDate'], templateDateTime)
+            factUnclearDate = UnclearDate(year = factDate.year, month = factDate.month, day = factDate.day)
+        if request.POST['status'] :
+            status = request.POST['status']
+        try:
+            grave = Grave.objects.get(pk = graveId)
+            burial = Burial.objects.get(pk = burialId)
+            burial.grave = grave
+            burial.place = grave.place
+            burial.row = grave.place.row
+            burial.area = grave.place.area
+            burial.cemetery = grave.place.area.cemetery
+            burial.status = status
+            burial.fact_date = factUnclearDate
+            burial.save()            
+        except Grave.DoesNotExist:
+            raise Http404            
+        except Burial.DoesNotExist:
+            raise Http404
+        return Response()
+    
+burial_upload = ApiBurialUpload.as_view()
 
 class ApiPlacePhotoList(APIView):
     permission_classes = (IsAuthenticated,)
