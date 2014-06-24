@@ -368,7 +368,7 @@ class ApiGraveUpload(APIView):
             raise Http404            
         except Grave.DoesNotExist:
             prevGrave = None            
-            grave = Grave(place = place, grave_number = place.get_available_count () + 1, is_military = isMilitary, is_wrong_fio = isWrongFIO)
+            grave = Grave(place = place, grave_number = place.get_graves_count() + 1, is_military = isMilitary, is_wrong_fio = isWrongFIO)
             grave.save()
             write_log(request, grave, _(u"Могила '%s' создана через мобильное приложение") % graveName )
             listInsertedGrave.append(grave)            
