@@ -1097,20 +1097,6 @@ edit_burialfile_comment = BurialfileCommentEdit.as_view()
 class PlaceCertificateView(UGHRequiredMixin, DetailView):
     template_name = 'place_certificate.html'
 
-    YANDEX_API_KEYS = [
-        # Ключи получены на пользователя pohoronnoedelo@yandex.ru.
-        # В зависимости от доменв, откуда идет вызов к yandex api,
-        # применяется тот или иной ключ
-        { 
-            're_host': r'pohoronnoedelo\.ru(?:\:\d+)?$',
-            'api_key': r'AObGplMBAAAAuFr-WQIADlv2OrFxt6jLCsvlWYiJgtv7YDMAAAAAAAAAAABOAIr3zG31LfU7pllJzun2eZhJmg==',
-        },
-        { 
-            're_host': r'pohoronnoedelo\.by(?:\:\d+)?$',
-            'api_key': r'AFFSqFMBAAAAeVx-MwIAmJKPwA0dteKD-K4LTJ1nfnN2MTQAAAAAAAAAAABHBnSvshh-SZ_2hyIdqI0NU_lvCA==',
-        },
-    ]
-    
     def get_object(self):
         place =  get_object_or_404(
             Place,
@@ -1200,7 +1186,7 @@ class PlaceCertificateView(UGHRequiredMixin, DetailView):
                 place.cemetery.address.gps_x,
             ))
             host = self.request.get_host()
-            for key in self.YANDEX_API_KEYS:
+            for key in settings.YANDEX_API_KEYS:
                 if re.search(key['re_host'], host, flags=re.I):
                     yandex_api_key = key['api_key']
 
