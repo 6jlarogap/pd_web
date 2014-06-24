@@ -3,25 +3,25 @@
 <HTML>
 <HEAD>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-{# Ключ yandex api взят от pohoronnoedelo@yandex.ru, действует, если обращаться от *.pohoronnoedelo.ru #}
-<script src="http://api-maps.yandex.ru/0.8/?key=AObGplMBAAAAuFr-WQIADlv2OrFxt6jLCsvlWYiJgtv7YDMAAAAAAAAAAABOAIr3zG31LfU7pllJzun2eZhJmg=="
-type="text/javascript">
-</script>
-<script type="text/javascript">
-    var map;
-    function init () {
-        map = new YMaps.Map( document.getElementById("YMapsID") );
-        map.setCenter(new YMaps.GeoPoint(27.6644500607,53.9386702591), 13,
-        YMaps.MapType.MAP);
-        // Создает метку и добавляет ее на карту
-        var placemark = new YMaps.Placemark(new YMaps.GeoPoint(27.6644500607,53.9386702591));
-        placemark.name = "Here";
-        placemark.description = "Here";
-        map.addOverlay(placemark);
-        // Открывает балун
-        // placemark.openBalloon();
-    }
-</script>
+{% if yandex_api_key %}
+    <script src="http://api-maps.yandex.ru/0.8/?key={{ yandex_api_key }}"
+    type="text/javascript">
+    </script>
+    <script type="text/javascript">
+        var map;
+        function init () {
+            map = new YMaps.Map( document.getElementById("YMapsID") );
+            map.setCenter(new YMaps.GeoPoint(27.6644500607,53.9386702591), 13,
+            YMaps.MapType.MAP);
+            var placemark = new YMaps.Placemark(new YMaps.GeoPoint(27.6644500607,53.9386702591));
+            placemark.name = "Здесь";
+            placemark.description = "Здесь";
+            map.addOverlay(placemark);
+            // Открывает балун
+            // placemark.openBalloon();
+        }
+    </script>
+ {% endif %}
 <TITLE>{% trans "Паспорт места" %}</TITLE>
 <style type="text/css">
   .topheader { 
@@ -51,7 +51,7 @@ type="text/javascript">
    }
 </style>
 </HEAD>
-<BODY bgcolor="#f8f1de" onload="init();">
+<BODY bgcolor="#f8f1de"{% if yandex_api_key %} onload="init();"{% endif %}>
 
 <TABLE border="0" width="900px" height="100%" cellspacing="3px" cellpadding="3px" align="center">
 <TR class="topheader">
@@ -101,16 +101,20 @@ type="text/javascript">
 
 <TR class="header">
  <TD></TD>
- <TD align="center">ФОТОГРАФИЯ</TD>
- <TD valign="top" align="center">КАРТА</TD>
+ <TD align="center">{% if place_photo %}ФОТОГРАФИЯ{% endif %}</TD>
+ <TD valign="top" align="center">{% if yandex_api_key %}КАРТА{% endif %}</TD>
  <TD></TD>
 </TR>
 
 <TR >
  <TD></TD>
- {% thumbnail "place-photos/2014/03/03/1/1393789300102.jpg" "200x200" "scale" "jpg" as thumb %}
- <TD class="maintext" > <img src="{{ thumb.url }}"></TD>
- <TD class="maintext" ><div id="YMapsID" style="height:350px; width:500px;"></div></TD>
+ {% if place_photo %}
+    {% thumbnail place_photo "188x250" "scale" "jpg" as thumb %}
+    <TD class="maintext" > <img src="{{ thumb.url }}"></TD>
+ {% endif %}
+ {% if yandex_api_key %}
+    <TD class="maintext" ><div id="YMapsID" style="height:350px; width:500px;"></div></TD>
+ {% endif %}
  <TD></TD>
 </TR>
 
