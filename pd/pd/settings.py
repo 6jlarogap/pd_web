@@ -360,6 +360,9 @@ YANDEX_API_KEYS = [
     # Ключи получены на пользователя pohoronnoedelo@yandex.ru.
     # В зависимости от доменв, откуда идет вызов к yandex api,
     # применяется тот или иной ключ
+    #
+    # NB:   скрывать их в local_settings нет смысла, они доступны
+    #       в исходных кодах страниц
     { 
         're_host': r'pohoronnoedelo\.ru(?:\:\d+)?$',
         'api_key': r'AObGplMBAAAAuFr-WQIADlv2OrFxt6jLCsvlWYiJgtv7YDMAAAAAAAAAAABOAIr3zG31LfU7pllJzun2eZhJmg==',

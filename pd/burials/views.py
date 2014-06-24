@@ -1110,7 +1110,7 @@ class PlaceCertificateView(UGHRequiredMixin, DetailView):
         def make_table(left, right):
             table = []
             for i in range(max(len(left), len(right))):
-                item = (dict(left='', right=''))
+                item = dict(left='', right='')
                 try:
                     item['left'] = left[i]
                 except IndexError:
@@ -1128,7 +1128,10 @@ class PlaceCertificateView(UGHRequiredMixin, DetailView):
         if ugh.off_address:
             left.append(u"%s: %s" % (_(u'Адрес'), ugh.off_address, ))
         if ugh.phones:
-            left.append(u"%s: %s" % (_(u'Телефоны'), ", ".join(ugh.phones.split()), ))
+            left.append(u"%s: %s" % (
+                _(u'Телефоны') if re.search(r'\s+', ugh.phones) else _(u'Телефон'),
+                ", ".join(ugh.phones.split()),
+            ))
         if ugh.worktime:
             left.append(u"%s: %s" % (_(u'Время работы'), ugh.worktime, ))
 
