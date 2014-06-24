@@ -1212,7 +1212,7 @@ class PlaceCertificateView(UGHRequiredMixin, DetailView):
         return dict(
             table1=table1,
             table2=table2,
-            yandex_api_key= yandex_api_key,
+            yandex_api_key=yandex_api_key,
             place=place,
             place_photo=place_photo,
             request=self.request,

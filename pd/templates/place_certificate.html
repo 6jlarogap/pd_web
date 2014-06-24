@@ -1,5 +1,5 @@
 ﻿<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//RU">
-{% load thumbnail i18n %}
+{% load thumbnail i18n floattags %}
 <HTML>
 <HEAD>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
@@ -11,9 +11,9 @@
         var map;
         function init () {
             map = new YMaps.Map( document.getElementById("YMapsID") );
-            map.setCenter(new YMaps.GeoPoint(27.6644500607,53.9386702591), 13,
+            map.setCenter(new YMaps.GeoPoint({{ place.cemetery.address.gps_x|formatted_float }},{{ place.cemetery.address.gps_y|formatted_float }}), 13,
             YMaps.MapType.MAP);
-            var placemark = new YMaps.Placemark(new YMaps.GeoPoint(27.6644500607,53.9386702591));
+            var placemark = new YMaps.Placemark(new YMaps.GeoPoint({{ place.cemetery.address.gps_x|formatted_float }},{{ place.cemetery.address.gps_y|formatted_float }}));
             placemark.name = "Здесь";
             placemark.description = "Здесь";
             map.addOverlay(placemark);
@@ -82,8 +82,8 @@
 
 <TR class="header">
  <TD></TD>
- <TD align="center"> ОТВЕТСТВЕННЫЙ ЗА МЕСТО <BR> ЗАХОРОНЕНИЯ</TD>
- <TD valign="top" align="center">АДРЕС МЕСТА ЗАХОРОНЕНИЯ</TD>
+ <TD align="center"> {% trans "ОТВЕТСТВЕННЫЙ ЗА МЕСТО" %} <BR> {% trans "ЗАХОРОНЕНИЯ" %}</TD>
+ <TD valign="top" align="center">{% trans "АДРЕС МЕСТА ЗАХОРОНЕНИЯ" %}</TD>
  <TD></TD>
 </TR>
 
@@ -101,8 +101,8 @@
 
 <TR class="header">
  <TD></TD>
- <TD align="center">{% if place_photo %}ФОТОГРАФИЯ{% endif %}</TD>
- <TD valign="top" align="center">{% if yandex_api_key %}КАРТА{% endif %}</TD>
+ <TD align="center">{% if place_photo %}{% trans "ФОТОГРАФИЯ" %}{% endif %}</TD>
+ <TD valign="top" align="center">{% if yandex_api_key %}{% trans "КАРТА" %}{% endif %}</TD>
  <TD></TD>
 </TR>
 
@@ -113,7 +113,7 @@
     <TD class="maintext" > <img src="{{ thumb.url }}"></TD>
  {% endif %}
  {% if yandex_api_key %}
-    <TD class="maintext" ><div id="YMapsID" style="height:350px; width:500px;"></div></TD>
+    <TD class="maintext" ><div id="YMapsID" style="height:255px; width:340x;"></div></TD>
  {% endif %}
  <TD></TD>
 </TR>
