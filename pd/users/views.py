@@ -1750,6 +1750,7 @@ class ApiOrgSignupView(CheckRecaptchaMixin, ApiAuthSigninView):
                     gps_y= coords and coords.get('latitude'),
                 )
             name = request.DATA.get('orgName', '')
+            full_name = request.DATA.get('orgFullName')
             org_types = dict(loru=Org.PROFILE_LORU, oms=Org.PROFILE_UGH)
             type_ = org_types[request.DATA.get('orgType', org_types['loru'])]
             director = request.DATA.get('directorFullname', '')
@@ -1764,7 +1765,7 @@ class ApiOrgSignupView(CheckRecaptchaMixin, ApiAuthSigninView):
             fax = request.DATA.get('fax', '')
             org = Org.objects.create(
                 name=name,
-                full_name=name,
+                full_name=full_name or name,
                 type=type_,
                 off_address=off_address,
                 director=director,
