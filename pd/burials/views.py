@@ -1149,7 +1149,7 @@ class PlaceCertificateView(UGHRequiredMixin, DetailView):
         right = []
         for burial in place.burials_available():
             if burial.deadman.birth_date or burial.deadman.death_date:
-                lived = u", %s — %s" % (
+                lived = u"%s — %s" % (
                     burial.deadman.birth_date or u"...",
                     burial.deadman.death_date or u"...",
                 )
@@ -1159,7 +1159,7 @@ class PlaceCertificateView(UGHRequiredMixin, DetailView):
                 fact_date = _(u"похоронен %s") % burial.fact_date
             else:
                 fact_date = _(u"дата похорон неизвестна")
-            right.append(_(u"№: %s, %s, %s") % (burial.pk, burial.deadman, lived, fact_date ))
+            right.append(_(u"№: %s, %s, %s, %s") % (burial.pk, burial.deadman, lived, fact_date ))
         if not right:
             right.append(_(u"Нет захоронений"))
         table1 = make_table(left, right)

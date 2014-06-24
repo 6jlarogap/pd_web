@@ -22,7 +22,7 @@
         }
     </script>
  {% endif %}
-<TITLE>{% trans "Паспорт места" %}</TITLE>
+<TITLE>{% trans "Паспорт места" %} {{ place.pk }}</TITLE>
 <style type="text/css">
   .topheader { 
     font-size: 110%; 
@@ -63,7 +63,7 @@
 
 <TR class="header">
 <TD width="100px"></TD>
-<TD width="350px" align="center">ВЫДАН </TD>
+<TD width="350px" align="center">{% trans "ВЫДАН" %} </TD>
 <TD width="350px" align="center">ДАННЫЕ ЗАХОРОНЕНИЙ</TD>
 <TD width="100px"></TD>
 </TR>
