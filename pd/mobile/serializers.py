@@ -87,11 +87,15 @@ class GraveSerializer(BaseSerializer):
     is_military = serializers.CharField(required=False)
     is_wrong_fio = serializers.CharField(required=False)
     
-class BurialSerializer(BaseSerializer):    
-    grave = BaseSerializer(required=True)    
-    fact_date = serializers.CharField(required=False)
+class BurialSerializer(BaseSerializer):
+    cemetery = BaseSerializer(required=True)
+    grave = BaseSerializer(required=True)
     burial_container = serializers.CharField(required=False)
     deadman = BasePersonSerializer(required=False)
+    fact_date = serializers.CharField(required=False)
+    plan_date = serializers.DateField(required=False)
+    plan_time = serializers.TimeField(required=False)
+    status = serializers.CharField(required=False)
     
 class GravePhotoSerializer(BaseSerializer):  
     grave = BaseSerializer(required=False)    
