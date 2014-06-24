@@ -9,13 +9,14 @@ from django.views.generic.base import View
 from django.utils.translation import ugettext as _
 
 from persons.models import DeadPerson, AlivePerson, BasePerson, DocumentSource, Phone, \
-                           CustomPlace, CustomPerson, SafeDeleteMixin
+                           CustomPlace, CustomPerson, MemoryGallery, SafeDeleteMixin
 from serializers import AlivePersonSerializer, DeadPersonSerializer, PhoneSerializer
 
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework import generics, viewsets
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.parsers import MultiPartParser
 
 from pd.models import UnclearDate
 from burials.models import Place 
@@ -23,6 +24,7 @@ from logs.models import write_log
 from users.models import PermitIfCabinet
 from geo.models import Location
 
+from pd.utils import utcisoformat
 from pd.views import ServiceException
 
 
@@ -232,6 +234,7 @@ class ApiClientCustomplacesDetailView(ApiClientCustomplacesMixin, SafeDeleteMixi
     """
     Edit or delete CustomPlace
     """
+    permission_classes = (PermitIfCabinet,)
 
     def get_object(self, pk):
         try:
@@ -275,3 +278,112 @@ class ApiClientCustomplacesDetailView(ApiClientCustomplacesMixin, SafeDeleteMixi
         return Response({"status": "success"}, 200)
 
 api_client_customplaces_detail = ApiClientCustomplacesDetailView.as_view()
+
+class ApiCustompersonMixin(object):
+
+    def get_object(self, pk):
+        try:
+            customperson = CustomPerson.objects.get(pk=pk)
+        except CustomPerson.DoesNotExist:
+            raise Http404
+        return customperson
+
+class ApiMemoryGalleryMixin(object):
+
+    def gallery_dict(self, m, request):
+        return {
+            'type': m.type,
+            'text': m.text,
+            'mediaContent': m.bfile and request.build_absolute_uri(m.bfile.url) or None,
+            'eventDate': m.event_date and UnclearDate.str_safe(m.event_date) or None,
+            'createdAt': utcisoformat(m.date_of_creation),
+        }
+
+class ApiCustompersonMemoryView(ApiCustompersonMixin, ApiMemoryGalleryMixin, APIView):
+    permission_classes = (PermitIfCabinet,)
+
+    def get(self, request, pk):
+        customperson = self.get_object(pk)
+        data = {
+            'photo': None,
+            'lasttname' : customperson.last_name,
+            'firstname' : customperson.first_name,
+            'middlename' : customperson.middle_name,
+            'dob' : customperson.birth_date and customperson.birth_date.str_safe() or None,
+            'dod' : customperson.death_date and customperson.death_date.str_safe() or None,
+            'commonText': customperson.memory_text,
+        }
+        gallery = []
+        for m in MemoryGallery.objects.filter(customperson=customperson):
+            item = self.gallery_dict(m, request)
+            gallery.append(item)
+        data['gallery'] = gallery
+        return Response(data, 200)
+        
+    def patch(self, request, pk):
+        customperson = self.get_object(pk)
+        mapping = dict(
+           lastname='last_name',
+           firstname='first_name',
+           middlename='middle_name',
+           commonText='memory_text',
+        )
+        fields = dict()
+        for f in mapping:
+            got = request.DATA.get(f)
+            if got is not None:
+                fields[mapping[f]] = got
+        if fields:
+            for f in fields:
+                setattr(customperson, f, fields[f])
+            customperson.save()
+        return Response({"status": "success"}, 200)
+
+api_customperson_memory = ApiCustompersonMemoryView.as_view()
+
+class ApiCustompersonMemoryGalleryView(ApiCustompersonMixin, ApiMemoryGalleryMixin, APIView):
+    permission_classes = (PermitIfCabinet,)
+    parser_classes = (MultiPartParser,)
+    
+    def get(self, request, pk):
+        customperson = self.get_object(pk)
+
+        offset = self.request.GET.get('offset') and int(self.request.GET.get('offset'))
+        limit = self.request.GET.get('limit') and int(self.request.GET.get('limit'))
+        filter = MemoryGallery.objects.filter(customperson=customperson)
+        if offset and limit:
+            filter = filter[offset:offset+limit]
+        elif offset:
+            filter = filter[offset:]
+        elif limit:
+            filter = filter[:limit]
+
+        data = []
+        for m in filter:
+            item = self.gallery_dict(m, request)
+            item['createdBy'] = {
+                    'id': request.user.pk,
+                    'lastname': m.creator.customerprofile.user_last_name,
+                    'firstname': m.creator.customerprofile.user_first_name,
+                    'middlename': m.creator.customerprofile.user_middle_name,
+                 }
+            data.append(item)
+        return Response(data, 200)
+
+
+    def post(self, request, pk):
+        customperson = self.get_object(pk)
+        fields = {
+            'customperson': customperson,
+            'type': request.DATA.get('type'),
+            'text': request.DATA.get('text'),
+            'event_date': request.DATA.get('eventDate') and UnclearDate.from_str_safe(request.DATA['eventDate']) or None,
+            'creator': request.user,
+        }
+        file_ = request.FILES.get('mediaContent')
+        if file_:
+            fields['bfile'] = file_
+        MemoryGallery.objects.create(**fields)
+        return Response({"status": "success"}, 200)
+
+api_customperson_memory_gallery = ApiCustompersonMemoryGalleryView.as_view()

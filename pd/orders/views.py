@@ -596,7 +596,6 @@ class ProductCategoryViewSet(viewsets.ModelViewSet):
 
 class CustomerDataMixin:
     def get_customer_data(self, request):
-        username = request.user.username
         places = []
         lorus = set()
         is_customer = True
@@ -605,15 +604,11 @@ class CustomerDataMixin:
         except CustomerProfile.DoesNotExist:
             is_customer = False
         else:
-            try:
-                login_phone = decimal.Decimal(username)
-            except decimal.InvalidOperation:
-                is_customer = False
-            else:
-                lorus = set()
-                for p in Place.objects.filter(responsible__login_phone=login_phone):
-                    places.append(p)
-                    lorus.update(p.cemetery.ugh.get_loru_list())
+            login_phone = request.user.customerprofile.login_phone
+            lorus = set()
+            for p in Place.objects.filter(responsible__login_phone=login_phone):
+                places.append(p)
+                lorus.update(p.cemetery.ugh.get_loru_list())
         return is_customer, places, lorus
         
 
@@ -758,7 +753,8 @@ class ApiProfileViewSet(CustomerDataMixin, viewsets.ViewSet):
         data['lastName'] = profile.user_last_name
         data['firstName'] = profile.user_first_name
         data['middleName'] = profile.user_middle_name
-        data['loginPhone'] = request.user.username
+        data['loginPhone'] = request.user.customerprofile.login_phone
+        data['username'] = request.user.username
         data['places'] = []
         for p in places:
             place={'id': p.pk}

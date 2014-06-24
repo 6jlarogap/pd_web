@@ -19,7 +19,7 @@ from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
 from django.core.urlresolvers import reverse
 from django.core.files.base import ContentFile
-from django.db import transaction, connection
+from django.db import transaction, connection, IntegrityError
 from django.db.models.query_utils import Q
 from django.db.models.aggregates import Count
 from django.http import HttpResponse, Http404
@@ -143,9 +143,10 @@ class ApiAuthSigninView(APIView):
                 profile['lastname'] = pr.user_last_name or user.last_name or None
                 profile['firstname'] = pr.user_first_name or user.first_name or None
                 profile['middlename'] = pr.user_middle_name or None
+                profile['username'] = pr.user.username
                 if role == 'ROLE_CLIENT':
                     org = { 'id': None, 'name': None, 'location': None }
-                    profile['mainPhone'] = username
+                    profile['mainPhone'] = pr.login_phone
                     if not user.customerprofile.tc_confirmed and confirm_tc:
                         user.customerprofile.tc_confirmed = datetime.datetime.now()
                         user.customerprofile.save()
@@ -207,10 +208,6 @@ class ApiAuthSignupView(CheckRecaptchaMixin, ApiAuthSigninView):
         password = request.DATA.get('password')
         profile = request.DATA.get('profile')
         try:
-            try:
-                validate_phone_as_number(decimal.Decimal(username))
-            except (TypeError, decimal.InvalidOperation, ValidationError, ):
-                raise ServiceException(_(u'Неверный формат телефона как имени пользователя'))
             if profile and profile.get('email'):
                 try:
                     validate_email(profile['email'])
@@ -327,6 +324,7 @@ class ApiSettings(APIView):
         Input data
         {
            # avatar, пока не применяем
+           "username": "somebody",
            "loginPhone": "375297542270",
             "oldPassword": "1234567",
             "newPassword": "7654321"
@@ -344,10 +342,23 @@ class ApiSettings(APIView):
             login_phone = request.DATA.get('loginPhone')
             if login_phone:
                 try:
-                    validate_phone_as_number(decimal.Decimal(login_phone))
+                    new_login_phone = decimal.Decimal(login_phone)
+                    validate_phone_as_number(new_login_phone)
                 except (TypeError, decimal.InvalidOperation, ValidationError, ):
                     raise ServiceException(_(u'Неверный формат телефона'))
-                user.username = login_phone
+                if is_cabinet_user(user):
+                    old_login_phone = user.customerprofile.login_phone
+                    if new_login_phone != old_login_phone:
+                        try:
+                            user.customerprofile.login_phone = new_login_phone
+                            user.customerprofile.save()
+                            AlivePerson.objects.filter(login_phone=old_login_phone).update(login_phone=new_login_phone)
+                        except IntegrityError:
+                            raise ServiceException(_(u'Такой номер телефона ответственного уже имеется'))
+
+            new_username = request.DATA.get('username')
+            if new_username:
+                user.username = new_username
 
             new_password = request.DATA.get('newPassword')
             if new_password:
@@ -361,15 +372,12 @@ class ApiSettings(APIView):
                     raise ServiceException(_(u'Неверный формат адреса электронной почты'))
                 user.email = email
 
-            if new_password or login_phone or email:
-                user.save()
-            try:
-                # это только для клиента кабинета!
-                user.customerprofile
-                if login_phone and login_phone != old_username:
-                    AlivePerson.objects.filter(login_phone=old_username).update(login_phone=login_phone)
-            except CustomerProfile.DoesNotExist:
-                pass
+            if new_password or new_username or email:
+                try:
+                    user.save()
+                except IntegrityError:
+                    raise ServiceException(_(u'Пользователь с таким именем для входа в систему уже имеется'))
+
         except ServiceException as excpt:
             transaction.rollback()
             data = { 'status': 'error',
@@ -437,26 +445,35 @@ class AuthGetPasswordBySMSView(CheckRecaptchaMixin, APIView):
         status = 'error'
         status_code = 400
         message = ''
-        phone_number = request.DATA['phoneNumber']
+        login_phone = request.DATA['phoneNumber']
         recaptcha_data = request.DATA.get('recaptchaData')
         if not recaptcha_data:
             message = _(u'Не данных по captcha')
         elif not self.check_recaptcha(self.request, recaptcha_data['challenge'], recaptcha_data['response']):
             message = _(u'Введена неверная captcha')
         else:
-            if not CustomerProfile.objects.filter(user__username=phone_number).count():
-                message = _(u'Вы не зарегистрированы в системе. Обратитесь в администрацию кладбища')
+            try:
+                login_phone = decimal.Decimal(login_phone)
+                validate_phone_as_number(login_phone)
+            except (TypeError, decimal.InvalidOperation, ValidationError, ):
+                message = _(u'Неверный формат телефона')
             else:
-                password = CustomerProfile.generate_password()
-                user = User.objects.get(username=phone_number)
-                user.set_password(password)
-                user.save()
-                if not settings.DEBUG:
-                    sent, message = send_sms(
-                        phone_number=phone_number,
-                        text=_(u'Vash parol na PohoronnoeDelo: %s') % password,
-                        email_error_text = _(u"Пользователь %s не смог получить или заменить пароль" % (phone_number,)),
-                    )
+                try:
+                    customerprofile = CustomerProfile.objects.get(login_phone=login_phone)
+                except CustomerProfile.DoesNotExist:
+                    message = _(u'Вы не зарегистрированы в системе. Обратитесь в администрацию кладбища')
+                else:
+                    password = CustomerProfile.generate_password()
+                    user = customerprofile.user
+                    user.set_password(password)
+                    user.save()
+                    if not settings.DEBUG:
+                        sent, message = send_sms(
+                            phone_number=login_phone,
+                            text=_(u'Vash parol na PohoronnoeDelo: %s') % password,
+                            email_error_text = _(u"Пользователь %s (телефон %s) не смог получить или заменить пароль" % \
+                                               (user.username, login_phone)),
+                        )
         if not message:
             status = 'success'
             status_code = 200
@@ -1413,27 +1430,33 @@ class OrgCurrentStatsView(SupervisorRequiredMixin, TemplateView):
             org['num_places_cabinet'] = cabinets.count()
             total['places_cabinet_count'] += org['num_places_cabinet']
 
-            # вместо:
-            # User.objects.filter(username__in=\
-            #    cabinets.distinct('responsible__login_phone').
-            #    order_by('responsible__login_phone').
-            #    values_list('responsible__login_phone')
-            # )
-            # применяем этот сырой запрос из-за cast(string to decimal)
-            #
-            query = r"""SELECT COUNT(*) FROM "auth_user"
-                        WHERE "auth_user"."username" ~ E'^\\d+$'
-                        and cast("auth_user"."username" as decimal) IN 
-                        (SELECT DISTINCT ON (U1."login_phone") U1."login_phone" FROM 
-                        "burials_place" U0 LEFT OUTER JOIN "persons_aliveperson" U1 
-                        ON (U0."responsible_id" = U1."baseperson_ptr_id") 
-                        INNER JOIN "burials_cemetery" U2 ON (U0."cemetery_id" = U2."id")
-                        WHERE (U1."login_phone" IS NOT NULL AND U2."ugh_id" = %s ))
-                     """ % o.pk
-            cursor = connection.cursor()
-            cursor.execute(query)
-            org['num_cabinets'] = cursor.fetchone()[0]
+            ## вместо:
+            ## User.objects.filter(username__in=\
+            ##    cabinets.distinct('responsible__login_phone').
+            ##    order_by('responsible__login_phone').
+            ##    values_list('responsible__login_phone')
+            ## ).count()
+            ## применяем этот сырой запрос из-за cast(string to decimal)
+            ##
+            #query = r"""SELECT COUNT(*) FROM "auth_user"
+                        #WHERE "auth_user"."username" ~ E'^\\d+$'
+                        #and cast("auth_user"."username" as decimal) IN 
+                        #(SELECT DISTINCT ON (U1."login_phone") U1."login_phone" FROM 
+                        #"burials_place" U0 LEFT OUTER JOIN "persons_aliveperson" U1 
+                        #ON (U0."responsible_id" = U1."baseperson_ptr_id") 
+                        #INNER JOIN "burials_cemetery" U2 ON (U0."cemetery_id" = U2."id")
+                        #WHERE (U1."login_phone" IS NOT NULL AND U2."ugh_id" = %s ))
+                     #""" % o.pk
+            #cursor = connection.cursor()
+            #cursor.execute(query)
+            #org['num_cabinets'] = cursor.fetchone()[0]
 
+            org['num_cabinets'] = CustomerProfile.objects.filter(login_phone__in=\
+                cabinets.distinct('responsible__login_phone').
+                order_by('responsible__login_phone').
+                values_list('responsible__login_phone')
+            ).count()
+            
             org['num_lorus'] = ProfileLORU.objects.filter(ugh=o).count()
             
             products = Product.objects.filter(loru__ugh_list__ugh=o)
@@ -1681,7 +1704,7 @@ class StoreDetail(APIView):
 
 api_loru_store_detail = StoreDetail.as_view()
 
-class ApiOrgSignupView(CheckRecaptchaMixin, APIView):
+class ApiOrgSignupView(CheckRecaptchaMixin, ApiAuthSigninView):
     """
     Регистрация ЛОРУ (нового поставщика)
     """
@@ -1690,13 +1713,14 @@ class ApiOrgSignupView(CheckRecaptchaMixin, APIView):
     @transaction.commit_on_success
     def post(self, request):
         try:
-            status_code=200
-            data = dict(status='success')
-
             recaptcha_data = request.DATA.get('recaptchaData')
             if not recaptcha_data:
                 raise ServiceException(_(u'Нет captcha'))
-            if self.check_recaptcha(request, recaptcha_data['challenge'], recaptcha_data['response']):
+            try:
+                recaptcha_data = json.loads(recaptcha_data)
+            except ValueError:
+                raise ServiceException(_(u'Неверный формат captcha'))
+            if not self.check_recaptcha(request, recaptcha_data['challenge'], recaptcha_data['response']):
                 raise ServiceException(_(u'Введена неверная captcha'))
 
             username = request.DATA.get('username')
@@ -1712,10 +1736,19 @@ class ApiOrgSignupView(CheckRecaptchaMixin, APIView):
                 user.set_password(password)
                 user.save()
 
-            addr_str = request.DATA.get('registredOfficeAddress')
+            location = request.DATA.get('registredOffice')
+            try:
+                location = json.loads(location)
+            except ValueError:
+                raise ServiceException(_(u'Неверный формат registredOffice'))
             off_address = None
-            if addr_str:
-                off_address = Location.objects.create(addr_str=addr_str)
+            if location:
+                coords = location.get('location')
+                off_address = Location.objects.create(
+                    addr_str=location.get('address', ''),
+                    gps_x= coords and coords.get('longitude'),
+                    gps_y= coords and coords.get('latitude'),
+                )
             name = request.DATA.get('orgName', '')
             org_types = dict(loru=Org.PROFILE_LORU, oms=Org.PROFILE_UGH)
             type_ = org_types[request.DATA.get('orgType', org_types['loru'])]
@@ -1782,15 +1815,11 @@ class ApiOrgSignupView(CheckRecaptchaMixin, APIView):
                 org=org,
             )
             contract.bfile.save('contract.pdf', ContentFile(pdf))
-            data['contractUrl'] = request.build_absolute_uri(contract.bfile.url)
+            return self.do_post(request)
 
         except ServiceException as excpt:
             transaction.rollback()
-            data['message'] = excpt.message
-            status_code = 400
-            data['status'] = 'error'
-        
-        return Response(data=data, status=status_code)
+            return Response(dict(status='error', message=excpt.message), status=400)
 
 api_org_signup = ApiOrgSignupView.as_view()
 
