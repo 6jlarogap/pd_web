@@ -67,6 +67,14 @@ class CemeterySerializer(serializers.ModelSerializer):
         return PhoneSerializer(obj.phone_set.all()).data
 
 
+class CemeteryBriefSerializer(serializers.ModelSerializer):
+    phones = Field(source='phone_list')
+    address = serializers.RelatedField()
+
+    class Meta:
+        model = Cemetery
+        fields = ('id', 'address', 'phones', )
+
 class AreaSerializer(serializers.ModelSerializer):
     purpose = serializers.PrimaryKeyRelatedField()
     cemetery = serializers.PrimaryKeyRelatedField()
@@ -114,10 +122,12 @@ class ApiOmsPlacesSerializer(ApiPlacesSerializer):
 
 class ApiCatalogPlacesSerializer(GetGalleryMixin, ApiPlacesSerializer):
     photos = serializers.SerializerMethodField('gallery_func')
+    address = serializers.Field(source='full_name')
+    cemetery = CemeteryBriefSerializer()
 
     class Meta:
         model = Place
-        fields = ('id', 'location', 'status',  'photos', )
+        fields = ('id', 'location', 'address', 'status',  'photos', 'cemetery' )
 
 
 

@@ -16,7 +16,10 @@ from django.conf import settings
 from restthumbnails.views import ThumbnailView
 
 class OurThumbnailView(ThumbnailView):
+
     def get(self, request, *args, **kwargs):
+        from restthumbnails import exceptions
+
         m= re.search(r'^/?thumb/([^/]+).*/(\d+)/[^/]+/',request.path)
         if m:
             what = m.group(1)
@@ -30,8 +33,10 @@ class OurThumbnailView(ThumbnailView):
                     raise Http404
         else:
             raise Http404
-        return super(OurThumbnailView, self).get(request, *args, **kwargs)
-
+        try:
+            return super(OurThumbnailView, self).get(request, *args, **kwargs)
+        except exceptions.SourceDoesNotExist:
+            raise Http404
 
 class PaginateListView(ListView):
     """
@@ -170,11 +175,13 @@ def get_front_end_url(request):
         back_end_prefix = settings.BACK_END_PREFIX if settings.BACK_END_PREFIX.endswith('.') \
                                                 else settings.BACK_END_PREFIX + '.'
         host = request.get_host()
-        result = '/'
-        if host.startswith(back_end_prefix):
-            result = 'https://' if request.is_secure() else 'http://'
+        result = 'https://' if request.is_secure() else 'http://'
+        if host.lower().startswith(back_end_prefix.lower()):
             # ВНИМАНИЕ: заканчиваем на '/'
             result += host[len(back_end_prefix):] + '/'
+        else:
+            # Затычка. Невозможная ситуация в реальной работе
+            result += host + '/'
     return result
 
 class ServiceException(Exception):

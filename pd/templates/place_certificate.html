@@ -1,0 +1,130 @@
+﻿<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//RU">
+{% load thumbnail i18n floattags %}
+<HTML>
+<HEAD>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+{% if yandex_api_key %}
+    <script src="http://api-maps.yandex.ru/0.8/?key={{ yandex_api_key }}"
+    type="text/javascript">
+    </script>
+    <script type="text/javascript">
+        var map;
+        function init () {
+            map = new YMaps.Map( document.getElementById("YMapsID") );
+            map.setCenter(new YMaps.GeoPoint({{ place.cemetery.address.gps_x|formatted_float }},{{ place.cemetery.address.gps_y|formatted_float }}), 13,
+            YMaps.MapType.MAP);
+            var placemark = new YMaps.Placemark(new YMaps.GeoPoint({{ place.cemetery.address.gps_x|formatted_float }},{{ place.cemetery.address.gps_y|formatted_float }}));
+            placemark.name = "Здесь";
+            placemark.description = "Здесь";
+            map.addOverlay(placemark);
+            // Открывает балун
+            // placemark.openBalloon();
+        }
+    </script>
+ {% endif %}
+<TITLE>{% trans "Паспорт места" %} {{ place.pk }}</TITLE>
+<style type="text/css">
+  .topheader { 
+    font-size: 110%; 
+    font-family: Verdana, Arial, Helvetica, sans-serif; 
+    color: #7d1416;
+	text-align: left;
+    padding: 1em;
+   }
+   
+  .header { 
+    font-size: 100%; 
+    font-family: Verdana, Arial, Helvetica, sans-serif; 
+    color: #7d1416;
+	font-weight: bold;
+	text-align: left;
+    padding: 1em;
+   }
+   
+  .maintext { 
+    font-size: 80%; 
+    font-family: Verdana, Arial, Helvetica, sans-serif; 
+    color: #7d1416;
+	text-align: left;
+    margin:0px;
+	font-style:italic;
+   }
+</style>
+</HEAD>
+<BODY bgcolor="#f8f1de"{% if yandex_api_key %} onload="init();"{% endif %}>
+
+<TABLE border="0" width="900px" height="100%" cellspacing="3px" cellpadding="3px" align="center">
+<TR class="topheader">
+<TD align="left" valign="top"><img src="{{ STATIC_URL}}img/place_passport/lefttop.jpg" width="100px" height="115px"></TD>
+<TD align="center">ПАСПОРТ МЕСТА<BR> ЗАХОРОНЕНИЯ<BR>№ {{ place.pk }}</TD>
+<TD></TD>
+<TD align="right" valign="top"><img src="{{ STATIC_URL}}img/place_passport/righttop.jpg" width="100px" height="115px"></TD>
+</TR>
+
+<TR class="header">
+<TD width="100px"></TD>
+<TD width="350px" align="center">{% trans "ВЫДАН" %} </TD>
+<TD width="350px" align="center">ДАННЫЕ ЗАХОРОНЕНИЙ</TD>
+<TD width="100px"></TD>
+</TR>
+
+{% for item in table1 %}
+    <TR class="maintext">
+    <TD></TD>
+    <TD>{{ item.left }}</TD>
+    <TD>{{ item.right }}</TD>
+    <TD></TD>
+    </TR>
+{% endfor %}
+
+<TR class="maintext" >
+</TR>
+
+<TR class="header">
+ <TD></TD>
+ <TD align="center"> {% trans "ОТВЕТСТВЕННЫЙ ЗА МЕСТО" %} <BR> {% trans "ЗАХОРОНЕНИЯ" %}</TD>
+ <TD valign="top" align="center">{% trans "АДРЕС МЕСТА ЗАХОРОНЕНИЯ" %}</TD>
+ <TD></TD>
+</TR>
+
+{% for item in table2 %}
+    <TR class="maintext">
+    <TD></TD>
+    <TD>{{ item.left }}</TD>
+    <TD>{{ item.right }}</TD>
+    <TD></TD>
+    </TR>
+{% endfor %}
+
+<TR class="maintext" >
+</TR>
+
+<TR class="header">
+ <TD></TD>
+ <TD align="center">{% if place_photo %}{% trans "ФОТОГРАФИЯ" %}{% endif %}</TD>
+ <TD valign="top" align="center">{% if yandex_api_key %}{% trans "КАРТА" %}{% endif %}</TD>
+ <TD></TD>
+</TR>
+
+<TR >
+ <TD></TD>
+ {% if place_photo %}
+    {% thumbnail place_photo "188x250" "scale" "jpg" as thumb %}
+    <TD class="maintext" > <img src="{{ thumb.url }}"></TD>
+ {% endif %}
+ {% if yandex_api_key %}
+    <TD class="maintext" ><div id="YMapsID" style="height:255px; width:340x;"></div></TD>
+ {% endif %}
+ <TD></TD>
+</TR>
+
+<TR>
+ <TD align="left" valign="bottom"  ><img src="{{ STATIC_URL}}img/place_passport/leftbottom.jpg" width="100px" height="115px"></TD>
+ <TD></TD>
+ <TD></TD>
+ <TD align="right" valign="bottom"><img src="{{ STATIC_URL}}img/place_passport/rightbottom.jpg" width="100px" height="115px"></TD>
+</TR>
+</TABLE>
+
+</BODY>
+</HTML>
