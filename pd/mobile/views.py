@@ -46,11 +46,21 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.exceptions import APIException
 
 from serializers import BaseSerializer, CoordinatesSerializer, CemeterySerializer, CemeteryWithNestedObjectSerializer, \
     AreaSerializer, AreaWithNestedObjectSerializer, RegionSerializer, CitySerializer, StreetSerializer, CountrySerializer, LocationSerializer, \
     BasePersonSerializer, AlivePersonSerializer, PlaceWithNestedObjectSerializer, GraveSerializer, BurialSerializer, \
     GravePhotoSerializer, PlacePhotoSerializer
+    
+class CustomException(APIException):
+    status_code = 500
+    default_detail = 'Custom Exception'
+    def __init__(self, detail = None):
+        if detail :
+            self.detail = detail    
+        else :
+            self.detail = self.default_detail
         
 class ApiCemeteryList(APIView):
     permission_classes = (IsAuthenticated,)
@@ -403,37 +413,39 @@ class ApiBurialList(APIView):
 
 burial_list = ApiBurialList.as_view()
 
-class ApiBurialUpload(APIView):
+class ApiBindBurialGrave(APIView):
     permission_classes = (IsAuthenticated,)
     def get(self, request) :
-        return render_to_response('mobile_upload_burial.html', {'message': _(u"Загрузите захоронение:")})
+        return render_to_response('mobile_bind_burial_grave.html', {'message': _(u"Загрузите захоронение:")})
     def post(self, request) :
         graveId = int(request.POST['graveId'])
         burialId = int(request.POST['burialId'])        
         templateDateTime = '%Y-%m-%dT%H:%M:%S.%f'
         if request.POST['factDate'] :
             factDate = datetime.strptime(request.POST['factDate'], templateDateTime)
-            factUnclearDate = UnclearDate(year = factDate.year, month = factDate.month, day = factDate.day)
-        if request.POST['status'] :
-            status = request.POST['status']
+            factUnclearDate = UnclearDate(year = factDate.year, month = factDate.month, day = factDate.day)       
         try:
             grave = Grave.objects.get(pk = graveId)
             burial = Burial.objects.get(pk = burialId)
-            burial.grave = grave
-            burial.place = grave.place
+            if burial.status != Burial.STATUS_APPROVED :
+                raise CustomException(detail = 'Привязать данное захоронение невозможно к могиле.')
+            burial.place_number = grave.place.place
+            burial.grave_number = grave.grave_number
             burial.row = grave.place.row
             burial.area = grave.place.area
-            burial.cemetery = grave.place.area.cemetery
-            burial.status = status
+            burial.cemetery = grave.place.cemetery
+            burial.ugh = grave.place.cemetery.ugh
+            burial.changed_by = request.user
             burial.fact_date = factUnclearDate
-            burial.save()            
+            burial.save()
+            burial.close(request=request)
         except Grave.DoesNotExist:
             raise Http404            
         except Burial.DoesNotExist:
             raise Http404
         return Response()
     
-burial_upload = ApiBurialUpload.as_view()
+bind_burial_grave = ApiBindBurialGrave.as_view()
 
 class ApiPlacePhotoList(APIView):
     permission_classes = (IsAuthenticated,)
