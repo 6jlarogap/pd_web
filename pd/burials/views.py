@@ -1174,7 +1174,7 @@ class PlaceCertificateView(UGHRequiredMixin, DetailView):
         right=[u"%s: %s" % (_(u'Кладбище'), place.cemetery, ), ]
         if place.cemetery.address:
             right.append(u"%s: %s" % (_(u'Адрес'), place.cemetery.address, ))
-        urm = u"%s: %s" % (_(u'Участок'), place.area.name, )
+        urm = u"%s: %s" % (_(u'Участок'), place.area and place.area.name or _(u"не указан"), )
         if place.row:
             urm = u"%s, %s: %s" % (urm, _(u"ряд"), place.row, )
         if place.place:
