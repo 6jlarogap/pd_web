@@ -854,7 +854,7 @@ class Burial(SafeDeleteMixin, GetLogsMixin, BaseModel):
     def approved_dt(self):
         return self.dt_modified
 
-    def close(self, old_place=None, old_status=STATUS_CLOSED, request=None):
+    def close(self, old_place=None, request=None):
         if not self.account_number:
             self.set_account_number(user=self.changed_by)
 
@@ -927,12 +927,13 @@ class Burial(SafeDeleteMixin, GetLogsMixin, BaseModel):
         self.responsible = None
         self.place = place
         self.place_number = place.place
+        old_status = self.status
         self.status = self.STATUS_CLOSED
         self.save()
         
         if place.responsible and \
            place.responsible.login_phone and \
-           (not old_status or old_status != self.STATUS_CLOSED):
+           old_status != self.STATUS_CLOSED:
             try:
                 customerprofile = CustomerProfile.objects.get(login_phone=place.responsible.login_phone)
                 text = _(u'Место %s прикреплено. pohoronnoedelo.ru') % place.pk
