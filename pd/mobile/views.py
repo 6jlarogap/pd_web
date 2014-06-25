@@ -345,7 +345,7 @@ class ApiGraveUpload(APIView):
     def get(self, request) :
         return render_to_response('mobile_upload_grave.html', {'message': _(u"Загрузите название могилы:")})
     def post(self, request) :
-        graveName = request.POST['graveName']
+        grave_number = request.POST['grave_number']
         graveId = int(request.POST['graveId'])
         placeId = int(request.POST['placeId'])
         isWrongFIO = False
@@ -358,8 +358,8 @@ class ApiGraveUpload(APIView):
         try:
             place = Place.objects.get(pk = placeId)
             prevGrave = Grave.objects.get(pk = graveId)
-            if prevGrave.grave_number != graveName or prevGrave.place != place or prevGrave.is_wrong_fio != isWrongFIO or prevGrave.is_military != isMilitary:
-                prevGrave.grave_number = graveName
+            if prevGrave.grave_number != grave_number or prevGrave.place != place or prevGrave.is_wrong_fio != isWrongFIO or prevGrave.is_military != isMilitary:
+                prevGrave.grave_number = grave_number
                 prevGrave.place = place
                 prevGrave.is_military = isMilitary
                 prevGrave.is_wrong_fio = isWrongFIO
@@ -370,7 +370,7 @@ class ApiGraveUpload(APIView):
             prevGrave = None            
             grave = Grave(place = place, grave_number = place.get_graves_count() + 1, is_military = isMilitary, is_wrong_fio = isWrongFIO)
             grave.save()
-            write_log(request, grave, _(u"Могила '%s' создана через мобильное приложение") % graveName )
+            write_log(request, grave, _(u"Могила '%s' создана через мобильное приложение") % grave_number )
             listInsertedGrave.append(grave)            
         serializer = GraveSerializer(listInsertedGrave)
         return Response(serializer.data)
