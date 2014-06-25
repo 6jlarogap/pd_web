@@ -114,10 +114,11 @@ class ApiOmsPlacesSerializer(ApiPlacesSerializer):
 
 class ApiCatalogPlacesSerializer(GetGalleryMixin, ApiPlacesSerializer):
     photos = serializers.SerializerMethodField('gallery_func')
+    address = serializers.Field(source='full_name')
 
     class Meta:
         model = Place
-        fields = ('id', 'location', 'status',  'photos', )
+        fields = ('id', 'location', 'address', 'status',  'photos', )
 
 
 

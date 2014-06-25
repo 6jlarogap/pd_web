@@ -221,6 +221,15 @@ class Place(SafeDeleteMixin, GeoPointModel):
     def __unicode__(self):
         return _(u'Кл. %s, уч. %s, ряд %s, место %s') % (self.cemetery, self.area and self.area.name or '', self.row, self.place)
 
+    def full_name(self):
+        result = _(u'Кладбище: %s') % self.cemetery.name
+        if self.area:
+            result = _(u"%s, участок: %s") % (result, self.area.name, )
+        if self.row:
+            result = _(u"%s, ряд: %s") % (result, self.row, )
+        if self.place:
+            result = _(u"%s, место: %s") % (result, self.place)
+        return result
 
     def unique_error_message(self, model_class, unique_check):
         if len(unique_check) == 1:
