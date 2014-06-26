@@ -380,7 +380,7 @@ class ApiGraveUpload(APIView):
             prevGrave = None            
             grave = Grave(place = place, grave_number = place.get_graves_count() + 1, is_military = isMilitary, is_wrong_fio = isWrongFIO)
             grave.save()
-            write_log(request, grave, _(u"Могила '%s' создана через мобильное приложение") % grave_number )
+            write_log(request, grave, _(u"Могила '%s' создана через мобильное приложение") % grave.grave_number )
             listInsertedGrave.append(grave)            
         serializer = GraveSerializer(listInsertedGrave)
         return Response(serializer.data)
@@ -428,7 +428,7 @@ class ApiBindBurialGrave(APIView):
             grave = Grave.objects.get(pk = graveId)
             burial = Burial.objects.get(pk = burialId)
             if burial.status != Burial.STATUS_APPROVED :
-                raise CustomException(detail = 'Привязать данное захоронение невозможно к могиле.')
+                raise CustomException(detail = _(u"Привязать данное захоронение невозможно к могиле."))
             burial.place_number = grave.place.place
             burial.grave_number = grave.grave_number
             burial.row = grave.place.row
