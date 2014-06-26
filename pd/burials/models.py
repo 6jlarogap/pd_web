@@ -771,11 +771,11 @@ class Burial(SafeDeleteMixin, GetLogsMixin, BaseModel):
         if self.place:
             return self.place
 
-        params = {'cemetery': self.cemetery}
-        if self.area:
-            params.update({'area': self.area})
-        if self.row:
-            params.update({'row': self.row})
+        params = {
+            'cemetery': self.cemetery,
+            'area': self.area,
+            'row': self.row,
+        }
         if self.place_number:
             params.update({'place': self.place_number})
         else:
