@@ -444,6 +444,8 @@ class Grave(GeoPointModel):
         else:
             raise Exception('Warning: Grave::delete - "request" param is undefined')
 
+    def full_name(self):
+        return _(u"%s, могила %s") % (self.place.full_name(), self.grave_number)
 
 class PlacePhoto(Files, GeoPointModel):
     place = models.ForeignKey(Place)
@@ -854,7 +856,7 @@ class Burial(SafeDeleteMixin, GetLogsMixin, BaseModel):
     def approved_dt(self):
         return self.dt_modified
 
-    def close(self, old_place=None, request=None):
+    def close(self, request, old_place=None):
         if not self.account_number:
             self.set_account_number(user=self.changed_by)
 
@@ -930,6 +932,9 @@ class Burial(SafeDeleteMixin, GetLogsMixin, BaseModel):
         old_status = self.status
         self.status = self.STATUS_CLOSED
         self.save()
+
+        if old_status != self.STATUS_CLOSED:
+            write_log(request, self, _(u'Захоронение закрыто'))
         
         if place.responsible and \
            place.responsible.login_phone and \
