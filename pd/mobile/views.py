@@ -438,6 +438,7 @@ class ApiBindBurialGrave(APIView):
             burial.changed_by = request.user
             burial.fact_date = factUnclearDate
             burial.save()
+            write_log(request, burial, u"%s\n%s: %s\n%s: %s" % ((u'Захоронение сохранено'), (u'Могила'), grave.full_name(), _(u'Факт. дата'), burial.fact_date))            
             burial.close(request=request)
         except Grave.DoesNotExist:
             raise Http404            
