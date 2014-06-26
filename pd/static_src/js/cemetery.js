@@ -982,6 +982,8 @@ $(function() {
         types: ['geocode'],
         componentRestrictions: {country: 'ru'}
     };
+    $('input[id$=addr_str]').css('width', '650px');
+
     $('input[id$=fias_address]').attr('autocomplete', 'off').css('width', '600px').each(function() {
         var autocomplete = new google.maps.places.Autocomplete(this, ac_options );
         var $input = $(this);

@@ -28,6 +28,7 @@ from persons.models import BasePerson
 from users.models import Profile
 from users.models import Org
 from logs.models import write_log
+from pd.models import UnclearDate
 
 from django.utils.dateparse import parse_datetime
 from django.core.files.base import ContentFile
@@ -45,11 +46,21 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.exceptions import APIException
 
 from serializers import BaseSerializer, CoordinatesSerializer, CemeterySerializer, CemeteryWithNestedObjectSerializer, \
     AreaSerializer, AreaWithNestedObjectSerializer, RegionSerializer, CitySerializer, StreetSerializer, CountrySerializer, LocationSerializer, \
     BasePersonSerializer, AlivePersonSerializer, PlaceWithNestedObjectSerializer, GraveSerializer, BurialSerializer, \
     GravePhotoSerializer, PlacePhotoSerializer
+    
+class CustomException(APIException):
+    status_code = 500
+    default_detail = 'Custom Exception'
+    def __init__(self, detail = None):
+        if detail :
+            self.detail = detail    
+        else :
+            self.detail = self.default_detail
         
 class ApiCemeteryList(APIView):
     permission_classes = (IsAuthenticated,)
@@ -72,6 +83,9 @@ class ApiCemeteryUpload(APIView):
         cemeteryId = int(request.POST['cemeteryId'])
         cemeteryName = request.POST['cemeteryName']
         gpsJSON = request.POST['gps']
+        square = None
+        if request.POST['square'] :
+            square = request.POST['square']
         isGPSChange = False
         if gpsJSON :
             isGPSChange = True
@@ -84,13 +98,14 @@ class ApiCemeteryUpload(APIView):
         cem = None
         try:
             prevCem = Cemetery.objects.get(pk = cemeteryId)
-            if prevCem.name != cemeteryName :
+            if prevCem.name != cemeteryName or prevCem.square != square :
                 prevCem.name = cemeteryName
+                prevCem.square = square
                 prevCem.save()
             cem = prevCem
         except Cemetery.DoesNotExist:
             prevCem = None
-            cem = Cemetery(name = cemeteryName, creator = request.user, ugh = org)
+            cem = Cemetery(name = cemeteryName, square = square, creator = request.user, ugh = org)
             cem.save()
             listInsertedCemetery.append(cem)
         if isGPSChange == True :
@@ -139,6 +154,9 @@ class ApiAreaUpload(APIView):
         areaId = int(request.POST['areaId'])
         cemeteryId = int(request.POST['cemeteryId'])
         gpsJSON = request.POST['gps']
+        square = None
+        if request.POST['square'] :
+            square = request.POST['square']
         isGPSChange = False
         if gpsJSON :
             isGPSChange = True
@@ -152,16 +170,17 @@ class ApiAreaUpload(APIView):
         try:
             cemetery = Cemetery.objects.get(pk = cemeteryId)
             prevArea = Area.objects.get(pk = areaId)
-            if prevArea.name != areaName or prevArea.cemetery != cemetery :
+            if prevArea.name != areaName or prevArea.cemetery != cemetery or prevArea.square != square :
                 prevArea.name = areaName
-                prevArea.cemetery = cemetery                
+                prevArea.cemetery = cemetery
+                prevArea.square = square
                 prevArea.save()
             area = prevArea
         except Cemetery.DoesNotExist:
             raise Http404
         except Area.DoesNotExist:
             prevArea = None
-            area = Area(cemetery = cemetery, name = areaName)            
+            area = Area(cemetery = cemetery, name = areaName, square = square)            
             area.save()
             listInsertedArea.append(area)
         if isGPSChange == True :
@@ -336,7 +355,7 @@ class ApiGraveUpload(APIView):
     def get(self, request) :
         return render_to_response('mobile_upload_grave.html', {'message': _(u"Загрузите название могилы:")})
     def post(self, request) :
-        graveName = request.POST['graveName']
+        grave_number = request.POST['grave_number']
         graveId = int(request.POST['graveId'])
         placeId = int(request.POST['placeId'])
         isWrongFIO = False
@@ -349,8 +368,8 @@ class ApiGraveUpload(APIView):
         try:
             place = Place.objects.get(pk = placeId)
             prevGrave = Grave.objects.get(pk = graveId)
-            if prevGrave.grave_number != graveName or prevGrave.place != place or prevGrave.is_wrong_fio != isWrongFIO or prevGrave.is_military != isMilitary:
-                prevGrave.grave_number = graveName
+            if prevGrave.grave_number != grave_number or prevGrave.place != place or prevGrave.is_wrong_fio != isWrongFIO or prevGrave.is_military != isMilitary:
+                prevGrave.grave_number = grave_number
                 prevGrave.place = place
                 prevGrave.is_military = isMilitary
                 prevGrave.is_wrong_fio = isWrongFIO
@@ -358,10 +377,10 @@ class ApiGraveUpload(APIView):
         except Place.DoesNotExist:
             raise Http404            
         except Grave.DoesNotExist:
-            prevGrave = None
-            grave = Grave(place = place, grave_number = graveName, is_military = isMilitary, is_wrong_fio = isWrongFIO)
+            prevGrave = None            
+            grave = Grave(place = place, grave_number = place.get_graves_count() + 1, is_military = isMilitary, is_wrong_fio = isWrongFIO)
             grave.save()
-            write_log(request, grave, _(u"Могила '%s' создана через мобильное приложение") % graveName )
+            write_log(request, grave, _(u"Могила '%s' создана через мобильное приложение") % grave.grave_number )
             listInsertedGrave.append(grave)            
         serializer = GraveSerializer(listInsertedGrave)
         return Response(serializer.data)
@@ -374,14 +393,17 @@ class ApiBurialList(APIView):
         argSyncDateUnix = request.GET.get('syncDate', None) 
         argGraveId = request.GET.get('graveId', None)
         argCemeteryId = request.GET.get('cemeteryId', None)
-        argAreaId = request.GET.get('areaId', None)        
-        queryBurial = Q(grave__place__cemetery__ugh = request.user.profile.org)
+        argAreaId = request.GET.get('areaId', None)
+        argStatus = request.GET.get('status', None)        
+        queryBurial = Q(cemetery__ugh = request.user.profile.org)
         if argCemeteryId :
-            queryBurial &= Q(grave__place__cemetery__pk = argCemeteryId)
+            queryBurial &= Q(cemetery__pk = argCemeteryId)
         if argAreaId :
-            queryBurial &= Q(grave__place__area__pk = argAreaId)
+            queryBurial &= Q(area__pk = argAreaId)
         if argGraveId :
             queryBurial &= Q(grave__pk = argGraveId)
+        if argStatus :
+            queryBurial &= Q(status = argStatus)
         if argSyncDateUnix :
             argSyncDate = datetime.fromtimestamp(int(argSyncDateUnix))
             queryBurial &= Q(dt_modified__gte = argSyncDate)        
@@ -390,6 +412,64 @@ class ApiBurialList(APIView):
         return Response(serializer.data)
 
 burial_list = ApiBurialList.as_view()
+
+class ApiBindBurialGrave(APIView):
+    permission_classes = (IsAuthenticated,)
+    def get(self, request) :
+        return render_to_response('mobile_bind_burial_grave.html', {'message': _(u"Загрузите захоронение:")})
+    def post(self, request) :
+        graveId = int(request.POST['graveId'])
+        burialId = int(request.POST['burialId'])        
+        templateDateTime = '%Y-%m-%dT%H:%M:%S.%f'
+        if request.POST['factDate'] :
+            factDate = datetime.strptime(request.POST['factDate'], templateDateTime)
+            factUnclearDate = UnclearDate(year = factDate.year, month = factDate.month, day = factDate.day)       
+        try:
+            grave = Grave.objects.get(pk = graveId)
+            burial = Burial.objects.get(pk = burialId)
+            if burial.status != Burial.STATUS_APPROVED :
+                raise CustomException(detail = _(u"Привязать данное захоронение невозможно к могиле."))
+            burial.place_number = grave.place.place
+            burial.grave_number = grave.grave_number
+            burial.row = grave.place.row
+            burial.area = grave.place.area
+            burial.cemetery = grave.place.cemetery
+            burial.ugh = grave.place.cemetery.ugh
+            burial.changed_by = request.user
+            burial.fact_date = factUnclearDate
+            burial.save()
+            write_log(request, burial, u"%s\n%s: %s\n%s: %s" % ((u'Захоронение сохранено'), (u'Могила'), grave.full_name(), _(u'Факт. дата'), burial.fact_date))            
+            burial.close(request=request)
+        except Grave.DoesNotExist:
+            raise Http404            
+        except Burial.DoesNotExist:
+            raise Http404
+        return Response()
+    
+bind_burial_grave = ApiBindBurialGrave.as_view()
+
+class ApiPlacePhotoList(APIView):
+    permission_classes = (IsAuthenticated,)
+    def get(self, request) :
+        argSyncDateUnix = request.GET.get('syncDate', None)
+        argPlaceId = request.GET.get('placeId', None)
+        argCemeteryId = request.GET.get('cemeteryId', None)
+        argAreaId = request.GET.get('areaId', None)        
+        queryPlacePhoto = Q(place__cemetery__ugh = request.user.profile.org)
+        if argCemeteryId :
+            queryPlacePhoto &= Q(place__cemetery__pk = argCemeteryId)
+        if argAreaId :
+            queryPlacePhoto &= Q(place__area__pk = argAreaId)
+        if argPlaceId :
+            queryPlacePhoto &= Q(place__pk = argPlaceId)
+        if argSyncDateUnix :
+            argSyncDate = datetime.fromtimestamp(int(argSyncDateUnix))
+            queryPlacePhoto &= Q(dt_modified__gte = argSyncDate)        
+        listPlacePhoto = PlacePhoto.objects.filter(queryPlacePhoto).order_by('id')
+        serializer = PlacePhotoSerializer(listPlacePhoto)
+        return Response(serializer.data)
+
+placephoto_list = ApiPlacePhotoList.as_view()
 
 
 class ApiGravePhotoUpload(APIView):

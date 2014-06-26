@@ -1,6 +1,7 @@
 # coding=utf-8
 import datetime
 import re
+from django.contrib import messages
 from django.contrib.contenttypes.models import ContentType
 from django.db import models, connection
 from django.db.models import Count, Avg
@@ -10,9 +11,10 @@ from django.db.models.query_utils import Q
 from django.conf import settings
 from pd.models import UnclearDateModelField, BaseModel, Files, GetLogsMixin, validate_gt0
 
-from persons.models import DeadPerson, SafeDeleteMixin, DeathCertificate, PhonesMixin
+from persons.models import DeadPerson, SafeDeleteMixin, DeathCertificate
 from reports.models import Report
-from users.models import Org, Profile, Dover, ProfileLORU, CustomerProfile
+from users.models import Org, Profile, Dover, ProfileLORU, CustomerProfile, PhonesMixin, \
+                         is_ugh_user, is_cabinet_user
 from logs.models import Log
 from geo.models import GeoPointModel, CoordinatesModel
 
@@ -66,6 +68,7 @@ class Cemetery(GetLogsMixin, BaseModel, PhonesMixin):
     address = models.ForeignKey('geo.Location', editable=False, null=True)
     archive_burial_fact_date_required = models.BooleanField(_(u"Дата архивного захоронения обязательна"), default=True)
     archive_burial_account_number_required = models.BooleanField(_(u"Номер архивного захоронения обязателен"), default=True)
+    square = models.FloatField(_(u"Площадь"), null=True, editable=False)
 
     class Meta:
         verbose_name = _(u"Кладбище")
@@ -148,6 +151,7 @@ class Area(BaseModel):
     availability = models.CharField(_(u"Открытость"), max_length=32, choices=AVAILABILITY_CHOICES, null=True)
     purpose = models.ForeignKey(AreaPurpose, verbose_name=_(u"Назначение"), null=True, on_delete=models.PROTECT)
     places_count = models.PositiveIntegerField(_(u"Макс. кол-во могил в месте"), default=1)
+    square = models.FloatField(_(u"Площадь"), null=True, editable=False)
 
     class Meta:
         verbose_name = _(u"Участок")
@@ -181,6 +185,8 @@ class AreaCoordinates(CoordinatesModel):
         unique_together = ('area', 'angle_number',)
 
 class Place(SafeDeleteMixin, GeoPointModel):
+    STATUS_LIST = ('dt_wrong_fio', 'dt_military', 'dt_size_violated', 'dt_unowned', 'dt_unindentified', )
+
     cemetery = models.ForeignKey(Cemetery, verbose_name=_(u"Кладбище"), on_delete=models.PROTECT)
     area = models.ForeignKey(Area, verbose_name=_(u"Участок"), blank=True, null=True,
                              on_delete=models.PROTECT)
@@ -215,6 +221,15 @@ class Place(SafeDeleteMixin, GeoPointModel):
     def __unicode__(self):
         return _(u'Кл. %s, уч. %s, ряд %s, место %s') % (self.cemetery, self.area and self.area.name or '', self.row, self.place)
 
+    def full_name(self):
+        result = _(u'Кладбище: %s') % self.cemetery.name
+        if self.area:
+            result = _(u"%s, участок: %s") % (result, self.area.name, )
+        if self.row:
+            result = _(u"%s, ряд: %s") % (result, self.row, )
+        if self.place:
+            result = _(u"%s, место: %s") % (result, self.place)
+        return result
 
     def unique_error_message(self, model_class, unique_check):
         if len(unique_check) == 1:
@@ -332,12 +347,9 @@ class Place(SafeDeleteMixin, GeoPointModel):
     def get_photo_gallery(self, request):
         """
         Получить все фото, относящиеся к месту.
-        
-        Выбираются все PlacePhoto, все GravePhoto этого места,
-        сортируются по дате создания в порядке убывания
         """
         gallery = []
-        for pph in PlacePhoto.objects.filter(place=self):
+        for pph in PlacePhoto.objects.filter(place=self).order_by('-date_of_creation'):
             if pph.bfile:
                 gallery.append(
                     {
@@ -345,18 +357,19 @@ class Place(SafeDeleteMixin, GeoPointModel):
                         'addedAt': pph.date_of_creation,
                     }
                 )
-        for g in Grave.objects.filter(place=self).order_by('grave_number'):
-            for gph in GravePhoto.objects.filter(grave=g):
-                if gph.bfile:
-                    gallery.append(
-                        {
-                            'photo': request.build_absolute_uri(gph.bfile.url),
-                            'addedAt': gph.date_of_creation,
-                        }
-                    )
-        gallery = sorted(gallery, key=lambda photo: photo['addedAt'], reverse=True)
         return gallery
         
+    def status_list(self):
+        """
+        Вернуть список статусов, например ['dt_wrong_fio', 'dt_unindentified', ]
+        """
+        result  = []
+        for f in Place.STATUS_LIST:
+            value = getattr(self,f)
+            if value:
+                result.append(f)
+        return result
+
 class PlaceSize(models.Model):
     org = models.ForeignKey(Org, verbose_name=_(u"Организация"), editable=False, on_delete=models.PROTECT) 
     graves_count = models.PositiveSmallIntegerField(_(u"Число могил"), )
@@ -431,9 +444,37 @@ class Grave(GeoPointModel):
         else:
             raise Exception('Warning: Grave::delete - "request" param is undefined')
 
+    def full_name(self):
+        return _(u"%s, могила %s") % (self.place.full_name(), self.grave_number)
 
 class PlacePhoto(Files, GeoPointModel):
     place = models.ForeignKey(Place)
+
+    def is_accessible_anonymous(self):
+        """
+        Доступно ли анонимному пользователю
+        """
+        return bool(self.place.dt_unowned)
+
+    def is_accessible(self, user):
+        """
+        Доступность фото места:
+        
+        * ОМС, чье кладбище, где место
+        * Пользователь кабинета, если это его место
+        * Анонимный пользователь, если место бесхозное
+        """
+        result = False
+        if self.is_accessible_anonymous():
+            result = True
+        elif is_ugh_user(user):
+            result = self.place.cemetery.ugh == user.profile.org
+        elif is_cabinet_user(user):
+            result = self.place.responsible and \
+                     self.place.responsible.login_phone and \
+                     self.place.responsible.login_phone == user.customerprofile.login_phone
+        return result
+        
 
 class AreaPhoto(Files, GeoPointModel):
     area = models.ForeignKey(Area)
@@ -815,7 +856,7 @@ class Burial(SafeDeleteMixin, GetLogsMixin, BaseModel):
     def approved_dt(self):
         return self.dt_modified
 
-    def close(self, old_place=None, old_status=STATUS_CLOSED):
+    def close(self, request, old_place=None):
         if not self.account_number:
             self.set_account_number(user=self.changed_by)
 
@@ -888,27 +929,37 @@ class Burial(SafeDeleteMixin, GetLogsMixin, BaseModel):
         self.responsible = None
         self.place = place
         self.place_number = place.place
+        old_status = self.status
         self.status = self.STATUS_CLOSED
         self.save()
+
+        if old_status != self.STATUS_CLOSED:
+            write_log(request, self, _(u'Захоронение закрыто'))
         
-        if not settings.DEBUG and \
-           place.responsible and \
+        if place.responsible and \
            place.responsible.login_phone and \
-           (not old_status or old_status != self.STATUS_CLOSED):
-            if CustomerProfile.objects.filter(user__username=place.responsible.login_phone).count():
-                text=_(u'Место %s прикреплено. pohoronnoedelo.ru') % place.pk
-                email_error_text = _(u"Пользователь %s не смог получить СМС после прикрепления места %s" % \
-                                    (place.responsible.login_phone, place.pk,))
-            else:
+           old_status != self.STATUS_CLOSED:
+            try:
+                customerprofile = CustomerProfile.objects.get(login_phone=place.responsible.login_phone)
+                text = _(u'Место %s прикреплено. pohoronnoedelo.ru') % place.pk
+                email_error_text = _(u"Пользователь %s (телефон %s) не смог получить СМС после прикрепления места %s" % \
+                                    (customerprofile.user.username, place.responsible.login_phone, place.pk,))
+            except CustomerProfile.DoesNotExist:
                 password = CustomerProfile.create_cabinet(place.responsible)
-                text=_(u'https://pohoronnoedelo.ru login: %s parol: %s') % (place.responsible.login_phone, password,)
+                text = _(u'https://pohoronnoedelo.ru login: %s parol: %s') % (place.responsible.login_phone, password,)
                 email_error_text = _(u"Пользователь %s не смог получить пароль после закрытия захоронения" % \
                                     (place.responsible.login_phone,))
-            sent, message = send_sms(
-                phone_number=place.responsible.login_phone,
-                text=text,
-                email_error_text=email_error_text,
-            )
+                if request and settings.DEBUG:
+                    messages.warning(
+                        request,
+                        _(u"Создан пользователь кабинета %s, пароль %s") % (place.responsible.login_phone, password, ),
+                    )
+            if not settings.DEBUG:
+                sent, message = send_sms(
+                    phone_number=place.responsible.login_phone,
+                    text=text,
+                    email_error_text=email_error_text,
+                )
 
         # Очистим "пустышку" свидетельства о смерти, где
         # не все обязательные поля заполнены

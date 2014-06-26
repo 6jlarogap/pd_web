@@ -3,44 +3,53 @@
 <div class="form_block">
     {{ form.non_field_errors }}
 
-    {{ form.fias_address.errors }}
-    <p>{{ form.fias_address.label_tag }} {{ form.fias_address }}<span class="helptext">{{ form.fias_address.help_text }}</span></p>
+    {% if form.is_addr_str %}
 
-    {{ form.fias_street.errors }}
-    {{ form.fias_street }}
+        {{ form.addr_str.errors }}
+        <p>{{ form.addr_str }}<span class="helptext">{{ form.addr_str.help_text }}</span></p>
 
-    <div class="full_address">
-        <p></p>
+    {% else %}
 
-        {{ form.country_name.errors }}
-        <p class="inline">{{ form.country_name.label_tag }} {{ form.country_name }}<span class="helptext">{{ form.country_name.help_text }}</span></p>
+        {{ form.fias_address.errors }}
+        <p>{{ form.fias_address.label_tag }} {{ form.fias_address }}<span class="helptext">{{ form.fias_address.help_text }}</span></p>
 
-        {{ form.region_name.errors }}
-        <p class="inline">{{ form.region_name.label_tag }} {{ form.region_name }}<span class="helptext">{{ form.region_name.help_text }}</span></p>
+        {{ form.fias_street.errors }}
+        {{ form.fias_street }}
 
-        {{ form.city_name.errors }}
-        <p class="inline">{{ form.city_name.label_tag }} {{ form.city_name }}<span class="helptext">{{ form.city_name.help_text }}</span></p>
+        <div class="full_address">
+            <p></p>
 
-        {{ form.street_name.errors }}
-        <p class="inline">{{ form.street_name.label_tag }} {{ form.street_name }}<span class="helptext">{{ form.street_name.help_text }}</span></p>
+            {{ form.country_name.errors }}
+            <p class="inline">{{ form.country_name.label_tag }} {{ form.country_name }}<span class="helptext">{{ form.country_name.help_text }}</span></p>
 
-        <p></p>
+            {{ form.region_name.errors }}
+            <p class="inline">{{ form.region_name.label_tag }} {{ form.region_name }}<span class="helptext">{{ form.region_name.help_text }}</span></p>
 
-        {{ form.post_index.errors }}
-        <p>{{ form.post_index.label_tag }} {{ form.post_index }}<span class="helptext">{{ form.post_index.help_text }}</span></p>
-    </div>
-    {{ form.house.errors }}
-    <p class="inline">{{ form.house.label_tag }} {{ form.house }}<span class="helptext">{{ form.house.help_text }}</span></p>
+            {{ form.city_name.errors }}
+            <p class="inline">{{ form.city_name.label_tag }} {{ form.city_name }}<span class="helptext">{{ form.city_name.help_text }}</span></p>
 
-    {{ form.block.errors }}
-    <p class="inline">{{ form.block.label_tag }} {{ form.block }}<span class="helptext">{{ form.block.help_text }}</span></p>
+            {{ form.street_name.errors }}
+            <p class="inline">{{ form.street_name.label_tag }} {{ form.street_name }}<span class="helptext">{{ form.street_name.help_text }}</span></p>
 
-    {{ form.building.errors }}
-    <p class="inline">{{ form.building.label_tag }} {{ form.building }}<span class="helptext">{{ form.building.help_text }}</span></p>
+            <p></p>
 
-    {{ form.flat.errors }}
-    <p class="inline">{{ form.flat.label_tag }} {{ form.flat }}<span class="helptext">{{ form.flat.help_text }}</span></p>
+            {{ form.post_index.errors }}
+            <p>{{ form.post_index.label_tag }} {{ form.post_index }}<span class="helptext">{{ form.post_index.help_text }}</span></p>
+        </div>
+        {{ form.house.errors }}
+        <p class="inline">{{ form.house.label_tag }} {{ form.house }}<span class="helptext">{{ form.house.help_text }}</span></p>
 
-    {{ form.info.errors }}
-    <p>{{ form.info.label_tag }} {{ form.info }}<span class="helptext">{{ form.info.help_text }}</span></p>
+        {{ form.block.errors }}
+        <p class="inline">{{ form.block.label_tag }} {{ form.block }}<span class="helptext">{{ form.block.help_text }}</span></p>
+
+        {{ form.building.errors }}
+        <p class="inline">{{ form.building.label_tag }} {{ form.building }}<span class="helptext">{{ form.building.help_text }}</span></p>
+
+        {{ form.flat.errors }}
+        <p class="inline">{{ form.flat.label_tag }} {{ form.flat }}<span class="helptext">{{ form.flat.help_text }}</span></p>
+
+        {{ form.info.errors }}
+        <p>{{ form.info.label_tag }} {{ form.info }}<span class="helptext">{{ form.info.help_text }}</span></p>
+
+    {% endif %}
 </div>

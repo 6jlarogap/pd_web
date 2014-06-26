@@ -17,7 +17,7 @@ from django.core.exceptions import ValidationError
 from django.utils.translation import ugettext as _
 
 from burials.models import Burial, ExhumationRequest, Cemetery, Area, Place, AreaPurpose, Grave, BurialFiles
-from geo.models import Location, Country, LocationFIAS, DFiasAddrobj, Region, City, Street
+from geo.models import Location, Country, Region, City, Street
 from logs.models import write_log
 from orders.models import Product, Order, OrderItem, CoffinData, CatafalqueData, AddInfoData
 from pd.models import UnclearDate
@@ -81,27 +81,9 @@ def import_location(location_data):
         building = location_data[6],
         flat = location_data[7],
     )
-    fias_street = None
-    if location_data[4] == u'Россия':
-        fias_street = DFiasAddrobj.objects.get_streets(location_data[0], location_data[1], location_data[2], location_data[3])[0]
-
-    if fias_street:
-        fias_parent = fias_street
-        while fias_parent:
-            LocationFIAS.objects.create(
-                loc = location,
-                guid = fias_parent.aoguid,
-                name = u'%s %s' % (fias_parent.shortname, fias_parent.formalname),
-                level = fias_parent.aolevel,
-                )
-            try:
-                fias_parent = DFiasAddrobj.objects.get(aoguid=fias_parent.parentguid, actstatus=1)
-            except DFiasAddrobj.DoesNotExist:
-                fias_parent = None
-    else:
-        location.region, _created = Region.objects.get_or_create(country=location.country, name=location_data[1])
-        location.city, _created = City.objects.get_or_create(region=location.region, name=location_data[2])
-        location.street, _created = Street.objects.get_or_create(city=location.city, name=location_data[3])
+    location.region, _created = Region.objects.get_or_create(country=location.country, name=location_data[1])
+    location.city, _created = City.objects.get_or_create(region=location.region, name=location_data[2])
+    location.street, _created = Street.objects.get_or_create(city=location.city, name=location_data[3])
 
     location.save()
     return location

@@ -18,7 +18,8 @@ from django.core.mail import send_mail, EmailMessage
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
 from django.core.urlresolvers import reverse
-from django.db import transaction, connection
+from django.core.files.base import ContentFile
+from django.db import transaction, connection, IntegrityError
 from django.db.models.query_utils import Q
 from django.db.models.aggregates import Count
 from django.http import HttpResponse, Http404
@@ -32,24 +33,32 @@ from django.views.generic.detail import DetailView
     
 from captcha.client import submit
 
+from wkhtmltopdf.views import PDFTemplateResponse
+
 from rest_framework import viewsets
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.authtoken.models import Token
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.parsers import MultiPartParser
 
 from burials.views import UGHRequiredMixin, LoginRequiredMixin, SupervisorRequiredMixin
 from logs.models import Log, write_log, LoginLog
 from users.forms import UserAddForm, RegisterForm, LoruFormset, ProfileForm, UserProfileForm, \
                         UserDataForm, ChangePasswordForm, BankAccountFormset, OrgForm, \
                         OrgLogForm, LoginLogForm, OrgBurialStatsForm, SupportForm, TestCaptchaForm
-from users.models import Profile, Org, RegisterProfile, ProfileLORU, CustomerProfile, get_mail_footer, is_cabinet_user
+from users.models import Profile, Org, RegisterProfile, ProfileLORU, CustomerProfile, Store, \
+                         get_mail_footer, is_cabinet_user, PermitIfLoru, Oauth, \
+                         BankAccount, OrgCertificate, OrgContract
 from pd.models import validate_phone_as_number
-from persons.models import AlivePerson
+from persons.models import AlivePerson, Phone
 from burials.models import Cemetery, Area, Burial, Place
 from billing.models import Wallet, Rate
 from orders.models import Product, ProductStatus, ProductHistory
 from pd.views import PaginateListView, RequestToFormMixin, FormInvalidMixin, get_front_end_url, ServiceException
+from geo.models import Location
+
+from users.serializers import StoreSerializer
 
 from sms_service.utils import send_sms
 
@@ -71,22 +80,42 @@ class CheckRecaptchaMixin(object):
                 use_ssl=use_ssl
         ).is_valid
     
-class AuthGetTokenView(APIView):
+class ApiAuthSigninView(APIView):
     """
     Проверка имени и пароля, (создать и) отдать token
     """
-    def post(self, request):
+    def do_post(self, request, user=None):
+        """
+        Выполнить 'обычную' авторизацию, если не задан объект user как параметр,
+        иначе только создать при необходимости token и вернуть данные
+        """
         token = None
-        username = request.DATA.get('username')
-        password = request.DATA.get('password')
-        confirm_tc = request.DATA.get('confirmTC')
         data = dict(status='error')
         status_code = 400
-        if username and password:
-            user = authenticate(username=username, password=password)
-            if user and user.is_active:
+         # Так надо для login() без предварительного authenticate()
+        user_backend = 'django.contrib.auth.backends.ModelBackend'
+        confirm_tc = request.DATA.get('confirmTC')
+        oauth = request.DATA.get('oauth')
+        if user:
+            user.backend = user_backend
+        else:
+            username = request.DATA.get('username')
+            password = request.DATA.get('password')
+            if username and password:
+                user = authenticate(username=username, password=password)
+            elif oauth:
+                user, oauth_rec, message = Oauth.check_token(
+                    oauth,
+                )
+                if user:
+                    user.backend = user_backend
+        if user:
+            if user.is_active:
                 token, created = Token.objects.get_or_create(user=user)
+            else:
+                data['message'] = _(u'Пользователь %s не активен') % user.username
         if token:
+            username = user.username
             tc_confirmed = True
             role = None
             try:
@@ -114,14 +143,25 @@ class AuthGetTokenView(APIView):
                 profile['lastname'] = pr.user_last_name or user.last_name or None
                 profile['firstname'] = pr.user_first_name or user.first_name or None
                 profile['middlename'] = pr.user_middle_name or None
+                profile['username'] = pr.user.username
                 if role == 'ROLE_CLIENT':
-                    org = { 'id': None, 'name': None }
-                    profile['mainPhone'] = username
+                    org = { 'id': None, 'name': None, 'location': None }
+                    profile['mainPhone'] = pr.login_phone
                     if not user.customerprofile.tc_confirmed and confirm_tc:
                         user.customerprofile.tc_confirmed = datetime.datetime.now()
                         user.customerprofile.save()
                 else:
                     org = { 'id': user.profile.org.pk, 'name': user.profile.org.name or None }
+                    if user.profile.org.off_address:
+                        org['location'] = {
+                            'address': unicode(user.profile.org.off_address),
+                            'coords': {
+                                'longitude': user.profile.org.off_address.gps_x,
+                                'latitude': user.profile.org.off_address.gps_y,
+                           },
+                        }
+                    else:
+                        org['location'] = None
                     profile['mainPhone'] = None
 
                 data.update({
@@ -137,24 +177,145 @@ class AuthGetTokenView(APIView):
                 LoginLog.write(request)
             else:
                 data['message'] = 'unconfirmed_tc'
+        elif oauth and not user:
+            data.update(message)
         else:
             data['message'] = 'Wrong username or password'
         return Response(data=data, status=status_code)
 
-auth_get_token = AuthGetTokenView.as_view()
+    def post(self, request):
+        return self.do_post(request)
 
-class AuthApiLogout(APIView):
+api_auth_signin = ApiAuthSigninView.as_view()
+
+class ApiAuthSignoutView(APIView):
     permission_classes = (IsAuthenticated,)
     
     def post(self, request):
         logout(request)
         return Response(data={}, status=200)
 
-auth_api_logout = AuthApiLogout.as_view()
+api_auth_signout = ApiAuthSignoutView.as_view()
 
-class ApiAuthSettings(APIView):
+class ApiAuthSignupView(CheckRecaptchaMixin, ApiAuthSigninView):
+    """
+    Регистрация пользователя-кабинетчика (физического лица)
+    """
+    def post(self, request):
+        data = dict(status='error')
+        status_code = 400
+        username = request.DATA.get('username')
+        password = request.DATA.get('password')
+        profile = request.DATA.get('profile')
+        try:
+            if profile and profile.get('email'):
+                try:
+                    validate_email(profile['email'])
+                except ValidationError:
+                    raise ServiceException(_(u'Неверный формат адреса электронной почты'))
+            oauth = request.DATA.get('oauth')
+            recaptcha_data = request.DATA.get('recaptchaData')
+            if oauth:
+                user, oauth_rec, message = Oauth.check_token(
+                    oauth,
+                    signup_dict=dict(
+                        username=username,
+                        password=password,
+                        profile=profile,
+                    ),
+                )
+                if message:
+                    data.update(message)
+                else:
+                    return super(ApiAuthSignupView, self).do_post(request, user)
+            elif recaptcha_data:
+                if self.check_recaptcha(request, recaptcha_data['challenge'], recaptcha_data['response']):
+                    user, created = User.objects.get_or_create(
+                        username=username,
+                        defaults = {
+                            'email': profile and profile.get('email') or '',
+                        }
+                    )
+                    if created:
+                        if password:
+                            user.set_password(password)
+                            user.save()
+                        kwargs = {}
+                        if profile:
+                            kwargs.update({
+                                'user_last_name': profile.get('lastname', ''),
+                                'user_first_name': profile.get('firstname', ''),
+                                'user_middle_name': profile.get('middlename', ''),
+                            })
+                        CustomerProfile.objects.create(
+                            user=user,
+                            tc_confirmed = datetime.datetime.now(),
+                            **kwargs
+                        )
+                        return super(ApiAuthSignupView, self).do_post(request)
+                    else:
+                        data['message'] = _(u'Такой пользователь, %s, уже имеется') % username
+                else:
+                    data['message'] = _(u'Введена неверная captcha')
+            else:
+                data['message'] = _(u'Регистрация пользователя без captcha или стороннего провайдера не предусмотрена')
+        except ServiceException as excpt:
+            data['message'] = excpt.message
+        return Response(data=data, status=status_code)
+
+api_auth_signup = ApiAuthSignupView.as_view()
+    
+class ApiSettingsOauthProvidersView(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def post(self, request):
+        data = dict(status='error')
+        status_code = 400
+        user, oauth_rec, message = Oauth.check_token(
+            request.DATA,
+            bind_dict=dict(
+                user=request.user,
+            ),
+        )
+        if message:
+            data.update(message)
+        else:
+            status_code = 200
+            data['status'] = 'success'
+            data['username'] = oauth_rec.get_display_name()
+        return Response(data=data, status=status_code)
+        
+api_settings_oauth_providers = ApiSettingsOauthProvidersView.as_view()
+
+class ApiSettingsOauthProvidersDeleteView(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def delete(self, request, provider):
+        providers = Oauth.objects.filter(user=request.user, provider=provider)
+        if providers:
+            providers.delete()
+            return Response(data={'status': 'success'}, status=200)
+        else:
+            return Response(
+                data={'status': 'error', 'message': _(u'Нет такого провайдера')},
+                status=400,
+            )
+
+api_settings_oauth_providers_delete = ApiSettingsOauthProvidersDeleteView.as_view()
+
+class ApiSettings(APIView):
     permission_classes = (IsAuthenticated,)
     
+    def get(self, request):
+        data = dict(oauthProviders=[])
+        for provider in Oauth.objects.filter(user=request.user):
+            info = {
+                'id': provider.provider,
+                'username': provider.get_display_name(),
+            }
+            data['oauthProviders'].append(info)
+        return Response(data=data, status=200)
+        
     @transaction.commit_on_success
     def put(self, request):
         """
@@ -163,6 +324,7 @@ class ApiAuthSettings(APIView):
         Input data
         {
            # avatar, пока не применяем
+           "username": "somebody",
            "loginPhone": "375297542270",
             "oldPassword": "1234567",
             "newPassword": "7654321"
@@ -180,10 +342,23 @@ class ApiAuthSettings(APIView):
             login_phone = request.DATA.get('loginPhone')
             if login_phone:
                 try:
-                    validate_phone_as_number(decimal.Decimal(login_phone))
+                    new_login_phone = decimal.Decimal(login_phone)
+                    validate_phone_as_number(new_login_phone)
                 except (TypeError, decimal.InvalidOperation, ValidationError, ):
                     raise ServiceException(_(u'Неверный формат телефона'))
-                user.username = login_phone
+                if is_cabinet_user(user):
+                    old_login_phone = user.customerprofile.login_phone
+                    if new_login_phone != old_login_phone:
+                        try:
+                            user.customerprofile.login_phone = new_login_phone
+                            user.customerprofile.save()
+                            AlivePerson.objects.filter(login_phone=old_login_phone).update(login_phone=new_login_phone)
+                        except IntegrityError:
+                            raise ServiceException(_(u'Такой номер телефона ответственного уже имеется'))
+
+            new_username = request.DATA.get('username')
+            if new_username:
+                user.username = new_username
 
             new_password = request.DATA.get('newPassword')
             if new_password:
@@ -197,16 +372,14 @@ class ApiAuthSettings(APIView):
                     raise ServiceException(_(u'Неверный формат адреса электронной почты'))
                 user.email = email
 
-            if new_password or login_phone or email:
-                user.save()
-            try:
-                # это только для клиента кабинета!
-                user.customerprofile
-                if login_phone and login_phone != old_username:
-                    AlivePerson.objects.filter(login_phone=old_username).update(login_phone=login_phone)
-            except CustomerProfile.DoesNotExist:
-                pass
+            if new_password or new_username or email:
+                try:
+                    user.save()
+                except IntegrityError:
+                    raise ServiceException(_(u'Пользователь с таким именем для входа в систему уже имеется'))
+
         except ServiceException as excpt:
+            transaction.rollback()
             data = { 'status': 'error',
                      'message': excpt.message,
                    }
@@ -216,7 +389,7 @@ class ApiAuthSettings(APIView):
             status_code = 200
         return Response(data=data, status=status_code)
 
-api_auth_settings = ApiAuthSettings.as_view()
+api_settings = ApiSettings.as_view()
 
 class ApiAuthUser(APIView):
     permission_classes = (IsAuthenticated,)
@@ -272,24 +445,35 @@ class AuthGetPasswordBySMSView(CheckRecaptchaMixin, APIView):
         status = 'error'
         status_code = 400
         message = ''
-        phone_number = request.DATA['phoneNumber']
-        recaptcha_data = request.DATA['recaptchaData']
-        if not self.check_recaptcha(self.request, recaptcha_data['challenge'], recaptcha_data['response']):
+        login_phone = request.DATA['phoneNumber']
+        recaptcha_data = request.DATA.get('recaptchaData')
+        if not recaptcha_data:
+            message = _(u'Не данных по captcha')
+        elif not self.check_recaptcha(self.request, recaptcha_data['challenge'], recaptcha_data['response']):
             message = _(u'Введена неверная captcha')
         else:
-            if not CustomerProfile.objects.filter(user__username=phone_number).count():
-                message = _(u'Вы не зарегистрированы в системе. Обратитесь в администрацию кладбища')
+            try:
+                login_phone = decimal.Decimal(login_phone)
+                validate_phone_as_number(login_phone)
+            except (TypeError, decimal.InvalidOperation, ValidationError, ):
+                message = _(u'Неверный формат телефона')
             else:
-                password = CustomerProfile.generate_password()
-                user = User.objects.get(username=phone_number)
-                user.set_password(password)
-                user.save()
-                if not settings.DEBUG:
-                    sent, message = send_sms(
-                        phone_number=phone_number,
-                        text=_(u'Vash parol na PohoronnoeDelo: %s') % password,
-                        email_error_text = _(u"Пользователь %s не смог получить или заменить пароль" % (phone_number,)),
-                    )
+                try:
+                    customerprofile = CustomerProfile.objects.get(login_phone=login_phone)
+                except CustomerProfile.DoesNotExist:
+                    message = _(u'Вы не зарегистрированы в системе. Обратитесь в администрацию кладбища')
+                else:
+                    password = CustomerProfile.generate_password()
+                    user = customerprofile.user
+                    user.set_password(password)
+                    user.save()
+                    if not settings.DEBUG:
+                        sent, message = send_sms(
+                            phone_number=login_phone,
+                            text=_(u'Vash parol na PohoronnoeDelo: %s') % password,
+                            email_error_text = _(u"Пользователь %s (телефон %s) не смог получить или заменить пароль" % \
+                                               (user.username, login_phone)),
+                        )
         if not message:
             status = 'success'
             status_code = 200
@@ -332,7 +516,7 @@ class ApiFeedBack(CheckRecaptchaMixin, APIView):
         try:
             if not request.user.is_authenticated():
                 if not recaptcha_data:
-                    raise ServiceException(_(u'Не задана captcha'))
+                    raise ServiceException(_(u'Не данных по captcha'))
                 if not self.check_recaptcha(self.request, recaptcha_data['challenge'], recaptcha_data['response']):
                     raise ServiceException(_(u'Ошибка проверки captcha'))
 
@@ -420,19 +604,23 @@ class ApiFeedBack(CheckRecaptchaMixin, APIView):
 api_feedback = ApiFeedBack.as_view()
 
 class ApiLoruPlaces(APIView):
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (PermitIfLoru,)
 
+    """
+    Вернуть массив, в котором только "ОМС" публичного каталога
+    """
     def get(self, request):
         data = []
-        for ugh in Org.objects.filter(loru_list__loru=request.user.profile.org):
+        try:
+            ugh = Org.objects.filter(inn=settings.ORG_AD_PAY_RECIPIENT['inn'])[0]
             d = {
-                    'id': ugh.pk,
-                    'name': ugh.name,
-                    'currency': {
-                        'name': ugh.currency.name,
-                        'shortName': ugh.currency.short_name,
-                        'code': ugh.currency.code,
-                    }
+                'id': ugh.pk,
+                'name': _(u'Каталог'),
+                'currency': {
+                    'name': ugh.currency.name,
+                    'shortName': ugh.currency.short_name,
+                    'code': ugh.currency.code,
+                }
             }
             for action, costFor in (
                                         (Rate.RATE_ACTION_PUBLISH, 'costForEnable'),
@@ -445,6 +633,8 @@ class ApiLoruPlaces(APIView):
                                                 ).order_by('-date_from')[:1]:
                         d['costFor'] = rate.rate
             data.append(d)
+        except IndexError:
+            pass
         return Response(data=data, status=200)
 
 api_loru_places = ApiLoruPlaces.as_view()
@@ -1240,27 +1430,33 @@ class OrgCurrentStatsView(SupervisorRequiredMixin, TemplateView):
             org['num_places_cabinet'] = cabinets.count()
             total['places_cabinet_count'] += org['num_places_cabinet']
 
-            # вместо:
-            # User.objects.filter(username__in=\
-            #    cabinets.distinct('responsible__login_phone').
-            #    order_by('responsible__login_phone').
-            #    values_list('responsible__login_phone')
-            # )
-            # применяем этот сырой запрос из-за cast(string to decimal)
-            #
-            query = r"""SELECT COUNT(*) FROM "auth_user"
-                        WHERE "auth_user"."username" ~ E'^\\d+$'
-                        and cast("auth_user"."username" as decimal) IN 
-                        (SELECT DISTINCT ON (U1."login_phone") U1."login_phone" FROM 
-                        "burials_place" U0 LEFT OUTER JOIN "persons_aliveperson" U1 
-                        ON (U0."responsible_id" = U1."baseperson_ptr_id") 
-                        INNER JOIN "burials_cemetery" U2 ON (U0."cemetery_id" = U2."id")
-                        WHERE (U1."login_phone" IS NOT NULL AND U2."ugh_id" = %s ))
-                     """ % o.pk
-            cursor = connection.cursor()
-            cursor.execute(query)
-            org['num_cabinets'] = cursor.fetchone()[0]
+            ## вместо:
+            ## User.objects.filter(username__in=\
+            ##    cabinets.distinct('responsible__login_phone').
+            ##    order_by('responsible__login_phone').
+            ##    values_list('responsible__login_phone')
+            ## ).count()
+            ## применяем этот сырой запрос из-за cast(string to decimal)
+            ##
+            #query = r"""SELECT COUNT(*) FROM "auth_user"
+                        #WHERE "auth_user"."username" ~ E'^\\d+$'
+                        #and cast("auth_user"."username" as decimal) IN 
+                        #(SELECT DISTINCT ON (U1."login_phone") U1."login_phone" FROM 
+                        #"burials_place" U0 LEFT OUTER JOIN "persons_aliveperson" U1 
+                        #ON (U0."responsible_id" = U1."baseperson_ptr_id") 
+                        #INNER JOIN "burials_cemetery" U2 ON (U0."cemetery_id" = U2."id")
+                        #WHERE (U1."login_phone" IS NOT NULL AND U2."ugh_id" = %s ))
+                     #""" % o.pk
+            #cursor = connection.cursor()
+            #cursor.execute(query)
+            #org['num_cabinets'] = cursor.fetchone()[0]
 
+            org['num_cabinets'] = CustomerProfile.objects.filter(login_phone__in=\
+                cabinets.distinct('responsible__login_phone').
+                order_by('responsible__login_phone').
+                values_list('responsible__login_phone')
+            ).count()
+            
             org['num_lorus'] = ProfileLORU.objects.filter(ugh=o).count()
             
             products = Product.objects.filter(loru__ugh_list__ugh=o)
@@ -1449,4 +1645,182 @@ class Tutorial(TemplateView):
         return self.render_to_response({'data': data})
 
 tutorial = Tutorial.as_view()
+
+class StoreList(APIView):
+    """
+    List all stores, or create a new store.
+    """
+    permission_classes = (PermitIfLoru,)
+
+    def get(self, request, format=None):
+        stores = Store.objects.filter(loru=request.user.profile.org)
+        serializer = StoreSerializer(stores, many=True)
+        return Response(serializer.data)
+
+    def post(self, request, format=None):
+        serializer = StoreSerializer(data=request.DATA, context={ 'request': request, })
+        if serializer.is_valid():
+            serializer.save()
+            phones = request.DATA.get('phones')
+            if phones is not None:
+                Phone.create_default_phones(serializer.object, phones)
+            return Response(serializer.data, status=200)
+        return Response(serializer.errors, status=400)
+    
+api_loru_stores = StoreList.as_view()
+
+class StoreDetail(APIView):
+    """
+    Retrieve, update or delete a store instance.
+    """
+    permission_classes = (PermitIfLoru,)
+
+    def get_object(self, request, pk):
+        try:
+            return Store.objects.get(loru=request.user.profile.org, pk=pk)
+        except Store.DoesNotExist:
+            raise Http404
+
+    def get(self, request, pk, format=None):
+        store = self.get_object(request, pk)
+        serializer = StoreSerializer(store)
+        return Response(serializer.data)
+
+    def put(self, request, pk, format=None):
+        store = self.get_object(request, pk)
+        serializer = StoreSerializer(store, data=request.DATA, context={ 'request': request, })
+        if serializer.is_valid():
+            serializer.save()
+            phones = request.DATA.get('phones')
+            if phones is not None:
+                Phone.create_default_phones(serializer.object, phones)
+            return Response(serializer.data, status=200)
+        return Response(serializer.errors, status=400)
+
+    def delete(self, request, pk, format=None):
+        store = self.get_object(request, pk)
+        store.delete()
+        return Response(status=200, data={})
+
+api_loru_store_detail = StoreDetail.as_view()
+
+class ApiOrgSignupView(CheckRecaptchaMixin, ApiAuthSigninView):
+    """
+    Регистрация ЛОРУ (нового поставщика)
+    """
+    parser_classes = (MultiPartParser,)
+    
+    @transaction.commit_on_success
+    def post(self, request):
+        try:
+            recaptcha_data = request.DATA.get('recaptchaData')
+            if not recaptcha_data:
+                raise ServiceException(_(u'Нет captcha'))
+            try:
+                recaptcha_data = json.loads(recaptcha_data)
+            except ValueError:
+                raise ServiceException(_(u'Неверный формат captcha'))
+            if not self.check_recaptcha(request, recaptcha_data['challenge'], recaptcha_data['response']):
+                raise ServiceException(_(u'Введена неверная captcha'))
+
+            username = request.DATA.get('username')
+            email = request.DATA.get('email', '')
+            user, created = User.objects.get_or_create(
+                username=username,
+                defaults=dict(email=email),
+            )
+            if not created:
+                raise ServiceException(_(u'Такой пользователь, %s, уже имеется') % username)
+            password = request.DATA.get('password')
+            if password:
+                user.set_password(password)
+                user.save()
+
+            location = request.DATA.get('registredOffice')
+            try:
+                location = json.loads(location)
+            except ValueError:
+                raise ServiceException(_(u'Неверный формат registredOffice'))
+            off_address = None
+            if location:
+                coords = location.get('location')
+                off_address = Location.objects.create(
+                    addr_str=location.get('address', ''),
+                    gps_x= coords and coords.get('longitude'),
+                    gps_y= coords and coords.get('latitude'),
+                )
+            name = request.DATA.get('orgName', '')
+            full_name = request.DATA.get('orgFullName')
+            org_types = dict(loru=Org.PROFILE_LORU, oms=Org.PROFILE_UGH)
+            type_ = org_types[request.DATA.get('orgType', org_types['loru'])]
+            director = request.DATA.get('directorFullname', '')
+            inn = request.DATA.get('tin', '')
+            ogrn = request.DATA.get('OGRN', '')
+            phones = request.DATA.get('phones')
+            if phones:
+                try:
+                    phones = "\n".join(json.loads(phones))
+                except ValueError:
+                    raise ServiceException(_(u'Неверный формат телефонов (phones)'))
+            fax = request.DATA.get('fax', '')
+            org = Org.objects.create(
+                name=name,
+                full_name=full_name or name,
+                type=type_,
+                off_address=off_address,
+                director=director,
+                phones=phones,
+                fax=fax,
+                inn=inn,
+                ogrn=ogrn,
+                email=email,
+            )
+            profile = Profile.objects.create(
+                user=user,
+                org=org,
+            )
+
+            banks = request.DATA.get('bankAccounts')
+            if banks:
+                try:
+                    banks = json.loads(banks)
+                except ValueError:
+                    raise ServiceException(_(u'Неверный формат банковских счетов (bankAccounts)'))
+                for bank in banks:
+                    BankAccount.objects.create(
+                        organization=org,
+                        bankname=bank['name'],
+                        rs=bank['account'],
+                        bik=bank['bik'],
+                        ks=bank['correspondent'],
+                    )
+
+            cert = request.FILES.get('certificatePhoto')
+            if cert:
+                OrgCertificate.objects.create(
+                    bfile=cert,
+                    creator=user,
+                    org=org,
+                )
+            try:
+                pdf = PDFTemplateResponse(
+                    request=request,
+                    template='loru_contract.html',
+                    context=dict(org=org)
+                ).rendered_content
+            except:
+                raise ServiceException(_(u'Ошибка формирования договора.pdf. Проверьте настройки сервера'))
+            
+            contract = OrgContract.objects.create(
+                creator=user,
+                org=org,
+            )
+            contract.bfile.save('contract.pdf', ContentFile(pdf))
+            return self.do_post(request)
+
+        except ServiceException as excpt:
+            transaction.rollback()
+            return Response(dict(status='error', message=excpt.message), status=400)
+
+api_org_signup = ApiOrgSignupView.as_view()
 

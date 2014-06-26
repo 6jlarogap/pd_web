@@ -7,7 +7,7 @@ from rest_framework.fields import Field, TimeField
 
 
 from burials.models import Cemetery, Place, Area, Grave, Burial, AreaPhoto, GravePhoto, BurialFiles, ExhumationRequest, \
-    AreaPurpose, PlaceSize
+    AreaPurpose, PlaceSize, PlaceStatus
 
 
 from geo.models import Location
@@ -19,6 +19,12 @@ from rest_api.fields import UnclearDateFieldSerializer
 
 from django.core.exceptions import ValidationError
 
+
+class GetGalleryMixin(object):
+
+    def gallery_func(self, obj):
+        request = self.context.get('request')
+        return obj.get_photo_gallery(request) if request else []
 
 class SubCemeterySerializer(serializers.ModelSerializer):
     """
@@ -61,6 +67,14 @@ class CemeterySerializer(serializers.ModelSerializer):
         return PhoneSerializer(obj.phone_set.all()).data
 
 
+class CemeteryBriefSerializer(serializers.ModelSerializer):
+    phones = Field(source='phone_list')
+    address = serializers.RelatedField()
+
+    class Meta:
+        model = Cemetery
+        fields = ('id', 'address', 'phones', )
+
 class AreaSerializer(serializers.ModelSerializer):
     purpose = serializers.PrimaryKeyRelatedField()
     cemetery = serializers.PrimaryKeyRelatedField()
@@ -82,7 +96,42 @@ class AreaSerializer(serializers.ModelSerializer):
 
 
 
-class PlaceSerializer(serializers.ModelSerializer):
+class ApiPlacesSerializer(serializers.ModelSerializer):
+    location = serializers.SerializerMethodField('location_func')
+    status = serializers.Field(source='status_list')
+
+    def location_func(self, obj):
+        if obj.lat and obj.lng:
+            return {
+                'latitude': obj.lat,
+                'longitude': obj.lng,
+            }
+        else:
+            return None
+
+ 
+
+class ApiOmsPlacesSerializer(ApiPlacesSerializer):
+    cemeteryId = serializers.PrimaryKeyRelatedField(source='cemetery')
+    areaId = serializers.PrimaryKeyRelatedField(source='area')
+
+    class Meta:
+        model = Place
+        fields = ('id', 'cemeteryId', 'areaId', 'location', 'status', )
+
+
+class ApiCatalogPlacesSerializer(GetGalleryMixin, ApiPlacesSerializer):
+    photos = serializers.SerializerMethodField('gallery_func')
+    address = serializers.Field(source='full_name')
+    cemetery = CemeteryBriefSerializer()
+
+    class Meta:
+        model = Place
+        fields = ('id', 'location', 'address', 'status',  'photos', 'cemetery' )
+
+
+
+class PlaceSerializer(GetGalleryMixin, serializers.ModelSerializer):
     cemetery = serializers.PrimaryKeyRelatedField()
     area = serializers.PrimaryKeyRelatedField()
     responsible = serializers.PrimaryKeyRelatedField(required=False)
@@ -102,10 +151,6 @@ class PlaceSerializer(serializers.ModelSerializer):
                   'dt_wrong_fio', 'dt_military', 'dt_size_violated', 'dt_unowned', 'dt_unindentified', 
                  ) 
 
-    def gallery_func(self, obj):
-        request = self.context.get('request')
-        return obj.get_photo_gallery(request) if request else []
-        
     def responsible_str(self, obj):
         if obj.responsible:
             return "%s %s %s" % (obj.responsible.first_name, obj.responsible.middle_name, obj.responsible.last_name)
