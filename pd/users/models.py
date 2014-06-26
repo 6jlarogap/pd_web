@@ -30,6 +30,9 @@ class PhonesMixin(object):
         Phone = get_model('persons', 'Phone')
         return Phone.objects.filter(obj_id=self.pk, ct=ct)
 
+    @property
+    def phone_list(self):
+        return [ phone.number for phone in self.phone_set ]
 
 class CommonProfile(BaseModel):
     USERNAME_HELPTEXT = _(u'До 30 символов: латинские буквы, цифры, дефисы, знаки подчеркивания, @')

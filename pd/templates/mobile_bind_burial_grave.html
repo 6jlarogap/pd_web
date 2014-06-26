@@ -67,19 +67,10 @@
 
     <div class="container-fluid">
         <h1>{{ message }}</h1>
-        <form action="/mobile/burial/upload/" enctype="multipart/form-data" method="post">
+        <form action="/mobile/burial/bind_burial_grave/" enctype="multipart/form-data" method="post">
         Id (Burial): <input type="text" name="burialId"><br>
 	    Id (Grave): <input type="text" name="graveId"><br>
-	    factDate(2012-06-14T00:00:00.000): <input type="text" name="factDate"><br>
-        status: <input type="text" name="status"><br>
-        STATUS_BACKED = 'backed'
-        STATUS_DECLINED = 'declined'
-        STATUS_DRAFT = 'draft'
-        STATUS_READY = 'ready'
-        STATUS_INSPECTING = 'inspecting'
-        STATUS_APPROVED = 'approved'
-        STATUS_CLOSED = 'closed'
-        STATUS_EXHUMATED = 'exhumated'
+	    factDate(2012-06-14T00:00:00.000): <input type="text" name="factDate"><br>        
         <p><input type="submit" value="Отправить"></p>
         </form> 
     </div>

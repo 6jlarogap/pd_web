@@ -221,6 +221,15 @@ class Place(SafeDeleteMixin, GeoPointModel):
     def __unicode__(self):
         return _(u'Кл. %s, уч. %s, ряд %s, место %s') % (self.cemetery, self.area and self.area.name or '', self.row, self.place)
 
+    def full_name(self):
+        result = _(u'Кладбище: %s') % self.cemetery.name
+        if self.area:
+            result = _(u"%s, участок: %s") % (result, self.area.name, )
+        if self.row:
+            result = _(u"%s, ряд: %s") % (result, self.row, )
+        if self.place:
+            result = _(u"%s, место: %s") % (result, self.place)
+        return result
 
     def unique_error_message(self, model_class, unique_check):
         if len(unique_check) == 1:
@@ -435,6 +444,8 @@ class Grave(GeoPointModel):
         else:
             raise Exception('Warning: Grave::delete - "request" param is undefined')
 
+    def full_name(self):
+        return _(u"%s, могила %s") % (self.place.full_name(), self.grave_number)
 
 class PlacePhoto(Files, GeoPointModel):
     place = models.ForeignKey(Place)
@@ -801,11 +812,11 @@ class Burial(SafeDeleteMixin, GetLogsMixin, BaseModel):
         if self.place:
             return self.place
 
-        params = {'cemetery': self.cemetery}
-        if self.area:
-            params.update({'area': self.area})
-        if self.row:
-            params.update({'row': self.row})
+        params = {
+            'cemetery': self.cemetery,
+            'area': self.area,
+            'row': self.row,
+        }
         if self.place_number:
             params.update({'place': self.place_number})
         else:
@@ -845,7 +856,7 @@ class Burial(SafeDeleteMixin, GetLogsMixin, BaseModel):
     def approved_dt(self):
         return self.dt_modified
 
-    def close(self, old_place=None, old_status=STATUS_CLOSED, request=None):
+    def close(self, request, old_place=None):
         if not self.account_number:
             self.set_account_number(user=self.changed_by)
 
@@ -918,12 +929,16 @@ class Burial(SafeDeleteMixin, GetLogsMixin, BaseModel):
         self.responsible = None
         self.place = place
         self.place_number = place.place
+        old_status = self.status
         self.status = self.STATUS_CLOSED
         self.save()
+
+        if old_status != self.STATUS_CLOSED:
+            write_log(request, self, _(u'Захоронение закрыто'))
         
         if place.responsible and \
            place.responsible.login_phone and \
-           (not old_status or old_status != self.STATUS_CLOSED):
+           old_status != self.STATUS_CLOSED:
             try:
                 customerprofile = CustomerProfile.objects.get(login_phone=place.responsible.login_phone)
                 text = _(u'Место %s прикреплено. pohoronnoedelo.ru') % place.pk
