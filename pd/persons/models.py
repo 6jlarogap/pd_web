@@ -6,11 +6,12 @@ from django.utils.translation import ugettext as _
 from django.db.models.deletion import ProtectedError
 from django.contrib.contenttypes import generic
 from django.contrib.contenttypes.models import ContentType
+from django.contrib.auth.models import User
 
 import datetime
 from geo.models import Location
 from pd.models import UnclearDate, UnclearDateModelField, BaseModel, Files, validate_phone_as_number
-from users.models import Org
+from users.models import Org, PhonesMixin
 
 class SafeDeleteMixin(object):
     
@@ -34,15 +35,8 @@ class SafeDeleteMixin(object):
                 pass
 
 
-class PhonesMixin(object):
-    @property
-    def phone_set(self):
-        ct = ContentType.objects.get_for_model(self)
-        return Phone.objects.filter(obj_id=self.pk, ct=ct)
-
-
 class IDDocumentType(models.Model):
-    name = models.CharField(_(u"Тип документа"), max_length=255)
+    name = models.CharField(_(u"Тип документа"), max_length=255, db_index=True)
 
     def __unicode__(self):
         return self.name
@@ -50,6 +44,7 @@ class IDDocumentType(models.Model):
     class Meta:
         verbose_name = (_(u"тип документа"))
         verbose_name_plural = (_(u"типы документов"))
+        ordering = ('name', )
 
 class BasePerson(models.Model):
     """
@@ -333,3 +328,55 @@ class Phone(BaseModel):
          for k, v in PHONE_TYPE_CHOICES:  
              if k == self.phonetype:  
                  return _(u"%s: %s") % (v, self.number)
+
+    @classmethod
+    def create_default_phones(cls, instance, phones):
+        """
+        Создать массив телефонов с типом по умолчанию
+        """
+        instance.phone_set.delete()
+        ct = ContentType.objects.get_for_model(instance)
+        for phone in phones:
+            cls.objects.create(
+                ct=ct,
+                obj_id=instance.pk,
+                number=phone.lstrip('+'),
+            )
+
+class CustomPlace(BaseModel):
+    address = models.ForeignKey(Location, verbose_name=_(u"Адрес"), null=True)
+    user = models.ForeignKey('auth.User', verbose_name=_(u"Владелец или указавший место"))
+
+class CustomPerson(BaseModel):
+    """
+    Человек, чаще усопший, но возможно живой
+    """
+    class Meta:
+        ordering = ('last_name', 'first_name', 'middle_name', )
+
+    last_name = models.CharField(_(u"Фамилия"), max_length=255, blank=True)
+    first_name = models.CharField(_(u"Имя"), max_length=255, blank=True)
+    middle_name = models.CharField(_(u"Отчество"), max_length=255, blank=True)
+    birth_date = UnclearDateModelField(_(u"Дата рождения"), blank=True, null=True)
+    death_date = UnclearDateModelField(_(u"Дата смерти"), blank=True, null=True)
+    is_dead = models.BooleanField(_(u"Уcопший"), default=True)
+    customplace = models.ForeignKey(CustomPlace, verbose_name=_(u"Место захоронения"), blank=True, null=True)
+    memory_text = models.TextField(_(u"Памятный текст"), null=True)
+
+class MemoryGallery(Files):
+    """
+    Страницы памяти у CustomPerson
+    """
+    TYPE_IMAGE = 'image'
+    TYPE_VIDEO = 'video'
+    TYPE_TEXT = 'text'
+    TYPE_CHOICES = (
+        (TYPE_IMAGE, _(u"Фото")),
+        (TYPE_VIDEO, _(u"Видео")),
+        (TYPE_TEXT, _(u"Текст"))
+    )
+
+    customperson = models.ForeignKey(CustomPerson)
+    type = models.CharField(_(u"Тип"), max_length=255, choices=TYPE_CHOICES)
+    text = models.TextField(_(u"Текст"), null=True)
+    event_date = UnclearDateModelField(_(u"Дата события"), null=True)

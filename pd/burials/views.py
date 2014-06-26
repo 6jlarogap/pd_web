@@ -1,5 +1,7 @@
 # coding=utf-8
 
+import re
+
 from django.conf import settings
 from django.contrib import messages
 from django.core.urlresolvers import reverse
@@ -20,14 +22,15 @@ from django.contrib.contenttypes.models import ContentType
 
 from geo.models import Country, Region, Street, City
 
-from pd.views import RequestToFormMixin, FormInvalidMixin
+from pd.views import RequestToFormMixin, FormInvalidMixin, get_front_end_url
 from pd.models import validate_phone_as_number
 
 from burials.forms import CemeteryForm, AreaFormset, PlaceEditForm, AddOrgForm, AreaMergeForm, BurialfileCommentEditForm
-from burials.models import Cemetery, Place, Area, BurialFiles, Grave, Burial, AreaPhoto, GravePhoto, ExhumationRequest, AreaPurpose, PlaceSize
+from burials.models import Cemetery, Place, Area, BurialFiles, Grave, Burial, AreaPhoto, GravePhoto, PlacePhoto, \
+                           ExhumationRequest, AreaPurpose, PlaceSize
 from burials.burials_views import *
 from logs.models import write_log, log_object, prepare_m2m_log, compare_obj
-from users.models import Profile, Org, CustomerProfile
+from users.models import Profile, Org, CustomerProfile, PermitIfUgh
 from persons.models import Phone, AlivePerson
 from geo.models import Location
 
@@ -41,10 +44,10 @@ from rest_framework.permissions import IsAuthenticated
 
 from django.db import transaction
 
-
 from serializers import CemeterySerializer, AreaSerializer, PlaceSerializer, AreaPurposeSerializer, \
     GraveSerializer, BurialSerializer, BurialListSerializer, BurialPutGraveSerializer, \
-    AreaPhotoSerializer, GravePhotoSerializer, ExhumationRequestSerializer, PlaceSizeSerializer
+    AreaPhotoSerializer, GravePhotoSerializer, ExhumationRequestSerializer, PlaceSizeSerializer, \
+    ApiOmsPlacesSerializer, ApiCatalogPlacesSerializer
 
 from persons.serializers import AlivePersonSerializer, PhoneSerializer
 from geo.serializers import LocationSerializer, LocationStaticSerializer, LocationDataSerializer
@@ -298,6 +301,45 @@ class AreaViewSet(viewsets.ModelViewSet):
 
 
 
+class ApiOmsPlacesViewSet(viewsets.ReadOnlyModelViewSet):
+    model = Place
+    serializer_class = ApiOmsPlacesSerializer
+    permission_classes = (PermitIfUgh,)
+    paginate_by = None
+
+    def get_queryset(self):
+        return Place.objects.filter(
+            cemetery__ugh=self.request.user.profile.org,
+            lat__isnull=False,
+            lng__isnull=False,
+        ).distinct()
+
+class ApiCatalogPlacesViewSet(viewsets.ReadOnlyModelViewSet):
+    model = Place
+    serializer_class = ApiCatalogPlacesSerializer
+    paginate_by = None
+
+    def get_queryset(self):
+        q = Q(
+            lat__isnull=False,
+            lng__isnull=False,
+        )
+        statuses = self.request.GET.getlist('filter[status]')
+        while statuses.count(u''):
+            statuses.remove(u'')
+        qs = None
+        for status in statuses:
+            if status in Place.STATUS_LIST:
+                this_status = { "%s__isnull" % status: False }
+                if qs is None:
+                    qs = Q(**this_status)
+                else:
+                    qs |= Q(**this_status)
+        if qs is not None:
+            q &= qs
+        return Place.objects.filter(q).distinct()
+
+
 class PlaceViewSet(viewsets.ModelViewSet):
     model = Place
     serializer_class = PlaceSerializer
@@ -352,23 +394,24 @@ class PlaceViewSet(viewsets.ModelViewSet):
                 self.old_responsible = None
             object.responsible = responsible_serializer.save()
 
-            if not settings.DEBUG and \
-               object.responsible.login_phone and \
+            if object.responsible.login_phone and \
                (not self.old_responsible or not self.old_responsible.login_phone):
-                if CustomerProfile.objects.filter(user__username=object.responsible.login_phone).count():
+                try:
+                    customerprofile = CustomerProfile.objects.get(login_phone=object.responsible.login_phone)
                     text=_(u'Место %s прикреплено. pohoronnoedelo.ru') % object.pk
-                    email_error_text = _(u"Пользователь %s не смог получить СМС после прикрепления места %s" % \
-                                        (object.responsible.login_phone, object.pk,))
-                else:
+                    email_error_text = _(u"Пользователь %s (телефон %s) не смог получить СМС после прикрепления места %s" % \
+                                        (customerprofile.user.username, object.responsible.login_phone, object.pk,))
+                except CustomerProfile.DoesNotExist:
                     password = CustomerProfile.create_cabinet(object.responsible)
                     text=_(u'https://pohoronnoedelo.ru login: %s parol: %s') % (object.responsible.login_phone, password,)
                     email_error_text = _(u"Пользователь %s не смог получить пароль после закрытия захоронения" % \
                                         (object.responsible.login_phone,))
-                sent, message = send_sms(
-                    phone_number=object.responsible.login_phone,
-                    text=text,
-                    email_error_text=email_error_text,
-                )
+                if not settings.DEBUG:
+                    sent, message = send_sms(
+                        phone_number=object.responsible.login_phone,
+                        text=text,
+                        email_error_text=email_error_text,
+                    )
 
             #object.responsible.address_id = responsible.address
 
@@ -901,7 +944,7 @@ class AddOrgView(LoginRequiredMixin, View):
 
 add_org = AddOrgView.as_view()
 
-class AddDocTypeView(LoginRequiredMixin, View):
+class AddDocTypeView(SupervisorRequiredMixin, View):
     def post(self, request, *args, **kwargs):
         f = AddDocTypeForm(data=request.POST, prefix='doctype')
         if f.is_valid():
@@ -1050,3 +1093,118 @@ class BurialfileCommentEdit(LoginRequiredMixin, UpdateView):
         return self.render_to_response(context)
 
 edit_burialfile_comment = BurialfileCommentEdit.as_view()
+
+class PlaceCertificateView(UGHRequiredMixin, DetailView):
+    template_name = 'place_certificate.html'
+
+    def get_object(self):
+        place =  get_object_or_404(
+            Place,
+            pk=self.kwargs['pk'],
+            cemetery__ugh=self.request.user.profile.org
+        )
+        return place
+
+    def get_context_data(self, **kwargs):
+        
+        def make_table(left, right):
+            table = []
+            for i in range(max(len(left), len(right))):
+                item = dict(left='', right='')
+                try:
+                    item['left'] = left[i]
+                except IndexError:
+                    pass
+                try:
+                    item['right'] = right[i]
+                except IndexError:
+                    pass
+                table.append(item)
+            return table
+            
+        place = self.object
+        ugh = place.cemetery.ugh
+        left = [ ugh, ]
+        if ugh.off_address:
+            left.append(u"%s: %s" % (_(u'Адрес'), ugh.off_address, ))
+        if ugh.phones:
+            left.append(u"%s: %s" % (
+                _(u'Телефоны') if re.search(r'\s+', ugh.phones) else _(u'Телефон'),
+                ", ".join(ugh.phones.split()),
+            ))
+        if ugh.worktime:
+            left.append(u"%s: %s" % (_(u'Время работы'), ugh.worktime, ))
+
+        right = []
+        for burial in place.burials_available():
+            if burial.deadman.birth_date or burial.deadman.death_date:
+                lived = u"%s — %s" % (
+                    burial.deadman.birth_date or u"...",
+                    burial.deadman.death_date or u"...",
+                )
+            else:
+                lived = _(u"годы жизни неизвестны")
+            if burial.fact_date:
+                fact_date = _(u"похоронен %s") % burial.fact_date
+            else:
+                fact_date = _(u"дата похорон неизвестна")
+            right.append(_(u"№: %s, %s, %s, %s") % (burial.pk, burial.deadman, lived, fact_date ))
+        if not right:
+            right.append(_(u"Нет захоронений"))
+        table1 = make_table(left, right)
+
+        left = []
+        if place.responsible:
+            left.append(place.responsible.last_name)
+            if place.responsible.first_name:
+                left.append(place.responsible.first_name)
+            if place.responsible.middle_name:
+                left.append(place.responsible.middle_name)
+            if place.responsible.login_phone:
+                try:
+                    customerprofile = CustomerProfile.objects.get(login_phone=place.responsible.login_phone)
+                except CustomerProfile.DoesNotExist:
+                    customerprofile = None
+                left.append(_(u"Вход на сайт %s, логин: %s") % (
+                    get_front_end_url(self.request),
+                    customerprofile.user.username if customerprofile else place.responsible.login_phone,
+                ))
+        else:
+            left.append(_(u"не указан"))
+        right=[u"%s: %s" % (_(u'Кладбище'), place.cemetery, ), ]
+        if place.cemetery.address:
+            right.append(u"%s: %s" % (_(u'Адрес'), place.cemetery.address, ))
+        urm = u"%s: %s" % (_(u'Участок'), place.area and place.area.name or _(u"не указан"), )
+        if place.row:
+            urm = u"%s, %s: %s" % (urm, _(u"ряд"), place.row, )
+        if place.place:
+            urm = u"%s, %s: %s" % (urm, _(u"место"), place.place, )
+        right.append(urm)
+
+        yandex_api_key = None
+        if place.cemetery.address and \
+           place.cemetery.address.gps_x is not None and place.cemetery.address.gps_y is not None:
+            right.append(_(u"Координаты GPS/ГЛОНАСС: ш. %s, д. %s") % (
+                place.cemetery.address.gps_y,
+                place.cemetery.address.gps_x,
+            ))
+            host = self.request.get_host()
+            for key in settings.YANDEX_API_KEYS:
+                if re.search(key['re_host'], host, flags=re.I):
+                    yandex_api_key = key['api_key']
+
+        table2 = make_table(left, right)
+        try:
+            place_photo = PlacePhoto.objects.filter(place=place).order_by('-date_of_creation')[0].bfile
+        except IndexError:
+            place_photo = None
+        return dict(
+            table1=table1,
+            table2=table2,
+            yandex_api_key=yandex_api_key,
+            place=place,
+            place_photo=place_photo,
+            request=self.request,
+        )
+
+place_certificate = PlaceCertificateView.as_view()

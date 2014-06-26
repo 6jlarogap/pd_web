@@ -70,7 +70,6 @@ MIDDLEWARE_CLASSES = (
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'debug_toolbar.middleware.DebugToolbarMiddleware',
-    'users.middleware.ProfileMiddleware',
     'pd.middleware.LoginRequiredMiddleware',
     'corsheaders.middleware.CorsMiddleware',
 )
@@ -174,8 +173,12 @@ LOGIN_URL = "/login/"
 # URLs, не требующие регистрации в системе:
 REGISTER_URLS_REGEX = r'^/?register(?:/|$)'
 SUPPORT_URLS_REGEX = r'^/?support(?:/|$)'
-# URLs, требующие регистрации, но она проходит посредством tokens:
+# URLs, доступ к которым регулируется в соответствующих классах.as_view():
 API_URLS_REGEX = r'^/?api(?:/|$)'
+# URLs, доступные анонимным пользователям, например в публичном каталоге:
+ANONYMOUS_URLS_REGEX = r'^/?(?:thumb|media)/product\-photo/'
+# URLs, доступные анонимным пользователям, но при определенных условиях
+ANONYMOUS_LIMITED_URLS_REGEX = r'^/?(?:thumb|media)/place\-photos/'
 
 LOGOUT_URL = "/logout/"
 LOGIN_REDIRECT_URL = "/"
@@ -187,6 +190,9 @@ PAGINATION_PER_PAGE = 50
 
 # Кодировка для файлов обмена.
 CSV_ENCODING = "utf8"
+
+# Валюта по умолчанию, код:
+CURRENCY_DEFAULT_CODE = 'RUR'
 
 # Настройки пэйджинации.
 PAGINATION_USER_PER_PAGE_MAX = 50
@@ -339,6 +345,38 @@ ORG_PD_FUND = {
     'inn': '9999999992',
     'share': 0.34,
 }
+# При авторизации посредством Oauth некоторые социальные сети, в частности одноклассники,
+# требуют публичный и секретный ключ приложения. Разумеется, эта конфиденциальная информация
+# должна быть заменена на реальную в local_settings.py
+#
+OAUTH_PROVIDERS_KEYS = {
+    'odnoklassniki': {
+        'public_key': 'PublicStuff',
+        'private_key': 'PrivateStuff',
+    },
+}
+
+YANDEX_API_KEYS = [
+    # Ключи получены на пользователя pohoronnoedelo@yandex.ru.
+    # В зависимости от доменв, откуда идет вызов к yandex api,
+    # применяется тот или иной ключ
+    #
+    # NB:   скрывать их в local_settings нет смысла, они доступны
+    #       в исходных кодах страниц
+    { 
+        're_host': r'pohoronnoedelo\.ru(?:\:\d+)?$',
+        'api_key': r'AObGplMBAAAAuFr-WQIADlv2OrFxt6jLCsvlWYiJgtv7YDMAAAAAAAAAAABOAIr3zG31LfU7pllJzun2eZhJmg==',
+    },
+    { 
+        're_host': r'pohoronnoedelo\.by(?:\:\d+)?$',
+        'api_key': r'AFFSqFMBAAAAeVx-MwIAmJKPwA0dteKD-K4LTJ1nfnN2MTQAAAAAAAAAAABHBnSvshh-SZ_2hyIdqI0NU_lvCA==',
+    },
+]
+    
+# Категории продуктов (ключи), видимые только для ЛОРУ
+PRODUCT_CATEGORY_LORU_ONLY_PKS = (21, )
+
+WKHTMLTOPDF_CMD = '/usr/local/bin/wkhtmltox/bin/wkhtmltopdf'
 
 try:
     from local_settings import *

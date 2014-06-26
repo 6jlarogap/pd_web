@@ -11,9 +11,8 @@ from django.utils.translation import ugettext_lazy as _
 from django.db.models.query_utils import Q
 
 from geo.forms import LocationForm
-# from geo.models import DFiasAddrobj
 from pd.forms import ChildrenJSONMixin, LoggingFormMixin, OurReCaptchaField, StrippedStringsMixin
-from pd.models import validate_phone_as_number
+from pd.models import validate_phone_as_number, validate_username
 from burials.models import Cemetery, PlaceSize, Reason, Burial
 
 from users.models import Profile, ProfileLORU, Org, BankAccount, RegisterProfile, get_mail_footer, is_cabinet_user
@@ -24,7 +23,8 @@ class UserAddForm(forms.ModelForm):
         model = User
         fields = ['username', 'email']
 
-    username = forms.SlugField(label=_(u"Логин"))
+    username = forms.CharField(label=_(u"Логин"), validators=[validate_username],
+                               help_text=Profile.USERNAME_HELPTEXT)
     password1 = forms.CharField(label=_(u"Пароль"), widget=forms.PasswordInput())
     password2 = forms.CharField(label=_(u"Пароль (повторите)"), widget=forms.PasswordInput())
 
@@ -60,8 +60,6 @@ LoruFormset = inlineformset_factory(Org, ProfileLORU, fk_name='ugh', formset=Bas
 
 BankAccountFormset = inlineformset_factory(Org, BankAccount, formset=BaseLoruFormset, extra=2)
 
-# FIAS_REGIONS = DFiasAddrobj.objects.filter(parentguid='').order_by('formalname')
-
 class ProfileForm(ChildrenJSONMixin, forms.ModelForm):
 
     org_type = forms.ChoiceField(label=_(u"Тип"), choices=Org.PROFILE_TYPES)
@@ -70,13 +68,14 @@ class ProfileForm(ChildrenJSONMixin, forms.ModelForm):
     org_inn = forms.CharField(label=_(u"ИНН организации"))
     org_kpp = forms.CharField(label=_(u"КПП организации"), required=False)
     org_ogrn = forms.CharField(label=_(u"ОГРН организации"), required=False)
-    org_director = forms.CharField(label=_(u"Директор"), required=False)
+    org_director = forms.CharField(label=_(u"Директор (в родительном падеже, например, Иванова Ивана Ивановича)"),
+                                   required=False)
     org_email = forms.EmailField(label=_(u"Email"), required=False)
     org_phones = forms.CharField(label=_(u"Телефоны"), required=False)
 
     class Meta:
         model = Profile
-        exclude = ['org', 'is_agent', 'region_fias', 'user', 'country', 'cemetery', 'area', ]
+        exclude = ['org', 'is_agent', 'user', 'cemetery', 'area', ]
 
     def __init__(self, *args, **kwargs):
         super(ProfileForm, self).__init__(*args, **kwargs)
@@ -108,7 +107,6 @@ class ProfileForm(ChildrenJSONMixin, forms.ModelForm):
         return obj
 
 class UserProfileForm(ChildrenJSONMixin, StrippedStringsMixin, forms.ModelForm):
-    # region = forms.ModelChoiceField(label=_(u"Регион"), queryset=FIAS_REGIONS, required=False)
 
     class Meta:
         model = Profile
@@ -122,16 +120,6 @@ class UserProfileForm(ChildrenJSONMixin, StrippedStringsMixin, forms.ModelForm):
             Q(ugh=self.instance.org)
         ).distinct()
         self.fields['user_last_name'].required = True
-        #if self.instance.region_fias:
-            #self.initial['region'] = self.instance.get_region()
-
-    #def save(self, commit=True, *args, **kwargs):
-        #obj = super(UserProfileForm, self).save(commit=False, *args, **kwargs)
-        #if self.cleaned_data['region']:
-            #obj.region_fias = self.cleaned_data['region'].aoguid
-        #if commit:
-            #obj.save()
-        #return obj
 
 class UserDataForm(forms.ModelForm):
     is_agent = forms.BooleanField(label=_(u"Агент"), required=False)
@@ -146,6 +134,7 @@ class UserDataForm(forms.ModelForm):
             self.initial['is_agent'] = self.instance.profile.is_agent
         if self.instance and self.instance.profile and self.instance.profile.is_ugh():
             del self.fields['is_agent']
+        self.fields['username'].help_text=Profile.USERNAME_HELPTEXT
 
     def save(self, *args, **kwargs):
         user = super(UserDataForm, self).save(*args, **kwargs)
@@ -154,6 +143,12 @@ class UserDataForm(forms.ModelForm):
             user.profile.save()
         return user
 
+    def clean_username(self):
+        username = self.cleaned_data.get('username')
+        if username:
+            validate_username(username)
+        return username
+        
 class ChangePasswordForm(forms.ModelForm):
     class Meta:
         model = User
@@ -214,8 +209,9 @@ class BaseOrgForm(LoggingFormMixin, forms.ModelForm):
         type_posted = request.POST.get("%s-type" % self.prefix if self.prefix else "type")
         if type_posted and type_posted == Org.PROFILE_ZAGS or \
            add_org_with_type and add_org_with_type == Org.PROFILE_ZAGS:
-            for f in ('full_name', 'inn', 'director', ):
-                self.fields[f].required = False
+            for f in ('full_name', 'inn', ):
+                if f in self.fields:
+                    self.fields[f].required = False
 
     def clean_inn(self):
         inn = self.cleaned_data.get('inn')
@@ -243,7 +239,7 @@ ReasonFormset = inlineformset_factory(Org, Reason, formset=BaseInlineFormSet, ca
 class OrgForm(BaseOrgForm):
     class Meta:
         model = Org
-        exclude = ('off_address', 'publish_cost', 'currency', )
+        exclude = ('off_address', )
 
     def __init__(self, request, *args, **kwargs):
         super(OrgForm, self).__init__(request, *args, **kwargs)
@@ -355,10 +351,7 @@ class RegisterForm(forms.ModelForm):
         self.address_form.fields['city_name'].required = True
         
     def clean_user_name(self):
-        user_name=self.cleaned_data['user_name'].strip()
-        if not re.match(r'^[A-Za-z0-9_-]+$', user_name):
-            raise forms.ValidationError(_(u"Имя может состоять только из латинских букв, "
-                                          u"цифр, знаков подчеркивания или дефиса"))
+        user_name=self.cleaned_data['user_name']
         if User.objects.filter(username=user_name).exists():
             raise forms.ValidationError(_(u"Это имя уже используется в системе"))
         q = Q(user_name=user_name) & \
@@ -425,6 +418,23 @@ class SupportForm(forms.Form):
                 self.save_org_phone = True
             for f in self.fio:
                 self.initial[f] = getattr(request.user.profile, f)
+            user_request = request.GET.get('request')
+            if user_request and user_request == u'add_doctype':
+                self.initial['subject'] = _(u'Добавить тип документа')
+                self.initial['message'] = _(u'Прошу добавить следующий тип документа:\n'
+                                            u'________________________.\n\n'
+                                            u'Пока новый тип не добавлен, вношу запись о документе '
+                                            u'физического лица как об удостоверении.\n'
+                )
+                burial_path = request.GET.get('burial_path')
+                if burial_path:
+                    burial_path = u"%s://%s%s" % (
+                        'https' if request.is_secure() else 'http',
+                        request.get_host(),
+                        burial_path,
+                    )
+                    self.initial['message'] = u"%sПравилось захоронение:\n%s\n" % \
+                        (self.initial['message'], burial_path, )
 
     def clean(self):
         if self.is_valid():

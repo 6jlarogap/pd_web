@@ -752,7 +752,7 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
             )
 
         if self.instance.is_closed():
-            self.instance.close(old_place=self.old_place)
+            self.instance.close(request=self.request, old_place=self.old_place)
 
         self.put_log_data()
 
@@ -1490,13 +1490,13 @@ class AddOrgForm(BaseOrgForm):
         exclude = ('off_address', 'numbers_algo',
                    'opf_order', 'opf_order_customer_mandatory',
                    'plan_date_days_before', 'max_graves_count',
-                   'worktime', 'site',
-                   'publish_cost', 'currency', )
+                   'worktime', 'site', 
+                   'currency', 'director', )
     
     def __init__(self, request, *args, **kwargs):
         super(AddOrgForm, self).__init__(request, *args, **kwargs)
         self.required_fields = []
-        for field in ('name', 'full_name', 'inn', 'director', ):
+        for field in ('name', 'full_name', 'inn', ):
             if self.fields[field].required:
                 self.required_fields.append(field)
             self.fields[field].required = False

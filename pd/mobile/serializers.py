@@ -1,5 +1,5 @@
 # coding=utf-8
-
+from geo.models import CoordinatesModel 
 from rest_framework import serializers
 
 class BaseSerializer(serializers.Serializer):	
@@ -21,6 +21,7 @@ class CoordinatesSerializer(BaseSerializer):
         
 class CemeterySerializer(BaseSerializer):	
     name = serializers.CharField(required=True)
+    square = serializers.CharField(required=True)
 
 class CemeteryWithNestedObjectSerializer(CemeterySerializer):	
     coordinates = CoordinatesSerializer(many=True)
@@ -28,6 +29,7 @@ class CemeteryWithNestedObjectSerializer(CemeterySerializer):
 class AreaSerializer(BaseSerializer):
     cemetery = BaseSerializer(required=True)
     name = serializers.CharField(required=True)
+    square = serializers.CharField(required=True)
     
 class AreaWithNestedObjectSerializer(AreaSerializer):    
     coordinates = CoordinatesSerializer(many=True)
@@ -85,18 +87,28 @@ class GraveSerializer(BaseSerializer):
     is_military = serializers.CharField(required=False)
     is_wrong_fio = serializers.CharField(required=False)
     
-class BurialSerializer(BaseSerializer):    
-    grave = BaseSerializer(required=True)    
-    fact_date = serializers.CharField(required=False)
+class BurialSerializer(BaseSerializer):
+    cemetery = BaseSerializer(required=True)
+    grave = BaseSerializer(required=True)
     burial_container = serializers.CharField(required=False)
     deadman = BasePersonSerializer(required=False)
+    fact_date = serializers.CharField(required=False)
+    plan_date = serializers.DateField(required=False)
+    plan_time = serializers.TimeField(required=False)
+    status = serializers.CharField(required=False)
     
 class GravePhotoSerializer(BaseSerializer):  
     grave = BaseSerializer(required=False)    
     lat = serializers.CharField(required=False)
     lng = serializers.CharField(required=False)
+    original_name = serializers.CharField(required=False)
+    bfile = serializers.FileField(max_length=None, allow_empty_file=False)
+    date_of_creation = serializers.DateTimeField(required=False)
 
 class PlacePhotoSerializer(BaseSerializer):  
     place = BaseSerializer(required=False)    
     lat = serializers.CharField(required=False)
     lng = serializers.CharField(required=False)
+    original_name = serializers.CharField(required=False)
+    bfile = serializers.FileField(max_length=None, allow_empty_file=False)
+    date_of_creation = serializers.DateTimeField(required=False)

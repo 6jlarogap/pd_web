@@ -51,6 +51,23 @@ class UnclearDate:
             result += '-%02d' % self.d.day
         return result
 
+    @classmethod
+    def from_str_safe(cls, s):
+        """
+        Сделать UnclearDate из yyyy-mm-dd, yyyy-mm, yyyy
+        """
+        m = re.search(r'^(\d{4})(?:\-(\d{2}))?(?:\-(\d{2}))?$', s)
+        if not m:
+            raise ValueError('Invalid data to make an UnclearDate object')
+        day = m.group(3)
+        month = m.group(2)
+        year = m.group(1)
+        return cls(
+            int(year),
+            month and int(month) or None,
+            day and int(day) or None,
+        )
+
     @property
     def month(self):
         return self.d.month
@@ -260,6 +277,15 @@ def files_upload_to(instance, filename):
     elif isinstance(instance, get_model('users', 'CustomerProfilePhoto')):
         return os.path.join('customer-profile',
                 today_pk_dir % instance.customerprofile.user.pk, fname)
+    elif isinstance(instance, get_model('users', 'OrgCertificate')):
+        return os.path.join('org-certificates',
+                today_pk_dir % instance.org.pk, fname)
+    elif isinstance(instance, get_model('users', 'OrgContract')):
+        return os.path.join('org-contracts',
+                today_pk_dir % instance.org.pk, fname)
+    elif isinstance(instance, get_model('persons', 'MemoryGallery')):
+        return os.path.join('memory-gallery',
+                today_pk_dir % instance.creator.pk, fname)
     else:
         return os.path.join('files', fname)
 
@@ -292,6 +318,12 @@ class Files(models.Model):
 def validate_gt0(value):
     if value <= 0:
         raise ValidationError(_(u'Должно быть больше нуля'))
+
+def validate_username(value):
+    if not re.match(r'^[A-Za-z0-9_-]+$', value):
+        raise ValidationError(_(u"Может включать только латинские буквы, "
+                                u"цифры, знаки подчеркивания, дефисы, @"
+        ))
 
 def validate_phone_as_number(value):
     """
