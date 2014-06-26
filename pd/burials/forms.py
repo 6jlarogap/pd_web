@@ -752,7 +752,7 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
             )
 
         if self.instance.is_closed():
-            self.instance.close(old_place=self.old_place)
+            self.instance.close(request=self.request, old_place=self.old_place)
 
         self.put_log_data()
 
