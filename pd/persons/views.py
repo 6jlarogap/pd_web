@@ -9,7 +9,7 @@ from django.views.generic.base import View
 from django.utils.translation import ugettext as _
 
 from persons.models import DeadPerson, AlivePerson, BasePerson, DocumentSource, Phone, \
-                           CustomPlace, CustomPerson, MemoryGallery, SafeDeleteMixin
+                           CustomPlace, CustomPerson, MemoryGallery
 from serializers import AlivePersonSerializer, DeadPersonSerializer, PhoneSerializer
 
 from rest_framework.response import Response
@@ -18,7 +18,7 @@ from rest_framework import generics, viewsets
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.parsers import MultiPartParser
 
-from pd.models import UnclearDate
+from pd.models import UnclearDate, SafeDeleteMixin
 from burials.models import Place 
 from logs.models import write_log
 from users.models import PermitIfCabinet

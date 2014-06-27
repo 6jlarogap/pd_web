@@ -39,11 +39,20 @@
         {{ form.org_inn.errors }}
         <p>{{ form.org_inn.label_tag }} {{ form.org_inn }}<span class="helptext">{{ form.org_inn.help_text }}</span></p>
 
+        {{ form.org_ogrn.errors }}
+        <p>{{ form.org_ogrn.label_tag }} {{ form.org_ogrn }}<span class="helptext">{{ form.org_ogrn.help_text }}</span></p>
+
         {{ form.org_director.errors }}
         <p>{{ form.org_director.label_tag }} {{ form.org_director }}<span class="helptext">{{ form.org_director.help_text }}</span></p>
 
+        {{ form.org_basis.errors }}
+        <p>{{ form.org_basis.label_tag }} {{ form.org_basis }}<span class="helptext">{{ form.org_basis.help_text }}</span></p>
+
         {{ form.org_phones.errors }}
         <p>{{ form.org_phones.label_tag }} {{ form.org_phones }}<span class="helptext">{{ form.org_phones.help_text }}</span></p>
+
+        {{ form.org_fax.errors }}
+        <p>{{ form.org_fax.label_tag }} {{ form.org_fax }}<span class="helptext">{{ form.org_fax.help_text }}</span></p>
 
         <h3>{% trans "Адрес" %}</h3>
         {% with form.address_form as form %}
