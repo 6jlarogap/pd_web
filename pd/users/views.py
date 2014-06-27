@@ -7,6 +7,7 @@ import decimal
 import hashlib
 import os
 import csv
+import copy
 
 from django.conf import settings
 from django.contrib import messages
@@ -49,7 +50,8 @@ from users.forms import UserAddForm, RegisterForm, LoruFormset, ProfileForm, Use
                         OrgLogForm, LoginLogForm, OrgBurialStatsForm, SupportForm, TestCaptchaForm
 from users.models import Profile, Org, RegisterProfile, ProfileLORU, CustomerProfile, Store, \
                          get_mail_footer, is_cabinet_user, PermitIfLoru, Oauth, \
-                         BankAccount, OrgCertificate, OrgContract
+                         BankAccount, BankAccountRegister, OrgCertificate, OrgContract, \
+                         RegisterProfileContract, RegisterProfileScan
 from pd.models import validate_phone_as_number
 from persons.models import AlivePerson, Phone
 from burials.models import Cemetery, Area, Burial, Place
@@ -1089,7 +1091,31 @@ class LoginLogView(SupervisorRequiredMixin, PaginateListView):
 
 login_log = LoginLogView.as_view()
 
-class RegisterView(CreateView):
+class RegisterMixin(object):
+    
+    def send_email_to_confirm(self, obj):
+        """
+        Отправка письма с просьбой подтверждения регистрации
+        """
+        write_log(None, obj, _(u'%s : получена. Ожидание подтверждения') % obj)
+        email_subject = u"%s %s" % (
+            _(u"Подтверждение заявки на регистрацию на"),
+            _(u"Похоронное Дело"),
+        )
+        email_text = render_to_string(
+                        'register_activation_email.txt',
+                        {
+                         'host': '%s://%s' % (self.request.is_secure() and 'https' or 'http',
+                                              self.request.get_host(),
+                                             ),
+                         'activation_key': obj.user_activation_key,
+                        }
+        )
+        email_from = settings.DEFAULT_FROM_EMAIL
+        email_to = (obj.user_email, )
+        send_mail(email_subject, email_text, email_from, email_to)
+        
+class RegisterView(RegisterMixin, CreateView):
     """
     Регистрация новых пользователей и организаций
     
@@ -1109,22 +1135,7 @@ class RegisterView(CreateView):
         if form.address_form.cleaned_data.get('country_name'):
             obj.org_address = form.address_form.save()
         obj.save()
-        write_log(None, obj, _(u'%s : получена. Ожидание подтверждения') % obj)
-        email_subject = "%s %s" % (unicode(_(u"Подтверждение заявки на регистрацию на")),
-                                   unicode(_(u"Похоронное Дело")),
-                                  )
-        email_text = render_to_string(
-                        'register_activation_email.txt',
-                        {
-                         'host': '%s://%s' % (self.request.is_secure() and 'https' or 'http',
-                                              self.request.get_host(),
-                                             ),
-                         'activation_key': obj.user_activation_key,
-                        }
-                     )
-        email_from = settings.DEFAULT_FROM_EMAIL
-        email_to = (obj.user_email, )
-        send_mail(email_subject, email_text, email_from, email_to)
+        self.send_email_to_confirm(obj)
         return redirect(reverse('register_activation', args=[obj.user_activation_key]))
         
 register = RegisterView.as_view()
@@ -1258,6 +1269,8 @@ class RegistrantDelete(SupervisorRequiredMixin, View):
 registrant_delete = RegistrantDelete.as_view()
 
 class RegistrantApprove(SupervisorRequiredMixin, View):
+
+    @transaction.commit_on_success
     def get(self, request, *args, **kwargs):
         registrant = get_object_or_404(RegisterProfile, pk=self.kwargs['pk'])
         if registrant.status == RegisterProfile.STATUS_APPROVED:
@@ -1275,15 +1288,57 @@ class RegistrantApprove(SupervisorRequiredMixin, View):
                         password=registrant.user_password,
                         email=registrant.user_email,
             )
+            if registrant.org_address:
+                off_address = copy.deepcopy(registrant.org_address)
+                off_address.pk = None
+                off_address.save(force_insert=True)
+            else:
+                off_address = None
             org=Org.objects.create(
                         type=registrant.org_type,
                         name=registrant.org_name,
                         full_name=registrant.org_full_name,
                         inn = registrant.org_inn,
                         director = registrant.org_director,
+                        basis = registrant.org_basis,
                         email = registrant.user_email,
                         phones = registrant.org_phones,
+                        fax = registrant.org_fax,
+                        ogrn = registrant.org_ogrn,
+                        off_address=off_address,
             )
+            for bank in registrant.bankaccountregister_set.all():
+                BankAccount.objects.create(
+                    organization=org,
+                    bankname=bank.bankname,
+                    rs=bank.rs,
+                    bik=bank.bik,
+                    ks=bank.ks,
+                )
+            try:
+                fname = registrant.registerprofilescan.bfile.path
+                f = open(fname, 'r')
+                s = f.read()
+                f.close()
+                cert = OrgCertificate.objects.create(
+                    creator=user,
+                    org=org,
+                )
+                cert.bfile.save(os.path.basename(fname), ContentFile(s))
+            except (AttributeError, RegisterProfileScan.DoesNotExist, IOError, ):
+                pass
+            try:
+                fname = registrant.registerprofilecontract.bfile.path
+                f = open(fname, 'r')
+                s = f.read()
+                f.close()
+                contract = OrgContract.objects.create(
+                    creator=user,
+                    org=org,
+                )
+                contract.bfile.save(os.path.basename(fname), ContentFile(s))
+            except (AttributeError, RegisterProfileContract.DoesNotExist, IOError, ):
+                pass
             org.create_wallet_rate()
             profile=Profile.objects.create(
                         user_last_name=registrant.user_last_name,
@@ -1704,7 +1759,7 @@ class StoreDetail(APIView):
 
 api_loru_store_detail = StoreDetail.as_view()
 
-class ApiOrgSignupView(CheckRecaptchaMixin, ApiAuthSigninView):
+class ApiOrgSignupView(CheckRecaptchaMixin, RegisterMixin, APIView):
     """
     Регистрация ЛОРУ (нового поставщика)
     """
@@ -1723,61 +1778,94 @@ class ApiOrgSignupView(CheckRecaptchaMixin, ApiAuthSigninView):
             if not self.check_recaptcha(request, recaptcha_data['challenge'], recaptcha_data['response']):
                 raise ServiceException(_(u'Введена неверная captcha'))
 
-            username = request.DATA.get('username')
-            email = request.DATA.get('email', '')
-            user, created = User.objects.get_or_create(
-                username=username,
-                defaults=dict(email=email),
-            )
-            if not created:
-                raise ServiceException(_(u'Такой пользователь, %s, уже имеется') % username)
-            password = request.DATA.get('password')
-            if password:
-                user.set_password(password)
-                user.save()
+            username = request.DATA.get('username', '').strip()
+            if not username:
+                raise ServiceException(_(u'Не задано имя пользователя для входа в систему'))
+            if User.objects.filter(username=username).exists():
+                raise ServiceException(_(u"Имя  %s уже используется в системе") % username)
+            q = Q(user_name=username) & \
+                ~Q(status__in=(RegisterProfile.STATUS_DECLINED, RegisterProfile.STATUS_APPROVED, ))
+            if RegisterProfile.objects.filter(q).exists():
+                raise ServiceException(_(u"Имя  %s уже используется среди кандидатов на регистрацию") % username)
+
+            email = request.DATA.get('email', '').strip()
+            if not email:
+                raise ServiceException(_(u'Не задан адрес электронной почты'))
+            try:
+                validate_email(email)
+            except ValidationError:
+                raise ServiceException(_(u'Неверный формат адреса электронной почты: %s') % email)
+
+            password = request.DATA.get('password', '')
+            if not password.strip():
+                raise ServiceException(_(u'Не задан пароль'))
+            user_password = make_password(password)
+            salt = hashlib.sha1(str(random.random())).hexdigest()[:5]
+            user_activation_key = hashlib.sha1(salt+username).hexdigest()
 
             location = request.DATA.get('registredOffice')
+            if not location:
+                raise ServiceException(_(u'Не задан адрес организации'))
             try:
                 location = json.loads(location)
             except ValueError:
                 raise ServiceException(_(u'Неверный формат registredOffice'))
-            off_address = None
-            if location:
-                coords = location.get('location')
-                off_address = Location.objects.create(
-                    addr_str=location.get('address', ''),
-                    gps_x= coords and coords.get('longitude'),
-                    gps_y= coords and coords.get('latitude'),
-                )
-            name = request.DATA.get('orgName', '')
+            coords = location.get('location')
+            org_address = Location(
+                addr_str=location.get('address', '').strip(),
+                gps_x= coords and coords.get('longitude'),
+                gps_y= coords and coords.get('latitude'),
+            )
+
+            user_last_name = request.DATA.get('userLastName', '').strip()
+            if not user_last_name:
+                raise ServiceException(_(u'Не задана фамилия пользователя'))
+            user_first_name = request.DATA.get('userFirstName', '').strip()
+            if not user_first_name:
+                raise ServiceException(_(u'Не задано имя пользователя'))
+            user_middle_name = request.DATA.get('userMiddleName', '').strip()
+
+            org_name = request.DATA.get('orgName', '').strip()
+            if not org_name:
+                raise ServiceException(_(u'Не задано краткое наименование организации'))
             full_name = request.DATA.get('orgFullName')
             org_types = dict(loru=Org.PROFILE_LORU, oms=Org.PROFILE_UGH)
-            type_ = org_types[request.DATA.get('orgType', org_types['loru'])]
-            director = request.DATA.get('directorFullname', '')
-            inn = request.DATA.get('tin', '')
-            ogrn = request.DATA.get('OGRN', '')
-            phones = request.DATA.get('phones')
-            if phones:
+            org_type = request.DATA.get('orgType')
+            if not org_type or org_type not in org_types:
+                raise ServiceException(_(u'Тип организации не задан или неверен'))
+            org_type = org_types[org_type]
+            org_phones = request.DATA.get('phones')
+            if org_phones:
                 try:
-                    phones = "\n".join(json.loads(phones))
+                    org_phones = "\n".join(json.loads(org_phones))
                 except ValueError:
                     raise ServiceException(_(u'Неверный формат телефонов (phones)'))
-            fax = request.DATA.get('fax', '')
-            org = Org.objects.create(
-                name=name,
-                full_name=full_name or name,
-                type=type_,
-                off_address=off_address,
-                director=director,
-                phones=phones,
-                fax=fax,
-                inn=inn,
-                ogrn=ogrn,
-                email=email,
-            )
-            profile = Profile.objects.create(
-                user=user,
-                org=org,
+            if not org_phones:
+                raise ServiceException(_(u'Не указано ни одного телефона'))
+            org_inn=request.DATA.get('tin', '').strip()
+            if not org_inn:
+                raise ServiceException(_(u'Не указан ИНН'))
+            org_basis = request.DATA.get('directorPowerSource', Org.BASIS_CHARTER)
+            org_address.save()
+            registerprofile = RegisterProfile.objects.create(
+                status=RegisterProfile.STATUS_TO_CONFIRM,
+                user_name=username,
+                user_last_name=user_last_name,
+                user_first_name=user_first_name,
+                user_middle_name=user_middle_name,
+                user_email=email,
+                user_password=user_password,
+                user_activation_key=user_activation_key,
+                org_type=org_type,
+                org_name=org_name,
+                org_full_name=request.DATA.get('orgFullName', '').strip() or org_name,
+                org_inn=org_inn,
+                org_ogrn=request.DATA.get('OGRN', '').strip(),
+                org_director=request.DATA.get('directorFullname', '').strip(),
+                org_phones=org_phones,
+                org_fax=request.DATA.get('fax', '').strip(),
+                org_address=org_address,
+                org_basis=org_basis,
             )
 
             banks = request.DATA.get('bankAccounts')
@@ -1787,8 +1875,8 @@ class ApiOrgSignupView(CheckRecaptchaMixin, ApiAuthSigninView):
                 except ValueError:
                     raise ServiceException(_(u'Неверный формат банковских счетов (bankAccounts)'))
                 for bank in banks:
-                    BankAccount.objects.create(
-                        organization=org,
+                    BankAccountRegister.objects.create(
+                        registerprofile=registerprofile,
                         bankname=bank['name'],
                         rs=bank['account'],
                         bik=bank['bik'],
@@ -1797,30 +1885,47 @@ class ApiOrgSignupView(CheckRecaptchaMixin, ApiAuthSigninView):
 
             cert = request.FILES.get('certificatePhoto')
             if cert:
-                OrgCertificate.objects.create(
+                RegisterProfileScan.objects.create(
                     bfile=cert,
-                    creator=user,
-                    org=org,
+                    registerprofile=registerprofile,
                 )
+
+            # Будем использовать один и тот же шаблон и для договора с кандидатом на регистрацию,
+            # и для договора с организацией, а там разные имена полей. "Приведем" эти имена
+            # к тому, что есть в модели Org
+            #
+            for f in registerprofile._meta.get_all_field_names():
+                if f.startswith('org_'):
+                    setattr(registerprofile, f[4:], getattr(registerprofile, f))
+            setattr(registerprofile, 'off_address', getattr(registerprofile, 'org_address'))
+
             try:
                 pdf = PDFTemplateResponse(
                     request=request,
-                    template='loru_contract.html',
-                    context=dict(org=org)
+                    template='loru_contract.html' if registerprofile.org_type==Org.PROFILE_LORU \
+                              else 'oms_contract.html',
+                    context=dict(org=registerprofile)
                 ).rendered_content
             except:
                 raise ServiceException(_(u'Ошибка формирования договора.pdf. Проверьте настройки сервера'))
             
-            contract = OrgContract.objects.create(
-                creator=user,
-                org=org,
-            )
-            contract.bfile.save('contract.pdf', ContentFile(pdf))
-            return self.do_post(request)
+            #contract = RegisterProfileContract.objects.create(
+                #registerprofile=registerprofile,
+            #)
+            #contract.bfile.save('contract.pdf', ContentFile(pdf))
+            self.send_email_to_confirm(obj=registerprofile)
+            return Response(status=200, data={
+                'status': 'success',
+                'message': _(
+                    u"Вам отправлено письмо по адресу %s, "
+                    u"в котором имеется ссылка, "
+                    u"переход по которой направит вашу заявку "
+                    u"на рассмотрение администратора системы"
+                ) % registerprofile.user_email
+            })
 
         except ServiceException as excpt:
             transaction.rollback()
             return Response(dict(status='error', message=excpt.message), status=400)
 
 api_org_signup = ApiOrgSignupView.as_view()
-

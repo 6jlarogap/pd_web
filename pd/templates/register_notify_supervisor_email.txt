@@ -11,9 +11,11 @@
 
 {% trans "Организация" %}: {{ obj.org_name }}
 {% trans "Полное название" %}: {{ obj.org_full_name }}
+{% trans "Адрес" %}: {{ obj.org_address }}
 {% trans "ИНН" %}: {{ obj.org_inn }}
 {% trans "Директор" %}: {{ obj.org_director }}
 {% trans "Телефон(ы)" %}: {{ obj.org_phones }}
+{% trans "Факс" %}: {{ obj.org_fax }}
 
 {% trans "Одобрить" %}: {{ host }}{% url registrant_approve  obj.pk %}
 

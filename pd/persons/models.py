@@ -13,28 +13,6 @@ from geo.models import Location
 from pd.models import UnclearDate, UnclearDateModelField, BaseModel, Files, validate_phone_as_number
 from users.models import Org, PhonesMixin
 
-class SafeDeleteMixin(object):
-    
-    def safe_delete(self, field_name, instance):
-        """
-        Безопасно удалить что-то из записи таблицы
-        
-        field       - строка (!) имени поля
-        instance    - запись в таблице
-        Поле устанавливается в null, запись сохраняется, потом
-        удаляется то, на что указывало поле.
-        Типичный пример - удаление заявителя, заказчика, покойника.
-        """
-        field_to_delete = getattr(instance, field_name)
-        if field_to_delete:
-            setattr(instance, field_name, None)
-            instance.save()
-            try:
-                field_to_delete.delete()
-            except ProtectedError:
-                pass
-
-
 class IDDocumentType(models.Model):
     name = models.CharField(_(u"Тип документа"), max_length=255, db_index=True)
 
