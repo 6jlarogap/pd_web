@@ -23,10 +23,11 @@ from geo.forms import LocationForm
 from orders.models import Order
 from pd.forms import PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, CommentForm, StrippedStringsMixin, CustomUploadModelForm
 from persons.forms import DeadPersonForm, DeathCertificateForm, AlivePersonForm, PersonIDForm
-from persons.models import DeathCertificate, PersonID, IDDocumentType, SafeDeleteMixin
+from persons.models import DeathCertificate, PersonID, IDDocumentType
 from users.forms import BaseOrgForm
 from users.models import Org, Profile, Dover
 from logs.models import write_log
+from pd.models import SafeDeleteMixin
 
 OPF_CHOICES = (('person', _(u'ФЛ')), ('org', _(u'ЮЛ')))
 

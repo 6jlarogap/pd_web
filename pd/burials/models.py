@@ -9,9 +9,9 @@ from django.db.models.deletion import ProtectedError
 from django.utils.translation import ugettext_lazy as _
 from django.db.models.query_utils import Q
 from django.conf import settings
-from pd.models import UnclearDateModelField, BaseModel, Files, GetLogsMixin, validate_gt0
+from pd.models import UnclearDateModelField, BaseModel, Files, GetLogsMixin, validate_gt0, SafeDeleteMixin
 
-from persons.models import DeadPerson, SafeDeleteMixin, DeathCertificate
+from persons.models import DeadPerson, DeathCertificate
 from reports.models import Report
 from users.models import Org, Profile, Dover, ProfileLORU, CustomerProfile, PhonesMixin, \
                          is_ugh_user, is_cabinet_user
