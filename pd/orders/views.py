@@ -605,15 +605,15 @@ class CustomerDataMixin:
             is_customer = False
         else:
             login_phone = request.user.customerprofile.login_phone
-            lorus = set()
-            for p in Place.objects.filter(responsible__login_phone=login_phone):
-                places.append(p)
-                lorus.update(p.cemetery.ugh.get_loru_list())
+            if login_phone is not None:
+                for p in Place.objects.filter(responsible__login_phone=login_phone):
+                    places.append(p)
+                    lorus.update(p.cemetery.ugh.get_loru_list())
         return is_customer, places, lorus
-        
+
 
 class ApiCatalogSuppliersView(APIView):
-    
+
     def get(self, request):
         suppliers = []
         qs = Q(
