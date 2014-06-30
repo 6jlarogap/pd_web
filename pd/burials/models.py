@@ -695,7 +695,7 @@ class Burial(SafeDeleteMixin, GetLogsMixin, BaseModel):
             return False
         elif self.is_full():
             return self.is_approved()
-        elif self.is_ugh():
+        else:
             return self.is_draft() or self.is_approved()
 
     def can_approve_ugh(self):
