@@ -1351,12 +1351,12 @@ class BurialApproveCloseForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelFor
                     pass
 
         if request.POST.get('disapprove') and request.user.profile.is_ugh() and \
-           self.instance.can_disapprove:
+           self.instance.can_disapprove_ugh():
             for f in self.fields:
                 self.fields[f].required = False
 
         if request.POST.get('approve') and request.user.profile.is_ugh() and \
-           self.instance.is_draft():
+           self.instance.can_approve_ugh():
             for f in ('place_number', 'fact_date', ):
                 self.fields[f].required = False
 

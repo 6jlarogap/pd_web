@@ -258,7 +258,7 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
                 ))
                 redirect_to_view = True
 
-        if request.POST.get('approve') and request.user.profile.is_ugh() and b.is_draft() and b.is_ugh:
+        if request.POST.get('approve') and request.user.profile.is_ugh() and b.can_approve_ugh():
             approve_close_form = self.get_approve_close_form()
             if approve_close_form.is_valid():
                 b = approve_close_form.save()
@@ -298,7 +298,7 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
                 messages.error(request, msg)
                 return redirect(reverse('view_burial', args=[b.pk]))
 
-        if request.POST.get('disapprove') and request.user.profile.is_ugh() and b.can_disapprove():
+        if request.POST.get('disapprove') and request.user.profile.is_ugh() and b.can_disapprove_ugh():
             approve_close_form = self.get_approve_close_form()
             if approve_close_form.is_valid():
                 b = approve_close_form.save()
@@ -808,7 +808,7 @@ class CreateBurial(BurialGetOrderMixin, FormInvalidMixin, CreateView):
                 )
                 messages.success(self.request, msg)
 
-            if action == 'approve' and self.request.user.profile.is_ugh() and b.is_draft() and b.is_ugh():
+            if action == 'approve' and self.request.user.profile.is_ugh() and b.can_approve_ugh():
                 b.status = Burial.STATUS_APPROVED
                 b.approve(self.request.user)
                 write_log(self.request, b, _(u'Захоронение согласовано'))
@@ -816,7 +816,7 @@ class CreateBurial(BurialGetOrderMixin, FormInvalidMixin, CreateView):
                     reverse('view_burial', args=[b.pk]), b.pk,
                 ))
 
-            if action == 'disapprove' and self.request.user.profile.is_ugh() and b.can_disapprove():
+            if action == 'disapprove' and self.request.user.profile.is_ugh() and b.can_disapprove_ugh():
                 b.status = Burial.STATUS_DRAFT
                 write_log(self.request, b, _(u'Захоронение возвращено в статус черновика'))
                 messages.success(self.request, _(u"<a href='%s'>Захоронение %s</a> возвращено в статус черновика") % (

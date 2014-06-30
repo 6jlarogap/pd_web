@@ -289,10 +289,10 @@
                 </script>
                 <input type="submit" class="btn btn-primary" name="complete" value="{% trans "закрыть" %}">
             {% endif %}
-            {% if b.is_ugh and b.is_draft %}
+            {% if b.can_approve_ugh %}
                 <input type="submit" class="btn btn-primary" name="approve" value="{% trans "cогласовать" %}">
             {% endif %}
-            {% if b.can_disapprove %}
+            {% if b.can_disapprove_ugh %}
                 <input type="submit" class="btn" name="disapprove" value="{% trans "отменить согласование" %}">
             {% endif %}
             {% if b.is_closed %}
