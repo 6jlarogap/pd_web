@@ -424,7 +424,11 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
             del self.fields['plan_time']
         elif not self.instance.is_finished():
             del self.fields['fact_date']
-            del self.fields['account_number']
+            if self.instance.account_number:
+                self.fields['account_number'].widget.attrs.update({'readonly':'True'})
+            else:
+                del self.fields['account_number']
+                
         if 'account_number' in self.fields and \
            self.request.user.profile.org.numbers_algo == Org.NUM_EMPTY and \
            not self.instance.account_number:
@@ -957,6 +961,12 @@ class BurialCommitForm(BurialForm):
         if (not self.instance or not self.instance.pk) and self.request.user.profile.is_ugh():
             is_ugh = True
 
+        msg_complete = _(u'закрывать')
+        if is_ugh and self.request.REQUEST.get('approve'):
+            msg_complete = _(u'согласовывать')
+        elif self.request.user.profile.is_loru() and self.request.REQUEST.get('ready'):
+            msg_complete = _(u'отправлять на согласование')
+
         cemetery = self.cleaned_data.get('cemetery')
         area = self.cleaned_data.get('area')
         row = self.cleaned_data.get('row')
@@ -994,7 +1004,7 @@ class BurialCommitForm(BurialForm):
 
             if (self.instance.is_archive() or self.request.REQUEST.get('archive')) and not acc_number.strip():
                 if not cemetery or cemetery.archive_burial_account_number_required:
-                    msg = _(u"Нельзя закрывать архивное захоронение без указания его номера в книге учета")
+                    msg = _(u"Нельзя %s архивное захоронение без указания его номера в книге учета") % msg_complete
                     raise forms.ValidationError(msg)
                 if not place_number.strip() and \
                     cemetery and \
@@ -1005,20 +1015,17 @@ class BurialCommitForm(BurialForm):
         if not place_number.strip() and \
            (self.instance.is_archive() or self.request.REQUEST.get('archive')) and \
            cemetery and cemetery.places_algo_archive == Cemetery.PLACE_ARCHIVE_MANUAL:
-            msg = _(u"Нельзя закрывать архивное захоронение без указания номера места для этого кладбища")
+            msg = _(u"Нельзя %s архивное захоронение без указания номера места для этого кладбища") % msg_complete
             raise forms.ValidationError(msg)
         elif not place_number.strip() and \
            (burial_type in (Burial.BURIAL_ADD, Burial.BURIAL_OVER,)) and \
            cemetery and cemetery.places_algo_archive == Cemetery.PLACE_ARCHIVE_MANUAL and is_ugh:
-            msg = _(u"Нельзя закрывать %s без указания номера места для этого кладбища") % burial_type_str.lower()
+            msg = _(u"Нельзя %s %s без указания номера места для этого кладбища") % \
+                   (msg_complete, burial_type_str.lower(), )
             raise forms.ValidationError(msg)
         elif not place_number.strip() and area and area.availability == Area.AVAILABILITY_CLOSED:
-            if is_ugh:
-                msg = _(u"Не указано место для закрытого участка. Нельзя закрывать захоронение")
-                raise forms.ValidationError(msg)
-            elif self.request.REQUEST.get('ready'):
-                msg = _(u"Не указано место для закрытого участка. Нельзя отправлять на согласование")
-                raise forms.ValidationError(msg)
+            msg = _(u"Не указано место для закрытого участка. Нельзя %s захоронение") % msg_complete
+            raise forms.ValidationError(msg)
         elif not place_number.strip() and \
              cemetery and \
              cemetery.ugh.numbers_algo == Org.NUM_EMPTY and \
@@ -1343,8 +1350,14 @@ class BurialApproveCloseForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelFor
                 except PlaceSize.DoesNotExist:
                     pass
 
+        if request.POST.get('disapprove') and request.user.profile.is_ugh() and \
+           self.instance.can_disapprove:
+            for f in self.fields:
+                self.fields[f].required = False
+
     def clean(self):
         if self.is_valid() and \
+           not self.request.POST.get('disapprove') and \
            'row' in self.fields and \
            self.cleaned_data['cemetery'].places_algo == Cemetery.PLACE_ROW and \
            not self.cleaned_data['row'].strip():
@@ -1352,46 +1365,50 @@ class BurialApproveCloseForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelFor
         return self.cleaned_data
 
     def clean_place_number(self):
-        cemetery = self.cleaned_data.get('cemetery')
         place_number = self.cleaned_data.get('place_number', '')
-        if self.request.user.profile.is_ugh() and self.instance.can_finish() and cemetery and \
-           not place_number.strip() and \
-           (
-                (self.instance.burial_type in (Burial.BURIAL_NEW,) and \
-                 cemetery.places_algo == Cemetery.PLACE_MANUAL) \
-            or \
-                (self.instance.burial_type in (Burial.BURIAL_ADD, Burial.BURIAL_OVER,) and \
-                 cemetery.places_algo_archive == Cemetery.PLACE_ARCHIVE_MANUAL)
-           ):
-            raise forms.ValidationError(_(u'Номер места обязателен для кладбища с ручной нумерацией мест'))
+        if not self.request.POST.get('disapprove'):
+            cemetery = self.cleaned_data.get('cemetery')
+            if self.request.user.profile.is_ugh() and self.instance.can_finish() and cemetery and \
+            not place_number.strip() and \
+            (
+                    (self.instance.burial_type in (Burial.BURIAL_NEW,) and \
+                    cemetery.places_algo == Cemetery.PLACE_MANUAL) \
+                or \
+                    (self.instance.burial_type in (Burial.BURIAL_ADD, Burial.BURIAL_OVER,) and \
+                    cemetery.places_algo_archive == Cemetery.PLACE_ARCHIVE_MANUAL)
+            ):
+                raise forms.ValidationError(_(u'Номер места обязателен для кладбища с ручной нумерацией мест'))
         return place_number
 
     def clean_area(self):
         """
         Проверка одобрения захоронения только в открытый участок.
         """
-        if self.instance.is_ready() and self.cleaned_data['area'].availability != Area.AVAILABILITY_OPEN:
-            raise forms.ValidationError(_(u'Можно предлагать лишь открытый участок кладбища'))
+        if not self.request.POST.get('disapprove'):
+            if self.instance.is_ready() and self.cleaned_data['area'].availability != Area.AVAILABILITY_OPEN:
+                raise forms.ValidationError(_(u'Можно предлагать лишь открытый участок кладбища'))
         return self.cleaned_data['area']
 
     def clean_desired_graves_count(self):
         desired_graves_count = self.cleaned_data['desired_graves_count']
-        b_temp = Burial(cemetery = self.instance.cemetery,
-                        area = self.instance.area,
-                        row = self.instance.row,
-                        place_number = self.instance.place_number
-                       )
-        if not b_temp.get_place() and self.instance.grave_number > desired_graves_count:
-            raise forms.ValidationError(_(u"Номер могилы превышает запрошенное количество могил в новом месте"))
+        if not self.request.POST.get('disapprove'):
+            b_temp = Burial(cemetery = self.instance.cemetery,
+                            area = self.instance.area,
+                            row = self.instance.row,
+                            place_number = self.instance.place_number
+                        )
+            if not b_temp.get_place() and self.instance.grave_number > desired_graves_count:
+                raise forms.ValidationError(_(u"Номер могилы превышает запрошенное количество могил в новом месте"))
         return desired_graves_count
 
     def clean_fact_date(self):
         fact_date = self.cleaned_data.get('fact_date')
-        deadman_death_date = self.instance.deadman and self.instance.deadman.death_date
-        if fact_date and deadman_death_date and \
-           deadman_death_date > fact_date:
-            msg = _(u"Фактическая дата захоронения не может быть раньше даты смерти")
-            raise forms.ValidationError(msg)
+        if not self.request.POST.get('disapprove'):
+            deadman_death_date = self.instance.deadman and self.instance.deadman.death_date
+            if fact_date and deadman_death_date and \
+            deadman_death_date > fact_date:
+                msg = _(u"Фактическая дата захоронения не может быть раньше даты смерти")
+                raise forms.ValidationError(msg)
         return fact_date
 
     def is_valid(self):

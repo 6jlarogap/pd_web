@@ -289,6 +289,9 @@
                 </script>
                 <input type="submit" class="btn btn-primary" name="complete" value="{% trans "закрыть" %}">
             {% endif %}
+            {% if b.can_disapprove %}
+                <input type="submit" class="btn" name="disapprove" value="{% trans "отменить согласование" %}">
+            {% endif %}
             {% if b.is_closed %}
                 <a href="{% url burial_exhumate b.pk %}" class="btn">{% trans "эксгумировать" %}</a>
             {% endif %}
