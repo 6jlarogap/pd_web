@@ -696,7 +696,19 @@ class Burial(SafeDeleteMixin, GetLogsMixin, BaseModel):
         elif self.is_full():
             return self.is_approved()
         else:
-            return self.is_draft()
+            return self.is_draft() or self.is_approved()
+
+    def can_approve_ugh(self):
+        """
+        Условия возможности согласование ручного черновика
+        """
+        return self.is_ugh() and self.is_draft()
+
+    def can_disapprove_ugh(self):
+        """
+        Условия отзыва угх ручного или архивного согласованного захоронения
+        """
+        return self.is_ugh() and self.is_approved()
 
     def can_ugh_annulate(self):
         if self.annulated:
@@ -704,7 +716,7 @@ class Burial(SafeDeleteMixin, GetLogsMixin, BaseModel):
         if self.is_full():
             return self.is_closed() or self.is_exhumated()
         if self.is_ugh_only():
-            return self.is_closed() or self.is_draft() or self.is_exhumated()
+            return self.is_closed() or self.is_draft() or self.is_approved() or self.is_exhumated()
         if self.is_transferred() or self.is_archive():
             return True
         return False
