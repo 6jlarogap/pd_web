@@ -259,19 +259,12 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
                 redirect_to_view = True
 
         if request.POST.get('approve') and request.user.profile.is_ugh() and b.is_draft() and b.is_ugh:
-            b, refresh = self.approve_or_check_dc()
-            if refresh:
-                return redirect(reverse('view_burial', args=[self.b.pk]) + order_parm)
-            elif not b:
-                return self.get(request, *args, **kwargs)
+            approve_close_form = self.get_approve_close_form()
+            if approve_close_form.is_valid():
+                b = approve_close_form.save()
+                return redirect(reverse('edit_burial', args=[b.pk]) + '?action=approve')
             else:
-                b.status = Burial.STATUS_APPROVED
-                b.approve(self.request.user)
-                write_log(request, b, _(u'Захоронение согласовано'))
-                messages.success(request, _(u"<a href='%s'>Захоронение %s</a> согласовано") % (
-                    reverse('view_burial', args=[b.pk]), b.pk,
-                ))
-                redirect_to_view = True
+                return self.get(request, *args, **kwargs)
 
         if request.POST.get('approve-inspect') and request.user.profile.is_ugh() and b.can_approve_inspect():
             b, refresh = self.approve_or_check_dc()
