@@ -816,7 +816,7 @@ class CreateBurial(BurialGetOrderMixin, FormInvalidMixin, CreateView):
                     reverse('view_burial', args=[b.pk]), b.pk,
                 ))
 
-            if action == 'disapprove' and self.request.user.profile.is_ugh() and b.is_approved() and b.is_ugh():
+            if action == 'disapprove' and self.request.user.profile.is_ugh() and b.can_disapprove():
                 b.status = Burial.STATUS_DRAFT
                 write_log(self.request, b, _(u'Захоронение возвращено в статус черновика'))
                 messages.success(self.request, _(u"<a href='%s'>Захоронение %s</a> возвращено в статус черновика") % (

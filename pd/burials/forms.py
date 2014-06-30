@@ -1374,14 +1374,14 @@ class BurialApproveCloseForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelFor
         if not self.request.POST.get('disapprove'):
             cemetery = self.cleaned_data.get('cemetery')
             if self.request.user.profile.is_ugh() and self.instance.can_finish() and cemetery and \
-            not place_number.strip() and \
-            (
+               not place_number.strip() and \
+               (
                     (self.instance.burial_type in (Burial.BURIAL_NEW,) and \
                     cemetery.places_algo == Cemetery.PLACE_MANUAL) \
                 or \
                     (self.instance.burial_type in (Burial.BURIAL_ADD, Burial.BURIAL_OVER,) and \
                     cemetery.places_algo_archive == Cemetery.PLACE_ARCHIVE_MANUAL)
-            ):
+               ):
                 raise forms.ValidationError(_(u'Номер места обязателен для кладбища с ручной нумерацией мест'))
         return place_number
 
