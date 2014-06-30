@@ -11,13 +11,15 @@ from django.conf import settings
 from django.contrib.auth.models import User
 from django.db import models, transaction, IntegrityError
 from django.db.models.loading import get_model
+from django.db.models.deletion import ProtectedError
 from django.utils.translation import ugettext_lazy as _
 from django.contrib.contenttypes.models import ContentType
 
 from rest_framework import permissions
 
 from geo.models import Location
-from pd.models import BaseModel, Files, GetLogsMixin, validate_gt0, validate_username, validate_phone_as_number
+from pd.models import BaseModel, Files, GetLogsMixin, validate_gt0, validate_username, \
+                      validate_phone_as_number, SafeDeleteMixin
 from logs.models import Log
 
 from pd.utils import DigitsValidator, LengthValidator, NotEmptyValidator
@@ -659,16 +661,24 @@ class Store(models.Model, PhonesMixin):
     address = models.ForeignKey('geo.Location', verbose_name=_(u"Адрес"))
     # phones: могут быть разных типов, пользуемся моделью persons.Phone
 
-class BankAccount(models.Model):
+class BankAccountCommon(models.Model):
     """
     Банковские реквизиты
     """
-    organization = models.ForeignKey(Org, verbose_name=u"Организация")
+    class Meta:
+        abstract = True
+        
     rs = models.CharField(u"Расчетный счет", max_length=20, validators=[DigitsValidator(), LengthValidator(20), ])
     ks = models.CharField(u"Корреспондентский счет", max_length=20, blank=True, validators=[DigitsValidator(), LengthValidator(20), ])
     bik = models.CharField(u"БИК", max_length=9, validators=[DigitsValidator(), LengthValidator(9), ])
     bankname = models.CharField(u"Наименование банка", max_length=64, validators=[NotEmptyValidator(1), ])
     ls = models.CharField(u"Л/с", max_length=11, blank=True, null=True, validators=[LengthValidator(11), ])
+
+class BankAccount(BankAccountCommon):
+    """
+    Банковские реквизиты организации
+    """
+    organization = models.ForeignKey(Org, verbose_name=u"Организация")
 
 class ProfileLORU(models.Model):
     ugh = models.ForeignKey(Org, related_name='loru_list', limit_choices_to={'type': Org.PROFILE_UGH}, verbose_name=_(u"ОМС"))
@@ -699,7 +709,7 @@ class Dover(models.Model):
     def __unicode__(self):
         return u'%s (%s - %s)' % (self.number, self.begin.strftime('%d.%m.%Y'), self.end.strftime('%d.%m.%Y'))
 
-class RegisterProfile(BaseModel):
+class RegisterProfile(SafeDeleteMixin, BaseModel):
 
     REG_ORG_UGH = Org.PROFILE_UGH
     REG_ORG_LORU = Org.PROFILE_LORU
@@ -739,10 +749,15 @@ class RegisterProfile(BaseModel):
     org_name = models.CharField(_(u"Краткое название организации"), max_length=255, default='')
     org_full_name = models.CharField(_(u"Полное название организации"), max_length=255, default='')
     org_inn = models.CharField(_(u"ИНН"), max_length=255, default='')
-    org_director = models.CharField(_(u"ФИО директора"), max_length=255, default='')
+    org_ogrn = models.CharField(_(u"ОГРН/ОГРЮЛ"), max_length=255, default='', blank=True)
+    org_director = models.CharField(_(u"Директор (в родительном падеже, например, Иванова Ивана Ивановича)"),
+                                    max_length=255, default='')
+    org_basis = models.CharField(_(u"Основание действия директора"), max_length=255, 
+                             choices=Org.BASIS_CHOICES, default=Org.BASIS_CHARTER)
     org_phones = models.TextField(_(u"Телефоны"),
                                   help_text=_(u'В международном формате: +код-страны-код-города-номер-телефона')
                                  )
+    org_fax = models.CharField(_(u"Факс"), max_length=20, default='', blank=True)
     org_address = models.ForeignKey(Location, editable=False, null=True)
 
     def __unicode__(self):
@@ -752,6 +767,21 @@ class RegisterProfile(BaseModel):
         return _(u'Заявка: %s/"%s"/%s/%s/%s') % (self.get_org_type_display(), self.org_name,
                                                  fio, self.user_name, self.user_email, )
     
+    @transaction.commit_on_success
+    def delete(self):
+        self.safe_delete('org_address', self)
+        try:
+            self.registerprofilescan.delete()
+        except RegisterProfileScan.DoesNotExist:
+            pass
+        try:
+            self.registerprofilecontract.delete()
+        except RegisterProfileContract.DoesNotExist:
+            pass
+        for bank in self.bankaccountregister_set.all():
+            bank.delete()
+        super(RegisterProfile, self).delete()
+        
     def is_to_confirm(self):
         return self.status == self.STATUS_TO_CONFIRM
 
@@ -774,6 +804,19 @@ class RegisterProfile(BaseModel):
 
 class RegisterProfileScan(Files):
     """
-    Файлы-сканы, прикрепляемые к завкам на регистрацию
+    Файлы-сканы, прикрепляемые к заявкам на регистрацию
     """
     registerprofile = models.OneToOneField(RegisterProfile)
+
+class RegisterProfileContract(Files):
+    """
+    PDF файлы договоров с кандидатами на регистрацию
+    """
+    registerprofile = models.OneToOneField(RegisterProfile)
+
+class BankAccountRegister(BankAccountCommon):
+    """
+    Банковские реквизиты кандидата на регистрацию
+    """
+    registerprofile = models.ForeignKey(RegisterProfile, verbose_name=u"Организация")
+
