@@ -1116,14 +1116,16 @@ class Reason(models.Model):
     TYPE_BACK = 'back'
     TYPE_DECLINE = 'decline'
     TYPE_ANNULATE = 'annulate'
+    TYPE_DISAPPROVE = 'disapprove'
     TYPE_CHOICES = (
         (TYPE_BACK, _(u'ЛОРУ отзывает захоронение')),
         (TYPE_DECLINE, _(u'ОМС отказывает в захоронении')),
         (TYPE_ANNULATE, _(u'Аннулирование захоронения')),
+        (TYPE_DISAPPROVE, _(u'ОМС отзывает согласование ручного захоронения')),
     )
     # ЛОРУ и УГХ имеют разные списки отказов и др. действий
     #
-    TYPES_UGH = (TYPE_DECLINE, TYPE_ANNULATE, )
+    TYPES_UGH = (TYPE_DECLINE, TYPE_ANNULATE, TYPE_DISAPPROVE, )
     # ЛОРУ аннулирует лишь свои черновики, отказванные, отозванные,
     # т.е. по сути свои черновики, так что незачем ему указывать причину
     # аннулирования
