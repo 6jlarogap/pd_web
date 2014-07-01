@@ -304,7 +304,7 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
                 b = approve_close_form.save()
                 b.status = Burial.STATUS_DRAFT
                 b.save()
-                write_log(request, b, _(u'Захоронение возвращено в статус черновика'))
+                write_log(request, b, _(u'Захоронение возвращено в статус черновика'), reason)
                 messages.success(request, _(u"<a href='%s'>Захоронение %s</a> возвращено в статус черновика") % (
                     reverse('view_burial', args=[b.pk]), b.pk,
                 ))
@@ -425,6 +425,7 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
             'reason_typical_back': Reason.objects.filter(org=org, reason_type=Reason.TYPE_BACK),
             'reason_typical_decline': Reason.objects.filter(org=org, reason_type=Reason.TYPE_DECLINE),
             'reason_typical_annulate': Reason.objects.filter(org=org, reason_type=Reason.TYPE_ANNULATE),
+            'reason_typical_disapprove': Reason.objects.filter(org=org, reason_type=Reason.TYPE_DISAPPROVE),
             'approve_close_form': self.get_approve_close_form(),
             'comment_form': CommentForm(),
             'zags_form': AddOrgForm(request=self.request, prefix='zags', instance=Org(type=Org.PROFILE_ZAGS)),
