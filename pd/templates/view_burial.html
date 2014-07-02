@@ -253,6 +253,9 @@
                 <textarea name="reason" rows="5" cols="30"></textarea>
                 <br/>
                 <input type="submit" class="btn" name="annulate" value="{% trans "аннулировать" %}">
+                {% if b.can_disapprove_ugh %}
+                    <input type="submit" class="btn" name="disapprove" value="{% trans "отменить согласование" %}">
+                {% endif %}
             {% endif %}
             {% if b.can_approve %}
                 <script type="text/javascript">
@@ -295,9 +298,6 @@
                 <input type="submit" class="btn btn-primary" name="complete" value="{% trans "закрыть" %}">
                 {% if b.can_approve_ugh %}
                     <input type="submit" class="btn btn-primary" name="approve" value="{% trans "cогласовать" %}">
-                {% endif %}
-                {% if b.can_disapprove_ugh %}
-                    <input type="submit" class="btn" name="disapprove" value="{% trans "отменить согласование" %}">
                 {% endif %}
             {% endif %}
             {% if b.is_closed %}
