@@ -411,6 +411,7 @@ class PlaceViewSet(viewsets.ModelViewSet):
                         phone_number=object.responsible.login_phone,
                         text=text,
                         email_error_text=email_error_text,
+                        user=self.request.user,
                     )
 
             #object.responsible.address_id = responsible.address

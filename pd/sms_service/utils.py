@@ -4,14 +4,20 @@ from django.conf import settings
 from django.core.mail import EmailMessage
 from django.utils.translation import ugettext_lazy as _
 
+from users.models import Profile
+
 from sms_service import sms24x7
 
-def send_sms(phone_number, text, email_error_text=''):
+def send_sms(phone_number, text, email_error_text='', user=None):
     """
     Отправить СМС с текстом text на номер phone_number (Decimal or string!)
     
     *   email_error_text - текст сообщения в службу поддержки, если передача СМС не получилась.
         К нему добавляется сообщение СМС-сервиса
+    *   user - инициатор отправки сообщения. Если пользователь не смог получить СМС
+        по причине "сотовый оператор не подключен", то информация об user и его организации
+        включается в письмо, а на адрес user.email или user.profile.org.email идет копия
+        сообщения
     *   функцию вызывать, если not settings.DEBUG!
     
     *   Возвращает кортеж:
@@ -21,6 +27,8 @@ def send_sms(phone_number, text, email_error_text=''):
     phone_number = str(phone_number)
     default_serv = your_serv = None
     message = ''
+    no_gate = False
+    email_copy = None
     for serv in settings.SMS_SERVICE:
         if serv['country_code'] == 'default':
             default_serv = serv
@@ -45,6 +53,7 @@ def send_sms(phone_number, text, email_error_text=''):
         # с цифровыми кодами, приходится перечислять
         except sms24x7.smsapi_nogate_exception:
             message = _(u"Ошибка СМС-сервиса: сотовый оператор не подключен")
+            no_gate = True
         except sms24x7.smsapi_auth_exception as excpt:
             message = _(u"Ошибка СМС-сервиса: аутентификация, код: %s") % excpt
         except sms24x7.smsapi_spam_exception as excpt:
@@ -57,11 +66,25 @@ def send_sms(phone_number, text, email_error_text=''):
         except sms24x7.smsapi_exception as excpt:
             message = _(u"Ошибка СМС-сервиса, %s") % excpt
     if message:
+        if no_gate and user:
+            try:
+                email_error_text += u"\n\n%s: %s / %s / %s\n" % (
+                    _(u'Регистратор'),
+                    user.username,
+                    user.profile.full_name(),
+                    user.profile.org.name,
+                )
+                email_copy = user.email or user.profile.org.email or None
+            except (AttributeError, Profile.DoesNotExist, ):
+                pass
         email_error_text += u"\n%s\n%s" % \
                             (message, _(u"Справка по числовому коду: https://outbox.sms24x7.ru/api_manual/errors.html"), )
         email_from = settings.DEFAULT_FROM_EMAIL
         email_to = (settings.DEFAULT_FROM_EMAIL, )
         email_subject = _(u'Ошибка СМС-сервиса при отправке на %s') % phone_number
         email_text = email_error_text
-        EmailMessage(email_subject, email_text, email_from, email_to, ).send()
+        kwargs = dict()
+        if email_copy:
+            kwargs['cc'] = (email_copy, )
+        email_message = EmailMessage(email_subject, email_text, email_from, email_to, **kwargs ).send()
     return bool(not message), message

@@ -959,6 +959,7 @@ class Burial(SafeDeleteMixin, GetLogsMixin, BaseModel):
                     phone_number=place.responsible.login_phone,
                     text=text,
                     email_error_text=email_error_text,
+                    user=request and request.user or None,
                 )
 
         # Очистим "пустышку" свидетельства о смерти, где
