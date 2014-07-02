@@ -779,6 +779,9 @@ class ApiProfileViewSet(CustomerDataMixin, viewsets.ViewSet):
                         {
                             'id': b.pk,
                             'fio': b.deadman and b.deadman.full_name_complete() or _(u"Неизвестный"),
+                            'lastName': b.deadman and b.deadman.last_name,
+                            'firstName': b.deadman and b.deadman.first_name,
+                            'middleName': b.deadman and b.deadman.middle_name,
                             'photo': None,
                             'birthDate': b.deadman and b.deadman.birth_date and b.deadman.birth_date.str_safe() or None,
                             'deathDate': b.deadman and b.deadman.death_date and b.deadman.death_date.str_safe() or None,
