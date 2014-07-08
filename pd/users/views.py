@@ -892,7 +892,7 @@ class UserAddView(CreateView):
 
 add_user = UserAddView.as_view()
 
-class UserEditView(LoginRequiredMixin, UpdateView):
+class UserEditView(LoginRequiredMixin, RequestToFormMixin, UpdateView):
     template_name = 'edit_user.html'
     model = User
     form_class = UserDataForm

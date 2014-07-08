@@ -121,15 +121,16 @@ class UserProfileForm(ChildrenJSONMixin, StrippedStringsMixin, forms.ModelForm):
         ).distinct()
         self.fields['user_last_name'].required = True
 
-class UserDataForm(forms.ModelForm):
+class UserDataForm(LoggingFormMixin, forms.ModelForm):
     is_agent = forms.BooleanField(label=_(u"Агент"), required=False)
 
     class Meta:
         model = User
         fields = ['username', 'email', 'is_active' ,]
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, request, *args, **kwargs):
         super(UserDataForm, self).__init__(*args, **kwargs)
+        self.request = request
         if self.instance and self.instance.profile:
             self.initial['is_agent'] = self.instance.profile.is_agent
         if self.instance and self.instance.profile and self.instance.profile.is_ugh():
@@ -149,6 +150,15 @@ class UserDataForm(forms.ModelForm):
             validate_username(username)
         return username
         
+    def save(self, commit=True):
+        self.collect_log_data()
+        user = super(UserDataForm, self).save(commit=commit)
+        self.put_log_data(
+            msg=_(u'Изменены данные пользователя %s') % user.username,
+            log_instance=user.profile.org,
+        )
+        return user
+
 class ChangePasswordForm(forms.ModelForm):
     class Meta:
         model = User
