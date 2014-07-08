@@ -859,7 +859,7 @@ class UserProfileView(LoginRequiredMixin, UpdateView):
 
 user_profile = UserProfileView.as_view()
 
-class UserAddView(CreateView):
+class UserAddView(LoginRequiredMixin, CreateView):
     template_name = 'add_user.html'
     model = User
     form_class = UserAddForm
@@ -874,16 +874,15 @@ class UserAddView(CreateView):
             self.object.username,
         )
         messages.success(self.request, msg)
-        write_log(self.request, self.object, _(u'Создан пользователь'))
+        log_msg = _(u'Создан пользователь %s') % self.object.username
+        if self.object.email:
+            log_msg = _(u"%s, email: %s") % (log_msg, self.object.email,)
+        write_log(self.request, self.object, log_msg)
+        write_log(self.request, self.object.profile.org, log_msg)
         return redirect(self.get_success_url())
 
     def get_success_url(self):
         return reverse('edit_org', args=[self.object.profile.org.pk])
-
-    def dispatch(self, request, *args, **kwargs):
-        if not request.user.is_authenticated():
-            return redirect('/')
-        return super(UserAddView, self).dispatch(request, *args, **kwargs)
 
     def get_form_kwargs(self, **kwargs):
         data = super(UserAddView, self).get_form_kwargs(**kwargs)

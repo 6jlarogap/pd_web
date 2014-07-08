@@ -157,6 +157,10 @@ class UserDataForm(LoggingFormMixin, forms.ModelForm):
             msg=_(u'Изменены данные пользователя %s') % user.username,
             log_instance=user.profile.org,
         )
+        self.put_log_data(
+            msg=_(u'Изменены данные'),
+            log_instance=user,
+        )
         return user
 
 class ChangePasswordForm(forms.ModelForm):
