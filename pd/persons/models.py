@@ -31,6 +31,7 @@ class BasePerson(models.Model):
     last_name = models.CharField(_(u"Фамилия"), max_length=255, blank=True)
     first_name = models.CharField(_(u"Имя"), max_length=255, blank=True)
     middle_name = models.CharField(_(u"Отчество"), max_length=255, blank=True)
+    birth_date = UnclearDateModelField(_(u"Дата рождения"), serialize=False, blank=True, null=True)
 
     address = models.ForeignKey(Location, editable=False, null=True)
 
@@ -124,7 +125,6 @@ class DeadPerson(BasePerson):
     Мертвое ФЛ
     """
     # serialize=False - не выгружать значение поля в фикстуры. Для этого типа поля не описан сериализатор
-    birth_date = UnclearDateModelField(_(u"Дата рождения"), serialize=False, blank=True, null=True)
     death_date = UnclearDateModelField(_(u"Дата смерти"), serialize=False, blank=True, null=True)
 
     def get_birth_date(self):
