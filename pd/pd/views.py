@@ -140,7 +140,7 @@ def media_xsendfile(request, path, document_root):
                     Profile = get_model('users', 'Profile')
                     if pk != str(request.user.profile.org.pk):
                         raise Http404
-                except (IndexError, AttributeError, Profile.DoesNotExist ):
+                except (IndexError, AttributeError, Profile.DoesNotExist, ):
                     raise Http404
         else:
             # Для товаров, их категорий, поддержки и др.: открыто всем
