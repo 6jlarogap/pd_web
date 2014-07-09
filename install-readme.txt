@@ -39,13 +39,24 @@ install-readme.txt, utf8 code page
             * wkhtmltopdf (конвертация в pdf, от Google):
                 (хорошая программа, но тянет за собой Qt & X Server)
                  Однако разработчик поддерживает static- compiled
-                 программы wkhtmltopdf для linux 32 & 64 bit:
-                 - скачать wkhtmltopdf-архив для 32 или 64 bit,
-                   http://wkhtmltopdf.org/downloads.html
-                 - tar xf wkhtmltox-linux-<i386|amd64>_<версия>.tar.xz
-                 - sudo rsync -a wkhtmltox /usr/local/bin && rm -rf wkhtmltox
-                 - Проверка:
-                    /usr/local/bin/wkhtmltox/bin/wkhtmltopdf http://www.google.com musor.pdf
+                 - для саммых популярных и поддерживаемых дистрибутивов
+                   (включая debian wheezy и ubuntu 12.04, 14.04)
+                    * http://wkhtmltopdf.org/downloads.html,
+                      скачать соответствующий deb- файл, например для ubuntu 14.04
+                      wkhtmltox-0.12.1_linux-trusty-amd64.deb
+                    * sudo apt-get install fontconfig
+                    * sudo apt-get install libxrender1
+                    * sudo dpkg -i wkhtmltox-0.12.1_linux-trusty-amd64.deb
+                - для других дистрибутивов придется довольствоваться архивной
+                  версией 0.12.0, в которой распространяется архив, который
+                  распаковываешь куда-то и программа готова к запуску.
+                    * скачать wkhtmltopdf-архив для 32 или 64 bit,
+                      http://sourceforge.net/projects/wkhtmltopdf/files/archive/0.12.0/
+                    * tar xf wkhtmltox-linux-<i386|amd64>_<версия>.tar.xz
+                    * sudo rsync -a wkhtmltox /usr/local/bin && rm -rf wkhtmltox
+                    * sudo ln -s /usr/local/bin/wkhtmltox/bin/wkhtmltopdf /usr/local/bin/wkhtmltopdf
+                - Проверка:
+                    /usr/local/bin/wkhtmltopdf http://www.google.com musor.pdf
                     musor.pdf должен демонстрировать начальную страницу Google
 
          - web сервер apache2:
