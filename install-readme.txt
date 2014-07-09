@@ -12,43 +12,59 @@ install-readme.txt, utf8 code page
         - средства разработки:
             * python, не ниже 2.6
               - пакеты python, которые могут не быть в его "стандартной поставке":
-                  * python-dev
-                  * python-virtualenv
-                  * python-pycurl
-            * C/C++
-            * g++
+                  * (ubuntu) python-all-devdev
+                    - (ubuntu 14.04) это автоматически установит c/c++, g++
+                  * (ubuntu) python-virtualenv
+                  * (ubuntu) python-pycurl
 
-         - postgresql,           в т.ч. для разработчика
+         - postgresql,
+            * в т.ч. для разработчика (ubuntu 14.04, postgresql-server-dev-all)
             полагаем, что используется база postgresql на localhost,
             в которой пользователю postgres всё дозволено. Это достигается
-            правкой pg_hba.conf (на ubuntu 12.04 в /etc/postgresql/9.1/main/)
+            правкой pg_hba.conf (на ubuntu 14.04 в /etc/postgresql/9.3/main/)
             заменой строки:
-                local all all peer
+                local all postgres peer
             на:
-                local all all trust
+                local all postgres trust
             с перезагрузкой postgresql (service postgresql restart)
 
-         - библиотеки для графики, включая jpeg, в Ubuntu 12.04: libjpeg-dev
+         - библиотеки для графики, включая jpeg, в Ubuntu: libjpeg-dev
     
         - bower
             * скачать NodeJS: http://nodejs.org/
-            * распаковать, cd node-<VERSION>; ./configure; make; sudo make install
+            * распаковать, cd node-<VERSION>; ./configure && make && sudo make install
             * sudo npm install -g bower
 
         - программы:
             * wkhtmltopdf (конвертация в pdf, от Google):
                 (хорошая программа, но тянет за собой Qt & X Server)
                  Однако разработчик поддерживает static- compiled
-                 программы wkhtmltopdf для linux 32 & 64 bit:
-                 - скачать wkhtmltopdf-архив для 32 или 64 bit,
-                   http://wkhtmltopdf.org/downloads.html
-                 - tar xf wkhtmltox-linux-<i386|amd64>_<версия>.tar.xz
-                 - sudo rsync -a wkhtmltox /usr/local/bin && rm -rf wkhtmltox
-                 - Проверка:
-                    /usr/local/bin/wkhtmltox/bin/wkhtmltopdf http://www.google.com musor.pdf
+                 - для саммых популярных и поддерживаемых дистрибутивов
+                   (включая debian wheezy и ubuntu 12.04, 14.04)
+                    * http://wkhtmltopdf.org/downloads.html,
+                      скачать соответствующий deb- файл, например для ubuntu 14.04
+                      wkhtmltox-0.12.1_linux-trusty-amd64.deb
+                    * sudo apt-get install fontconfig
+                    * sudo apt-get install libxrender1
+                    * sudo dpkg -i wkhtmltox-0.12.1_linux-trusty-amd64.deb
+                - для других дистрибутивов придется довольствоваться архивной
+                  версией 0.12.0, в которой распространяется архив, который
+                  распаковываешь куда-то и программа готова к запуску.
+                    * скачать wkhtmltopdf-архив для 32 или 64 bit,
+                      http://sourceforge.net/projects/wkhtmltopdf/files/archive/0.12.0/
+                    * tar xf wkhtmltox-linux-<i386|amd64>_<версия>.tar.xz
+                    * sudo rsync -a wkhtmltox /usr/local/bin && rm -rf wkhtmltox
+                    * sudo ln -s /usr/local/bin/wkhtmltox/bin/wkhtmltopdf /usr/local/bin/wkhtmltopdf
+                - Проверка:
+                    /usr/local/bin/wkhtmltopdf http://www.google.com musor.pdf
                     musor.pdf должен демонстрировать начальную страницу Google
+
+         - web сервер apache2:
+            (ubuntu: sudo apt-get install apache2  apache2-utils)
+            
+         -git (ubuntu: sudo apt-get install git)
  
-    * Д.б. запущены postgresql & mysql серверы
+    * Д.б. запущен postgresql сервер
  
     * mkdir ~/venv; cd ~/venv; virtualenv --no-site-packages pdweb
     * mkdir ~/projects; cd ~/projects

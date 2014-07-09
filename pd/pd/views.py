@@ -134,6 +134,14 @@ def media_xsendfile(request, path, document_root):
                         raise Http404
                 except IndexError:
                     raise Http404
+            elif what in ('org-certificates', 'org-contracts', ):
+                try:
+                    org = get_model('users', 'Org').objects.filter(pk=pk)[0]
+                    Profile = get_model('users', 'Profile')
+                    if pk != str(request.user.profile.org.pk):
+                        raise Http404
+                except (IndexError, AttributeError, Profile.DoesNotExist, ):
+                    raise Http404
         else:
             # Для товаров, их категорий, поддержки и др.: открыто всем
             if re.search(r'^(?:product\-photo|icons|support)/',path):
