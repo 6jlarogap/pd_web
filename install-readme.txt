@@ -12,27 +12,27 @@ install-readme.txt, utf8 code page
         - средства разработки:
             * python, не ниже 2.6
               - пакеты python, которые могут не быть в его "стандартной поставке":
-                  * python-dev
-                  * python-virtualenv
-                  * python-pycurl
-            * C/C++
-            * g++
+                  * (ubuntu) python-all-devdev
+                    - (ubuntu 14.04) это автоматически установит c/c++, g++
+                  * (ubuntu) python-virtualenv
+                  * (ubuntu) python-pycurl
 
-         - postgresql,           в т.ч. для разработчика
+         - postgresql,
+            * в т.ч. для разработчика (ubuntu 14.04, postgresql-server-dev-all)
             полагаем, что используется база postgresql на localhost,
             в которой пользователю postgres всё дозволено. Это достигается
-            правкой pg_hba.conf (на ubuntu 12.04 в /etc/postgresql/9.1/main/)
+            правкой pg_hba.conf (на ubuntu 14.04 в /etc/postgresql/9.3/main/)
             заменой строки:
-                local all all peer
+                local all postgres peer
             на:
-                local all all trust
+                local all postgres trust
             с перезагрузкой postgresql (service postgresql restart)
 
-         - библиотеки для графики, включая jpeg, в Ubuntu 12.04: libjpeg-dev
+         - библиотеки для графики, включая jpeg, в Ubuntu: libjpeg-dev
     
         - bower
             * скачать NodeJS: http://nodejs.org/
-            * распаковать, cd node-<VERSION>; ./configure; make; sudo make install
+            * распаковать, cd node-<VERSION>; ./configure && make && sudo make install
             * sudo npm install -g bower
 
         - программы:
@@ -47,8 +47,13 @@ install-readme.txt, utf8 code page
                  - Проверка:
                     /usr/local/bin/wkhtmltox/bin/wkhtmltopdf http://www.google.com musor.pdf
                     musor.pdf должен демонстрировать начальную страницу Google
+
+         - web сервер apache2:
+            (ubuntu: sudo apt-get install apache2  apache2-utils)
+            
+         -git (ubuntu: sudo apt-get install git)
  
-    * Д.б. запущены postgresql & mysql серверы
+    * Д.б. запущен postgresql сервер
  
     * mkdir ~/venv; cd ~/venv; virtualenv --no-site-packages pdweb
     * mkdir ~/projects; cd ~/projects
