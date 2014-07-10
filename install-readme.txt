@@ -105,6 +105,9 @@ install-readme.txt, utf8 code page
     * Должен быть установлен Apache mod_wsgi и mod_xsendfile.
         - В Debian/Ubuntu выполнить:
             sudo apt-get install libapache2-mod-wsgi libapache2-mod-xsendfile
+
+    * При использовании ssl: sudo a2enmod ssl
+    * sudo a2enmod rewrite
     
     * пример настройки виртуального хоста Apache
         (имя сервера, каталоги могут отличаться)
@@ -139,11 +142,26 @@ install-readme.txt, utf8 code page
                 # Каталог static должен быть доступен пользователю,
                 # исполняющему Apache, не только, разумеется,
                 # по чтению, но и по записи (AngularJS)
-                Order deny,allow
-                Allow from all
+                <IfVersion < 2.3 >
+                    Order allow,deny
+                    Allow from all
+                </IfVersion>
+                <IfVersion >= 2.3>
+                    Require all granted
+                </IfVersion>
             </Directory>
             <FilesMatch "wsgi\.py$">
-                Order deny,allow
-                Allow from all
+                <IfVersion < 2.3 >
+                    Order allow,deny
+                    Allow from all
+                </IfVersion>
+                <IfVersion >= 2.3>
+                    Require all granted
+                </IfVersion>
             </FilesMatch>
         </VirtualHost>
+
+    * При такой конфигурации (Debian/Ubuntu):
+        sudo chown -R www-data:www-data /home/www-data/media /home/www-data/pw_web
+        cd /home/www-data/pd_web/pd
+        sudo -u www-data ./manage.py collectstatic --noinput
