@@ -1,4 +1,4 @@
-﻿app.controller('PlaceViewCtrl', function PlaceViewCtrl($scope, $routeParams, $location, Place, Cemetery, Grave, GravePhoto, Burial, Area, AlivePerson, Phone, Address, Log, ymapData, $dialog) {
+﻿app.controller('PlaceViewCtrl', function PlaceViewCtrl($scope, $routeParams, $location, Place, Cemetery, Grave, Burial, Area, AlivePerson, Phone, Address, Log, ymapData, $dialog) {
   "use strict";
 
   //Constants
@@ -166,16 +166,6 @@
       angular.forEach(graves.graves, function (row, key) {
         var grave = new Grave(row);
         $scope.graves.push(grave);
-
-        GravePhoto.query({
-          grave_id: grave.id
-        }, function (photos) {
-          if (!_.isEmpty(photos)) {
-            grave.photos = photos;
-            grave.firstPhoto = _.first(photos).bfile;
-          }
-        });
-
       });
       delete $scope.burials;
       $scope.burials = [];
@@ -308,9 +298,9 @@
           $scope.editor.gave = data;
         }
         break;
-      case 'isGraveGalleryOpen':
+      case 'isPlaceGalleryOpen':
         if (data) {
-          $scope.selectedGravePhotos = data;
+          $scope.selectedPlacePhotos = data;
           $scope.setCurrentImage(_.first(data));
         }
         break;
@@ -522,7 +512,7 @@
     });
   };
 
-  $scope.isGraveGalleryOpen = false;
+  $scope.isPlaceGalleryOpen = false;
 
   //Burial
   $scope.isBurialEditorOpen = false;
