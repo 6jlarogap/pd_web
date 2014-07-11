@@ -479,9 +479,6 @@ class PlacePhoto(Files, GeoPointModel):
 class AreaPhoto(Files, GeoPointModel):
     area = models.ForeignKey(Area)
 
-class GravePhoto(Files, GeoPointModel):
-    grave = models.ForeignKey(Grave)
-
 class Burial(SafeDeleteMixin, GetLogsMixin, BaseModel):
     STATUS_BACKED = 'backed'
     STATUS_DECLINED = 'declined'
@@ -1205,25 +1202,3 @@ models.signals.post_save.connect(calculate_free_burial_count, sender=Grave)
 models.signals.post_save.connect(calculate_free_burial_count, sender=Burial)
 models.signals.post_delete.connect(calculate_free_burial_count, sender=Grave)
 models.signals.post_delete.connect(calculate_free_burial_count, sender=Burial)
-
-
-def update_grave_place_coords(sender, instance, **kwargs):
-    #if 'created' in kwargs.keys() and kwargs['created']:
-    # Update grave point coords
-    grave = instance.grave
-    res = GravePhoto.objects.filter(grave=grave, lng__isnull=False, lat__isnull=False).\
-        aggregate(lng=Avg('lng'), lat=Avg('lat')) #, cnt=Count('id')
-    grave.lng = round(res["lng"], 10)
-    grave.lat = round(res["lat"], 10)
-    grave.save()
-
-    # Update place point coords
-    place = instance.grave.place
-    res = Grave.objects.filter(place=place, lng__isnull=False, lat__isnull=False).\
-        aggregate(lng=Avg('lng'), lat=Avg('lat')) #, cnt=Count('id')
-    place.lng = round(res["lng"], 10)
-    place.lat = round(res["lat"], 10)
-    place.save()
-    
-
-models.signals.post_save.connect(update_grave_place_coords, sender=GravePhoto)

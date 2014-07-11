@@ -23,7 +23,7 @@ from django.shortcuts import get_object_or_404
 
 from logs.models import write_log
 from burials.forms import AddOrgForm, AddAgentForm, AddDoverForm, AddDocTypeForm
-from burials.models import Burial, Place, Grave, GravePhoto, PlacePhoto
+from burials.models import Burial, Place, Grave, PlacePhoto
 from users.models import CustomerProfile, CustomerProfilePhoto, Org, ProfileLORU, Store, is_loru_user
 from billing.models import Rate
 from orders.forms import ProductForm, OrderForm, OrderItemFormset, CoffinForm, CatafalqueForm, \
