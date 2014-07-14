@@ -26,7 +26,7 @@ from pd.views import RequestToFormMixin, FormInvalidMixin, get_front_end_url
 from pd.models import validate_phone_as_number
 
 from burials.forms import CemeteryForm, AreaFormset, PlaceEditForm, AddOrgForm, AreaMergeForm, BurialfileCommentEditForm
-from burials.models import Cemetery, Place, Area, BurialFiles, Grave, Burial, AreaPhoto, GravePhoto, PlacePhoto, \
+from burials.models import Cemetery, Place, Area, BurialFiles, Grave, Burial, AreaPhoto, PlacePhoto, \
                            ExhumationRequest, AreaPurpose, PlaceSize
 from burials.burials_views import *
 from logs.models import write_log, log_object, prepare_m2m_log, compare_obj
@@ -46,7 +46,7 @@ from django.db import transaction
 
 from serializers import CemeterySerializer, AreaSerializer, PlaceSerializer, AreaPurposeSerializer, \
     GraveSerializer, BurialSerializer, BurialListSerializer, BurialPutGraveSerializer, \
-    AreaPhotoSerializer, GravePhotoSerializer, ExhumationRequestSerializer, PlaceSizeSerializer, \
+    AreaPhotoSerializer, ExhumationRequestSerializer, PlaceSizeSerializer, \
     ApiOmsPlacesSerializer, ApiCatalogPlacesSerializer
 
 from persons.serializers import AlivePersonSerializer, PhoneSerializer
@@ -411,6 +411,7 @@ class PlaceViewSet(viewsets.ModelViewSet):
                         phone_number=object.responsible.login_phone,
                         text=text,
                         email_error_text=email_error_text,
+                        user=self.request.user,
                     )
 
             #object.responsible.address_id = responsible.address
@@ -757,20 +758,6 @@ class AreaPhotoViewSet(viewsets.ModelViewSet):
         qs = self.model.objects.filter(area__cemetery__ugh=self.request.user.profile.org)
         item = getArea(self.request)
         qs = qs.filter(area=item)
-        return  qs.all()
-
-
-class GravePhotoViewSet(viewsets.ModelViewSet):
-    model = GravePhoto
-    serializer_class = GravePhotoSerializer
-    permission_classes = (IsAuthenticated,)
-    paginate_by = None
-    def get_queryset(self):
-        qs = self.model.objects.filter(grave__place__cemetery__ugh=self.request.user.profile.org)
-        id = self.request.GET.get('grave_id')
-        if id:
-            item = get_object_or_404(Grave, id=id)
-            qs = qs.filter(grave=item)
         return  qs.all()
 
 

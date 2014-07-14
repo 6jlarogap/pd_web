@@ -238,16 +238,26 @@
             {% if b.can_ugh_deannulate %}
                 <input type="submit" class="btn" name="deannulate" value="{% trans "де-аннулировать" %}">
             {% endif %}
-            {% if b.can_ugh_annulate %}
+            {% if b.can_ugh_annulate or b.can_disapprove_ugh %}
                 <br/><br/>
-                <label>{% trans "Причина аннулирования" %}:</label>
+                <label>{% if b.can_ugh_annulate and b.can_disapprove_ugh %}{% if b.is_archive %}{% trans "Причина аннулирования" %}{% else %}{% trans "Причина аннулирования или отказа от согласования" %}{% endif %}{% elif b.can_ugh_annulate %}{% trans "Причина аннулирования" %}{% elif b.can_disapprove_ugh and not b.is_archive %}{% trans "Причина отказа от согласования" %}{% endif %}:</label>
                 <select name="reason_typical">
                     <option value="">-------</option>
-                    {% for r in reason_typical_annulate %}<option value="{{ r.text }}">{{ r.name }}</option>{% endfor %}
+                    {% if b.can_ugh_annulate %}
+                        {% for r in reason_typical_annulate %}<option value="{{ r.text }}">{{ r.name }}</option>{% endfor %}
+                    {% endif %}
+                    {% if b.can_disapprove_ugh and not b.is_archive %}
+                        {% for r in reason_typical_disapprove %}<option value="{{ r.text }}">{{ r.name }}</option>{% endfor %}
+                    {% endif %}
                 </select>
                 <textarea name="reason" rows="5" cols="30"></textarea>
                 <br/>
-                <input type="submit" class="btn" name="annulate" value="{% trans "аннулировать" %}">
+                {% if b.can_ugh_annulate %}
+                    <input type="submit" class="btn" name="annulate" value="{% trans "аннулировать" %}">
+                {% endif %}
+                {% if b.can_disapprove_ugh %}
+                    <input type="submit" class="btn" name="disapprove" value="{% trans "отменить согласование" %}">
+                {% endif %}
             {% endif %}
             {% if b.can_approve %}
                 <script type="text/javascript">
@@ -288,6 +298,9 @@
                     PLACE_SIZE = {{ approve_close_form.place_size_json|default:"{}" }};
                 </script>
                 <input type="submit" class="btn btn-primary" name="complete" value="{% trans "закрыть" %}">
+                {% if b.can_approve_ugh %}
+                    <input type="submit" class="btn btn-primary" name="approve" value="{% trans "cогласовать" %}">
+                {% endif %}
             {% endif %}
             {% if b.is_closed %}
                 <a href="{% url burial_exhumate b.pk %}" class="btn">{% trans "эксгумировать" %}</a>

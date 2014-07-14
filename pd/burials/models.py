@@ -479,9 +479,6 @@ class PlacePhoto(Files, GeoPointModel):
 class AreaPhoto(Files, GeoPointModel):
     area = models.ForeignKey(Area)
 
-class GravePhoto(Files, GeoPointModel):
-    grave = models.ForeignKey(Grave)
-
 class Burial(SafeDeleteMixin, GetLogsMixin, BaseModel):
     STATUS_BACKED = 'backed'
     STATUS_DECLINED = 'declined'
@@ -696,7 +693,19 @@ class Burial(SafeDeleteMixin, GetLogsMixin, BaseModel):
         elif self.is_full():
             return self.is_approved()
         else:
-            return self.is_draft()
+            return self.is_draft() or self.is_approved()
+
+    def can_approve_ugh(self):
+        """
+        Условия возможности согласование ручного черновика
+        """
+        return self.is_ugh() and self.is_draft()
+
+    def can_disapprove_ugh(self):
+        """
+        Условия отзыва угх ручного или архивного согласованного захоронения
+        """
+        return self.is_ugh() and self.is_approved()
 
     def can_ugh_annulate(self):
         if self.annulated:
@@ -704,7 +713,7 @@ class Burial(SafeDeleteMixin, GetLogsMixin, BaseModel):
         if self.is_full():
             return self.is_closed() or self.is_exhumated()
         if self.is_ugh_only():
-            return self.is_closed() or self.is_draft() or self.is_exhumated()
+            return self.is_closed() or self.is_draft() or self.is_approved() or self.is_exhumated()
         if self.is_transferred() or self.is_archive():
             return True
         return False
@@ -959,6 +968,7 @@ class Burial(SafeDeleteMixin, GetLogsMixin, BaseModel):
                     phone_number=place.responsible.login_phone,
                     text=text,
                     email_error_text=email_error_text,
+                    user=request and request.user or None,
                 )
 
         # Очистим "пустышку" свидетельства о смерти, где
@@ -1104,14 +1114,16 @@ class Reason(models.Model):
     TYPE_BACK = 'back'
     TYPE_DECLINE = 'decline'
     TYPE_ANNULATE = 'annulate'
+    TYPE_DISAPPROVE = 'disapprove'
     TYPE_CHOICES = (
         (TYPE_BACK, _(u'ЛОРУ отзывает захоронение')),
         (TYPE_DECLINE, _(u'ОМС отказывает в захоронении')),
         (TYPE_ANNULATE, _(u'Аннулирование захоронения')),
+        (TYPE_DISAPPROVE, _(u'ОМС отзывает согласование ручного захоронения')),
     )
     # ЛОРУ и УГХ имеют разные списки отказов и др. действий
     #
-    TYPES_UGH = (TYPE_DECLINE, TYPE_ANNULATE, )
+    TYPES_UGH = (TYPE_DECLINE, TYPE_ANNULATE, TYPE_DISAPPROVE, )
     # ЛОРУ аннулирует лишь свои черновики, отказванные, отозванные,
     # т.е. по сути свои черновики, так что незачем ему указывать причину
     # аннулирования
@@ -1190,25 +1202,3 @@ models.signals.post_save.connect(calculate_free_burial_count, sender=Grave)
 models.signals.post_save.connect(calculate_free_burial_count, sender=Burial)
 models.signals.post_delete.connect(calculate_free_burial_count, sender=Grave)
 models.signals.post_delete.connect(calculate_free_burial_count, sender=Burial)
-
-
-def update_grave_place_coords(sender, instance, **kwargs):
-    #if 'created' in kwargs.keys() and kwargs['created']:
-    # Update grave point coords
-    grave = instance.grave
-    res = GravePhoto.objects.filter(grave=grave, lng__isnull=False, lat__isnull=False).\
-        aggregate(lng=Avg('lng'), lat=Avg('lat')) #, cnt=Count('id')
-    grave.lng = round(res["lng"], 10)
-    grave.lat = round(res["lat"], 10)
-    grave.save()
-
-    # Update place point coords
-    place = instance.grave.place
-    res = Grave.objects.filter(place=place, lng__isnull=False, lat__isnull=False).\
-        aggregate(lng=Avg('lng'), lat=Avg('lat')) #, cnt=Count('id')
-    place.lng = round(res["lng"], 10)
-    place.lat = round(res["lat"], 10)
-    place.save()
-    
-
-models.signals.post_save.connect(update_grave_place_coords, sender=GravePhoto)

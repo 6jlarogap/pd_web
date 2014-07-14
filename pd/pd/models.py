@@ -290,9 +290,6 @@ def files_upload_to(instance, filename):
     elif isinstance(instance, get_model('burials', 'AreaPhoto')):
         return os.path.join('area-photos',
                 today_pk_dir % instance.cemetery.pk, fname)
-    elif isinstance(instance, get_model('burials', 'GravePhoto')):
-        return os.path.join('grave-photos',
-                today_pk_dir % instance.grave.place.pk, fname)
     elif isinstance(instance, get_model('users', 'RegisterProfileScan')):
         return os.path.join('register-profile-scans',
                 today_pk_dir % instance.registerprofile.pk, fname)

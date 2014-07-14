@@ -83,7 +83,7 @@
 
       <tr ng-show="placeGalleryFirstPhoto">
         <td colspan="2">
-          <img ng-click="openEditForm('isGraveGalleryOpen', placeGallery)"
+          <img ng-click="openEditForm('isPlaceGalleryOpen', placeGallery)"
                class="first-photo" ng-src="{{ placeGalleryFirstPhoto.photo | thumbnail:233:134:'scale' }} "/>
         </td>
       </tr>
@@ -283,7 +283,7 @@
 </div>
 <!-- EOF POPUP form -->
 
-<div options="{dialogClass: 'modal gallery'}" modal="isGraveGalleryOpen" close="closeEditForm('isGraveGalleryOpen')">
+<div options="{dialogClass: 'modal gallery'}" modal="isPlaceGalleryOpen" close="closeEditForm('isPlaceGalleryOpen')">
   <div class="modal-header">
     <h3>Фотографии</h3>
   </div>
@@ -296,7 +296,7 @@
       </div>
       <div class="span2 well preview-col">
         <ul class="thumbnails">
-          <li class="thumbnail-preview-col" ng-repeat="image in selectedGravePhotos">
+          <li class="thumbnail-preview-col" ng-repeat="image in selectedPlacePhotos">
             <img class="thumbnail" ng-click="setCurrentImage(image)"
                  ng-src="{{image.photo | thumbnail:120:100:'scale'}}"
                 />
@@ -306,7 +306,7 @@
     </div>
   </div>
   <div class="modal-footer">
-    <button class="btn cancel" ng-click="closeEditForm('isGraveGalleryOpen')">Отменить</button>
+    <button class="btn cancel" ng-click="closeEditForm('isPlaceGalleryOpen')">Отменить</button>
   </div>
 </div>
 

@@ -23,7 +23,7 @@ from django.shortcuts import get_object_or_404
 
 from logs.models import write_log
 from burials.forms import AddOrgForm, AddAgentForm, AddDoverForm, AddDocTypeForm
-from burials.models import Burial, Place, Grave, GravePhoto, PlacePhoto
+from burials.models import Burial, Place, Grave, PlacePhoto
 from users.models import CustomerProfile, CustomerProfilePhoto, Org, ProfileLORU, Store, is_loru_user
 from billing.models import Rate
 from orders.forms import ProductForm, OrderForm, OrderItemFormset, CoffinForm, CatafalqueForm, \
@@ -779,6 +779,9 @@ class ApiProfileViewSet(CustomerDataMixin, viewsets.ViewSet):
                         {
                             'id': b.pk,
                             'fio': b.deadman and b.deadman.full_name_complete() or _(u"Неизвестный"),
+                            'lastName': b.deadman and b.deadman.last_name,
+                            'firstName': b.deadman and b.deadman.first_name,
+                            'middleName': b.deadman and b.deadman.middle_name,
                             'photo': None,
                             'birthDate': b.deadman and b.deadman.birth_date and b.deadman.birth_date.str_safe() or None,
                             'deathDate': b.deadman and b.deadman.death_date and b.deadman.death_date.str_safe() or None,

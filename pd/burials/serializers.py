@@ -6,7 +6,7 @@ from rest_framework import serializers
 from rest_framework.fields import Field, TimeField
 
 
-from burials.models import Cemetery, Place, Area, Grave, Burial, AreaPhoto, GravePhoto, BurialFiles, ExhumationRequest, \
+from burials.models import Cemetery, Place, Area, Grave, Burial, AreaPhoto, BurialFiles, ExhumationRequest, \
     AreaPurpose, PlaceSize, PlaceStatus
 
 
@@ -215,14 +215,6 @@ class BurialPutGraveSerializer(serializers.ModelSerializer):
     class Meta:
         model = Burial
         fields = ('id', 'grave_number',)
-
-
-class GravePhotoSerializer(serializers.ModelSerializer):
-    grave = serializers.PrimaryKeyRelatedField()
-    date_of_creation = serializers.DateField(format=u"%d.%m.%Y")
-    class Meta:
-        model = GravePhoto
-        fields = ('id', 'grave', 'bfile', 'comment', 'original_name', 'lat', 'lng', 'date_of_creation') 
 
 
 class AreaPhotoSerializer(serializers.ModelSerializer):
