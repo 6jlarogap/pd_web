@@ -31,6 +31,8 @@ class OurThumbnailView(ThumbnailView):
                         raise Http404
                 except IndexError:
                     raise Http404
+        elif re.search(settings.ANONYMOUS_URLS_REGEX, request.path):
+            pass
         else:
             raise Http404
         try:
