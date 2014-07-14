@@ -58,7 +58,7 @@ class Log(models.Model):
         elif model_name == 'Profile':
             result = ""
         elif model_name == 'User':
-            result = ""
+            result = _(u"Пользователь")
         else:
             result = u"%s %s" % (model_name, obj_id,)
         return result
