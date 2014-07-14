@@ -58,7 +58,19 @@ class Log(models.Model):
         elif model_name == 'Profile':
             result = ""
         elif model_name == 'User':
-            result = ""
+            result = _(u"Пользователь")
+        elif model_name == 'Product':
+            product = ref = ""
+            try:
+                product = Model.objects.get(pk=obj_id).name
+            except Model.DoesNotExist:
+                pass
+            if product:
+                ref = ": <a href='%s'>%s</a>" % (
+                    reverse('manage_products_edit', args=[obj_id]),
+                    product,
+                )
+            result = _(u"Товар/услуга%s") % ref
         else:
             result = u"%s %s" % (model_name, obj_id,)
         return result
