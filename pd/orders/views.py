@@ -71,7 +71,7 @@ class ProductCreate(LORURequiredMixin, CreateView):
         self.object = form.save(commit=False)
         self.object.loru = self.request.user.profile.org
         self.object.save()
-        write_log(self.request, self.object, _(u'Товар создан'))
+        write_log(self.request, self.object, _(u'Создание: %s') % self.object.name)
         msg = _(u"<a href='%s'>Товар %s</a> создан") % (
             reverse('manage_products_edit', args=[self.object.pk]),
             self.object.name,
@@ -90,7 +90,7 @@ class ProductEdit(LORURequiredMixin, UpdateView):
 
     def form_valid(self, form):
         self.object = form.save()
-        write_log(self.request, self.object, _(u'Товар изменен'))
+        write_log(self.request, self.object, _(u'Изменение: %s') % self.object.name)
         msg = _(u"<a href='%s'>Товар %s</a> изменен") % (
             reverse('manage_products_edit', args=[self.object.pk]),
             self.object.name,
@@ -870,13 +870,22 @@ class ApiLoruProductPlaces(APIView):
                                 ).order_by('-date_from')[0].rate
                             except IndexError:
                                 pass
-                        ProductHistory.objects.create(
+                        producthistory = ProductHistory.objects.create(
                                         product_id=p['id'],
                                         ugh=ugh,
                                         operation=product_history_operation[o['status']],
                                         dt=dt,
                                         publish_cost=rate,
                                         currency=ugh.currency,
+                        )
+                        if ugh.inn and ugh.inn == settings.ORG_AD_PAY_RECIPIENT['inn']:
+                            where = _(u"в публичном каталоге")
+                        else:
+                            where = _(u"у ОМС: %s") % ugh.name
+                        write_log(
+                            request,
+                            producthistory.product,
+                            _(u"Статус: %s, %s") % (producthistory.get_operation_display(), where, )
                         )
                 data.append(data_p)
         return Response(data=data, status=200)
