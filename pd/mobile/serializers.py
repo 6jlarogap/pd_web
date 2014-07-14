@@ -56,7 +56,8 @@ class LocationSerializer(serializers.Serializer):
     city = CitySerializer(required=False)
     street = StreetSerializer(required=False)
 
-class BasePersonSerializer(serializers.Serializer):    
+class BasePersonSerializer(serializers.Serializer):
+    pk = serializers.Field()
     last_name = serializers.CharField(required=False)
     first_name = serializers.CharField(required=False)
     middle_name = serializers.CharField(required=False)    
@@ -89,6 +90,9 @@ class GraveSerializer(BaseSerializer):
     
 class BurialSerializer(BaseSerializer):
     cemetery = BaseSerializer(required=True)
+    area = BaseSerializer(required=True)
+    row = serializers.CharField(required=False)
+    place = BaseSerializer(required=True)
     grave = BaseSerializer(required=True)
     burial_container = serializers.CharField(required=False)
     deadman = BasePersonSerializer(required=False)
@@ -96,6 +100,7 @@ class BurialSerializer(BaseSerializer):
     plan_date = serializers.DateField(required=False)
     plan_time = serializers.TimeField(required=False)
     status = serializers.CharField(required=False)
+    responsible = AlivePersonSerializer(required=False)
     
 class PlacePhotoSerializer(BaseSerializer):  
     place = BaseSerializer(required=False)    
