@@ -160,6 +160,11 @@
                                         <a href="{{ global_context_FRONT_END_URL }}#/loru/advertisement">{% trans "Реклама" %}</a>
                                     {% endif %}
                                 </li>
+                                {% if user.profile.is_loru %}
+                                    <li>
+                                        <a href="{{ global_context_FRONT_END_URL }}#/">{% trans "Каталог" %}</a>
+                                    </li>
+                                {% endif %}
                             </ul>
                         </div>
                     {% endif %}
