@@ -258,6 +258,14 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
                 ))
                 redirect_to_view = True
 
+        if request.POST.get('approve') and request.user.profile.is_ugh() and b.can_approve_ugh():
+            approve_close_form = self.get_approve_close_form()
+            if approve_close_form.is_valid():
+                b = approve_close_form.save()
+                return redirect(reverse('edit_burial', args=[b.pk]) + '?action=approve')
+            else:
+                return self.get(request, *args, **kwargs)
+
         if request.POST.get('approve-inspect') and request.user.profile.is_ugh() and b.can_approve_inspect():
             b, refresh = self.approve_or_check_dc()
             if refresh:
@@ -290,6 +298,20 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
                 messages.error(request, msg)
                 return redirect(reverse('view_burial', args=[b.pk]))
 
+        if request.POST.get('disapprove') and request.user.profile.is_ugh() and b.can_disapprove_ugh():
+            approve_close_form = self.get_approve_close_form()
+            if approve_close_form.is_valid():
+                b = approve_close_form.save()
+                b.status = Burial.STATUS_DRAFT
+                b.save()
+                write_log(request, b, _(u'Захоронение возвращено в статус черновика'), reason)
+                messages.success(request, _(u"<a href='%s'>Захоронение %s</a> возвращено в статус черновика") % (
+                    reverse('view_burial', args=[b.pk]), b.pk,
+                ))
+                redirect_to_view = True
+            else:
+                return self.get(request, *args, **kwargs)
+
         if request.POST.get('complete') and request.user.profile.is_ugh() and b.can_finish():
             approve_close_form = self.get_approve_close_form()
             if approve_close_form.is_valid():
@@ -303,6 +325,7 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
                     ))
             else:
                 return self.get(request, *args, **kwargs)
+
         if request.POST.get('annulate') and \
             (request.user.profile.is_ugh() and b.can_ugh_annulate() or \
              request.user.profile.is_loru() and b.can_loru_annulate() \
@@ -402,6 +425,7 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
             'reason_typical_back': Reason.objects.filter(org=org, reason_type=Reason.TYPE_BACK),
             'reason_typical_decline': Reason.objects.filter(org=org, reason_type=Reason.TYPE_DECLINE),
             'reason_typical_annulate': Reason.objects.filter(org=org, reason_type=Reason.TYPE_ANNULATE),
+            'reason_typical_disapprove': Reason.objects.filter(org=org, reason_type=Reason.TYPE_DISAPPROVE),
             'approve_close_form': self.get_approve_close_form(),
             'comment_form': CommentForm(),
             'zags_form': AddOrgForm(request=self.request, prefix='zags', instance=Org(type=Org.PROFILE_ZAGS)),
@@ -785,11 +809,18 @@ class CreateBurial(BurialGetOrderMixin, FormInvalidMixin, CreateView):
                 )
                 messages.success(self.request, msg)
 
-            if action == 'approve' and self.request.user.profile.is_ugh() and b.can_approve() and b.is_ugh_only():
+            if action == 'approve' and self.request.user.profile.is_ugh() and b.can_approve_ugh():
                 b.status = Burial.STATUS_APPROVED
                 b.approve(self.request.user)
                 write_log(self.request, b, _(u'Захоронение согласовано'))
                 messages.success(self.request, _(u"<a href='%s'>Захоронение %s</a> согласовано") % (
+                    reverse('view_burial', args=[b.pk]), b.pk,
+                ))
+
+            if action == 'disapprove' and self.request.user.profile.is_ugh() and b.can_disapprove_ugh():
+                b.status = Burial.STATUS_DRAFT
+                write_log(self.request, b, _(u'Захоронение возвращено в статус черновика'))
+                messages.success(self.request, _(u"<a href='%s'>Захоронение %s</a> возвращено в статус черновика") % (
                     reverse('view_burial', args=[b.pk]), b.pk,
                 ))
 
@@ -838,6 +869,8 @@ class CreateBurial(BurialGetOrderMixin, FormInvalidMixin, CreateView):
         action = self.request.REQUEST.get('action')
         if self.request.REQUEST.get('approve'):
             action = 'approve'
+        if self.request.REQUEST.get('disapprove'):
+            action = 'disapprove'
         if self.request.REQUEST.get('ready'):
             action = 'ready'
         if self.request.REQUEST.get('complete'):
@@ -850,7 +883,7 @@ class CreateBurial(BurialGetOrderMixin, FormInvalidMixin, CreateView):
 
     def get_form_class(self):
         action =  self.get_action()
-        if action and action not in ('annulate', 'unbind',):
+        if action and action not in ('annulate', 'unbind', 'disapprove'):
             return BurialCommitForm
         elif self.get_object() and self.get_object().is_finished() and self.request.user.profile.is_ugh():
             return BurialCommitForm

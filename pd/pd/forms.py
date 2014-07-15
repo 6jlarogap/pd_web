@@ -84,7 +84,8 @@ class LoggingFormMixin:
         obj = self.instance
         if obj and obj.pk:
             obj = Burial.objects.get(pk=obj.pk)
-            for form in [self] + self.forms:
+            forms = self.forms if hasattr(self, 'forms') else []
+            for form in [self] + forms:
                 prefix = self.get_prefix(form)
                 for f in form.changed_data:
                     old_value = obj and getattr(obj, f, None) or form.initial.get(f)
@@ -112,15 +113,26 @@ class LoggingFormMixin:
                     if old_value != new_value and form.fields[f].label:
                         self.changed_list.append((u'%s%s' % (prefix, form.fields[f].label), old_value, new_value))
 
-    def put_log_data(self, msg=_(u'Захоронение сохранено')):
+    def put_log_data(self, msg=_(u'Захоронение сохранено'), log_instance=None):
+        """
+        Поместить сведения об изменениях в объекте формы в журнал
+
+        msg:            заголовок изменений
+        log_instance:   обычно это объект формы, но возможна ситуация,
+                        когда в журнал вносятся данные об одном объекте,
+                        а изменения касаются другого, например при правке данных
+                        пользователя запись производится в журнал организации
+        """
+        if not log_instance:
+            log_instance = self.instance
         if self.changed_list or not self.instance or not self.instance.pk:
             changed_data_str = u'\n'.join([u'%s: %s -> %s' % cd for cd in self.changed_list])
             changed_data_str = changed_data_str. \
                                 replace(u'True -> False', _(u'выключ.')). \
                                 replace(u'False -> True', _(u'включ.'))
-            write_log(self.request, self.instance, msg + u'\n' + changed_data_str)
+            write_log(self.request, log_instance, msg + u'\n' + changed_data_str)
         else:
-            write_log(self.request, self.instance, msg)
+            write_log(self.request, log_instance, msg)
 
 class PartialFormMixin:
     def _partial_html_output(self, fields=None, exclude=None, *args, **kwargs):

@@ -31,6 +31,8 @@ class OurThumbnailView(ThumbnailView):
                         raise Http404
                 except IndexError:
                     raise Http404
+        elif re.search(settings.ANONYMOUS_URLS_REGEX, request.path):
+            pass
         else:
             raise Http404
         try:
@@ -131,6 +133,21 @@ def media_xsendfile(request, path, document_root):
                 try:
                     place_photo = get_model('burials', 'PlacePhoto').objects.filter(pk=pk)[0]
                     if not place_photo.is_accessible(request.user):
+                        raise Http404
+                except IndexError:
+                    raise Http404
+            elif what in ('org-certificates', 'org-contracts', ):
+                try:
+                    org = get_model('users', 'Org').objects.filter(pk=pk)[0]
+                    Profile = get_model('users', 'Profile')
+                    if pk != str(request.user.profile.org.pk):
+                        raise Http404
+                except (IndexError, AttributeError, Profile.DoesNotExist, ):
+                    raise Http404
+            elif what == 'memory-gallery':
+                try:
+                    org = get_model('users', 'Org').objects.filter(pk=pk)[0]
+                    if pk != str(request.user.pk):
                         raise Http404
                 except IndexError:
                     raise Http404

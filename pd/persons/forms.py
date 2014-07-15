@@ -154,6 +154,8 @@ class AlivePersonForm(ValidDataMixin, StrippedStringsMixin, forms.ModelForm):
         self.fields['phones'].widget = forms.TextInput()
         # Это требуется только для ответственного:
         del self.fields['login_phone']
+        # У нас нет случаев, когда живому человеку в формен надо вводить день рождения:
+        del self.fields['birth_date']
 
     def is_valid_data(self):
         return self.is_valid() and self.cleaned_data.get('last_name') # last name should be present

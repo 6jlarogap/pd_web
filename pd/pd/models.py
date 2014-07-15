@@ -9,10 +9,32 @@ from django.conf import settings
 from django.db import models
 from django.contrib.contenttypes.models import ContentType
 from django.db.models.loading import get_model
+from django.db.models.deletion import ProtectedError
 from django.utils.translation import ugettext as _
 from django.core.exceptions import ValidationError
 from south.modelsinspector import add_introspection_rules
 from logs.models import Log
+
+class SafeDeleteMixin(object):
+    
+    def safe_delete(self, field_name, instance):
+        """
+        Безопасно удалить что-то из записи таблицы
+        
+        field       - строка (!) имени поля
+        instance    - запись в таблице
+        Поле устанавливается в null, запись сохраняется, потом
+        удаляется то, на что указывало поле.
+        Типичный пример - удаление заявителя, заказчика, покойника.
+        """
+        field_to_delete = getattr(instance, field_name)
+        if field_to_delete:
+            setattr(instance, field_name, None)
+            instance.save()
+            try:
+                field_to_delete.delete()
+            except ProtectedError:
+                pass
 
 class UnclearDate:
     def __init__(self, year, month=None, day=None):
@@ -268,11 +290,11 @@ def files_upload_to(instance, filename):
     elif isinstance(instance, get_model('burials', 'AreaPhoto')):
         return os.path.join('area-photos',
                 today_pk_dir % instance.cemetery.pk, fname)
-    elif isinstance(instance, get_model('burials', 'GravePhoto')):
-        return os.path.join('grave-photos',
-                today_pk_dir % instance.grave.place.pk, fname)
     elif isinstance(instance, get_model('users', 'RegisterProfileScan')):
-        return os.path.join('register-profile',
+        return os.path.join('register-profile-scans',
+                today_pk_dir % instance.registerprofile.pk, fname)
+    elif isinstance(instance, get_model('users', 'RegisterProfileContract')):
+        return os.path.join('register-profile-contracts',
                 today_pk_dir % instance.registerprofile.pk, fname)
     elif isinstance(instance, get_model('users', 'CustomerProfilePhoto')):
         return os.path.join('customer-profile',

@@ -37,8 +37,14 @@
             <p class="clear">
                 <input type="submit" class="btn btn-primary btn-commit-burial" value="{% trans "cохранить" %}"/>
                 {% if not b.annulated %}
-                    {% if not b.is_finished %}
-                        {% if user.profile.is_ugh and not b.is_full %}
+                    {% if user.profile.is_ugh %}
+                        {% if b.is_draft or not b.pk %}
+                            <input type="submit" class="btn btn-commit-burial" name="approve" value="{% trans "cохранить и согласовать" %}"/>
+                        {% endif %}
+                        {% if b.ugh and b.is_approved %}
+                            <input type="submit" class="btn btn-commit-burial" name="disapprove" value="{% trans "cохранить и отменить согласование" %}"/>
+                        {% endif %}
+                        {% if not b.is_full %}
                             <input type="submit" class="btn btn-commit-burial" name="complete" value="{% trans "cохранить и закрыть" %}"/>
                         {% endif %}
                     {% endif %}
