@@ -616,26 +616,19 @@ class Org(GetLogsMixin, BaseModel):
         return email
 
     @classmethod
-    def get_add_pay_recipient(cls):
+    def get_catalog_org_pk(cls):
         """
-        Возвращает организацию-получателя (и распределителя ;) доходов от рекламы
+        Возвращает первичный ключ организации-получателя (и распределителя ;)
+        доходов от рекламы. Эта же организация является хранителем публичного
+        каталога товаров и услуг
         """
-        result = None
-        try:
-            return cls.objects.filter(inn=settings.ORG_AD_PAY_RECIPIENT['inn'])[0]
-        except IndexError:
-            return None
-
-    @classmethod
-    def get_pd_fund(cls):
-        """
-        Возвращает организацию-получателя (и распределителя ;) доходов от рекламы
-        """
-        result = None
-        try:
-            return cls.objects.filter(inn=settings.ORG_PD_FUND['inn'])[0]
-        except IndexError:
-            return None
+        if settings.ORG_AD_PAY_RECIPIENT_PK is None:
+            try:
+                return cls.objects.filter(inn=settings.ORG_AD_PAY_RECIPIENT['inn'])[0].pk
+            except IndexError:
+                return 0
+        else:
+            return settings.ORG_AD_PAY_RECIPIENT_PK
 
 class OrgCertificate(Files):
     """
