@@ -660,6 +660,9 @@ class ApiCatalogSuppliersView(APIView):
 api_catalog_suppliers = ApiCatalogSuppliersView.as_view()
 
 class ProductsViewSet(viewsets.ModelViewSet):
+    """
+    Показ продуктов в публичном каталоге только!!!
+    """
     model = Product
     serializer_class = ProductsSerializer
 
@@ -680,7 +683,8 @@ class ProductsViewSet(viewsets.ModelViewSet):
 
         qs  &= Q(
             productstatus__status__in=\
-                (ProductHistory.PRODUCT_OPERATION_PUBLISH, ProductHistory.PRODUCT_OPERATION_UPDATE, )
+                (ProductHistory.PRODUCT_OPERATION_PUBLISH, ProductHistory.PRODUCT_OPERATION_UPDATE, ),
+                productstatus__ugh__inn=settings.ORG_AD_PAY_RECIPIENT['inn'],
         )
         
         if self.request.GET.get('filter[price_from]'):
