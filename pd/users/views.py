@@ -1403,7 +1403,9 @@ class OrgBurialStatsView(SupervisorRequiredMixin, TemplateView):
         for source_type in Burial.SOURCE_TYPES:
             total[source_type[0]] = 0
         total['all'] = 0
+        total['ughs'] = 0
         for o in Org.objects.filter(type=Org.PROFILE_UGH).order_by(*s):
+            total['ughs'] += 1 
             org = {'name': o.name, 'all': 0}
             for source_type in Burial.SOURCE_TYPES:
                 org[source_type[0]] = Burial.objects.filter(
