@@ -1873,6 +1873,10 @@ class ApiOrgSignupView(CheckRecaptchaMixin, RegisterMixin, APIView):
             if banks:
                 try:
                     banks = json.loads(banks)
+                    # TODO
+                    # Убрать эту затычку для ошибочного вх. bankAccounts=[{}] 
+                    if banks and not banks[0]:
+                        banks = []
                 except ValueError:
                     raise ServiceException(_(u'Неверный формат банковских счетов (bankAccounts)'))
                 for bank in banks:
