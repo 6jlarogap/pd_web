@@ -15,7 +15,6 @@ js_app = Bundle(
         "js/app/resources/area.js",
         "js/app/resources/area_purpose.js",
         "js/app/resources/area_photo.js",
-        "js/app/resources/grave_photo.js",
         "js/app/resources/person.js",
         "js/app/resources/phone.js",
         "js/app/resources/log.js",

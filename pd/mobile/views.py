@@ -20,7 +20,6 @@ from burials.models import AreaCoordinates
 from burials.models import Place
 from burials.models import PlaceStatus
 from burials.models import Grave
-from burials.models import GravePhoto
 from burials.models import PlacePhoto
 from burials.models import Burial
 from persons.models import DeadPerson
@@ -51,7 +50,7 @@ from rest_framework.exceptions import APIException
 from serializers import BaseSerializer, CoordinatesSerializer, CemeterySerializer, CemeteryWithNestedObjectSerializer, \
     AreaSerializer, AreaWithNestedObjectSerializer, RegionSerializer, CitySerializer, StreetSerializer, CountrySerializer, LocationSerializer, \
     BasePersonSerializer, AlivePersonSerializer, PlaceWithNestedObjectSerializer, GraveSerializer, BurialSerializer, \
-    GravePhotoSerializer, PlacePhotoSerializer
+    PlacePhotoSerializer
     
 class CustomException(APIException):
     status_code = 500
@@ -472,35 +471,6 @@ class ApiPlacePhotoList(APIView):
 placephoto_list = ApiPlacePhotoList.as_view()
 
 
-class ApiGravePhotoUpload(APIView):
-    permission_classes = (IsAuthenticated,)
-    def get(self, request) :
-        return render_to_response('mobile_upload_gravephoto.html', {'message': _(u"Загрузите фотографию к могиле:")})
-    def post(self, request) :
-        graveId = request.POST['grave']
-        lat = request.POST['lat']
-        lng = request.POST['lng'] 
-        data = ""
-        listPhoto = []
-        try:
-            grave = Grave.objects.get(id = graveId)            
-            photo_content = ContentFile(request.FILES['photo'].read())
-            photo = GravePhoto(grave=grave, lat = lat, lng = lng, comment = '', creator = request.user)
-            photo.save()
-            photo.bfile.save(request.FILES['photo'].name, photo_content)            
-            if lat and lat :
-                grave.lat = lat
-                grave.lng = lng
-                grave.save()
-            listPhoto.append(photo)
-            serializer = GravePhotoSerializer(listPhoto)
-            return Response(serializer.data)
-        except Grave.DoesNotExist:
-            grave = None
-            raise Http404
-
-gravephoto_upload = ApiGravePhotoUpload.as_view()
-
 class ApiPlacePhotoUpload(APIView):
     permission_classes = (IsAuthenticated,)
     def get(self, request) :
@@ -529,21 +499,6 @@ class ApiPlacePhotoUpload(APIView):
             raise Http404
     
 placephoto_upload = ApiPlacePhotoUpload.as_view()
-
-class ApiGravePhotoDelete(APIView):
-    permission_classes = (IsAuthenticated,)
-    def get(self, request) :
-        return render_to_response('mobile_remove_photo.html', {'message': _(u"Удалить фотографию к могиле:")})
-    def post(self, request) :
-        gravePhotoId = request.POST['gravePhotoId']
-        try :
-            gravePhoto = GravePhoto.objects.get(id = gravePhotoId)
-            gravePhoto.delete()
-            return Response("Ok")
-        except GravePhoto.DoesNotExist:
-            return Response("Ok")
-            
-gravephoto_delete = ApiGravePhotoDelete.as_view()
 
 class ApiPlacePhotoDelete(APIView):
     permission_classes = (IsAuthenticated,)

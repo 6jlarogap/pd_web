@@ -84,7 +84,13 @@
                 {% trans "ИНН" %}: {{ r.org_inn }}<br />
                 {% trans "Тел." %}: {{ r.org_phones|linebreaksbr }}<br />
                 {% if r.org_address %}
-                    {% trans "Адр." %}: {{ r.org_address }}<br />
+                    {% trans "Адрес" %}: {{ r.org_address }}<br />
+                {% endif %}
+                {% if r.registerprofilescan %}
+                    <a href="{{ r.registerprofilescan.bfile.url }}" target="_blank">{% trans "Скан документа о регистрации" %}</a><br />
+                {% endif %}
+                {% if r.registerprofilecontract %}
+                    <a href="{{ r.registerprofilecontract.bfile.url }}" target="_blank">{% trans "Договор" %}</a><br />
                 {% endif %}
             </td>
             <td>
@@ -121,7 +127,11 @@
                  </a>
             </td>
             <td>
-                {% if not r.is_approved and r.orgs_same_inn %}
+                {% if not r.org_inn %}
+                    <span style="color:red">
+                        {% trans "ИНН отсутствует!" %}<br />
+                    </span>
+                {% elif not r.is_approved and r.orgs_same_inn %}
                     <span style="color:red">
                         {% trans "Совпадение ИНН" %}:<br />
                     </span>

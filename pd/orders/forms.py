@@ -13,8 +13,9 @@ from orders.models import Product, Order, OrderItem, CatafalqueData, CoffinData,
 from burials.forms import EMPTY
 from pd.forms import ChildrenJSONMixin
 from persons.forms import AlivePersonForm, PersonIDForm
-from persons.models import AlivePerson, PersonID, SafeDeleteMixin
+from persons.models import AlivePerson, PersonID
 from users.models import Org, Profile
+from pd.models import SafeDeleteMixin
 
 class ProductForm(forms.ModelForm):
     class Meta:

@@ -23,7 +23,7 @@ from django.shortcuts import get_object_or_404
 
 from logs.models import write_log
 from burials.forms import AddOrgForm, AddAgentForm, AddDoverForm, AddDocTypeForm
-from burials.models import Burial, Place, Grave, GravePhoto, PlacePhoto
+from burials.models import Burial, Place, Grave, PlacePhoto
 from users.models import CustomerProfile, CustomerProfilePhoto, Org, ProfileLORU, Store, is_loru_user
 from billing.models import Rate
 from orders.forms import ProductForm, OrderForm, OrderItemFormset, CoffinForm, CatafalqueForm, \
@@ -71,7 +71,7 @@ class ProductCreate(LORURequiredMixin, CreateView):
         self.object = form.save(commit=False)
         self.object.loru = self.request.user.profile.org
         self.object.save()
-        write_log(self.request, self.object, _(u'Товар создан'))
+        write_log(self.request, self.object, _(u'Создание: %s') % self.object.name)
         msg = _(u"<a href='%s'>Товар %s</a> создан") % (
             reverse('manage_products_edit', args=[self.object.pk]),
             self.object.name,
@@ -90,7 +90,7 @@ class ProductEdit(LORURequiredMixin, UpdateView):
 
     def form_valid(self, form):
         self.object = form.save()
-        write_log(self.request, self.object, _(u'Товар изменен'))
+        write_log(self.request, self.object, _(u'Изменение: %s') % self.object.name)
         msg = _(u"<a href='%s'>Товар %s</a> изменен") % (
             reverse('manage_products_edit', args=[self.object.pk]),
             self.object.name,
@@ -660,6 +660,9 @@ class ApiCatalogSuppliersView(APIView):
 api_catalog_suppliers = ApiCatalogSuppliersView.as_view()
 
 class ProductsViewSet(viewsets.ModelViewSet):
+    """
+    Показ продуктов в публичном каталоге только!!!
+    """
     model = Product
     serializer_class = ProductsSerializer
 
@@ -678,9 +681,11 @@ class ProductsViewSet(viewsets.ModelViewSet):
         if loru_ids:
             qs &= Q(loru__pk__in=loru_ids)
 
+        catalog_org_pk = Org.get_catalog_org_pk()
         qs  &= Q(
             productstatus__status__in=\
-                (ProductHistory.PRODUCT_OPERATION_PUBLISH, ProductHistory.PRODUCT_OPERATION_UPDATE, )
+                (ProductHistory.PRODUCT_OPERATION_PUBLISH, ProductHistory.PRODUCT_OPERATION_UPDATE, ),
+                productstatus__ugh__pk=catalog_org_pk,
         )
         
         if self.request.GET.get('filter[price_from]'):
@@ -779,6 +784,9 @@ class ApiProfileViewSet(CustomerDataMixin, viewsets.ViewSet):
                         {
                             'id': b.pk,
                             'fio': b.deadman and b.deadman.full_name_complete() or _(u"Неизвестный"),
+                            'lastName': b.deadman and b.deadman.last_name,
+                            'firstName': b.deadman and b.deadman.first_name,
+                            'middleName': b.deadman and b.deadman.middle_name,
                             'photo': None,
                             'birthDate': b.deadman and b.deadman.birth_date and b.deadman.birth_date.str_safe() or None,
                             'deathDate': b.deadman and b.deadman.death_date and b.deadman.death_date.str_safe() or None,
@@ -837,6 +845,7 @@ class ApiLoruProductPlaces(APIView):
         }
         product_history_operation =  product_status = rate_action
         data = []
+        catalog_org_pk = Org.get_catalog_org_pk()
         for p in request.DATA:
             if Product.objects.filter(pk=p['id'], loru=request.user.profile.org).count():
                 data_p = { 'id': p['id'], 'places': [] }
@@ -867,13 +876,22 @@ class ApiLoruProductPlaces(APIView):
                                 ).order_by('-date_from')[0].rate
                             except IndexError:
                                 pass
-                        ProductHistory.objects.create(
+                        producthistory = ProductHistory.objects.create(
                                         product_id=p['id'],
                                         ugh=ugh,
                                         operation=product_history_operation[o['status']],
                                         dt=dt,
                                         publish_cost=rate,
                                         currency=ugh.currency,
+                        )
+                        if ugh.pk == catalog_org_pk:
+                            where = _(u"в публичном каталоге")
+                        else:
+                            where = _(u"у ОМС: %s") % ugh.name
+                        write_log(
+                            request,
+                            producthistory.product,
+                            _(u"Статус: %s, %s") % (producthistory.get_operation_display(), where, )
                         )
                 data.append(data_p)
         return Response(data=data, status=200)
