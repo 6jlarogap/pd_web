@@ -614,7 +614,7 @@ class ApiLoruPlaces(APIView):
     def get(self, request):
         data = []
         try:
-            ugh = Org.objects.filter(inn=settings.ORG_AD_PAY_RECIPIENT['inn'])[0]
+            ugh = Org.objects.filter(pk=Org.get_catalog_org_pk())[0]
             d = {
                 'id': ugh.pk,
                 'name': _(u'Каталог'),

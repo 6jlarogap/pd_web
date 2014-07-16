@@ -681,10 +681,11 @@ class ProductsViewSet(viewsets.ModelViewSet):
         if loru_ids:
             qs &= Q(loru__pk__in=loru_ids)
 
+        catalog_org_pk = Org.get_catalog_org_pk()
         qs  &= Q(
             productstatus__status__in=\
                 (ProductHistory.PRODUCT_OPERATION_PUBLISH, ProductHistory.PRODUCT_OPERATION_UPDATE, ),
-                productstatus__ugh__inn=settings.ORG_AD_PAY_RECIPIENT['inn'],
+                productstatus__ugh__pk=catalog_org_pk,
         )
         
         if self.request.GET.get('filter[price_from]'):
@@ -844,6 +845,7 @@ class ApiLoruProductPlaces(APIView):
         }
         product_history_operation =  product_status = rate_action
         data = []
+        catalog_org_pk = Org.get_catalog_org_pk()
         for p in request.DATA:
             if Product.objects.filter(pk=p['id'], loru=request.user.profile.org).count():
                 data_p = { 'id': p['id'], 'places': [] }
@@ -882,7 +884,7 @@ class ApiLoruProductPlaces(APIView):
                                         publish_cost=rate,
                                         currency=ugh.currency,
                         )
-                        if ugh.inn and ugh.inn == settings.ORG_AD_PAY_RECIPIENT['inn']:
+                        if ugh.pk == catalog_org_pk:
                             where = _(u"в публичном каталоге")
                         else:
                             where = _(u"у ОМС: %s") % ugh.name

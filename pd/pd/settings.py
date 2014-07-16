@@ -336,6 +336,13 @@ ORG_AD_PAY_RECIPIENT = {
     # ОМС и ORG_PD_FUND
     'share': 0.33,
 }
+# Первичный ключ этой организации. Если None, то организация ищется по ИНН,
+# иначе (установлен в local_settings.py) по первичному ключу, для ускорения поиска
+#
+# ВНИМАНИЕ!!!
+# Если задан ORG_AD_PAY_RECIPIENT_PK, то ORG_AD_PAY_RECIPIENT['inn'] не используется
+#
+ORG_AD_PAY_RECIPIENT_PK = None
 #
 # Фонд похоронного дела, получает свою долю от полученного ORG_AD_PAY_RECIPIENT'ом:
 #
