@@ -1960,7 +1960,7 @@ class ApiOrgSignupView(CheckRecaptchaMixin, RegisterMixin, APIView):
                         raise ServiceException(_(u'Неверный БИК: %s') % bank['bik'])
 
                     bank['correspondent'] = bank['correspondent'].strip()
-                    if bank['correspondent'] and not re.search(r'^\d{3,%d}$' % ks_len, bank['correspondent']):
+                    if bank['correspondent'] and not re.search(r'^\d{6,%d}$' % ks_len, bank['correspondent']):
                         raise ServiceException(_(u'Неверный банковский корреспондентский счет: %s') % bank['correspondent'])
 
                     bank_address = bank.get('address') and bank['address'].strip() or ''
