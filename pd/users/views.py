@@ -1886,7 +1886,6 @@ class ApiOrgSignupView(CheckRecaptchaMixin, RegisterMixin, APIView):
             org_name = request.DATA.get('orgName', '').strip()
             if not org_name:
                 raise ServiceException(_(u'Не задано краткое наименование организации'))
-            full_name = request.DATA.get('orgFullName')
             org_types = dict(loru=Org.PROFILE_LORU, oms=Org.PROFILE_UGH)
             org_type = request.DATA.get('orgType')
             if not org_type or org_type not in org_types:
@@ -1901,8 +1900,6 @@ class ApiOrgSignupView(CheckRecaptchaMixin, RegisterMixin, APIView):
             if not org_phones:
                 raise ServiceException(_(u'Не указано ни одного телефона'))
             org_inn=request.DATA.get('tin', '').strip()
-            if not org_inn:
-                raise ServiceException(_(u'Не указан ИНН'))
             org_basis = request.DATA.get('directorPowerSource', Org.BASIS_CHARTER)
             org_address.save()
             registerprofile = RegisterProfile.objects.create(
