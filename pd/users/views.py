@@ -1433,8 +1433,8 @@ class OrgBurialStatsView(SupervisorRequiredMixin, TemplateView):
 
 org_burial_stats = OrgBurialStatsView.as_view()
 
-class OrgCurrentStatsView(SupervisorRequiredMixin, TemplateView):
-    template_name = 'org_current_stats.html'
+class OmsCurrentStatsView(SupervisorRequiredMixin, TemplateView):
+    template_name = 'oms_current_stats.html'
 
     def get_context_data(self, **kwargs):
         sort = self.request.GET.get('sort', 'org')
@@ -1535,7 +1535,7 @@ class OrgCurrentStatsView(SupervisorRequiredMixin, TemplateView):
             'sort': sort,
         }
 
-org_current_stats = OrgCurrentStatsView.as_view()
+oms_current_stats = OmsCurrentStatsView.as_view()
 
 class SupportView(RequestToFormMixin, FormView):
     form_class = SupportForm
