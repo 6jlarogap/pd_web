@@ -8,6 +8,7 @@ import hashlib
 import os
 import csv
 import copy
+import re
 
 from django.conf import settings
 from django.contrib import messages
@@ -52,7 +53,7 @@ from users.models import Profile, Org, RegisterProfile, ProfileLORU, CustomerPro
                          get_mail_footer, is_cabinet_user, PermitIfLoru, Oauth, \
                          BankAccount, BankAccountRegister, OrgCertificate, OrgContract, \
                          RegisterProfileContract, RegisterProfileScan
-from pd.models import validate_phone_as_number
+from pd.models import validate_phone_as_number, validate_username
 from persons.models import AlivePerson, Phone
 from burials.models import Cemetery, Area, Burial, Place
 from billing.models import Wallet, Rate
@@ -1307,12 +1308,18 @@ class RegistrantApprove(SupervisorRequiredMixin, View):
                         off_address=off_address,
             )
             for bank in registrant.bankaccountregister_set.all():
+                if bank.off_address:
+                    bank_address = copy.deepcopy(bank.off_address)
+                    bank_address.pk = None
+                    bank_address.save(force_insert=True)
+                else:
+                    bank_address = None
                 BankAccount.objects.create(
                     organization=org,
                     bankname=bank.bankname,
                     rs=bank.rs,
                     bik=bank.bik,
-                    ks=bank.ks,
+                    off_address=bank_address,
                 )
             try:
                 fname = registrant.registerprofilescan.bfile.path
@@ -1373,8 +1380,8 @@ class RegistrantDecline(SupervisorRequiredMixin, View):
 
 registrant_decline = RegistrantDecline.as_view()
 
-class OrgBurialStatsView(SupervisorRequiredMixin, TemplateView):
-    template_name = 'org_burial_stats.html'
+class OmsBurialStatsView(SupervisorRequiredMixin, TemplateView):
+    template_name = 'oms_burial_stats.html'
 
     def get_context_data(self, **kwargs):
         form = self.get_form()
@@ -1431,10 +1438,10 @@ class OrgBurialStatsView(SupervisorRequiredMixin, TemplateView):
     def get_form(self):
         return OrgBurialStatsForm(data=self.request.GET or None)
 
-org_burial_stats = OrgBurialStatsView.as_view()
+oms_burial_stats = OmsBurialStatsView.as_view()
 
-class OrgCurrentStatsView(SupervisorRequiredMixin, TemplateView):
-    template_name = 'org_current_stats.html'
+class OmsCurrentStatsView(SupervisorRequiredMixin, TemplateView):
+    template_name = 'oms_current_stats.html'
 
     def get_context_data(self, **kwargs):
         sort = self.request.GET.get('sort', 'org')
@@ -1535,7 +1542,50 @@ class OrgCurrentStatsView(SupervisorRequiredMixin, TemplateView):
             'sort': sort,
         }
 
-org_current_stats = OrgCurrentStatsView.as_view()
+oms_current_stats = OmsCurrentStatsView.as_view()
+
+class LoruCurrentStatsView(SupervisorRequiredMixin, TemplateView):
+    template_name = 'loru_current_stats.html'
+
+    def get_context_data(self, **kwargs):
+        sort = self.request.GET.get('sort', 'org')
+        SORT_FIELDS = {
+            'org': 'name',
+            '-org': '-name',
+            'city': 'off_address__city',
+            '-city': '-off_address__city',
+       }
+        s = SORT_FIELDS[sort]
+        if not isinstance(s, list):
+            s = [s]
+
+        orgs = []
+        total={}
+        for source_type in Burial.SOURCE_TYPES:
+            total[source_type[0]] = 0
+        total['loru_count'] = total['num_users'] = total['num_stores'] = \
+        total['num_products'] = total['num_published_products'] = \
+        total['num_orders'] = total['num_burials'] = 0
+        q_published = Q(
+            productstatus__status__in=\
+            (ProductHistory.PRODUCT_OPERATION_PUBLISH, ProductHistory.PRODUCT_OPERATION_UPDATE, )
+        )
+        for o in Org.objects.filter(type=Org.PROFILE_LORU).order_by(*s):
+            total['loru_count'] += 1
+            org = {'name': o.name}
+            org['city'] = o.off_address and o.off_address.city or ''
+
+            orgs.append(org)
+
+        lorus = Org.objects.filter(type=Org.PROFILE_LORU)
+
+        return {
+            'orgs':orgs,
+            'total': total,
+            'sort': sort,
+        }
+
+loru_current_stats = LoruCurrentStatsView.as_view()
 
 class SupportView(RequestToFormMixin, FormView):
     form_class = SupportForm
@@ -1782,6 +1832,12 @@ class ApiOrgSignupView(CheckRecaptchaMixin, RegisterMixin, APIView):
             username = request.DATA.get('username', '').strip()
             if not username:
                 raise ServiceException(_(u'Не задано имя пользователя для входа в систему'))
+            try:
+                validate_username(username)
+            except ValidationError as e:
+                raise ServiceException(_(u'Неверное имя пользователя для входа в систему: %s. %s') % \
+                    (username, e.messages and e.messages[0] or '', )
+                )
             if User.objects.filter(username=username).exists():
                 raise ServiceException(_(u"Имя  %s уже используется в системе") % username)
             q = Q(user_name=username) & \
@@ -1871,6 +1927,9 @@ class ApiOrgSignupView(CheckRecaptchaMixin, RegisterMixin, APIView):
 
             banks = request.DATA.get('bankAccounts')
             if banks:
+                name_len = BankAccountRegister._meta.get_field('bankname').max_length
+                rs_len = BankAccountRegister._meta.get_field('rs').max_length
+                bik_len = BankAccountRegister._meta.get_field('bik').max_length
                 try:
                     banks = json.loads(banks)
                 except ValueError:
@@ -1881,12 +1940,34 @@ class ApiOrgSignupView(CheckRecaptchaMixin, RegisterMixin, APIView):
                     #
                     if not bank.get('name') or not bank.get('account'):
                         continue
+
+                    bank['name'] = bank['name'].strip()
+                    if not bank['name']:
+                        raise ServiceException(_(u'Пустое наименование банка') )
+                    if len(bank['name']) > name_len:
+                        raise ServiceException(_(u'Наименование банка, %s, превышает максимальную длину, %d') % \
+                            (bank['name'], name_len, )
+                        )
+
+                    bank['account'] = bank['account'].strip()
+                    if not re.search(r'^\d{6,%d}$' % rs_len, bank['account']):
+                        raise ServiceException(_(u'Неверный банковский расчетный счет: %s') % bank['account'])
+
+                    bank['bik'] = bank['bik'].strip()
+                    if bank['bik'] and not re.search(r'^\d{3,%d}$' % bik_len, bank['bik']):
+                        raise ServiceException(_(u'Неверный БИК: %s') % bank['bik'])
+
+                    bank_address = bank['correspondent'].strip()
+                    if bank_address:
+                        bank_address = Location.objects.create(addr_str=bank_address)
+                    else:
+                        bank_address = None
                     BankAccountRegister.objects.create(
                         registerprofile=registerprofile,
                         bankname=bank['name'],
                         rs=bank['account'],
                         bik=bank['bik'],
-                        ks=bank['correspondent'],
+                        off_address=bank_address,
                     )
 
             cert = request.FILES.get('certificatePhoto')
