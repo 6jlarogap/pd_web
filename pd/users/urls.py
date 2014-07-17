@@ -42,8 +42,9 @@ urlpatterns = patterns('users.views',
     url(r'^registrant/(?P<pk>\d+)/approve/$', 'registrant_approve', name='registrant_approve'),
     url(r'^registrant/(?P<pk>\d+)/decline/$', 'registrant_decline', name='registrant_decline'),
     
-    url(r'^orgburialstats/', 'org_burial_stats', name='org_burial_stats'),
+    url(r'^oms_burialstats/', 'oms_burial_stats', name='oms_burial_stats'),
     url(r'^oms_currentstats/', 'oms_current_stats', name='oms_current_stats'),
+    url(r'^loru_currentstats/', 'loru_current_stats', name='loru_current_stats'),
         
     url(r'^profile/', 'profile', name='profile'),
     url(r'^loruregistry/', 'loru_registry', name='loru_registry'),
