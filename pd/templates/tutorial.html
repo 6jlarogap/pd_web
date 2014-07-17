@@ -25,7 +25,7 @@
             <center>
             <a name="chapter{{ d.order }}{{ item.order }}"></a><h3>{{ item.title }}</h3>
             <br />
-            <video width="640" height="360" controls="controls" >
+            <video width="640" height="360" controls="controls" preload="none" >
             {% for src in item.urls %}
                 <source src="{{ src.url }}"  type="video/{{ src.type }}" />
             {% endfor %}
