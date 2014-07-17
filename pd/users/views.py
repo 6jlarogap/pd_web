@@ -1791,9 +1791,9 @@ class ApiOrgSignupView(CheckRecaptchaMixin, RegisterMixin, APIView):
                 raise ServiceException(_(u'Не задано имя пользователя для входа в систему'))
             try:
                 validate_username(username)
-            except ValidationError:
-                raise ServiceException(_(u'Неверное имя пользователя для входа в систему: %s. Должно быть %s') % \
-                    (username, Profile.USERNAME_HELPTEXT[0].lower() + Profile.USERNAME_HELPTEXT[1:], )
+            except ValidationError as e:
+                raise ServiceException(_(u'Неверное имя пользователя для входа в систему: %s. %s') % \
+                    (username, e.messages and e.messages[0] or '', )
                 )
             if User.objects.filter(username=username).exists():
                 raise ServiceException(_(u"Имя  %s уже используется в системе") % username)
