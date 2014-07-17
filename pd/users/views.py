@@ -1873,13 +1873,14 @@ class ApiOrgSignupView(CheckRecaptchaMixin, RegisterMixin, APIView):
             if banks:
                 try:
                     banks = json.loads(banks)
-                    # TODO
-                    # Убрать эту затычку для ошибочного вх. bankAccounts=[{}] 
-                    if banks and not banks[0]:
-                        banks = []
                 except ValueError:
                     raise ServiceException(_(u'Неверный формат банковских счетов (bankAccounts)'))
                 for bank in banks:
+                    # Возможно: вх. bankAccounts=[{}]
+                    # Возможно: [{"name":"","account":"","bik":"","correspondent":""}]
+                    #
+                    if not bank.get('name') or not bank.get('account'):
+                        continue
                     BankAccountRegister.objects.create(
                         registerprofile=registerprofile,
                         bankname=bank['name'],
