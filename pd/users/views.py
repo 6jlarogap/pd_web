@@ -1776,15 +1776,15 @@ class ApiOrgSignupView(CheckRecaptchaMixin, RegisterMixin, APIView):
     @transaction.commit_on_success
     def post(self, request):
         try:
-            #recaptcha_data = request.DATA.get('recaptchaData')
-            #if not recaptcha_data:
-                #raise ServiceException(_(u'Нет captcha'))
-            #try:
-                #recaptcha_data = json.loads(recaptcha_data)
-            #except ValueError:
-                #raise ServiceException(_(u'Неверный формат captcha'))
-            #if not self.check_recaptcha(request, recaptcha_data['challenge'], recaptcha_data['response']):
-                #raise ServiceException(_(u'Введена неверная captcha'))
+            recaptcha_data = request.DATA.get('recaptchaData')
+            if not recaptcha_data:
+                raise ServiceException(_(u'Нет captcha'))
+            try:
+                recaptcha_data = json.loads(recaptcha_data)
+            except ValueError:
+                raise ServiceException(_(u'Неверный формат captcha'))
+            if not self.check_recaptcha(request, recaptcha_data['challenge'], recaptcha_data['response']):
+                raise ServiceException(_(u'Введена неверная captcha'))
 
             username = request.DATA.get('username', '').strip()
             if not username:
