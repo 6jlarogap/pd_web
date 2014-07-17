@@ -666,6 +666,7 @@ class BankAccountCommon(models.Model):
     bik = models.CharField(u"БИК", max_length=9, validators=[DigitsValidator(), LengthValidator(9), ])
     bankname = models.CharField(u"Наименование банка", max_length=64, validators=[NotEmptyValidator(1), ])
     ls = models.CharField(u"Л/с", max_length=11, blank=True, null=True, validators=[LengthValidator(11), ])
+    off_address = models.ForeignKey('geo.Location', verbose_name=_(u"Юр. адрес"), null=True, editable=False)
 
 class BankAccount(BankAccountCommon):
     """
@@ -772,6 +773,7 @@ class RegisterProfile(SafeDeleteMixin, BaseModel):
         except RegisterProfileContract.DoesNotExist:
             pass
         for bank in self.bankaccountregister_set.all():
+            self.safe_delete('off_address', bank)
             bank.delete()
         super(RegisterProfile, self).delete()
         
