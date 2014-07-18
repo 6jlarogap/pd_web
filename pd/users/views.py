@@ -1319,6 +1319,7 @@ class RegistrantApprove(SupervisorRequiredMixin, View):
                     bankname=bank.bankname,
                     rs=bank.rs,
                     bik=bank.bik,
+                    ks=bank.ks,
                     off_address=bank_address,
                 )
             try:
@@ -1380,8 +1381,8 @@ class RegistrantDecline(SupervisorRequiredMixin, View):
 
 registrant_decline = RegistrantDecline.as_view()
 
-class OrgBurialStatsView(SupervisorRequiredMixin, TemplateView):
-    template_name = 'org_burial_stats.html'
+class OmsBurialStatsView(SupervisorRequiredMixin, TemplateView):
+    template_name = 'oms_burial_stats.html'
 
     def get_context_data(self, **kwargs):
         form = self.get_form()
@@ -1438,10 +1439,10 @@ class OrgBurialStatsView(SupervisorRequiredMixin, TemplateView):
     def get_form(self):
         return OrgBurialStatsForm(data=self.request.GET or None)
 
-org_burial_stats = OrgBurialStatsView.as_view()
+oms_burial_stats = OmsBurialStatsView.as_view()
 
-class OrgCurrentStatsView(SupervisorRequiredMixin, TemplateView):
-    template_name = 'org_current_stats.html'
+class OmsCurrentStatsView(SupervisorRequiredMixin, TemplateView):
+    template_name = 'oms_current_stats.html'
 
     def get_context_data(self, **kwargs):
         sort = self.request.GET.get('sort', 'org')
@@ -1542,7 +1543,50 @@ class OrgCurrentStatsView(SupervisorRequiredMixin, TemplateView):
             'sort': sort,
         }
 
-org_current_stats = OrgCurrentStatsView.as_view()
+oms_current_stats = OmsCurrentStatsView.as_view()
+
+class LoruCurrentStatsView(SupervisorRequiredMixin, TemplateView):
+    template_name = 'loru_current_stats.html'
+
+    def get_context_data(self, **kwargs):
+        sort = self.request.GET.get('sort', 'org')
+        SORT_FIELDS = {
+            'org': 'name',
+            '-org': '-name',
+            'city': 'off_address__city',
+            '-city': '-off_address__city',
+       }
+        s = SORT_FIELDS[sort]
+        if not isinstance(s, list):
+            s = [s]
+
+        orgs = []
+        total={}
+        for source_type in Burial.SOURCE_TYPES:
+            total[source_type[0]] = 0
+        total['loru_count'] = total['num_users'] = total['num_stores'] = \
+        total['num_products'] = total['num_published_products'] = \
+        total['num_orders'] = total['num_burials'] = 0
+        q_published = Q(
+            productstatus__status__in=\
+            (ProductHistory.PRODUCT_OPERATION_PUBLISH, ProductHistory.PRODUCT_OPERATION_UPDATE, )
+        )
+        for o in Org.objects.filter(type=Org.PROFILE_LORU).order_by(*s):
+            total['loru_count'] += 1
+            org = {'name': o.name}
+            org['city'] = o.off_address and o.off_address.city or ''
+
+            orgs.append(org)
+
+        lorus = Org.objects.filter(type=Org.PROFILE_LORU)
+
+        return {
+            'orgs':orgs,
+            'total': total,
+            'sort': sort,
+        }
+
+loru_current_stats = LoruCurrentStatsView.as_view()
 
 class SupportView(RequestToFormMixin, FormView):
     form_class = SupportForm
@@ -1842,7 +1886,6 @@ class ApiOrgSignupView(CheckRecaptchaMixin, RegisterMixin, APIView):
             org_name = request.DATA.get('orgName', '').strip()
             if not org_name:
                 raise ServiceException(_(u'Не задано краткое наименование организации'))
-            full_name = request.DATA.get('orgFullName')
             org_types = dict(loru=Org.PROFILE_LORU, oms=Org.PROFILE_UGH)
             org_type = request.DATA.get('orgType')
             if not org_type or org_type not in org_types:
@@ -1857,8 +1900,6 @@ class ApiOrgSignupView(CheckRecaptchaMixin, RegisterMixin, APIView):
             if not org_phones:
                 raise ServiceException(_(u'Не указано ни одного телефона'))
             org_inn=request.DATA.get('tin', '').strip()
-            if not org_inn:
-                raise ServiceException(_(u'Не указан ИНН'))
             org_basis = request.DATA.get('directorPowerSource', Org.BASIS_CHARTER)
             org_address.save()
             registerprofile = RegisterProfile.objects.create(
@@ -1887,6 +1928,7 @@ class ApiOrgSignupView(CheckRecaptchaMixin, RegisterMixin, APIView):
                 name_len = BankAccountRegister._meta.get_field('bankname').max_length
                 rs_len = BankAccountRegister._meta.get_field('rs').max_length
                 bik_len = BankAccountRegister._meta.get_field('bik').max_length
+                ks_len = BankAccountRegister._meta.get_field('ks').max_length
                 try:
                     banks = json.loads(banks)
                 except ValueError:
@@ -1914,7 +1956,11 @@ class ApiOrgSignupView(CheckRecaptchaMixin, RegisterMixin, APIView):
                     if bank['bik'] and not re.search(r'^\d{3,%d}$' % bik_len, bank['bik']):
                         raise ServiceException(_(u'Неверный БИК: %s') % bank['bik'])
 
-                    bank_address = bank['correspondent'].strip()
+                    bank['correspondent'] = bank['correspondent'].strip()
+                    if bank['correspondent'] and not re.search(r'^\d{6,%d}$' % ks_len, bank['correspondent']):
+                        raise ServiceException(_(u'Неверный банковский корреспондентский счет: %s') % bank['correspondent'])
+
+                    bank_address = bank.get('address') and bank['address'].strip() or ''
                     if bank_address:
                         bank_address = Location.objects.create(addr_str=bank_address)
                     else:
@@ -1924,6 +1970,7 @@ class ApiOrgSignupView(CheckRecaptchaMixin, RegisterMixin, APIView):
                         bankname=bank['name'],
                         rs=bank['account'],
                         bik=bank['bik'],
+                        ks=bank['correspondent'],
                         off_address=bank_address,
                     )
 

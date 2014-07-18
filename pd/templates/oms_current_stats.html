@@ -3,7 +3,7 @@
 {% load i18n %}
 
 {% block content %}
-    <h1>{% trans "Текущая статистика" %}</h1>
+    <h1>{% trans "Текущая статистика" %} {% trans "ОМС" %}</h1>
     <br />
     <table class="table table-bordered table-striped">
     <tr>
@@ -53,6 +53,42 @@
             {% trans "Опубликованных продуктов<br />у ЛОРУ из реестра" %}
         </th>
     </tr>
+    <tr>
+        <td>
+            <b>{% trans "Итого" %} {{ total.oms_count }} {% trans "ОМС"%}</b>
+        </td>
+        <td>
+        </td>
+        <td style="text-align:right;">
+            <b>{{ total.cemeteries_count }}</b>
+        </td>
+        <td style="text-align:right;">
+            <b>{{ total.areas_count }}</b>
+        </td>
+        <td style="text-align:right;">
+            <b>{{ total.places_count }}</b>
+        </td>
+        <td style="text-align:right;">
+            <b>{{ total.burials_count }}</b>
+        </td>
+        <td style="text-align:right;">
+            <b>{{ total.places_cabinet_count }}</b>
+        </td>
+        <td>
+            <b>{% trans "Всего кабинетов" %}: {{ total.cabinets_count }}</b>
+        </td>
+        <td>
+            <b>{% trans "Всего ЛОРУ" %}: {{ total.lorus_count }}
+            <br />({% trans "активных" %}: {{ total.active_lorus_count }})
+            </b>
+        </td>
+        <td>
+            <b>{% trans "Всего продуктов" %}: {{ total.products_count }}</b>
+        </td>
+        <td>
+            <b>{% trans "Всего<br> опубликованных продуктов" %}: {{ total.published_products_count }}</b>
+        </td>
+    </tr>
     {% for org in orgs %}
         <tr>
             <td>
@@ -90,42 +126,6 @@
             </td>
         </tr>
     {% endfor %}
-        <tr>
-            <td>
-                <b>{% trans "Итого" %} {{ total.oms_count }} {% trans "ОМС"%}</b>
-            </td>
-            <td>
-            </td>
-            <td style="text-align:right;">
-                <b>{{ total.cemeteries_count }}</b>
-            </td>
-            <td style="text-align:right;">
-                <b>{{ total.areas_count }}</b>
-            </td>
-            <td style="text-align:right;">
-                <b>{{ total.places_count }}</b>
-            </td>
-            <td style="text-align:right;">
-                <b>{{ total.burials_count }}</b>
-            </td>
-            <td style="text-align:right;">
-                <b>{{ total.places_cabinet_count }}</b>
-            </td>
-            <td>
-                <b>{% trans "Всего кабинетов" %}: {{ total.cabinets_count }}</b>
-            </td>
-            <td>
-                <b>{% trans "Всего ЛОРУ" %}: {{ total.lorus_count }}
-                <br />({% trans "активных" %}: {{ total.active_lorus_count }})
-                </b>
-            </td>
-            <td>
-                <b>{% trans "Всего продуктов" %}: {{ total.products_count }}</b>
-            </td>
-            <td>
-                <b>{% trans "Всего<br> опубликованных продуктов" %}: {{ total.published_products_count }}</b>
-            </td>
-        </tr>
     </table>
 
 {% endblock %}
