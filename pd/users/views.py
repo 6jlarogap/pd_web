@@ -57,7 +57,7 @@ from pd.models import validate_phone_as_number, validate_username
 from persons.models import AlivePerson, Phone
 from burials.models import Cemetery, Area, Burial, Place
 from billing.models import Wallet, Rate
-from orders.models import Product, ProductStatus, ProductHistory
+from orders.models import Product, ProductStatus, ProductHistory, Order
 from pd.views import PaginateListView, RequestToFormMixin, FormInvalidMixin, get_front_end_url, ServiceException
 from geo.models import Location
 
@@ -1575,6 +1575,24 @@ class LoruCurrentStatsView(SupervisorRequiredMixin, TemplateView):
             total['loru_count'] += 1
             org = {'name': o.name}
             org['city'] = o.off_address and o.off_address.city or ''
+            org['num_users'] = Profile.objects.filter(org=o).count()
+            total['num_users'] += org['num_users']
+            org['num_stores'] = Store.objects.filter(loru=o).count()
+            total['num_stores'] += org['num_stores']
+            org['num_products'] = Product.objects.filter(loru=o).count()
+            total['num_products'] += org['num_products']
+            qs = q_published & Q(loru=o)
+            org['num_published_products'] = Product.objects.filter(qs).count()
+            total['num_published_products'] += org['num_published_products']
+            org['num_orders'] = Order.objects.filter(loru=o).count()
+            total['num_orders'] += org['num_orders']
+            org['num_burials'] = Burial.objects.filter(
+                source_type=Burial.SOURCE_FULL,
+                status=Burial.STATUS_CLOSED,
+                annulated=False,
+                loru=o,
+            ).count()
+            total['num_burials'] += org['num_burials']
 
             orgs.append(org)
 
