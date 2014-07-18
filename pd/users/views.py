@@ -1319,6 +1319,7 @@ class RegistrantApprove(SupervisorRequiredMixin, View):
                     bankname=bank.bankname,
                     rs=bank.rs,
                     bik=bank.bik,
+                    ks=bank.ks,
                     off_address=bank_address,
                 )
             try:
@@ -1885,7 +1886,6 @@ class ApiOrgSignupView(CheckRecaptchaMixin, RegisterMixin, APIView):
             org_name = request.DATA.get('orgName', '').strip()
             if not org_name:
                 raise ServiceException(_(u'Не задано краткое наименование организации'))
-            full_name = request.DATA.get('orgFullName')
             org_types = dict(loru=Org.PROFILE_LORU, oms=Org.PROFILE_UGH)
             org_type = request.DATA.get('orgType')
             if not org_type or org_type not in org_types:
@@ -1900,8 +1900,6 @@ class ApiOrgSignupView(CheckRecaptchaMixin, RegisterMixin, APIView):
             if not org_phones:
                 raise ServiceException(_(u'Не указано ни одного телефона'))
             org_inn=request.DATA.get('tin', '').strip()
-            if not org_inn:
-                raise ServiceException(_(u'Не указан ИНН'))
             org_basis = request.DATA.get('directorPowerSource', Org.BASIS_CHARTER)
             org_address.save()
             registerprofile = RegisterProfile.objects.create(
@@ -1930,6 +1928,7 @@ class ApiOrgSignupView(CheckRecaptchaMixin, RegisterMixin, APIView):
                 name_len = BankAccountRegister._meta.get_field('bankname').max_length
                 rs_len = BankAccountRegister._meta.get_field('rs').max_length
                 bik_len = BankAccountRegister._meta.get_field('bik').max_length
+                ks_len = BankAccountRegister._meta.get_field('ks').max_length
                 try:
                     banks = json.loads(banks)
                 except ValueError:
@@ -1957,7 +1956,11 @@ class ApiOrgSignupView(CheckRecaptchaMixin, RegisterMixin, APIView):
                     if bank['bik'] and not re.search(r'^\d{3,%d}$' % bik_len, bank['bik']):
                         raise ServiceException(_(u'Неверный БИК: %s') % bank['bik'])
 
-                    bank_address = bank['correspondent'].strip()
+                    bank['correspondent'] = bank['correspondent'].strip()
+                    if bank['correspondent'] and not re.search(r'^\d{6,%d}$' % ks_len, bank['correspondent']):
+                        raise ServiceException(_(u'Неверный банковский корреспондентский счет: %s') % bank['correspondent'])
+
+                    bank_address = bank.get('address') and bank['address'].strip() or ''
                     if bank_address:
                         bank_address = Location.objects.create(addr_str=bank_address)
                     else:
@@ -1967,6 +1970,7 @@ class ApiOrgSignupView(CheckRecaptchaMixin, RegisterMixin, APIView):
                         bankname=bank['name'],
                         rs=bank['account'],
                         bik=bank['bik'],
+                        ks=bank['correspondent'],
                         off_address=bank_address,
                     )
 
