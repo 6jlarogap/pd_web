@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-    {% for p in published_products %}
+    {% for ps in product_statuses %}
         <url>
-            <loc>{{ global_context_FRONT_END_URL }}#/?productId={{ p.id }}"</loc>
-            <lastmod>{{ p.productstatus.dt|date:"Y-m-d" }}</lastmod>
+            <loc>{{ url }}#/?productId={{ ps.product.pk }}"</loc>
+            <lastmod>{{ ps.dt|date:"Y-m-d" }}</lastmod>
             <changefreq>monthly</changefreq>
         </url>
     {% endfor %}
