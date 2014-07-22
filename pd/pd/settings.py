@@ -256,7 +256,6 @@ THUMBNAILS_FILE_SIGNATURE = '%(source)s/%(size)s~%(method)s~%(secret)s.%(extensi
 THUMBNAILS_STORAGE_BASE_PATH = '/thumb/'
 THUMBNAILS_PROXY_BASE_URL = '/thumb/'
 #THUMBNAILS_STORAGE_BACKEND = 'testsuite.storages.TemporaryStorage'
-THUMBNAILS_STORAGE_ROOT = os.path.join(MEDIA_ROOT, 'thumbnails')
 # возможные длины и высоты:
 THUMBNAILS_ALLOWED_SIZE_RANGE = range(20, 2001)
 
@@ -389,6 +388,9 @@ try:
     from local_settings import *
 except ImportError:
     pass
+
+# MEDIA_ROOT может измениться в local_settings
+THUMBNAILS_STORAGE_ROOT = os.path.join(MEDIA_ROOT, 'thumbnails')
 
 import sys
 if len(sys.argv) > 1 and sys.argv[1] == 'test':
