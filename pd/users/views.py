@@ -589,7 +589,7 @@ class ApiFeedBack(CheckRecaptchaMixin, APIView):
                 )
             email_text += get_mail_footer(request.user)
 
-            email_to = (settings.DEFAULT_FROM_EMAIL, )
+            email_to = (Org.get_supervisor_email(), )
             headers = {}
             if email_from:
                 headers['Reply-To'] = email_from
@@ -1187,6 +1187,11 @@ class RegisterActivation(DetailView):
                 email_subject = "%s %s" % (unicode(_(u"Заявка на регистрацию на")),
                                            unicode(_(u"ПохоронноеДело")),
                                           )
+                try:
+                    scan = self.object.registerprofilescan
+                    scan = scan and scan.bfile and os.path.exists(scan.bfile.path) and scan.bfile.path or None
+                except (AttributeError, RegisterProfileScan.DoesNotExist, ):
+                    scan = None
                 email_text = render_to_string(
                                 'register_notify_supervisor_email.txt',
                                 { 
@@ -1194,11 +1199,15 @@ class RegisterActivation(DetailView):
                                     'host': '%s://%s' % (request.is_secure() and 'https' or 'http',
                                                          self.request.get_host(),
                                                         ),
+                                    'scan': scan,
                                 }
                 )
                 email_from = settings.DEFAULT_FROM_EMAIL
                 email_to = (Org.get_supervisor_email(), )
-                send_mail(email_subject, email_text, email_from, email_to )
+                email_message = EmailMessage(email_subject, email_text, email_from, email_to, )
+                if scan:
+                    email_message.attach_file(scan)
+                email_message.send()
             else:
                 explain = _(
                             u'Вам отправлено письмо, в котором имеется ссылка,\n'
@@ -1912,6 +1921,10 @@ class ApiOrgSignupView(CheckRecaptchaMixin, RegisterMixin, APIView):
                 raise ServiceException(_(u'Тип организации не задан или неверен'))
             org_type = org_types[org_type]
             org_phones = request.DATA.get('phones')
+            fax_len = RegisterProfile._meta.get_field('org_fax').max_length
+            org_fax=request.DATA.get('fax', '').strip()
+            if len(org_fax) > fax_len:
+                raise ServiceException(_(u'Факс: длина больше %d символов') % fax_len)
             if org_phones:
                 try:
                     org_phones = "\n".join(json.loads(org_phones))
@@ -1938,7 +1951,7 @@ class ApiOrgSignupView(CheckRecaptchaMixin, RegisterMixin, APIView):
                 org_ogrn=request.DATA.get('OGRN', '').strip(),
                 org_director=request.DATA.get('directorFullname', '').strip(),
                 org_phones=org_phones,
-                org_fax=request.DATA.get('fax', '').strip(),
+                org_fax=org_fax,
                 org_address=org_address,
                 org_basis=org_basis,
             )
