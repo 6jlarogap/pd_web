@@ -1912,6 +1912,10 @@ class ApiOrgSignupView(CheckRecaptchaMixin, RegisterMixin, APIView):
                 raise ServiceException(_(u'Тип организации не задан или неверен'))
             org_type = org_types[org_type]
             org_phones = request.DATA.get('phones')
+            fax_len = RegisterProfile._meta.get_field('org_fax').max_length
+            org_fax=request.DATA.get('fax', '').strip()
+            if len(org_fax) > fax_len:
+                raise ServiceException(_(u'Факс: длина больше %d символов') % fax_len)
             if org_phones:
                 try:
                     org_phones = "\n".join(json.loads(org_phones))
@@ -1938,7 +1942,7 @@ class ApiOrgSignupView(CheckRecaptchaMixin, RegisterMixin, APIView):
                 org_ogrn=request.DATA.get('OGRN', '').strip(),
                 org_director=request.DATA.get('directorFullname', '').strip(),
                 org_phones=org_phones,
-                org_fax=request.DATA.get('fax', '').strip(),
+                org_fax=org_fax,
                 org_address=org_address,
                 org_basis=org_basis,
             )
