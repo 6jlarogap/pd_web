@@ -589,7 +589,7 @@ class ApiFeedBack(CheckRecaptchaMixin, APIView):
                 )
             email_text += get_mail_footer(request.user)
 
-            email_to = (settings.DEFAULT_FROM_EMAIL, )
+            email_to = (Org.get_supervisor_email(), )
             headers = {}
             if email_from:
                 headers['Reply-To'] = email_from
@@ -1187,6 +1187,11 @@ class RegisterActivation(DetailView):
                 email_subject = "%s %s" % (unicode(_(u"Заявка на регистрацию на")),
                                            unicode(_(u"ПохоронноеДело")),
                                           )
+                try:
+                    scan = self.object.registerprofilescan
+                    scan = scan and scan.bfile and os.path.exists(scan.bfile.path) and scan.bfile.path or None
+                except (AttributeError, RegisterProfileScan.DoesNotExist, ):
+                    scan = None
                 email_text = render_to_string(
                                 'register_notify_supervisor_email.txt',
                                 { 
@@ -1194,11 +1199,15 @@ class RegisterActivation(DetailView):
                                     'host': '%s://%s' % (request.is_secure() and 'https' or 'http',
                                                          self.request.get_host(),
                                                         ),
+                                    'scan': scan,
                                 }
                 )
                 email_from = settings.DEFAULT_FROM_EMAIL
                 email_to = (Org.get_supervisor_email(), )
-                send_mail(email_subject, email_text, email_from, email_to )
+                email_message = EmailMessage(email_subject, email_text, email_from, email_to, )
+                if scan:
+                    email_message.attach_file(scan)
+                email_message.send()
             else:
                 explain = _(
                             u'Вам отправлено письмо, в котором имеется ссылка,\n'
