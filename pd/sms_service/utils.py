@@ -4,7 +4,7 @@ from django.conf import settings
 from django.core.mail import EmailMessage
 from django.utils.translation import ugettext_lazy as _
 
-from users.models import Profile
+from users.models import Org, Profile
 
 from sms_service import sms24x7
 
@@ -80,7 +80,7 @@ def send_sms(phone_number, text, email_error_text='', user=None):
         email_error_text += u"\n%s\n%s" % \
                             (message, _(u"Справка по числовому коду: https://outbox.sms24x7.ru/api_manual/errors.html"), )
         email_from = settings.DEFAULT_FROM_EMAIL
-        email_to = (settings.DEFAULT_FROM_EMAIL, )
+        email_to = (Org.get_supervisor_email(), )
         email_subject = _(u'Ошибка СМС-сервиса при отправке на %s') % phone_number
         email_text = email_error_text
         kwargs = dict()

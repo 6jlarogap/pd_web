@@ -502,7 +502,7 @@ class SupportForm(forms.Form):
                 self.cleaned_data['phone'],
             )
         email_text += get_mail_footer(self.request.user)
-        email_to = (settings.DEFAULT_FROM_EMAIL, )
+        email_to = (Org.get_supervisor_email(), )
         # Некоторые почтовые серверы подменяют поле From: письма
         # на тот почтовый ящик, через который шла аутентификация
         # при отправке письма (settings.EMAIL_HOST_USER)
