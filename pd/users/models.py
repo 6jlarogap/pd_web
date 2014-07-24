@@ -792,6 +792,10 @@ class RegisterProfile(SafeDeleteMixin, BaseModel):
     def orgs_same_inn(self):
         return Org.objects.filter(inn=self.org_inn)
 
+    def same_username(self):
+        return not self.is_approved() and \
+               User.objects.filter(username__iexact=self.user_name).count()
+
     @classmethod
     def get_logs(cls):
         ct = ContentType.objects.get_for_model(cls)
