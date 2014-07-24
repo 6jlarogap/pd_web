@@ -1228,7 +1228,7 @@ class RegisterActivation(DetailView):
             message = _(u'Регистрация успешна!')
             explain = _(
                         u"Вы можете работать в <a href='%s'>системе</a>\n"
-                       ) % reverse('dashboard')
+                       ) % get_front_end_url(request)
         else:
             raise Http404
         context = {}
@@ -1291,93 +1291,100 @@ class RegistrantApprove(SupervisorRequiredMixin, View):
                 registrant.get_status_display()
             )
         else:
-            registrant.status = RegisterProfile.STATUS_APPROVED
-            registrant.save()
-            write_log(request, registrant, _(u'%s : одобрена') % registrant)
-            user = User.objects.create(
-                        username=registrant.user_name,
-                        password=registrant.user_password,
-                        email=registrant.user_email,
-            )
-            if registrant.org_address:
-                off_address = copy.deepcopy(registrant.org_address)
-                off_address.pk = None
-                off_address.save(force_insert=True)
-            else:
-                off_address = None
-            org=Org.objects.create(
-                        type=registrant.org_type,
-                        name=registrant.org_name,
-                        full_name=registrant.org_full_name,
-                        inn = registrant.org_inn,
-                        director = registrant.org_director,
-                        basis = registrant.org_basis,
-                        email = registrant.user_email,
-                        phones = registrant.org_phones,
-                        fax = registrant.org_fax,
-                        ogrn = registrant.org_ogrn,
-                        off_address=off_address,
-            )
-            for bank in registrant.bankaccountregister_set.all():
-                if bank.off_address:
-                    bank_address = copy.deepcopy(bank.off_address)
-                    bank_address.pk = None
-                    bank_address.save(force_insert=True)
+            try:
+                registrant.status = RegisterProfile.STATUS_APPROVED
+                registrant.save()
+                user = User.objects.create(
+                            username=registrant.user_name,
+                            password=registrant.user_password,
+                            email=registrant.user_email,
+                )
+                if registrant.org_address:
+                    off_address = copy.deepcopy(registrant.org_address)
+                    off_address.pk = None
+                    off_address.save(force_insert=True)
                 else:
-                    bank_address = None
-                BankAccount.objects.create(
-                    organization=org,
-                    bankname=bank.bankname,
-                    rs=bank.rs,
-                    bik=bank.bik,
-                    ks=bank.ks,
-                    off_address=bank_address,
+                    off_address = None
+                org=Org.objects.create(
+                            type=registrant.org_type,
+                            name=registrant.org_name,
+                            full_name=registrant.org_full_name,
+                            inn = registrant.org_inn,
+                            director = registrant.org_director,
+                            basis = registrant.org_basis,
+                            email = registrant.user_email,
+                            phones = registrant.org_phones,
+                            fax = registrant.org_fax,
+                            ogrn = registrant.org_ogrn,
+                            off_address=off_address,
                 )
-            try:
-                fname = registrant.registerprofilescan.bfile.path
-                f = open(fname, 'r')
-                s = f.read()
-                f.close()
-                cert = OrgCertificate.objects.create(
-                    creator=user,
-                    org=org,
-                )
-                cert.bfile.save(os.path.basename(fname), ContentFile(s))
-            except (AttributeError, RegisterProfileScan.DoesNotExist, IOError, ):
-                pass
-            try:
-                fname = registrant.registerprofilecontract.bfile.path
-                f = open(fname, 'r')
-                s = f.read()
-                f.close()
-                contract = OrgContract.objects.create(
-                    creator=user,
-                    org=org,
-                )
-                contract.bfile.save(os.path.basename(fname), ContentFile(s))
-            except (AttributeError, RegisterProfileContract.DoesNotExist, IOError, ):
-                pass
-            org.create_wallet_rate()
-            profile=Profile.objects.create(
-                        user_last_name=registrant.user_last_name,
-                        user_first_name=registrant.user_first_name,
-                        user_middle_name=registrant.user_middle_name,
-                        is_agent=True,
-                        user=user,
+                for bank in registrant.bankaccountregister_set.all():
+                    if bank.off_address:
+                        bank_address = copy.deepcopy(bank.off_address)
+                        bank_address.pk = None
+                        bank_address.save(force_insert=True)
+                    else:
+                        bank_address = None
+                    BankAccount.objects.create(
+                        organization=org,
+                        bankname=bank.bankname,
+                        rs=bank.rs,
+                        bik=bank.bik,
+                        ks=bank.ks,
+                        off_address=bank_address,
+                    )
+                try:
+                    fname = registrant.registerprofilescan.bfile.path
+                    f = open(fname, 'r')
+                    s = f.read()
+                    f.close()
+                    cert = OrgCertificate.objects.create(
+                        creator=user,
                         org=org,
-            )
-            email_subject = unicode(_(u"Заявка на регистрацию одобрена"))
-            email_text = render_to_string(
-                            'register_approved_email.txt',
-                            { 'host': '%s://%s' % (self.request.is_secure() and 'https' or 'http',
-                                                self.request.get_host(),
-                                                ),
-                            'obj': registrant,
-                            }
-                        )
-            email_from = settings.DEFAULT_FROM_EMAIL
-            email_to = (registrant.user_email, )
-            send_mail(email_subject, email_text, email_from, email_to )
+                    )
+                    cert.bfile.save(os.path.basename(fname), ContentFile(s))
+                except (AttributeError, RegisterProfileScan.DoesNotExist, IOError, ):
+                    pass
+                try:
+                    fname = registrant.registerprofilecontract.bfile.path
+                    f = open(fname, 'r')
+                    s = f.read()
+                    f.close()
+                    contract = OrgContract.objects.create(
+                        creator=user,
+                        org=org,
+                    )
+                    contract.bfile.save(os.path.basename(fname), ContentFile(s))
+                except (AttributeError, RegisterProfileContract.DoesNotExist, IOError, ):
+                    pass
+                org.create_wallet_rate()
+                profile=Profile.objects.create(
+                            user_last_name=registrant.user_last_name,
+                            user_first_name=registrant.user_first_name,
+                            user_middle_name=registrant.user_middle_name,
+                            is_agent=True,
+                            user=user,
+                            org=org,
+                )
+                transaction.commit()
+            except IntegrityError:
+                messages.error(request, _(u'Пользователь %s уже в системе') % registrant.user_name)
+            except:
+                transaction.callback()
+            else:
+                write_log(request, registrant, _(u'%s : одобрена') % registrant)
+                email_subject = unicode(_(u"Заявка на регистрацию одобрена"))
+                email_text = render_to_string(
+                                'register_approved_email.txt',
+                                { 'host': '%s://%s' % (self.request.is_secure() and 'https' or 'http',
+                                                    self.request.get_host(),
+                                                    ),
+                                'obj': registrant,
+                                }
+                            )
+                email_from = settings.DEFAULT_FROM_EMAIL
+                email_to = (registrant.user_email, )
+                send_mail(email_subject, email_text, email_from, email_to )
         return redirect('registrants')
 
 registrant_approve = RegistrantApprove.as_view()
