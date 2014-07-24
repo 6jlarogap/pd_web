@@ -604,18 +604,6 @@ class Org(GetLogsMixin, BaseModel):
         return result
 
     @classmethod
-    def get_supervisor_email(cls):
-        """
-        Возвращает email-адрес Супервизора или seltings.DEFAULT_FROM_EMAIL
-        """
-        email = settings.DEFAULT_FROM_EMAIL
-        try:
-            email = cls.get_supervisor().email or email
-        except AttributeError:
-            pass
-        return email
-
-    @classmethod
     def get_catalog_org_pk(cls):
         """
         Возвращает первичный ключ организации-получателя (и распределителя ;)

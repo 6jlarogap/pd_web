@@ -80,7 +80,7 @@ def send_sms(phone_number, text, email_error_text='', user=None):
         email_error_text += u"\n%s\n%s" % \
                             (message, _(u"Справка по числовому коду: https://outbox.sms24x7.ru/api_manual/errors.html"), )
         email_from = settings.DEFAULT_FROM_EMAIL
-        email_to = (Org.get_supervisor_email(), )
+        email_to = settings.SUPPORT_EMAILS
         email_subject = _(u'Ошибка СМС-сервиса при отправке на %s') % phone_number
         email_text = email_error_text
         kwargs = dict()
