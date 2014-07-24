@@ -589,7 +589,7 @@ class ApiFeedBack(CheckRecaptchaMixin, APIView):
                 )
             email_text += get_mail_footer(request.user)
 
-            email_to = (Org.get_supervisor_email(), )
+            email_to = settings.SUPPORT_EMAILS
             headers = {}
             if email_from:
                 headers['Reply-To'] = email_from
@@ -1203,7 +1203,7 @@ class RegisterActivation(DetailView):
                                 }
                 )
                 email_from = settings.DEFAULT_FROM_EMAIL
-                email_to = (Org.get_supervisor_email(), )
+                email_to = settings.SUPPORT_EMAILS
                 email_message = EmailMessage(email_subject, email_text, email_from, email_to, )
                 if scan:
                     email_message.attach_file(scan)

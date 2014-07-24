@@ -392,6 +392,16 @@ except ImportError:
 # MEDIA_ROOT может измениться в local_settings
 THUMBNAILS_STORAGE_ROOT = os.path.join(MEDIA_ROOT, 'thumbnails')
 
+# Уведомления (о регистрации, об ошибках смс- сервиса),
+# а также письма в поддержку направляются по этому списку:
+#
+try:
+    # Задали ли это в local_settings ?
+    SUPPORT_EMAILS
+except NameError:
+    # Нет, не задали, да и DEFAULT_FROM_EMAIL наверняка там изменится
+    SUPPORT_EMAILS = (DEFAULT_FROM_EMAIL, )
+
 import sys
 if len(sys.argv) > 1 and sys.argv[1] == 'test':
     from test_settings import *
