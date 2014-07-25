@@ -16,7 +16,7 @@
 {% trans "Директор" %}: {{ obj.org_director }}
 {% trans "Телефон(ы)" %}: {{ obj.org_phones }}
 {% trans "Факс" %}: {{ obj.org_fax }}
-{% trans "Cкан свидетельства о регистрации" %}: {% if scan %}{% trans "см. прикрепление" %}{% else %}{% trans "не передан" %}{% endif %}
+{% trans "Cкан свидетельства о регистрации" %}: {% if scan %}{{ host }}{{ scan }}{% else %}{% trans "не передан" %}{% endif %}
 
 {% trans "Одобрить" %}: {{ host }}{% url registrant_approve  obj.pk %}
 
