@@ -161,6 +161,16 @@ install-readme.txt, utf8 code page
             </FilesMatch>
         </VirtualHost>
 
+    * Добавить в /etc/apache2/conf.d (Debian/Ubuntu) файл, например,
+      с именем reqtimeout следующего содержания:
+    
+        # Minimize IOError request data read exeptions when posting data
+        #
+        # http://stackoverflow.com/questions/3823280/ioerror-request-data-read-error
+        # http://httpd.apache.org/docs/2.2/mod/mod_reqtimeout.html
+        #
+        RequestReadTimeout header=90,MinRate=500 body=90,MinRate=500
+
     * При такой конфигурации (Debian/Ubuntu):
         sudo chown -R www-data:www-data /home/www-data/media /home/www-data/pw_web
         cd /home/www-data/pd_web/pd
