@@ -1192,12 +1192,21 @@ class RegisterActivation(DetailView):
                     scan = scan and scan.bfile and os.path.exists(scan.bfile.path) and scan.bfile.url or None
                 except (AttributeError, RegisterProfileScan.DoesNotExist, ):
                     scan = None
+                host = self.request.get_host()
+                # Какие бы ни были домены первого уровня у "основного" org.pohoronnoedelo.XX,
+                # ссылки в письме администратору должны вести на org.pohoronnoedelo.ru
+                host = re.sub(
+                    r'^org\.pohoronnoedelo\.[a-z]{2,}$',
+                    r'org.pohoronnoedelo.ru',
+                    host,
+                    flags=re.I
+                )
                 email_text = render_to_string(
                                 'register_notify_supervisor_email.txt',
                                 { 
                                     'obj': self.object,
                                     'host': '%s://%s' % (request.is_secure() and 'https' or 'http',
-                                                         self.request.get_host(),
+                                                         host,
                                                         ),
                                     'scan': scan,
                                 }
