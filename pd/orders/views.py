@@ -71,6 +71,9 @@ class ProductCreate(LORURequiredMixin, CreateView):
         self.object = form.save(commit=False)
         self.object.loru = self.request.user.profile.org
         self.object.save()
+        if not self.object.sku or not self.object.sku.strip():
+            self.object.sku = str(self.object.pk)
+            self.object.save()
         write_log(self.request, self.object, _(u'Создание: %s') % self.object.name)
         msg = _(u"<a href='%s'>Товар %s</a> создан") % (
             reverse('manage_products_edit', args=[self.object.pk]),
@@ -89,7 +92,10 @@ class ProductEdit(LORURequiredMixin, UpdateView):
         return Product.objects.filter(loru=self.request.user.profile.org)
 
     def form_valid(self, form):
-        self.object = form.save()
+        self.object = form.save(commit=False)
+        if not self.object.sku or not self.object.sku.strip():
+            self.object.sku = str(self.object.pk)
+        self.object.save()
         write_log(self.request, self.object, _(u'Изменение: %s') % self.object.name)
         msg = _(u"<a href='%s'>Товар %s</a> изменен") % (
             reverse('manage_products_edit', args=[self.object.pk]),
