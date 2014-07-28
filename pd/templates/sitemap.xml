@@ -3,7 +3,7 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     {% for ps in product_statuses %}
         <url>
-            <loc>{{ url }}product/{{ ps.product.slug }}"</loc>
+            <loc>{{ url }}product/{{ ps.product.slug }}</loc>
             <lastmod>{{ ps.dt|date:"Y-m-d" }}</lastmod>
             <changefreq>monthly</changefreq>
         </url>
