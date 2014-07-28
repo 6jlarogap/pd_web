@@ -741,7 +741,7 @@ class ProductInfoViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         q_exclude = Q() if is_loru_user(self.request.user)  \
                         else Q(productcategory__pk__in=settings.PRODUCT_CATEGORY_LORU_ONLY_PKS)
-        return Product.objects.filter(pk=self.kwargs.get('product_id')).exclude(q_exclude)
+        return Product.objects.filter(slug=self.kwargs.get('product_slug')).exclude(q_exclude)
 
 class ApiProfileViewSet(CustomerDataMixin, viewsets.ViewSet):
     queryset = CustomerProfile.objects.none()
