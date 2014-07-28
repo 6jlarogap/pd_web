@@ -25,7 +25,9 @@ class ProductsSerializer(serializers.HyperlinkedModelSerializer):
     
     class Meta:
         model = Product
-        fields = ('id', 'name', 'description', 'photo', 'measure', 'price', 'currency', 'sku', 'supplier', )
+        fields = ('id', 'name', 'description', 'photo', 'measure', 'price', 'currency',
+                  'sku', 'supplier', 'slug',
+        )
 
 
 class SupplierSerializer(serializers.HyperlinkedModelSerializer):
@@ -46,7 +48,9 @@ class ProductInfoSerializer(serializers.HyperlinkedModelSerializer):
     
     class Meta:
         model = Product
-        fields = ('id', 'photo', 'price', 'currency', 'name', 'description', 'sku', 'category', 'supplier', 'model3d', )
+        fields = ('id', 'photo', 'price', 'currency', 'name', 'description', 'sku', 'category',
+                  'supplier', 'model3d', 'slug',
+        )
 
     def model3d_func(self, obj):
         return None
