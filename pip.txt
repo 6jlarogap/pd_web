@@ -25,3 +25,4 @@ git+https://github.com/ottoyiu/django-cors-headers.git
 django-wkhtmltopdf==1.2.2
 pytz
 ExifRead==1.4.2
+django-autoslug==1.7.2
