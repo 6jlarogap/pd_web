@@ -1,6 +1,8 @@
 # coding=utf-8
 from __builtin__ import property
 import datetime
+from autoslug import AutoSlugField
+
 from burials.models import Burial
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
@@ -37,6 +39,8 @@ class Product(models.Model):
 
     loru = models.ForeignKey(Org, limit_choices_to={'type': Org.PROFILE_LORU}, null=True, verbose_name=_(u"ЛОРУ"))
     name = models.CharField(_(u"Название"), max_length=255)
+    slug = AutoSlugField(populate_from='name', max_length=255, editable=False,
+                         unique_with=['name'], unique=True, null=True, always_update=True)
     description = models.TextField(_(u"Описание"), blank=True, default='')
     measure = models.CharField(_(u"Ед. изм."), max_length=255, default=_(u"шт"))
     price = models.DecimalField(_(u"Цена"), max_digits=20, decimal_places=2)
