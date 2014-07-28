@@ -28,7 +28,7 @@ class Command(BaseCommand):
         product_statuses = ProductStatus.objects.filter(
             status__in=(ProductHistory.PRODUCT_OPERATION_PUBLISH, ProductHistory.PRODUCT_OPERATION_UPDATE, ),
             ugh__pk=catalog_org_pk,
-        )
+        ).exclude(product__productcategory__pk__in=settings.PRODUCT_CATEGORY_LORU_ONLY_PKS)
 
         t = loader.get_template('sitemap.xml')
         xml = unicode(t.render(Context({
