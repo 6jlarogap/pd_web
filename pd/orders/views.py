@@ -24,7 +24,7 @@ from django.shortcuts import get_object_or_404
 from logs.models import write_log
 from burials.forms import AddOrgForm, AddAgentForm, AddDoverForm, AddDocTypeForm
 from burials.models import Burial, Place, Grave, PlacePhoto
-from users.models import CustomerProfile, CustomerProfilePhoto, Org, ProfileLORU, Store, is_loru_user
+from users.models import CustomerProfile, CustomerProfilePhoto, Org, ProfileLORU, Store, is_loru_user, is_supervisor
 from billing.models import Rate
 from orders.forms import ProductForm, OrderForm, OrderItemFormset, CoffinForm, CatafalqueForm, \
                          AddInfoForm, OrderSearchForm, OrderBurialForm
@@ -597,7 +597,9 @@ class ProductCategoryViewSet(viewsets.ModelViewSet):
     serializer_class = ProductCategorySerializer
 
     def get_queryset(self):
-        q_exclude = Q() if is_loru_user(self.request.user) else Q(pk__in=settings.PRODUCT_CATEGORY_LORU_ONLY_PKS)
+        user = self.request.user
+        q_exclude = Q() if is_loru_user(user) or is_supervisor(user) \
+                        else Q(pk__in=settings.PRODUCT_CATEGORY_LORU_ONLY_PKS)
         return  ProductCategory.objects.exclude(q_exclude)
 
 class CustomerDataMixin:
@@ -632,7 +634,7 @@ class ApiCatalogSuppliersView(APIView):
                 pc['productcategory__pk'] for pc in \
                 Product.objects.filter(q).order_by('productcategory__pk').values('productcategory__pk').distinct()
             ]
-            if not is_loru_user(request.user):
+            if not (is_loru_user(request.user) or is_supervisor(request.user)):
                 for category in settings.PRODUCT_CATEGORY_LORU_ONLY_PKS:
                     try:
                         loru_categories.remove(category)
@@ -705,7 +707,7 @@ class ProductsViewSet(viewsets.ModelViewSet):
         if category_ids:
             qs &= Q(productcategory__pk__in=category_ids)
 
-        if not is_loru_user(self.request.user):
+        if not (is_loru_user(self.request.user) or is_supervisor(self.request.user)):
             qs &= ~Q(productcategory__pk__in=settings.PRODUCT_CATEGORY_LORU_ONLY_PKS)
 
         ordered = None
@@ -739,9 +741,7 @@ class ProductInfoViewSet(viewsets.ModelViewSet):
     serializer_class = ProductInfoSerializer
 
     def get_queryset(self):
-        q_exclude = Q() if is_loru_user(self.request.user)  \
-                        else Q(productcategory__pk__in=settings.PRODUCT_CATEGORY_LORU_ONLY_PKS)
-        return Product.objects.filter(slug=self.kwargs.get('product_slug')).exclude(q_exclude)
+        return Product.objects.filter(slug=self.kwargs.get('product_slug'))
 
 class ApiProfileViewSet(CustomerDataMixin, viewsets.ViewSet):
     queryset = CustomerProfile.objects.none()

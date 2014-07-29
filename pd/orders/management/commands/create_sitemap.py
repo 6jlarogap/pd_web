@@ -17,6 +17,7 @@ class Command(BaseCommand):
     
     def handle(self, *args, **options):
         sitemap = os.path.join(settings.MEDIA_ROOT, 'sitemap.xml')
+        sitemap_temp = u"%s.TMP" % sitemap
         try:
             url = args[0]
         except IndexError:
@@ -28,7 +29,7 @@ class Command(BaseCommand):
         product_statuses = ProductStatus.objects.filter(
             status__in=(ProductHistory.PRODUCT_OPERATION_PUBLISH, ProductHistory.PRODUCT_OPERATION_UPDATE, ),
             ugh__pk=catalog_org_pk,
-        ).exclude(product__productcategory__pk__in=settings.PRODUCT_CATEGORY_LORU_ONLY_PKS)
+        )
 
         t = loader.get_template('sitemap.xml')
         xml = unicode(t.render(Context({
@@ -36,5 +37,10 @@ class Command(BaseCommand):
             'url': url,
         })))
         
-        with codecs.open(sitemap, 'w', encoding='utf-8') as f:
+        with codecs.open(sitemap_temp, 'w', encoding='utf-8') as f:
             f.write(xml)
+        try:
+            os.remove(sitemap)
+        except OSError:
+            pass
+        os.rename(sitemap_temp, sitemap)
