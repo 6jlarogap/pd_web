@@ -534,12 +534,12 @@ class Org(GetLogsMixin, BaseModel):
     
     type = models.CharField(_(u"Тип"), max_length=255, choices=PROFILE_TYPES)
     name = models.CharField(_(u"Название организации"), max_length=255, default='')
-    full_name = models.CharField(_(u"Полное название"), max_length=255, default='')
-    inn = models.CharField(_(u"ИНН"), max_length=255, default='')
+    full_name = models.CharField(_(u"Полное название"), max_length=255, default='', blank=True)
+    inn = models.CharField(_(u"ИНН"), max_length=255, default='', blank=True)
     kpp = models.CharField(_(u"КПП"), max_length=255, default='', blank=True)
     ogrn = models.CharField(_(u"ОГРН/ОГРЮЛ"), max_length=255, default='', blank=True)
     director = models.CharField(_(u"Директор (в родительном падеже, например, Иванова Ивана Ивановича)"),
-                                max_length=255, default='')
+                                max_length=255, default='', blank=True)
     basis = models.CharField(_(u"Основание действия директора"), max_length=255, 
                              choices=BASIS_CHOICES, default=BASIS_CHARTER)
     email = models.EmailField(_(u"Email"), null=True, blank=True)
