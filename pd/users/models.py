@@ -170,6 +170,12 @@ def is_ugh_user(user):
     except (AttributeError, Profile.DoesNotExist, ):
         return False
     
+def is_supervisor(user):
+    try:
+        return user.profile.is_supervisor()
+    except (AttributeError, Profile.DoesNotExist, ):
+        return False
+
 class PermitIfLoru(permissions.BasePermission):
     def has_permission(self, request, view):
         return is_loru_user(request.user)
