@@ -13,6 +13,7 @@ from django.db.models.query_utils import Q
 from geo.forms import LocationForm
 from pd.forms import ChildrenJSONMixin, LoggingFormMixin, OurReCaptchaField, StrippedStringsMixin
 from pd.models import validate_phone_as_number, validate_username
+from pd.utils import host_country_code
 from burials.models import Cemetery, PlaceSize, Reason, Burial
 
 from users.models import Profile, ProfileLORU, Org, BankAccount, RegisterProfile, get_mail_footer, is_cabinet_user
@@ -193,6 +194,10 @@ class BaseOrgForm(LoggingFormMixin, forms.ModelForm):
         self.is_own_org = self.instance and self.instance.pk and self.instance.pk == request.user.profile.org.pk
         # Добавить новый ЗАГС, в форму передается пустой instance с заданным типом
         add_org_with_type = self.instance and not self.instance.pk and self.instance.type
+        country_code = host_country_code(request)
+        if country_code == 'by':
+            self.fields['inn'].label = _(u'УНП')
+            self.fields['ogrn'].label = _(u'ОКПО')
         if self.is_own_org or add_org_with_type:
             del self.fields['type']
             self.fields['type_'] = forms.CharField(widget=forms.TextInput(attrs={'readonly':'readonly'}),
@@ -220,15 +225,15 @@ class BaseOrgForm(LoggingFormMixin, forms.ModelForm):
             self.fields['type'] = forms.fields.TypedChoiceField(choices = choices)
             self.fields['type'].label = label
 
-        type_posted = request.POST.get("%s-type" % self.prefix if self.prefix else "type")
-        if type_posted and type_posted == Org.PROFILE_ZAGS or \
-           add_org_with_type and add_org_with_type == Org.PROFILE_ZAGS:
-            for f in ('full_name', 'inn', ):
-                if f in self.fields:
-                    self.fields[f].required = False
+        #type_posted = request.POST.get("%s-type" % self.prefix if self.prefix else "type")
+        #if type_posted and type_posted == Org.PROFILE_ZAGS or \
+           #add_org_with_type and add_org_with_type == Org.PROFILE_ZAGS:
+            #for f in ('full_name', 'inn', ):
+                #if f in self.fields:
+                    #self.fields[f].required = False
 
     def clean_inn(self):
-        inn = self.cleaned_data.get('inn')
+        inn = self.cleaned_data.get('inn', '').strip()
         if inn:
             orgs = Org.objects.filter(inn=inn)
             if self.instance and self.instance.pk:

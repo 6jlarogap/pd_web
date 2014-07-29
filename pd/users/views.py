@@ -1586,11 +1586,11 @@ class LoruCurrentStatsView(SupervisorRequiredMixin, TemplateView):
 
         orgs = []
         total={}
-        for source_type in Burial.SOURCE_TYPES:
-            total[source_type[0]] = 0
         total['loru_count'] = total['num_users'] = total['num_stores'] = \
         total['num_products'] = total['num_published_products'] = \
+        total['num_published_components'] = total['num_published_public_products'] = \
         total['num_orders'] = total['num_burials'] = 0
+        catalog_org_pk = Org.get_catalog_org_pk()
         q_published = Q(
             productstatus__status__in=\
             (ProductHistory.PRODUCT_OPERATION_PUBLISH, ProductHistory.PRODUCT_OPERATION_UPDATE, )
@@ -1599,17 +1599,32 @@ class LoruCurrentStatsView(SupervisorRequiredMixin, TemplateView):
             total['loru_count'] += 1
             org = {'name': o.name}
             org['city'] = o.off_address and o.off_address.city or ''
+
             org['num_users'] = Profile.objects.filter(org=o).count()
             total['num_users'] += org['num_users']
+
             org['num_stores'] = Store.objects.filter(loru=o).count()
             total['num_stores'] += org['num_stores']
+
             org['num_products'] = Product.objects.filter(loru=o).count()
             total['num_products'] += org['num_products']
+
             qs = q_published & Q(loru=o)
             org['num_published_products'] = Product.objects.filter(qs).count()
             total['num_published_products'] += org['num_published_products']
+
+            qs = q_published & Q(loru=o) & Q(productcategory__pk__in=settings.PRODUCT_CATEGORY_LORU_ONLY_PKS)
+            org['num_published_components'] = Product.objects.filter(qs).count()
+            total['num_published_components'] += org['num_published_components']
+
+            qs = q_published & Q(loru=o) & ~Q(productcategory__pk__in=settings.PRODUCT_CATEGORY_LORU_ONLY_PKS) & \
+                 Q(productstatus__ugh__pk=catalog_org_pk)
+            org['num_published_public_products'] = Product.objects.filter(qs).count()
+            total['num_published_public_products'] += org['num_published_public_products']
+
             org['num_orders'] = Order.objects.filter(loru=o).count()
             total['num_orders'] += org['num_orders']
+
             org['num_burials'] = Burial.objects.filter(
                 source_type=Burial.SOURCE_FULL,
                 status=Burial.STATUS_CLOSED,
