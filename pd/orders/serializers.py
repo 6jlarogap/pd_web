@@ -45,6 +45,7 @@ class ProductInfoSerializer(serializers.HyperlinkedModelSerializer):
     category = serializers.RelatedField(source='productcategory')
     supplier = SupplierSerializer(source='loru')
     model3d = serializers.SerializerMethodField('model3d_func')
+    supplier = serializers.SerializerMethodField('supplier_func')
     
     class Meta:
         model = Product
@@ -54,3 +55,10 @@ class ProductInfoSerializer(serializers.HyperlinkedModelSerializer):
 
     def model3d_func(self, obj):
         return None
+
+    def supplier_func(self, obj):
+        return dict(
+            id=obj.loru.pk,
+            name=obj.loru.name,
+            slug=obj.loru.slug,
+        )

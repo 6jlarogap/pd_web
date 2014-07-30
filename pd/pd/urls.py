@@ -27,7 +27,8 @@ from logs.views import LogViewSet
 from orders.views import ProductCategoryViewSet, ProductsViewSet, \
                          ProductInfoViewSet, ApiProfileViewSet, UghPublishedProductsViewSet
 from users.views import auth_get_password_by_sms, \
-                        api_feedback, api_auth_user, api_balance
+                        api_feedback, api_auth_user, api_balance, \
+                        OrgDetailViewSet
 
 # Burial
 router.register(r'^api/log', LogViewSet)
@@ -53,6 +54,8 @@ router.register(r'^api/placesize', PlaceSizeViewSet)
 router.register(r'^api/catalog/categories', ProductCategoryViewSet)
 router.register(r'^api/catalog/products/?$', ProductsViewSet)
 router.register(r'^api/catalog/products/(?P<product_slug>[\w-]+)', ProductInfoViewSet)
+router.register(r'^api/catalog/suppliers/(?P<org_slug>[\w-]+)', OrgDetailViewSet)
+
 router.register(r'^api/profile', ApiProfileViewSet)
 
 router.register(r'^api/loru/products', UghPublishedProductsViewSet)

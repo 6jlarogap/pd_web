@@ -1,9 +1,10 @@
 # coding=utf-8
 
 from rest_framework import serializers
+from rest_framework.fields import Field
 
 from geo.models import Location
-from users.models import Store
+from users.models import Org, Store
 from persons.models import Phone
 
 class StoreSerializer(serializers.ModelSerializer):
@@ -68,3 +69,23 @@ class StoreSerializer(serializers.ModelSerializer):
             }
         else:
             return None
+
+class OrgSerializer(serializers.ModelSerializer):
+    fullname = Field(source='full_name')
+    address = serializers.RelatedField('off_address')
+    stores = serializers.Field(source='get_stores')
+    phones = serializers.SerializerMethodField('phones_func')
+
+    class Meta:
+        model = Org
+        fields = ('id', 'name', 'slug', 'fullname', 'address', 'description',
+                  'phones', 'fax', 'worktime', 'site', 'email', 'stores',
+        )
+
+    def phones_func(self, obj):
+        phones = []
+        for phone in obj.phones.split('\n'):
+            phone = phone.strip()
+            if phone:
+                phones.append(phone)
+        return phones
