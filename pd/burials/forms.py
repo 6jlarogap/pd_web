@@ -1507,7 +1507,7 @@ class AddDoverForm(StrippedStringsMixin, forms.ModelForm):
 
         return self.cleaned_data
 
-class AddOrgForm(BaseOrgForm):
+class AddOrgForm(StrippedStringsMixin, BaseOrgForm):
     class Meta:
         model = Org
         exclude = ('off_address', 'numbers_algo',
