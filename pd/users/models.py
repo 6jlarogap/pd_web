@@ -539,6 +539,7 @@ class Org(GetLogsMixin, BaseModel):
     slug = AutoSlugField(populate_from='name', max_length=255, editable=False,
                          unique=True, null=True, always_update=True)
     full_name = models.CharField(_(u"Полное название"), max_length=255, default='', blank=True)
+    description = models.TextField(_(u"Направление деятельности"), blank=True, null=True)
     inn = models.CharField(_(u"ИНН"), max_length=255, default='', blank=True)
     kpp = models.CharField(_(u"КПП"), max_length=255, default='', blank=True)
     ogrn = models.CharField(_(u"ОГРН/ОГРЮЛ"), max_length=255, default='', blank=True)
@@ -627,6 +628,19 @@ class Org(GetLogsMixin, BaseModel):
                 return 0
         else:
             return settings.ORG_AD_PAY_RECIPIENT_PK
+
+    def get_stores(self):
+        stores=[]
+        for store in Store.objects.filter(loru=self):
+            stores.append(dict(
+                id=store.pk,
+                name=store.name,
+                location = store.address.gps_x is not None and store.address.gps_y is not None and dict(
+                    longitude=store.address.gps_x,
+                    latitude=store.address.gps_y
+                ) or None,
+            ))
+        return stores
 
 class OrgCertificate(Files):
     """

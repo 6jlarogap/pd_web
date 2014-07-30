@@ -1514,7 +1514,9 @@ class AddOrgForm(StrippedStringsMixin, BaseOrgForm):
                    'opf_order', 'opf_order_customer_mandatory',
                    'plan_date_days_before', 'max_graves_count',
                    'worktime', 'site', 
-                   'currency', 'director', )
+                   'currency', 'director',
+                   'description',
+        )
     
     def __init__(self, request, *args, **kwargs):
         super(AddOrgForm, self).__init__(request, *args, **kwargs)
