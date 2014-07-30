@@ -539,7 +539,7 @@ class Org(GetLogsMixin, BaseModel):
     slug = AutoSlugField(populate_from='name', max_length=255, editable=False,
                          unique=True, null=True, always_update=True)
     full_name = models.CharField(_(u"Полное название"), max_length=255, default='', blank=True)
-    description = models.TextField(_(u"Направление деятельности"), blank=True, null=True)
+    description = models.TextField(_(u"Описание, направление деятельности"), blank=True, null=True)
     inn = models.CharField(_(u"ИНН"), max_length=255, default='', blank=True)
     kpp = models.CharField(_(u"КПП"), max_length=255, default='', blank=True)
     ogrn = models.CharField(_(u"ОГРН/ОГРЮЛ"), max_length=255, default='', blank=True)
@@ -635,7 +635,7 @@ class Org(GetLogsMixin, BaseModel):
             stores.append(dict(
                 id=store.pk,
                 name=store.name,
-                address=unicode(store.address),
+                address=store.address and unicode(store.address) or None,
                 location=store.address and store.address.gps_x is not None and store.address.gps_y is not None and dict(
                     longitude=store.address.gps_x,
                     latitude=store.address.gps_y
