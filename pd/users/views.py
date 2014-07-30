@@ -62,7 +62,7 @@ from orders.models import Product, ProductStatus, ProductHistory, Order
 from pd.views import PaginateListView, RequestToFormMixin, FormInvalidMixin, get_front_end_url, ServiceException
 from geo.models import Location
 
-from users.serializers import StoreSerializer
+from users.serializers import StoreSerializer, OrgSerializer
 
 from sms_service.utils import send_sms
 
@@ -2121,3 +2121,13 @@ class ApiCatalogSuppliersView(APIView):
         return Response(status=200, data=data)
 
 api_catalog_suppliers = ApiCatalogSuppliersView.as_view()
+
+class OrgDetailViewSet(viewsets.ModelViewSet):
+    """
+    Показ ЛОРУ в публичном каталоге только!!!
+    """
+    model = Org
+    serializer_class = OrgSerializer
+
+    def get_queryset(self):
+        return Org.objects.filter(slug=self.kwargs.get('org_slug'))

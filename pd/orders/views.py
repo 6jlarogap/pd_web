@@ -633,7 +633,7 @@ class ProductsViewSet(viewsets.ModelViewSet):
         if store_ids:
             qs = Q(loru__store__pk__in=store_ids)
         else:
-            return Product.objects.none()
+            qs = Q() # return Product.objects.none()
 
         loru_ids = self.request.GET.getlist('filter[supplier]')
         while loru_ids.count(u''):
