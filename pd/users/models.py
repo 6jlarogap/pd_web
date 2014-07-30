@@ -15,6 +15,8 @@ from django.db.models.deletion import ProtectedError
 from django.utils.translation import ugettext_lazy as _
 from django.contrib.contenttypes.models import ContentType
 
+from autoslug import AutoSlugField
+
 from rest_framework import permissions
 
 from geo.models import Location
@@ -534,6 +536,8 @@ class Org(GetLogsMixin, BaseModel):
     
     type = models.CharField(_(u"Тип"), max_length=255, choices=PROFILE_TYPES)
     name = models.CharField(_(u"Название организации"), max_length=255, default='')
+    slug = AutoSlugField(populate_from='name', max_length=255, editable=False,
+                         unique=True, null=True, always_update=True)
     full_name = models.CharField(_(u"Полное название"), max_length=255, default='', blank=True)
     inn = models.CharField(_(u"ИНН"), max_length=255, default='', blank=True)
     kpp = models.CharField(_(u"КПП"), max_length=255, default='', blank=True)
