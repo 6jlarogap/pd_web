@@ -523,7 +523,7 @@ class Org(GetLogsMixin, BaseModel):
    
     BASIS_CHARTER = 'charter'
     BASIS_CONDITION = 'condition'
-    BASIS_CERTIFICATE = 'charter'
+    BASIS_CERTIFICATE = 'certificate'
     BASIS_PROXY = 'proxy'
     BASIS_CHOICES = (
         (BASIS_CHARTER, _(u'устава')),
