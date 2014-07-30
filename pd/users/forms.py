@@ -255,7 +255,7 @@ class BaseOrgForm(LoggingFormMixin, forms.ModelForm):
 PlaceSizeFormset = inlineformset_factory(Org, PlaceSize, formset=BaseInlineFormSet, can_delete=True, extra=2)
 ReasonFormset = inlineformset_factory(Org, Reason, formset=BaseInlineFormSet, can_delete=True, extra=2)
 
-class OrgForm(BaseOrgForm):
+class OrgForm(StrippedStringsMixin, BaseOrgForm):
     class Meta:
         model = Org
         exclude = ('off_address', )

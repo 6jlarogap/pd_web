@@ -1507,14 +1507,16 @@ class AddDoverForm(StrippedStringsMixin, forms.ModelForm):
 
         return self.cleaned_data
 
-class AddOrgForm(BaseOrgForm):
+class AddOrgForm(StrippedStringsMixin, BaseOrgForm):
     class Meta:
         model = Org
         exclude = ('off_address', 'numbers_algo',
                    'opf_order', 'opf_order_customer_mandatory',
                    'plan_date_days_before', 'max_graves_count',
                    'worktime', 'site', 
-                   'currency', 'director', )
+                   'currency', 'director',
+                   'description',
+        )
     
     def __init__(self, request, *args, **kwargs):
         super(AddOrgForm, self).__init__(request, *args, **kwargs)

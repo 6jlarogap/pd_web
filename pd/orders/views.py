@@ -619,54 +619,6 @@ class CustomerDataMixin:
                     lorus.update(p.cemetery.ugh.get_loru_list())
         return is_customer, places, lorus
 
-
-class ApiCatalogSuppliersView(APIView):
-
-    def get(self, request):
-        suppliers = []
-        qs = Q(
-            productstatus__status__in=\
-                (ProductHistory.PRODUCT_OPERATION_PUBLISH, ProductHistory.PRODUCT_OPERATION_UPDATE, )
-        )
-        for l in Org.objects.filter(type=Org.PROFILE_LORU):
-            q = qs & Q(loru=l)
-            loru_categories = [
-                pc['productcategory__pk'] for pc in \
-                Product.objects.filter(q).order_by('productcategory__pk').values('productcategory__pk').distinct()
-            ]
-            if not (is_loru_user(request.user) or is_supervisor(request.user)):
-                for category in settings.PRODUCT_CATEGORY_LORU_ONLY_PKS:
-                    try:
-                        loru_categories.remove(category)
-                    except ValueError:
-                        pass
-            loru_stores = []
-            for store in Store.objects.filter(loru=l):
-                loru_stores.append(dict(
-                    id=store.pk,
-                    name=store.name,
-                    location = store.address.gps_x is not None and store.address.gps_y is not None and dict(
-                        longitude=store.address.gps_x,
-                        latitude=store.address.gps_y
-                    ) or None,
-                ))
-            supplier = {
-                'id': l.pk,
-                'name': l.name,
-                'categories': loru_categories,
-                'stores': loru_stores,
-                'location': None,
-            }
-            if l.off_address and l.off_address.gps_x and l.off_address.gps_y:
-                supplier['location'] = {'longitude': l.off_address.gps_x, 'latitude': l.off_address.gps_y}
-            suppliers.append(supplier)
-        data = {
-            'supplier': suppliers,
-        }
-        return Response(status=200, data=data)
-
-api_catalog_suppliers = ApiCatalogSuppliersView.as_view()
-
 class ProductsViewSet(viewsets.ModelViewSet):
     """
     Показ продуктов в публичном каталоге только!!!
