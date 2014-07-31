@@ -2115,10 +2115,7 @@ class ApiCatalogSuppliersView(APIView):
             if l.off_address and l.off_address.gps_x and l.off_address.gps_y:
                 supplier['location'] = {'longitude': l.off_address.gps_x, 'latitude': l.off_address.gps_y}
             suppliers.append(supplier)
-        data = {
-            'supplier': suppliers,
-        }
-        return Response(status=200, data=data)
+        return Response(status=200, data=suppliers)
 
 api_catalog_suppliers = ApiCatalogSuppliersView.as_view()
 
