@@ -8,6 +8,7 @@ from rest_framework.fields import Field
 from rest_api.fields import HyperlinkedFileField
 from orders.models import ProductCategory, Product
 from users.models import Org
+from users.serializers import OrgSerializer
 
 
 class ProductCategorySerializer(serializers.HyperlinkedModelSerializer):
@@ -21,7 +22,7 @@ class ProductCategorySerializer(serializers.HyperlinkedModelSerializer):
 class ProductsSerializer(serializers.HyperlinkedModelSerializer):
     photo = HyperlinkedFileField()
     currency = serializers.RelatedField(source='currency')
-    supplier = serializers.RelatedField(source='loru')
+    supplier = serializers.SerializerMethodField('supplier_func')
     
     class Meta:
         model = Product
@@ -29,6 +30,8 @@ class ProductsSerializer(serializers.HyperlinkedModelSerializer):
                   'sku', 'supplier', 'slug',
         )
 
+    def supplier_func(self, obj):
+        return OrgSerializer(obj.loru).data
 
 class SupplierSerializer(serializers.HyperlinkedModelSerializer):
     address = serializers.RelatedField(source='off_address')
@@ -57,8 +60,4 @@ class ProductInfoSerializer(serializers.HyperlinkedModelSerializer):
         return None
 
     def supplier_func(self, obj):
-        return dict(
-            id=obj.loru.pk,
-            name=obj.loru.name,
-            slug=obj.loru.slug,
-        )
+        return OrgSerializer(obj.loru).data
