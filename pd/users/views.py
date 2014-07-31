@@ -2125,6 +2125,7 @@ class OrgDetailViewSet(viewsets.ModelViewSet):
     """
     model = Org
     serializer_class = OrgSerializer
+    paginate_by = None
 
     def get_queryset(self):
         return Org.objects.filter(slug=self.kwargs.get('org_slug'))
