@@ -2119,13 +2119,12 @@ class ApiCatalogSuppliersView(APIView):
 
 api_catalog_suppliers = ApiCatalogSuppliersView.as_view()
 
-class OrgDetailViewSet(viewsets.ModelViewSet):
+class OrgDetailView(APIView):
     """
     Показ ЛОРУ в публичном каталоге только!!!
     """
-    model = Org
-    serializer_class = OrgSerializer
-    paginate_by = None
+    def get(self, request, org_slug):
+        obj = get_object_or_404(Org, slug=org_slug)
+        return Response(status=200, data=OrgSerializer(obj).data)
 
-    def get_queryset(self):
-        return Org.objects.filter(slug=self.kwargs.get('org_slug'))
+api_catalog_suppliers_detail = OrgDetailView.as_view()
