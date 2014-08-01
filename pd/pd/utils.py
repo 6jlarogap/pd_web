@@ -55,3 +55,16 @@ def host_country_code(request):
         return m.group(1).lower()
     else:
         return ''
+
+def phones_from_text(phones_text):
+    phones = []
+    for phone in phones_text.split('\n'):
+        phone = phone.strip()
+        if phone:
+            phones.append(phone)
+    return phones
+
+class PhonesFromTextMixin(object):
+
+    def phones_func(self, obj):
+        return phones_from_text(obj.phones)
