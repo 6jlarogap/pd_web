@@ -8,7 +8,7 @@ from rest_framework.fields import Field
 from rest_api.fields import HyperlinkedFileField
 from orders.models import ProductCategory, Product
 from users.models import Org
-from users.serializers import OrgSerializer
+from users.serializers import OrgSerializer, OrgShortSerializer
 
 
 class ProductCategorySerializer(serializers.HyperlinkedModelSerializer):
@@ -22,7 +22,7 @@ class ProductCategorySerializer(serializers.HyperlinkedModelSerializer):
 class ProductsSerializer(serializers.HyperlinkedModelSerializer):
     photo = HyperlinkedFileField()
     currency = serializers.RelatedField(source='currency')
-    supplier = serializers.SerializerMethodField('supplier_func')
+    supplier = OrgShortSerializer(source='loru')
     
     class Meta:
         model = Product
@@ -30,25 +30,12 @@ class ProductsSerializer(serializers.HyperlinkedModelSerializer):
                   'sku', 'supplier', 'slug',
         )
 
-    def supplier_func(self, obj):
-        return OrgSerializer(obj.loru).data
-
-class SupplierSerializer(serializers.HyperlinkedModelSerializer):
-    address = serializers.RelatedField(source='off_address')
-    phone = Field(source='phones')
-    
-    class Meta:
-        model = Org
-        fields = ('id', 'name', 'address', 'phone', 'worktime', 'site', )
-
-
 class ProductInfoSerializer(serializers.HyperlinkedModelSerializer):
     photo = HyperlinkedFileField()
     currency = serializers.RelatedField(source='currency')
     category = serializers.RelatedField(source='productcategory')
-    supplier = SupplierSerializer(source='loru')
+    supplier = OrgShortSerializer(source='loru')
     model3d = serializers.SerializerMethodField('model3d_func')
-    supplier = serializers.SerializerMethodField('supplier_func')
     
     class Meta:
         model = Product
@@ -58,6 +45,3 @@ class ProductInfoSerializer(serializers.HyperlinkedModelSerializer):
 
     def model3d_func(self, obj):
         return None
-
-    def supplier_func(self, obj):
-        return OrgSerializer(obj.loru).data
