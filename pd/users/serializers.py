@@ -89,4 +89,4 @@ class OrgShortSerializer(PhonesFromTextMixin, serializers.ModelSerializer):
 
     class Meta:
         model = Org
-        fields = ('id', 'name', 'address', 'phones', 'worktime', 'site', )
+        fields = ('id', 'name', 'slug', 'address', 'phones', 'worktime', 'site', )
