@@ -2115,19 +2115,16 @@ class ApiCatalogSuppliersView(APIView):
             if l.off_address and l.off_address.gps_x and l.off_address.gps_y:
                 supplier['location'] = {'longitude': l.off_address.gps_x, 'latitude': l.off_address.gps_y}
             suppliers.append(supplier)
-        data = {
-            'supplier': suppliers,
-        }
-        return Response(status=200, data=data)
+        return Response(status=200, data=suppliers)
 
 api_catalog_suppliers = ApiCatalogSuppliersView.as_view()
 
-class OrgDetailViewSet(viewsets.ModelViewSet):
+class OrgDetailView(APIView):
     """
     Показ ЛОРУ в публичном каталоге только!!!
     """
-    model = Org
-    serializer_class = OrgSerializer
+    def get(self, request, org_slug):
+        obj = get_object_or_404(Org, slug=org_slug)
+        return Response(status=200, data=OrgSerializer(obj).data)
 
-    def get_queryset(self):
-        return Org.objects.filter(slug=self.kwargs.get('org_slug'))
+api_catalog_suppliers_detail = OrgDetailView.as_view()

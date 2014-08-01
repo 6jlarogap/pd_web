@@ -625,6 +625,7 @@ class ProductsViewSet(viewsets.ModelViewSet):
     """
     model = Product
     serializer_class = ProductsSerializer
+    paginate_by = None
 
     def get_queryset(self):
         store_ids = self.request.GET.getlist('filter[supplierStore]')
@@ -688,12 +689,16 @@ class ProductsViewSet(viewsets.ModelViewSet):
         
         return filter
         
-class ProductInfoViewSet(viewsets.ModelViewSet):
-    model = Product
-    serializer_class = ProductInfoSerializer
+class ProductInfoView(APIView):
 
-    def get_queryset(self):
-        return Product.objects.filter(slug=self.kwargs.get('product_slug'))
+    def get(self, request, product_slug):
+        obj = get_object_or_404(Product, slug=product_slug)
+        return Response(
+            status=200,
+            data=ProductInfoSerializer(obj, context=dict(request=request)).data,
+        )
+
+api_catalog_products_detail = ProductInfoView.as_view()
 
 class ApiProfileViewSet(CustomerDataMixin, viewsets.ViewSet):
     queryset = CustomerProfile.objects.none()
