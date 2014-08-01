@@ -60,6 +60,13 @@ class ProductList(LORURequiredMixin, ListView):
 
     def get_queryset(self):
         return Product.objects.filter(loru=self.request.user.profile.org)
+    
+    def get_context_data(self, **kwargs):
+        result = super(ProductList, self).get_context_data(**kwargs)
+        result['components_present'] = bool(
+            self.get_queryset().filter(pk__in=settings.PRODUCT_CATEGORY_LORU_ONLY_PKS).count()
+        )
+        return result
 
 manage_products = ProductList.as_view()
 
@@ -661,7 +668,10 @@ class ProductsViewSet(viewsets.ModelViewSet):
             qs &= Q(productcategory__pk__in=category_ids)
 
         if not (is_loru_user(self.request.user) or is_supervisor(self.request.user)):
-            qs &= ~Q(productcategory__pk__in=settings.PRODUCT_CATEGORY_LORU_ONLY_PKS)
+            qs &= ~(
+                Q(productcategory__pk__in=settings.PRODUCT_CATEGORY_LORU_ONLY_PKS) |
+                Q(is_component=True)
+            )
 
         ordered = None
         orders = {'price': 'price', 'date': 'productstatus__dt', }

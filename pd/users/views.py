@@ -1596,6 +1596,10 @@ class LoruCurrentStatsView(SupervisorRequiredMixin, TemplateView):
             productstatus__status__in=\
             (ProductHistory.PRODUCT_OPERATION_PUBLISH, ProductHistory.PRODUCT_OPERATION_UPDATE, )
         )
+        q_components = (Q(productcategory__pk__in=settings.PRODUCT_CATEGORY_LORU_ONLY_PKS) |
+                        Q(is_component=True)
+        ) 
+
         for o in Org.objects.filter(type=Org.PROFILE_LORU).order_by(*s):
             total['loru_count'] += 1
             org = {'name': o.name}
@@ -1614,11 +1618,12 @@ class LoruCurrentStatsView(SupervisorRequiredMixin, TemplateView):
             org['num_published_products'] = Product.objects.filter(qs).count()
             total['num_published_products'] += org['num_published_products']
 
-            qs = q_published & Q(loru=o) & Q(productcategory__pk__in=settings.PRODUCT_CATEGORY_LORU_ONLY_PKS)
+            qs = q_published & Q(loru=o) & q_components
+
             org['num_published_components'] = Product.objects.filter(qs).count()
             total['num_published_components'] += org['num_published_components']
 
-            qs = q_published & Q(loru=o) & ~Q(productcategory__pk__in=settings.PRODUCT_CATEGORY_LORU_ONLY_PKS) & \
+            qs = q_published & Q(loru=o) & ~q_components & \
                  Q(productstatus__ugh__pk=catalog_org_pk)
             org['num_published_public_products'] = Product.objects.filter(qs).count()
             total['num_published_public_products'] += org['num_published_public_products']

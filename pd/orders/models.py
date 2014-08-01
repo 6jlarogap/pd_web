@@ -3,11 +3,12 @@ from __builtin__ import property
 import datetime
 from autoslug import AutoSlugField
 
-from burials.models import Burial
+from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.utils.translation import ugettext as _
 
+from burials.models import Burial
 from reports.models import Report
 from users.models import Org
 from pd.models import BaseModel, GetLogsMixin, upload_slugified
@@ -42,6 +43,7 @@ class Product(models.Model):
     slug = AutoSlugField(populate_from='name', max_length=255, editable=False,
                          unique=True, null=True, always_update=True)
     description = models.TextField(_(u"Описание"), blank=True, default='')
+    is_component = models.BooleanField(_(u"Комплектующие?"), default=False)
     measure = models.CharField(_(u"Ед. изм."), max_length=255, default=_(u"шт"))
     price = models.DecimalField(_(u"Цена"), max_digits=20, decimal_places=2)
     ptype = models.CharField(_(u"Тип"), max_length=255, choices=PRODUCT_TYPES, null=True, blank=True)
@@ -61,6 +63,9 @@ class Product(models.Model):
 
     def is_burial(self):
         return self.ptype == self.PRODUCT_BURIAL
+
+    def is_old_style_component(self):
+        return self.productcategory.pk in settings.PRODUCT_CATEGORY_LORU_ONLY_PKS
 
 class ProductHistory(models.Model):
     """
