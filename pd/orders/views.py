@@ -693,7 +693,10 @@ class ProductInfoView(APIView):
 
     def get(self, request, product_slug):
         obj = get_object_or_404(Product, slug=product_slug)
-        return Response(status=200, data=ProductInfoSerializer(obj).data)
+        return Response(
+            status=200,
+            data=ProductInfoSerializer(obj, context=dict(request=request)).data,
+        )
 
 api_catalog_products_detail = ProductInfoView.as_view()
 
