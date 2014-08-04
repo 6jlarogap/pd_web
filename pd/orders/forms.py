@@ -11,13 +11,13 @@ from burials.models import Burial
 from geo.forms import LocationForm
 from orders.models import Product, Order, OrderItem, CatafalqueData, CoffinData, AddInfoData, ProductCategory
 from burials.forms import EMPTY
-from pd.forms import ChildrenJSONMixin
+from pd.forms import ChildrenJSONMixin, StrippedStringsMixin
 from persons.forms import AlivePersonForm, PersonIDForm
 from persons.models import AlivePerson, PersonID
 from users.models import Org, Profile
 from pd.models import SafeDeleteMixin
 
-class ProductForm(forms.ModelForm):
+class ProductForm(StrippedStringsMixin, forms.ModelForm):
     class Meta:
         model = Product
         exclude = ['loru', ]

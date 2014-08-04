@@ -379,9 +379,6 @@ YANDEX_API_KEYS = [
     },
 ]
     
-# Категории продуктов (ключи), видимые только для ЛОРУ
-PRODUCT_CATEGORY_LORU_ONLY_PKS = (21, )
-
 WKHTMLTOPDF_CMD = '/usr/local/bin/wkhtmltopdf'
 
 try:

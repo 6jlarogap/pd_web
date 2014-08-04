@@ -698,8 +698,13 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
             self.instance.flag_no_applicant_doc_required = False
 
         remove_responsible = False
-        if self.responsible_form.cleaned_data.get('take_from') == ResponsibleForm.WHERE_FROM_APPLICANT:
+        if self.responsible_form.cleaned_data.get('take_from') == ResponsibleForm.WHERE_FROM_APPLICANT and \
+           self.instance.applicant:
+            # Заявитель-ФЛ при этом формируется новый и без login_phone, но это может измениться
+            applicant_login_phone = self.instance.applicant.login_phone
+            self.instance.applicant.login_phone = self.responsible_form.cleaned_data.get('login_phone_')
             self.instance.responsible = self.instance.applicant.deep_copy()
+            self.instance.applicant.login_phone = applicant_login_phone
         elif self.responsible_form.is_valid():
             if self.responsible_form.cleaned_data.get('last_name').strip() or \
                self.responsible_form.cleaned_data.get('first_name').strip() or \
@@ -1507,14 +1512,16 @@ class AddDoverForm(StrippedStringsMixin, forms.ModelForm):
 
         return self.cleaned_data
 
-class AddOrgForm(BaseOrgForm):
+class AddOrgForm(StrippedStringsMixin, BaseOrgForm):
     class Meta:
         model = Org
         exclude = ('off_address', 'numbers_algo',
                    'opf_order', 'opf_order_customer_mandatory',
                    'plan_date_days_before', 'max_graves_count',
                    'worktime', 'site', 
-                   'currency', 'director', )
+                   'currency', 'director',
+                   'description',
+        )
     
     def __init__(self, request, *args, **kwargs):
         super(AddOrgForm, self).__init__(request, *args, **kwargs)

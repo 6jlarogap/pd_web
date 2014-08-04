@@ -72,8 +72,11 @@
         <field type="CharField" name="name">Прочие товары и услуги</field>
         <field type="FileField" name="icon"></field>
     </object>
+    <!--- 
+    Комплектующие были удалены. Вместо них признак комплектующих
     <object pk="21" model="orders.productcategory">
         <field type="CharField" name="name">Комплектующие</field>
         <field type="FileField" name="icon"></field>
     </object>
+     -->
 </django-objects>
