@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 
-import sys, os, codecs, datetime
+import sys, os, codecs
 
 from django.core.management.base import BaseCommand
 from django.template import loader, Context
+from django.db.models.query_utils import Q
 
 from django.conf import settings
 
@@ -25,29 +26,26 @@ class Command(BaseCommand):
         if not url.endswith('/'):
             url += '/'
 
-        published_statuses = (
-            ProductHistory.PRODUCT_OPERATION_PUBLISH,
-            ProductHistory.PRODUCT_OPERATION_UPDATE,
-        )
         catalog_org_pk = Org.get_catalog_org_pk()
-        product_statuses = ProductStatus.objects.filter(
-            status__in=published_statuses,
+        q_published = Q(
+            status__in=(
+                ProductHistory.PRODUCT_OPERATION_PUBLISH,
+                ProductHistory.PRODUCT_OPERATION_UPDATE,
+            ),
             ugh__pk=catalog_org_pk,
         )
+        product_statuses = ProductStatus.objects.filter(q_published)
         
         # Поставщики: дата их последней модификации является датой,
         # когда они внесли свой последний опубликованный товар
-        suppliers = Product.objects.filter(
-            productstatus__status__in=published_statuses,
-            productstatus__ugh__pk=catalog_org_pk,
-        ).order_by('loru__slug','-productstatus__dt',). \
-        values('loru__slug', 'productstatus__dt',).\
-        distinct('loru__slug',)
+        suppliers_product_statuses = ProductStatus.objects.filter(q_published).\
+            order_by('product__loru__slug','-dt',). \
+            distinct('product__loru__slug',)
 
         t = loader.get_template('sitemap.xml')
         xml = unicode(t.render(Context({
             'product_statuses': product_statuses,
-            'suppliers': suppliers,
+            'suppliers_product_statuses': suppliers_product_statuses,
             'url': url,
         })))
         

@@ -8,10 +8,10 @@
             <changefreq>monthly</changefreq>
         </url>
     {% endfor %}
-    {% for s in suppliers %}
+    {% for s in suppliers_product_statuses %}
         <url>
-            <loc>{{ url }}suppliers/{{ s.loru__slug }}</loc>
-            <lastmod>{{ s.productstatus__dt|date:"Y-m-d" }}</lastmod>
+            <loc>{{ url }}suppliers/{{ s.product.loru.slug }}</loc>
+            <lastmod>{{ s.dt|date:"Y-m-d" }}</lastmod>
             <changefreq>monthly</changefreq>
         </url>
     {% endfor %}
