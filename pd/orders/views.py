@@ -654,7 +654,14 @@ class ProductsViewSet(viewsets.ModelViewSet):
         if category_ids:
             qs &= Q(productcategory__pk__in=category_ids)
 
-        if not (is_loru_user(self.request.user) or is_supervisor(self.request.user)):
+        if is_loru_user(self.request.user) or is_supervisor(self.request.user):
+            components_only = self.request.GET.get('filter[components_only]')
+            try:
+                if components_only and int(components_only):
+                    qs &= Q(is_component=True)
+            except ValueError:
+                pass
+        else:
             qs &= ~Q(is_component=True)
 
         ordered = None
