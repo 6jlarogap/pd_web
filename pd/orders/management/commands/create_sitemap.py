@@ -8,7 +8,7 @@ from django.db.models.query_utils import Q
 
 from django.conf import settings
 
-from orders.models import Product, ProductStatus, ProductHistory
+from orders.models import ProductStatus, ProductHistory
 from users.models import Org
 
 
@@ -36,16 +36,12 @@ class Command(BaseCommand):
         )
         product_statuses = ProductStatus.objects.filter(q_published)
         
-        # Поставщики: дата их последней модификации является датой,
-        # когда они внесли свой последний опубликованный товар
-        suppliers_product_statuses = ProductStatus.objects.filter(q_published).\
-            order_by('product__loru__slug','-dt',). \
-            distinct('product__loru__slug',)
+        suppliers = Org.objects.filter(type=Org.PROFILE_LORU).order_by('slug')
 
         t = loader.get_template('sitemap.xml')
         xml = unicode(t.render(Context({
             'product_statuses': product_statuses,
-            'suppliers_product_statuses': suppliers_product_statuses,
+            'suppliers': suppliers,
             'url': url,
         })))
         
