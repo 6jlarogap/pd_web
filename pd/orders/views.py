@@ -63,8 +63,8 @@ class ProductList(LORURequiredMixin, ListView):
     
     def get_context_data(self, **kwargs):
         result = super(ProductList, self).get_context_data(**kwargs)
-        result['components_present'] = bool(
-            self.get_queryset().filter(pk__in=settings.PRODUCT_CATEGORY_LORU_ONLY_PKS).count()
+        result['old_style_components_present'] = bool(
+            self.get_queryset().filter(productcategory__pk=settings.OTHER_PRODUCTS_PK, is_component=True).count()
         )
         return result
 
@@ -603,12 +603,6 @@ class ProductCategoryViewSet(viewsets.ModelViewSet):
     model = ProductCategory
     serializer_class = ProductCategorySerializer
 
-    def get_queryset(self):
-        user = self.request.user
-        q_exclude = Q() if is_loru_user(user) or is_supervisor(user) \
-                        else Q(pk__in=settings.PRODUCT_CATEGORY_LORU_ONLY_PKS)
-        return  ProductCategory.objects.exclude(q_exclude)
-
 class CustomerDataMixin:
     def get_customer_data(self, request):
         places = []
@@ -668,10 +662,7 @@ class ProductsViewSet(viewsets.ModelViewSet):
             qs &= Q(productcategory__pk__in=category_ids)
 
         if not (is_loru_user(self.request.user) or is_supervisor(self.request.user)):
-            qs &= ~(
-                Q(productcategory__pk__in=settings.PRODUCT_CATEGORY_LORU_ONLY_PKS) |
-                Q(is_component=True)
-            )
+            qs &= ~Q(is_component=True)
 
         ordered = None
         orders = {'price': 'price', 'date': 'productstatus__dt', }

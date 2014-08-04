@@ -175,7 +175,17 @@ class ApiAuthSigninView(APIView):
                     'profile': profile,
                     'org': org,
                     'role': role,
+                    'old_style_components_present': False,
                  })
+                if data['role'] == u'ROLE_LORU':
+                    data['old_style_components_present'] = bool(
+                        Product.objects.filter(
+                            productcategory__pk=settings.OTHER_PRODUCTS_PK,
+                            is_component=True,
+                            loru=user.profile.org,
+                        ).count()
+                    )
+
                 status_code = 200
                 write_log(request, request.user, _(u'Вход в систему'))
                 LoginLog.write(request)
@@ -1596,9 +1606,7 @@ class LoruCurrentStatsView(SupervisorRequiredMixin, TemplateView):
             productstatus__status__in=\
             (ProductHistory.PRODUCT_OPERATION_PUBLISH, ProductHistory.PRODUCT_OPERATION_UPDATE, )
         )
-        q_components = (Q(productcategory__pk__in=settings.PRODUCT_CATEGORY_LORU_ONLY_PKS) |
-                        Q(is_component=True)
-        ) 
+        q_components = Q(is_component=True)
 
         for o in Org.objects.filter(type=Org.PROFILE_LORU).order_by(*s):
             total['loru_count'] += 1
@@ -2102,12 +2110,6 @@ class ApiCatalogSuppliersView(APIView):
                 pc['productcategory__pk'] for pc in \
                 Product.objects.filter(q).order_by('productcategory__pk').values('productcategory__pk').distinct()
             ]
-            if not (is_loru_user(request.user) or is_supervisor(request.user)):
-                for category in settings.PRODUCT_CATEGORY_LORU_ONLY_PKS:
-                    try:
-                        loru_categories.remove(category)
-                    except ValueError:
-                        pass
             loru_stores = l.get_stores()
             supplier = {
                 'id': l.pk,

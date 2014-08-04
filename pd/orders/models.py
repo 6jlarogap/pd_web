@@ -65,7 +65,7 @@ class Product(models.Model):
         return self.ptype == self.PRODUCT_BURIAL
 
     def is_old_style_component(self):
-        return self.productcategory.pk in settings.PRODUCT_CATEGORY_LORU_ONLY_PKS
+        return self.is_component and self.productcategory.pk == settings.OTHER_PRODUCTS_PK
 
 class ProductHistory(models.Model):
     """
