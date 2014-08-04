@@ -4,17 +4,6 @@
 
 {% block content %}
     <h1>{% trans "Товары" %}</h1>
-    {% if old_style_components_present %}
-        <br /><h3><i><span style="color:blue">Внимание!</span><br />
-                     <span style="color:red">Товары из бывшей категории "Комплектующие"</span>
-                     <span style="color:blue">были перенесены в категорию "Прочие товары и услуги".
-                                              Пожалуйста, перераспределите</span>
-                     <span style="color:red">их</span> 
-                     <span style="color:blue">по правильным категориям. Или оставьте в категории "Прочих...",
-                                              если это в самом деле "Прочие..."
-                                             Приносим извинения за доставленные неудобства.</span>
-              </i></h3><br />
-    {% endif %}
     <table class="table table-bordered">
         <tr>
             <th>{% trans "Название" %}</th>
@@ -28,10 +17,10 @@
         </tr>
         {% for c in object_list %}
             <tr>
-                <td>{% if c.is_old_style_component %}<span style="color:red">{{ c.name }}</span>{% else %}{{ c.name }}{% endif %}</td>
+                <td>{{ c.name }}</td>
                 <td>{{ c.get_ptype_display|default:"" }}</td>
-                <td>{% if c.is_old_style_component %}<span style="color:red">{{ c.productcategory }}{% else %}{{ c.productcategory }}{% endif %}</td>
-                <td>{% if c.is_old_style_component %}<span style="color:red">{% trans "Комплектующие" %}</span>{% elif c.is_component %}{% trans "Комплектующие" %}{% endif %}</td>
+                <td>{{ c.productcategory }}</td>
+                <td>{% if c.is_component %}{% trans "Комплектующие" %}{% endif %}</td>
                 <td>{{ c.measure }}</td>
                 <td>{{ c.default|yesno }}</td>
                 <td>{{ c.price }}</td>

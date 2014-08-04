@@ -175,17 +175,7 @@ class ApiAuthSigninView(APIView):
                     'profile': profile,
                     'org': org,
                     'role': role,
-                    'old_style_components_present': False,
                  })
-                if data['role'] == u'ROLE_LORU':
-                    data['old_style_components_present'] = bool(
-                        Product.objects.filter(
-                            productcategory__pk=settings.OTHER_PRODUCTS_PK,
-                            is_component=True,
-                            loru=user.profile.org,
-                        ).count()
-                    )
-
                 status_code = 200
                 write_log(request, request.user, _(u'Вход в систему'))
                 LoginLog.write(request)

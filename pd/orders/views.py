@@ -61,13 +61,6 @@ class ProductList(LORURequiredMixin, ListView):
     def get_queryset(self):
         return Product.objects.filter(loru=self.request.user.profile.org)
     
-    def get_context_data(self, **kwargs):
-        result = super(ProductList, self).get_context_data(**kwargs)
-        result['old_style_components_present'] = bool(
-            self.get_queryset().filter(productcategory__pk=settings.OTHER_PRODUCTS_PK, is_component=True).count()
-        )
-        return result
-
 manage_products = ProductList.as_view()
 
 class ProductCreate(LORURequiredMixin, CreateView):
