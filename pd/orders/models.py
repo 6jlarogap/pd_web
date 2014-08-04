@@ -64,9 +64,6 @@ class Product(models.Model):
     def is_burial(self):
         return self.ptype == self.PRODUCT_BURIAL
 
-    def is_old_style_component(self):
-        return self.productcategory.pk in settings.PRODUCT_CATEGORY_LORU_ONLY_PKS
-
 class ProductHistory(models.Model):
     """
     Журнал добавления/удаления/поднятия статусов продуктов
