@@ -52,7 +52,8 @@ from users.forms import UserAddForm, RegisterForm, LoruFormset, ProfileForm, Use
 from users.models import Profile, Org, RegisterProfile, ProfileLORU, CustomerProfile, Store, \
                          get_mail_footer, is_cabinet_user, PermitIfLoru, Oauth, \
                          BankAccount, BankAccountRegister, OrgCertificate, OrgContract, \
-                         RegisterProfileContract, RegisterProfileScan
+                         RegisterProfileContract, RegisterProfileScan, \
+                         is_loru_user, is_supervisor
 from pd.models import validate_phone_as_number, validate_username
 from persons.models import AlivePerson, Phone
 from burials.models import Cemetery, Area, Burial, Place
@@ -61,7 +62,7 @@ from orders.models import Product, ProductStatus, ProductHistory, Order
 from pd.views import PaginateListView, RequestToFormMixin, FormInvalidMixin, get_front_end_url, ServiceException
 from geo.models import Location
 
-from users.serializers import StoreSerializer
+from users.serializers import StoreSerializer, OrgSerializer
 
 from sms_service.utils import send_sms
 
@@ -1595,6 +1596,8 @@ class LoruCurrentStatsView(SupervisorRequiredMixin, TemplateView):
             productstatus__status__in=\
             (ProductHistory.PRODUCT_OPERATION_PUBLISH, ProductHistory.PRODUCT_OPERATION_UPDATE, )
         )
+        q_components = Q(is_component=True)
+
         for o in Org.objects.filter(type=Org.PROFILE_LORU).order_by(*s):
             total['loru_count'] += 1
             org = {'name': o.name}
@@ -1613,11 +1616,12 @@ class LoruCurrentStatsView(SupervisorRequiredMixin, TemplateView):
             org['num_published_products'] = Product.objects.filter(qs).count()
             total['num_published_products'] += org['num_published_products']
 
-            qs = q_published & Q(loru=o) & Q(productcategory__pk__in=settings.PRODUCT_CATEGORY_LORU_ONLY_PKS)
+            qs = q_published & Q(loru=o) & q_components
+
             org['num_published_components'] = Product.objects.filter(qs).count()
             total['num_published_components'] += org['num_published_components']
 
-            qs = q_published & Q(loru=o) & ~Q(productcategory__pk__in=settings.PRODUCT_CATEGORY_LORU_ONLY_PKS) & \
+            qs = q_published & Q(loru=o) & ~q_components & \
                  Q(productstatus__ugh__pk=catalog_org_pk)
             org['num_published_public_products'] = Product.objects.filter(qs).count()
             total['num_published_public_products'] += org['num_published_public_products']
@@ -2081,3 +2085,43 @@ class ApiOrgSignupView(CheckRecaptchaMixin, RegisterMixin, APIView):
             return Response(dict(status='error', message=excpt.message), status=400)
 
 api_org_signup = ApiOrgSignupView.as_view()
+
+class ApiCatalogSuppliersView(APIView):
+
+    def get(self, request):
+        suppliers = []
+        qs = Q(
+            productstatus__status__in=\
+                (ProductHistory.PRODUCT_OPERATION_PUBLISH, ProductHistory.PRODUCT_OPERATION_UPDATE, )
+        )
+        for l in Org.objects.filter(type=Org.PROFILE_LORU):
+            q = qs & Q(loru=l)
+            loru_categories = [
+                pc['productcategory__pk'] for pc in \
+                Product.objects.filter(q).order_by('productcategory__pk').values('productcategory__pk').distinct()
+            ]
+            loru_stores = l.get_stores()
+            supplier = {
+                'id': l.pk,
+                'name': l.name,
+                'slug': l.slug,
+                'categories': loru_categories,
+                'stores': loru_stores,
+                'location': None,
+            }
+            if l.off_address and l.off_address.gps_x and l.off_address.gps_y:
+                supplier['location'] = {'longitude': l.off_address.gps_x, 'latitude': l.off_address.gps_y}
+            suppliers.append(supplier)
+        return Response(status=200, data=suppliers)
+
+api_catalog_suppliers = ApiCatalogSuppliersView.as_view()
+
+class OrgDetailView(APIView):
+    """
+    Показ ЛОРУ в публичном каталоге только!!!
+    """
+    def get(self, request, org_slug):
+        obj = get_object_or_404(Org, slug=org_slug)
+        return Response(status=200, data=OrgSerializer(obj).data)
+
+api_catalog_suppliers_detail = OrgDetailView.as_view()

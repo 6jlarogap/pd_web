@@ -60,7 +60,7 @@ class ProductList(LORURequiredMixin, ListView):
 
     def get_queryset(self):
         return Product.objects.filter(loru=self.request.user.profile.org)
-
+    
 manage_products = ProductList.as_view()
 
 class ProductCreate(LORURequiredMixin, CreateView):
@@ -596,12 +596,6 @@ class ProductCategoryViewSet(viewsets.ModelViewSet):
     model = ProductCategory
     serializer_class = ProductCategorySerializer
 
-    def get_queryset(self):
-        user = self.request.user
-        q_exclude = Q() if is_loru_user(user) or is_supervisor(user) \
-                        else Q(pk__in=settings.PRODUCT_CATEGORY_LORU_ONLY_PKS)
-        return  ProductCategory.objects.exclude(q_exclude)
-
 class CustomerDataMixin:
     def get_customer_data(self, request):
         places = []
@@ -619,60 +613,13 @@ class CustomerDataMixin:
                     lorus.update(p.cemetery.ugh.get_loru_list())
         return is_customer, places, lorus
 
-
-class ApiCatalogSuppliersView(APIView):
-
-    def get(self, request):
-        suppliers = []
-        qs = Q(
-            productstatus__status__in=\
-                (ProductHistory.PRODUCT_OPERATION_PUBLISH, ProductHistory.PRODUCT_OPERATION_UPDATE, )
-        )
-        for l in Org.objects.filter(type=Org.PROFILE_LORU):
-            q = qs & Q(loru=l)
-            loru_categories = [
-                pc['productcategory__pk'] for pc in \
-                Product.objects.filter(q).order_by('productcategory__pk').values('productcategory__pk').distinct()
-            ]
-            if not (is_loru_user(request.user) or is_supervisor(request.user)):
-                for category in settings.PRODUCT_CATEGORY_LORU_ONLY_PKS:
-                    try:
-                        loru_categories.remove(category)
-                    except ValueError:
-                        pass
-            loru_stores = []
-            for store in Store.objects.filter(loru=l):
-                loru_stores.append(dict(
-                    id=store.pk,
-                    name=store.name,
-                    location = store.address.gps_x is not None and store.address.gps_y is not None and dict(
-                        longitude=store.address.gps_x,
-                        latitude=store.address.gps_y
-                    ) or None,
-                ))
-            supplier = {
-                'id': l.pk,
-                'name': l.name,
-                'categories': loru_categories,
-                'stores': loru_stores,
-                'location': None,
-            }
-            if l.off_address and l.off_address.gps_x and l.off_address.gps_y:
-                supplier['location'] = {'longitude': l.off_address.gps_x, 'latitude': l.off_address.gps_y}
-            suppliers.append(supplier)
-        data = {
-            'supplier': suppliers,
-        }
-        return Response(status=200, data=data)
-
-api_catalog_suppliers = ApiCatalogSuppliersView.as_view()
-
 class ProductsViewSet(viewsets.ModelViewSet):
     """
     Показ продуктов в публичном каталоге только!!!
     """
     model = Product
     serializer_class = ProductsSerializer
+    paginate_by = None
 
     def get_queryset(self):
         store_ids = self.request.GET.getlist('filter[supplierStore]')
@@ -707,8 +654,15 @@ class ProductsViewSet(viewsets.ModelViewSet):
         if category_ids:
             qs &= Q(productcategory__pk__in=category_ids)
 
-        if not (is_loru_user(self.request.user) or is_supervisor(self.request.user)):
-            qs &= ~Q(productcategory__pk__in=settings.PRODUCT_CATEGORY_LORU_ONLY_PKS)
+        if is_loru_user(self.request.user) or is_supervisor(self.request.user):
+            components_only = self.request.GET.get('filter[components_only]')
+            try:
+                if components_only and int(components_only):
+                    qs &= Q(is_component=True)
+            except ValueError:
+                pass
+        else:
+            qs &= ~Q(is_component=True)
 
         ordered = None
         orders = {'price': 'price', 'date': 'productstatus__dt', }
@@ -736,12 +690,16 @@ class ProductsViewSet(viewsets.ModelViewSet):
         
         return filter
         
-class ProductInfoViewSet(viewsets.ModelViewSet):
-    model = Product
-    serializer_class = ProductInfoSerializer
+class ProductInfoView(APIView):
 
-    def get_queryset(self):
-        return Product.objects.filter(slug=self.kwargs.get('product_slug'))
+    def get(self, request, product_slug):
+        obj = get_object_or_404(Product, slug=product_slug)
+        return Response(
+            status=200,
+            data=ProductInfoSerializer(obj, context=dict(request=request)).data,
+        )
+
+api_catalog_products_detail = ProductInfoView.as_view()
 
 class ApiProfileViewSet(CustomerDataMixin, viewsets.ViewSet):
     queryset = CustomerProfile.objects.none()
