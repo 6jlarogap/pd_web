@@ -36,7 +36,10 @@ class Command(BaseCommand):
         )
         product_statuses = ProductStatus.objects.filter(q_published)
         
-        suppliers = Org.objects.filter(type=Org.PROFILE_LORU).order_by('slug')
+        suppliers = Org.objects.filter(
+            type=Org.PROFILE_LORU,
+            profile__user__is_active=True,
+        ).order_by('slug')
 
         t = loader.get_template('sitemap.xml')
         xml = unicode(t.render(Context({
