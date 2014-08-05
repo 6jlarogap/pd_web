@@ -13,15 +13,22 @@ from users.models import Org
 from geo.models import Country, Location
 
 # Получить несколько sitemap.xml: sitemap_ru.xml, sitemap_by.xml,
-# тех доменов, что прописаны в DOMAINS. Sitemap_??.xml пишутся
+# тех доменов, что прописаны в DOMAINS_. Sitemap_??.xml пишутся
 # в корень MEDIA каталога, а в конфигурации web сервера прописывается,
 # что это http....??/sitemap.xml
 # В sitemap_XX.sml записываются опубликованные товары лору и сами
 # лору из страны XX или из страны DEFAULT_DOMAIN, если страну
 # не удалось вычислить.
 # Шаблон sitemap_XX.xml -- get_template('sitemap.xml')
+#
+# Аргументы:
+#   1:  сайт, но без доменного окончания, например, https://pohoronnoedelo,
+#       по умолчанию https://pohoronnoedelo. Этот сайт, вместе с доменным
+#       суффиксом будет фигурировать в вых. sitemap_XX.xml
+#   2:  default или nodefault (по умолчанию). Если default, то
+#       вся информация будет в вых sitemap_XX, где XX - DEFAULT_DOMAIN
 
-DOMAINS = dict(
+DOMAINS_ = dict(
     ru=dict(name=u'Россия', obj_country=None,),
     by=dict(name=u'Беларусь', obj_country=None,),
 )
@@ -30,7 +37,7 @@ DEFAULT_DOMAIN = 'ru'
 YANDEX_GEOCODE_URL = "http://geocode-maps.yandex.ru/1.x/?geocode=%s,%s&format=json&results=1"
     
 class Command(BaseCommand):
-    args = '<front-end url-WITHOUT-DOMAIN> (default: https://pohoronnoedelo)>'
+    args = "<front-end url-WITHOUT-DOMAIN>(default: https://pohoronnoedelo) <default|nodefault>(if 'default', only default domain)>"
     help = "Create sitemap.xml for domains"
     
     def handle(self, *args, **options):
@@ -38,6 +45,13 @@ class Command(BaseCommand):
             url = args[0]
         except IndexError:
             url = 'https://pohoronnoedelo'
+
+        DOMAINS = DOMAINS_
+        try:
+            if args[1].lower() == 'default':
+                DOMAINS = { DEFAULT_DOMAIN: DOMAINS_[DEFAULT_DOMAIN] }
+        except IndexError:
+            pass
 
         catalog_org_pk = Org.get_catalog_org_pk()
         q_published = Q(
@@ -84,17 +98,19 @@ class Command(BaseCommand):
             except (KeyError, ValueError, ):
                 continue
 
+        all_countries = [DOMAINS[d]['name'] for d in DOMAINS]
         for domain in DOMAINS:
-            q_domain_products = Q(product__loru__off_address__country__name=DOMAINS[domain]['name'])
-            if domain == DEFAULT_DOMAIN:
-                q_domain_products |= Q(product__loru__off_address__isnull=True) | \
-                                     Q(product__loru__off_address__country__isnull=True)
+            if len(DOMAINS) > 1:
+                q_domain_products = Q(product__loru__off_address__country__name=DOMAINS[domain]['name'])
+                if domain == DEFAULT_DOMAIN:
+                    q_domain_products |= ~Q(product__loru__off_address__country__name__in=all_countries)
+                q_domain_suppliers = Q(off_address__country__name=DOMAINS[domain]['name'])
+                if domain == DEFAULT_DOMAIN:
+                    q_domain_suppliers |= ~Q(off_address__country__name__in=all_countries)
+            else:
+                q_domain_products = q_domain_suppliers = Q()
+
             product_statuses = ProductStatus.objects.filter(q_published & q_domain_products).distinct()
-            
-            q_domain_suppliers = Q(off_address__country__name=DOMAINS[domain]['name'])
-            if domain == DEFAULT_DOMAIN:
-                q_domain_suppliers |= Q(off_address__isnull=True) | \
-                                      Q(off_address__country__isnull=True)
             suppliers = Org.objects.filter(q_suppliers & q_domain_suppliers).order_by('slug').distinct()
             
             t = loader.get_template('sitemap.xml')
