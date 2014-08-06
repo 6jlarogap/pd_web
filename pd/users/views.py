@@ -175,6 +175,7 @@ class ApiAuthSigninView(APIView):
                     'profile': profile,
                     'org': org,
                     'role': role,
+                    'isSupervisor': is_supervisor(user),
                  })
                 status_code = 200
                 write_log(request, request.user, _(u'Вход в систему'))
@@ -2104,7 +2105,7 @@ class ApiCatalogSuppliersView(APIView):
                 Product.objects.filter(q).order_by('productcategory__pk').\
                     values('productcategory__pk', 'productcategory__name').distinct()
             ]
-            loru_stores = l.get_stores()
+            loru_stores = [StoreSerializer(s).data for s in l.store_set.all()]
             supplier = {
                 'id': l.pk,
                 'name': l.name,
