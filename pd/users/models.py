@@ -630,9 +630,7 @@ class Org(GetLogsMixin, BaseModel):
             return settings.ORG_AD_PAY_RECIPIENT_PK
 
     def get_stores(self):
-        stores=[]
-        for store in Store.objects.filter(loru=self):
-            stores.append(dict(
+        return [dict(
                 id=store.pk,
                 name=store.name,
                 address=store.address and unicode(store.address) or None,
@@ -640,8 +638,9 @@ class Org(GetLogsMixin, BaseModel):
                     longitude=store.address.gps_x,
                     latitude=store.address.gps_y
                 ) or None,
-            ))
-        return stores
+                phones=[phone.number for phone in store.phone_set],
+            ) for store in Store.objects.filter(loru=self)
+        ]
 
 class OrgCertificate(Files):
     """
