@@ -74,7 +74,7 @@ class StoreSerializer(serializers.ModelSerializer):
 class OrgSerializer(PhonesFromTextMixin, serializers.ModelSerializer):
     fullname = Field(source='full_name')
     address = serializers.RelatedField('off_address')
-    stores = serializers.Field(source='get_stores')
+    stores = StoreSerializer(many=True, source='store_set')
     phones = serializers.SerializerMethodField('phones_func')
 
     class Meta:

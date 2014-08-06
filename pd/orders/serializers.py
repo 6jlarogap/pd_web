@@ -34,7 +34,7 @@ class ProductInfoSerializer(serializers.HyperlinkedModelSerializer):
     photo = HyperlinkedFileField()
     currency = serializers.RelatedField(source='currency')
     category = serializers.RelatedField(source='productcategory')
-    supplier = OrgShortSerializer(source='loru')
+    supplier = OrgSerializer(source='loru')
     model3d = serializers.SerializerMethodField('model3d_func')
     
     class Meta:
