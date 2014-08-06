@@ -175,6 +175,7 @@ class ApiAuthSigninView(APIView):
                     'profile': profile,
                     'org': org,
                     'role': role,
+                    'isSupervisor': is_supervisor(user),
                  })
                 status_code = 200
                 write_log(request, request.user, _(u'Вход в систему'))
