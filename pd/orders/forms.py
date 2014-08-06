@@ -71,6 +71,7 @@ class ProductForm(StrippedStringsMixin, forms.ModelForm):
         description = self.cleaned_data.get('description')
         if not description or not description.strip():
             raise forms.ValidationError(_(u'Обязательное поле'))
+        return description
 
 class OrderForm(ChildrenJSONMixin, SafeDeleteMixin, forms.ModelForm):
 
