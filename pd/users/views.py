@@ -2090,34 +2090,10 @@ api_org_signup = ApiOrgSignupView.as_view()
 class ApiCatalogSuppliersView(APIView):
 
     def get(self, request):
-        suppliers = []
-        qs = Q(
-            productstatus__status__in=\
-                (ProductHistory.PRODUCT_OPERATION_PUBLISH, ProductHistory.PRODUCT_OPERATION_UPDATE, )
+        return Response(
+            data = [ OrgSerializer(loru).data for loru in Org.objects.filter(type=Org.PROFILE_LORU) ],
+            status=200
         )
-        for l in Org.objects.filter(type=Org.PROFILE_LORU):
-            q = qs & Q(loru=l)
-            loru_categories = [
-                {
-                    'id': pc['productcategory__pk'],
-                    'title': pc['productcategory__name']
-                } for pc in \
-                Product.objects.filter(q).order_by('productcategory__pk').\
-                    values('productcategory__pk', 'productcategory__name').distinct()
-            ]
-            loru_stores = [StoreSerializer(s).data for s in l.store_set.all()]
-            supplier = {
-                'id': l.pk,
-                'name': l.name,
-                'slug': l.slug,
-                'categories': loru_categories,
-                'stores': loru_stores,
-                'location': None,
-            }
-            if l.off_address and l.off_address.gps_x and l.off_address.gps_y:
-                supplier['location'] = {'longitude': l.off_address.gps_x, 'latitude': l.off_address.gps_y}
-            suppliers.append(supplier)
-        return Response(status=200, data=suppliers)
 
 api_catalog_suppliers = ApiCatalogSuppliersView.as_view()
 
