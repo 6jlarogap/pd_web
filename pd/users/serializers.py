@@ -58,10 +58,7 @@ class StoreSerializer(serializers.ModelSerializer):
         return unicode(instance.address)
 
     def phones_func(self, instance):
-        phones = []
-        for phone in instance.phone_set:
-            phones.append(phone.number)
-        return phones
+        return [ phone.number for phone in instance.phone_set ]
 
     def location_func(self, instance):
         if instance.address and instance.address.gps_x is not None and instance.address.gps_y is not None:
@@ -108,6 +105,7 @@ class OrgSerializer(PhonesFromTextMixin, serializers.ModelSerializer):
             }
         else:
             return None
+
 class OrgShortSerializer(PhonesFromTextMixin, serializers.ModelSerializer):
     address = serializers.RelatedField(source='off_address')
     phones = serializers.SerializerMethodField('phones_func')
@@ -115,3 +113,20 @@ class OrgShortSerializer(PhonesFromTextMixin, serializers.ModelSerializer):
     class Meta:
         model = Org
         fields = ('id', 'name', 'slug', 'address', 'phones', 'worktime', 'site', )
+
+class OrgShort2Serializer(serializers.ModelSerializer):
+    categories = serializers.SerializerMethodField('categories_func')
+    stores = StoreSerializer(many=True, source='store_set')
+
+    class Meta:
+        model = Org
+        fields = ('id', 'name', 'slug', 'categories', 'stores', )
+
+    def categories_func(self, obj):
+        return [ pc['productcategory__pk'] for pc in Product.objects.filter(
+                    productstatus__status__in=\
+                      (ProductHistory.PRODUCT_OPERATION_PUBLISH, ProductHistory.PRODUCT_OPERATION_UPDATE, ),
+                    loru=obj,
+                ).order_by('productcategory__pk').\
+                    values('productcategory__pk', 'productcategory__name').distinct()
+    ]
