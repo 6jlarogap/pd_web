@@ -62,7 +62,7 @@ from orders.models import Product, ProductStatus, ProductHistory, Order
 from pd.views import PaginateListView, RequestToFormMixin, FormInvalidMixin, get_front_end_url, ServiceException
 from geo.models import Location
 
-from users.serializers import StoreSerializer, OrgSerializer
+from users.serializers import StoreSerializer, OrgSerializer, OrgShort2Serializer
 
 from sms_service.utils import send_sms
 
@@ -2091,7 +2091,7 @@ class ApiCatalogSuppliersView(APIView):
 
     def get(self, request):
         return Response(
-            data = [ OrgSerializer(loru).data for loru in Org.objects.filter(type=Org.PROFILE_LORU) ],
+            data = [ OrgShort2Serializer(loru).data for loru in Org.objects.filter(type=Org.PROFILE_LORU) ],
             status=200
         )
 
