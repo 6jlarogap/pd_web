@@ -69,7 +69,18 @@ class StoreSerializer(serializers.ModelSerializer):
         else:
             return None
 
-class OrgSerializer(PhonesFromTextMixin, serializers.ModelSerializer):
+class OrgLocationMixin(object):
+
+    def location_func(self, instance):
+        if instance.off_address and instance.off_address.gps_x is not None and instance.off_address.gps_y is not None:
+            return {
+                'latitude': instance.off_address.gps_y,
+                'longitude': instance.off_address.gps_x,
+            }
+        else:
+            return None
+
+class OrgSerializer(PhonesFromTextMixin, OrgLocationMixin, serializers.ModelSerializer):
     fullname = Field(source='full_name')
     address = serializers.RelatedField('off_address')
     stores = StoreSerializer(many=True, source='store_set')
@@ -97,15 +108,6 @@ class OrgSerializer(PhonesFromTextMixin, serializers.ModelSerializer):
                     values('productcategory__pk', 'productcategory__name').distinct()
     ]
 
-    def location_func(self, instance):
-        if instance.off_address and instance.off_address.gps_x is not None and instance.off_address.gps_y is not None:
-            return {
-                'latitude': instance.off_address.gps_y,
-                'longitude': instance.off_address.gps_x,
-            }
-        else:
-            return None
-
 class OrgShortSerializer(PhonesFromTextMixin, serializers.ModelSerializer):
     address = serializers.RelatedField(source='off_address')
     phones = serializers.SerializerMethodField('phones_func')
@@ -114,13 +116,14 @@ class OrgShortSerializer(PhonesFromTextMixin, serializers.ModelSerializer):
         model = Org
         fields = ('id', 'name', 'slug', 'address', 'phones', 'worktime', 'site', )
 
-class OrgShort2Serializer(serializers.ModelSerializer):
+class OrgShort2Serializer(OrgLocationMixin, serializers.ModelSerializer):
+    location = serializers.SerializerMethodField('location_func')
     categories = serializers.SerializerMethodField('categories_func')
     stores = StoreSerializer(many=True, source='store_set')
 
     class Meta:
         model = Org
-        fields = ('id', 'name', 'slug', 'categories', 'stores', )
+        fields = ('id', 'name', 'slug', 'location', 'categories', 'stores', )
 
     def categories_func(self, obj):
         return [ pc['productcategory__pk'] for pc in Product.objects.filter(
