@@ -64,7 +64,7 @@ class StoreSerializer(serializers.ModelSerializer):
         return phones
 
     def location_func(self, instance):
-        if instance.address.gps_x is not None and instance.address.gps_y is not None:
+        if instance.address and instance.address.gps_x is not None and instance.address.gps_y is not None:
             return {
                 'latitude': instance.address.gps_y,
                 'longitude': instance.address.gps_x,
@@ -78,12 +78,13 @@ class OrgSerializer(PhonesFromTextMixin, serializers.ModelSerializer):
     stores = StoreSerializer(many=True, source='store_set')
     phones = serializers.SerializerMethodField('phones_func')
     categories = serializers.SerializerMethodField('categories_func')
+    location = serializers.SerializerMethodField('location_func')
 
     class Meta:
         model = Org
         fields = ('id', 'name', 'slug', 'fullname', 'address', 'description',
                   'phones', 'fax', 'worktime', 'site', 'email', 'stores',
-                  'categories',
+                  'categories', 'location', 
         )
 
     def categories_func(self, obj):
@@ -99,6 +100,14 @@ class OrgSerializer(PhonesFromTextMixin, serializers.ModelSerializer):
                     values('productcategory__pk', 'productcategory__name').distinct()
     ]
 
+    def location_func(self, instance):
+        if instance.off_address and instance.off_address.gps_x is not None and instance.off_address.gps_y is not None:
+            return {
+                'latitude': instance.off_address.gps_y,
+                'longitude': instance.off_address.gps_x,
+            }
+        else:
+            return None
 class OrgShortSerializer(PhonesFromTextMixin, serializers.ModelSerializer):
     address = serializers.RelatedField(source='off_address')
     phones = serializers.SerializerMethodField('phones_func')
