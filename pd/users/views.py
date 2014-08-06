@@ -2097,8 +2097,12 @@ class ApiCatalogSuppliersView(APIView):
         for l in Org.objects.filter(type=Org.PROFILE_LORU):
             q = qs & Q(loru=l)
             loru_categories = [
-                pc['productcategory__pk'] for pc in \
-                Product.objects.filter(q).order_by('productcategory__pk').values('productcategory__pk').distinct()
+                {
+                    'id': pc['productcategory__pk'],
+                    'title': pc['productcategory__name']
+                } for pc in \
+                Product.objects.filter(q).order_by('productcategory__pk').\
+                    values('productcategory__pk', 'productcategory__name').distinct()
             ]
             loru_stores = l.get_stores()
             supplier = {
