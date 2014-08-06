@@ -629,19 +629,6 @@ class Org(GetLogsMixin, BaseModel):
         else:
             return settings.ORG_AD_PAY_RECIPIENT_PK
 
-    def get_stores(self):
-        return [dict(
-                id=store.pk,
-                name=store.name,
-                address=store.address and unicode(store.address) or None,
-                location=store.address and store.address.gps_x is not None and store.address.gps_y is not None and dict(
-                    longitude=store.address.gps_x,
-                    latitude=store.address.gps_y
-                ) or None,
-                phones=[phone.number for phone in store.phone_set],
-            ) for store in Store.objects.filter(loru=self)
-        ]
-
 class OrgCertificate(Files):
     """
     Сканы свидетельств о регистрации
