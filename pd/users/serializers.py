@@ -7,6 +7,7 @@ from pd.utils import PhonesFromTextMixin
 from geo.models import Location
 from users.models import Org, Store
 from persons.models import Phone
+from orders.models import Product, ProductHistory
 
 class StoreSerializer(serializers.ModelSerializer):
     address = serializers.SerializerMethodField('address_func')
@@ -74,14 +75,29 @@ class StoreSerializer(serializers.ModelSerializer):
 class OrgSerializer(PhonesFromTextMixin, serializers.ModelSerializer):
     fullname = Field(source='full_name')
     address = serializers.RelatedField('off_address')
-    stores = serializers.Field(source='get_stores')
+    stores = StoreSerializer(many=True, source='store_set')
     phones = serializers.SerializerMethodField('phones_func')
+    categories = serializers.SerializerMethodField('categories_func')
 
     class Meta:
         model = Org
         fields = ('id', 'name', 'slug', 'fullname', 'address', 'description',
                   'phones', 'fax', 'worktime', 'site', 'email', 'stores',
+                  'categories',
         )
+
+    def categories_func(self, obj):
+        return [
+                {
+                    'id': pc['productcategory__pk'],
+                    'title': pc['productcategory__name']
+                } for pc in Product.objects.filter(
+                    productstatus__status__in=\
+                      (ProductHistory.PRODUCT_OPERATION_PUBLISH, ProductHistory.PRODUCT_OPERATION_UPDATE, ),
+                    loru=obj,
+                ).order_by('productcategory__pk').\
+                    values('productcategory__pk', 'productcategory__name').distinct()
+    ]
 
 class OrgShortSerializer(PhonesFromTextMixin, serializers.ModelSerializer):
     address = serializers.RelatedField(source='off_address')
