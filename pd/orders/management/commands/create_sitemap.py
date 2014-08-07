@@ -8,7 +8,7 @@ from django.db.models.query_utils import Q
 
 from django.conf import settings
 
-from orders.models import ProductStatus, ProductHistory
+from orders.models import Product, ProductHistory
 from users.models import Org
 from geo.models import Country, Location
 
@@ -55,11 +55,11 @@ class Command(BaseCommand):
 
         catalog_org_pk = Org.get_catalog_org_pk()
         q_published = Q(
-            status__in=(
+            productstatus__status__in=(
                 ProductHistory.PRODUCT_OPERATION_PUBLISH,
                 ProductHistory.PRODUCT_OPERATION_UPDATE,
             ),
-            ugh__pk=catalog_org_pk,
+            productstatus__ugh__pk=catalog_org_pk,
         )
         q_suppliers = Q(
             type=Org.PROFILE_LORU,
@@ -101,21 +101,21 @@ class Command(BaseCommand):
         all_countries = [DOMAINS[d]['name'] for d in DOMAINS]
         for domain in DOMAINS:
             if len(DOMAINS) > 1:
-                q_domain_products = Q(product__loru__off_address__country__name=DOMAINS[domain]['name'])
+                q_domain_products = Q(loru__off_address__country__name=DOMAINS[domain]['name'])
                 if domain == DEFAULT_DOMAIN:
-                    q_domain_products |= ~Q(product__loru__off_address__country__name__in=all_countries)
+                    q_domain_products |= ~Q(loru__off_address__country__name__in=all_countries)
                 q_domain_suppliers = Q(off_address__country__name=DOMAINS[domain]['name'])
                 if domain == DEFAULT_DOMAIN:
                     q_domain_suppliers |= ~Q(off_address__country__name__in=all_countries)
             else:
                 q_domain_products = q_domain_suppliers = Q()
 
-            product_statuses = ProductStatus.objects.filter(q_published & q_domain_products).distinct()
+            products = Product.objects.filter(q_published & q_domain_products).distinct()
             suppliers = Org.objects.filter(q_suppliers & q_domain_suppliers).order_by('slug').distinct()
             
             t = loader.get_template('sitemap.xml')
             xml = unicode(t.render(Context({
-                'product_statuses': product_statuses,
+                'products': products,
                 'suppliers': suppliers,
                 'url': u"%s.%s/" % (url, domain),
             })))

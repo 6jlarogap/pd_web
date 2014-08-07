@@ -7,6 +7,7 @@ from pd.utils import PhonesFromTextMixin
 from geo.models import Location
 from users.models import Org, Store
 from persons.models import Phone
+from orders.models import Product, ProductHistory
 
 class StoreSerializer(serializers.ModelSerializer):
     address = serializers.SerializerMethodField('address_func')
@@ -57,13 +58,10 @@ class StoreSerializer(serializers.ModelSerializer):
         return unicode(instance.address)
 
     def phones_func(self, instance):
-        phones = []
-        for phone in instance.phone_set:
-            phones.append(phone.number)
-        return phones
+        return [ phone.number for phone in instance.phone_set ]
 
     def location_func(self, instance):
-        if instance.address.gps_x is not None and instance.address.gps_y is not None:
+        if instance.address and instance.address.gps_x is not None and instance.address.gps_y is not None:
             return {
                 'latitude': instance.address.gps_y,
                 'longitude': instance.address.gps_x,
@@ -71,17 +69,44 @@ class StoreSerializer(serializers.ModelSerializer):
         else:
             return None
 
-class OrgSerializer(PhonesFromTextMixin, serializers.ModelSerializer):
+class OrgLocationMixin(object):
+
+    def location_func(self, instance):
+        if instance.off_address and instance.off_address.gps_x is not None and instance.off_address.gps_y is not None:
+            return {
+                'latitude': instance.off_address.gps_y,
+                'longitude': instance.off_address.gps_x,
+            }
+        else:
+            return None
+
+class OrgSerializer(PhonesFromTextMixin, OrgLocationMixin, serializers.ModelSerializer):
     fullname = Field(source='full_name')
     address = serializers.RelatedField('off_address')
-    stores = serializers.Field(source='get_stores')
+    stores = StoreSerializer(many=True, source='store_set')
     phones = serializers.SerializerMethodField('phones_func')
+    categories = serializers.SerializerMethodField('categories_func')
+    location = serializers.SerializerMethodField('location_func')
 
     class Meta:
         model = Org
         fields = ('id', 'name', 'slug', 'fullname', 'address', 'description',
                   'phones', 'fax', 'worktime', 'site', 'email', 'stores',
+                  'categories', 'location', 
         )
+
+    def categories_func(self, obj):
+        return [
+                {
+                    'id': pc['productcategory__pk'],
+                    'title': pc['productcategory__name']
+                } for pc in Product.objects.filter(
+                    productstatus__status__in=\
+                      (ProductHistory.PRODUCT_OPERATION_PUBLISH, ProductHistory.PRODUCT_OPERATION_UPDATE, ),
+                    loru=obj,
+                ).order_by('productcategory__pk').\
+                    values('productcategory__pk', 'productcategory__name').distinct()
+    ]
 
 class OrgShortSerializer(PhonesFromTextMixin, serializers.ModelSerializer):
     address = serializers.RelatedField(source='off_address')
@@ -90,3 +115,21 @@ class OrgShortSerializer(PhonesFromTextMixin, serializers.ModelSerializer):
     class Meta:
         model = Org
         fields = ('id', 'name', 'slug', 'address', 'phones', 'worktime', 'site', )
+
+class OrgShort2Serializer(OrgLocationMixin, serializers.ModelSerializer):
+    location = serializers.SerializerMethodField('location_func')
+    categories = serializers.SerializerMethodField('categories_func')
+    stores = StoreSerializer(many=True, source='store_set')
+
+    class Meta:
+        model = Org
+        fields = ('id', 'name', 'slug', 'location', 'categories', 'stores', )
+
+    def categories_func(self, obj):
+        return [ pc['productcategory__pk'] for pc in Product.objects.filter(
+                    productstatus__status__in=\
+                      (ProductHistory.PRODUCT_OPERATION_PUBLISH, ProductHistory.PRODUCT_OPERATION_UPDATE, ),
+                    loru=obj,
+                ).order_by('productcategory__pk').\
+                    values('productcategory__pk', 'productcategory__name').distinct()
+    ]

@@ -62,7 +62,7 @@ from orders.models import Product, ProductStatus, ProductHistory, Order
 from pd.views import PaginateListView, RequestToFormMixin, FormInvalidMixin, get_front_end_url, ServiceException
 from geo.models import Location
 
-from users.serializers import StoreSerializer, OrgSerializer
+from users.serializers import StoreSerializer, OrgSerializer, OrgShort2Serializer
 
 from sms_service.utils import send_sms
 
@@ -175,6 +175,7 @@ class ApiAuthSigninView(APIView):
                     'profile': profile,
                     'org': org,
                     'role': role,
+                    'isSupervisor': is_supervisor(user),
                  })
                 status_code = 200
                 write_log(request, request.user, _(u'Вход в систему'))
@@ -2089,30 +2090,10 @@ api_org_signup = ApiOrgSignupView.as_view()
 class ApiCatalogSuppliersView(APIView):
 
     def get(self, request):
-        suppliers = []
-        qs = Q(
-            productstatus__status__in=\
-                (ProductHistory.PRODUCT_OPERATION_PUBLISH, ProductHistory.PRODUCT_OPERATION_UPDATE, )
+        return Response(
+            data = [ OrgShort2Serializer(loru).data for loru in Org.objects.filter(type=Org.PROFILE_LORU) ],
+            status=200
         )
-        for l in Org.objects.filter(type=Org.PROFILE_LORU):
-            q = qs & Q(loru=l)
-            loru_categories = [
-                pc['productcategory__pk'] for pc in \
-                Product.objects.filter(q).order_by('productcategory__pk').values('productcategory__pk').distinct()
-            ]
-            loru_stores = l.get_stores()
-            supplier = {
-                'id': l.pk,
-                'name': l.name,
-                'slug': l.slug,
-                'categories': loru_categories,
-                'stores': loru_stores,
-                'location': None,
-            }
-            if l.off_address and l.off_address.gps_x and l.off_address.gps_y:
-                supplier['location'] = {'longitude': l.off_address.gps_x, 'latitude': l.off_address.gps_y}
-            suppliers.append(supplier)
-        return Response(status=200, data=suppliers)
 
 api_catalog_suppliers = ApiCatalogSuppliersView.as_view()
 

@@ -26,7 +26,7 @@ class ProductCategory(models.Model):
     def __unicode__(self):
         return self.name
 
-class Product(models.Model):
+class Product(BaseModel):
     PRODUCT_CATAFALQUE = 'catafalque'
     PRODUCT_LOADERS = 'loaders'
     PRODUCT_DIGGERS = 'diggers'
