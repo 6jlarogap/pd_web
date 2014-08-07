@@ -518,9 +518,9 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
             if cust_address:
                 if cust_address.country:
                     applicant_address_form_initial['country_name'] = cust_address.country.name
-                if cust_address.country:
+                if cust_address.region:
                     applicant_address_form_initial['region_name'] = cust_address.region.name
-                if cust_address.country:
+                if cust_address.city:
                     applicant_address_form_initial['city_name'] = cust_address.city.name
                 if cust_address.street:
                     applicant_address_form_initial['street_name'] = cust_address.street.name
