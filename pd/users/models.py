@@ -48,6 +48,7 @@ class CommonProfile(BaseModel):
 
     class Meta:
         abstract = True
+        ordering = ('user_last_name', 'user_first_name', 'user_middle_name', )
 
     def __unicode__(self):
         return self.user and (self.full_name() or self.user.username) or u'%s' % self.pk
@@ -61,7 +62,7 @@ class CommonProfile(BaseModel):
                 if self.user_middle_name:
                     name = u"{0} {1}".format(name, self.user_middle_name)
         if not name:
-            name = self.user.username
+            name = self.user.get_full_name()
         return name
 
     def last_name_initials(self):
