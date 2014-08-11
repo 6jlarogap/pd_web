@@ -153,11 +153,20 @@ class UserDataForm(LoggingFormMixin, forms.ModelForm):
             validate_username(username)
         return username
         
+    def clean_email(self):
+        email = self.cleaned_data.get('email', '').strip() or None
+        if email and User.objects.filter(email=email).exclude(pk=self.instance.pk).exists():
+            raise forms.ValidationError(_(u"Этот email уже используется"))
+        return email
+
     def save(self):
         self.collect_log_data()
         user = super(UserDataForm, self).save(commit=False)
         user.email = self.cleaned_data['email']
-        user.save()
+        try:
+            user.save()
+        except IntegrityError:
+            raise forms.ValidationError(_(u"Имя пользователя или email уже используются в системе"))
         self.put_log_data(
             msg=_(u'Изменены данные пользователя %s') % user.username,
             log_instance=user.profile.org,
