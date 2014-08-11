@@ -19,7 +19,6 @@ from burials.models import Cemetery, PlaceSize, Reason, Burial
 
 from users.models import Profile, ProfileLORU, Org, BankAccount, RegisterProfile, get_mail_footer, is_cabinet_user
 
-
 class UserAddForm(forms.ModelForm):
     class Meta:
         model = User
@@ -35,25 +34,28 @@ class UserAddForm(forms.ModelForm):
             raise forms.ValidationError(_(u"Это имя уже используется"))
         return self.cleaned_data['username']
 
-    def clean_email(self):
-        email = self.cleaned_data.get('email')
-        if email and User.objects.filter(email=email).exists():
-            raise forms.ValidationError(_(u"Этот почтовый адрес уже используется"))
-        return email
-
     def clean(self):
         if self.is_valid() and self.cleaned_data['password1'] != self.cleaned_data['password2']:
             raise forms.ValidationError(_(u"Пароли не совпадают"))
         return self.cleaned_data
 
+    def clean_email(self):
+        email = self.cleaned_data.get('email', '').strip() or None
+        if email and User.objects.filter(email=email).exists():
+            raise forms.ValidationError(_(u"Этот email уже используется"))
+        return email
+
     def save(self, *args, **kwargs):
-        user = User.objects.create_user(
-            self.cleaned_data['username'],
-            self.cleaned_data.get('email') or None,
-            self.cleaned_data['password1']
-        )
-        user.is_active = True
-        user.save()
+        try:
+            user = User(
+                username=self.cleaned_data['username'],
+                email=self.cleaned_data['email'],
+            )
+            user.set_password(self.cleaned_data['password1'])
+            user.is_active = True
+            user.save()
+        except IntegrityError:
+            raise forms.ValidationError(_(u"Имя пользователя или email уже используются в системе"))
         Profile.objects.create(user=user)
         return user
 
@@ -163,7 +165,7 @@ class UserDataForm(LoggingFormMixin, forms.ModelForm):
     def save(self):
         self.collect_log_data()
         user = super(UserDataForm, self).save(commit=False)
-        user.email = self.cleaned_data.get('email', '').strip() or None
+        user.email = self.cleaned_data['email']
         user.save()
         self.put_log_data(
             msg=_(u'Изменены данные пользователя %s') % user.username,

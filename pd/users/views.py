@@ -1303,11 +1303,18 @@ class RegistrantApprove(SupervisorRequiredMixin, View):
             try:
                 registrant.status = RegisterProfile.STATUS_APPROVED
                 registrant.save()
-                user = User.objects.create(
-                            username=registrant.user_name,
-                            password=registrant.user_password,
-                            email=registrant.user_email,
-                )
+                try:
+                    user, created = User.objects.get_or_create(
+                                username=registrant.user_name,
+                                defaults=dict(
+                                    password=registrant.user_password,
+                                    email=registrant.user_email,
+                                )
+                    )
+                    if not created:
+                        raise ServiceException(_(u"Пользователь уже в системе"))
+                except IntegrityError:
+                    raise ServiceException(_(u"Такой email уже имеется у кого-то из пользователей системы"))
                 if registrant.org_address:
                     off_address = copy.deepcopy(registrant.org_address)
                     off_address.pk = None
@@ -1376,10 +1383,9 @@ class RegistrantApprove(SupervisorRequiredMixin, View):
                             org=org,
                 )
                 transaction.commit()
-            except IntegrityError:
-                messages.error(request, _(u'Пользователь %s уже в системе') % registrant.user_name)
-            except:
-                transaction.callback()
+            except ServiceException as excpt:
+                transaction.rollback()
+                messages.error(request, excpt.message)
             else:
                 write_log(request, registrant, _(u'%s : одобрена') % registrant)
                 email_subject = unicode(_(u"Заявка на регистрацию одобрена"))
@@ -1883,15 +1889,15 @@ class ApiOrgSignupView(CheckRecaptchaMixin, RegisterMixin, APIView):
     @transaction.commit_on_success
     def post(self, request):
         try:
-            recaptcha_data = request.DATA.get('recaptchaData')
-            if not recaptcha_data:
-                raise ServiceException(_(u'Нет captcha'))
-            try:
-                recaptcha_data = json.loads(recaptcha_data)
-            except ValueError:
-                raise ServiceException(_(u'Неверный формат captcha'))
-            if not self.check_recaptcha(request, recaptcha_data['challenge'], recaptcha_data['response']):
-                raise ServiceException(_(u'Введена неверная captcha'))
+            #recaptcha_data = request.DATA.get('recaptchaData')
+            #if not recaptcha_data:
+                #raise ServiceException(_(u'Нет captcha'))
+            #try:
+                #recaptcha_data = json.loads(recaptcha_data)
+            #except ValueError:
+                #raise ServiceException(_(u'Неверный формат captcha'))
+            #if not self.check_recaptcha(request, recaptcha_data['challenge'], recaptcha_data['response']):
+                #raise ServiceException(_(u'Введена неверная captcha'))
 
             username = request.DATA.get('username', '').strip()
             if not username:
@@ -1916,6 +1922,13 @@ class ApiOrgSignupView(CheckRecaptchaMixin, RegisterMixin, APIView):
                 validate_email(email)
             except ValidationError:
                 raise ServiceException(_(u'Неверный формат адреса электронной почты: %s') % email)
+
+            if User.objects.filter(email=email).exists():
+                raise ServiceException(_(u"Email %s уже используется в системе") % email)
+            q = Q(user_email=email) & \
+                ~Q(status__in=(RegisterProfile.STATUS_DECLINED, RegisterProfile.STATUS_APPROVED, ))
+            if RegisterProfile.objects.filter(q).exists():
+                raise ServiceException(_(u"Email %s уже используется среди кандидатов на регистрацию") % email)
 
             password = request.DATA.get('password', '')
             if not password.strip():
