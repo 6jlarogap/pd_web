@@ -8,6 +8,7 @@ from django.core.exceptions import ValidationError
 from django.contrib.auth.models import User
 from django.forms.models import inlineformset_factory, BaseInlineFormSet
 from django.utils.translation import ugettext_lazy as _
+from django.db import IntegrityError
 from django.db.models.query_utils import Q
 
 from geo.forms import LocationForm
@@ -34,6 +35,12 @@ class UserAddForm(forms.ModelForm):
             raise forms.ValidationError(_(u"Это имя уже используется"))
         return self.cleaned_data['username']
 
+    def clean_email(self):
+        email = self.cleaned_data.get('email')
+        if email and User.objects.filter(email=email).exists():
+            raise forms.ValidationError(_(u"Этот почтовый адрес уже используется"))
+        return email
+
     def clean(self):
         if self.is_valid() and self.cleaned_data['password1'] != self.cleaned_data['password2']:
             raise forms.ValidationError(_(u"Пароли не совпадают"))
@@ -42,7 +49,7 @@ class UserAddForm(forms.ModelForm):
     def save(self, *args, **kwargs):
         user = User.objects.create_user(
             self.cleaned_data['username'],
-            self.cleaned_data['email'],
+            self.cleaned_data.get('email') or None,
             self.cleaned_data['password1']
         )
         user.is_active = True
@@ -139,7 +146,9 @@ class UserDataForm(LoggingFormMixin, forms.ModelForm):
         self.fields['username'].help_text=Profile.USERNAME_HELPTEXT
 
     def save(self, *args, **kwargs):
-        user = super(UserDataForm, self).save(*args, **kwargs)
+        user = super(UserDataForm, self).save(*args, commit=False, **kwargs)
+        user.email = self.cleaned_data.get('email') or None
+        user.save()
         if not user.profile.is_ugh():
             user.profile.is_agent = self.cleaned_data['is_agent']
             user.profile.save()
@@ -151,9 +160,11 @@ class UserDataForm(LoggingFormMixin, forms.ModelForm):
             validate_username(username)
         return username
         
-    def save(self, commit=True):
+    def save(self):
         self.collect_log_data()
-        user = super(UserDataForm, self).save(commit=commit)
+        user = super(UserDataForm, self).save(commit=False)
+        user.email = self.cleaned_data.get('email', '').strip() or None
+        user.save()
         self.put_log_data(
             msg=_(u'Изменены данные пользователя %s') % user.username,
             log_instance=user.profile.org,
@@ -262,6 +273,7 @@ class OrgForm(StrippedStringsMixin, BaseOrgForm):
 
     def __init__(self, request, *args, **kwargs):
         super(OrgForm, self).__init__(request, *args, **kwargs)
+        self.user_qs = []
         self.address_form = LocationForm(data=self.data or None, prefix='address', instance=self.instance.off_address)
         self.forms = [self.address_form, ]
         # self.bank_formset = BankAccountFormset(data=request.POST or None, instance=request.user.profile.org)
@@ -277,6 +289,7 @@ class OrgForm(StrippedStringsMixin, BaseOrgForm):
         else:
             self.placesize_formset = None
         if self.is_own_org:
+            self.user_qs = self.instance.profile_set.all().order_by('user__username')
             self.reason_formset = ReasonFormset(data=request.POST or None, instance=self.instance)
             choices = [('', '---------')]
             for reason_type in Reason.TYPE_CHOICES:
@@ -379,6 +392,16 @@ class RegisterForm(forms.ModelForm):
             raise forms.ValidationError(_(u"Это имя уже используется среди кандидатов на регистрацию"))
         return user_name
 
+    def clean_user_email(self):
+        user_email=self.cleaned_data['user_email']
+        if User.objects.filter(email=user_email).exists():
+            raise forms.ValidationError(_(u"Этот почтовый адрес уже используется в системе"))
+        q = Q(user_email=user_email) & \
+            ~Q(status__in=(RegisterProfile.STATUS_DECLINED, RegisterProfile.STATUS_APPROVED, ))
+        if RegisterProfile.objects.filter(q).exists():
+            raise forms.ValidationError(_(u"Этот почтовый адрес уже используется среди кандидатов на регистрацию"))
+        return user_email
+
     def clean(self):
         cleaned_data = super(RegisterForm, self).clean()
         password1 = self.cleaned_data.get('password1')
@@ -477,7 +500,10 @@ class SupportForm(forms.Form):
         email_from = self.cleaned_data.get('sender')
         if self.save_user_email and email_from:
             self.request.user.email = email_from
-            self.request.user.save()
+            try:
+                self.request.user.save()
+            except IntegrityError:
+                pass
         org_phone = self.cleaned_data.get('phone')
         if self.save_org_phone and org_phone and self.cleaned_data.get('callback'):
             self.request.user.profile.org.phones = org_phone

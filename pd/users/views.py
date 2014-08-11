@@ -231,40 +231,41 @@ class ApiAuthSignupView(CheckRecaptchaMixin, ApiAuthSigninView):
                     ),
                 )
                 if message:
-                    data.update(message)
-                else:
-                    return super(ApiAuthSignupView, self).do_post(request, user)
+                    raise ServiceException(message)
+                return super(ApiAuthSignupView, self).do_post(request, user)
             elif recaptcha_data:
-                if self.check_recaptcha(request, recaptcha_data['challenge'], recaptcha_data['response']):
+                if not self.check_recaptcha(request, recaptcha_data['challenge'], recaptcha_data['response']):
+                    raise ServiceException(_(u'Введена неверная captcha'))
+                try:
+                    email = profile and profile.get('email') or ''
                     user, created = User.objects.get_or_create(
                         username=username,
                         defaults = {
-                            'email': profile and profile.get('email') or '',
+                            'email': email,
                         }
                     )
-                    if created:
-                        if password:
-                            user.set_password(password)
-                            user.save()
-                        kwargs = {}
-                        if profile:
-                            kwargs.update({
-                                'user_last_name': profile.get('lastname', ''),
-                                'user_first_name': profile.get('firstname', ''),
-                                'user_middle_name': profile.get('middlename', ''),
-                            })
-                        CustomerProfile.objects.create(
-                            user=user,
-                            tc_confirmed = datetime.datetime.now(),
-                            **kwargs
-                        )
-                        return super(ApiAuthSignupView, self).do_post(request)
-                    else:
-                        data['message'] = _(u'Такой пользователь, %s, уже имеется') % username
-                else:
-                    data['message'] = _(u'Введена неверная captcha')
+                except IntegrityError:
+                    raise ServiceException(_(u'Есть уже пользователь с таким email: %s') % email)
+                if not created:
+                    raise ServiceException(_(u'Такой пользователь, %s, уже имеется') % username)
+                if password:
+                    user.set_password(password)
+                    user.save()
+                kwargs = {}
+                if profile:
+                    kwargs.update({
+                        'user_last_name': profile.get('lastname', ''),
+                        'user_first_name': profile.get('firstname', ''),
+                        'user_middle_name': profile.get('middlename', ''),
+                    })
+                CustomerProfile.objects.create(
+                    user=user,
+                    tc_confirmed = datetime.datetime.now(),
+                    **kwargs
+                )
+                return super(ApiAuthSignupView, self).do_post(request)
             else:
-                data['message'] = _(u'Регистрация пользователя без captcha или стороннего провайдера не предусмотрена')
+                raise ServiceException(_(u'Регистрация пользователя без captcha или стороннего провайдера не предусмотрена'))
         except ServiceException as excpt:
             data['message'] = excpt.message
         return Response(data=data, status=status_code)
