@@ -147,15 +147,6 @@ class UserDataForm(LoggingFormMixin, forms.ModelForm):
             del self.fields['is_agent']
         self.fields['username'].help_text=Profile.USERNAME_HELPTEXT
 
-    def save(self, *args, **kwargs):
-        user = super(UserDataForm, self).save(*args, commit=False, **kwargs)
-        user.email = self.cleaned_data.get('email') or None
-        user.save()
-        if not user.profile.is_ugh():
-            user.profile.is_agent = self.cleaned_data['is_agent']
-            user.profile.save()
-        return user
-
     def clean_username(self):
         username = self.cleaned_data.get('username')
         if username:
