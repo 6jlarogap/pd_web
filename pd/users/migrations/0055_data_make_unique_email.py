@@ -2,11 +2,12 @@
 import datetime, re
 from south.db import db
 from south.v2 import DataMigration
-from django.db import models, connection
+from django.db import models, connection, transaction
 
 
 class Migration(DataMigration):
-
+    
+    @transaction.commit_on_success
     def forwards(self, orm):
         "Write your forwards methods here."
         # Note: Remember to use orm['appname.ModelName'] rather than "from appname.models..."
@@ -49,8 +50,15 @@ class Migration(DataMigration):
         cursor.execute('ALTER TABLE auth_user ADD UNIQUE (email)')
 
         print "*** Empty emails were NULLed for %d users" % count_empty_emails
-        for not_unique_email in not_unique_emails:
-            print "*** User/email with a not unique email: %s/%s. This email is changed!"  % not_unique_email
+        if not_unique_emails:
+            print "*** User/email with a not unique email -> the email is changed to...:"
+            for not_unique_email in not_unique_emails:
+                print "    %s/%s -> %s"  % \
+                    (
+                        not_unique_email[0],
+                        not_unique_email[1],
+                        User.objects.get(username=not_unique_email[0]).email,
+                    )
         else:
             print "*** All emails were unique"
 
