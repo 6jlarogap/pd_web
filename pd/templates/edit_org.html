@@ -68,10 +68,10 @@
                 <th>{% trans "Активен" %}</th>
                 <th></th>
             </tr>
-            {% for p in user.profile.org.profile_set.all %}
+            {% for p in form.user_qs %}
                 <tr>
                     <td>{{ p.user.username }}</td>
-                    <td>{{ p.user.email }}</td>
+                    <td>{{ p.user.email|default_if_none:"" }}</td>
                     <td>{% if p.user.profile.user_last_name %}{{ p.user.profile.full_name }}{% endif %}</td>
                     {% if user.profile.is_loru %}<td>{{ p.is_agent|yesno }}</td>{% endif %}
                     <td>{{ p.user.is_active|yesno }}</td>

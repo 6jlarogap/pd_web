@@ -231,40 +231,41 @@ class ApiAuthSignupView(CheckRecaptchaMixin, ApiAuthSigninView):
                     ),
                 )
                 if message:
-                    data.update(message)
-                else:
-                    return super(ApiAuthSignupView, self).do_post(request, user)
+                    raise ServiceException(message)
+                return super(ApiAuthSignupView, self).do_post(request, user)
             elif recaptcha_data:
-                if self.check_recaptcha(request, recaptcha_data['challenge'], recaptcha_data['response']):
+                if not self.check_recaptcha(request, recaptcha_data['challenge'], recaptcha_data['response']):
+                    raise ServiceException(_(u'Введена неверная captcha'))
+                try:
+                    email = profile and profile.get('email') or ''
                     user, created = User.objects.get_or_create(
                         username=username,
                         defaults = {
-                            'email': profile and profile.get('email') or '',
+                            'email': email,
                         }
                     )
-                    if created:
-                        if password:
-                            user.set_password(password)
-                            user.save()
-                        kwargs = {}
-                        if profile:
-                            kwargs.update({
-                                'user_last_name': profile.get('lastname', ''),
-                                'user_first_name': profile.get('firstname', ''),
-                                'user_middle_name': profile.get('middlename', ''),
-                            })
-                        CustomerProfile.objects.create(
-                            user=user,
-                            tc_confirmed = datetime.datetime.now(),
-                            **kwargs
-                        )
-                        return super(ApiAuthSignupView, self).do_post(request)
-                    else:
-                        data['message'] = _(u'Такой пользователь, %s, уже имеется') % username
-                else:
-                    data['message'] = _(u'Введена неверная captcha')
+                except IntegrityError:
+                    raise ServiceException(_(u'Есть уже пользователь с таким email: %s') % email)
+                if not created:
+                    raise ServiceException(_(u'Такой пользователь, %s, уже имеется') % username)
+                if password:
+                    user.set_password(password)
+                    user.save()
+                kwargs = {}
+                if profile:
+                    kwargs.update({
+                        'user_last_name': profile.get('lastname', ''),
+                        'user_first_name': profile.get('firstname', ''),
+                        'user_middle_name': profile.get('middlename', ''),
+                    })
+                CustomerProfile.objects.create(
+                    user=user,
+                    tc_confirmed = datetime.datetime.now(),
+                    **kwargs
+                )
+                return super(ApiAuthSignupView, self).do_post(request)
             else:
-                data['message'] = _(u'Регистрация пользователя без captcha или стороннего провайдера не предусмотрена')
+                raise ServiceException(_(u'Регистрация пользователя без captcha или стороннего провайдера не предусмотрена'))
         except ServiceException as excpt:
             data['message'] = excpt.message
         return Response(data=data, status=status_code)
@@ -1302,11 +1303,18 @@ class RegistrantApprove(SupervisorRequiredMixin, View):
             try:
                 registrant.status = RegisterProfile.STATUS_APPROVED
                 registrant.save()
-                user = User.objects.create(
-                            username=registrant.user_name,
-                            password=registrant.user_password,
-                            email=registrant.user_email,
-                )
+                try:
+                    user, created = User.objects.get_or_create(
+                                username=registrant.user_name,
+                                defaults=dict(
+                                    password=registrant.user_password,
+                                    email=registrant.user_email or None,
+                                )
+                    )
+                    if not created:
+                        raise ServiceException(_(u"Пользователь уже в системе"))
+                except IntegrityError:
+                    raise ServiceException(_(u"Такой email уже имеется у кого-то из пользователей системы"))
                 if registrant.org_address:
                     off_address = copy.deepcopy(registrant.org_address)
                     off_address.pk = None
@@ -1375,10 +1383,9 @@ class RegistrantApprove(SupervisorRequiredMixin, View):
                             org=org,
                 )
                 transaction.commit()
-            except IntegrityError:
-                messages.error(request, _(u'Пользователь %s уже в системе') % registrant.user_name)
-            except:
-                transaction.callback()
+            except ServiceException as excpt:
+                transaction.rollback()
+                messages.error(request, excpt.message)
             else:
                 write_log(request, registrant, _(u'%s : одобрена') % registrant)
                 email_subject = unicode(_(u"Заявка на регистрацию одобрена"))
@@ -1915,6 +1922,13 @@ class ApiOrgSignupView(CheckRecaptchaMixin, RegisterMixin, APIView):
                 validate_email(email)
             except ValidationError:
                 raise ServiceException(_(u'Неверный формат адреса электронной почты: %s') % email)
+
+            if User.objects.filter(email=email).exists():
+                raise ServiceException(_(u"Email %s уже используется в системе") % email)
+            q = Q(user_email=email) & \
+                ~Q(status__in=(RegisterProfile.STATUS_DECLINED, RegisterProfile.STATUS_APPROVED, ))
+            if RegisterProfile.objects.filter(q).exists():
+                raise ServiceException(_(u"Email %s уже используется среди кандидатов на регистрацию") % email)
 
             password = request.DATA.get('password', '')
             if not password.strip():
