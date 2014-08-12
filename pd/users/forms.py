@@ -19,6 +19,9 @@ from burials.models import Cemetery, PlaceSize, Reason, Burial
 
 from users.models import Profile, ProfileLORU, Org, BankAccount, RegisterProfile, get_mail_footer, is_cabinet_user
 
+User._meta.get_field_by_name('email')[0]._unique = True
+User._meta.get_field_by_name('email')[0].null=True
+
 class UserAddForm(forms.ModelForm):
     class Meta:
         model = User
