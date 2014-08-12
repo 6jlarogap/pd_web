@@ -7,16 +7,28 @@ from pd.utils import PhonesFromTextMixin
 from geo.models import Location
 from users.models import Org, Store
 from persons.models import Phone
-from orders.models import Product, ProductHistory
+from orders.models import Product
+
+class OrgLocationMixin(object):
+
+    def location_func(self, instance):
+        if instance.off_address and instance.off_address.gps_x is not None and instance.off_address.gps_y is not None:
+            return {
+                'latitude': instance.off_address.gps_y,
+                'longitude': instance.off_address.gps_x,
+            }
+        else:
+            return None
 
 class StoreSerializer(serializers.ModelSerializer):
     address = serializers.SerializerMethodField('address_func')
     phones = serializers.SerializerMethodField('phones_func')
     location = serializers.SerializerMethodField('location_func')
+    hasComponents = serializers.SerializerMethodField('has_components_func')
 
     class Meta:
         model = Store
-        fields = ('id', 'name', 'address', 'location', 'phones', )
+        fields = ('id', 'name', 'address', 'location', 'phones', 'hasComponents', )
 
     def restore_object(self, attrs, instance=None):
         data = self.context['request'].DATA
@@ -57,6 +69,10 @@ class StoreSerializer(serializers.ModelSerializer):
     def address_func(self, instance):
         return unicode(instance.address)
 
+    def has_components_func(self, instance):
+        return Product.objects.filter(Product.public_catalog_queryset(loru=instance.loru)).\
+                filter(is_component=True).exists()
+
     def phones_func(self, instance):
         return [ phone.number for phone in instance.phone_set ]
 
@@ -65,17 +81,6 @@ class StoreSerializer(serializers.ModelSerializer):
             return {
                 'latitude': instance.address.gps_y,
                 'longitude': instance.address.gps_x,
-            }
-        else:
-            return None
-
-class OrgLocationMixin(object):
-
-    def location_func(self, instance):
-        if instance.off_address and instance.off_address.gps_x is not None and instance.off_address.gps_y is not None:
-            return {
-                'latitude': instance.off_address.gps_y,
-                'longitude': instance.off_address.gps_x,
             }
         else:
             return None
@@ -100,13 +105,10 @@ class OrgSerializer(PhonesFromTextMixin, OrgLocationMixin, serializers.ModelSeri
                 {
                     'id': pc['productcategory__pk'],
                     'title': pc['productcategory__name']
-                } for pc in Product.objects.filter(
-                    productstatus__status__in=\
-                      (ProductHistory.PRODUCT_OPERATION_PUBLISH, ProductHistory.PRODUCT_OPERATION_UPDATE, ),
-                    loru=obj,
-                ).order_by('productcategory__pk').\
-                    values('productcategory__pk', 'productcategory__name').distinct()
-    ]
+                } for pc in Product.objects.filter(Product.public_catalog_queryset(loru=obj)).\
+                                order_by('productcategory__pk').\
+                                values('productcategory__pk', 'productcategory__name').distinct()
+        ]
 
 class OrgShortSerializer(PhonesFromTextMixin, serializers.ModelSerializer):
     address = serializers.RelatedField(source='off_address')
@@ -126,10 +128,8 @@ class OrgShort2Serializer(OrgLocationMixin, serializers.ModelSerializer):
         fields = ('id', 'name', 'slug', 'location', 'categories', 'stores', )
 
     def categories_func(self, obj):
-        return [ pc['productcategory__pk'] for pc in Product.objects.filter(
-                    productstatus__status__in=\
-                      (ProductHistory.PRODUCT_OPERATION_PUBLISH, ProductHistory.PRODUCT_OPERATION_UPDATE, ),
-                    loru=obj,
-                ).order_by('productcategory__pk').\
-                    values('productcategory__pk', 'productcategory__name').distinct()
-    ]
+        return [ pc['productcategory__pk'] for pc in \
+            Product.objects.filter(Product.public_catalog_queryset(loru=obj)).\
+                order_by('productcategory__pk').\
+                values('productcategory__pk').distinct()
+        ]
