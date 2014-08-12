@@ -20,6 +20,7 @@ from captcha.fields import ReCaptchaField
 from burials.models import Burial, Area, PlaceSize
 from logs.models import write_log
 from pd.models import UnclearDate
+from pd.utils import host_country_code
 from users.models import Profile, Dover
 
 
@@ -382,3 +383,12 @@ class CustomClearableFileInput(ClearableFileInput):
                 substitutions['clear_template'] = self.template_with_clear % substitutions
 
         return mark_safe(template % substitutions)
+
+class AppOrgFormMixin(object):
+
+    def init_app_org_label(self):
+        country_code = host_country_code(self.request)
+        if country_code == 'by':
+            self.fields['applicant_organization'].label += _(u' (наименование или УНП)')
+        else:
+            self.fields['applicant_organization'].label += _(u' (наименование или ИНН)')

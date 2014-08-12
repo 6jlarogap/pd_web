@@ -16,6 +16,7 @@ from persons.forms import AlivePersonForm, PersonIDForm
 from persons.models import AlivePerson, PersonID
 from users.models import Org, Profile
 from pd.models import SafeDeleteMixin
+from pd.forms import AppOrgFormMixin
 
 class ProductForm(StrippedStringsMixin, forms.ModelForm):
     DESCRIPTION_POPUP = """
@@ -73,7 +74,7 @@ class ProductForm(StrippedStringsMixin, forms.ModelForm):
             raise forms.ValidationError(_(u'Обязательное поле'))
         return description
 
-class OrderForm(ChildrenJSONMixin, SafeDeleteMixin, forms.ModelForm):
+class OrderForm(ChildrenJSONMixin, SafeDeleteMixin, AppOrgFormMixin, forms.ModelForm):
 
     class Meta:
         model = Order
@@ -82,6 +83,7 @@ class OrderForm(ChildrenJSONMixin, SafeDeleteMixin, forms.ModelForm):
     def __init__(self, request, *args, **kwargs):
         self.request = request
         super(OrderForm, self).__init__(*args, **kwargs)
+        self.init_app_org_label()
         self.fields.keyOrder.insert(0, self.fields.keyOrder.pop(-1))
 
         remove_opf_empty = request.user.profile.org.opf_order_customer_mandatory

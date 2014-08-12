@@ -55,6 +55,7 @@ from users.models import Profile, Org, RegisterProfile, ProfileLORU, CustomerPro
                          RegisterProfileContract, RegisterProfileScan, \
                          is_loru_user, is_supervisor
 from pd.models import validate_phone_as_number, validate_username
+from pd.utils import host_country_code
 from persons.models import AlivePerson, Phone
 from burials.models import Cemetery, Area, Burial, Place
 from billing.models import Wallet, Rate
@@ -984,16 +985,39 @@ class AutocompleteOrg(View):
         query = request.GET.get('query')
         type_ = request.GET.get('type')
         exact = request.GET.get('exact')
-        if request.user.profile.is_loru() or \
-           request.user.profile.is_ugh():
-            q = Q(name=query) if exact else Q(name__icontains=query)
+        check_inn = request.GET.get('check_inn')
+        if query and (request.user.profile.is_loru() or \
+                      request.user.profile.is_ugh()
+                     ):
+            if exact:
+                q = Q(name=query)
+            else:
+                q = Q(name__icontains=query)
+                if check_inn:
+                    m = re.search(r'^(\d{4,})$', query.strip())
+                    if m:
+                        country_code = host_country_code(request)
+                        if country_code == 'by':
+                            inn_label = _(u'УНП')
+                        else:
+                            inn_label = _(u'ИНН')
+                        q = Q(inn__startswith=m.group(1))
+                    else:
+                        check_inn = None
             if type_:
                 q &= Q(type=type_)
             orgs = Org.objects.filter(q).order_by('name')
         else:
             orgs = Org.objects.none()
 
-        return HttpResponse(json.dumps([{'value': c.pk if exact else c.name} for c in orgs[:20]]), mimetype='text/javascript')
+        return HttpResponse(
+            json.dumps([{'value': c.pk  if exact \
+                                        else u"%s%s" % (c.name, u" (%s: %s)" % (inn_label, c.inn,)  if check_inn \
+                                                                                                    else "")} \
+                                            for c in orgs[:20]
+            ]),
+            mimetype='text/javascript'
+        )
 
 autocomplete_org = AutocompleteOrg.as_view()
 
