@@ -1,11 +1,14 @@
 # coding=utf-8
 from __builtin__ import property
 import datetime
-from burials.models import Burial
+from autoslug import AutoSlugField
+
+from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.utils.translation import ugettext as _
 
+from burials.models import Burial
 from reports.models import Report
 from users.models import Org
 from pd.models import BaseModel, GetLogsMixin, upload_slugified
@@ -23,7 +26,7 @@ class ProductCategory(models.Model):
     def __unicode__(self):
         return self.name
 
-class Product(models.Model):
+class Product(BaseModel):
     PRODUCT_CATAFALQUE = 'catafalque'
     PRODUCT_LOADERS = 'loaders'
     PRODUCT_DIGGERS = 'diggers'
@@ -37,7 +40,10 @@ class Product(models.Model):
 
     loru = models.ForeignKey(Org, limit_choices_to={'type': Org.PROFILE_LORU}, null=True, verbose_name=_(u"ЛОРУ"))
     name = models.CharField(_(u"Название"), max_length=255)
+    slug = AutoSlugField(populate_from='name', max_length=255, editable=False,
+                         unique=True, null=True, always_update=True)
     description = models.TextField(_(u"Описание"), blank=True, default='')
+    is_component = models.BooleanField(_(u"Комплектующие?"), default=False)
     measure = models.CharField(_(u"Ед. изм."), max_length=255, default=_(u"шт"))
     price = models.DecimalField(_(u"Цена"), max_digits=20, decimal_places=2)
     ptype = models.CharField(_(u"Тип"), max_length=255, choices=PRODUCT_TYPES, null=True, blank=True)

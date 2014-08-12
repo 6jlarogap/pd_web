@@ -8,6 +8,7 @@ import hashlib
 import os
 import csv
 import copy
+import re
 
 from django.conf import settings
 from django.contrib import messages
@@ -51,16 +52,17 @@ from users.forms import UserAddForm, RegisterForm, LoruFormset, ProfileForm, Use
 from users.models import Profile, Org, RegisterProfile, ProfileLORU, CustomerProfile, Store, \
                          get_mail_footer, is_cabinet_user, PermitIfLoru, Oauth, \
                          BankAccount, BankAccountRegister, OrgCertificate, OrgContract, \
-                         RegisterProfileContract, RegisterProfileScan
-from pd.models import validate_phone_as_number
+                         RegisterProfileContract, RegisterProfileScan, \
+                         is_loru_user, is_supervisor
+from pd.models import validate_phone_as_number, validate_username
 from persons.models import AlivePerson, Phone
 from burials.models import Cemetery, Area, Burial, Place
 from billing.models import Wallet, Rate
-from orders.models import Product, ProductStatus, ProductHistory
+from orders.models import Product, ProductStatus, ProductHistory, Order
 from pd.views import PaginateListView, RequestToFormMixin, FormInvalidMixin, get_front_end_url, ServiceException
 from geo.models import Location
 
-from users.serializers import StoreSerializer
+from users.serializers import StoreSerializer, OrgSerializer, OrgShort2Serializer
 
 from sms_service.utils import send_sms
 
@@ -173,6 +175,7 @@ class ApiAuthSigninView(APIView):
                     'profile': profile,
                     'org': org,
                     'role': role,
+                    'isSupervisor': is_supervisor(user),
                  })
                 status_code = 200
                 write_log(request, request.user, _(u'Вход в систему'))
@@ -194,6 +197,7 @@ class ApiAuthSignoutView(APIView):
     permission_classes = (IsAuthenticated,)
     
     def post(self, request):
+        print u'DEBUG: %s:%s /API/AUTH/SIGNOUT' % (request.get_host(), request.user.username, )
         logout(request)
         return Response(data={}, status=200)
 
@@ -227,40 +231,41 @@ class ApiAuthSignupView(CheckRecaptchaMixin, ApiAuthSigninView):
                     ),
                 )
                 if message:
-                    data.update(message)
-                else:
-                    return super(ApiAuthSignupView, self).do_post(request, user)
+                    raise ServiceException(message)
+                return super(ApiAuthSignupView, self).do_post(request, user)
             elif recaptcha_data:
-                if self.check_recaptcha(request, recaptcha_data['challenge'], recaptcha_data['response']):
+                if not self.check_recaptcha(request, recaptcha_data['challenge'], recaptcha_data['response']):
+                    raise ServiceException(_(u'Введена неверная captcha'))
+                try:
+                    email = profile and profile.get('email') or ''
                     user, created = User.objects.get_or_create(
                         username=username,
                         defaults = {
-                            'email': profile and profile.get('email') or '',
+                            'email': email,
                         }
                     )
-                    if created:
-                        if password:
-                            user.set_password(password)
-                            user.save()
-                        kwargs = {}
-                        if profile:
-                            kwargs.update({
-                                'user_last_name': profile.get('lastname', ''),
-                                'user_first_name': profile.get('firstname', ''),
-                                'user_middle_name': profile.get('middlename', ''),
-                            })
-                        CustomerProfile.objects.create(
-                            user=user,
-                            tc_confirmed = datetime.datetime.now(),
-                            **kwargs
-                        )
-                        return super(ApiAuthSignupView, self).do_post(request)
-                    else:
-                        data['message'] = _(u'Такой пользователь, %s, уже имеется') % username
-                else:
-                    data['message'] = _(u'Введена неверная captcha')
+                except IntegrityError:
+                    raise ServiceException(_(u'Есть уже пользователь с таким email: %s') % email)
+                if not created:
+                    raise ServiceException(_(u'Такой пользователь, %s, уже имеется') % username)
+                if password:
+                    user.set_password(password)
+                    user.save()
+                kwargs = {}
+                if profile:
+                    kwargs.update({
+                        'user_last_name': profile.get('lastname', ''),
+                        'user_first_name': profile.get('firstname', ''),
+                        'user_middle_name': profile.get('middlename', ''),
+                    })
+                CustomerProfile.objects.create(
+                    user=user,
+                    tc_confirmed = datetime.datetime.now(),
+                    **kwargs
+                )
+                return super(ApiAuthSignupView, self).do_post(request)
             else:
-                data['message'] = _(u'Регистрация пользователя без captcha или стороннего провайдера не предусмотрена')
+                raise ServiceException(_(u'Регистрация пользователя без captcha или стороннего провайдера не предусмотрена'))
         except ServiceException as excpt:
             data['message'] = excpt.message
         return Response(data=data, status=status_code)
@@ -587,7 +592,7 @@ class ApiFeedBack(CheckRecaptchaMixin, APIView):
                 )
             email_text += get_mail_footer(request.user)
 
-            email_to = (settings.DEFAULT_FROM_EMAIL, )
+            email_to = settings.SUPPORT_EMAILS
             headers = {}
             if email_from:
                 headers['Reply-To'] = email_from
@@ -614,7 +619,7 @@ class ApiLoruPlaces(APIView):
     def get(self, request):
         data = []
         try:
-            ugh = Org.objects.filter(inn=settings.ORG_AD_PAY_RECIPIENT['inn'])[0]
+            ugh = Org.objects.filter(pk=Org.get_catalog_org_pk())[0]
             d = {
                 'id': ugh.pk,
                 'name': _(u'Каталог'),
@@ -679,7 +684,7 @@ class LoginView(View):
                 next_url = "?redirectUrl=%s" % request.GET.get("redirectUrl")
             else:
                 next_url = ''
-            response = redirect('%s#/signout%s' % (get_front_end_url(request), next_url))
+            response = redirect('%s#!/signout%s' % (get_front_end_url(request), next_url))
             response.delete_cookie('pdsession')
             return response
         else:
@@ -714,11 +719,12 @@ class LogoutView(View):
         if not request.user.is_authenticated():
             return redirect('/')
         write_log(request, request.user, _(u'Выход из системы'))
+        print u'DEBUG: %s:%s /LOGOUT' % (request.get_host(), request.user.username, )
         logout(request)
         if request.GET.get("redirectUrl"):
             response = redirect(request.GET.get("redirectUrl"))
         elif settings.REDIRECT_LOGIN_TO_FRONT_END:
-            response = redirect(get_front_end_url(request) + '#/signout')
+            response = redirect(get_front_end_url(request) + '#!/signout')
             response.delete_cookie('pdsession')
         else:
             response = redirect('/')
@@ -1184,18 +1190,33 @@ class RegisterActivation(DetailView):
                 email_subject = "%s %s" % (unicode(_(u"Заявка на регистрацию на")),
                                            unicode(_(u"ПохоронноеДело")),
                                           )
+                try:
+                    scan = self.object.registerprofilescan
+                    scan = scan and scan.bfile and os.path.exists(scan.bfile.path) and scan.bfile.url or None
+                except (AttributeError, RegisterProfileScan.DoesNotExist, ):
+                    scan = None
+                host = self.request.get_host()
+                # Какие бы ни были домены первого уровня у "основного" org.pohoronnoedelo.XX,
+                # ссылки в письме администратору должны вести на org.pohoronnoedelo.ru
+                host = re.sub(
+                    r'^org\.pohoronnoedelo\.[a-z]{2,}$',
+                    r'org.pohoronnoedelo.ru',
+                    host,
+                    flags=re.I
+                )
                 email_text = render_to_string(
                                 'register_notify_supervisor_email.txt',
                                 { 
                                     'obj': self.object,
                                     'host': '%s://%s' % (request.is_secure() and 'https' or 'http',
-                                                         self.request.get_host(),
+                                                         host,
                                                         ),
+                                    'scan': scan,
                                 }
                 )
                 email_from = settings.DEFAULT_FROM_EMAIL
-                email_to = (Org.get_supervisor_email(), )
-                send_mail(email_subject, email_text, email_from, email_to )
+                email_to = settings.SUPPORT_EMAILS
+                EmailMessage(email_subject, email_text, email_from, email_to, ).send()
             else:
                 explain = _(
                             u'Вам отправлено письмо, в котором имеется ссылка,\n'
@@ -1216,7 +1237,7 @@ class RegisterActivation(DetailView):
             message = _(u'Регистрация успешна!')
             explain = _(
                         u"Вы можете работать в <a href='%s'>системе</a>\n"
-                       ) % reverse('dashboard')
+                       ) % get_front_end_url(request)
         else:
             raise Http404
         context = {}
@@ -1279,86 +1300,106 @@ class RegistrantApprove(SupervisorRequiredMixin, View):
                 registrant.get_status_display()
             )
         else:
-            registrant.status = RegisterProfile.STATUS_APPROVED
-            registrant.save()
-            write_log(request, registrant, _(u'%s : одобрена') % registrant)
-            user = User.objects.create(
-                        username=registrant.user_name,
-                        password=registrant.user_password,
-                        email=registrant.user_email,
-            )
-            if registrant.org_address:
-                off_address = copy.deepcopy(registrant.org_address)
-                off_address.pk = None
-                off_address.save(force_insert=True)
-            else:
-                off_address = None
-            org=Org.objects.create(
-                        type=registrant.org_type,
-                        name=registrant.org_name,
-                        full_name=registrant.org_full_name,
-                        inn = registrant.org_inn,
-                        director = registrant.org_director,
-                        basis = registrant.org_basis,
-                        email = registrant.user_email,
-                        phones = registrant.org_phones,
-                        fax = registrant.org_fax,
-                        ogrn = registrant.org_ogrn,
-                        off_address=off_address,
-            )
-            for bank in registrant.bankaccountregister_set.all():
-                BankAccount.objects.create(
-                    organization=org,
-                    bankname=bank.bankname,
-                    rs=bank.rs,
-                    bik=bank.bik,
-                    ks=bank.ks,
-                )
             try:
-                fname = registrant.registerprofilescan.bfile.path
-                f = open(fname, 'r')
-                s = f.read()
-                f.close()
-                cert = OrgCertificate.objects.create(
-                    creator=user,
-                    org=org,
+                registrant.status = RegisterProfile.STATUS_APPROVED
+                registrant.save()
+                try:
+                    user, created = User.objects.get_or_create(
+                                username=registrant.user_name,
+                                defaults=dict(
+                                    password=registrant.user_password,
+                                    email=registrant.user_email or None,
+                                )
+                    )
+                    if not created:
+                        raise ServiceException(_(u"Пользователь уже в системе"))
+                except IntegrityError:
+                    raise ServiceException(_(u"Такой email уже имеется у кого-то из пользователей системы"))
+                if registrant.org_address:
+                    off_address = copy.deepcopy(registrant.org_address)
+                    off_address.pk = None
+                    off_address.save(force_insert=True)
+                else:
+                    off_address = None
+                org=Org.objects.create(
+                            type=registrant.org_type,
+                            name=registrant.org_name,
+                            full_name=registrant.org_full_name,
+                            inn = registrant.org_inn,
+                            director = registrant.org_director,
+                            basis = registrant.org_basis,
+                            email = registrant.user_email,
+                            phones = registrant.org_phones,
+                            fax = registrant.org_fax,
+                            ogrn = registrant.org_ogrn,
+                            off_address=off_address,
                 )
-                cert.bfile.save(os.path.basename(fname), ContentFile(s))
-            except (AttributeError, RegisterProfileScan.DoesNotExist, IOError, ):
-                pass
-            try:
-                fname = registrant.registerprofilecontract.bfile.path
-                f = open(fname, 'r')
-                s = f.read()
-                f.close()
-                contract = OrgContract.objects.create(
-                    creator=user,
-                    org=org,
-                )
-                contract.bfile.save(os.path.basename(fname), ContentFile(s))
-            except (AttributeError, RegisterProfileContract.DoesNotExist, IOError, ):
-                pass
-            org.create_wallet_rate()
-            profile=Profile.objects.create(
-                        user_last_name=registrant.user_last_name,
-                        user_first_name=registrant.user_first_name,
-                        user_middle_name=registrant.user_middle_name,
-                        is_agent=True,
-                        user=user,
+                for bank in registrant.bankaccountregister_set.all():
+                    if bank.off_address:
+                        bank_address = copy.deepcopy(bank.off_address)
+                        bank_address.pk = None
+                        bank_address.save(force_insert=True)
+                    else:
+                        bank_address = None
+                    BankAccount.objects.create(
+                        organization=org,
+                        bankname=bank.bankname,
+                        rs=bank.rs,
+                        bik=bank.bik,
+                        ks=bank.ks,
+                        off_address=bank_address,
+                    )
+                try:
+                    fname = registrant.registerprofilescan.bfile.path
+                    f = open(fname, 'r')
+                    s = f.read()
+                    f.close()
+                    cert = OrgCertificate.objects.create(
+                        creator=user,
                         org=org,
-            )
-            email_subject = unicode(_(u"Заявка на регистрацию одобрена"))
-            email_text = render_to_string(
-                            'register_approved_email.txt',
-                            { 'host': '%s://%s' % (self.request.is_secure() and 'https' or 'http',
-                                                self.request.get_host(),
-                                                ),
-                            'obj': registrant,
-                            }
-                        )
-            email_from = settings.DEFAULT_FROM_EMAIL
-            email_to = (registrant.user_email, )
-            send_mail(email_subject, email_text, email_from, email_to )
+                    )
+                    cert.bfile.save(os.path.basename(fname), ContentFile(s))
+                except (AttributeError, RegisterProfileScan.DoesNotExist, IOError, ):
+                    pass
+                try:
+                    fname = registrant.registerprofilecontract.bfile.path
+                    f = open(fname, 'r')
+                    s = f.read()
+                    f.close()
+                    contract = OrgContract.objects.create(
+                        creator=user,
+                        org=org,
+                    )
+                    contract.bfile.save(os.path.basename(fname), ContentFile(s))
+                except (AttributeError, RegisterProfileContract.DoesNotExist, IOError, ):
+                    pass
+                org.create_wallet_rate()
+                profile=Profile.objects.create(
+                            user_last_name=registrant.user_last_name,
+                            user_first_name=registrant.user_first_name,
+                            user_middle_name=registrant.user_middle_name,
+                            is_agent=True,
+                            user=user,
+                            org=org,
+                )
+                transaction.commit()
+            except ServiceException as excpt:
+                transaction.rollback()
+                messages.error(request, excpt.message)
+            else:
+                write_log(request, registrant, _(u'%s : одобрена') % registrant)
+                email_subject = unicode(_(u"Заявка на регистрацию одобрена"))
+                email_text = render_to_string(
+                                'register_approved_email.txt',
+                                { 'host': '%s://%s' % (self.request.is_secure() and 'https' or 'http',
+                                                    self.request.get_host(),
+                                                    ),
+                                'obj': registrant,
+                                }
+                            )
+                email_from = settings.DEFAULT_FROM_EMAIL
+                email_to = (registrant.user_email, )
+                send_mail(email_subject, email_text, email_from, email_to )
         return redirect('registrants')
 
 registrant_approve = RegistrantApprove.as_view()
@@ -1373,8 +1414,8 @@ class RegistrantDecline(SupervisorRequiredMixin, View):
 
 registrant_decline = RegistrantDecline.as_view()
 
-class OrgBurialStatsView(SupervisorRequiredMixin, TemplateView):
-    template_name = 'org_burial_stats.html'
+class OmsBurialStatsView(SupervisorRequiredMixin, TemplateView):
+    template_name = 'oms_burial_stats.html'
 
     def get_context_data(self, **kwargs):
         form = self.get_form()
@@ -1403,7 +1444,9 @@ class OrgBurialStatsView(SupervisorRequiredMixin, TemplateView):
         for source_type in Burial.SOURCE_TYPES:
             total[source_type[0]] = 0
         total['all'] = 0
+        total['ughs'] = 0
         for o in Org.objects.filter(type=Org.PROFILE_UGH).order_by(*s):
+            total['ughs'] += 1 
             org = {'name': o.name, 'all': 0}
             for source_type in Burial.SOURCE_TYPES:
                 org[source_type[0]] = Burial.objects.filter(
@@ -1429,10 +1472,10 @@ class OrgBurialStatsView(SupervisorRequiredMixin, TemplateView):
     def get_form(self):
         return OrgBurialStatsForm(data=self.request.GET or None)
 
-org_burial_stats = OrgBurialStatsView.as_view()
+oms_burial_stats = OmsBurialStatsView.as_view()
 
-class OrgCurrentStatsView(SupervisorRequiredMixin, TemplateView):
-    template_name = 'org_current_stats.html'
+class OmsCurrentStatsView(SupervisorRequiredMixin, TemplateView):
+    template_name = 'oms_current_stats.html'
 
     def get_context_data(self, **kwargs):
         sort = self.request.GET.get('sort', 'org')
@@ -1533,7 +1576,86 @@ class OrgCurrentStatsView(SupervisorRequiredMixin, TemplateView):
             'sort': sort,
         }
 
-org_current_stats = OrgCurrentStatsView.as_view()
+oms_current_stats = OmsCurrentStatsView.as_view()
+
+class LoruCurrentStatsView(SupervisorRequiredMixin, TemplateView):
+    template_name = 'loru_current_stats.html'
+
+    def get_context_data(self, **kwargs):
+        sort = self.request.GET.get('sort', 'org')
+        SORT_FIELDS = {
+            'org': 'name',
+            '-org': '-name',
+            'city': 'off_address__city',
+            '-city': '-off_address__city',
+       }
+        s = SORT_FIELDS[sort]
+        if not isinstance(s, list):
+            s = [s]
+
+        orgs = []
+        total={}
+        total['loru_count'] = total['num_users'] = total['num_stores'] = \
+        total['num_products'] = total['num_published_products'] = \
+        total['num_published_components'] = total['num_published_public_products'] = \
+        total['num_orders'] = total['num_burials'] = 0
+        catalog_org_pk = Org.get_catalog_org_pk()
+        q_published = Q(
+            productstatus__status__in=\
+            (ProductHistory.PRODUCT_OPERATION_PUBLISH, ProductHistory.PRODUCT_OPERATION_UPDATE, )
+        )
+        q_components = Q(is_component=True)
+
+        for o in Org.objects.filter(type=Org.PROFILE_LORU).order_by(*s):
+            total['loru_count'] += 1
+            org = {'name': o.name}
+            org['city'] = o.off_address and o.off_address.city or ''
+
+            org['num_users'] = Profile.objects.filter(org=o).count()
+            total['num_users'] += org['num_users']
+
+            org['num_stores'] = Store.objects.filter(loru=o).count()
+            total['num_stores'] += org['num_stores']
+
+            org['num_products'] = Product.objects.filter(loru=o).count()
+            total['num_products'] += org['num_products']
+
+            qs = q_published & Q(loru=o)
+            org['num_published_products'] = Product.objects.filter(qs).count()
+            total['num_published_products'] += org['num_published_products']
+
+            qs = q_published & Q(loru=o) & q_components
+
+            org['num_published_components'] = Product.objects.filter(qs).count()
+            total['num_published_components'] += org['num_published_components']
+
+            qs = q_published & Q(loru=o) & ~q_components & \
+                 Q(productstatus__ugh__pk=catalog_org_pk)
+            org['num_published_public_products'] = Product.objects.filter(qs).count()
+            total['num_published_public_products'] += org['num_published_public_products']
+
+            org['num_orders'] = Order.objects.filter(loru=o).count()
+            total['num_orders'] += org['num_orders']
+
+            org['num_burials'] = Burial.objects.filter(
+                source_type=Burial.SOURCE_FULL,
+                status=Burial.STATUS_CLOSED,
+                annulated=False,
+                loru=o,
+            ).count()
+            total['num_burials'] += org['num_burials']
+
+            orgs.append(org)
+
+        lorus = Org.objects.filter(type=Org.PROFILE_LORU)
+
+        return {
+            'orgs':orgs,
+            'total': total,
+            'sort': sort,
+        }
+
+loru_current_stats = LoruCurrentStatsView.as_view()
 
 class SupportView(RequestToFormMixin, FormView):
     form_class = SupportForm
@@ -1780,6 +1902,12 @@ class ApiOrgSignupView(CheckRecaptchaMixin, RegisterMixin, APIView):
             username = request.DATA.get('username', '').strip()
             if not username:
                 raise ServiceException(_(u'Не задано имя пользователя для входа в систему'))
+            try:
+                validate_username(username)
+            except ValidationError as e:
+                raise ServiceException(_(u'Неверное имя пользователя для входа в систему: %s. %s') % \
+                    (username, e.messages and e.messages[0] or '', )
+                )
             if User.objects.filter(username=username).exists():
                 raise ServiceException(_(u"Имя  %s уже используется в системе") % username)
             q = Q(user_name=username) & \
@@ -1794,6 +1922,13 @@ class ApiOrgSignupView(CheckRecaptchaMixin, RegisterMixin, APIView):
                 validate_email(email)
             except ValidationError:
                 raise ServiceException(_(u'Неверный формат адреса электронной почты: %s') % email)
+
+            if User.objects.filter(email=email).exists():
+                raise ServiceException(_(u"Email %s уже используется в системе") % email)
+            q = Q(user_email=email) & \
+                ~Q(status__in=(RegisterProfile.STATUS_DECLINED, RegisterProfile.STATUS_APPROVED, ))
+            if RegisterProfile.objects.filter(q).exists():
+                raise ServiceException(_(u"Email %s уже используется среди кандидатов на регистрацию") % email)
 
             password = request.DATA.get('password', '')
             if not password.strip():
@@ -1827,13 +1962,16 @@ class ApiOrgSignupView(CheckRecaptchaMixin, RegisterMixin, APIView):
             org_name = request.DATA.get('orgName', '').strip()
             if not org_name:
                 raise ServiceException(_(u'Не задано краткое наименование организации'))
-            full_name = request.DATA.get('orgFullName')
             org_types = dict(loru=Org.PROFILE_LORU, oms=Org.PROFILE_UGH)
             org_type = request.DATA.get('orgType')
             if not org_type or org_type not in org_types:
                 raise ServiceException(_(u'Тип организации не задан или неверен'))
             org_type = org_types[org_type]
             org_phones = request.DATA.get('phones')
+            fax_len = RegisterProfile._meta.get_field('org_fax').max_length
+            org_fax=request.DATA.get('fax', '').strip()
+            if len(org_fax) > fax_len:
+                raise ServiceException(_(u'Факс: длина больше %d символов') % fax_len)
             if org_phones:
                 try:
                     org_phones = "\n".join(json.loads(org_phones))
@@ -1842,8 +1980,6 @@ class ApiOrgSignupView(CheckRecaptchaMixin, RegisterMixin, APIView):
             if not org_phones:
                 raise ServiceException(_(u'Не указано ни одного телефона'))
             org_inn=request.DATA.get('tin', '').strip()
-            if not org_inn:
-                raise ServiceException(_(u'Не указан ИНН'))
             org_basis = request.DATA.get('directorPowerSource', Org.BASIS_CHARTER)
             org_address.save()
             registerprofile = RegisterProfile.objects.create(
@@ -1862,24 +1998,60 @@ class ApiOrgSignupView(CheckRecaptchaMixin, RegisterMixin, APIView):
                 org_ogrn=request.DATA.get('OGRN', '').strip(),
                 org_director=request.DATA.get('directorFullname', '').strip(),
                 org_phones=org_phones,
-                org_fax=request.DATA.get('fax', '').strip(),
+                org_fax=org_fax,
                 org_address=org_address,
                 org_basis=org_basis,
             )
 
             banks = request.DATA.get('bankAccounts')
             if banks:
+                name_len = BankAccountRegister._meta.get_field('bankname').max_length
+                rs_len = BankAccountRegister._meta.get_field('rs').max_length
+                bik_len = BankAccountRegister._meta.get_field('bik').max_length
+                ks_len = BankAccountRegister._meta.get_field('ks').max_length
                 try:
                     banks = json.loads(banks)
                 except ValueError:
                     raise ServiceException(_(u'Неверный формат банковских счетов (bankAccounts)'))
                 for bank in banks:
+                    # Возможно: вх. bankAccounts=[{}]
+                    # Возможно: [{"name":"","account":"","bik":"","correspondent":""}]
+                    #
+                    if not bank.get('name') or not bank.get('account'):
+                        continue
+
+                    bank['name'] = bank['name'].strip()
+                    if not bank['name']:
+                        raise ServiceException(_(u'Пустое наименование банка') )
+                    if len(bank['name']) > name_len:
+                        raise ServiceException(_(u'Наименование банка, %s, превышает максимальную длину, %d') % \
+                            (bank['name'], name_len, )
+                        )
+
+                    bank['account'] = bank['account'].strip()
+                    if not re.search(r'^\d{6,%d}$' % rs_len, bank['account']):
+                        raise ServiceException(_(u'Неверный банковский расчетный счет: %s') % bank['account'])
+
+                    bank['bik'] = bank['bik'].strip()
+                    if bank['bik'] and not re.search(r'^\d{3,%d}$' % bik_len, bank['bik']):
+                        raise ServiceException(_(u'Неверный БИК: %s') % bank['bik'])
+
+                    bank['correspondent'] = bank['correspondent'].strip()
+                    if bank['correspondent'] and not re.search(r'^\d{6,%d}$' % ks_len, bank['correspondent']):
+                        raise ServiceException(_(u'Неверный банковский корреспондентский счет: %s') % bank['correspondent'])
+
+                    bank_address = bank.get('address') and bank['address'].strip() or ''
+                    if bank_address:
+                        bank_address = Location.objects.create(addr_str=bank_address)
+                    else:
+                        bank_address = None
                     BankAccountRegister.objects.create(
                         registerprofile=registerprofile,
                         bankname=bank['name'],
                         rs=bank['account'],
                         bik=bank['bik'],
                         ks=bank['correspondent'],
+                        off_address=bank_address,
                     )
 
             cert = request.FILES.get('certificatePhoto')
@@ -1928,3 +2100,23 @@ class ApiOrgSignupView(CheckRecaptchaMixin, RegisterMixin, APIView):
             return Response(dict(status='error', message=excpt.message), status=400)
 
 api_org_signup = ApiOrgSignupView.as_view()
+
+class ApiCatalogSuppliersView(APIView):
+
+    def get(self, request):
+        return Response(
+            data = [ OrgShort2Serializer(loru).data for loru in Org.objects.filter(type=Org.PROFILE_LORU) ],
+            status=200
+        )
+
+api_catalog_suppliers = ApiCatalogSuppliersView.as_view()
+
+class OrgDetailView(APIView):
+    """
+    Показ ЛОРУ в публичном каталоге только!!!
+    """
+    def get(self, request, org_slug):
+        obj = get_object_or_404(Org, slug=org_slug)
+        return Response(status=200, data=OrgSerializer(obj).data)
+
+api_catalog_suppliers_detail = OrgDetailView.as_view()

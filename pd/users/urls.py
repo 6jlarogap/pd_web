@@ -21,6 +21,9 @@ urlpatterns = patterns('users.views',
     url(r'^api/loru/stores/?$', 'api_loru_stores', name='api_loru_stores'),
     url(r'^api/loru/stores/(?P<pk>\d+)/?$', 'api_loru_store_detail', name='api_loru_store_detail'),
 
+    url(r'^api/catalog/suppliers/?$', 'api_catalog_suppliers', name='api_catalog_suppliers'),
+    url(r'^api/catalog/suppliers/(?P<org_slug>[\w-]+)', 'api_catalog_suppliers_detail', name='api_catalog_suppliers_detail'),
+
     url(r'^api/org/signup/?$', 'api_org_signup', name='api_org_signup'),
 
     url(r'^api/education/?$', 'api_education', name='api_education'),
@@ -42,8 +45,9 @@ urlpatterns = patterns('users.views',
     url(r'^registrant/(?P<pk>\d+)/approve/$', 'registrant_approve', name='registrant_approve'),
     url(r'^registrant/(?P<pk>\d+)/decline/$', 'registrant_decline', name='registrant_decline'),
     
-    url(r'^orgburialstats/', 'org_burial_stats', name='org_burial_stats'),
-    url(r'^currentstats/', 'org_current_stats', name='org_current_stats'),
+    url(r'^oms_burialstats/', 'oms_burial_stats', name='oms_burial_stats'),
+    url(r'^oms_currentstats/', 'oms_current_stats', name='oms_current_stats'),
+    url(r'^loru_currentstats/', 'loru_current_stats', name='loru_current_stats'),
         
     url(r'^profile/', 'profile', name='profile'),
     url(r'^loruregistry/', 'loru_registry', name='loru_registry'),

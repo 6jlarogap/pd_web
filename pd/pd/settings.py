@@ -256,7 +256,6 @@ THUMBNAILS_FILE_SIGNATURE = '%(source)s/%(size)s~%(method)s~%(secret)s.%(extensi
 THUMBNAILS_STORAGE_BASE_PATH = '/thumb/'
 THUMBNAILS_PROXY_BASE_URL = '/thumb/'
 #THUMBNAILS_STORAGE_BACKEND = 'testsuite.storages.TemporaryStorage'
-THUMBNAILS_STORAGE_ROOT = os.path.join(MEDIA_ROOT, 'thumbnails')
 # возможные длины и высоты:
 THUMBNAILS_ALLOWED_SIZE_RANGE = range(20, 2001)
 
@@ -336,6 +335,13 @@ ORG_AD_PAY_RECIPIENT = {
     # ОМС и ORG_PD_FUND
     'share': 0.33,
 }
+# Первичный ключ этой организации. Если None, то организация ищется по ИНН,
+# иначе (установлен в local_settings.py) по первичному ключу, для ускорения поиска
+#
+# ВНИМАНИЕ!!!
+# Если задан ORG_AD_PAY_RECIPIENT_PK, то ORG_AD_PAY_RECIPIENT['inn'] не используется
+#
+ORG_AD_PAY_RECIPIENT_PK = None
 #
 # Фонд похоронного дела, получает свою долю от полученного ORG_AD_PAY_RECIPIENT'ом:
 #
@@ -373,15 +379,25 @@ YANDEX_API_KEYS = [
     },
 ]
     
-# Категории продуктов (ключи), видимые только для ЛОРУ
-PRODUCT_CATEGORY_LORU_ONLY_PKS = (21, )
-
 WKHTMLTOPDF_CMD = '/usr/local/bin/wkhtmltopdf'
 
 try:
     from local_settings import *
 except ImportError:
     pass
+
+# MEDIA_ROOT может измениться в local_settings
+THUMBNAILS_STORAGE_ROOT = os.path.join(MEDIA_ROOT, 'thumbnails')
+
+# Уведомления (о регистрации, об ошибках смс- сервиса),
+# а также письма в поддержку направляются по этому списку:
+#
+try:
+    # Задали ли это в local_settings ?
+    SUPPORT_EMAILS
+except NameError:
+    # Нет, не задали, да и DEFAULT_FROM_EMAIL наверняка там изменится
+    SUPPORT_EMAILS = (DEFAULT_FROM_EMAIL, )
 
 import sys
 if len(sys.argv) > 1 and sys.argv[1] == 'test':

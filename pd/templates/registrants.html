@@ -109,7 +109,7 @@
                 </span>
                 </big></b>
                 {% if r.is_confirmed %}
-                    <br /><a href="{% url registrant_approve r.pk %}">{% trans "одобрить" %}</a>
+                    <br />{% if r.same_username or r.same_email %}<s>{% trans "одобрить" %}</s>{% else %}<a href="{% url registrant_approve r.pk %}">{% trans "одобрить" %}</a>{% endif %}
                     <br />
                         <a href="{% url registrant_decline r.pk %}"
                         {% if r.is_confirmed or r.is_to_confirm %}
@@ -138,6 +138,18 @@
                     {% for o in r.orgs_same_inn %}
                         {{ o }}<br />
                     {% endfor %}
+                {% endif %}
+                {% if r.same_username %}
+                    <span style="color:red">
+                        {% trans "Есть такой пользователь в системе" %}:<br />
+                        {% trans "Нельзя одобрять заявку" %}:<br />
+                    </span>
+                {% endif %}
+                {% if r.same_email %}
+                    <span style="color:red">
+                        {% trans "Есть пользователь с таким email в системе" %}:<br />
+                        {% trans "Нельзя одобрять заявку" %}:<br />
+                    </span>
                 {% endif %}
             </td>
         </tr>

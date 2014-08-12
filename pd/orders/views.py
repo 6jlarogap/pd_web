@@ -24,7 +24,7 @@ from django.shortcuts import get_object_or_404
 from logs.models import write_log
 from burials.forms import AddOrgForm, AddAgentForm, AddDoverForm, AddDocTypeForm
 from burials.models import Burial, Place, Grave, PlacePhoto
-from users.models import CustomerProfile, CustomerProfilePhoto, Org, ProfileLORU, Store, is_loru_user
+from users.models import CustomerProfile, CustomerProfilePhoto, Org, ProfileLORU, Store, is_loru_user, is_supervisor
 from billing.models import Rate
 from orders.forms import ProductForm, OrderForm, OrderItemFormset, CoffinForm, CatafalqueForm, \
                          AddInfoForm, OrderSearchForm, OrderBurialForm
@@ -60,7 +60,7 @@ class ProductList(LORURequiredMixin, ListView):
 
     def get_queryset(self):
         return Product.objects.filter(loru=self.request.user.profile.org)
-
+    
 manage_products = ProductList.as_view()
 
 class ProductCreate(LORURequiredMixin, CreateView):
@@ -71,6 +71,9 @@ class ProductCreate(LORURequiredMixin, CreateView):
         self.object = form.save(commit=False)
         self.object.loru = self.request.user.profile.org
         self.object.save()
+        if not self.object.sku or not self.object.sku.strip():
+            self.object.sku = str(self.object.pk)
+            self.object.save()
         write_log(self.request, self.object, _(u'Создание: %s') % self.object.name)
         msg = _(u"<a href='%s'>Товар %s</a> создан") % (
             reverse('manage_products_edit', args=[self.object.pk]),
@@ -89,7 +92,10 @@ class ProductEdit(LORURequiredMixin, UpdateView):
         return Product.objects.filter(loru=self.request.user.profile.org)
 
     def form_valid(self, form):
-        self.object = form.save()
+        self.object = form.save(commit=False)
+        if not self.object.sku or not self.object.sku.strip():
+            self.object.sku = str(self.object.pk)
+        self.object.save()
         write_log(self.request, self.object, _(u'Изменение: %s') % self.object.name)
         msg = _(u"<a href='%s'>Товар %s</a> изменен") % (
             reverse('manage_products_edit', args=[self.object.pk]),
@@ -590,10 +596,6 @@ class ProductCategoryViewSet(viewsets.ModelViewSet):
     model = ProductCategory
     serializer_class = ProductCategorySerializer
 
-    def get_queryset(self):
-        q_exclude = Q() if is_loru_user(self.request.user) else Q(pk__in=settings.PRODUCT_CATEGORY_LORU_ONLY_PKS)
-        return  ProductCategory.objects.exclude(q_exclude)
-
 class CustomerDataMixin:
     def get_customer_data(self, request):
         places = []
@@ -611,57 +613,13 @@ class CustomerDataMixin:
                     lorus.update(p.cemetery.ugh.get_loru_list())
         return is_customer, places, lorus
 
-
-class ApiCatalogSuppliersView(APIView):
-
-    def get(self, request):
-        suppliers = []
-        qs = Q(
-            productstatus__status__in=\
-                (ProductHistory.PRODUCT_OPERATION_PUBLISH, ProductHistory.PRODUCT_OPERATION_UPDATE, )
-        )
-        for l in Org.objects.filter(type=Org.PROFILE_LORU):
-            q = qs & Q(loru=l)
-            loru_categories = [
-                pc['productcategory__pk'] for pc in \
-                Product.objects.filter(q).order_by('productcategory__pk').values('productcategory__pk').distinct()
-            ]
-            if not is_loru_user(request.user):
-                for category in settings.PRODUCT_CATEGORY_LORU_ONLY_PKS:
-                    try:
-                        loru_categories.remove(category)
-                    except ValueError:
-                        pass
-            loru_stores = []
-            for store in Store.objects.filter(loru=l):
-                loru_stores.append(dict(
-                    id=store.pk,
-                    name=store.name,
-                    location = store.address.gps_x is not None and store.address.gps_y is not None and dict(
-                        longitude=store.address.gps_x,
-                        latitude=store.address.gps_y
-                    ) or None,
-                ))
-            supplier = {
-                'id': l.pk,
-                'name': l.name,
-                'categories': loru_categories,
-                'stores': loru_stores,
-                'location': None,
-            }
-            if l.off_address and l.off_address.gps_x and l.off_address.gps_y:
-                supplier['location'] = {'longitude': l.off_address.gps_x, 'latitude': l.off_address.gps_y}
-            suppliers.append(supplier)
-        data = {
-            'supplier': suppliers,
-        }
-        return Response(status=200, data=data)
-
-api_catalog_suppliers = ApiCatalogSuppliersView.as_view()
-
 class ProductsViewSet(viewsets.ModelViewSet):
+    """
+    Показ продуктов в публичном каталоге только!!!
+    """
     model = Product
     serializer_class = ProductsSerializer
+    paginate_by = None
 
     def get_queryset(self):
         store_ids = self.request.GET.getlist('filter[supplierStore]')
@@ -678,9 +636,11 @@ class ProductsViewSet(viewsets.ModelViewSet):
         if loru_ids:
             qs &= Q(loru__pk__in=loru_ids)
 
+        catalog_org_pk = Org.get_catalog_org_pk()
         qs  &= Q(
             productstatus__status__in=\
-                (ProductHistory.PRODUCT_OPERATION_PUBLISH, ProductHistory.PRODUCT_OPERATION_UPDATE, )
+                (ProductHistory.PRODUCT_OPERATION_PUBLISH, ProductHistory.PRODUCT_OPERATION_UPDATE, ),
+                productstatus__ugh__pk=catalog_org_pk,
         )
         
         if self.request.GET.get('filter[price_from]'):
@@ -694,8 +654,15 @@ class ProductsViewSet(viewsets.ModelViewSet):
         if category_ids:
             qs &= Q(productcategory__pk__in=category_ids)
 
-        if not is_loru_user(self.request.user):
-            qs &= ~Q(productcategory__pk__in=settings.PRODUCT_CATEGORY_LORU_ONLY_PKS)
+        if is_loru_user(self.request.user) or is_supervisor(self.request.user):
+            components_only = self.request.GET.get('filter[components_only]')
+            try:
+                if components_only and int(components_only):
+                    qs &= Q(is_component=True)
+            except ValueError:
+                pass
+        else:
+            qs &= ~Q(is_component=True)
 
         ordered = None
         orders = {'price': 'price', 'date': 'productstatus__dt', }
@@ -723,14 +690,16 @@ class ProductsViewSet(viewsets.ModelViewSet):
         
         return filter
         
-class ProductInfoViewSet(viewsets.ModelViewSet):
-    model = Product
-    serializer_class = ProductInfoSerializer
+class ProductInfoView(APIView):
 
-    def get_queryset(self):
-        q_exclude = Q() if is_loru_user(self.request.user)  \
-                        else Q(productcategory__pk__in=settings.PRODUCT_CATEGORY_LORU_ONLY_PKS)
-        return Product.objects.filter(pk=self.kwargs.get('product_id')).exclude(q_exclude)
+    def get(self, request, product_slug):
+        obj = get_object_or_404(Product, slug=product_slug)
+        return Response(
+            status=200,
+            data=ProductInfoSerializer(obj, context=dict(request=request)).data,
+        )
+
+api_catalog_products_detail = ProductInfoView.as_view()
 
 class ApiProfileViewSet(CustomerDataMixin, viewsets.ViewSet):
     queryset = CustomerProfile.objects.none()
@@ -840,6 +809,7 @@ class ApiLoruProductPlaces(APIView):
         }
         product_history_operation =  product_status = rate_action
         data = []
+        catalog_org_pk = Org.get_catalog_org_pk()
         for p in request.DATA:
             if Product.objects.filter(pk=p['id'], loru=request.user.profile.org).count():
                 data_p = { 'id': p['id'], 'places': [] }
@@ -878,7 +848,7 @@ class ApiLoruProductPlaces(APIView):
                                         publish_cost=rate,
                                         currency=ugh.currency,
                         )
-                        if ugh.inn and ugh.inn == settings.ORG_AD_PAY_RECIPIENT['inn']:
+                        if ugh.pk == catalog_org_pk:
                             where = _(u"в публичном каталоге")
                         else:
                             where = _(u"у ОМС: %s") % ugh.name

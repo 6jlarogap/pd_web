@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+    {% for p in products %}
+        <url>
+            <loc>{{ url }}product/{{ p.slug }}</loc>
+            <lastmod>{{ p.dt_modified|date:"Y-m-d" }}</lastmod>
+            <changefreq>monthly</changefreq>
+        </url>
+    {% endfor %}
+    {% for s in suppliers %}
+        <url>
+            <loc>{{ url }}suppliers/{{ s.slug }}</loc>
+            <lastmod>{{ s.dt_modified|date:"Y-m-d" }}</lastmod>
+            <changefreq>monthly</changefreq>
+        </url>
+    {% endfor %}
+
+</urlset>

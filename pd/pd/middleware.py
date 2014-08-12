@@ -12,6 +12,7 @@ exempt_urls = [re.compile(re.escape(url.lstrip('/')), flags=re.I) \
                     settings.LOGOUT_URL,
                     settings.LOGIN_URL,
                     'favicon.ico',
+                    'sitemap.xml',
                 )
 ]
 

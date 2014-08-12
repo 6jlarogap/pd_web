@@ -9,11 +9,15 @@ import hashlib
 
 from django.conf import settings
 from django.contrib.auth.models import User
+User._meta.get_field_by_name('email')[0]._unique = True
+User._meta.get_field_by_name('email')[0].null=True
 from django.db import models, transaction, IntegrityError
 from django.db.models.loading import get_model
 from django.db.models.deletion import ProtectedError
 from django.utils.translation import ugettext_lazy as _
 from django.contrib.contenttypes.models import ContentType
+
+from autoslug import AutoSlugField
 
 from rest_framework import permissions
 
@@ -46,6 +50,7 @@ class CommonProfile(BaseModel):
 
     class Meta:
         abstract = True
+        ordering = ('user_last_name', 'user_first_name', 'user_middle_name', )
 
     def __unicode__(self):
         return self.user and (self.full_name() or self.user.username) or u'%s' % self.pk
@@ -170,6 +175,12 @@ def is_ugh_user(user):
     except (AttributeError, Profile.DoesNotExist, ):
         return False
     
+def is_supervisor(user):
+    try:
+        return user.profile.is_supervisor()
+    except (AttributeError, Profile.DoesNotExist, ):
+        return False
+
 class PermitIfLoru(permissions.BasePermission):
     def has_permission(self, request, view):
         return is_loru_user(request.user)
@@ -194,7 +205,7 @@ def get_mail_footer(user):
                         user.username,
                         '/' if pr.full_name() else '',
                         pr.full_name(),
-                        user.email,
+                        user.email or '',
                        )
         if not is_customer:
             footer += _(    u'\n\n'
@@ -202,7 +213,7 @@ def get_mail_footer(user):
                             u'Email организации: %s\n'
                         ) % (
                                 pr.org,
-                                pr.org and pr.org.email,
+                                pr.org and pr.org.email or '',
                             )
     return footer
 
@@ -406,14 +417,18 @@ class Oauth(models.Model):
                 password = signup_dict.get('password')
                 profile = signup_dict.get('profile')
                 if username:
-                    user, created = User.objects.get_or_create(
-                        username=username,
-                        defaults = {
-                            'email': profile and profile.get('email') or '',
-                        }
-                    )
-                    if not created:
-                        raise ServiceException(_(u'Такой пользователь, %s, уже имеется') % username)
+                    try:
+                        email = profile and profile.get('email') or None
+                        user, created = User.objects.get_or_create(
+                            username=username,
+                            defaults = {
+                                'email': email,
+                            }
+                        )
+                        if not created:
+                            raise ServiceException(_(u'Такой пользователь, %s, уже имеется') % username)
+                    except IntegrityError:
+                        raise ServiceException(_(u'Есть уже пользователь с таким email: %s') % email)
                 else:
                     chars = string.ascii_lowercase + string.digits
                     while True:
@@ -517,7 +532,7 @@ class Org(GetLogsMixin, BaseModel):
    
     BASIS_CHARTER = 'charter'
     BASIS_CONDITION = 'condition'
-    BASIS_CERTIFICATE = 'charter'
+    BASIS_CERTIFICATE = 'certificate'
     BASIS_PROXY = 'proxy'
     BASIS_CHOICES = (
         (BASIS_CHARTER, _(u'устава')),
@@ -528,12 +543,15 @@ class Org(GetLogsMixin, BaseModel):
     
     type = models.CharField(_(u"Тип"), max_length=255, choices=PROFILE_TYPES)
     name = models.CharField(_(u"Название организации"), max_length=255, default='')
-    full_name = models.CharField(_(u"Полное название"), max_length=255, default='')
-    inn = models.CharField(_(u"ИНН"), max_length=255, default='')
+    slug = AutoSlugField(populate_from='name', max_length=255, editable=False,
+                         unique=True, null=True, always_update=True)
+    full_name = models.CharField(_(u"Полное название"), max_length=255, default='', blank=True)
+    description = models.TextField(_(u"Описание, направление деятельности"), blank=True, null=True)
+    inn = models.CharField(_(u"ИНН"), max_length=255, default='', blank=True)
     kpp = models.CharField(_(u"КПП"), max_length=255, default='', blank=True)
     ogrn = models.CharField(_(u"ОГРН/ОГРЮЛ"), max_length=255, default='', blank=True)
     director = models.CharField(_(u"Директор (в родительном падеже, например, Иванова Ивана Ивановича)"),
-                                max_length=255, default='')
+                                max_length=255, default='', blank=True)
     basis = models.CharField(_(u"Основание действия директора"), max_length=255, 
                              choices=BASIS_CHOICES, default=BASIS_CHARTER)
     email = models.EmailField(_(u"Email"), null=True, blank=True)
@@ -604,38 +622,19 @@ class Org(GetLogsMixin, BaseModel):
         return result
 
     @classmethod
-    def get_supervisor_email(cls):
+    def get_catalog_org_pk(cls):
         """
-        Возвращает email-адрес Супервизора или seltings.DEFAULT_FROM_EMAIL
+        Возвращает первичный ключ организации-получателя (и распределителя ;)
+        доходов от рекламы. Эта же организация является хранителем публичного
+        каталога товаров и услуг
         """
-        email = settings.DEFAULT_FROM_EMAIL
-        try:
-            email = cls.get_supervisor().email or email
-        except AttributeError:
-            pass
-        return email
-
-    @classmethod
-    def get_add_pay_recipient(cls):
-        """
-        Возвращает организацию-получателя (и распределителя ;) доходов от рекламы
-        """
-        result = None
-        try:
-            return cls.objects.filter(inn=settings.ORG_AD_PAY_RECIPIENT['inn'])[0]
-        except IndexError:
-            return None
-
-    @classmethod
-    def get_pd_fund(cls):
-        """
-        Возвращает организацию-получателя (и распределителя ;) доходов от рекламы
-        """
-        result = None
-        try:
-            return cls.objects.filter(inn=settings.ORG_PD_FUND['inn'])[0]
-        except IndexError:
-            return None
+        if settings.ORG_AD_PAY_RECIPIENT_PK is None:
+            try:
+                return cls.objects.filter(inn=settings.ORG_AD_PAY_RECIPIENT['inn'])[0].pk
+            except IndexError:
+                return 0
+        else:
+            return settings.ORG_AD_PAY_RECIPIENT_PK
 
 class OrgCertificate(Files):
     """
@@ -673,6 +672,7 @@ class BankAccountCommon(models.Model):
     bik = models.CharField(u"БИК", max_length=9, validators=[DigitsValidator(), LengthValidator(9), ])
     bankname = models.CharField(u"Наименование банка", max_length=64, validators=[NotEmptyValidator(1), ])
     ls = models.CharField(u"Л/с", max_length=11, blank=True, null=True, validators=[LengthValidator(11), ])
+    off_address = models.ForeignKey('geo.Location', verbose_name=_(u"Юр. адрес"), null=True, editable=False)
 
 class BankAccount(BankAccountCommon):
     """
@@ -779,6 +779,7 @@ class RegisterProfile(SafeDeleteMixin, BaseModel):
         except RegisterProfileContract.DoesNotExist:
             pass
         for bank in self.bankaccountregister_set.all():
+            self.safe_delete('off_address', bank)
             bank.delete()
         super(RegisterProfile, self).delete()
         
@@ -796,6 +797,14 @@ class RegisterProfile(SafeDeleteMixin, BaseModel):
 
     def orgs_same_inn(self):
         return Org.objects.filter(inn=self.org_inn)
+
+    def same_username(self):
+        return not self.is_approved() and not self.is_declined() and \
+               User.objects.filter(username__iexact=self.user_name).count()
+
+    def same_email(self):
+        return not self.is_approved() and not self.is_declined() and \
+               User.objects.filter(email__iexact=self.user_email).count()
 
     @classmethod
     def get_logs(cls):

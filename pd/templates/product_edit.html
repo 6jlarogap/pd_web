@@ -6,10 +6,29 @@
     <h1>{% trans "Товар" %} {{ form.instance }}</h1>
     <form action="" method="POST" enctype="multipart/form-data">
         {% csrf_token %}
-        {{ form.as_p }}
-
+        {% for field in form %}
+            {{ field.errors }}
+            <p>{{ field.label_tag }} {{ field }}<span class="helptext">{{ field.help_text }}</span>
+            {% if field.name == "description" %}
+                <a href="#product_description_help" data-toggle="modal" title="{{ form.DESCRIPTION_TITLE }}"><img src="/static/help-question.png">
+                </a>
+            {% endif %}
+            </p>
+        {% endfor %}
         <p>
             <input type="submit" class="btn" value="{% trans "cохранить" %}" class="btn"/>
         </p>
     </form>
+    <div id="product_description_help" class="modal hide fade" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+            <h3 id="myModalLabel">{% trans "Описание товара/услуги, подсказка" %}</h3>
+        </div>
+        <div class="modal-body">
+        {% autoescape off %}{{ form.DESCRIPTION_POPUP }}{% endautoescape %}
+        </div>
+        <div class="modal-footer">
+            <button class="btn" data-dismiss="modal" aria-hidden="true">{% trans "закрыть" %}</button>
+        </div>
+    </div>
 {% endblock %}

@@ -6,6 +6,7 @@ from django.utils.translation import ugettext_lazy as _
 
 import datetime
 from pytz import timezone, utc
+import re
 
 class DigitsValidator(RegexValidator):
     regex = '^\d+$'
@@ -41,3 +42,30 @@ def utcisoformat(dt, remove_mcsec=True):
     if remove_mcsec:
         dt = dt.replace(microsecond=0)
     return TZ.localize(dt).astimezone(utc).replace(tzinfo=None).isoformat() + 'Z'
+
+def host_country_code(request):
+    """
+    Получить строку 'ru' запроса типа http://org.pohoronnodelo.ru
+
+    Если к системе обращаются по ip-адресу или localhost или host,
+    возвращается пустая строка
+    """
+    m = re.search(r'\.([a-zA-Z]{2,})(?:\:\d+)?$', request.get_host())
+    if m:
+        return m.group(1).lower()
+    else:
+        return ''
+
+def phones_from_text(phones_text):
+    phones = []
+    if phones_text:
+        for phone in phones_text.split('\n'):
+            phone = phone.strip()
+            if phone:
+                phones.append(phone)
+    return phones
+
+class PhonesFromTextMixin(object):
+
+    def phones_func(self, obj):
+        return phones_from_text(obj.phones)

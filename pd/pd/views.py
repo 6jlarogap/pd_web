@@ -31,6 +31,8 @@ class OurThumbnailView(ThumbnailView):
                         raise Http404
                 except IndexError:
                     raise Http404
+        elif re.search(settings.ANONYMOUS_URLS_REGEX, request.path):
+            pass
         else:
             raise Http404
         try:
@@ -148,6 +150,13 @@ def media_xsendfile(request, path, document_root):
                     if pk != str(request.user.pk):
                         raise Http404
                 except IndexError:
+                    raise Http404
+            elif what in ('register-profile-scans', 'register-profile-contracts', ):
+                try:
+                    Profile = get_model('users', 'Profile')
+                    if not request.user.profile.is_supervisor():
+                        raise Http404
+                except (AttributeError, Profile.DoesNotExist, ):
                     raise Http404
         else:
             # Для товаров, их категорий, поддержки и др.: открыто всем

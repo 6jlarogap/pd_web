@@ -161,7 +161,28 @@ install-readme.txt, utf8 code page
             </FilesMatch>
         </VirtualHost>
 
+    * Добавить в /etc/apache2/conf.d (Debian/Ubuntu) файл, например,
+      с именем reqtimeout следующего содержания:
+    
+        # Minimize IOError request data read exeptions when posting data
+        #
+        # http://stackoverflow.com/questions/3823280/ioerror-request-data-read-error
+        # http://httpd.apache.org/docs/2.2/mod/mod_reqtimeout.html
+        #
+        RequestReadTimeout header=90,MinRate=500 body=90,MinRate=500
+
     * При такой конфигурации (Debian/Ubuntu):
         sudo chown -R www-data:www-data /home/www-data/media /home/www-data/pw_web
         cd /home/www-data/pd_web/pd
         sudo -u www-data ./manage.py collectstatic --noinput
+
+    * sitemap.xml (в особенности для production site):
+        - обеспечить периодическую регенерацию, например, строчкой в /etc/crontab:
+            19 1 * * *   www-data cd /home/www-data/django/pd_prod/pd && ./manage.py create_sitemap https://pohoronnoedelo.ru
+        - submit sitemap посредством google webmaster tools, см. инструкцию
+            https://support.google.com/webmasters/answer/183669?hl=en&ref_topic=4581713
+        - обеспечить resubmit sitemap, после того как меняется sitemap, например, строчкой в /etc/crontab:
+            22 1 * * *   www-data cd /home/www-data && sh ./resubmit_sitemap.sh
+            где /home/www-data/resubmit_sitemap.sh содержит:
+            #! /bin/bash
+            wget www.google.com/webmasters/tools/ping?sitemap=https%3A%2F%2Fpohoronnoedelo.ru%2Fsitemap.xml

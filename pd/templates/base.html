@@ -5,6 +5,9 @@
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <meta name="Keywords" content="" />
     <meta name="Description" content="" />
+    {# front-end, в котором практически всё доступно #}
+    {# лишь авторизованному пользователю, закрываем от поисковых роботов #}
+    <meta name="robots" content="noindex, nofollow"/>
     {% block meta_extra %}{% endblock %}
 
     <!-- Le styles -->
@@ -116,7 +119,7 @@
                                     </a>
                                     <ul class="dropdown-menu">
                                         {% if user.profile.is_ugh %}
-                                            <li><a href="{{ global_context_FRONT_END_URL }}#/oms/placesmap">{% trans "Карта захоронений" %}</a></li>
+                                            <li><a href="{{ global_context_FRONT_END_URL }}#!/oms/placesmap">{% trans "Карта захоронений" %}</a></li>
                                             <li><a href="{% url loru_registry %}">{% trans "Реестр ЛОРУ" %}</a></li>
                                         {% endif %}
                                         {% if user.profile.org.pk %}
@@ -126,7 +129,7 @@
                                             <li><a href="{% url user_profile %}">{% trans "Пользователь" %}</a></li>
                                         {% endif %}
                                         {% if user.profile.is_loru %}
-                                            <li><a href="{{ global_context_FRONT_END_URL }}#/loru/orgplaces">{% trans "Склады" %}</a></li>
+                                            <li><a href="{{ global_context_FRONT_END_URL }}#!/loru/orgplaces">{% trans "Склады" %}</a></li>
                                             <li><a href="{% url manage_products %}">{% trans "Товары и услуги" %}</a></li>
                                         {% endif %}
                                         {% if user.profile.org.pk %}
@@ -137,8 +140,9 @@
                                             <li><a href="{% url registrants %}">{% trans "Регистрация" %}</a></li>
                                             <li><a href="{% url registration_old %}">{% trans "Регистрация (старый вариант)" %}</a></li>
                                             <li><a href="{% url login_log %}">{% trans "Журнал входов в систему" %}</a></li>
-                                            <li><a href="{% url org_burial_stats %}">{% trans "Статистика захоронений" %}</a></li>
-                                            <li><a href="{% url org_current_stats %}">{% trans "Текущая статистика" %}</a></li>
+                                            <li><a href="{% url oms_burial_stats %}">{% trans "Статистика захоронений" %}</a></li>
+                                            <li><a href="{% url oms_current_stats %}">{% trans "Текущая статистика" %} {% trans "ОМС" %}</a></li>
+                                            <li><a href="{% url loru_current_stats %}">{% trans "Текущая статистика" %} {% trans "ЛОРУ" %}</a></li>
                                         {% endif %}
                                         <li class="divider"></li>
                                         <li><a href="{% url ulogout %}">{% trans "Выйти" %}</a></li>
@@ -157,12 +161,12 @@
                                     {% if user.profile.is_ugh %}
                                         <a href="{% url manage_cemeteries %}">{% trans "Кладбища" %}</a>
                                     {% elif user.profile.is_loru %}
-                                        <a href="{{ global_context_FRONT_END_URL }}#/loru/advertisement">{% trans "Реклама" %}</a>
+                                        <a href="{{ global_context_FRONT_END_URL }}#!/loru/advertisement">{% trans "Реклама" %}</a>
                                     {% endif %}
                                 </li>
                                 {% if user.profile.is_loru %}
                                     <li>
-                                        <a href="{{ global_context_FRONT_END_URL }}#/">{% trans "Каталог" %}</a>
+                                        <a href="{{ global_context_FRONT_END_URL }}#!/">{% trans "Каталог" %}</a>
                                     </li>
                                 {% endif %}
                             </ul>

@@ -11,19 +11,53 @@ from burials.models import Burial
 from geo.forms import LocationForm
 from orders.models import Product, Order, OrderItem, CatafalqueData, CoffinData, AddInfoData, ProductCategory
 from burials.forms import EMPTY
-from pd.forms import ChildrenJSONMixin
+from pd.forms import ChildrenJSONMixin, StrippedStringsMixin
 from persons.forms import AlivePersonForm, PersonIDForm
 from persons.models import AlivePerson, PersonID
 from users.models import Org, Profile
 from pd.models import SafeDeleteMixin
 
-class ProductForm(forms.ModelForm):
+class ProductForm(StrippedStringsMixin, forms.ModelForm):
+    DESCRIPTION_POPUP = """
+    <br />Для поднятия товаров в результатах поисковых систем рекомендуется при написании ОПИСАНИЯ
+    Памятников, по мере необходимости, использовать (но не переусердствовать) следующие слова:
+    <br />
+    <br />.. купить
+    <br />.. изготовление
+    <br />.. произвести
+    <br />.. заказать
+    <br />.. приобрести
+    <br />.. установка
+    <br />.. предложения
+    <br />.. ремонт
+    <br />.. примеры
+    <br />.. перечислить материалы (гранит)
+    <br />.. восстановление
+    <br />.. доставка (если есть)
+    <br />
+    <br />Для оптовиков:
+    <br />
+    <br />.. оптовая торговля
+    <br />.. купить оптом
+    <br />.. поставщики
+    <br />.. производители
+    <br />
+    <br />Допускается использование слов в виде разных частей речи - восстановить, восстановление,...
+    <br />
+    <br />Составляйте уникальные описания - копирование текста определяется поисковыми системами и отбрасываются
+    <br />
+    """
+    DESCRIPTION_TITLE = ""
+
+
     class Meta:
         model = Product
         exclude = ['loru', ]
 
     def __init__(self, *args, **kwargs):
         super(ProductForm, self).__init__(*args, **kwargs)
+        self.DESCRIPTION_TITLE = self.DESCRIPTION_POPUP.replace('\n', '').replace('<br />','\n').strip()
+        self.fields['description'].required = True
         if not self.instance or not self.instance.pk:
             try:
                 category_default = ProductCategory.objects.get(
@@ -32,6 +66,12 @@ class ProductForm(forms.ModelForm):
                 self.initial.update({'productcategory': category_default})
             except ProductCategory.DoesNotExist:
                 pass
+
+    def clean_description(self):
+        description = self.cleaned_data.get('description')
+        if not description or not description.strip():
+            raise forms.ValidationError(_(u'Обязательное поле'))
+        return description
 
 class OrderForm(ChildrenJSONMixin, SafeDeleteMixin, forms.ModelForm):
 
