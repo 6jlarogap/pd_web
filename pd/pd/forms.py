@@ -389,6 +389,6 @@ class AppOrgFormMixin(object):
     def init_app_org_label(self):
         country_code = host_country_code(self.request)
         if country_code == 'by':
-            self.fields['applicant_organization'].label += _(u'( наименование или УНП)')
+            self.fields['applicant_organization'].label += _(u' (наименование или УНП)')
         else:
-            self.fields['applicant_organization'].label += _(u'( наименование или ИНН)')
+            self.fields['applicant_organization'].label += _(u' (наименование или ИНН)')
