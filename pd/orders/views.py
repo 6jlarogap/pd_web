@@ -636,12 +636,7 @@ class ProductsViewSet(viewsets.ModelViewSet):
         if loru_ids:
             qs &= Q(loru__pk__in=loru_ids)
 
-        catalog_org_pk = Org.get_catalog_org_pk()
-        qs  &= Q(
-            productstatus__status__in=\
-                (ProductHistory.PRODUCT_OPERATION_PUBLISH, ProductHistory.PRODUCT_OPERATION_UPDATE, ),
-                productstatus__ugh__pk=catalog_org_pk,
-        )
+        qs &= Product.public_catalog_queryset()
         
         if self.request.GET.get('filter[price_from]'):
             qs &= Q(price__gte=self.request.GET.get('filter[price_from]'))

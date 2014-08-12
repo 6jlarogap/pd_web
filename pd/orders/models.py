@@ -7,6 +7,7 @@ from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.utils.translation import ugettext as _
+from django.db.models.query_utils import Q
 
 from burials.models import Burial
 from reports.models import Report
@@ -64,6 +65,18 @@ class Product(BaseModel):
     def is_burial(self):
         return self.ptype == self.PRODUCT_BURIAL
 
+    @classmethod
+    def public_catalog_queryset(cls, loru=None):
+        catalog_org_pk = Org.get_catalog_org_pk()
+        qs = Q(
+            productstatus__status__in=\
+                      (ProductHistory.PRODUCT_OPERATION_PUBLISH, ProductHistory.PRODUCT_OPERATION_UPDATE, ),
+            productstatus__ugh__pk=catalog_org_pk,
+        )
+        if loru:
+            qs &= Q(loru=loru)
+        return qs
+        
 class ProductHistory(models.Model):
     """
     Журнал добавления/удаления/поднятия статусов продуктов
