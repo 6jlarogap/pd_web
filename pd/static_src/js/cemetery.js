@@ -821,7 +821,6 @@ $(function() {
             if (data.pk) {
                 if (typeof ORGS_INACTIVE != "undefined") {
                     ORGS_INACTIVE.push(data.pk.toString());
-                    ORGS_LIST.push(data.label);
                     var select = $('#id_applicant_organization');
                     select.append('<option value="'+data.pk+'" selected="selected">'+data.label+'</option>');
                 }
@@ -839,7 +838,6 @@ $(function() {
             if (data.pk) {
                 if (typeof ORGS_INACTIVE != "undefined") {
                     ORGS_INACTIVE.push(data.pk.toString());
-                    ORGS_LIST.push(data.label);
                     var select = $('#id_applicant_organization');
                     select.append('<option value="'+data.pk+'" selected="selected">'+data.label+'</option>');
                 }
