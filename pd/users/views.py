@@ -66,6 +66,9 @@ from users.serializers import StoreSerializer, OrgSerializer, OrgShort2Serialize
 
 from sms_service.utils import send_sms
 
+User._meta.get_field_by_name('email')[0]._unique = True
+User._meta.get_field_by_name('email')[0].null=True
+
 class CheckRecaptchaMixin(object):
     
     def check_recaptcha(self, request, challenge, response):
