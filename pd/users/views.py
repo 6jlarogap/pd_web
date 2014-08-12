@@ -1011,10 +1011,10 @@ class AutocompleteOrg(View):
             orgs = Org.objects.none()
 
         return HttpResponse(
-            json.dumps([{'value': c.pk if exact \
-                                  else u"%s%s" % (c.name, u" (%s: %s)" % (inn_label, c.inn,) if check_inn \
-                                                                                             else "") } \
-                                  for c in orgs[:20]
+            json.dumps([{'value': c.pk  if exact \
+                                        else u"%s%s" % (c.name, u" (%s: %s)" % (inn_label, c.inn,)  if check_inn \
+                                                                                                    else "")} \
+                                            for c in orgs[:20]
             ]),
             mimetype='text/javascript'
         )
