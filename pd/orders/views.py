@@ -654,15 +654,17 @@ class ProductsViewSet(viewsets.ModelViewSet):
         if category_ids:
             qs &= Q(productcategory__pk__in=category_ids)
 
+        # По умолчанию не показываем комплектующие
+        show_components = False
         if is_loru_user(self.request.user) or is_supervisor(self.request.user):
             components_only = self.request.GET.get('filter[components_only]')
             try:
                 if components_only and int(components_only):
-                    qs &= Q(is_component=True)
+                    show_components = True
             except ValueError:
                 pass
-        else:
-            qs &= ~Q(is_component=True)
+        if not show_components:
+            qs &= Q(is_component=False)
 
         ordered = None
         orders = {'price': 'price', 'date': 'productstatus__dt', }
