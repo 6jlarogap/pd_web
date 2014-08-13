@@ -79,4 +79,8 @@
         <field type="FileField" name="icon"></field>
     </object>
      -->
+    <object pk="22" model="orders.productcategory">
+        <field type="CharField" name="name">Фото для памятников</field>
+        <field type="FileField" name="icon"></field>
+    </object>
 </django-objects>
