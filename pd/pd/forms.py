@@ -342,7 +342,20 @@ class CustomUploadModelForm(forms.ModelForm):
     MAX_UPLOAD_SIZE_MB = 2
 
     # 'bfile' -- такое имя у нас в моделях для файлового поля
+
+    # Вызывается после инициализации формы-потомка:
     #
+    def init_bfile(self):
+        self.fields['bfile'].label = _(u'Скан')
+        # Это пришлось сделать, чтобы при ошибке file upload
+        # показывать исходный файл:
+        try:
+            self.fields['bfile'].widget.url = None
+            if self.instance.pk:
+                self.fields['bfile'].widget.url_ = self.instance.bfile.url
+        except AttributeError:
+            pass
+
     def clean_bfile(self):
         bfile = self.cleaned_data.get('bfile')
         # В upload file field может оказаться:
@@ -351,7 +364,9 @@ class CustomUploadModelForm(forms.ModelForm):
         # - типа ...UploadFile (много разных таких типов),
         #        когда выполнен POST с прикрепленным файлом
         if bfile and not isinstance(bfile, FieldFile) and bfile.size > self.MAX_UPLOAD_SIZE_MB * 2**20:
-            raise forms.ValidationError(_(u'Превышен максимальный размер файла') + u", %s Мб." % self.MAX_UPLOAD_SIZE_MB)
+            raise forms.ValidationError(_(u'Попытка загрузки файла %s, превышен максимальный размер: %s Мб.') % \
+                                         (bfile._name, self.MAX_UPLOAD_SIZE_MB)
+            )
         return bfile
 
 class CustomClearableFileInput(ClearableFileInput):

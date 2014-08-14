@@ -285,13 +285,8 @@ class OrgCertificateForm(CustomUploadModelForm):
 
     def __init__(self, *args, **kwargs):
         super(OrgCertificateForm, self).__init__(*args, **kwargs)
-        self.fields['bfile'].label = _(u'Скан')
-        self.fields['bfile'].widget.url = None
-        try:
-            if self.instance and self.instance.pk:
-                self.fields['bfile'].widget.url_ = self.instance.bfile.url
-        except AttributeError:
-            pass
+        self.init_bfile()
+        self.fields['bfile'].label = _(u'Скан свидетельства о регистрации')
         self.MAX_UPLOAD_SIZE_MB = 5
 
 class OrgForm(StrippedStringsMixin, BaseOrgForm):
