@@ -342,7 +342,20 @@ class CustomUploadModelForm(forms.ModelForm):
     MAX_UPLOAD_SIZE_MB = 2
 
     # 'bfile' -- такое имя у нас в моделях для файлового поля
+
+    # Вызывается после инициализации формы-потомка:
     #
+    def init_bfile(self):
+        self.fields['bfile'].label = _(u'Скан')
+        # Это пришлось сделать, чтобы при ошибке file upload
+        # показывать исходный файл:
+        try:
+            self.fields['bfile'].widget.url = None
+            if self.instance.pk:
+                self.fields['bfile'].widget.url_ = self.instance.bfile.url
+        except AttributeError:
+            pass
+
     def clean_bfile(self):
         bfile = self.cleaned_data.get('bfile')
         # В upload file field может оказаться:
@@ -351,14 +364,25 @@ class CustomUploadModelForm(forms.ModelForm):
         # - типа ...UploadFile (много разных таких типов),
         #        когда выполнен POST с прикрепленным файлом
         if bfile and not isinstance(bfile, FieldFile) and bfile.size > self.MAX_UPLOAD_SIZE_MB * 2**20:
-            raise forms.ValidationError(_(u'Превышен максимальный размер файла') + u", %s Мб." % self.MAX_UPLOAD_SIZE_MB)
+            raise forms.ValidationError(_(u'Попытка загрузки файла %s, превышен максимальный размер: %s Мб.') % \
+                                         (bfile._name, self.MAX_UPLOAD_SIZE_MB)
+            )
         return bfile
 
 class CustomClearableFileInput(ClearableFileInput):
-    def render(self, name, value, attrs=None):
     
-        self.template_with_initial = u'%(initial_text)s: %(initial)s <br />%(clear_template)s<br />%(input_text)s:<br /> %(input)s<br />'
-        self.template_with_clear = u'<label for="%(clear_checkbox_id)s">%(clear_checkbox_label)s:</label> %(clear)s'
+    def __init__(self, show_clear_checkbox_=True, *args, **kwargs):
+        super(CustomClearableFileInput, self).__init__(*args, **kwargs)
+        self.show_clear_checkbox_ = show_clear_checkbox_
+
+    def render(self, name, value, attrs=None):
+
+        if self.show_clear_checkbox_:
+            self.template_with_initial = u'%(initial_text)s: %(initial)s<br />%(clear_template)s<br />%(input_text)s:<br /> %(input)s<br />'
+            self.template_with_clear = u'<label for="%(clear_checkbox_id)s">%(clear_checkbox_label)s:</label> %(clear)s'
+        else:
+            self.template_with_initial = u'%(initial_text)s: %(initial)s<br />%(input_text)s:<br /> %(input)s<br />'
+            self.template_with_clear = ''
 
         substitutions = {
             'initial_text': self.initial_text,
@@ -369,12 +393,15 @@ class CustomClearableFileInput(ClearableFileInput):
         template = u'%(input)s'
         substitutions['input'] = super(ClearableFileInput, self).render(name, value, attrs)
 
-        if value and hasattr(value, "url"):
+        url = value and hasattr(value, "url") and value.url or \
+              hasattr(self, "url_") and self.url_
+        if url:
             template = self.template_with_initial
             substitutions['initial'] = (u'<a href="%s" target="_blank">%s</a>'
-                                        % (escape(value.url),
+                                        % (escape(url),
                                            "("+_(u"просмотр")+")"))
-            if not self.is_required:
+
+            if self.show_clear_checkbox_ and not self.is_required:
                 checkbox_name = self.clear_checkbox_name(name)
                 checkbox_id = self.clear_checkbox_id(checkbox_name)
                 substitutions['clear_checkbox_name'] = conditional_escape(checkbox_name)
