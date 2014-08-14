@@ -10,14 +10,18 @@ from django.forms.models import inlineformset_factory, BaseInlineFormSet
 from django.utils.translation import ugettext_lazy as _
 from django.db import IntegrityError
 from django.db.models.query_utils import Q
+from django.db.models.fields.files import FieldFile
 
 from geo.forms import LocationForm
-from pd.forms import ChildrenJSONMixin, LoggingFormMixin, OurReCaptchaField, StrippedStringsMixin
+from pd.forms import ChildrenJSONMixin, LoggingFormMixin, OurReCaptchaField, StrippedStringsMixin, \
+                     CustomUploadModelForm, CustomClearableFileInput
 from pd.models import validate_phone_as_number, validate_username
 from pd.utils import host_country_code
 from burials.models import Cemetery, PlaceSize, Reason, Burial
+from logs.models import write_log
 
-from users.models import Profile, ProfileLORU, Org, BankAccount, RegisterProfile, get_mail_footer, is_cabinet_user
+from users.models import Profile, ProfileLORU, Org, BankAccount, RegisterProfile, OrgCertificate, \
+                         get_mail_footer, is_cabinet_user
 
 User._meta.get_field_by_name('email')[0]._unique = True
 User._meta.get_field_by_name('email')[0].null=True
@@ -271,6 +275,25 @@ class BaseOrgForm(LoggingFormMixin, forms.ModelForm):
 PlaceSizeFormset = inlineformset_factory(Org, PlaceSize, formset=BaseInlineFormSet, can_delete=True, extra=2)
 ReasonFormset = inlineformset_factory(Org, Reason, formset=BaseInlineFormSet, can_delete=True, extra=2)
 
+class OrgCertificateForm(CustomUploadModelForm):
+    class Meta:
+        model = OrgCertificate
+        fields = ('bfile', )
+        widgets = {
+            'bfile': CustomClearableFileInput(show_clear_checkbox_=False),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super(OrgCertificateForm, self).__init__(*args, **kwargs)
+        self.fields['bfile'].label = _(u'Скан')
+        self.fields['bfile'].widget.url = None
+        try:
+            if self.instance and self.instance.pk:
+                self.fields['bfile'].widget.url_ = self.instance.bfile.url
+        except AttributeError:
+            pass
+        self.MAX_UPLOAD_SIZE_MB = 5
+
 class OrgForm(StrippedStringsMixin, BaseOrgForm):
     class Meta:
         model = Org
@@ -293,6 +316,8 @@ class OrgForm(StrippedStringsMixin, BaseOrgForm):
             self.placesize_formset = PlaceSizeFormset(data=request.POST or None, instance=self.instance)
         else:
             self.placesize_formset = None
+
+        self.scan_form = scan = None
         if self.is_own_org:
             self.user_qs = self.instance.profile_set.all().order_by('user__username')
             self.reason_formset = ReasonFormset(data=request.POST or None, instance=self.instance)
@@ -308,6 +333,13 @@ class OrgForm(StrippedStringsMixin, BaseOrgForm):
             for f in self.reason_formset.forms:
                 f.fields['reason_type'] = forms.fields.TypedChoiceField(choices = choices, label=label)
                 # f.prefix += '-reason'
+
+            try:
+                scan = self.instance.orgcertificate
+            except OrgCertificate.DoesNotExist:
+                pass
+            self.scan_form = OrgCertificateForm(request, prefix='org-scan', instance = scan, files=request.FILES)
+
         else:
             self.reason_formset = None
 
@@ -330,7 +362,8 @@ class OrgForm(StrippedStringsMixin, BaseOrgForm):
     def is_valid(self):
         return super(OrgForm, self).is_valid() and self.address_form.is_valid() and \
                     (not self.placesize_formset or self.placesize_formset.is_valid()) and \
-                    (not self.reason_formset or self.reason_formset.is_valid())
+                    (not self.reason_formset or self.reason_formset.is_valid()) and \
+                    (not self.scan_form or self.scan_form.is_valid())
                     # and self.bank_formset.is_valid()
 
     def save(self, commit=True):
@@ -343,6 +376,27 @@ class OrgForm(StrippedStringsMixin, BaseOrgForm):
             self.reason_formset.save()
         if any(self.address_form.cleaned_data.values()):
             org.off_address = self.address_form.save()
+
+        scan_uploaded = scan_clear = False
+        if self.scan_form:
+            bfile = self.scan_form.cleaned_data.get('bfile')
+            # FieldFile -- это еще не UploadedFile
+            scan_uploaded = bfile and not isinstance(bfile, FieldFile)
+            scan_clear = self.request.POST.get(self.scan_form.prefix+'-bfile-clear')
+
+        if commit and self.scan_form:
+            if self.scan_form.instance.pk:
+                if scan_clear and not scan_uploaded:
+                    self.scan_form.instance.delete()
+                    write_log(self.request, org, _(u'Скан свидетельства о регистрации удален'))
+                if scan_uploaded:
+                    OrgCertificate.objects.get(pk=self.scan_form.instance.pk).delete_from_media()
+            if scan_uploaded:
+                scan = self.scan_form.save(commit=False)
+                scan.org = org
+                scan.save()
+                write_log(self.request, org, _(u'Прикреплен скан свидетельства о регистрации: %s') % scan.original_name)
+
         if commit:
             org.save()
             self.put_log_data(msg=_(u'Изменены данные организации'))
