@@ -38,6 +38,8 @@ class Product(BaseModel):
         (PRODUCT_DIGGERS, _(u"Рытье могилы")),
         (PRODUCT_SIGN, _(u"Написание надмогильной таблички")),
     )
+    
+    PRODUCT_NAME_MAXLEN = 60
 
     loru = models.ForeignKey(Org, limit_choices_to={'type': Org.PROFILE_LORU}, null=True, verbose_name=_(u"ЛОРУ"))
     name = models.CharField(_(u"Название"), max_length=255)
