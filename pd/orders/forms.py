@@ -19,6 +19,15 @@ from pd.models import SafeDeleteMixin
 from pd.forms import AppOrgFormMixin
 
 class ProductForm(StrippedStringsMixin, forms.ModelForm):
+
+    NAME_POPUP = """
+    <br />Длина названия ограничена %d символами.
+    <br />
+    <br />Пожалуйста, не применяйте в названии СЛОВА ИЗ ПРОПИСНЫХ БУКВ без необходимости.
+    <br />
+    """ % Product.PRODUCT_NAME_MAXLEN
+    NAME_TITLE = ""
+
     DESCRIPTION_POPUP = """
     <br />Для поднятия товаров в результатах поисковых систем рекомендуется при написании ОПИСАНИЯ
     Памятников, по мере необходимости, использовать (но не переусердствовать) следующие слова:
@@ -50,13 +59,13 @@ class ProductForm(StrippedStringsMixin, forms.ModelForm):
     """
     DESCRIPTION_TITLE = ""
 
-
     class Meta:
         model = Product
         exclude = ['loru', ]
 
     def __init__(self, *args, **kwargs):
         super(ProductForm, self).__init__(*args, **kwargs)
+        self.NAME_TITLE = self.NAME_POPUP.replace('\n', '').replace('<br />','\n').strip()
         self.DESCRIPTION_TITLE = self.DESCRIPTION_POPUP.replace('\n', '').replace('<br />','\n').strip()
         self.fields['description'].required = True
         if not self.instance or not self.instance.pk:

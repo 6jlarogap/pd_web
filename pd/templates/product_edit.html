@@ -9,6 +9,10 @@
         {% for field in form %}
             {{ field.errors }}
             <p>{{ field.label_tag }} {{ field }}<span class="helptext">{{ field.help_text }}</span>
+            {% if field.name == "name" %}
+                <a href="#product_name_help" data-toggle="modal" title="{{ form.NAME_TITLE }}"><img src="/static/help-question.png">
+                </a>
+            {% endif %}
             {% if field.name == "description" %}
                 <a href="#product_description_help" data-toggle="modal" title="{{ form.DESCRIPTION_TITLE }}"><img src="/static/help-question.png">
                 </a>
@@ -19,6 +23,18 @@
             <input type="submit" class="btn" value="{% if form.instance.pk %}{% trans "Сохранить" %}{% else %}{% trans "Создать" %}{% endif %}" class="btn"/>
         </p>
     </form>
+    <div id="product_name_help" class="modal hide fade" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+            <h3 id="myModalLabel">{% trans "Название товара/услуги, подсказка" %}</h3>
+        </div>
+        <div class="modal-body">
+        {% autoescape off %}{{ form.NAME_POPUP }}{% endautoescape %}
+        </div>
+        <div class="modal-footer">
+            <button class="btn" data-dismiss="modal" aria-hidden="true">{% trans "закрыть" %}</button>
+        </div>
+    </div>
     <div id="product_description_help" class="modal hide fade" tabindex="-1" role="dialog" aria-hidden="true">
         <div class="modal-header">
             <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
