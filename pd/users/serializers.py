@@ -70,8 +70,7 @@ class StoreSerializer(serializers.ModelSerializer):
         return unicode(instance.address)
 
     def has_components_func(self, instance):
-        return Product.objects.filter(Product.public_catalog_queryset(loru=instance.loru)).\
-                filter(is_component=True).exists()
+        return Product.objects.filter(loru=instance.loru, is_component=True).exists()
 
     def phones_func(self, instance):
         return [ phone.number for phone in instance.phone_set ]
@@ -105,7 +104,7 @@ class OrgSerializer(PhonesFromTextMixin, OrgLocationMixin, serializers.ModelSeri
                 {
                     'id': pc['productcategory__pk'],
                     'title': pc['productcategory__name']
-                } for pc in Product.objects.filter(Product.public_catalog_queryset(loru=obj)).\
+                } for pc in Product.objects.filter(is_public_catalog=True, loru=obj).\
                                 order_by('productcategory__pk').\
                                 values('productcategory__pk', 'productcategory__name').distinct()
         ]
@@ -129,7 +128,7 @@ class OrgShort2Serializer(OrgLocationMixin, serializers.ModelSerializer):
 
     def categories_func(self, obj):
         return [ pc['productcategory__pk'] for pc in \
-            Product.objects.filter(Product.public_catalog_queryset(loru=obj)).\
+            Product.objects.filter(is_public_catalog=True, loru=obj).\
                 order_by('productcategory__pk').\
                 values('productcategory__pk').distinct()
         ]

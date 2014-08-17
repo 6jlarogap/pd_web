@@ -69,13 +69,6 @@ class Product(BaseModel):
     def is_burial(self):
         return self.ptype == self.PRODUCT_BURIAL
 
-    @classmethod
-    def public_catalog_queryset(cls, loru=None):
-        qs = Q(is_public_catalog=True)
-        if loru:
-            qs &= Q(loru=loru)
-        return qs
-        
 class Order(GetLogsMixin, BaseModel):
     PAYMENT_CASH = 'cash'
     PAYMENT_WIRE = 'wire'
