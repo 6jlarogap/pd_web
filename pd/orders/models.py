@@ -46,7 +46,6 @@ class Product(BaseModel):
     slug = AutoSlugField(populate_from='name', max_length=255, editable=False,
                          unique=True, null=True, always_update=True)
     description = models.TextField(_(u"Описание"), blank=True, default='')
-    is_component = models.BooleanField(_(u"Комплектующие?"), default=False)
     measure = models.CharField(_(u"Ед. изм."), max_length=255, default=_(u"шт"))
     price = models.DecimalField(_(u"Цена"), max_digits=20, decimal_places=2)
     ptype = models.CharField(_(u"Тип"), max_length=255, choices=PRODUCT_TYPES, null=True, blank=True)
@@ -55,6 +54,7 @@ class Product(BaseModel):
     productcategory = models.ForeignKey(ProductCategory, verbose_name=_(u"Категория"), on_delete=models.PROTECT)
     currency = models.ForeignKey('billing.Currency', verbose_name=_(u"Валюта"))
     sku = models.CharField(_(u"Артикул"), max_length=255, blank=True, default='')
+    is_component = models.BooleanField(_(u"Показать в каталоге оптовикам"), default=False)
 
     class Meta:
         verbose_name = _(u"Товар")

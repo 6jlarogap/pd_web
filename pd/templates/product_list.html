@@ -9,18 +9,17 @@
             <th>{% trans "Название" %}</th>
             <th>{% trans "Тип" %}</th>
             <th>{% trans "Категория" %}</th>
-            <th>{% trans "Комплектующие" %}?</th>
             <th>{% trans "Ед. изм." %}</th>
             <th>{% trans "По умолчанию" %}</th>
             <th>{% trans "Цена" %}</th>
             <th></th>
+            <th>{% trans "Показ в каталоге" %}</th>
         </tr>
         {% for c in object_list %}
             <tr>
                 <td>{{ c.name }}</td>
                 <td>{{ c.get_ptype_display|default:"" }}</td>
                 <td>{{ c.productcategory }}</td>
-                <td>{% if c.is_component %}{% trans "Комплектующие" %}{% endif %}</td>
                 <td>{{ c.measure }}</td>
                 <td>{{ c.default|yesno }}</td>
                 <td>{{ c.price }}</td>
@@ -29,6 +28,7 @@
                         <a href="{% url manage_products_edit c.pk %}" class="btn">{% trans "править" %}</a>
                     {% endif %}
                 </td>
+                <td>{% if c.is_component %}{% trans "Оптовикам" %}{% endif %}</td>
             </tr>
         {% endfor %}
     </table>
