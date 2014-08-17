@@ -3,7 +3,7 @@
 {% load i18n %}
 
 {% block content %}
-    <h1>{% trans "Товар" %} {{ form.instance }}</h1>
+    <h1>{% if form.instance.pk %}{% trans "Товар" %} {{ form.instance }}{% else %}{% trans "Новый товар" %}{% endif %}</h1>
     <form action="" method="POST" enctype="multipart/form-data">
         {% csrf_token %}
         {% for field in form %}
@@ -16,7 +16,7 @@
             </p>
         {% endfor %}
         <p>
-            <input type="submit" class="btn" value="{% trans "cохранить" %}" class="btn"/>
+            <input type="submit" class="btn" value="{% if form.instance.pk %}{% trans "Сохранить" %}{% else %}{% trans "Создать" %}{% endif %}" class="btn"/>
         </p>
     </form>
     <div id="product_description_help" class="modal hide fade" tabindex="-1" role="dialog" aria-hidden="true">
