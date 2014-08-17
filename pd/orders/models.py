@@ -47,13 +47,15 @@ class Product(BaseModel):
                          unique=True, null=True, always_update=True)
     description = models.TextField(_(u"Описание"), blank=True, default='')
     measure = models.CharField(_(u"Ед. изм."), max_length=255, default=_(u"шт"))
-    price = models.DecimalField(_(u"Цена"), max_digits=20, decimal_places=2)
+    price = models.DecimalField(_(u"Цена розничная"), max_digits=20, decimal_places=2)
+    price_wholesale = models.DecimalField(_(u"Цена оптовая"), max_digits=20, decimal_places=2)
     ptype = models.CharField(_(u"Тип"), max_length=255, choices=PRODUCT_TYPES, null=True, blank=True)
     default = models.BooleanField(_(u"По умолчанию"), default=False, blank=True)
     photo = models.FileField(u"Фото", upload_to=upload_slugified, blank=True, null=True)
     productcategory = models.ForeignKey(ProductCategory, verbose_name=_(u"Категория"), on_delete=models.PROTECT)
     currency = models.ForeignKey('billing.Currency', verbose_name=_(u"Валюта"))
     sku = models.CharField(_(u"Артикул"), max_length=255, blank=True, default='')
+    is_public_catalog = models.BooleanField(_(u"Показать в публичном каталоге"), default=False)
     is_component = models.BooleanField(_(u"Показать в каталоге оптовикам"), default=False)
 
     class Meta:

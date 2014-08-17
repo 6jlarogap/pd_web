@@ -11,7 +11,8 @@
             <th>{% trans "Категория" %}</th>
             <th>{% trans "Ед. изм." %}</th>
             <th>{% trans "По умолчанию" %}</th>
-            <th>{% trans "Цена" %}</th>
+            <th>{% trans "Цена розничная" %}</th>
+            <th>{% trans "Цена оптовая" %}</th>
             <th></th>
             <th>{% trans "Показ в каталоге" %}</th>
         </tr>
@@ -23,12 +24,17 @@
                 <td>{{ c.measure }}</td>
                 <td>{{ c.default|yesno }}</td>
                 <td>{{ c.price }}</td>
+                <td>{{ c.price_wholesale }}</td>
                 <td>
                     {% if user.profile.org == c.loru %}
                         <a href="{% url manage_products_edit c.pk %}" class="btn">{% trans "править" %}</a>
                     {% endif %}
                 </td>
-                <td>{% if c.is_component %}{% trans "Оптовикам" %}{% endif %}</td>
+                <td>
+                    {% if c.is_public_catalog%}{% trans "В публичном каталоге" %}{% endif %}
+                    {% if c.is_component %}{% trans "Оптовикам" %}{% endif %}
+                    {% if c.is_public_catalog and c.is_component %}<br />{% endif %}
+                </td>
             </tr>
         {% endfor %}
     </table>
