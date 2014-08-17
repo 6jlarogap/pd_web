@@ -74,6 +74,12 @@ class ProductForm(StrippedStringsMixin, forms.ModelForm):
             raise forms.ValidationError(_(u'Обязательное поле'))
         return description
 
+    def clean_name(self):
+        name = self.cleaned_data.get('name', '').strip()
+        if len(name) > Product.PRODUCT_NAME_MAXLEN:
+            raise forms.ValidationError(_(u'Не больше %d символов') % Product.PRODUCT_NAME_MAXLEN)
+        return name
+
 class OrderForm(ChildrenJSONMixin, SafeDeleteMixin, AppOrgFormMixin, forms.ModelForm):
 
     class Meta:
