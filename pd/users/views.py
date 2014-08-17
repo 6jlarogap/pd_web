@@ -59,7 +59,7 @@ from pd.utils import host_country_code
 from persons.models import AlivePerson, Phone
 from burials.models import Cemetery, Area, Burial, Place
 from billing.models import Wallet, Rate
-from orders.models import Product, ProductStatus, ProductHistory, Order
+from orders.models import Product, Order
 from pd.views import PaginateListView, RequestToFormMixin, FormInvalidMixin, get_front_end_url, ServiceException
 from geo.models import Location
 
@@ -799,16 +799,6 @@ class LoruRegistryView(UGHRequiredMixin, View):
                     profile.area = None
                     profile.cemetery = None
                     profile.save()
-            for p_status in ProductStatus.objects.filter(ugh=request.user.profile.org,
-                                                         product__loru__in=removed_lorus):
-                ProductHistory.objects.create(
-                    product=p_status.product,
-                    ugh=p_status.ugh,
-                    operation=ProductHistory.PRODUCT_OPERATION_DELETE,
-                    dt=datetime.datetime.now(),
-                    publish_cost='0.0',
-                    currency=p_status.ugh.currency,
-                )
 
             messages.success(self.request, _(u"Данные сохранены"))
             write_log(self.request, self.request.user.profile.org, _(u'Изменены данные реестра ЛОРУ'))
@@ -1523,10 +1513,7 @@ class OmsCurrentStatsView(SupervisorRequiredMixin, TemplateView):
         total['oms_count'] = total['cemeteries_count'] = \
         total['areas_count'] = total['places_count'] = \
         total['burials_count'] = total['places_cabinet_count'] = 0
-        q_published = Q(
-            productstatus__status__in=\
-            (ProductHistory.PRODUCT_OPERATION_PUBLISH, ProductHistory.PRODUCT_OPERATION_UPDATE, )
-        )
+        q_published = Q(is_public_catalog=True)
         for o in Org.objects.filter(type=Org.PROFILE_UGH).order_by(*s):
             total['oms_count'] += 1
             org = {'name': o.name}
@@ -1624,13 +1611,10 @@ class LoruCurrentStatsView(SupervisorRequiredMixin, TemplateView):
         total={}
         total['loru_count'] = total['num_users'] = total['num_stores'] = \
         total['num_products'] = total['num_published_products'] = \
-        total['num_published_components'] = total['num_published_public_products'] = \
+        total['num_published_components'] = \
         total['num_orders'] = total['num_burials'] = 0
         catalog_org_pk = Org.get_catalog_org_pk()
-        q_published = Q(
-            productstatus__status__in=\
-            (ProductHistory.PRODUCT_OPERATION_PUBLISH, ProductHistory.PRODUCT_OPERATION_UPDATE, )
-        )
+        q_published = Q(is_public_catalog=True)
         q_components = Q(is_component=True)
 
         for o in Org.objects.filter(type=Org.PROFILE_LORU).order_by(*s):
@@ -1651,15 +1635,10 @@ class LoruCurrentStatsView(SupervisorRequiredMixin, TemplateView):
             org['num_published_products'] = Product.objects.filter(qs).count()
             total['num_published_products'] += org['num_published_products']
 
-            qs = q_published & Q(loru=o) & q_components
+            qs = q_components & Q(loru=o)
 
             org['num_published_components'] = Product.objects.filter(qs).count()
             total['num_published_components'] += org['num_published_components']
-
-            qs = q_published & Q(loru=o) & ~q_components & \
-                 Q(productstatus__ugh__pk=catalog_org_pk)
-            org['num_published_public_products'] = Product.objects.filter(qs).count()
-            total['num_published_public_products'] += org['num_published_public_products']
 
             org['num_orders'] = Order.objects.filter(loru=o).count()
             total['num_orders'] += org['num_orders']

@@ -71,55 +71,11 @@ class Product(BaseModel):
 
     @classmethod
     def public_catalog_queryset(cls, loru=None):
-        catalog_org_pk = Org.get_catalog_org_pk()
-        qs = Q(
-            productstatus__status__in=\
-                      (ProductHistory.PRODUCT_OPERATION_PUBLISH, ProductHistory.PRODUCT_OPERATION_UPDATE, ),
-            productstatus__ugh__pk=catalog_org_pk,
-        )
+        qs = Q(is_public_catalog=True)
         if loru:
             qs &= Q(loru=loru)
         return qs
         
-class ProductHistory(models.Model):
-    """
-    Журнал добавления/удаления/поднятия статусов продуктов
-    (товаров и услуг) ЛОРУ у соответствующего ОМС
-    """
-    PRODUCT_OPERATION_PUBLISH = 'publish'
-    PRODUCT_OPERATION_DISABLE = 'disable'
-    PRODUCT_OPERATION_UPDATE = 'update'
-    # Если ОМС удалит ЛОРУ из реестра:
-    PRODUCT_OPERATION_DELETE = 'delete'
-    PRODUCT_OPERATIONS = (
-        (PRODUCT_OPERATION_PUBLISH, _(u"Добавление")),
-        (PRODUCT_OPERATION_DISABLE, _(u"Изъятие")),
-        # Это поднятие статуса продукта в каталоге (обновление даты/времени)
-        (PRODUCT_OPERATION_UPDATE, _(u"Обновление")),
-        (PRODUCT_OPERATION_DELETE, _(u"Удаление")),
-    )
-
-    product = models.ForeignKey(Product, verbose_name=_(u"Продукт"), on_delete=models.PROTECT)
-    ugh = models.ForeignKey(Org, limit_choices_to={'type': Org.PROFILE_UGH}, verbose_name=_(u"ОМС"))
-    dt = models.DateTimeField(_(u"Дата/время создания"))
-    operation = models.CharField(_(u"Операция"), max_length=255, choices=PRODUCT_OPERATIONS)
-    publish_cost = models.DecimalField(_(u"Цена"), max_digits=20, decimal_places=2)
-    currency = models.ForeignKey('billing.Currency', verbose_name=_(u"Валюта"))
-
-class ProductStatus(models.Model):
-    """
-    Состояние продукта (товара или услуги) ЛОРУ у соответствующего ОМС
-    """
-
-    product = models.ForeignKey(Product, verbose_name=_(u"Продукт"), on_delete=models.PROTECT)
-    ugh = models.ForeignKey(Org, limit_choices_to={'type': Org.PROFILE_UGH}, verbose_name=_(u"ОМС"))
-    # Из ProductHistory.PRODUCT_OPERATIONS здесь будут применяться только enable, disable, up:
-    status = models.CharField(_(u"Статус"), max_length=255, choices=ProductHistory.PRODUCT_OPERATIONS)
-    dt = models.DateTimeField(_(u"Дата/время модификации"))
-
-    class Meta:
-        unique_together = ('product', 'ugh',)
-
 class Order(GetLogsMixin, BaseModel):
     PAYMENT_CASH = 'cash'
     PAYMENT_WIRE = 'wire'

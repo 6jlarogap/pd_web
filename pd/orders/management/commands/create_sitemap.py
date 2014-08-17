@@ -53,14 +53,7 @@ class Command(BaseCommand):
         except IndexError:
             pass
 
-        catalog_org_pk = Org.get_catalog_org_pk()
-        q_published = Q(
-            productstatus__status__in=(
-                ProductHistory.PRODUCT_OPERATION_PUBLISH,
-                ProductHistory.PRODUCT_OPERATION_UPDATE,
-            ),
-            productstatus__ugh__pk=catalog_org_pk,
-        )
+        q_published = Q(is_public_catalog=True)
         q_suppliers = Q(
             type=Org.PROFILE_LORU,
             profile__user__is_active=True,
