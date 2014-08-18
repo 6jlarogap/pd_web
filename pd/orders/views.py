@@ -796,13 +796,12 @@ class ApiLoruProductPlaces(APIView):
 
     @transaction.commit_on_success
     def post(self, request, format=None):
-        # Соответствие команды "status" из входных данных строкам в полях соответствующих таблиц:
+        # Соответствие входных данных с константами в поле Rate.action
         rate_action = {
             'disable': Rate.RATE_ACTION_DISABLE,
             'enable': Rate.RATE_ACTION_PUBLISH,
             'up': Rate.RATE_ACTION_UPDATE,
         }
-        product_history_operation =  product_status = rate_action
         data = []
         catalog_org_pk = Org.get_catalog_org_pk()
         for p in request.DATA:

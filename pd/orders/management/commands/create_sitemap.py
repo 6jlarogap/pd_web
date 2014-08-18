@@ -8,7 +8,7 @@ from django.db.models.query_utils import Q
 
 from django.conf import settings
 
-from orders.models import Product, ProductHistory
+from orders.models import Product
 from users.models import Org
 from geo.models import Country, Location
 
