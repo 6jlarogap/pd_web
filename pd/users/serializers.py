@@ -24,7 +24,7 @@ class StoreSerializer(serializers.ModelSerializer):
     address = serializers.SerializerMethodField('address_func')
     phones = serializers.SerializerMethodField('phones_func')
     location = serializers.SerializerMethodField('location_func')
-    hasComponents = serializers.SerializerMethodField('has_components_func')
+    hasComponents = serializers.SerializerMethodField('has_wholesales_func')
 
     class Meta:
         model = Store
@@ -69,8 +69,8 @@ class StoreSerializer(serializers.ModelSerializer):
     def address_func(self, instance):
         return unicode(instance.address)
 
-    def has_components_func(self, instance):
-        return Product.objects.filter(loru=instance.loru, is_component=True).exists()
+    def has_wholesales_func(self, instance):
+        return Product.objects.filter(loru=instance.loru, is_wholesale=True).exists()
 
     def phones_func(self, instance):
         return [ phone.number for phone in instance.phone_set ]

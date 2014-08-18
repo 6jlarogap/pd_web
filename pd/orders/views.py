@@ -659,7 +659,7 @@ class ProductsViewSet(viewsets.ModelViewSet):
                     is_wholesale = True
             except ValueError:
                 pass
-        qs &= Q(is_public_catalog=is_public_catalog, is_component=is_wholesale)
+        qs &= Q(is_public_catalog=is_public_catalog, is_wholesale=is_wholesale)
 
         ordered = None
         orders = {'price': 'price', 'date': 'dt_modified', }

@@ -1611,11 +1611,11 @@ class LoruCurrentStatsView(SupervisorRequiredMixin, TemplateView):
         total={}
         total['loru_count'] = total['num_users'] = total['num_stores'] = \
         total['num_products'] = total['num_published_products'] = \
-        total['num_published_components'] = \
+        total['num_published_wholesales'] = \
         total['num_orders'] = total['num_burials'] = 0
         catalog_org_pk = Org.get_catalog_org_pk()
         q_published = Q(is_public_catalog=True)
-        q_components = Q(is_component=True)
+        q_wholesales = Q(is_wholesale=True)
 
         for o in Org.objects.filter(type=Org.PROFILE_LORU).order_by(*s):
             total['loru_count'] += 1
@@ -1635,10 +1635,10 @@ class LoruCurrentStatsView(SupervisorRequiredMixin, TemplateView):
             org['num_published_products'] = Product.objects.filter(qs).count()
             total['num_published_products'] += org['num_published_products']
 
-            qs = q_components & Q(loru=o)
+            qs = q_wholesales & Q(loru=o)
 
-            org['num_published_components'] = Product.objects.filter(qs).count()
-            total['num_published_components'] += org['num_published_components']
+            org['num_published_wholesales'] = Product.objects.filter(qs).count()
+            total['num_published_wholesales'] += org['num_published_wholesales']
 
             org['num_orders'] = Order.objects.filter(loru=o).count()
             total['num_orders'] += org['num_orders']
