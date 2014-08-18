@@ -23,12 +23,22 @@ class ProductsSerializer(serializers.HyperlinkedModelSerializer):
     photo = HyperlinkedFileField()
     currency = serializers.RelatedField(source='currency')
     supplier = OrgShortSerializer(source='loru')
+    price = serializers.SerializerMethodField('price_func')
     
     class Meta:
         model = Product
         fields = ('id', 'name', 'description', 'photo', 'measure', 'price', 'currency',
                   'sku', 'supplier', 'slug',
         )
+
+    def price_func(self, product):
+        price = product.price
+        try:
+            if int(self.context['request'].GET.get('filter[components_only]', 0)):
+                price = product.price_wholesale
+        except (IndexError, ValueError,):
+            pass
+        return price
 
 class ProductInfoSerializer(serializers.HyperlinkedModelSerializer):
     photo = HyperlinkedFileField()
