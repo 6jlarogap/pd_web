@@ -65,6 +65,10 @@ class ProductForm(StrippedStringsMixin, forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super(ProductForm, self).__init__(*args, **kwargs)
+        self.fields['name'].widget.attrs = dict(
+            maxlength=Product.PRODUCT_NAME_MAXLEN,
+            size=Product.PRODUCT_NAME_MAXLEN,
+        )
         self.NAME_TITLE = self.NAME_POPUP.replace('\n', '').replace('<br />','\n').strip()
         self.DESCRIPTION_TITLE = self.DESCRIPTION_POPUP.replace('\n', '').replace('<br />','\n').strip()
         self.fields['description'].required = True
