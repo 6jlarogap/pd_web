@@ -32,8 +32,8 @@
                 </td>
                 <td>
                     {% if c.is_public_catalog%}{% trans "В публичном каталоге" %}{% endif %}
-                    {% if c.is_public_catalog and c.is_component %}<br />{% endif %}
-                    {% if c.is_component %}{% trans "Оптовикам" %}{% endif %}
+                    {% if c.is_public_catalog and c.is_wholesale %}<br />{% endif %}
+                    {% if c.is_wholesale %}{% trans "Оптовикам" %}{% endif %}
                 </td>
             </tr>
         {% endfor %}

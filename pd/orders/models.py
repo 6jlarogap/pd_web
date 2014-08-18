@@ -56,7 +56,7 @@ class Product(BaseModel):
     currency = models.ForeignKey('billing.Currency', verbose_name=_(u"Валюта"))
     sku = models.CharField(_(u"Артикул"), max_length=255, blank=True, default='')
     is_public_catalog = models.BooleanField(_(u"Показать в публичном каталоге"), default=False)
-    is_component = models.BooleanField(_(u"Показать в каталоге оптовикам"), default=False)
+    is_wholesale = models.BooleanField(_(u"Показать в каталоге оптовикам"), default=False)
 
     class Meta:
         verbose_name = _(u"Товар")
