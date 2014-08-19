@@ -24,11 +24,12 @@ from django.shortcuts import get_object_or_404
 from logs.models import write_log
 from burials.forms import AddOrgForm, AddAgentForm, AddDoverForm, AddDocTypeForm
 from burials.models import Burial, Place, Grave, PlacePhoto
-from users.models import CustomerProfile, CustomerProfilePhoto, Org, ProfileLORU, Store, is_loru_user, is_supervisor
+from users.models import CustomerProfile, CustomerProfilePhoto, Org, ProfileLORU, Store, is_loru_user, is_supervisor, \
+                         PermitIfLoru
 from billing.models import Rate
 from orders.forms import ProductForm, OrderForm, OrderItemFormset, CoffinForm, CatafalqueForm, \
                          AddInfoForm, OrderSearchForm, OrderBurialForm
-from orders.models import Product, Order, OrderItem, ProductCategory, ProductStatus, ProductHistory
+from orders.models import Product, Order, OrderItem, ProductCategory
 from pd.forms import CommentForm
 from pd.views import PaginateListView, RequestToFormMixin
 from reports.models import make_report
@@ -37,7 +38,7 @@ from rest_framework import viewsets
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from serializers import ProductCategorySerializer, ProductsSerializer, ProductInfoSerializer
+from serializers import ProductCategorySerializer, ProductsSerializer, ProductsOptSerializer, ProductInfoSerializer
 
 
 class LORURequiredMixin:
@@ -64,7 +65,7 @@ class ProductList(LORURequiredMixin, ListView):
 manage_products = ProductList.as_view()
 
 class ProductCreate(LORURequiredMixin, CreateView):
-    template_name = 'product_create.html'
+    template_name = 'product_edit.html'
     form_class = ProductForm
 
     def form_valid(self, form):
@@ -613,7 +614,7 @@ class CustomerDataMixin:
                     lorus.update(p.cemetery.ugh.get_loru_list())
         return is_customer, places, lorus
 
-class ProductsViewSet(viewsets.ModelViewSet):
+class ProductsViewSet(viewsets.ReadOnlyModelViewSet):
     """
     Показ продуктов в публичном каталоге только!!!
     """
@@ -636,13 +637,6 @@ class ProductsViewSet(viewsets.ModelViewSet):
         if loru_ids:
             qs &= Q(loru__pk__in=loru_ids)
 
-        catalog_org_pk = Org.get_catalog_org_pk()
-        qs  &= Q(
-            productstatus__status__in=\
-                (ProductHistory.PRODUCT_OPERATION_PUBLISH, ProductHistory.PRODUCT_OPERATION_UPDATE, ),
-                productstatus__ugh__pk=catalog_org_pk,
-        )
-        
         if self.request.GET.get('filter[price_from]'):
             qs &= Q(price__gte=self.request.GET.get('filter[price_from]'))
         if self.request.GET.get('filter[price_to]'):
@@ -654,20 +648,21 @@ class ProductsViewSet(viewsets.ModelViewSet):
         if category_ids:
             qs &= Q(productcategory__pk__in=category_ids)
 
-        # По умолчанию не показываем комплектующие
-        show_components = False
+        # По умолчанию показываем только то, что в публичном каталоге
+        is_public_catalog = True
+        is_wholesale = False
         if is_loru_user(self.request.user) or is_supervisor(self.request.user):
             components_only = self.request.GET.get('filter[components_only]')
             try:
                 if components_only and int(components_only):
-                    show_components = True
+                    is_public_catalog = False
+                    is_wholesale = True
             except ValueError:
                 pass
-        if not show_components:
-            qs &= Q(is_component=False)
+        qs &= Q(is_public_catalog=is_public_catalog, is_wholesale=is_wholesale)
 
         ordered = None
-        orders = {'price': 'price', 'date': 'productstatus__dt', }
+        orders = {'price': 'price', 'date': 'dt_modified', }
         directions = {'asc': '', 'desc': '-', }
         for order in orders:
             direction = self.request.GET.get('order[%s]' % order)
@@ -691,7 +686,36 @@ class ProductsViewSet(viewsets.ModelViewSet):
             filter = filter[:limit]
         
         return filter
-        
+
+class ProductsOptViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    Показ продуктов оптовика-поставщика
+
+    api/optplaces/suppliers/(?P<loru_pk>\d+)/products
+    """
+    model = Product
+    paginate_by = None
+
+    def get_queryset(self, *args, **kwargs):
+        return Product.objects.filter(
+            loru__pk=self.kwargs['loru_pk'],
+            is_wholesale=True,
+        )
+
+    def get_serializer(self, *args, **kwargs):
+        try:
+            is_wholesale_with_vat = Org.objects.get(pk=self.kwargs['loru_pk']).is_wholesale_with_vat
+        except Org.DoesNotExist:
+            is_wholesale_with_vat = False
+        return ProductsOptSerializer(
+            self.get_queryset(),
+            context = dict(
+                request=self.request,
+                view=self,
+                is_wholesale_with_vat=is_wholesale_with_vat,
+            )
+        )
+
 class ProductInfoView(APIView):
 
     def get(self, request, product_slug):
@@ -797,82 +821,52 @@ class ApiLoruProductPlaces(APIView):
     ]
     """
     
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (PermitIfLoru,)
 
     @transaction.commit_on_success
     def post(self, request, format=None):
-        if not is_loru_user(request.user):
-            return Response(data={ "detail": "User denied access: not LORU" }, status=403)
-        # Соответствие команды "status" из входных данных строкам в полях соответствующих таблиц:
+        # Соответствие входных данных с константами в поле Rate.action
         rate_action = {
             'disable': Rate.RATE_ACTION_DISABLE,
             'enable': Rate.RATE_ACTION_PUBLISH,
             'up': Rate.RATE_ACTION_UPDATE,
         }
-        product_history_operation =  product_status = rate_action
         data = []
         catalog_org_pk = Org.get_catalog_org_pk()
         for p in request.DATA:
-            if Product.objects.filter(pk=p['id'], loru=request.user.profile.org).count():
-                data_p = { 'id': p['id'], 'places': [] }
+            try:
+                product = Product.objects.get(pk=p['id'], loru=request.user.profile.org)
+                data_p = { 'id': p['id'], 'places': [catalog_org_pk] }
                 for o in p['places']:
-                    if o['status'] in rate_action.keys() and \
-                       ProfileLORU.objects.filter(ugh_id=o['id'], loru=request.user.profile.org).count():
-                        ugh = Org.objects.get(pk=o['id'])
-                        data_p['places'].append(o)
-                        dt = datetime.datetime.now()
-                        status, created = ProductStatus.objects.get_or_create(
-                                            product_id=p['id'],
-                                            ugh=ugh,
-                                            defaults={'status': product_status[o['status']],
-                                                      'dt': dt,
-                                            }
-                        )
-                        if not created:
-                            status.status=product_status[o['status']]
-                            status.dt=dt
-                            status.save()
-                        rate = '0.0'
-                        if o['status'] in ('enable', 'up', ):
-                            try:
-                                rate = Rate.objects.filter(
-                                    wallet__org=ugh,
-                                    wallet__currency=ugh.currency,
-                                    action=rate_action[o['status']],
-                                ).order_by('-date_from')[0].rate
-                            except IndexError:
-                                pass
-                        producthistory = ProductHistory.objects.create(
-                                        product_id=p['id'],
-                                        ugh=ugh,
-                                        operation=product_history_operation[o['status']],
-                                        dt=dt,
-                                        publish_cost=rate,
-                                        currency=ugh.currency,
-                        )
-                        if ugh.pk == catalog_org_pk:
-                            where = _(u"в публичном каталоге")
-                        else:
-                            where = _(u"у ОМС: %s") % ugh.name
-                        write_log(
-                            request,
-                            producthistory.product,
-                            _(u"Статус: %s, %s") % (producthistory.get_operation_display(), where, )
-                        )
-                data.append(data_p)
+                    if o['id'] == catalog_org_pk:
+                        try:
+                            if rate_action[o['status']] == Rate.RATE_ACTION_DISABLE:
+                                product.is_public_catalog = False
+                            elif rate_action[o['status']] in \
+                                    (Rate.RATE_ACTION_PUBLISH, Rate.RATE_ACTION_UPDATE,):
+                                product.is_public_catalog = True
+                            product.save()
+                            write_log(
+                                request,
+                                product,
+                                _(u"Добавлен в публичный каталог") if product.is_public_catalog else _(u"Изъят из публичного каталога"),
+                            )
+                            data.append(data_p)
+                        except IndexError:
+                            pass
+            except Product.DoesNotExist:
+                pass
         return Response(data=data, status=200)
 
 api_loru_product_places = ApiLoruProductPlaces.as_view()
 
 class UghPublishedProductsViewSet(viewsets.ViewSet):
     queryset = Product.objects.none()
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (PermitIfLoru,)
     
     def list(self, request):
         data=[]
-        if not is_loru_user(request.user):
-            return Response(status=400, data=data)
-        ugh_list = [ pl.ugh for pl in ProfileLORU.objects.filter(loru=request.user.profile.org)]
+        catalog_org_pk = Org.get_catalog_org_pk()
         for p in Product.objects.filter(loru=request.user.profile.org).order_by('pk'):
             data_p = {
                 'id': p.pk,
@@ -883,9 +877,7 @@ class UghPublishedProductsViewSet(viewsets.ViewSet):
                     'name': p.productcategory.name,
                 },
             }
-            for ps in ProductStatus.objects.filter(product=p, ugh__in=ugh_list):
-                if ps.status in (ProductHistory.PRODUCT_OPERATION_PUBLISH,
-                                 ProductHistory.PRODUCT_OPERATION_UPDATE):
-                    data_p['availableOnPlaces'].append(ps.ugh.pk)
+            if p.is_public_catalog:
+                data_p['availableOnPlaces'] = [catalog_org_pk,]
             data.append(data_p)
         return Response(status=200, data=data)

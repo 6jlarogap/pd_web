@@ -16,8 +16,18 @@ from persons.forms import AlivePersonForm, PersonIDForm
 from persons.models import AlivePerson, PersonID
 from users.models import Org, Profile
 from pd.models import SafeDeleteMixin
+from pd.forms import AppOrgFormMixin
 
 class ProductForm(StrippedStringsMixin, forms.ModelForm):
+
+    NAME_POPUP = """
+    <br />Длина названия ограничена %d символами.
+    <br />
+    <br />Пожалуйста, не применяйте в названии СЛОВА ИЗ ПРОПИСНЫХ БУКВ без необходимости.
+    <br />
+    """ % Product.PRODUCT_NAME_MAXLEN
+    NAME_TITLE = ""
+
     DESCRIPTION_POPUP = """
     <br />Для поднятия товаров в результатах поисковых систем рекомендуется при написании ОПИСАНИЯ
     Памятников, по мере необходимости, использовать (но не переусердствовать) следующие слова:
@@ -49,13 +59,17 @@ class ProductForm(StrippedStringsMixin, forms.ModelForm):
     """
     DESCRIPTION_TITLE = ""
 
-
     class Meta:
         model = Product
         exclude = ['loru', ]
 
     def __init__(self, *args, **kwargs):
         super(ProductForm, self).__init__(*args, **kwargs)
+        self.fields['name'].widget.attrs = dict(
+            maxlength=Product.PRODUCT_NAME_MAXLEN,
+            size=Product.PRODUCT_NAME_MAXLEN,
+        )
+        self.NAME_TITLE = self.NAME_POPUP.replace('\n', '').replace('<br />','\n').strip()
         self.DESCRIPTION_TITLE = self.DESCRIPTION_POPUP.replace('\n', '').replace('<br />','\n').strip()
         self.fields['description'].required = True
         if not self.instance or not self.instance.pk:
@@ -73,7 +87,13 @@ class ProductForm(StrippedStringsMixin, forms.ModelForm):
             raise forms.ValidationError(_(u'Обязательное поле'))
         return description
 
-class OrderForm(ChildrenJSONMixin, SafeDeleteMixin, forms.ModelForm):
+    def clean_name(self):
+        name = self.cleaned_data.get('name', '').strip()
+        if len(name) > Product.PRODUCT_NAME_MAXLEN:
+            raise forms.ValidationError(_(u'Не больше %d символов') % Product.PRODUCT_NAME_MAXLEN)
+        return name
+
+class OrderForm(ChildrenJSONMixin, SafeDeleteMixin, AppOrgFormMixin, forms.ModelForm):
 
     class Meta:
         model = Order
@@ -82,6 +102,7 @@ class OrderForm(ChildrenJSONMixin, SafeDeleteMixin, forms.ModelForm):
     def __init__(self, request, *args, **kwargs):
         self.request = request
         super(OrderForm, self).__init__(*args, **kwargs)
+        self.init_app_org_label()
         self.fields.keyOrder.insert(0, self.fields.keyOrder.pop(-1))
 
         remove_opf_empty = request.user.profile.org.opf_order_customer_mandatory
