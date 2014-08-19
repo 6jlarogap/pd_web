@@ -46,15 +46,19 @@ class ProductsOptSerializer(serializers.HyperlinkedModelSerializer):
     price = Field(source = 'price_wholesale')
     category = ProductCategorySerializer(source='productcategory')
     subcategory = serializers.SerializerMethodField('subcategory_func')
+    withVAT = serializers.SerializerMethodField('withVAT_func')
 
     class Meta:
         model = Product
         fields = ('id', 'sku', 'photo', 'slug', 'name', 'description', 'measure', 'price', 'currency',
-                  'category', 'subcategory', 
+                  'withVAT', 'category', 'subcategory', 
         )
 
     def subcategory_func(self, product):
         return None
+
+    def withVAT_func(self, product):
+        return self.context['is_wholesale_with_vat']
 
 class ProductInfoSerializer(serializers.HyperlinkedModelSerializer):
     photo = HyperlinkedFileField()
