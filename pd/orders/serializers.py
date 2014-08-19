@@ -18,13 +18,12 @@ class ProductCategorySerializer(serializers.HyperlinkedModelSerializer):
         model = ProductCategory
         fields = ('id', 'name', 'icon', )
 
-
 class ProductsSerializer(serializers.HyperlinkedModelSerializer):
     photo = HyperlinkedFileField()
     currency = serializers.RelatedField(source='currency')
     supplier = OrgShortSerializer(source='loru')
     price = serializers.SerializerMethodField('price_func')
-    
+
     class Meta:
         model = Product
         fields = ('id', 'name', 'description', 'photo', 'measure', 'price', 'currency',
@@ -39,6 +38,23 @@ class ProductsSerializer(serializers.HyperlinkedModelSerializer):
         except (IndexError, ValueError,):
             pass
         return price
+
+class ProductsOptSerializer(serializers.HyperlinkedModelSerializer):
+    photo = HyperlinkedFileField()
+    currency = serializers.RelatedField(source='currency')
+    supplier = OrgShortSerializer(source='loru')
+    price = Field(source = 'price_wholesale')
+    category = ProductCategorySerializer(source='productcategory')
+    subcategory = serializers.SerializerMethodField('subcategory_func')
+
+    class Meta:
+        model = Product
+        fields = ('id', 'sku', 'photo', 'slug', 'name', 'description', 'measure', 'price', 'currency',
+                  'category', 'subcategory', 
+        )
+
+    def subcategory_func(self, product):
+        return None
 
 class ProductInfoSerializer(serializers.HyperlinkedModelSerializer):
     photo = HyperlinkedFileField()
