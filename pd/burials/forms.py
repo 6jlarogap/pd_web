@@ -1522,7 +1522,7 @@ class AddOrgForm(StrippedStringsMixin, BaseOrgForm):
                    'plan_date_days_before', 'max_graves_count',
                    'worktime', 'site', 
                    'currency', 'director',
-                   'description',
+                   'description', 'is_wholesale_with_vat',
         )
     
     def __init__(self, request, *args, **kwargs):

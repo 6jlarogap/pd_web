@@ -614,7 +614,7 @@ class CustomerDataMixin:
                     lorus.update(p.cemetery.ugh.get_loru_list())
         return is_customer, places, lorus
 
-class ProductsViewSet(viewsets.ModelViewSet):
+class ProductsViewSet(viewsets.ReadOnlyModelViewSet):
     """
     Показ продуктов в публичном каталоге только!!!
     """
@@ -687,20 +687,33 @@ class ProductsViewSet(viewsets.ModelViewSet):
         
         return filter
 
-class ProductsOptViewSet(viewsets.ModelViewSet):
+class ProductsOptViewSet(viewsets.ReadOnlyModelViewSet):
     """
     Показ продуктов оптовика-поставщика
 
     api/optplaces/suppliers/(?P<loru_pk>\d+)/products
     """
     model = Product
-    serializer_class = ProductsOptSerializer
     paginate_by = None
 
     def get_queryset(self, *args, **kwargs):
         return Product.objects.filter(
             loru__pk=self.kwargs['loru_pk'],
             is_wholesale=True,
+        )
+
+    def get_serializer(self, *args, **kwargs):
+        try:
+            is_wholesale_with_vat = Org.objects.get(pk=self.kwargs['loru_pk']).is_wholesale_with_vat
+        except Org.DoesNotExist:
+            is_wholesale_with_vat = False
+        return ProductsOptSerializer(
+            self.get_queryset(),
+            context = dict(
+                request=self.request,
+                view=self,
+                is_wholesale_with_vat=is_wholesale_with_vat,
+            )
         )
 
 class ProductInfoView(APIView):

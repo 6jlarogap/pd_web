@@ -307,6 +307,7 @@ class OrgForm(StrippedStringsMixin, BaseOrgForm):
         if not self.is_own_org or not self.request.user.profile.is_loru():
             del self.fields['opf_order']
             del self.fields['opf_order_customer_mandatory']
+            del self.fields['is_wholesale_with_vat']
         if self.is_own_org and request.user.profile.is_ugh():
             self.placesize_formset = PlaceSizeFormset(data=request.POST or None, instance=self.instance)
         else:
