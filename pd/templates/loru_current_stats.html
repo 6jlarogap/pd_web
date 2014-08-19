@@ -35,13 +35,10 @@
             {% trans "Товаров" %}
         </th>
         <th style="text-align:right;">
-            {% trans "Товаров<br />опубликовано" %}
+            {% trans "Товаров<br />в публичном каталоге" %}
         </th>
         <th style="text-align:right;">
-            {% trans "Комплектующих<br />опубликовано" %}
-        </th>
-        <th style="text-align:right;">
-            {% trans "Публичных товаров<br />опубликовано<br />(без комлектующих)" %}
+            {% trans "Товаров опубликовано<br />оптовикам" %}
         </th>
         <th style="text-align:right;">
             {% trans "Заказов" %}
@@ -69,10 +66,7 @@
             <b>{{ total.num_published_products }}</b>
         </td>
         <td style="text-align:right;">
-            <b>{{ total.num_published_components }}</b>
-        </td>
-        <td style="text-align:right;">
-            <b>{{ total.num_published_public_products }}</b>
+            <b>{{ total.num_published_wholesales }}</b>
         </td>
         <td style="text-align:right;">
             <b>{{ total.num_orders }}</b>
@@ -102,10 +96,7 @@
                 {{ org.num_published_products }}
             </td>
             <td style="text-align:right;">
-                {{ org.num_published_components }}
-            </td>
-            <td style="text-align:right;">
-                {{ org.num_published_public_products }}
+                {{ org.num_published_wholesales }}
             </td>
             <td style="text-align:right;">
                 {{ org.num_orders }}

@@ -4,9 +4,16 @@
 
 {% block content %}
 <h1>{% trans "Данные организации" %} {{ object }}</h1>
-<form action="" method="POST">
+<form action="" method="POST"  enctype="multipart/form-data">
     {% csrf_token %}
-    {{ form.as_p }}
+    {% for field in form %}
+        {{ field.errors }}
+        <p>{{ field.label_tag }} {{ field }}<span class="helptext">{{ field.help_text }}</span>
+        </p>
+        {% if form.scan_form and field.name == "basis" %}
+            {{ form.scan_form.as_p }}
+        {% endif %}
+    {% endfor %}
 
     {% if form.placesize_formset %}
         <h2>{% trans "Размеры мест" %}</h2>
@@ -68,10 +75,10 @@
                 <th>{% trans "Активен" %}</th>
                 <th></th>
             </tr>
-            {% for p in user.profile.org.profile_set.all %}
+            {% for p in form.user_qs %}
                 <tr>
                     <td>{{ p.user.username }}</td>
-                    <td>{{ p.user.email }}</td>
+                    <td>{{ p.user.email|default_if_none:"" }}</td>
                     <td>{% if p.user.profile.user_last_name %}{{ p.user.profile.full_name }}{% endif %}</td>
                     {% if user.profile.is_loru %}<td>{{ p.is_agent|yesno }}</td>{% endif %}
                     <td>{{ p.user.is_active|yesno }}</td>

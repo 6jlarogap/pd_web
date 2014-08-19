@@ -203,7 +203,7 @@ def get_mail_footer(user):
                         user.username,
                         '/' if pr.full_name() else '',
                         pr.full_name(),
-                        user.email,
+                        user.email or '',
                        )
         if not is_customer:
             footer += _(    u'\n\n'
@@ -211,7 +211,7 @@ def get_mail_footer(user):
                             u'Email организации: %s\n'
                         ) % (
                                 pr.org,
-                                pr.org and pr.org.email,
+                                pr.org and pr.org.email or '',
                             )
     return footer
 
@@ -415,14 +415,18 @@ class Oauth(models.Model):
                 password = signup_dict.get('password')
                 profile = signup_dict.get('profile')
                 if username:
-                    user, created = User.objects.get_or_create(
-                        username=username,
-                        defaults = {
-                            'email': profile and profile.get('email') or '',
-                        }
-                    )
-                    if not created:
-                        raise ServiceException(_(u'Такой пользователь, %s, уже имеется') % username)
+                    try:
+                        email = profile and profile.get('email') or None
+                        user, created = User.objects.get_or_create(
+                            username=username,
+                            defaults = {
+                                'email': email,
+                            }
+                        )
+                        if not created:
+                            raise ServiceException(_(u'Такой пользователь, %s, уже имеется') % username)
+                    except IntegrityError:
+                        raise ServiceException(_(u'Есть уже пользователь с таким email: %s') % email)
                 else:
                     chars = string.ascii_lowercase + string.digits
                     while True:
@@ -565,6 +569,7 @@ class Org(GetLogsMixin, BaseModel):
     worktime = models.CharField(_(u"Время работы (ЧЧ:ММ - ЧЧ:ММ)"), max_length=255, default='', blank=True)
     site = models.URLField(_(u"Сайт"), default='', blank=True)
     currency = models.ForeignKey('billing.Currency', verbose_name=_(u"Валюта"), default=get_default_currency)
+    is_wholesale_with_vat = models.BooleanField(_(u"Оптовые цены продуктов с НДС"), default=False)
 
     class Meta:
         verbose_name = _(u'Организация')
@@ -793,8 +798,12 @@ class RegisterProfile(SafeDeleteMixin, BaseModel):
         return Org.objects.filter(inn=self.org_inn)
 
     def same_username(self):
-        return not self.is_approved() and \
+        return not self.is_approved() and not self.is_declined() and \
                User.objects.filter(username__iexact=self.user_name).count()
+
+    def same_email(self):
+        return not self.is_approved() and not self.is_declined() and \
+               User.objects.filter(email__iexact=self.user_email).count()
 
     @classmethod
     def get_logs(cls):

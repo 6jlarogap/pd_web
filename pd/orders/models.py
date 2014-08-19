@@ -7,6 +7,7 @@ from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.utils.translation import ugettext as _
+from django.db.models.query_utils import Q
 
 from burials.models import Burial
 from reports.models import Report
@@ -37,21 +38,25 @@ class Product(BaseModel):
         (PRODUCT_DIGGERS, _(u"Рытье могилы")),
         (PRODUCT_SIGN, _(u"Написание надмогильной таблички")),
     )
+    
+    PRODUCT_NAME_MAXLEN = 60
 
     loru = models.ForeignKey(Org, limit_choices_to={'type': Org.PROFILE_LORU}, null=True, verbose_name=_(u"ЛОРУ"))
     name = models.CharField(_(u"Название"), max_length=255)
     slug = AutoSlugField(populate_from='name', max_length=255, editable=False,
                          unique=True, null=True, always_update=True)
     description = models.TextField(_(u"Описание"), blank=True, default='')
-    is_component = models.BooleanField(_(u"Комплектующие?"), default=False)
     measure = models.CharField(_(u"Ед. изм."), max_length=255, default=_(u"шт"))
-    price = models.DecimalField(_(u"Цена"), max_digits=20, decimal_places=2)
+    price = models.DecimalField(_(u"Цена розничная"), max_digits=20, decimal_places=2)
+    price_wholesale = models.DecimalField(_(u"Цена оптовая"), max_digits=20, decimal_places=2)
     ptype = models.CharField(_(u"Тип"), max_length=255, choices=PRODUCT_TYPES, null=True, blank=True)
     default = models.BooleanField(_(u"По умолчанию"), default=False, blank=True)
     photo = models.FileField(u"Фото", upload_to=upload_slugified, blank=True, null=True)
     productcategory = models.ForeignKey(ProductCategory, verbose_name=_(u"Категория"), on_delete=models.PROTECT)
     currency = models.ForeignKey('billing.Currency', verbose_name=_(u"Валюта"))
     sku = models.CharField(_(u"Артикул"), max_length=255, blank=True, default='')
+    is_public_catalog = models.BooleanField(_(u"Показать в публичном каталоге"), default=False)
+    is_wholesale = models.BooleanField(_(u"Показать в каталоге оптовикам"), default=False)
 
     class Meta:
         verbose_name = _(u"Товар")
@@ -63,45 +68,6 @@ class Product(BaseModel):
 
     def is_burial(self):
         return self.ptype == self.PRODUCT_BURIAL
-
-class ProductHistory(models.Model):
-    """
-    Журнал добавления/удаления/поднятия статусов продуктов
-    (товаров и услуг) ЛОРУ у соответствующего ОМС
-    """
-    PRODUCT_OPERATION_PUBLISH = 'publish'
-    PRODUCT_OPERATION_DISABLE = 'disable'
-    PRODUCT_OPERATION_UPDATE = 'update'
-    # Если ОМС удалит ЛОРУ из реестра:
-    PRODUCT_OPERATION_DELETE = 'delete'
-    PRODUCT_OPERATIONS = (
-        (PRODUCT_OPERATION_PUBLISH, _(u"Добавление")),
-        (PRODUCT_OPERATION_DISABLE, _(u"Изъятие")),
-        # Это поднятие статуса продукта в каталоге (обновление даты/времени)
-        (PRODUCT_OPERATION_UPDATE, _(u"Обновление")),
-        (PRODUCT_OPERATION_DELETE, _(u"Удаление")),
-    )
-
-    product = models.ForeignKey(Product, verbose_name=_(u"Продукт"), on_delete=models.PROTECT)
-    ugh = models.ForeignKey(Org, limit_choices_to={'type': Org.PROFILE_UGH}, verbose_name=_(u"ОМС"))
-    dt = models.DateTimeField(_(u"Дата/время создания"))
-    operation = models.CharField(_(u"Операция"), max_length=255, choices=PRODUCT_OPERATIONS)
-    publish_cost = models.DecimalField(_(u"Цена"), max_digits=20, decimal_places=2)
-    currency = models.ForeignKey('billing.Currency', verbose_name=_(u"Валюта"))
-
-class ProductStatus(models.Model):
-    """
-    Состояние продукта (товара или услуги) ЛОРУ у соответствующего ОМС
-    """
-
-    product = models.ForeignKey(Product, verbose_name=_(u"Продукт"), on_delete=models.PROTECT)
-    ugh = models.ForeignKey(Org, limit_choices_to={'type': Org.PROFILE_UGH}, verbose_name=_(u"ОМС"))
-    # Из ProductHistory.PRODUCT_OPERATIONS здесь будут применяться только enable, disable, up:
-    status = models.CharField(_(u"Статус"), max_length=255, choices=ProductHistory.PRODUCT_OPERATIONS)
-    dt = models.DateTimeField(_(u"Дата/время модификации"))
-
-    class Meta:
-        unique_together = ('product', 'ugh',)
 
 class Order(GetLogsMixin, BaseModel):
     PAYMENT_CASH = 'cash'
