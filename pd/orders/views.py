@@ -38,7 +38,7 @@ from rest_framework import viewsets
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from serializers import ProductCategorySerializer, ProductsSerializer, ProductInfoSerializer
+from serializers import ProductCategorySerializer, ProductsSerializer, ProductsOptSerializer, ProductInfoSerializer
 
 
 class LORURequiredMixin:
@@ -686,7 +686,23 @@ class ProductsViewSet(viewsets.ModelViewSet):
             filter = filter[:limit]
         
         return filter
-        
+
+class ProductsOptViewSet(viewsets.ModelViewSet):
+    """
+    Показ продуктов оптовика-поставщика
+
+    api/optplaces/suppliers/(?P<loru_pk>\d+)/products
+    """
+    model = Product
+    serializer_class = ProductsOptSerializer
+    paginate_by = None
+
+    def get_queryset(self, *args, **kwargs):
+        return Product.objects.filter(
+            loru__pk=self.kwargs['loru_pk'],
+            is_wholesale=True,
+        )
+
 class ProductInfoView(APIView):
 
     def get(self, request, product_slug):
