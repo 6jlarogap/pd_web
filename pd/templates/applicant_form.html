@@ -35,8 +35,8 @@
             </p>
             <script type="text/javascript">
                 ORGS_INACTIVE = [{% for org in form.fields.applicant_organization.inactive_queryset %}"{{ org.pk }}"{% if not forloop.last %},{% endif %}{% endfor %}];
-                ORGS_LIST = [{% for org in form.fields.applicant_organization.queryset %}"{{ org.name|escapejs }}"{% if not forloop.last %},{% endif %}{% endfor %}];
                 $(function() {
+                    $('select[name$=applicant_organization]').css('width', '295px');
                     $('select[name$=applicant_organization]').attr('autocomplete', 'off').change(function() {
                         if (ORGS_INACTIVE.indexOf($(this).val()) > -1) {
                             $('.btn-edit-org').attr('href', '/org/'+$(this).val()+'/edit/').show();
@@ -55,11 +55,21 @@
                         if (sel_input.find('option:selected').attr('value')) {
                             ac_input.val(sel_input.find('option:selected').text());
                         }
+                        ac_input.css('width', '295px');
                         ac_input.insertAfter(sel_input);
                         sel_input.hide();
                         ac_input.typeahead({
                             items: 100,
-                            source: ORGS_LIST,
+                            source: function (typeahead, query) {
+                                if (query.length < 2) { return }
+                                $.ajax({
+                                    url: ORG_URL + "?check_inn=1&query=" + query,
+                                    dataType: 'json',
+                                    success: function(data) {
+                                        typeahead.process(data);
+                                    }
+                                });
+                            },
                             onselect: function() {
                                 ac_input.change();
                             },
@@ -70,11 +80,13 @@
                             }
                         }).change(function() {
                             var item = $(this).val();
+                            item = item.replace(new RegExp(' \\(\\S+\\: [0-9]{4,}\\)$'),'');
                             var processed = false;
                             sel_input.find('option').each(function() {
                                 if ($(this).text() == item) {
                                     sel_input.val($(this).attr('value'));
                                     sel_input.change();
+                                    ac_input.val(item);
                                     processed = true;
                                 }
                             });

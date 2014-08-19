@@ -24,7 +24,7 @@ class StoreSerializer(serializers.ModelSerializer):
     address = serializers.SerializerMethodField('address_func')
     phones = serializers.SerializerMethodField('phones_func')
     location = serializers.SerializerMethodField('location_func')
-    hasComponents = serializers.SerializerMethodField('has_components_func')
+    hasComponents = serializers.SerializerMethodField('has_wholesales_func')
 
     class Meta:
         model = Store
@@ -69,9 +69,8 @@ class StoreSerializer(serializers.ModelSerializer):
     def address_func(self, instance):
         return unicode(instance.address)
 
-    def has_components_func(self, instance):
-        return Product.objects.filter(Product.public_catalog_queryset(loru=instance.loru)).\
-                filter(is_component=True).exists()
+    def has_wholesales_func(self, instance):
+        return Product.objects.filter(loru=instance.loru, is_wholesale=True).exists()
 
     def phones_func(self, instance):
         return [ phone.number for phone in instance.phone_set ]
@@ -105,7 +104,7 @@ class OrgSerializer(PhonesFromTextMixin, OrgLocationMixin, serializers.ModelSeri
                 {
                     'id': pc['productcategory__pk'],
                     'title': pc['productcategory__name']
-                } for pc in Product.objects.filter(Product.public_catalog_queryset(loru=obj)).\
+                } for pc in Product.objects.filter(is_public_catalog=True, loru=obj).\
                                 order_by('productcategory__pk').\
                                 values('productcategory__pk', 'productcategory__name').distinct()
         ]
@@ -129,7 +128,7 @@ class OrgShort2Serializer(OrgLocationMixin, serializers.ModelSerializer):
 
     def categories_func(self, obj):
         return [ pc['productcategory__pk'] for pc in \
-            Product.objects.filter(Product.public_catalog_queryset(loru=obj)).\
+            Product.objects.filter(is_public_catalog=True, loru=obj).\
                 order_by('productcategory__pk').\
                 values('productcategory__pk').distinct()
         ]

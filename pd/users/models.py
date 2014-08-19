@@ -9,8 +9,6 @@ import hashlib
 
 from django.conf import settings
 from django.contrib.auth.models import User
-User._meta.get_field_by_name('email')[0]._unique = True
-User._meta.get_field_by_name('email')[0].null=True
 from django.db import models, transaction, IntegrityError
 from django.db.models.loading import get_model
 from django.db.models.deletion import ProtectedError

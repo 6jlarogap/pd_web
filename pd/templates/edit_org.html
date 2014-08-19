@@ -4,9 +4,16 @@
 
 {% block content %}
 <h1>{% trans "Данные организации" %} {{ object }}</h1>
-<form action="" method="POST">
+<form action="" method="POST"  enctype="multipart/form-data">
     {% csrf_token %}
-    {{ form.as_p }}
+    {% for field in form %}
+        {{ field.errors }}
+        <p>{{ field.label_tag }} {{ field }}<span class="helptext">{{ field.help_text }}</span>
+        </p>
+        {% if form.scan_form and field.name == "basis" %}
+            {{ form.scan_form.as_p }}
+        {% endif %}
+    {% endfor %}
 
     {% if form.placesize_formset %}
         <h2>{% trans "Размеры мест" %}</h2>

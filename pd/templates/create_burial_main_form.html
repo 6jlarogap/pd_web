@@ -134,7 +134,6 @@
         {% with form.dc_form as form %}
             {% include "deathcertificate.html" %}
         {% endwith %}
-        {{ form.dc_form.scan_form.as_p }}
 </div>
 
 <h2>{% trans "Место" %} {{ form.instance.get_place|default:"" }}</h2>
