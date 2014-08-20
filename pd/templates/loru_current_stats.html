@@ -11,43 +11,97 @@
         {% trans "№ п/п" %}
         </th>
         <th>
-            {% if sort == 'org' %}
-                {% if sort == 'org' %}<i class="icon icon-arrow-up"></i>{% endif %}
-                <a href="?{{ GET_PARAMS }}&sort=-org">{% trans "ЛОРУ" %}</a>
+            {% if sort == 'name' %}
+                {% if sort == 'name' %}<i class="icon icon-arrow-up"></i>{% endif %}
+                <a href="?{{ GET_PARAMS }}&sort=-name">{% trans "ЛОРУ" %}</a>
             {% else %}
-                {% if sort == '-org' %}<i class="icon icon-arrow-down"></i>{% endif %}
-                <a href="?{{ GET_PARAMS }}&sort=org">{% trans "ЛОРУ" %}</a>
+                {% if sort == '-name' %}<i class="icon icon-arrow-down"></i>{% endif %}
+                <a href="?{{ GET_PARAMS }}&sort=name">{% trans "ЛОРУ" %}</a>
             {% endif %}
         </th>
         <th style="text-align:right;">
-            {% trans "Id" %}
+            {% if sort == 'pk' %}
+                {% if sort == 'pk' %}<i class="icon icon-arrow-up"></i>{% endif %}
+                <a href="?{{ GET_PARAMS }}&sort=-pk">{% trans "Id" %}</a>
+            {% else %}
+                {% if sort == '-pk' %}<i class="icon icon-arrow-down"></i>{% endif %}
+                <a href="?{{ GET_PARAMS }}&sort=pk">{% trans "Id" %}</a>
+            {% endif %}
         </th>
         <th>
             {% trans "Адрес" %}<br />{% trans "Телефоны" %}
         </th>
         <th style="text-align:right;">
-            {% trans "Пользователей" %}
+            {% if sort == '-num_users' %}
+                {% if sort == '-num_users' %}<i class="icon icon-arrow-down"></i>{% endif %}
+                <a href="?{{ GET_PARAMS }}&sort=num_users">{% trans "Пользователей" %}</a>
+            {% else %}
+                {% if sort == 'num_users' %}<i class="icon icon-arrow-up"></i>{% endif %}
+                <a href="?{{ GET_PARAMS }}&sort=-num_users">{% trans "Пользователей" %}</a>
+            {% endif %}
         </th>
         <th style="text-align:right;">
-            {% trans "Активных пользователей" %}
+            {% if sort == '-num_active_users' %}
+                {% if sort == '-num_active_users' %}<i class="icon icon-arrow-down"></i>{% endif %}
+                <a href="?{{ GET_PARAMS }}&sort=num_active_users">{% trans "Активных пользователей" %}</a>
+            {% else %}
+                {% if sort == 'num_active_users' %}<i class="icon icon-arrow-up"></i>{% endif %}
+                <a href="?{{ GET_PARAMS }}&sort=-num_active_users">{% trans "Активных пользователей" %}</a>
+            {% endif %}
         </th>
         <th style="text-align:right;">
-            {% trans "Магазинов" %}
+            {% if sort == '-num_stores' %}
+                {% if sort == '-num_stores' %}<i class="icon icon-arrow-down"></i>{% endif %}
+                <a href="?{{ GET_PARAMS }}&sort=num_stores">{% trans "Магазинов" %}</a>
+            {% else %}
+                {% if sort == 'num_stores' %}<i class="icon icon-arrow-up"></i>{% endif %}
+                <a href="?{{ GET_PARAMS }}&sort=-num_stores">{% trans "Магазинов" %}</a>
+            {% endif %}
         </th>
         <th style="text-align:right;">
-            {% trans "Товаров" %}
+            {% if sort == '-num_products' %}
+                {% if sort == '-num_products' %}<i class="icon icon-arrow-down"></i>{% endif %}
+                <a href="?{{ GET_PARAMS }}&sort=num_products">{% trans "Товаров" %}</a>
+            {% else %}
+                {% if sort == 'num_products' %}<i class="icon icon-arrow-up"></i>{% endif %}
+                <a href="?{{ GET_PARAMS }}&sort=-num_products">{% trans "Товаров" %}</a>
+            {% endif %}
         </th>
         <th style="text-align:right;">
-            {% trans "Товаров<br />в публичном каталоге" %}
+            {% if sort == '-num_published_products' %}
+                {% if sort == '-num_published_products' %}<i class="icon icon-arrow-down"></i>{% endif %}
+                <a href="?{{ GET_PARAMS }}&sort=num_published_products">{% trans "Товаров<br />в публичном каталоге" %}</a>
+            {% else %}
+                {% if sort == 'num_published_products' %}<i class="icon icon-arrow-up"></i>{% endif %}
+                <a href="?{{ GET_PARAMS }}&sort=-num_published_products">{% trans "Товаров<br />в публичном каталоге" %}</a>
+            {% endif %}
         </th>
         <th style="text-align:right;">
-            {% trans "Товаров опубликовано<br />оптовикам" %}
+            {% if sort == '-num_published_wholesales' %}
+                {% if sort == '-num_published_wholesales' %}<i class="icon icon-arrow-down"></i>{% endif %}
+                <a href="?{{ GET_PARAMS }}&sort=num_published_wholesales">{% trans "Товаров опубликовано<br />оптовикам" %}</a>
+            {% else %}
+                {% if sort == 'num_published_wholesales' %}<i class="icon icon-arrow-up"></i>{% endif %}
+                <a href="?{{ GET_PARAMS }}&sort=-num_published_wholesales">{% trans "Товаров опубликовано<br />оптовикам" %}</a>
+            {% endif %}
         </th>
         <th style="text-align:right;">
-            {% trans "Заказов" %}
+            {% if sort == '-num_orders' %}
+                {% if sort == '-num_orders' %}<i class="icon icon-arrow-down"></i>{% endif %}
+                <a href="?{{ GET_PARAMS }}&sort=num_orders">{% trans "Заказов" %}</a>
+            {% else %}
+                {% if sort == 'num_orders' %}<i class="icon icon-arrow-up"></i>{% endif %}
+                <a href="?{{ GET_PARAMS }}&sort=-num_orders">{% trans "Заказов" %}</a>
+            {% endif %}
         </th>
         <th style="text-align:right;">
-            {% trans "Закрытых<br />электронных захоронений" %}
+            {% if sort == '-num_burials' %}
+                {% if sort == '-num_burials' %}<i class="icon icon-arrow-down"></i>{% endif %}
+                <a href="?{{ GET_PARAMS }}&sort=num_burials">{% trans "Закрытых<br />электронных захоронений" %}</a>
+            {% else %}
+                {% if sort == 'num_burials' %}<i class="icon icon-arrow-up"></i>{% endif %}
+                <a href="?{{ GET_PARAMS }}&sort=-num_burials">{% trans "Закрытых<br />электронных захоронений" %}</a>
+            {% endif %}
         </th>
     </tr>
     <tr>
