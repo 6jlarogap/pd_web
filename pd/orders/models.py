@@ -255,7 +255,7 @@ class OrderItem(models.Model):
     def total(self):
         return self.cost * self.quantity
 
-class Iorder(models.Model):
+class Iorder(BaseModel):
     """
     Интернет-заказ оптовой продукции
     """
@@ -263,11 +263,10 @@ class Iorder(models.Model):
                                       verbose_name=_(u"Поставщик"), related_name='iorder_suppliers')
     customer = models.ForeignKey(Org, limit_choices_to={'type': Org.PROFILE_LORU},
                                       verbose_name=_(u"Покупатель"), related_name='iorder_customers')
-    dt = models.DateTimeField(_(u"Дата/время создания"), auto_now_add=True)
     # Порядковый номер в пределах поставщика, покупателя, года
     number = models. IntegerField(_(u"Номер"))
 
-class IorderItem(models.Model):
+class IorderItem(BaseModel):
     """
     Пункты интернет-заказа оптовой продукции
 
@@ -286,10 +285,10 @@ class IorderItem(models.Model):
     name = models.CharField(_(u"Название"), max_length=255)
     productcategory = models.ForeignKey(ProductCategory, verbose_name=_(u"Категория"),
                                         on_delete=models.PROTECT)
-    productcategory_name = models.CharField(_(u"Название"), max_length=255)
+    productcategory_name = models.CharField(_(u"Название категории"), max_length=255)
     productgroup = models.ForeignKey(ProductGroup, verbose_name=_(u"Подкатегория"), null=True,
                                      on_delete=models.PROTECT)
-    productgroup_name = models.CharField(_(u"Название"), max_length=255, default='')
+    productgroup_name = models.CharField(_(u"Название подкатегории"), max_length=255, default='')
     is_wholesale_with_vat = models.BooleanField(_(u"Цена с НДС"))
 
 class CatafalqueData(models.Model):
