@@ -1596,14 +1596,16 @@ class LoruCurrentStatsView(SupervisorRequiredMixin, TemplateView):
     template_name = 'loru_current_stats.html'
 
     def get_context_data(self, **kwargs):
-        sort = self.request.GET.get('sort', 'org')
-        SORT_FIELDS = {
-            'org': 'name',
-            '-org': '-name',
-       }
-        s = SORT_FIELDS[sort]
-        if not isinstance(s, list):
-            s = [s]
+        
+        sort = self.request.GET.get('sort', 'name')
+        
+        def sort_key(org):
+            sort_parm = re.sub(r'^\-', '', sort)
+            try:
+                result = org[sort_parm]
+            except KeyError:
+                result = org['name']
+            return result
 
         orgs = []
         total={}
@@ -1616,7 +1618,7 @@ class LoruCurrentStatsView(SupervisorRequiredMixin, TemplateView):
         q_published = Q(is_public_catalog=True)
         q_wholesales = Q(is_wholesale=True)
 
-        for o in Org.objects.filter(type=Org.PROFILE_LORU).order_by(*s):
+        for o in Org.objects.filter(type=Org.PROFILE_LORU):
             total['loru_count'] += 1
             org = {'name': o.name}
             org['off_address'] = o.off_address or ''
@@ -1657,7 +1659,7 @@ class LoruCurrentStatsView(SupervisorRequiredMixin, TemplateView):
 
             orgs.append(org)
 
-        lorus = Org.objects.filter(type=Org.PROFILE_LORU)
+        orgs.sort(key=sort_key, reverse=sort.startswith('-'))
 
         return {
             'orgs':orgs,
