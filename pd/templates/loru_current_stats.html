@@ -8,6 +8,9 @@
     <table class="table table-bordered table-striped">
     <tr>
         <th>
+        {% trans "№ п/п" %}
+        </th>
+        <th>
             {% if sort == 'org' %}
                 {% if sort == 'org' %}<i class="icon icon-arrow-up"></i>{% endif %}
                 <a href="?{{ GET_PARAMS }}&sort=-org">{% trans "ЛОРУ" %}</a>
@@ -16,17 +19,17 @@
                 <a href="?{{ GET_PARAMS }}&sort=org">{% trans "ЛОРУ" %}</a>
             {% endif %}
         </th>
+        <th style="text-align:right;">
+            {% trans "Id" %}
+        </th>
         <th>
-            {% if sort == 'city' %}
-                {% if sort == 'city' %}<i class="icon icon-arrow-up"></i>{% endif %}
-                <a href="?{{ GET_PARAMS }}&sort=-city">{% trans "Город" %}</a>
-            {% else %}
-                {% if sort == '-city' %}<i class="icon icon-arrow-down"></i>{% endif %}
-                <a href="?{{ GET_PARAMS }}&sort=city">{% trans "Город" %}</a>
-            {% endif %}
+            {% trans "Адрес" %}<br />{% trans "Телефоны" %}
         </th>
         <th style="text-align:right;">
             {% trans "Пользователей" %}
+        </th>
+        <th style="text-align:right;">
+            {% trans "Активных пользователей" %}
         </th>
         <th style="text-align:right;">
             {% trans "Магазинов" %}
@@ -49,12 +52,22 @@
     </tr>
     <tr>
         <td>
+        {# N п/п #}
+        </td>
+        <td>
             <b>{% trans "Итого" %} {{ total.loru_count }} {% trans "ЛОРУ"%}</b>
         </td>
         <td>
+        {# Id #}
+        </td>
+        <td>
+        {# Address, phones #}
         </td>
         <td style="text-align:right;">
             <b>{{ total.num_users }}</b>
+        </td>
+        <td style="text-align:right;">
+            <b>{{ total.num_active_users }}</b>
         </td>
         <td style="text-align:right;">
             <b>{{ total.num_stores }}</b>
@@ -77,14 +90,23 @@
     </tr>
     {% for org in orgs %}
         <tr>
+            <td style="text-align:right;">
+                {{ forloop.counter }}
+            </td>
             <td>
                 {{ org.name }}
             </td>
+            <td style="text-align:right;">
+                {{ org.pk }}
+            </td>
             <td>
-                {{ org.city }}
+                {{ org.off_address }}{% if org.phones %}<br >{% for phone in org.phones %}{{ phone }}<br />{% endfor %}{% endif %}
             </td>
             <td style="text-align:right;">
                 {{ org.num_users }}
+            </td>
+            <td style="text-align:right;">
+                {{ org.num_active_users }}
             </td>
             <td style="text-align:right;">
                 {{ org.num_stores }}
