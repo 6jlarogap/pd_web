@@ -649,17 +649,15 @@ class ProductsViewSet(viewsets.ReadOnlyModelViewSet):
             qs &= Q(productcategory__pk__in=category_ids)
 
         # По умолчанию показываем только то, что в публичном каталоге
-        is_public_catalog = True
-        is_wholesale = False
+        q_public_whole = Q(is_public_catalog=True)
         if is_loru_user(self.request.user) or is_supervisor(self.request.user):
             components_only = self.request.GET.get('filter[components_only]')
             try:
                 if components_only and int(components_only):
-                    is_public_catalog = False
-                    is_wholesale = True
+                    q_public_whole = Q(is_wholesale=True)
             except ValueError:
                 pass
-        qs &= Q(is_public_catalog=is_public_catalog, is_wholesale=is_wholesale)
+        qs &= q_public_whole
 
         ordered = None
         orders = {'price': 'price', 'date': 'dt_modified', }
