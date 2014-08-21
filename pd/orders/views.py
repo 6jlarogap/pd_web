@@ -882,9 +882,9 @@ class UghPublishedProductsViewSet(viewsets.ViewSet):
 
 class ApiOptPlacesOrders(APIView):
     """
-    Обновление статусов продуктов на площадках (ОМС)
+    Интернет-заказ товаров
 
-    Пример водных данных:
+    Пример входных данных:
     [
         {
         "id": 1,
