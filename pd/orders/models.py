@@ -31,6 +31,7 @@ class ProductGroup(models.Model):
     loru = models.ForeignKey(Org, limit_choices_to={'type': Org.PROFILE_LORU}, verbose_name=_(u"ЛОРУ"))
     productcategory = models.ForeignKey(ProductCategory, verbose_name=_(u"Категория"), on_delete=models.PROTECT)
     name = models.CharField(_(u"Название"), max_length=255)
+    description = models.TextField(_(u"Описание"), blank=True, default='')
     icon = models.FileField(u"Иконка", upload_to=upload_slugified, blank=True, null=True)
 
     class Meta:
@@ -264,14 +265,14 @@ class Iorder(BaseModel):
     customer = models.ForeignKey(Org, limit_choices_to={'type': Org.PROFILE_LORU},
                                       verbose_name=_(u"Покупатель"), related_name='iorder_customers')
     # Порядковый номер в пределах поставщика, покупателя, года
-    number = models. IntegerField(_(u"Номер"))
+    number = models.IntegerField(_(u"Номер"))
 
 class IorderItem(BaseModel):
     """
     Пункты интернет-заказа оптовой продукции
 
     price_wholesale, productcategory, productcategory_name, productgroup, productgroup_name,
-    name, measure:
+    name, description, measure:
         содержат копии сооответствующих полей продукта в момент внесения его в интернет-заказ
     is_wholesale_with_vat:
         содержит копию сооответствующего параметра лору в момент создания заказа
@@ -289,6 +290,7 @@ class IorderItem(BaseModel):
     productgroup = models.ForeignKey(ProductGroup, verbose_name=_(u"Подкатегория"), null=True,
                                      on_delete=models.PROTECT)
     productgroup_name = models.CharField(_(u"Название подкатегории"), max_length=255, default='')
+    productgroup_description = models.TextField(_(u"Описание подкатегории"), blank=True, default='')
     is_wholesale_with_vat = models.BooleanField(_(u"Цена с НДС"))
 
 class CatafalqueData(models.Model):

@@ -29,9 +29,9 @@ from users.models import CustomerProfile, CustomerProfilePhoto, Org, ProfileLORU
 from billing.models import Rate
 from orders.forms import ProductForm, OrderForm, OrderItemFormset, CoffinForm, CatafalqueForm, \
                          AddInfoForm, OrderSearchForm, OrderBurialForm
-from orders.models import Product, Order, OrderItem, ProductCategory
+from orders.models import Product, Order, OrderItem, ProductCategory, Iorder, IorderItem
 from pd.forms import CommentForm
-from pd.views import PaginateListView, RequestToFormMixin
+from pd.views import PaginateListView, RequestToFormMixin, ServiceException
 from reports.models import make_report
 
 from rest_framework import viewsets
@@ -903,11 +903,55 @@ class ApiOptPlacesOrders(APIView):
     permission_classes = (PermitIfLoru,)
 
     @transaction.commit_on_success
-    def post(self, request, format=None):
+    def post(self, request):
         status_code=200
-        data=dict(
-            status='success',
-        )
+        data = dict(status='success')
+        year = datetime.datetime.now().year
+        try:
+            customer = request.user.profile.org
+            supplier = None
+            for p in request.DATA:
+                try:
+                    product = Product.objects.get(pk=p['id'])
+                    if supplier is None:
+                        supplier = product.loru
+                        try:
+                            number = Iorder.objects.filter(
+                                supplier=supplier,
+                                customer=customer,
+                                dt_created__year=year,
+                            ).order_by('-number')[0].number
+                        except IndexError:
+                            number = 0
+                        iorder = Iorder.objects.create(
+                            supplier=supplier,
+                            customer=customer,
+                            number=number+1,
+                        )
+                    else:
+                        if product.loru != supplier:
+                            raise ServiceException(_(u'В списке товаров таковые от разных поставщиков'))
+                    IorderItem.objects.create(
+                        iorder=iorder,
+                        product=product,
+                        quantity=decimal.Decimal(p['count']),
+                        measure=product.measure,
+                        price_wholesale=product.price_wholesale,
+                        name=product.name,
+                        productcategory=product.productcategory,
+                        productcategory_name=product.productcategory.name,
+                        productgroup=product.productgroup,
+                        productgroup_name=product.productgroup.name if product.productgroup else '',
+                        productgroup_description=product.productgroup.description if product.productgroup else '',
+                        is_wholesale_with_vat=supplier.is_wholesale_with_vat,
+                    )
+                except Product.DoesNotExist:
+                    raise ServiceException(_(u'Не найден товар/услуга Id=%s') % p['id'])
+        except ServiceException as excpt:
+            transaction.rollback()
+            status_code=400
+            data['status'] = 'error'
+            data['message'] = excpt.message
         return Response(data=data, status=status_code)
 
 api_optplaces_orders = ApiOptPlacesOrders.as_view()
