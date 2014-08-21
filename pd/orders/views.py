@@ -879,3 +879,36 @@ class UghPublishedProductsViewSet(viewsets.ViewSet):
                 data_p['availableOnPlaces'] = [catalog_org_pk,]
             data.append(data_p)
         return Response(status=200, data=data)
+
+class ApiOptPlacesOrders(APIView):
+    """
+    Обновление статусов продуктов на площадках (ОМС)
+
+    Пример водных данных:
+    [
+        {
+        "id": 1,
+        "count": 2
+        },
+        {
+        "id": 2,
+        "count": 1
+    ]
+    Заказывает покупатель у поставщика. Покупатель выполнил логин, поставщик - в id продуктов.
+    Эти id проверяются на то, чтоб им соответствовали продукты,
+    и чтоб они относились к одному поставщику. Если проверка не пройдет,
+    то возвращается status=400, message=”что произошло”. Если проверка успешна,
+    то формируется новый заказ, статус код - 200 
+    """
+    permission_classes = (PermitIfLoru,)
+
+    @transaction.commit_on_success
+    def post(self, request, format=None):
+        status_code=200
+        data=dict(
+            status='success',
+        )
+        return Response(data=data, status=status_code)
+
+api_optplaces_orders = ApiOptPlacesOrders.as_view()
+
