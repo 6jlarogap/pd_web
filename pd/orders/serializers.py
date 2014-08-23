@@ -65,12 +65,12 @@ class ProductInfoSerializer(serializers.HyperlinkedModelSerializer):
     currency = serializers.RelatedField(source='currency')
     category = serializers.RelatedField(source='productcategory')
     supplier = OrgSerializer(source='loru')
-    price_wholesale = serializers.SerializerMethodField('price_wholesale_func')
+    priceWholesale = serializers.SerializerMethodField('price_wholesale_func')
     model3d = serializers.SerializerMethodField('model3d_func')
     
     class Meta:
         model = Product
-        fields = ('id', 'photo', 'price', 'price_wholesale',
+        fields = ('id', 'photo', 'price', 'priceWholesale',
                   'currency', 'name', 'description', 'sku', 'category',
                   'supplier', 'model3d', 'slug',
         )
