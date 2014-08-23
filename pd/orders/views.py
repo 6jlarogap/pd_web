@@ -717,10 +717,14 @@ class ProductsOptViewSet(viewsets.ReadOnlyModelViewSet):
 class ProductInfoView(APIView):
 
     def get(self, request, product_slug):
-        obj = get_object_or_404(Product, slug=product_slug)
+        product = get_object_or_404(Product, slug=product_slug)
+        show_wholesale = is_loru_user(request.user) or is_supervisor(request.user)
         return Response(
             status=200,
-            data=ProductInfoSerializer(obj, context=dict(request=request)).data,
+            data=ProductInfoSerializer(product, context=dict(
+                request=request,
+                show_wholesale=show_wholesale,
+            )).data,
         )
 
 api_catalog_products_detail = ProductInfoView.as_view()

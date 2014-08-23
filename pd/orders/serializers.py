@@ -65,13 +65,18 @@ class ProductInfoSerializer(serializers.HyperlinkedModelSerializer):
     currency = serializers.RelatedField(source='currency')
     category = serializers.RelatedField(source='productcategory')
     supplier = OrgSerializer(source='loru')
+    price_wholesale = serializers.SerializerMethodField('price_wholesale_func')
     model3d = serializers.SerializerMethodField('model3d_func')
     
     class Meta:
         model = Product
-        fields = ('id', 'photo', 'price', 'currency', 'name', 'description', 'sku', 'category',
+        fields = ('id', 'photo', 'price', 'price_wholesale',
+                  'currency', 'name', 'description', 'sku', 'category',
                   'supplier', 'model3d', 'slug',
         )
 
-    def model3d_func(self, obj):
+    def price_wholesale_func(self, product):
+        return product.price_wholesale if self.context.get('show_wholesale') else None
+
+    def model3d_func(self, product):
         return None
