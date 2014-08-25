@@ -17,7 +17,7 @@ from pd.models import BaseModel, GetLogsMixin, upload_slugified
 
 class ProductCategory(models.Model):
     name = models.CharField(_(u"Название"), max_length=255)
-    icon = models.FileField(u"Иконка", upload_to=upload_slugified, blank=True, null=True)
+    icon = models.ImageField(u"Иконка", upload_to=upload_slugified, blank=True, null=True)
 
     class Meta:
         verbose_name = _(u"Категория")
@@ -51,7 +51,7 @@ class Product(BaseModel):
     price_wholesale = models.DecimalField(_(u"Цена оптовая"), max_digits=20, decimal_places=2)
     ptype = models.CharField(_(u"Тип"), max_length=255, choices=PRODUCT_TYPES, null=True, blank=True)
     default = models.BooleanField(_(u"По умолчанию"), default=False, blank=True)
-    photo = models.FileField(u"Фото", upload_to=upload_slugified, blank=True, null=True)
+    photo = models.ImageField(u"Фото", upload_to=upload_slugified, blank=True, null=True)
     productcategory = models.ForeignKey(ProductCategory, verbose_name=_(u"Категория"), on_delete=models.PROTECT)
     currency = models.ForeignKey('billing.Currency', verbose_name=_(u"Валюта"))
     sku = models.CharField(_(u"Артикул"), max_length=255, blank=True, default='')
