@@ -63,7 +63,7 @@ class ProductForm(StrippedStringsMixin, forms.ModelForm):
         model = Product
         exclude = ['loru', ]
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, request, *args, **kwargs):
         super(ProductForm, self).__init__(*args, **kwargs)
         self.fields['name'].widget.attrs = dict(
             maxlength=Product.PRODUCT_NAME_MAXLEN,
@@ -80,6 +80,9 @@ class ProductForm(StrippedStringsMixin, forms.ModelForm):
                 self.initial.update({'productcategory': category_default})
             except ProductCategory.DoesNotExist:
                 pass
+            currency_default = request.user.profile.org.currency
+            if currency_default:
+                self.initial.update({'currency': currency_default})
 
     def clean_description(self):
         description = self.cleaned_data.get('description')
