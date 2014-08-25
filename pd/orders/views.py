@@ -64,7 +64,7 @@ class ProductList(LORURequiredMixin, ListView):
     
 manage_products = ProductList.as_view()
 
-class ProductCreate(LORURequiredMixin, CreateView):
+class ProductCreate(LORURequiredMixin, RequestToFormMixin, CreateView):
     template_name = 'product_edit.html'
     form_class = ProductForm
 
@@ -85,7 +85,7 @@ class ProductCreate(LORURequiredMixin, CreateView):
 
 manage_products_create = ProductCreate.as_view()
 
-class ProductEdit(LORURequiredMixin, UpdateView):
+class ProductEdit(LORURequiredMixin, RequestToFormMixin, UpdateView):
     template_name = 'product_edit.html'
     form_class = ProductForm
 
