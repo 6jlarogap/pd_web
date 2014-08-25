@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% load i18n %}
+{% load thumbnail i18n %}
 
 {% block content %}
     <h1>{% trans "Товары" %}</h1>
@@ -15,6 +15,7 @@
             <th>{% trans "Цена оптовая" %}</th>
             <th></th>
             <th>{% trans "Показ в каталоге" %}</th>
+            <th>{% trans "Фото" %}</th>
         </tr>
         {% for c in object_list %}
             <tr>
@@ -34,6 +35,12 @@
                     {% if c.is_public_catalog%}{% trans "В публичном каталоге" %}{% endif %}
                     {% if c.is_public_catalog and c.is_wholesale %}<br />{% endif %}
                     {% if c.is_wholesale %}{% trans "Оптовикам" %}{% endif %}
+                </td>
+                <td>
+                    {% if c.photo %}
+                        {% thumbnail c.photo "100x75" "crop" "jpg" as thumb %}
+                        <img src="{{ thumb.url }}">
+                    {% endif %}
                 </td>
             </tr>
         {% endfor %}
