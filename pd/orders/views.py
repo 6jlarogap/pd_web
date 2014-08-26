@@ -956,6 +956,7 @@ class ApiOptPlacesOrders(APIView):
                         productgroup_description=product.productgroup.description if product.productgroup else '',
                         is_wholesale_with_vat=supplier.is_wholesale_with_vat,
                     )
+                    data['id'] = iorder.pk
                 except Product.DoesNotExist:
                     raise ServiceException(_(u'Не найден товар/услуга Id=%s') % p['id'])
         except ServiceException as excpt:
