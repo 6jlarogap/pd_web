@@ -27,6 +27,24 @@ class ProductCategory(models.Model):
     def __unicode__(self):
         return self.name
 
+class ProductGroup(models.Model):
+    loru = models.ForeignKey(Org, limit_choices_to={'type': Org.PROFILE_LORU}, verbose_name=_(u"ЛОРУ"))
+    productcategory = models.ForeignKey(ProductCategory, verbose_name=_(u"Категория"), on_delete=models.PROTECT)
+    name = models.CharField(_(u"Название"), max_length=255)
+    description = models.TextField(_(u"Описание"), blank=True, default='')
+    icon = models.FileField(u"Иконка", upload_to=upload_slugified, blank=True, null=True)
+
+    class Meta:
+        verbose_name = _(u"Подкатегория")
+        verbose_name_plural = _(u"Подкатегории")
+        ordering = ('name', )
+        unique_together = (
+            ('loru', 'productcategory', 'name', ),
+        )
+
+    def __unicode__(self):
+        return self.name
+
 class Product(BaseModel):
     PRODUCT_CATAFALQUE = 'catafalque'
     PRODUCT_LOADERS = 'loaders'
@@ -53,6 +71,8 @@ class Product(BaseModel):
     default = models.BooleanField(_(u"По умолчанию"), default=False, blank=True)
     photo = models.ImageField(u"Фото", upload_to=upload_slugified, blank=True, null=True)
     productcategory = models.ForeignKey(ProductCategory, verbose_name=_(u"Категория"), on_delete=models.PROTECT)
+    productgroup = models.ForeignKey(ProductGroup, verbose_name=_(u"Подкатегория"), null=True, editable=False,
+                                     on_delete=models.PROTECT)
     currency = models.ForeignKey('billing.Currency', verbose_name=_(u"Валюта"))
     sku = models.CharField(_(u"Артикул"), max_length=255, blank=True, default='')
     is_public_catalog = models.BooleanField(_(u"Показать в публичном каталоге"), default=False)
@@ -235,6 +255,44 @@ class OrderItem(models.Model):
     @property
     def total(self):
         return self.cost * self.quantity
+
+class Iorder(BaseModel):
+    """
+    Интернет-заказ оптовой продукции
+    """
+    supplier = models.ForeignKey(Org, limit_choices_to={'type': Org.PROFILE_LORU},
+                                      verbose_name=_(u"Поставщик"), related_name='iorder_suppliers')
+    customer = models.ForeignKey(Org, limit_choices_to={'type': Org.PROFILE_LORU},
+                                      verbose_name=_(u"Покупатель"), related_name='iorder_customers')
+    # Порядковый номер в пределах поставщика, покупателя, года
+    number = models.IntegerField(_(u"Номер"))
+    comment = models.TextField(_(u"Комментарий"), blank=True, default='')
+
+class IorderItem(BaseModel):
+    """
+    Пункты интернет-заказа оптовой продукции
+
+    price_wholesale, productcategory, productcategory_name, productgroup, productgroup_name,
+    name, description, measure:
+        содержат копии сооответствующих полей продукта в момент внесения его в интернет-заказ
+    is_wholesale_with_vat:
+        содержит копию сооответствующего параметра лору в момент создания заказа
+
+    """
+    iorder = models.ForeignKey(Iorder, editable=False)
+    product = models.ForeignKey(Product, verbose_name=_(u"Товар"))
+    quantity = models.DecimalField(_(u"Кол-во"), max_digits=20, decimal_places=2, default=1)
+    measure = models.CharField(_(u"Ед. изм."), max_length=255, default=_(u"шт"))
+    price_wholesale = models.DecimalField(_(u"Цена оптовая"), max_digits=20, decimal_places=2)
+    name = models.CharField(_(u"Название"), max_length=255)
+    productcategory = models.ForeignKey(ProductCategory, verbose_name=_(u"Категория"),
+                                        on_delete=models.PROTECT)
+    productcategory_name = models.CharField(_(u"Название категории"), max_length=255)
+    productgroup = models.ForeignKey(ProductGroup, verbose_name=_(u"Подкатегория"), null=True,
+                                     on_delete=models.PROTECT)
+    productgroup_name = models.CharField(_(u"Название подкатегории"), max_length=255, default='')
+    productgroup_description = models.TextField(_(u"Описание подкатегории"), blank=True, default='')
+    is_wholesale_with_vat = models.BooleanField(_(u"Цена с НДС"))
 
 class CatafalqueData(models.Model):
     order = models.OneToOneField('orders.Order', editable=False)

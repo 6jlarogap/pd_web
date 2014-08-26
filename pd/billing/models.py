@@ -62,7 +62,7 @@ class Payment(models.Model):
 class Io(models.Model):
     payment = models.OneToOneField(Payment)
     bank = models.CharField(_(u"Банк"), max_length=255)
-    transaction = models.CharField(_(u"Банк"), max_length=255)
+    transaction = models.CharField(_(u"Транзакция"), max_length=255)
 
 class Ad(models.Model):
     payment = models.OneToOneField(Payment)
