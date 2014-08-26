@@ -2,11 +2,12 @@
 
 from django.db import models
 from django.db.models.query_utils import Q
+from django.db.models.loading import get_model
 from django.utils.translation import ugettext as _
 
 from pd.models import BaseModel 
 
-import re
+import re, urllib2, json
 
 class GeoPointModel(BaseModel):
     """
@@ -40,6 +41,44 @@ class Country(models.Model):
 
     def __unicode__(self):
         return self.name[:16]
+
+    @classmethod
+    def get_country_currency_by_coords(cls, gps_x, gps_y):
+        """
+        Получить страну по координатам
+        """
+
+        DOMAINS = dict(
+            ru=dict(name=u'Россия', currency='RUR',),
+            by=dict(name=u'Беларусь', currency='BYR',),
+        )
+        YANDEX_GEOCODE_URL = "http://geocode-maps.yandex.ru/1.x/?geocode=%s,%s&format=json&results=1"
+
+        result = None, None
+        if gps_x is None or gps_y is None:
+            return result
+        try:
+            r = urllib2.urlopen(YANDEX_GEOCODE_URL % (
+                gps_x,
+                gps_y,
+            ))
+            raw_data = r.read().decode(r.info().getparam('charset') or 'utf-8')
+        except (urllib2.HTTPError, urllib2.URLError):
+            return result
+        try:
+            data = json.loads(raw_data)
+            country = data['response']['GeoObjectCollection']['featureMember'][0]\
+                        ['GeoObject']['metaDataProperty']['GeocoderMetaData']\
+                        ['AddressDetails']['Country']
+            country_parms = DOMAINS[country['CountryNameCode'].lower()]
+            country_name = country_parms['name']
+            currency_code = country_parms['currency']
+            country, created_country = cls.objects.get_or_create(name=country_name)
+            Currency = models.get_model('billing', 'Currency')
+            currency, created_currency = Currency.objects.get_or_create(code=currency_code)
+        except (KeyError, ValueError):
+            return result
+        return country, currency
 
     class Meta:
         db_table = "common_geocountry"
