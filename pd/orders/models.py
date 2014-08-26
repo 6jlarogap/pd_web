@@ -266,6 +266,7 @@ class Iorder(BaseModel):
                                       verbose_name=_(u"Покупатель"), related_name='iorder_customers')
     # Порядковый номер в пределах поставщика, покупателя, года
     number = models.IntegerField(_(u"Номер"))
+    comment = models.TextField(_(u"Комментарий"), blank=True, default='')
 
 class IorderItem(BaseModel):
     """
