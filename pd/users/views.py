@@ -53,15 +53,15 @@ from users.models import Profile, Org, RegisterProfile, ProfileLORU, CustomerPro
                          get_mail_footer, is_cabinet_user, PermitIfLoru, Oauth, \
                          BankAccount, BankAccountRegister, OrgCertificate, OrgContract, \
                          RegisterProfileContract, RegisterProfileScan, \
-                         is_loru_user, is_supervisor
+                         is_loru_user, is_supervisor, get_default_currency
 from pd.models import validate_phone_as_number, validate_username
 from pd.utils import host_country_code, phones_from_text
 from persons.models import AlivePerson, Phone
 from burials.models import Cemetery, Area, Burial, Place
-from billing.models import Wallet, Rate
+from billing.models import Wallet, Rate, Currency
 from orders.models import Product, Order
 from pd.views import PaginateListView, RequestToFormMixin, FormInvalidMixin, get_front_end_url, ServiceException
-from geo.models import Location
+from geo.models import Location, Country
 
 from users.serializers import StoreSerializer, OrgSerializer, OrgShort2Serializer
 
@@ -1350,6 +1350,7 @@ class RegistrantApprove(SupervisorRequiredMixin, View):
                             fax = registrant.org_fax,
                             ogrn = registrant.org_ogrn,
                             off_address=off_address,
+                            currency = registrant.org_currency,
                 )
                 for bank in registrant.bankaccountregister_set.all():
                     if bank.off_address:
@@ -1957,11 +1958,23 @@ class ApiOrgSignupView(CheckRecaptchaMixin, RegisterMixin, APIView):
             except ValueError:
                 raise ServiceException(_(u'Неверный формат registredOffice'))
             coords = location.get('location')
+            gps_x= coords and coords.get('longitude')
+            gps_y= coords and coords.get('latitude')
+            country, country_currency = Country.get_country_currency_by_coords(gps_x, gps_y)
             org_address = Location(
                 addr_str=location.get('address', '').strip(),
-                gps_x= coords and coords.get('longitude'),
-                gps_y= coords and coords.get('latitude'),
+                country=country,
+                gps_x=gps_x,
+                gps_y=gps_y,
             )
+            currency_code = request.DATA.get('currency')
+            if currency_code:
+                try:
+                    org_currency = Currency.objects.get(code=country_code)
+                except Currency.DoesNotExist:
+                    raise ServiceException(_(u'Неизвестный код валюты'))
+            else:
+                org_currency = country_currency or get_default_currency()
 
             user_last_name = request.DATA.get('userLastName', '').strip()
             if not user_last_name:
@@ -2006,6 +2019,7 @@ class ApiOrgSignupView(CheckRecaptchaMixin, RegisterMixin, APIView):
                 org_type=org_type,
                 org_name=org_name,
                 org_full_name=request.DATA.get('orgFullName', '').strip() or org_name,
+                org_currency=org_currency,
                 org_inn=org_inn,
                 org_ogrn=request.DATA.get('OGRN', '').strip(),
                 org_director=request.DATA.get('directorFullname', '').strip(),

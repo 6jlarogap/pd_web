@@ -61,7 +61,7 @@ class ProductForm(StrippedStringsMixin, forms.ModelForm):
 
     class Meta:
         model = Product
-        exclude = ['loru', ]
+        exclude = ['loru', 'currency', ]
         widgets = {
             'photo': CustomClearableFileInput,
         }
@@ -83,9 +83,6 @@ class ProductForm(StrippedStringsMixin, forms.ModelForm):
                 self.initial.update({'productcategory': category_default})
             except ProductCategory.DoesNotExist:
                 pass
-            currency_default = request.user.profile.org.currency
-            if currency_default:
-                self.initial.update({'currency': currency_default})
 
     def clean_description(self):
         description = self.cleaned_data.get('description')

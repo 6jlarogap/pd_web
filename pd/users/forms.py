@@ -421,7 +421,7 @@ class RegisterForm(forms.ModelForm):
         # Задаем порядок полей:
         fields = ('user_name', 'password1', 'password2',
                   'user_last_name', 'user_first_name', 'user_middle_name', 'user_email',
-                  'org_type', 'org_name', 'org_full_name', 'org_inn', 'org_ogrn',
+                  'org_type', 'org_name', 'org_full_name', 'org_currency', 'org_inn', 'org_ogrn',
                   'org_director', 'org_basis', 'org_phones', 'org_fax', 
                   'captcha',
                  )

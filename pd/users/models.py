@@ -747,6 +747,7 @@ class RegisterProfile(SafeDeleteMixin, BaseModel):
     org_type = models.CharField(_(u"Тип организации"), max_length=255, choices=REG_ORG_TYPES, default=REG_ORG_UGH)
     org_name = models.CharField(_(u"Краткое название организации"), max_length=255, default='')
     org_full_name = models.CharField(_(u"Полное название организации"), max_length=255, default='')
+    org_currency = models.ForeignKey('billing.Currency', verbose_name=_(u"Валюта"), default=get_default_currency)
     org_inn = models.CharField(_(u"ИНН"), max_length=255, default='')
     org_ogrn = models.CharField(_(u"ОГРН/ОГРЮЛ"), max_length=255, default='', blank=True)
     org_director = models.CharField(_(u"Директор (в родительном падеже, например, Иванова Ивана Ивановича)"),
