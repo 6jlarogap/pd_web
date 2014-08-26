@@ -17,6 +17,9 @@
                 <a href="#product_description_help" data-toggle="modal" title="{{ form.DESCRIPTION_TITLE }}"><img src="/static/help-question.png">
                 </a>
             {% endif %}
+            {% if field.name == "price" or field.name == "price_wholesale" %}
+                <b>{{ request.user.profile.org.currency.code }}</b>
+            {% endif %}
             </p>
         {% endfor %}
         <p>
