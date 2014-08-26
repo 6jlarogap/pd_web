@@ -45,7 +45,7 @@ class Country(models.Model):
     @classmethod
     def get_country_currency_by_coords(cls, gps_x, gps_y):
         """
-        Получить страну по координатам
+        Получить страну, валюту по координатам
         """
 
         DOMAINS = dict(
