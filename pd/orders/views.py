@@ -889,15 +889,19 @@ class ApiOptPlacesOrders(APIView):
     Интернет-заказ товаров
 
     Пример входных данных:
-    [
-        {
-        "id": 1,
-        "count": 2
-        },
-        {
-        "id": 2,
-        "count": 1
-    ]
+    {
+        "products": [
+            {
+            "id": 62,
+            "count": 2
+            },
+            {
+            "id": 57,
+            "count": 1
+            }
+        ],
+        "comment": "Текст комментария"
+    }
     Заказывает покупатель у поставщика. Покупатель выполнил логин, поставщик - в id продуктов.
     Эти id проверяются на то, чтоб им соответствовали продукты,
     и чтоб они относились к одному поставщику. Если проверка не пройдет,
@@ -914,7 +918,9 @@ class ApiOptPlacesOrders(APIView):
         try:
             customer = request.user.profile.org
             supplier = None
-            for p in request.DATA:
+            products = request.DATA.get("products",[])
+            comment = request.DATA.get("comment",'')
+            for p in products:
                 try:
                     product = Product.objects.get(pk=p['id'])
                     if supplier is None:
@@ -931,6 +937,7 @@ class ApiOptPlacesOrders(APIView):
                             supplier=supplier,
                             customer=customer,
                             number=number+1,
+                            comment=comment,
                         )
                     else:
                         if product.loru != supplier:
