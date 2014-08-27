@@ -7,6 +7,7 @@ from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.utils.translation import ugettext as _
+from django.db.models import Sum
 from django.db.models.query_utils import Q
 
 from burials.models import Burial
@@ -283,6 +284,24 @@ class Iorder(BaseModel):
     title = models.CharField(_(u"Должность"), max_length=255, default='')
     phones = models.TextField(_(u"Телефоны"), null=True)
     address = models.ForeignKey('geo.Location', verbose_name=_(u"Адрес"), null=True)
+
+    def number_verbose(self):
+        """
+        Автогенерируемый номер заказа
+        """
+        return u"%d-%d-%d-%d" % (
+            self.dt_created.year,
+            self.customer and self.customer.pk or 0,
+            self.supplier.pk,
+            self.number,
+        )
+
+    def items_count(self):
+        return IorderItem.objects.filter(iorder=self).count()
+
+    def total(self):
+        return float(IorderItem.objects.filter(iorder=self). \
+                aggregate(total=Sum('price_wholesale'))['total'])
 
 class IorderItem(BaseModel):
     """

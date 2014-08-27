@@ -6,9 +6,9 @@ from rest_framework import serializers
 from rest_framework.fields import Field
 
 from rest_api.fields import HyperlinkedFileField
-from orders.models import ProductCategory, Product
+from orders.models import ProductCategory, Product, Iorder
 from users.models import Org
-from users.serializers import OrgSerializer, OrgShortSerializer
+from users.serializers import OrgSerializer, OrgShortSerializer, OrgShort3Serializer
 
 
 class ProductCategorySerializer(serializers.HyperlinkedModelSerializer):
@@ -80,3 +80,14 @@ class ProductInfoSerializer(serializers.HyperlinkedModelSerializer):
 
     def model3d_func(self, product):
         return None
+
+class IordersSerializer(serializers.HyperlinkedModelSerializer):
+    supplier = OrgShort3Serializer(source='supplier')
+    number = serializers.Field(source='number_verbose')
+    itemsCount = serializers.Field(source='items_count')
+    totalPrice = serializers.Field(source='total')
+
+    class Meta:
+        model = Iorder
+        fields = ('id', 'number', 'supplier', 'itemsCount', 'totalPrice', 'status',
+        )

@@ -132,3 +132,9 @@ class OrgShort2Serializer(OrgLocationMixin, serializers.ModelSerializer):
                 order_by('productcategory__pk').\
                 values('productcategory__pk').distinct()
         ]
+
+class OrgShort3Serializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Org
+        fields = ('id', 'name',)
