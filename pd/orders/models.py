@@ -260,13 +260,29 @@ class Iorder(BaseModel):
     """
     Интернет-заказ оптовой продукции
     """
+    STATUS_POSTED = 'posted'
+    STATUS_CONFIRMED = 'confirmed'
+    STATUS_SHIPPED = 'shipped'
+    STATUS_ACCEPTED = 'accepted'
+    STATUS_TYPES = (
+        (STATUS_POSTED, _(u"Размещен")),
+        (STATUS_CONFIRMED, _(u"Подтвержден")),
+        (STATUS_SHIPPED, _(u"Отправлен")),
+        (STATUS_ACCEPTED, _(u"Принят")),
+    )
     supplier = models.ForeignKey(Org, limit_choices_to={'type': Org.PROFILE_LORU},
                                       verbose_name=_(u"Поставщик"), related_name='iorder_suppliers')
-    customer = models.ForeignKey(Org, limit_choices_to={'type': Org.PROFILE_LORU},
-                                      verbose_name=_(u"Покупатель"), related_name='iorder_customers')
+    customer = models.ForeignKey(Org,
+                                      verbose_name=_(u"Покупатель"), related_name='iorder_customers',
+                                      null=True)
+    status = models.CharField(_(u"Статус"), max_length=255, choices=STATUS_TYPES, default=STATUS_POSTED)
     # Порядковый номер в пределах поставщика, покупателя, года
     number = models.IntegerField(_(u"Номер"))
     comment = models.TextField(_(u"Комментарий"), blank=True, default='')
+    # При обращении к заказу по телефону (customer=None):
+    title = models.CharField(_(u"Должность"), max_length=255, default='')
+    phones = models.TextField(_(u"Телефоны"), null=True)
+    address = models.ForeignKey('geo.Location', verbose_name=_(u"Адрес"), null=True)
 
 class IorderItem(BaseModel):
     """
