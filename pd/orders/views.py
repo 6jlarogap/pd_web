@@ -966,6 +966,7 @@ class ApiOptPlacesOrders(APIView):
                         iorder = Iorder.objects.create(
                             supplier=supplier,
                             customer=customer,
+                            status=Iorder.STATUS_POSTED,
                             number=number+1,
                             comment=comment,
                             title=title or '',
