@@ -22,6 +22,7 @@ from django.views.decorators.csrf import csrf_protect, csrf_exempt
 from django.shortcuts import get_object_or_404
 
 from logs.models import write_log
+from geo.models import Location
 from burials.forms import AddOrgForm, AddAgentForm, AddDoverForm, AddDocTypeForm
 from burials.models import Burial, Place, Grave, PlacePhoto
 from users.models import CustomerProfile, CustomerProfilePhoto, Org, ProfileLORU, Store, is_loru_user, is_supervisor, \
@@ -901,11 +902,20 @@ class ApiOptPlacesOrders(APIView):
             "count": 1
             }
         ],
-        "comment": "Текст комментария"
+        "comment": "Текст комментария",
+        "customer": {
+            "id": 2,
+            # или, если заказал по телефону
+            "title": "Директор Рога и Копыта",
+            "phoneNumber": "375291234567",
+            "address": "Одесса Малая Арнаутская"
+        }
     }
-    Заказывает покупатель у поставщика. Покупатель выполнил логин, поставщик - в id продуктов.
-    Эти id проверяются на то, чтоб им соответствовали продукты,
-    и чтоб они относились к одному поставщику. Если проверка не пройдет,
+    Заказывает покупатель у поставщика.
+    Покупатель может быть указан в customer, или если не указан, то это выполнивший
+    логин.
+    Поставщик - в id продуктов. Эти id проверяются на то, чтоб им соответствовали
+    продукты, и чтоб они относились к одному поставщику. Если проверка не пройдет,
     то возвращается status=400, message=”что произошло”. Если проверка успешна,
     то формируется новый заказ, статус код - 200 
     """
@@ -917,7 +927,26 @@ class ApiOptPlacesOrders(APIView):
         data = dict(status='success')
         year = datetime.datetime.now().year
         try:
-            customer = request.user.profile.org
+            customer= title = phones = address = None
+            customer_input = request.DATA.get("customer")
+            if customer_input:
+                if customer_input.get('id'):
+                    try:
+                        customer = Org.objects.get(pk=customer_input['id'])
+                    except Org.DoesNotExist:
+                        raise ServiceException(
+                            _(u"Покупатель с сustomer['id']==%s отсутствует") % customer_input['id']
+                        )
+                elif set(('title', 'phoneNumber', 'address',)).intersection(customer_input.keys()):
+                    title = customer_input.get('title', '')
+                    phones = customer_input.get('phoneNumber')
+                    addr_str = customer_input.get('address')
+                    if addr_str:
+                        address = Location.objects.create(addr_str=addr_str)
+                else:
+                    raise ServiceException(_(u'Невозможно определить покупателя'))
+            else:
+                customer = request.user.profile.org
             supplier = None
             products = request.DATA.get("products",[])
             comment = request.DATA.get("comment",'')
@@ -937,8 +966,12 @@ class ApiOptPlacesOrders(APIView):
                         iorder = Iorder.objects.create(
                             supplier=supplier,
                             customer=customer,
+                            status=Iorder.STATUS_POSTED,
                             number=number+1,
                             comment=comment,
+                            title=title or '',
+                            phones=phones,
+                            address=address,
                         )
                     else:
                         if product.loru != supplier:
