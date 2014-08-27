@@ -286,9 +286,12 @@ class Iorder(BaseModel):
     address = models.ForeignKey('geo.Location', verbose_name=_(u"Адрес"), null=True)
 
     def number_verbose(self):
+        """
+        Автогенерируемый номер заказа
+        """
         return u"%d-%d-%d-%d" % (
             self.dt_created.year,
-            self.customer.pk,
+            self.customer and self.customer.pk or 0,
             self.supplier.pk,
             self.number,
         )
