@@ -40,7 +40,7 @@ from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from orders.serializers import ProductCategorySerializer, ProductsSerializer, ProductsOptSerializer, \
-                               ProductInfoSerializer, IordersSerializer
+                               ProductInfoSerializer, IordersSerializer, IorderInfoSerializer
 
 
 class LORURequiredMixin:
@@ -1012,3 +1012,16 @@ class ApiOptPlacesOrders(APIView):
 
 api_optplaces_orders = ApiOptPlacesOrders.as_view()
 
+
+class IorderInfoView(APIView):
+
+    def get(self, request, pk):
+        iorder = get_object_or_404(Iorder, pk=pk)
+        return Response(
+            status=200,
+            data=IorderInfoSerializer(iorder, context=dict(
+                request=request,
+            )).data,
+        )
+
+api_optplaces_orders_detail = IorderInfoView.as_view()

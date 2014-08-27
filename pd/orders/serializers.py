@@ -91,3 +91,10 @@ class IordersSerializer(serializers.HyperlinkedModelSerializer):
         model = Iorder
         fields = ('id', 'number', 'supplier', 'itemsCount', 'totalPrice', 'status',
         )
+
+class IorderInfoSerializer(serializers.HyperlinkedModelSerializer):
+    products = serializers.Field(source='products_json')
+
+    class Meta:
+        model = Iorder
+        fields = ('products', 'comment', )

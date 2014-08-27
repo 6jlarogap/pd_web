@@ -25,6 +25,7 @@ urlpatterns = patterns('orders.views',
     url(r'^api/catalog/products/(?P<product_slug>[\w-]+)', 'api_catalog_products_detail', name='api_catalog_products_detail'),
 
     url(r'^api/optplaces/orders/?$', 'api_optplaces_orders', name='api_optplaces_orders'),
+    url(r'^api/optplaces/orders/(?P<pk>\d+)/?$', 'api_optplaces_orders_detail', name='api_optplaces_orders_detail'),
 
     url(r'^order/product/ajax_get_product_price/$', 'ajax_product_price', name='ajax_product_price'),
 )
