@@ -39,7 +39,8 @@ from rest_framework import viewsets
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from serializers import ProductCategorySerializer, ProductsSerializer, ProductsOptSerializer, ProductInfoSerializer
+from orders.serializers import ProductCategorySerializer, ProductsSerializer, ProductsOptSerializer, \
+                               ProductInfoSerializer, IordersSerializer
 
 
 class LORURequiredMixin:
@@ -999,6 +1000,15 @@ class ApiOptPlacesOrders(APIView):
             data['status'] = 'error'
             data['message'] = excpt.message
         return Response(data=data, status=status_code)
+
+    def get(self, request):
+        iorders = Iorder.objects.filter(supplier=request.user.profile.org)
+        return Response(
+            status=200,
+            data=IordersSerializer(iorders, context=dict(
+                request=request,
+            )).data,
+        )
 
 api_optplaces_orders = ApiOptPlacesOrders.as_view()
 
