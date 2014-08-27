@@ -303,6 +303,13 @@ class Iorder(BaseModel):
         return float(IorderItem.objects.filter(iorder=self). \
                 aggregate(total=Sum('price_wholesale'))['total'])
 
+    def products_json(self):
+       return [dict(
+                    id=item.pk,
+                    count=float(item.quantity),
+               ) for item in IorderItem.objects.filter(iorder=self)
+       ]
+
 class IorderItem(BaseModel):
     """
     Пункты интернет-заказа оптовой продукции
