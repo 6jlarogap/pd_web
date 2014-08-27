@@ -97,5 +97,4 @@ class IorderInfoSerializer(serializers.HyperlinkedModelSerializer):
 
     class Meta:
         model = Iorder
-        fields = ('id', 'products', 'comment',
-        )
+        fields = ('products', 'comment', )
