@@ -1002,7 +1002,7 @@ class ApiOptPlacesOrders(APIView):
         return Response(data=data, status=status_code)
 
     def get(self, request):
-        iorders = Iorder.objects.filter(supplier=request.user.profile.org)
+        iorders = Iorder.objects.filter(customer=request.user.profile.org)
         return Response(
             status=200,
             data=IordersSerializer(iorders, context=dict(
