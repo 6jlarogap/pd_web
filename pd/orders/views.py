@@ -1004,7 +1004,7 @@ class ApiOptPlacesOrders(APIView):
     def get(self, request):
         org = request.user.profile.org
         qs = Q(customer=org) | Q(supplier=org)
-        iorders = Iorder.objects.filter(qs).distinct()
+        iorders = Iorder.objects.filter(qs).order_by('-dt_created').distinct()
         return Response(
             status=200,
             data=IordersSerializer(iorders, context=dict(
