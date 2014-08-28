@@ -1015,9 +1015,22 @@ class ApiOptPlacesOrders(APIView):
 api_optplaces_orders = ApiOptPlacesOrders.as_view()
 
 class IorderInfoView(APIView):
+    permission_classes = (PermitIfLoru,)
+
+    def is_permitted(self, request, iorder):
+        """
+        Просматривать и править заказ может лишь поставщик или покупатель, если имеется
+        """
+        org = request.user.profile.org
+        return iorder.supplier == org or iorder.customer and iorder.customer == org
 
     def get(self, request, pk):
         iorder = get_object_or_404(Iorder, pk=pk)
+        if not self.is_permitted(request, iorder):
+            return Response(
+                status=403,
+                data={"detail": "Not authorized: you are not customer nor supplier"},
+            )
         return Response(
             status=200,
             data=IorderInfoSerializer(iorder, context=dict(

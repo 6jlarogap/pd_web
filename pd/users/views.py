@@ -63,7 +63,7 @@ from orders.models import Product, Order
 from pd.views import PaginateListView, RequestToFormMixin, FormInvalidMixin, get_front_end_url, ServiceException
 from geo.models import Location, Country
 
-from users.serializers import StoreSerializer, OrgSerializer, OrgShort2Serializer
+from users.serializers import StoreSerializer, OrgSerializer, OrgShort2Serializer, OrgOptSupplierSerializer
 
 from sms_service.utils import send_sms
 
@@ -2146,3 +2146,14 @@ class OrgDetailView(APIView):
         return Response(status=200, data=OrgSerializer(obj).data)
 
 api_catalog_suppliers_detail = OrgDetailView.as_view()
+
+class ApiOptplacesSuppliersView(APIView):
+    permission_classes = (PermitIfLoru,)
+
+    def get(self, request):
+        return Response(
+            data = [ OrgOptSupplierSerializer(loru).data for loru in Org.objects.filter(type=Org.PROFILE_LORU) ],
+            status=200
+        )
+
+api_optplaces_suppliers = ApiOptplacesSuppliersView.as_view()
