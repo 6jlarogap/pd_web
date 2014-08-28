@@ -975,6 +975,22 @@ $(function() {
         }
     });
 
+    $('.product_edit #id_price, .product_edit #id_price_wholesale').change(function() {
+        var val = $(this).val();
+        var other_price = "";
+        switch ($(this).attr('id')) {
+            case 'id_price':
+                other_price = '#id_price_wholesale';
+                break;
+            case 'id_price_wholesale':
+                other_price = '#id_price';
+                break;
+        }
+        if (val && !$(other_price).val()) {
+            $(other_price).val(val);
+        }
+    });
+
     var ac_options = {
         bounds: USER_DEFAULT_BOUNDS,
         types: ['geocode'],
