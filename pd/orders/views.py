@@ -887,7 +887,28 @@ class UghPublishedProductsViewSet(viewsets.ViewSet):
             data.append(data_p)
         return Response(status=200, data=data)
 
-class ApiOptPlacesOrders(APIView):
+class OrderItemMixin(APIView):
+
+    def put_item(self, iorder, product, count):
+        """
+        Забить позицию интернет-заказа iorder продуктом product
+        """
+        return IorderItem.objects.create(
+            iorder=iorder,
+            product=product,
+            quantity=decimal.Decimal(count),
+            measure=product.measure,
+            price_wholesale=product.price_wholesale,
+            name=product.name,
+            productcategory=product.productcategory,
+            productcategory_name=product.productcategory.name,
+            productgroup=product.productgroup,
+            productgroup_name=product.productgroup.name if product.productgroup else '',
+            productgroup_description=product.productgroup.description if product.productgroup else '',
+            is_wholesale_with_vat=iorder.supplier.is_wholesale_with_vat,
+        )
+
+class ApiOptPlacesOrders(OrderItemMixin, APIView):
     """
     Интернет-заказ товаров
 
@@ -977,20 +998,7 @@ class ApiOptPlacesOrders(APIView):
                     else:
                         if product.loru != supplier:
                             raise ServiceException(_(u'В списке товаров таковые от разных поставщиков'))
-                    IorderItem.objects.create(
-                        iorder=iorder,
-                        product=product,
-                        quantity=decimal.Decimal(p['count']),
-                        measure=product.measure,
-                        price_wholesale=product.price_wholesale,
-                        name=product.name,
-                        productcategory=product.productcategory,
-                        productcategory_name=product.productcategory.name,
-                        productgroup=product.productgroup,
-                        productgroup_name=product.productgroup.name if product.productgroup else '',
-                        productgroup_description=product.productgroup.description if product.productgroup else '',
-                        is_wholesale_with_vat=supplier.is_wholesale_with_vat,
-                    )
+                    self.put_item(iorder, product, p['count'])
                     data['id'] = iorder.pk
                 except Product.DoesNotExist:
                     raise ServiceException(_(u'Не найден товар/услуга Id=%s') % p['id'])
@@ -1014,28 +1022,64 @@ class ApiOptPlacesOrders(APIView):
 
 api_optplaces_orders = ApiOptPlacesOrders.as_view()
 
-class IorderInfoView(APIView):
+class IorderInfoView(OrderItemMixin, APIView):
     permission_classes = (PermitIfLoru,)
 
-    def is_permitted(self, request, iorder):
+    def instance_permitted(self, request, pk):
         """
         Просматривать и править заказ может лишь поставщик или покупатель, если имеется
         """
-        org = request.user.profile.org
-        return iorder.supplier == org or iorder.customer and iorder.customer == org
-
-    def get(self, request, pk):
         iorder = get_object_or_404(Iorder, pk=pk)
-        if not self.is_permitted(request, iorder):
-            return Response(
+        org = request.user.profile.org
+        if iorder.supplier == org or iorder.customer and iorder.customer == org:
+            return iorder, None
+        else:
+            return None, Response(
                 status=403,
                 data={"detail": "Not authorized: you are not customer nor supplier"},
             )
+
+    def get(self, request, pk):
+        iorder, response = self.instance_permitted(request, pk)
+        if response:
+            return response
         return Response(
             status=200,
             data=IorderInfoSerializer(iorder, context=dict(
                 request=request,
             )).data,
         )
+
+    @transaction.commit_on_success
+    def put(self, request, pk):
+        iorder, response = self.instance_permitted(request, pk)
+        if response:
+            return response
+        status_code=200
+        data = dict(status='success')
+        products = request.DATA.get("products")
+        if products is None:
+            raise ServiceException(_(u'Не задан список товаров, пусть даже пустой'))
+        try:
+            IorderItem.objects.filter(iorder=iorder).delete()
+            for p in products:
+                try:
+                    product = Product.objects.get(pk=p['id'])
+                    if product.loru != iorder.supplier:
+                        raise ServiceException(_(u'Товара Id=%s нет среди товаров поставщика заказа') % p['id'])
+                    if p.get('count'):
+                        self.put_item(iorder, product, p['count'])
+                except Product.DoesNotExist:
+                    raise ServiceException(_(u'Не найден товар/услуга Id=%s') % p['id'])
+            comment = request.DATA.get("comment")
+            if comment is not None:
+                iorder.comment = comment
+            iorder.save()
+        except ServiceException as excpt:
+            transaction.rollback()
+            status_code=400
+            data['status'] = 'error'
+            data['message'] = excpt.message
+        return Response(data=data, status=status_code)
 
 api_optplaces_orders_detail = IorderInfoView.as_view()
