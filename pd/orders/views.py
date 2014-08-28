@@ -1002,7 +1002,9 @@ class ApiOptPlacesOrders(APIView):
         return Response(data=data, status=status_code)
 
     def get(self, request):
-        iorders = Iorder.objects.filter(customer=request.user.profile.org)
+        org = request.user.profile.org
+        qs = Q(customer=org) | Q(supplier=org)
+        iorders = Iorder.objects.filter(qs).distinct()
         return Response(
             status=200,
             data=IordersSerializer(iorders, context=dict(
@@ -1011,7 +1013,6 @@ class ApiOptPlacesOrders(APIView):
         )
 
 api_optplaces_orders = ApiOptPlacesOrders.as_view()
-
 
 class IorderInfoView(APIView):
 

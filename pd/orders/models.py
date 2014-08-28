@@ -305,7 +305,7 @@ class Iorder(BaseModel):
 
     def products_json(self):
        return [dict(
-                    id=item.pk,
+                    id=item.product.pk,
                     count=float(item.quantity),
                ) for item in IorderItem.objects.filter(iorder=self)
        ]
