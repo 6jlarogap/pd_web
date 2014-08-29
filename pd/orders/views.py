@@ -22,6 +22,7 @@ from django.views.decorators.csrf import csrf_protect, csrf_exempt
 from django.shortcuts import get_object_or_404
 
 from logs.models import write_log
+from geo.models import Location
 from burials.forms import AddOrgForm, AddAgentForm, AddDoverForm, AddDocTypeForm
 from burials.models import Burial, Place, Grave, PlacePhoto
 from users.models import CustomerProfile, CustomerProfilePhoto, Org, ProfileLORU, Store, is_loru_user, is_supervisor, \
@@ -38,7 +39,8 @@ from rest_framework import viewsets
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from serializers import ProductCategorySerializer, ProductsSerializer, ProductsOptSerializer, ProductInfoSerializer
+from orders.serializers import ProductCategorySerializer, ProductsSerializer, ProductsOptSerializer, \
+                               ProductInfoSerializer, IordersSerializer, IorderInfoSerializer
 
 
 class LORURequiredMixin:
@@ -696,10 +698,16 @@ class ProductsOptViewSet(viewsets.ReadOnlyModelViewSet):
     paginate_by = None
 
     def get_queryset(self, *args, **kwargs):
-        return Product.objects.filter(
+        qs = Q(
             loru__pk=self.kwargs['loru_pk'],
             is_wholesale=True,
         )
+        category_ids = self.request.GET.getlist('filter[category]')
+        while category_ids.count(u''):
+            category_ids.remove(u'')
+        if category_ids:
+            qs &= Q(productcategory__pk__in=category_ids)
+        return Product.objects.filter(qs)
 
     def get_serializer(self, *args, **kwargs):
         try:
@@ -885,7 +893,28 @@ class UghPublishedProductsViewSet(viewsets.ViewSet):
             data.append(data_p)
         return Response(status=200, data=data)
 
-class ApiOptPlacesOrders(APIView):
+class OrderItemMixin(APIView):
+
+    def put_item(self, iorder, product, count):
+        """
+        Забить позицию интернет-заказа iorder продуктом product
+        """
+        return IorderItem.objects.create(
+            iorder=iorder,
+            product=product,
+            quantity=decimal.Decimal(count),
+            measure=product.measure,
+            price_wholesale=product.price_wholesale,
+            name=product.name,
+            productcategory=product.productcategory,
+            productcategory_name=product.productcategory.name,
+            productgroup=product.productgroup,
+            productgroup_name=product.productgroup.name if product.productgroup else '',
+            productgroup_description=product.productgroup.description if product.productgroup else '',
+            is_wholesale_with_vat=iorder.supplier.is_wholesale_with_vat,
+        )
+
+class ApiOptPlacesOrders(OrderItemMixin, APIView):
     """
     Интернет-заказ товаров
 
@@ -901,11 +930,20 @@ class ApiOptPlacesOrders(APIView):
             "count": 1
             }
         ],
-        "comment": "Текст комментария"
+        "comment": "Текст комментария",
+        "customer": {
+            "id": 2,
+            # или, если заказал по телефону
+            "title": "Директор Рога и Копыта",
+            "phoneNumber": "375291234567",
+            "address": "Одесса Малая Арнаутская"
+        }
     }
-    Заказывает покупатель у поставщика. Покупатель выполнил логин, поставщик - в id продуктов.
-    Эти id проверяются на то, чтоб им соответствовали продукты,
-    и чтоб они относились к одному поставщику. Если проверка не пройдет,
+    Заказывает покупатель у поставщика.
+    Покупатель может быть указан в customer, или если не указан, то это выполнивший
+    логин.
+    Поставщик - в id продуктов. Эти id проверяются на то, чтоб им соответствовали
+    продукты, и чтоб они относились к одному поставщику. Если проверка не пройдет,
     то возвращается status=400, message=”что произошло”. Если проверка успешна,
     то формируется новый заказ, статус код - 200 
     """
@@ -917,7 +955,26 @@ class ApiOptPlacesOrders(APIView):
         data = dict(status='success')
         year = datetime.datetime.now().year
         try:
-            customer = request.user.profile.org
+            customer= title = phones = address = None
+            customer_input = request.DATA.get("customer")
+            if customer_input:
+                if customer_input.get('id'):
+                    try:
+                        customer = Org.objects.get(pk=customer_input['id'])
+                    except Org.DoesNotExist:
+                        raise ServiceException(
+                            _(u"Покупатель с сustomer['id']==%s отсутствует") % customer_input['id']
+                        )
+                elif set(('title', 'phoneNumber', 'address',)).intersection(customer_input.keys()):
+                    title = customer_input.get('title', '')
+                    phones = customer_input.get('phoneNumber')
+                    addr_str = customer_input.get('address')
+                    if addr_str:
+                        address = Location.objects.create(addr_str=addr_str)
+                else:
+                    raise ServiceException(_(u'Невозможно определить покупателя'))
+            else:
+                customer = request.user.profile.org
             supplier = None
             products = request.DATA.get("products",[])
             comment = request.DATA.get("comment",'')
@@ -937,26 +994,17 @@ class ApiOptPlacesOrders(APIView):
                         iorder = Iorder.objects.create(
                             supplier=supplier,
                             customer=customer,
+                            status=Iorder.STATUS_POSTED,
                             number=number+1,
                             comment=comment,
+                            title=title or '',
+                            phones=phones,
+                            address=address,
                         )
                     else:
                         if product.loru != supplier:
                             raise ServiceException(_(u'В списке товаров таковые от разных поставщиков'))
-                    IorderItem.objects.create(
-                        iorder=iorder,
-                        product=product,
-                        quantity=decimal.Decimal(p['count']),
-                        measure=product.measure,
-                        price_wholesale=product.price_wholesale,
-                        name=product.name,
-                        productcategory=product.productcategory,
-                        productcategory_name=product.productcategory.name,
-                        productgroup=product.productgroup,
-                        productgroup_name=product.productgroup.name if product.productgroup else '',
-                        productgroup_description=product.productgroup.description if product.productgroup else '',
-                        is_wholesale_with_vat=supplier.is_wholesale_with_vat,
-                    )
+                    self.put_item(iorder, product, p['count'])
                     data['id'] = iorder.pk
                 except Product.DoesNotExist:
                     raise ServiceException(_(u'Не найден товар/услуга Id=%s') % p['id'])
@@ -967,5 +1015,77 @@ class ApiOptPlacesOrders(APIView):
             data['message'] = excpt.message
         return Response(data=data, status=status_code)
 
+    def get(self, request):
+        org = request.user.profile.org
+        qs = Q(customer=org) | Q(supplier=org)
+        iorders = Iorder.objects.filter(qs).order_by('-dt_created').distinct()
+        return Response(
+            status=200,
+            data=IordersSerializer(iorders, context=dict(
+                request=request,
+            )).data,
+        )
+
 api_optplaces_orders = ApiOptPlacesOrders.as_view()
 
+class IorderInfoView(OrderItemMixin, APIView):
+    permission_classes = (PermitIfLoru,)
+
+    def instance_permitted(self, request, pk):
+        """
+        Просматривать и править заказ может лишь поставщик или покупатель, если имеется
+        """
+        iorder = get_object_or_404(Iorder, pk=pk)
+        org = request.user.profile.org
+        if iorder.supplier == org or iorder.customer and iorder.customer == org:
+            return iorder, None
+        else:
+            return None, Response(
+                status=403,
+                data={"detail": "Not authorized: you are not customer nor supplier"},
+            )
+
+    def get(self, request, pk):
+        iorder, response = self.instance_permitted(request, pk)
+        if response:
+            return response
+        return Response(
+            status=200,
+            data=IorderInfoSerializer(iorder, context=dict(
+                request=request,
+            )).data,
+        )
+
+    @transaction.commit_on_success
+    def put(self, request, pk):
+        iorder, response = self.instance_permitted(request, pk)
+        if response:
+            return response
+        status_code=200
+        data = dict(status='success')
+        products = request.DATA.get("products")
+        if products is None:
+            raise ServiceException(_(u'Не задан список товаров, пусть даже пустой'))
+        try:
+            IorderItem.objects.filter(iorder=iorder).delete()
+            for p in products:
+                try:
+                    product = Product.objects.get(pk=p['id'])
+                    if product.loru != iorder.supplier:
+                        raise ServiceException(_(u'Товара Id=%s нет среди товаров поставщика заказа') % p['id'])
+                    if p.get('count'):
+                        self.put_item(iorder, product, p['count'])
+                except Product.DoesNotExist:
+                    raise ServiceException(_(u'Не найден товар/услуга Id=%s') % p['id'])
+            comment = request.DATA.get("comment")
+            if comment is not None:
+                iorder.comment = comment
+            iorder.save()
+        except ServiceException as excpt:
+            transaction.rollback()
+            status_code=400
+            data['status'] = 'error'
+            data['message'] = excpt.message
+        return Response(data=data, status=status_code)
+
+api_optplaces_orders_detail = IorderInfoView.as_view()

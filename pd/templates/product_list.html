@@ -38,7 +38,7 @@
                 </td>
                 <td>
                     {% if c.photo %}
-                        {% thumbnail c.photo "100x75" "crop" "jpg" as thumb %}
+                        {% thumbnail c.photo "100x75" "scale" "jpg" as thumb %}
                         <img src="{{ thumb.url }}">
                     {% endif %}
                 </td>

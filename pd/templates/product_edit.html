@@ -4,7 +4,7 @@
 
 {% block content %}
     <h1>{% if form.instance.pk %}{% trans "Товар" %} {{ form.instance }}{% else %}{% trans "Новый товар" %}{% endif %}</h1>
-    <form action="" method="POST" enctype="multipart/form-data">
+    <form action="" method="POST" enctype="multipart/form-data" class="product_edit">
         {% csrf_token %}
         {% for field in form %}
             {{ field.errors }}
@@ -18,7 +18,7 @@
                 </a>
             {% endif %}
             {% if field.name == "price" or field.name == "price_wholesale" %}
-                <b>{{ request.user.profile.org.currency.code }}</b>
+                <b><span title="{% trans "Валюта товара — это валюта организации" %}">{{ request.user.profile.org.currency.code }}</span></b>
             {% endif %}
             </p>
         {% endfor %}
