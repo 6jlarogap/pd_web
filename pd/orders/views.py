@@ -698,10 +698,16 @@ class ProductsOptViewSet(viewsets.ReadOnlyModelViewSet):
     paginate_by = None
 
     def get_queryset(self, *args, **kwargs):
-        return Product.objects.filter(
+        qs = Q(
             loru__pk=self.kwargs['loru_pk'],
             is_wholesale=True,
         )
+        category_ids = self.request.GET.getlist('filter[category]')
+        while category_ids.count(u''):
+            category_ids.remove(u'')
+        if category_ids:
+            qs &= Q(productcategory__pk__in=category_ids)
+        return Product.objects.filter(qs)
 
     def get_serializer(self, *args, **kwargs):
         try:
