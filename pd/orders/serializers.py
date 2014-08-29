@@ -83,6 +83,7 @@ class ProductInfoSerializer(serializers.HyperlinkedModelSerializer):
 
 class IordersSerializer(serializers.HyperlinkedModelSerializer):
     supplier = OrgShort3Serializer(source='supplier')
+    customer = OrgShort3Serializer(source='customer')
     number = serializers.Field(source='number_verbose')
     itemsCount = serializers.Field(source='items_count')
     totalPrice = serializers.Field(source='total')
@@ -91,7 +92,7 @@ class IordersSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = Iorder
         fields = (
-            'id', 'number', 'supplier', 'itemsCount', 'totalPrice', 'status',
+            'id', 'number', 'supplier', 'customer', 'itemsCount', 'totalPrice', 'status',
             'createdAt',
         )
 
