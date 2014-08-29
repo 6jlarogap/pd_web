@@ -18,7 +18,7 @@
                 </a>
             {% endif %}
             {% if field.name == "price" or field.name == "price_wholesale" %}
-                <b>{{ request.user.profile.org.currency.code }}</b>
+                <b><span title="{% trans "Валюта товара — это валюта организации" %}">{{ request.user.profile.org.currency.code }}</span></b>
             {% endif %}
             </p>
         {% endfor %}
