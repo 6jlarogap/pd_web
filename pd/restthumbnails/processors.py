@@ -1,3 +1,4 @@
+# coding: utf-8
 """
 This module contains code adapted from easy-thumbnails, under the following
 license:
@@ -266,11 +267,21 @@ def scale_and_crop(im, size, crop=False, upscale=True, **kwargs):
     upscale
         Allow upscaling of the source image during scaling.
 
+    Внесены изменения:
+        Если crop=='crop' и заданы ширина, высота, то исходная картинка уменьшается
+        (увеличивается) в миниатюру, чтоб только влезла в ширину, высоту.
+        Если ширина или высота получившейся миниатюры окажется меньше
+        заданной ширины или высоты, то получившаяся миниатюра впихивается в
+        белое окно заданной ширины, высоты по центру.
+
     """
     source_x, source_y = [float(v) for v in im.size]
     target_x, target_y = [float(v) for v in size]
 
-    if crop or not target_x or not target_y:
+    our_crop =  crop == 'crop' and size[0] and size[1]
+    if our_crop:
+        scale = min(target_x / source_x, target_y / source_y)
+    elif crop or not target_x or not target_y:
         scale = max(target_x / source_x, target_y / source_y)
     else:
         scale = min(target_x / source_x, target_y / source_y)
@@ -345,6 +356,15 @@ def scale_and_crop(im, size, crop=False, upscale=True, **kwargs):
             # Finally, crop the image!
             if crop != 'scale':
                 im = im.crop(box)
+
+    if our_crop:
+        diff_x, diff_y = size[0] - im.size[0], size[1] - im.size[1]
+        if diff_x or diff_y:
+            offset = (max(0, diff_x / 2), max(0, diff_y / 2))
+            back = Image.new("RGB", size, "white")
+            back.paste(im, offset)
+            # Результат будет размером в size
+            im = back
     return im
 
 
