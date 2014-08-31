@@ -93,7 +93,7 @@ class IordersSerializer(serializers.HyperlinkedModelSerializer):
         model = Iorder
         fields = (
             'id', 'number', 'supplier', 'customer', 'itemsCount', 'totalPrice', 'status',
-            'createdAt',
+            'createdAt', 'comment', 
         )
 
     def createdAt_func(self, instance):
