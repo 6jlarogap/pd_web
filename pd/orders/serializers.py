@@ -6,10 +6,10 @@ from rest_framework import serializers
 from rest_framework.fields import Field
 
 from rest_api.fields import HyperlinkedFileField
-from orders.models import ProductCategory, Product
+from orders.models import ProductCategory, Product, Iorder
 from users.models import Org
-from users.serializers import OrgSerializer, OrgShortSerializer
-
+from users.serializers import OrgSerializer, OrgShortSerializer, OrgShort3Serializer
+from pd.utils import utcisoformat
 
 class ProductCategorySerializer(serializers.HyperlinkedModelSerializer):
     icon = HyperlinkedFileField()
@@ -80,3 +80,32 @@ class ProductInfoSerializer(serializers.HyperlinkedModelSerializer):
 
     def model3d_func(self, product):
         return None
+
+class IordersSerializer(serializers.HyperlinkedModelSerializer):
+    supplier = OrgShort3Serializer(source='supplier')
+    customer = OrgShort3Serializer(source='customer')
+    number = serializers.Field(source='number_verbose')
+    itemsCount = serializers.Field(source='items_count')
+    totalPrice = serializers.Field(source='total')
+    createdAt = serializers.SerializerMethodField('createdAt_func')
+
+    class Meta:
+        model = Iorder
+        fields = (
+            'id', 'number', 'supplier', 'customer', 'itemsCount', 'totalPrice', 'status',
+            'createdAt', 'comment', 
+        )
+
+    def createdAt_func(self, instance):
+        return utcisoformat(instance.dt_created)
+
+class IorderInfoSerializer(serializers.HyperlinkedModelSerializer):
+    products = serializers.Field(source='products_json')
+    supplierId = serializers.SerializerMethodField('supplierId_func')
+
+    class Meta:
+        model = Iorder
+        fields = ('products', 'comment', 'supplierId', )
+
+    def supplierId_func(self, instance):
+        return instance.supplier.pk

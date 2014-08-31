@@ -3,11 +3,11 @@
 from rest_framework import serializers
 from rest_framework.fields import Field
 
-from pd.utils import PhonesFromTextMixin
+from pd.utils import PhonesFromTextMixin, utcisoformat
 from geo.models import Location
 from users.models import Org, Store
 from persons.models import Phone
-from orders.models import Product
+from orders.models import Product, Iorder
 
 class OrgLocationMixin(object):
 
@@ -132,3 +132,24 @@ class OrgShort2Serializer(OrgLocationMixin, serializers.ModelSerializer):
                 order_by('productcategory__pk').\
                 values('productcategory__pk').distinct()
         ]
+
+class OrgShort3Serializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Org
+        fields = ('id', 'name',)
+
+class OrgOptSupplierSerializer(serializers.ModelSerializer):
+    dtLastOrder = serializers.SerializerMethodField('dt_last_order_func')
+
+    class Meta:
+        model = Org
+        fields = ('id', 'name', 'dtLastOrder', )
+
+    def dt_last_order_func(self, loru):
+      try:
+          return utcisoformat(
+              Iorder.objects.filter(supplier=loru).order_by('-dt_created')[0].dt_created
+          )
+      except IndexError:
+          return None
