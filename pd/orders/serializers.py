@@ -93,7 +93,7 @@ class IordersSerializer(serializers.HyperlinkedModelSerializer):
         model = Iorder
         fields = (
             'id', 'number', 'supplier', 'customer', 'itemsCount', 'totalPrice', 'status',
-            'createdAt',
+            'createdAt', 'comment', 
         )
 
     def createdAt_func(self, instance):
@@ -101,7 +101,11 @@ class IordersSerializer(serializers.HyperlinkedModelSerializer):
 
 class IorderInfoSerializer(serializers.HyperlinkedModelSerializer):
     products = serializers.Field(source='products_json')
+    supplierId = serializers.SerializerMethodField('supplierId_func')
 
     class Meta:
         model = Iorder
-        fields = ('products', 'comment', )
+        fields = ('products', 'comment', 'supplierId', )
+
+    def supplierId_func(self, instance):
+        return instance.supplier.pk
