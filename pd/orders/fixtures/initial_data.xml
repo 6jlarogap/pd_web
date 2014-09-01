@@ -83,4 +83,12 @@
         <field type="CharField" name="name">Фото для памятников</field>
         <field type="FileField" name="icon"></field>
     </object>
+    <object pk="23" model="orders.productcategory">
+        <field type="CharField" name="name">Швейные ритуальные изделия</field>
+        <field type="FileField" name="icon"></field>
+    </object>
+    <object pk="24" model="orders.productcategory">
+        <field type="CharField" name="name">Накладки ритуальные</field>
+        <field type="FileField" name="icon"></field>
+    </object>
 </django-objects>
