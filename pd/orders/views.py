@@ -1089,3 +1089,19 @@ class IorderInfoView(OrderItemMixin, APIView):
         return Response(data=data, status=status_code)
 
 api_optplaces_orders_detail = IorderInfoView.as_view()
+
+class ApiLoruProductTypesView(APIView):
+    permission_classes = (PermitIfLoru,)
+
+    def get(self, request):
+        return Response(
+            data=[ dict(
+                    id=pt[0],
+                    name =unicode(pt[1]),
+                   )
+                    for pt in Product.PRODUCT_TYPES
+            ],
+            status=200,
+        )
+
+api_loru_product_types = ApiLoruProductTypesView.as_view()

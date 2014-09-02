@@ -22,6 +22,8 @@ urlpatterns = patterns('orders.views',
 
     url(r'^api/loru/product_places/?$', 'api_loru_product_places', name='api_loru_product_places'),
 
+    url(r'^api/loru/product_types/?$', 'api_loru_product_types', name='api_loru_product_types'),
+
     url(r'^api/catalog/products/(?P<product_slug>[\w-]+)', 'api_catalog_products_detail', name='api_catalog_products_detail'),
 
     url(r'^api/optplaces/orders/?$', 'api_optplaces_orders', name='api_optplaces_orders'),
