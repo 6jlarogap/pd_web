@@ -612,6 +612,16 @@ class ProductCategoryViewSet(viewsets.ModelViewSet):
     model = ProductCategory
     serializer_class = ProductCategorySerializer
 
+    def get_queryset(self):
+        loru_ids = self.request.GET.getlist('filter[supplier]')
+        while loru_ids.count(u''):
+            loru_ids.remove(u'')
+        if loru_ids:
+            qs = Q(product__loru__pk__in=loru_ids)
+        else:
+            qs = Q()
+        return ProductCategory.objects.filter(qs).order_by('name').distinct()
+
 class CustomerDataMixin:
     def get_customer_data(self, request):
         places = []
