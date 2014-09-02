@@ -8,7 +8,7 @@ from rest_framework.fields import Field
 from rest_api.fields import HyperlinkedFileField
 from orders.models import ProductCategory, Product, Iorder
 from users.models import Org
-from users.serializers import OrgSerializer, OrgShortSerializer, OrgShort3Serializer
+from users.serializers import OrgSerializer, OrgShortSerializer, OrgShort3Serializer, OrgShort4Serializer
 from pd.utils import utcisoformat
 
 class ProductCategorySerializer(serializers.HyperlinkedModelSerializer):
@@ -101,11 +101,10 @@ class IordersSerializer(serializers.HyperlinkedModelSerializer):
 
 class IorderInfoSerializer(serializers.HyperlinkedModelSerializer):
     products = serializers.Field(source='products_json')
-    supplierId = serializers.SerializerMethodField('supplierId_func')
+    number = serializers.Field(source='number_verbose')
+    supplier = OrgShort4Serializer(source='supplier')
+    customer = OrgShort4Serializer(source='customer')
 
     class Meta:
         model = Iorder
-        fields = ('products', 'comment', 'supplierId', )
-
-    def supplierId_func(self, instance):
-        return instance.supplier.pk
+        fields = ('products', 'comment', 'number', 'supplier', 'customer', )
