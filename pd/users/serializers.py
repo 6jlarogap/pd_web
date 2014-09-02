@@ -139,6 +139,14 @@ class OrgShort3Serializer(serializers.ModelSerializer):
         model = Org
         fields = ('id', 'name',)
 
+class OrgShort4Serializer(PhonesFromTextMixin, serializers.ModelSerializer):
+    shortName = Field(source='name')
+    phones = serializers.SerializerMethodField('phones_func')
+
+    class Meta:
+        model = Org
+        fields = ('id', 'shortName', 'phones', )
+
 class OrgOptSupplierSerializer(serializers.ModelSerializer):
     dtLastOrder = serializers.SerializerMethodField('dt_last_order_func')
 
