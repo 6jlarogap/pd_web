@@ -39,8 +39,10 @@ from rest_framework import viewsets
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.parsers import MultiPartParser
 from orders.serializers import ProductCategorySerializer, ProductsSerializer, ProductsOptSerializer, \
-                               ProductInfoSerializer, IordersSerializer, IorderInfoSerializer
+                               ProductInfoSerializer, IordersSerializer, IorderInfoSerializer, \
+                               ProductEditSerializer
 
 
 class LORURequiredMixin:
@@ -1089,3 +1091,38 @@ class IorderInfoView(OrderItemMixin, APIView):
         return Response(data=data, status=status_code)
 
 api_optplaces_orders_detail = IorderInfoView.as_view()
+
+class ApiLoruProductTypesView(APIView):
+    permission_classes = (PermitIfLoru,)
+
+    def get(self, request):
+        return Response(
+            data=[ dict(
+                    id=pt[0],
+                    name =unicode(pt[1]),
+                   )
+                    for pt in Product.PRODUCT_TYPES
+            ],
+            status=200,
+        )
+
+api_loru_product_types = ApiLoruProductTypesView.as_view()
+
+class ApiProductList(APIView):
+    permission_classes = (PermitIfLoru,)
+    parser_classes = (MultiPartParser,)
+
+    def get(self, request):
+        qs = Q(loru=request.user.profile.org)
+        category_ids = self.request.GET.getlist('filter[category]')
+        while category_ids.count(u''):
+            category_ids.remove(u'')
+        if category_ids:
+            qs &= Q(productcategory__pk__in=category_ids)
+
+        data = [ ProductEditSerializer(p, context=dict(request=request)).data \
+                for p in Product.objects.filter(qs)
+        ]
+        return Response(data=data, status=200)
+
+api_product_list = ApiProductList.as_view()

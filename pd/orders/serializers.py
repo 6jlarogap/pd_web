@@ -108,3 +108,26 @@ class IorderInfoSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = Iorder
         fields = ('products', 'comment', 'number', 'supplier', 'customer', )
+
+class ProductEditSerializer(serializers.HyperlinkedModelSerializer):
+    typeName = serializers.SerializerMethodField('typeName_func')
+    categoryName = serializers.RelatedField(source='productcategory')
+    measurementUnit = Field(source='measure')
+    isDefault = Field(source='default')
+    retailPrice = Field(source='price')
+    tradePrice = Field(source='price_wholesale')
+    isShownInRetailCatalog = Field(source='is_public_catalog')
+    isShownInTradeCatalog = Field(source='is_wholesale')
+    imageUrl = HyperlinkedFileField(source='photo')
+    
+    class Meta:
+        model = Product
+        fields = (
+            'id', 'name', 'typeName', 'categoryName',
+             'measurementUnit', 'isDefault',
+             'retailPrice', 'tradePrice', 'isShownInRetailCatalog',
+             'isShownInTradeCatalog', 'imageUrl', 
+        )
+
+    def typeName_func(self, instance):
+        return instance.get_ptype_display() or None
