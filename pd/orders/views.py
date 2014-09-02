@@ -39,9 +39,21 @@ from rest_framework import viewsets
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.parsers import MultiPartParser
 from orders.serializers import ProductCategorySerializer, ProductsSerializer, ProductsOptSerializer, \
-                               ProductInfoSerializer, IordersSerializer, IorderInfoSerializer
+                               ProductInfoSerializer, IordersSerializer, IorderInfoSerializer, \
+                               ProductEditSerializer
 
+class ProductCategoryQsMixin(object):
+    
+    def product_category_qs(self):
+        category_ids = self.request.GET.getlist('filter[category]')
+        while category_ids.count(u''):
+            category_ids.remove(u'')
+        if category_ids:
+            return Q(productcategory__pk__in=category_ids)
+        else:
+            return Q()
 
 class LORURequiredMixin:
     def is_loru(self, request):
@@ -600,6 +612,16 @@ class ProductCategoryViewSet(viewsets.ModelViewSet):
     model = ProductCategory
     serializer_class = ProductCategorySerializer
 
+    def get_queryset(self):
+        loru_ids = self.request.GET.getlist('filter[supplier]')
+        while loru_ids.count(u''):
+            loru_ids.remove(u'')
+        if loru_ids:
+            qs = Q(product__loru__pk__in=loru_ids)
+        else:
+            qs = Q()
+        return ProductCategory.objects.filter(qs).order_by('name').distinct()
+
 class CustomerDataMixin:
     def get_customer_data(self, request):
         places = []
@@ -617,7 +639,7 @@ class CustomerDataMixin:
                     lorus.update(p.cemetery.ugh.get_loru_list())
         return is_customer, places, lorus
 
-class ProductsViewSet(viewsets.ReadOnlyModelViewSet):
+class ProductsViewSet(ProductCategoryQsMixin, viewsets.ReadOnlyModelViewSet):
     """
     Показ продуктов в публичном каталоге только!!!
     """
@@ -645,11 +667,7 @@ class ProductsViewSet(viewsets.ReadOnlyModelViewSet):
         if self.request.GET.get('filter[price_to]'):
             qs &= Q(price__lte=self.request.GET.get('filter[price_to]'))
 
-        category_ids = self.request.GET.getlist('filter[category]')
-        while category_ids.count(u''):
-            category_ids.remove(u'')
-        if category_ids:
-            qs &= Q(productcategory__pk__in=category_ids)
+        qs &= self.product_category_qs()
 
         # По умолчанию показываем только то, что в публичном каталоге
         q_public_whole = Q(is_public_catalog=True)
@@ -688,7 +706,7 @@ class ProductsViewSet(viewsets.ReadOnlyModelViewSet):
         
         return filter
 
-class ProductsOptViewSet(viewsets.ReadOnlyModelViewSet):
+class ProductsOptViewSet(ProductCategoryQsMixin, viewsets.ReadOnlyModelViewSet):
     """
     Показ продуктов оптовика-поставщика
 
@@ -702,11 +720,7 @@ class ProductsOptViewSet(viewsets.ReadOnlyModelViewSet):
             loru__pk=self.kwargs['loru_pk'],
             is_wholesale=True,
         )
-        category_ids = self.request.GET.getlist('filter[category]')
-        while category_ids.count(u''):
-            category_ids.remove(u'')
-        if category_ids:
-            qs &= Q(productcategory__pk__in=category_ids)
+        qs &= self.product_category_qs()
         return Product.objects.filter(qs)
 
     def get_serializer(self, *args, **kwargs):
@@ -1089,3 +1103,34 @@ class IorderInfoView(OrderItemMixin, APIView):
         return Response(data=data, status=status_code)
 
 api_optplaces_orders_detail = IorderInfoView.as_view()
+
+class ApiLoruProductTypesView(APIView):
+    permission_classes = (PermitIfLoru,)
+
+    def get(self, request):
+        return Response(
+            data=[ dict(
+                    id=pt[0],
+                    name =unicode(pt[1]),
+                   )
+                    for pt in Product.PRODUCT_TYPES
+            ],
+            status=200,
+        )
+
+api_loru_product_types = ApiLoruProductTypesView.as_view()
+
+class ApiProductList(ProductCategoryQsMixin, APIView):
+    permission_classes = (PermitIfLoru,)
+    parser_classes = (MultiPartParser,)
+
+    def get(self, request):
+        qs = Q(loru=request.user.profile.org)
+        qs &= self.product_category_qs()
+
+        data = [ ProductEditSerializer(p, context=dict(request=request)).data \
+                for p in Product.objects.filter(qs)
+        ]
+        return Response(data=data, status=200)
+
+api_product_list = ApiProductList.as_view()
