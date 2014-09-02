@@ -1133,4 +1133,11 @@ class ApiProductList(ProductCategoryQsMixin, APIView):
         ]
         return Response(data=data, status=200)
 
+    def post(self, request):
+        serializer = ProductEditSerializer(data=request.DATA, context={ 'request': request, })
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=200)
+        return Response(serializer.errors, status=400)
+
 api_product_list = ApiProductList.as_view()

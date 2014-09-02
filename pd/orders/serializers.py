@@ -123,7 +123,7 @@ class ProductEditSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = Product
         fields = (
-            'id', 'name', 'typeName', 'categoryName',
+            'id', 'name', 'description', 'sku', 'typeName', 'categoryName',
              'measurementUnit', 'isDefault',
              'retailPrice', 'tradePrice', 'isShownInRetailCatalog',
              'isShownInTradeCatalog', 'imageUrl', 
@@ -131,3 +131,39 @@ class ProductEditSerializer(serializers.HyperlinkedModelSerializer):
 
     def typeName_func(self, instance):
         return instance.get_ptype_display() or None
+
+    def restore_object(self, attrs, instance=None):
+        data = self.context['request'].DATA
+        image = self.context['request'].FILES.get('image')
+
+        # В вызывающем post (добавление продукта) должны быть проверены
+        # на обязательность соответствующие поля продукта
+        # При правке продукта правим только то, что в полях kwargs
+        # окажется None
+
+        kwargs = dict(
+            loru=self.context['request'].user.profile.org if not instance else None,
+            name=data.get('name'),
+            description=data.get('description'),
+            measure=data.get('measurementUnit'),
+            price=data.get('retailPrice'),
+            price_wholesale=data.get('tradePrice'),
+            ptype=data.get('typeId'),
+            default=data.get('isDefault'),
+            productcategory=ProductCategory.objects.get(data.get('categoryId')) if data.get('categoryId') else None,
+            currency=self.context['request'].user.profile.org.currency if not instance else None,
+            sku=data.get('sku'),
+            is_public_catalog=data.get('isShownInRetailCatalog'),
+            is_wholesale=data.get('isShownInTradeCatalog'),
+        )
+        for k in kwargs:
+            if kwargs[k] is None:
+                del kwargs[k]
+        return Product(**kwargs)
+
+    def save_object(self, obj, **kwargs):
+        new_obj = obj.pk is None
+        obj = obj.save(**kwargs)
+        if new_obj and (not obj.sku or not obj.sku.strip()):
+            obj.sku = obj.pk
+            obj.save()
