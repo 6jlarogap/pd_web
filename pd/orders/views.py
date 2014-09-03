@@ -1137,6 +1137,24 @@ class ApiProductList(ProductCategoryQsMixin, APIView):
         return Response(data=data, status=200)
 
     def post(self, request):
+        required_not_got = list()
+        for f in (
+            'name',
+            'description',
+            'categoryId',
+            'retailPrice',
+            'tradePrice',
+                 ):
+            if not request.DATA.get(f):
+                required_not_got.append(f)
+        if required_not_got:
+            return Response(
+                data={
+                    'status': 'error',
+                    'message': _(u"Не заданы параметры: %s") % ", ".join(required_not_got),
+                     },
+                status=400,
+            )
         serializer = ProductEditSerializer(data=request.DATA, context={ 'request': request, })
         if serializer.is_valid():
             serializer.save()

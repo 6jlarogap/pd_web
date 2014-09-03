@@ -118,7 +118,7 @@ class ProductEditSerializer(serializers.HyperlinkedModelSerializer):
     tradePrice = Field(source='price_wholesale')
     isShownInRetailCatalog = Field(source='is_public_catalog')
     isShownInTradeCatalog = Field(source='is_wholesale')
-    imageUrl = HyperlinkedFileField(source='photo')
+    imageUrl = HyperlinkedFileField(source='photo', required=False)
     
     class Meta:
         model = Product
@@ -141,7 +141,7 @@ class ProductEditSerializer(serializers.HyperlinkedModelSerializer):
         # При правке продукта правим только то, что в полях kwargs
         # окажется None
 
-        kwargs = dict(
+        fields_get = dict(
             loru=self.context['request'].user.profile.org if not instance else None,
             name=data.get('name'),
             description=data.get('description'),
@@ -156,10 +156,16 @@ class ProductEditSerializer(serializers.HyperlinkedModelSerializer):
             is_public_catalog=data.get('isShownInRetailCatalog'),
             is_wholesale=data.get('isShownInTradeCatalog'),
         )
-        for k in kwargs:
-            if kwargs[k] is None:
-                del kwargs[k]
-        return Product(**kwargs)
+        fields = dict()
+        for k in fields_get:
+            if fields_get[k] is None:
+                fields[k] = fields_get[k]
+        if instance:
+            for k in fields:
+                setattr(instance, f, fields[f])
+            return instance
+        else:
+            return Product(**fields)
 
     def save_object(self, obj, **kwargs):
         new_obj = obj.pk is None
