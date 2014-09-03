@@ -4,7 +4,7 @@
 
 TO_IMPORT_ODS = '../contrib/import_pricelist/pricelist.ods'
 # Название организации изменено, чтоб еще раз не запустить процесс
-LORU_NAME = u'Частное предприятие "Шенвальд"--DUMMY--'
+LORU_NAME = u'Частное предприятие "Шенвальд"'
 
 # Импортировать товары лору LORU_NAME из таблицы TO_IMPORT_ODS
 # Сделать эти товары предназначенными для показа оптовикам
@@ -32,27 +32,31 @@ def main():
     ods = load(TO_IMPORT_ODS).spreadsheet
     rows = ods.getElementsByType(TableRow)
     for row in rows[1:]:
-        cells = row.getElementsByType(TableCell)
-        sku = ods_cell(cells[0])
-        name = ods_cell(cells[1])
-        description = ods_cell(cells[2])
         try:
-            price = price_wholesale = float(ods_cell(cells[3]))
-        except ValueError:
-            # цена не указана, значит конец списка
+            cells = row.getElementsByType(TableCell)
+            sku = ods_cell(cells[0])
+            name = ods_cell(cells[1])
+            description = ods_cell(cells[2])
+            try:
+                price = price_wholesale = float(ods_cell(cells[3]))
+            except ValueError:
+                # цена не указана, значит конец списка
+                break
+            productcategory = ProductCategory.objects.get(name=ods_cell(cells[4]))
+            Product.objects.create(
+                loru=loru,
+                name=name,
+                description=description,
+                productcategory=productcategory,
+                price=price,
+                price_wholesale=price_wholesale,
+                currency=loru.currency,
+                sku=sku,
+                is_wholesale=True,
+            )
+        except IndexError:
+            # тоже конец списка
             break
-        productcategory = ProductCategory.objects.get(name=ods_cell(cells[4]))
-        Product.objects.create(
-            loru=loru,
-            name=name,
-            description=description,
-            productcategory=productcategory,
-            price=price,
-            price_wholesale=price_wholesale,
-            currency=loru.currency,
-            sku=sku,
-            is_wholesale=True,
-        )
 
 def ods_cell(cell):
     return "".join([unicode(data) for data in cell.getElementsByType(P)]).strip()
