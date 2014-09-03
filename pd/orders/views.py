@@ -620,6 +620,9 @@ class ProductCategoryViewSet(viewsets.ModelViewSet):
             qs = Q(product__loru__pk__in=loru_ids)
         else:
             qs = Q()
+        onlyOpt = self.request.GET.get('filter[onlyOpt]')
+        if onlyOpt and onlyOpt == 'true':
+            qs &= Q(product__is_wholesale=True)
         return ProductCategory.objects.filter(qs).order_by('name').distinct()
 
 class CustomerDataMixin:
