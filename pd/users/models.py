@@ -24,7 +24,7 @@ from pd.models import BaseModel, Files, GetLogsMixin, validate_gt0, validate_use
                       validate_phone_as_number, SafeDeleteMixin
 from logs.models import Log
 
-from pd.utils import DigitsValidator, LengthValidator, NotEmptyValidator
+from pd.utils import DigitsValidator, LengthValidator, NotEmptyValidator, phones_from_text
 from pd.views import ServiceException
 
 class PhonesMixin(object):
@@ -634,6 +634,9 @@ class Org(GetLogsMixin, BaseModel):
                 return 0
         else:
             return settings.ORG_AD_PAY_RECIPIENT_PK
+
+    def phone_list(self):
+        return phones_from_text(self.phones)
 
 class OrgCertificate(Files):
     """

@@ -7,12 +7,14 @@ import json
 from django.conf import settings
 from django.contrib import messages
 from django.core.urlresolvers import reverse
+from django.core.mail import EmailMessage
 from django.db import transaction
 from django.db.models.aggregates import Count, Sum
 from django.db.models.query_utils import Q
 from django.http import HttpResponse, Http404
 from django.shortcuts import redirect, render
 from django.template.context import RequestContext
+from django.template.loader import render_to_string
 from django.views.generic.base import View
 from django.views.generic.detail import DetailView
 from django.views.generic.edit import CreateView, UpdateView
@@ -32,7 +34,7 @@ from orders.forms import ProductForm, OrderForm, OrderItemFormset, CoffinForm, C
                          AddInfoForm, OrderSearchForm, OrderBurialForm
 from orders.models import Product, Order, OrderItem, ProductCategory, Iorder, IorderItem
 from pd.forms import CommentForm
-from pd.views import PaginateListView, RequestToFormMixin, ServiceException
+from pd.views import PaginateListView, RequestToFormMixin, ServiceException, get_front_end_url
 from reports.models import make_report
 
 from rest_framework import viewsets
@@ -910,7 +912,7 @@ class UghPublishedProductsViewSet(viewsets.ViewSet):
             data.append(data_p)
         return Response(status=200, data=data)
 
-class OrderItemMixin(APIView):
+class IorderMixin(APIView):
 
     def put_item(self, iorder, product, count):
         """
@@ -931,7 +933,46 @@ class OrderItemMixin(APIView):
             is_wholesale_with_vat=iorder.supplier.is_wholesale_with_vat,
         )
 
-class ApiOptPlacesOrders(OrderItemMixin, APIView):
+    def email_notifications(self, iorder, is_new_iorder):
+        """
+        """
+        email_from = settings.DEFAULT_FROM_EMAIL
+        if iorder.customer and iorder.customer.email:
+            email_to = (iorder.customer.email, )
+            email_subject = u"%s: %s %s" % (
+                _(u"ПохоронноеДело"),
+                _(u"создан заказ") if is_new_iorder else _(u"изменен заказ"),
+                iorder.number_verbose()
+            )
+            email_text = render_to_string(
+                            'iorder_notification.txt',
+                            {
+                                'preambule': _(u"Создан") if is_new_iorder else _(u"Изменен"),
+                                'front_end_url': get_front_end_url(self.request),
+                                'iorder': iorder,
+                                'to_customer': True,
+                            }
+            )
+            # EmailMessage(email_subject, email_text, email_from, email_to,).send()
+        if iorder.supplier and iorder.supplier.email:
+            email_to = (iorder.supplier.email, )
+            email_subject = u"%s: %s %s" % (
+                _(u"ПохоронноеДело"),
+                _(u"поступил заказ") if is_new_iorder else _(u"изменен заказ"),
+                iorder.number_verbose()
+            )
+            email_text = render_to_string(
+                            'iorder_notification.txt',
+                            {
+                                'preambule': _(u"Поступил") if is_new_iorder else _(u"Изменен"),
+                                'front_end_url': get_front_end_url(self.request),
+                                'iorder': iorder,
+                                'to_customer': False,
+                            }
+            )
+            # EmailMessage(email_subject, email_text, email_from, email_to,).send()
+
+class ApiOptPlacesOrders(IorderMixin, APIView):
     """
     Интернет-заказ товаров
 
@@ -1030,6 +1071,8 @@ class ApiOptPlacesOrders(OrderItemMixin, APIView):
             status_code=400
             data['status'] = 'error'
             data['message'] = excpt.message
+        else:
+            self.email_notifications(iorder, is_new_iorder=True)
         return Response(data=data, status=status_code)
 
     def get(self, request):
@@ -1045,7 +1088,7 @@ class ApiOptPlacesOrders(OrderItemMixin, APIView):
 
 api_optplaces_orders = ApiOptPlacesOrders.as_view()
 
-class IorderInfoView(OrderItemMixin, APIView):
+class IorderInfoView(IorderMixin, APIView):
     permission_classes = (PermitIfLoru,)
 
     def instance_permitted(self, request, pk):
@@ -1103,6 +1146,8 @@ class IorderInfoView(OrderItemMixin, APIView):
             status_code=400
             data['status'] = 'error'
             data['message'] = excpt.message
+        else:
+            self.email_notifications(iorder, is_new_iorder=False)
         return Response(data=data, status=status_code)
 
 api_optplaces_orders_detail = IorderInfoView.as_view()
