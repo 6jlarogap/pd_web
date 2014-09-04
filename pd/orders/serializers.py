@@ -1,7 +1,7 @@
 
 # coding=utf-8
 
-from django.contrib.auth.models import Group, Permission
+from django.db import transaction
 from rest_framework import serializers
 from rest_framework.fields import Field
 
@@ -110,38 +110,54 @@ class IorderInfoSerializer(serializers.HyperlinkedModelSerializer):
         fields = ('products', 'comment', 'number', 'supplier', 'customer', )
 
 class ProductEditSerializer(serializers.HyperlinkedModelSerializer):
+    name = Field(source='name')
+    typeId = Field(source='ptype')
     typeName = serializers.SerializerMethodField('typeName_func')
+    categoryId = serializers.SerializerMethodField('categoryId_func')
     categoryName = serializers.RelatedField(source='productcategory')
     measurementUnit = Field(source='measure')
     isDefault = Field(source='default')
     retailPrice = Field(source='price')
+    currency = serializers.RelatedField(source='currency')
     tradePrice = Field(source='price_wholesale')
     isShownInRetailCatalog = Field(source='is_public_catalog')
     isShownInTradeCatalog = Field(source='is_wholesale')
-    imageUrl = HyperlinkedFileField(source='photo')
+    imageUrl = HyperlinkedFileField(source='photo', required=False)
     
     class Meta:
         model = Product
         fields = (
-            'id', 'name', 'description', 'sku', 'typeName', 'categoryName',
-             'measurementUnit', 'isDefault',
-             'retailPrice', 'tradePrice', 'isShownInRetailCatalog',
-             'isShownInTradeCatalog', 'imageUrl', 
+            'id', 'name', 'description', 'sku',
+            'typeId', 'typeName',
+            'categoryId', 'categoryName',
+            'measurementUnit', 'isDefault',
+            'retailPrice', 'tradePrice', 'currency',
+            'isShownInRetailCatalog', 'isShownInTradeCatalog',
+            'imageUrl', 
         )
 
     def typeName_func(self, instance):
         return instance.get_ptype_display() or None
 
+    def categoryId_func(self, instance):
+        return instance.productcategory.pk
+
     def restore_object(self, attrs, instance=None):
         data = self.context['request'].DATA
         image = self.context['request'].FILES.get('image')
+        is_public_catalog = data.get('isShownInRetailCatalog')
+        if is_public_catalog is not None:
+            is_public_catalog = is_public_catalog.lower() == 'true'
+        is_wholesale = data.get('isShownInTradeCatalog')
+        if is_wholesale is not None:
+            is_wholesale = is_wholesale.lower() == 'true'
 
         # В вызывающем post (добавление продукта) должны быть проверены
         # на обязательность соответствующие поля продукта
         # При правке продукта правим только то, что в полях kwargs
         # окажется None
 
-        kwargs = dict(
+        fields_got = dict(
             loru=self.context['request'].user.profile.org if not instance else None,
             name=data.get('name'),
             description=data.get('description'),
@@ -150,20 +166,28 @@ class ProductEditSerializer(serializers.HyperlinkedModelSerializer):
             price_wholesale=data.get('tradePrice'),
             ptype=data.get('typeId'),
             default=data.get('isDefault'),
-            productcategory=ProductCategory.objects.get(data.get('categoryId')) if data.get('categoryId') else None,
+            productcategory=ProductCategory.objects.get(pk=data.get('categoryId')) if data.get('categoryId') else None,
             currency=self.context['request'].user.profile.org.currency if not instance else None,
             sku=data.get('sku'),
-            is_public_catalog=data.get('isShownInRetailCatalog'),
-            is_wholesale=data.get('isShownInTradeCatalog'),
+            is_public_catalog=is_public_catalog,
+            is_wholesale=is_wholesale,
+            photo=image if image else None,
         )
-        for k in kwargs:
-            if kwargs[k] is None:
-                del kwargs[k]
-        return Product(**kwargs)
+        fields = dict()
+        for k in fields_got:
+            if fields_got[k] is not None:
+                fields[k] = fields_got[k]
+        if instance:
+            for k in fields:
+                setattr(instance, k, fields[k])
+            return instance
+        else:
+            return Product(**fields)
 
+    @transaction.commit_on_success
     def save_object(self, obj, **kwargs):
         new_obj = obj.pk is None
-        obj = obj.save(**kwargs)
+        obj.save(**kwargs)
         if new_obj and (not obj.sku or not obj.sku.strip()):
             obj.sku = obj.pk
             obj.save()

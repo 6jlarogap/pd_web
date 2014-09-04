@@ -1137,6 +1137,24 @@ class ApiProductList(ProductCategoryQsMixin, APIView):
         return Response(data=data, status=200)
 
     def post(self, request):
+        required_not_got = list()
+        for f in (
+            'name',
+            'description',
+            'categoryId',
+            'retailPrice',
+            'tradePrice',
+                 ):
+            if not request.DATA.get(f):
+                required_not_got.append(f)
+        if required_not_got:
+            return Response(
+                data={
+                    'status': 'error',
+                    'message': _(u"Не заданы параметры: %s") % ", ".join(required_not_got),
+                     },
+                status=400,
+            )
         serializer = ProductEditSerializer(data=request.DATA, context={ 'request': request, })
         if serializer.is_valid():
             serializer.save()
@@ -1144,3 +1162,32 @@ class ApiProductList(ProductCategoryQsMixin, APIView):
         return Response(serializer.errors, status=400)
 
 api_product_list = ApiProductList.as_view()
+
+class ApiProductDetail(APIView):
+    permission_classes = (PermitIfLoru,)
+    parser_classes = (MultiPartParser,)
+
+    def get_object(self, request, pk):
+        try:
+            return Product.objects.get(loru=request.user.profile.org, pk=pk)
+        except Product.DoesNotExist:
+            raise Http404
+
+    def get(self, request, pk):
+        product = self.get_object(request, pk)
+        serializer = ProductEditSerializer(product, context=dict(request=request))
+        return Response(serializer.data)
+
+    def put(self, request, pk):
+        product = self.get_object(request, pk)
+        serializer = ProductEditSerializer(
+            product,
+            data=request.DATA,
+            context=dict(request=request),
+        )
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=200)
+        return Response(serializer.errors, status=400)
+
+api_product_detail = ApiProductDetail.as_view()
