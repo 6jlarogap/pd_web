@@ -110,11 +110,13 @@ class IorderInfoSerializer(serializers.HyperlinkedModelSerializer):
         fields = ('products', 'comment', 'number', 'supplier', 'customer', )
 
 class ProductEditSerializer(serializers.HyperlinkedModelSerializer):
+    typeId = Field(source='ptype')
     typeName = serializers.SerializerMethodField('typeName_func')
     categoryName = serializers.RelatedField(source='productcategory')
     measurementUnit = Field(source='measure')
     isDefault = Field(source='default')
     retailPrice = Field(source='price')
+    currency = serializers.RelatedField(source='currency')
     tradePrice = Field(source='price_wholesale')
     isShownInRetailCatalog = Field(source='is_public_catalog')
     isShownInTradeCatalog = Field(source='is_wholesale')
@@ -123,10 +125,13 @@ class ProductEditSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = Product
         fields = (
-            'id', 'name', 'description', 'sku', 'typeName', 'categoryName',
-             'measurementUnit', 'isDefault',
-             'retailPrice', 'tradePrice', 'isShownInRetailCatalog',
-             'isShownInTradeCatalog', 'imageUrl', 
+            'id', 'name', 'description', 'sku',
+            'typeId', 'typeName',
+            'categoryName',
+            'measurementUnit', 'isDefault',
+            'retailPrice', 'tradePrice', 'currency',
+            'isShownInRetailCatalog', 'isShownInTradeCatalog',
+            'imageUrl', 
         )
 
     def typeName_func(self, instance):

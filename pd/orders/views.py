@@ -1162,3 +1162,20 @@ class ApiProductList(ProductCategoryQsMixin, APIView):
         return Response(serializer.errors, status=400)
 
 api_product_list = ApiProductList.as_view()
+
+class ApiProductDetail(APIView):
+    permission_classes = (PermitIfLoru,)
+    parser_classes = (MultiPartParser,)
+
+    def get_object(self, request, pk):
+        try:
+            return Product.objects.get(loru=request.user.profile.org, pk=pk)
+        except Product.DoesNotExist:
+            raise Http404
+
+    def get(self, request, pk):
+        product = self.get_object(request, pk)
+        serializer = ProductEditSerializer(product, context=dict(request=request))
+        return Response(serializer.data)
+
+api_product_detail = ApiProductDetail.as_view()
