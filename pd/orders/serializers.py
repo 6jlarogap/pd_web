@@ -155,6 +155,7 @@ class ProductEditSerializer(serializers.HyperlinkedModelSerializer):
             sku=data.get('sku'),
             is_public_catalog=data.get('isShownInRetailCatalog'),
             is_wholesale=data.get('isShownInTradeCatalog'),
+            photo=image if image else None,
         )
         fields = dict()
         for k in fields_get:
