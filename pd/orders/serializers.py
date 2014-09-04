@@ -1,7 +1,7 @@
 
 # coding=utf-8
 
-from django.contrib.auth.models import Group, Permission
+from django.db import transaction
 from rest_framework import serializers
 from rest_framework.fields import Field
 
@@ -150,7 +150,7 @@ class ProductEditSerializer(serializers.HyperlinkedModelSerializer):
             price_wholesale=data.get('tradePrice'),
             ptype=data.get('typeId'),
             default=data.get('isDefault'),
-            productcategory=ProductCategory.objects.get(data.get('categoryId')) if data.get('categoryId') else None,
+            productcategory=ProductCategory.objects.get(pk=data.get('categoryId')) if data.get('categoryId') else None,
             currency=self.context['request'].user.profile.org.currency if not instance else None,
             sku=data.get('sku'),
             is_public_catalog=data.get('isShownInRetailCatalog'),
@@ -158,7 +158,7 @@ class ProductEditSerializer(serializers.HyperlinkedModelSerializer):
         )
         fields = dict()
         for k in fields_get:
-            if fields_get[k] is None:
+            if fields_get[k] is not None:
                 fields[k] = fields_get[k]
         if instance:
             for k in fields:
@@ -167,9 +167,10 @@ class ProductEditSerializer(serializers.HyperlinkedModelSerializer):
         else:
             return Product(**fields)
 
+    @transaction.commit_on_success
     def save_object(self, obj, **kwargs):
         new_obj = obj.pk is None
-        obj = obj.save(**kwargs)
+        obj.save(**kwargs)
         if new_obj and (not obj.sku or not obj.sku.strip()):
             obj.sku = obj.pk
             obj.save()
