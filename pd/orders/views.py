@@ -1178,4 +1178,16 @@ class ApiProductDetail(APIView):
         serializer = ProductEditSerializer(product, context=dict(request=request))
         return Response(serializer.data)
 
+    def put(self, request, pk):
+        product = self.get_object(request, pk)
+        serializer = ProductEditSerializer(
+            product,
+            data=request.DATA,
+            context=dict(request=request),
+        )
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=200)
+        return Response(serializer.errors, status=400)
+
 api_product_detail = ApiProductDetail.as_view()
