@@ -112,6 +112,7 @@ class IorderInfoSerializer(serializers.HyperlinkedModelSerializer):
 class ProductEditSerializer(serializers.HyperlinkedModelSerializer):
     typeId = Field(source='ptype')
     typeName = serializers.SerializerMethodField('typeName_func')
+    categoryId = serializers.SerializerMethodField('categoryId_func')
     categoryName = serializers.RelatedField(source='productcategory')
     measurementUnit = Field(source='measure')
     isDefault = Field(source='default')
@@ -127,7 +128,7 @@ class ProductEditSerializer(serializers.HyperlinkedModelSerializer):
         fields = (
             'id', 'name', 'description', 'sku',
             'typeId', 'typeName',
-            'categoryName',
+            'categoryId', 'categoryName',
             'measurementUnit', 'isDefault',
             'retailPrice', 'tradePrice', 'currency',
             'isShownInRetailCatalog', 'isShownInTradeCatalog',
@@ -136,6 +137,9 @@ class ProductEditSerializer(serializers.HyperlinkedModelSerializer):
 
     def typeName_func(self, instance):
         return instance.get_ptype_display() or None
+
+    def categoryId_func(self, instance):
+        return instance.productcategory.pk
 
     def restore_object(self, attrs, instance=None):
         data = self.context['request'].DATA
