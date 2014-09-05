@@ -953,7 +953,8 @@ class IorderMixin(APIView):
                                 'to_customer': True,
                             }
             )
-            # EmailMessage(email_subject, email_text, email_from, email_to,).send()
+            EmailMessage(email_subject, email_text, email_from, email_to,).send()
+            print email_text
         if iorder.supplier and iorder.supplier.email:
             email_to = (iorder.supplier.email, )
             email_subject = u"%s: %s %s" % (
@@ -970,7 +971,7 @@ class IorderMixin(APIView):
                                 'to_customer': False,
                             }
             )
-            # EmailMessage(email_subject, email_text, email_from, email_to,).send()
+            EmailMessage(email_subject, email_text, email_from, email_to,).send()
 
 class ApiOptPlacesOrders(IorderMixin, APIView):
     """
