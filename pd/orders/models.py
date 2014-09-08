@@ -281,7 +281,7 @@ class Iorder(BaseModel):
     number = models.IntegerField(_(u"Номер"))
     comment = models.TextField(_(u"Комментарий"), blank=True, default='')
     # При обращении к заказу по телефону (customer=None):
-    title = models.CharField(_(u"Должность"), max_length=255, default='')
+    title = models.CharField(_(u"Наименование покупателя"), max_length=255, default='')
     phones = models.TextField(_(u"Телефоны"), null=True)
     address = models.ForeignKey('geo.Location', verbose_name=_(u"Адрес"), null=True)
 
