@@ -135,6 +135,11 @@
                                         {% if user.profile.org.pk %}
                                             <li><a href="{% url org_log %}">{% trans "Журнал" %}</a></li>
                                         {% endif %}
+                                        {% if user.profile.is_loru %}
+                                            <li class="divider"></li>
+                                            <li><a href="{{ global_context_FRONT_END_URL }}#!/price/{{ user.profile.org.pk }}">{% trans "Оптовый заказ" %}</a></li>
+                                            <li><a href="{{ global_context_FRONT_END_URL }}#!/orders">{% trans "Архив заказов" %}</a></li>
+                                        {% endif %}
                                         {% if user.profile.is_supervisor %}
                                             <li class="divider"></li>
                                             <li><a href="{% url registrants %}">{% trans "Регистрация" %}</a></li>
