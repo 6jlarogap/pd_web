@@ -50,7 +50,7 @@ from users.forms import UserAddForm, RegisterForm, LoruFormset, ProfileForm, Use
                         UserDataForm, ChangePasswordForm, BankAccountFormset, OrgForm, \
                         OrgLogForm, LoginLogForm, OrgBurialStatsForm, SupportForm, TestCaptchaForm
 from users.models import Profile, Org, RegisterProfile, ProfileLORU, CustomerProfile, Store, \
-                         get_mail_footer, is_cabinet_user, PermitIfLoru, Oauth, \
+                         get_mail_footer, is_cabinet_user, PermitIfLoru, PermitIfLoruOrSupervisor, Oauth, \
                          BankAccount, BankAccountRegister, OrgCertificate, OrgContract, \
                          RegisterProfileContract, RegisterProfileScan, \
                          is_loru_user, is_supervisor, get_default_currency
@@ -2149,7 +2149,7 @@ class OrgDetailView(APIView):
 api_catalog_suppliers_detail = OrgDetailView.as_view()
 
 class ApiOptplacesSuppliersView(APIView):
-    permission_classes = (PermitIfLoru,)
+    permission_classes = (PermitIfLoruOrSupervisor, )
 
     def get(self, request):
         return Response(
@@ -2163,7 +2163,7 @@ class ApiOptplacesSupplierDetailView(APIView):
     """
     Показ ЛОРУ другим оптовикам, тоже ЛОРУ
     """
-    permission_classes = (PermitIfLoru,)
+    permission_classes = (PermitIfLoruOrSupervisor, )
 
     def get(self, request, pk):
         obj = get_object_or_404(Org, pk=pk)

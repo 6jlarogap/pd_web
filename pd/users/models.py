@@ -183,6 +183,10 @@ class PermitIfLoru(permissions.BasePermission):
     def has_permission(self, request, view):
         return is_loru_user(request.user)
 
+class PermitIfLoruOrSupervisor(permissions.BasePermission):
+    def has_permission(self, request, view):
+        return is_loru_user(request.user) or is_supervisor(request.user)
+
 class PermitIfUgh(permissions.BasePermission):
     def has_permission(self, request, view):
         return is_ugh_user(request.user)
