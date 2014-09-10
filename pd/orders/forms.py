@@ -61,7 +61,7 @@ class ProductForm(StrippedStringsMixin, forms.ModelForm):
 
     class Meta:
         model = Product
-        exclude = ['loru', 'currency', ]
+        exclude = ('loru', )
         widgets = {
             'photo': CustomClearableFileInput,
         }

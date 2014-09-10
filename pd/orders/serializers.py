@@ -11,6 +11,10 @@ from users.models import Org
 from users.serializers import OrgSerializer, OrgShortSerializer, OrgShort3Serializer, OrgShort4Serializer
 from pd.utils import utcisoformat
 
+class ProductCurrencyMixin(object):
+    def get_org_currency(self, instance):
+        return instance.loru.currency
+
 class ProductCategorySerializer(serializers.HyperlinkedModelSerializer):
     icon = HyperlinkedFileField()
     
@@ -18,9 +22,9 @@ class ProductCategorySerializer(serializers.HyperlinkedModelSerializer):
         model = ProductCategory
         fields = ('id', 'name', 'icon', )
 
-class ProductsSerializer(serializers.HyperlinkedModelSerializer):
+class ProductsSerializer(ProductCurrencyMixin, serializers.HyperlinkedModelSerializer):
     photo = HyperlinkedFileField()
-    currency = serializers.RelatedField(source='currency')
+    currency = serializers.SerializerMethodField('get_org_currency')
     supplier = OrgShortSerializer(source='loru')
     price = serializers.SerializerMethodField('price_func')
 
@@ -39,9 +43,9 @@ class ProductsSerializer(serializers.HyperlinkedModelSerializer):
             pass
         return price
 
-class ProductsOptSerializer(serializers.HyperlinkedModelSerializer):
+class ProductsOptSerializer(ProductCurrencyMixin, serializers.HyperlinkedModelSerializer):
     photo = HyperlinkedFileField()
-    currency = serializers.RelatedField(source='currency')
+    currency = serializers.SerializerMethodField('get_org_currency')
     supplier = OrgShortSerializer(source='loru')
     price = Field(source = 'price_wholesale')
     category = ProductCategorySerializer(source='productcategory')
@@ -60,9 +64,9 @@ class ProductsOptSerializer(serializers.HyperlinkedModelSerializer):
     def withVAT_func(self, product):
         return self.context['is_wholesale_with_vat']
 
-class ProductInfoSerializer(serializers.HyperlinkedModelSerializer):
+class ProductInfoSerializer(ProductCurrencyMixin, serializers.HyperlinkedModelSerializer):
     photo = HyperlinkedFileField()
-    currency = serializers.RelatedField(source='currency')
+    currency = serializers.SerializerMethodField('get_org_currency')
     category = serializers.RelatedField(source='productcategory')
     supplier = OrgSerializer(source='loru')
     priceWholesale = serializers.SerializerMethodField('price_wholesale_func')
@@ -109,7 +113,7 @@ class IorderInfoSerializer(serializers.HyperlinkedModelSerializer):
         model = Iorder
         fields = ('products', 'comment', 'number', 'supplier', 'customer', )
 
-class ProductEditSerializer(serializers.HyperlinkedModelSerializer):
+class ProductEditSerializer(ProductCurrencyMixin, serializers.HyperlinkedModelSerializer):
     name = Field(source='name')
     typeId = Field(source='ptype')
     typeName = serializers.SerializerMethodField('typeName_func')
@@ -118,7 +122,7 @@ class ProductEditSerializer(serializers.HyperlinkedModelSerializer):
     measurementUnit = Field(source='measure')
     isDefault = Field(source='default')
     retailPrice = Field(source='price')
-    currency = serializers.RelatedField(source='currency')
+    currency = serializers.SerializerMethodField('get_org_currency')
     tradePrice = Field(source='price_wholesale')
     isShownInRetailCatalog = Field(source='is_public_catalog')
     isShownInTradeCatalog = Field(source='is_wholesale')
@@ -167,7 +171,6 @@ class ProductEditSerializer(serializers.HyperlinkedModelSerializer):
             ptype=data.get('typeId'),
             default=data.get('isDefault'),
             productcategory=ProductCategory.objects.get(pk=data.get('categoryId')) if data.get('categoryId') else None,
-            currency=self.context['request'].user.profile.org.currency if not instance else None,
             sku=data.get('sku'),
             is_public_catalog=is_public_catalog,
             is_wholesale=is_wholesale,
