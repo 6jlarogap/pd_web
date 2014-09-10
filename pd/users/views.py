@@ -689,7 +689,7 @@ class LoginView(View):
                 next_url = "?redirectUrl=%s" % request.GET.get("redirectUrl")
             else:
                 next_url = ''
-            response = redirect('%s#!/signout%s' % (get_front_end_url(request), next_url))
+            response = redirect('%ssignout%s' % (get_front_end_url(request), next_url))
             response.delete_cookie('pdsession')
             return response
         else:
@@ -729,7 +729,7 @@ class LogoutView(View):
         if request.GET.get("redirectUrl"):
             response = redirect(request.GET.get("redirectUrl"))
         elif settings.REDIRECT_LOGIN_TO_FRONT_END:
-            response = redirect(get_front_end_url(request) + '#!/signout')
+            response = redirect(get_front_end_url(request) + 'signout')
             response.delete_cookie('pdsession')
         else:
             response = redirect('/')
