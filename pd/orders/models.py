@@ -74,7 +74,6 @@ class Product(BaseModel):
     productcategory = models.ForeignKey(ProductCategory, verbose_name=_(u"Категория"), on_delete=models.PROTECT)
     productgroup = models.ForeignKey(ProductGroup, verbose_name=_(u"Подкатегория"), null=True, editable=False,
                                      on_delete=models.PROTECT)
-    currency = models.ForeignKey('billing.Currency', verbose_name=_(u"Валюта"))
     sku = models.CharField(_(u"Артикул"), max_length=255, blank=True, default='')
     is_public_catalog = models.BooleanField(_(u"Показать в публичном каталоге"), default=False)
     is_wholesale = models.BooleanField(_(u"Показать в каталоге оптовикам"), default=False)
