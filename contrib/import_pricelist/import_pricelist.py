@@ -2,9 +2,10 @@
 
 # import_pricelist.py,
 
-TO_IMPORT_ODS = '../contrib/import_pricelist/pricelist.ods'
+# TO_IMPORT_ODS = '/home/suprune20/musor/import_pricelist/pricelist-arnika.ods'
+TO_IMPORT_ODS = '/home/suprune20/musor/import_pricelist/pricelist-optomiks-2.ods'
 # Название организации изменено, чтоб еще раз не запустить процесс
-LORU_NAME = u'Частное предприятие "Шенвальд"'
+LORU_NAME = u'ЧТУП "ОПТОМИКСБРЕСТ"'
 
 # Импортировать товары лору LORU_NAME из таблицы TO_IMPORT_ODS
 # Сделать эти товары предназначенными для показа оптовикам
@@ -31,7 +32,9 @@ def main():
     loru = Org.objects.get(name=LORU_NAME)
     ods = load(TO_IMPORT_ODS).spreadsheet
     rows = ods.getElementsByType(TableRow)
+    no = 1
     for row in rows[1:]:
+        no += 1
         try:
             cells = row.getElementsByType(TableCell)
             sku = ods_cell(cells[0])
@@ -42,8 +45,12 @@ def main():
             except ValueError:
                 # цена не указана, значит конец списка
                 break
-            productcategory = ProductCategory.objects.get(name=ods_cell(cells[4]))
-            Product.objects.create(
+            try:
+                productcategory = ProductCategory.objects.get(name=ods_cell(cells[4]))
+            except ProductCategory.DoesNotExist:
+                print '**** line %d' % no
+                raise
+            p = Product.objects.create(
                 loru=loru,
                 name=name,
                 description=description,
@@ -54,6 +61,9 @@ def main():
                 sku=sku,
                 is_wholesale=True,
             )
+            if not p.sku:
+                p.sku = str(p.pk)
+                p.save()
         except IndexError:
             # тоже конец списка
             break
