@@ -49,9 +49,14 @@ from orders.serializers import ProductCategorySerializer, ProductsSerializer, Pr
 class ProductCategoryQsMixin(object):
     
     def product_category_qs(self):
-        category_ids = self.request.GET.getlist('filter[category]')
-        while category_ids.count(u''):
-            category_ids.remove(u'')
+        category_ids_got = self.request.GET.getlist('filter[category]')
+        category_ids = []
+        for category_id in category_ids_got:
+            try:
+                # может быть '', 'null'
+                category_ids.append(int(category_id))
+            except ValueError:
+                pass
         if category_ids:
             return Q(productcategory__pk__in=category_ids)
         else:
