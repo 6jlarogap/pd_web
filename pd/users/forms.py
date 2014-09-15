@@ -308,6 +308,9 @@ class OrgForm(StrippedStringsMixin, BaseOrgForm):
             del self.fields['opf_order']
             del self.fields['opf_order_customer_mandatory']
             del self.fields['is_wholesale_with_vat']
+        if 'currency' in self.fields and \
+           not (self.instance and self.instance.pk and self.instance.type == Org.PROFILE_LORU):
+            self.fields['currency'].help_text = None
         if self.is_own_org and request.user.profile.is_ugh():
             self.placesize_formset = PlaceSizeFormset(data=request.POST or None, instance=self.instance)
         else:

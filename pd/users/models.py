@@ -572,7 +572,8 @@ class Org(GetLogsMixin, BaseModel):
                                 validators=[validate_gt0])
     worktime = models.CharField(_(u"Время работы (ЧЧ:ММ - ЧЧ:ММ)"), max_length=255, default='', blank=True)
     site = models.URLField(_(u"Сайт"), default='', blank=True)
-    currency = models.ForeignKey('billing.Currency', verbose_name=_(u"Валюта"), default=get_default_currency)
+    currency = models.ForeignKey('billing.Currency', verbose_name=_(u"Валюта"), default=get_default_currency,
+                                 help_text=_(u' При изменении валюты она будет заменена у всех товаров без изменения цен'))
     is_wholesale_with_vat = models.BooleanField(_(u"Оптовые цены продуктов с НДС"), default=False)
 
     class Meta:

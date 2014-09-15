@@ -148,11 +148,12 @@ class OrgShort4Serializer(PhonesFromTextMixin, serializers.ModelSerializer):
         fields = ('id', 'shortName', 'phones', )
 
 class OrgOptSupplierSerializer(serializers.ModelSerializer):
+    tin = Field(source='inn')
     dtLastOrder = serializers.SerializerMethodField('dt_last_order_func')
 
     class Meta:
         model = Org
-        fields = ('id', 'name', 'dtLastOrder', )
+        fields = ('id', 'name', 'tin', 'dtLastOrder', )
 
     def dt_last_order_func(self, loru):
       try:
