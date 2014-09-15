@@ -92,7 +92,6 @@ class ProductCreate(LORURequiredMixin, RequestToFormMixin, CreateView):
     def form_valid(self, form):
         self.object = form.save(commit=False)
         self.object.loru = self.request.user.profile.org
-        self.object.currency = self.request.user.profile.org.currency
         self.object.save()
         if not self.object.sku or not self.object.sku.strip():
             self.object.sku = str(self.object.pk)
