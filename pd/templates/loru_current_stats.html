@@ -202,10 +202,10 @@
                 {{ org.num_orders }}
             </td>
             <td style="text-align:right;">
-                {{ org.num_iorders_in }}
+                {{ org.num_iorders_in }}{% if org.sum_iorders_in %} ({{ org.sum_iorders_in }} {{ org.currency }}){% endif %}
             </td>
             <td style="text-align:right;">
-                {{ org.num_iorders_out }}
+                {{ org.num_iorders_out }}{% if org.sum_iorders_out %} ({{ org.sum_iorders_out }} {{ org.currency }}){% endif %}
             </td>
             <td style="text-align:right;">
                 {{ org.num_burials }}
