@@ -28,7 +28,7 @@ from geo.models import Location
 from burials.forms import AddOrgForm, AddAgentForm, AddDoverForm, AddDocTypeForm
 from burials.models import Burial, Place, Grave, PlacePhoto
 from users.models import CustomerProfile, CustomerProfilePhoto, Org, ProfileLORU, Store, is_loru_user, is_supervisor, \
-                         PermitIfLoru, PermitIfLoruOrSupervisor
+                         PermitIfLoru
 from billing.models import Rate
 from orders.forms import ProductForm, OrderForm, OrderItemFormset, CoffinForm, CatafalqueForm, \
                          AddInfoForm, OrderSearchForm, OrderBurialForm
@@ -723,7 +723,6 @@ class ProductsOptViewSet(ProductCategoryQsMixin, viewsets.ReadOnlyModelViewSet):
     """
     model = Product
     paginate_by = None
-    permission_classes = (PermitIfLoruOrSupervisor, )
 
     def get_queryset(self, *args, **kwargs):
         qs = Q(
