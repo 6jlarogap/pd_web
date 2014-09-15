@@ -95,6 +95,15 @@
             {% endif %}
         </th>
         <th style="text-align:right;">
+            {% if sort == '-num_iorders_in' %}
+                {% if sort == '-num_iorders_in' %}<i class="icon icon-arrow-down"></i>{% endif %}
+                <a href="?{{ GET_PARAMS }}&sort=num_iorders_in">{% trans "Входящих интернет-заказов" %}</a>
+            {% else %}
+                {% if sort == 'num_iorders_in' %}<i class="icon icon-arrow-up"></i>{% endif %}
+                <a href="?{{ GET_PARAMS }}&sort=-num_iorders_in">{% trans "Входящих интернет-заказов" %}</a>
+            {% endif %}
+        </th>
+        <th style="text-align:right;">
             {% if sort == '-num_burials' %}
                 {% if sort == '-num_burials' %}<i class="icon icon-arrow-down"></i>{% endif %}
                 <a href="?{{ GET_PARAMS }}&sort=num_burials">{% trans "Закрытых<br />электронных захоронений" %}</a>
@@ -139,6 +148,9 @@
             <b>{{ total.num_orders }}</b>
         </td>
         <td style="text-align:right;">
+            <b>{{ total.num_iorders_in }}</b>
+        </td>
+        <td style="text-align:right;">
             <b>{{ total.num_burials }}</b>
         </td>
     </tr>
@@ -176,6 +188,9 @@
             </td>
             <td style="text-align:right;">
                 {{ org.num_orders }}
+            </td>
+            <td style="text-align:right;">
+                {{ org.num_iorders_in }}
             </td>
             <td style="text-align:right;">
                 {{ org.num_burials }}
