@@ -1661,6 +1661,12 @@ class LoruCurrentStatsView(SupervisorRequiredMixin, TemplateView):
                 aggregate(total=Sum('price_wholesale'))['total'] or 0
             total['sum_iorders_in'] += org['sum_iorders_in']
 
+            org['num_iorders_out'] = Iorder.objects.filter(customer=o).count()
+            total['num_iorders_out'] += org['num_iorders_out']
+            org['sum_iorders_out'] = IorderItem.objects.filter(iorder__customer=o). \
+                aggregate(total=Sum('price_wholesale'))['total'] or 0
+            total['sum_iorders_out'] += org['sum_iorders_out']
+
             org['num_burials'] = Burial.objects.filter(
                 source_type=Burial.SOURCE_FULL,
                 status=Burial.STATUS_CLOSED,
