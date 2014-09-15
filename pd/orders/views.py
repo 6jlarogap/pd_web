@@ -959,7 +959,6 @@ class IorderMixin(APIView):
                             }
             )
             EmailMessage(email_subject, email_text, email_from, email_to,).send()
-            print email_text
         if iorder.supplier and iorder.supplier.email:
             email_to = (iorder.supplier.email, )
             email_subject = u"%s: %s %s" % (
