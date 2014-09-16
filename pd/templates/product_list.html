@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% load i18n %}
+{% load thumbnail i18n %}
 
 {% block content %}
     <h1>{% trans "Товары" %}</h1>
@@ -9,24 +9,37 @@
             <th>{% trans "Название" %}</th>
             <th>{% trans "Тип" %}</th>
             <th>{% trans "Категория" %}</th>
-            <th>{% trans "Комплектующие" %}?</th>
             <th>{% trans "Ед. изм." %}</th>
             <th>{% trans "По умолчанию" %}</th>
-            <th>{% trans "Цена" %}</th>
+            <th>{% trans "Цена розничная" %}</th>
+            <th>{% trans "Цена оптовая" %}</th>
             <th></th>
+            <th>{% trans "Показ в каталоге" %}</th>
+            <th>{% trans "Фото" %}</th>
         </tr>
         {% for c in object_list %}
             <tr>
                 <td>{{ c.name }}</td>
                 <td>{{ c.get_ptype_display|default:"" }}</td>
                 <td>{{ c.productcategory }}</td>
-                <td>{% if c.is_component %}{% trans "Комплектующие" %}{% endif %}</td>
                 <td>{{ c.measure }}</td>
                 <td>{{ c.default|yesno }}</td>
                 <td>{{ c.price }}</td>
+                <td>{{ c.price_wholesale }}</td>
                 <td>
                     {% if user.profile.org == c.loru %}
                         <a href="{% url manage_products_edit c.pk %}" class="btn">{% trans "править" %}</a>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if c.is_public_catalog%}{% trans "В публичном каталоге" %}{% endif %}
+                    {% if c.is_public_catalog and c.is_wholesale %}<br />{% endif %}
+                    {% if c.is_wholesale %}{% trans "Оптовикам" %}{% endif %}
+                </td>
+                <td>
+                    {% if c.photo %}
+                        {% thumbnail c.photo "100x75" "crop" "jpg" as thumb %}
+                        <img src="{{ thumb.url }}">
                     {% endif %}
                 </td>
             </tr>

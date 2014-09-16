@@ -1,3 +1,4 @@
+# coding: utf-8
 """
 This module contains code adapted from easy-thumbnails, under the following
 license:
@@ -48,6 +49,7 @@ from restthumbnails import exceptions
 import re
 import math
 
+import exifread
 
 def _is_transparent(image):
     """
@@ -61,16 +63,20 @@ def _is_transparent(image):
             (image.mode == 'P' and 'transparency' in image.info))
 
 
-def _exif_orientation(im):
+def _exif_orientation(im, orientation=None):
     """
     Rotate and/or flip an image to respect the image's EXIF orientation data.
+
+    Внесены изменения:
+    Ориентация исходного снимка определяется пакетом exifread, 
     """
-    try:
-        exif = im._getexif()
-    except (AttributeError, IndexError, KeyError, IOError):
-        exif = None
-    if exif:
-        orientation = exif.get(0x0112)
+    #try:
+        #exif = im._getexif()
+    #except (AttributeError, IndexError, KeyError, IOError):
+        #exif = None
+    #if exif:
+        #orientation = exif.get(0x0112)
+    if orientation:
         if orientation == 2:
             im = im.transpose(Image.FLIP_LEFT_RIGHT)
         elif orientation == 3:
@@ -131,6 +137,9 @@ def get_image(source, exif_orientation=True, **options):
         If EXIF orientation data is present, perform any required reorientation
         before passing the data along the processing pipeline.
 
+    Внесены изменения:
+    Ориентация исходного снимка определяется пакетом exifread
+
     """
     # Use a StringIO wrapper because if the source is an incomplete file like
     # object, PIL may have problems with it. For example, some image types
@@ -138,6 +147,9 @@ def get_image(source, exif_orientation=True, **options):
     # File objects.
 
     source = StringIO(source.read())
+    if exif_orientation:
+        tags = exifread.process_file(source, details=False)
+        source.seek(0, 0)
 
     image = Image.open(source)
     # Fully load the image now to catch any problems with the image
@@ -145,7 +157,11 @@ def get_image(source, exif_orientation=True, **options):
     image.load()
 
     if exif_orientation:
-        image = _exif_orientation(image)
+        #image = _exif_orientation(image)
+        try:
+            image = _exif_orientation(image, tags['Image Orientation'].values[0])
+        except (AttributeError, KeyError, IndexError):
+            pass
     return image
 
 
@@ -266,11 +282,21 @@ def scale_and_crop(im, size, crop=False, upscale=True, **kwargs):
     upscale
         Allow upscaling of the source image during scaling.
 
+    Внесены изменения:
+        Если crop=='crop' и заданы ширина, высота, то исходная картинка уменьшается
+        (увеличивается) в миниатюру, чтоб только влезла в ширину, высоту.
+        Если ширина или высота получившейся миниатюры окажется меньше
+        заданной ширины или высоты, то получившаяся миниатюра впихивается в
+        белое окно заданной ширины, высоты по центру.
+
     """
     source_x, source_y = [float(v) for v in im.size]
     target_x, target_y = [float(v) for v in size]
 
-    if crop or not target_x or not target_y:
+    our_crop =  crop == 'crop' and size[0] and size[1]
+    if our_crop:
+        scale = min(target_x / source_x, target_y / source_y)
+    elif crop or not target_x or not target_y:
         scale = max(target_x / source_x, target_y / source_y)
     else:
         scale = min(target_x / source_x, target_y / source_y)
@@ -345,6 +371,15 @@ def scale_and_crop(im, size, crop=False, upscale=True, **kwargs):
             # Finally, crop the image!
             if crop != 'scale':
                 im = im.crop(box)
+
+    if our_crop:
+        diff_x, diff_y = size[0] - im.size[0], size[1] - im.size[1]
+        if diff_x or diff_y:
+            offset = (max(0, diff_x / 2), max(0, diff_y / 2))
+            back = Image.new("RGB", size, "white")
+            back.paste(im, offset)
+            # Результат будет размером в size
+            im = back
     return im
 
 

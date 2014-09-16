@@ -1,69 +1,23 @@
 # -*- coding: utf-8 -*-
-import datetime, re
+import datetime
 from south.db import db
-from south.v2 import DataMigration
-from django.db import models, connection, transaction
+from south.v2 import SchemaMigration
+from django.db import models
 
 
-class Migration(DataMigration):
-    
-    @transaction.commit_on_success
+class Migration(SchemaMigration):
+
     def forwards(self, orm):
-        "Write your forwards methods here."
-        # Note: Remember to use orm['appname.ModelName'] rather than "from appname.models..."
-        
-        # - ALTER TABLE auth_user ALTER COLUMN email DROP NOT NULL;
-        # - Проход по всем пользователям. Если у кого пустая почта, ставим NULL
-        # - Проверка, чтоб у пользователей не было одинаковых почтовых ящиков.
-        # - Если есть, например, у 3 пользователей один email == q@mail.ru,
-        #   то первому делается q-CHANGED-1@mail.ru, второму: q-CHANGED-2@mail.ru,
-        #   ну а у 3-го останется q@mail.ru
-        # - ALTER TABLE auth_user ADD UNIQUE (email);
-        
-        print "*** Check if there are doubles, triples etc among users' emails..."
+        # Adding field 'Org.is_wholesale_with_vat'
+        db.add_column('users_org', 'is_wholesale_with_vat',
+                      self.gf('django.db.models.fields.BooleanField')(default=False),
+                      keep_default=False)
 
-        cursor = connection.cursor()
-        print "*** Making users' emails NULLable..."
-        cursor.execute('ALTER TABLE auth_user ALTER COLUMN email DROP NOT NULL')
-
-        print "*** Avoiding email duplicates..."
-        count_empty_emails = 0
-        not_unique_emails = set()
-        User = orm['auth.User']
-        for user in User.objects.all():
-            email = email_source = user.email
-            if re.search(r'\S+@\S+', email ):
-                num = 1
-                name, domain = email.strip().split('@',1)
-                while User.objects.filter(email=email).exclude(pk=user.pk).count():
-                    not_unique_emails.add(( user.username, email_source,))
-                    email = u"%s-CHANGED-%d@%s" % (name, num, domain)
-                    num += 1
-                    user.email = email
-                    user.save()
-            else:
-                user.email = None
-                user.save()
-                count_empty_emails += 1
-
-        print "*** Making User.email unique..."
-        cursor.execute('ALTER TABLE auth_user ADD UNIQUE (email)')
-
-        print "*** Empty emails were NULLed for %d users" % count_empty_emails
-        if not_unique_emails:
-            print "*** User/email with a not unique email -> the email is changed to...:"
-            for not_unique_email in not_unique_emails:
-                print "    %s/%s -> %s"  % \
-                    (
-                        not_unique_email[0],
-                        not_unique_email[1],
-                        User.objects.get(username=not_unique_email[0]).email,
-                    )
-        else:
-            print "*** All emails were unique"
 
     def backwards(self, orm):
-        "Write your backwards methods here."
+        # Deleting field 'Org.is_wholesale_with_vat'
+        db.delete_column('users_org', 'is_wholesale_with_vat')
+
 
     models = {
         'auth.group': {
@@ -82,7 +36,7 @@ class Migration(DataMigration):
         'auth.user': {
             'Meta': {'object_name': 'User'},
             'date_joined': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now'}),
-            'email': ('django.db.models.fields.EmailField', [], {'unique': 'True', 'max_length': '75', 'blank': 'True'}),
+            'email': ('django.db.models.fields.EmailField', [], {'max_length': '75', 'blank': 'True'}),
             'first_name': ('django.db.models.fields.CharField', [], {'max_length': '30', 'blank': 'True'}),
             'groups': ('django.db.models.fields.related.ManyToManyField', [], {'to': "orm['auth.Group']", 'symmetrical': 'False', 'blank': 'True'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
@@ -262,6 +216,7 @@ class Migration(DataMigration):
             'full_name': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '255', 'blank': 'True'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'inn': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '255', 'blank': 'True'}),
+            'is_wholesale_with_vat': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'kpp': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '255', 'blank': 'True'}),
             'max_graves_count': ('django.db.models.fields.PositiveIntegerField', [], {'default': '5'}),
             'name': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '255'}),
@@ -373,4 +328,3 @@ class Migration(DataMigration):
     }
 
     complete_apps = ['users']
-    symmetrical = True

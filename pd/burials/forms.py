@@ -28,6 +28,7 @@ from users.forms import BaseOrgForm
 from users.models import Org, Profile, Dover
 from logs.models import write_log
 from pd.models import SafeDeleteMixin
+from pd.forms import AppOrgFormMixin
 
 OPF_CHOICES = (('person', _(u'ФЛ')), ('org', _(u'ЮЛ')))
 
@@ -328,7 +329,7 @@ class BurialPublicListForm(forms.Form):
             #raise forms.ValidationError(_(u'Обязательные поля: ФИО и Кладбище'))
         #return cd
 
-class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDeleteMixin, StrippedStringsMixin, forms.ModelForm):
+class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDeleteMixin, StrippedStringsMixin, AppOrgFormMixin, forms.ModelForm):
     COFFIN = 'coffin'
     URN = 'urn'
 
@@ -345,6 +346,7 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
     def __init__(self, request, *args, **kwargs):
         super(BurialForm, self).__init__(*args, **kwargs)
         self.request = request
+        self.init_app_org_label()
         self.fields['cemetery'].queryset = Cemetery.objects.filter(
             Q(ugh__isnull=True) |
             Q(ugh__loru_list__loru=self.request.user.profile.org) |
@@ -1203,7 +1205,7 @@ class BurialCommitForm(BurialForm):
             if msg:
                 raise forms.ValidationError(msg)
 
-            if self.request.REQUEST.get('ready') and self.dc_form.is_valid():
+            if self.request.REQUEST.get('ready') and self.dc_form.is_valid() and self.deadman_form.is_valid():
                 death_date = self.deadman_form.cleaned_data.get('death_date')
                 last_name = self.deadman_form.cleaned_data.get('last_name').strip()
                 s_number = self.dc_form.cleaned_data.get('s_number').strip()
@@ -1520,7 +1522,7 @@ class AddOrgForm(StrippedStringsMixin, BaseOrgForm):
                    'plan_date_days_before', 'max_graves_count',
                    'worktime', 'site', 
                    'currency', 'director',
-                   'description',
+                   'description', 'is_wholesale_with_vat',
         )
     
     def __init__(self, request, *args, **kwargs):

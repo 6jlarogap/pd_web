@@ -22,6 +22,7 @@ from django.core.exceptions import ValidationError
 from django.core.urlresolvers import reverse
 from django.core.files.base import ContentFile
 from django.db import transaction, connection, IntegrityError
+from django.db.models import Sum
 from django.db.models.query_utils import Q
 from django.db.models.aggregates import Count
 from django.http import HttpResponse, Http404
@@ -50,21 +51,26 @@ from users.forms import UserAddForm, RegisterForm, LoruFormset, ProfileForm, Use
                         UserDataForm, ChangePasswordForm, BankAccountFormset, OrgForm, \
                         OrgLogForm, LoginLogForm, OrgBurialStatsForm, SupportForm, TestCaptchaForm
 from users.models import Profile, Org, RegisterProfile, ProfileLORU, CustomerProfile, Store, \
-                         get_mail_footer, is_cabinet_user, PermitIfLoru, Oauth, \
+                         get_mail_footer, is_cabinet_user, PermitIfLoru, PermitIfLoruOrSupervisor, Oauth, \
                          BankAccount, BankAccountRegister, OrgCertificate, OrgContract, \
                          RegisterProfileContract, RegisterProfileScan, \
-                         is_loru_user, is_supervisor
+                         is_loru_user, is_supervisor, get_default_currency
 from pd.models import validate_phone_as_number, validate_username
+from pd.utils import host_country_code, phones_from_text
 from persons.models import AlivePerson, Phone
 from burials.models import Cemetery, Area, Burial, Place
-from billing.models import Wallet, Rate
-from orders.models import Product, ProductStatus, ProductHistory, Order
+from billing.models import Wallet, Rate, Currency
+from orders.models import Product, Order, Iorder, IorderItem
 from pd.views import PaginateListView, RequestToFormMixin, FormInvalidMixin, get_front_end_url, ServiceException
-from geo.models import Location
+from geo.models import Location, Country
 
-from users.serializers import StoreSerializer, OrgSerializer, OrgShort2Serializer
+from users.serializers import StoreSerializer, OrgSerializer, OrgShort2Serializer, \
+                              OrgOptSupplierSerializer, OrgShort4Serializer
 
 from sms_service.utils import send_sms
+
+User._meta.get_field_by_name('email')[0]._unique = True
+User._meta.get_field_by_name('email')[0].null=True
 
 class CheckRecaptchaMixin(object):
     
@@ -684,7 +690,7 @@ class LoginView(View):
                 next_url = "?redirectUrl=%s" % request.GET.get("redirectUrl")
             else:
                 next_url = ''
-            response = redirect('%s#!/signout%s' % (get_front_end_url(request), next_url))
+            response = redirect('%ssignout%s' % (get_front_end_url(request), next_url))
             response.delete_cookie('pdsession')
             return response
         else:
@@ -724,7 +730,7 @@ class LogoutView(View):
         if request.GET.get("redirectUrl"):
             response = redirect(request.GET.get("redirectUrl"))
         elif settings.REDIRECT_LOGIN_TO_FRONT_END:
-            response = redirect(get_front_end_url(request) + '#!/signout')
+            response = redirect(get_front_end_url(request) + 'signout')
             response.delete_cookie('pdsession')
         else:
             response = redirect('/')
@@ -795,16 +801,6 @@ class LoruRegistryView(UGHRequiredMixin, View):
                     profile.area = None
                     profile.cemetery = None
                     profile.save()
-            for p_status in ProductStatus.objects.filter(ugh=request.user.profile.org,
-                                                         product__loru__in=removed_lorus):
-                ProductHistory.objects.create(
-                    product=p_status.product,
-                    ugh=p_status.ugh,
-                    operation=ProductHistory.PRODUCT_OPERATION_DELETE,
-                    dt=datetime.datetime.now(),
-                    publish_cost='0.0',
-                    currency=p_status.ugh.currency,
-                )
 
             messages.success(self.request, _(u"Данные сохранены"))
             write_log(self.request, self.request.user.profile.org, _(u'Изменены данные реестра ЛОРУ'))
@@ -981,16 +977,39 @@ class AutocompleteOrg(View):
         query = request.GET.get('query')
         type_ = request.GET.get('type')
         exact = request.GET.get('exact')
-        if request.user.profile.is_loru() or \
-           request.user.profile.is_ugh():
-            q = Q(name=query) if exact else Q(name__icontains=query)
+        check_inn = request.GET.get('check_inn')
+        if query and (request.user.profile.is_loru() or \
+                      request.user.profile.is_ugh()
+                     ):
+            if exact:
+                q = Q(name=query)
+            else:
+                q = Q(name__icontains=query)
+                if check_inn:
+                    m = re.search(r'^(\d{4,})$', query.strip())
+                    if m:
+                        country_code = host_country_code(request)
+                        if country_code == 'by':
+                            inn_label = _(u'УНП')
+                        else:
+                            inn_label = _(u'ИНН')
+                        q = Q(inn__startswith=m.group(1))
+                    else:
+                        check_inn = None
             if type_:
                 q &= Q(type=type_)
             orgs = Org.objects.filter(q).order_by('name')
         else:
             orgs = Org.objects.none()
 
-        return HttpResponse(json.dumps([{'value': c.pk if exact else c.name} for c in orgs[:20]]), mimetype='text/javascript')
+        return HttpResponse(
+            json.dumps([{'value': c.pk  if exact \
+                                        else u"%s%s" % (c.name, u" (%s: %s)" % (inn_label, c.inn,)  if check_inn \
+                                                                                                    else "")} \
+                                            for c in orgs[:20]
+            ]),
+            mimetype='text/javascript'
+        )
 
 autocomplete_org = AutocompleteOrg.as_view()
 
@@ -1333,6 +1352,7 @@ class RegistrantApprove(SupervisorRequiredMixin, View):
                             fax = registrant.org_fax,
                             ogrn = registrant.org_ogrn,
                             off_address=off_address,
+                            currency = registrant.org_currency,
                 )
                 for bank in registrant.bankaccountregister_set.all():
                     if bank.off_address:
@@ -1496,10 +1516,7 @@ class OmsCurrentStatsView(SupervisorRequiredMixin, TemplateView):
         total['oms_count'] = total['cemeteries_count'] = \
         total['areas_count'] = total['places_count'] = \
         total['burials_count'] = total['places_cabinet_count'] = 0
-        q_published = Q(
-            productstatus__status__in=\
-            (ProductHistory.PRODUCT_OPERATION_PUBLISH, ProductHistory.PRODUCT_OPERATION_UPDATE, )
-        )
+        q_published = Q(is_public_catalog=True)
         for o in Org.objects.filter(type=Org.PROFILE_UGH).order_by(*s):
             total['oms_count'] += 1
             org = {'name': o.name}
@@ -1582,37 +1599,42 @@ class LoruCurrentStatsView(SupervisorRequiredMixin, TemplateView):
     template_name = 'loru_current_stats.html'
 
     def get_context_data(self, **kwargs):
-        sort = self.request.GET.get('sort', 'org')
-        SORT_FIELDS = {
-            'org': 'name',
-            '-org': '-name',
-            'city': 'off_address__city',
-            '-city': '-off_address__city',
-       }
-        s = SORT_FIELDS[sort]
-        if not isinstance(s, list):
-            s = [s]
+        
+        sort = self.request.GET.get('sort', 'name')
+        
+        def sort_key(org):
+            sort_parm = re.sub(r'^\-', '', sort)
+            try:
+                result = org[sort_parm]
+            except KeyError:
+                result = org['name']
+            return result
 
         orgs = []
         total={}
-        total['loru_count'] = total['num_users'] = total['num_stores'] = \
+        total['loru_count'] = total['num_users'] = total['num_active_users'] = \
+        total['num_stores'] = \
         total['num_products'] = total['num_published_products'] = \
-        total['num_published_components'] = total['num_published_public_products'] = \
-        total['num_orders'] = total['num_burials'] = 0
+        total['num_published_wholesales'] = \
+        total['num_orders'] = \
+        total['num_iorders_in'] = total['num_iorders_out'] = \
+        total['num_burials'] = 0
         catalog_org_pk = Org.get_catalog_org_pk()
-        q_published = Q(
-            productstatus__status__in=\
-            (ProductHistory.PRODUCT_OPERATION_PUBLISH, ProductHistory.PRODUCT_OPERATION_UPDATE, )
-        )
-        q_components = Q(is_component=True)
+        q_published = Q(is_public_catalog=True)
+        q_wholesales = Q(is_wholesale=True)
 
-        for o in Org.objects.filter(type=Org.PROFILE_LORU).order_by(*s):
+        for o in Org.objects.filter(type=Org.PROFILE_LORU):
             total['loru_count'] += 1
             org = {'name': o.name}
-            org['city'] = o.off_address and o.off_address.city or ''
+            org['off_address'] = o.off_address or ''
+            org['phones'] = phones_from_text(o.phones)
+            org['pk'] = o.pk
 
             org['num_users'] = Profile.objects.filter(org=o).count()
             total['num_users'] += org['num_users']
+
+            org['num_active_users'] = Profile.objects.filter(org=o, user__is_active=True).count()
+            total['num_active_users'] += org['num_active_users']
 
             org['num_stores'] = Store.objects.filter(loru=o).count()
             total['num_stores'] += org['num_stores']
@@ -1624,18 +1646,25 @@ class LoruCurrentStatsView(SupervisorRequiredMixin, TemplateView):
             org['num_published_products'] = Product.objects.filter(qs).count()
             total['num_published_products'] += org['num_published_products']
 
-            qs = q_published & Q(loru=o) & q_components
+            qs = q_wholesales & Q(loru=o)
 
-            org['num_published_components'] = Product.objects.filter(qs).count()
-            total['num_published_components'] += org['num_published_components']
-
-            qs = q_published & Q(loru=o) & ~q_components & \
-                 Q(productstatus__ugh__pk=catalog_org_pk)
-            org['num_published_public_products'] = Product.objects.filter(qs).count()
-            total['num_published_public_products'] += org['num_published_public_products']
+            org['num_published_wholesales'] = Product.objects.filter(qs).count()
+            total['num_published_wholesales'] += org['num_published_wholesales']
 
             org['num_orders'] = Order.objects.filter(loru=o).count()
             total['num_orders'] += org['num_orders']
+
+            org['currency'] = o.currency.code
+
+            org['num_iorders_in'] = Iorder.objects.filter(supplier=o).count()
+            total['num_iorders_in'] += org['num_iorders_in']
+            org['sum_iorders_in'] = IorderItem.objects.filter(iorder__supplier=o). \
+                aggregate(total=Sum('price_wholesale'))['total'] or 0
+
+            org['num_iorders_out'] = Iorder.objects.filter(customer=o).count()
+            total['num_iorders_out'] += org['num_iorders_out']
+            org['sum_iorders_out'] = IorderItem.objects.filter(iorder__customer=o). \
+                aggregate(total=Sum('price_wholesale'))['total'] or 0
 
             org['num_burials'] = Burial.objects.filter(
                 source_type=Burial.SOURCE_FULL,
@@ -1647,7 +1676,7 @@ class LoruCurrentStatsView(SupervisorRequiredMixin, TemplateView):
 
             orgs.append(org)
 
-        lorus = Org.objects.filter(type=Org.PROFILE_LORU)
+        orgs.sort(key=sort_key, reverse=sort.startswith('-'))
 
         return {
             'orgs':orgs,
@@ -1945,11 +1974,23 @@ class ApiOrgSignupView(CheckRecaptchaMixin, RegisterMixin, APIView):
             except ValueError:
                 raise ServiceException(_(u'Неверный формат registredOffice'))
             coords = location.get('location')
+            gps_x= coords and coords.get('longitude')
+            gps_y= coords and coords.get('latitude')
+            country, country_currency = Country.get_country_currency_by_coords(gps_x, gps_y)
             org_address = Location(
                 addr_str=location.get('address', '').strip(),
-                gps_x= coords and coords.get('longitude'),
-                gps_y= coords and coords.get('latitude'),
+                country=country,
+                gps_x=gps_x,
+                gps_y=gps_y,
             )
+            currency_code = request.DATA.get('currency')
+            if currency_code:
+                try:
+                    org_currency = Currency.objects.get(code=country_code)
+                except Currency.DoesNotExist:
+                    raise ServiceException(_(u'Неизвестный код валюты'))
+            else:
+                org_currency = country_currency or get_default_currency()
 
             user_last_name = request.DATA.get('userLastName', '').strip()
             if not user_last_name:
@@ -1994,6 +2035,7 @@ class ApiOrgSignupView(CheckRecaptchaMixin, RegisterMixin, APIView):
                 org_type=org_type,
                 org_name=org_name,
                 org_full_name=request.DATA.get('orgFullName', '').strip() or org_name,
+                org_currency=org_currency,
                 org_inn=org_inn,
                 org_ogrn=request.DATA.get('OGRN', '').strip(),
                 org_director=request.DATA.get('directorFullname', '').strip(),
@@ -2120,3 +2162,27 @@ class OrgDetailView(APIView):
         return Response(status=200, data=OrgSerializer(obj).data)
 
 api_catalog_suppliers_detail = OrgDetailView.as_view()
+
+class ApiOptplacesSuppliersView(APIView):
+    permission_classes = (PermitIfLoruOrSupervisor, )
+
+    def get(self, request):
+        return Response(
+            data = [ OrgOptSupplierSerializer(loru).data for loru in Org.objects.filter(type=Org.PROFILE_LORU) ],
+            status=200
+        )
+
+api_optplaces_suppliers = ApiOptplacesSuppliersView.as_view()
+
+class ApiOptplacesSupplierDetailView(APIView):
+    """
+    Показ ЛОРУ другим оптовикам, тоже ЛОРУ
+    """
+    permission_classes = (PermitIfLoruOrSupervisor, )
+
+    def get(self, request, pk):
+        obj = get_object_or_404(Org, pk=pk)
+        return Response(status=200, data=OrgShort4Serializer(obj).data)
+
+api_optplaces_suppliers_detail = ApiOptplacesSupplierDetailView.as_view()
+

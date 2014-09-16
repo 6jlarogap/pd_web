@@ -821,7 +821,6 @@ $(function() {
             if (data.pk) {
                 if (typeof ORGS_INACTIVE != "undefined") {
                     ORGS_INACTIVE.push(data.pk.toString());
-                    ORGS_LIST.push(data.label);
                     var select = $('#id_applicant_organization');
                     select.append('<option value="'+data.pk+'" selected="selected">'+data.label+'</option>');
                 }
@@ -839,7 +838,6 @@ $(function() {
             if (data.pk) {
                 if (typeof ORGS_INACTIVE != "undefined") {
                     ORGS_INACTIVE.push(data.pk.toString());
-                    ORGS_LIST.push(data.label);
                     var select = $('#id_applicant_organization');
                     select.append('<option value="'+data.pk+'" selected="selected">'+data.label+'</option>');
                 }
@@ -974,6 +972,22 @@ $(function() {
         }
         if (val && !$(full_name).val()) {
             $(full_name).val(val);
+        }
+    });
+
+    $('.product_edit #id_price, .product_edit #id_price_wholesale').change(function() {
+        var val = $(this).val();
+        var other_price = "";
+        switch ($(this).attr('id')) {
+            case 'id_price':
+                other_price = '#id_price_wholesale';
+                break;
+            case 'id_price_wholesale':
+                other_price = '#id_price';
+                break;
+        }
+        if (val && !$(other_price).val()) {
+            $(other_price).val(val);
         }
     });
 

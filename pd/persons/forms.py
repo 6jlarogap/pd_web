@@ -170,5 +170,5 @@ class DeathCertificateScanForm(CustomUploadModelForm):
         
     def __init__(self, *args, **kwargs):
         super(DeathCertificateScanForm, self).__init__(*args, **kwargs)
-        self.fields['bfile'].label = _(u'Скан')
+        self.init_bfile()
         self.MAX_UPLOAD_SIZE_MB = 5
