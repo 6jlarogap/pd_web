@@ -2176,10 +2176,10 @@ api_optplaces_suppliers = ApiOptplacesSuppliersView.as_view()
 
 class ApiOptplacesSupplierDetailView(APIView):
     """
-    Показ ЛОРУ другим оптовикам, тоже ЛОРУ
+    Показ данных о ЛОРУ, поставщике интернет-заказа
+    
+    Общий доступ, чтобы можно было посмотреть price-list поставщика
     """
-    permission_classes = (PermitIfLoruOrSupervisor, )
-
     def get(self, request, pk):
         obj = get_object_or_404(Org, pk=pk)
         return Response(status=200, data=OrgShort4Serializer(obj).data)
