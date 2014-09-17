@@ -22,6 +22,7 @@ class CoordinatesSerializer(BaseSerializer):
 class CemeterySerializer(BaseSerializer):	
     name = serializers.CharField(required=True)
     square = serializers.CharField(required=True)
+    ugh = BaseSerializer(required=True)
 
 class CemeteryWithNestedObjectSerializer(CemeterySerializer):	
     coordinates = CoordinatesSerializer(many=True)
