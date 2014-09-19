@@ -91,4 +91,8 @@
         <field type="CharField" name="name">Накладки ритуальные</field>
         <field type="FileField" name="icon"></field>
     </object>
+    <object pk="25" model="orders.productcategory">
+        <field type="CharField" name="name">Фурнитура для гробов</field>
+        <field type="FileField" name="icon"></field>
+    </object>
 </django-objects>
