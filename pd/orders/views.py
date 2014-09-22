@@ -1192,8 +1192,6 @@ class ApiProductList(ProductCategoryQsMixin, APIView):
             'name',
             'description',
             'categoryId',
-            'retailPrice',
-            'tradePrice',
                  ):
             if not request.DATA.get(f):
                 required_not_got.append(f)
