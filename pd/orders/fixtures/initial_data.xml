@@ -87,10 +87,13 @@
         <field type="CharField" name="name">Швейные ритуальные изделия</field>
         <field type="FileField" name="icon"></field>
     </object>
+    <!--- 
+    Удалена за ненадобностью
     <object pk="24" model="orders.productcategory">
         <field type="CharField" name="name">Накладки ритуальные</field>
         <field type="FileField" name="icon"></field>
     </object>
+     -->
     <object pk="25" model="orders.productcategory">
         <field type="CharField" name="name">Фурнитура для гробов</field>
         <field type="FileField" name="icon"></field>
