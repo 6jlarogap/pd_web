@@ -158,14 +158,18 @@ class ProductEditSerializer(ProductCurrencyMixin, serializers.HyperlinkedModelSe
         is_wholesale = data.get('isShownInTradeCatalog')
         if is_wholesale is not None:
             is_wholesale = is_wholesale.lower() == 'true'
-        try:
-            price = data.get('retailPrice') and decimal.Decimal(data['retailPrice'])
-        except decimal.InvalidOperation:
-            raise ServiceException(_(u'Неверно задана розничная цена'))
-        try:
-            price_wholesale = data.get('tradePrice') and decimal.Decimal(data['tradePrice'])
-        except decimal.InvalidOperation:
-            raise ServiceException(_(u'Неверно задана оптовая цена'))
+        price = data.get('retailPrice')
+        if price is not None:
+            try:
+                price = decimal.Decimal(price)
+            except decimal.InvalidOperation:
+                raise ServiceException(_(u'Неверно задана розничная цена'))
+        price_wholesale = data.get('tradePrice')
+        if price_wholesale is not None:
+            try:
+                price_wholesale = decimal.Decimal(price_wholesale)
+            except decimal.InvalidOperation:
+                raise ServiceException(_(u'Неверно задана оптовая цена'))
         return is_public_catalog, is_wholesale, price, price_wholesale
 
     def restore_object(self, attrs, instance=None):
@@ -208,6 +212,7 @@ class ProductEditSerializer(ProductCurrencyMixin, serializers.HyperlinkedModelSe
 
     def is_valid(self):
         message = ''
+        valid = True
         try:
             is_public_catalog, is_wholesale, price, price_wholesale = self.get_catalogs_prices()
         except ServiceException as excpt:
