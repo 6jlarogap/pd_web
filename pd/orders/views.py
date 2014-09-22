@@ -918,7 +918,7 @@ class UghPublishedProductsViewSet(viewsets.ViewSet):
 
 class IorderMixin(APIView):
 
-    def put_item(self, iorder, product, count):
+    def put_item(self, iorder, product, count, comment):
         """
         Забить позицию интернет-заказа iorder продуктом product
         """
@@ -926,6 +926,7 @@ class IorderMixin(APIView):
             iorder=iorder,
             product=product,
             quantity=decimal.Decimal(count),
+            comment=comment or '',
             measure=product.measure,
             price_wholesale=product.price_wholesale,
             name=product.name,
@@ -1066,7 +1067,7 @@ class ApiOptPlacesOrders(IorderMixin, APIView):
                     else:
                         if product.loru != supplier:
                             raise ServiceException(_(u'В списке товаров таковые от разных поставщиков'))
-                    self.put_item(iorder, product, p['count'])
+                    self.put_item(iorder, product, p['count'], p.get('comment'))
                     data['id'] = iorder.pk
                 except Product.DoesNotExist:
                     raise ServiceException(_(u'Не найден товар/услуга Id=%s') % p['id'])
@@ -1138,7 +1139,7 @@ class IorderInfoView(IorderMixin, APIView):
                     if product.loru != iorder.supplier:
                         raise ServiceException(_(u'Товара Id=%s нет среди товаров поставщика заказа') % p['id'])
                     if p.get('count'):
-                        self.put_item(iorder, product, p['count'])
+                        self.put_item(iorder, product, p['count'], p.get('comment'))
                 except Product.DoesNotExist:
                     raise ServiceException(_(u'Не найден товар/услуга Id=%s') % p['id'])
             comment = request.DATA.get("comment")
