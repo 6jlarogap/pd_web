@@ -306,6 +306,7 @@ class Iorder(BaseModel):
        return [dict(
                     id=item.product.pk,
                     count=float(item.quantity),
+                    comment=item.comment,
                ) for item in IorderItem.objects.filter(iorder=self)
        ]
 
@@ -333,6 +334,7 @@ class IorderItem(BaseModel):
                                      on_delete=models.PROTECT)
     productgroup_name = models.CharField(_(u"Название подкатегории"), max_length=255, default='')
     productgroup_description = models.TextField(_(u"Описание подкатегории"), blank=True, default='')
+    comment = models.TextField(_(u"Комментарий"), blank=True, default='')
     is_wholesale_with_vat = models.BooleanField(_(u"Цена с НДС"))
 
 class CatafalqueData(models.Model):
