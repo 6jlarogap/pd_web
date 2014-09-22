@@ -690,7 +690,7 @@ class ProductsViewSet(ProductCategoryQsMixin, viewsets.ReadOnlyModelViewSet):
         qs &= q_public_whole
 
         ordered = None
-        orders = {'price': 'price', 'date': 'dt_modified', }
+        orders = {'price': 'price', 'date': 'dt_created', }
         directions = {'asc': '', 'desc': '-', }
         for order in orders:
             direction = self.request.GET.get('order[%s]' % order)
