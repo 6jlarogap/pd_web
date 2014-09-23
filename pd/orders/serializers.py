@@ -1,7 +1,10 @@
 
 # coding=utf-8
 
+import decimal
+
 from django.db import transaction
+from django.utils.translation import ugettext as _
 from rest_framework import serializers
 from rest_framework.fields import Field
 
@@ -10,6 +13,7 @@ from orders.models import ProductCategory, Product, Iorder
 from users.models import Org
 from users.serializers import OrgSerializer, OrgShortSerializer, OrgShort3Serializer, OrgShort4Serializer
 from pd.utils import utcisoformat
+from pd.views import ServiceException
 
 class ProductCurrencyMixin(object):
     def get_org_currency(self, instance):
@@ -146,15 +150,32 @@ class ProductEditSerializer(ProductCurrencyMixin, serializers.HyperlinkedModelSe
     def categoryId_func(self, instance):
         return instance.productcategory.pk
 
-    def restore_object(self, attrs, instance=None):
+    def get_catalogs_prices(self):
         data = self.context['request'].DATA
-        image = self.context['request'].FILES.get('image')
         is_public_catalog = data.get('isShownInRetailCatalog')
         if is_public_catalog is not None:
             is_public_catalog = is_public_catalog.lower() == 'true'
         is_wholesale = data.get('isShownInTradeCatalog')
         if is_wholesale is not None:
             is_wholesale = is_wholesale.lower() == 'true'
+        price = data.get('retailPrice')
+        if price is not None:
+            try:
+                price = decimal.Decimal(price)
+            except decimal.InvalidOperation:
+                raise ServiceException(_(u'Неверно задана розничная цена'))
+        price_wholesale = data.get('tradePrice')
+        if price_wholesale is not None:
+            try:
+                price_wholesale = decimal.Decimal(price_wholesale)
+            except decimal.InvalidOperation:
+                raise ServiceException(_(u'Неверно задана оптовая цена'))
+        return is_public_catalog, is_wholesale, price, price_wholesale
+
+    def restore_object(self, attrs, instance=None):
+        data = self.context['request'].DATA
+        image = self.context['request'].FILES.get('image')
+        is_public_catalog, is_wholesale, price, price_wholesale = self.get_catalogs_prices()
 
         # В вызывающем post (добавление продукта) должны быть проверены
         # на обязательность соответствующие поля продукта
@@ -166,8 +187,8 @@ class ProductEditSerializer(ProductCurrencyMixin, serializers.HyperlinkedModelSe
             name=data.get('name'),
             description=data.get('description'),
             measure=data.get('measurementUnit'),
-            price=data.get('retailPrice'),
-            price_wholesale=data.get('tradePrice'),
+            price=price,
+            price_wholesale=price_wholesale,
             ptype=data.get('typeId'),
             default=data.get('isDefault'),
             productcategory=ProductCategory.objects.get(pk=data.get('categoryId')) if data.get('categoryId') else None,
@@ -185,7 +206,40 @@ class ProductEditSerializer(ProductCurrencyMixin, serializers.HyperlinkedModelSe
                 setattr(instance, k, fields[k])
             return instance
         else:
+            fields['price'] = fields.get('price', 0)
+            fields['price_wholesale'] = fields.get('price_wholesale', 0)
             return Product(**fields)
+
+    def is_valid(self):
+        message = ''
+        valid = True
+        try:
+            is_public_catalog, is_wholesale, price, price_wholesale = self.get_catalogs_prices()
+        except ServiceException as excpt:
+            message = excpt.message
+            valid = False
+        else:
+            valid = not self.errors
+            if self.object:
+                is_public_catalog = self.object.is_public_catalog if is_public_catalog is None else is_public_catalog
+                is_wholesale = self.object.is_wholesale if is_wholesale is None else is_wholesale
+                price = self.object.price if price is None else price
+                price_wholesale = self.object.price_wholesale if price_wholesale is None else price_wholesale
+            else:
+                price = price or 0
+                price_wholesale = price_wholesale or 0
+            if is_public_catalog and price <= 0:
+                message = _(u'Не задана или неверна розничная цена при помещении товара/услуги в публичный каталог')
+            elif is_wholesale and price_wholesale <= 0:
+                message = _(u'Не задана или неверна оптовая цена при помещении товара/услуги в оптовый каталог')
+        if message:
+            self._errors = self._errors or {}
+            self._errors.update(dict(
+                status='error',
+                message=message,
+            ))
+            valid = False
+        return valid
 
     @transaction.commit_on_success
     def save_object(self, obj, **kwargs):
