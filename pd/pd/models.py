@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-import os
+import os, shutil
 import pytils
 import datetime
 import re
@@ -331,7 +331,7 @@ class Files(models.Model):
             os.remove(self.bfile.path)
             thmb = os.path.join(settings.THUMBNAILS_STORAGE_ROOT, self.bfile.name)
             if os.path.exists(thmb):
-                os.shutil.rmtree(thmb)
+                shutil.rmtree(thmb)
 
     def delete(self):
         self.delete_from_media()

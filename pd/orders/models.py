@@ -1,6 +1,7 @@
 # coding=utf-8
 from __builtin__ import property
 import datetime
+import os, shutil
 from autoslug import AutoSlugField
 
 from django.conf import settings
@@ -88,6 +89,22 @@ class Product(BaseModel):
 
     def is_burial(self):
         return self.ptype == self.PRODUCT_BURIAL
+
+    def delete(self):
+        path = self.photo and self.photo.path or None
+        thmb = os.path.join(settings.THUMBNAILS_STORAGE_ROOT, self.photo.name) if path else None
+        try:
+            super(Product, self).delete()
+        except:
+            raise
+        else:
+            if path and os.path.exists(path):
+                try:
+                    os.remove(path)
+                except IOError:
+                    pass
+            if thmb and os.path.exists(thmb):
+                shutil.rmtree(thmb, ignore_errors=True)
 
 class Order(GetLogsMixin, BaseModel):
     PAYMENT_CASH = 'cash'
