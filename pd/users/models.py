@@ -24,7 +24,7 @@ from pd.models import BaseModel, Files, GetLogsMixin, validate_gt0, validate_use
                       validate_phone_as_number, SafeDeleteMixin
 from logs.models import Log
 
-from pd.utils import DigitsValidator, LengthValidator, NotEmptyValidator
+from pd.utils import DigitsValidator, LengthValidator, NotEmptyValidator, phones_from_text
 from pd.views import ServiceException
 
 class PhonesMixin(object):
@@ -182,6 +182,10 @@ def is_supervisor(user):
 class PermitIfLoru(permissions.BasePermission):
     def has_permission(self, request, view):
         return is_loru_user(request.user)
+
+class PermitIfLoruOrSupervisor(permissions.BasePermission):
+    def has_permission(self, request, view):
+        return is_loru_user(request.user) or is_supervisor(request.user)
 
 class PermitIfUgh(permissions.BasePermission):
     def has_permission(self, request, view):
@@ -568,7 +572,9 @@ class Org(GetLogsMixin, BaseModel):
                                 validators=[validate_gt0])
     worktime = models.CharField(_(u"Время работы (ЧЧ:ММ - ЧЧ:ММ)"), max_length=255, default='', blank=True)
     site = models.URLField(_(u"Сайт"), default='', blank=True)
-    currency = models.ForeignKey('billing.Currency', verbose_name=_(u"Валюта"), default=get_default_currency)
+    currency = models.ForeignKey('billing.Currency', verbose_name=_(u"Валюта"), default=get_default_currency,
+                                 help_text=_(u' При смене валюты она будет заменена у всех товаров (услуг) без корректировки цен'))
+    is_wholesale_with_vat = models.BooleanField(_(u"Оптовые цены продуктов с НДС"), default=False)
 
     class Meta:
         verbose_name = _(u'Организация')
@@ -633,6 +639,9 @@ class Org(GetLogsMixin, BaseModel):
                 return 0
         else:
             return settings.ORG_AD_PAY_RECIPIENT_PK
+
+    def phone_list(self):
+        return phones_from_text(self.phones)
 
 class OrgCertificate(Files):
     """
@@ -746,6 +755,7 @@ class RegisterProfile(SafeDeleteMixin, BaseModel):
     org_type = models.CharField(_(u"Тип организации"), max_length=255, choices=REG_ORG_TYPES, default=REG_ORG_UGH)
     org_name = models.CharField(_(u"Краткое название организации"), max_length=255, default='')
     org_full_name = models.CharField(_(u"Полное название организации"), max_length=255, default='')
+    org_currency = models.ForeignKey('billing.Currency', verbose_name=_(u"Валюта"), default=get_default_currency)
     org_inn = models.CharField(_(u"ИНН"), max_length=255, default='')
     org_ogrn = models.CharField(_(u"ОГРН/ОГРЮЛ"), max_length=255, default='', blank=True)
     org_director = models.CharField(_(u"Директор (в родительном падеже, например, Иванова Ивана Ивановича)"),

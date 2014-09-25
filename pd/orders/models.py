@@ -1,12 +1,14 @@
 # coding=utf-8
 from __builtin__ import property
 import datetime
+import os, shutil
 from autoslug import AutoSlugField
 
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.utils.translation import ugettext as _
+from django.db.models import Sum
 from django.db.models.query_utils import Q
 
 from burials.models import Burial
@@ -17,12 +19,30 @@ from pd.models import BaseModel, GetLogsMixin, upload_slugified
 
 class ProductCategory(models.Model):
     name = models.CharField(_(u"Название"), max_length=255)
-    icon = models.FileField(u"Иконка", upload_to=upload_slugified, blank=True, null=True)
+    icon = models.ImageField(u"Иконка", upload_to=upload_slugified, blank=True, null=True)
 
     class Meta:
         verbose_name = _(u"Категория")
         verbose_name_plural = _(u"Категории")
         ordering = ('name', )
+
+    def __unicode__(self):
+        return self.name
+
+class ProductGroup(models.Model):
+    loru = models.ForeignKey(Org, limit_choices_to={'type': Org.PROFILE_LORU}, verbose_name=_(u"ЛОРУ"))
+    productcategory = models.ForeignKey(ProductCategory, verbose_name=_(u"Категория"), on_delete=models.PROTECT)
+    name = models.CharField(_(u"Название"), max_length=255)
+    description = models.TextField(_(u"Описание"), blank=True, default='')
+    icon = models.FileField(u"Иконка", upload_to=upload_slugified, blank=True, null=True)
+
+    class Meta:
+        verbose_name = _(u"Подкатегория")
+        verbose_name_plural = _(u"Подкатегории")
+        ordering = ('name', )
+        unique_together = (
+            ('loru', 'productcategory', 'name', ),
+        )
 
     def __unicode__(self):
         return self.name
@@ -51,9 +71,10 @@ class Product(BaseModel):
     price_wholesale = models.DecimalField(_(u"Цена оптовая"), max_digits=20, decimal_places=2)
     ptype = models.CharField(_(u"Тип"), max_length=255, choices=PRODUCT_TYPES, null=True, blank=True)
     default = models.BooleanField(_(u"По умолчанию"), default=False, blank=True)
-    photo = models.FileField(u"Фото", upload_to=upload_slugified, blank=True, null=True)
+    photo = models.ImageField(u"Фото", upload_to=upload_slugified, blank=True, null=True)
     productcategory = models.ForeignKey(ProductCategory, verbose_name=_(u"Категория"), on_delete=models.PROTECT)
-    currency = models.ForeignKey('billing.Currency', verbose_name=_(u"Валюта"))
+    productgroup = models.ForeignKey(ProductGroup, verbose_name=_(u"Подкатегория"), null=True, editable=False,
+                                     on_delete=models.PROTECT)
     sku = models.CharField(_(u"Артикул"), max_length=255, blank=True, default='')
     is_public_catalog = models.BooleanField(_(u"Показать в публичном каталоге"), default=False)
     is_wholesale = models.BooleanField(_(u"Показать в каталоге оптовикам"), default=False)
@@ -68,6 +89,22 @@ class Product(BaseModel):
 
     def is_burial(self):
         return self.ptype == self.PRODUCT_BURIAL
+
+    def delete(self):
+        path = self.photo and self.photo.path or None
+        thmb = os.path.join(settings.THUMBNAILS_STORAGE_ROOT, self.photo.name) if path else None
+        try:
+            super(Product, self).delete()
+        except:
+            raise
+        else:
+            if path and os.path.exists(path):
+                try:
+                    os.remove(path)
+                except IOError:
+                    pass
+            if thmb and os.path.exists(thmb):
+                shutil.rmtree(thmb, ignore_errors=True)
 
 class Order(GetLogsMixin, BaseModel):
     PAYMENT_CASH = 'cash'
@@ -235,6 +272,87 @@ class OrderItem(models.Model):
     @property
     def total(self):
         return self.cost * self.quantity
+
+class Iorder(BaseModel):
+    """
+    Интернет-заказ оптовой продукции
+    """
+    STATUS_POSTED = 'posted'
+    STATUS_CONFIRMED = 'confirmed'
+    STATUS_SHIPPED = 'shipped'
+    STATUS_ACCEPTED = 'accepted'
+    STATUS_TYPES = (
+        (STATUS_POSTED, _(u"Размещен")),
+        (STATUS_CONFIRMED, _(u"Подтвержден")),
+        (STATUS_SHIPPED, _(u"Отправлен")),
+        (STATUS_ACCEPTED, _(u"Принят")),
+    )
+    supplier = models.ForeignKey(Org, limit_choices_to={'type': Org.PROFILE_LORU},
+                                      verbose_name=_(u"Поставщик"), related_name='iorder_suppliers')
+    customer = models.ForeignKey(Org,
+                                      verbose_name=_(u"Покупатель"), related_name='iorder_customers',
+                                      null=True)
+    status = models.CharField(_(u"Статус"), max_length=255, choices=STATUS_TYPES, default=STATUS_POSTED)
+    # Порядковый номер в пределах поставщика, покупателя, года
+    number = models.IntegerField(_(u"Номер"))
+    comment = models.TextField(_(u"Комментарий"), blank=True, default='')
+    # При обращении к заказу по телефону (customer=None):
+    title = models.CharField(_(u"Наименование покупателя"), max_length=255, default='')
+    phones = models.TextField(_(u"Телефоны"), null=True)
+    address = models.ForeignKey('geo.Location', verbose_name=_(u"Адрес"), null=True)
+
+    def number_verbose(self):
+        """
+        Автогенерируемый номер заказа
+        """
+        return u"%d-%d-%d-%d" % (
+            self.dt_created.year,
+            self.customer and self.customer.pk or 0,
+            self.supplier.pk,
+            self.number,
+        )
+
+    def items_count(self):
+        return IorderItem.objects.filter(iorder=self).count()
+
+    def total(self):
+        return float(IorderItem.objects.filter(iorder=self). \
+                aggregate(total=Sum('price_wholesale'))['total'])
+
+    def products_json(self):
+       return [dict(
+                    id=item.product.pk,
+                    count=float(item.quantity),
+                    comment=item.comment,
+               ) for item in IorderItem.objects.filter(iorder=self)
+       ]
+
+class IorderItem(BaseModel):
+    """
+    Пункты интернет-заказа оптовой продукции
+
+    price_wholesale, productcategory, productcategory_name, productgroup, productgroup_name,
+    name, description, measure:
+        содержат копии сооответствующих полей продукта в момент внесения его в интернет-заказ
+    is_wholesale_with_vat:
+        содержит копию сооответствующего параметра лору в момент создания заказа
+
+    """
+    iorder = models.ForeignKey(Iorder, editable=False)
+    product = models.ForeignKey(Product, verbose_name=_(u"Товар"))
+    quantity = models.DecimalField(_(u"Кол-во"), max_digits=20, decimal_places=2, default=1)
+    measure = models.CharField(_(u"Ед. изм."), max_length=255, default=_(u"шт"))
+    price_wholesale = models.DecimalField(_(u"Цена оптовая"), max_digits=20, decimal_places=2)
+    name = models.CharField(_(u"Название"), max_length=255)
+    productcategory = models.ForeignKey(ProductCategory, verbose_name=_(u"Категория"),
+                                        on_delete=models.PROTECT)
+    productcategory_name = models.CharField(_(u"Название категории"), max_length=255)
+    productgroup = models.ForeignKey(ProductGroup, verbose_name=_(u"Подкатегория"), null=True,
+                                     on_delete=models.PROTECT)
+    productgroup_name = models.CharField(_(u"Название подкатегории"), max_length=255, default='')
+    productgroup_description = models.TextField(_(u"Описание подкатегории"), blank=True, default='')
+    comment = models.TextField(_(u"Комментарий"), blank=True, default='')
+    is_wholesale_with_vat = models.BooleanField(_(u"Цена с НДС"))
 
 class CatafalqueData(models.Model):
     order = models.OneToOneField('orders.Order', editable=False)

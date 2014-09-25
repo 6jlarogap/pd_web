@@ -7,12 +7,14 @@ import json
 from django.conf import settings
 from django.contrib import messages
 from django.core.urlresolvers import reverse
+from django.core.mail import EmailMessage
 from django.db import transaction
 from django.db.models.aggregates import Count, Sum
 from django.db.models.query_utils import Q
 from django.http import HttpResponse, Http404
 from django.shortcuts import redirect, render
 from django.template.context import RequestContext
+from django.template.loader import render_to_string
 from django.views.generic.base import View
 from django.views.generic.detail import DetailView
 from django.views.generic.edit import CreateView, UpdateView
@@ -22,6 +24,7 @@ from django.views.decorators.csrf import csrf_protect, csrf_exempt
 from django.shortcuts import get_object_or_404
 
 from logs.models import write_log
+from geo.models import Location
 from burials.forms import AddOrgForm, AddAgentForm, AddDoverForm, AddDocTypeForm
 from burials.models import Burial, Place, Grave, PlacePhoto
 from users.models import CustomerProfile, CustomerProfilePhoto, Org, ProfileLORU, Store, is_loru_user, is_supervisor, \
@@ -29,17 +32,35 @@ from users.models import CustomerProfile, CustomerProfilePhoto, Org, ProfileLORU
 from billing.models import Rate
 from orders.forms import ProductForm, OrderForm, OrderItemFormset, CoffinForm, CatafalqueForm, \
                          AddInfoForm, OrderSearchForm, OrderBurialForm
-from orders.models import Product, Order, OrderItem, ProductCategory
+from orders.models import Product, Order, OrderItem, ProductCategory, Iorder, IorderItem
 from pd.forms import CommentForm
-from pd.views import PaginateListView, RequestToFormMixin
+from pd.views import PaginateListView, RequestToFormMixin, ServiceException, get_front_end_url
 from reports.models import make_report
 
 from rest_framework import viewsets
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from serializers import ProductCategorySerializer, ProductsSerializer, ProductsOptSerializer, ProductInfoSerializer
+from rest_framework.parsers import MultiPartParser
+from orders.serializers import ProductCategorySerializer, ProductsSerializer, ProductsOptSerializer, \
+                               ProductInfoSerializer, IordersSerializer, IorderInfoSerializer, \
+                               ProductEditSerializer
 
+class ProductCategoryQsMixin(object):
+    
+    def product_category_qs(self):
+        category_ids_got = self.request.GET.getlist('filter[category]')
+        category_ids = []
+        for category_id in category_ids_got:
+            try:
+                # может быть '', 'null'
+                category_ids.append(int(category_id))
+            except ValueError:
+                pass
+        if category_ids:
+            return Q(productcategory__pk__in=category_ids)
+        else:
+            return Q()
 
 class LORURequiredMixin:
     def is_loru(self, request):
@@ -64,7 +85,7 @@ class ProductList(LORURequiredMixin, ListView):
     
 manage_products = ProductList.as_view()
 
-class ProductCreate(LORURequiredMixin, CreateView):
+class ProductCreate(LORURequiredMixin, RequestToFormMixin, CreateView):
     template_name = 'product_edit.html'
     form_class = ProductForm
 
@@ -85,7 +106,7 @@ class ProductCreate(LORURequiredMixin, CreateView):
 
 manage_products_create = ProductCreate.as_view()
 
-class ProductEdit(LORURequiredMixin, UpdateView):
+class ProductEdit(LORURequiredMixin, RequestToFormMixin, UpdateView):
     template_name = 'product_edit.html'
     form_class = ProductForm
 
@@ -597,6 +618,19 @@ class ProductCategoryViewSet(viewsets.ModelViewSet):
     model = ProductCategory
     serializer_class = ProductCategorySerializer
 
+    def get_queryset(self):
+        loru_ids = self.request.GET.getlist('filter[supplier]')
+        while loru_ids.count(u''):
+            loru_ids.remove(u'')
+        if loru_ids:
+            qs = Q(product__loru__pk__in=loru_ids)
+        else:
+            qs = Q()
+        onlyOpt = self.request.GET.get('filter[onlyOpt]')
+        if onlyOpt and onlyOpt == 'true':
+            qs &= Q(product__is_wholesale=True)
+        return ProductCategory.objects.filter(qs).order_by('name').distinct()
+
 class CustomerDataMixin:
     def get_customer_data(self, request):
         places = []
@@ -614,7 +648,7 @@ class CustomerDataMixin:
                     lorus.update(p.cemetery.ugh.get_loru_list())
         return is_customer, places, lorus
 
-class ProductsViewSet(viewsets.ModelViewSet):
+class ProductsViewSet(ProductCategoryQsMixin, viewsets.ReadOnlyModelViewSet):
     """
     Показ продуктов в публичном каталоге только!!!
     """
@@ -642,27 +676,21 @@ class ProductsViewSet(viewsets.ModelViewSet):
         if self.request.GET.get('filter[price_to]'):
             qs &= Q(price__lte=self.request.GET.get('filter[price_to]'))
 
-        category_ids = self.request.GET.getlist('filter[category]')
-        while category_ids.count(u''):
-            category_ids.remove(u'')
-        if category_ids:
-            qs &= Q(productcategory__pk__in=category_ids)
+        qs &= self.product_category_qs()
 
         # По умолчанию показываем только то, что в публичном каталоге
-        is_public_catalog = True
-        is_wholesale = False
+        q_public_whole = Q(is_public_catalog=True)
         if is_loru_user(self.request.user) or is_supervisor(self.request.user):
             components_only = self.request.GET.get('filter[components_only]')
             try:
                 if components_only and int(components_only):
-                    is_public_catalog = False
-                    is_wholesale = True
+                    q_public_whole = Q(is_wholesale=True)
             except ValueError:
                 pass
-        qs &= Q(is_public_catalog=is_public_catalog, is_wholesale=is_wholesale)
+        qs &= q_public_whole
 
         ordered = None
-        orders = {'price': 'price', 'date': 'dt_modified', }
+        orders = {'price': 'price', 'date': 'dt_created', }
         directions = {'asc': '', 'desc': '-', }
         for order in orders:
             direction = self.request.GET.get('order[%s]' % order)
@@ -687,29 +715,48 @@ class ProductsViewSet(viewsets.ModelViewSet):
         
         return filter
 
-class ProductsOptViewSet(viewsets.ModelViewSet):
+class ProductsOptViewSet(ProductCategoryQsMixin, viewsets.ReadOnlyModelViewSet):
     """
     Показ продуктов оптовика-поставщика
 
     api/optplaces/suppliers/(?P<loru_pk>\d+)/products
     """
     model = Product
-    serializer_class = ProductsOptSerializer
     paginate_by = None
 
     def get_queryset(self, *args, **kwargs):
-        return Product.objects.filter(
+        qs = Q(
             loru__pk=self.kwargs['loru_pk'],
             is_wholesale=True,
+        )
+        qs &= self.product_category_qs()
+        return Product.objects.filter(qs)
+
+    def get_serializer(self, *args, **kwargs):
+        try:
+            is_wholesale_with_vat = Org.objects.get(pk=self.kwargs['loru_pk']).is_wholesale_with_vat
+        except Org.DoesNotExist:
+            is_wholesale_with_vat = False
+        return ProductsOptSerializer(
+            self.get_queryset(),
+            context = dict(
+                request=self.request,
+                view=self,
+                is_wholesale_with_vat=is_wholesale_with_vat,
+            )
         )
 
 class ProductInfoView(APIView):
 
     def get(self, request, product_slug):
-        obj = get_object_or_404(Product, slug=product_slug)
+        product = get_object_or_404(Product, slug=product_slug)
+        show_wholesale = is_loru_user(request.user) or is_supervisor(request.user)
         return Response(
             status=200,
-            data=ProductInfoSerializer(obj, context=dict(request=request)).data,
+            data=ProductInfoSerializer(product, context=dict(
+                request=request,
+                show_wholesale=show_wholesale,
+            )).data,
         )
 
 api_catalog_products_detail = ProductInfoView.as_view()
@@ -868,3 +915,327 @@ class UghPublishedProductsViewSet(viewsets.ViewSet):
                 data_p['availableOnPlaces'] = [catalog_org_pk,]
             data.append(data_p)
         return Response(status=200, data=data)
+
+class IorderMixin(APIView):
+
+    def put_item(self, iorder, product, count, comment):
+        """
+        Забить позицию интернет-заказа iorder продуктом product
+        """
+        return IorderItem.objects.create(
+            iorder=iorder,
+            product=product,
+            quantity=decimal.Decimal(count),
+            comment=comment or '',
+            measure=product.measure,
+            price_wholesale=product.price_wholesale,
+            name=product.name,
+            productcategory=product.productcategory,
+            productcategory_name=product.productcategory.name,
+            productgroup=product.productgroup,
+            productgroup_name=product.productgroup.name if product.productgroup else '',
+            productgroup_description=product.productgroup.description if product.productgroup else '',
+            is_wholesale_with_vat=iorder.supplier.is_wholesale_with_vat,
+        )
+
+    def email_notifications(self, iorder, is_new_iorder):
+        """
+        """
+        email_from = settings.DEFAULT_FROM_EMAIL
+        if iorder.customer and iorder.customer.email:
+            email_to = (iorder.customer.email, )
+            email_subject = u"%s: %s %s" % (
+                _(u"ПохоронноеДело"),
+                _(u"создан заказ") if is_new_iorder else _(u"изменен заказ"),
+                iorder.number_verbose()
+            )
+            email_text = render_to_string(
+                            'iorder_notification.txt',
+                            {
+                                'preambule': _(u"Создан") if is_new_iorder else _(u"Изменен"),
+                                'front_end_url': get_front_end_url(self.request),
+                                'iorder': iorder,
+                                'to_customer': True,
+                            }
+            )
+            EmailMessage(email_subject, email_text, email_from, email_to,).send()
+        if iorder.supplier and iorder.supplier.email:
+            email_to = (iorder.supplier.email, )
+            email_subject = u"%s: %s %s" % (
+                _(u"ПохоронноеДело"),
+                _(u"поступил заказ") if is_new_iorder else _(u"изменен заказ"),
+                iorder.number_verbose()
+            )
+            email_text = render_to_string(
+                            'iorder_notification.txt',
+                            {
+                                'preambule': _(u"Поступил") if is_new_iorder else _(u"Изменен"),
+                                'front_end_url': get_front_end_url(self.request),
+                                'iorder': iorder,
+                                'to_customer': False,
+                            }
+            )
+            EmailMessage(email_subject, email_text, email_from, email_to,).send()
+
+class ApiOptPlacesOrders(IorderMixin, APIView):
+    """
+    Интернет-заказ товаров
+
+    Пример входных данных:
+    {
+        "products": [
+            {
+            "id": 62,
+            "count": 2
+            },
+            {
+            "id": 57,
+            "count": 1
+            }
+        ],
+        "comment": "Текст комментария",
+        "customer": {
+            "id": 2,
+            # или, если заказал по телефону
+            "title": "Директор Рога и Копыта",
+            "phoneNumber": "375291234567",
+            "address": "Одесса Малая Арнаутская"
+        }
+    }
+    Заказывает покупатель у поставщика.
+    Покупатель может быть указан в customer, или если не указан, то это выполнивший
+    логин.
+    Поставщик - в id продуктов. Эти id проверяются на то, чтоб им соответствовали
+    продукты, и чтоб они относились к одному поставщику. Если проверка не пройдет,
+    то возвращается status=400, message=”что произошло”. Если проверка успешна,
+    то формируется новый заказ, статус код - 200 
+    """
+    permission_classes = (PermitIfLoru,)
+
+    @transaction.commit_on_success
+    def post(self, request):
+        status_code=200
+        data = dict(status='success')
+        year = datetime.datetime.now().year
+        try:
+            customer= title = phones = address = None
+            customer_input = request.DATA.get("customer")
+            if customer_input:
+                if customer_input.get('id'):
+                    try:
+                        customer = Org.objects.get(pk=customer_input['id'])
+                    except Org.DoesNotExist:
+                        raise ServiceException(
+                            _(u"Покупатель с сustomer['id']==%s отсутствует") % customer_input['id']
+                        )
+                elif set(('title', 'phoneNumber', 'address',)).intersection(customer_input.keys()):
+                    title = customer_input.get('title', '')
+                    phones = customer_input.get('phoneNumber')
+                    addr_str = customer_input.get('address')
+                    if addr_str:
+                        address = Location.objects.create(addr_str=addr_str)
+                else:
+                    raise ServiceException(_(u'Невозможно определить покупателя'))
+            else:
+                customer = request.user.profile.org
+            supplier = None
+            products = request.DATA.get("products",[])
+            comment = request.DATA.get("comment",'')
+            for p in products:
+                try:
+                    product = Product.objects.get(pk=p['id'])
+                    if supplier is None:
+                        supplier = product.loru
+                        try:
+                            number = Iorder.objects.filter(
+                                supplier=supplier,
+                                customer=customer,
+                                dt_created__year=year,
+                            ).order_by('-number')[0].number
+                        except IndexError:
+                            number = 0
+                        iorder = Iorder.objects.create(
+                            supplier=supplier,
+                            customer=customer,
+                            status=Iorder.STATUS_POSTED,
+                            number=number+1,
+                            comment=comment,
+                            title=title or '',
+                            phones=phones,
+                            address=address,
+                        )
+                    else:
+                        if product.loru != supplier:
+                            raise ServiceException(_(u'В списке товаров таковые от разных поставщиков'))
+                    self.put_item(iorder, product, p['count'], p.get('comment'))
+                    data['id'] = iorder.pk
+                except Product.DoesNotExist:
+                    raise ServiceException(_(u'Не найден товар/услуга Id=%s') % p['id'])
+        except ServiceException as excpt:
+            transaction.rollback()
+            status_code=400
+            data['status'] = 'error'
+            data['message'] = excpt.message
+        else:
+            self.email_notifications(iorder, is_new_iorder=True)
+        return Response(data=data, status=status_code)
+
+    def get(self, request):
+        org = request.user.profile.org
+        qs = Q(customer=org) | Q(supplier=org)
+        iorders = Iorder.objects.filter(qs).order_by('-dt_created').distinct()
+        return Response(
+            status=200,
+            data=IordersSerializer(iorders, context=dict(
+                request=request,
+            )).data,
+        )
+
+api_optplaces_orders = ApiOptPlacesOrders.as_view()
+
+class IorderInfoView(IorderMixin, APIView):
+    permission_classes = (PermitIfLoru,)
+
+    def instance_permitted(self, request, pk):
+        """
+        Просматривать и править заказ может лишь поставщик или покупатель, если имеется
+        """
+        iorder = get_object_or_404(Iorder, pk=pk)
+        org = request.user.profile.org
+        if iorder.supplier == org or iorder.customer and iorder.customer == org:
+            return iorder, None
+        else:
+            return None, Response(
+                status=403,
+                data={"detail": "Not authorized: you are not customer nor supplier"},
+            )
+
+    def get(self, request, pk):
+        iorder, response = self.instance_permitted(request, pk)
+        if response:
+            return response
+        return Response(
+            status=200,
+            data=IorderInfoSerializer(iorder, context=dict(
+                request=request,
+            )).data,
+        )
+
+    @transaction.commit_on_success
+    def put(self, request, pk):
+        iorder, response = self.instance_permitted(request, pk)
+        if response:
+            return response
+        status_code=200
+        data = dict(status='success')
+        products = request.DATA.get("products")
+        if products is None:
+            raise ServiceException(_(u'Не задан список товаров, пусть даже пустой'))
+        try:
+            IorderItem.objects.filter(iorder=iorder).delete()
+            for p in products:
+                try:
+                    product = Product.objects.get(pk=p['id'])
+                    if product.loru != iorder.supplier:
+                        raise ServiceException(_(u'Товара Id=%s нет среди товаров поставщика заказа') % p['id'])
+                    if p.get('count'):
+                        self.put_item(iorder, product, p['count'], p.get('comment'))
+                except Product.DoesNotExist:
+                    raise ServiceException(_(u'Не найден товар/услуга Id=%s') % p['id'])
+            comment = request.DATA.get("comment")
+            if comment is not None:
+                iorder.comment = comment
+            iorder.save()
+        except ServiceException as excpt:
+            transaction.rollback()
+            status_code=400
+            data['status'] = 'error'
+            data['message'] = excpt.message
+        else:
+            self.email_notifications(iorder, is_new_iorder=False)
+        return Response(data=data, status=status_code)
+
+api_optplaces_orders_detail = IorderInfoView.as_view()
+
+class ApiLoruProductTypesView(APIView):
+    permission_classes = (PermitIfLoru,)
+
+    def get(self, request):
+        return Response(
+            data=[ dict(
+                    id=pt[0],
+                    name =unicode(pt[1]),
+                   )
+                    for pt in Product.PRODUCT_TYPES
+            ],
+            status=200,
+        )
+
+api_loru_product_types = ApiLoruProductTypesView.as_view()
+
+class ApiProductList(ProductCategoryQsMixin, APIView):
+    permission_classes = (PermitIfLoru,)
+    parser_classes = (MultiPartParser,)
+
+    def get(self, request):
+        qs = Q(loru=request.user.profile.org)
+        qs &= self.product_category_qs()
+
+        data = [ ProductEditSerializer(p, context=dict(request=request)).data \
+                for p in Product.objects.filter(qs)
+        ]
+        return Response(data=data, status=200)
+
+    def post(self, request):
+        required_not_got = list()
+        for f in (
+            'name',
+            'description',
+            'categoryId',
+                 ):
+            if not request.DATA.get(f):
+                required_not_got.append(f)
+        if required_not_got:
+            return Response(
+                data={
+                    'status': 'error',
+                    'message': _(u"Не заданы параметры: %s") % ", ".join(required_not_got),
+                     },
+                status=400,
+            )
+        serializer = ProductEditSerializer(data=request.DATA, context={ 'request': request, })
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=200)
+        return Response(serializer.errors, status=400)
+
+api_product_list = ApiProductList.as_view()
+
+class ApiProductDetail(APIView):
+    permission_classes = (PermitIfLoru,)
+    parser_classes = (MultiPartParser,)
+
+    def get_object(self, request, pk):
+        try:
+            return Product.objects.get(loru=request.user.profile.org, pk=pk)
+        except Product.DoesNotExist:
+            raise Http404
+
+    def get(self, request, pk):
+        product = self.get_object(request, pk)
+        serializer = ProductEditSerializer(product, context=dict(request=request))
+        return Response(serializer.data)
+
+    def put(self, request, pk):
+        product = self.get_object(request, pk)
+        serializer = ProductEditSerializer(
+            product,
+            data=request.DATA,
+            context=dict(request=request),
+        )
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=200)
+        return Response(serializer.errors, status=400)
+
+api_product_detail = ApiProductDetail.as_view()

@@ -16,7 +16,7 @@ from persons.forms import AlivePersonForm, PersonIDForm
 from persons.models import AlivePerson, PersonID
 from users.models import Org, Profile
 from pd.models import SafeDeleteMixin
-from pd.forms import AppOrgFormMixin
+from pd.forms import AppOrgFormMixin, CustomClearableFileInput
 
 class ProductForm(StrippedStringsMixin, forms.ModelForm):
 
@@ -61,9 +61,12 @@ class ProductForm(StrippedStringsMixin, forms.ModelForm):
 
     class Meta:
         model = Product
-        exclude = ['loru', ]
+        exclude = ('loru', )
+        widgets = {
+            'photo': CustomClearableFileInput,
+        }
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, request, *args, **kwargs):
         super(ProductForm, self).__init__(*args, **kwargs)
         self.fields['name'].widget.attrs = dict(
             maxlength=Product.PRODUCT_NAME_MAXLEN,

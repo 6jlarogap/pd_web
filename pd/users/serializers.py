@@ -3,11 +3,17 @@
 from rest_framework import serializers
 from rest_framework.fields import Field
 
-from pd.utils import PhonesFromTextMixin
+from django.db.models.query_utils import Q
+
+from pd.utils import PhonesFromTextMixin, utcisoformat
 from geo.models import Location
 from users.models import Org, Store
 from persons.models import Phone
-from orders.models import Product
+from orders.models import Product, Iorder
+
+class CatalogQsMixin(object):
+    def catalog_qs(self, loru):
+        return Q(loru=loru) & (Q(is_public_catalog=True) | Q(is_wholesale=True))
 
 class OrgLocationMixin(object):
 
@@ -84,7 +90,7 @@ class StoreSerializer(serializers.ModelSerializer):
         else:
             return None
 
-class OrgSerializer(PhonesFromTextMixin, OrgLocationMixin, serializers.ModelSerializer):
+class OrgSerializer(PhonesFromTextMixin, OrgLocationMixin, CatalogQsMixin, serializers.ModelSerializer):
     fullname = Field(source='full_name')
     address = serializers.RelatedField('off_address')
     stores = StoreSerializer(many=True, source='store_set')
@@ -104,7 +110,7 @@ class OrgSerializer(PhonesFromTextMixin, OrgLocationMixin, serializers.ModelSeri
                 {
                     'id': pc['productcategory__pk'],
                     'title': pc['productcategory__name']
-                } for pc in Product.objects.filter(is_public_catalog=True, loru=obj).\
+                } for pc in Product.objects.filter(self.catalog_qs(loru=obj)).\
                                 order_by('productcategory__pk').\
                                 values('productcategory__pk', 'productcategory__name').distinct()
         ]
@@ -117,7 +123,7 @@ class OrgShortSerializer(PhonesFromTextMixin, serializers.ModelSerializer):
         model = Org
         fields = ('id', 'name', 'slug', 'address', 'phones', 'worktime', 'site', )
 
-class OrgShort2Serializer(OrgLocationMixin, serializers.ModelSerializer):
+class OrgShort2Serializer(OrgLocationMixin, CatalogQsMixin, serializers.ModelSerializer):
     location = serializers.SerializerMethodField('location_func')
     categories = serializers.SerializerMethodField('categories_func')
     stores = StoreSerializer(many=True, source='store_set')
@@ -128,7 +134,37 @@ class OrgShort2Serializer(OrgLocationMixin, serializers.ModelSerializer):
 
     def categories_func(self, obj):
         return [ pc['productcategory__pk'] for pc in \
-            Product.objects.filter(is_public_catalog=True, loru=obj).\
+            Product.objects.filter(self.catalog_qs(loru=obj)).\
                 order_by('productcategory__pk').\
                 values('productcategory__pk').distinct()
         ]
+
+class OrgShort3Serializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Org
+        fields = ('id', 'name',)
+
+class OrgShort4Serializer(PhonesFromTextMixin, serializers.ModelSerializer):
+    shortName = Field(source='name')
+    phones = serializers.SerializerMethodField('phones_func')
+
+    class Meta:
+        model = Org
+        fields = ('id', 'shortName', 'phones', )
+
+class OrgOptSupplierSerializer(serializers.ModelSerializer):
+    tin = Field(source='inn')
+    dtLastOrder = serializers.SerializerMethodField('dt_last_order_func')
+
+    class Meta:
+        model = Org
+        fields = ('id', 'name', 'tin', 'dtLastOrder', )
+
+    def dt_last_order_func(self, loru):
+      try:
+          return utcisoformat(
+              Iorder.objects.filter(supplier=loru).order_by('-dt_created')[0].dt_created
+          )
+      except IndexError:
+          return None

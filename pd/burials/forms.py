@@ -1205,7 +1205,7 @@ class BurialCommitForm(BurialForm):
             if msg:
                 raise forms.ValidationError(msg)
 
-            if self.request.REQUEST.get('ready') and self.dc_form.is_valid():
+            if self.request.REQUEST.get('ready') and self.dc_form.is_valid() and self.deadman_form.is_valid():
                 death_date = self.deadman_form.cleaned_data.get('death_date')
                 last_name = self.deadman_form.cleaned_data.get('last_name').strip()
                 s_number = self.dc_form.cleaned_data.get('s_number').strip()
@@ -1522,7 +1522,7 @@ class AddOrgForm(StrippedStringsMixin, BaseOrgForm):
                    'plan_date_days_before', 'max_graves_count',
                    'worktime', 'site', 
                    'currency', 'director',
-                   'description',
+                   'description', 'is_wholesale_with_vat',
         )
     
     def __init__(self, request, *args, **kwargs):
