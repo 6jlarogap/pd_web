@@ -186,3 +186,25 @@ install-readme.txt, utf8 code page
             где /home/www-data/resubmit_sitemap.sh содержит:
             #! /bin/bash
             wget www.google.com/webmasters/tools/ping?sitemap=https%3A%2F%2Fpohoronnoedelo.ru%2Fsitemap.xml
+
+    * Почта.
+      - системные настройки:
+        Система использует отправку различной почты. Если на localhost не настроен почтовый сервер,
+        то необходимо заполнить параметры EMAIL_..., см. local_settings.py.example.
+        На производственном localhost настраиваем почтовый сервер в минимальной и безопасной конфигурации:
+        * слушает только localhost
+        * пересылает почту только от localhost
+        * использует google-mail account как relay server
+        Установка:
+            - sudo apt-get install postfix
+            - подправить /etc/postfix в соответствии с contrib/email-server/postfix/main.cf,
+              для сравнения там есть оригинальный mail.cf.Orig
+            - поместить в /etc/postfix подправленный contrib/email-server/postfix/sasl_passwd
+              (username@google-mail и пароль)
+            - sudo chmod 400 /etc/postfix/sasl_passwd
+            - sudo postmap /etc/postfix/sasl_passwd
+            - cat /etc/ssl/certs/Thawte_Premium_Server_CA.pem | sudo tee -a /etc/postfix/cacert.pem
+
+       - Отправитель почты.
+         Тот, кто будет фигурировать по умолчанию в поле "От кого" писем от системы
+         надо заменить параметр DEFAULT_FROM_EMAIL в local_settings.py
