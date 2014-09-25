@@ -213,15 +213,16 @@ RECAPTCHA_PRIVATE_KEY = 'another-string-of-hex-and-digits'
 RECAPTCHA_USE_SSL = False
 
 # Для отправки кода активации и прочей почты,
-# Здесь приведены параметры, отработанные для отправки
-# через smtp-сервер @gmail.com
 #
-EMAIL_HOST = 'smtp.googlemail.com'
-EMAIL_PORT = 587
-EMAIL_HOST_USER = 'EMAIL-HOST-USER@gmail.com'
-EMAIL_HOST_PASSWORD = 'SECRET'
-EMAIL_USE_TLS = True
-EMAIL_USE_SSL = False
+# По умолчанию почта отправляется через localhost:25.
+# Если не настроен почтовый сервер на этом хосте,
+# то необходимо заполнить параметры отправки почты
+# в local_settings.py
+
+# Этот адрес применяется как "От кого" в письмах,
+# отправляемых от имени системы. Подлежит замене
+# в local_settings.py
+#
 DEFAULT_FROM_EMAIL = 'EMAIL-HOST-USER@gmail.com'
 
 # Для учета настроек, необязательных на сайтах разработчиков
