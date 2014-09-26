@@ -12,7 +12,7 @@ from rest_api.fields import HyperlinkedFileField
 from orders.models import ProductCategory, Product, Iorder
 from users.models import Org
 from users.serializers import OrgSerializer, OrgShortSerializer, OrgShort3Serializer, OrgShort4Serializer
-from pd.utils import utcisoformat
+from pd.utils import utcisoformat, str_to_bool_or_None
 from pd.views import ServiceException
 
 class ProductCurrencyMixin(object):
@@ -152,12 +152,8 @@ class ProductEditSerializer(ProductCurrencyMixin, serializers.HyperlinkedModelSe
 
     def get_catalogs_prices(self):
         data = self.context['request'].DATA
-        is_public_catalog = data.get('isShownInRetailCatalog')
-        if is_public_catalog is not None:
-            is_public_catalog = is_public_catalog.lower() == 'true'
-        is_wholesale = data.get('isShownInTradeCatalog')
-        if is_wholesale is not None:
-            is_wholesale = is_wholesale.lower() == 'true'
+        is_public_catalog = str_to_bool_or_None(data.get('isShownInRetailCatalog'))
+        is_wholesale = str_to_bool_or_None(data.get('isShownInTradeCatalog'))
         price = data.get('retailPrice')
         if price is not None:
             try:
@@ -190,7 +186,7 @@ class ProductEditSerializer(ProductCurrencyMixin, serializers.HyperlinkedModelSe
             price=price,
             price_wholesale=price_wholesale,
             ptype=data.get('typeId'),
-            default=data.get('isDefault'),
+            default=str_to_bool_or_None(data.get('isDefault')),
             productcategory=ProductCategory.objects.get(pk=data.get('categoryId')) if data.get('categoryId') else None,
             sku=data.get('sku'),
             is_public_catalog=is_public_catalog,

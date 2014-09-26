@@ -69,3 +69,18 @@ class PhonesFromTextMixin(object):
 
     def phones_func(self, obj):
         return phones_from_text(obj.phones)
+
+def str_to_bool_or_None(s):
+    """
+    Строку 'true' или 'false' преобразовать в boolean True/False или None, если строка не 'true'/'false'
+
+    Применяется при разборе multipart/form-data параметров, чтоб были аналогичны разбору json параметров
+    """
+    result = None
+    if isinstance(s, basestring):
+        s = s.lower()
+        if s == 'true':
+            result = True
+        elif s == 'false':
+            result = False
+    return result
