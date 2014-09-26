@@ -1867,6 +1867,34 @@ class FavoriteSupplierList(APIView):
 
 api_loru_favorite_suppliers = FavoriteSupplierList.as_view()
 
+class FavoriteSupplierEdit(APIView):
+    """
+    Add or delete loru's favorite suppliers
+    """
+    permission_classes = (PermitIfLoru,)
+
+    def post(self, request, supplier_id):
+        try:
+            try:
+                supplier = Org.objects.get(pk=supplier_id)
+            except Org.DoesNotExist:
+                raise ServiceException(_(u'Нет такого поставщика: %s') % supplier_id)
+            if supplier.type != Org.PROFILE_LORU:
+                raise ServiceException(_(u'Id = %s : это не поставщик (ЛОРУ)') % supplier_id)
+            FavoriteSupplier.objects.get_or_create(
+                loru=request.user.profile.org,
+                supplier=supplier,
+            )
+        except ServiceException as excpt:
+            data = dict(status='error', message=excpt.message)
+            status_code = 400
+        else:
+            data = dict()
+            status_code = 200
+        return Response(data, status=status_code)
+
+api_loru_favorite_suppliers_edit = FavoriteSupplierEdit.as_view()
+
 class StoreList(APIView):
     """
     List all stores, or create a new store.
