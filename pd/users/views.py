@@ -53,7 +53,7 @@ from users.forms import UserAddForm, RegisterForm, LoruFormset, ProfileForm, Use
 from users.models import Profile, Org, RegisterProfile, ProfileLORU, CustomerProfile, Store, \
                          get_mail_footer, is_cabinet_user, PermitIfLoru, PermitIfLoruOrSupervisor, Oauth, \
                          BankAccount, BankAccountRegister, OrgCertificate, OrgContract, \
-                         RegisterProfileContract, RegisterProfileScan, \
+                         RegisterProfileContract, RegisterProfileScan, FavoriteSupplier, \
                          is_loru_user, is_supervisor, get_default_currency
 from pd.models import validate_phone_as_number, validate_username
 from pd.utils import host_country_code, phones_from_text
@@ -65,7 +65,7 @@ from pd.views import PaginateListView, RequestToFormMixin, FormInvalidMixin, get
 from geo.models import Location, Country
 
 from users.serializers import StoreSerializer, OrgSerializer, OrgShort2Serializer, \
-                              OrgOptSupplierSerializer, OrgShort4Serializer
+                              OrgShort3Serializer, OrgOptSupplierSerializer, OrgShort4Serializer
 
 from sms_service.utils import send_sms
 
@@ -1850,6 +1850,22 @@ class Tutorial(TemplateView):
         return self.render_to_response({'data': data})
 
 tutorial = Tutorial.as_view()
+
+class FavoriteSupplierList(APIView):
+    """
+    List all loru's favorite suppliers
+    """
+    permission_classes = (PermitIfLoru,)
+
+    def get(self, request):
+        return Response(
+            [OrgShort3Serializer(f.supplier).data for f in FavoriteSupplier.objects.filter(
+                loru=request.user.profile.org
+            )],
+            status=200,
+        )
+
+api_loru_favorite_suppliers = FavoriteSupplierList.as_view()
 
 class StoreList(APIView):
     """
