@@ -21,6 +21,13 @@ urlpatterns = patterns('users.views',
     url(r'^api/loru/stores/?$', 'api_loru_stores', name='api_loru_stores'),
     url(r'^api/loru/stores/(?P<pk>\d+)/?$', 'api_loru_store_detail', name='api_loru_store_detail'),
 
+    url(r'^api/loru/favorite_suppliers/?$', 'api_loru_favorite_suppliers', name='api_loru_favorite_suppliers'),
+    url(
+        r'^api/loru/favorite_suppliers/(?P<supplier_id>\d+)/?$',
+        'api_loru_favorite_suppliers_edit',
+        name='api_loru_favorite_suppliers_edit'
+    ),
+
     url(r'^api/catalog/suppliers/?$', 'api_catalog_suppliers', name='api_catalog_suppliers'),
     url(r'^api/catalog/suppliers/(?P<org_slug>[\w-]+)/?$', 'api_catalog_suppliers_detail', name='api_catalog_suppliers_detail'),
 
