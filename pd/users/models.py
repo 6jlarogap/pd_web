@@ -667,6 +667,18 @@ class Store(models.Model, PhonesMixin):
     address = models.ForeignKey('geo.Location', verbose_name=_(u"Адрес"))
     # phones: могут быть разных типов, пользуемся моделью persons.Phone
 
+class FavoriteSupplier(models.Model):
+    """
+    Избранные поставщики у ЛОРУ
+    """
+    loru = models.ForeignKey(Org, verbose_name=_(u"ЛОРУ"), limit_choices_to={'type': Org.PROFILE_LORU},
+        related_name='favorite_loru', on_delete=models.PROTECT, )
+    supplier = models.ForeignKey(Org, verbose_name=_(u"ЛОРУ"), limit_choices_to={'type': Org.PROFILE_LORU},
+        related_name='favorite_supplier_list', on_delete=models.PROTECT, )
+
+    class Meta:
+        unique_together = ('loru', 'supplier', )
+
 class BankAccountCommon(models.Model):
     """
     Банковские реквизиты
