@@ -1893,6 +1893,13 @@ class FavoriteSupplierEdit(APIView):
             status_code = 200
         return Response(data, status=status_code)
 
+    def delete(self, request, supplier_id):
+        FavoriteSupplier.objects.filter(
+            loru=request.user.profile.org,
+            supplier__pk=supplier_id,
+        ).delete()
+        return Response(data={}, status=200)
+
 api_loru_favorite_suppliers_edit = FavoriteSupplierEdit.as_view()
 
 class StoreList(APIView):
