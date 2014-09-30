@@ -12,8 +12,21 @@ from persons.models import Phone
 from orders.models import Product, Iorder
 
 class CatalogQsMixin(object):
-    def catalog_qs(self, loru):
-        return Q(loru=loru) & (Q(is_public_catalog=True) | Q(is_wholesale=True))
+    def catalog_qs(self, loru, catalog=None):
+        """
+        Выборка продуктов по каталогу: оптовому, публичному или по обоим
+
+        catalog =   None: оба каталога
+                    'public': публичный
+                    'wholesale': оптовый
+        """
+        q_catalog = Q(is_public_catalog=True) | Q(is_wholesale=True)
+        if catalog is not None:
+            if catalog == 'public':
+                q_catalog = Q(is_public_catalog=True)
+            elif catalog == 'wholesale':
+                q_catalog = Q(is_wholesale=True)
+        return Q(loru=loru) & q_catalog
 
 class OrgLocationMixin(object):
 
@@ -133,8 +146,9 @@ class OrgShort2Serializer(OrgLocationMixin, CatalogQsMixin, serializers.ModelSer
         fields = ('id', 'name', 'slug', 'location', 'categories', 'stores', )
 
     def categories_func(self, obj):
+        catalog = 'wholesale' if self.context['request'].GET.get('supplierType', '').lower() == 'opt' else 'public'
         return [ pc['productcategory__pk'] for pc in \
-            Product.objects.filter(self.catalog_qs(loru=obj)).\
+            Product.objects.filter(self.catalog_qs(loru=obj, catalog=catalog)).\
                 order_by('productcategory__pk').\
                 values('productcategory__pk').distinct()
         ]
