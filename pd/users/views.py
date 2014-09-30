@@ -2198,7 +2198,10 @@ class ApiCatalogSuppliersView(APIView):
 
     def get(self, request):
         return Response(
-            data = [ OrgShort2Serializer(loru).data for loru in Org.objects.filter(type=Org.PROFILE_LORU) ],
+            data = [ OrgShort2Serializer(
+                                    loru,
+                                    context = dict(request=request),
+                     ).data for loru in Org.objects.filter(type=Org.PROFILE_LORU) ],
             status=200
         )
 

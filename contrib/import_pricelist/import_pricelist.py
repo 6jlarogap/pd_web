@@ -4,7 +4,8 @@
 
 TO_IMPORT_ODS = '/home/suprune20/musor/pricelist.ods'
 PHOTOS_FOLDER = '/home/suprune20/musor/product-photo'
-LORU_NAME = u'ООО Академия камня'
+# Название организации изменено, чтоб еще раз сдуру не запустить процесс
+LORU_NAME = u'ЧТУП "ОПТОМИКСБРЕСТ"-----'
 
 # Импортировать товары лору LORU_NAME из таблицы TO_IMPORT_ODS
 # Сделать эти товары предназначенными для показа оптовикам
