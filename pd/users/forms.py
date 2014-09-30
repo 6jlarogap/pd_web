@@ -3,7 +3,6 @@ import re
 
 from django.conf import settings
 from django import forms
-from django.core.mail import EmailMessage
 from django.core.exceptions import ValidationError
 from django.contrib.auth.models import User
 from django.forms.models import inlineformset_factory, BaseInlineFormSet
@@ -16,7 +15,7 @@ from geo.forms import LocationForm
 from pd.forms import ChildrenJSONMixin, LoggingFormMixin, OurReCaptchaField, StrippedStringsMixin, \
                      CustomUploadModelForm, CustomClearableFileInput
 from pd.models import validate_phone_as_number, validate_username
-from pd.utils import host_country_code
+from pd.utils import host_country_code, OurEmailMessage
 from burials.models import Cemetery, PlaceSize, Reason, Burial
 from logs.models import write_log
 
@@ -599,7 +598,7 @@ class SupportForm(forms.Form):
         headers = {}
         if email_from:
             headers['Reply-To'] = email_from
-        EmailMessage(email_subject, email_text, email_from, email_to, headers=headers, ).send()
+        OurEmailMessage(email_subject, email_text, email_from, email_to, headers=headers, ).send()
 
 class TestCaptchaForm(forms.Form):
     captcha = OurReCaptchaField(label='')

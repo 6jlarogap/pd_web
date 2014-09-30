@@ -94,7 +94,6 @@ class OurEmailMessage(EmailMessage):
         - если почта от какого-то другого сервера, нежели производственного,
         тему письма предваряем "[dev] "
     """
-    SUBJECT_SUFFIX_DEV = u"[dev]"
 
     def send(self, **kwargs):
         if not settings.PRODUCTION_SITE:
