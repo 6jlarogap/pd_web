@@ -12,7 +12,7 @@ install-readme.txt, utf8 code page
         - средства разработки:
             * python, не ниже 2.6
               - пакеты python, которые могут не быть в его "стандартной поставке":
-                  * (ubuntu) python-all-devdev
+                  * (ubuntu) python-all-dev
                     - (ubuntu 14.04) это автоматически установит c/c++, g++
                   * (ubuntu) python-virtualenv
                   * (ubuntu) python-pycurl
@@ -189,22 +189,25 @@ install-readme.txt, utf8 code page
 
     * Почта.
       - системные настройки:
-        Система использует отправку различной почты. Если на localhost не настроен почтовый сервер,
+        Система использует отправку различной почты. Если на localhost НЕ НАСТРОЕН почтовый сервер,
         то необходимо заполнить параметры EMAIL_..., см. local_settings.py.example.
-        На производственном localhost настраиваем почтовый сервер в минимальной и безопасной конфигурации:
-        * слушает только localhost
-        * пересылает почту только от localhost
-        * использует google-mail account как relay server
+
+        На ПРОИЗВОДСТВЕННОМ localhost, а также на "главном" разработческом, настраиваем почтовый сервер
+        в минимальной и безопасной конфигурации:
+            * слушает только localhost
+            * пересылает почту только от localhost
         Установка:
             - sudo apt-get install postfix
+              (На Ubuntu 14.4 спросит, в какой конфигурации, выбираем local only)
             - подправить /etc/postfix в соответствии с contrib/email-server/postfix/main.cf,
               для сравнения там есть оригинальный mail.cf.Orig
-            - поместить в /etc/postfix подправленный contrib/email-server/postfix/sasl_passwd
-              (username@google-mail и пароль)
-            - sudo chmod 400 /etc/postfix/sasl_passwd
-            - sudo postmap /etc/postfix/sasl_passwd
-            - cat /etc/ssl/certs/Thawte_Premium_Server_CA.pem | sudo tee -a /etc/postfix/cacert.pem
 
        - Отправитель почты.
          Тот, кто будет фигурировать по умолчанию в поле "От кого" писем от системы
          надо заменить параметр DEFAULT_FROM_EMAIL в local_settings.py
+       
+       - Получатель скрытых копий отправленных писем. Система отправляет письма. Некоторые из них
+         идут нам же, так что их копии незачем где-то хранить. Но очень многие идут заказчикам,
+         и желательно иметь копию этих писем, чтоб проверить, ушло ли сообщение и в каком виде
+         ушло. Для этого параметр BCC_OUR_MAIL в local_settings.py. Если не задан, то скрытые
+         копии не формируются
