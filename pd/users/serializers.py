@@ -11,7 +11,8 @@ from users.models import Org, Store, FavoriteSupplier, is_loru_user
 from persons.models import Phone
 from orders.models import Product, Iorder
 
-class CatalogQsMixin(object):
+class OrgSerializerMixin(object):
+
     def catalog_qs(self, loru, catalog=None):
         """
         Выборка продуктов по каталогу: оптовому, публичному или по обоим
@@ -28,8 +29,6 @@ class CatalogQsMixin(object):
                 q_catalog = Q(is_wholesale=True)
         return Q(loru=loru) & q_catalog
 
-class OrgLocationMixin(object):
-
     def location_func(self, instance):
         if instance.off_address and instance.off_address.gps_x is not None and instance.off_address.gps_y is not None:
             return {
@@ -38,6 +37,17 @@ class OrgLocationMixin(object):
             }
         else:
             return None
+
+    def isFavorite_func(self, instance):
+        result = None
+        if hasattr(self, 'context') and 'request' in self.context:
+            user = self.context['request'].user
+            if is_loru_user(user):
+                result = FavoriteSupplier.objects.filter(
+                    loru=user.profile.org,
+                    supplier=instance,
+                    ).exists()
+        return result
 
 class StoreSerializer(serializers.ModelSerializer):
     address = serializers.SerializerMethodField('address_func')
@@ -103,19 +113,20 @@ class StoreSerializer(serializers.ModelSerializer):
         else:
             return None
 
-class OrgSerializer(PhonesFromTextMixin, OrgLocationMixin, CatalogQsMixin, serializers.ModelSerializer):
+class OrgSerializer(PhonesFromTextMixin, OrgSerializerMixin, serializers.ModelSerializer):
     fullname = Field(source='full_name')
     address = serializers.RelatedField('off_address')
     stores = StoreSerializer(many=True, source='store_set')
     phones = serializers.SerializerMethodField('phones_func')
     categories = serializers.SerializerMethodField('categories_func')
     location = serializers.SerializerMethodField('location_func')
+    isFavorite = serializers.SerializerMethodField('isFavorite_func')
 
     class Meta:
         model = Org
         fields = ('id', 'name', 'slug', 'fullname', 'address', 'description',
                   'phones', 'fax', 'worktime', 'site', 'email', 'stores',
-                  'categories', 'location', 
+                  'categories', 'location', 'isFavorite',
         )
 
     def categories_func(self, obj):
@@ -136,7 +147,7 @@ class OrgShortSerializer(PhonesFromTextMixin, serializers.ModelSerializer):
         model = Org
         fields = ('id', 'name', 'slug', 'address', 'phones', 'worktime', 'site', )
 
-class OrgShort2Serializer(OrgLocationMixin, CatalogQsMixin, serializers.ModelSerializer):
+class OrgShort2Serializer(OrgSerializerMixin, serializers.ModelSerializer):
     location = serializers.SerializerMethodField('location_func')
     categories = serializers.SerializerMethodField('categories_func')
     stores = StoreSerializer(many=True, source='store_set')
@@ -167,22 +178,12 @@ class OrgShort4Serializer(PhonesFromTextMixin, serializers.ModelSerializer):
         model = Org
         fields = ('id', 'shortName', 'phones', )
 
-class OrgShort5Serializer(OrgShort4Serializer):
+class OrgShort5Serializer(OrgSerializerMixin, OrgShort4Serializer):
     isFavorite = serializers.SerializerMethodField('isFavorite_func')
 
     class Meta:
         model = Org
         fields = ('id', 'shortName', 'phones', 'isFavorite', )
-
-    def isFavorite_func(self, instance):
-        result = None
-        user = self.context['request'].user
-        if is_loru_user(user):
-            result = FavoriteSupplier.objects.filter(
-                loru=user.profile.org,
-                supplier=instance,
-                ).exists()
-        return result
 
 class OrgOptSupplierSerializer(serializers.ModelSerializer):
     tin = Field(source='inn')

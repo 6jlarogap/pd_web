@@ -2213,7 +2213,7 @@ class OrgDetailView(APIView):
     """
     def get(self, request, org_slug):
         obj = get_object_or_404(Org, slug=org_slug)
-        return Response(status=200, data=OrgSerializer(obj).data)
+        return Response(status=200, data=OrgSerializer(obj, context = dict(request=request)).data)
 
 api_catalog_suppliers_detail = OrgDetailView.as_view()
 
