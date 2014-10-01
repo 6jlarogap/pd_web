@@ -7,7 +7,7 @@ from django.db.models.query_utils import Q
 
 from pd.utils import PhonesFromTextMixin, utcisoformat
 from geo.models import Location
-from users.models import Org, Store
+from users.models import Org, Store, FavoriteSupplier, is_loru_user
 from persons.models import Phone
 from orders.models import Product, Iorder
 
@@ -166,6 +166,23 @@ class OrgShort4Serializer(PhonesFromTextMixin, serializers.ModelSerializer):
     class Meta:
         model = Org
         fields = ('id', 'shortName', 'phones', )
+
+class OrgShort5Serializer(OrgShort4Serializer):
+    isFavorite = serializers.SerializerMethodField('isFavorite_func')
+
+    class Meta:
+        model = Org
+        fields = ('id', 'shortName', 'phones', 'isFavorite', )
+
+    def isFavorite_func(self, instance):
+        result = None
+        user = self.context['request'].user
+        if is_loru_user(user):
+            result = FavoriteSupplier.objects.filter(
+                loru=user.profile.org,
+                supplier=instance,
+                ).exists()
+        return result
 
 class OrgOptSupplierSerializer(serializers.ModelSerializer):
     tin = Field(source='inn')
