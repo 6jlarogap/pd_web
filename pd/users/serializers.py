@@ -11,7 +11,7 @@ from users.models import Org, Store, FavoriteSupplier, is_loru_user
 from persons.models import Phone
 from orders.models import Product, Iorder
 
-class OrgSerialiserMixin(object):
+class OrgSerializerMixin(object):
 
     def catalog_qs(self, loru, catalog=None):
         """
@@ -113,7 +113,7 @@ class StoreSerializer(serializers.ModelSerializer):
         else:
             return None
 
-class OrgSerializer(PhonesFromTextMixin, OrgSerialiserMixin, serializers.ModelSerializer):
+class OrgSerializer(PhonesFromTextMixin, OrgSerializerMixin, serializers.ModelSerializer):
     fullname = Field(source='full_name')
     address = serializers.RelatedField('off_address')
     stores = StoreSerializer(many=True, source='store_set')
@@ -147,7 +147,7 @@ class OrgShortSerializer(PhonesFromTextMixin, serializers.ModelSerializer):
         model = Org
         fields = ('id', 'name', 'slug', 'address', 'phones', 'worktime', 'site', )
 
-class OrgShort2Serializer(OrgSerialiserMixin, serializers.ModelSerializer):
+class OrgShort2Serializer(OrgSerializerMixin, serializers.ModelSerializer):
     location = serializers.SerializerMethodField('location_func')
     categories = serializers.SerializerMethodField('categories_func')
     stores = StoreSerializer(many=True, source='store_set')
@@ -178,7 +178,7 @@ class OrgShort4Serializer(PhonesFromTextMixin, serializers.ModelSerializer):
         model = Org
         fields = ('id', 'shortName', 'phones', )
 
-class OrgShort5Serializer(OrgSerialiserMixin, OrgShort4Serializer):
+class OrgShort5Serializer(OrgSerializerMixin, OrgShort4Serializer):
     isFavorite = serializers.SerializerMethodField('isFavorite_func')
 
     class Meta:
