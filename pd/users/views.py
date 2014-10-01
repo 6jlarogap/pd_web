@@ -65,7 +65,7 @@ from pd.views import PaginateListView, RequestToFormMixin, FormInvalidMixin, get
 from geo.models import Location, Country
 
 from users.serializers import StoreSerializer, OrgSerializer, OrgShort2Serializer, \
-                              OrgShort3Serializer, OrgOptSupplierSerializer, OrgShort4Serializer
+                              OrgShort3Serializer, OrgOptSupplierSerializer, OrgShort5Serializer
 
 from sms_service.utils import send_sms
 
@@ -2236,7 +2236,7 @@ class ApiOptplacesSupplierDetailView(APIView):
     """
     def get(self, request, pk):
         obj = get_object_or_404(Org, pk=pk)
-        return Response(status=200, data=OrgShort4Serializer(obj).data)
+        return Response(status=200, data=OrgShort5Serializer(obj, context=dict(request=request)).data)
 
 api_optplaces_suppliers_detail = ApiOptplacesSupplierDetailView.as_view()
 

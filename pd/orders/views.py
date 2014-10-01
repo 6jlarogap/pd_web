@@ -687,6 +687,8 @@ class ProductsViewSet(ProductCategoryQsMixin, viewsets.ReadOnlyModelViewSet):
                     q_public_whole = Q(is_wholesale=True)
             except ValueError:
                 pass
+        if self.request.GET.get('filter[productType]', '').lower() == 'opt':
+            q_public_whole = Q(is_wholesale=True)
         qs &= q_public_whole
 
         ordered = None
