@@ -38,6 +38,17 @@ class OrgSerialiserMixin(object):
         else:
             return None
 
+    def isFavorite_func(self, instance):
+        result = None
+        if hasattr(self, 'context') and 'request' in self.context:
+            user = self.context['request'].user
+            if is_loru_user(user):
+                result = FavoriteSupplier.objects.filter(
+                    loru=user.profile.org,
+                    supplier=instance,
+                    ).exists()
+        return result
+
 class StoreSerializer(serializers.ModelSerializer):
     address = serializers.SerializerMethodField('address_func')
     phones = serializers.SerializerMethodField('phones_func')
@@ -109,12 +120,13 @@ class OrgSerializer(PhonesFromTextMixin, OrgSerialiserMixin, serializers.ModelSe
     phones = serializers.SerializerMethodField('phones_func')
     categories = serializers.SerializerMethodField('categories_func')
     location = serializers.SerializerMethodField('location_func')
+    isFavorite = serializers.SerializerMethodField('isFavorite_func')
 
     class Meta:
         model = Org
         fields = ('id', 'name', 'slug', 'fullname', 'address', 'description',
                   'phones', 'fax', 'worktime', 'site', 'email', 'stores',
-                  'categories', 'location', 
+                  'categories', 'location', 'isFavorite',
         )
 
     def categories_func(self, obj):
@@ -166,22 +178,12 @@ class OrgShort4Serializer(PhonesFromTextMixin, serializers.ModelSerializer):
         model = Org
         fields = ('id', 'shortName', 'phones', )
 
-class OrgShort5Serializer(OrgShort4Serializer):
+class OrgShort5Serializer(OrgSerialiserMixin, OrgShort4Serializer):
     isFavorite = serializers.SerializerMethodField('isFavorite_func')
 
     class Meta:
         model = Org
         fields = ('id', 'shortName', 'phones', 'isFavorite', )
-
-    def isFavorite_func(self, instance):
-        result = None
-        user = self.context['request'].user
-        if is_loru_user(user):
-            result = FavoriteSupplier.objects.filter(
-                loru=user.profile.org,
-                supplier=instance,
-                ).exists()
-        return result
 
 class OrgOptSupplierSerializer(serializers.ModelSerializer):
     tin = Field(source='inn')
