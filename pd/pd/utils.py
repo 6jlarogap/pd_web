@@ -86,7 +86,7 @@ def str_to_bool_or_None(s):
             result = False
     return result
 
-class OurEmailMessage(EmailMessage):
+class EmailMessage(EmailMessage):
     """
     Формирование, отправка почты
     
@@ -100,4 +100,4 @@ class OurEmailMessage(EmailMessage):
             self.subject = u"[dev] %s" % self.subject
         if settings.BCC_OUR_MAIL:
             self.bcc.append(settings.BCC_OUR_MAIL)
-        super(OurEmailMessage, self).send(**kwargs)
+        super(EmailMessage, self).send(**kwargs)

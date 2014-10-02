@@ -16,7 +16,6 @@ from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.models import User
 from django.contrib.auth.hashers import make_password
-from django.core.mail import EmailMessage
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
 from django.core.urlresolvers import reverse
@@ -56,7 +55,7 @@ from users.models import Profile, Org, RegisterProfile, ProfileLORU, CustomerPro
                          RegisterProfileContract, RegisterProfileScan, FavoriteSupplier, \
                          is_loru_user, is_supervisor, get_default_currency
 from pd.models import validate_phone_as_number, validate_username
-from pd.utils import host_country_code, phones_from_text, OurEmailMessage
+from pd.utils import host_country_code, phones_from_text, EmailMessage
 from persons.models import AlivePerson, Phone
 from burials.models import Cemetery, Area, Burial, Place
 from billing.models import Wallet, Rate, Currency

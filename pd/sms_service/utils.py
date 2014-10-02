@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
 
 from django.conf import settings
-from django.core.mail import EmailMessage
 from django.utils.translation import ugettext_lazy as _
 
 from users.models import Org, Profile
 
 from sms_service import sms24x7
+
+from pd.utils import EmailMessage
 
 def send_sms(phone_number, text, email_error_text='', user=None):
     """

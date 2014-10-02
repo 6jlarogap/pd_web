@@ -15,7 +15,7 @@ from geo.forms import LocationForm
 from pd.forms import ChildrenJSONMixin, LoggingFormMixin, OurReCaptchaField, StrippedStringsMixin, \
                      CustomUploadModelForm, CustomClearableFileInput
 from pd.models import validate_phone_as_number, validate_username
-from pd.utils import host_country_code, OurEmailMessage
+from pd.utils import host_country_code, EmailMessage
 from burials.models import Cemetery, PlaceSize, Reason, Burial
 from logs.models import write_log
 
@@ -598,7 +598,7 @@ class SupportForm(forms.Form):
         headers = {}
         if email_from:
             headers['Reply-To'] = email_from
-        OurEmailMessage(email_subject, email_text, email_from, email_to, headers=headers, ).send()
+        EmailMessage(email_subject, email_text, email_from, email_to, headers=headers, ).send()
 
 class TestCaptchaForm(forms.Form):
     captcha = OurReCaptchaField(label='')
