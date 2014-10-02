@@ -7,7 +7,6 @@ import json
 from django.conf import settings
 from django.contrib import messages
 from django.core.urlresolvers import reverse
-from django.core.mail import EmailMessage
 from django.db import transaction
 from django.db.models.aggregates import Count, Sum
 from django.db.models.query_utils import Q
@@ -45,6 +44,8 @@ from rest_framework.parsers import MultiPartParser
 from orders.serializers import ProductCategorySerializer, ProductsSerializer, ProductsOptSerializer, \
                                ProductInfoSerializer, IordersSerializer, IorderInfoSerializer, \
                                ProductEditSerializer
+
+from pd.utils import EmailMessage
 
 class ProductCategoryQsMixin(object):
     
