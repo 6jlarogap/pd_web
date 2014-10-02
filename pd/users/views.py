@@ -1859,13 +1859,9 @@ class FavoriteSupplierList(APIView):
 
     def get(self, request):
         my_org = request.user.profile.org
-        q_my = Q(loru=my_org)
-        q_self = Q(supplier=my_org)
-        data_self = [OrgShort3Serializer(f.supplier).data for f in FavoriteSupplier.objects.filter(
-                q_my & q_self,
-        )]
+        data_self = [OrgShort3Serializer(my_org).data]
         data_other = [OrgShort3Serializer(f.supplier).data for f in FavoriteSupplier.objects.filter(
-                q_my & ~q_self,
+                Q(loru=my_org) & ~Q(supplier=my_org),
         )]
         return Response(data=data_self + data_other, status=200)
 
