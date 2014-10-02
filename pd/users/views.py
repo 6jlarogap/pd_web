@@ -601,6 +601,7 @@ class ApiFeedBack(CheckRecaptchaMixin, APIView):
             headers = {}
             if email_from:
                 headers['Reply-To'] = email_from
+            email_from = _(u"Вопрос в поддержку <%s>") % settings.DEFAULT_FROM_EMAIL
             EmailMessage(email_subject, email_text, email_from, email_to, headers=headers, ).send()
             data = { 'status': 'success',
                      'message': '',
