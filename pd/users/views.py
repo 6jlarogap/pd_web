@@ -1858,12 +1858,12 @@ class FavoriteSupplierList(APIView):
     permission_classes = (PermitIfLoru,)
 
     def get(self, request):
-        return Response(
-            [OrgShort3Serializer(f.supplier).data for f in FavoriteSupplier.objects.filter(
-                loru=request.user.profile.org
-            )],
-            status=200,
-        )
+        my_org = request.user.profile.org
+        data_self = [OrgShort3Serializer(my_org).data]
+        data_other = [OrgShort3Serializer(f.supplier).data for f in FavoriteSupplier.objects.filter(
+                Q(loru=my_org) & ~Q(supplier=my_org),
+        )]
+        return Response(data=data_self + data_other, status=200)
 
 api_loru_favorite_suppliers = FavoriteSupplierList.as_view()
 
