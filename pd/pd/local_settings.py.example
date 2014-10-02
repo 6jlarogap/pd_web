@@ -47,16 +47,33 @@ RECAPTCHA_PRIVATE_KEY = 'another-string-of-hex-and-digits'
 RECAPTCHA_USE_SSL = False
 
 # Для отправки кода активации и прочей почты.
+#
+# На производственном сервере эти параметры можно не менять,
+# там почта отправляется через localhost, на котором
+# стоит настроенный почтовый сервер.
+#
+# На тестовом сервере, скорее всего, нет настроенного
+# почтового сервера, и наверняка надо заполнить эти параметры.
 # Здесь приведены параметры, отработанные для отправки
 # через smtp-сервер @gmail.com
 #
-EMAIL_HOST = 'smtp.googlemail.com'
-EMAIL_PORT = 587
-EMAIL_HOST_USER = 'EMAIL-HOST-USER@gmail.com'
-EMAIL_HOST_PASSWORD = 'SECRET'
-EMAIL_USE_TLS = True
-EMAIL_USE_SSL = False
+# EMAIL_HOST = 'smtp.googlemail.com'
+# EMAIL_PORT = 587
+# EMAIL_HOST_USER = 'EMAIL-HOST-USER@gmail.com'
+# EMAIL_HOST_PASSWORD = 'SECRET'
+# EMAIL_USE_TLS = True
+# EMAIL_USE_SSL = False
+
+# Этот адрес применяется как "От кого" в письмах,
+# отправляемых с этого сервера
+#
 DEFAULT_FROM_EMAIL = 'EMAIL-HOST-USER@gmail.com'
+
+# На этот адрес доставляются скрытые копии всех писем, отправленных
+# с этого сервера. Если не задан (None), то такие копии не
+# доставляются
+#
+BCC_OUR_MAIL = None 
 
 # Учетные записи для SMS- службы рассылки СМС-сообщений,
 # на разные страны могут быть разные учетные записи
