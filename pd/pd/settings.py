@@ -225,6 +225,12 @@ RECAPTCHA_USE_SSL = False
 #
 DEFAULT_FROM_EMAIL = 'EMAIL-HOST-USER@gmail.com'
 
+# На этот адрес доставляются скрытые копии всех писем, отправленных
+# с этого сервера. Если не задан (None), то такие копии не
+# доставляются
+#
+BCC_OUR_MAIL = None 
+
 # Для учета настроек, необязательных на сайтах разработчиков
 #
 PRODUCTION_SITE = False
