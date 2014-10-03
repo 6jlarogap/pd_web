@@ -98,4 +98,6 @@ class EmailMessage(EmailMessage):
     def send(self, **kwargs):
         if not settings.PRODUCTION_SITE:
             self.subject = u"[dev] %s" % self.subject
+        if settings.BCC_OUR_MAIL:
+            self.bcc.append(settings.BCC_OUR_MAIL)
         super(EmailMessage, self).send(**kwargs)

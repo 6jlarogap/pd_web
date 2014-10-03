@@ -591,13 +591,14 @@ class SupportForm(forms.Form):
             )
         email_text += get_mail_footer(self.request.user)
         email_to = settings.SUPPORT_EMAILS
-        # Некоторые почтовые серверы подменяют поле From: письма
-        # на тот почтовый ящик, через который шла аутентификация
-        # при отправке письма (settings.EMAIL_HOST_USER)
-        #
         headers = {}
         if email_from:
             headers['Reply-To'] = email_from
+        # Если в From: поставить задавшего вопрос, например, user@yandex.ru,
+        # то письмо придет в email_to (адреса гугловской почты) с "замечаниями"
+        # в заголовке, что письмо пришло не от yandex, так и в спам может попасть.
+        # Посему реальный отправитель будет в Reply-To:
+        #
         email_from = _(u"Вопрос в поддержку <%s>") % settings.DEFAULT_FROM_EMAIL
         EmailMessage(email_subject, email_text, email_from, email_to, headers=headers, ).send()
 
