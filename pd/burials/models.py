@@ -10,6 +10,7 @@ from django.utils.translation import ugettext_lazy as _
 from django.db.models.query_utils import Q
 from django.conf import settings
 from pd.models import UnclearDateModelField, BaseModel, Files, GetLogsMixin, validate_gt0, SafeDeleteMixin
+from pd.views import get_front_end_url
 
 from persons.models import DeadPerson, DeathCertificate
 from reports.models import Report
@@ -947,6 +948,7 @@ class Burial(SafeDeleteMixin, GetLogsMixin, BaseModel):
         
         if place.responsible and \
            place.responsible.login_phone and \
+           request and \
            old_status != self.STATUS_CLOSED:
             try:
                 customerprofile = CustomerProfile.objects.get(login_phone=place.responsible.login_phone)
@@ -955,7 +957,11 @@ class Burial(SafeDeleteMixin, GetLogsMixin, BaseModel):
                                     (customerprofile.user.username, place.responsible.login_phone, place.pk,))
             except CustomerProfile.DoesNotExist:
                 password = CustomerProfile.create_cabinet(place.responsible)
-                text = _(u'https://pohoronnoedelo.ru login: %s parol: %s') % (place.responsible.login_phone, password,)
+                text = _(u'%s login: %s parol: %s') % (
+                    get_front_end_url(request).rstrip('/'),
+                    place.responsible.login_phone,
+                    password,
+                )
                 email_error_text = _(u"Пользователь %s не смог получить пароль после закрытия захоронения" % \
                                     (place.responsible.login_phone,))
                 if request and settings.DEBUG:
@@ -968,7 +974,7 @@ class Burial(SafeDeleteMixin, GetLogsMixin, BaseModel):
                     phone_number=place.responsible.login_phone,
                     text=text,
                     email_error_text=email_error_text,
-                    user=request and request.user or None,
+                    user=request.user,
                 )
 
         # Очистим "пустышку" свидетельства о смерти, где
