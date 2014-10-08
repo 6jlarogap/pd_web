@@ -997,12 +997,17 @@ class IorderMixin(APIView):
                     pass
             if phone_number:
                 supplier_email = u" (email: %s)" % iorder.supplier.email if iorder.supplier.email else ""
+                sum = iorder.total()
+                text =  _(u"%s zakaz № %s summa %s") % (
+                    get_front_end_url(self.request).rstrip('/'),
+                    number_verbose,
+                    iorder.total(),
+                )
+                print text
                 if is_new_iorder:
-                    text = _(u"Поступил заказ")
                     email_error_text = u"Поставщик %s%s не получил СМС- уведомление о новом заказе" % \
                                         (iorder.supplier.name, supplier_email,)
                 else:
-                    text = u"%s %s" % (_(u"Изменен заказ"), number_verbose,)
                     email_error_text = _(u"Поставщик %s%s не получил СМС- уведомление об изменении заказа %s") % \
                                         (iorder.supplier.name, supplier_email, number_verbose, )
                 send_sms(
