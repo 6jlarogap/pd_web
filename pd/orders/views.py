@@ -997,7 +997,6 @@ class IorderMixin(APIView):
                     pass
             if phone_number:
                 supplier_email = u" (email: %s)" % iorder.supplier.email if iorder.supplier.email else ""
-                sum = iorder.total()
                 text =  _(u"%s zakaz № %s summa %s") % (
                     get_front_end_url(self.request).rstrip('/'),
                     number_verbose,
