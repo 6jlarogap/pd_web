@@ -41,9 +41,9 @@ class ProductsSerializer(ProductCurrencyMixin, serializers.HyperlinkedModelSeria
     def price_func(self, product):
         price = product.price
         try:
-            if int(self.context['request'].GET.get('filter[components_only]', 0)):
+            if self.context['request'].GET.get('filter[productType]', '').lower() == 'opt':
                 price = product.price_wholesale
-        except (IndexError, ValueError,):
+        except (AttributeError, KeyError,):
             pass
         return price
 

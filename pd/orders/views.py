@@ -683,15 +683,7 @@ class ProductsViewSet(ProductCategoryQsMixin, viewsets.ReadOnlyModelViewSet):
 
         qs &= self.product_category_qs()
 
-        # По умолчанию показываем только то, что в публичном каталоге
         q_public_whole = Q(is_public_catalog=True)
-        if is_loru_user(self.request.user) or is_supervisor(self.request.user):
-            components_only = self.request.GET.get('filter[components_only]')
-            try:
-                if components_only and int(components_only):
-                    q_public_whole = Q(is_wholesale=True)
-            except ValueError:
-                pass
         if self.request.GET.get('filter[productType]', '').lower() == 'opt':
             q_public_whole = Q(is_wholesale=True)
         qs &= q_public_whole
