@@ -16,7 +16,6 @@ from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.models import User
 from django.contrib.auth.hashers import make_password
-from django.core.mail import send_mail, EmailMessage
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
 from django.core.urlresolvers import reverse
@@ -56,7 +55,7 @@ from users.models import Profile, Org, RegisterProfile, ProfileLORU, CustomerPro
                          RegisterProfileContract, RegisterProfileScan, FavoriteSupplier, \
                          is_loru_user, is_supervisor, get_default_currency
 from pd.models import validate_phone_as_number, validate_username
-from pd.utils import host_country_code, phones_from_text
+from pd.utils import host_country_code, phones_from_text, EmailMessage
 from persons.models import AlivePerson, Phone
 from burials.models import Cemetery, Area, Burial, Place
 from billing.models import Wallet, Rate, Currency
@@ -65,7 +64,7 @@ from pd.views import PaginateListView, RequestToFormMixin, FormInvalidMixin, get
 from geo.models import Location, Country
 
 from users.serializers import StoreSerializer, OrgSerializer, OrgShort2Serializer, \
-                              OrgShort3Serializer, OrgOptSupplierSerializer, OrgShort4Serializer
+                              OrgShort3Serializer, OrgOptSupplierSerializer, OrgShort5Serializer
 
 from sms_service.utils import send_sms
 
@@ -602,6 +601,12 @@ class ApiFeedBack(CheckRecaptchaMixin, APIView):
             headers = {}
             if email_from:
                 headers['Reply-To'] = email_from
+            # Если в From: поставить задавшего вопрос, например, user@yandex.ru,
+            # то письмо придет в email_to (адреса гугловской почты) с "замечаниями"
+            # в заголовке, что письмо пришло не от yandex, так и в спам может попасть.
+            # Посему реальный отправитель будет в Reply-To:
+            #
+            email_from = _(u"Вопрос в поддержку <%s>") % settings.DEFAULT_FROM_EMAIL
             EmailMessage(email_subject, email_text, email_from, email_to, headers=headers, ).send()
             data = { 'status': 'success',
                      'message': '',
@@ -1137,7 +1142,7 @@ class RegisterMixin(object):
         )
         email_from = settings.DEFAULT_FROM_EMAIL
         email_to = (obj.user_email, )
-        send_mail(email_subject, email_text, email_from, email_to)
+        EmailMessage(email_subject, email_text, email_from, email_to).send()
         
 class RegisterView(RegisterMixin, CreateView):
     """
@@ -1419,7 +1424,7 @@ class RegistrantApprove(SupervisorRequiredMixin, View):
                             )
                 email_from = settings.DEFAULT_FROM_EMAIL
                 email_to = (registrant.user_email, )
-                send_mail(email_subject, email_text, email_from, email_to )
+                EmailMessage(email_subject, email_text, email_from, email_to, ).send()
         return redirect('registrants')
 
 registrant_approve = RegistrantApprove.as_view()
@@ -1858,12 +1863,12 @@ class FavoriteSupplierList(APIView):
     permission_classes = (PermitIfLoru,)
 
     def get(self, request):
-        return Response(
-            [OrgShort3Serializer(f.supplier).data for f in FavoriteSupplier.objects.filter(
-                loru=request.user.profile.org
-            )],
-            status=200,
-        )
+        my_org = request.user.profile.org
+        data_self = [OrgShort3Serializer(my_org).data]
+        data_other = [OrgShort3Serializer(f.supplier).data for f in FavoriteSupplier.objects.filter(
+                Q(loru=my_org) & ~Q(supplier=my_org),
+        )]
+        return Response(data=data_self + data_other, status=200)
 
 api_loru_favorite_suppliers = FavoriteSupplierList.as_view()
 
@@ -2198,7 +2203,10 @@ class ApiCatalogSuppliersView(APIView):
 
     def get(self, request):
         return Response(
-            data = [ OrgShort2Serializer(loru).data for loru in Org.objects.filter(type=Org.PROFILE_LORU) ],
+            data = [ OrgShort2Serializer(
+                                    loru,
+                                    context = dict(request=request),
+                     ).data for loru in Org.objects.filter(type=Org.PROFILE_LORU) ],
             status=200
         )
 
@@ -2210,7 +2218,7 @@ class OrgDetailView(APIView):
     """
     def get(self, request, org_slug):
         obj = get_object_or_404(Org, slug=org_slug)
-        return Response(status=200, data=OrgSerializer(obj).data)
+        return Response(status=200, data=OrgSerializer(obj, context = dict(request=request)).data)
 
 api_catalog_suppliers_detail = OrgDetailView.as_view()
 
@@ -2233,7 +2241,7 @@ class ApiOptplacesSupplierDetailView(APIView):
     """
     def get(self, request, pk):
         obj = get_object_or_404(Org, pk=pk)
-        return Response(status=200, data=OrgShort4Serializer(obj).data)
+        return Response(status=200, data=OrgShort5Serializer(obj, context=dict(request=request)).data)
 
 api_optplaces_suppliers_detail = ApiOptplacesSupplierDetailView.as_view()
 

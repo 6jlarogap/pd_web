@@ -403,7 +403,11 @@ class PlaceViewSet(viewsets.ModelViewSet):
                                         (customerprofile.user.username, object.responsible.login_phone, object.pk,))
                 except CustomerProfile.DoesNotExist:
                     password = CustomerProfile.create_cabinet(object.responsible)
-                    text=_(u'https://pohoronnoedelo.ru login: %s parol: %s') % (object.responsible.login_phone, password,)
+                    text=_(u'%s login: %s parol: %s') % (
+                        get_front_end_url(self.request).rstrip('/'),
+                        object.responsible.login_phone,
+                        password,
+                    )
                     email_error_text = _(u"Пользователь %s не смог получить пароль после закрытия захоронения" % \
                                         (object.responsible.login_phone,))
                 if not settings.DEBUG:

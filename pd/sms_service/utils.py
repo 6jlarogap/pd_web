@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
 
 from django.conf import settings
-from django.core.mail import EmailMessage
 from django.utils.translation import ugettext_lazy as _
 
 from users.models import Org, Profile
 
 from sms_service import sms24x7
+
+from pd.utils import EmailMessage
 
 def send_sms(phone_number, text, email_error_text='', user=None):
     """
@@ -40,6 +41,7 @@ def send_sms(phone_number, text, email_error_text='', user=None):
         else:
             message = _(u"Оператора телефона нет в настройках PohoronnoeDeloRu")
     if not message:
+        have_code = True
         try:
             smsapi = sms24x7.smsapi(your_serv['user'], your_serv['password'])
             smsapi.push_msg(
@@ -54,6 +56,7 @@ def send_sms(phone_number, text, email_error_text='', user=None):
         except sms24x7.smsapi_nogate_exception:
             message = _(u"Ошибка СМС-сервиса: сотовый оператор не подключен")
             no_gate = True
+            have_code = False
         except sms24x7.smsapi_auth_exception as excpt:
             message = _(u"Ошибка СМС-сервиса: аутентификация, код: %s") % excpt
         except sms24x7.smsapi_spam_exception as excpt:
@@ -77,8 +80,11 @@ def send_sms(phone_number, text, email_error_text='', user=None):
                 email_copy = user.email or user.profile.org.email or None
             except (AttributeError, Profile.DoesNotExist, ):
                 pass
-        email_error_text += u"\n%s\n%s" % \
-                            (message, _(u"Справка по числовому коду: https://outbox.sms24x7.ru/api_manual/errors.html"), )
+        email_error_text += u"\n%s%s" % (
+            message,
+            u"\n%s" % _(u"Справка по числовому коду: https://outbox.sms24x7.ru/api_manual/errors.html") \
+                    if have_code else '',
+        )
         email_from = settings.DEFAULT_FROM_EMAIL
         email_to = settings.SUPPORT_EMAILS
         email_subject = _(u'Ошибка СМС-сервиса при отправке на %s') % phone_number
