@@ -4,12 +4,12 @@
 
 UGH_NAME = u'БарЖКХ'
 CEMETERY_NAME = u'Русино'
-IMPORT_ODS = '../contrib/import_barjkh/import.ods'
+IMPORT_XLS = '/home/sev/musor/1/mydb.xls' # '../contrib/import_barjkh/import.xls'
 
 # Создать в организации UGH_NAME кладбище CEMETERY_NAME, импортировать
-# данные по кладбищу из IMPORT_ODS
+# данные по кладбищу из IMPORT_XLS
 #
-# Сама таблица IMPORT_ODS получена из двух MS Acess баз. В данные mydb.mdb
+# Сама таблица IMPORT_XLS получена из двух MS Acess баз. В данные mydb.mdb
 # добавлены три усопших ихз mydb2, отсутствовавшие в mydb. Поле ID_record
 # для этих добавленных фамилий заполнено следующими по порядку номерами,
 # ибо 3 добавленных захоронения были наиболее свежими.
@@ -26,14 +26,10 @@ IMPORT_ODS = '../contrib/import_barjkh/import.ods'
 
 # Требования:
 # -----------
-# * python-odfpy
+# * python-xlrd
 
-import sys,os
-
-from odf.opendocument import load
-from odf.opendocument import Spreadsheet
-from odf.text import P
-from odf.table import TableRow, TableCell
+import datetime
+import xlrd
 
 from django.db import transaction
 
@@ -55,7 +51,29 @@ def main():
         raise Exception(u"Кладбище '%s' (pk=%s) у ОМС '%s' уже имеется и там есть захоронения!" % \
                 (CEMETERY_NAME, cemetery.pk, UGH_NAME, ) )
 
-def ods_cell(cell):
-    return "".join([unicode(data) for data in cell.getElementsByType(P)]).strip()
+    book = xlrd.open_workbook(IMPORT_XLS)
+    sheet = book.sheet_by_index(0)
+    for row in range(sheet.nrows)[1:]:
+        for i in range(9):
+            cell = sheet.cell(row, i)
+            print row + 1, i, cell_value(cell), cell.ctype
+
+def cell_value(cell):
+    cell_type = cell.ctype
+    cell_value = cell.value
+
+    if cell_type == xlrd.XL_CELL_DATE:
+        try:
+            dt_tuple = xlrd.xldate_as_tuple(cell_value, 0)
+        except xlrd.xldate.XLDateError:
+            return None
+        return datetime.datetime(
+            dt_tuple[0], dt_tuple[1], dt_tuple[2], 
+            dt_tuple[3], dt_tuple[4], dt_tuple[5]
+        )
+    elif cell_type == xlrd.XL_CELL_NUMBER:
+        return  float(cell_value)
+    else:
+        return unicode(cell_value).strip()
 
 main()
