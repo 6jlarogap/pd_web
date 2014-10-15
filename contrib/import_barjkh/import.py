@@ -6,6 +6,8 @@ UGH_NAME = u'БарЖКХ'
 CEMETERY_NAME = u'Русино'
 IMPORT_XLS = '../contrib/import_barjkh/import.xls'
 
+BURIAL_ACCT_PREFIX = '2008'
+
 # Создать в организации UGH_NAME кладбище CEMETERY_NAME, импортировать
 # данные по кладбищу из IMPORT_XLS
 #
@@ -15,7 +17,9 @@ IMPORT_XLS = '../contrib/import_barjkh/import.xls'
 #
 # При импорте считалось:
 #
-# - учетный номер захоронения это поле ID_record
+# - учетный номер захоронения -- это поле ID_record.
+#   К этому номеру приставляем 2008, год до которого, судя по xls,
+#   активно проводились захоронения
 # - импортируемый xls отсортирован по дате смерти, затем по ID_record,
 #   чтоб определить, кто в могилу с каким номером захоронен
 # - если дата рождения/смерти 01.01.1900, то это неизвестная дата
@@ -28,7 +32,12 @@ IMPORT_XLS = '../contrib/import_barjkh/import.xls'
 #     3-го -- в  3-ю, если место семейное, иначе во 2-ю в двойном месте
 #             или в 1-ю в одинарном
 #     4-го и т.д. -- в последнюю из имеющихся могил в месте
+# - длина и ширина места устанавливается в зависимости от числа могил в нем:
+#     1 могила: 1.50 x 2.30
+#     2 могилы: 3.60 x 2.30
+#     3 могилы: 4.50 x 2.30
 # - фактическая дата захоронения не проставляется. Не будем гадать
+# - считаем, что все захоронены в гробу
 
 # Запуск из ./manage.py shell :
 # execfile('../contrib/import_barjkh/import.py')
@@ -44,6 +53,7 @@ from django.db import transaction
 
 from users.models import Org, Profile
 from burials.models import Cemetery, Burial, Area, AreaPurpose, Place, Grave
+from persons.models import DeadPerson
 
 # Колонки импортируемого xls, начиная с 0:
 #
@@ -121,13 +131,95 @@ def main():
         else:
             s_type_n = 1
         place.get_or_create_graves(s_type_n)
-        grave_count = place.get_graves_count()
-        if grave_count == 3 and place.place_length < place_length_3:
+        graves_count = place.get_graves_count()
+        if graves_count == 3 and place.place_length < place_length_3:
             place.place_length = place_length_3
             place.save()
-        if grave_count == 2 and place.place_length < place_length_2:
+        if graves_count == 2 and place.place_length < place_length_2:
             place.place_length = place_length_2
             place.save()
+        if row % 500 == 0:
+            print ' %s records processed' % row
+            transaction.commit()
+
+    # 2-й проход:
+    # Формируем захоронения, привязываем их к могилам
+    # к захоронениям нельзя, ибо в импортируемом xls бывае, что одно и то же
+    # место помечено и как двойное, и как одинарное.
+    #
+    print '2-nd pass: creating burials'
+
+    for row in range(sheet.nrows)[1:]:
+        s_area = cell_value(sheet.cell(row, C_SECTOR))
+        s_their_area = cell_value(sheet.cell(row, C_AREA))
+        if s_their_area:
+            s_area = u"%s-%s" % (s_area, s_their_area, )
+        area = Area.objects.get(cemetery=cemetery, name=s_area)
+        place = Place.objects.get(
+            cemetery=cemetery,
+            area=area,
+            row = cell_value(sheet.cell(row, C_ROW)),
+            place = cell_value(sheet.cell(row, C_PLACE)),
+        )
+        # Определимся, в какую могилу
+        graves_count = place.get_graves_count()
+        available_count = place.available_count()
+        grave_number = graves_count - available_count + 1
+        grave_number = max(grave_number, 1)
+        grave_number = min(grave_number, graves_count)
+        is_grave_free = not Burial.objects.filter(grave_number=grave_number).exists()
+        grave = Grave.objects.get(place=place, grave_number=grave_number)
+        
+        if is_grave_free:
+            if grave_number == 1:
+                burial_type = Burial.BURIAL_NEW
+            else:
+                burial_type = Burial.BURIAL_ADD
+        else:
+            burial_type = Burial.BURIAL_OVER
+
+        deadman = None
+        fio = cell_value(sheet.cell(row, C_FIO))
+        if not fio.lower().contains(u'неизвестн'):
+            fio = re.sub(ur'\(без\s+\S+\)', '', fio, flags = re.IGNORECASE)
+            fio = fio.strip()
+            fio = fio.split(' ')
+            last_name = first_name = middle_name = ''
+            if len(fio) > 2:
+                middle_name = " ".join(fio[2:])
+            if len(fio) > 1:
+                first_name = fio[1]
+            if len(fio) > 0:
+                last_name = fio[0]
+                deadman = DeadPerson.objects.create(
+                    last_name=last_name,
+                    first_name=first_name,
+                    middle_name=middle_name,
+                    birth_date=cell_value(sheet.cell(row, C_DOB)) or None,
+                    death_date=cell_value(sheet.cell(row, C_DOD)) or None,
+                )
+        acct = '{:0>4}'.format(cell_value(sheet.cell(row, C_ACCOUNT_NUMBER)))
+        
+        burial = Burial.objects.create(
+            burial_type=burial_type,
+            burial_container=Burial.CONTAINER_COFFIN,
+            source_type=Burial.SOURCE_TRANSFERRED,
+            account_number='{:0>5}'.format(cell_value(sheet.cell(row, C_ACCOUNT_NUMBER))),
+            place=place,
+            cemetery=cemetery,
+            area=area,
+            row=place.row,
+            place_number=place.place,
+            grave=grave,
+            grave_number=grave_number,
+            place_length=place.place_length,
+            place_width=place.place_width,
+            deadman=deadman,
+            ugh=ugh,
+            status=Burial.STATUS_CLOSED,
+            changed_by=user,
+            flag_no_applicant_doc_required = True,
+        )
         if row % 500 == 0:
             print ' %s records processed' % row
             transaction.commit()
