@@ -25,6 +25,8 @@ BURIAL_ACCT_PREFIX = '2008'
 # - если дата рождения/смерти 01.01.1900, то это неизвестная дата
 # - "наш" участок формируется как "их" сектор-участок (24-1). Если участок у них
 #   не указан,то просто сектор (например, 52)
+# - номер места у нас не может быть пустым. Посему пустота в номере места,
+#   где она встречается в xls, заменяется на '-'
 # - места на кладбище состоят из одной (колонка I в xls == "Одинарный"),
 #   двух ("Двойной") или трёх ("Семейный") могил
 # - * 1-го покойника в месте "кладем" в 1-ю могилу,
@@ -117,8 +119,8 @@ def main():
         place, _created = Place.objects.get_or_create(
             cemetery=cemetery,
             area=area,
-            row = cell_value(sheet.cell(row, C_ROW)),
-            place = cell_value(sheet.cell(row, C_PLACE)),
+            row = cell_value(sheet.cell(row, C_ROW)) or '',
+            place = cell_value(sheet.cell(row, C_PLACE)) or '-',
             defaults = dict(
                 place_length=place_length_1,
                 place_width=place_width,
@@ -155,19 +157,26 @@ def main():
         if s_their_area:
             s_area = u"%s-%s" % (s_area, s_their_area, )
         area = Area.objects.get(cemetery=cemetery, name=s_area)
-        place = Place.objects.get(
-            cemetery=cemetery,
-            area=area,
-            row = cell_value(sheet.cell(row, C_ROW)),
-            place = cell_value(sheet.cell(row, C_PLACE)),
-        )
-        # Определимся, в какую могилу
+        try:
+            place = Place.objects.get(
+                cemetery=cemetery,
+                area=area,
+                row = cell_value(sheet.cell(row, C_ROW)) or '',
+                place = cell_value(sheet.cell(row, C_PLACE)) or '-',
+            )
+        except Place.DoesNotExist:
+            print '!!!, строка:', row+1
+            continue
+
         graves_count = place.get_graves_count()
-        available_count = place.available_count()
+        available_count = place.available_count
         grave_number = graves_count - available_count + 1
         grave_number = max(grave_number, 1)
         grave_number = min(grave_number, graves_count)
-        is_grave_free = not Burial.objects.filter(grave_number=grave_number).exists()
+        is_grave_free = not Burial.objects.filter(
+            place=place,
+            grave_number=grave_number,
+        ).exists()
         grave = Grave.objects.get(place=place, grave_number=grave_number)
         
         if is_grave_free:
@@ -180,9 +189,8 @@ def main():
 
         deadman = None
         fio = cell_value(sheet.cell(row, C_FIO))
-        if not fio.lower().contains(u'неизвестн'):
-            fio = re.sub(ur'\(без\s+\S+\)', '', fio, flags = re.IGNORECASE)
-            fio = fio.strip()
+        if u'неизвестн' not in fio.lower():
+            fio = re.sub(r'\(.+\)', '', fio, flags = re.IGNORECASE).strip()
             fio = fio.split(' ')
             last_name = first_name = middle_name = ''
             if len(fio) > 2:
@@ -198,7 +206,6 @@ def main():
                     birth_date=cell_value(sheet.cell(row, C_DOB)) or None,
                     death_date=cell_value(sheet.cell(row, C_DOD)) or None,
                 )
-        acct = '{:0>4}'.format(cell_value(sheet.cell(row, C_ACCOUNT_NUMBER)))
         
         burial = Burial.objects.create(
             burial_type=burial_type,
