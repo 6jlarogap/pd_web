@@ -643,6 +643,26 @@ class Org(GetLogsMixin, BaseModel):
     def phone_list(self):
         return phones_from_text(self.phones)
 
+    def favorites_for_template(self):
+        """
+        [dict(name=favorite_name1, pk=favorite_pk1), dict(name=favorite_name2, pk=favorite_pk2), ...]
+
+        Для шаблона, где в меню показаны избранные поставщики
+        """
+        def favorite_item(loru):
+            name = loru.name.strip()
+            if len(name) > 50:
+                name = u"%s..." % name[:47]
+            return dict(name=name, pk=loru.pk)
+
+        result = []
+        favorites = FavoriteSupplier.objects.filter(loru=self).exclude(supplier=self).order_by('supplier__name')
+        if favorites.count():
+            result.append(favorite_item(self))
+            for favorite in favorites:
+                result.append(favorite_item(favorite.supplier))
+        return result
+
 class OrgCertificate(Files):
     """
     Сканы свидетельств о регистрации
