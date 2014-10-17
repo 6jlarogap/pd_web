@@ -2021,7 +2021,7 @@ ul.dropdown-menu li:hover ul{
    overflow: scroll;
    overflow-x: hidden;
    position: absolute;
-   top: 1em;
+   top: 0;
    right: 150px; /*меню раскрывается влево*/
    color: #000000;
    text-decoration: none;
