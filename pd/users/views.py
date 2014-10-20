@@ -1415,13 +1415,11 @@ class RegistrantApprove(SupervisorRequiredMixin, View):
                 write_log(request, registrant, _(u'%s : одобрена') % registrant)
                 email_subject = unicode(_(u"Заявка на регистрацию одобрена"))
                 email_text = render_to_string(
-                                'register_approved_email.txt',
-                                { 'host': '%s://%s' % (self.request.is_secure() and 'https' or 'http',
-                                                    self.request.get_host(),
-                                                    ),
-                                'obj': registrant,
-                                }
-                            )
+                    'register_approved_email.txt',
+                    dict(
+                        host=get_front_end_url(request),
+                        obj=registrant,
+                ))
                 email_from = settings.DEFAULT_FROM_EMAIL
                 email_to = (registrant.user_email, )
                 EmailMessage(email_subject, email_text, email_from, email_to, ).send()
