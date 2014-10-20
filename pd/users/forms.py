@@ -3,7 +3,6 @@ import re
 
 from django.conf import settings
 from django import forms
-from django.core.mail import EmailMessage
 from django.core.exceptions import ValidationError
 from django.contrib.auth.models import User
 from django.forms.models import inlineformset_factory, BaseInlineFormSet
@@ -16,7 +15,7 @@ from geo.forms import LocationForm
 from pd.forms import ChildrenJSONMixin, LoggingFormMixin, OurReCaptchaField, StrippedStringsMixin, \
                      CustomUploadModelForm, CustomClearableFileInput
 from pd.models import validate_phone_as_number, validate_username
-from pd.utils import host_country_code
+from pd.utils import host_country_code, EmailMessage
 from burials.models import Cemetery, PlaceSize, Reason, Burial
 from logs.models import write_log
 
@@ -592,13 +591,15 @@ class SupportForm(forms.Form):
             )
         email_text += get_mail_footer(self.request.user)
         email_to = settings.SUPPORT_EMAILS
-        # Некоторые почтовые серверы подменяют поле From: письма
-        # на тот почтовый ящик, через который шла аутентификация
-        # при отправке письма (settings.EMAIL_HOST_USER)
-        #
         headers = {}
         if email_from:
             headers['Reply-To'] = email_from
+        # Если в From: поставить задавшего вопрос, например, user@yandex.ru,
+        # то письмо придет в email_to (адреса гугловской почты) с "замечаниями"
+        # в заголовке, что письмо пришло не от yandex, так и в спам может попасть.
+        # Посему реальный отправитель будет в Reply-To:
+        #
+        email_from = _(u"Вопрос в поддержку <%s>") % settings.DEFAULT_FROM_EMAIL
         EmailMessage(email_subject, email_text, email_from, email_to, headers=headers, ).send()
 
 class TestCaptchaForm(forms.Form):

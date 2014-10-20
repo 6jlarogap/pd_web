@@ -2,6 +2,7 @@
 
 from django.conf import settings
 from django.core.validators import RegexValidator, MinLengthValidator
+from django.core.mail import EmailMessage
 from django.utils.translation import ugettext_lazy as _
 
 import datetime
@@ -84,3 +85,19 @@ def str_to_bool_or_None(s):
         elif s == 'false':
             result = False
     return result
+
+class EmailMessage(EmailMessage):
+    """
+    Формирование, отправка почты
+    
+    В добавок к EmailMessage от django:
+        - если почта от какого-то другого сервера, нежели производственного,
+        тему письма предваряем "[dev] "
+    """
+
+    def send(self, **kwargs):
+        if not settings.PRODUCTION_SITE:
+            self.subject = u"[dev] %s" % self.subject
+        if settings.BCC_OUR_MAIL:
+            self.bcc.append(settings.BCC_OUR_MAIL)
+        super(EmailMessage, self).send(**kwargs)
