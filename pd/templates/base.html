@@ -138,7 +138,17 @@
                                         {% endif %}
                                         {% if user.profile.is_loru %}
                                             <li class="divider"></li>
-                                            <li><a href="{{ global_context_FRONT_END_URL }}price/{{ user.profile.org.pk }}">{% trans "Оптовый заказ" %}</a></li>
+                                            <li><a href="{{ global_context_FRONT_END_URL }}price/{{ user.profile.org.pk }}">{% trans "Интернет-магазин" %}{% if user.profile.org.favorites_for_template %}&nbsp;&nbsp;<span class="caret-right"></span>{% endif %}</a>
+                                            {% for favorite in user.profile.org.favorites_for_template %}
+                                                {% if forloop.first %}
+                                                    <ul style=" line-height: 2em; height:{% if forloop.revcounter <= 20 %}{% widthratio forloop.revcounter 1 2 %}{% else %}40{% endif %}em;">
+                                                {% endif %}
+                                                        <li><a href="{{ global_context_FRONT_END_URL }}price/{{ favorite.pk }}">{{ favorite.name }}</a></li>
+                                                {% if forloop.last %}
+                                                    </ul>
+                                                {% endif %}
+                                            {% endfor  %}
+                                            </li>
                                             <li><a href="{{ global_context_FRONT_END_URL }}orders">{% trans "Архив заказов" %}</a></li>
                                         {% endif %}
                                         {% if user.profile.is_supervisor %}

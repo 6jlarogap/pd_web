@@ -856,8 +856,9 @@ class BurialCommitForm(BurialForm):
             cemetery = self.instance.cemetery or None
 
         if self.fields.get('fact_date'):
-            self.fields['fact_date'].required = True
-            if (self.instance.is_archive() or self.request.REQUEST.get('archive')) and \
+            if self.instance.is_transferred():
+                self.fields['fact_date'].required = False
+            elif (self.instance.is_archive() or self.request.REQUEST.get('archive')) and \
                cemetery and not cemetery.archive_burial_fact_date_required:
                 self.fields['fact_date'].required = False
             else:

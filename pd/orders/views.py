@@ -7,6 +7,7 @@ import json
 from django.conf import settings
 from django.contrib import messages
 from django.core.urlresolvers import reverse
+from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.db.models.aggregates import Count, Sum
 from django.db.models.query_utils import Q
@@ -46,6 +47,9 @@ from orders.serializers import ProductCategorySerializer, ProductsSerializer, Pr
                                ProductEditSerializer
 
 from pd.utils import EmailMessage
+from pd.models import validate_phone_as_number
+
+from sms_service.utils import send_sms
 
 class ProductCategoryQsMixin(object):
     
@@ -679,15 +683,7 @@ class ProductsViewSet(ProductCategoryQsMixin, viewsets.ReadOnlyModelViewSet):
 
         qs &= self.product_category_qs()
 
-        # По умолчанию показываем только то, что в публичном каталоге
         q_public_whole = Q(is_public_catalog=True)
-        if is_loru_user(self.request.user) or is_supervisor(self.request.user):
-            components_only = self.request.GET.get('filter[components_only]')
-            try:
-                if components_only and int(components_only):
-                    q_public_whole = Q(is_wholesale=True)
-            except ValueError:
-                pass
         if self.request.GET.get('filter[productType]', '').lower() == 'opt':
             q_public_whole = Q(is_wholesale=True)
         qs &= q_public_whole
@@ -945,12 +941,13 @@ class IorderMixin(APIView):
         """
         """
         email_from = settings.DEFAULT_FROM_EMAIL
+        number_verbose = iorder.number_verbose()
         if iorder.customer and iorder.customer.email:
             email_to = (iorder.customer.email, )
             email_subject = u"%s: %s %s" % (
                 _(u"ПохоронноеДело"),
                 _(u"создан заказ") if is_new_iorder else _(u"изменен заказ"),
-                iorder.number_verbose()
+                number_verbose,
             )
             email_text = render_to_string(
                             'iorder_notification.txt',
@@ -962,12 +959,12 @@ class IorderMixin(APIView):
                             }
             )
             EmailMessage(email_subject, email_text, email_from, email_to,).send()
-        if iorder.supplier and iorder.supplier.email:
+        if iorder.supplier.email:
             email_to = (iorder.supplier.email, )
             email_subject = u"%s: %s %s" % (
                 _(u"ПохоронноеДело"),
                 _(u"поступил заказ") if is_new_iorder else _(u"изменен заказ"),
-                iorder.number_verbose()
+                number_verbose,
             )
             email_text = render_to_string(
                             'iorder_notification.txt',
@@ -979,6 +976,36 @@ class IorderMixin(APIView):
                             }
             )
             EmailMessage(email_subject, email_text, email_from, email_to,).send()
+        if not settings.DEBUG:
+            # Отправка смс поставщику
+            phone_number = None
+            for phone in iorder.supplier.phone_list():
+                try:
+                    phone = phone.lstrip("+").strip()
+                    validate_phone_as_number(phone)
+                    phone_number = phone
+                    break
+                except ValidationError:
+                    pass
+            if phone_number:
+                supplier_email = u" (email: %s)" % iorder.supplier.email if iorder.supplier.email else ""
+                text =  _(u"%s zakaz № %s summa %s") % (
+                    get_front_end_url(self.request).rstrip('/'),
+                    number_verbose,
+                    iorder.total(),
+                )
+                print text
+                if is_new_iorder:
+                    email_error_text = u"Поставщик %s%s не получил СМС- уведомление о новом заказе" % \
+                                        (iorder.supplier.name, supplier_email,)
+                else:
+                    email_error_text = _(u"Поставщик %s%s не получил СМС- уведомление об изменении заказа %s") % \
+                                        (iorder.supplier.name, supplier_email, number_verbose, )
+                send_sms(
+                    phone_number=phone_number,
+                    text=text,
+                    email_error_text=email_error_text,
+                )
 
 class ApiOptPlacesOrders(IorderMixin, APIView):
     """
