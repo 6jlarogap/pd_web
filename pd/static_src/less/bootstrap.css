@@ -2001,6 +2001,50 @@ table .span24 {
   text-decoration: none;
   background-color: #0088cc;
 }
+
+ul.dropdown-menu li ul {
+   display: none;
+}
+
+ul.dropdown-menu li:hover {
+   position: relative;
+}
+ul.dropdown-menu li:hover > ul {
+   display: block;
+}
+ul.dropdown-menu li:hover ul{
+   height: 20em;
+   line-height: 2em;
+   border: 1px solid #ccc;
+   padding: 0;
+   margin: 0;
+   overflow: scroll;
+   overflow-x: hidden;
+   position: absolute;
+   top: 0;
+   right: 150px; /*меню раскрывается влево*/
+   color: #000000;
+   text-decoration: none;
+   background-color: #ffffff;
+   -webkit-border-radius: 5px;
+   -moz-border-radius: 5px;
+   border-radius: 5px;
+}
+.caret-right {
+  display: inline-block;
+  width: 0;
+  height: 0;
+  vertical-align: center;
+  border-left: 4px solid #000000;
+  border-top: 4px solid transparent;
+  border-bottom: 4px solid transparent;
+  content: "";
+  opacity: 0.3;
+  filter: alpha(opacity=30);
+  right: 0;
+  left: auto;
+}
+
 .open {
   *z-index: 1000;
 }
