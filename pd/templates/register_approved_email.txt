@@ -5,7 +5,7 @@
 
 {% trans "Добро пожаловать в систему" %}:
 
-{{ host }}{{ global_context_FRONT_END_URL }}
+{{ host }}
 
 {% trans "Имя пользователя" %}: {{ obj.user_name }}
 {% trans "Пароль был задан Вами при регистрации" %}
