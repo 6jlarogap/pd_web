@@ -976,30 +976,31 @@ class IorderMixin(APIView):
                             }
             )
             EmailMessage(email_subject, email_text, email_from, email_to,).send()
-
-        if not settings.DEBUG and iorder.supplier.sms_phone:
-            supplier_email = u" (email: %s)" % iorder.supplier.email if iorder.supplier.email else ""
-            text =  _(u"%s zakaz № %s summa %s") % (
-                get_front_end_url(self.request).rstrip('/'),
-                number_verbose,
-                iorder.total(),
-            )
-            if is_new_iorder:
-                email_error_text = u"Поставщик %s%s не получил СМС- уведомление о новом заказе" % \
-                                    (iorder.supplier.name, supplier_email,)
-            else:
-                email_error_text = _(u"Поставщик %s%s не получил СМС- уведомление об изменении заказа %s") % \
-                                    (iorder.supplier.name, supplier_email, number_verbose, )
-            send_sms(
-                phone_number=iorder.supplier.sms_phone,
-                text=text,
-                email_error_text=email_error_text,
-            )
-        elif iorder.supplier.email:
-            # TODO
-            # Уведомление поставщику и скрытая копия администраторам,
-            # что у поставщика не занесен sms_phone в организации
-            pass
+        if not settings.DEBUG:
+            # Отправка смс поставщику
+            if iorder.supplier.sms_phone:
+                supplier_email = u" (email: %s)" % iorder.supplier.email if iorder.supplier.email else ""
+                text =  _(u"%s zakaz № %s summa %s") % (
+                    get_front_end_url(self.request).rstrip('/'),
+                    number_verbose,
+                    iorder.total(),
+                )
+                if is_new_iorder:
+                    email_error_text = u"Поставщик %s%s не получил СМС- уведомление о новом заказе" % \
+                                        (iorder.supplier.name, supplier_email,)
+                else:
+                    email_error_text = _(u"Поставщик %s%s не получил СМС- уведомление об изменении заказа %s") % \
+                                        (iorder.supplier.name, supplier_email, number_verbose, )
+                send_sms(
+                    phone_number=iorder.supplier.sms_phone,
+                    text=text,
+                    email_error_text=email_error_text,
+                )
+            elif iorder.supplier.email:
+                # TODO
+                # Уведомление поставщику и скрытая копия администраторам,
+                # что у поставщика не занесен sms_phone в организации
+                pass
 
 class ApiOptPlacesOrders(IorderMixin, APIView):
     """
