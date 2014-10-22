@@ -945,7 +945,7 @@ class IorderMixin(APIView):
         if iorder.customer and iorder.customer.email:
             email_to = (iorder.customer.email, )
             email_subject = u"%s: %s %s" % (
-                _(u"ПохоронноеДело"),
+                _(u"Похоронное Дело"),
                 _(u"создан заказ") if is_new_iorder else _(u"изменен заказ"),
                 number_verbose,
             )
@@ -962,7 +962,7 @@ class IorderMixin(APIView):
         if iorder.supplier.email:
             email_to = (iorder.supplier.email, )
             email_subject = u"%s: %s %s" % (
-                _(u"ПохоронноеДело"),
+                _(u"Похоронное Дело"),
                 _(u"поступил заказ") if is_new_iorder else _(u"изменен заказ"),
                 number_verbose,
             )
