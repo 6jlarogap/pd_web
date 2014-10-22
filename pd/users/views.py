@@ -1211,8 +1211,8 @@ class RegisterActivation(DetailView):
                             u'Спасибо за подтверждение заявки на регистрацию!\n'
                             u'Ваша заявка принята на <b>рассмотрение администратора системы</b>\n'
                 )
-                email_subject = "%s %s" % (unicode(_(u"Заявка на регистрацию на")),
-                                           unicode(_(u"ПохоронноеДело")),
+                email_subject = "%s %s" % (unicode(_(u"Заявка на регистрацию в")),
+                                           unicode(_(u"Похоронное Дело")),
                                           )
                 try:
                     scan = self.object.registerprofilescan
