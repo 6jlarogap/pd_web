@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+
+{% load i18n %}
+
+{% block content %}
+    <h1>{% trans "Статистика по интернет- заказам" %}</h1>
+    <div class="row-fluid no-print">
+        <div class="span12">
+            <div class="row-fluid">
+                <form id="mainform" class="form-horizontal" method="get" action="">
+                    {{ form.as_p }}
+
+                    <p class="buttons">
+                        <input type="submit" value="искать" class="btn btn-primary" />
+                    </p>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    {% if not form.errors %}
+        <table class="table table-bordered table-striped">
+        <tr>
+            <th>
+                {% if sort == 'org' %}
+                    {% if sort == 'org' %}<i class="icon icon-arrow-up"></i>{% endif %}
+                    <a href="?{{ GET_PARAMS }}&sort=-org">{% trans "Организация (ЛОРУ)" %}</a>
+                {% else %}
+                    {% if sort == '-org' %}<i class="icon icon-arrow-down"></i>{% endif %}
+                    <a href="?{{ GET_PARAMS }}&sort=org">{% trans "Организация (ЛОРУ)" %}</a>
+                {% endif %}
+            </th>
+            <th style="text-align:right;">
+                {% trans "Электронные" %}
+            </th>
+            <th style="text-align:right;">
+                {% trans "Ручные" %}
+            </th>
+            <th style="text-align:right;">
+                {% trans "Архивные" %}
+            </th>
+            <th style="text-align:right;">
+                {% trans "Перенесенные" %}
+            </th>
+            <th style="text-align:right;">
+                {% trans "Итого" %}
+            </th>
+        </tr>
+        {% for org in orgs %}
+            <tr>
+                <td>
+                    {{ org.name }}
+                </td>
+                <td style="text-align:right;">
+                    {{ org.full }}
+                </td>
+                <td style="text-align:right;">
+                    {{ org.ugh }}
+                </td>
+                <td style="text-align:right;">
+                    {{ org.archive }}
+                </td>
+                <td style="text-align:right;">
+                    {{ org.transferred }}
+                </td>
+                <td style="text-align:right;">
+                    {{ org.all }}
+                </td style="text-align:right;">
+            </tr>
+        {% endfor %}
+            <tr>
+                <td>
+                    <b>{% trans "Всего" %} {{ total.ughs }} {% trans "ЛОРУ" %}</b>
+                </td>
+                <td style="text-align:right;">
+                    <b>{{ total.full }}</b>
+                </td>
+                <td style="text-align:right;">
+                    <b>{{ total.ugh }}</b>
+                </td>
+                <td style="text-align:right;">
+                    <b>{{ total.archive }}</b>
+                </td>
+                <td style="text-align:right;">
+                    <b>{{ total.transferred }}</b>
+                </td>
+                <td style="text-align:right;">
+                    <b>{{ total.all }}</b>
+                </td style="text-align:right;">
+            </tr>
+        </table>
+
+    {% endif %}
+
+{% endblock %}

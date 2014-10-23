@@ -482,6 +482,11 @@ class OrgBurialStatsForm(forms.Form):
     date_to = forms.DateField(required=False, label=_(u"по"))
     status = forms.TypedChoiceField(required=False, label=_(u"Статус"), choices=EMPTY + Burial.STATUS_CHOICES)
 
+class LoruIordersStatsForm(forms.Form):
+
+    date_from = forms.DateField(required=False, label=_(u"С"))
+    date_to = forms.DateField(required=False, label=_(u"по"))
+
 class SupportForm(forms.Form):
     user_last_name = forms.CharField(label=_(u"Фамилия"), max_length=100, required=True)
     user_first_name = forms.CharField(label=_(u"Имя"), max_length=100, required=False)

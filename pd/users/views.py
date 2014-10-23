@@ -48,7 +48,8 @@ from burials.views import UGHRequiredMixin, LoginRequiredMixin, SupervisorRequir
 from logs.models import Log, write_log, LoginLog
 from users.forms import UserAddForm, RegisterForm, LoruFormset, ProfileForm, UserProfileForm, \
                         UserDataForm, ChangePasswordForm, BankAccountFormset, OrgForm, \
-                        OrgLogForm, LoginLogForm, OrgBurialStatsForm, SupportForm, TestCaptchaForm
+                        OrgLogForm, LoginLogForm, OrgBurialStatsForm, SupportForm, TestCaptchaForm, \
+                        LoruIordersStatsForm
 from users.models import Profile, Org, RegisterProfile, ProfileLORU, CustomerProfile, Store, \
                          get_mail_footer, is_cabinet_user, PermitIfLoru, PermitIfLoruOrSupervisor, Oauth, \
                          BankAccount, BankAccountRegister, OrgCertificate, OrgContract, \
@@ -1496,6 +1497,21 @@ class OmsBurialStatsView(SupervisorRequiredMixin, TemplateView):
         return OrgBurialStatsForm(data=self.request.GET or None)
 
 oms_burial_stats = OmsBurialStatsView.as_view()
+
+class LoruIorderStatsView(SupervisorRequiredMixin, TemplateView):
+    template_name = 'loru_iorder_stats.html'
+
+    def get_context_data(self, **kwargs):
+        form = self.get_form()
+
+        return {
+            'form': form,
+        }
+
+    def get_form(self):
+        return LoruIordersStatsForm(data=self.request.GET or None)
+
+loru_iorderstats = LoruIorderStatsView.as_view()
 
 class OmsCurrentStatsView(SupervisorRequiredMixin, TemplateView):
     template_name = 'oms_current_stats.html'

@@ -89,7 +89,7 @@ function setup_address_autocompletes() {
         }
     });
 
-    $('input[id=id_loru]').attr('autocomplete', 'off').typeahead({
+    $('input[id=id_loru] input[id=id_supplier]').attr('autocomplete', 'off').typeahead({
         items: 100,
         onselect: function() {
             $('input[id=id_loru]').change();
