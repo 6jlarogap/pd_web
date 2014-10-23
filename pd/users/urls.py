@@ -48,7 +48,7 @@ urlpatterns = patterns('users.views',
         
     url(r'^support/$', 'support', name='support'),
     url(r'^support/thanks/$', 'support_thanks', name='support_thanks'),
-    url(r'^tutorial$', 'tutorial', name='tutorial'),
+    url(r'^tutorial/$', 'tutorial', name='tutorial'),
     
     url(r'^registrants/$', 'registrants', name='registrants'),
     url(r'^registrant/(?P<pk>\d+)/delete/$', 'registrant_delete', name='registrant_delete'),
