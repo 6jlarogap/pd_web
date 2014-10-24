@@ -1054,7 +1054,7 @@ class OrgLogView(LoginRequiredMixin, PaginateListView):
 
         if form.data and form.is_valid():
             if form.cleaned_data['date_from']:
-                logs = logs.filter(dt__gt=form.cleaned_data['date_from'])
+                logs = logs.filter(dt__gte=form.cleaned_data['date_from'])
             if form.cleaned_data['date_to']:
                 logs = logs.filter(dt__lt=form.cleaned_data['date_to']+datetime.timedelta(days=1))
 
@@ -1094,7 +1094,7 @@ class LoginLogView(SupervisorRequiredMixin, PaginateListView):
             if form.cleaned_data['date_from']:
                 logs = logs.filter(dt__gte=form.cleaned_data['date_from'])
             if form.cleaned_data['date_to']:
-                logs = logs.filter(dt__lte=form.cleaned_data['date_to']+datetime.timedelta(days=1))
+                logs = logs.filter(dt__lt=form.cleaned_data['date_to']+datetime.timedelta(days=1))
 
         sort = self.request.GET.get('sort', self.SORT_DEFAULT)
         SORT_FIELDS = {
@@ -1201,7 +1201,7 @@ class RegisterActivation(DetailView):
                 self.object.save()
                 write_log(None, self.object, _(u'%s : получено подтверждение') % self.object)
                 for r in RegisterProfile.objects.filter(
-                        status__in=(RegisterProfile.STATUS_APPROVED, ),
+                        status__in=(RegisterProfile.STATUS_DECLINED, RegisterProfile.STATUS_APPROVED, ),
                         dt_modified__lt=datetime.datetime.now() - \
                                         datetime.timedelta(days=RegisterProfile.CLEAR_PROCESSED),):
                     r.delete()
@@ -1448,7 +1448,7 @@ class OmsBurialStatsView(SupervisorRequiredMixin, TemplateView):
             if form.cleaned_data['date_from']:
                 q &= Q(dt_modified__gte=form.cleaned_data['date_from'])
             if form.cleaned_data['date_to']:
-                q &= Q(dt_modified__lte=form.cleaned_data['date_to']+datetime.timedelta(days=1))
+                q &= Q(dt_modified__lt=form.cleaned_data['date_to']+datetime.timedelta(days=1))
             if form.cleaned_data['status']:
                 q &= Q(status=form.cleaned_data['status'])
             else:
