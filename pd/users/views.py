@@ -1201,7 +1201,7 @@ class RegisterActivation(DetailView):
                 self.object.save()
                 write_log(None, self.object, _(u'%s : получено подтверждение') % self.object)
                 for r in RegisterProfile.objects.filter(
-                        status__in=(RegisterProfile.STATUS_DECLINED, RegisterProfile.STATUS_APPROVED, ),
+                        status__in=(RegisterProfile.STATUS_APPROVED, ),
                         dt_modified__lt=datetime.datetime.now() - \
                                         datetime.timedelta(days=RegisterProfile.CLEAR_PROCESSED),):
                     r.delete()
