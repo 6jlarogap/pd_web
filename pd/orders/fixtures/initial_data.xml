@@ -98,4 +98,8 @@
         <field type="CharField" name="name">Фурнитура для гробов</field>
         <field type="FileField" name="icon"></field>
     </object>
+    <object pk="26" model="orders.productcategory">
+        <field type="CharField" name="name">Каркасы для венков</field>
+        <field type="FileField" name="icon"></field>
+    </object>
 </django-objects>
