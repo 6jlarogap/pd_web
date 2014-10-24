@@ -48,7 +48,8 @@ from burials.views import UGHRequiredMixin, LoginRequiredMixin, SupervisorRequir
 from logs.models import Log, write_log, LoginLog
 from users.forms import UserAddForm, RegisterForm, LoruFormset, ProfileForm, UserProfileForm, \
                         UserDataForm, ChangePasswordForm, BankAccountFormset, OrgForm, \
-                        OrgLogForm, LoginLogForm, OrgBurialStatsForm, SupportForm, TestCaptchaForm
+                        OrgLogForm, LoginLogForm, OrgBurialStatsForm, SupportForm, TestCaptchaForm, \
+                        LoruIordersStatsForm
 from users.models import Profile, Org, RegisterProfile, ProfileLORU, CustomerProfile, Store, \
                          get_mail_footer, is_cabinet_user, PermitIfLoru, PermitIfLoruOrSupervisor, Oauth, \
                          BankAccount, BankAccountRegister, OrgCertificate, OrgContract, \
@@ -1055,7 +1056,7 @@ class OrgLogView(LoginRequiredMixin, PaginateListView):
             if form.cleaned_data['date_from']:
                 logs = logs.filter(dt__gte=form.cleaned_data['date_from'])
             if form.cleaned_data['date_to']:
-                logs = logs.filter(dt__lte=form.cleaned_data['date_to']+datetime.timedelta(days=1))
+                logs = logs.filter(dt__lt=form.cleaned_data['date_to']+datetime.timedelta(days=1))
 
         sort = self.request.GET.get('sort', self.SORT_DEFAULT)
         SORT_FIELDS = {
@@ -1093,7 +1094,7 @@ class LoginLogView(SupervisorRequiredMixin, PaginateListView):
             if form.cleaned_data['date_from']:
                 logs = logs.filter(dt__gte=form.cleaned_data['date_from'])
             if form.cleaned_data['date_to']:
-                logs = logs.filter(dt__lte=form.cleaned_data['date_to']+datetime.timedelta(days=1))
+                logs = logs.filter(dt__lt=form.cleaned_data['date_to']+datetime.timedelta(days=1))
 
         sort = self.request.GET.get('sort', self.SORT_DEFAULT)
         SORT_FIELDS = {
@@ -1200,7 +1201,7 @@ class RegisterActivation(DetailView):
                 self.object.save()
                 write_log(None, self.object, _(u'%s : получено подтверждение') % self.object)
                 for r in RegisterProfile.objects.filter(
-                        status__in=(RegisterProfile.STATUS_APPROVED, ),
+                        status__in=(RegisterProfile.STATUS_DECLINED, RegisterProfile.STATUS_APPROVED, ),
                         dt_modified__lt=datetime.datetime.now() - \
                                         datetime.timedelta(days=RegisterProfile.CLEAR_PROCESSED),):
                     r.delete()
@@ -1447,7 +1448,7 @@ class OmsBurialStatsView(SupervisorRequiredMixin, TemplateView):
             if form.cleaned_data['date_from']:
                 q &= Q(dt_modified__gte=form.cleaned_data['date_from'])
             if form.cleaned_data['date_to']:
-                q &= Q(dt_modified__lte=form.cleaned_data['date_to'])
+                q &= Q(dt_modified__lt=form.cleaned_data['date_to']+datetime.timedelta(days=1))
             if form.cleaned_data['status']:
                 q &= Q(status=form.cleaned_data['status'])
             else:
@@ -1496,6 +1497,88 @@ class OmsBurialStatsView(SupervisorRequiredMixin, TemplateView):
         return OrgBurialStatsForm(data=self.request.GET or None)
 
 oms_burial_stats = OmsBurialStatsView.as_view()
+
+class LoruIorderStatsView(SupervisorRequiredMixin, TemplateView):
+    template_name = 'loru_iorder_stats.html'
+
+    def get_context_data(self, **kwargs):
+
+        def sort_key(org):
+            sort_parm = re.sub(r'^\-', '', sort)
+            try:
+                result = org[sort_parm]
+            except KeyError:
+                result = org['name']
+            return result
+
+        form = self.get_form()
+        orgs = []
+        sort = self.request.GET.get('sort', 'name')
+        total={}
+        total['loru_count'] = total['num_iorders']= total['sum_iorders'] = 0
+
+        if form.data and form.is_valid():
+            q = Q()
+            if form.cleaned_data.get('date_from'):
+                q &= Q(dt_created__gte=form.cleaned_data['date_from'])
+            if form.cleaned_data.get('date_to'):
+                q &= Q(dt_created__lt=form.cleaned_data['date_to']+datetime.timedelta(days=1))
+            supplier_name = form.cleaned_data.get('supplier')
+            if supplier_name:
+                q &= Q(supplier__name__icontains=supplier_name)
+
+            
+            pks = {}
+            currencies = set()
+            for iorder in Iorder.objects.filter(q):
+                org_pk = iorder.supplier.pk
+                if org_pk not in pks:
+                    pks[org_pk] = dict(
+                        name=iorder.supplier.name,
+                        currency=iorder.supplier.currency.code,
+                        num_iorders=0,
+                        sum_iorders=0,
+                    )
+                    if len(currencies) < 2:
+                        currencies.add(iorder.supplier.currency)
+                org = pks[org_pk]
+                org['num_iorders'] += 1
+                total['num_iorders'] += 1
+                
+                this_sum= IorderItem.objects.filter(iorder=iorder). \
+                    aggregate(total=Sum('price_wholesale'))['total']
+                org['sum_iorders'] += this_sum
+                total['sum_iorders'] +=  this_sum
+
+            orgs = pks.values()
+
+            all_sum_integers = True
+            for org in orgs:
+                f_sum = float(org['sum_iorders'])
+                if f_sum - f_sum // 1 != 0.0:
+                    all_sum_integers = False
+                    break
+            if all_sum_integers:
+                for org in orgs:
+                    org['sum_iorders'] = int(org['sum_iorders'])
+                total['sum_iorders'] = int(total['sum_iorders'])
+
+            total['currency'] = orgs[0]['currency'] if len(currencies) == 1 else ''
+            orgs.sort(key=sort_key, reverse=sort.startswith('-'))
+
+        total['loru_count'] = len(orgs)
+        return {
+            'form': form,
+            'orgs': orgs,
+            'total': total,
+            'sort': sort,
+        }
+
+
+    def get_form(self):
+        return LoruIordersStatsForm(data=self.request.GET or None)
+
+loru_iorder_stats = LoruIorderStatsView.as_view()
 
 class OmsCurrentStatsView(SupervisorRequiredMixin, TemplateView):
     template_name = 'oms_current_stats.html'
