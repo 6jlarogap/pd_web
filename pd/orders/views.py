@@ -983,7 +983,7 @@ class IorderMixin(APIView):
                 text =  _(u"%s zakaz N %s summa %s") % (
                     get_front_end_url(self.request).rstrip('/'),
                     number_verbose,
-                    iorder.total(),
+                    iorder.total_float(),
                 )
                 if is_new_iorder:
                     email_error_text = u"Поставщик %s%s не получил СМС- уведомление о новом заказе" % \

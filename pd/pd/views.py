@@ -49,7 +49,7 @@ class PaginateListView(ListView):
     
     * В классе-потомке могут быть переопределены переменные, см. ниже:
     """
-    DISPLAY_OPTIONS = ['page', 'print']
+    DISPLAY_OPTIONS = ['page', 'print', 'sort']
     
     # Параметр get-запроса для сортировки по умолчанию
     # (именно get-запроса, а поля из таблицы!)

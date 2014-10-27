@@ -482,7 +482,7 @@ class OrgBurialStatsForm(forms.Form):
     date_to = forms.DateField(required=False, label=_(u"по"))
     status = forms.TypedChoiceField(required=False, label=_(u"Статус"), choices=EMPTY + Burial.STATUS_CHOICES)
 
-class LoruIordersStatsForm(forms.Form):
+class LoruOrdersStatsForm(forms.Form):
 
     date_from = forms.DateField(required=False, label=_(u"С"))
     date_to = forms.DateField(required=False, label=_(u"по"))

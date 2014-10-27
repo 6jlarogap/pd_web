@@ -44,12 +44,12 @@
             </th>
             <th style="text-align:right;">
                 {% if total.loru_count > 1 %}
-                    {% if sort == '-num_iorders' %}
-                        {% if sort == '-num_iorders' %}<i class="icon icon-arrow-down"></i>{% endif %}
-                        <a href="?{{ GET_PARAMS }}&sort=num_iorders">{% trans "Заказов" %}</a>
+                    {% if sort == '-num_orders' %}
+                        {% if sort == '-num_orders' %}<i class="icon icon-arrow-down"></i>{% endif %}
+                        <a href="?{{ GET_PARAMS }}&sort=num_orders">{% trans "Заказов" %}</a>
                     {% else %}
-                        {% if sort == 'num_iorders' %}<i class="icon icon-arrow-up"></i>{% endif %}
-                        <a href="?{{ GET_PARAMS }}&sort=-num_iorders">{% trans "Заказов" %}</a>
+                        {% if sort == 'num_orders' %}<i class="icon icon-arrow-up"></i>{% endif %}
+                        <a href="?{{ GET_PARAMS }}&sort=-num_orders">{% trans "Заказов" %}</a>
                     {% endif %}
                 {% else %}
                     {% trans "Заказов" %}
@@ -57,12 +57,12 @@
             </th>
             <th style="text-align:right;">
                 {% if total.loru_count > 1 %}
-                    {% if sort == '-sum_iorders' %}
-                        {% if sort == '-sum_iorders' %}<i class="icon icon-arrow-down"></i>{% endif %}
-                        <a href="?{{ GET_PARAMS }}&sort=sum_iorders">{% trans "Сумма" %}</a>
+                    {% if sort == '-sum_orders' %}
+                        {% if sort == '-sum_orders' %}<i class="icon icon-arrow-down"></i>{% endif %}
+                        <a href="?{{ GET_PARAMS }}&sort=sum_orders">{% trans "Сумма" %}</a>
                     {% else %}
-                        {% if sort == 'sum_iorders' %}<i class="icon icon-arrow-up"></i>{% endif %}
-                        <a href="?{{ GET_PARAMS }}&sort=-sum_iorders">{% trans "Сумма" %}</a>
+                        {% if sort == 'sum_orders' %}<i class="icon icon-arrow-up"></i>{% endif %}
+                        <a href="?{{ GET_PARAMS }}&sort=-sum_orders">{% trans "Сумма" %}</a>
                     {% endif %}
                 {% else %}
                     {% trans "Сумма" %}
@@ -91,11 +91,11 @@
                     <b>{% trans "Всего" %} {{ total.loru_count }} {% trans "ЛОРУ"%}</b>
                 </td>
                 <td style="text-align:right;">
-                    <b>{{ total.num_iorders }}</b>
+                    <b>{{ total.num_orders }}</b>
                 </td>
                 <td style="text-align:right;">
                     {% if total.currency %}
-                        <b>{{ total.sum_iorders }}</b>
+                        <b>{{ total.sum_orders }}</b>
                     {% else %}
                         <i>{% trans "Валюты поставщиков различны" %}</i>
                     {% endif %}
@@ -118,10 +118,10 @@
                     {{ org.name }}
                 </td>
                 <td style="text-align:right;">
-                    {{ org.num_iorders }}
+                    {{ org.num_orders }}
                 </td>
                 <td style="text-align:right;">
-                    {{ org.sum_iorders }}
+                    {{ org.sum_orders }}
                 </td>
                 <td>
                     {{ org.currency }}
@@ -130,6 +130,9 @@
         {% endfor %}
         </table>
 
+        {% if paginator.num_pages > 1 %}
+            {% include "paginator.html" %}
+        {% endif %}
     {% endif %}
 
 {% endblock %}
