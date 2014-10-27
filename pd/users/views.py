@@ -1521,19 +1521,22 @@ class LoruOrderStatsView(SupervisorRequiredMixin, PaginateListView):
         total['loru_count'] = total['num_orders']= total['sum_orders'] = 0
 
         if form.data and form.is_valid():
-            q = Q()
+            q_iorder = Q()
+            q_order = Q(loru__isnull=False, annulated = False)
             if form.cleaned_data.get('date_from'):
-                q &= Q(dt_created__gte=form.cleaned_data['date_from'])
+                q_order &= Q(dt__gte=form.cleaned_data['date_from'])
+                q_iorder &= Q(dt_created__gte=form.cleaned_data['date_from'])
             if form.cleaned_data.get('date_to'):
-                q &= Q(dt_created__lt=form.cleaned_data['date_to']+datetime.timedelta(days=1))
+                q_order &= Q(dt__lte=form.cleaned_data['date_to']+datetime.timedelta(days=1))
+                q_iorder &= Q(dt_created__lt=form.cleaned_data['date_to']+datetime.timedelta(days=1))
             supplier_name = form.cleaned_data.get('supplier')
             if supplier_name:
-                q &= Q(supplier__name__icontains=supplier_name)
+                q_order &= Q(loru__name__icontains=supplier_name)
+                q_iorder &= Q(supplier__name__icontains=supplier_name)
 
-            
             pks = {}
             currencies = set()
-            for iorder in Iorder.objects.filter(q):
+            for iorder in Iorder.objects.filter(q_iorder).select_related('supplier', 'supplier__name'):
                 org_pk = iorder.supplier.pk
                 if org_pk not in pks:
                     pks[org_pk] = dict(
@@ -1548,8 +1551,26 @@ class LoruOrderStatsView(SupervisorRequiredMixin, PaginateListView):
                 org['num_orders'] += 1
                 total['num_orders'] += 1
                 
-                this_sum= IorderItem.objects.filter(iorder=iorder). \
-                    aggregate(total=Sum('price_wholesale'))['total']
+                this_sum= iorder.total()
+                org['sum_orders'] += this_sum
+                total['sum_orders'] +=  this_sum
+
+            for order in Order.objects.filter(q_order).distinct().select_related('loru', 'loru__name'):
+                org_pk = order.loru.pk
+                if org_pk not in pks:
+                    pks[org_pk] = dict(
+                        name=order.loru.name,
+                        currency=order.loru.currency.code,
+                        num_orders=0,
+                        sum_orders=0,
+                    )
+                    if len(currencies) < 2:
+                        currencies.add(iorder.supplier.currency)
+                org = pks[org_pk]
+                org['num_orders'] += 1
+                total['num_orders'] += 1
+
+                this_sum = order.total
                 org['sum_orders'] += this_sum
                 total['sum_orders'] +=  this_sum
 
