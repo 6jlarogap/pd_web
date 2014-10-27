@@ -558,6 +558,10 @@ class Org(GetLogsMixin, BaseModel):
                              choices=BASIS_CHOICES, default=BASIS_CHARTER)
     email = models.EmailField(_(u"Email"), null=True, blank=True)
     phones = models.TextField(_(u"Телефоны"), blank=True, null=True)
+    sms_phone = models.DecimalField(_(u"Мобильный телефон для СМС- уведомлений"), max_digits=15, decimal_places=0,
+                  blank=True, null=True,
+                  help_text=_(u'В международном формате, начиная с кода страны, без "+", например 79101234567'),
+                  validators = [validate_phone_as_number, ])
     fax = models.CharField(_(u"Факс"), max_length=20, default='', blank=True)
     off_address = models.ForeignKey('geo.Location', verbose_name=_(u"Юр. адрес"), null=True, blank=True)
     numbers_algo = models.CharField(_(u"Заполнение номера захоронения"), max_length=255, choices=NUM_TYPES,

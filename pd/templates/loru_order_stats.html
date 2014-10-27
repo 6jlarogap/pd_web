@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+
+{% load i18n %}
+
+{% block content %}
+    <h1>{% trans "Статистика по интернет- заказам" %}</h1>
+    <div class="row-fluid no-print">
+        <div class="span12">
+            <div class="row-fluid">
+                <form id="mainform" class="form-horizontal" method="get" action="">
+                    {{ form.as_p }}
+
+                    <p class="buttons">
+                        <input type="submit" value="искать" class="btn btn-primary" />
+                    </p>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    {% if not form.errors %}
+        <table class="table table-bordered table-striped">
+            {% if total.loru_count > 1 %}
+                <col width="40">
+            {% endif %}
+            <tr>
+            {% if total.loru_count > 1 %}
+                <th>
+                {% trans "№ п/п" %}
+                </th>
+            {% endif %}
+            <th>
+                {% if total.loru_count > 1 %}
+                    {% if sort == 'name' %}
+                        {% if sort == 'name' %}<i class="icon icon-arrow-up"></i>{% endif %}
+                        <a href="?{{ GET_PARAMS }}&sort=-name">{% trans "Поставщик" %}</a>
+                    {% else %}
+                        {% if sort == '-name' %}<i class="icon icon-arrow-down"></i>{% endif %}
+                        <a href="?{{ GET_PARAMS }}&sort=name">{% trans "Поставщик" %}</a>
+                    {% endif %}
+                {% else %}
+                    {% trans "Поставщик" %}
+                {% endif %}
+            </th>
+            <th style="text-align:right;">
+                {% if total.loru_count > 1 %}
+                    {% if sort == '-num_orders' %}
+                        {% if sort == '-num_orders' %}<i class="icon icon-arrow-down"></i>{% endif %}
+                        <a href="?{{ GET_PARAMS }}&sort=num_orders">{% trans "Заказов" %}</a>
+                    {% else %}
+                        {% if sort == 'num_orders' %}<i class="icon icon-arrow-up"></i>{% endif %}
+                        <a href="?{{ GET_PARAMS }}&sort=-num_orders">{% trans "Заказов" %}</a>
+                    {% endif %}
+                {% else %}
+                    {% trans "Заказов" %}
+                {% endif %}
+            </th>
+            <th style="text-align:right;">
+                {% if total.loru_count > 1 %}
+                    {% if sort == '-sum_orders' %}
+                        {% if sort == '-sum_orders' %}<i class="icon icon-arrow-down"></i>{% endif %}
+                        <a href="?{{ GET_PARAMS }}&sort=sum_orders">{% trans "Сумма" %}</a>
+                    {% else %}
+                        {% if sort == 'sum_orders' %}<i class="icon icon-arrow-up"></i>{% endif %}
+                        <a href="?{{ GET_PARAMS }}&sort=-sum_orders">{% trans "Сумма" %}</a>
+                    {% endif %}
+                {% else %}
+                    {% trans "Сумма" %}
+                {% endif %}
+            </th>
+            <th>
+                {% if total.loru_count > 1 and not total.currency %}
+                    {% if sort == '-currency' %}
+                        {% if sort == '-currency' %}<i class="icon icon-arrow-down"></i>{% endif %}
+                        <a href="?{{ GET_PARAMS }}&sort=currency">{% trans "Валюта" %}</a>
+                    {% else %}
+                        {% if sort == 'currency' %}<i class="icon icon-arrow-up"></i>{% endif %}
+                        <a href="?{{ GET_PARAMS }}&sort=-currency">{% trans "Валюта" %}</a>
+                    {% endif %}
+                {% else %}
+                    {% trans "Валюта" %}
+                {% endif %}
+            </th>
+        </tr>
+        {% if total.loru_count > 1 %}
+            <tr>
+                <td>
+                {# N п/п #}
+                </td>
+                <td>
+                    <b>{% trans "Всего" %} {{ total.loru_count }} {% trans "ЛОРУ"%}</b>
+                </td>
+                <td style="text-align:right;">
+                    <b>{{ total.num_orders }}</b>
+                </td>
+                <td style="text-align:right;">
+                    {% if total.currency %}
+                        <b>{{ total.sum_orders }}</b>
+                    {% else %}
+                        <i>{% trans "Валюты поставщиков различны" %}</i>
+                    {% endif %}
+                    <td>
+                    {% if total.currency %}
+                        {{ total.currency }}
+                    {% endif %}
+                    </td>
+                </td>
+            </tr>
+        {% endif %}
+        {% for org in orgs %}
+            <tr>
+                {% if total.loru_count > 1 %}
+                    <td style="text-align:right;">
+                        {{ forloop.counter }}
+                    </td>
+                {% endif %}
+                <td>
+                    {{ org.name }}
+                </td>
+                <td style="text-align:right;">
+                    {{ org.num_orders }}
+                </td>
+                <td style="text-align:right;">
+                    {{ org.sum_orders }}
+                </td>
+                <td>
+                    {{ org.currency }}
+                </td>
+            </tr>
+        {% endfor %}
+        </table>
+
+        {% if paginator.num_pages > 1 %}
+            {% include "paginator.html" %}
+        {% endif %}
+    {% endif %}
+
+{% endblock %}

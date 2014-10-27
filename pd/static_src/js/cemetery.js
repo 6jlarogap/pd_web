@@ -89,10 +89,10 @@ function setup_address_autocompletes() {
         }
     });
 
-    $('input[id=id_loru]').attr('autocomplete', 'off').typeahead({
+    loru_typeahed = {
         items: 100,
         onselect: function() {
-            $('input[id=id_loru]').change();
+            $(this).change();
         },
         source: function (typeahead, query) {
             if (query.length < 2) { return }
@@ -104,7 +104,10 @@ function setup_address_autocompletes() {
                 }
             });
         }
-    });
+    }
+
+    $('input[id=id_loru]').attr('autocomplete', 'off').typeahead(loru_typeahed);
+    $('input[id=id_supplier]').attr('autocomplete', 'off').css('width', '400px').typeahead(loru_typeahed);
 
     $('input[id=id_loru_in_burials]').attr('autocomplete', 'off').typeahead({
         items: 100,

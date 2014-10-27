@@ -48,7 +48,7 @@ urlpatterns = patterns('users.views',
         
     url(r'^support/$', 'support', name='support'),
     url(r'^support/thanks/$', 'support_thanks', name='support_thanks'),
-    url(r'^tutorial$', 'tutorial', name='tutorial'),
+    url(r'^tutorial/$', 'tutorial', name='tutorial'),
     
     url(r'^registrants/$', 'registrants', name='registrants'),
     url(r'^registrant/(?P<pk>\d+)/delete/$', 'registrant_delete', name='registrant_delete'),
@@ -58,6 +58,7 @@ urlpatterns = patterns('users.views',
     url(r'^oms_burialstats/', 'oms_burial_stats', name='oms_burial_stats'),
     url(r'^oms_currentstats/', 'oms_current_stats', name='oms_current_stats'),
     url(r'^loru_currentstats/', 'loru_current_stats', name='loru_current_stats'),
+    url(r'^loru_orderstats/', 'loru_order_stats', name='loru_order_stats'),
         
     url(r'^profile/', 'profile', name='profile'),
     url(r'^loruregistry/', 'loru_registry', name='loru_registry'),

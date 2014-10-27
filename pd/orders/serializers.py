@@ -94,7 +94,7 @@ class IordersSerializer(serializers.HyperlinkedModelSerializer):
     customer = OrgShort3Serializer(source='customer')
     number = serializers.Field(source='number_verbose')
     itemsCount = serializers.Field(source='items_count')
-    totalPrice = serializers.Field(source='total')
+    totalPrice = serializers.Field(source='total_float')
     createdAt = serializers.SerializerMethodField('createdAt_func')
 
     class Meta:

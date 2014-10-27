@@ -34,7 +34,7 @@ from orders.forms import ProductForm, OrderForm, OrderItemFormset, CoffinForm, C
                          AddInfoForm, OrderSearchForm, OrderBurialForm
 from orders.models import Product, Order, OrderItem, ProductCategory, Iorder, IorderItem
 from pd.forms import CommentForm
-from pd.views import PaginateListView, RequestToFormMixin, ServiceException, get_front_end_url
+from pd.views import PaginateListView, RequestToFormMixin, ServiceException, get_front_end_url, get_host_url
 from reports.models import make_report
 
 from rest_framework import viewsets
@@ -945,7 +945,7 @@ class IorderMixin(APIView):
         if iorder.customer and iorder.customer.email:
             email_to = (iorder.customer.email, )
             email_subject = u"%s: %s %s" % (
-                _(u"ПохоронноеДело"),
+                _(u"Похоронное Дело"),
                 _(u"создан заказ") if is_new_iorder else _(u"изменен заказ"),
                 number_verbose,
             )
@@ -962,7 +962,7 @@ class IorderMixin(APIView):
         if iorder.supplier.email:
             email_to = (iorder.supplier.email, )
             email_subject = u"%s: %s %s" % (
-                _(u"ПохоронноеДело"),
+                _(u"Похоронное Дело"),
                 _(u"поступил заказ") if is_new_iorder else _(u"изменен заказ"),
                 number_verbose,
             )
@@ -978,23 +978,13 @@ class IorderMixin(APIView):
             EmailMessage(email_subject, email_text, email_from, email_to,).send()
         if not settings.DEBUG:
             # Отправка смс поставщику
-            phone_number = None
-            for phone in iorder.supplier.phone_list():
-                try:
-                    phone = phone.lstrip("+").strip()
-                    validate_phone_as_number(phone)
-                    phone_number = phone
-                    break
-                except ValidationError:
-                    pass
-            if phone_number:
+            if iorder.supplier.sms_phone:
                 supplier_email = u" (email: %s)" % iorder.supplier.email if iorder.supplier.email else ""
-                text =  _(u"%s zakaz № %s summa %s") % (
+                text =  _(u"%s zakaz N %s summa %s") % (
                     get_front_end_url(self.request).rstrip('/'),
                     number_verbose,
-                    iorder.total(),
+                    iorder.total_float(),
                 )
-                print text
                 if is_new_iorder:
                     email_error_text = u"Поставщик %s%s не получил СМС- уведомление о новом заказе" % \
                                         (iorder.supplier.name, supplier_email,)
@@ -1002,10 +992,29 @@ class IorderMixin(APIView):
                     email_error_text = _(u"Поставщик %s%s не получил СМС- уведомление об изменении заказа %s") % \
                                         (iorder.supplier.name, supplier_email, number_verbose, )
                 send_sms(
-                    phone_number=phone_number,
+                    phone_number=iorder.supplier.sms_phone,
                     text=text,
                     email_error_text=email_error_text,
                 )
+            elif iorder.supplier.email:
+                EmailMessage(
+                    subject=_(u'Похоронное Дело: телефон смс- уведомений'),
+                    body=_(
+                        u'Невозможно доставить СМС %s заказе № %s.\n'
+                        u'\n'
+                        u'В свойствах вашей организации: %s\n'
+                        u'не указан телефон для СМС- уведомлений.\n'
+                        u'\n'
+                        u'Это можно исправить: %s\n'
+                    ) % (
+                        _(u'о новом') if is_new_iorder else _(u'об измененном'),
+                        number_verbose,
+                        iorder.supplier.name,
+                        get_host_url(self.request) + reverse('edit_org', args=(iorder.supplier.pk,)).lstrip('/'),
+                    ),
+                    from_email=email_from,
+                    to=(iorder.supplier.email,),
+                ).send(fail_silently=True)
 
 class ApiOptPlacesOrders(IorderMixin, APIView):
     """

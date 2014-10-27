@@ -49,7 +49,7 @@ class PaginateListView(ListView):
     
     * В классе-потомке могут быть переопределены переменные, см. ниже:
     """
-    DISPLAY_OPTIONS = ['page', 'print']
+    DISPLAY_OPTIONS = ['page', 'print', 'sort']
     
     # Параметр get-запроса для сортировки по умолчанию
     # (именно get-запроса, а поля из таблицы!)
@@ -208,9 +208,15 @@ def get_front_end_url(request):
             result += host + '/'
     return result
 
+def get_host_url(request):
+        return u"%s://%s/" % (
+            'https' if request.is_secure() else 'http',
+            request.get_host(),
+        )
+
 class ServiceException(Exception):
     """
-    Чтобы не плодить депочки if (try) else ... if (try) ... else
+    Чтобы не плодить цепочки if (try) else ... if (try) ... else
     
     Пример:
     try:
