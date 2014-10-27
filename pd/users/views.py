@@ -773,7 +773,7 @@ class LogoutView(View):
 
 ulogout = LogoutView.as_view()
 
-class RegistrationOldView(SupervisorRequiredMixin, View):
+class RegistrationOldView(SupervisorProductionRequiredMixin, View):
     """
     Регистрация
     """
@@ -1467,7 +1467,7 @@ class RegistrantDecline(SupervisorRequiredMixin, View):
 
 registrant_decline = RegistrantDecline.as_view()
 
-class OmsBurialStatsView(SupervisorRequiredMixin, TemplateView):
+class OmsBurialStatsView(SupervisorProductionRequiredMixin, TemplateView):
     template_name = 'oms_burial_stats.html'
 
     def get_context_data(self, **kwargs):
@@ -1527,7 +1527,7 @@ class OmsBurialStatsView(SupervisorRequiredMixin, TemplateView):
 
 oms_burial_stats = OmsBurialStatsView.as_view()
 
-class LoruOrderStatsView(SupervisorRequiredMixin, PaginateListView):
+class LoruOrderStatsView(SupervisorProductionRequiredMixin, PaginateListView):
     template_name = 'loru_order_stats.html'
     queryset = Org.objects.none()
 
@@ -1635,7 +1635,7 @@ class LoruOrderStatsView(SupervisorRequiredMixin, PaginateListView):
 
 loru_order_stats = LoruOrderStatsView.as_view()
 
-class OmsCurrentStatsView(SupervisorRequiredMixin, TemplateView):
+class OmsCurrentStatsView(SupervisorProductionRequiredMixin, TemplateView):
     template_name = 'oms_current_stats.html'
 
     def get_context_data(self, **kwargs):
@@ -1736,7 +1736,7 @@ class OmsCurrentStatsView(SupervisorRequiredMixin, TemplateView):
 
 oms_current_stats = OmsCurrentStatsView.as_view()
 
-class LoruCurrentStatsView(SupervisorRequiredMixin, TemplateView):
+class LoruCurrentStatsView(SupervisorProductionRequiredMixin, TemplateView):
     template_name = 'loru_current_stats.html'
 
     def get_context_data(self, **kwargs):

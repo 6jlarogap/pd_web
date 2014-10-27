@@ -154,11 +154,11 @@
                                         {% if user.profile.is_supervisor %}
                                             <li class="divider"></li>
                                             <li><a href="{% url registrants %}">{% trans "Регистрация" %}</a></li>
-                                            <li><a href="{% url login_log %}">{% trans "Журнал входов в систему" %}</a></li>
-                                            <li><a href="{% url oms_burial_stats %}">{% trans "Статистика захоронений" %}</a></li>
-                                            <li><a href="{% url oms_current_stats %}">{% trans "Текущая статистика" %} {% trans "ОМС" %}</a></li>
-                                            <li><a href="{% url loru_current_stats %}">{% trans "Текущая статистика" %} {% trans "ЛОРУ" %}</a></li>
                                             {% if global_context_PRODUCTION_SITE %}
+                                                <li><a href="{% url login_log %}">{% trans "Журнал входов в систему" %}</a></li>
+                                                <li><a href="{% url oms_burial_stats %}">{% trans "Статистика захоронений" %}</a></li>
+                                                <li><a href="{% url oms_current_stats %}">{% trans "Текущая статистика" %} {% trans "ОМС" %}</a></li>
+                                                <li><a href="{% url loru_current_stats %}">{% trans "Текущая статистика" %} {% trans "ЛОРУ" %}</a></li>
                                                 <li><a href="{% url loru_order_stats %}">{% trans "Статистика заказов" %}</a></li>
                                             {% endif %}
                                         {% endif %}
