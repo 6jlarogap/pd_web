@@ -1527,7 +1527,7 @@ class LoruOrderStatsView(SupervisorRequiredMixin, PaginateListView):
                 q_order &= Q(dt__gte=form.cleaned_data['date_from'])
                 q_iorder &= Q(dt_created__gte=form.cleaned_data['date_from'])
             if form.cleaned_data.get('date_to'):
-                q_order &= Q(dt__lte=form.cleaned_data['date_to']+datetime.timedelta(days=1))
+                q_order &= Q(dt__lte=form.cleaned_data['date_to'])
                 q_iorder &= Q(dt_created__lt=form.cleaned_data['date_to']+datetime.timedelta(days=1))
             supplier_name = form.cleaned_data.get('supplier')
             if supplier_name:
@@ -1536,7 +1536,8 @@ class LoruOrderStatsView(SupervisorRequiredMixin, PaginateListView):
 
             pks = {}
             currencies = set()
-            for iorder in Iorder.objects.filter(q_iorder).select_related('supplier', 'supplier__name'):
+            for iorder in Iorder.objects.filter(q_iorder). \
+                            select_related('supplier', 'supplier__name', 'supplier__currency'):
                 org_pk = iorder.supplier.pk
                 if org_pk not in pks:
                     pks[org_pk] = dict(
@@ -1555,7 +1556,8 @@ class LoruOrderStatsView(SupervisorRequiredMixin, PaginateListView):
                 org['sum_orders'] += this_sum
                 total['sum_orders'] +=  this_sum
 
-            for order in Order.objects.filter(q_order).distinct().select_related('loru', 'loru__name'):
+            for order in Order.objects.filter(q_order). \
+                            select_related('loru', 'loru__name', 'loru__currency'):
                 org_pk = order.loru.pk
                 if org_pk not in pks:
                     pks[org_pk] = dict(
