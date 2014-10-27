@@ -45,7 +45,6 @@ from rest_framework.authtoken.models import Token
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.parsers import MultiPartParser
 
-from burials.views import UGHRequiredMixin, LoginRequiredMixin, SupervisorRequiredMixin
 from logs.models import Log, write_log, LoginLog
 from users.forms import UserAddForm, RegisterForm, LoruFormset, ProfileForm, UserProfileForm, \
                         UserDataForm, ChangePasswordForm, BankAccountFormset, OrgForm, \
@@ -55,7 +54,7 @@ from users.models import Profile, Org, RegisterProfile, ProfileLORU, CustomerPro
                          get_mail_footer, is_cabinet_user, PermitIfLoru, PermitIfLoruOrSupervisor, Oauth, \
                          BankAccount, BankAccountRegister, OrgCertificate, OrgContract, \
                          RegisterProfileContract, RegisterProfileScan, FavoriteSupplier, \
-                         is_loru_user, is_supervisor, get_default_currency
+                         is_loru_user, is_supervisor, is_ugh_user, get_default_currency
 from pd.models import validate_phone_as_number, validate_username
 from pd.utils import host_country_code, phones_from_text, EmailMessage
 from persons.models import AlivePerson, Phone
@@ -72,6 +71,35 @@ from sms_service.utils import send_sms
 
 User._meta.get_field_by_name('email')[0]._unique = True
 User._meta.get_field_by_name('email')[0].null=True
+
+class SupervisorRequiredMixin:
+    def dispatch(self, request, *args, **kwargs):
+        if is_supervisor(request.user):
+            return View.dispatch(self, request, *args, **kwargs)
+        raise Http404
+
+class SupervisorProductionRequiredMixin:
+    """
+    Быть и супервизором на основном (производственном) сайте
+    """
+    def dispatch(self, request, *args, **kwargs):
+        if is_supervisor(request.user) and settings.PRODUCTION_SITE:
+            return View.dispatch(self, request, *args, **kwargs)
+        raise Http404
+
+class UGHRequiredMixin:
+    def dispatch(self, request, *args, **kwargs):
+        self.request = request
+        if not is_ugh_user(request.user):
+            return redirect('/')
+        return View.dispatch(self, request, *args, **kwargs)
+
+class LoginRequiredMixin:
+    def dispatch(self, request, *args, **kwargs):
+        self.request = request
+        if not request.user.is_authenticated():
+            return redirect('/')
+        return View.dispatch(self, request, *args, **kwargs)
 
 class CheckRecaptchaMixin(object):
     
