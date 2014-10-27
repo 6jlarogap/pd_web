@@ -20,6 +20,7 @@ from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
 from django.core.urlresolvers import reverse
 from django.core.files.base import ContentFile
+from django.core.paginator import Paginator
 from django.db import transaction, connection, IntegrityError
 from django.db.models import Sum
 from django.db.models.query_utils import Q
@@ -49,7 +50,7 @@ from logs.models import Log, write_log, LoginLog
 from users.forms import UserAddForm, RegisterForm, LoruFormset, ProfileForm, UserProfileForm, \
                         UserDataForm, ChangePasswordForm, BankAccountFormset, OrgForm, \
                         OrgLogForm, LoginLogForm, OrgBurialStatsForm, SupportForm, TestCaptchaForm, \
-                        LoruIordersStatsForm
+                        LoruOrdersStatsForm
 from users.models import Profile, Org, RegisterProfile, ProfileLORU, CustomerProfile, Store, \
                          get_mail_footer, is_cabinet_user, PermitIfLoru, PermitIfLoruOrSupervisor, Oauth, \
                          BankAccount, BankAccountRegister, OrgCertificate, OrgContract, \
@@ -1498,8 +1499,9 @@ class OmsBurialStatsView(SupervisorRequiredMixin, TemplateView):
 
 oms_burial_stats = OmsBurialStatsView.as_view()
 
-class LoruIorderStatsView(SupervisorRequiredMixin, TemplateView):
-    template_name = 'loru_iorder_stats.html'
+class LoruOrderStatsView(SupervisorRequiredMixin, PaginateListView):
+    template_name = 'loru_order_stats.html'
+    queryset = Org.objects.none()
 
     def get_context_data(self, **kwargs):
 
@@ -1511,11 +1513,12 @@ class LoruIorderStatsView(SupervisorRequiredMixin, TemplateView):
                 result = org['name']
             return result
 
+        data = super(LoruOrderStatsView, self).get_context_data(**kwargs)
         form = self.get_form()
         orgs = []
         sort = self.request.GET.get('sort', 'name')
         total={}
-        total['loru_count'] = total['num_iorders']= total['sum_iorders'] = 0
+        total['loru_count'] = total['num_orders']= total['sum_orders'] = 0
 
         if form.data and form.is_valid():
             q = Q()
@@ -1536,49 +1539,50 @@ class LoruIorderStatsView(SupervisorRequiredMixin, TemplateView):
                     pks[org_pk] = dict(
                         name=iorder.supplier.name,
                         currency=iorder.supplier.currency.code,
-                        num_iorders=0,
-                        sum_iorders=0,
+                        num_orders=0,
+                        sum_orders=0,
                     )
                     if len(currencies) < 2:
                         currencies.add(iorder.supplier.currency)
                 org = pks[org_pk]
-                org['num_iorders'] += 1
-                total['num_iorders'] += 1
+                org['num_orders'] += 1
+                total['num_orders'] += 1
                 
                 this_sum= IorderItem.objects.filter(iorder=iorder). \
                     aggregate(total=Sum('price_wholesale'))['total']
-                org['sum_iorders'] += this_sum
-                total['sum_iorders'] +=  this_sum
+                org['sum_orders'] += this_sum
+                total['sum_orders'] +=  this_sum
 
             orgs = pks.values()
 
             all_sum_integers = True
             for org in orgs:
-                f_sum = float(org['sum_iorders'])
+                f_sum = float(org['sum_orders'])
                 if f_sum - f_sum // 1 != 0.0:
                     all_sum_integers = False
                     break
             if all_sum_integers:
                 for org in orgs:
-                    org['sum_iorders'] = int(org['sum_iorders'])
-                total['sum_iorders'] = int(total['sum_iorders'])
+                    org['sum_orders'] = int(org['sum_orders'])
+                total['sum_orders'] = int(total['sum_orders'])
 
             total['currency'] = orgs[0]['currency'] if len(currencies) == 1 else ''
             orgs.sort(key=sort_key, reverse=sort.startswith('-'))
 
         total['loru_count'] = len(orgs)
-        return {
-            'form': form,
+        data.update({
             'orgs': orgs,
             'total': total,
             'sort': sort,
-        }
+            'paginator': Paginator(orgs, per_page=25)
+        })
+        return data
 
 
     def get_form(self):
-        return LoruIordersStatsForm(data=self.request.GET or None)
+        return LoruOrdersStatsForm(data=self.request.GET or None)
 
-loru_iorder_stats = LoruIorderStatsView.as_view()
+loru_order_stats = LoruOrderStatsView.as_view()
 
 class OmsCurrentStatsView(SupervisorRequiredMixin, TemplateView):
     template_name = 'oms_current_stats.html'

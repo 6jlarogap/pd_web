@@ -159,7 +159,7 @@
                                             <li><a href="{% url oms_current_stats %}">{% trans "Текущая статистика" %} {% trans "ОМС" %}</a></li>
                                             <li><a href="{% url loru_current_stats %}">{% trans "Текущая статистика" %} {% trans "ЛОРУ" %}</a></li>
                                             {% if global_context_PRODUCTION_SITE %}
-                                                <li><a href="{% url loru_iorder_stats %}">{% trans "Статистика Интернет-заказов" %}</a></li>
+                                                <li><a href="{% url loru_order_stats %}">{% trans "Статистика заказов" %}</a></li>
                                             {% endif %}
                                         {% endif %}
                                         <li class="divider"></li>
