@@ -20,6 +20,7 @@ from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
 from django.core.urlresolvers import reverse
 from django.core.files.base import ContentFile
+from django.core.paginator import Paginator
 from django.db import transaction, connection, IntegrityError
 from django.db.models import Sum
 from django.db.models.query_utils import Q
@@ -44,17 +45,16 @@ from rest_framework.authtoken.models import Token
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.parsers import MultiPartParser
 
-from burials.views import UGHRequiredMixin, LoginRequiredMixin, SupervisorRequiredMixin
 from logs.models import Log, write_log, LoginLog
 from users.forms import UserAddForm, RegisterForm, LoruFormset, ProfileForm, UserProfileForm, \
                         UserDataForm, ChangePasswordForm, BankAccountFormset, OrgForm, \
                         OrgLogForm, LoginLogForm, OrgBurialStatsForm, SupportForm, TestCaptchaForm, \
-                        LoruIordersStatsForm
+                        LoruOrdersStatsForm
 from users.models import Profile, Org, RegisterProfile, ProfileLORU, CustomerProfile, Store, \
                          get_mail_footer, is_cabinet_user, PermitIfLoru, PermitIfLoruOrSupervisor, Oauth, \
                          BankAccount, BankAccountRegister, OrgCertificate, OrgContract, \
                          RegisterProfileContract, RegisterProfileScan, FavoriteSupplier, \
-                         is_loru_user, is_supervisor, get_default_currency
+                         is_loru_user, is_supervisor, is_ugh_user, get_default_currency
 from pd.models import validate_phone_as_number, validate_username
 from pd.utils import host_country_code, phones_from_text, EmailMessage
 from persons.models import AlivePerson, Phone
@@ -71,6 +71,35 @@ from sms_service.utils import send_sms
 
 User._meta.get_field_by_name('email')[0]._unique = True
 User._meta.get_field_by_name('email')[0].null=True
+
+class SupervisorRequiredMixin:
+    def dispatch(self, request, *args, **kwargs):
+        if is_supervisor(request.user):
+            return View.dispatch(self, request, *args, **kwargs)
+        raise Http404
+
+class SupervisorProductionRequiredMixin:
+    """
+    Быть и супервизором на основном (производственном) сайте
+    """
+    def dispatch(self, request, *args, **kwargs):
+        if is_supervisor(request.user) and settings.PRODUCTION_SITE:
+            return View.dispatch(self, request, *args, **kwargs)
+        raise Http404
+
+class UGHRequiredMixin:
+    def dispatch(self, request, *args, **kwargs):
+        self.request = request
+        if not is_ugh_user(request.user):
+            return redirect('/')
+        return View.dispatch(self, request, *args, **kwargs)
+
+class LoginRequiredMixin:
+    def dispatch(self, request, *args, **kwargs):
+        self.request = request
+        if not request.user.is_authenticated():
+            return redirect('/')
+        return View.dispatch(self, request, *args, **kwargs)
 
 class CheckRecaptchaMixin(object):
     
@@ -744,7 +773,7 @@ class LogoutView(View):
 
 ulogout = LogoutView.as_view()
 
-class RegistrationOldView(SupervisorRequiredMixin, View):
+class RegistrationOldView(SupervisorProductionRequiredMixin, View):
     """
     Регистрация
     """
@@ -1438,7 +1467,7 @@ class RegistrantDecline(SupervisorRequiredMixin, View):
 
 registrant_decline = RegistrantDecline.as_view()
 
-class OmsBurialStatsView(SupervisorRequiredMixin, TemplateView):
+class OmsBurialStatsView(SupervisorProductionRequiredMixin, TemplateView):
     template_name = 'oms_burial_stats.html'
 
     def get_context_data(self, **kwargs):
@@ -1498,8 +1527,9 @@ class OmsBurialStatsView(SupervisorRequiredMixin, TemplateView):
 
 oms_burial_stats = OmsBurialStatsView.as_view()
 
-class LoruIorderStatsView(SupervisorRequiredMixin, TemplateView):
-    template_name = 'loru_iorder_stats.html'
+class LoruOrderStatsView(SupervisorProductionRequiredMixin, PaginateListView):
+    template_name = 'loru_order_stats.html'
+    queryset = Org.objects.none()
 
     def get_context_data(self, **kwargs):
 
@@ -1511,76 +1541,101 @@ class LoruIorderStatsView(SupervisorRequiredMixin, TemplateView):
                 result = org['name']
             return result
 
+        data = super(LoruOrderStatsView, self).get_context_data(**kwargs)
         form = self.get_form()
         orgs = []
         sort = self.request.GET.get('sort', 'name')
         total={}
-        total['loru_count'] = total['num_iorders']= total['sum_iorders'] = 0
+        total['loru_count'] = total['num_orders']= total['sum_orders'] = 0
 
         if form.data and form.is_valid():
-            q = Q()
+            q_iorder = Q()
+            q_order = Q(loru__isnull=False, annulated = False)
             if form.cleaned_data.get('date_from'):
-                q &= Q(dt_created__gte=form.cleaned_data['date_from'])
+                q_order &= Q(dt__gte=form.cleaned_data['date_from'])
+                q_iorder &= Q(dt_created__gte=form.cleaned_data['date_from'])
             if form.cleaned_data.get('date_to'):
-                q &= Q(dt_created__lt=form.cleaned_data['date_to']+datetime.timedelta(days=1))
+                q_order &= Q(dt__lte=form.cleaned_data['date_to'])
+                q_iorder &= Q(dt_created__lt=form.cleaned_data['date_to']+datetime.timedelta(days=1))
             supplier_name = form.cleaned_data.get('supplier')
             if supplier_name:
-                q &= Q(supplier__name__icontains=supplier_name)
+                q_order &= Q(loru__name__icontains=supplier_name)
+                q_iorder &= Q(supplier__name__icontains=supplier_name)
 
-            
             pks = {}
             currencies = set()
-            for iorder in Iorder.objects.filter(q):
+            for iorder in Iorder.objects.filter(q_iorder). \
+                            select_related('supplier', 'supplier__name', 'supplier__currency'):
                 org_pk = iorder.supplier.pk
                 if org_pk not in pks:
                     pks[org_pk] = dict(
                         name=iorder.supplier.name,
                         currency=iorder.supplier.currency.code,
-                        num_iorders=0,
-                        sum_iorders=0,
+                        num_orders=0,
+                        sum_orders=0,
                     )
                     if len(currencies) < 2:
                         currencies.add(iorder.supplier.currency)
                 org = pks[org_pk]
-                org['num_iorders'] += 1
-                total['num_iorders'] += 1
+                org['num_orders'] += 1
+                total['num_orders'] += 1
                 
-                this_sum= IorderItem.objects.filter(iorder=iorder). \
-                    aggregate(total=Sum('price_wholesale'))['total']
-                org['sum_iorders'] += this_sum
-                total['sum_iorders'] +=  this_sum
+                this_sum= iorder.total()
+                org['sum_orders'] += this_sum
+                total['sum_orders'] +=  this_sum
+
+            for order in Order.objects.filter(q_order). \
+                            select_related('loru', 'loru__name', 'loru__currency'):
+                org_pk = order.loru.pk
+                if org_pk not in pks:
+                    pks[org_pk] = dict(
+                        name=order.loru.name,
+                        currency=order.loru.currency.code,
+                        num_orders=0,
+                        sum_orders=0,
+                    )
+                    if len(currencies) < 2:
+                        currencies.add(iorder.supplier.currency)
+                org = pks[org_pk]
+                org['num_orders'] += 1
+                total['num_orders'] += 1
+
+                this_sum = order.total
+                org['sum_orders'] += this_sum
+                total['sum_orders'] +=  this_sum
 
             orgs = pks.values()
 
             all_sum_integers = True
             for org in orgs:
-                f_sum = float(org['sum_iorders'])
+                f_sum = float(org['sum_orders'])
                 if f_sum - f_sum // 1 != 0.0:
                     all_sum_integers = False
                     break
             if all_sum_integers:
                 for org in orgs:
-                    org['sum_iorders'] = int(org['sum_iorders'])
-                total['sum_iorders'] = int(total['sum_iorders'])
+                    org['sum_orders'] = int(org['sum_orders'])
+                total['sum_orders'] = int(total['sum_orders'])
 
             total['currency'] = orgs[0]['currency'] if len(currencies) == 1 else ''
             orgs.sort(key=sort_key, reverse=sort.startswith('-'))
 
         total['loru_count'] = len(orgs)
-        return {
-            'form': form,
+        data.update({
             'orgs': orgs,
             'total': total,
             'sort': sort,
-        }
+            'paginator': Paginator(orgs, per_page=25)
+        })
+        return data
 
 
     def get_form(self):
-        return LoruIordersStatsForm(data=self.request.GET or None)
+        return LoruOrdersStatsForm(data=self.request.GET or None)
 
-loru_iorder_stats = LoruIorderStatsView.as_view()
+loru_order_stats = LoruOrderStatsView.as_view()
 
-class OmsCurrentStatsView(SupervisorRequiredMixin, TemplateView):
+class OmsCurrentStatsView(SupervisorProductionRequiredMixin, TemplateView):
     template_name = 'oms_current_stats.html'
 
     def get_context_data(self, **kwargs):
@@ -1681,7 +1736,7 @@ class OmsCurrentStatsView(SupervisorRequiredMixin, TemplateView):
 
 oms_current_stats = OmsCurrentStatsView.as_view()
 
-class LoruCurrentStatsView(SupervisorRequiredMixin, TemplateView):
+class LoruCurrentStatsView(SupervisorProductionRequiredMixin, TemplateView):
     template_name = 'loru_current_stats.html'
 
     def get_context_data(self, **kwargs):
