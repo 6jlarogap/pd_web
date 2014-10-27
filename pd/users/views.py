@@ -1595,7 +1595,7 @@ class LoruOrderStatsView(SupervisorProductionRequiredMixin, PaginateListView):
                         sum_orders=0,
                     )
                     if len(currencies) < 2:
-                        currencies.add(iorder.supplier.currency)
+                        currencies.add(order.loru.currency)
                 org = pks[org_pk]
                 org['num_orders'] += 1
                 total['num_orders'] += 1
