@@ -14,7 +14,7 @@ from django.db.models.query_utils import Q
 from burials.models import Burial
 from reports.models import Report
 from users.models import Org
-from pd.models import BaseModel, GetLogsMixin, upload_slugified
+from pd.models import BaseModel, GetLogsMixin, upload_slugified, Files
 
 
 class ProductCategory(models.Model):
@@ -114,6 +114,25 @@ class Order(GetLogsMixin, BaseModel):
         (PAYMENT_WIRE, _(u'Безналичный')),
     )
 
+    # Обычно это заказ к захоронению, но не исключается и без захоронения,
+    # но с возможной привязкой к захоронению
+    #
+    TYPE_BURIAL = 'burial'
+    TYPE_PHOTO = 'photo'
+    ORDER_TYPES = (
+        (TYPE_BURIAL, _(u"Заказ к захоронению")),
+        (TYPE_BURIAL, _(u"Заказ фотографий места захоронения")),
+    )
+
+    STATUS_PENDING = 'pending'
+    STATUS_IN_PROGRESS = 'in_progress'
+    STATUS_DONE = 'done'
+    STATUS_TYPES = (
+        (STATUS_PENDING, _(u"Размещен")),
+        (STATUS_IN_PROGRESS, _(u"Подтвержден")),
+        (STATUS_DONE, _(u"Отправлен")),
+    )
+
     loru = models.ForeignKey(Org, limit_choices_to={'type': Org.PROFILE_LORU}, null=True, verbose_name=_(u"ЛОРУ"))
     loru_number = models.PositiveIntegerField(null=True, editable=False)
     payment = models.CharField(_(u"Тип платежа"), max_length=255, choices=PAYMENT_CHOICES, default=PAYMENT_CASH)
@@ -129,6 +148,11 @@ class Order(GetLogsMixin, BaseModel):
     cost = models.DecimalField(_(u"Цена"), max_digits=20, decimal_places=2, editable=False)
     dt = models.DateField(_(u"Дата заказа"))
     burial = models.ForeignKey(Burial, related_name='burial_orders', editable=False, null=True)
+
+    type = models.CharField(_(u"Вид"), max_length=255, choices=ORDER_TYPES, default=TYPE_BURIAL, editable=False,)
+    status = models.CharField(_(u"Статус"), max_length=255, choices=STATUS_TYPES, default=STATUS_PENDING, editable=False,)
+    rating = models.PositiveIntegerField(_(u"Рейтинг"), default=0, editable=False,)
+    finalComment = models.TextField(_(u"Комментарий по окончании работы"), null=True, editable=False, )
 
     class Meta:
         verbose_name = _(u"Заказ")
@@ -247,6 +271,17 @@ class Order(GetLogsMixin, BaseModel):
         hrs = self.orderitem_set.filter(product__ptype=Product.PRODUCT_CATAFALQUE)[0].quantity
         minutes = int(round(hrs * 60))
         return dict(hour=minutes // 60, minute=minutes % 60)
+
+class OrderComment(BaseModel):
+    order = models.ForeignKey(Order, verbose_name=_(u"Заказ"), )
+    user = models.ForeignKey('auth.User', verbose_name=_(u"Пользователь"), )
+    comment = models.TextField(_(u"Комментарий"), )
+
+class OrderPhoto(Files):
+    """
+    Результаты выполнения заказа на фото места
+    """
+    order = models.ForeignKey(Order, verbose_name=_(u"Заказ"), )
 
 class OrderItem(models.Model):
     order = models.ForeignKey(Order, editable=False)
