@@ -316,8 +316,11 @@ class Iorder(BaseModel):
         return IorderItem.objects.filter(iorder=self).count()
 
     def total(self):
-        return float(IorderItem.objects.filter(iorder=self). \
-                aggregate(total=Sum('price_wholesale'))['total'])
+        return IorderItem.objects.filter(iorder=self). \
+                aggregate(total=Sum('price_wholesale'))['total']
+
+    def total_float(self):
+        return float(self.total())
 
     def products_json(self):
        return [dict(

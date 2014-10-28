@@ -31,6 +31,7 @@ from burials.models import Cemetery, Place, Area, BurialFiles, Grave, Burial, Ar
 from burials.burials_views import *
 from logs.models import write_log, log_object, prepare_m2m_log, compare_obj
 from users.models import Profile, Org, CustomerProfile, PermitIfUgh
+from users.views import SupervisorRequiredMixin, UGHRequiredMixin, LoginRequiredMixin
 from persons.models import Phone, AlivePerson
 from geo.models import Location
 
@@ -87,23 +88,6 @@ def getPlace(request):
         raise Http404()
     else:
         return get_object_or_404(Place, id=place_id, cemetery__ugh=request.user.profile.org)
-
-
-
-class UGHRequiredMixin:
-    def dispatch(self, request, *args, **kwargs):
-        self.request = request
-        if not request.user.is_authenticated() or not getattr(self.request.user, 'profile', None) or not self.request.user.profile.is_ugh():
-            return redirect('/')
-        return View.dispatch(self, request, *args, **kwargs)
-
-class LoginRequiredMixin:
-    def dispatch(self, request, *args, **kwargs):
-        self.request = request
-        if not request.user.is_authenticated():
-            return redirect('/')
-        return View.dispatch(self, request, *args, **kwargs)
-
 
 class CemeteryViewSet(viewsets.ModelViewSet):
     model = Cemetery
@@ -193,8 +177,6 @@ class CemeteryViewSet(viewsets.ModelViewSet):
             obj.phone_set.exclude(pk__in=id_binds.keys()).delete()
 
 
-
-
     @action(methods=['GET',])
     def getform(self, request, pk=None):
         cemetery = get_object_or_404(self.get_queryset(), pk=pk)
@@ -210,15 +192,6 @@ class CemeteryViewSet(viewsets.ModelViewSet):
             data["address"] = LocationStaticSerializer(cemetery.address).data
 
         return Response(status=200, data=data)
-
-
-class SupervisorRequiredMixin:
-    def dispatch(self, request, *args, **kwargs):
-        if request.user.is_authenticated() and \
-           request.user.profile and \
-           request.user.profile.is_supervisor():
-            return View.dispatch(self, request, *args, **kwargs)
-        raise Http404
 
 
 class CemeteryList(UGHRequiredMixin, ListView):
