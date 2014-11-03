@@ -5,10 +5,12 @@
 TO_IMPORT_ODS = '/home/suprune20/musor/pricelist.ods'
 PHOTOS_FOLDER = '/home/suprune20/musor/product-photo'
 # Название организации изменено, чтоб еще раз сдуру не запустить процесс
-LORU_NAME = u'ЧТУП "ОПТОМИКСБРЕСТ"-----'
+LORU_NAME = u'ИП Дащинская С.В.---'
 
 # Импортировать товары лору LORU_NAME из таблицы TO_IMPORT_ODS
-# Сделать эти товары предназначенными для показа оптовикам
+# Сделать эти товары предназначенными для показа оптовикам,
+# если указана ненулевая цена, иначе поставщик сам укажет
+# потом цену и внесет ва оптовый каталог
 #
 # Запуск из ./manage.py shell :
 # execfile('../contrib/import_pricelist/import_pricelist.py')
@@ -61,14 +63,14 @@ def main():
                 price=price,
                 price_wholesale=price_wholesale,
                 sku=sku,
-                is_wholesale=True,
+                is_wholesale=bool(price),
             )
             if not p.sku:
                 p.sku = str(p.pk)
                 p.save()
             fname = ods_cell(cells[5])
             if fname:
-                fname = u"%s.jpg" % fname
+                fname = u"%s.png" % fname
                 f = open(os.path.join(PHOTOS_FOLDER, fname), 'r')
                 s = f.read()
                 f.close()
