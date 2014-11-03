@@ -594,9 +594,13 @@ class ApiFeedBack(CheckRecaptchaMixin, APIView):
                 email_subject = _(u'Вопрос в поддержку')
             
             if request.user.is_authenticated():
-                if not request.user.email and email_from:
-                    request.user.email = email_from
-                    request.user.save()
+                user_email = request.user.email
+                if not user_email and email_from:
+                    try:
+                        request.user.email = email_from
+                        request.user.save()
+                    except IntegrityError:
+                        request.user.email = user_email
 
                 if is_cabinet_user(request.user):
                     profile = request.user.customerprofile
