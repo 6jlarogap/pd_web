@@ -30,6 +30,7 @@ from django.shortcuts import redirect, render, get_object_or_404
 from django.template.loader import render_to_string
 from django.utils.translation import ugettext_lazy as _
 from django.utils.encoding import smart_unicode
+from django.utils.formats import number_format
 from django.views.generic.base import View, TemplateView
 from django.views.generic.edit import UpdateView, CreateView, FormView
 from django.views.generic.detail import DetailView
@@ -593,9 +594,13 @@ class ApiFeedBack(CheckRecaptchaMixin, APIView):
                 email_subject = _(u'Вопрос в поддержку')
             
             if request.user.is_authenticated():
-                if not request.user.email and email_from:
-                    request.user.email = email_from
-                    request.user.save()
+                user_email = request.user.email
+                if not user_email and email_from:
+                    try:
+                        request.user.email = email_from
+                        request.user.save()
+                    except IntegrityError:
+                        request.user.email = user_email
 
                 if is_cabinet_user(request.user):
                     profile = request.user.customerprofile
@@ -1616,6 +1621,10 @@ class LoruOrderStatsView(SupervisorProductionRequiredMixin, PaginateListView):
                 for org in orgs:
                     org['sum_orders'] = int(org['sum_orders'])
                 total['sum_orders'] = int(total['sum_orders'])
+
+            for org in orgs:
+                org['sum_orders'] = number_format(org['sum_orders'], force_grouping=True)
+            total['sum_orders'] = number_format(total['sum_orders'], force_grouping=True)
 
             total['currency'] = orgs[0]['currency'] if len(currencies) == 1 else ''
             orgs.sort(key=sort_key, reverse=sort.startswith('-'))
