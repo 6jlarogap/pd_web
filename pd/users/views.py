@@ -395,7 +395,8 @@ class ApiSettings(APIView):
                         try:
                             user.customerprofile.login_phone = new_login_phone
                             user.customerprofile.save()
-                            AlivePerson.objects.filter(login_phone=old_login_phone).update(login_phone=new_login_phone)
+                            #TODO :журнал места и всех зх места, что изменился login_phone
+                            AlivePerson.objects.filter(user=user).update(login_phone=new_login_phone)
                         except IntegrityError:
                             raise ServiceException(_(u'Такой номер телефона ответственного уже имеется'))
 
@@ -514,7 +515,7 @@ class AuthGetPasswordBySMSView(CheckRecaptchaMixin, APIView):
                         sent, message = send_sms(
                             phone_number=login_phone,
                             text=_(u'Vash parol na PohoronnoeDelo: %s') % password,
-                            email_error_text = _(u"Пользователь %s (телефон %s) не смог получить или заменить пароль" % \
+                            email_error_text = _(u"Пользователь %s (телефон %s) не смог заменить пароль" % \
                                                (user.username, login_phone)),
                         )
         if not message:

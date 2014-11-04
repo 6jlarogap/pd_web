@@ -956,6 +956,8 @@ class Burial(SafeDeleteMixin, GetLogsMixin, BaseModel):
                 email_error_text = _(u"Пользователь %s (телефон %s) не смог получить СМС после прикрепления места %s" % \
                                     (customerprofile.user.username, place.responsible.login_phone, place.pk,))
             except CustomerProfile.DoesNotExist:
+                # create_cabinet() создаст user, customerprofile с login_phone,
+                # а также занесет в place.responsible нового user
                 password = CustomerProfile.create_cabinet(place.responsible)
                 text = _(u'%s login: %s parol: %s') % (
                     get_front_end_url(request).rstrip('/'),

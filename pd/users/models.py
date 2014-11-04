@@ -119,6 +119,8 @@ class CustomerProfile(CommonProfile):
                                         'login_phone': decimal.Decimal(responsible.login_phone)
                                     }
                                 )
+        responsible.user = user
+        responsible.save()
         return password
 
 class CustomerProfilePhoto(Files):

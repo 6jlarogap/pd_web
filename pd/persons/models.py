@@ -185,10 +185,19 @@ class AlivePerson(BasePerson, PhonesMixin):
     Живое ФЛ с телефоном
     """
     phones = models.TextField(_(u"Телефоны"), blank=True, null=True)
+    user = models.ForeignKey('auth.User', verbose_name=_(u"Ответственный за место или пользователь- физ. лицо"),
+           null=True, editable=False)
+    # Оставляем здесь login_phone как хранилище для телефона логина ответственного,
+    # для сохранения черновиков захоронений, а также для удобства отображения в формах.
+    # Реальный телефон логина ответственного см. в self.user and self.user.customerprofile.login_phone.
+    # Если пользователь меняет login_phone, то копия его попадет и сюда, т.е. будет поддерживаться:
+    # self.login_phone == self.user.customerprofile.login_phone
+    #
     login_phone = models.DecimalField(_(u"Мобильный телефон для входа в кабинет"), max_digits=15, decimal_places=0,
                   blank=True, null=True, db_index=True,
                   help_text=_(u'В международном формате, начиная с кода страны, без "+", например 79101234567'),
-                  validators = [validate_phone_as_number, ])
+                  validators = [validate_phone_as_number, ],
+                  editable=False)
 
 class DocumentSource(models.Model):
     name = models.CharField(_(u"Наименование органа"), max_length=255, unique=True)
