@@ -185,6 +185,8 @@ class AlivePerson(BasePerson, PhonesMixin):
     Живое ФЛ с телефоном
     """
     phones = models.TextField(_(u"Телефоны"), blank=True, null=True)
+    user = models.ForeignKey('auth.User', verbose_name=_(u"Ответственный за место или пользователь- физ. лицо"),
+           null=True, editable=False)
     login_phone = models.DecimalField(_(u"Мобильный телефон для входа в кабинет"), max_digits=15, decimal_places=0,
                   blank=True, null=True, db_index=True,
                   help_text=_(u'В международном формате, начиная с кода страны, без "+", например 79101234567'),
