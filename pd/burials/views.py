@@ -329,15 +329,12 @@ class PlaceViewSet(viewsets.ModelViewSet):
 
     def pre_save(self, object):
         
-        item = getArea(self.request) # TODO: check this
+        item = getArea(self.request)
         object.area = item
         self.new_msg = []
         self.old_responsible = object.responsible
         self.old_object = None
         
-        #if item.pk:
-        #    write_log(self.request, object, _(u'Место №%s изменено' % object.place))
-
         max_graves_count = self.request.user.profile.org.max_graves_count or 10
         try:
             self.places_count = int(self.request.DATA.get('places_count',1))
@@ -390,8 +387,6 @@ class PlaceViewSet(viewsets.ModelViewSet):
                         email_error_text=email_error_text,
                         user=self.request.user,
                     )
-
-            #object.responsible.address_id = responsible.address
 
         try:
             self.old_object = self.model.objects.get(pk=object.pk)
@@ -1124,14 +1119,10 @@ class PlaceCertificateView(UGHRequiredMixin, DetailView):
                 left.append(place.responsible.first_name)
             if place.responsible.middle_name:
                 left.append(place.responsible.middle_name)
-            if place.responsible.login_phone:
-                try:
-                    customerprofile = CustomerProfile.objects.get(login_phone=place.responsible.login_phone)
-                except CustomerProfile.DoesNotExist:
-                    customerprofile = None
+            if place.responsible.user:
                 left.append(_(u"Вход на сайт %s, логин: %s") % (
                     get_front_end_url(self.request),
-                    customerprofile.user.username if customerprofile else place.responsible.login_phone,
+                    place.responsible.user.username,
                 ))
         else:
             left.append(_(u"не указан"))
