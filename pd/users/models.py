@@ -181,6 +181,18 @@ def is_supervisor(user):
     except (AttributeError, Profile.DoesNotExist, ):
         return False
 
+def get_profile(user):
+    profile = None
+    if user:
+        if is_cabinet_user(user):
+            profile = user.customerprofile
+        else:
+            try:
+                profile = user.profile
+            except (AttributeError, Profile.DoesNotExist, ):
+                pass
+    return profile
+
 class PermitIfLoru(permissions.BasePermission):
     def has_permission(self, request, view):
         return is_loru_user(request.user)

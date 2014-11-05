@@ -13,7 +13,11 @@
             <td>{{ log.dt }}</td>
             <td>
             {% if log.user %}
-                {{ log.user.profile }} / {{ log.user.profile.org }}
+                {% if log.user.profile %}
+                    {{ log.user.profile }} / {{ log.user.profile.org }}
+                {% elif log.user.customerprofile %}
+                    {{ log.user.customerprofile }} / {% trans "Ответственный за место" %}
+                {% endif %}
             {% endif %}
             </td>
             <td>{{ log.msg|linebreaksbr }}</td>

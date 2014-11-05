@@ -371,6 +371,20 @@ class Place(SafeDeleteMixin, GeoPointModel):
                 result.append(f)
         return result
 
+    @classmethod
+    def log_login_phone_change(cls, request, old_login_phone):
+        """
+        Записать в журнал по всем местам и захоронениям изменение login_phone
+        """
+        for place in cls.objects.filter(responsible__user=request.user):
+            message = _(u"Ответственный изменил телефон входа в систему c %s на %s") % (
+                old_login_phone,
+                place.responsible.login_phone,
+            )
+            write_log(request, place, message)
+            for burial in place.burial_set.all():
+                write_log(request, burial, message)
+
 class PlaceSize(models.Model):
     org = models.ForeignKey(Org, verbose_name=_(u"Организация"), editable=False, on_delete=models.PROTECT) 
     graves_count = models.PositiveSmallIntegerField(_(u"Число могил"), )
