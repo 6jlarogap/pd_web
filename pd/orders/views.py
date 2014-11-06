@@ -28,11 +28,12 @@ from geo.models import Location
 from burials.forms import AddOrgForm, AddAgentForm, AddDoverForm, AddDocTypeForm
 from burials.models import Burial, Place, Grave, PlacePhoto
 from users.models import CustomerProfile, CustomerProfilePhoto, Org, ProfileLORU, Store, is_loru_user, is_supervisor, \
-                         PermitIfLoru
+                         PermitIfLoru, PermitIfCabinet, is_cabinet_user
 from billing.models import Rate
 from orders.forms import ProductForm, OrderForm, OrderItemFormset, CoffinForm, CatafalqueForm, \
                          AddInfoForm, OrderSearchForm, OrderBurialForm
 from orders.models import Product, Order, OrderItem, ProductCategory, Iorder, IorderItem
+from persons.models import CustomPlace
 from pd.forms import CommentForm
 from pd.views import PaginateListView, RequestToFormMixin, ServiceException, get_front_end_url, get_host_url
 from reports.models import make_report
@@ -636,23 +637,6 @@ class ProductCategoryViewSet(viewsets.ModelViewSet):
             qs &= Q(product__is_wholesale=True)
         return ProductCategory.objects.filter(qs).order_by('name').distinct()
 
-class CustomerDataMixin:
-    def get_customer_data(self, request):
-        places = []
-        lorus = set()
-        is_customer = True
-        try:
-            request.user.customerprofile
-        except CustomerProfile.DoesNotExist:
-            is_customer = False
-        else:
-            login_phone = request.user.customerprofile.login_phone
-            if login_phone is not None:
-                for p in Place.objects.filter(responsible__login_phone=login_phone):
-                    places.append(p)
-                    lorus.update(p.cemetery.ugh.get_loru_list())
-        return is_customer, places, lorus
-
 class ProductsViewSet(ProductCategoryQsMixin, viewsets.ReadOnlyModelViewSet):
     """
     Показ продуктов в публичном каталоге только!!!
@@ -760,14 +744,10 @@ class ProductInfoView(APIView):
 
 api_catalog_products_detail = ProductInfoView.as_view()
 
-class ApiProfileViewSet(CustomerDataMixin, viewsets.ViewSet):
-    queryset = CustomerProfile.objects.none()
-    permission_classes = (IsAuthenticated,)
+class ApiProfileView(APIView):
+    permission_classes = (PermitIfCabinet,)
     
-    def list(self, request):
-        is_customer, places, lorus = self.get_customer_data(request)
-        if not is_customer:
-            return Response(status=400, data=[])
+    def get(self, request):
         profile = request.user.customerprofile
         data = {
             'id': request.user.pk,
@@ -784,8 +764,9 @@ class ApiProfileViewSet(CustomerDataMixin, viewsets.ViewSet):
         data['loginPhone'] = request.user.customerprofile.login_phone
         data['username'] = request.user.username
         data['places'] = []
-        for p in places:
-            place={'id': p.pk}
+        for cp in CustomPlace.objects.filter(place__responsible__user=request.user).select_related('place'):
+            place={'id': cp.pk}
+            p = cp.place
             place['address'] = _(u'Кладбище %s, участок %s') % (p.cemetery.name, p.area.name, )
             if p.row:
                 place['address'] += _(u', ряд %s') % p.row
@@ -822,6 +803,8 @@ class ApiProfileViewSet(CustomerDataMixin, viewsets.ViewSet):
             data['places'].append(place)           
             
         return Response(status=200, data=data)
+
+api_profile = ApiProfileView.as_view()
 
 class ApiLoruProductPlaces(APIView):
     """
