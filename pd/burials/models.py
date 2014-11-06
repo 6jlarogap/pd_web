@@ -12,7 +12,7 @@ from django.conf import settings
 from pd.models import UnclearDateModelField, BaseModel, Files, GetLogsMixin, validate_gt0, SafeDeleteMixin
 from pd.views import get_front_end_url
 
-from persons.models import DeadPerson, DeathCertificate
+from persons.models import DeadPerson, DeathCertificate, CustomPlace
 from reports.models import Report
 from users.models import Org, Profile, Dover, ProfileLORU, CustomerProfile, PhonesMixin, \
                          is_ugh_user, is_cabinet_user
@@ -966,13 +966,14 @@ class Burial(SafeDeleteMixin, GetLogsMixin, BaseModel):
            old_status != self.STATUS_CLOSED:
             try:
                 customerprofile = CustomerProfile.objects.get(login_phone=place.responsible.login_phone)
+                user = customerprofile.user
                 text = _(u'Место %s прикреплено. pohoronnoedelo.ru') % place.pk
                 email_error_text = _(u"Пользователь %s (телефон %s) не смог получить СМС после прикрепления места %s" % \
                                     (customerprofile.user.username, place.responsible.login_phone, place.pk,))
             except CustomerProfile.DoesNotExist:
                 # create_cabinet() создаст user, customerprofile с login_phone,
                 # а также занесет в place.responsible нового user
-                password = CustomerProfile.create_cabinet(place.responsible)
+                user, password = CustomerProfile.create_cabinet(place.responsible)
                 text = _(u'%s login: %s parol: %s') % (
                     get_front_end_url(request).rstrip('/'),
                     place.responsible.login_phone,
@@ -985,6 +986,7 @@ class Burial(SafeDeleteMixin, GetLogsMixin, BaseModel):
                         request,
                         _(u"Создан пользователь кабинета %s, пароль %s") % (place.responsible.login_phone, password, ),
                     )
+            CustomPlace.objects.get_or_create(user=user, place=place)
             if not settings.DEBUG:
                 sent, message = send_sms(
                     phone_number=place.responsible.login_phone,
