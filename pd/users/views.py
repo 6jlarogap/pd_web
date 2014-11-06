@@ -233,7 +233,7 @@ class ApiAuthSignoutView(APIView):
     permission_classes = (IsAuthenticated,)
     
     def post(self, request):
-        print u'DEBUG: %s:%s /API/AUTH/SIGNOUT' % (request.get_host(), request.user.username, )
+        # print u'DEBUG: %s:%s /API/AUTH/SIGNOUT' % (request.get_host(), request.user.username, )
         logout(request)
         return Response(data={}, status=200)
 
