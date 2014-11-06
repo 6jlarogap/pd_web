@@ -233,7 +233,7 @@ class ApiAuthSignoutView(APIView):
     permission_classes = (IsAuthenticated,)
     
     def post(self, request):
-        print u'DEBUG: %s:%s /API/AUTH/SIGNOUT' % (request.get_host(), request.user.username, )
+        # print u'DEBUG: %s:%s /API/AUTH/SIGNOUT' % (request.get_host(), request.user.username, )
         logout(request)
         return Response(data={}, status=200)
 
@@ -395,8 +395,8 @@ class ApiSettings(APIView):
                         try:
                             user.customerprofile.login_phone = new_login_phone
                             user.customerprofile.save()
-                            #TODO :журнал места и всех зх места, что изменился login_phone
                             AlivePerson.objects.filter(user=user).update(login_phone=new_login_phone)
+                            Place.log_login_phone_change(request, old_login_phone)
                         except IntegrityError:
                             raise ServiceException(_(u'Такой номер телефона ответственного уже имеется'))
 

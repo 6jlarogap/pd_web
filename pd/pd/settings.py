@@ -202,7 +202,7 @@ SENTRY_TESTING = True
 
 DEBUG_TOOLBAR_CONFIG = {'INTERCEPT_REDIRECTS': False}
 
-SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False
 SESSION_SAVE_EVERY_REQUEST = True
 
 # Google reCaptcha keys, поучаемые из http://www.google.com/recaptcha,
