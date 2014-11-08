@@ -1277,48 +1277,65 @@ class ApiOrgServicesMixin(object):
     def check_input_message(self, request, service_name=None):
         if not service_name:
             service_name = request.DATA.get('type')
-        result = ''
         try:
-            Service.objects.get(name=service_name)
+            service = Service.objects.get(name=service_name)
             org = request.user.profile.org
             if OrgService.objects.filter(service__name=service_name).exists():
                 if request.method == "POST":
-                    return _(u"Сервис %s уже активирован у организации") % service_name
+                    return service, None, _(u"Сервис %s уже активирован у организации") % service_name
             else:
                 if request.method in ("PUT", "DETETE", ):
-                    return _(u"Сервис %s не активирован у организации") % service_name
-            measures = request.DATA.get('measures', [])
+                    return service, None, _(u"Сервис %s не активирован у организации") % service_name
+            measures_get = request.DATA.get('measures', [])
             if request.method == "POST":
-                if not measures:
-                    return _(u"Не заданы цены с единицами изменений (measures)")
-            measure_names = [v['name'] for v in Measure.objects.filter(service__name=service_name).values('name')]
-            for m in measures:
+                if not measures_get:
+                    return service, None, _(u"Не заданы цены с единицами изменений (measures)")
+            measures = Measure.objects.filter(service__name=service_name)
+            measure_names = [v['name'] for v in measures.values('name')]
+            for m in measures_get:
                 if m['name'] not in measure_names:
-                    return _(u"Нет единицы измерения %s у услуги %s") % (m['name'], service_name)
+                    return service, measures, _(u"Нет единицы измерения %s у услуги %s") % (m['name'], service_name)
         except Service.DoesNotExist:
-            return _(u"Сервис %s неизвестен в системе") % service_name
-        return result
+            return None, None, _(u"Сервис %s неизвестен в системе") % service_name
+        return service, measures, ''
 
 class ApiOrgServicesView(ApiOrgServicesMixin, APIView):
     permission_classes = (PermitIfLoru,)
 
     def post(self, request):
         """
-        Активизировать сервис service_name
+        Активизировать сервис
         
         Вх.данные, пример:
-            {
-                “type”: “place_photo”,
-                “measures”: {
-                    “name”: “kg”,
-                    “value”: 234
-                }
-            }
+        {
+        "type": "photo",
+        "measures": [
+          {
+          "name": "unit",
+          "value": 234
+          }
+         ]
+        }
         """
-        message = self.check_input_message(request)
+        service, measures, message = self.check_input_message(request)
         if message:
             data = dict(status='error', message=message)
             return Response(data=dict(status='error', message=message), status=400)
+        # Заполнить всеми возможными единицами измерения
+        measures_get = request.DATA.get('measures', [])
+        for measure in measures:
+            for m in measures_get:
+                if m['name'] == measure.name:
+                    price=m['value']
+                break
+            else:
+                price = 0.00
+            OrgService.objects.create(
+                org=request.user.profile.org,
+                service=service,
+                measure=measure,
+                price=price,
+            )
         return Response(data=dict(status='success'), status=200)
 
 api_org_services = ApiOrgServicesView.as_view()
