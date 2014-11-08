@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <django-objects version="1.0">
+    <!--- ProductCategory -->
     <object pk="1" model="orders.productcategory">
         <field type="CharField" name="name">Памятники</field>
         <field type="FileField" name="icon"></field>
@@ -101,5 +102,37 @@
     <object pk="26" model="orders.productcategory">
         <field type="CharField" name="name">Каркасы для венков</field>
         <field type="FileField" name="icon"></field>
+    </object>
+    <!--- Service: возможные услуги -->
+    <object pk="1" model="orders.service">
+        <field type="CharField" name="name">photo</field>
+        <field type="CharField" name="title">Заказ фотографии</field>
+        <field type="TextField" name="description"></field>
+    </object>
+    <object pk="2" model="orders.service">
+        <field type="CharField" name="name">delivery</field>
+        <field type="CharField" name="title">Доставка</field>
+        <field type="TextField" name="description">Транспортные услуги</field>
+    </object>
+    <!--- Measure: Возможные единицы оказываемых услуг (сервисов) -->
+    <object pk="1" model="orders.measure">
+        <field to="orders.service" name="service" rel="ManyToOneRel">1</field>
+        <field type="CharField" name="name">unit</field>
+        <field type="CharField" name="title">Стоимость за единицу</field>
+    </object>
+    <object pk="2" model="orders.measure">
+        <field to="orders.service" name="service" rel="ManyToOneRel">2</field>
+        <field type="CharField" name="name">km</field>
+        <field type="CharField" name="title">Стоимость за километр</field>
+    </object>
+    <object pk="3" model="orders.measure">
+        <field to="orders.service" name="service" rel="ManyToOneRel">2</field>
+        <field type="CharField" name="name">kg</field>
+        <field type="CharField" name="title">Стоимость за килограмм</field>
+    </object>
+    <object pk="4" model="orders.measure">
+        <field to="orders.service" name="service" rel="ManyToOneRel">2</field>
+        <field type="CharField" name="name">m3</field>
+        <field type="CharField" name="title">Стоимость за метр кубический</field>
     </object>
 </django-objects>
