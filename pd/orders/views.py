@@ -32,7 +32,7 @@ from users.models import CustomerProfile, CustomerProfilePhoto, Org, ProfileLORU
 from billing.models import Rate
 from orders.forms import ProductForm, OrderForm, OrderItemFormset, CoffinForm, CatafalqueForm, \
                          AddInfoForm, OrderSearchForm, OrderBurialForm
-from orders.models import Product, Order, OrderItem, ProductCategory, Iorder, IorderItem
+from orders.models import Product, Order, OrderItem, ProductCategory, Iorder, IorderItem, Service
 from persons.models import CustomPlace
 from pd.forms import CommentForm
 from pd.views import PaginateListView, RequestToFormMixin, ServiceException, get_front_end_url, get_host_url
@@ -45,7 +45,7 @@ from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser
 from orders.serializers import ProductCategorySerializer, ProductsSerializer, ProductsOptSerializer, \
                                ProductInfoSerializer, IordersSerializer, IorderInfoSerializer, \
-                               ProductEditSerializer
+                               ProductEditSerializer, ServiceSerializer
 
 from pd.utils import EmailMessage
 from pd.models import validate_phone_as_number
@@ -1261,3 +1261,12 @@ class ApiProductDetail(APIView):
         return Response(serializer.errors, status=400)
 
 api_product_detail = ApiProductDetail.as_view()
+
+class ApiServicesView(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request):
+        serializer = ServiceSerializer(Service.objects.all(), many=True)
+        return Response(serializer.data)
+
+api_services = ApiServicesView.as_view()

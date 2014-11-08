@@ -9,7 +9,7 @@ from rest_framework import serializers
 from rest_framework.fields import Field
 
 from rest_api.fields import HyperlinkedFileField
-from orders.models import ProductCategory, Product, Iorder
+from orders.models import ProductCategory, Product, Iorder, Service, Measure
 from users.models import Org
 from users.serializers import OrgSerializer, OrgShortSerializer, OrgShort3Serializer, OrgShort4Serializer
 from pd.utils import utcisoformat, str_to_bool_or_None
@@ -244,3 +244,17 @@ class ProductEditSerializer(ProductCurrencyMixin, serializers.HyperlinkedModelSe
         if new_obj and (not obj.sku or not obj.sku.strip()):
             obj.sku = obj.pk
             obj.save()
+
+class MeasureSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Measure
+        fields = ('name', 'title', )
+
+class ServiceSerializer(serializers.ModelSerializer):
+    type = Field(source='name')
+    measures = MeasureSerializer(many=True, source='measure_set')
+
+    class Meta:
+        model = Service
+        fields = ('type', 'title', 'description', 'measures', )
