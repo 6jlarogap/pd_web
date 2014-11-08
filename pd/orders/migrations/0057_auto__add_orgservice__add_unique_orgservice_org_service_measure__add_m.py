@@ -18,8 +18,8 @@ class Migration(SchemaMigration):
         ))
         db.send_create_signal('orders', ['OrgService'])
 
-        # Adding unique constraint on 'OrgService', fields ['org', 'measure']
-        db.create_unique('orders_orgservice', ['org_id', 'measure_id'])
+        # Adding unique constraint on 'OrgService', fields ['org', 'service', 'measure']
+        db.create_unique('orders_orgservice', ['org_id', 'service_id', 'measure_id'])
 
         # Adding model 'Measure'
         db.create_table('orders_measure', (
@@ -61,6 +61,7 @@ class Migration(SchemaMigration):
             ('dt_modified', self.gf('django.db.models.fields.DateTimeField')(auto_now=True, blank=True)),
             ('order', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['orders.Order'])),
             ('user', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['auth.User'])),
+            ('type', self.gf('django.db.models.fields.CharField')(default='shared', max_length=255)),
             ('comment', self.gf('django.db.models.fields.TextField')()),
         ))
         db.send_create_signal('orders', ['OrderComment'])
@@ -86,7 +87,7 @@ class Migration(SchemaMigration):
 
         # Adding field 'Order.rating'
         db.add_column('orders_order', 'rating',
-                      self.gf('django.db.models.fields.PositiveIntegerField')(default=0),
+                      self.gf('django.db.models.fields.PositiveSmallIntegerField')(default=0),
                       keep_default=False)
 
         # Adding field 'Order.finalComment'
@@ -99,8 +100,8 @@ class Migration(SchemaMigration):
         # Removing unique constraint on 'Measure', fields ['service', 'name']
         db.delete_unique('orders_measure', ['service_id', 'name'])
 
-        # Removing unique constraint on 'OrgService', fields ['org', 'measure']
-        db.delete_unique('orders_orgservice', ['org_id', 'measure_id'])
+        # Removing unique constraint on 'OrgService', fields ['org', 'service', 'measure']
+        db.delete_unique('orders_orgservice', ['org_id', 'service_id', 'measure_id'])
 
         # Deleting model 'OrgService'
         db.delete_table('orders_orgservice')
@@ -409,7 +410,7 @@ class Migration(SchemaMigration):
             'loru': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['users.Org']", 'null': 'True'}),
             'loru_number': ('django.db.models.fields.PositiveIntegerField', [], {'null': 'True'}),
             'payment': ('django.db.models.fields.CharField', [], {'default': "'cash'", 'max_length': '255'}),
-            'rating': ('django.db.models.fields.PositiveIntegerField', [], {'default': '0'}),
+            'rating': ('django.db.models.fields.PositiveSmallIntegerField', [], {'default': '0'}),
             'status': ('django.db.models.fields.CharField', [], {'default': "'pending'", 'max_length': '255'})
         },
         'orders.ordercomment': {
@@ -419,6 +420,7 @@ class Migration(SchemaMigration):
             'dt_modified': ('django.db.models.fields.DateTimeField', [], {'auto_now': 'True', 'blank': 'True'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'order': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['orders.Order']"}),
+            'type': ('django.db.models.fields.CharField', [], {'default': "'shared'", 'max_length': '255'}),
             'user': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['auth.User']"})
         },
         'orders.orderitem': {
@@ -430,7 +432,7 @@ class Migration(SchemaMigration):
             'quantity': ('django.db.models.fields.DecimalField', [], {'default': '1', 'max_digits': '20', 'decimal_places': '2'})
         },
         'orders.orgservice': {
-            'Meta': {'unique_together': "(('org', 'measure'),)", 'object_name': 'OrgService'},
+            'Meta': {'unique_together': "(('org', 'service', 'measure'),)", 'object_name': 'OrgService'},
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'measure': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['orders.Measure']", 'on_delete': 'models.PROTECT'}),
             'org': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['users.Org']"}),

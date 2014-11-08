@@ -23,8 +23,8 @@ class Service(models.Model):
 
     Перечисляются в fixtures
     """
-    name = models.CharField(_(u"Обозначение"), max_length=255, unique=True)
-    title = models.CharField(_(u"Название"), max_length=255)
+    name = models.CharField(_(u"Название"), max_length=255, unique=True)
+    title = models.CharField(_(u"Заглавие"), max_length=255)
     description = models.TextField(_(u"Описание"), default='')
 
 class Measure(models.Model):
@@ -33,9 +33,9 @@ class Measure(models.Model):
 
     Перечисляются в fixtures
     """
-    service = models.ForeignKey(Service, verbose_name=_(u"Тип сервиса"), on_delete=models.PROTECT)
-    name = models.CharField(_(u"Обозначение"), max_length=255)
-    title = models.CharField(_(u"Название"), max_length=255)
+    service = models.ForeignKey(Service, verbose_name=_(u"Сервис"), on_delete=models.PROTECT)
+    name = models.CharField(_(u"Название"), max_length=255)
+    title = models.CharField(_(u"Заглавие"), max_length=255)
 
     class Meta:
         unique_together = (
@@ -49,11 +49,11 @@ class OrgService(models.Model):
     org = models.ForeignKey(Org, verbose_name=_(u"Поставщик"))
     service = models.ForeignKey(Service, verbose_name=_(u"Тип сервиса"), on_delete=models.PROTECT)
     measure = models.ForeignKey(Measure, verbose_name=_(u"Единица измерения"), on_delete=models.PROTECT)
-    price = models.DecimalField(_(u"Цена за услугу"), max_digits=20, decimal_places=2, default='0.00')
+    price = models.DecimalField(_(u"Цена"), max_digits=20, decimal_places=2, default='0.00')
 
     class Meta:
         unique_together = (
-            ('org', 'measure', ),
+            ('org', 'service', 'measure', ),
         )
 
 class ProductCategory(models.Model):
@@ -159,7 +159,7 @@ class Order(GetLogsMixin, BaseModel):
     STATUS_TYPES = (
         (STATUS_PENDING, _(u"Размещен")),
         (STATUS_IN_PROGRESS, _(u"Подтвержден")),
-        (STATUS_DONE, _(u"Отправлен")),
+        (STATUS_DONE, _(u"Выполнен")),
     )
 
     loru = models.ForeignKey(Org, limit_choices_to={'type': Org.PROFILE_LORU}, null=True, verbose_name=_(u"ЛОРУ"))
@@ -180,7 +180,7 @@ class Order(GetLogsMixin, BaseModel):
 
     customplace = models.ForeignKey('persons.CustomPlace', verbose_name=_(u"Место захоронения"), null=True, editable=False)
     status = models.CharField(_(u"Статус"), max_length=255, choices=STATUS_TYPES, default=STATUS_PENDING, editable=False,)
-    rating = models.PositiveIntegerField(_(u"Рейтинг"), default=0, editable=False,)
+    rating = models.PositiveSmallIntegerField(_(u"Рейтинг"), default=0, editable=False,)
     finalComment = models.TextField(_(u"Комментарий по окончании работы"), null=True, editable=False, )
 
     class Meta:
@@ -303,13 +303,23 @@ class Order(GetLogsMixin, BaseModel):
 
 class ServiceItem(models.Model):
     order = models.ForeignKey(Order)
-    orgservice = models.ForeignKey(OrgService, verbose_name=_(u"Подписанная услуга"), on_delete=models.PROTECT)
+    orgservice = models.ForeignKey(OrgService, verbose_name=_(u"Услуга"), on_delete=models.PROTECT)
     cost = models.DecimalField(_(u"Цена"), max_digits=20, decimal_places=2)
 
 class OrderComment(BaseModel):
 
+    TYPE_PRIVATE = 'private'
+    TYPE_SHARED = 'shared'
+    TYPE_PUBLIC = 'public'
+    COMMENT_TYPES = (
+        (TYPE_PRIVATE, _(u"Личный")),
+        (TYPE_SHARED, _(u"Доступный автору и собеседнику")),
+        (TYPE_PUBLIC, _(u"Общедоступный")),
+    )
+
     order = models.ForeignKey(Order, verbose_name=_(u"Заказ"), )
     user = models.ForeignKey('auth.User', verbose_name=_(u"Пользователь"), )
+    type = models.CharField(_(u"Тип"), max_length=255, choices=COMMENT_TYPES, default=TYPE_SHARED)
     comment = models.TextField(_(u"Комментарий"), )
 
 class ResultFile(Files):

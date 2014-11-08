@@ -32,7 +32,8 @@ from users.models import CustomerProfile, CustomerProfilePhoto, Org, ProfileLORU
 from billing.models import Rate
 from orders.forms import ProductForm, OrderForm, OrderItemFormset, CoffinForm, CatafalqueForm, \
                          AddInfoForm, OrderSearchForm, OrderBurialForm
-from orders.models import Product, Order, OrderItem, ProductCategory, Iorder, IorderItem, Service
+from orders.models import Product, Order, OrderItem, ProductCategory, Iorder, IorderItem, \
+                          Service, Measure, OrgService
 from persons.models import CustomPlace
 from pd.forms import CommentForm
 from pd.views import PaginateListView, RequestToFormMixin, ServiceException, get_front_end_url, get_host_url
@@ -1267,6 +1268,57 @@ class ApiServicesView(APIView):
 
     def get(self, request):
         serializer = ServiceSerializer(Service.objects.all(), many=True)
-        return Response(serializer.data)
+        return Response(serializer.data, status=200)
 
 api_services = ApiServicesView.as_view()
+
+class ApiOrgServicesMixin(object):
+
+    def check_input_message(self, request, service_name=None):
+        if not service_name:
+            service_name = request.DATA.get('type')
+        result = ''
+        try:
+            Service.objects.get(name=service_name)
+            org = request.user.profile.org
+            if OrgService.objects.filter(service__name=service_name).exists():
+                if request.method == "POST":
+                    return _(u"Сервис %s уже активирован у организации") % service_name
+            else:
+                if request.method in ("PUT", "DETETE", ):
+                    return _(u"Сервис %s не активирован у организации") % service_name
+            measures = request.DATA.get('measures', [])
+            if request.method == "POST":
+                if not measures:
+                    return _(u"Не заданы цены с единицами изменений (measures)")
+            measure_names = [v['name'] for v in Measure.objects.filter(service__name=service_name).values('name')]
+            for m in measures:
+                if m['name'] not in measure_names:
+                    return _(u"Нет единицы измерения %s у услуги %s") % (m['name'], service_name)
+        except Service.DoesNotExist:
+            return _(u"Сервис %s неизвестен в системе") % service_name
+        return result
+
+class ApiOrgServicesView(ApiOrgServicesMixin, APIView):
+    permission_classes = (PermitIfLoru,)
+
+    def post(self, request):
+        """
+        Активизировать сервис service_name
+        
+        Вх.данные, пример:
+            {
+                “type”: “place_photo”,
+                “measures”: {
+                    “name”: “kg”,
+                    “value”: 234
+                }
+            }
+        """
+        message = self.check_input_message(request)
+        if message:
+            data = dict(status='error', message=message)
+            return Response(data=dict(status='error', message=message), status=400)
+        return Response(data=dict(status='success'), status=200)
+
+api_org_services = ApiOrgServicesView.as_view()
