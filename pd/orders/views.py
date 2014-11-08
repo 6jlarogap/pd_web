@@ -1326,8 +1326,8 @@ class ApiOrgServicesView(ApiOrgServicesMixin, APIView):
         for measure in measures:
             for m in measures_get:
                 if m['name'] == measure.name:
-                    price=m['value']
-                break
+                    price = m['value']
+                    break
             else:
                 price = 0.00
             OrgService.objects.create(
