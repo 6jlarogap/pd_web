@@ -33,7 +33,7 @@ from billing.models import Rate
 from orders.forms import ProductForm, OrderForm, OrderItemFormset, CoffinForm, CatafalqueForm, \
                          AddInfoForm, OrderSearchForm, OrderBurialForm
 from orders.models import Product, Order, OrderItem, ProductCategory, Iorder, IorderItem, \
-                          Service, Measure, OrgService
+                          Service, Measure, OrgService, OrgServicePrice
 from persons.models import CustomPlace
 from pd.forms import CommentForm
 from pd.views import PaginateListView, RequestToFormMixin, ServiceException, get_front_end_url, get_host_url
@@ -1275,23 +1275,21 @@ api_services = ApiServicesView.as_view()
 class ApiOrgServicesMixin(object):
 
     def check_input_message(self, request, org_id, service_name=None):
-        if str(request.user.profile.org.pk) != str(org_id):
+        org = request.user.profile.org
+        if str(org.pk) != str(org_id):
             return None, None, _(u"Org_id %s не соответствует организации, выполняющей запрос") % org_id
         if not service_name:
             service_name = request.DATA.get('type')
         try:
             service = Service.objects.get(name=service_name)
-            org = request.user.profile.org
-            if OrgService.objects.filter(service__name=service_name).exists():
-                if request.method == "POST":
-                    return service, None, _(u"Сервис %s уже активирован у организации") % service_name
-            else:
-                if request.method in ("PUT", "DETETE", ):
+            try:
+                orgservice = OrgService.objects.get(org=org, service__name=service_name)
+            except OrgService.DoesNotExist:
+                if request.method in ("PUT", "DETETE"):
                     return service, None, _(u"Сервис %s не активирован у организации") % service_name
             measures_get = request.DATA.get('measures', [])
-            if request.method == "POST":
-                if not measures_get:
-                    return service, None, _(u"Не заданы цены с единицами изменений (measures)")
+            if request.method == "POST" and not measures_get:
+                return service, None, _(u"Не заданы цены с единицами изменений (measures)")
             measures = Measure.objects.filter(service__name=service_name)
             measure_names = [v['name'] for v in measures.values('name')]
             for m in measures_get:
@@ -1324,21 +1322,29 @@ class ApiOrgServicesView(ApiOrgServicesMixin, APIView):
         if message:
             data = dict(status='error', message=message)
             return Response(data=dict(status='error', message=message), status=400)
-        # Заполнить всеми возможными единицами измерения
-        measures_get = request.DATA.get('measures', [])
-        for measure in measures:
-            for m in measures_get:
-                if m['name'] == measure.name:
-                    price = m['value']
-                    break
-            else:
-                price = 0.00
-            OrgService.objects.create(
-                org=request.user.profile.org,
-                service=service,
-                measure=measure,
-                price=price,
-            )
+        orgservice, created_ = OrgService.objects.get_or_create(
+            org=request.user.profile.org,
+            service=service,
+            defaults = dict(enabled=True),
+        )
+        if created_:
+            # Заполнить всеми возможными единицами измерения
+            measures_get = request.DATA.get('measures', [])
+            for measure in measures:
+                for m in measures_get:
+                    if m['name'] == measure.name:
+                        price = m['value']
+                        break
+                else:
+                    price = 0.00
+                OrgServicePrice.objects.create(
+                    orgservice=orgservice,
+                    measure=measure,
+                    price=price,
+                )
+        else:
+            # Здесь действия, аналогичные put (правке сервиса)
+            pass
         return Response(data=dict(status='success'), status=200)
 
 api_org_services = ApiOrgServicesView.as_view()

@@ -11,15 +11,14 @@ class Migration(SchemaMigration):
         # Adding model 'OrgService'
         db.create_table('orders_orgservice', (
             ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('org', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['users.Org'])),
+            ('org', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['users.Org'], on_delete=models.PROTECT)),
             ('service', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['orders.Service'], on_delete=models.PROTECT)),
-            ('measure', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['orders.Measure'], on_delete=models.PROTECT)),
-            ('price', self.gf('django.db.models.fields.DecimalField')(default='0.00', max_digits=20, decimal_places=2)),
+            ('enabled', self.gf('django.db.models.fields.BooleanField')(default=True)),
         ))
         db.send_create_signal('orders', ['OrgService'])
 
-        # Adding unique constraint on 'OrgService', fields ['org', 'service', 'measure']
-        db.create_unique('orders_orgservice', ['org_id', 'service_id', 'measure_id'])
+        # Adding unique constraint on 'OrgService', fields ['org', 'service']
+        db.create_unique('orders_orgservice', ['org_id', 'service_id'])
 
         # Adding model 'Measure'
         db.create_table('orders_measure', (
@@ -32,6 +31,18 @@ class Migration(SchemaMigration):
 
         # Adding unique constraint on 'Measure', fields ['service', 'name']
         db.create_unique('orders_measure', ['service_id', 'name'])
+
+        # Adding model 'OrgServicePrice'
+        db.create_table('orders_orgserviceprice', (
+            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
+            ('orgservice', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['orders.OrgService'], on_delete=models.PROTECT)),
+            ('measure', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['orders.Measure'], on_delete=models.PROTECT)),
+            ('price', self.gf('django.db.models.fields.DecimalField')(default='0.00', max_digits=20, decimal_places=2)),
+        ))
+        db.send_create_signal('orders', ['OrgServicePrice'])
+
+        # Adding unique constraint on 'OrgServicePrice', fields ['orgservice', 'measure']
+        db.create_unique('orders_orgserviceprice', ['orgservice_id', 'measure_id'])
 
         # Adding model 'ResultFile'
         db.create_table('orders_resultfile', (
@@ -97,17 +108,23 @@ class Migration(SchemaMigration):
 
 
     def backwards(self, orm):
+        # Removing unique constraint on 'OrgServicePrice', fields ['orgservice', 'measure']
+        db.delete_unique('orders_orgserviceprice', ['orgservice_id', 'measure_id'])
+
         # Removing unique constraint on 'Measure', fields ['service', 'name']
         db.delete_unique('orders_measure', ['service_id', 'name'])
 
-        # Removing unique constraint on 'OrgService', fields ['org', 'service', 'measure']
-        db.delete_unique('orders_orgservice', ['org_id', 'service_id', 'measure_id'])
+        # Removing unique constraint on 'OrgService', fields ['org', 'service']
+        db.delete_unique('orders_orgservice', ['org_id', 'service_id'])
 
         # Deleting model 'OrgService'
         db.delete_table('orders_orgservice')
 
         # Deleting model 'Measure'
         db.delete_table('orders_measure')
+
+        # Deleting model 'OrgServicePrice'
+        db.delete_table('orders_orgserviceprice')
 
         # Deleting model 'ResultFile'
         db.delete_table('orders_resultfile')
@@ -432,12 +449,18 @@ class Migration(SchemaMigration):
             'quantity': ('django.db.models.fields.DecimalField', [], {'default': '1', 'max_digits': '20', 'decimal_places': '2'})
         },
         'orders.orgservice': {
-            'Meta': {'unique_together': "(('org', 'service', 'measure'),)", 'object_name': 'OrgService'},
+            'Meta': {'unique_together': "(('org', 'service'),)", 'object_name': 'OrgService'},
+            'enabled': ('django.db.models.fields.BooleanField', [], {'default': 'True'}),
+            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'org': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['users.Org']", 'on_delete': 'models.PROTECT'}),
+            'service': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['orders.Service']", 'on_delete': 'models.PROTECT'})
+        },
+        'orders.orgserviceprice': {
+            'Meta': {'unique_together': "(('orgservice', 'measure'),)", 'object_name': 'OrgServicePrice'},
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'measure': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['orders.Measure']", 'on_delete': 'models.PROTECT'}),
-            'org': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['users.Org']"}),
-            'price': ('django.db.models.fields.DecimalField', [], {'default': "'0.00'", 'max_digits': '20', 'decimal_places': '2'}),
-            'service': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['orders.Service']", 'on_delete': 'models.PROTECT'})
+            'orgservice': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['orders.OrgService']", 'on_delete': 'models.PROTECT'}),
+            'price': ('django.db.models.fields.DecimalField', [], {'default': "'0.00'", 'max_digits': '20', 'decimal_places': '2'})
         },
         'orders.product': {
             'Meta': {'ordering': "['name']", 'object_name': 'Product'},

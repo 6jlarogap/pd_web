@@ -46,20 +46,20 @@ class OrgService(models.Model):
     """
     Сервисы, на которые подписалась организация
     """
-    org = models.ForeignKey(Org, verbose_name=_(u"Поставщик"))
+    org = models.ForeignKey(Org, verbose_name=_(u"Поставщик"), on_delete=models.PROTECT)
     service = models.ForeignKey(Service, verbose_name=_(u"Тип сервиса"), on_delete=models.PROTECT)
-    enabled = models.BooleanField(_(u"Включен"), default=False)
+    enabled = models.BooleanField(_(u"Включен"), default=True)
 
     class Meta:
         unique_together = (
             ('org', 'service', ),
         )
 
-class OrgMeasure(models.Model):
+class OrgServicePrice(models.Model):
     """
-    Сервисы, на которые подписалась организация
+    Цены сервисов организации
     """
-    orgservice = models.ForeignKey(OrgService, verbose_name=_(u"Служба"))
+    orgservice = models.ForeignKey(OrgService, verbose_name=_(u"Служба"), on_delete=models.PROTECT)
     measure = models.ForeignKey(Measure, verbose_name=_(u"Единица измерения"), on_delete=models.PROTECT)
     price = models.DecimalField(_(u"Цена"), max_digits=20, decimal_places=2, default='0.00')
 
