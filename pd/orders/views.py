@@ -1274,7 +1274,9 @@ api_services = ApiServicesView.as_view()
 
 class ApiOrgServicesMixin(object):
 
-    def check_input_message(self, request, service_name=None):
+    def check_input_message(self, request, org_id, service_name=None):
+        if str(request.user.profile.org.pk) != str(org_id):
+            return None, None, _(u"Org_id %s не соответствует организации, выполняющей запрос") % org_id
         if not service_name:
             service_name = request.DATA.get('type')
         try:
@@ -1302,7 +1304,7 @@ class ApiOrgServicesMixin(object):
 class ApiOrgServicesView(ApiOrgServicesMixin, APIView):
     permission_classes = (PermitIfLoru,)
 
-    def post(self, request):
+    def post(self, request, org_id):
         """
         Активизировать сервис
         
@@ -1317,7 +1319,7 @@ class ApiOrgServicesView(ApiOrgServicesMixin, APIView):
          ]
         }
         """
-        service, measures, message = self.check_input_message(request)
+        service, measures, message = self.check_input_message(request, org_id)
         if message:
             data = dict(status='error', message=message)
             return Response(data=dict(status='error', message=message), status=400)
