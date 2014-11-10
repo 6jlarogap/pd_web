@@ -68,6 +68,12 @@ class OrgServicePrice(models.Model):
             ('orgservice', 'measure', ),
         )
 
+    def measure_name(self):
+        return self.measure.name
+
+    def price_float(self):
+        return float(self.price)
+
 class ProductCategory(models.Model):
     name = models.CharField(_(u"Название"), max_length=255)
     icon = models.ImageField(u"Иконка", upload_to=upload_slugified, blank=True, null=True)

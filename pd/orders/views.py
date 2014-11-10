@@ -1279,11 +1279,17 @@ class ApiOrgServicesMixin(object):
         measures = []
         orgservice = None
 
+    def check_org_id(self, request, org_id):
+        org, message = request.user.profile.org, ''
+        if str(org.pk) != str(org_id):
+            message = _(u"Org_id %s не соответствует организации, выполняющей запрос") % org_id
+        return org, message
+    
     def check_input_message(self, request, org_id, service_name=None):
         self.data = self.Data()
-        org = request.user.profile.org
-        if str(org.pk) != str(org_id):
-            return _(u"Org_id %s не соответствует организации, выполняющей запрос") % org_id
+        org, message = self.check_org_id(request, org_id)
+        if message:
+            return message 
         if not service_name:
             service_name = request.DATA.get('type')
         try:
@@ -1336,6 +1342,12 @@ class ApiOrgServicesMixin(object):
 
 class ApiOrgServicesView(ApiOrgServicesMixin, APIView):
     permission_classes = (PermitIfLoru,)
+
+    def get(self, request, org_id):
+        org, message = self.check_org_id(request, org_id)
+        if message:
+            return Response(data=dict(status='error', message=message), status=200)
+        return Response(data=dict(status='success'), status=200)
 
     @transaction.commit_on_success
     def post(self, request, org_id):
