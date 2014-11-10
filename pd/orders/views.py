@@ -1273,47 +1273,52 @@ class ApiServicesView(APIView):
 api_services = ApiServicesView.as_view()
 
 class ApiOrgServicesMixin(object):
+    
+    class Data(object):
+        service=None
+        measures = []
+        orgservice = None
 
     def check_input_message(self, request, org_id, service_name=None):
-        self.orgservice = None
+        self.data = self.Data()
         org = request.user.profile.org
         if str(org.pk) != str(org_id):
-            return None, None, _(u"Org_id %s не соответствует организации, выполняющей запрос") % org_id
+            return _(u"Org_id %s не соответствует организации, выполняющей запрос") % org_id
         if not service_name:
             service_name = request.DATA.get('type')
         try:
-            service = Service.objects.get(name=service_name)
+            self.data.service = Service.objects.get(name=service_name)
             try:
-                self.orgservice = OrgService.objects.get(org=org, service__name=service_name)
+                self.data.orgservice = OrgService.objects.get(org=org, service__name=service_name)
             except OrgService.DoesNotExist:
                 if request.method in ("PUT", "DETETE"):
-                    return service, None, _(u"Сервис %s никогда не был активирован у организации") % service_name
+                    return _(u"Сервис %s никогда не был активирован у организации") % service_name
             measures_get = request.DATA.get('measures', [])
             if request.method == "POST" and not measures_get:
-                return service, None, _(u"Не заданы цены с единицами изменений (measures)")
-            measures = Measure.objects.filter(service__name=service_name)
-            measure_names = [v['name'] for v in measures.values('name')]
+                return _(u"Не заданы цены с единицами изменений (measures)")
+            self.data.measures = Measure.objects.filter(service__name=service_name)
+            measure_names = [v['name'] for v in self.data.measures.values('name')]
             for m in measures_get:
                 if m['name'] not in measure_names:
-                    return service, measures, _(u"Нет единицы измерения %s у услуги %s") % (m['name'], service_name)
+                    return _(u"Нет единицы измерения %s у услуги %s") % (m['name'], service_name)
         except Service.DoesNotExist:
-            return None, None, _(u"Сервис %s неизвестен в системе") % service_name
-        return service, measures, ''
+            return _(u"Сервис %s неизвестен в системе") % service_name
+        return ''
 
-    def put_prices(self, request, measures, service):
-        if self.orgservice:
-            orgservice = self.orgservice
+    def put_prices(self, request):
+        if self.data.orgservice:
+            orgservice = self.data.orgservice
         else:
             orgservice = OrgService.objects.create(
                 org=request.user.profile.org,
-                service=service,
+                service=self.data.service,
                 enabled=True,
             )
         if not orgservice.enabled and request.method == "POST":
             orgservice.enabled = True
             orgservice.save()
         measures_get = request.DATA.get('measures', [])
-        for measure in measures:
+        for measure in self.data.measures:
             for m in measures_get:
                 if m['name'] == measure.name:
                     price = m['value']
@@ -1348,11 +1353,11 @@ class ApiOrgServicesView(ApiOrgServicesMixin, APIView):
          ]
         }
         """
-        service, measures, message = self.check_input_message(request, org_id)
+        message = self.check_input_message(request, org_id)
         if message:
             data = dict(status='error', message=message)
             return Response(data=dict(status='error', message=message), status=400)
-        self.put_prices(request, measures, service)
+        self.put_prices(request)
         return Response(data=dict(status='success'), status=200)
 
 api_org_services = ApiOrgServicesView.as_view()
@@ -1375,19 +1380,19 @@ class ApiOrgServicesEditView(ApiOrgServicesMixin, APIView):
          ]
         }
         """
-        service, measures, message = self.check_input_message(request, org_id, service_name)
+        message = self.check_input_message(request, org_id, service_name)
         if message:
             data = dict(status='error', message=message)
             return Response(data=dict(status='error', message=message), status=400)
-        self.put_prices(request, measures, service)
+        self.put_prices(request)
         return Response(data=dict(status='success'), status=200)
 
     def delete(self, request, org_id, service_name):
         """
         Де-активация сервиса service_name у организации org_id
         """
-        service, measures, message = self.check_input_message(request, org_id, service_name)
-        orgservice = self.orgservice
+        message = self.check_input_message(request, org_id, service_name)
+        orgservice = self.data.orgservice
         if orgservice.enabled:
             orgservice.enabled = False
             orgservice.save()
