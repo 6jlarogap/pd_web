@@ -46,7 +46,7 @@ from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser
 from orders.serializers import ProductCategorySerializer, ProductsSerializer, ProductsOptSerializer, \
                                ProductInfoSerializer, IordersSerializer, IorderInfoSerializer, \
-                               ProductEditSerializer, ServiceSerializer
+                               ProductEditSerializer, ServiceSerializer, OrgServiceSerializer
 
 from pd.utils import EmailMessage
 from pd.models import validate_phone_as_number
@@ -1347,7 +1347,10 @@ class ApiOrgServicesView(ApiOrgServicesMixin, APIView):
         org, message = self.check_org_id(request, org_id)
         if message:
             return Response(data=dict(status='error', message=message), status=200)
-        return Response(data=dict(status='success'), status=200)
+        return Response(
+            data=OrgServiceSerializer(OrgService.objects.filter(org=org), many=True).data,
+            status=200
+        )
 
     @transaction.commit_on_success
     def post(self, request, org_id):

@@ -9,7 +9,7 @@ from rest_framework import serializers
 from rest_framework.fields import Field
 
 from rest_api.fields import HyperlinkedFileField
-from orders.models import ProductCategory, Product, Iorder, Service, Measure, OrgServicePrice
+from orders.models import ProductCategory, Product, Iorder, Service, Measure, OrgService, OrgServicePrice
 from users.models import Org
 from users.serializers import OrgSerializer, OrgShortSerializer, OrgShort3Serializer, OrgShort4Serializer
 from pd.utils import utcisoformat, str_to_bool_or_None
@@ -267,3 +267,11 @@ class OrgServicePriceSerializer(serializers.ModelSerializer):
         model = OrgServicePrice
         fields = ('name', 'price', )
 
+class OrgServiceSerializer(serializers.ModelSerializer):
+    type = serializers.Field(source='service_name')
+    isActive = serializers.Field(source='enabled')
+    measures = OrgServicePriceSerializer(many=True, source='orgserviceprice_set')
+    
+    class Meta:
+        model = OrgService
+        fields = ('type', 'isActive', 'measures', )

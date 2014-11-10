@@ -55,6 +55,9 @@ class OrgService(models.Model):
             ('org', 'service', ),
         )
 
+    def service_name(self):
+        return self.service.name
+
 class OrgServicePrice(models.Model):
     """
     Цены сервисов организации
