@@ -1304,6 +1304,7 @@ class ApiOrgServicesMixin(object):
 class ApiOrgServicesView(ApiOrgServicesMixin, APIView):
     permission_classes = (PermitIfLoru,)
 
+    @transaction.commit_on_success
     def post(self, request, org_id):
         """
         Активизировать сервис

@@ -48,12 +48,24 @@ class OrgService(models.Model):
     """
     org = models.ForeignKey(Org, verbose_name=_(u"Поставщик"))
     service = models.ForeignKey(Service, verbose_name=_(u"Тип сервиса"), on_delete=models.PROTECT)
+    enabled = models.BooleanField(_(u"Включен"), default=False)
+
+    class Meta:
+        unique_together = (
+            ('org', 'service', ),
+        )
+
+class OrgMeasure(models.Model):
+    """
+    Сервисы, на которые подписалась организация
+    """
+    orgservice = models.ForeignKey(OrgService, verbose_name=_(u"Служба"))
     measure = models.ForeignKey(Measure, verbose_name=_(u"Единица измерения"), on_delete=models.PROTECT)
     price = models.DecimalField(_(u"Цена"), max_digits=20, decimal_places=2, default='0.00')
 
     class Meta:
         unique_together = (
-            ('org', 'service', 'measure', ),
+            ('orgservice', 'measure', ),
         )
 
 class ProductCategory(models.Model):
