@@ -1430,6 +1430,17 @@ class ApiClientAvailablePerformersView(ApiOrgServicesMixin, APIView):
         Из них выбираются те, кто имеют склады с коодинатами
         Из этих складов выбираются ближайший
         """
+        
+        def get_price_service(service_name, org_pk):
+            if service_name in ('photo', ):
+                price_service = OrgServicePrice.objects.get(
+                    orgservice__org__pk=org_pk,
+                    measure__name='unit',
+                ).price
+            else:
+                price_service = 0
+            return float(price_service)
+
         try:
             service_name = request.GET.get('type')
             try:
@@ -1481,41 +1492,30 @@ class ApiClientAvailablePerformersView(ApiOrgServicesMixin, APIView):
             org_pk = None
             for store in Store.objects.filter(q).order_by('loru__pk'):
                 if org_pk is None:
-                    price = 0
+                    price_org = 0
                     org_pk = store.loru.pk
-                    if service_name in ('photo', ):
-                        price_service = OrgServicePrice.objects.get(
-                            orgservice__org__pk=org_pk,
-                            measure__name='unit',
-                        ).price
-                    else:
-                        price_service = 0
-                    price_store = price_service
+                    price_store = price_service = get_price_service(service_name, org_pk)
 
                 if org_pk != store.loru.pk:
                     data.append(dict(
                         id=org_pk,
                         name=store.loru.name,
-                        price=price,
+                        price=price_org,
                     ))
-                    if service_name in ('photo', ):
-                        price_service = OrgServicePrice.objects.get(
-                            orgservice__org__pk=org_pk,
-                            measure__name='unit',
-                        ).price
-                    else:
-                        price_service = 0
-                    price_store = price_service
+                    price_store = price_service = get_price_service(service_name, org_pk)
+                    price_org = 0
                     org_pk = store.loru.pk
 
                 if need_delivery:
+                    #TODO Расчет километража и цены доставки
                     pass
-                price = max(price, price_store)
+
+                price_org = max(price_org, price_store)
             if org_pk:
                 data.append(dict(
                     id=org_pk,
                     name=store.loru.name,
-                    price=price,
+                    price=price_org,
                 ))
 
         except ServiceException as excpt:
