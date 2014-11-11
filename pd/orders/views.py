@@ -23,6 +23,8 @@ from django.utils.translation import ugettext_lazy as _
 from django.views.decorators.csrf import csrf_protect, csrf_exempt
 from django.shortcuts import get_object_or_404
 
+from LatLon import LatLon, Latitude, Longitude
+
 from logs.models import write_log
 from geo.models import Location
 from burials.forms import AddOrgForm, AddAgentForm, AddDoverForm, AddDocTypeForm
@@ -1414,3 +1416,62 @@ class ApiOrgServicesEditView(ApiOrgServicesMixin, APIView):
         return Response(data=dict(status='success'), status=200)
 
 api_org_services_edit = ApiOrgServicesEditView.as_view()
+
+class ApiClientAvailablePerformersView(ApiOrgServicesMixin, APIView):
+    permission_classes = (PermitIfCabinet,)
+
+    def get(self, request):
+        """
+        Получить список возможных исполнителей работы
+        """
+        try:
+            service_name = request.GET.get('type')
+            try:
+                service = service_name and Service.objects.get(name=service_name)
+            except CustomPlace.DoesNotExist:
+                service = None
+            if not service:
+                raise ServiceException(_(u'Сервис не задан или неизвестен'))
+
+            customplace_id = request.GET.get('placeId')
+            try:
+                customplace = customplace_id and CustomPlace.objects.get(pk=customplace_id)
+            except CustomPlace.DoesNotExist:
+                customplace = None
+            if not customplace:
+                raise ServiceException(_(u'Не задан placeId или не найдено место'))
+            if customplace.user != request.user:
+                raise ServiceException(_(u'Пользователь %s не имеет прав на этот запрос') % request.user.username)
+
+            latitude = request.GET.get('location[latitude]')
+            longitude = request.GET.get('location[longitude]')
+            if latitude is None or longitude is None:
+                latitude = customplace.address and customplace.address.gps_y
+                longitude = customplace.address and customplace.address.gps_x
+            if (latitude is None or longitude is None) and customplace.place:
+                latitude = customplace.place.lat
+                longitude = customplace.place.lng
+            if latitude is None or longitude is None:
+                raise ServiceException(_(u'Не заданы и не удалось выяснить координаты места'))
+            latitude = float(latitude)
+            longitude = float(longitude)
+
+            service_names = [service_name]
+            if service_name in ('photo', ):
+                service_names.append('delivery')
+            q = Q(
+                orgservice__org__type=Org.PROFILE_LORU,
+                orgservice__org__off_address__gps_x__isnull=False,
+                orgservice__org__off_address__gps_y__isnull=False,
+                orgservice__service=service,
+                
+            )
+            for orgserviceprice in OrgServicePrice.objects.filter(q):
+                print orgserviceprice.orgservice.org
+
+        except ServiceException as excpt:
+            return Response(data=dict(status='error', message=excpt.message), status=400)
+
+        return Response(data=dict(), status=200)
+
+api_client_available_performers = ApiClientAvailablePerformersView.as_view()
