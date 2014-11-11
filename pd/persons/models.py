@@ -333,6 +333,10 @@ class Phone(BaseModel):
 class CustomPlace(BaseModel):
     address = models.ForeignKey(Location, verbose_name=_(u"Адрес"), null=True)
     user = models.ForeignKey('auth.User', verbose_name=_(u"Владелец или указавший место"))
+    place = models.ForeignKey('burials.Place', verbose_name=_(u"Место"), null=True)
+
+    class Meta:
+        unique_together = ('user', 'place', )
 
 class CustomPerson(BaseModel):
     """

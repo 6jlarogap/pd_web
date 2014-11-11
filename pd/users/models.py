@@ -121,7 +121,7 @@ class CustomerProfile(CommonProfile):
                                 )
         responsible.user = user
         responsible.save()
-        return password
+        return user, password
 
 class CustomerProfilePhoto(Files):
     customerprofile = models.OneToOneField(CustomerProfile)
