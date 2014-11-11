@@ -1423,6 +1423,12 @@ class ApiClientAvailablePerformersView(ApiOrgServicesMixin, APIView):
     def get(self, request):
         """
         Получить список возможных исполнителей работы
+        
+        Выбираются исполнители, подписавшиеся на сервис.
+            - если сервис требует транспортных расходов, то еще и подписавшиеся
+              на сервис delivery.
+        Из них выбираются те, кто имеют склады с коодинатами
+        Из этих складов выбираются ближайший
         """
         try:
             service_name = request.GET.get('type')
@@ -1443,35 +1449,78 @@ class ApiClientAvailablePerformersView(ApiOrgServicesMixin, APIView):
             if customplace.user != request.user:
                 raise ServiceException(_(u'Пользователь %s не имеет прав на этот запрос') % request.user.username)
 
-            latitude = request.GET.get('location[latitude]')
-            longitude = request.GET.get('location[longitude]')
-            if latitude is None or longitude is None:
-                latitude = customplace.address and customplace.address.gps_y
-                longitude = customplace.address and customplace.address.gps_x
-            if (latitude is None or longitude is None) and customplace.place:
-                latitude = customplace.place.lat
-                longitude = customplace.place.lng
-            if latitude is None or longitude is None:
-                raise ServiceException(_(u'Не заданы и не удалось выяснить координаты места'))
-            latitude = float(latitude)
-            longitude = float(longitude)
-
-            service_names = [service_name]
-            if service_name in ('photo', ):
-                service_names.append('delivery')
+            need_delivery = service_name in ('photo', 'delivery')
+            if need_delivery:
+                latitude = request.GET.get('location[latitude]')
+                longitude = request.GET.get('location[longitude]')
+                if latitude is None or longitude is None:
+                    latitude = customplace.address and customplace.address.gps_y
+                    longitude = customplace.address and customplace.address.gps_x
+                if (latitude is None or longitude is None) and customplace.place:
+                    latitude = customplace.place.lat
+                    longitude = customplace.place.lng
+                if latitude is None or longitude is None:
+                    raise ServiceException(_(u'Не заданы и не удалось выяснить координаты места'))
+                latitude = float(latitude)
+                longitude = float(longitude)
+            
             q = Q(
-                orgservice__org__type=Org.PROFILE_LORU,
-                orgservice__org__off_address__gps_x__isnull=False,
-                orgservice__org__off_address__gps_y__isnull=False,
-                orgservice__service=service,
-                
+                loru__orgservice__service__name=service_name,
             )
-            for orgserviceprice in OrgServicePrice.objects.filter(q):
-                print orgserviceprice.orgservice.org
+            stores = []
+            if need_delivery:
+                q &= Q(
+                    address__gps_x__isnull=False,
+                    address__gps_y__isnull=False,
+                )
+                if service_name != 'delivery':
+                    orgs = [orgservice.org for orgservice in OrgService.objects.filter(service__name=service_name)]
+                    q &= Q(loru__in=orgs)
+
+            data = []
+            org_pk = None
+            for store in Store.objects.filter(q).order_by('loru__pk'):
+                if org_pk is None:
+                    price = 0
+                    org_pk = store.loru.pk
+                    if service_name in ('photo', ):
+                        price_service = OrgServicePrice.objects.get(
+                            orgservice__org__pk=org_pk,
+                            measure__name='unit',
+                        ).price
+                    else:
+                        price_service = 0
+                    price_store = price_service
+
+                if org_pk != store.loru.pk:
+                    data.append(dict(
+                        id=org_pk,
+                        name=store.loru.name,
+                        price=price,
+                    ))
+                    if service_name in ('photo', ):
+                        price_service = OrgServicePrice.objects.get(
+                            orgservice__org__pk=org_pk,
+                            measure__name='unit',
+                        ).price
+                    else:
+                        price_service = 0
+                    price_store = price_service
+                    org_pk = store.loru.pk
+
+                if need_delivery:
+                    pass
+                price = max(price, price_store)
+            if org_pk:
+                data.append(dict(
+                    id=org_pk,
+                    name=store.loru.name,
+                    price=price,
+                ))
 
         except ServiceException as excpt:
             return Response(data=dict(status='error', message=excpt.message), status=400)
 
-        return Response(data=dict(), status=200)
+        return Response(data=data, status=200)
 
 api_client_available_performers = ApiClientAvailablePerformersView.as_view()
