@@ -96,13 +96,13 @@ class Migration(SchemaMigration):
                       self.gf('django.db.models.fields.CharField')(default='pending', max_length=255),
                       keep_default=False)
 
-        # Adding field 'Order.rating'
-        db.add_column('orders_order', 'rating',
-                      self.gf('django.db.models.fields.PositiveSmallIntegerField')(default=0),
+        # Adding field 'Order.applicant_approved'
+        db.add_column('orders_order', 'applicant_approved',
+                      self.gf('django.db.models.fields.NullBooleanField')(null=True, blank=True),
                       keep_default=False)
 
-        # Adding field 'Order.finalComment'
-        db.add_column('orders_order', 'finalComment',
+        # Adding field 'Order.applicant_final_comment'
+        db.add_column('orders_order', 'applicant_final_comment',
                       self.gf('django.db.models.fields.TextField')(null=True),
                       keep_default=False)
 
@@ -144,11 +144,11 @@ class Migration(SchemaMigration):
         # Deleting field 'Order.status'
         db.delete_column('orders_order', 'status')
 
-        # Deleting field 'Order.rating'
-        db.delete_column('orders_order', 'rating')
+        # Deleting field 'Order.applicant_approved'
+        db.delete_column('orders_order', 'applicant_approved')
 
-        # Deleting field 'Order.finalComment'
-        db.delete_column('orders_order', 'finalComment')
+        # Deleting field 'Order.applicant_final_comment'
+        db.delete_column('orders_order', 'applicant_final_comment')
 
 
     models = {
@@ -414,6 +414,8 @@ class Migration(SchemaMigration):
             'agent_director': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'annulated': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'applicant': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['persons.AlivePerson']", 'null': 'True', 'on_delete': 'models.PROTECT', 'blank': 'True'}),
+            'applicant_approved': ('django.db.models.fields.NullBooleanField', [], {'null': 'True', 'blank': 'True'}),
+            'applicant_final_comment': ('django.db.models.fields.TextField', [], {'null': 'True'}),
             'applicant_organization': ('django.db.models.fields.related.ForeignKey', [], {'blank': 'True', 'related_name': "'org_orders'", 'null': 'True', 'to': "orm['users.Org']"}),
             'burial': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'burial_orders'", 'null': 'True', 'to': "orm['burials.Burial']"}),
             'cost': ('django.db.models.fields.DecimalField', [], {'max_digits': '20', 'decimal_places': '2'}),
@@ -422,12 +424,10 @@ class Migration(SchemaMigration):
             'dt': ('django.db.models.fields.DateField', [], {}),
             'dt_created': ('django.db.models.fields.DateTimeField', [], {'auto_now_add': 'True', 'blank': 'True'}),
             'dt_modified': ('django.db.models.fields.DateTimeField', [], {'auto_now': 'True', 'blank': 'True'}),
-            'finalComment': ('django.db.models.fields.TextField', [], {'null': 'True'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'loru': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['users.Org']", 'null': 'True'}),
             'loru_number': ('django.db.models.fields.PositiveIntegerField', [], {'null': 'True'}),
             'payment': ('django.db.models.fields.CharField', [], {'default': "'cash'", 'max_length': '255'}),
-            'rating': ('django.db.models.fields.PositiveSmallIntegerField', [], {'default': '0'}),
             'status': ('django.db.models.fields.CharField', [], {'default': "'pending'", 'max_length': '255'})
         },
         'orders.ordercomment': {

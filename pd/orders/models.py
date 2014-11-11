@@ -201,8 +201,8 @@ class Order(GetLogsMixin, BaseModel):
 
     customplace = models.ForeignKey('persons.CustomPlace', verbose_name=_(u"Место захоронения"), null=True, editable=False)
     status = models.CharField(_(u"Статус"), max_length=255, choices=STATUS_TYPES, default=STATUS_PENDING, editable=False,)
-    rating = models.PositiveSmallIntegerField(_(u"Рейтинг"), default=0, editable=False,)
-    finalComment = models.TextField(_(u"Комментарий по окончании работы"), null=True, editable=False, )
+    applicant_approved = models.NullBooleanField(_(u"Одобрено заказчиком"), null=True, editable=False,)
+    applicant_final_comment = models.TextField(_(u"Комментарий заказчика по окончании работы"), null=True, editable=False, )
 
     class Meta:
         verbose_name = _(u"Заказ")
