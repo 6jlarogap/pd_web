@@ -32,7 +32,7 @@ from burials.burials_views import *
 from logs.models import write_log, log_object, prepare_m2m_log, compare_obj
 from users.models import Profile, Org, CustomerProfile, PermitIfUgh
 from users.views import SupervisorRequiredMixin, UGHRequiredMixin, LoginRequiredMixin
-from persons.models import Phone, AlivePerson
+from persons.models import Phone, AlivePerson, CustomPlace
 from geo.models import Location
 
 # REST import
@@ -368,11 +368,12 @@ class PlaceViewSet(viewsets.ModelViewSet):
                (not self.old_responsible or not self.old_responsible.login_phone):
                 try:
                     customerprofile = CustomerProfile.objects.get(login_phone=object.responsible.login_phone)
+                    user = customerprofile.user
                     text=_(u'Место %s прикреплено. pohoronnoedelo.ru') % object.pk
                     email_error_text = _(u"Пользователь %s (телефон %s) не смог получить СМС после прикрепления места %s" % \
                                         (customerprofile.user.username, object.responsible.login_phone, object.pk,))
                 except CustomerProfile.DoesNotExist:
-                    password = CustomerProfile.create_cabinet(object.responsible)
+                    user, password = CustomerProfile.create_cabinet(object.responsible)
                     text=_(u'%s login: %s parol: %s') % (
                         get_front_end_url(self.request).rstrip('/'),
                         object.responsible.login_phone,
@@ -380,6 +381,7 @@ class PlaceViewSet(viewsets.ModelViewSet):
                     )
                     email_error_text = _(u"Пользователь %s не смог получить пароль после закрытия захоронения" % \
                                         (object.responsible.login_phone,))
+                CustomPlace.objects.get_or_create(user=user, place=object)
                 if not settings.DEBUG:
                     sent, message = send_sms(
                         phone_number=object.responsible.login_phone,

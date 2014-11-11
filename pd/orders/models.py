@@ -14,8 +14,68 @@ from django.db.models.query_utils import Q
 from burials.models import Burial
 from reports.models import Report
 from users.models import Org
-from pd.models import BaseModel, GetLogsMixin, upload_slugified
+from pd.models import BaseModel, GetLogsMixin, upload_slugified, Files
 
+
+class Service(models.Model):
+    """
+    Сервисы, предлагаемые нами для поставщиков товаров/услуг
+
+    Перечисляются в fixtures
+    """
+    name = models.CharField(_(u"Название"), max_length=255, unique=True)
+    title = models.CharField(_(u"Заглавие"), max_length=255)
+    description = models.TextField(_(u"Описание"), default='')
+
+class Measure(models.Model):
+    """
+    Возможные единицы измерения за сервисы
+
+    Перечисляются в fixtures
+    """
+    service = models.ForeignKey(Service, verbose_name=_(u"Сервис"), on_delete=models.PROTECT)
+    name = models.CharField(_(u"Название"), max_length=255)
+    title = models.CharField(_(u"Заглавие"), max_length=255)
+
+    class Meta:
+        unique_together = (
+            ('service', 'name', ),
+        )
+
+class OrgService(models.Model):
+    """
+    Сервисы, на которые подписалась организация
+    """
+    org = models.ForeignKey(Org, verbose_name=_(u"Поставщик"), on_delete=models.PROTECT)
+    service = models.ForeignKey(Service, verbose_name=_(u"Тип сервиса"), on_delete=models.PROTECT)
+    enabled = models.BooleanField(_(u"Включен"), default=True)
+
+    class Meta:
+        unique_together = (
+            ('org', 'service', ),
+        )
+
+    def service_name(self):
+        return self.service.name
+
+class OrgServicePrice(models.Model):
+    """
+    Цены сервисов организации
+    """
+    orgservice = models.ForeignKey(OrgService, verbose_name=_(u"Служба"), on_delete=models.PROTECT)
+    measure = models.ForeignKey(Measure, verbose_name=_(u"Единица измерения"), on_delete=models.PROTECT)
+    price = models.DecimalField(_(u"Цена"), max_digits=20, decimal_places=2, default='0.00')
+
+    class Meta:
+        unique_together = (
+            ('orgservice', 'measure', ),
+        )
+
+    def measure_name(self):
+        return self.measure.name
+
+    def price_float(self):
+        return float(self.price)
 
 class ProductCategory(models.Model):
     name = models.CharField(_(u"Название"), max_length=255)
@@ -114,6 +174,15 @@ class Order(GetLogsMixin, BaseModel):
         (PAYMENT_WIRE, _(u'Безналичный')),
     )
 
+    STATUS_PENDING = 'pending'
+    STATUS_IN_PROGRESS = 'in_progress'
+    STATUS_DONE = 'done'
+    STATUS_TYPES = (
+        (STATUS_PENDING, _(u"Размещен")),
+        (STATUS_IN_PROGRESS, _(u"Подтвержден")),
+        (STATUS_DONE, _(u"Выполнен")),
+    )
+
     loru = models.ForeignKey(Org, limit_choices_to={'type': Org.PROFILE_LORU}, null=True, verbose_name=_(u"ЛОРУ"))
     loru_number = models.PositiveIntegerField(null=True, editable=False)
     payment = models.CharField(_(u"Тип платежа"), max_length=255, choices=PAYMENT_CHOICES, default=PAYMENT_CASH)
@@ -129,6 +198,11 @@ class Order(GetLogsMixin, BaseModel):
     cost = models.DecimalField(_(u"Цена"), max_digits=20, decimal_places=2, editable=False)
     dt = models.DateField(_(u"Дата заказа"))
     burial = models.ForeignKey(Burial, related_name='burial_orders', editable=False, null=True)
+
+    customplace = models.ForeignKey('persons.CustomPlace', verbose_name=_(u"Место захоронения"), null=True, editable=False)
+    status = models.CharField(_(u"Статус"), max_length=255, choices=STATUS_TYPES, default=STATUS_PENDING, editable=False,)
+    applicant_approved = models.NullBooleanField(_(u"Одобрено заказчиком"), null=True, editable=False,)
+    applicant_final_comment = models.TextField(_(u"Комментарий заказчика по окончании работы"), null=True, editable=False, )
 
     class Meta:
         verbose_name = _(u"Заказ")
@@ -247,6 +321,33 @@ class Order(GetLogsMixin, BaseModel):
         hrs = self.orderitem_set.filter(product__ptype=Product.PRODUCT_CATAFALQUE)[0].quantity
         minutes = int(round(hrs * 60))
         return dict(hour=minutes // 60, minute=minutes % 60)
+
+class ServiceItem(models.Model):
+    order = models.ForeignKey(Order)
+    orgservice = models.ForeignKey(OrgService, verbose_name=_(u"Услуга"), on_delete=models.PROTECT)
+    cost = models.DecimalField(_(u"Цена"), max_digits=20, decimal_places=2)
+
+class OrderComment(BaseModel):
+
+    TYPE_PRIVATE = 'private'
+    TYPE_SHARED = 'shared'
+    TYPE_PUBLIC = 'public'
+    COMMENT_TYPES = (
+        (TYPE_PRIVATE, _(u"Личный")),
+        (TYPE_SHARED, _(u"Доступный автору и собеседнику")),
+        (TYPE_PUBLIC, _(u"Общедоступный")),
+    )
+
+    order = models.ForeignKey(Order, verbose_name=_(u"Заказ"), )
+    user = models.ForeignKey('auth.User', verbose_name=_(u"Пользователь"), )
+    type = models.CharField(_(u"Тип"), max_length=255, choices=COMMENT_TYPES, default=TYPE_SHARED)
+    comment = models.TextField(_(u"Комментарий"), )
+
+class ResultFile(Files):
+    """
+    Результаты выполнения заказа на фото места
+    """
+    order = models.ForeignKey(Order, verbose_name=_(u"Заказ"), )
 
 class OrderItem(models.Model):
     order = models.ForeignKey(Order, editable=False)

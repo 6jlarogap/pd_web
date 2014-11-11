@@ -23,16 +23,20 @@ from django.utils.translation import ugettext_lazy as _
 from django.views.decorators.csrf import csrf_protect, csrf_exempt
 from django.shortcuts import get_object_or_404
 
+from LatLon import LatLon, Latitude, Longitude
+
 from logs.models import write_log
 from geo.models import Location
 from burials.forms import AddOrgForm, AddAgentForm, AddDoverForm, AddDocTypeForm
 from burials.models import Burial, Place, Grave, PlacePhoto
 from users.models import CustomerProfile, CustomerProfilePhoto, Org, ProfileLORU, Store, is_loru_user, is_supervisor, \
-                         PermitIfLoru
+                         PermitIfLoru, PermitIfCabinet, is_cabinet_user
 from billing.models import Rate
 from orders.forms import ProductForm, OrderForm, OrderItemFormset, CoffinForm, CatafalqueForm, \
                          AddInfoForm, OrderSearchForm, OrderBurialForm
-from orders.models import Product, Order, OrderItem, ProductCategory, Iorder, IorderItem
+from orders.models import Product, Order, OrderItem, ProductCategory, Iorder, IorderItem, \
+                          Service, Measure, OrgService, OrgServicePrice
+from persons.models import CustomPlace
 from pd.forms import CommentForm
 from pd.views import PaginateListView, RequestToFormMixin, ServiceException, get_front_end_url, get_host_url
 from reports.models import make_report
@@ -44,7 +48,7 @@ from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser
 from orders.serializers import ProductCategorySerializer, ProductsSerializer, ProductsOptSerializer, \
                                ProductInfoSerializer, IordersSerializer, IorderInfoSerializer, \
-                               ProductEditSerializer
+                               ProductEditSerializer, ServiceSerializer, OrgServiceSerializer
 
 from pd.utils import EmailMessage
 from pd.models import validate_phone_as_number
@@ -636,23 +640,6 @@ class ProductCategoryViewSet(viewsets.ModelViewSet):
             qs &= Q(product__is_wholesale=True)
         return ProductCategory.objects.filter(qs).order_by('name').distinct()
 
-class CustomerDataMixin:
-    def get_customer_data(self, request):
-        places = []
-        lorus = set()
-        is_customer = True
-        try:
-            request.user.customerprofile
-        except CustomerProfile.DoesNotExist:
-            is_customer = False
-        else:
-            login_phone = request.user.customerprofile.login_phone
-            if login_phone is not None:
-                for p in Place.objects.filter(responsible__login_phone=login_phone):
-                    places.append(p)
-                    lorus.update(p.cemetery.ugh.get_loru_list())
-        return is_customer, places, lorus
-
 class ProductsViewSet(ProductCategoryQsMixin, viewsets.ReadOnlyModelViewSet):
     """
     Показ продуктов в публичном каталоге только!!!
@@ -760,14 +747,10 @@ class ProductInfoView(APIView):
 
 api_catalog_products_detail = ProductInfoView.as_view()
 
-class ApiProfileViewSet(CustomerDataMixin, viewsets.ViewSet):
-    queryset = CustomerProfile.objects.none()
-    permission_classes = (IsAuthenticated,)
+class ApiProfileView(APIView):
+    permission_classes = (PermitIfCabinet,)
     
-    def list(self, request):
-        is_customer, places, lorus = self.get_customer_data(request)
-        if not is_customer:
-            return Response(status=400, data=[])
+    def get(self, request):
         profile = request.user.customerprofile
         data = {
             'id': request.user.pk,
@@ -784,8 +767,9 @@ class ApiProfileViewSet(CustomerDataMixin, viewsets.ViewSet):
         data['loginPhone'] = request.user.customerprofile.login_phone
         data['username'] = request.user.username
         data['places'] = []
-        for p in places:
-            place={'id': p.pk}
+        for cp in CustomPlace.objects.filter(place__responsible__user=request.user).select_related('place'):
+            place={'id': cp.pk}
+            p = cp.place
             place['address'] = _(u'Кладбище %s, участок %s') % (p.cemetery.name, p.area.name, )
             if p.row:
                 place['address'] += _(u', ряд %s') % p.row
@@ -822,6 +806,8 @@ class ApiProfileViewSet(CustomerDataMixin, viewsets.ViewSet):
             data['places'].append(place)           
             
         return Response(status=200, data=data)
+
+api_profile = ApiProfileView.as_view()
 
 class ApiLoruProductPlaces(APIView):
     """
@@ -1278,3 +1264,214 @@ class ApiProductDetail(APIView):
         return Response(serializer.errors, status=400)
 
 api_product_detail = ApiProductDetail.as_view()
+
+class ApiServicesView(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request):
+        serializer = ServiceSerializer(Service.objects.all(), many=True)
+        return Response(serializer.data, status=200)
+
+api_services = ApiServicesView.as_view()
+
+class ApiOrgServicesMixin(object):
+    
+    class Data(object):
+        service=None
+        measures = []
+        orgservice = None
+
+    def check_org_id(self, request, org_id):
+        org, message = request.user.profile.org, ''
+        if str(org.pk) != str(org_id):
+            message = _(u"Org_id %s не соответствует организации, выполняющей запрос") % org_id
+        return org, message
+    
+    def check_input_message(self, request, org_id, service_name=None):
+        self.data = self.Data()
+        org, message = self.check_org_id(request, org_id)
+        if message:
+            return message 
+        if not service_name:
+            service_name = request.DATA.get('type')
+        try:
+            self.data.service = Service.objects.get(name=service_name)
+            try:
+                self.data.orgservice = OrgService.objects.get(org=org, service__name=service_name)
+            except OrgService.DoesNotExist:
+                if request.method in ("PUT", "DETETE"):
+                    return _(u"Сервис %s никогда не был активирован у организации") % service_name
+            measures_get = request.DATA.get('measures', [])
+            if request.method == "POST" and not measures_get:
+                return _(u"Не заданы цены с единицами изменений (measures)")
+            self.data.measures = Measure.objects.filter(service__name=service_name)
+            measure_names = [v['name'] for v in self.data.measures.values('name')]
+            for m in measures_get:
+                if m['name'] not in measure_names:
+                    return _(u"Нет единицы измерения %s у услуги %s") % (m['name'], service_name)
+        except Service.DoesNotExist:
+            return _(u"Сервис %s неизвестен в системе") % service_name
+        return ''
+
+    def put_prices(self, request):
+        if self.data.orgservice:
+            orgservice = self.data.orgservice
+        else:
+            orgservice = OrgService.objects.create(
+                org=request.user.profile.org,
+                service=self.data.service,
+                enabled=True,
+            )
+        if not orgservice.enabled and request.method == "POST":
+            orgservice.enabled = True
+            orgservice.save()
+        measures_get = request.DATA.get('measures', [])
+        for measure in self.data.measures:
+            for m in measures_get:
+                if m['name'] == measure.name:
+                    price = m['value']
+                    break
+            else:
+                price = None
+            orgserviceprice, created_ = OrgServicePrice.objects.get_or_create(
+                orgservice=orgservice,
+                measure=measure,
+                defaults=dict(price=price or 0.00)
+            )
+            if not created_ and price is not None:
+                orgserviceprice.price = price
+                orgserviceprice.save()
+
+class ApiOrgServicesView(ApiOrgServicesMixin, APIView):
+    permission_classes = (PermitIfLoru,)
+
+    def get(self, request, org_id):
+        org, message = self.check_org_id(request, org_id)
+        if message:
+            return Response(data=dict(status='error', message=message), status=200)
+        return Response(
+            data=OrgServiceSerializer(OrgService.objects.filter(org=org), many=True).data,
+            status=200
+        )
+
+    @transaction.commit_on_success
+    def post(self, request, org_id):
+        """
+        Активизировать сервис у организации org_id
+        
+        Вх.данные, пример:
+        {
+        "type": "photo",
+        "measures": [
+          {
+          "name": "unit",
+          "value": 234
+          }
+         ]
+        }
+        """
+        message = self.check_input_message(request, org_id)
+        if message:
+            data = dict(status='error', message=message)
+            return Response(data=dict(status='error', message=message), status=400)
+        self.put_prices(request)
+        return Response(data=dict(status='success'), status=200)
+
+api_org_services = ApiOrgServicesView.as_view()
+
+class ApiOrgServicesEditView(ApiOrgServicesMixin, APIView):
+    permission_classes = (PermitIfLoru,)
+
+    @transaction.commit_on_success
+    def put(self, request, org_id, service_name):
+        """
+        Править сервис service_name у организации org_id
+        
+        Вх.данные, пример:
+        {
+        "measures": [
+          {
+          "name": "unit",
+          "value": 234
+          }
+         ]
+        }
+        """
+        message = self.check_input_message(request, org_id, service_name)
+        if message:
+            data = dict(status='error', message=message)
+            return Response(data=dict(status='error', message=message), status=400)
+        self.put_prices(request)
+        return Response(data=dict(status='success'), status=200)
+
+    def delete(self, request, org_id, service_name):
+        """
+        Де-активация сервиса service_name у организации org_id
+        """
+        message = self.check_input_message(request, org_id, service_name)
+        orgservice = self.data.orgservice
+        if orgservice.enabled:
+            orgservice.enabled = False
+            orgservice.save()
+        return Response(data=dict(status='success'), status=200)
+
+api_org_services_edit = ApiOrgServicesEditView.as_view()
+
+class ApiClientAvailablePerformersView(ApiOrgServicesMixin, APIView):
+    permission_classes = (PermitIfCabinet,)
+
+    def get(self, request):
+        """
+        Получить список возможных исполнителей работы
+        """
+        try:
+            service_name = request.GET.get('type')
+            try:
+                service = service_name and Service.objects.get(name=service_name)
+            except CustomPlace.DoesNotExist:
+                service = None
+            if not service:
+                raise ServiceException(_(u'Сервис не задан или неизвестен'))
+
+            customplace_id = request.GET.get('placeId')
+            try:
+                customplace = customplace_id and CustomPlace.objects.get(pk=customplace_id)
+            except CustomPlace.DoesNotExist:
+                customplace = None
+            if not customplace:
+                raise ServiceException(_(u'Не задан placeId или не найдено место'))
+            if customplace.user != request.user:
+                raise ServiceException(_(u'Пользователь %s не имеет прав на этот запрос') % request.user.username)
+
+            latitude = request.GET.get('location[latitude]')
+            longitude = request.GET.get('location[longitude]')
+            if latitude is None or longitude is None:
+                latitude = customplace.address and customplace.address.gps_y
+                longitude = customplace.address and customplace.address.gps_x
+            if (latitude is None or longitude is None) and customplace.place:
+                latitude = customplace.place.lat
+                longitude = customplace.place.lng
+            if latitude is None or longitude is None:
+                raise ServiceException(_(u'Не заданы и не удалось выяснить координаты места'))
+            latitude = float(latitude)
+            longitude = float(longitude)
+
+            service_names = [service_name]
+            if service_name in ('photo', ):
+                service_names.append('delivery')
+            q = Q(
+                orgservice__org__type=Org.PROFILE_LORU,
+                orgservice__org__off_address__gps_x__isnull=False,
+                orgservice__org__off_address__gps_y__isnull=False,
+                orgservice__service=service,
+                
+            )
+            for orgserviceprice in OrgServicePrice.objects.filter(q):
+                print orgserviceprice.orgservice.org
+
+        except ServiceException as excpt:
+            return Response(data=dict(status='error', message=excpt.message), status=400)
+
+        return Response(data=dict(), status=200)
+
+api_client_available_performers = ApiClientAvailablePerformersView.as_view()
