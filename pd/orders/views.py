@@ -152,7 +152,7 @@ class OrderList(LORURequiredMixin, PaginateListView):
         return self.filtered_orders()
 
     def filtered_orders(self):
-        orders = Order.objects.filter(loru=self.request.user.profile.org) 
+        orders = Order.objects.filter(loru=self.request.user.profile.org, customplace__isnull=True) 
                 # .annotate(item_count=Count('orderitem'))  # мы не показываем в таблице кол-во товаров,
                                                             # к тому же это резко замедляет поиск
 
@@ -1380,7 +1380,6 @@ class ApiOrgServicesView(ApiOrgServicesMixin, APIView):
         """
         message = self.check_input_message(request, org_id)
         if message:
-            data = dict(status='error', message=message)
             return Response(data=dict(status='error', message=message), status=400)
         self.put_prices(request)
         return Response(data=dict(status='success'), status=200)
@@ -1407,7 +1406,6 @@ class ApiOrgServicesEditView(ApiOrgServicesMixin, APIView):
         """
         message = self.check_input_message(request, org_id, service_name)
         if message:
-            data = dict(status='error', message=message)
             return Response(data=dict(status='error', message=message), status=400)
         self.put_prices(request)
         return Response(data=dict(status='success'), status=200)
@@ -1427,39 +1425,107 @@ api_org_services_edit = ApiOrgServicesEditView.as_view()
 
 class ApiServicePriceMixin(object):
 
-        def get_price_service(self, service, org):
-            """
-            Цена за услугу у огранизации
-            """
-            if service.name == 'delivery':
-                # цена за доставку считается не по организации, а по складам
-                price_service = 0
-            elif service.name in ('photo', ):
-                price_service = OrgServicePrice.objects.get(
-                    orgservice__service=service,
-                    orgservice__org=org,
-                    measure__name='unit',
-                ).price
-            else:
-                price_service = 0
-            return round(float(price_service), 2)
+    class Data(object):
+        service = None
+        service_name = None
+        customplace = None
+        latitude = None
+        longitude = None
+        need_delivery = False
+        org = None
 
-        def get_price_delivery(self, org, km, kg=None, m3=None):
-            """
-            Цена за доставку XX kg и/или yy m3 груза на расстояние km в организации org
-            """
-            result = 0.00
-            for m in OrgServicePrice.objects.filter(
+    def check_input_message(self, request):
+        self.data = self.Data()
+        try:
+            if request.method == 'GET':
+                req_dict = request.GET
+            elif request.method == 'POST':
+                req_dict = request.DATA
+                org = req_dict.get('performerId')
+                try:
+                    org = org and Org.objects.get(pk=org)
+                except Org.DoesNotExist:
+                    pass
+                if not org:
+                    raise ServiceException(_(u"Id исполнителя не задан или не найден среди организаций"))
+                if org.type not in (Org.PROFILE_LORU, ):
+                    raise ServiceException(_(u"performerId %s - не ЛОРУ (поставщик услуг)") % org.pk)
+                self.data.org = org
+
+            self.data.service_name = req_dict.get('type')
+            try:
+                self.data.service = self.data.service_name and Service.objects.get(name=self.data.service_name)
+            except Service.DoesNotExist:
+                self.data.service = None
+            if not self.data.service:
+                raise ServiceException(_(u'Сервис не задан или неизвестен'))
+
+            customplace_id = req_dict.get('placeId')
+            try:
+                self.data.customplace = customplace_id and CustomPlace.objects.get(pk=customplace_id)
+            except CustomPlace.DoesNotExist:
+                self.data.customplace = None
+            if not self.data.customplace:
+                raise ServiceException(_(u'Не задан placeId или не найдено место'))
+            if self.data.customplace.user != request.user:
+                raise ServiceException(_(u'Пользователь %s не имеет прав на запрос по этому месту') % request.user.username)
+            
+            self.data.need_delivery = self.data.service_name in ('photo', 'delivery')
+            if self.data.need_delivery:
+                if request.method == 'GET':
+                    latitude = req_dict.get('location[latitude]')
+                    longitude = req_dict.get('location[longitude]')
+                elif request.method == 'POST':
+                    latitude = req_dict.get('location') and req_dict['location'].get('latitude')
+                    longitude = req_dict.get('location') and req_dict['location'].get('longitude')
+                if latitude is None or longitude is None:
+                    latitude = self.data.customplace.address and self.data.customplace.address.gps_y
+                    longitude = self.data.customplace.address and self.data.customplace.address.gps_x
+                if (latitude is None or longitude is None) and self.data.customplace.place:
+                    latitude = self.data.customplace.place.lat
+                    longitude = self.data.customplace.place.lng
+                if latitude is None or longitude is None:
+                    raise ServiceException(_(u'Не заданы и не удалось выяснить координаты места'))
+                self.data.latitude = float(latitude)
+                self.data.longitude = float(longitude)
+
+        except ServiceException as excpt:
+            return excpt.message
+        return ''
+
+    def get_price_service(self, org):
+        """
+        Цена за услугу у огранизации
+        """
+        if self.data.service.name == 'delivery':
+            # цена за доставку считается не по организации, а по складам
+            price_service = 0
+        elif self.data.service.name in ('photo', ):
+            price_service = OrgServicePrice.objects.get(
+                orgservice__service=self.data.service,
                 orgservice__org=org,
-                orgservice__service__name='delivery'
-               ).values('measure__name', 'price'):
-                if m['measure__name'] == 'km':
-                    result += float(m['price']) * km
-                elif kg and m['measure__name'] == 'kg':
-                    result += float(m['price']) * kg * km
-                elif m3 and m['measure__name'] == 'm3':
-                    result += float(m['price']) * m3 * km
-            return round(result, 2)
+                measure__name='unit',
+            ).price
+        else:
+            price_service = 0
+        return round(float(price_service), 2)
+
+    def get_price_delivery(self, org, km, kg=None, m3=None):
+        """
+        Цена за доставку XX kg и/или yy m3 груза на расстояние km в организации org
+        """
+        result = 0.00
+        for m in OrgServicePrice.objects.filter(
+            orgservice__org=org,
+            orgservice__service__name='delivery'
+            ).values('measure__name', 'price'):
+            if m['measure__name'] == 'km':
+                result += float(m['price']) * km
+            elif kg and m['measure__name'] == 'kg':
+                result += float(m['price']) * kg * km
+            elif m3 and m['measure__name'] == 'm3':
+                result += float(m['price']) * m3 * km
+        return round(result, 2)
 
 class ApiClientAvailablePerformersView(ApiServicePriceMixin, APIView):
     permission_classes = (PermitIfCabinet,)
@@ -1474,99 +1540,107 @@ class ApiClientAvailablePerformersView(ApiServicePriceMixin, APIView):
         Из них выбираются те, кто имеют склады с коодинатами
         Из этих складов выбираются ближайший
         """
-        try:
-            service_name = request.GET.get('type')
-            try:
-                service = service_name and Service.objects.get(name=service_name)
-            except CustomPlace.DoesNotExist:
-                service = None
-            if not service:
-                raise ServiceException(_(u'Сервис не задан или неизвестен'))
+        message = self.check_input_message(request)
+        if message:
+            return Response(data=dict(status='error', message=message), status=400)
 
-            customplace_id = request.GET.get('placeId')
-            try:
-                customplace = customplace_id and CustomPlace.objects.get(pk=customplace_id)
-            except CustomPlace.DoesNotExist:
-                customplace = None
-            if not customplace:
-                raise ServiceException(_(u'Не задан placeId или не найдено место'))
-            if customplace.user != request.user:
-                raise ServiceException(_(u'Пользователь %s не имеет прав на запрос по этому месту') % request.user.username)
-
-            need_delivery = service_name in ('photo', 'delivery')
-            if need_delivery:
-                latitude = request.GET.get('location[latitude]')
-                longitude = request.GET.get('location[longitude]')
-                if latitude is None or longitude is None:
-                    latitude = customplace.address and customplace.address.gps_y
-                    longitude = customplace.address and customplace.address.gps_x
-                if (latitude is None or longitude is None) and customplace.place:
-                    latitude = customplace.place.lat
-                    longitude = customplace.place.lng
-                if latitude is None or longitude is None:
-                    raise ServiceException(_(u'Не заданы и не удалось выяснить координаты места'))
-                latitude = float(latitude)
-                longitude = float(longitude)
-            
-            q = Q(
-                loru__orgservice__service=service,
-                loru__orgservice__enabled=True,
+        q = Q(
+            loru__orgservice__service=self.data.service,
+            loru__orgservice__enabled=True,
+        )
+        if self.data.need_delivery:
+            q &= Q(
+                address__gps_x__isnull=False,
+                address__gps_y__isnull=False,
             )
-            stores = []
-            if need_delivery:
-                q &= Q(
-                    address__gps_x__isnull=False,
-                    address__gps_y__isnull=False,
-                )
-                if service_name != 'delivery':
-                    orgs = [orgservice.org for orgservice in OrgService.objects.filter(
-                        service=service,
-                        enabled=True,
-                    )]
-                    q &= Q(loru__in=orgs)
+            if self.data.service_name != 'delivery':
+                orgs = [orgservice.org for orgservice in OrgService.objects.filter(
+                    service=self.data.service,
+                    enabled=True,
+                )]
+                q &= Q(loru__in=orgs)
+            customer_loc = LatLon(Latitude(self.data.latitude), Longitude(self.data.longitude))
 
-            data = []
-            org = None
-            for store in Store.objects.filter(q).order_by('loru'):
-                # Идем по складам одного поставщика, потом по складам другого поставщика...
-                if org is None:
-                    org = store.loru
-                    # Цена за любую услугу, кроме delivery
-                    price_org = self.get_price_service(service, org)
-                    # Больше длины экватора
-                    distance = 41000.0
+        data = []
+        org = None
+        for store in Store.objects.filter(q).order_by('loru'):
+            # Идем по складам одного поставщика, потом по складам другого поставщика...
+            if org is None:
+                org = store.loru
+                # Цена за любую услугу, кроме delivery
+                price_org = self.get_price_service(org)
+                # Больше длины экватора
+                distance = 41000.0
 
-                if store.loru != org:
-                    if need_delivery:
-                        kwargs = dict(km=distance)
-                        price_org += self.get_price_delivery(org, **kwargs)
-                    data.append(dict(
-                        id=org.pk,
-                        name=org.name,
-                        price=round(price_org, 2),
-                    ))
-                    org = store.loru
-                    price_org = self.get_price_service(service, org)
-                    distance = 41000.0
-
-                if need_delivery:
-                    store_loc = LatLon(Latitude(store.address.gps_y), Longitude(store.address.gps_x))
-                    customer_loc = LatLon(Latitude(latitude), Longitude(longitude))
-                    distance = min(distance, store_loc.distance(customer_loc))
-
-            if org:
-                if need_delivery:
+            if store.loru != org:
+                if self.data.need_delivery:
                     kwargs = dict(km=distance)
                     price_org += self.get_price_delivery(org, **kwargs)
                 data.append(dict(
                     id=org.pk,
                     name=org.name,
                     price=round(price_org, 2),
+                    currency=org.currency.code,
                 ))
+                org = store.loru
+                price_org = self.get_price_service(org)
+                distance = 41000.0
 
-        except ServiceException as excpt:
-            return Response(data=dict(status='error', message=excpt.message), status=400)
+            if self.data.need_delivery:
+                store_loc = LatLon(Latitude(store.address.gps_y), Longitude(store.address.gps_x))
+                distance = min(distance, store_loc.distance(customer_loc))
+
+        if org:
+            if self.data.need_delivery:
+                kwargs = dict(km=distance)
+                price_org += self.get_price_delivery(org, **kwargs)
+            data.append(dict(
+                id=org.pk,
+                name=org.name,
+                price=round(price_org, 2),
+                currency=org.currency.code,
+            ))
 
         return Response(data=data, status=200)
 
 api_client_available_performers = ApiClientAvailablePerformersView.as_view()
+
+class ApiClientOrdersView(ApiServicePriceMixin, APIView):
+    permission_classes = (PermitIfCabinet,)
+
+    def post(self, request):
+        """
+        Принять предложение о создании заказа
+
+        Вх. данные, пример:
+        {
+            "type": "photo",
+            "performerId": 19,
+            "placeId": 43,
+            "location": {
+                "latitude": 52.70,
+                "longitude": 27.35
+            },
+            "comment": "Коментарий к заказу"
+        }
+        """
+        message = self.check_input_message(request)
+        if message:
+            return Response(data=dict(status='error', message=message), status=400)
+
+        distance = 41000.0
+        price_org = self.get_price_service(self.data.org)
+        if self.data.need_delivery:
+            customer_loc = LatLon(Latitude(self.data.latitude), Longitude(self.data.longitude))
+            for store in self.data.org.store_set.filter(
+                address__gps_x__isnull=False,
+                address__gps_y__isnull=False,
+            ):
+                store_loc = LatLon(Latitude(store.address.gps_y), Longitude(store.address.gps_x))
+                distance = min(distance, store_loc.distance(customer_loc))
+
+            kwargs = dict(km=distance)
+            price_org += self.get_price_delivery(self.data.org, **kwargs)
+        return Response(data=dict(price=round(price_org,2)), status=200)
+
+api_client_orders = ApiClientOrdersView.as_view()
