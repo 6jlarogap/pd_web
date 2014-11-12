@@ -1439,10 +1439,17 @@ class ApiClientAvailablePerformersView(APIView):
         Из этих складов выбираются ближайший
         """
         
-        def get_price_service(service_name, org_pk):
-            if service_name in ('photo', ):
+        def get_price_service(service, org):
+            """
+            Цена за услугу у огранизации
+            """
+            if service.name == 'delivery':
+                # цена за доставку считается не по организации, а по складам
+                price_service = 0
+            elif service.name in ('photo', ):
                 price_service = OrgServicePrice.objects.get(
-                    orgservice__org__pk=org_pk,
+                    orgservice__service=service,
+                    orgservice__org=org,
                     measure__name='unit',
                 ).price
             else:
@@ -1466,7 +1473,7 @@ class ApiClientAvailablePerformersView(APIView):
             if not customplace:
                 raise ServiceException(_(u'Не задан placeId или не найдено место'))
             if customplace.user != request.user:
-                raise ServiceException(_(u'Пользователь %s не имеет прав на этот запрос') % request.user.username)
+                raise ServiceException(_(u'Пользователь %s не имеет прав на запрос по этому месту') % request.user.username)
 
             need_delivery = service_name in ('photo', 'delivery')
             if need_delivery:
@@ -1484,7 +1491,8 @@ class ApiClientAvailablePerformersView(APIView):
                 longitude = float(longitude)
             
             q = Q(
-                loru__orgservice__service__name=service_name,
+                loru__orgservice__service=service,
+                loru__orgservice__enabled=True,
             )
             stores = []
             if need_delivery:
@@ -1493,36 +1501,39 @@ class ApiClientAvailablePerformersView(APIView):
                     address__gps_y__isnull=False,
                 )
                 if service_name != 'delivery':
-                    orgs = [orgservice.org for orgservice in OrgService.objects.filter(service__name=service_name)]
+                    orgs = [orgservice.org for orgservice in OrgService.objects.filter(
+                        service=service,
+                        enabled=True,
+                    )]
                     q &= Q(loru__in=orgs)
 
             data = []
-            org_pk = None
-            for store in Store.objects.filter(q).order_by('loru__pk'):
-                if org_pk is None:
-                    price_org = 0
-                    org_pk = store.loru.pk
-                    price_store = price_service = get_price_service(service_name, org_pk)
+            org = None
+            for store in Store.objects.filter(q).order_by('loru'):
+                # Идем по складам одного поставщика, потом по складам другого поставщика...
+                if org is None:
+                    org = store.loru
+                    # Цена за 
+                    price_org = price_store = get_price_service(service, org)
 
-                if org_pk != store.loru.pk:
+                if store.loru != org:
                     data.append(dict(
-                        id=org_pk,
-                        name=store.loru.name,
+                        id=org.pk,
+                        name=org.name,
                         price=price_org,
                     ))
-                    price_store = price_service = get_price_service(service_name, org_pk)
-                    price_org = 0
-                    org_pk = store.loru.pk
+                    org = store.loru
+                    price_org = price_store = get_price_service(service, org)
 
                 if need_delivery:
                     #TODO Расчет километража и цены доставки
                     pass
 
                 price_org = max(price_org, price_store)
-            if org_pk:
+            if org:
                 data.append(dict(
-                    id=org_pk,
-                    name=store.loru.name,
+                    id=org.pk,
+                    name=org.name,
                     price=price_org,
                 ))
 
