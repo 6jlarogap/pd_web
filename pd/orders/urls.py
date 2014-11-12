@@ -38,6 +38,7 @@ urlpatterns = patterns('orders.views',
     url(r'^api/org/(?P<org_id>\d+)/services/(?P<service_name>\w+)/?$', 'api_org_services_edit', name='api_org_services_edit'),
 
     url(r'^api/client/available_performers/?$', 'api_client_available_performers', name='api_client_available_performers'),
+    url(r'^api/client/orders/?$', 'api_client_orders', name='api_client_orders'),
 
     url(r'^order/product/ajax_get_product_price/$', 'ajax_product_price', name='ajax_product_price'),
 )
