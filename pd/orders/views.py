@@ -1280,6 +1280,7 @@ class ApiOrgServicesMixin(object):
         service=None
         measures = []
         orgservice = None
+        measures_get = []
 
     def check_org_id(self, request, org_id):
         org, message = request.user.profile.org, ''
@@ -1289,50 +1290,57 @@ class ApiOrgServicesMixin(object):
     
     def check_input_message(self, request, org_id, service_name=None):
         self.data = self.Data()
+        self.data.measures_get = request.DATA.get('measures', [])
+
         org, message = self.check_org_id(request, org_id)
         if message:
-            return message 
+            return message
+
         if not service_name:
             service_name = request.DATA.get('type')
         try:
             self.data.service = Service.objects.get(name=service_name)
-            try:
-                self.data.orgservice = OrgService.objects.get(org=org, service__name=service_name)
-            except OrgService.DoesNotExist:
-                if request.method in ("PUT", "DETETE"):
-                    return _(u"Сервис %s никогда не был активирован у организации") % service_name
-            measures_get = request.DATA.get('measures', [])
-            if request.method == "POST" and not measures_get:
-                return _(u"Не заданы цены с единицами изменений (measures)")
-            self.data.measures = Measure.objects.filter(service__name=service_name)
-            measure_names = [v['name'] for v in self.data.measures.values('name')]
-            for m in measures_get:
-                if m['name'] not in measure_names:
-                    return _(u"Нет единицы измерения %s у услуги %s") % (m['name'], service_name)
         except Service.DoesNotExist:
             return _(u"Сервис %s неизвестен в системе") % service_name
+
+        try:
+            self.data.orgservice = OrgService.objects.get(org=org, service=self.data.service)
+        except OrgService.DoesNotExist:
+            if request.method == 'POST' and not self.data.measures_get:
+                return _(u"У организации нет цен по сервису %s. Нельзя его активировать, не указав цены") % service_name
+            # - put (задать цены):          сервис будет создан у организации
+            # - delete (де-активировать):   нет сервиса, не будет и после запроса,
+            #                               т.е. сервис останется неактивированным у организации
+
+        if request.method == 'PUT' and not self.data.measures_get:
+            return _(u"Изменение цен по сервису. Не указаны цены")
+
+        self.data.measures = Measure.objects.filter(service=self.data.service)
+        measure_names = [v['name'] for v in self.data.measures.values('name')]
+        for m in self.data.measures_get:
+            if m['name'] not in measure_names:
+                return _(u"Нет единицы измерения %s у услуги %s") % (m['name'], service_name)
         return ''
 
     def put_prices(self, request):
         if self.data.orgservice:
             orgservice = self.data.orgservice
+            if request.method == 'POST' and not orgservice.enabled:
+                orgservice.enabled = True
+                orgservice.save()
         else:
             orgservice = OrgService.objects.create(
                 org=request.user.profile.org,
                 service=self.data.service,
-                enabled=True,
+                enabled=request.method == "POST",
             )
-        if not orgservice.enabled and request.method == "POST":
-            orgservice.enabled = True
-            orgservice.save()
-        measures_get = request.DATA.get('measures', [])
+            self.data.orgservice = orgservice
         for measure in self.data.measures:
-            for m in measures_get:
+            price = None
+            for m in self.data.measures_get:
                 if m['name'] == measure.name:
-                    price = m['value']
+                    price = m['price']
                     break
-            else:
-                price = None
             orgserviceprice, created_ = OrgServicePrice.objects.get_or_create(
                 orgservice=orgservice,
                 measure=measure,
@@ -1410,14 +1418,14 @@ class ApiOrgServicesEditView(ApiOrgServicesMixin, APIView):
         """
         message = self.check_input_message(request, org_id, service_name)
         orgservice = self.data.orgservice
-        if orgservice.enabled:
+        if orgservice and orgservice.enabled:
             orgservice.enabled = False
             orgservice.save()
         return Response(data=dict(status='success'), status=200)
 
 api_org_services_edit = ApiOrgServicesEditView.as_view()
 
-class ApiClientAvailablePerformersView(ApiOrgServicesMixin, APIView):
+class ApiClientAvailablePerformersView(APIView):
     permission_classes = (PermitIfCabinet,)
 
     def get(self, request):
