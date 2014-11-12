@@ -1425,21 +1425,9 @@ class ApiOrgServicesEditView(ApiOrgServicesMixin, APIView):
 
 api_org_services_edit = ApiOrgServicesEditView.as_view()
 
-class ApiClientAvailablePerformersView(APIView):
-    permission_classes = (PermitIfCabinet,)
+class ApiServicePriceMixin(object):
 
-    def get(self, request):
-        """
-        Получить список возможных исполнителей работы
-        
-        Выбираются исполнители, подписавшиеся на сервис.
-            - если сервис требует транспортных расходов, то еще и подписавшиеся
-              на сервис delivery.
-        Из них выбираются те, кто имеют склады с коодинатами
-        Из этих складов выбираются ближайший
-        """
-        
-        def get_price_service(service, org):
+        def get_price_service(self, service, org):
             """
             Цена за услугу у огранизации
             """
@@ -1454,8 +1442,38 @@ class ApiClientAvailablePerformersView(APIView):
                 ).price
             else:
                 price_service = 0
-            return float(price_service)
+            return round(float(price_service), 2)
 
+        def get_price_delivery(self, org, km, kg=None, m3=None):
+            """
+            Цена за доставку XX kg и/или yy m3 груза на расстояние km в организации org
+            """
+            result = 0.00
+            for m in OrgServicePrice.objects.filter(
+                orgservice__org=org,
+                orgservice__service__name='delivery'
+               ).values('measure__name', 'price'):
+                if m['measure__name'] == 'km':
+                    result += float(m['price']) * km
+                elif kg and m['measure__name'] == 'kg':
+                    result += float(m['price']) * kg * km
+                elif m3 and m['measure__name'] == 'm3':
+                    result += float(m['price']) * m3 * km
+            return round(result, 2)
+
+class ApiClientAvailablePerformersView(ApiServicePriceMixin, APIView):
+    permission_classes = (PermitIfCabinet,)
+
+    def get(self, request):
+        """
+        Получить список возможных исполнителей работы
+        
+        Выбираются исполнители, подписавшиеся на сервис.
+            - если сервис требует транспортных расходов, то еще и подписавшиеся
+              на сервис delivery.
+        Из них выбираются те, кто имеют склады с коодинатами
+        Из этих складов выбираются ближайший
+        """
         try:
             service_name = request.GET.get('type')
             try:
@@ -1513,28 +1531,37 @@ class ApiClientAvailablePerformersView(APIView):
                 # Идем по складам одного поставщика, потом по складам другого поставщика...
                 if org is None:
                     org = store.loru
-                    # Цена за 
-                    price_org = price_store = get_price_service(service, org)
+                    # Цена за любую услугу, кроме delivery
+                    price_org = self.get_price_service(service, org)
+                    # Больше длины экватора
+                    distance = 41000.0
 
                 if store.loru != org:
+                    if need_delivery:
+                        kwargs = dict(km=distance)
+                        price_org += self.get_price_delivery(org, **kwargs)
                     data.append(dict(
                         id=org.pk,
                         name=org.name,
-                        price=price_org,
+                        price=round(price_org, 2),
                     ))
                     org = store.loru
-                    price_org = price_store = get_price_service(service, org)
+                    price_org = self.get_price_service(service, org)
+                    distance = 41000.0
 
                 if need_delivery:
-                    #TODO Расчет километража и цены доставки
-                    pass
+                    store_loc = LatLon(Latitude(store.address.gps_y), Longitude(store.address.gps_x))
+                    customer_loc = LatLon(Latitude(latitude), Longitude(longitude))
+                    distance = min(distance, store_loc.distance(customer_loc))
 
-                price_org = max(price_org, price_store)
             if org:
+                if need_delivery:
+                    kwargs = dict(km=distance)
+                    price_org += self.get_price_delivery(org, **kwargs)
                 data.append(dict(
                     id=org.pk,
                     name=org.name,
-                    price=price_org,
+                    price=round(price_org, 2),
                 ))
 
         except ServiceException as excpt:
