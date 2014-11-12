@@ -1280,6 +1280,7 @@ class ApiOrgServicesMixin(object):
         service=None
         measures = []
         orgservice = None
+        measures_get = []
 
     def check_org_id(self, request, org_id):
         org, message = request.user.profile.org, ''
@@ -1289,50 +1290,57 @@ class ApiOrgServicesMixin(object):
     
     def check_input_message(self, request, org_id, service_name=None):
         self.data = self.Data()
+        self.data.measures_get = request.DATA.get('measures', [])
+
         org, message = self.check_org_id(request, org_id)
         if message:
-            return message 
+            return message
+
         if not service_name:
             service_name = request.DATA.get('type')
         try:
             self.data.service = Service.objects.get(name=service_name)
-            try:
-                self.data.orgservice = OrgService.objects.get(org=org, service__name=service_name)
-            except OrgService.DoesNotExist:
-                if request.method in ("PUT", "DETETE"):
-                    return _(u"Сервис %s никогда не был активирован у организации") % service_name
-            measures_get = request.DATA.get('measures', [])
-            if request.method == "POST" and not measures_get:
-                return _(u"Не заданы цены с единицами изменений (measures)")
-            self.data.measures = Measure.objects.filter(service__name=service_name)
-            measure_names = [v['name'] for v in self.data.measures.values('name')]
-            for m in measures_get:
-                if m['name'] not in measure_names:
-                    return _(u"Нет единицы измерения %s у услуги %s") % (m['name'], service_name)
         except Service.DoesNotExist:
             return _(u"Сервис %s неизвестен в системе") % service_name
+
+        try:
+            self.data.orgservice = OrgService.objects.get(org=org, service=self.data.service)
+        except OrgService.DoesNotExist:
+            if request.method == 'POST' and not self.data.measures_get:
+                return _(u"У организации нет цен по сервису %s. Нельзя его активировать, не указав цены") % service_name
+            # - put (задать цены):          сервис будет создан у организации
+            # - delete (де-активировать):   нет сервиса, не будет и после запроса,
+            #                               т.е. сервис останется неактивированным у организации
+
+        if request.method == 'PUT' and not self.data.measures_get:
+            return _(u"Изменение цен по сервису. Не указаны цены")
+
+        self.data.measures = Measure.objects.filter(service=self.data.service)
+        measure_names = [v['name'] for v in self.data.measures.values('name')]
+        for m in self.data.measures_get:
+            if m['name'] not in measure_names:
+                return _(u"Нет единицы измерения %s у услуги %s") % (m['name'], service_name)
         return ''
 
     def put_prices(self, request):
         if self.data.orgservice:
             orgservice = self.data.orgservice
+            if request.method == 'POST' and not orgservice.enabled:
+                orgservice.enabled = True
+                orgservice.save()
         else:
             orgservice = OrgService.objects.create(
                 org=request.user.profile.org,
                 service=self.data.service,
-                enabled=True,
+                enabled=request.method == "POST",
             )
-        if not orgservice.enabled and request.method == "POST":
-            orgservice.enabled = True
-            orgservice.save()
-        measures_get = request.DATA.get('measures', [])
+            self.data.orgservice = orgservice
         for measure in self.data.measures:
-            for m in measures_get:
+            price = None
+            for m in self.data.measures_get:
                 if m['name'] == measure.name:
-                    price = m['value']
+                    price = m['price']
                     break
-            else:
-                price = None
             orgserviceprice, created_ = OrgServicePrice.objects.get_or_create(
                 orgservice=orgservice,
                 measure=measure,
@@ -1410,20 +1418,37 @@ class ApiOrgServicesEditView(ApiOrgServicesMixin, APIView):
         """
         message = self.check_input_message(request, org_id, service_name)
         orgservice = self.data.orgservice
-        if orgservice.enabled:
+        if orgservice and orgservice.enabled:
             orgservice.enabled = False
             orgservice.save()
         return Response(data=dict(status='success'), status=200)
 
 api_org_services_edit = ApiOrgServicesEditView.as_view()
 
-class ApiClientAvailablePerformersView(ApiOrgServicesMixin, APIView):
+class ApiClientAvailablePerformersView(APIView):
     permission_classes = (PermitIfCabinet,)
 
     def get(self, request):
         """
         Получить список возможных исполнителей работы
+        
+        Выбираются исполнители, подписавшиеся на сервис.
+            - если сервис требует транспортных расходов, то еще и подписавшиеся
+              на сервис delivery.
+        Из них выбираются те, кто имеют склады с коодинатами
+        Из этих складов выбираются ближайший
         """
+        
+        def get_price_service(service_name, org_pk):
+            if service_name in ('photo', ):
+                price_service = OrgServicePrice.objects.get(
+                    orgservice__org__pk=org_pk,
+                    measure__name='unit',
+                ).price
+            else:
+                price_service = 0
+            return float(price_service)
+
         try:
             service_name = request.GET.get('type')
             try:
@@ -1443,35 +1468,67 @@ class ApiClientAvailablePerformersView(ApiOrgServicesMixin, APIView):
             if customplace.user != request.user:
                 raise ServiceException(_(u'Пользователь %s не имеет прав на этот запрос') % request.user.username)
 
-            latitude = request.GET.get('location[latitude]')
-            longitude = request.GET.get('location[longitude]')
-            if latitude is None or longitude is None:
-                latitude = customplace.address and customplace.address.gps_y
-                longitude = customplace.address and customplace.address.gps_x
-            if (latitude is None or longitude is None) and customplace.place:
-                latitude = customplace.place.lat
-                longitude = customplace.place.lng
-            if latitude is None or longitude is None:
-                raise ServiceException(_(u'Не заданы и не удалось выяснить координаты места'))
-            latitude = float(latitude)
-            longitude = float(longitude)
-
-            service_names = [service_name]
-            if service_name in ('photo', ):
-                service_names.append('delivery')
+            need_delivery = service_name in ('photo', 'delivery')
+            if need_delivery:
+                latitude = request.GET.get('location[latitude]')
+                longitude = request.GET.get('location[longitude]')
+                if latitude is None or longitude is None:
+                    latitude = customplace.address and customplace.address.gps_y
+                    longitude = customplace.address and customplace.address.gps_x
+                if (latitude is None or longitude is None) and customplace.place:
+                    latitude = customplace.place.lat
+                    longitude = customplace.place.lng
+                if latitude is None or longitude is None:
+                    raise ServiceException(_(u'Не заданы и не удалось выяснить координаты места'))
+                latitude = float(latitude)
+                longitude = float(longitude)
+            
             q = Q(
-                orgservice__org__type=Org.PROFILE_LORU,
-                orgservice__org__off_address__gps_x__isnull=False,
-                orgservice__org__off_address__gps_y__isnull=False,
-                orgservice__service=service,
-                
+                loru__orgservice__service__name=service_name,
             )
-            for orgserviceprice in OrgServicePrice.objects.filter(q):
-                print orgserviceprice.orgservice.org
+            stores = []
+            if need_delivery:
+                q &= Q(
+                    address__gps_x__isnull=False,
+                    address__gps_y__isnull=False,
+                )
+                if service_name != 'delivery':
+                    orgs = [orgservice.org for orgservice in OrgService.objects.filter(service__name=service_name)]
+                    q &= Q(loru__in=orgs)
+
+            data = []
+            org_pk = None
+            for store in Store.objects.filter(q).order_by('loru__pk'):
+                if org_pk is None:
+                    price_org = 0
+                    org_pk = store.loru.pk
+                    price_store = price_service = get_price_service(service_name, org_pk)
+
+                if org_pk != store.loru.pk:
+                    data.append(dict(
+                        id=org_pk,
+                        name=store.loru.name,
+                        price=price_org,
+                    ))
+                    price_store = price_service = get_price_service(service_name, org_pk)
+                    price_org = 0
+                    org_pk = store.loru.pk
+
+                if need_delivery:
+                    #TODO Расчет километража и цены доставки
+                    pass
+
+                price_org = max(price_org, price_store)
+            if org_pk:
+                data.append(dict(
+                    id=org_pk,
+                    name=store.loru.name,
+                    price=price_org,
+                ))
 
         except ServiceException as excpt:
             return Response(data=dict(status='error', message=excpt.message), status=400)
 
-        return Response(data=dict(), status=200)
+        return Response(data=data, status=200)
 
 api_client_available_performers = ApiClientAvailablePerformersView.as_view()
