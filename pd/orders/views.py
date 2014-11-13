@@ -1441,6 +1441,16 @@ class ApiServicePriceMixin(object):
                 req_dict = request.GET
             elif request.method == 'POST':
                 req_dict = request.DATA
+
+            self.data.service_name = req_dict.get('type')
+            try:
+                self.data.service = self.data.service_name and Service.objects.get(name=self.data.service_name)
+            except Service.DoesNotExist:
+                self.data.service = None
+            if not self.data.service:
+                raise ServiceException(_(u'Сервис не задан или неизвестен'))
+
+            if request.method == 'POST':
                 org = req_dict.get('performerId')
                 try:
                     org = org and Org.objects.get(pk=org)
@@ -1450,15 +1460,14 @@ class ApiServicePriceMixin(object):
                     raise ServiceException(_(u"Id исполнителя не задан или не найден среди организаций"))
                 if org.type not in (Org.PROFILE_LORU, ):
                     raise ServiceException(_(u"performerId %s - не ЛОРУ (поставщик услуг)") % org.pk)
+                try:
+                    orgservice = OrgService.objects.get(org=org, service=self.data.service, enabled=True)
+                except OrgService.DoesNotExist:
+                    raise ServiceException(_(u"Сервис %s не активирован у организации Id=%s") % (
+                          self.data.service_name,
+                          org.pk,
+                    ))
                 self.data.org = org
-
-            self.data.service_name = req_dict.get('type')
-            try:
-                self.data.service = self.data.service_name and Service.objects.get(name=self.data.service_name)
-            except Service.DoesNotExist:
-                self.data.service = None
-            if not self.data.service:
-                raise ServiceException(_(u'Сервис не задан или неизвестен'))
 
             customplace_id = req_dict.get('placeId')
             try:
