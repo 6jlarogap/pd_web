@@ -35,7 +35,8 @@ from billing.models import Rate
 from orders.forms import ProductForm, OrderForm, OrderItemFormset, CoffinForm, CatafalqueForm, \
                          AddInfoForm, OrderSearchForm, OrderBurialForm
 from orders.models import Product, Order, OrderItem, ProductCategory, Iorder, IorderItem, \
-                          Service, Measure, OrgService, OrgServicePrice, ServiceItem, OrderComment
+                          Service, Measure, OrgService, OrgServicePrice, ServiceItem, OrderComment, \
+                          Route
 from persons.models import CustomPlace, AlivePerson
 from pd.forms import CommentForm
 from pd.views import PaginateListView, RequestToFormMixin, ServiceException, get_front_end_url, get_host_url
@@ -1658,6 +1659,7 @@ class ApiClientOrdersView(ApiServicePriceMixin, APIView):
 
         distance = 41000.0
         price_org = self.get_price_service(self.data.org)
+        closest_store = dict(lat=0, lng=0)
         if self.data.need_delivery:
             customer_loc = LatLon(Latitude(self.data.latitude), Longitude(self.data.longitude))
             for store in self.data.org.store_set.filter(
@@ -1665,7 +1667,10 @@ class ApiClientOrdersView(ApiServicePriceMixin, APIView):
                 address__gps_y__isnull=False,
             ):
                 store_loc = LatLon(Latitude(store.address.gps_y), Longitude(store.address.gps_x))
-                distance = min(distance, store_loc.distance(customer_loc))
+                distance_store = store_loc.distance(customer_loc)
+                if distance_store < distance:
+                    distance = distance_store
+                    closest_store=dict(lat=store.address.gps_y, lng=store.address.gps_x)
 
             kwargs = dict(km=distance)
             price_delivery = self.get_price_delivery(self.data.org, **kwargs)
@@ -1702,6 +1707,13 @@ class ApiClientOrdersView(ApiServicePriceMixin, APIView):
                 order=order,
                 orgservice=self.data.orgservice_delivery,
                 cost=price_delivery,
+            )
+            Route.objects.create(order=order, index=0, **closest_store)
+            Route.objects.create(
+                order=order,
+                index=1,
+                lat=self.data.latitude,
+                lng=self.data.longitude,
             )
         comment = request.DATA.get('comment')
         if comment:

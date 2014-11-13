@@ -478,6 +478,11 @@ class CoffinData(models.Model):
 class Route(PointsModel):
     order = models.ForeignKey(Order)
 
+    class Meta:
+        unique_together = (
+            ('order', 'index', ),
+        )
+
 def recount_cost(instance, **kwargs):
     instance.order.cost = sum([i.total for i in instance.order.orderitem_set.all()], 0)
     instance.order.save()

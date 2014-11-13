@@ -24,6 +24,9 @@ class CoordinatesModel(models.Model):
     """
     Базовая модель для списка координат объекта: вершин многоугольника
     """
+    # TODO  Убрать этот базовый класс, а модель на его основе, burials.CemeteryCoordinates
+    #       привести к PointsModel (неудачное название angle_number)
+    #
     angle_number = models.PositiveIntegerField(_(u"Порядок следования углов многоугольника"))
     lat = models.FloatField(_(u"Широта"))
     lng = models.FloatField(_(u"Долгота"))
@@ -34,9 +37,9 @@ class CoordinatesModel(models.Model):
 
 class PointsModel(models.Model):
     """
-    Базовая модель для списка координат объекта, маршрута или вершин многоугольника
+    Базовая модель для списка координат: маршрута или вершин многоугольника
     """
-    index = models.PositiveIntegerField(_(u"Порядок следования"))
+    index = models.PositiveIntegerField(_(u"Порядок следования точек, начиная с 0"))
     lat = models.FloatField(_(u"Широта"))
     lng = models.FloatField(_(u"Долгота"))
 
