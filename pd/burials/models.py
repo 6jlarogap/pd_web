@@ -120,6 +120,8 @@ class Cemetery(GetLogsMixin, BaseModel, PhonesMixin):
 
 
 class CemeteryCoordinates(CoordinatesModel):
+    #TODO:
+    # Перевести эту модель к PointsModel
     cemetery = models.ForeignKey(Cemetery, verbose_name=_(u"Кладбище"), on_delete=models.PROTECT, related_name='coordinates')
 
     class Meta:

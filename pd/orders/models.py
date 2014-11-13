@@ -15,6 +15,7 @@ from burials.models import Burial
 from reports.models import Report
 from users.models import Org
 from pd.models import BaseModel, GetLogsMixin, upload_slugified, Files
+from geo.models import PointsModel
 
 
 class Service(models.Model):
@@ -473,6 +474,9 @@ class AddInfoData(models.Model):
 class CoffinData(models.Model):
     order = models.OneToOneField('orders.Order', editable=False)
     size = models.TextField(_(u"Размер"))
+
+class Route(PointsModel):
+    order = models.ForeignKey(Order)
 
 def recount_cost(instance, **kwargs):
     instance.order.cost = sum([i.total for i in instance.order.orderitem_set.all()], 0)

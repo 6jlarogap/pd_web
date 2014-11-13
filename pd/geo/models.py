@@ -32,6 +32,18 @@ class CoordinatesModel(models.Model):
         abstract = True
 
 
+class PointsModel(models.Model):
+    """
+    Базовая модель для списка координат объекта, маршрута или вершин многоугольника
+    """
+    index = models.PositiveIntegerField(_(u"Порядок следования"))
+    lat = models.FloatField(_(u"Широта"))
+    lng = models.FloatField(_(u"Долгота"))
+
+    class Meta:
+        abstract = True
+
+
 class Country(models.Model):
     """
     Страна.
