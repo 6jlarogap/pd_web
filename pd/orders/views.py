@@ -35,8 +35,8 @@ from billing.models import Rate
 from orders.forms import ProductForm, OrderForm, OrderItemFormset, CoffinForm, CatafalqueForm, \
                          AddInfoForm, OrderSearchForm, OrderBurialForm
 from orders.models import Product, Order, OrderItem, ProductCategory, Iorder, IorderItem, \
-                          Service, Measure, OrgService, OrgServicePrice
-from persons.models import CustomPlace
+                          Service, Measure, OrgService, OrgServicePrice, ServiceItem, OrderComment
+from persons.models import CustomPlace, AlivePerson
 from pd.forms import CommentForm
 from pd.views import PaginateListView, RequestToFormMixin, ServiceException, get_front_end_url, get_host_url
 from reports.models import make_report
@@ -1428,6 +1428,8 @@ class ApiServicePriceMixin(object):
     class Data(object):
         service = None
         service_name = None
+        orgservice=None
+        orgservice_delivery = None
         customplace = None
         latitude = None
         longitude = None
@@ -1441,6 +1443,16 @@ class ApiServicePriceMixin(object):
                 req_dict = request.GET
             elif request.method == 'POST':
                 req_dict = request.DATA
+
+            self.data.service_name = req_dict.get('type')
+            try:
+                self.data.service = self.data.service_name and Service.objects.get(name=self.data.service_name)
+            except Service.DoesNotExist:
+                self.data.service = None
+            if not self.data.service:
+                raise ServiceException(_(u'Сервис не задан или неизвестен'))
+
+            if request.method == 'POST':
                 org = req_dict.get('performerId')
                 try:
                     org = org and Org.objects.get(pk=org)
@@ -1450,15 +1462,18 @@ class ApiServicePriceMixin(object):
                     raise ServiceException(_(u"Id исполнителя не задан или не найден среди организаций"))
                 if org.type not in (Org.PROFILE_LORU, ):
                     raise ServiceException(_(u"performerId %s - не ЛОРУ (поставщик услуг)") % org.pk)
+                try:
+                    self.data.orgservice = OrgService.objects.get(
+                        org=org,
+                        service=self.data.service,
+                        enabled=True
+                    )
+                except OrgService.DoesNotExist:
+                    raise ServiceException(_(u"Сервис %s не активирован у организации Id=%s") % (
+                          self.data.service_name,
+                          org.pk,
+                    ))
                 self.data.org = org
-
-            self.data.service_name = req_dict.get('type')
-            try:
-                self.data.service = self.data.service_name and Service.objects.get(name=self.data.service_name)
-            except Service.DoesNotExist:
-                self.data.service = None
-            if not self.data.service:
-                raise ServiceException(_(u'Сервис не задан или неизвестен'))
 
             customplace_id = req_dict.get('placeId')
             try:
@@ -1488,6 +1503,18 @@ class ApiServicePriceMixin(object):
                     raise ServiceException(_(u'Не заданы и не удалось выяснить координаты места'))
                 self.data.latitude = float(latitude)
                 self.data.longitude = float(longitude)
+                if request.method == 'POST' and self.data.service_name != 'delivery':
+                    try:
+                        self.data.orgservice_delivery = OrgService.objects.get(
+                            org=org,
+                            service__name='delivery',
+                            enabled=True
+                        )
+                    except OrgService.DoesNotExist:
+                        raise ServiceException(_(u'Услуга %s требует еще активной услуги доставки у организации') % (
+                            self.data.service_name,
+                        ))
+                    
 
         except ServiceException as excpt:
             return excpt.message
@@ -1608,6 +1635,7 @@ api_client_available_performers = ApiClientAvailablePerformersView.as_view()
 class ApiClientOrdersView(ApiServicePriceMixin, APIView):
     permission_classes = (PermitIfCabinet,)
 
+    @transaction.commit_on_success
     def post(self, request):
         """
         Принять предложение о создании заказа
@@ -1640,7 +1668,52 @@ class ApiClientOrdersView(ApiServicePriceMixin, APIView):
                 distance = min(distance, store_loc.distance(customer_loc))
 
             kwargs = dict(km=distance)
-            price_org += self.get_price_delivery(self.data.org, **kwargs)
-        return Response(data=dict(price=round(price_org,2)), status=200)
+            price_delivery = self.get_price_delivery(self.data.org, **kwargs)
+        else:
+            price_delivery = 0.00
+
+        login_phone = request.user.customerprofile.login_phone
+        applicant = AlivePerson.objects.create(
+            user=request.user,
+            phones=u"+%s" % login_phone if login_phone else None,
+            login_phone=login_phone,
+            last_name=request.user.customerprofile.user_last_name,
+            first_name=request.user.customerprofile.user_first_name,
+            middle_name=request.user.customerprofile.user_middle_name,
+        )
+        cost=round(price_org +price_delivery, 2)
+        order = Order(
+            loru=self.data.org,
+            applicant=applicant,
+            cost=cost,
+            dt=datetime.date.today(),
+            customplace=self.data.customplace,
+        )
+        # так будет назначен loru_number:
+        order.save()
+        if self.data.service_name != 'delivery':
+            item_service = ServiceItem.objects.create(
+                order=order,
+                orgservice=self.data.orgservice,
+                cost=price_org,
+            )
+        if self.data.need_delivery:
+            item_service = ServiceItem.objects.create(
+                order=order,
+                orgservice=self.data.orgservice_delivery,
+                cost=price_delivery,
+            )
+        comment = request.DATA.get('comment')
+        if comment:
+            OrderComment.objects.create(
+                order=order,
+                user=request.user,
+                comment=comment,
+            )
+
+        return Response(
+            data=dict(status='success', price=cost, currency=self.data.org.currency.code),
+            status=200,
+        )
 
 api_client_orders = ApiClientOrdersView.as_view()
