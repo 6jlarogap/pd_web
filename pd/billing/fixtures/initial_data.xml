@@ -5,11 +5,13 @@
         <field type="CharField" name="short_name">руб</field>
         <field type="CharField" name="code">RUR</field>
         <field type="FileField" name="icon"></field>
+        <field type="FileField" name="rounding">2</field>
     </object>
     <object pk="2" model="billing.currency">
         <field type="CharField" name="name">рубль</field>
         <field type="CharField" name="short_name">руб</field>
         <field type="CharField" name="code">BYR</field>
         <field type="FileField" name="icon"></field>
+        <field type="FileField" name="rounding">-2</field>
     </object>
 </django-objects>

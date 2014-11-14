@@ -235,7 +235,7 @@ def get_mail_footer(user):
 
 def get_default_currency():
     Currency = models.get_model('billing', 'Currency')
-    return Currency.objects.get(code=settings.CURRENCY_DEFAULT_CODE)
+    return Currency.objects.only('pk').get(code=settings.CURRENCY_DEFAULT_CODE)
 
 class Oauth(models.Model):
     PROVIDER_YANDEX = 'yandex'

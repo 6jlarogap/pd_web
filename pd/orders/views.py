@@ -1536,7 +1536,7 @@ class ApiServicePriceMixin(object):
             ).price
         else:
             price_service = 0
-        return round(float(price_service), 2)
+        return round(float(price_service), org.currency.rounding)
 
     def get_price_delivery(self, org, km, kg=None, m3=None):
         """
@@ -1553,7 +1553,7 @@ class ApiServicePriceMixin(object):
                 result += float(m['price']) * kg * km
             elif m3 and m['measure__name'] == 'm3':
                 result += float(m['price']) * m3 * km
-        return round(result, 2)
+        return round(result, org.currency.rounding)
 
 class ApiClientAvailablePerformersView(ApiServicePriceMixin, APIView):
     permission_classes = (PermitIfCabinet,)
@@ -1607,7 +1607,7 @@ class ApiClientAvailablePerformersView(ApiServicePriceMixin, APIView):
                 data.append(dict(
                     id=org.pk,
                     name=org.name,
-                    price=round(price_org, 2),
+                    price=round(price_org, org.currency.rounding),
                     currency=org.currency.code,
                 ))
                 org = store.loru
@@ -1625,7 +1625,7 @@ class ApiClientAvailablePerformersView(ApiServicePriceMixin, APIView):
             data.append(dict(
                 id=org.pk,
                 name=org.name,
-                price=round(price_org, 2),
+                price=round(price_org, org.currency.rounding),
                 currency=org.currency.code,
             ))
 
@@ -1686,7 +1686,7 @@ class ApiClientOrdersView(ApiServicePriceMixin, APIView):
             first_name=request.user.customerprofile.user_first_name,
             middle_name=request.user.customerprofile.user_middle_name,
         )
-        cost=round(price_org +price_delivery, 2)
+        cost=round(price_org + price_delivery, self.data.org.currency.rounding)
         order = Order(
             loru=self.data.org,
             applicant=applicant,
@@ -1722,7 +1722,6 @@ class ApiClientOrdersView(ApiServicePriceMixin, APIView):
                 user=request.user,
                 comment=comment,
             )
-
         return Response(
             data=dict(status='success', price=cost, currency=self.data.org.currency.code),
             status=200,
