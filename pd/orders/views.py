@@ -153,7 +153,9 @@ class OrderList(LORURequiredMixin, PaginateListView):
         return self.filtered_orders()
 
     def filtered_orders(self):
-        orders = Order.objects.filter(loru=self.request.user.profile.org)
+        q = Q(loru=self.request.user.profile.org) | \
+            Q(type=Order.TYPE_TRADE, applicant_organization=self.request.user.profile.org)
+        orders = Order.objects.filter(q).distinct()
                 # .annotate(item_count=Count('orderitem'))  # мы не показываем в таблице кол-во товаров,
                                                             # к тому же это резко замедляет поиск
 

@@ -273,15 +273,15 @@
                     <td>{{ c.dt|default:"" }}</td>
                     <td class="no-print">
                         {% if c.is_type_burial %}
-                            {% if user.profile.org == c.loru %}
-                                <a href="{% url order_edit c.pk %}" class="btn">{% trans "править" %}</a>
-                            {% endif %}
+                            <a href="{% url order_edit c.pk %}" class="btn">{% trans "править" %}</a>
                             {% if not c.annulated %}
                                 <a href="{% url order_print c.pk %}" class="btn" target="_blank">{% trans "счет-заказ" %}</a>
                                 <a href="{% url order_contract c.pk %}" class="btn" target="_blank">{% trans "контракт" %}</a>
                             {% endif %}
                         {% elif c.is_type_trade %}
                             <a href="{{ global_context_FRONT_END_URL }}order/{{c.pk}}" class="btn">{% trans "править" %}</a>
+                        {% elif c.is_type_customer %}
+                            {% trans "Заказ<br/>пользователя" %}
                         {% endif %}
                     </td>
                 </tr>
