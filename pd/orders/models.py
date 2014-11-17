@@ -15,6 +15,7 @@ from burials.models import Burial
 from reports.models import Report
 from users.models import Org
 from pd.models import BaseModel, GetLogsMixin, upload_slugified, Files
+from geo.models import PointsModel
 
 
 class Service(models.Model):
@@ -202,7 +203,6 @@ class Order(GetLogsMixin, BaseModel):
     customplace = models.ForeignKey('persons.CustomPlace', verbose_name=_(u"Место захоронения"), null=True, editable=False)
     status = models.CharField(_(u"Статус"), max_length=255, choices=STATUS_TYPES, default=STATUS_PENDING, editable=False,)
     applicant_approved = models.NullBooleanField(_(u"Одобрено заказчиком"), null=True, editable=False,)
-    applicant_final_comment = models.TextField(_(u"Комментарий заказчика по окончании работы"), null=True, editable=False, )
 
     class Meta:
         verbose_name = _(u"Заказ")
@@ -474,6 +474,14 @@ class AddInfoData(models.Model):
 class CoffinData(models.Model):
     order = models.OneToOneField('orders.Order', editable=False)
     size = models.TextField(_(u"Размер"))
+
+class Route(PointsModel):
+    order = models.ForeignKey(Order)
+
+    class Meta:
+        unique_together = (
+            ('order', 'index', ),
+        )
 
 def recount_cost(instance, **kwargs):
     instance.order.cost = sum([i.total for i in instance.order.orderitem_set.all()], 0)

@@ -109,7 +109,7 @@ class BasePerson(models.Model):
         return new_person
 
     def save(self, *args, **kwargs):
-        uname = lambda s: (s[:1].upper() + s[1:]).strip(' ').strip('*')
+        uname = lambda s: s and (s[:1].upper() + s[1:]).strip(' ').strip('*') or ''
         self.first_name = uname(self.first_name)
         self.last_name = uname(self.last_name)
         self.middle_name = uname(self.middle_name)
