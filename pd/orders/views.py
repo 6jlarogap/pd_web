@@ -153,7 +153,7 @@ class OrderList(LORURequiredMixin, PaginateListView):
         return self.filtered_orders()
 
     def filtered_orders(self):
-        orders = Order.objects.filter(loru=self.request.user.profile.org, customplace__isnull=True) 
+        orders = Order.objects.filter(loru=self.request.user.profile.org)
                 # .annotate(item_count=Count('orderitem'))  # мы не показываем в таблице кол-во товаров,
                                                             # к тому же это резко замедляет поиск
 
@@ -323,6 +323,7 @@ class OrderCreate(LORURequiredMixin, RequestToFormMixin, CreateView):
         })
         return data
 
+    @transaction.commit_on_success
     def form_valid(self, form):
         self.object = form.save(commit=False)
         self.object.loru = self.request.user.profile.org
@@ -331,7 +332,18 @@ class OrderCreate(LORURequiredMixin, RequestToFormMixin, CreateView):
         self.object.save()
 
         for p in Product.objects.filter(loru=self.request.user.profile.org, default=True):
-            OrderItem.objects.create(order=self.object, product=p)
+            OrderItem.objects.create(
+                order=self.object,
+                product=p,
+                name=p.name,
+                measure=p.measure,
+                description=p.description,
+                productcategory=p.productcategory,
+                productcategory_name=p.productcategory.name,
+                productgroup=p.productgroup,
+                productgroup_name=p.productgroup and p.productgroup.name or '',
+                productgroup_description=p.productgroup and p.productgroup.description or '',
+            )
 
         write_log(self.request, self.object, _(u'Заказ сохранен'))
         msg = _(u"<a href='%s'>Заказ %s</a> сохранен") % (
@@ -367,7 +379,7 @@ class OrderEdit(LORURequiredMixin, RequestToFormMixin, UpdateView):
         return super(OrderEdit, self).get(request, *args, **kwargs)
 
     def get_queryset(self):
-        return Order.objects.filter(loru=self.request.user.profile.org)
+        return Order.objects.filter(loru=self.request.user.profile.org, type=Order.TYPE_BURIAL)
 
     def form_valid(self, form):
         self.object = form.save()
@@ -404,7 +416,7 @@ class OrderEditProducts(LORURequiredMixin, View):
         return OrderItemFormset(request=self.request, data=self.request.POST or None, instance=self.get_object())
 
     def get_object(self):
-        return self.get_queryset().get(pk=self.kwargs['pk'])
+        return self.get_queryset().get(pk=self.kwargs['pk'], type=Order.TYPE_BURIAL)
 
     def get_context_data(self, **kwargs):
         return {
@@ -412,6 +424,7 @@ class OrderEditProducts(LORURequiredMixin, View):
             'formset': self.get_formset(),
         }
 
+    @transaction.commit_on_success
     def post(self, request, *args, **kwargs):
         self.request = request
             
@@ -422,7 +435,6 @@ class OrderEditProducts(LORURequiredMixin, View):
                 orderitem.delete()
             
             formset.save()
-
 
             write_log(self.request, self.object, _(u'Заказ сохранен'))
             msg = _(u"<a href='%s'>Заказ %s</a> сохранен") % (
@@ -437,7 +449,10 @@ class OrderEditProducts(LORURequiredMixin, View):
 
     def get(self, request, *args, **kwargs):
         self.request = request
-        return render(request, self.template_name, self.get_context_data())
+        try:
+            return render(request, self.template_name, self.get_context_data())
+        except Order.DoesNotExist:
+            raise Http404
 
 order_products = OrderEditProducts.as_view()
 
@@ -445,7 +460,7 @@ class OrderInfo(LORURequiredMixin, DetailView):
     template_name = 'order_info.html'
 
     def get_queryset(self):
-        return Order.objects.filter(loru=self.request.user.profile.org)
+        return Order.objects.filter(loru=self.request.user.profile.org, type=Order.TYPE_BURIAL)
 
     def get_context_data(self, **kwargs):
         data = super(OrderInfo, self).get_context_data(**kwargs)
@@ -595,7 +610,7 @@ class OrderBurialView(LORURequiredMixin, RequestToFormMixin, UpdateView):
     form_class = OrderBurialForm
 
     def get_queryset(self):
-        return Order.objects.filter(loru=self.request.user.profile.org)
+        return Order.objects.filter(loru=self.request.user.profile.org, type=Order.TYPE_BURIAL)
 
     def get(self, request, *args, **kwargs):
         order = self.get_object()
