@@ -33,7 +33,7 @@ class Migration(DataMigration):
             try:
                 loru_number = int(existing[0].loru_number) + 1
             except (IndexError, TypeError):
-                self.loru_number = 1
+                loru_number = 1
             order = Order.objects.create(
                 type='trade',
                 loru_number=loru_number,
@@ -77,7 +77,16 @@ class Migration(DataMigration):
         print "***   Done"
         print "*** - Making year-specific numbers of orders"
         for order in Order.objects.filter(loru__isnull=False):
-            pass
+            try:
+                number = Order.objects.filter(
+                    loru=order.loru,
+                    dt__year=order.dt.year,
+                    number__isnull=False,
+                ).order_by('-number')[0].number
+            except IndexError:
+                number = 0
+            order.number = number + 1
+            order.save()
         print "***   Done"
 
     def backwards(self, orm):
