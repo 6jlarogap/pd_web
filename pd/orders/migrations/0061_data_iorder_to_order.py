@@ -50,12 +50,11 @@ class Migration(DataMigration):
                 phones=iorder.phones,
                 address=iorder.address,
             )
-            if iorder.comment and iorder.comment.strip():
-                OrderComment.objects.create(
-                    order=order,
-                    user=Profile.objects.filter(org=iorder.supplier)[0].user,
-                    comment=iorder.comment.strip(),
-                )
+            OrderComment.objects.create(
+                order=order,
+                user=Profile.objects.filter(org=iorder.supplier)[0].user,
+                comment=iorder.comment and iorder.comment.strip() or '',
+            )
             cost = decimal.Decimal('0.00')
             for iorderitem in IorderItem.objects.filter(iorder=iorder):
                 cost += iorderitem.price_wholesale * iorderitem.quantity

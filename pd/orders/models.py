@@ -196,14 +196,10 @@ class Order(GetLogsMixin, BaseModel):
 
     # Заказы от пользователя-физ.лица
     # STATUS_POSTED = 'posted'
-    STATUS_IN_PROGRESS = 'in_progress'
-    STATUS_DONE = STATUS_SHIPPED
+    # STATUS_CONFIRMED = 'confirmed'
+    # STATUS_SHIPPED = 'shipped'
 
     STATUS_TYPES = (
-        (STATUS_POSTED, _(u"Размещен")),
-        (STATUS_IN_PROGRESS, _(u"В процессе выполнения")),
-        (STATUS_DONE, _(u"Выполнен")),
-
         (STATUS_POSTED, _(u"Размещен")),
         (STATUS_CONFIRMED, _(u"Подтвержден")),
         (STATUS_SHIPPED, _(u"Отправлен")),
@@ -385,6 +381,15 @@ class Order(GetLogsMixin, BaseModel):
             self.loru.pk,
             self.number,
         )
+
+    def first_comment(self):
+        """
+        В оптовых заказах, при создании, обязательно делается комментарий
+        """
+        try:
+            return OrderComment.objects.filter(order=self).order_by('dt_created')[0].comment
+        except IndexError:
+            return ''
 
     def products_json(self):
        return [dict(

@@ -919,88 +919,89 @@ class UghPublishedProductsViewSet(viewsets.ViewSet):
             data.append(data_p)
         return Response(status=200, data=data)
 
-class IorderMixin(APIView):
+class OptOrderMixin(APIView):
 
-    def put_item(self, iorder, product, count, comment):
+    def put_item(self, order, product, count, comment):
         """
         Забить позицию интернет-заказа iorder продуктом product
         """
-        return IorderItem.objects.create(
-            iorder=iorder,
+        return OrderItem.objects.create(
+            order=order,
             product=product,
             quantity=decimal.Decimal(count),
             comment=comment or '',
-            measure=product.measure,
-            price_wholesale=product.price_wholesale,
+            cost=product.price_wholesale,
             name=product.name,
+            measure=product.measure,
+            description=product.description,
             productcategory=product.productcategory,
             productcategory_name=product.productcategory.name,
             productgroup=product.productgroup,
             productgroup_name=product.productgroup.name if product.productgroup else '',
             productgroup_description=product.productgroup.description if product.productgroup else '',
-            is_wholesale_with_vat=iorder.supplier.is_wholesale_with_vat,
+            is_wholesale_with_vat=order.loru.is_wholesale_with_vat,
         )
 
-    def email_notifications(self, iorder, is_new_iorder):
+    def email_notifications(self, order, is_new_opt_order):
         """
         """
         email_from = settings.DEFAULT_FROM_EMAIL
-        number_verbose = iorder.number_verbose()
-        if iorder.customer and iorder.customer.email:
-            email_to = (iorder.customer.email, )
+        number_verbose = order.number_verbose()
+        if order.applicant_organization and order.applicant_organization.email:
+            email_to = (order.applicant_organization.email, )
             email_subject = u"%s: %s %s" % (
                 _(u"Похоронное Дело"),
-                _(u"создан заказ") if is_new_iorder else _(u"изменен заказ"),
+                _(u"создан заказ") if is_new_opt_order else _(u"изменен заказ"),
                 number_verbose,
             )
             email_text = render_to_string(
-                            'iorder_notification.txt',
+                            'opt_order_notification.txt',
                             {
-                                'preambule': _(u"Создан") if is_new_iorder else _(u"Изменен"),
+                                'preambule': _(u"Создан") if is_new_opt_order else _(u"Изменен"),
                                 'front_end_url': get_front_end_url(self.request),
-                                'iorder': iorder,
+                                'order': order,
                                 'to_customer': True,
                             }
             )
             EmailMessage(email_subject, email_text, email_from, email_to,).send()
-        if iorder.supplier.email:
-            email_to = (iorder.supplier.email, )
+        if order.loru.email:
+            email_to = (order.loru.email, )
             email_subject = u"%s: %s %s" % (
                 _(u"Похоронное Дело"),
-                _(u"поступил заказ") if is_new_iorder else _(u"изменен заказ"),
+                _(u"поступил заказ") if is_new_opt_order else _(u"изменен заказ"),
                 number_verbose,
             )
             email_text = render_to_string(
-                            'iorder_notification.txt',
+                            'opt_order_notification.txt',
                             {
-                                'preambule': _(u"Поступил") if is_new_iorder else _(u"Изменен"),
+                                'preambule': _(u"Поступил") if is_new_opt_order else _(u"Изменен"),
                                 'front_end_url': get_front_end_url(self.request),
-                                'iorder': iorder,
+                                'order': order,
                                 'to_customer': False,
                             }
             )
             EmailMessage(email_subject, email_text, email_from, email_to,).send()
         if not settings.DEBUG:
             # Отправка смс поставщику
-            if iorder.supplier.sms_phone:
-                supplier_email = u" (email: %s)" % iorder.supplier.email if iorder.supplier.email else ""
+            if order.loru.sms_phone:
+                supplier_email = u" (email: %s)" % order.loru.email if order.loru.email else ""
                 text =  _(u"%s zakaz N %s summa %s") % (
                     get_front_end_url(self.request).rstrip('/'),
                     number_verbose,
-                    iorder.total_float(),
+                    order.total_float(),
                 )
-                if is_new_iorder:
+                if is_new_opt_order:
                     email_error_text = u"Поставщик %s%s не получил СМС- уведомление о новом заказе" % \
-                                        (iorder.supplier.name, supplier_email,)
+                                        (order.loru.name, supplier_email,)
                 else:
                     email_error_text = _(u"Поставщик %s%s не получил СМС- уведомление об изменении заказа %s") % \
-                                        (iorder.supplier.name, supplier_email, number_verbose, )
+                                        (order.loru.name, supplier_email, number_verbose, )
                 send_sms(
-                    phone_number=iorder.supplier.sms_phone,
+                    phone_number=order.loru.sms_phone,
                     text=text,
                     email_error_text=email_error_text,
                 )
-            elif iorder.supplier.email:
+            elif order.loru.email:
                 EmailMessage(
                     subject=_(u'Похоронное Дело: телефон смс- уведомений'),
                     body=_(
@@ -1011,16 +1012,16 @@ class IorderMixin(APIView):
                         u'\n'
                         u'Это можно исправить: %s\n'
                     ) % (
-                        _(u'о новом') if is_new_iorder else _(u'об измененном'),
+                        _(u'о новом') if is_new_opt_order else _(u'об измененном'),
                         number_verbose,
-                        iorder.supplier.name,
-                        get_host_url(self.request) + reverse('edit_org', args=(iorder.supplier.pk,)).lstrip('/'),
+                        order.loru.name,
+                        get_host_url(self.request) + reverse('edit_org', args=(order.loru.pk,)).lstrip('/'),
                     ),
                     from_email=email_from,
-                    to=(iorder.supplier.email,),
+                    to=(order.loru.email,),
                 ).send(fail_silently=True)
 
-class ApiOptPlacesOrders(IorderMixin, APIView):
+class ApiOptPlacesOrders(OptOrderMixin, APIView):
     """
     Интернет-заказ товаров
 
@@ -1089,20 +1090,13 @@ class ApiOptPlacesOrders(IorderMixin, APIView):
                     product = Product.objects.get(pk=p['id'])
                     if supplier is None:
                         supplier = product.loru
-                        try:
-                            number = Iorder.objects.filter(
-                                supplier=supplier,
-                                customer=customer,
-                                dt_created__year=year,
-                            ).order_by('-number')[0].number
-                        except IndexError:
-                            number = 0
-                        iorder = Iorder.objects.create(
-                            supplier=supplier,
-                            customer=customer,
-                            status=Iorder.STATUS_POSTED,
-                            number=number+1,
-                            comment=comment,
+                        order = Order.objects.create(
+                            type=Order.TYPE_TRADE,
+                            loru=supplier,
+                            applicant_organization=customer,
+                            status=Order.STATUS_POSTED,
+                            payment=Order.PAYMENT_WIRE,
+                            dt=datetime.date.today(),
                             title=title or '',
                             phones=phones,
                             address=address,
@@ -1110,8 +1104,13 @@ class ApiOptPlacesOrders(IorderMixin, APIView):
                     else:
                         if product.loru != supplier:
                             raise ServiceException(_(u'В списке товаров таковые от разных поставщиков'))
-                    self.put_item(iorder, product, p['count'], p.get('comment'))
-                    data['id'] = iorder.pk
+                    OrderComment.objects.create(
+                        order=order,
+                        user=request.user,
+                        comment=comment,
+                    )
+                    self.put_item(order, product, p['count'], p.get('comment'))
+                    data['id'] = order.pk
                 except Product.DoesNotExist:
                     raise ServiceException(_(u'Не найден товар/услуга Id=%s') % p['id'])
         except ServiceException as excpt:
@@ -1120,7 +1119,7 @@ class ApiOptPlacesOrders(IorderMixin, APIView):
             data['status'] = 'error'
             data['message'] = excpt.message
         else:
-            self.email_notifications(iorder, is_new_iorder=True)
+            self.email_notifications(order, is_new_opt_order=True)
         return Response(data=data, status=status_code)
 
     def get(self, request):
@@ -1136,7 +1135,7 @@ class ApiOptPlacesOrders(IorderMixin, APIView):
 
 api_optplaces_orders = ApiOptPlacesOrders.as_view()
 
-class IorderInfoView(IorderMixin, APIView):
+class IorderInfoView(OptOrderMixin, APIView):
     permission_classes = (PermitIfLoru,)
 
     def instance_permitted(self, request, pk):
@@ -1195,7 +1194,7 @@ class IorderInfoView(IorderMixin, APIView):
             data['status'] = 'error'
             data['message'] = excpt.message
         else:
-            self.email_notifications(iorder, is_new_iorder=False)
+            self.email_notifications(order, is_new_opt_order=False)
         return Response(data=data, status=status_code)
 
 api_optplaces_orders_detail = IorderInfoView.as_view()

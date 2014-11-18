@@ -96,7 +96,7 @@ class OptOrdersSerializer(serializers.HyperlinkedModelSerializer):
     itemsCount = serializers.Field(source='item_count')
     totalPrice = serializers.Field(source='total_float')
     createdAt = serializers.SerializerMethodField('createdAt_func')
-    comment = serializers.SerializerMethodField('comment_func')
+    comment = serializers.Field(source='first_comment')
 
     class Meta:
         model = Order
@@ -107,12 +107,6 @@ class OptOrdersSerializer(serializers.HyperlinkedModelSerializer):
 
     def createdAt_func(self, instance):
         return utcisoformat(instance.dt_created)
-
-    def comment_func(self, instance):
-        try:
-            return OrderComment.objects.filter(order=instance)[0].comment
-        except IndexError:
-            return ''
 
 class IorderInfoSerializer(serializers.HyperlinkedModelSerializer):
     products = serializers.Field(source='products_json')
