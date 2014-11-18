@@ -1555,38 +1555,38 @@ class LoruOrderStatsView(SupervisorProductionRequiredMixin, PaginateListView):
         total['loru_count'] = total['num_orders']= total['sum_orders'] = 0
 
         if form.data and form.is_valid():
-            q_iorder = Q()
+            q_opt_order = Q(type=Order.TYPE_TRADE, annulated = False)
             q_order = Q(loru__isnull=False, annulated = False)
             if form.cleaned_data.get('date_from'):
                 q_order &= Q(dt__gte=form.cleaned_data['date_from'])
-                q_iorder &= Q(dt_created__gte=form.cleaned_data['date_from'])
+                q_opt_order &= Q(dt_created__gte=form.cleaned_data['date_from'])
             if form.cleaned_data.get('date_to'):
-                q_order &= Q(dt__lte=form.cleaned_data['date_to'])
-                q_iorder &= Q(dt_created__lt=form.cleaned_data['date_to']+datetime.timedelta(days=1))
+                q_order &= Q(dt__lt=form.cleaned_data['date_to']+datetime.timedelta(days=1))
+                q_opt_order &= Q(dt_created__lt=form.cleaned_data['date_to']+datetime.timedelta(days=1))
             supplier_name = form.cleaned_data.get('supplier')
             if supplier_name:
                 q_order &= Q(loru__name__icontains=supplier_name)
-                q_iorder &= Q(supplier__name__icontains=supplier_name)
+                q_opt_order &= Q(supplier__name__icontains=supplier_name)
 
             pks = {}
             currencies = set()
-            for iorder in Iorder.objects.filter(q_iorder). \
-                            select_related('supplier', 'supplier__name', 'supplier__currency'):
-                org_pk = iorder.supplier.pk
+            for opt_order in Order.objects.filter(q_opt_order). \
+                            select_related('loru', 'loru__name', 'loru__currency'):
+                org_pk = opt_order.loru.pk
                 if org_pk not in pks:
                     pks[org_pk] = dict(
-                        name=iorder.supplier.name,
-                        currency=iorder.supplier.currency.code,
+                        name=opt_order.loru.name,
+                        currency=opt_order.loru.currency.code,
                         num_orders=0,
                         sum_orders=0,
                     )
                     if len(currencies) < 2:
-                        currencies.add(iorder.supplier.currency)
+                        currencies.add(opt_order.loru.currency)
                 org = pks[org_pk]
                 org['num_orders'] += 1
                 total['num_orders'] += 1
                 
-                this_sum= iorder.total()
+                this_sum= opt_order.total
                 org['sum_orders'] += this_sum
                 total['sum_orders'] +=  this_sum
 

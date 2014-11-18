@@ -923,7 +923,7 @@ class OptOrderMixin(APIView):
 
     def put_item(self, order, product, count, comment):
         """
-        Забить позицию интернет-заказа iorder продуктом product
+        Забить позицию интернет-заказа продуктом product
         """
         return OrderItem.objects.create(
             order=order,
@@ -1165,7 +1165,7 @@ class OptOrderderInfoView(OptOrderMixin, APIView):
 
     @transaction.commit_on_success
     def put(self, request, pk):
-        iorder, response = self.instance_permitted(request, pk)
+        order, response = self.instance_permitted(request, pk)
         if response:
             return response
         status_code=200
@@ -1174,20 +1174,30 @@ class OptOrderderInfoView(OptOrderMixin, APIView):
         if products is None:
             raise ServiceException(_(u'Не задан список товаров, пусть даже пустой'))
         try:
-            IorderItem.objects.filter(iorder=iorder).delete()
+            OrderItem.objects.filter(order=order).delete()
             for p in products:
                 try:
                     product = Product.objects.get(pk=p['id'])
-                    if product.loru != iorder.supplier:
+                    if product.loru != order.loru:
                         raise ServiceException(_(u'Товара Id=%s нет среди товаров поставщика заказа') % p['id'])
                     if p.get('count'):
-                        self.put_item(iorder, product, p['count'], p.get('comment'))
+                        self.put_item(order, product, p['count'], p.get('comment'))
                 except Product.DoesNotExist:
                     raise ServiceException(_(u'Не найден товар/услуга Id=%s') % p['id'])
             comment = request.DATA.get("comment")
             if comment is not None:
-                iorder.comment = comment
-            iorder.save()
+                try:
+                    ordercomment = OrderComment.objects.filter(order=order)[0]
+                except OrderComment.DoesNotExist:
+                    OrderComment.objects.create(
+                        order=order,
+                        user=request.user,
+                        comment=comment,
+                    )
+                else:
+                    order.comment = comment
+            # В любом случае сохранить, чтоб подправилась dt_modified
+            order.save()
         except ServiceException as excpt:
             transaction.rollback()
             status_code=400
