@@ -6,5 +6,7 @@
 {% trans "Адрес" %}: {{ order.loru.off_address }}{% endif %}{% else %}
 {% trans "Покупатель" %}: {% if order.applicant_organization %}{{ order.applicant_organization.name }}{% else %}{{ order.title }}{% endif %}{% if order.applicant_organization.email %}
 {% trans "Email" %}: {{ order.applicant_organization.email }}{% endif %}{% if order.applicant_organization.phones %}
-{% trans "Телефон(ы)" %}: {% for phone in order.applicant_organization.phone_list %}{{ phone }}{% if not forloop.last %}, {% endif %}{% endfor %}{% elif order.phones %}{% trans "Телефон" %}: {{ order.phones }}{% endif %}{% if order.applicant_organization.off_address %}
-{% trans "Адрес" %}: {{ order.applicant_organization.off_address }}{% elif order.address %}{% trans "Адрес" %}: {{ order.address }}{% endif %}{% endif %}{% endautoescape %}
+{% trans "Телефон(ы)" %}: {% for phone in order.applicant_organization.phone_list %}{{ phone }}{% if not forloop.last %}, {% endif %}{% endfor %}{% elif order.phones %}
+{% trans "Телефон" %}: {{ order.phones }}{% endif %}{% if order.applicant_organization.off_address %}
+{% trans "Адрес" %}: {{ order.applicant_organization.off_address }}{% elif order.address %}
+{% trans "Адрес" %}: {{ order.address }}{% endif %}{% endif %}{% endautoescape %}

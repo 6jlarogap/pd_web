@@ -396,7 +396,7 @@ class Order(GetLogsMixin, BaseModel):
                     id=item.product.pk,
                     count=float(item.quantity),
                     comment=item.comment,
-               ) for item in OrderItem.objects.filter(iorder=self)
+               ) for item in OrderItem.objects.filter(order=self)
        ]
 
 class ServiceItem(models.Model):

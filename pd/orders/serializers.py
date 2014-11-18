@@ -108,11 +108,12 @@ class OptOrdersSerializer(serializers.HyperlinkedModelSerializer):
     def createdAt_func(self, instance):
         return utcisoformat(instance.dt_created)
 
-class IorderInfoSerializer(serializers.HyperlinkedModelSerializer):
+class OptOrderInfoSerializer(serializers.HyperlinkedModelSerializer):
     products = serializers.Field(source='products_json')
     number = serializers.Field(source='number_verbose')
-    supplier = OrgShort4Serializer(source='supplier')
-    customer = OrgShort4Serializer(source='customer')
+    supplier = OrgShort4Serializer(source='loru')
+    customer = OrgShort4Serializer(source='applicant_organization')
+    comment = serializers.Field(source='first_comment')
 
     class Meta:
         model = Order

@@ -48,7 +48,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser
 from orders.serializers import ProductCategorySerializer, ProductsSerializer, ProductsOptSerializer, \
-                               ProductInfoSerializer, OptOrdersSerializer, IorderInfoSerializer, \
+                               ProductInfoSerializer, OptOrdersSerializer, OptOrderInfoSerializer, \
                                ProductEditSerializer, ServiceSerializer, OrgServiceSerializer
 
 from pd.utils import EmailMessage
@@ -1135,30 +1135,30 @@ class ApiOptPlacesOrders(OptOrderMixin, APIView):
 
 api_optplaces_orders = ApiOptPlacesOrders.as_view()
 
-class IorderInfoView(OptOrderMixin, APIView):
+class OptOrderderInfoView(OptOrderMixin, APIView):
     permission_classes = (PermitIfLoru,)
 
     def instance_permitted(self, request, pk):
         """
         Просматривать и править заказ может лишь поставщик или покупатель, если имеется
         """
-        iorder = get_object_or_404(Iorder, pk=pk)
+        order = get_object_or_404(Order, pk=pk, type=Order.TYPE_TRADE)
         org = request.user.profile.org
-        if iorder.supplier == org or iorder.customer and iorder.customer == org:
-            return iorder, None
+        if order.loru == org or order.applicant_organization and order.applicant_organization == org:
+            return order, None
         else:
             return None, Response(
                 status=403,
-                data={"detail": "Not authorized: you are not customer nor supplier"},
+                data={"detail": "Either it is not a trade order, or not authorized: you are not customer nor supplier."},
             )
 
     def get(self, request, pk):
-        iorder, response = self.instance_permitted(request, pk)
+        order, response = self.instance_permitted(request, pk)
         if response:
             return response
         return Response(
             status=200,
-            data=IorderInfoSerializer(iorder, context=dict(
+            data=OptOrderInfoSerializer(order, context=dict(
                 request=request,
             )).data,
         )
@@ -1197,7 +1197,7 @@ class IorderInfoView(OptOrderMixin, APIView):
             self.email_notifications(order, is_new_opt_order=False)
         return Response(data=data, status=status_code)
 
-api_optplaces_orders_detail = IorderInfoView.as_view()
+api_optplaces_orders_detail = OptOrderderInfoView.as_view()
 
 class ApiLoruProductTypesView(APIView):
     permission_classes = (PermitIfLoru,)
