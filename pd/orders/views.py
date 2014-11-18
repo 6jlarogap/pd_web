@@ -334,18 +334,7 @@ class OrderCreate(LORURequiredMixin, RequestToFormMixin, CreateView):
         self.object.save()
 
         for p in Product.objects.filter(loru=self.request.user.profile.org, default=True):
-            OrderItem.objects.create(
-                order=self.object,
-                product=p,
-                name=p.name,
-                measure=p.measure,
-                description=p.description,
-                productcategory=p.productcategory,
-                productcategory_name=p.productcategory.name,
-                productgroup=p.productgroup,
-                productgroup_name=p.productgroup and p.productgroup.name or '',
-                productgroup_description=p.productgroup and p.productgroup.description or '',
-            )
+            OrderItem.objects.create(order=self.object, product=p)
 
         write_log(self.request, self.object, _(u'Заказ сохранен'))
         msg = _(u"<a href='%s'>Заказ %s</a> сохранен") % (
@@ -1188,7 +1177,7 @@ class OptOrderderInfoView(OptOrderMixin, APIView):
             if comment is not None:
                 try:
                     ordercomment = OrderComment.objects.filter(order=order)[0]
-                except OrderComment.DoesNotExist:
+                except IndexError:
                     OrderComment.objects.create(
                         order=order,
                         user=request.user,

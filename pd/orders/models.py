@@ -467,9 +467,9 @@ class OrderItem(models.Model):
         if not self.name and self.product:
             # Доп. поля никогда не заполнялись ранее
             #
-            self.name = self.product.name,
-            self.measure = self.product.measure,
-            self.description = self.product.description,
+            self.name = self.product.name
+            self.measure = self.product.measure
+            self.description = self.product.description
             self.productcategory = self.product.productcategory
             self.productcategory_name = self.product.productcategory.name
             self.productgroup = self.product.productgroup
