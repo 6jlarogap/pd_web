@@ -9,7 +9,7 @@ from rest_framework import serializers
 from rest_framework.fields import Field
 
 from rest_api.fields import HyperlinkedFileField
-from orders.models import Order, ProductCategory, Product, Service, Measure, OrgService, OrgServicePrice
+from orders.models import Order, ProductCategory, Product, Service, Measure, OrgService, OrgServicePrice, OrderComment
 from users.models import Org
 from users.serializers import OrgSerializer, OrgShortSerializer, OrgShort3Serializer, OrgShort4Serializer
 from pd.utils import utcisoformat, str_to_bool_or_None
@@ -89,13 +89,14 @@ class ProductInfoSerializer(ProductCurrencyMixin, serializers.HyperlinkedModelSe
     def model3d_func(self, product):
         return None
 
-class IordersSerializer(serializers.HyperlinkedModelSerializer):
-    supplier = OrgShort3Serializer(source='supplier')
-    customer = OrgShort3Serializer(source='customer')
+class OptOrdersSerializer(serializers.HyperlinkedModelSerializer):
+    supplier = OrgShort3Serializer(source='loru')
+    customer = OrgShort3Serializer(source='applicant_organization')
     number = serializers.Field(source='number_verbose')
-    itemsCount = serializers.Field(source='items_count')
+    itemsCount = serializers.Field(source='item_count')
     totalPrice = serializers.Field(source='total_float')
     createdAt = serializers.SerializerMethodField('createdAt_func')
+    comment = serializers.SerializerMethodField('comment_func')
 
     class Meta:
         model = Order
@@ -106,6 +107,12 @@ class IordersSerializer(serializers.HyperlinkedModelSerializer):
 
     def createdAt_func(self, instance):
         return utcisoformat(instance.dt_created)
+
+    def comment_func(self, instance):
+        try:
+            return OrderComment.objects.filter(order=instance)[0].comment
+        except IndexError:
+            return ''
 
 class IorderInfoSerializer(serializers.HyperlinkedModelSerializer):
     products = serializers.Field(source='products_json')

@@ -48,7 +48,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser
 from orders.serializers import ProductCategorySerializer, ProductsSerializer, ProductsOptSerializer, \
-                               ProductInfoSerializer, IordersSerializer, IorderInfoSerializer, \
+                               ProductInfoSerializer, OptOrdersSerializer, IorderInfoSerializer, \
                                ProductEditSerializer, ServiceSerializer, OrgServiceSerializer
 
 from pd.utils import EmailMessage
@@ -1125,11 +1125,11 @@ class ApiOptPlacesOrders(IorderMixin, APIView):
 
     def get(self, request):
         org = request.user.profile.org
-        qs = Q(customer=org) | Q(supplier=org)
-        iorders = Iorder.objects.filter(qs).order_by('-dt_created').distinct()
+        qs = Q(loru=org) | Q(applicant_organization=org)
+        opt_orders = Order.objects.filter(qs & Q(type=Order.TYPE_TRADE)).order_by('-dt_created').distinct()
         return Response(
             status=200,
-            data=IordersSerializer(iorders, context=dict(
+            data=OptOrdersSerializer(opt_orders, context=dict(
                 request=request,
             )).data,
         )
@@ -1705,6 +1705,7 @@ class ApiClientOrdersView(ApiServicePriceMixin, APIView):
         )
         order = Order(
             loru=self.data.org,
+            type=Order.TYPE_CUSTOMER,
             applicant=applicant,
             dt=datetime.date.today(),
             customplace=self.data.customplace,

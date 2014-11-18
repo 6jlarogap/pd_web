@@ -28,6 +28,8 @@ class Migration(DataMigration):
         print "*** - Make new Orders from Iorders"
         Iorder = orm['orders.Iorder']
         IorderItem = orm['orders.IorderItem']
+        Profile = orm['users.Profile']
+        OrderComment = orm['orders.OrderComment']
         for iorder in Iorder.objects.all():
             existing = Order.objects.filter(loru=iorder.supplier).exclude(loru_number__isnull=True).order_by('-loru_number')
             try:
@@ -48,6 +50,12 @@ class Migration(DataMigration):
                 phones=iorder.phones,
                 address=iorder.address,
             )
+            if iorder.comment and iorder.comment.strip():
+                OrderComment.objects.create(
+                    order=order,
+                    user=Profile.objects.filter(org=iorder.supplier)[0].user,
+                    comment=iorder.comment.strip(),
+                )
             cost = decimal.Decimal('0.00')
             for iorderitem in IorderItem.objects.filter(iorder=iorder):
                 cost += iorderitem.price_wholesale * iorderitem.quantity

@@ -9,7 +9,7 @@ from pd.utils import PhonesFromTextMixin, utcisoformat
 from geo.models import Location
 from users.models import Org, Store, FavoriteSupplier, is_loru_user
 from persons.models import Phone
-from orders.models import Product
+from orders.models import Order, Product
 
 class OrgSerializerMixin(object):
 
@@ -196,7 +196,7 @@ class OrgOptSupplierSerializer(serializers.ModelSerializer):
     def dt_last_order_func(self, loru):
       try:
           return utcisoformat(
-              Iorder.objects.filter(supplier=loru).order_by('-dt_created')[0].dt_created
+              Order.objects.filter(loru=loru, type=Order.TYPE_TRADE).order_by('-dt_created')[0].dt_created
           )
       except IndexError:
           return None
