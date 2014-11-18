@@ -369,7 +369,7 @@ class Migration(DataMigration):
             'number': ('django.db.models.fields.PositiveIntegerField', [], {'null': 'True'}),
             'payment': ('django.db.models.fields.CharField', [], {'default': "'cash'", 'max_length': '255'}),
             'phones': ('django.db.models.fields.TextField', [], {'null': 'True'}),
-            'status': ('django.db.models.fields.CharField', [], {'default': "'pending'", 'max_length': '255'}),
+            'status': ('django.db.models.fields.CharField', [], {'default': "'posted'", 'max_length': '255'}),
             'title': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '255'}),
             'type': ('django.db.models.fields.CharField', [], {'default': "'burial'", 'max_length': '255'})
         },
