@@ -213,7 +213,7 @@ class Order(GetLogsMixin, BaseModel):
     type = models.CharField(_(u"Тип Заказ"), max_length=255, choices=ORDER_TYPES, default=TYPE_BURIAL, editable=False)
 
     loru = models.ForeignKey(Org, limit_choices_to={'type': Org.PROFILE_LORU}, null=True, verbose_name=_(u"ЛОРУ"))
-    loru_number = models.PositiveIntegerField(_(u"Номер в переделах исполнителя заказа и года"), null=True, editable=False)
+    loru_number = models.PositiveIntegerField(_(u"Номер в переделах исполнителя заказа"), null=True, editable=False)
     number = models.PositiveIntegerField(_(u"Номер в переделах исполнителя заказа и года"), null=True, editable=False)
     payment = models.CharField(_(u"Тип платежа"), max_length=255, choices=PAYMENT_CHOICES, default=PAYMENT_CASH)
     applicant = models.ForeignKey('persons.AlivePerson', verbose_name=_(u"Заказчик-ФЛ"), null=True, blank=True,
@@ -252,14 +252,24 @@ class Order(GetLogsMixin, BaseModel):
     def save(self, *args, **kwargs):
         if not self.cost:
             self.cost = 0
-        if not self.loru_number and self.loru:
-            existing = Order.objects.filter(loru=self.loru).exclude(loru_number__isnull=True).order_by('-loru_number')
-            if self.pk:
-                existing = existing.exclude(pk=self.pk)
-            try:
-                self.loru_number = int(existing[0].loru_number) + 1
-            except (IndexError, TypeError), e:
-                self.loru_number = 1
+        if self.loru:
+            if not self.loru_number:
+                existing = Order.objects.filter(loru=self.loru).exclude(loru_number__isnull=True).order_by('-loru_number')
+                if self.pk:
+                    existing = existing.exclude(pk=self.pk)
+                try:
+                    self.loru_number = int(existing[0].loru_number) + 1
+                except (IndexError, TypeError), e:
+                    self.loru_number = 1
+            if not self.number:
+                year = self.dt and self.dt.year or datetime.date.today().year
+                existing = Order.objects.filter(loru=self.loru, dt__year=year).exclude(number__isnull=True).order_by('-number')
+                if self.pk:
+                    existing = existing.exclude(pk=self.pk)
+                try:
+                    self.number = int(existing[0].number) + 1
+                except (IndexError, TypeError), e:
+                    self.number = 1
         return super(Order, self).save(*args, **kwargs)
 
     def annulate(self):
@@ -559,6 +569,9 @@ class Route(PointsModel):
 
 def recount_cost(instance, **kwargs):
     instance.order.cost = sum([i.total for i in instance.order.orderitem_set.all()], 0)
+    instance.order.cost += sum([i.cost for i in instance.order.serviceitem_set.all()], 0)
     instance.order.save()
 models.signals.post_save.connect(recount_cost, sender=OrderItem)
 models.signals.post_delete.connect(recount_cost, sender=OrderItem)
+models.signals.post_save.connect(recount_cost, sender=ServiceItem)
+models.signals.post_delete.connect(recount_cost, sender=ServiceItem)

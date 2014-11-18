@@ -67,16 +67,14 @@ class Migration(DataMigration):
                     comment = iorderitem.comment,
                     is_wholesale_with_vat = iorderitem.is_wholesale_with_vat,
                 )
-            order.cost=cost
-            order.save()
+            Order.objects.filter(pk=order.pk).update(cost=cost)
         print "***   Done"
         print "*** - Setting TYPE_CUSTOMER at customer orders"
-        for order in Order.objects.filter(customplace__isnull=False):
-            order.type='customer'
-            order.save()
+        Order.objects.filter(customplace__isnull=False).update(type='customer')
         print "***   Done"
         print "*** - Making year-specific numbers of orders"
-        for order in Order.objects.filter(loru__isnull=False):
+        Order.objects.filter(number__isnull=False).update(number=None)
+        for order in Order.objects.filter(loru__isnull=False).order_by('loru__pk', 'loru_number', ):
             try:
                 number = Order.objects.filter(
                     loru=order.loru,
@@ -85,8 +83,7 @@ class Migration(DataMigration):
                 ).order_by('-number')[0].number
             except IndexError:
                 number = 0
-            order.number = number + 1
-            order.save()
+            Order.objects.filter(pk=order.pk).update(number=number+1)
         print "***   Done"
 
     def backwards(self, orm):
