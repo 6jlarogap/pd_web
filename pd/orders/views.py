@@ -34,7 +34,7 @@ from users.models import CustomerProfile, CustomerProfilePhoto, Org, ProfileLORU
 from billing.models import Rate
 from orders.forms import ProductForm, OrderForm, OrderItemFormset, CoffinForm, CatafalqueForm, \
                          AddInfoForm, OrderSearchForm, OrderBurialForm
-from orders.models import Product, Order, OrderItem, ProductCategory, Iorder, IorderItem, \
+from orders.models import Product, Order, OrderItem, ProductCategory, \
                           Service, Measure, OrgService, OrgServicePrice, ServiceItem, OrderComment, \
                           Route
 from persons.models import CustomPlace, AlivePerson
@@ -1553,7 +1553,7 @@ class ApiServicePriceMixin(object):
             ).price
         else:
             price_service = 0
-        return round(float(price_service), org.currency.rounding)
+        return decimal.Decimal(round(float(price_service), org.currency.rounding))
 
     def get_price_delivery(self, org, km, kg=None, m3=None):
         """
@@ -1570,7 +1570,7 @@ class ApiServicePriceMixin(object):
                 result += float(m['price']) * kg * km
             elif m3 and m['measure__name'] == 'm3':
                 result += float(m['price']) * m3 * km
-        return round(result, org.currency.rounding)
+        return decimal.Decimal(round(result, org.currency.rounding))
 
 class ApiClientAvailablePerformersView(ApiServicePriceMixin, APIView):
     permission_classes = (PermitIfCabinet,)
@@ -1642,7 +1642,7 @@ class ApiClientAvailablePerformersView(ApiServicePriceMixin, APIView):
             data.append(dict(
                 id=org.pk,
                 name=org.name,
-                price=round(price_org, org.currency.rounding),
+                price=float(price_org),
                 currency=org.currency.code,
             ))
 
@@ -1703,15 +1703,13 @@ class ApiClientOrdersView(ApiServicePriceMixin, APIView):
             first_name=request.user.customerprofile.user_first_name,
             middle_name=request.user.customerprofile.user_middle_name,
         )
-        cost=round(price_org + price_delivery, self.data.org.currency.rounding)
         order = Order(
             loru=self.data.org,
             applicant=applicant,
-            cost=cost,
             dt=datetime.date.today(),
             customplace=self.data.customplace,
         )
-        # так будет назначен loru_number:
+        # будут назначены loru_number, number:
         order.save()
         if self.data.service_name != 'delivery':
             item_service = ServiceItem.objects.create(
@@ -1740,7 +1738,7 @@ class ApiClientOrdersView(ApiServicePriceMixin, APIView):
                 comment=comment,
             )
         return Response(
-            data=dict(status='success', price=cost, currency=self.data.org.currency.code),
+            data=dict(status='success', price=float(order.cost), currency=self.data.org.currency.code),
             status=200,
         )
 

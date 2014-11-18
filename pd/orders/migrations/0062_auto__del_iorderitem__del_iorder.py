@@ -1,96 +1,58 @@
 # -*- coding: utf-8 -*-
-import datetime, decimal
+import datetime
 from south.db import db
-from south.v2 import DataMigration
+from south.v2 import SchemaMigration
 from django.db import models
 
-class Migration(DataMigration):
+
+class Migration(SchemaMigration):
 
     def forwards(self, orm):
-        "Write your forwards methods here."
-        # Note: Remember to use orm['appname.ModelName'] rather than "from appname.models..."
+        # Deleting model 'IorderItem'
+        db.delete_table('orders_iorderitem')
 
-        print "*** Moving Iorders to Orders"
-        print "*** - Fill new fields at existing OrderItems"
-        Order = orm['orders.Order']
-        OrderItem = orm['orders.OrderItem']
-        for orderitem in OrderItem.objects.all().select_related('product', 'product__productcategory', 'product__productgroup'):
-            orderitem.name = orderitem.product.name
-            orderitem.description = orderitem.product.description
-            orderitem.measure = orderitem.product.measure
-            orderitem.productcategory = orderitem.product.productcategory
-            orderitem.productcategory_name = orderitem.product.productcategory.name
-            orderitem.productgroup = orderitem.product.productgroup
-            orderitem.productgroup_name = orderitem.product.productgroup and orderitem.product.productgroup.name or ''
-            orderitem.productgroup_description = orderitem.product.productgroup and orderitem.product.productgroup.description or ''
-            orderitem.save()
-        print "***   Done"
-        print "*** - Make new Orders from Iorders"
-        Iorder = orm['orders.Iorder']
-        IorderItem = orm['orders.IorderItem']
-        for iorder in Iorder.objects.all():
-            existing = Order.objects.filter(loru=iorder.supplier).exclude(loru_number__isnull=True).order_by('-loru_number')
-            try:
-                loru_number = int(existing[0].loru_number) + 1
-            except (IndexError, TypeError):
-                loru_number = 1
-            order = Order.objects.create(
-                type='trade',
-                loru_number=loru_number,
-                loru=iorder.supplier,
-                number=iorder.number,
-                payment='wire',
-                applicant_organization=iorder.customer,
-                cost=0.00,
-                dt=iorder.dt_created.date(),
-                status=iorder.status,
-                title=iorder.title,
-                phones=iorder.phones,
-                address=iorder.address,
-            )
-            cost = decimal.Decimal('0.00')
-            for iorderitem in IorderItem.objects.filter(iorder=iorder):
-                cost += iorderitem.price_wholesale * iorderitem.quantity
-                orderitem = OrderItem.objects.create(
-                    order=order,
-                    product=iorderitem.product,
-                    quantity=iorderitem.quantity,
-                    cost=iorderitem.price_wholesale,
-                    name=iorderitem.name,
-                    measure=iorderitem.measure,
-                    description=iorderitem.product.description,
-                    productcategory = iorderitem.productcategory,
-                    productcategory_name = iorderitem.productcategory_name,
-                    productgroup = iorderitem.productgroup,
-                    productgroup_name = iorderitem.productgroup_name,
-                    productgroup_description = iorderitem.productgroup_description,
-                    comment = iorderitem.comment,
-                    is_wholesale_with_vat = iorderitem.is_wholesale_with_vat,
-                )
-            Order.objects.filter(pk=order.pk).update(cost=cost)
-        print "***   Done"
-        print "*** - Setting TYPE_CUSTOMER at customer orders"
-        Order.objects.filter(customplace__isnull=False).update(type='customer')
-        print "***   Done"
-        print "*** - Fixing Order.status: pending -> posted"
-        Order.objects.filter(status='pending').update(status='posted')
-        print "***   Done"
-        print "*** - Making year-specific numbers of orders"
-        Order.objects.filter(number__isnull=False).update(number=None)
-        for order in Order.objects.filter(loru__isnull=False).order_by('loru__pk', 'loru_number', ):
-            try:
-                number = Order.objects.filter(
-                    loru=order.loru,
-                    dt__year=order.dt.year,
-                    number__isnull=False,
-                ).order_by('-number')[0].number
-            except IndexError:
-                number = 0
-            Order.objects.filter(pk=order.pk).update(number=number+1)
-        print "***   Done"
+        # Deleting model 'Iorder'
+        db.delete_table('orders_iorder')
+
 
     def backwards(self, orm):
-        "Write your backwards methods here."
+        # Adding model 'IorderItem'
+        db.create_table('orders_iorderitem', (
+            ('comment', self.gf('django.db.models.fields.TextField')(default='', blank=True)),
+            ('productgroup_name', self.gf('django.db.models.fields.CharField')(default='', max_length=255)),
+            ('product', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['orders.Product'])),
+            ('name', self.gf('django.db.models.fields.CharField')(max_length=255)),
+            ('measure', self.gf('django.db.models.fields.CharField')(default=u'\u0448\u0442', max_length=255)),
+            ('productgroup_description', self.gf('django.db.models.fields.TextField')(default='', blank=True)),
+            ('productcategory', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['orders.ProductCategory'], on_delete=models.PROTECT)),
+            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
+            ('productcategory_name', self.gf('django.db.models.fields.CharField')(max_length=255)),
+            ('dt_created', self.gf('django.db.models.fields.DateTimeField')(auto_now_add=True, blank=True)),
+            ('productgroup', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['orders.ProductGroup'], null=True, on_delete=models.PROTECT)),
+            ('is_wholesale_with_vat', self.gf('django.db.models.fields.BooleanField')(default=False)),
+            ('iorder', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['orders.Iorder'])),
+            ('quantity', self.gf('django.db.models.fields.DecimalField')(default=1, max_digits=20, decimal_places=2)),
+            ('dt_modified', self.gf('django.db.models.fields.DateTimeField')(auto_now=True, blank=True)),
+            ('price_wholesale', self.gf('django.db.models.fields.DecimalField')(max_digits=20, decimal_places=2)),
+        ))
+        db.send_create_signal('orders', ['IorderItem'])
+
+        # Adding model 'Iorder'
+        db.create_table('orders_iorder', (
+            ('comment', self.gf('django.db.models.fields.TextField')(default='', blank=True)),
+            ('status', self.gf('django.db.models.fields.CharField')(default='posted', max_length=255)),
+            ('phones', self.gf('django.db.models.fields.TextField')(null=True)),
+            ('number', self.gf('django.db.models.fields.IntegerField')()),
+            ('dt_created', self.gf('django.db.models.fields.DateTimeField')(auto_now_add=True, blank=True)),
+            ('address', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['geo.Location'], null=True)),
+            ('dt_modified', self.gf('django.db.models.fields.DateTimeField')(auto_now=True, blank=True)),
+            ('customer', self.gf('django.db.models.fields.related.ForeignKey')(related_name='iorder_customers', null=True, to=orm['users.Org'])),
+            ('title', self.gf('django.db.models.fields.CharField')(default='', max_length=255)),
+            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
+            ('supplier', self.gf('django.db.models.fields.related.ForeignKey')(related_name='iorder_suppliers', to=orm['users.Org'])),
+        ))
+        db.send_create_signal('orders', ['Iorder'])
+
 
     models = {
         'auth.group': {
@@ -309,39 +271,6 @@ class Migration(DataMigration):
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'order': ('django.db.models.fields.related.OneToOneField', [], {'to': "orm['orders.Order']", 'unique': 'True'}),
             'size': ('django.db.models.fields.TextField', [], {})
-        },
-        'orders.iorder': {
-            'Meta': {'object_name': 'Iorder'},
-            'address': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['geo.Location']", 'null': 'True'}),
-            'comment': ('django.db.models.fields.TextField', [], {'default': "''", 'blank': 'True'}),
-            'customer': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'iorder_customers'", 'null': 'True', 'to': "orm['users.Org']"}),
-            'dt_created': ('django.db.models.fields.DateTimeField', [], {'auto_now_add': 'True', 'blank': 'True'}),
-            'dt_modified': ('django.db.models.fields.DateTimeField', [], {'auto_now': 'True', 'blank': 'True'}),
-            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'number': ('django.db.models.fields.IntegerField', [], {}),
-            'phones': ('django.db.models.fields.TextField', [], {'null': 'True'}),
-            'status': ('django.db.models.fields.CharField', [], {'default': "'posted'", 'max_length': '255'}),
-            'supplier': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'iorder_suppliers'", 'to': "orm['users.Org']"}),
-            'title': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '255'})
-        },
-        'orders.iorderitem': {
-            'Meta': {'object_name': 'IorderItem'},
-            'comment': ('django.db.models.fields.TextField', [], {'default': "''", 'blank': 'True'}),
-            'dt_created': ('django.db.models.fields.DateTimeField', [], {'auto_now_add': 'True', 'blank': 'True'}),
-            'dt_modified': ('django.db.models.fields.DateTimeField', [], {'auto_now': 'True', 'blank': 'True'}),
-            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'iorder': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['orders.Iorder']"}),
-            'is_wholesale_with_vat': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
-            'measure': ('django.db.models.fields.CharField', [], {'default': "u'\\u0448\\u0442'", 'max_length': '255'}),
-            'name': ('django.db.models.fields.CharField', [], {'max_length': '255'}),
-            'price_wholesale': ('django.db.models.fields.DecimalField', [], {'max_digits': '20', 'decimal_places': '2'}),
-            'product': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['orders.Product']"}),
-            'productcategory': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['orders.ProductCategory']", 'on_delete': 'models.PROTECT'}),
-            'productcategory_name': ('django.db.models.fields.CharField', [], {'max_length': '255'}),
-            'productgroup': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['orders.ProductGroup']", 'null': 'True', 'on_delete': 'models.PROTECT'}),
-            'productgroup_description': ('django.db.models.fields.TextField', [], {'default': "''", 'blank': 'True'}),
-            'productgroup_name': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '255'}),
-            'quantity': ('django.db.models.fields.DecimalField', [], {'default': '1', 'max_digits': '20', 'decimal_places': '2'})
         },
         'orders.measure': {
             'Meta': {'unique_together': "(('service', 'name'),)", 'object_name': 'Measure'},
@@ -579,4 +508,3 @@ class Migration(DataMigration):
     }
 
     complete_apps = ['orders']
-    symmetrical = True

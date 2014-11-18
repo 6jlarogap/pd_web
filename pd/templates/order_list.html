@@ -268,7 +268,13 @@
                             ЮЛ {{ c.applicant_organization|default:"" }} {{ c.agent|default:"" }}
                         {% endif %}
                     </td>
-                    <td>{{ c.loru_number|default:"" }}</td>
+                    <td>
+                        {% if c.is_type_burial %}
+                            {{ c.loru_number }}
+                        {% elif c.is_type_trade or c.is_type_customer %}
+                            {{ c.number_verbose }}
+                        {% endif %}
+                    </td>
                     <td>{{ c.total|floatformat:2|default:"" }}</td>
                     <td>{{ c.dt|default:"" }}</td>
                     <td class="no-print">

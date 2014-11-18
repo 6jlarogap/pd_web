@@ -9,7 +9,7 @@ from pd.utils import PhonesFromTextMixin, utcisoformat
 from geo.models import Location
 from users.models import Org, Store, FavoriteSupplier, is_loru_user
 from persons.models import Phone
-from orders.models import Product, Iorder
+from orders.models import Product
 
 class OrgSerializerMixin(object):
 

@@ -61,7 +61,7 @@ from pd.utils import host_country_code, phones_from_text, EmailMessage
 from persons.models import AlivePerson, Phone
 from burials.models import Cemetery, Area, Burial, Place
 from billing.models import Wallet, Rate, Currency
-from orders.models import Product, Order, Iorder, IorderItem
+from orders.models import Product, Order
 from pd.views import PaginateListView, RequestToFormMixin, FormInvalidMixin, get_front_end_url, ServiceException
 from geo.models import Location, Country
 

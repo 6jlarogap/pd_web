@@ -9,7 +9,7 @@ from rest_framework import serializers
 from rest_framework.fields import Field
 
 from rest_api.fields import HyperlinkedFileField
-from orders.models import ProductCategory, Product, Iorder, Service, Measure, OrgService, OrgServicePrice
+from orders.models import Order, ProductCategory, Product, Service, Measure, OrgService, OrgServicePrice
 from users.models import Org
 from users.serializers import OrgSerializer, OrgShortSerializer, OrgShort3Serializer, OrgShort4Serializer
 from pd.utils import utcisoformat, str_to_bool_or_None
@@ -98,7 +98,7 @@ class IordersSerializer(serializers.HyperlinkedModelSerializer):
     createdAt = serializers.SerializerMethodField('createdAt_func')
 
     class Meta:
-        model = Iorder
+        model = Order
         fields = (
             'id', 'number', 'supplier', 'customer', 'itemsCount', 'totalPrice', 'status',
             'createdAt', 'comment', 
@@ -114,7 +114,7 @@ class IorderInfoSerializer(serializers.HyperlinkedModelSerializer):
     customer = OrgShort4Serializer(source='customer')
 
     class Meta:
-        model = Iorder
+        model = Order
         fields = ('products', 'comment', 'number', 'supplier', 'customer', )
 
 class ProductEditSerializer(ProductCurrencyMixin, serializers.HyperlinkedModelSerializer):
