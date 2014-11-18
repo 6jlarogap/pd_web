@@ -1768,7 +1768,7 @@ class LoruCurrentStatsView(SupervisorProductionRequiredMixin, TemplateView):
         total['num_products'] = total['num_published_products'] = \
         total['num_published_wholesales'] = \
         total['num_orders'] = \
-        total['num_iorders_in'] = total['num_iorders_out'] = \
+        total['num_opt_orders_in'] = total['num_opt_orders_out'] = \
         total['num_burials'] = 0
         catalog_org_pk = Org.get_catalog_org_pk()
         q_published = Q(is_public_catalog=True)
@@ -1807,15 +1807,15 @@ class LoruCurrentStatsView(SupervisorProductionRequiredMixin, TemplateView):
 
             org['currency'] = o.currency.code
 
-            org['num_iorders_in'] = Iorder.objects.filter(supplier=o).count()
-            total['num_iorders_in'] += org['num_iorders_in']
-            org['sum_iorders_in'] = IorderItem.objects.filter(iorder__supplier=o). \
-                aggregate(total=Sum('price_wholesale'))['total'] or 0
+            org['num_opt_orders_in'] = Order.objects.filter(loru=o, type=Order.TYPE_TRADE).count()
+            total['num_opt_orders_in'] += org['num_opt_orders_in']
+            org['sum_opt_orders_in'] = Order.objects.filter(loru=o, type=Order.TYPE_TRADE). \
+                aggregate(total=Sum('cost'))['total'] or 0
 
-            org['num_iorders_out'] = Iorder.objects.filter(customer=o).count()
-            total['num_iorders_out'] += org['num_iorders_out']
-            org['sum_iorders_out'] = IorderItem.objects.filter(iorder__customer=o). \
-                aggregate(total=Sum('price_wholesale'))['total'] or 0
+            org['num_opt_orders_out'] = Order.objects.filter(applicant_organization=o, type=Order.TYPE_TRADE).count()
+            total['num_opt_orders_out'] += org['num_opt_orders_out']
+            org['sum_opt_orders_out'] = Order.objects.filter(applicant_organization=o, type=Order.TYPE_TRADE). \
+                aggregate(total=Sum('cost'))['total'] or 0
 
             org['num_burials'] = Burial.objects.filter(
                 source_type=Burial.SOURCE_FULL,
