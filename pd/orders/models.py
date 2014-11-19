@@ -399,6 +399,35 @@ class Order(GetLogsMixin, BaseModel):
                ) for item in OrderItem.objects.filter(order=self)
        ]
 
+    def service_name(self):
+        """
+        Имя сервиса у заказа TYPE_CUSTOMER
+        """
+        result = type_delivery = type_org = None
+        if self.is_type_customer():
+            for serviceitem in ServiceItem.objects.filter(order=self):
+                if serviceitem.orgservice.service.name == 'delivery':
+                    type_delivery = 'delivery'
+                elif not type_org:
+                    type_org = serviceitem.orgservice.service.name
+            return type_org or type_delivey
+        return result
+
+    def customer_location(self):
+        """
+        Координаты места у заказа TYPE_CUSTOMER
+
+        Конечная точка маршрута
+        """
+        result = None
+        if self.is_type_customer():
+            try:
+                point = Route.objects.filter(order=self).order_by('-index')[0]
+                return dict(latitude=point.lat, longitude=point.lng)
+            except IndexError:
+                pass
+        return result
+
 class ServiceItem(models.Model):
     order = models.ForeignKey(Order)
     orgservice = models.ForeignKey(OrgService, verbose_name=_(u"Услуга"), on_delete=models.PROTECT)
