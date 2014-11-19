@@ -61,7 +61,7 @@ from pd.utils import host_country_code, phones_from_text, EmailMessage
 from persons.models import AlivePerson, Phone
 from burials.models import Cemetery, Area, Burial, Place
 from billing.models import Wallet, Rate, Currency
-from orders.models import Product, Order, Iorder, IorderItem
+from orders.models import Product, Order
 from pd.views import PaginateListView, RequestToFormMixin, FormInvalidMixin, get_front_end_url, ServiceException
 from geo.models import Location, Country
 
@@ -1555,38 +1555,38 @@ class LoruOrderStatsView(SupervisorProductionRequiredMixin, PaginateListView):
         total['loru_count'] = total['num_orders']= total['sum_orders'] = 0
 
         if form.data and form.is_valid():
-            q_iorder = Q()
+            q_opt_order = Q(type=Order.TYPE_TRADE, annulated = False)
             q_order = Q(loru__isnull=False, annulated = False)
             if form.cleaned_data.get('date_from'):
                 q_order &= Q(dt__gte=form.cleaned_data['date_from'])
-                q_iorder &= Q(dt_created__gte=form.cleaned_data['date_from'])
+                q_opt_order &= Q(dt_created__gte=form.cleaned_data['date_from'])
             if form.cleaned_data.get('date_to'):
-                q_order &= Q(dt__lte=form.cleaned_data['date_to'])
-                q_iorder &= Q(dt_created__lt=form.cleaned_data['date_to']+datetime.timedelta(days=1))
+                q_order &= Q(dt__lt=form.cleaned_data['date_to']+datetime.timedelta(days=1))
+                q_opt_order &= Q(dt_created__lt=form.cleaned_data['date_to']+datetime.timedelta(days=1))
             supplier_name = form.cleaned_data.get('supplier')
             if supplier_name:
                 q_order &= Q(loru__name__icontains=supplier_name)
-                q_iorder &= Q(supplier__name__icontains=supplier_name)
+                q_opt_order &= Q(supplier__name__icontains=supplier_name)
 
             pks = {}
             currencies = set()
-            for iorder in Iorder.objects.filter(q_iorder). \
-                            select_related('supplier', 'supplier__name', 'supplier__currency'):
-                org_pk = iorder.supplier.pk
+            for opt_order in Order.objects.filter(q_opt_order). \
+                            select_related('loru', 'loru__name', 'loru__currency'):
+                org_pk = opt_order.loru.pk
                 if org_pk not in pks:
                     pks[org_pk] = dict(
-                        name=iorder.supplier.name,
-                        currency=iorder.supplier.currency.code,
+                        name=opt_order.loru.name,
+                        currency=opt_order.loru.currency.code,
                         num_orders=0,
                         sum_orders=0,
                     )
                     if len(currencies) < 2:
-                        currencies.add(iorder.supplier.currency)
+                        currencies.add(opt_order.loru.currency)
                 org = pks[org_pk]
                 org['num_orders'] += 1
                 total['num_orders'] += 1
                 
-                this_sum= iorder.total()
+                this_sum= opt_order.total
                 org['sum_orders'] += this_sum
                 total['sum_orders'] +=  this_sum
 
@@ -1768,7 +1768,7 @@ class LoruCurrentStatsView(SupervisorProductionRequiredMixin, TemplateView):
         total['num_products'] = total['num_published_products'] = \
         total['num_published_wholesales'] = \
         total['num_orders'] = \
-        total['num_iorders_in'] = total['num_iorders_out'] = \
+        total['num_opt_orders_in'] = total['num_opt_orders_out'] = \
         total['num_burials'] = 0
         catalog_org_pk = Org.get_catalog_org_pk()
         q_published = Q(is_public_catalog=True)
@@ -1807,15 +1807,15 @@ class LoruCurrentStatsView(SupervisorProductionRequiredMixin, TemplateView):
 
             org['currency'] = o.currency.code
 
-            org['num_iorders_in'] = Iorder.objects.filter(supplier=o).count()
-            total['num_iorders_in'] += org['num_iorders_in']
-            org['sum_iorders_in'] = IorderItem.objects.filter(iorder__supplier=o). \
-                aggregate(total=Sum('price_wholesale'))['total'] or 0
+            org['num_opt_orders_in'] = Order.objects.filter(loru=o, type=Order.TYPE_TRADE).count()
+            total['num_opt_orders_in'] += org['num_opt_orders_in']
+            org['sum_opt_orders_in'] = Order.objects.filter(loru=o, type=Order.TYPE_TRADE). \
+                aggregate(total=Sum('cost'))['total'] or 0
 
-            org['num_iorders_out'] = Iorder.objects.filter(customer=o).count()
-            total['num_iorders_out'] += org['num_iorders_out']
-            org['sum_iorders_out'] = IorderItem.objects.filter(iorder__customer=o). \
-                aggregate(total=Sum('price_wholesale'))['total'] or 0
+            org['num_opt_orders_out'] = Order.objects.filter(applicant_organization=o, type=Order.TYPE_TRADE).count()
+            total['num_opt_orders_out'] += org['num_opt_orders_out']
+            org['sum_opt_orders_out'] = Order.objects.filter(applicant_organization=o, type=Order.TYPE_TRADE). \
+                aggregate(total=Sum('cost'))['total'] or 0
 
             org['num_burials'] = Burial.objects.filter(
                 source_type=Burial.SOURCE_FULL,

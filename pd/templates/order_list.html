@@ -141,7 +141,6 @@
                             {{form.per_page}}
                         </p>
                         <input type="submit" value="искать" class="btn btn-primary" />
-                        <input type="submit" value="распечатать все" class="btn" name="print" />
 
                     </div>
 
@@ -269,16 +268,26 @@
                             ЮЛ {{ c.applicant_organization|default:"" }} {{ c.agent|default:"" }}
                         {% endif %}
                     </td>
-                    <td>{{ c.loru_number|default:"" }}</td>
+                    <td>
+                        {% if c.is_type_burial %}
+                            {{ c.loru_number }}
+                        {% elif c.is_type_trade or c.is_type_customer %}
+                            {{ c.number_verbose }}
+                        {% endif %}
+                    </td>
                     <td>{{ c.total|floatformat:2|default:"" }}</td>
                     <td>{{ c.dt|default:"" }}</td>
                     <td class="no-print">
-                        {% if user.profile.org == c.loru %}
+                        {% if c.is_type_burial %}
                             <a href="{% url order_edit c.pk %}" class="btn">{% trans "править" %}</a>
-                        {% endif %}
-                        {% if not c.annulated %}
-                            <a href="{% url order_print c.pk %}" class="btn" target="_blank">{% trans "счет-заказ" %}</a>
-                            <a href="{% url order_contract c.pk %}" class="btn" target="_blank">{% trans "контракт" %}</a>
+                            {% if not c.annulated %}
+                                <a href="{% url order_print c.pk %}" class="btn" target="_blank">{% trans "счет-заказ" %}</a>
+                                <a href="{% url order_contract c.pk %}" class="btn" target="_blank">{% trans "контракт" %}</a>
+                            {% endif %}
+                        {% elif c.is_type_trade %}
+                            <a href="{{ global_context_FRONT_END_URL }}order/{{c.pk}}" class="btn">{% trans "править" %}</a>
+                        {% elif c.is_type_customer %}
+                            {% trans "Заказ<br/>пользователя" %}
                         {% endif %}
                     </td>
                 </tr>
