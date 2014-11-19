@@ -30,7 +30,7 @@ from geo.models import Location
 from burials.forms import AddOrgForm, AddAgentForm, AddDoverForm, AddDocTypeForm
 from burials.models import Burial, Place, Grave, PlacePhoto
 from users.models import CustomerProfile, CustomerProfilePhoto, Org, ProfileLORU, Store, is_loru_user, is_supervisor, \
-                         PermitIfLoru, PermitIfCabinet, is_cabinet_user
+                         PermitIfLoru, PermitIfCabinet, PermitIfLoruOrCabinet, is_cabinet_user
 from billing.models import Rate
 from orders.forms import ProductForm, OrderForm, OrderItemFormset, CoffinForm, CatafalqueForm, \
                          AddInfoForm, OrderSearchForm, OrderBurialForm
@@ -49,7 +49,8 @@ from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser
 from orders.serializers import ProductCategorySerializer, ProductsSerializer, ProductsOptSerializer, \
                                ProductInfoSerializer, OptOrdersSerializer, OptOrderInfoSerializer, \
-                               ProductEditSerializer, ServiceSerializer, OrgServiceSerializer
+                               ProductEditSerializer, ServiceSerializer, OrgServiceSerializer, \
+                               ServiceOrderSerializer, OrderCommentsSerializer
 
 from pd.utils import EmailMessage
 from pd.models import validate_phone_as_number
@@ -1742,3 +1743,41 @@ class ApiClientOrdersView(ApiServicePriceMixin, APIView):
         )
 
 api_client_orders = ApiClientOrdersView.as_view()
+
+class ApiServiceOrdersView(APIView):
+    permission_classes = (PermitIfLoruOrCabinet,)
+
+    def get(self, request):
+        q = Q()
+        if is_loru_user(request.user):
+            q = Q(loru=request.user.profile.org, type=Order.TYPE_CUSTOMER)
+        elif is_cabinet_user(request.user):
+            q = Q(customplace__user=request.user, type=Order.TYPE_CUSTOMER)
+        qs = Order.objects.filter(q).order_by('-dt_created') if q else Order.objects.none()
+        return Response(data=ServiceOrderSerializer(qs, many=True,).data, status=200)
+
+api_orders = ApiServiceOrdersView.as_view()
+
+class ApiOrderCommentsView(APIView):
+    permission_classes = (PermitIfLoruOrCabinet,)
+
+    def get(self, request, pk):
+        try:
+            order = Order.objects.get(pk=pk)
+            if is_cabinet_user(request.user) and order.customplace and order.customplace.user == request.user:
+                pass
+            elif is_loru_user(request.user) and \
+                 (order.loru and order.loru == request.user.profile.org or \
+                  order.applicant_organization and order.applicant_organization == request.user.profile.org):
+                pass
+            else:
+                return Response(data=dict(detail='You are not authorized to this order'), status=403)
+        except Order.DoesNotExist:
+            raise Http404
+        data=[OrderCommentsSerializer(ordercomment, context=dict(
+                request=request,
+              )).data for ordercomment in OrderComment.objects.filter(order=order).order_by('dt_created')
+        ]
+        return Response(data=data, status=200)
+
+api_orders_comments = ApiOrderCommentsView.as_view()

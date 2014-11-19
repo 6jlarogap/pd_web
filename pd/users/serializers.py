@@ -6,6 +6,9 @@ from rest_framework.fields import Field
 from django.db.models.query_utils import Q
 
 from pd.utils import PhonesFromTextMixin, utcisoformat
+
+from django.contrib.auth.models import User
+
 from geo.models import Location
 from users.models import Org, Store, FavoriteSupplier, is_loru_user
 from persons.models import Phone
@@ -200,3 +203,9 @@ class OrgOptSupplierSerializer(serializers.ModelSerializer):
           )
       except IndexError:
           return None
+
+class UserShortSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = User
+        fields = ('id', 'username',)
