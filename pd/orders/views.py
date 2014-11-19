@@ -50,7 +50,7 @@ from rest_framework.parsers import MultiPartParser
 from orders.serializers import ProductCategorySerializer, ProductsSerializer, ProductsOptSerializer, \
                                ProductInfoSerializer, OptOrdersSerializer, OptOrderInfoSerializer, \
                                ProductEditSerializer, ServiceSerializer, OrgServiceSerializer, \
-                               ServiceOrderSerializer
+                               ServiceOrderSerializer, OrderCommentsSerializer
 
 from pd.utils import EmailMessage
 from pd.models import validate_phone_as_number
@@ -1757,3 +1757,27 @@ class ApiServiceOrdersView(APIView):
         return Response(data=ServiceOrderSerializer(qs, many=True,).data, status=200)
 
 api_orders = ApiServiceOrdersView.as_view()
+
+class ApiOrderCommentsView(APIView):
+    permission_classes = (PermitIfLoruOrCabinet,)
+
+    def get(self, request, pk):
+        try:
+            order = Order.objects.get(pk=pk)
+            if is_cabinet_user(request.user) and order.customplace and order.customplace.user == request.user:
+                pass
+            elif is_loru_user(request.user) and \
+                 (order.loru and order.loru == request.user.profile.org or \
+                  order.applicant_organization and order.applicant_organization == request.user.profile.org):
+                pass
+            else:
+                return Response(data=dict(detail='You are not authorized to this order'), status=403)
+        except Order.DoesNotExist:
+            raise Http404
+        data=[OrderCommentsSerializer(ordercomment, context=dict(
+                request=request,
+              )).data for ordercomment in OrderComment.objects.filter(order=order).order_by('dt_created')
+        ]
+        return Response(data=data, status=200)
+
+api_orders_comments = ApiOrderCommentsView.as_view()

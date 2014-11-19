@@ -53,13 +53,13 @@ class CommonProfile(BaseModel):
     def __unicode__(self):
         return self.user and (self.full_name() or self.user.username) or u'%s' % self.pk
 
-    def full_name(self):
+    def full_name(self, put_middle_name=True):
         name = ""
         if self.user_last_name:
             name = self.user_last_name
             if self.user_first_name:
                 name = u"{0} {1}".format(name, self.user_first_name)
-                if self.user_middle_name:
+                if put_middle_name and self.user_middle_name:
                     name = u"{0} {1}".format(name, self.user_middle_name)
         if not name:
             name = self.user.get_full_name()

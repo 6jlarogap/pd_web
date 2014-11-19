@@ -10,7 +10,7 @@ from rest_framework.fields import Field
 
 from rest_api.fields import HyperlinkedFileField
 from orders.models import Order, ProductCategory, Product, Service, Measure, OrgService, OrgServicePrice, OrderComment
-from users.models import Org
+from users.models import Org, is_cabinet_user, is_loru_user
 from users.serializers import OrgSerializer, OrgShortSerializer, OrgShort3Serializer, OrgShort4Serializer, \
                               UserShortSerializer
 from pd.utils import utcisoformat, str_to_bool_or_None
@@ -290,3 +290,23 @@ class ServiceOrderSerializer(CreatedAtMixin, serializers.ModelSerializer):
         model = Order
         fields = ('id', 'type', 'performer', 'owner', 'number', 'status',
                   'totalPrice', 'currency', 'createdAt')
+
+class OrderCommentsSerializer(CreatedAtMixin, serializers.ModelSerializer):
+    createdAt = serializers.SerializerMethodField('createdAt_func')
+    user = serializers.SerializerMethodField('user_func')
+
+    class Meta:
+        model = OrderComment
+        fields = ('id', 'comment', 'createdAt', 'user', )
+
+    def user_func(self, instance):
+        if is_cabinet_user(instance.user):
+            return dict(
+                id=instance.user.pk,
+                username=instance.user.customerprofile.full_name(put_middle_name=False)
+            )
+        if is_loru_user(instance.user):
+            return dict(
+                id=instance.user.profile.org.pk,
+                username=instance.user.profile.org.name
+            )
