@@ -36,7 +36,7 @@ from orders.forms import ProductForm, OrderForm, OrderItemFormset, CoffinForm, C
                          AddInfoForm, OrderSearchForm, OrderBurialForm
 from orders.models import Product, Order, OrderItem, ProductCategory, \
                           Service, Measure, OrgService, OrgServicePrice, ServiceItem, OrderComment, \
-                          Route
+                          Route, ResultFile
 from persons.models import CustomPlace, AlivePerson
 from pd.forms import CommentForm
 from pd.views import PaginateListView, RequestToFormMixin, ServiceException, get_front_end_url, get_host_url
@@ -50,7 +50,7 @@ from rest_framework.parsers import MultiPartParser
 from orders.serializers import ProductCategorySerializer, ProductsSerializer, ProductsOptSerializer, \
                                ProductInfoSerializer, OptOrdersSerializer, OptOrderInfoSerializer, \
                                ProductEditSerializer, ServiceSerializer, OrgServiceSerializer, \
-                               ServiceOrderSerializer, OrderCommentsSerializer
+                               ServiceOrderSerializer, OrderCommentsSerializer, ServiceOrderDetailSerializer
 
 from pd.utils import EmailMessage
 from pd.models import validate_phone_as_number
@@ -1764,13 +1764,7 @@ class ApiOrderCommentsView(APIView):
     def get(self, request, pk):
         try:
             order = Order.objects.get(pk=pk)
-            if is_cabinet_user(request.user) and order.customplace and order.customplace.user == request.user:
-                pass
-            elif is_loru_user(request.user) and \
-                 (order.loru and order.loru == request.user.profile.org or \
-                  order.applicant_organization and order.applicant_organization == request.user.profile.org):
-                pass
-            else:
+            if not order.is_accessible(request.user):
                 return Response(data=dict(detail='You are not authorized to this order'), status=403)
         except Order.DoesNotExist:
             raise Http404
@@ -1781,3 +1775,96 @@ class ApiOrderCommentsView(APIView):
         return Response(data=data, status=200)
 
 api_orders_comments = ApiOrderCommentsView.as_view()
+
+class ApiOrderResultView(APIView):
+    permission_classes = (PermitIfLoru,)
+    parser_classes = (MultiPartParser,)
+
+    @transaction.commit_on_success
+    def post(self, request, pk):
+        try:
+            try:
+                order = Order.objects.get(pk=pk)
+                if not (order.loru and order.loru == request.user.profile.org):
+                    return Response(data=dict(detail='You are not authorized to this order'), status=403)
+            except Order.DoesNotExist:
+                raise Http404
+            data = request.DATA.get('data')
+            if data:
+                try:
+                    data = json.loads(data)
+                    images = data['image']
+                    for image in images:
+                        if image not in request.FILES:
+                            raise ServiceException(_(u'%s нет в списке прикрепленных файлов') % image)
+                except (ValueError, KeyError, TypeError):
+                    # Неверный json, нет data['image'], data['image'] not iterable
+                    raise ServiceException(_(u'Неверный формат %s') % 'data')
+            else:
+                images = []
+            for image in images:
+                ResultFile.objects.create(
+                    bfile=request.FILES[image],
+                    order=order,
+                    creator=request.user,
+                )
+            comment = request.DATA.get('comment')
+            if comment or images:
+                if comment:
+                    OrderComment.objects.create(
+                        order=order,
+                        user=request.user,
+                        comment=comment,
+                    )
+                # отметим изменение в order.dt_modified, даже если не было комментария:
+                order.save()
+        except ServiceException as excpt:
+            transaction.rollback()
+            return Response(data=dict(status='error', message=excpt.message), status=400)
+        return Response(data=dict(status='success'), status=200)
+
+api_orders_results = ApiOrderResultView.as_view()
+
+class ApiServiceOrderResultView(APIView):
+    permission_classes = (PermitIfLoruOrCabinet,)
+
+    def get(self, request, pk):
+        try:
+            order = Order.objects.get(pk=pk, type=Order.TYPE_CUSTOMER)
+            if not order.is_accessible(request.user):
+                return Response(data=dict(detail='You are not authorized to this order'), status=403)
+        except Order.DoesNotExist:
+            raise Http404
+        return Response(
+            data=ServiceOrderDetailSerializer(order, context=dict(request=request)).data,
+            status=200,
+        )
+
+api_orders_detail = ApiServiceOrderResultView.as_view()
+
+class ApiServiceOrderRateView(APIView):
+    permission_classes = (PermitIfCabinet,)
+
+    @transaction.commit_on_success
+    def put(self, request, pk):
+        try:
+            order = Order.objects.get(pk=pk, type=Order.TYPE_CUSTOMER)
+            if not order.is_accessible(request.user):
+                return Response(data=dict(detail='You are not authorized to this order'), status=403)
+        except Order.DoesNotExist:
+            raise Http404
+        comment = request.DATA.get('finalComment')
+        approved = request.DATA.get('approved')
+        if comment or 'approved' in request.DATA:
+            if comment:
+                OrderComment.objects.create(
+                    order=order,
+                    user=request.user,
+                    comment=comment,
+                )
+            if 'approved' in request.DATA:
+                order.applicant_approved = request.DATA['approved']
+        order.save()
+        return Response(data=dict(status='succes'), status=200)
+
+api_client_orders_rate = ApiServiceOrderRateView.as_view()

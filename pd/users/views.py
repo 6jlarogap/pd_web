@@ -766,7 +766,7 @@ class LogoutView(View):
         if not request.user.is_authenticated():
             return redirect('/')
         write_log(request, request.user, _(u'Выход из системы'))
-        print u'DEBUG: %s:%s /LOGOUT' % (request.get_host(), request.user.username, )
+        # print u'DEBUG: %s:%s /LOGOUT' % (request.get_host(), request.user.username, )
         logout(request)
         if request.GET.get("redirectUrl"):
             response = redirect(request.GET.get("redirectUrl"))

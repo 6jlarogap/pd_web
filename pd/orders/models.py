@@ -13,7 +13,7 @@ from django.db.models.query_utils import Q
 
 from burials.models import Burial
 from reports.models import Report
-from users.models import Org
+from users.models import Org, is_cabinet_user, is_loru_user
 from pd.models import BaseModel, GetLogsMixin, upload_slugified, Files
 from geo.models import PointsModel
 
@@ -190,20 +190,15 @@ class Order(GetLogsMixin, BaseModel):
 
     # Оптовые заказы
     STATUS_POSTED = 'posted'
-    STATUS_CONFIRMED = 'confirmed'
-    STATUS_SHIPPED = 'shipped'
     STATUS_ACCEPTED = 'accepted'
-
-    # Заказы от пользователя-физ.лица
-    # STATUS_POSTED = 'posted'
-    # STATUS_CONFIRMED = 'confirmed'
-    # STATUS_SHIPPED = 'shipped'
+    STATUS_PAID = 'paid'
+    STATUS_DONE = 'done'
 
     STATUS_TYPES = (
         (STATUS_POSTED, _(u"Размещен")),
-        (STATUS_CONFIRMED, _(u"Подтвержден")),
-        (STATUS_SHIPPED, _(u"Отправлен")),
         (STATUS_ACCEPTED, _(u"Принят")),
+        (STATUS_PAID, _(u"Оплачен")),
+        (STATUS_DONE, _(u"Выполнен")),
     )
 
     type = models.CharField(_(u"Тип Заказ"), max_length=255, choices=ORDER_TYPES, default=TYPE_BURIAL, editable=False)
@@ -428,6 +423,20 @@ class Order(GetLogsMixin, BaseModel):
                 pass
         return result
 
+    def is_accessible(self, user):
+        """
+        Доступность ResultFile, OrderComments от этого Order и самого Order
+        """
+        result = False
+        if is_loru_user(user):
+            org = user.profile.org
+            result = self.loru and self.loru == org or \
+                     self.applicant_organization and self.applicant_organization == org
+        elif is_cabinet_user(user):
+            result = self.applicant and self.applicant.user and \
+                     self.applicant.user == user
+        return bool(result)
+        
 class ServiceItem(models.Model):
     order = models.ForeignKey(Order)
     orgservice = models.ForeignKey(OrgService, verbose_name=_(u"Услуга"), on_delete=models.PROTECT)

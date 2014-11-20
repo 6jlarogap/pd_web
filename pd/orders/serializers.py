@@ -9,7 +9,8 @@ from rest_framework import serializers
 from rest_framework.fields import Field
 
 from rest_api.fields import HyperlinkedFileField
-from orders.models import Order, ProductCategory, Product, Service, Measure, OrgService, OrgServicePrice, OrderComment
+from orders.models import Order, ProductCategory, Product, Service, Measure, OrgService, OrgServicePrice, \
+                          OrderComment, ResultFile
 from users.models import Org, is_cabinet_user, is_loru_user
 from users.serializers import OrgSerializer, OrgShortSerializer, OrgShort3Serializer, OrgShort4Serializer, \
                               UserShortSerializer
@@ -310,3 +311,24 @@ class OrderCommentsSerializer(CreatedAtMixin, serializers.ModelSerializer):
                 id=instance.user.profile.org.pk,
                 username=instance.user.profile.org.name
             )
+
+class OrderResultsSerializer(serializers.ModelSerializer):
+    imageUrl = HyperlinkedFileField(source='bfile', required=False)
+
+    class Meta:
+        model = ResultFile
+        fields = ('imageUrl', )
+
+class ServiceOrderDetailSerializer(serializers.ModelSerializer):
+    type = serializers.Field(source='service_name')
+    placeId = serializers.Field(source='customplace.pk')
+    data = serializers.SerializerMethodField('data_func')
+
+    class Meta:
+        model = Order
+        fields = ('id', 'type', 'placeId', 'status', 'data', )
+
+    def data_func(self, instance):
+        return [OrderResultsSerializer(resultfile, context=self.context).data \
+            for resultfile in ResultFile.objects.filter(order=instance)
+        ]
