@@ -1809,7 +1809,7 @@ class ApiOrderResultView(APIView):
                     creator=request.user,
                 )
             comment = request.DATA.get('comment')
-            if comment is not None or images:
+            if comment or images:
                 if comment:
                     OrderComment.objects.create(
                         order=order,
@@ -1841,3 +1841,30 @@ class ApiServiceOrderResultView(APIView):
         )
 
 api_orders_detail = ApiServiceOrderResultView.as_view()
+
+class ApiServiceOrderRateView(APIView):
+    permission_classes = (PermitIfCabinet,)
+
+    @transaction.commit_on_success
+    def put(self, request, pk):
+        try:
+            order = Order.objects.get(pk=pk, type=Order.TYPE_CUSTOMER)
+            if not order.is_accessible(request.user):
+                return Response(data=dict(detail='You are not authorized to this order'), status=403)
+        except Order.DoesNotExist:
+            raise Http404
+        comment = request.DATA.get('finalComment')
+        approved = request.DATA.get('approved')
+        if comment or 'approved' in request.DATA:
+            if comment:
+                OrderComment.objects.create(
+                    order=order,
+                    user=request.user,
+                    comment=comment,
+                )
+            if 'approved' in request.DATA:
+                order.applicant_approved = request.DATA['approved']
+        order.save()
+        return Response(data=dict(status='succes'), status=200)
+
+api_client_orders_rate = ApiServiceOrderRateView.as_view()

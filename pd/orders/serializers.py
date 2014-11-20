@@ -328,7 +328,7 @@ class ServiceOrderDetailSerializer(serializers.ModelSerializer):
         model = Order
         fields = ('id', 'type', 'placeId', 'status', 'data', )
 
-    def data_func(self,instance):
+    def data_func(self, instance):
         return [OrderResultsSerializer(resultfile, context=self.context).data \
             for resultfile in ResultFile.objects.filter(order=instance)
         ]

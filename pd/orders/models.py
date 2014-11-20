@@ -191,13 +191,13 @@ class Order(GetLogsMixin, BaseModel):
     # Оптовые заказы
     STATUS_POSTED = 'posted'
     STATUS_ACCEPTED = 'accepted'
-    STATUS_PAYED = 'payed'
+    STATUS_PAID = 'paid'
     STATUS_DONE = 'done'
 
     STATUS_TYPES = (
         (STATUS_POSTED, _(u"Размещен")),
         (STATUS_ACCEPTED, _(u"Принят")),
-        (STATUS_PAYED, _(u"Оплачен")),
+        (STATUS_PAID, _(u"Оплачен")),
         (STATUS_DONE, _(u"Выполнен")),
     )
 
