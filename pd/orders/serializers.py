@@ -310,3 +310,9 @@ class OrderCommentsSerializer(CreatedAtMixin, serializers.ModelSerializer):
                 id=instance.user.profile.org.pk,
                 username=instance.user.profile.org.name
             )
+
+class ServiceOrderDetailSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Order
+        fields = ('id', )

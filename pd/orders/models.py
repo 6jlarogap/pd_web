@@ -425,7 +425,7 @@ class Order(GetLogsMixin, BaseModel):
 
     def is_accessible(self, user):
         """
-        Доступность ResultFile от этого Order
+        Доступность ResultFile, OrderComments от этого Order и самого Order
         """
         result = False
         if is_loru_user(user):

@@ -1764,13 +1764,7 @@ class ApiOrderCommentsView(APIView):
     def get(self, request, pk):
         try:
             order = Order.objects.get(pk=pk)
-            if is_cabinet_user(request.user) and order.customplace and order.customplace.user == request.user:
-                pass
-            elif is_loru_user(request.user) and \
-                 (order.loru and order.loru == request.user.profile.org or \
-                  order.applicant_organization and order.applicant_organization == request.user.profile.org):
-                pass
-            else:
+            if order.is_accessible(request.user):
                 return Response(data=dict(detail='You are not authorized to this order'), status=403)
         except Order.DoesNotExist:
             raise Http404
@@ -1818,7 +1812,11 @@ class ApiOrderResultView(APIView):
             if comment is not None or images:
                 # отметим изменение в order.dt_modified, даже если не было комментария:
                 if comment:
-                    order.comment = comment
+                    OrderComment.objects.create(
+                        order=order,
+                        user=request.user,
+                        comment=comment,
+                    )
                 order.save()
         except ServiceException as excpt:
             transaction.rollback()
@@ -1826,3 +1824,11 @@ class ApiOrderResultView(APIView):
         return Response(data=dict(status='success'), status=200)
 
 api_orders_results = ApiOrderResultView.as_view()
+
+class ApiServiceOrderResultView(APIView):
+    permission_classes = (PermitIfLoruOrCabinet,)
+
+    def get(self, request, pk):
+        return Response(data={}, status=200)
+
+api_orders_detail = ApiServiceOrderResultView.as_view()

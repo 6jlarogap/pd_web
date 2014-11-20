@@ -43,6 +43,7 @@ urlpatterns = patterns('orders.views',
     url(r'^api/orders/?$', 'api_orders', name='api_orders'),
     url(r'^api/orders/(?P<pk>\d+)/comments/?$', 'api_orders_comments', name='api_orders_comments'),
     url(r'^api/orders/(?P<pk>\d+)/results/?$', 'api_orders_results', name='api_orders_results'),
+    url(r'^api/orders/(?P<pk>\d+)/?$', 'api_orders_detail', name='api_orders_detail'),
 
     url(r'^order/product/ajax_get_product_price/$', 'ajax_product_price', name='ajax_product_price'),
 )
