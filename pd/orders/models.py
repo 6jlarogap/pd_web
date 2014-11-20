@@ -13,7 +13,7 @@ from django.db.models.query_utils import Q
 
 from burials.models import Burial
 from reports.models import Report
-from users.models import Org
+from users.models import Org, is_cabinet_user, is_loru_user
 from pd.models import BaseModel, GetLogsMixin, upload_slugified, Files
 from geo.models import PointsModel
 
@@ -423,6 +423,20 @@ class Order(GetLogsMixin, BaseModel):
                 pass
         return result
 
+    def is_accessible(self, user):
+        """
+        Доступность ResultFile от этого Order
+        """
+        result = False
+        if is_loru_user(user):
+            org = user.profile.org
+            result = self.loru and self.loru == org or \
+                     self.applicant_organization and self.applicant_organization == org
+        elif is_cabinet_user(user):
+            result = self.applicant and self.applicant.user and \
+                     self.applicant.user == user
+        return bool(result)
+        
 class ServiceItem(models.Model):
     order = models.ForeignKey(Order)
     orgservice = models.ForeignKey(OrgService, verbose_name=_(u"Услуга"), on_delete=models.PROTECT)
