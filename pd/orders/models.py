@@ -190,20 +190,15 @@ class Order(GetLogsMixin, BaseModel):
 
     # Оптовые заказы
     STATUS_POSTED = 'posted'
-    STATUS_CONFIRMED = 'confirmed'
-    STATUS_SHIPPED = 'shipped'
     STATUS_ACCEPTED = 'accepted'
-
-    # Заказы от пользователя-физ.лица
-    # STATUS_POSTED = 'posted'
-    # STATUS_CONFIRMED = 'confirmed'
-    # STATUS_SHIPPED = 'shipped'
+    STATUS_PAYED = 'payed'
+    STATUS_DONE = 'done'
 
     STATUS_TYPES = (
         (STATUS_POSTED, _(u"Размещен")),
-        (STATUS_CONFIRMED, _(u"Подтвержден")),
-        (STATUS_SHIPPED, _(u"Отправлен")),
         (STATUS_ACCEPTED, _(u"Принят")),
+        (STATUS_PAYED, _(u"Оплачен")),
+        (STATUS_DONE, _(u"Выполнен")),
     )
 
     type = models.CharField(_(u"Тип Заказ"), max_length=255, choices=ORDER_TYPES, default=TYPE_BURIAL, editable=False)
