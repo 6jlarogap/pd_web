@@ -36,7 +36,7 @@ from orders.forms import ProductForm, OrderForm, OrderItemFormset, CoffinForm, C
                          AddInfoForm, OrderSearchForm, OrderBurialForm
 from orders.models import Product, Order, OrderItem, ProductCategory, \
                           Service, Measure, OrgService, OrgServicePrice, ServiceItem, OrderComment, \
-                          Route
+                          Route, ResultFile
 from persons.models import CustomPlace, AlivePerson
 from pd.forms import CommentForm
 from pd.views import PaginateListView, RequestToFormMixin, ServiceException, get_front_end_url, get_host_url
@@ -1781,3 +1781,48 @@ class ApiOrderCommentsView(APIView):
         return Response(data=data, status=200)
 
 api_orders_comments = ApiOrderCommentsView.as_view()
+
+class ApiOrderResultView(APIView):
+    permission_classes = (PermitIfLoru,)
+    parser_classes = (MultiPartParser,)
+
+    @transaction.commit_on_success
+    def post(self, request, pk):
+        try:
+            try:
+                order = Order.objects.get(pk=pk)
+                if not (order.loru and order.loru == request.user.profile.org):
+                    return Response(data=dict(detail='You are not authorized to this order'), status=403)
+            except Order.DoesNotExist:
+                raise Http404
+            data = request.DATA.get('data')
+            if data:
+                try:
+                    data = json.loads(data)
+                    images = data['image']
+                    for image in images:
+                        if image not in request.FILES:
+                            raise ServiceException(_(u'%s нет в списке прикрепленных файлов') % image)
+                except (ValueError, KeyError, TypeError):
+                    # Неверный json, нет data['image'], data['image'] not iterable
+                    raise ServiceException(_(u'Неверный формат %s') % 'data')
+            else:
+                images = []
+            for image in images:
+                ResultFile.objects.create(
+                    bfile=request.FILES[image],
+                    order=order,
+                    creator=request.user,
+                )
+            comment = request.DATA.get('comment')
+            if comment is not None or images:
+                # отметим изменение в order.dt_modified, даже если не было комментария:
+                if comment:
+                    order.comment = comment
+                order.save()
+        except ServiceException as excpt:
+            transaction.rollback()
+            return Response(data=dict(status='error', message=excpt.message), status=400)
+        return Response(data=dict(status='success'), status=200)
+
+api_orders_results = ApiOrderResultView.as_view()
