@@ -50,7 +50,7 @@ from rest_framework.parsers import MultiPartParser
 from orders.serializers import ProductCategorySerializer, ProductsSerializer, ProductsOptSerializer, \
                                ProductInfoSerializer, OptOrdersSerializer, OptOrderInfoSerializer, \
                                ProductEditSerializer, ServiceSerializer, OrgServiceSerializer, \
-                               ServiceOrderSerializer, OrderCommentsSerializer
+                               ServiceOrderSerializer, OrderCommentsSerializer, ServiceOrderDetailSerializer
 
 from pd.utils import EmailMessage
 from pd.models import validate_phone_as_number
@@ -1764,7 +1764,7 @@ class ApiOrderCommentsView(APIView):
     def get(self, request, pk):
         try:
             order = Order.objects.get(pk=pk)
-            if order.is_accessible(request.user):
+            if not order.is_accessible(request.user):
                 return Response(data=dict(detail='You are not authorized to this order'), status=403)
         except Order.DoesNotExist:
             raise Http404
@@ -1810,13 +1810,13 @@ class ApiOrderResultView(APIView):
                 )
             comment = request.DATA.get('comment')
             if comment is not None or images:
-                # отметим изменение в order.dt_modified, даже если не было комментария:
                 if comment:
                     OrderComment.objects.create(
                         order=order,
                         user=request.user,
                         comment=comment,
                     )
+                # отметим изменение в order.dt_modified, даже если не было комментария:
                 order.save()
         except ServiceException as excpt:
             transaction.rollback()
@@ -1829,6 +1829,15 @@ class ApiServiceOrderResultView(APIView):
     permission_classes = (PermitIfLoruOrCabinet,)
 
     def get(self, request, pk):
-        return Response(data={}, status=200)
+        try:
+            order = Order.objects.get(pk=pk, type=Order.TYPE_CUSTOMER)
+            if not order.is_accessible(request.user):
+                return Response(data=dict(detail='You are not authorized to this order'), status=403)
+        except Order.DoesNotExist:
+            raise Http404
+        return Response(
+            data=ServiceOrderDetailSerializer(order, context=dict(request=request)).data,
+            status=200,
+        )
 
 api_orders_detail = ApiServiceOrderResultView.as_view()
