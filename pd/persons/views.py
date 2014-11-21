@@ -204,7 +204,7 @@ class ApiClientCustomplacesView(ApiClientCustomplacesMixin, APIView):
 
     def get(self, request):
         data = []
-        for p in CustomPlace.objects.filter(user=request.user).order_by('pk'):
+        for p in CustomPlace.objects.filter(user=request.user, place__isnull=True).order_by('pk'):
             place=dict(
                 id=p.pk,
                 address=p.address and unicode(p.address) or None,
