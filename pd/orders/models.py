@@ -471,7 +471,7 @@ class ResultFile(Files):
     )
 
     order = models.ForeignKey(Order, verbose_name=_(u"Заказ"), )
-    type = models.CharField(_(u"Тип"), max_length=255, choices=RESULT_TYPES, default=RESULT_TYPES)
+    type = models.CharField(_(u"Тип"), max_length=255, choices=RESULT_TYPES, default=TYPE_IMAGE)
 
 class OrderItem(models.Model):
     order = models.ForeignKey(Order, editable=False)
