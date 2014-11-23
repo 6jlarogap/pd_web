@@ -10,7 +10,7 @@ from pd.utils import PhonesFromTextMixin, utcisoformat
 from django.contrib.auth.models import User
 
 from geo.models import Location
-from users.models import Org, Store, FavoriteSupplier, is_loru_user
+from users.models import Org, Store, FavoriteSupplier, is_loru_user, get_profile
 from persons.models import Phone
 from orders.models import Order, Product
 
@@ -204,8 +204,23 @@ class OrgOptSupplierSerializer(serializers.ModelSerializer):
       except IndexError:
           return None
 
-class UserShortSerializer(serializers.ModelSerializer):
+class UserFioSerializer(serializers.ModelSerializer):
+    firstName = serializers.SerializerMethodField('firstName_func')
+    middleName = serializers.SerializerMethodField('middleName_func')
+    lastName = serializers.SerializerMethodField('lastName_func')
 
     class Meta:
         model = User
-        fields = ('id', 'username',)
+        fields = ('id', 'firstName', 'lastName', 'middleName')
+
+    def firstName_func(self, user):
+        profile = get_profile(user)
+        return profile.user_first_name or ''
+
+    def middleName_func(self, user):
+        profile = get_profile(user)
+        return profile.user_middle_name or ''
+
+    def lastName_func(self, user):
+        profile = get_profile(user)
+        return profile.user_last_name or ''
