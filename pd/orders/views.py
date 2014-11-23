@@ -1842,8 +1842,8 @@ class ApiServiceOrderResultView(APIView):
 
 api_orders_detail = ApiServiceOrderResultView.as_view()
 
-class ApiServiceOrderRateView(APIView):
-    permission_classes = (PermitIfCabinet,)
+class ApiServiceOrderDetailView(APIView):
+    permission_classes = (PermitIfLoruOrCabinet,)
 
     @transaction.commit_on_success
     def put(self, request, pk):
@@ -1853,18 +1853,16 @@ class ApiServiceOrderRateView(APIView):
                 return Response(data=dict(detail='You are not authorized to this order'), status=403)
         except Order.DoesNotExist:
             raise Http404
-        comment = request.DATA.get('finalComment')
-        approved = request.DATA.get('approved')
-        if comment or 'approved' in request.DATA:
-            if comment:
-                OrderComment.objects.create(
-                    order=order,
-                    user=request.user,
-                    comment=comment,
-                )
-            if 'approved' in request.DATA:
-                order.applicant_approved = request.DATA['approved']
+        status = request.DATA.get('status')
+        for st in Order.STATUS_TYPES:
+            if status == st[0]:
+                break
+        else:
+            return Response(data=dict(status='error', message=_(u"Статус %s не предусмотрен") % status), status=400)
+        if status:
+            order.status = status
+            order.save()
         order.save()
         return Response(data=dict(status='succes'), status=200)
 
-api_client_orders_rate = ApiServiceOrderRateView.as_view()
+api_client_orders_put_status = ApiServiceOrderDetailView.as_view()
