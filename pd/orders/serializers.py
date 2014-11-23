@@ -13,7 +13,7 @@ from orders.models import Order, ProductCategory, Product, Service, Measure, Org
                           OrderComment, ResultFile
 from users.models import Org, is_cabinet_user, is_loru_user
 from users.serializers import OrgSerializer, OrgShortSerializer, OrgShort3Serializer, OrgShort4Serializer, \
-                              UserShortSerializer
+                              UserFioSerializer
 from pd.utils import utcisoformat, str_to_bool_or_None
 from pd.views import ServiceException
 
@@ -281,7 +281,7 @@ class ServiceOrderSerializer(CreatedAtMixin, serializers.ModelSerializer):
     type = serializers.Field(source='service_name')
     location = serializers.Field(source='customer_location')
     performer = OrgShort3Serializer(source='loru')
-    owner = UserShortSerializer(source='customplace.user')
+    owner = UserFioSerializer(source='customplace.user')
     number = serializers.Field(source='number_verbose')
     totalPrice = serializers.Field(source='total_float')
     currency = serializers.Field(source='loru.currency.code')
@@ -322,13 +322,7 @@ class OrderResultsSerializer(serializers.ModelSerializer):
 class ServiceOrderDetailSerializer(serializers.ModelSerializer):
     type = serializers.Field(source='service_name')
     placeId = serializers.Field(source='customplace.pk')
-    data = serializers.SerializerMethodField('data_func')
 
     class Meta:
         model = Order
-        fields = ('id', 'type', 'placeId', 'status', 'data', )
-
-    def data_func(self, instance):
-        return [OrderResultsSerializer(resultfile, context=self.context).data \
-            for resultfile in ResultFile.objects.filter(order=instance)
-        ]
+        fields = ('id', 'type', 'placeId', 'status', )

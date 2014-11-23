@@ -463,7 +463,15 @@ class ResultFile(Files):
     """
     Результаты выполнения заказа на фото места
     """
+    TYPE_IMAGE = 'image'
+    TYPE_VIDEO = 'video'
+    RESULT_TYPES = (
+        (TYPE_IMAGE, _(u"Изображение")),
+        (TYPE_VIDEO, _(u"Видео")),
+    )
+
     order = models.ForeignKey(Order, verbose_name=_(u"Заказ"), )
+    type = models.CharField(_(u"Тип"), max_length=255, choices=RESULT_TYPES, default=TYPE_IMAGE)
 
 class OrderItem(models.Model):
     order = models.ForeignKey(Order, editable=False)
