@@ -318,7 +318,7 @@ class OrderResultsSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ResultFile
-        fields = ('fileUrl', 'type', 'createdAt', )
+        fields = ('id', 'fileUrl', 'type', 'createdAt', )
 
     def createdAt_func(self, instance):
         return utcisoformat(instance.date_of_creation)
