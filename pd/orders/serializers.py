@@ -312,13 +312,16 @@ class OrderCommentsSerializer(CreatedAtMixin, serializers.ModelSerializer):
                 username=instance.user.profile.org.name
             )
 
-class OrderResultsSerializer(CreatedAtMixin, serializers.ModelSerializer):
+class OrderResultsSerializer(serializers.ModelSerializer):
     fileUrl = HyperlinkedFileField(source='bfile', required=False)
     createdAt = serializers.SerializerMethodField('createdAt_func')
 
     class Meta:
         model = ResultFile
         fields = ('fileUrl', 'type', 'createdAt', )
+
+    def createdAt_func(self, instance):
+        return utcisoformat(instance.date_of_creation)
 
 class ServiceOrderDetailSerializer(serializers.ModelSerializer):
     type = serializers.Field(source='service_name')
