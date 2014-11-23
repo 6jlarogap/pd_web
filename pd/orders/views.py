@@ -50,7 +50,8 @@ from rest_framework.parsers import MultiPartParser
 from orders.serializers import ProductCategorySerializer, ProductsSerializer, ProductsOptSerializer, \
                                ProductInfoSerializer, OptOrdersSerializer, OptOrderInfoSerializer, \
                                ProductEditSerializer, ServiceSerializer, OrgServiceSerializer, \
-                               ServiceOrderSerializer, OrderCommentsSerializer, ServiceOrderDetailSerializer
+                               ServiceOrderSerializer, OrderCommentsSerializer, ServiceOrderDetailSerializer, \
+                               OrderResultsSerializer
 
 from pd.utils import EmailMessage
 from pd.models import validate_phone_as_number
@@ -1777,51 +1778,54 @@ class ApiOrderCommentsView(APIView):
 api_orders_comments = ApiOrderCommentsView.as_view()
 
 class ApiOrderResultView(APIView):
-    permission_classes = (PermitIfLoru,)
+    permission_classes = (PermitIfLoruOrCabinet,)
     parser_classes = (MultiPartParser,)
+
+    def get(self, request, pk):
+        try:
+            order = Order.objects.get(pk=pk, type=Order.TYPE_CUSTOMER)
+            if not order.is_accessible(request.user):
+                return Response(data=dict(detail='You are not authorized to this order'), status=403)
+        except Order.DoesNotExist:
+            raise Http404
+        return Response(data=[OrderResultsSerializer(resultfile, context=dict(request=request)).data \
+                        for resultfile in ResultFile.objects.filter(order=order)],
+                    status=200)
 
     @transaction.commit_on_success
     def post(self, request, pk):
         try:
             try:
                 order = Order.objects.get(pk=pk)
-                if not (order.loru and order.loru == request.user.profile.org):
-                    return Response(data=dict(detail='You are not authorized to this order'), status=403)
+                if not is_loru_user(request.user) or \
+                   not (order.loru and order.loru == request.user.profile.org):
+                    return Response(data=dict(detail='You are not authorized to post to this order'), status=403)
             except Order.DoesNotExist:
                 raise Http404
-            data = request.DATA.get('data')
-            if data:
-                try:
-                    data = json.loads(data)
-                    images = data['image']
-                    for image in images:
-                        if image not in request.FILES:
-                            raise ServiceException(_(u'%s нет в списке прикрепленных файлов') % image)
-                except (ValueError, KeyError, TypeError):
-                    # Неверный json, нет data['image'], data['image'] not iterable
-                    raise ServiceException(_(u'Неверный формат %s') % 'data')
+            type_ = request.DATA.get('type')
+            if not type_:
+                raise ServiceException(_(u"Не задан тип загружаемого файла"))
+            for tp in ResultFile.RESULT_TYPES:
+                if type_ == tp[0]:
+                    break
             else:
-                images = []
-            for image in images:
-                ResultFile.objects.create(
-                    bfile=request.FILES[image],
-                    order=order,
-                    creator=request.user,
-                )
-            comment = request.DATA.get('comment')
-            if comment or images:
-                if comment:
-                    OrderComment.objects.create(
-                        order=order,
-                        user=request.user,
-                        comment=comment,
-                    )
-                # отметим изменение в order.dt_modified, даже если не было комментария:
-                order.save()
+                raise ServiceException(_(u"Тип %s файла результата выполнения заказа не предусмотрен") % type_)
+            file_ = 'file'
+            if file_ not in request.FILES:
+                raise ServiceException(_(u"Не получен загружаемый файл '%s'") % file_)
+            resultfile = ResultFile.objects.create(
+                bfile=request.FILES[file_],
+                order=order,
+                type=type_,
+                creator=request.user,
+            )
+            # отметим изменение в order.dt_modified:
+            order.save()
         except ServiceException as excpt:
             transaction.rollback()
             return Response(data=dict(status='error', message=excpt.message), status=400)
-        return Response(data=dict(status='success'), status=200)
+        return Response(data=OrderResultsSerializer(resultfile, context=dict(request=request)).data, status=200)
+
 
 api_orders_results = ApiOrderResultView.as_view()
 

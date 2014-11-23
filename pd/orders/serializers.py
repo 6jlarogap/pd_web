@@ -312,12 +312,13 @@ class OrderCommentsSerializer(CreatedAtMixin, serializers.ModelSerializer):
                 username=instance.user.profile.org.name
             )
 
-class OrderResultsSerializer(serializers.ModelSerializer):
-    imageUrl = HyperlinkedFileField(source='bfile', required=False)
+class OrderResultsSerializer(CreatedAtMixin, serializers.ModelSerializer):
+    fileUrl = HyperlinkedFileField(source='bfile', required=False)
+    createdAt = serializers.SerializerMethodField('createdAt_func')
 
     class Meta:
         model = ResultFile
-        fields = ('imageUrl', )
+        fields = ('fileUrl', 'type', 'createdAt', )
 
 class ServiceOrderDetailSerializer(serializers.ModelSerializer):
     type = serializers.Field(source='service_name')
