@@ -340,10 +340,6 @@ class Files(models.Model):
         self.delete_from_media()
         super(Files, self).delete()
 
-    @property
-    def dt_created(self):
-        return self.date_of_creation
-
 def validate_gt0(value):
     if value <= 0:
         raise ValidationError(_(u'Должно быть больше нуля'))
