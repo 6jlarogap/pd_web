@@ -1775,6 +1775,25 @@ class ApiOrderCommentsView(APIView):
         ]
         return Response(data=data, status=200)
 
+    @transaction.commit_on_success
+    def post(self, request, pk):
+        try:
+            order = Order.objects.get(pk=pk)
+            if not order.is_accessible(request.user):
+                return Response(data=dict(detail='You are not authorized to this order'), status=403)
+        except Order.DoesNotExist:
+            raise Http404
+        comment = request.DATA.get('comment')
+        if comment is not None:
+            ordercomment = OrderComment.objects.create(
+                order=order,
+                user=request.user,
+                comment=comment,
+            )
+            return Response(data=OrderCommentsSerializer(ordercomment).data, status=200)
+        else:
+            return Response(data=dict(status='error', message='No comment at input'), status=400)
+
 api_orders_comments = ApiOrderCommentsView.as_view()
 
 class ApiOrderResultView(APIView):
@@ -1789,7 +1808,7 @@ class ApiOrderResultView(APIView):
         except Order.DoesNotExist:
             raise Http404
         return Response(data=[OrderResultsSerializer(resultfile, context=dict(request=request)).data \
-                        for resultfile in ResultFile.objects.filter(order=order)],
+                        for resultfile in ResultFile.objects.filter(order=order).order_by('date_of_creation')],
                     status=200)
 
     @transaction.commit_on_success
@@ -1829,7 +1848,7 @@ class ApiOrderResultView(APIView):
 
 api_orders_results = ApiOrderResultView.as_view()
 
-class ApiServiceOrderResultView(APIView):
+class ApiServiceOrderDetailView(APIView):
     permission_classes = (PermitIfLoruOrCabinet,)
 
     def get(self, request, pk):
@@ -1844,9 +1863,9 @@ class ApiServiceOrderResultView(APIView):
             status=200,
         )
 
-api_orders_detail = ApiServiceOrderResultView.as_view()
+api_orders_detail = ApiServiceOrderDetailView.as_view()
 
-class ApiServiceOrderDetailView(APIView):
+class ApiServiceOrderPutView(APIView):
     permission_classes = (PermitIfLoruOrCabinet,)
 
     @transaction.commit_on_success
@@ -1869,4 +1888,4 @@ class ApiServiceOrderDetailView(APIView):
         order.save()
         return Response(data=dict(status='succes'), status=200)
 
-api_client_orders_put_status = ApiServiceOrderDetailView.as_view()
+api_client_orders_put_status = ApiServiceOrderPutView.as_view()
