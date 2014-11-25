@@ -165,6 +165,13 @@ def media_xsendfile(request, path, document_root):
                         raise Http404
                 except IndexError:
                     raise Http404
+            elif what == 'user-photos':
+                try:
+                    user = get_model('auth', 'User').objects.filter(pk=pk)[0]
+                    if user != request.user:
+                        raise Http404
+                except IndexError:
+                    raise Http404
         else:
             # Для товаров, их категорий, поддержки и др.: открыто всем
             if re.search(r'^(?:product\-photo|icons|support)/',path):
