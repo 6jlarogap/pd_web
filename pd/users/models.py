@@ -38,6 +38,17 @@ class PhonesMixin(object):
     def phone_list(self):
         return [ phone.number for phone in self.phone_set ]
 
+class UserPhoto(Files):
+    """
+    Аватарки пользователя
+    """
+    # Макс. размер в мегабайтах
+    MAX_SIZE = 5
+    # Мин. ширина в пикселях
+    MIN_SIZE_X = 200
+
+    user = models.OneToOneField(User, related_name='user_photo_list')
+
 class CommonProfile(BaseModel):
     USERNAME_HELPTEXT = _(u'До 30 символов: латинские буквы, цифры, дефисы, знаки подчеркивания, @')
 
@@ -123,9 +134,6 @@ class CustomerProfile(CommonProfile):
         responsible.save()
         return user, password
 
-class CustomerProfilePhoto(Files):
-    customerprofile = models.OneToOneField(CustomerProfile)
-    
 class Profile(CommonProfile):
     org = models.ForeignKey('users.Org', null=True)
 
