@@ -44,7 +44,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.authtoken.models import Token
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.parsers import MultiPartParser
+from rest_framework.parsers import MultiPartParser, JSONParser
 
 from logs.models import Log, write_log, LoginLog
 from users.forms import UserAddForm, RegisterForm, LoruFormset, ProfileForm, UserProfileForm, \
@@ -55,7 +55,8 @@ from users.models import Profile, Org, RegisterProfile, ProfileLORU, CustomerPro
                          get_mail_footer, is_cabinet_user, PermitIfLoru, PermitIfLoruOrSupervisor, Oauth, \
                          BankAccount, BankAccountRegister, OrgCertificate, OrgContract, \
                          RegisterProfileContract, RegisterProfileScan, FavoriteSupplier, \
-                         is_loru_user, is_supervisor, is_ugh_user, get_default_currency
+                         is_loru_user, is_supervisor, is_ugh_user, get_default_currency, \
+                         get_profile
 from pd.models import validate_phone_as_number, validate_username
 from pd.utils import host_country_code, phones_from_text, EmailMessage
 from persons.models import AlivePerson, Phone
@@ -348,6 +349,7 @@ api_settings_oauth_providers_delete = ApiSettingsOauthProvidersDeleteView.as_vie
 
 class ApiSettings(APIView):
     permission_classes = (IsAuthenticated,)
+    parser_classes = (MultiPartParser, JSONParser, )
     
     def get(self, request):
         data = dict(oauthProviders=[])
@@ -362,19 +364,24 @@ class ApiSettings(APIView):
     @transaction.commit_on_success
     def put(self, request):
         """
-        Поменять пароль и фотку пользователя
+        Поменять данные пользователя
         
         Input data
         {
            # avatar, пока не применяем
            "username": "somebody",
            "loginPhone": "375297542270",
-            "oldPassword": "1234567",
-            "newPassword": "7654321"
+           "oldPassword": "1234567",
+           "newPassword": "7654321",
+           "lastName": "Моя-новая-фамилия",
+           "firstName": "Мое-новое-имя",
+           "middleName": "Мое-новое-отчество"
          }
         """
         try:
             user = request.user
+            profile = get_profile(user)
+            change_profile = False
             old_username = user.username
             old_password = request.DATA.get('oldPassword')
             if old_password:
@@ -383,22 +390,21 @@ class ApiSettings(APIView):
                     raise ServiceException(_(u'Неверно указан действующий пароль'))
 
             login_phone = request.DATA.get('loginPhone')
-            if login_phone:
+            if login_phone and is_cabinet_user(user):
                 try:
                     new_login_phone = decimal.Decimal(login_phone)
                     validate_phone_as_number(new_login_phone)
                 except (TypeError, decimal.InvalidOperation, ValidationError, ):
                     raise ServiceException(_(u'Неверный формат телефона'))
-                if is_cabinet_user(user):
-                    old_login_phone = user.customerprofile.login_phone
-                    if new_login_phone != old_login_phone:
-                        try:
-                            user.customerprofile.login_phone = new_login_phone
-                            user.customerprofile.save()
-                            AlivePerson.objects.filter(user=user).update(login_phone=new_login_phone)
-                            Place.log_login_phone_change(request, old_login_phone)
-                        except IntegrityError:
-                            raise ServiceException(_(u'Такой номер телефона ответственного уже имеется'))
+                old_login_phone = profile.login_phone
+                if new_login_phone != old_login_phone:
+                    try:
+                        profile.login_phone = new_login_phone
+                        change_profile = True
+                        AlivePerson.objects.filter(user=user).update(login_phone=new_login_phone)
+                        Place.log_login_phone_change(request, old_login_phone)
+                    except IntegrityError:
+                        raise ServiceException(_(u'Такой номер телефона ответственного уже имеется'))
 
             new_username = request.DATA.get('username')
             if new_username:
@@ -422,6 +428,21 @@ class ApiSettings(APIView):
                 except IntegrityError:
                     raise ServiceException(_(u'Пользователь с таким именем для входа в систему уже имеется'))
 
+            user_last_name = request.DATA.get('lastName')
+            if user_last_name is not None:
+                change_profile = True
+                profile.user_last_name = user_last_name
+            user_first_name = request.DATA.get('firstName')
+            if user_first_name is not None:
+                change_profile = True
+                profile.user_first_name = user_first_name
+            user_middle_name = request.DATA.get('middleName')
+            if user_middle_name is not None:
+                change_profile = True
+                profile.user_middle_name = user_middle_name
+
+            if change_profile:
+                profile.save()
         except ServiceException as excpt:
             transaction.rollback()
             data = { 'status': 'error',
@@ -429,7 +450,7 @@ class ApiSettings(APIView):
                    }
             status_code = 400
         else:
-            data = {}
+            data = dict(status='success')
             status_code = 200
         return Response(data=data, status=status_code)
 
