@@ -29,7 +29,7 @@ from logs.models import write_log
 from geo.models import Location
 from burials.forms import AddOrgForm, AddAgentForm, AddDoverForm, AddDocTypeForm
 from burials.models import Burial, Place, Grave, PlacePhoto
-from users.models import CustomerProfile, CustomerProfilePhoto, Org, ProfileLORU, Store, is_loru_user, is_supervisor, \
+from users.models import CustomerProfile, UserPhoto, Org, ProfileLORU, Store, is_loru_user, is_supervisor, \
                          PermitIfLoru, PermitIfCabinet, PermitIfLoruOrCabinet, is_cabinet_user
 from billing.models import Rate
 from orders.forms import ProductForm, OrderForm, OrderItemFormset, CoffinForm, CatafalqueForm, \
@@ -765,11 +765,9 @@ class ApiProfileView(APIView):
             'id': request.user.pk,
         }
         try:
-            photo = request.build_absolute_uri(profile.customerprofilephoto.bfile.url) \
-                if profile.customerprofilephoto.bfile else None
-        except CustomerProfilePhoto.DoesNotExist:
-            photo = None
-        data['photo'] = photo
+            data['photo'] = request.build_absolute_uri(UserPhoto.objects.get(user=request.user).bfile.url)
+        except UserPhoto.DoesNotExist:
+            data['photo'] = None
         data['lastName'] = profile.user_last_name
         data['firstName'] = profile.user_first_name
         data['middleName'] = profile.user_middle_name

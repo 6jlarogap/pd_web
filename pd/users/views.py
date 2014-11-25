@@ -9,6 +9,7 @@ import os
 import csv
 import copy
 import re
+from PIL import Image
 
 from django.conf import settings
 from django.contrib import messages
@@ -55,6 +56,7 @@ from users.models import Profile, Org, RegisterProfile, ProfileLORU, CustomerPro
                          get_mail_footer, is_cabinet_user, PermitIfLoru, PermitIfLoruOrSupervisor, Oauth, \
                          BankAccount, BankAccountRegister, OrgCertificate, OrgContract, \
                          RegisterProfileContract, RegisterProfileScan, FavoriteSupplier, \
+                         UserPhoto, \
                          is_loru_user, is_supervisor, is_ugh_user, get_default_currency, \
                          get_profile
 from pd.models import validate_phone_as_number, validate_username
@@ -179,11 +181,15 @@ class ApiAuthSigninView(APIView):
             if tc_confirmed:
                 login(request, user)
 
-                profile = { 'email': user.email or None, 'photo': None }
+                profile = { 'email': user.email or None, }
                 pr = user.customerprofile if role == 'ROLE_CLIENT' else user.profile
                 profile['lastname'] = pr.user_last_name or user.last_name or None
                 profile['firstname'] = pr.user_first_name or user.first_name or None
                 profile['middlename'] = pr.user_middle_name or None
+                try:
+                    profile['photo'] = request.build_absolute_uri(UserPhoto.objects.get(user=user).bfile.url)
+                except UserPhoto.DoesNotExist:
+                    profile['photo'] = None
                 profile['username'] = pr.user.username
                 if role == 'ROLE_CLIENT':
                     org = { 'id': None, 'name': None, 'location': None }
@@ -368,7 +374,10 @@ class ApiSettings(APIView):
         
         Input data
         {
-           # avatar, пока не применяем
+           "avatar",
+                - None в json-input, тогда удаляем картинку
+                - request.FILES['avatar'], в multipart-input,
+                  тогда устанавляваем фото
            "username": "somebody",
            "loginPhone": "375297542270",
            "oldPassword": "1234567",
@@ -440,6 +449,30 @@ class ApiSettings(APIView):
             if user_middle_name is not None:
                 change_profile = True
                 profile.user_middle_name = user_middle_name
+            avatar = request.FILES.get('avatar')
+            if avatar:
+                if avatar.size > UserPhoto.MAX_SIZE * 1024 * 1024:
+                    raise ServiceException(_(u"Размер изображения не должен превышать %sМб") % UserPhoto.MAX_SIZE)
+                try:
+                    image = Image.open(avatar)
+                except IOError:
+                    raise ServiceException(_(u"Прикрепленный файл не является изображением"))
+                if image.size[0] <= UserPhoto.MIN_SIZE_X:
+                    raise ServiceException(_(u"Ширина картинки должна быть больше %s px") % UserPhoto.MIN_SIZE_X)
+                userphoto, created_ = UserPhoto.objects.get_or_create(
+                    user=user,
+                    defaults=dict(
+                        creator=user,
+                        bfile=avatar,
+                ))
+                if not created_:
+                    userphoto.delete_from_media()
+                    userphoto.bfile.save(avatar.name, avatar)
+                change_profile = True
+            elif 'avatar' in request.DATA and request.DATA['avatar'] is None:
+                for photo in UserPhoto.objects.filter(user=user):
+                    photo.delete()
+                    change_profile = True
 
             if change_profile:
                 profile.save()
