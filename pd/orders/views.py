@@ -1874,16 +1874,22 @@ class ApiServiceOrderPutView(APIView):
                 return Response(data=dict(detail='You are not authorized to this order'), status=403)
         except Order.DoesNotExist:
             raise Http404
+        kwargs = dict()
+
         status = request.DATA.get('status')
-        for st in Order.STATUS_TYPES:
-            if status == st[0]:
-                break
-        else:
-            return Response(data=dict(status='error', message=_(u"Статус %s не предусмотрен") % status), status=400)
         if status:
-            order.status = status
-            order.save()
-        order.save()
+            for st in Order.STATUS_TYPES:
+                if status == st[0]:
+                    break
+            else:
+                return Response(data=dict(status='error', message=_(u"Статус %s не предусмотрен") % status), status=400)
+            kwargs.update(dict(status=status))
+
+        if 'clientRating' in request.DATA:
+            kwargs.update(dict(applicant_approved = request.DATA['clientRating']))
+
+        if kwargs:
+            Order.objects.filter(pk=order.pk).update(**kwargs)
         return Response(data=dict(status='succes'), status=200)
 
 api_client_orders_put_status = ApiServiceOrderPutView.as_view()

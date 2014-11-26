@@ -301,7 +301,6 @@ class OrderCommentsSerializer(CreatedAtMixin, serializers.ModelSerializer):
         fields = ('id', 'comment', 'createdAt', 'user', )
 
     def user_func(self, instance):
-        # request.build_absolute_uri(UserPhoto.objects.get(user=request.user).bfile.url)
         request = self.context['request']
         try:
             userphoto = UserPhoto.objects.get(user=instance.user)
