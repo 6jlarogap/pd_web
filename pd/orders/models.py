@@ -215,7 +215,8 @@ class Order(GetLogsMixin, BaseModel):
                               limit_choices_to={'is_agent': True}, on_delete=models.PROTECT)
     dover = models.ForeignKey('users.Dover', verbose_name=_(u"Доверенность"), null=True, blank=True,
                               on_delete=models.PROTECT)
-    annulated = models.BooleanField(_(u'Аннулировано'), editable=False, default=False)
+    annulated = models.BooleanField(_(u'Аннулирован'), editable=False, default=False)
+    archived = models.BooleanField(_(u'Архивирован'), editable=False, default=False)
     cost = models.DecimalField(_(u"Цена"), max_digits=20, decimal_places=2, editable=False)
     dt = models.DateField(_(u"Дата заказа"))
     burial = models.ForeignKey(Burial, related_name='burial_orders', editable=False, null=True)
