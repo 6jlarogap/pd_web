@@ -21,6 +21,9 @@ class CreatedAtMixin(object):
     def createdAt_func(self, instance):
         return utcisoformat(instance.dt_created)
 
+    def modifiedAt_func(self, instance):
+        return utcisoformat(instance.dt_modified)
+
 class ProductCategorySerializer(serializers.HyperlinkedModelSerializer):
     icon = HyperlinkedFileField()
     
@@ -286,11 +289,12 @@ class ServiceOrderSerializer(CreatedAtMixin, serializers.ModelSerializer):
     totalPrice = serializers.Field(source='total_float')
     currency = serializers.Field(source='loru.currency.code')
     createdAt = serializers.SerializerMethodField('createdAt_func')
+    modifiedAt = serializers.SerializerMethodField('modifiedAt_func')
 
     class Meta:
         model = Order
         fields = ('id', 'type', 'performer', 'owner', 'number', 'status',
-                  'totalPrice', 'currency', 'createdAt')
+                  'totalPrice', 'currency', 'createdAt', 'modifiedAt', )
 
 class OrderCommentsSerializer(CreatedAtMixin, serializers.ModelSerializer):
     createdAt = serializers.SerializerMethodField('createdAt_func')
@@ -301,7 +305,6 @@ class OrderCommentsSerializer(CreatedAtMixin, serializers.ModelSerializer):
         fields = ('id', 'comment', 'createdAt', 'user', )
 
     def user_func(self, instance):
-        # request.build_absolute_uri(UserPhoto.objects.get(user=request.user).bfile.url)
         request = self.context['request']
         try:
             userphoto = UserPhoto.objects.get(user=instance.user)
@@ -338,7 +341,8 @@ class OrderResultsSerializer(serializers.ModelSerializer):
 class ServiceOrderDetailSerializer(serializers.ModelSerializer):
     type = serializers.Field(source='service_name')
     placeId = serializers.Field(source='customplace.pk')
+    number = serializers.Field(source='number_verbose')
 
     class Meta:
         model = Order
-        fields = ('id', 'type', 'placeId', 'status', )
+        fields = ('id', 'number', 'type', 'placeId', 'status', )

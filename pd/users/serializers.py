@@ -10,7 +10,7 @@ from pd.utils import PhonesFromTextMixin, utcisoformat
 from django.contrib.auth.models import User
 
 from geo.models import Location
-from users.models import Org, Store, FavoriteSupplier, is_loru_user, get_profile
+from users.models import Org, Store, FavoriteSupplier, UserPhoto, is_cabinet_user, is_loru_user, get_profile
 from persons.models import Phone
 from orders.models import Order, Product
 
@@ -204,14 +204,7 @@ class OrgOptSupplierSerializer(serializers.ModelSerializer):
       except IndexError:
           return None
 
-class UserFioSerializer(serializers.ModelSerializer):
-    firstName = serializers.SerializerMethodField('firstName_func')
-    middleName = serializers.SerializerMethodField('middleName_func')
-    lastName = serializers.SerializerMethodField('lastName_func')
-
-    class Meta:
-        model = User
-        fields = ('id', 'firstName', 'lastName', 'middleName')
+class UserProfileMixin(object):
 
     def firstName_func(self, user):
         profile = get_profile(user)
@@ -224,3 +217,37 @@ class UserFioSerializer(serializers.ModelSerializer):
     def lastName_func(self, user):
         profile = get_profile(user)
         return profile.user_last_name or ''
+
+    def userPhotoUrl_func(self, user):
+        try:
+            userphoto = UserPhoto.objects.get(user=user)
+            request = self.context['request']
+            return request.build_absolute_uri(userphoto.bfile.url)
+        except UserPhoto.DoesNotExist:
+            return None
+
+    def loginPhone_func(self, user):
+        if is_cabinet_user(user):
+            return str(user.customerprofile.login_phone)
+        else:
+            return None
+
+class UserFioSerializer(UserProfileMixin, serializers.ModelSerializer):
+    firstName = serializers.SerializerMethodField('firstName_func')
+    middleName = serializers.SerializerMethodField('middleName_func')
+    lastName = serializers.SerializerMethodField('lastName_func')
+
+    class Meta:
+        model = User
+        fields = ('id', 'firstName', 'lastName', 'middleName')
+
+class UserSettingsSerializer(UserProfileMixin, serializers.ModelSerializer):
+    firstName = serializers.SerializerMethodField('firstName_func')
+    middleName = serializers.SerializerMethodField('middleName_func')
+    lastName = serializers.SerializerMethodField('lastName_func')
+    avatarUrl = serializers.SerializerMethodField('userPhotoUrl_func')
+    loginPhone = serializers.SerializerMethodField('loginPhone_func')
+
+    class Meta:
+        model = User
+        fields = ('firstName', 'lastName', 'middleName', 'avatarUrl', 'loginPhone', )
