@@ -69,7 +69,8 @@ from pd.views import PaginateListView, RequestToFormMixin, FormInvalidMixin, get
 from geo.models import Location, Country
 
 from users.serializers import StoreSerializer, OrgSerializer, OrgShort2Serializer, \
-                              OrgShort3Serializer, OrgOptSupplierSerializer, OrgShort5Serializer
+                              OrgShort3Serializer, OrgOptSupplierSerializer, OrgShort5Serializer, \
+                              UserSettingsSerializer
 
 from sms_service.utils import send_sms
 
@@ -483,7 +484,7 @@ class ApiSettings(APIView):
                    }
             status_code = 400
         else:
-            data = dict(status='success')
+            data = UserSettingsSerializer(user,context=dict(request=request)).data
             status_code = 200
         return Response(data=data, status=status_code)
 
