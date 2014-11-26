@@ -1886,7 +1886,11 @@ class ApiServiceOrderPutView(APIView):
             kwargs.update(dict(status=status))
 
         if 'clientRating' in request.DATA:
-            kwargs.update(dict(applicant_approved = request.DATA['clientRating']))
+            kwargs.update(dict(applicant_approved=request.DATA['clientRating']))
+
+        archived = request.DATA.get('isArchived')
+        if archived is not None:
+            kwargs.update(dict(archived=archived))
 
         if kwargs:
             Order.objects.filter(pk=order.pk).update(**kwargs)

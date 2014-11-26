@@ -290,10 +290,11 @@ class ServiceOrderSerializer(CreatedAtMixin, serializers.ModelSerializer):
     currency = serializers.Field(source='loru.currency.code')
     createdAt = serializers.SerializerMethodField('createdAt_func')
     modifiedAt = serializers.SerializerMethodField('modifiedAt_func')
+    isArchived = serializers.Field(source='archived')
 
     class Meta:
         model = Order
-        fields = ('id', 'type', 'performer', 'owner', 'number', 'status',
+        fields = ('id', 'type', 'performer', 'owner', 'number', 'status', 'isArchived',
                   'totalPrice', 'currency', 'createdAt', 'modifiedAt', )
 
 class OrderCommentsSerializer(CreatedAtMixin, serializers.ModelSerializer):
@@ -342,7 +343,8 @@ class ServiceOrderDetailSerializer(serializers.ModelSerializer):
     type = serializers.Field(source='service_name')
     placeId = serializers.Field(source='customplace.pk')
     number = serializers.Field(source='number_verbose')
+    isArchived = serializers.Field(source='archived')
 
     class Meta:
         model = Order
-        fields = ('id', 'number', 'type', 'placeId', 'status', )
+        fields = ('id', 'number', 'type', 'placeId', 'status', 'isArchived', )
