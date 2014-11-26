@@ -11,7 +11,7 @@ from rest_framework.fields import Field
 from rest_api.fields import HyperlinkedFileField
 from orders.models import Order, ProductCategory, Product, Service, Measure, OrgService, OrgServicePrice, \
                           OrderComment, ResultFile
-from users.models import Org, is_cabinet_user, is_loru_user
+from users.models import Org, is_cabinet_user, is_loru_user, UserPhoto
 from users.serializers import OrgSerializer, OrgShortSerializer, OrgShort3Serializer, OrgShort4Serializer, \
                               UserFioSerializer
 from pd.utils import utcisoformat, str_to_bool_or_None
@@ -301,16 +301,28 @@ class OrderCommentsSerializer(CreatedAtMixin, serializers.ModelSerializer):
         fields = ('id', 'comment', 'createdAt', 'user', )
 
     def user_func(self, instance):
+        # request.build_absolute_uri(UserPhoto.objects.get(user=request.user).bfile.url)
+        request = self.context['request']
+        try:
+            userphoto = UserPhoto.objects.get(user=instance.user)
+            avatarUrl = request.build_absolute_uri(userphoto.bfile.url)
+        except UserPhoto.DoesNotExist:
+            avatarUrl = None
+        data = dict(
+            id=instance.user.pk,
+            avatarUrl=avatarUrl,
+        )
         if is_cabinet_user(instance.user):
-            return dict(
-                id=instance.user.pk,
-                username=instance.user.customerprofile.full_name(put_middle_name=False)
-            )
+            data.update(dict(
+                username=instance.user.customerprofile.full_name(put_middle_name=False),
+                organisation=None,
+            ))
         if is_loru_user(instance.user):
-            return dict(
-                id=instance.user.profile.org.pk,
-                username=instance.user.profile.org.name
-            )
+            data.update(dict(
+                username=instance.user.profile.full_name(put_middle_name=False),
+                organisation=instance.user.profile.org.name,
+            ))
+        return data
 
 class OrderResultsSerializer(serializers.ModelSerializer):
     fileUrl = HyperlinkedFileField(source='bfile', required=False)
