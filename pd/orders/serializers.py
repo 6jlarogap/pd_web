@@ -341,7 +341,8 @@ class OrderResultsSerializer(serializers.ModelSerializer):
 class ServiceOrderDetailSerializer(serializers.ModelSerializer):
     type = serializers.Field(source='service_name')
     placeId = serializers.Field(source='customplace.pk')
+    number = serializers.Field(source='number_verbose')
 
     class Meta:
         model = Order
-        fields = ('id', 'type', 'placeId', 'status', )
+        fields = ('id', 'number', 'type', 'placeId', 'status', )
