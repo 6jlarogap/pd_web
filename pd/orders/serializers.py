@@ -10,7 +10,7 @@ from rest_framework.fields import Field
 
 from rest_api.fields import HyperlinkedFileField
 from orders.models import Order, ProductCategory, Product, Service, Measure, OrgService, OrgServicePrice, \
-                          OrderComment, ResultFile
+                          ServiceItem, OrderComment, ResultFile
 from users.models import Org, is_cabinet_user, is_loru_user, UserPhoto
 from users.serializers import OrgSerializer, OrgShortSerializer, OrgShort3Serializer, OrgShort4Serializer, \
                               UserFioSerializer
@@ -339,12 +339,28 @@ class OrderResultsSerializer(serializers.ModelSerializer):
     def createdAt_func(self, instance):
         return utcisoformat(instance.date_of_creation)
 
+class ServiceItemSerializer(serializers.ModelSerializer):
+    type = serializers.Field(source='orgservice.service.name')
+    title = serializers.Field(source='orgservice.service.title')
+    price = serializers.Field(source='cost_float')
+
+    class Meta:
+        model = ServiceItem
+        fields = ('id', 'type', 'title', 'price', )
+
 class ServiceOrderDetailSerializer(serializers.ModelSerializer):
     type = serializers.Field(source='service_name')
     placeId = serializers.Field(source='customplace.pk')
     number = serializers.Field(source='number_verbose')
     isArchived = serializers.Field(source='archived')
+    clientRating = serializers.Field(source='applicant_approved')
+    services = ServiceItemSerializer(many=True, source='serviceitem_set')
+    currency = serializers.Field(source='loru.currency.code')
 
     class Meta:
         model = Order
-        fields = ('id', 'number', 'type', 'placeId', 'status', 'isArchived', )
+        fields = (
+            'id', 'number', 'type', 'placeId', 'status', 'isArchived',
+            'clientRating', 'services', 'currency', 
+        )
+

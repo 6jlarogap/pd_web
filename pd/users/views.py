@@ -182,7 +182,10 @@ class ApiAuthSigninView(APIView):
             if tc_confirmed:
                 login(request, user)
 
-                profile = { 'email': user.email or None, }
+                profile = dict(
+                    id=user.pk,
+                    email=user.email or None,
+                )
                 pr = user.customerprofile if role == 'ROLE_CLIENT' else user.profile
                 profile['lastname'] = pr.user_last_name or user.last_name or None
                 profile['firstname'] = pr.user_first_name or user.first_name or None
