@@ -343,28 +343,9 @@ class ApiProfileView(APIView):
             p = cp.place
             place['address'] = p.address()
             place['location'] = p.location_dict()
-            place['graves'] = []
-            gallery = p.get_photo_gallery(request)
-            for g in Grave.objects.filter(place=p).order_by('grave_number'):
-                grave = {'graveNumber': g.grave_number}
-                burials = []
-                for b in g.burial_set.exclude(burial_container=Burial.CONTAINER_BIO):
-                    burials.append(
-                        {
-                            'id': b.pk,
-                            'fio': b.deadman and b.deadman.full_name_complete() or _(u"Неизвестный"),
-                            'lastName': b.deadman and b.deadman.last_name,
-                            'firstName': b.deadman and b.deadman.first_name,
-                            'middleName': b.deadman and b.deadman.middle_name,
-                            'photo': None,
-                            'birthDate': b.deadman and b.deadman.birth_date and b.deadman.birth_date.str_safe() or None,
-                            'deathDate': b.deadman and b.deadman.death_date and b.deadman.death_date.str_safe() or None,
-                        }
-                    )
-                grave['burials'] = burials
-                place['graves'].append(grave)
-            place['gallery'] = sorted(gallery, key=lambda photo: photo['addedAt'], reverse=True)
+            place['gallery'] = p.get_photo_gallery(request)
             place['photo'] = place['gallery'][0]['photo'] if place['gallery'] else None
+            place['graves'] = p.graves_list()
             data['places'].append(place)
 
         return Response(status=200, data=data)

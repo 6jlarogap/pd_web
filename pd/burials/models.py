@@ -397,6 +397,27 @@ class Place(SafeDeleteMixin, GeoPointModel):
             result += _(u', %s') % cemetery_address
         return result
 
+    def graves_list(self):
+        graves = []
+        for g in Grave.objects.filter(place=self).order_by('grave_number'):
+            grave = {'graveNumber': g.grave_number}
+            grave['burials'] = []
+            for b in g.burial_set.exclude(burial_container=Burial.CONTAINER_BIO).exclude(annulated=True):
+                grave['burials'].append(
+                    {
+                        'id': b.pk,
+                        'fio': b.deadman and b.deadman.full_name_complete() or _(u"Неизвестный"),
+                        'lastName': b.deadman and b.deadman.last_name,
+                        'firstName': b.deadman and b.deadman.first_name,
+                        'middleName': b.deadman and b.deadman.middle_name,
+                        'photo': None,
+                        'birthDate': b.deadman and b.deadman.birth_date and b.deadman.birth_date.str_safe() or None,
+                        'deathDate': b.deadman and b.deadman.death_date and b.deadman.death_date.str_safe() or None,
+                    }
+                )
+            graves.append(grave)
+        return graves
+
 class PlaceSize(models.Model):
     org = models.ForeignKey(Org, verbose_name=_(u"Организация"), editable=False, on_delete=models.PROTECT) 
     graves_count = models.PositiveSmallIntegerField(_(u"Число могил"), )

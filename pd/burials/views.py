@@ -1190,3 +1190,19 @@ class ApiClientPlacesDetailView(APIView):
 
 api_client_places_detail = ApiClientPlacesDetailView.as_view()
 
+class ApiClientPlaceGravesView(APIView):
+    permission_classes = (PermitIfCabinet,)
+
+    def get(self, request, pk):
+        try:
+            customplace = CustomPlace.objects.get(pk=pk, place__isnull=False)
+        except CustomPlace.DoesNotExist:
+            raise Http404
+        if customplace.user != request.user:
+            return Response(data=dict(detail='You are not authorized to this place'), status=403)
+        place = customplace.place
+        gallery = place.get_photo_gallery(request)
+        photo = gallery and gallery[0]['photo'] or None
+        return Response(data=customplace.place.graves_list(), status=200)
+
+api_client_place_graves = ApiClientPlaceGravesView.as_view()
