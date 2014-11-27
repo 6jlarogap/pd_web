@@ -30,18 +30,17 @@ from burials.models import Cemetery, Place, Area, BurialFiles, Grave, Burial, Ar
                            ExhumationRequest, AreaPurpose, PlaceSize
 from burials.burials_views import *
 from logs.models import write_log, log_object, prepare_m2m_log, compare_obj
-from users.models import Profile, Org, CustomerProfile, PermitIfUgh
+from users.models import Profile, Org, CustomerProfile, PermitIfUgh, PermitIfCabinet
 from users.views import SupervisorRequiredMixin, UGHRequiredMixin, LoginRequiredMixin
 from persons.models import Phone, AlivePerson, CustomPlace
 from geo.models import Location
 
-# REST import
 from rest_framework import generics, viewsets
+from rest_framework.views import APIView
 from rest_framework.decorators import api_view, permission_classes, action
 from rest_framework.reverse import reverse
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-# EOF REST import
 
 from django.db import transaction
 
@@ -1165,3 +1164,29 @@ class PlaceCertificateView(UGHRequiredMixin, DetailView):
         )
 
 place_certificate = PlaceCertificateView.as_view()
+
+class ApiClientPlacesDetailView(APIView):
+    permission_classes = (PermitIfCabinet,)
+
+    def get(self, request, pk):
+        try:
+            customplace = CustomPlace.objects.get(pk=pk, place__isnull=False)
+        except CustomPlace.DoesNotExist:
+            raise Http404
+        if customplace.user != request.user:
+            return Response(data=dict(detail='You are not authorized to this place'), status=403)
+        place = customplace.place
+        gallery = place.get_photo_gallery(request)
+        photo = gallery and gallery[0]['photo'] or None
+        return Response(
+            data=dict(
+                photo=photo,
+                gallery=gallery,
+                address=place.address(),
+                location=place.location_dict(),
+            ),
+            status=200,
+        )
+
+api_client_places_detail = ApiClientPlacesDetailView.as_view()
+

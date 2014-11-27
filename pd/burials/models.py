@@ -387,6 +387,16 @@ class Place(SafeDeleteMixin, GeoPointModel):
             for burial in place.burial_set.all():
                 write_log(request, burial, message)
 
+    def address(self):
+        result = _(u'Кладбище %s, участок %s') % (self.cemetery.name, self.area.name, )
+        if self.row:
+            result += _(u', ряд %s') % self.row
+        result += _(u', место %s') % self.place
+        cemetery_address = self.cemetery.address and self.cemetery.address.__unicode__() or ''
+        if cemetery_address:
+            result += _(u', %s') % cemetery_address
+        return result
+
 class PlaceSize(models.Model):
     org = models.ForeignKey(Org, verbose_name=_(u"Организация"), editable=False, on_delete=models.PROTECT) 
     graves_count = models.PositiveSmallIntegerField(_(u"Число могил"), )

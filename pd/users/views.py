@@ -341,17 +341,8 @@ class ApiProfileView(APIView):
         for cp in CustomPlace.objects.filter(place__responsible__user=request.user).select_related('place'):
             place={'id': cp.pk}
             p = cp.place
-            place['address'] = _(u'Кладбище %s, участок %s') % (p.cemetery.name, p.area.name, )
-            if p.row:
-                place['address'] += _(u', ряд %s') % p.row
-            place['address'] += _(u', место %s') % p.place
-            cemetery_address = p.cemetery.address and p.cemetery.address.__unicode__() or ''
-            if cemetery_address:
-                place['address'] += _(u', %s') % cemetery_address
-            place['location'] = {
-                'latitude': p.lat,
-                'longitude': p.lng,
-            }
+            place['address'] = p.address()
+            place['location'] = p.location_dict()
             place['graves'] = []
             gallery = p.get_photo_gallery(request)
             for g in Grave.objects.filter(place=p).order_by('grave_number'):
