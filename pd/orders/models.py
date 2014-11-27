@@ -444,6 +444,9 @@ class ServiceItem(models.Model):
     orgservice = models.ForeignKey(OrgService, verbose_name=_(u"Услуга"), on_delete=models.PROTECT)
     cost = models.DecimalField(_(u"Цена"), max_digits=20, decimal_places=2)
 
+    def cost_float(self):
+        return float(self.cost)
+
 class OrderComment(BaseModel):
 
     TYPE_PRIVATE = 'private'
