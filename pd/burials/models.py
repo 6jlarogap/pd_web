@@ -11,6 +11,7 @@ from django.db.models.query_utils import Q
 from django.conf import settings
 from pd.models import UnclearDateModelField, BaseModel, Files, GetLogsMixin, validate_gt0, SafeDeleteMixin
 from pd.views import get_front_end_url
+from pd.utils import utcisoformat
 
 from persons.models import DeadPerson, DeathCertificate, CustomPlace
 from reports.models import Report
@@ -357,7 +358,7 @@ class Place(SafeDeleteMixin, GeoPointModel):
                 gallery.append(
                     {
                         'photo': request.build_absolute_uri(pph.bfile.url),
-                        'addedAt': pph.date_of_creation,
+                        'createdAt': utcisoformat(pph.date_of_creation),
                     }
                 )
         return gallery
@@ -396,6 +397,27 @@ class Place(SafeDeleteMixin, GeoPointModel):
         if cemetery_address:
             result += _(u', %s') % cemetery_address
         return result
+
+    def graves_list(self):
+        graves = []
+        for g in Grave.objects.filter(place=self).order_by('grave_number'):
+            grave = {'graveNumber': g.grave_number}
+            grave['burials'] = []
+            for b in g.burial_set.exclude(burial_container=Burial.CONTAINER_BIO).exclude(annulated=True):
+                grave['burials'].append(
+                    {
+                        'id': b.pk,
+                        'fio': b.deadman and b.deadman.full_name_complete() or _(u"Неизвестный"),
+                        'lastName': b.deadman and b.deadman.last_name,
+                        'firstName': b.deadman and b.deadman.first_name,
+                        'middleName': b.deadman and b.deadman.middle_name,
+                        'photo': None,
+                        'birthDate': b.deadman and b.deadman.birth_date and b.deadman.birth_date.str_safe() or None,
+                        'deathDate': b.deadman and b.deadman.death_date and b.deadman.death_date.str_safe() or None,
+                    }
+                )
+            graves.append(grave)
+        return graves
 
 class PlaceSize(models.Model):
     org = models.ForeignKey(Org, verbose_name=_(u"Организация"), editable=False, on_delete=models.PROTECT) 

@@ -56,6 +56,7 @@ urlpatterns = patterns('burials.views',
     url(r'^autocomplete/areas/', 'autocomplete_areas', name='autocomplete_areas'),
 
     url(r'^api/client/places/(?P<pk>\d+)/?$', 'api_client_places_detail', name='api_client_places_detail'),
+    url(r'^api/client/places/(?P<pk>\d+)/graves/?$', 'api_client_place_graves', name='api_client_place_graves'),
 
     # REST API
     #url(r'^$', TemplateView.as_view(template_name='base_angular.html'),), # v1.5
