@@ -18,6 +18,8 @@ from restthumbnails.views import ThumbnailView
 class OurThumbnailView(ThumbnailView):
 
     def get(self, request, *args, **kwargs):
+        # Убираю проверку
+        return super(OurThumbnailView, self).get(request, *args, **kwargs)
         from restthumbnails import exceptions
 
         m= re.search(r'^/?thumb/([^/]+).*/(\d+)/[^/]+/',request.path)
