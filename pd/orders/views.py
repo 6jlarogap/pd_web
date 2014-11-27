@@ -28,8 +28,8 @@ from LatLon import LatLon, Latitude, Longitude
 from logs.models import write_log
 from geo.models import Location
 from burials.forms import AddOrgForm, AddAgentForm, AddDoverForm, AddDocTypeForm
-from burials.models import Burial, Place, Grave, PlacePhoto
-from users.models import CustomerProfile, UserPhoto, Org, ProfileLORU, Store, is_loru_user, is_supervisor, \
+from burials.models import Burial, Place
+from users.models import CustomerProfile, Org, ProfileLORU, Store, is_loru_user, is_supervisor, \
                          PermitIfLoru, PermitIfCabinet, PermitIfLoruOrCabinet, is_cabinet_user
 from billing.models import Rate
 from orders.forms import ProductForm, OrderForm, OrderItemFormset, CoffinForm, CatafalqueForm, \
@@ -755,66 +755,6 @@ class ProductInfoView(APIView):
         )
 
 api_catalog_products_detail = ProductInfoView.as_view()
-
-class ApiProfileView(APIView):
-    permission_classes = (PermitIfCabinet,)
-    
-    def get(self, request):
-        profile = request.user.customerprofile
-        data = {
-            'id': request.user.pk,
-        }
-        try:
-            data['photo'] = request.build_absolute_uri(UserPhoto.objects.get(user=request.user).bfile.url)
-        except UserPhoto.DoesNotExist:
-            data['photo'] = None
-        data['lastName'] = profile.user_last_name
-        data['firstName'] = profile.user_first_name
-        data['middleName'] = profile.user_middle_name
-        data['loginPhone'] = request.user.customerprofile.login_phone
-        data['username'] = request.user.username
-        data['places'] = []
-        for cp in CustomPlace.objects.filter(place__responsible__user=request.user).select_related('place'):
-            place={'id': cp.pk}
-            p = cp.place
-            place['address'] = _(u'Кладбище %s, участок %s') % (p.cemetery.name, p.area.name, )
-            if p.row:
-                place['address'] += _(u', ряд %s') % p.row
-            place['address'] += _(u', место %s') % p.place
-            cemetery_address = p.cemetery.address and p.cemetery.address.__unicode__() or ''
-            if cemetery_address:
-                place['address'] += _(u', %s') % cemetery_address
-            place['location'] = {
-                'latitude': p.lat,
-                'longitude': p.lng,
-            }
-            place['graves'] = []
-            gallery = p.get_photo_gallery(request)
-            for g in Grave.objects.filter(place=p).order_by('grave_number'):
-                grave = {'graveNumber': g.grave_number}
-                burials = []
-                for b in g.burial_set.exclude(burial_container=Burial.CONTAINER_BIO):
-                    burials.append(
-                        {
-                            'id': b.pk,
-                            'fio': b.deadman and b.deadman.full_name_complete() or _(u"Неизвестный"),
-                            'lastName': b.deadman and b.deadman.last_name,
-                            'firstName': b.deadman and b.deadman.first_name,
-                            'middleName': b.deadman and b.deadman.middle_name,
-                            'photo': None,
-                            'birthDate': b.deadman and b.deadman.birth_date and b.deadman.birth_date.str_safe() or None,
-                            'deathDate': b.deadman and b.deadman.death_date and b.deadman.death_date.str_safe() or None,
-                        }
-                    )
-                grave['burials'] = burials
-                place['graves'].append(grave)
-            place['gallery'] = sorted(gallery, key=lambda photo: photo['addedAt'], reverse=True)
-            place['photo'] = place['gallery'][0]['photo'] if place['gallery'] else None
-            data['places'].append(place)           
-            
-        return Response(status=200, data=data)
-
-api_profile = ApiProfileView.as_view()
 
 class ApiLoruProductPlaces(APIView):
     """

@@ -53,7 +53,8 @@ from users.forms import UserAddForm, RegisterForm, LoruFormset, ProfileForm, Use
                         OrgLogForm, LoginLogForm, OrgBurialStatsForm, SupportForm, TestCaptchaForm, \
                         LoruOrdersStatsForm
 from users.models import Profile, Org, RegisterProfile, ProfileLORU, CustomerProfile, Store, \
-                         get_mail_footer, is_cabinet_user, PermitIfLoru, PermitIfLoruOrSupervisor, Oauth, \
+                         get_mail_footer, is_cabinet_user, PermitIfLoru, PermitIfLoruOrSupervisor, \
+                         PermitIfCabinet, Oauth, \
                          BankAccount, BankAccountRegister, OrgCertificate, OrgContract, \
                          RegisterProfileContract, RegisterProfileScan, FavoriteSupplier, \
                          UserPhoto, \
@@ -61,8 +62,8 @@ from users.models import Profile, Org, RegisterProfile, ProfileLORU, CustomerPro
                          get_profile
 from pd.models import validate_phone_as_number, validate_username
 from pd.utils import host_country_code, phones_from_text, EmailMessage
-from persons.models import AlivePerson, Phone
-from burials.models import Cemetery, Area, Burial, Place
+from persons.models import AlivePerson, Phone, CustomPlace
+from burials.models import Cemetery, Area, Burial, Place, Grave
 from billing.models import Wallet, Rate, Currency
 from orders.models import Product, Order
 from pd.views import PaginateListView, RequestToFormMixin, FormInvalidMixin, get_front_end_url, ServiceException
@@ -319,6 +320,57 @@ class ApiAuthSignupView(CheckRecaptchaMixin, ApiAuthSigninView):
 
 api_auth_signup = ApiAuthSignupView.as_view()
     
+class ApiProfileView(APIView):
+    permission_classes = (PermitIfCabinet,)
+
+    def get(self, request):
+        profile = request.user.customerprofile
+        data = {
+            'id': request.user.pk,
+        }
+        try:
+            data['photo'] = request.build_absolute_uri(UserPhoto.objects.get(user=request.user).bfile.url)
+        except UserPhoto.DoesNotExist:
+            data['photo'] = None
+        data['lastName'] = profile.user_last_name
+        data['firstName'] = profile.user_first_name
+        data['middleName'] = profile.user_middle_name
+        data['loginPhone'] = request.user.customerprofile.login_phone
+        data['username'] = request.user.username
+        data['places'] = []
+        for cp in CustomPlace.objects.filter(place__responsible__user=request.user).select_related('place'):
+            place={'id': cp.pk}
+            p = cp.place
+            place['address'] = p.address()
+            place['location'] = p.location_dict()
+            place['graves'] = []
+            gallery = p.get_photo_gallery(request)
+            for g in Grave.objects.filter(place=p).order_by('grave_number'):
+                grave = {'graveNumber': g.grave_number}
+                burials = []
+                for b in g.burial_set.exclude(burial_container=Burial.CONTAINER_BIO):
+                    burials.append(
+                        {
+                            'id': b.pk,
+                            'fio': b.deadman and b.deadman.full_name_complete() or _(u"Неизвестный"),
+                            'lastName': b.deadman and b.deadman.last_name,
+                            'firstName': b.deadman and b.deadman.first_name,
+                            'middleName': b.deadman and b.deadman.middle_name,
+                            'photo': None,
+                            'birthDate': b.deadman and b.deadman.birth_date and b.deadman.birth_date.str_safe() or None,
+                            'deathDate': b.deadman and b.deadman.death_date and b.deadman.death_date.str_safe() or None,
+                        }
+                    )
+                grave['burials'] = burials
+                place['graves'].append(grave)
+            place['gallery'] = sorted(gallery, key=lambda photo: photo['addedAt'], reverse=True)
+            place['photo'] = place['gallery'][0]['photo'] if place['gallery'] else None
+            data['places'].append(place)
+
+        return Response(status=200, data=data)
+
+api_profile = ApiProfileView.as_view()
+
 class ApiSettingsOauthProvidersView(APIView):
     permission_classes = (IsAuthenticated,)
 

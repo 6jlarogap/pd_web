@@ -19,6 +19,8 @@ class GeoPointModel(BaseModel):
     class Meta:
         abstract = True
 
+    def location_dict(self):
+        return dict(latitude=self.lat, longitude=self.lng)
 
 class CoordinatesModel(models.Model):
     """

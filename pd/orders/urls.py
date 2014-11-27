@@ -31,8 +31,6 @@ urlpatterns = patterns('orders.views',
     url(r'^api/optplaces/orders/?$', 'api_optplaces_orders', name='api_optplaces_orders'),
     url(r'^api/optplaces/orders/(?P<pk>\d+)/?$', 'api_optplaces_orders_detail', name='api_optplaces_orders_detail'),
 
-    url(r'^api/profile/?$', 'api_profile', name='api_profile'),
-
     url(r'^api/services/?$', 'api_services', name='api_services'),
     url(r'^api/org/(?P<org_id>\d+)/services/?$', 'api_org_services', name='api_org_services'),
     url(r'^api/org/(?P<org_id>\d+)/services/(?P<service_name>\w+)/?$', 'api_org_services_edit', name='api_org_services_edit'),
