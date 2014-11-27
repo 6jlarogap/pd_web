@@ -11,6 +11,7 @@ from django.db.models.query_utils import Q
 from django.conf import settings
 from pd.models import UnclearDateModelField, BaseModel, Files, GetLogsMixin, validate_gt0, SafeDeleteMixin
 from pd.views import get_front_end_url
+from pd.utils import utcisoformat
 
 from persons.models import DeadPerson, DeathCertificate, CustomPlace
 from reports.models import Report
@@ -357,7 +358,7 @@ class Place(SafeDeleteMixin, GeoPointModel):
                 gallery.append(
                     {
                         'photo': request.build_absolute_uri(pph.bfile.url),
-                        'addedAt': pph.date_of_creation,
+                        'createdAt': utcisoformat(pph.date_of_creation),
                     }
                 )
         return gallery
