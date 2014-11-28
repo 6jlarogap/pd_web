@@ -1728,7 +1728,7 @@ class ApiOrderCommentsView(APIView):
                 user=request.user,
                 comment=comment,
             )
-            return Response(data=OrderCommentsSerializer(ordercomment).data, status=200)
+            return Response(OrderCommentsSerializer(ordercomment, context=dict(request=request)).data, status=200)
         else:
             return Response(data=dict(status='error', message='No comment at input'), status=400)
 

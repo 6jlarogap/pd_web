@@ -24,6 +24,7 @@ from geo.models import Country, Region, Street, City
 
 from pd.views import RequestToFormMixin, FormInvalidMixin, get_front_end_url
 from pd.models import validate_phone_as_number
+from pd.utils import utcisoformat
 
 from burials.forms import CemeteryForm, AreaFormset, PlaceEditForm, AddOrgForm, AreaMergeForm, BurialfileCommentEditForm
 from burials.models import Cemetery, Place, Area, BurialFiles, Grave, Burial, AreaPhoto, PlacePhoto, \
@@ -34,6 +35,7 @@ from users.models import Profile, Org, CustomerProfile, PermitIfUgh, PermitIfCab
 from users.views import SupervisorRequiredMixin, UGHRequiredMixin, LoginRequiredMixin
 from persons.models import Phone, AlivePerson, CustomPlace
 from geo.models import Location
+from orders.models import ResultFile
 
 from rest_framework import generics, viewsets
 from rest_framework.views import APIView
@@ -1175,23 +1177,36 @@ class ApiClientPlacesDetailView(APIView):
             raise Http404
         if customplace.user != request.user:
             return Response(data=dict(detail='You are not authorized to this place'), status=403)
+
+        gallery = [dict(
+                    photo=request.build_absolute_uri(photo.bfile.url),
+                    createdAt=utcisoformat(photo.date_of_creation),
+                   ) \
+                   for photo in ResultFile.objects.filter(
+                       order__customplace=customplace,
+                       type=ResultFile.TYPE_IMAGE,
+                       )
+        ]
+
         if customplace.place:
             place = customplace.place
-            gallery = place.get_photo_gallery(request)
-            photo = gallery and gallery[0]['photo'] or None
+            gallery += place.get_photo_gallery(request)
             data=dict(
-                photo=photo,
-                gallery=gallery,
                 address=place.address(),
                 location=place.location_dict(),
             )
         else:
             data = dict(
-                photo=None,
-                gallery=[],
+                address = unicode(customplace.address),
                 location = customplace.address and customplace.address.location_dict() or \
                                                    Location.empty_location_dict()
             )
+        gallery = sorted(gallery, key=lambda photo: photo['createdAt'], reverse=True)
+        photo = gallery[0]['photo'] if gallery else None
+        data.update(dict(
+            gallery=gallery,
+            photo=photo,
+        ))
         return Response(data, status=200)
 
 api_client_places_detail = ApiClientPlacesDetailView.as_view()
