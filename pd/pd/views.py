@@ -15,11 +15,26 @@ from django.conf import settings
 
 from restthumbnails.views import ThumbnailView
 
+def is_user_accessible(request, user):
+    """
+    Имеет ли доступ request.user к данным user, например, к его фото
+    """
+    result = False
+    if user == request.user:
+        result = True
+    else:
+        Profile = get_model('users', 'Profile')
+        try:
+            user.profile
+            if user.profile.org == request.user.profile.org:
+                result = True
+        except (AttributeError, Profile.DoesNotExist,):
+                pass
+    return result
+
 class OurThumbnailView(ThumbnailView):
 
     def get(self, request, *args, **kwargs):
-        # Убираю проверку
-        return super(OurThumbnailView, self).get(request, *args, **kwargs)
         from restthumbnails import exceptions
 
         m= re.search(r'^/?thumb/([^/]+).*/(\d+)/[^/]+/',request.path)
@@ -33,6 +48,15 @@ class OurThumbnailView(ThumbnailView):
                         raise Http404
                 except IndexError:
                     raise Http404
+            elif what == 'user-photos':
+                # Фото пользователя может смотреть либо он сам, либо любой из его организации
+                try:
+                    user = get_model('auth', 'User').objects.filter(pk=pk)[0]
+                    if not is_user_accessible(request, user):
+                        raise Http404
+                except IndexError:
+                    raise Http404
+
         elif re.search(settings.ANONYMOUS_URLS_REGEX, request.path):
             pass
         else:
@@ -170,7 +194,7 @@ def media_xsendfile(request, path, document_root):
             elif what == 'user-photos':
                 try:
                     user = get_model('auth', 'User').objects.filter(pk=pk)[0]
-                    if user != request.user:
+                    if not is_user_accessible(request, user):
                         raise Http404
                 except IndexError:
                     raise Http404
