@@ -1170,23 +1170,29 @@ class ApiClientPlacesDetailView(APIView):
 
     def get(self, request, pk):
         try:
-            customplace = CustomPlace.objects.get(pk=pk, place__isnull=False)
+            customplace = CustomPlace.objects.get(pk=pk)
         except CustomPlace.DoesNotExist:
             raise Http404
         if customplace.user != request.user:
             return Response(data=dict(detail='You are not authorized to this place'), status=403)
-        place = customplace.place
-        gallery = place.get_photo_gallery(request)
-        photo = gallery and gallery[0]['photo'] or None
-        return Response(
+        if customplace.place:
+            place = customplace.place
+            gallery = place.get_photo_gallery(request)
+            photo = gallery and gallery[0]['photo'] or None
             data=dict(
                 photo=photo,
                 gallery=gallery,
                 address=place.address(),
                 location=place.location_dict(),
-            ),
-            status=200,
-        )
+            )
+        else:
+            data = dict(
+                photo=None,
+                gallery=[],
+                location = customplace.address and customplace.address.location_dict() or \
+                                                   Location.empty_location_dict()
+            )
+        return Response(data, status=200)
 
 api_client_places_detail = ApiClientPlacesDetailView.as_view()
 

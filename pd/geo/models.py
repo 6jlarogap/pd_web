@@ -251,3 +251,9 @@ class Location(models.Model):
                 pass
             self.save()
 
+    def location_dict(self):
+        return dict(latitude=self.gps_y, longitude=self.gps_x)
+
+    @classmethod
+    def empty_location_dict(cls):
+        return dict(latitude=None, longitude=None)
