@@ -343,10 +343,11 @@ class ServiceItemSerializer(serializers.ModelSerializer):
     type = serializers.Field(source='orgservice.service.name')
     title = serializers.Field(source='orgservice.service.title')
     price = serializers.Field(source='cost_float')
+    currency = serializers.Field(source='order.loru.currency.code')
 
     class Meta:
         model = ServiceItem
-        fields = ('id', 'type', 'title', 'price', )
+        fields = ('id', 'type', 'title', 'price', 'currency',)
 
 class ServiceOrderDetailSerializer(serializers.ModelSerializer):
     type = serializers.Field(source='service_name')
@@ -355,12 +356,11 @@ class ServiceOrderDetailSerializer(serializers.ModelSerializer):
     isArchived = serializers.Field(source='archived')
     clientRating = serializers.Field(source='applicant_approved')
     services = ServiceItemSerializer(many=True, source='serviceitem_set')
-    currency = serializers.Field(source='loru.currency.code')
 
     class Meta:
         model = Order
         fields = (
             'id', 'number', 'type', 'placeId', 'status', 'isArchived',
-            'clientRating', 'services', 'currency', 
+            'clientRating', 'services',
         )
 
