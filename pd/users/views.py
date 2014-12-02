@@ -162,7 +162,7 @@ class ApiAuthSigninView(APIView):
             username = user.username
             tc_confirmed = True
             role = None
-            functions = []
+            org_functions = []
             try:
                 user.customerprofile
             except CustomerProfile.DoesNotExist:
@@ -204,7 +204,7 @@ class ApiAuthSigninView(APIView):
                         user.customerprofile.save()
                 else:
                     org = { 'id': user.profile.org.pk, 'name': user.profile.org.name or None }
-                    functions = [ f.name for f in pr.org.function.all() ]
+                    org_functions = [ f.name for f in pr.org.function.all() ]
                     if user.profile.org.off_address:
                         org['location'] = {
                             'address': unicode(user.profile.org.off_address),
@@ -224,7 +224,7 @@ class ApiAuthSigninView(APIView):
                     'profile': profile,
                     'org': org,
                     'role': role,
-                    'functions': functions,
+                    'orgFunctions': org_functions,
                     'isSupervisor': is_supervisor(user),
                  })
                 status_code = 200
