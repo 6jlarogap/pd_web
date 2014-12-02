@@ -174,12 +174,6 @@ def is_cabinet_user(user):
     except (AttributeError, CustomerProfile.DoesNotExist, ):
         return False
     
-def is_loru_user(user):
-    try:
-        return user.profile.is_loru()
-    except (AttributeError, Profile.DoesNotExist, ):
-        return False
-    
 def is_trade_user(user):
     try:
         return user.profile.is_trade()

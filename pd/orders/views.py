@@ -29,7 +29,7 @@ from logs.models import write_log
 from geo.models import Location
 from burials.forms import AddOrgForm, AddAgentForm, AddDoverForm, AddDocTypeForm
 from burials.models import Burial, Place
-from users.models import CustomerProfile, Org, ProfileLORU, Store, is_loru_user, is_trade_user, is_supervisor, \
+from users.models import CustomerProfile, Org, ProfileLORU, Store, is_trade_user, is_supervisor, \
                          PermitIfTrade, PermitIfTrade, PermitIfCabinet, PermitIfTradeOrCabinet, is_cabinet_user
 from billing.models import Rate
 from orders.forms import ProductForm, OrderForm, OrderItemFormset, CoffinForm, CatafalqueForm, \

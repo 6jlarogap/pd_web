@@ -58,8 +58,7 @@ from users.models import Profile, Org, RegisterProfile, ProfileLORU, CustomerPro
                          BankAccount, BankAccountRegister, OrgCertificate, OrgContract, \
                          RegisterProfileContract, RegisterProfileScan, FavoriteSupplier, \
                          UserPhoto, \
-                         is_loru_user, is_supervisor, is_ugh_user, get_default_currency, \
-                         get_profile
+                         is_supervisor, is_ugh_user, get_default_currency, get_profile
 from pd.models import validate_phone_as_number, validate_username
 from pd.utils import host_country_code, phones_from_text, EmailMessage
 from persons.models import AlivePerson, Phone, CustomPlace
