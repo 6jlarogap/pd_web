@@ -45,7 +45,7 @@ class Measure(models.Model):
 
 class OrgService(models.Model):
     """
-    Сервисы, на которые подписалась организация
+    Сервисы, на которые подписалась организация-продавец товаров/услуг
     """
     org = models.ForeignKey(Org, verbose_name=_(u"Поставщик"), on_delete=models.PROTECT)
     service = models.ForeignKey(Service, verbose_name=_(u"Тип сервиса"), on_delete=models.PROTECT)
@@ -61,7 +61,7 @@ class OrgService(models.Model):
 
 class OrgServicePrice(models.Model):
     """
-    Цены сервисов организации
+    Цены сервисов организации-продавца товаров/услуг
     """
     orgservice = models.ForeignKey(OrgService, verbose_name=_(u"Служба"), on_delete=models.PROTECT)
     measure = models.ForeignKey(Measure, verbose_name=_(u"Единица измерения"), on_delete=models.PROTECT)
@@ -91,7 +91,7 @@ class ProductCategory(models.Model):
         return self.name
 
 class ProductGroup(models.Model):
-    loru = models.ForeignKey(Org, limit_choices_to={'type': Org.PROFILE_LORU}, verbose_name=_(u"ЛОРУ"))
+    loru = models.ForeignKey(Org, verbose_name=_(u"ЛОРУ"))
     productcategory = models.ForeignKey(ProductCategory, verbose_name=_(u"Категория"), on_delete=models.PROTECT)
     name = models.CharField(_(u"Название"), max_length=255)
     description = models.TextField(_(u"Описание"), blank=True, default='')
@@ -122,7 +122,7 @@ class Product(BaseModel):
     
     PRODUCT_NAME_MAXLEN = 60
 
-    loru = models.ForeignKey(Org, limit_choices_to={'type': Org.PROFILE_LORU}, null=True, verbose_name=_(u"ЛОРУ"))
+    loru = models.ForeignKey(Org, null=True, verbose_name=_(u"ЛОРУ"))
     name = models.CharField(_(u"Название"), max_length=255)
     slug = AutoSlugField(populate_from='name', max_length=255, editable=False,
                          unique=True, null=True, always_update=True)
@@ -203,7 +203,7 @@ class Order(GetLogsMixin, BaseModel):
 
     type = models.CharField(_(u"Тип Заказ"), max_length=255, choices=ORDER_TYPES, default=TYPE_BURIAL, editable=False)
 
-    loru = models.ForeignKey(Org, limit_choices_to={'type': Org.PROFILE_LORU}, null=True, verbose_name=_(u"ЛОРУ"))
+    loru = models.ForeignKey(Org, null=True, verbose_name=_(u"ЛОРУ"))
     loru_number = models.PositiveIntegerField(_(u"Номер в переделах исполнителя заказа"), null=True, editable=False)
     number = models.PositiveIntegerField(_(u"Номер в переделах исполнителя заказа и года"), null=True, editable=False)
     payment = models.CharField(_(u"Тип платежа"), max_length=255, choices=PAYMENT_CHOICES, default=PAYMENT_CASH)

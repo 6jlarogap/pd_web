@@ -524,6 +524,14 @@ class Oauth(models.Model):
             message['message'] = excpt.message
         return user, oauth, message
 
+class OrgFunction(models.Model):
+    FUNCTION_TRADE = 'trade'
+    ORG_FUNCTIONS = (
+        (FUNCTION_TRADE, _(u'Торговля')),
+    )
+    name = models.CharField(_(u"Название"), max_length=255, unique=True, choices=ORG_FUNCTIONS)
+    title = models.CharField(_(u"Заглавие"), max_length=255)
+
 class Org(GetLogsMixin, BaseModel):
     NUM_EMPTY = 'empty'
     NUM_YEAR_UGH = 'year_ugh'
@@ -570,6 +578,7 @@ class Org(GetLogsMixin, BaseModel):
     )
     
     type = models.CharField(_(u"Тип"), max_length=255, choices=PROFILE_TYPES)
+    function = models.ManyToManyField(OrgFunction)
     name = models.CharField(_(u"Название организации"), max_length=255, default='')
     slug = AutoSlugField(populate_from='name', max_length=255, editable=False,
                          unique=True, null=True, always_update=True)
@@ -710,10 +719,7 @@ class Store(models.Model, PhonesMixin):
     Склады, магазины у ЛОРУ
     """
     name = models.CharField(_(u"Название"), max_length=255, default='')
-    loru = models.ForeignKey(
-        Org, verbose_name=_(u"ЛОРУ"), limit_choices_to={'type': Org.PROFILE_LORU},
-        on_delete=models.PROTECT,
-    )
+    loru = models.ForeignKey(Org, verbose_name=_(u"ЛОРУ"), on_delete=models.PROTECT)
     address = models.ForeignKey('geo.Location', verbose_name=_(u"Адрес"))
     # phones: могут быть разных типов, пользуемся моделью persons.Phone
 
@@ -721,9 +727,9 @@ class FavoriteSupplier(models.Model):
     """
     Избранные поставщики у ЛОРУ
     """
-    loru = models.ForeignKey(Org, verbose_name=_(u"ЛОРУ"), limit_choices_to={'type': Org.PROFILE_LORU},
+    loru = models.ForeignKey(Org, verbose_name=_(u"ЛОРУ"),
         related_name='favorite_loru', on_delete=models.PROTECT, )
-    supplier = models.ForeignKey(Org, verbose_name=_(u"ЛОРУ"), limit_choices_to={'type': Org.PROFILE_LORU},
+    supplier = models.ForeignKey(Org, verbose_name=_(u"ЛОРУ"),
         related_name='favorite_supplier_list', on_delete=models.PROTECT, )
 
     class Meta:
