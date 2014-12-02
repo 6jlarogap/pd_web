@@ -194,6 +194,7 @@
                                 <li{% if request.path == '/' %} class="active"{% endif %}>
                                     <a href="{% url dashboard %}">{% trans "Открытые" %}</a>
                                 </li>
+                            {% endif %}
                             {% if user.profile.is_ugh %}
                                 <li{% if request.path == '/burials/' %} class="active"{% endif %}>
                                     <a href="{% url burial_list %}">{% trans "Захоронения" %}</a>

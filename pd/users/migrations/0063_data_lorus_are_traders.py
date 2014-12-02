@@ -18,7 +18,7 @@ class Migration(DataMigration):
             name='trade',
             defaults=dict(title=u"Торговля"),
         )
-        for loru in orm['users.Org'].objects.all():
+        for loru in orm['users.Org'].objects.filter(type='loru'):
             loru.function.add(trade_function)
 
     def backwards(self, orm):
