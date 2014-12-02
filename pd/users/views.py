@@ -53,7 +53,7 @@ from users.forms import UserAddForm, RegisterForm, LoruFormset, ProfileForm, Use
                         OrgLogForm, LoginLogForm, OrgBurialStatsForm, SupportForm, TestCaptchaForm, \
                         LoruOrdersStatsForm
 from users.models import Profile, Org, RegisterProfile, ProfileLORU, CustomerProfile, Store, \
-                         get_mail_footer, is_cabinet_user, PermitIfLoru, PermitIfLoruOrSupervisor, \
+                         get_mail_footer, is_cabinet_user, PermitIfTrade, PermitIfTradeOrSupervisor, \
                          PermitIfCabinet, Oauth, \
                          BankAccount, BankAccountRegister, OrgCertificate, OrgContract, \
                          RegisterProfileContract, RegisterProfileScan, FavoriteSupplier, \
@@ -163,6 +163,7 @@ class ApiAuthSigninView(APIView):
             username = user.username
             tc_confirmed = True
             role = None
+            functions = []
             try:
                 user.customerprofile
             except CustomerProfile.DoesNotExist:
@@ -204,6 +205,7 @@ class ApiAuthSigninView(APIView):
                         user.customerprofile.save()
                 else:
                     org = { 'id': user.profile.org.pk, 'name': user.profile.org.name or None }
+                    functions = [ f.name for f in pr.org.function.all() ]
                     if user.profile.org.off_address:
                         org['location'] = {
                             'address': unicode(user.profile.org.off_address),
@@ -223,6 +225,7 @@ class ApiAuthSigninView(APIView):
                     'profile': profile,
                     'org': org,
                     'role': role,
+                    'functions': functions,
                     'isSupervisor': is_supervisor(user),
                  })
                 status_code = 200
@@ -749,7 +752,7 @@ class ApiFeedBack(CheckRecaptchaMixin, APIView):
 api_feedback = ApiFeedBack.as_view()
 
 class ApiLoruPlaces(APIView):
-    permission_classes = (PermitIfLoru,)
+    permission_classes = (PermitIfTrade,)
 
     """
     Вернуть массив, в котором только "ОМС" публичного каталога
@@ -2097,7 +2100,7 @@ class FavoriteSupplierList(APIView):
     """
     List all loru's favorite suppliers
     """
-    permission_classes = (PermitIfLoru,)
+    permission_classes = (PermitIfTrade,)
 
     def get(self, request):
         my_org = request.user.profile.org
@@ -2113,7 +2116,7 @@ class FavoriteSupplierEdit(APIView):
     """
     Add or delete loru's favorite suppliers
     """
-    permission_classes = (PermitIfLoru,)
+    permission_classes = (PermitIfTrade,)
 
     def post(self, request, supplier_id):
         try:
@@ -2148,7 +2151,7 @@ class StoreList(APIView):
     """
     List all stores, or create a new store.
     """
-    permission_classes = (PermitIfLoru,)
+    permission_classes = (PermitIfTrade,)
 
     def get(self, request, format=None):
         stores = Store.objects.filter(loru=request.user.profile.org)
@@ -2171,7 +2174,7 @@ class StoreDetail(APIView):
     """
     Retrieve, update or delete a store instance.
     """
-    permission_classes = (PermitIfLoru,)
+    permission_classes = (PermitIfTrade,)
 
     def get_object(self, request, pk):
         try:
@@ -2460,7 +2463,7 @@ class OrgDetailView(APIView):
 api_catalog_suppliers_detail = OrgDetailView.as_view()
 
 class ApiOptplacesSuppliersView(APIView):
-    permission_classes = (PermitIfLoruOrSupervisor, )
+    permission_classes = (PermitIfTradeOrSupervisor, )
 
     def get(self, request):
         return Response(

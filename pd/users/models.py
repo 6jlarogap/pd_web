@@ -148,6 +148,9 @@ class Profile(CommonProfile):
     def is_loru(self):
         return self.org and self.org.type == Org.PROFILE_LORU
 
+    def is_trade(self):
+        return self.org and self.org.function.filter(name=OrgFunction.FUNCTION_TRADE).exists()
+
     def is_ugh(self):
         return self.org and self.org.type == Org.PROFILE_UGH
 
@@ -177,6 +180,12 @@ def is_loru_user(user):
     except (AttributeError, Profile.DoesNotExist, ):
         return False
     
+def is_trade_user(user):
+    try:
+        return user.profile.is_trade()
+    except (AttributeError, Profile.DoesNotExist, ):
+        return False
+    
 def is_ugh_user(user):
     try:
         return user.profile.is_ugh()
@@ -201,17 +210,17 @@ def get_profile(user):
                 pass
     return profile
 
-class PermitIfLoru(permissions.BasePermission):
+class PermitIfTrade(permissions.BasePermission):
     def has_permission(self, request, view):
-        return is_loru_user(request.user)
+        return is_trade_user(request.user)
 
-class PermitIfLoruOrSupervisor(permissions.BasePermission):
+class PermitIfTradeOrSupervisor(permissions.BasePermission):
     def has_permission(self, request, view):
-        return is_loru_user(request.user) or is_supervisor(request.user)
+        return is_trade_user(request.user) or is_supervisor(request.user)
 
-class PermitIfLoruOrCabinet(permissions.BasePermission):
+class PermitIfTradeOrCabinet(permissions.BasePermission):
     def has_permission(self, request, view):
-        return is_loru_user(request.user) or is_cabinet_user(request.user)
+        return is_trade_user(request.user) or is_cabinet_user(request.user)
 
 class PermitIfUgh(permissions.BasePermission):
     def has_permission(self, request, view):

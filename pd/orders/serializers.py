@@ -11,7 +11,7 @@ from rest_framework.fields import Field
 from rest_api.fields import HyperlinkedFileField
 from orders.models import Order, ProductCategory, Product, Service, Measure, OrgService, OrgServicePrice, \
                           ServiceItem, OrderComment, ResultFile
-from users.models import Org, is_cabinet_user, is_loru_user, UserPhoto
+from users.models import Org, is_cabinet_user, is_trade_user, UserPhoto
 from users.serializers import OrgSerializer, OrgShortSerializer, OrgShort3Serializer, OrgShort4Serializer, \
                               UserFioSerializer
 from pd.utils import utcisoformat, str_to_bool_or_None
@@ -321,7 +321,7 @@ class OrderCommentsSerializer(CreatedAtMixin, serializers.ModelSerializer):
                 username=instance.user.customerprofile.full_name(put_middle_name=False),
                 organisation=None,
             ))
-        if is_loru_user(instance.user):
+        if is_trade_user(instance.user):
             data.update(dict(
                 username=instance.user.profile.full_name(put_middle_name=False),
                 organisation=instance.user.profile.org.name,
