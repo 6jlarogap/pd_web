@@ -204,7 +204,7 @@ class ApiAuthSigninView(APIView):
                         user.customerprofile.save()
                 else:
                     org = { 'id': user.profile.org.pk, 'name': user.profile.org.name or None }
-                    org_abilities = [ f.name for f in pr.org.function.all() ]
+                    org_abilities = [ f.name for f in pr.org.ability.all() ]
                     if user.profile.org.off_address:
                         org['location'] = {
                             'address': unicode(user.profile.org.off_address),

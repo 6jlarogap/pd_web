@@ -149,7 +149,7 @@ class Profile(CommonProfile):
         return self.org and self.org.type == Org.PROFILE_LORU
 
     def is_trade(self):
-        return self.org and self.org.abilility.filter(name=OrgAbility.ABILITY_TRADE).exists()
+        return self.org and self.org.ability.filter(name=OrgAbility.ABILITY_TRADE).exists()
 
     def is_ugh(self):
         return self.org and self.org.type == Org.PROFILE_UGH
@@ -581,7 +581,7 @@ class Org(GetLogsMixin, BaseModel):
     )
     
     type = models.CharField(_(u"Тип"), max_length=255, choices=PROFILE_TYPES)
-    abilility = models.ManyToManyField(OrgAbility)
+    ability = models.ManyToManyField(OrgAbility)
     name = models.CharField(_(u"Название организации"), max_length=255, default='')
     slug = AutoSlugField(populate_from='name', max_length=255, editable=False,
                          unique=True, null=True, always_update=True)
