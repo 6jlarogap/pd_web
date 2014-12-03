@@ -9,17 +9,17 @@ class Migration(DataMigration):
     def forwards(self, orm):
         "Write your forwards methods here."
         # Note: Remember to use orm['appname.ModelName'] rather than "from appname.models..."
-        
-        print "*** LORUs get 'trade' function"
-        # Всем ЛОРУ добавить function = OrgFunction с именем trade
-        # Фикстура с OrgFunction с именем trade может не существовать до этой миграции,
+
+        print "*** LORUs get 'trade' ability"
+        # Всем ЛОРУ добавить abilty = OrgAbility с именем trade
+        # Фикстура с OrgAbility с именем trade может не существовать до этой миграции,
         # посему создаем:
-        trade_function, created_ = orm['users.OrgFunction'].objects.get_or_create(
+        trade_ability, created_ = orm['users.OrgAbility'].objects.get_or_create(
             name='trade',
             defaults=dict(title=u"Торговля"),
         )
         for loru in orm['users.Org'].objects.filter(type='loru'):
-            loru.function.add(trade_function)
+            loru.ability.add(trade_ability)
 
     def backwards(self, orm):
         "Write your backwards methods here."
@@ -207,6 +207,7 @@ class Migration(DataMigration):
         },
         'users.org': {
             'Meta': {'object_name': 'Org'},
+            'ability': ('django.db.models.fields.related.ManyToManyField', [], {'to': "orm['users.OrgAbility']", 'symmetrical': 'False'}),
             'basis': ('django.db.models.fields.CharField', [], {'default': "'charter'", 'max_length': '255'}),
             'currency': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['billing.Currency']"}),
             'description': ('django.db.models.fields.TextField', [], {'null': 'True', 'blank': 'True'}),
@@ -216,7 +217,6 @@ class Migration(DataMigration):
             'email': ('django.db.models.fields.EmailField', [], {'max_length': '75', 'null': 'True', 'blank': 'True'}),
             'fax': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '20', 'blank': 'True'}),
             'full_name': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '255', 'blank': 'True'}),
-            'function': ('django.db.models.fields.related.ManyToManyField', [], {'to': "orm['users.OrgFunction']", 'symmetrical': 'False'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'inn': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '255', 'blank': 'True'}),
             'is_wholesale_with_vat': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
@@ -235,6 +235,12 @@ class Migration(DataMigration):
             'sms_phone': ('django.db.models.fields.DecimalField', [], {'null': 'True', 'max_digits': '15', 'decimal_places': '0', 'blank': 'True'}),
             'type': ('django.db.models.fields.CharField', [], {'max_length': '255'}),
             'worktime': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '255', 'blank': 'True'})
+        },
+        'users.orgability': {
+            'Meta': {'object_name': 'OrgAbility'},
+            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'name': ('django.db.models.fields.CharField', [], {'unique': 'True', 'max_length': '255'}),
+            'title': ('django.db.models.fields.CharField', [], {'max_length': '255'})
         },
         'users.orgcertificate': {
             'Meta': {'object_name': 'OrgCertificate'},
@@ -255,12 +261,6 @@ class Migration(DataMigration):
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'org': ('django.db.models.fields.related.OneToOneField', [], {'to': "orm['users.Org']", 'unique': 'True'}),
             'original_name': ('django.db.models.fields.CharField', [], {'max_length': '255'})
-        },
-        'users.orgfunction': {
-            'Meta': {'object_name': 'OrgFunction'},
-            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'name': ('django.db.models.fields.CharField', [], {'unique': 'True', 'max_length': '255'}),
-            'title': ('django.db.models.fields.CharField', [], {'max_length': '255'})
         },
         'users.profile': {
             'Meta': {'ordering': "('user_last_name', 'user_first_name', 'user_middle_name')", 'object_name': 'Profile'},

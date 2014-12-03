@@ -8,29 +8,29 @@ from django.db import models
 class Migration(SchemaMigration):
 
     def forwards(self, orm):
-        # Adding model 'OrgFunction'
-        db.create_table('users_orgfunction', (
+        # Adding model 'OrgAbility'
+        db.create_table('users_orgability', (
             ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
             ('name', self.gf('django.db.models.fields.CharField')(unique=True, max_length=255)),
             ('title', self.gf('django.db.models.fields.CharField')(max_length=255)),
         ))
-        db.send_create_signal('users', ['OrgFunction'])
+        db.send_create_signal('users', ['OrgAbility'])
 
-        # Adding M2M table for field function on 'Org'
-        db.create_table('users_org_function', (
+        # Adding M2M table for field ability on 'Org'
+        db.create_table('users_org_ability', (
             ('id', models.AutoField(verbose_name='ID', primary_key=True, auto_created=True)),
             ('org', models.ForeignKey(orm['users.org'], null=False)),
-            ('orgfunction', models.ForeignKey(orm['users.orgfunction'], null=False))
+            ('orgability', models.ForeignKey(orm['users.orgability'], null=False))
         ))
-        db.create_unique('users_org_function', ['org_id', 'orgfunction_id'])
+        db.create_unique('users_org_ability', ['org_id', 'orgability_id'])
 
 
     def backwards(self, orm):
-        # Deleting model 'OrgFunction'
-        db.delete_table('users_orgfunction')
+        # Deleting model 'OrgAbility'
+        db.delete_table('users_orgability')
 
-        # Removing M2M table for field function on 'Org'
-        db.delete_table('users_org_function')
+        # Removing M2M table for field ability on 'Org'
+        db.delete_table('users_org_ability')
 
 
     models = {
@@ -216,6 +216,7 @@ class Migration(SchemaMigration):
         },
         'users.org': {
             'Meta': {'object_name': 'Org'},
+            'ability': ('django.db.models.fields.related.ManyToManyField', [], {'to': "orm['users.OrgAbility']", 'symmetrical': 'False'}),
             'basis': ('django.db.models.fields.CharField', [], {'default': "'charter'", 'max_length': '255'}),
             'currency': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['billing.Currency']"}),
             'description': ('django.db.models.fields.TextField', [], {'null': 'True', 'blank': 'True'}),
@@ -225,7 +226,6 @@ class Migration(SchemaMigration):
             'email': ('django.db.models.fields.EmailField', [], {'max_length': '75', 'null': 'True', 'blank': 'True'}),
             'fax': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '20', 'blank': 'True'}),
             'full_name': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '255', 'blank': 'True'}),
-            'function': ('django.db.models.fields.related.ManyToManyField', [], {'to': "orm['users.OrgFunction']", 'symmetrical': 'False'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'inn': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '255', 'blank': 'True'}),
             'is_wholesale_with_vat': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
@@ -244,6 +244,12 @@ class Migration(SchemaMigration):
             'sms_phone': ('django.db.models.fields.DecimalField', [], {'null': 'True', 'max_digits': '15', 'decimal_places': '0', 'blank': 'True'}),
             'type': ('django.db.models.fields.CharField', [], {'max_length': '255'}),
             'worktime': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '255', 'blank': 'True'})
+        },
+        'users.orgability': {
+            'Meta': {'object_name': 'OrgAbility'},
+            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'name': ('django.db.models.fields.CharField', [], {'unique': 'True', 'max_length': '255'}),
+            'title': ('django.db.models.fields.CharField', [], {'max_length': '255'})
         },
         'users.orgcertificate': {
             'Meta': {'object_name': 'OrgCertificate'},
@@ -264,12 +270,6 @@ class Migration(SchemaMigration):
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'org': ('django.db.models.fields.related.OneToOneField', [], {'to': "orm['users.Org']", 'unique': 'True'}),
             'original_name': ('django.db.models.fields.CharField', [], {'max_length': '255'})
-        },
-        'users.orgfunction': {
-            'Meta': {'object_name': 'OrgFunction'},
-            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'name': ('django.db.models.fields.CharField', [], {'unique': 'True', 'max_length': '255'}),
-            'title': ('django.db.models.fields.CharField', [], {'max_length': '255'})
         },
         'users.profile': {
             'Meta': {'ordering': "('user_last_name', 'user_first_name', 'user_middle_name')", 'object_name': 'Profile'},
