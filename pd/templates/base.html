@@ -121,18 +121,9 @@
                                         {% if user.profile.is_ugh %}
                                             <li><a href="{{ global_context_FRONT_END_URL }}oms/placesmap">{% trans "Карта захоронений" %}</a></li>
                                             <li><a href="{% url loru_registry %}">{% trans "Реестр ЛОРУ" %}</a></li>
-                                        {% endif %}
-                                        {% if user.profile.org.pk %}
-                                            <li><a href="{% url edit_org user.profile.org.pk %}">{% trans "Организация" %}</a></li>
-                                        {% endif %}
-                                        {% if user.profile.pk %}
-                                            <li><a href="{% url user_profile %}">{% trans "Пользователь" %}</a></li>
-                                        {% endif %}
-                                        {% if user.profile.org.pk %}
-                                            <li><a href="{% url org_log %}">{% trans "Журнал" %}</a></li>
+                                            <li class="divider"></li>
                                         {% endif %}
                                         {% if user.profile.is_trade %}
-                                            <li class="divider"></li>
                                             <li><a href="{{ global_context_FRONT_END_URL }}loru/products">{% trans "Товары и услуги" %}</a></li>
                                             <li><a href="{{ global_context_FRONT_END_URL }}">{% trans "Каталог" %}</a></li>
                                             <li><a href="{{ global_context_FRONT_END_URL }}loru/orgplaces">{% trans "Склады" %}</a></li>
@@ -148,9 +139,19 @@
                                             {% endfor  %}
                                             </li>
                                             <li><a href="{{ global_context_FRONT_END_URL }}orders">{% trans "Архив заказов" %}</a></li>
+                                            <li class="divider"></li>
+                                        {% endif %}
+                                        {% if user.profile.pk %}
+                                            {% if user.profile.org.pk %}
+                                                <li><a href="{% url edit_org user.profile.org.pk %}">{% trans "Организация" %}</a></li>
+                                            {% endif %}
+                                            <li><a href="{% url user_profile %}">{% trans "Пользователь" %}</a></li>
+                                            {% if user.profile.org.pk %}
+                                                <li><a href="{% url org_log %}">{% trans "Журнал" %}</a></li>
+                                            {% endif %}
+                                            <li class="divider"></li>
                                         {% endif %}
                                         {% if user.profile.is_supervisor %}
-                                            <li class="divider"></li>
                                             <li><a href="{% url registrants %}">{% trans "Регистрация" %}</a></li>
                                             {% if global_context_PRODUCTION_SITE %}
                                                 <li><a href="{% url login_log %}">{% trans "Журнал входов в систему" %}</a></li>
@@ -159,8 +160,8 @@
                                                 <li><a href="{% url loru_current_stats %}">{% trans "Текущая статистика" %} {% trans "ЛОРУ" %}</a></li>
                                                 <li><a href="{% url loru_order_stats %}">{% trans "Статистика заказов" %}</a></li>
                                             {% endif %}
+                                            <li class="divider"></li>
                                         {% endif %}
-                                        <li class="divider"></li>
                                         <li><a href="{% url ulogout %}">{% trans "Выйти" %}</a></li>
                                     </ul>
                                 </li>
