@@ -31,11 +31,12 @@ from burials.models import Cemetery, Place, Area, BurialFiles, Grave, Burial, Ar
                            ExhumationRequest, AreaPurpose, PlaceSize
 from burials.burials_views import *
 from logs.models import write_log, log_object, prepare_m2m_log, compare_obj
-from users.models import Profile, Org, CustomerProfile, PermitIfUgh, PermitIfCabinet
+from users.models import Profile, Org, CustomerProfile, PermitIfUgh, PermitIfCabinet, PermitIfTradeOrCabinet, \
+                         is_cabinet_user, is_trade_user
 from users.views import SupervisorRequiredMixin, UGHRequiredMixin, LoginRequiredMixin
 from persons.models import Phone, AlivePerson, CustomPlace
 from geo.models import Location
-from orders.models import ResultFile
+from orders.models import Order, ResultFile
 
 from rest_framework import generics, viewsets
 from rest_framework.views import APIView
@@ -1168,14 +1169,21 @@ class PlaceCertificateView(UGHRequiredMixin, DetailView):
 place_certificate = PlaceCertificateView.as_view()
 
 class ApiClientPlacesDetailView(APIView):
-    permission_classes = (PermitIfCabinet,)
+    permission_classes = (PermitIfTradeOrCabinet,)
 
     def get(self, request, pk):
         try:
             customplace = CustomPlace.objects.get(pk=pk)
         except CustomPlace.DoesNotExist:
             raise Http404
-        if customplace.user != request.user:
+        grant_access = False
+        if is_cabinet_user(request.user):
+            if customplace.user == request.user:
+                grant_access = True
+        elif is_trade_user(request.user):
+            if Order.objects.filter(customplace=customplace, loru=request.user.profile.org).exists():
+                grant_access = True
+        if not grant_access:
             return Response(data=dict(detail='You are not authorized to this place'), status=403)
 
         gallery = [dict(
