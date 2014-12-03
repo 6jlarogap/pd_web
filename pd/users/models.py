@@ -149,7 +149,7 @@ class Profile(CommonProfile):
         return self.org and self.org.type == Org.PROFILE_LORU
 
     def is_trade(self):
-        return self.org and self.org.function.filter(name=OrgFunction.FUNCTION_TRADE).exists()
+        return self.org and self.org.function.filter(name=OrgAbility.ABILITY_TRADE).exists()
 
     def is_ugh(self):
         return self.org and self.org.type == Org.PROFILE_UGH
@@ -527,10 +527,10 @@ class Oauth(models.Model):
             message['message'] = excpt.message
         return user, oauth, message
 
-class OrgFunction(models.Model):
-    FUNCTION_TRADE = 'trade'
+class OrgAbility(models.Model):
+    ABILITY_TRADE = 'trade'
     ORG_FUNCTIONS = (
-        (FUNCTION_TRADE, _(u'Торговля')),
+        (ABILITY_TRADE, _(u'Торговля')),
     )
     name = models.CharField(_(u"Название"), max_length=255, unique=True, choices=ORG_FUNCTIONS)
     title = models.CharField(_(u"Заглавие"), max_length=255)
@@ -581,7 +581,7 @@ class Org(GetLogsMixin, BaseModel):
     )
     
     type = models.CharField(_(u"Тип"), max_length=255, choices=PROFILE_TYPES)
-    function = models.ManyToManyField(OrgFunction)
+    function = models.ManyToManyField(OrgAbility)
     name = models.CharField(_(u"Название организации"), max_length=255, default='')
     slug = AutoSlugField(populate_from='name', max_length=255, editable=False,
                          unique=True, null=True, always_update=True)
