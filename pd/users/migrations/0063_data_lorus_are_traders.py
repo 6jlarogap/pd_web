@@ -11,8 +11,8 @@ class Migration(DataMigration):
         # Note: Remember to use orm['appname.ModelName'] rather than "from appname.models..."
 
         print "*** LORUs get 'trade' ability"
-        # Всем ЛОРУ добавить function = OrgFunction с именем trade
-        # Фикстура с OrgFunction с именем trade может не существовать до этой миграции,
+        # Всем ЛОРУ добавить abilty = OrgAbility с именем trade
+        # Фикстура с OrgAbility с именем trade может не существовать до этой миграции,
         # посему создаем:
         trade_ability, created_ = orm['users.OrgAbility'].objects.get_or_create(
             name='trade',
