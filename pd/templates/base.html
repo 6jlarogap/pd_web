@@ -133,8 +133,8 @@
                                         {% endif %}
                                         {% if user.profile.is_trade %}
                                             <li class="divider"></li>
-                                            {# <li><a href="{% url manage_products %}">{% trans "Товары и услуги" %}</a></li> #}
                                             <li><a href="{{ global_context_FRONT_END_URL }}loru/products">{% trans "Товары и услуги" %}</a></li>
+                                            <li><a href="{{ global_context_FRONT_END_URL }}">{% trans "Каталог" %}</a></li>
                                             <li><a href="{{ global_context_FRONT_END_URL }}loru/orgplaces">{% trans "Склады" %}</a></li>
                                             <li><a href="{{ global_context_FRONT_END_URL }}price/{{ user.profile.org.pk }}">{% trans "Интернет-магазин" %}{% if user.profile.org.favorites_for_template %}&nbsp;&nbsp;<span class="caret-right"></span>{% endif %}</a>
                                             {% for favorite in user.profile.org.favorites_for_template %}
@@ -170,19 +170,12 @@
                             {# <a class="btn" href="{% url register %}">{% trans "Зарегистрироваться (для ЮЛ)" %}</a> #}
                         {% endif %}
                     </div>
-                    {% if user.profile.is_ugh or user.profile.is_loru %}
+                    {% if user.profile.is_ugh %}
                         <div class="pull-right nav-collapse">
                             <ul class="nav">
                                 <li>
-                                    {% if user.profile.is_ugh %}
-                                        <a href="{% url manage_cemeteries %}">{% trans "Кладбища" %}</a>
-                                    {% endif %}
+                                    <a href="{% url manage_cemeteries %}">{% trans "Кладбища" %}</a>
                                 </li>
-                                {% if user.profile.is_trade %}
-                                    <li>
-                                        <a href="{{ global_context_FRONT_END_URL }}">{% trans "Каталог" %}</a>
-                                    </li>
-                                {% endif %}
                             </ul>
                         </div>
                     {% endif %}
