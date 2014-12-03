@@ -29,8 +29,8 @@ from logs.models import write_log
 from geo.models import Location
 from burials.forms import AddOrgForm, AddAgentForm, AddDoverForm, AddDocTypeForm
 from burials.models import Burial, Place
-from users.models import CustomerProfile, Org, ProfileLORU, Store, is_loru_user, is_supervisor, \
-                         PermitIfLoru, PermitIfCabinet, PermitIfLoruOrCabinet, is_cabinet_user
+from users.models import CustomerProfile, Org, ProfileLORU, Store, is_trade_user, is_supervisor, \
+                         PermitIfTrade, PermitIfCabinet, PermitIfTradeOrCabinet, is_cabinet_user
 from billing.models import Rate
 from orders.forms import ProductForm, OrderForm, OrderItemFormset, CoffinForm, CatafalqueForm, \
                          AddInfoForm, OrderSearchForm, OrderBurialForm
@@ -745,7 +745,7 @@ class ProductInfoView(APIView):
 
     def get(self, request, product_slug):
         product = get_object_or_404(Product, slug=product_slug)
-        show_wholesale = is_loru_user(request.user) or is_supervisor(request.user)
+        show_wholesale = is_trade_user(request.user) or is_supervisor(request.user)
         return Response(
             status=200,
             data=ProductInfoSerializer(product, context=dict(
@@ -787,7 +787,7 @@ class ApiLoruProductPlaces(APIView):
     ]
     """
     
-    permission_classes = (PermitIfLoru,)
+    permission_classes = (PermitIfTrade,)
 
     @transaction.commit_on_success
     def post(self, request, format=None):
@@ -828,7 +828,7 @@ api_loru_product_places = ApiLoruProductPlaces.as_view()
 
 class UghPublishedProductsViewSet(viewsets.ViewSet):
     queryset = Product.objects.none()
-    permission_classes = (PermitIfLoru,)
+    permission_classes = (PermitIfTrade,)
     
     def list(self, request):
         data=[]
@@ -983,7 +983,7 @@ class ApiOptPlacesOrders(OptOrderMixin, APIView):
     то возвращается status=400, message=”что произошло”. Если проверка успешна,
     то формируется новый заказ, статус код - 200 
     """
-    permission_classes = (PermitIfLoru,)
+    permission_classes = (PermitIfTrade,)
 
     @transaction.commit_on_success
     def post(self, request):
@@ -1065,7 +1065,7 @@ class ApiOptPlacesOrders(OptOrderMixin, APIView):
 api_optplaces_orders = ApiOptPlacesOrders.as_view()
 
 class OptOrderderInfoView(OptOrderMixin, APIView):
-    permission_classes = (PermitIfLoru,)
+    permission_classes = (PermitIfTrade,)
 
     def instance_permitted(self, request, pk):
         """
@@ -1139,7 +1139,7 @@ class OptOrderderInfoView(OptOrderMixin, APIView):
 api_optplaces_orders_detail = OptOrderderInfoView.as_view()
 
 class ApiLoruProductTypesView(APIView):
-    permission_classes = (PermitIfLoru,)
+    permission_classes = (PermitIfTrade,)
 
     def get(self, request):
         return Response(
@@ -1155,7 +1155,7 @@ class ApiLoruProductTypesView(APIView):
 api_loru_product_types = ApiLoruProductTypesView.as_view()
 
 class ApiProductList(ProductCategoryQsMixin, APIView):
-    permission_classes = (PermitIfLoru,)
+    permission_classes = (PermitIfTrade,)
     parser_classes = (MultiPartParser,)
 
     def get(self, request):
@@ -1193,7 +1193,7 @@ class ApiProductList(ProductCategoryQsMixin, APIView):
 api_product_list = ApiProductList.as_view()
 
 class ApiProductDetail(APIView):
-    permission_classes = (PermitIfLoru,)
+    permission_classes = (PermitIfTrade,)
     parser_classes = (MultiPartParser,)
 
     def get_object(self, request, pk):
@@ -1307,7 +1307,7 @@ class ApiOrgServicesMixin(object):
                 orgserviceprice.save()
 
 class ApiOrgServicesView(ApiOrgServicesMixin, APIView):
-    permission_classes = (PermitIfLoru,)
+    permission_classes = (PermitIfTrade,)
 
     def get(self, request, org_id):
         org, message = self.check_org_id(request, org_id)
@@ -1343,7 +1343,7 @@ class ApiOrgServicesView(ApiOrgServicesMixin, APIView):
 api_org_services = ApiOrgServicesView.as_view()
 
 class ApiOrgServicesEditView(ApiOrgServicesMixin, APIView):
-    permission_classes = (PermitIfLoru,)
+    permission_classes = (PermitIfTrade,)
 
     @transaction.commit_on_success
     def put(self, request, org_id, service_name):
@@ -1684,11 +1684,11 @@ class ApiClientOrdersView(ApiServicePriceMixin, APIView):
 api_client_orders = ApiClientOrdersView.as_view()
 
 class ApiServiceOrdersView(APIView):
-    permission_classes = (PermitIfLoruOrCabinet,)
+    permission_classes = (PermitIfTradeOrCabinet,)
 
     def get(self, request):
         q = Q()
-        if is_loru_user(request.user):
+        if is_trade_user(request.user):
             q = Q(loru=request.user.profile.org, type=Order.TYPE_CUSTOMER)
         elif is_cabinet_user(request.user):
             q = Q(customplace__user=request.user, type=Order.TYPE_CUSTOMER)
@@ -1698,7 +1698,7 @@ class ApiServiceOrdersView(APIView):
 api_orders = ApiServiceOrdersView.as_view()
 
 class ApiOrderCommentsView(APIView):
-    permission_classes = (PermitIfLoruOrCabinet,)
+    permission_classes = (PermitIfTradeOrCabinet,)
 
     def get(self, request, pk):
         try:
@@ -1735,7 +1735,7 @@ class ApiOrderCommentsView(APIView):
 api_orders_comments = ApiOrderCommentsView.as_view()
 
 class ApiOrderResultView(APIView):
-    permission_classes = (PermitIfLoruOrCabinet,)
+    permission_classes = (PermitIfTradeOrCabinet,)
     parser_classes = (MultiPartParser,)
 
     def get(self, request, pk):
@@ -1754,7 +1754,7 @@ class ApiOrderResultView(APIView):
         try:
             try:
                 order = Order.objects.get(pk=pk)
-                if not is_loru_user(request.user) or \
+                if not is_trade_user(request.user) or \
                    not (order.loru and order.loru == request.user.profile.org):
                     return Response(data=dict(detail='You are not authorized to post to this order'), status=403)
             except Order.DoesNotExist:
@@ -1787,7 +1787,7 @@ class ApiOrderResultView(APIView):
 api_orders_results = ApiOrderResultView.as_view()
 
 class ApiServiceOrderDetailView(APIView):
-    permission_classes = (PermitIfLoruOrCabinet,)
+    permission_classes = (PermitIfTradeOrCabinet,)
 
     def get(self, request, pk):
         try:
@@ -1804,7 +1804,7 @@ class ApiServiceOrderDetailView(APIView):
 api_orders_detail = ApiServiceOrderDetailView.as_view()
 
 class ApiServiceOrderPutView(APIView):
-    permission_classes = (PermitIfLoruOrCabinet,)
+    permission_classes = (PermitIfTradeOrCabinet,)
 
     @transaction.commit_on_success
     def put(self, request, pk):

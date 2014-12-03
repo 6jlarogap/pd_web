@@ -10,7 +10,7 @@ from pd.utils import PhonesFromTextMixin, utcisoformat
 from django.contrib.auth.models import User
 
 from geo.models import Location
-from users.models import Org, Store, FavoriteSupplier, UserPhoto, is_cabinet_user, is_loru_user, get_profile
+from users.models import Org, Store, FavoriteSupplier, UserPhoto, is_cabinet_user, is_trade_user, get_profile
 from persons.models import Phone
 from orders.models import Order, Product
 
@@ -45,7 +45,7 @@ class OrgSerializerMixin(object):
         result = None
         if hasattr(self, 'context') and 'request' in self.context:
             user = self.context['request'].user
-            if is_loru_user(user):
+            if is_trade_user(user):
                 result = FavoriteSupplier.objects.filter(
                     loru=user.profile.org,
                     supplier=instance,
