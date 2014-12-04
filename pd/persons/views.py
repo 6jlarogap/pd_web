@@ -2,7 +2,7 @@
 
 import json
 
-from django.db import transaction
+from django.db import transaction, IntegrityError
 from django.db.models.query_utils import Q
 from django.http import Http404, HttpResponse
 from django.views.generic.base import View
@@ -204,7 +204,7 @@ class ApiClientCustomplacesView(ApiClientCustomplacesMixin, APIView):
 
     def get(self, request):
         data = []
-        for p in CustomPlace.objects.filter(user=request.user).order_by('pk'):
+        for p in CustomPlace.objects.filter(user=request.user, place__isnull=True).order_by('pk'):
             place=dict(
                 id=p.pk,
                 address=p.address and unicode(p.address) or None,
@@ -274,7 +274,11 @@ class ApiClientCustomplacesDetailView(ApiClientCustomplacesMixin, SafeDeleteMixi
         customplace = self.get_object(pk=pk)
         self.safe_delete('address', customplace)
         CustomPerson.objects.filter(customplace=customplace).delete()
-        customplace.delete()
+        try:
+            customplace.delete()
+        except IntegrityError:
+            transaction.rollback()
+            return Response({"status": "error", "message": _(u"На это место оформлен заказ, удалять нельзя")}, 400)
         return Response({"status": "success"}, 200)
 
 api_client_customplaces_detail = ApiClientCustomplacesDetailView.as_view()

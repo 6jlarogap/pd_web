@@ -13,7 +13,7 @@ from django.db.models.query_utils import Q
 
 from burials.models import Burial
 from reports.models import Report
-from users.models import Org
+from users.models import Org, is_cabinet_user, is_trade_user
 from pd.models import BaseModel, GetLogsMixin, upload_slugified, Files
 from geo.models import PointsModel
 
@@ -45,7 +45,7 @@ class Measure(models.Model):
 
 class OrgService(models.Model):
     """
-    Сервисы, на которые подписалась организация
+    Сервисы, на которые подписалась организация-продавец товаров/услуг
     """
     org = models.ForeignKey(Org, verbose_name=_(u"Поставщик"), on_delete=models.PROTECT)
     service = models.ForeignKey(Service, verbose_name=_(u"Тип сервиса"), on_delete=models.PROTECT)
@@ -61,7 +61,7 @@ class OrgService(models.Model):
 
 class OrgServicePrice(models.Model):
     """
-    Цены сервисов организации
+    Цены сервисов организации-продавца товаров/услуг
     """
     orgservice = models.ForeignKey(OrgService, verbose_name=_(u"Служба"), on_delete=models.PROTECT)
     measure = models.ForeignKey(Measure, verbose_name=_(u"Единица измерения"), on_delete=models.PROTECT)
@@ -91,7 +91,7 @@ class ProductCategory(models.Model):
         return self.name
 
 class ProductGroup(models.Model):
-    loru = models.ForeignKey(Org, limit_choices_to={'type': Org.PROFILE_LORU}, verbose_name=_(u"ЛОРУ"))
+    loru = models.ForeignKey(Org, verbose_name=_(u"ЛОРУ"))
     productcategory = models.ForeignKey(ProductCategory, verbose_name=_(u"Категория"), on_delete=models.PROTECT)
     name = models.CharField(_(u"Название"), max_length=255)
     description = models.TextField(_(u"Описание"), blank=True, default='')
@@ -122,7 +122,7 @@ class Product(BaseModel):
     
     PRODUCT_NAME_MAXLEN = 60
 
-    loru = models.ForeignKey(Org, limit_choices_to={'type': Org.PROFILE_LORU}, null=True, verbose_name=_(u"ЛОРУ"))
+    loru = models.ForeignKey(Org, null=True, verbose_name=_(u"ЛОРУ"))
     name = models.CharField(_(u"Название"), max_length=255)
     slug = AutoSlugField(populate_from='name', max_length=255, editable=False,
                          unique=True, null=True, always_update=True)
@@ -190,25 +190,20 @@ class Order(GetLogsMixin, BaseModel):
 
     # Оптовые заказы
     STATUS_POSTED = 'posted'
-    STATUS_CONFIRMED = 'confirmed'
-    STATUS_SHIPPED = 'shipped'
     STATUS_ACCEPTED = 'accepted'
-
-    # Заказы от пользователя-физ.лица
-    # STATUS_POSTED = 'posted'
-    # STATUS_CONFIRMED = 'confirmed'
-    # STATUS_SHIPPED = 'shipped'
+    STATUS_PAID = 'paid'
+    STATUS_DONE = 'done'
 
     STATUS_TYPES = (
         (STATUS_POSTED, _(u"Размещен")),
-        (STATUS_CONFIRMED, _(u"Подтвержден")),
-        (STATUS_SHIPPED, _(u"Отправлен")),
         (STATUS_ACCEPTED, _(u"Принят")),
+        (STATUS_PAID, _(u"Оплачен")),
+        (STATUS_DONE, _(u"Выполнен")),
     )
 
     type = models.CharField(_(u"Тип Заказ"), max_length=255, choices=ORDER_TYPES, default=TYPE_BURIAL, editable=False)
 
-    loru = models.ForeignKey(Org, limit_choices_to={'type': Org.PROFILE_LORU}, null=True, verbose_name=_(u"ЛОРУ"))
+    loru = models.ForeignKey(Org, null=True, verbose_name=_(u"ЛОРУ"))
     loru_number = models.PositiveIntegerField(_(u"Номер в переделах исполнителя заказа"), null=True, editable=False)
     number = models.PositiveIntegerField(_(u"Номер в переделах исполнителя заказа и года"), null=True, editable=False)
     payment = models.CharField(_(u"Тип платежа"), max_length=255, choices=PAYMENT_CHOICES, default=PAYMENT_CASH)
@@ -220,12 +215,14 @@ class Order(GetLogsMixin, BaseModel):
                               limit_choices_to={'is_agent': True}, on_delete=models.PROTECT)
     dover = models.ForeignKey('users.Dover', verbose_name=_(u"Доверенность"), null=True, blank=True,
                               on_delete=models.PROTECT)
-    annulated = models.BooleanField(_(u'Аннулировано'), editable=False, default=False)
+    annulated = models.BooleanField(_(u'Аннулирован'), editable=False, default=False)
+    archived = models.BooleanField(_(u'Архивирован'), editable=False, default=False)
     cost = models.DecimalField(_(u"Цена"), max_digits=20, decimal_places=2, editable=False)
     dt = models.DateField(_(u"Дата заказа"))
     burial = models.ForeignKey(Burial, related_name='burial_orders', editable=False, null=True)
 
-    customplace = models.ForeignKey('persons.CustomPlace', verbose_name=_(u"Место захоронения"), null=True, editable=False)
+    customplace = models.ForeignKey('persons.CustomPlace', verbose_name=_(u"Место захоронения"),
+                                    null=True, editable=False, on_delete=models.PROTECT)
     status = models.CharField(_(u"Статус"), max_length=255, choices=STATUS_TYPES, default=STATUS_POSTED, editable=False,)
     applicant_approved = models.NullBooleanField(_(u"Одобрено заказчиком"), null=True, editable=False,)
 
@@ -399,10 +396,56 @@ class Order(GetLogsMixin, BaseModel):
                ) for item in OrderItem.objects.filter(order=self)
        ]
 
+    def service_name(self):
+        """
+        Имя сервиса у заказа TYPE_CUSTOMER
+        """
+        result = type_delivery = type_org = None
+        if self.is_type_customer():
+            for serviceitem in ServiceItem.objects.filter(order=self):
+                if serviceitem.orgservice.service.name == 'delivery':
+                    type_delivery = 'delivery'
+                elif not type_org:
+                    type_org = serviceitem.orgservice.service.name
+            return type_org or type_delivey
+        return result
+
+    def customer_location(self):
+        """
+        Координаты места у заказа TYPE_CUSTOMER
+
+        Конечная точка маршрута
+        """
+        result = None
+        if self.is_type_customer():
+            try:
+                point = Route.objects.filter(order=self).order_by('-index')[0]
+                return dict(latitude=point.lat, longitude=point.lng)
+            except IndexError:
+                pass
+        return result
+
+    def is_accessible(self, user):
+        """
+        Доступность ResultFile, OrderComments от этого Order и самого Order
+        """
+        result = False
+        if is_trade_user(user):
+            org = user.profile.org
+            result = self.loru and self.loru == org or \
+                     self.applicant_organization and self.applicant_organization == org
+        elif is_cabinet_user(user):
+            result = self.applicant and self.applicant.user and \
+                     self.applicant.user == user
+        return bool(result)
+        
 class ServiceItem(models.Model):
     order = models.ForeignKey(Order)
     orgservice = models.ForeignKey(OrgService, verbose_name=_(u"Услуга"), on_delete=models.PROTECT)
     cost = models.DecimalField(_(u"Цена"), max_digits=20, decimal_places=2)
+
+    def cost_float(self):
+        return float(self.cost)
 
 class OrderComment(BaseModel):
 
@@ -424,7 +467,15 @@ class ResultFile(Files):
     """
     Результаты выполнения заказа на фото места
     """
+    TYPE_IMAGE = 'image'
+    TYPE_VIDEO = 'video'
+    RESULT_TYPES = (
+        (TYPE_IMAGE, _(u"Изображение")),
+        (TYPE_VIDEO, _(u"Видео")),
+    )
+
     order = models.ForeignKey(Order, verbose_name=_(u"Заказ"), )
+    type = models.CharField(_(u"Тип"), max_length=255, choices=RESULT_TYPES, default=TYPE_IMAGE)
 
 class OrderItem(models.Model):
     order = models.ForeignKey(Order, editable=False)

@@ -296,9 +296,6 @@ def files_upload_to(instance, filename):
     elif isinstance(instance, get_model('users', 'RegisterProfileContract')):
         return os.path.join('register-profile-contracts',
                 today_pk_dir % instance.registerprofile.pk, fname)
-    elif isinstance(instance, get_model('users', 'CustomerProfilePhoto')):
-        return os.path.join('customer-profile',
-                today_pk_dir % instance.customerprofile.user.pk, fname)
     elif isinstance(instance, get_model('users', 'OrgCertificate')):
         return os.path.join('org-certificates',
                 today_pk_dir % instance.org.pk, fname)
@@ -308,6 +305,12 @@ def files_upload_to(instance, filename):
     elif isinstance(instance, get_model('persons', 'MemoryGallery')):
         return os.path.join('memory-gallery',
                 today_pk_dir % instance.creator.pk, fname)
+    elif isinstance(instance, get_model('orders', 'ResultFile')):
+        return os.path.join('order-results',
+                today_pk_dir % instance.order.pk, fname)
+    elif isinstance(instance, get_model('users', 'UserPhoto')):
+        return os.path.join('user-photos',
+                today_pk_dir % instance.user.pk, fname)
     else:
         return os.path.join('files', fname)
 

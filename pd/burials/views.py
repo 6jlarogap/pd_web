@@ -24,24 +24,26 @@ from geo.models import Country, Region, Street, City
 
 from pd.views import RequestToFormMixin, FormInvalidMixin, get_front_end_url
 from pd.models import validate_phone_as_number
+from pd.utils import utcisoformat
 
 from burials.forms import CemeteryForm, AreaFormset, PlaceEditForm, AddOrgForm, AreaMergeForm, BurialfileCommentEditForm
 from burials.models import Cemetery, Place, Area, BurialFiles, Grave, Burial, AreaPhoto, PlacePhoto, \
                            ExhumationRequest, AreaPurpose, PlaceSize
 from burials.burials_views import *
 from logs.models import write_log, log_object, prepare_m2m_log, compare_obj
-from users.models import Profile, Org, CustomerProfile, PermitIfUgh
+from users.models import Profile, Org, CustomerProfile, PermitIfUgh, PermitIfCabinet, PermitIfTradeOrCabinet, \
+                         is_cabinet_user, is_trade_user
 from users.views import SupervisorRequiredMixin, UGHRequiredMixin, LoginRequiredMixin
 from persons.models import Phone, AlivePerson, CustomPlace
 from geo.models import Location
+from orders.models import Order, ResultFile
 
-# REST import
 from rest_framework import generics, viewsets
+from rest_framework.views import APIView
 from rest_framework.decorators import api_view, permission_classes, action
 from rest_framework.reverse import reverse
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-# EOF REST import
 
 from django.db import transaction
 
@@ -1165,3 +1167,71 @@ class PlaceCertificateView(UGHRequiredMixin, DetailView):
         )
 
 place_certificate = PlaceCertificateView.as_view()
+
+class ApiClientPlacesDetailView(APIView):
+    permission_classes = (PermitIfTradeOrCabinet,)
+
+    def get(self, request, pk):
+        try:
+            customplace = CustomPlace.objects.get(pk=pk)
+        except CustomPlace.DoesNotExist:
+            raise Http404
+        grant_access = False
+        if is_cabinet_user(request.user):
+            if customplace.user == request.user:
+                grant_access = True
+        elif is_trade_user(request.user):
+            if Order.objects.filter(customplace=customplace, loru=request.user.profile.org).exists():
+                grant_access = True
+        if not grant_access:
+            return Response(data=dict(detail='You are not authorized to this place'), status=403)
+
+        gallery = [dict(
+                    photo=request.build_absolute_uri(photo.bfile.url),
+                    createdAt=utcisoformat(photo.date_of_creation),
+                   ) \
+                   for photo in ResultFile.objects.filter(
+                       order__customplace=customplace,
+                       type=ResultFile.TYPE_IMAGE,
+                       )
+        ]
+
+        if customplace.place:
+            place = customplace.place
+            gallery += place.get_photo_gallery(request)
+            data=dict(
+                address=place.address(),
+                location=place.location_dict(),
+            )
+        else:
+            data = dict(
+                address = unicode(customplace.address),
+                location = customplace.address and customplace.address.location_dict() or \
+                                                   Location.empty_location_dict()
+            )
+        gallery = sorted(gallery, key=lambda photo: photo['createdAt'], reverse=True)
+        photo = gallery[0]['photo'] if gallery else None
+        data.update(dict(
+            gallery=gallery,
+            photo=photo,
+        ))
+        return Response(data, status=200)
+
+api_client_places_detail = ApiClientPlacesDetailView.as_view()
+
+class ApiClientPlaceGravesView(APIView):
+    permission_classes = (PermitIfCabinet,)
+
+    def get(self, request, pk):
+        try:
+            customplace = CustomPlace.objects.get(pk=pk, place__isnull=False)
+        except CustomPlace.DoesNotExist:
+            raise Http404
+        if customplace.user != request.user:
+            return Response(data=dict(detail='You are not authorized to this place'), status=403)
+        place = customplace.place
+        gallery = place.get_photo_gallery(request)
+        photo = gallery and gallery[0]['photo'] or None
+        return Response(data=customplace.place.graves_list(), status=200)
+
+api_client_place_graves = ApiClientPlaceGravesView.as_view()

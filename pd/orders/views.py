@@ -28,15 +28,15 @@ from LatLon import LatLon, Latitude, Longitude
 from logs.models import write_log
 from geo.models import Location
 from burials.forms import AddOrgForm, AddAgentForm, AddDoverForm, AddDocTypeForm
-from burials.models import Burial, Place, Grave, PlacePhoto
-from users.models import CustomerProfile, CustomerProfilePhoto, Org, ProfileLORU, Store, is_loru_user, is_supervisor, \
-                         PermitIfLoru, PermitIfCabinet, is_cabinet_user
+from burials.models import Burial, Place
+from users.models import CustomerProfile, Org, ProfileLORU, Store, is_trade_user, is_supervisor, \
+                         PermitIfTrade, PermitIfCabinet, PermitIfTradeOrCabinet, is_cabinet_user
 from billing.models import Rate
 from orders.forms import ProductForm, OrderForm, OrderItemFormset, CoffinForm, CatafalqueForm, \
                          AddInfoForm, OrderSearchForm, OrderBurialForm
 from orders.models import Product, Order, OrderItem, ProductCategory, \
                           Service, Measure, OrgService, OrgServicePrice, ServiceItem, OrderComment, \
-                          Route
+                          Route, ResultFile
 from persons.models import CustomPlace, AlivePerson
 from pd.forms import CommentForm
 from pd.views import PaginateListView, RequestToFormMixin, ServiceException, get_front_end_url, get_host_url
@@ -49,7 +49,9 @@ from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser
 from orders.serializers import ProductCategorySerializer, ProductsSerializer, ProductsOptSerializer, \
                                ProductInfoSerializer, OptOrdersSerializer, OptOrderInfoSerializer, \
-                               ProductEditSerializer, ServiceSerializer, OrgServiceSerializer
+                               ProductEditSerializer, ServiceSerializer, OrgServiceSerializer, \
+                               ServiceOrderSerializer, OrderCommentsSerializer, ServiceOrderDetailSerializer, \
+                               OrderResultsSerializer
 
 from pd.utils import EmailMessage
 from pd.models import validate_phone_as_number
@@ -743,7 +745,7 @@ class ProductInfoView(APIView):
 
     def get(self, request, product_slug):
         product = get_object_or_404(Product, slug=product_slug)
-        show_wholesale = is_loru_user(request.user) or is_supervisor(request.user)
+        show_wholesale = is_trade_user(request.user) or is_supervisor(request.user)
         return Response(
             status=200,
             data=ProductInfoSerializer(product, context=dict(
@@ -753,68 +755,6 @@ class ProductInfoView(APIView):
         )
 
 api_catalog_products_detail = ProductInfoView.as_view()
-
-class ApiProfileView(APIView):
-    permission_classes = (PermitIfCabinet,)
-    
-    def get(self, request):
-        profile = request.user.customerprofile
-        data = {
-            'id': request.user.pk,
-        }
-        try:
-            photo = request.build_absolute_uri(profile.customerprofilephoto.bfile.url) \
-                if profile.customerprofilephoto.bfile else None
-        except CustomerProfilePhoto.DoesNotExist:
-            photo = None
-        data['photo'] = photo
-        data['lastName'] = profile.user_last_name
-        data['firstName'] = profile.user_first_name
-        data['middleName'] = profile.user_middle_name
-        data['loginPhone'] = request.user.customerprofile.login_phone
-        data['username'] = request.user.username
-        data['places'] = []
-        for cp in CustomPlace.objects.filter(place__responsible__user=request.user).select_related('place'):
-            place={'id': cp.pk}
-            p = cp.place
-            place['address'] = _(u'Кладбище %s, участок %s') % (p.cemetery.name, p.area.name, )
-            if p.row:
-                place['address'] += _(u', ряд %s') % p.row
-            place['address'] += _(u', место %s') % p.place
-            cemetery_address = p.cemetery.address and p.cemetery.address.__unicode__() or ''
-            if cemetery_address:
-                place['address'] += _(u', %s') % cemetery_address
-            place['location'] = {
-                'latitude': p.lat,
-                'longitude': p.lng,
-            }
-            place['graves'] = []
-            gallery = p.get_photo_gallery(request)
-            for g in Grave.objects.filter(place=p).order_by('grave_number'):
-                grave = {'graveNumber': g.grave_number}
-                burials = []
-                for b in g.burial_set.exclude(burial_container=Burial.CONTAINER_BIO):
-                    burials.append(
-                        {
-                            'id': b.pk,
-                            'fio': b.deadman and b.deadman.full_name_complete() or _(u"Неизвестный"),
-                            'lastName': b.deadman and b.deadman.last_name,
-                            'firstName': b.deadman and b.deadman.first_name,
-                            'middleName': b.deadman and b.deadman.middle_name,
-                            'photo': None,
-                            'birthDate': b.deadman and b.deadman.birth_date and b.deadman.birth_date.str_safe() or None,
-                            'deathDate': b.deadman and b.deadman.death_date and b.deadman.death_date.str_safe() or None,
-                        }
-                    )
-                grave['burials'] = burials
-                place['graves'].append(grave)
-            place['gallery'] = sorted(gallery, key=lambda photo: photo['addedAt'], reverse=True)
-            place['photo'] = place['gallery'][0]['photo'] if place['gallery'] else None
-            data['places'].append(place)           
-            
-        return Response(status=200, data=data)
-
-api_profile = ApiProfileView.as_view()
 
 class ApiLoruProductPlaces(APIView):
     """
@@ -847,7 +787,7 @@ class ApiLoruProductPlaces(APIView):
     ]
     """
     
-    permission_classes = (PermitIfLoru,)
+    permission_classes = (PermitIfTrade,)
 
     @transaction.commit_on_success
     def post(self, request, format=None):
@@ -888,7 +828,7 @@ api_loru_product_places = ApiLoruProductPlaces.as_view()
 
 class UghPublishedProductsViewSet(viewsets.ViewSet):
     queryset = Product.objects.none()
-    permission_classes = (PermitIfLoru,)
+    permission_classes = (PermitIfTrade,)
     
     def list(self, request):
         data=[]
@@ -1043,7 +983,7 @@ class ApiOptPlacesOrders(OptOrderMixin, APIView):
     то возвращается status=400, message=”что произошло”. Если проверка успешна,
     то формируется новый заказ, статус код - 200 
     """
-    permission_classes = (PermitIfLoru,)
+    permission_classes = (PermitIfTrade,)
 
     @transaction.commit_on_success
     def post(self, request):
@@ -1125,7 +1065,7 @@ class ApiOptPlacesOrders(OptOrderMixin, APIView):
 api_optplaces_orders = ApiOptPlacesOrders.as_view()
 
 class OptOrderderInfoView(OptOrderMixin, APIView):
-    permission_classes = (PermitIfLoru,)
+    permission_classes = (PermitIfTrade,)
 
     def instance_permitted(self, request, pk):
         """
@@ -1199,7 +1139,7 @@ class OptOrderderInfoView(OptOrderMixin, APIView):
 api_optplaces_orders_detail = OptOrderderInfoView.as_view()
 
 class ApiLoruProductTypesView(APIView):
-    permission_classes = (PermitIfLoru,)
+    permission_classes = (PermitIfTrade,)
 
     def get(self, request):
         return Response(
@@ -1215,7 +1155,7 @@ class ApiLoruProductTypesView(APIView):
 api_loru_product_types = ApiLoruProductTypesView.as_view()
 
 class ApiProductList(ProductCategoryQsMixin, APIView):
-    permission_classes = (PermitIfLoru,)
+    permission_classes = (PermitIfTrade,)
     parser_classes = (MultiPartParser,)
 
     def get(self, request):
@@ -1253,7 +1193,7 @@ class ApiProductList(ProductCategoryQsMixin, APIView):
 api_product_list = ApiProductList.as_view()
 
 class ApiProductDetail(APIView):
-    permission_classes = (PermitIfLoru,)
+    permission_classes = (PermitIfTrade,)
     parser_classes = (MultiPartParser,)
 
     def get_object(self, request, pk):
@@ -1367,7 +1307,7 @@ class ApiOrgServicesMixin(object):
                 orgserviceprice.save()
 
 class ApiOrgServicesView(ApiOrgServicesMixin, APIView):
-    permission_classes = (PermitIfLoru,)
+    permission_classes = (PermitIfTrade,)
 
     def get(self, request, org_id):
         org, message = self.check_org_id(request, org_id)
@@ -1403,7 +1343,7 @@ class ApiOrgServicesView(ApiOrgServicesMixin, APIView):
 api_org_services = ApiOrgServicesView.as_view()
 
 class ApiOrgServicesEditView(ApiOrgServicesMixin, APIView):
-    permission_classes = (PermitIfLoru,)
+    permission_classes = (PermitIfTrade,)
 
     @transaction.commit_on_success
     def put(self, request, org_id, service_name):
@@ -1742,3 +1682,158 @@ class ApiClientOrdersView(ApiServicePriceMixin, APIView):
         )
 
 api_client_orders = ApiClientOrdersView.as_view()
+
+class ApiServiceOrdersView(APIView):
+    permission_classes = (PermitIfTradeOrCabinet,)
+
+    def get(self, request):
+        q = Q()
+        if is_trade_user(request.user):
+            q = Q(loru=request.user.profile.org, type=Order.TYPE_CUSTOMER)
+        elif is_cabinet_user(request.user):
+            q = Q(customplace__user=request.user, type=Order.TYPE_CUSTOMER)
+        qs = Order.objects.filter(q).order_by('-dt_created') if q else Order.objects.none()
+        return Response(data=ServiceOrderSerializer(qs, many=True,).data, status=200)
+
+api_orders = ApiServiceOrdersView.as_view()
+
+class ApiOrderCommentsView(APIView):
+    permission_classes = (PermitIfTradeOrCabinet,)
+
+    def get(self, request, pk):
+        try:
+            order = Order.objects.get(pk=pk)
+            if not order.is_accessible(request.user):
+                return Response(data=dict(detail='You are not authorized to this order'), status=403)
+        except Order.DoesNotExist:
+            raise Http404
+        data=[OrderCommentsSerializer(ordercomment, context=dict(
+                request=request,
+              )).data for ordercomment in OrderComment.objects.filter(order=order).order_by('dt_created')
+        ]
+        return Response(data=data, status=200)
+
+    @transaction.commit_on_success
+    def post(self, request, pk):
+        try:
+            order = Order.objects.get(pk=pk)
+            if not order.is_accessible(request.user):
+                return Response(data=dict(detail='You are not authorized to this order'), status=403)
+        except Order.DoesNotExist:
+            raise Http404
+        comment = request.DATA.get('comment')
+        if comment is not None:
+            ordercomment = OrderComment.objects.create(
+                order=order,
+                user=request.user,
+                comment=comment,
+            )
+            return Response(OrderCommentsSerializer(ordercomment, context=dict(request=request)).data, status=200)
+        else:
+            return Response(data=dict(status='error', message='No comment at input'), status=400)
+
+api_orders_comments = ApiOrderCommentsView.as_view()
+
+class ApiOrderResultView(APIView):
+    permission_classes = (PermitIfTradeOrCabinet,)
+    parser_classes = (MultiPartParser,)
+
+    def get(self, request, pk):
+        try:
+            order = Order.objects.get(pk=pk, type=Order.TYPE_CUSTOMER)
+            if not order.is_accessible(request.user):
+                return Response(data=dict(detail='You are not authorized to this order'), status=403)
+        except Order.DoesNotExist:
+            raise Http404
+        return Response(data=[OrderResultsSerializer(resultfile, context=dict(request=request)).data \
+                        for resultfile in ResultFile.objects.filter(order=order).order_by('date_of_creation')],
+                    status=200)
+
+    @transaction.commit_on_success
+    def post(self, request, pk):
+        try:
+            try:
+                order = Order.objects.get(pk=pk)
+                if not is_trade_user(request.user) or \
+                   not (order.loru and order.loru == request.user.profile.org):
+                    return Response(data=dict(detail='You are not authorized to post to this order'), status=403)
+            except Order.DoesNotExist:
+                raise Http404
+            type_ = request.DATA.get('type')
+            if not type_:
+                raise ServiceException(_(u"Не задан тип загружаемого файла"))
+            for tp in ResultFile.RESULT_TYPES:
+                if type_ == tp[0]:
+                    break
+            else:
+                raise ServiceException(_(u"Тип %s файла результата выполнения заказа не предусмотрен") % type_)
+            file_ = 'file'
+            if file_ not in request.FILES:
+                raise ServiceException(_(u"Не получен загружаемый файл '%s'") % file_)
+            resultfile = ResultFile.objects.create(
+                bfile=request.FILES[file_],
+                order=order,
+                type=type_,
+                creator=request.user,
+            )
+            # отметим изменение в order.dt_modified:
+            order.save()
+        except ServiceException as excpt:
+            transaction.rollback()
+            return Response(data=dict(status='error', message=excpt.message), status=400)
+        return Response(data=OrderResultsSerializer(resultfile, context=dict(request=request)).data, status=200)
+
+
+api_orders_results = ApiOrderResultView.as_view()
+
+class ApiServiceOrderDetailView(APIView):
+    permission_classes = (PermitIfTradeOrCabinet,)
+
+    def get(self, request, pk):
+        try:
+            order = Order.objects.get(pk=pk, type=Order.TYPE_CUSTOMER)
+            if not order.is_accessible(request.user):
+                return Response(data=dict(detail='You are not authorized to this order'), status=403)
+        except Order.DoesNotExist:
+            raise Http404
+        return Response(
+            data=ServiceOrderDetailSerializer(order, context=dict(request=request)).data,
+            status=200,
+        )
+
+api_orders_detail = ApiServiceOrderDetailView.as_view()
+
+class ApiServiceOrderPutView(APIView):
+    permission_classes = (PermitIfTradeOrCabinet,)
+
+    @transaction.commit_on_success
+    def put(self, request, pk):
+        try:
+            order = Order.objects.get(pk=pk, type=Order.TYPE_CUSTOMER)
+            if not order.is_accessible(request.user):
+                return Response(data=dict(detail='You are not authorized to this order'), status=403)
+        except Order.DoesNotExist:
+            raise Http404
+        kwargs = dict()
+
+        status = request.DATA.get('status')
+        if status:
+            for st in Order.STATUS_TYPES:
+                if status == st[0]:
+                    break
+            else:
+                return Response(data=dict(status='error', message=_(u"Статус %s не предусмотрен") % status), status=400)
+            kwargs.update(dict(status=status))
+
+        if 'clientRating' in request.DATA:
+            kwargs.update(dict(applicant_approved=request.DATA['clientRating']))
+
+        archived = request.DATA.get('isArchived')
+        if archived is not None:
+            kwargs.update(dict(archived=archived))
+
+        if kwargs:
+            Order.objects.filter(pk=order.pk).update(**kwargs)
+        return Response(data=dict(status='succes'), status=200)
+
+api_client_orders_put_status = ApiServiceOrderPutView.as_view()

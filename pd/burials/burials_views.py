@@ -3,6 +3,7 @@ import datetime
 import json
 from django import db
 
+from django.conf import settings
 from django.contrib import messages
 from django.core.urlresolvers import reverse
 from django.db import transaction
@@ -22,9 +23,9 @@ from burials.models import Reason, Burial, Cemetery, Place, ExhumationRequest
 from persons.models import DeathCertificate
 from logs.models import write_log
 from orders.models import Order
-from users.models import Org
+from users.models import Org, is_cabinet_user
 from pd.forms import CommentForm
-from pd.views import PaginateListView, FormInvalidMixin
+from pd.views import PaginateListView, FormInvalidMixin, get_front_end_url
 from reports.models import make_report
 
 class BurialGetOrderMixin:
@@ -63,6 +64,17 @@ class BurialsListGenericMixin:
 
 class DashboardView(BurialsListGenericMixin, TemplateView):
     template_name = 'dashboard.html'
+
+    def get(self, request, *args, **kwargs):
+        if is_cabinet_user(request.user):
+            if settings.REDIRECT_LOGIN_TO_FRONT_END:
+                return redirect(get_front_end_url(request))
+            else:
+                return render_to_response(
+                    'simple_message.html',
+                    dict(message=_(u"Рабочее место пользователя кабинета организовано другими средствами"))
+                )
+        return super(DashboardView, self).get(request, *args, **kwargs)
 
     def get_qs_filter(self):
       if self.request.user.is_authenticated() and self.request.user.profile.is_loru():

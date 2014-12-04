@@ -38,6 +38,17 @@ class PhonesMixin(object):
     def phone_list(self):
         return [ phone.number for phone in self.phone_set ]
 
+class UserPhoto(Files):
+    """
+    Аватарки пользователя
+    """
+    # Макс. размер в мегабайтах
+    MAX_SIZE = 5
+    # Мин. ширина в пикселях
+    MIN_SIZE_X = 200
+
+    user = models.OneToOneField(User, related_name='user_photo_list')
+
 class CommonProfile(BaseModel):
     USERNAME_HELPTEXT = _(u'До 30 символов: латинские буквы, цифры, дефисы, знаки подчеркивания, @')
 
@@ -53,13 +64,13 @@ class CommonProfile(BaseModel):
     def __unicode__(self):
         return self.user and (self.full_name() or self.user.username) or u'%s' % self.pk
 
-    def full_name(self):
+    def full_name(self, put_middle_name=True):
         name = ""
         if self.user_last_name:
             name = self.user_last_name
             if self.user_first_name:
                 name = u"{0} {1}".format(name, self.user_first_name)
-                if self.user_middle_name:
+                if put_middle_name and self.user_middle_name:
                     name = u"{0} {1}".format(name, self.user_middle_name)
         if not name:
             name = self.user.get_full_name()
@@ -123,9 +134,6 @@ class CustomerProfile(CommonProfile):
         responsible.save()
         return user, password
 
-class CustomerProfilePhoto(Files):
-    customerprofile = models.OneToOneField(CustomerProfile)
-    
 class Profile(CommonProfile):
     org = models.ForeignKey('users.Org', null=True)
 
@@ -139,6 +147,9 @@ class Profile(CommonProfile):
 
     def is_loru(self):
         return self.org and self.org.type == Org.PROFILE_LORU
+
+    def is_trade(self):
+        return self.org and self.org.ability.filter(name=OrgAbility.ABILITY_TRADE).exists()
 
     def is_ugh(self):
         return self.org and self.org.type == Org.PROFILE_UGH
@@ -163,9 +174,9 @@ def is_cabinet_user(user):
     except (AttributeError, CustomerProfile.DoesNotExist, ):
         return False
     
-def is_loru_user(user):
+def is_trade_user(user):
     try:
-        return user.profile.is_loru()
+        return user.profile.is_trade()
     except (AttributeError, Profile.DoesNotExist, ):
         return False
     
@@ -193,13 +204,17 @@ def get_profile(user):
                 pass
     return profile
 
-class PermitIfLoru(permissions.BasePermission):
+class PermitIfTrade(permissions.BasePermission):
     def has_permission(self, request, view):
-        return is_loru_user(request.user)
+        return is_trade_user(request.user)
 
-class PermitIfLoruOrSupervisor(permissions.BasePermission):
+class PermitIfTradeOrSupervisor(permissions.BasePermission):
     def has_permission(self, request, view):
-        return is_loru_user(request.user) or is_supervisor(request.user)
+        return is_trade_user(request.user) or is_supervisor(request.user)
+
+class PermitIfTradeOrCabinet(permissions.BasePermission):
+    def has_permission(self, request, view):
+        return is_trade_user(request.user) or is_cabinet_user(request.user)
 
 class PermitIfUgh(permissions.BasePermission):
     def has_permission(self, request, view):
@@ -512,6 +527,14 @@ class Oauth(models.Model):
             message['message'] = excpt.message
         return user, oauth, message
 
+class OrgAbility(models.Model):
+    ABILITY_TRADE = 'trade'
+    ORG_ABILITIES = (
+        (ABILITY_TRADE, _(u'Торговля')),
+    )
+    name = models.CharField(_(u"Название"), max_length=255, unique=True, choices=ORG_ABILITIES)
+    title = models.CharField(_(u"Заглавие"), max_length=255)
+
 class Org(GetLogsMixin, BaseModel):
     NUM_EMPTY = 'empty'
     NUM_YEAR_UGH = 'year_ugh'
@@ -558,6 +581,7 @@ class Org(GetLogsMixin, BaseModel):
     )
     
     type = models.CharField(_(u"Тип"), max_length=255, choices=PROFILE_TYPES)
+    ability = models.ManyToManyField(OrgAbility)
     name = models.CharField(_(u"Название организации"), max_length=255, default='')
     slug = AutoSlugField(populate_from='name', max_length=255, editable=False,
                          unique=True, null=True, always_update=True)
@@ -698,10 +722,7 @@ class Store(models.Model, PhonesMixin):
     Склады, магазины у ЛОРУ
     """
     name = models.CharField(_(u"Название"), max_length=255, default='')
-    loru = models.ForeignKey(
-        Org, verbose_name=_(u"ЛОРУ"), limit_choices_to={'type': Org.PROFILE_LORU},
-        on_delete=models.PROTECT,
-    )
+    loru = models.ForeignKey(Org, verbose_name=_(u"ЛОРУ"), on_delete=models.PROTECT)
     address = models.ForeignKey('geo.Location', verbose_name=_(u"Адрес"))
     # phones: могут быть разных типов, пользуемся моделью persons.Phone
 
@@ -709,9 +730,9 @@ class FavoriteSupplier(models.Model):
     """
     Избранные поставщики у ЛОРУ
     """
-    loru = models.ForeignKey(Org, verbose_name=_(u"ЛОРУ"), limit_choices_to={'type': Org.PROFILE_LORU},
+    loru = models.ForeignKey(Org, verbose_name=_(u"ЛОРУ"),
         related_name='favorite_loru', on_delete=models.PROTECT, )
-    supplier = models.ForeignKey(Org, verbose_name=_(u"ЛОРУ"), limit_choices_to={'type': Org.PROFILE_LORU},
+    supplier = models.ForeignKey(Org, verbose_name=_(u"ЛОРУ"),
         related_name='favorite_supplier_list', on_delete=models.PROTECT, )
 
     class Meta:
