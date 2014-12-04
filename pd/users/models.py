@@ -705,12 +705,42 @@ class Org(GetLogsMixin, BaseModel):
                 result.append(favorite_item(favorite.supplier))
         return result
 
+class OrgWebPay(BaseModel):
+    """
+    Данные, в том числе секретные, поставщика в платежной системе WebPay
+    """
+    org = models.OneToOneField(Org)
+    wsb_storeid = models.CharField(_(u"Идентификатор организации в системе WebPay"), max_length=255)
+    secret = models.CharField(_(u"Секретный ключ"), max_length=255)
+
+    # Это название должно совпадать с org.name, но в WebPay заказчик может ввести другое название.
+    # Не исключено, что WebPay проверяет или будет проверять совпадение wsb_store в запросе
+    # на оплату и наименование организации, каким оно прописано в WebPay
+    #
+    wsb_store = models.CharField(_(u"Название организации на форме оплаты WebPay"), max_length=255)
+
+    # WebPay сейчас работает только с BYR; кроме того, валюта есть свойство организации,
+    # так что поле wsb_currency_id может оказаться избыточным.
+    # Но не исключается, что
+    # - WebPay будет работать с другими валютами, в т.ч. с конвертацией,
+    # - при возможности конвертации валюта организации может отличаться от WebPay
+    # Посему, несмотря на избыточность поля, храним его в этой таблице
+    #
+    wsb_currency_id = models.CharField(_(u"Код валюты согласно ISO4271"), max_length=255, default='BYR')
+
+    #  Версия формы оплаты, сейчас 2, но могут появляться новые
+    #
+    wsb_version = models.CharField(_(u"Версия формы оплаты"), max_length=255)
+
+    # Будет устанавливаться в False по окончании тестирования
+    #
+    wsb_test = models.BooleanField(_(u"Тестовая среда"), default=True)
+
 class OrgCertificate(Files):
     """
     Сканы свидетельств о регистрации
     """
     org = models.OneToOneField(Org)
-
 class OrgContract(Files):
     """
     Сгенерированный pdf договора с заказчиком
