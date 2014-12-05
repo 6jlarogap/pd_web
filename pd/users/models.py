@@ -741,6 +741,7 @@ class OrgCertificate(Files):
     Сканы свидетельств о регистрации
     """
     org = models.OneToOneField(Org)
+
 class OrgContract(Files):
     """
     Сгенерированный pdf договора с заказчиком

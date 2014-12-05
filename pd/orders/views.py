@@ -29,8 +29,9 @@ from logs.models import write_log
 from geo.models import Location
 from burials.forms import AddOrgForm, AddAgentForm, AddDoverForm, AddDocTypeForm
 from burials.models import Burial, Place
-from users.models import CustomerProfile, Org, ProfileLORU, Store, is_trade_user, is_supervisor, \
-                         PermitIfTrade, PermitIfCabinet, PermitIfTradeOrCabinet, is_cabinet_user
+from users.models import CustomerProfile, Org, ProfileLORU, Store, OrgWebPay, \
+                         is_trade_user, is_supervisor, is_cabinet_user, \
+                         PermitIfTrade, PermitIfCabinet, PermitIfTradeOrCabinet
 from billing.models import Rate
 from orders.forms import ProductForm, OrderForm, OrderItemFormset, CoffinForm, CatafalqueForm, \
                          AddInfoForm, OrderSearchForm, OrderBurialForm
@@ -47,6 +48,7 @@ from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser
+from rest_framework.renderers import StaticHTMLRenderer
 from orders.serializers import ProductCategorySerializer, ProductsSerializer, ProductsOptSerializer, \
                                ProductInfoSerializer, OptOrdersSerializer, OptOrderInfoSerializer, \
                                ProductEditSerializer, ServiceSerializer, OrgServiceSerializer, \
@@ -1837,3 +1839,43 @@ class ApiServiceOrderPutView(APIView):
         return Response(data=dict(status='succes'), status=200)
 
 api_client_orders_put_status = ApiServiceOrderPutView.as_view()
+
+class ApiClientOrderPaymentsView(APIView):
+    permission_classes = (PermitIfCabinet,)
+
+    PAY_SYSTEM_WEBPAY = 'webpay'
+    PAY_SYSTEM_TYPES = (PAY_SYSTEM_WEBPAY, )
+
+    def post(self, request, pk):
+        try:
+            pay_system = request.DATA.get('type')
+            if not pay_system:
+                raise ServiceException(_(u"Не задан тип платежной системы"))
+            if pay_system not in self.PAY_SYSTEM_TYPES:
+                raise ServiceException(_(u"Платежная система %s не предусмотрена") % pay_system)
+            try:
+                order = Order.objects.get(pk=pk)
+            except Order.DoesNotExist:
+                raise Http404
+            if not order.is_accessible(request.user):
+                return Response(data=dict(detail='You are not authorized to this order'), status=403)
+            system_not_supported = _(u"Исполнитель заказа, %s, не поддерживает платежи в системе %s")
+            if pay_system == self.PAY_SYSTEM_WEBPAY:
+                try:
+                    pay_parms = OrgWebPay.objects.get(org=order.loru)
+                except OrgWebPay.DoesNotExist:
+                    raise ServiceException(system_not_supported % (order.loru, pay_system,))
+
+        except ServiceException as excpt:
+            return Response(data=dict(status='error', message=excpt.message), status=400)
+        return Response(data={}, status=200)
+
+api_client_orders_payments = ApiClientOrderPaymentsView.as_view()
+
+class ApiWebPayNotifyView(APIView):
+    renderer_classes = (StaticHTMLRenderer, )
+
+    def post(self, request, pk):
+        return Response('', status=200)
+
+api_orders_webpay_notify = ApiWebPayNotifyView.as_view()
