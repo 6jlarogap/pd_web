@@ -1950,6 +1950,7 @@ class ApiWebPayNotifyView(APIView):
            ):
             model_key = 'order_ident' if post_key == 'order_id' else post_key
             setattr(orderwebpay, model_key, request.DATA.get(post_key))
+            orderwebpay.save()
         return Response('', status=200)
 
 api_orders_webpay_notify = ApiWebPayNotifyView.as_view()
