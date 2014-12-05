@@ -3,6 +3,10 @@
 import datetime
 import decimal
 import json
+import random
+import string
+import re
+import hashlib
 
 from django.conf import settings
 from django.contrib import messages
@@ -1862,13 +1866,58 @@ class ApiClientOrderPaymentsView(APIView):
             system_not_supported = _(u"Исполнитель заказа, %s, не поддерживает платежи в системе %s")
             if pay_system == self.PAY_SYSTEM_WEBPAY:
                 try:
-                    pay_parms = OrgWebPay.objects.get(org=order.loru)
+                    orgwebpay = OrgWebPay.objects.get(org=order.loru)
                 except OrgWebPay.DoesNotExist:
                     raise ServiceException(system_not_supported % (order.loru, pay_system,))
-
+                items = []
+                for serviceitem in ServiceItem.objects.filter(order=order).order_by('pk'):
+                    items.append(dict(
+                        name=serviceitem.orgservice.service.title,
+                        quantity="1.00",
+                        price=str(serviceitem.cost)
+                    ))
+                for orderitem in OrderItem.objects.filter(order=order).order_by('name'):
+                    items.append(dict(
+                        name=orderitem.name,
+                        quantity=str(ordeitem.quantity),
+                        price=str(orderitem.cost),
+                    ))
+                for key in ('quantity', 'price',):
+                    for item in items:
+                        if not item[key].endswith('.00'):
+                            break
+                    else:
+                        for item in items:
+                            item[key] = re.sub(r'\.00','', item[key])
+                data = dict(
+                    wsb_storeid=orgwebpay.wsb_storeid,
+                    wsb_store=orgwebpay.wsb_store,
+                    wsb_order_num=order.number_webpay(),
+                    wsb_currency_id=orgwebpay.wsb_currency_id,
+                    wsb_version=orgwebpay.wsb_version,
+                    wsb_language_id=u'russian',
+                    wsb_seed=''.join(random.choice(string.ascii_uppercase + string.digits) for x in range(10)),
+                    wsb_notify_url=get_host_url(self.request) + \
+                                   reverse('api_orders_webpay_notify', args=(order.pk,)).strip('/'),
+                    wsb_test="1" if orgwebpay.wsb_test else "0",
+                    items=items,
+                    wsb_total=str(order.total),
+                )
+                signature = hashlib.sha1() if data['wsb_version'] == "2" else hashlib.md5()
+                print orgwebpay.secret, type(orgwebpay.secret)
+                signature.update(''.join((
+                    data['wsb_seed'],
+                    data['wsb_storeid'],
+                    data['wsb_order_num'],
+                    data['wsb_test'],
+                    data['wsb_currency_id'],
+                    data['wsb_total'],
+                    orgwebpay.secret,
+                )))
+                data['wsb_signature'] = signature.hexdigest()
         except ServiceException as excpt:
             return Response(data=dict(status='error', message=excpt.message), status=400)
-        return Response(data={}, status=200)
+        return Response(data=data, status=200)
 
 api_client_orders_payments = ApiClientOrderPaymentsView.as_view()
 
