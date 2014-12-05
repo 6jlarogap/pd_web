@@ -3,6 +3,10 @@
 import datetime
 import decimal
 import json
+import random
+import string
+import re
+import hashlib
 
 from django.conf import settings
 from django.contrib import messages
@@ -29,14 +33,15 @@ from logs.models import write_log
 from geo.models import Location
 from burials.forms import AddOrgForm, AddAgentForm, AddDoverForm, AddDocTypeForm
 from burials.models import Burial, Place
-from users.models import CustomerProfile, Org, ProfileLORU, Store, is_trade_user, is_supervisor, \
-                         PermitIfTrade, PermitIfCabinet, PermitIfTradeOrCabinet, is_cabinet_user
+from users.models import CustomerProfile, Org, ProfileLORU, Store, OrgWebPay, \
+                         is_trade_user, is_supervisor, is_cabinet_user, \
+                         PermitIfTrade, PermitIfCabinet, PermitIfTradeOrCabinet
 from billing.models import Rate
 from orders.forms import ProductForm, OrderForm, OrderItemFormset, CoffinForm, CatafalqueForm, \
                          AddInfoForm, OrderSearchForm, OrderBurialForm
 from orders.models import Product, Order, OrderItem, ProductCategory, \
                           Service, Measure, OrgService, OrgServicePrice, ServiceItem, OrderComment, \
-                          Route, ResultFile
+                          Route, ResultFile, OrderWebPay
 from persons.models import CustomPlace, AlivePerson
 from pd.forms import CommentForm
 from pd.views import PaginateListView, RequestToFormMixin, ServiceException, get_front_end_url, get_host_url
@@ -46,7 +51,8 @@ from rest_framework import viewsets
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from rest_framework.parsers import MultiPartParser
+from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.renderers import StaticHTMLRenderer
 from orders.serializers import ProductCategorySerializer, ProductsSerializer, ProductsOptSerializer, \
                                ProductInfoSerializer, OptOrdersSerializer, OptOrderInfoSerializer, \
                                ProductEditSerializer, ServiceSerializer, OrgServiceSerializer, \
@@ -1837,3 +1843,114 @@ class ApiServiceOrderPutView(APIView):
         return Response(data=dict(status='succes'), status=200)
 
 api_client_orders_put_status = ApiServiceOrderPutView.as_view()
+
+class ApiClientOrderPaymentsView(APIView):
+    permission_classes = (PermitIfCabinet,)
+
+    PAY_SYSTEM_WEBPAY = 'webpay'
+    PAY_SYSTEM_TYPES = (PAY_SYSTEM_WEBPAY, )
+
+    def post(self, request, pk):
+        try:
+            pay_system = request.DATA.get('type')
+            if not pay_system:
+                raise ServiceException(_(u"Не задан тип платежной системы"))
+            if pay_system not in self.PAY_SYSTEM_TYPES:
+                raise ServiceException(_(u"Платежная система %s не предусмотрена") % pay_system)
+            try:
+                order = Order.objects.get(pk=pk)
+            except Order.DoesNotExist:
+                raise Http404
+            if not order.is_accessible(request.user):
+                return Response(data=dict(detail='You are not authorized to this order'), status=403)
+            system_not_supported = _(u"Исполнитель заказа, %s, не поддерживает платежи в системе %s")
+            if pay_system == self.PAY_SYSTEM_WEBPAY:
+                try:
+                    orgwebpay = OrgWebPay.objects.get(org=order.loru)
+                except OrgWebPay.DoesNotExist:
+                    raise ServiceException(system_not_supported % (order.loru, pay_system,))
+                items = []
+                for serviceitem in ServiceItem.objects.filter(order=order).order_by('pk'):
+                    items.append(dict(
+                        name=serviceitem.orgservice.service.title,
+                        quantity="1.00",
+                        price=str(serviceitem.cost)
+                    ))
+                for orderitem in OrderItem.objects.filter(order=order).order_by('name'):
+                    items.append(dict(
+                        name=orderitem.name,
+                        quantity=str(ordeitem.quantity),
+                        price=str(orderitem.cost),
+                    ))
+                for key in ('quantity', 'price',):
+                    for item in items:
+                        if not item[key].endswith('.00'):
+                            break
+                    else:
+                        for item in items:
+                            item[key] = re.sub(r'\.00','', item[key])
+                data = dict(
+                    wsb_storeid=orgwebpay.wsb_storeid,
+                    wsb_store=orgwebpay.wsb_store,
+                    wsb_order_num=order.number_webpay(),
+                    wsb_currency_id=orgwebpay.wsb_currency_id,
+                    wsb_version=orgwebpay.wsb_version,
+                    wsb_language_id=u'russian',
+                    wsb_seed=''.join(random.choice(string.ascii_uppercase + string.digits) for x in range(10)),
+                    wsb_notify_url=get_host_url(self.request) + \
+                                   reverse('api_orders_webpay_notify', args=(order.pk,)).strip('/'),
+                    wsb_test="1" if orgwebpay.wsb_test else "0",
+                    items=items,
+                    wsb_total=str(order.total),
+                )
+                signature = hashlib.sha1() if data['wsb_version'] == "2" else hashlib.md5()
+                signature.update(''.join((
+                    data['wsb_seed'],
+                    data['wsb_storeid'],
+                    data['wsb_order_num'],
+                    data['wsb_test'],
+                    data['wsb_currency_id'],
+                    data['wsb_total'],
+                    orgwebpay.secret,
+                )))
+                data['wsb_signature'] = signature.hexdigest()
+                OrderWebPay.objects.create(
+                    order=order,
+                    wsb_order_num=data['wsb_order_num'],
+                )
+        except ServiceException as excpt:
+            return Response(data=dict(status='error', message=excpt.message), status=400)
+        return Response(data=data, status=200)
+
+api_client_orders_payments = ApiClientOrderPaymentsView.as_view()
+
+class ApiWebPayNotifyView(APIView):
+    parser_classes = (FormParser,)
+    renderer_classes = (StaticHTMLRenderer, )
+
+    def post(self, request, pk):
+        print "api_orders_webpay_notify GET:"
+        print request.GET
+        print "api_orders_webpay_notify DATA:"
+        print request.DATA
+        print "OrderId: ", pk
+        try:
+            order = Order.objects.get(pk=pk)
+        except Order.DoesNotExist:
+            raise Http404
+        order.status = Order.STATUS_PAID
+        order.save()
+        try:
+            orderwebpay = OrderWebPay.objects.filter(order=order).order_by('-pk')[0]
+        except IndexError:
+            raise Http404
+        for post_key in (
+            'transaction_id',
+            'batch_timestamp',
+           ):
+            model_key = 'order_ident' if post_key == 'order_id' else post_key
+            setattr(orderwebpay, model_key, request.DATA.get(post_key))
+            orderwebpay.save()
+        return Response('', status=200)
+
+api_orders_webpay_notify = ApiWebPayNotifyView.as_view()
