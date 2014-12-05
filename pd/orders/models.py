@@ -517,6 +517,7 @@ class OrderWebPay(BaseModel):
     wsb_order_num = models.CharField(_(u"Номер заказа"), max_length=255)
 
     # Имена этих полей -- в соответствии с полями ответа от WebPay
+    #
     transaction_id = models.CharField(_(u"Номер транзакции"), max_length=255)
     batch_timestamp = models.CharField(_(u"Время совершения транзакции"), max_length=255)
     currency_id = models.CharField(_(u"Код валюты согласно ISO4271"), max_length=255)

@@ -728,7 +728,7 @@ class OrgWebPay(BaseModel):
     #
     wsb_currency_id = models.CharField(_(u"Код валюты согласно ISO4271"), max_length=255, default='BYR')
 
-    #  Версия формы оплаты, сейчас 2, но могут появляться новые
+    #  Версия формы оплаты, сейчас "2", но могут появляться новые
     #
     wsb_version = models.CharField(_(u"Версия формы оплаты"), max_length=255)
 
