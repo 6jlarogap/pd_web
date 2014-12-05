@@ -581,7 +581,7 @@ class Org(GetLogsMixin, BaseModel):
     )
     
     type = models.CharField(_(u"Тип"), max_length=255, choices=PROFILE_TYPES)
-    ability = models.ManyToManyField(OrgAbility)
+    ability = models.ManyToManyField(OrgAbility, editable=False)
     name = models.CharField(_(u"Название организации"), max_length=255, default='')
     slug = AutoSlugField(populate_from='name', max_length=255, editable=False,
                          unique=True, null=True, always_update=True)
