@@ -41,7 +41,7 @@ from orders.forms import ProductForm, OrderForm, OrderItemFormset, CoffinForm, C
                          AddInfoForm, OrderSearchForm, OrderBurialForm
 from orders.models import Product, Order, OrderItem, ProductCategory, \
                           Service, Measure, OrgService, OrgServicePrice, ServiceItem, OrderComment, \
-                          Route, ResultFile
+                          Route, ResultFile, OrderWebPay
 from persons.models import CustomPlace, AlivePerson
 from pd.forms import CommentForm
 from pd.views import PaginateListView, RequestToFormMixin, ServiceException, get_front_end_url, get_host_url
@@ -51,7 +51,7 @@ from rest_framework import viewsets
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from rest_framework.parsers import MultiPartParser
+from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.renderers import StaticHTMLRenderer
 from orders.serializers import ProductCategorySerializer, ProductsSerializer, ProductsOptSerializer, \
                                ProductInfoSerializer, OptOrdersSerializer, OptOrderInfoSerializer, \
@@ -1904,7 +1904,6 @@ class ApiClientOrderPaymentsView(APIView):
                     wsb_total=str(order.total),
                 )
                 signature = hashlib.sha1() if data['wsb_version'] == "2" else hashlib.md5()
-                print orgwebpay.secret, type(orgwebpay.secret)
                 signature.update(''.join((
                     data['wsb_seed'],
                     data['wsb_storeid'],
@@ -1915,6 +1914,10 @@ class ApiClientOrderPaymentsView(APIView):
                     orgwebpay.secret,
                 )))
                 data['wsb_signature'] = signature.hexdigest()
+                OrderWebPay.objects.create(
+                    order=order,
+                    wsb_order_num=data['wsb_order_num'],
+                )
         except ServiceException as excpt:
             return Response(data=dict(status='error', message=excpt.message), status=400)
         return Response(data=data, status=200)
@@ -1922,9 +1925,31 @@ class ApiClientOrderPaymentsView(APIView):
 api_client_orders_payments = ApiClientOrderPaymentsView.as_view()
 
 class ApiWebPayNotifyView(APIView):
+    parser_classes = (FormParser,)
     renderer_classes = (StaticHTMLRenderer, )
 
     def post(self, request, pk):
+        print "api_orders_webpay_notify GET:"
+        print request.GET
+        print "api_orders_webpay_notify DATA:"
+        print request.DATA
+        print "OrderId: ", pk
+        try:
+            order = Order.objects.get(pk=pk)
+        except Order.DoesNotExist:
+            raise Http404
+        order.status = Order.STATUS_PAID
+        order.save()
+        try:
+            orderwebpay = OrderWebPay.objects.filter(order=order).order_by('-pk')[0]
+        except IndexError:
+            raise Http404
+        for post_key in (
+            'transaction_id',
+            'batch_timestamp',
+           ):
+            model_key = 'order_ident' if post_key == 'order_id' else post_key
+            setattr(orderwebpay, model_key, request.DATA.get(post_key))
         return Response('', status=200)
 
 api_orders_webpay_notify = ApiWebPayNotifyView.as_view()

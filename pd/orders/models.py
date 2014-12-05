@@ -1,6 +1,6 @@
 # coding=utf-8
 from __builtin__ import property
-import datetime
+import datetime, time
 import os, shutil
 from autoslug import AutoSlugField
 
@@ -379,14 +379,7 @@ class Order(GetLogsMixin, BaseModel):
             self.number,
         )
 
-    def number_webpay(self):
-        """
-        Автогенерируемый номер заказа для WebPay
-        """
-        return u"%s-%s" % (
-            self.number_verbose(),
-            self.pk,
-        )
+    number_webpay = number_verbose
 
     def first_comment(self):
         """
@@ -474,7 +467,7 @@ class OrderComment(BaseModel):
 
 class OrderWebPay(BaseModel):
     """
-    Транзакции по оплате заказа в WebPay
+    Транзакции по успешной оплате заказа в WebPay
     """
 
     METHOD_TEST = 'test'
@@ -501,9 +494,7 @@ class OrderWebPay(BaseModel):
         (PAY_TYPE_VOIDED, _(u"Voided (Сброшенная после авторизации)")),
     )
 
-    order = models.ForeignKey(Order, verbose_name=_(u"Заказ"),
-                              # Во избежание конфликта с полем order_id
-                              db_column='order_pk' )
+    order = models.ForeignKey(Order, verbose_name=_(u"Заказ"))
 
     # Этот номер, wsb_order_num, "наш" номер заказа, формируемый функцией
     # Order.number_verbose(), отправляется в WebPay, чтобы тот попросил заказчика
@@ -512,21 +503,24 @@ class OrderWebPay(BaseModel):
     #
     #   http(s)://.../api/orders/<order_pk>/webpay/notify?<wsb_order_num>
     #
-    # В колонке wsb_order_num держим этот номер в целях протоколирования
+    # В колонке wsb_order_num держим этот номер в целях протоколирования.
+    # Возможно, по нему будет производится поиск
     # 
-    wsb_order_num = models.CharField(_(u"Номер заказа"), max_length=255)
+    wsb_order_num = models.CharField(_(u"Номер заказа"), max_length=255, db_index=True)
 
     # Имена этих полей -- в соответствии с полями ответа от WebPay
+    # (кроме order_id (WebPay) == order_ident в этой модели)
+    # Заполняются, когда придет ответ
     #
-    transaction_id = models.CharField(_(u"Номер транзакции"), max_length=255)
-    batch_timestamp = models.CharField(_(u"Время совершения транзакции"), max_length=255)
-    currency_id = models.CharField(_(u"Код валюты согласно ISO4271"), max_length=255)
-    amount = models.CharField(_(u"Сумма"), max_length=255)
-    payment_method = models.CharField(_(u"Метод платежа"), max_length=255, choices=PAYMENT_METHODS)
-    payment_type = models.CharField(_(u"Тип транзакции"), max_length=255, choices=TRANSACTION_TYPES)
-    order_id = models.CharField(_(u"Номер заказа в системе WebPay (order_id)"), max_length=255)
-    rrn = models.CharField(_(u"Номер транзакции в системе Visa/MasterCard"), max_length=255)
-    wsb_signature = models.CharField(_(u"Электронная подпись"), max_length=255)
+    transaction_id = models.CharField(_(u"Номер транзакции"), max_length=255, null=True)
+    batch_timestamp = models.CharField(_(u"Время совершения транзакции"), max_length=255, null=True)
+    currency_id = models.CharField(_(u"Код валюты согласно ISO4271"), max_length=255, null=True)
+    amount = models.CharField(_(u"Сумма"), max_length=255, null=True)
+    payment_method = models.CharField(_(u"Метод платежа"), max_length=255, choices=PAYMENT_METHODS, null=True)
+    payment_type = models.CharField(_(u"Тип транзакции"), max_length=255, choices=TRANSACTION_TYPES, null=True)
+    order_ident = models.CharField(_(u"Номер заказа в системе WebPay (order_id)"), max_length=255, null=True)
+    rrn = models.CharField(_(u"Номер транзакции в системе Visa/MasterCard"), max_length=255, null=True)
+    wsb_signature = models.CharField(_(u"Электронная подпись"), max_length=255, null=True)
 
 class ResultFile(Files):
     """
