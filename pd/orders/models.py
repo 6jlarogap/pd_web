@@ -1,6 +1,6 @@
 # coding=utf-8
 from __builtin__ import property
-import datetime
+import datetime, time
 import os, shutil
 from autoslug import AutoSlugField
 
@@ -379,6 +379,8 @@ class Order(GetLogsMixin, BaseModel):
             self.number,
         )
 
+    number_webpay = number_verbose
+
     def first_comment(self):
         """
         В оптовых заказах, при создании, обязательно делается комментарий
@@ -462,6 +464,63 @@ class OrderComment(BaseModel):
     user = models.ForeignKey('auth.User', verbose_name=_(u"Пользователь"), )
     type = models.CharField(_(u"Тип"), max_length=255, choices=COMMENT_TYPES, default=TYPE_SHARED)
     comment = models.TextField(_(u"Комментарий"), )
+
+class OrderWebPay(BaseModel):
+    """
+    Транзакции по успешной оплате заказа в WebPay
+    """
+
+    METHOD_TEST = 'test'
+    METHOD_CARD = 'cc'
+    PAYMENT_METHODS = (
+        (METHOD_TEST, _(u"Тест, без реального платежа")),
+        (METHOD_CARD, _(u"Платежная карточка")),
+    )
+
+    PAY_TYPE_COMPLETED = '1'
+    PAY_TYPE_DECLINED = '2'
+    PAY_TYPE_PENDING = '3'
+    PAY_TYPE_AUTHORIZED = '4'
+    PAY_TYPE_REFUNDED = '5'
+    PAY_TYPE_SYSTEM = '6'
+    PAY_TYPE_VOIDED = '7'
+    TRANSACTION_TYPES = (
+        (PAY_TYPE_COMPLETED, _(u"Completed (Завершенная)")),
+        (PAY_TYPE_DECLINED, _(u"Declined (Отклоненная)")),
+        (PAY_TYPE_PENDING, _(u"Pending (В обработке)")),
+        (PAY_TYPE_AUTHORIZED, _(u"Authorized (Авторизованная)")),
+        (PAY_TYPE_REFUNDED, _(u"Refunded (Возвращенная)")),
+        (PAY_TYPE_SYSTEM, _(u"System (Системная))")),
+        (PAY_TYPE_VOIDED, _(u"Voided (Сброшенная после авторизации)")),
+    )
+
+    order = models.ForeignKey(Order, verbose_name=_(u"Заказ"))
+
+    # Этот номер, wsb_order_num, "наш" номер заказа, формируемый функцией
+    # Order.number_verbose(), отправляется в WebPay, чтобы тот попросил заказчика
+    # расплатиться по заказу с этим нашим номером. Когда заказчик расплатится,
+    # придет уведомление типа:
+    #
+    #   http(s)://.../api/orders/<order_pk>/webpay/notify?<wsb_order_num>
+    #
+    # В колонке wsb_order_num держим этот номер в целях протоколирования.
+    # Возможно, по нему будет производится поиск
+    # 
+    wsb_order_num = models.CharField(_(u"Номер заказа"), max_length=255, db_index=True)
+
+    # Имена этих полей -- в соответствии с полями ответа от WebPay
+    # (кроме order_id (WebPay) == order_ident в этой модели)
+    # Заполняются, когда придет ответ
+    #
+    transaction_id = models.CharField(_(u"Номер транзакции"), max_length=255, null=True)
+    batch_timestamp = models.CharField(_(u"Время совершения транзакции"), max_length=255, null=True)
+    currency_id = models.CharField(_(u"Код валюты согласно ISO4271"), max_length=255, null=True)
+    amount = models.CharField(_(u"Сумма"), max_length=255, null=True)
+    payment_method = models.CharField(_(u"Метод платежа"), max_length=255, choices=PAYMENT_METHODS, null=True)
+    payment_type = models.CharField(_(u"Тип транзакции"), max_length=255, choices=TRANSACTION_TYPES, null=True)
+    order_ident = models.CharField(_(u"Номер заказа в системе WebPay (order_id)"), max_length=255, null=True)
+    rrn = models.CharField(_(u"Номер транзакции в системе Visa/MasterCard"), max_length=255, null=True)
+    wsb_signature = models.CharField(_(u"Электронная подпись"), max_length=255, null=True)
 
 class ResultFile(Files):
     """
