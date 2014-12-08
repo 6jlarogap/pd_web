@@ -1710,7 +1710,7 @@ class ApiOrderCommentsView(APIView):
         try:
             order = Order.objects.get(pk=pk)
             if not order.is_accessible(request.user):
-                return Response(data=dict(detail='You are not authorized to this order'), status=403)
+                raise Http404
         except Order.DoesNotExist:
             raise Http404
         data=[OrderCommentsSerializer(ordercomment, context=dict(
@@ -1724,7 +1724,7 @@ class ApiOrderCommentsView(APIView):
         try:
             order = Order.objects.get(pk=pk)
             if not order.is_accessible(request.user):
-                return Response(data=dict(detail='You are not authorized to this order'), status=403)
+                raise Http404
         except Order.DoesNotExist:
             raise Http404
         comment = request.DATA.get('comment')
@@ -1748,7 +1748,7 @@ class ApiOrderResultView(APIView):
         try:
             order = Order.objects.get(pk=pk, type=Order.TYPE_CUSTOMER)
             if not order.is_accessible(request.user):
-                return Response(data=dict(detail='You are not authorized to this order'), status=403)
+                raise Http404
         except Order.DoesNotExist:
             raise Http404
         return Response(data=[OrderResultsSerializer(resultfile, context=dict(request=request)).data \
@@ -1799,7 +1799,7 @@ class ApiServiceOrderDetailView(APIView):
         try:
             order = Order.objects.get(pk=pk, type=Order.TYPE_CUSTOMER)
             if not order.is_accessible(request.user):
-                return Response(data=dict(detail='You are not authorized to this order'), status=403)
+                raise Http404
         except Order.DoesNotExist:
             raise Http404
         return Response(
@@ -1817,7 +1817,7 @@ class ApiServiceOrderPutView(APIView):
         try:
             order = Order.objects.get(pk=pk, type=Order.TYPE_CUSTOMER)
             if not order.is_accessible(request.user):
-                return Response(data=dict(detail='You are not authorized to this order'), status=403)
+                raise Http404
         except Order.DoesNotExist:
             raise Http404
         kwargs = dict()
@@ -1844,28 +1844,38 @@ class ApiServiceOrderPutView(APIView):
 
 api_client_orders_put_status = ApiServiceOrderPutView.as_view()
 
-class ApiOrderPaymentsView(APIView):
-    permission_classes = (PermitIfCabinet,)
+class ApiOrderPaymentsMixin(object):
 
     PAY_SYSTEM_WEBPAY = 'webpay'
     PAY_SYSTEM_TYPES = (PAY_SYSTEM_WEBPAY, )
 
+    def check_order_pay_system(self, order_pk, pay_system):
+        if not pay_system:
+            raise ServiceException(_(u"Не задан тип платежной системы"))
+        if pay_system not in self.PAY_SYSTEM_TYPES:
+            raise ServiceException(_(u"Платежная система %s не предусмотрена") % pay_system)
+        try:
+            order = Order.objects.get(pk=order_pk)
+        except Order.DoesNotExist:
+            raise Http404
+        if not order.is_accessible(self.request.user):
+            raise Http404
+        system_not_supported = _(u"Исполнитель заказа, %s, не поддерживает платежи в системе %s")
+        if pay_system == self.PAY_SYSTEM_WEBPAY:
+            try:
+                pay_data = OrgWebPay.objects.get(org=order.loru)
+            except OrgWebPay.DoesNotExist:
+                raise ServiceException(system_not_supported % (order.loru, pay_system,))
+        return order, pay_data
+
+class ApiOrderPaymentsView(ApiOrderPaymentsMixin, APIView):
+    permission_classes = (PermitIfCabinet,)
+
     def get(self, request, pk, pay_system):
         try:
-            if pay_system not in self.PAY_SYSTEM_TYPES:
-                raise ServiceException(_(u"Платежная система %s не предусмотрена") % pay_system)
-            try:
-                order = Order.objects.get(pk=pk)
-            except Order.DoesNotExist:
-                raise Http404
-            if not order.is_accessible(request.user):
-                return Response(data=dict(detail='You are not authorized to this order'), status=403)
-            system_not_supported = _(u"Исполнитель заказа, %s, не поддерживает платежи в системе %s")
+            order, pay_data = self.check_order_pay_system(order_pk=pk, pay_system=pay_system)
             if pay_system == self.PAY_SYSTEM_WEBPAY:
-                try:
-                    orgwebpay = OrgWebPay.objects.get(org=order.loru)
-                except OrgWebPay.DoesNotExist:
-                    raise ServiceException(system_not_supported % (order.loru, pay_system,))
+                orgwebpay = pay_data
                 items = []
                 for serviceitem in ServiceItem.objects.filter(order=order).order_by('pk'):
                     items.append(dict(
@@ -1916,6 +1926,7 @@ class ApiOrderPaymentsView(APIView):
                     wsb_order_num=data['wsb_order_num'],
                 )
         except ServiceException as excpt:
+            transaction.rollback()
             return Response(data=dict(status='error', message=excpt.message), status=400)
         return Response(data=data, status=200)
 
@@ -1966,3 +1977,47 @@ class ApiWebPayNotifyView(APIView):
         return Response('', status=200)
 
 api_orders_webpay_notify = ApiWebPayNotifyView.as_view()
+
+class ApiClientOrderPaymentsView(ApiOrderPaymentsMixin, APIView):
+    permission_classes = (PermitIfCabinet,)
+
+    @transaction.commit_on_success
+    def post(self, request, pk):
+        """
+        Отметка заказа как оплаченного
+
+        На входе:
+            type: тип платежносй системы
+            paymentToken - номер транзакции, который платежная система возвращает во front-end
+            в случае успешного платежа, и который front-end будет передавать в апи для валидации
+            и последующей смены статуса заказа на Оплаченый, в случае успешной валидации.
+
+            Для webpay - это атрибут wsb_tid. Не смотря на то, что сервер получает wsb_notify_url
+            front-end будет передавать в апи и этот запрос, на случай если wsb_notify_url
+            не достучался до сервера или по др. причине, даже если ранее апи уже выставило
+            статус для заказа paid, при получении этого запроса - должен будет вернуть 201,
+            либо если еще не выставило, то выставить и вернуть 201
+        """
+        pay_system = request.DATA.get('type')
+        try:
+            order, pay_data = self.check_order_pay_system(order_pk=pk, pay_system=pay_system)
+            if pay_system == self.PAY_SYSTEM_WEBPAY:
+                transaction_id = request.DATA.get('paymentToken')
+                if not transaction_id:
+                    raise ServiceException(_(u"Не задан параметр paymentToken (идентификатор транзакции webpay)"))
+            try:
+                orderwebpay = OrderWebPay.objects.filter(order=order).order_by('-pk')[0]
+            except IndexError:
+                raise ServiceException(_(u"Не была выставлена оплата за заказ"))
+            if not orderwebpay.transaction_id:
+                orderwebpay.transaction_id=transaction_id
+                orderwebpay.save()
+            if order.status != Order.STATUS_PAID:
+                order.status = Order.STATUS_PAID
+                order.save()
+        except ServiceException as excpt:
+            transaction.rollback()
+            return Response(data=dict(status='error', message=excpt.message), status=400)
+        return Response(data={}, status=201)
+
+api_client_orders_payments = ApiClientOrderPaymentsView.as_view()
