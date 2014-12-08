@@ -1844,17 +1844,14 @@ class ApiServiceOrderPutView(APIView):
 
 api_client_orders_put_status = ApiServiceOrderPutView.as_view()
 
-class ApiClientOrderPaymentsView(APIView):
+class ApiOrderPaymentsView(APIView):
     permission_classes = (PermitIfCabinet,)
 
     PAY_SYSTEM_WEBPAY = 'webpay'
     PAY_SYSTEM_TYPES = (PAY_SYSTEM_WEBPAY, )
 
-    def post(self, request, pk):
+    def get(self, request, pk, pay_system):
         try:
-            pay_system = request.DATA.get('type')
-            if not pay_system:
-                raise ServiceException(_(u"Не задан тип платежной системы"))
             if pay_system not in self.PAY_SYSTEM_TYPES:
                 raise ServiceException(_(u"Платежная система %s не предусмотрена") % pay_system)
             try:
@@ -1922,7 +1919,7 @@ class ApiClientOrderPaymentsView(APIView):
             return Response(data=dict(status='error', message=excpt.message), status=400)
         return Response(data=data, status=200)
 
-api_client_orders_payments = ApiClientOrderPaymentsView.as_view()
+api_orders_payments = ApiOrderPaymentsView.as_view()
 
 class ApiWebPayNotifyView(APIView):
     parser_classes = (FormParser,)
