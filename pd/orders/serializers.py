@@ -297,6 +297,16 @@ class ServiceOrderSerializer(CreatedAtMixin, serializers.ModelSerializer):
         fields = ('id', 'type', 'performer', 'owner', 'number', 'status', 'isArchived',
                   'totalPrice', 'currency', 'createdAt', 'modifiedAt', )
 
+class OrderSerializer(CreatedAtMixin, serializers.ModelSerializer):
+    type = serializers.Field(source='service_name')
+    createdAt = serializers.SerializerMethodField('createdAt_func')
+    modifiedAt = serializers.SerializerMethodField('modifiedAt_func')
+    number = serializers.Field(source='number_verbose')
+
+    class Meta:
+        model = Order
+        fields = ('id', 'type', 'createdAt', 'modifiedAt', 'number', 'status', )
+
 class OrderCommentsSerializer(CreatedAtMixin, serializers.ModelSerializer):
     createdAt = serializers.SerializerMethodField('createdAt_func')
     user = serializers.SerializerMethodField('user_func')
@@ -363,4 +373,3 @@ class ServiceOrderDetailSerializer(serializers.ModelSerializer):
             'id', 'number', 'type', 'placeId', 'status', 'isArchived',
             'clientRating', 'services',
         )
-

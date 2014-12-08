@@ -37,6 +37,7 @@ from users.views import SupervisorRequiredMixin, UGHRequiredMixin, LoginRequired
 from persons.models import Phone, AlivePerson, CustomPlace
 from geo.models import Location
 from orders.models import Order, ResultFile
+from orders.serializers import OrderSerializer
 
 from rest_framework import generics, viewsets
 from rest_framework.views import APIView
@@ -1184,7 +1185,7 @@ class ApiClientPlacesDetailView(APIView):
             if Order.objects.filter(customplace=customplace, loru=request.user.profile.org).exists():
                 grant_access = True
         if not grant_access:
-            return Response(data=dict(detail='You are not authorized to this place'), status=403)
+            raise Http404
 
         gallery = [dict(
                     photo=request.build_absolute_uri(photo.bfile.url),
@@ -1228,10 +1229,26 @@ class ApiClientPlaceGravesView(APIView):
         except CustomPlace.DoesNotExist:
             raise Http404
         if customplace.user != request.user:
-            return Response(data=dict(detail='You are not authorized to this place'), status=403)
+            raise Http404
         place = customplace.place
         gallery = place.get_photo_gallery(request)
         photo = gallery and gallery[0]['photo'] or None
         return Response(data=customplace.place.graves_list(), status=200)
 
 api_client_place_graves = ApiClientPlaceGravesView.as_view()
+
+class ApiClientPlacesOrdersView(APIView):
+    permission_classes = (PermitIfCabinet,)
+
+    def get(self, request, pk):
+        try:
+            customplace = CustomPlace.objects.get(pk=pk)
+        except CustomPlace.DoesNotExist:
+            raise Http404
+        if customplace.user != request.user:
+            raise Http404
+        return Response(data=[OrderSerializer(o).data \
+                              for o in Order.objects.filter(customplace=customplace) \
+                        ], status=200)
+
+api_client_places_orders = ApiClientPlacesOrdersView.as_view()
