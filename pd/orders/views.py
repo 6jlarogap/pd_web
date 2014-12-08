@@ -1844,17 +1844,14 @@ class ApiServiceOrderPutView(APIView):
 
 api_client_orders_put_status = ApiServiceOrderPutView.as_view()
 
-class ApiClientOrderPaymentsView(APIView):
+class ApiOrderPaymentsView(APIView):
     permission_classes = (PermitIfCabinet,)
 
     PAY_SYSTEM_WEBPAY = 'webpay'
     PAY_SYSTEM_TYPES = (PAY_SYSTEM_WEBPAY, )
 
-    def post(self, request, pk):
+    def get(self, request, pk, pay_system):
         try:
-            pay_system = request.DATA.get('type')
-            if not pay_system:
-                raise ServiceException(_(u"Не задан тип платежной системы"))
             if pay_system not in self.PAY_SYSTEM_TYPES:
                 raise ServiceException(_(u"Платежная система %s не предусмотрена") % pay_system)
             try:
@@ -1922,34 +1919,49 @@ class ApiClientOrderPaymentsView(APIView):
             return Response(data=dict(status='error', message=excpt.message), status=400)
         return Response(data=data, status=200)
 
-api_client_orders_payments = ApiClientOrderPaymentsView.as_view()
+api_orders_payments = ApiOrderPaymentsView.as_view()
 
 class ApiWebPayNotifyView(APIView):
     parser_classes = (FormParser,)
     renderer_classes = (StaticHTMLRenderer, )
 
+    @transaction.commit_on_success
     def post(self, request, pk):
-        print "api_orders_webpay_notify GET:"
-        print request.GET
-        print "api_orders_webpay_notify DATA:"
-        print request.DATA
-        print "OrderId: ", pk
         try:
             order = Order.objects.get(pk=pk)
         except Order.DoesNotExist:
             raise Http404
-        order.status = Order.STATUS_PAID
-        order.save()
         try:
             orderwebpay = OrderWebPay.objects.filter(order=order).order_by('-pk')[0]
         except IndexError:
             raise Http404
-        for post_key in (
+
+        # номер заказа приходит в POST-параметре 'site_order_id',
+        # а не в GET параметре wsb_order_num, как описано в документации webpay
+        #
+        post_keys = (
             'transaction_id',
             'batch_timestamp',
-           ):
+            'currency_id',
+            'amount',
+            'payment_method',
+            'payment_type',
+            'order_id',
+            'rrn',
+            'wsb_signature',
+        )
+
+        input_data = dict()
+        for post_key in post_keys:
             model_key = 'order_ident' if post_key == 'order_id' else post_key
-            setattr(orderwebpay, model_key, request.DATA.get(post_key))
+            input_data[model_key] = request.DATA.get(post_key)
+
+        if input_data['payment_type'] in OrderWebPay.SUCCESS_PAY_TYPES:
+            order.status = Order.STATUS_PAID
+            order.save()
+
+        for key in input_data:
+            setattr(orderwebpay, key, input_data[key])
             orderwebpay.save()
         return Response('', status=200)
 

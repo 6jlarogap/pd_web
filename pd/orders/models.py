@@ -494,6 +494,12 @@ class OrderWebPay(BaseModel):
         (PAY_TYPE_VOIDED, _(u"Voided (Сброшенная после авторизации)")),
     )
 
+    # Успешной оплате соответствуют следующие типы PAY_TYPE
+    SUCCESS_PAY_TYPES = (
+        PAY_TYPE_COMPLETED,
+        PAY_TYPE_AUTHORIZED,
+    )
+
     order = models.ForeignKey(Order, verbose_name=_(u"Заказ"))
 
     # Этот номер, wsb_order_num, "наш" номер заказа, формируемый функцией
