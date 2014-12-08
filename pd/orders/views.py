@@ -1928,28 +1928,43 @@ class ApiWebPayNotifyView(APIView):
     parser_classes = (FormParser,)
     renderer_classes = (StaticHTMLRenderer, )
 
+    @transaction.commit_on_success
     def post(self, request, pk):
-        print "api_orders_webpay_notify GET:"
-        print request.GET
-        print "api_orders_webpay_notify DATA:"
-        print request.DATA
-        print "OrderId: ", pk
         try:
             order = Order.objects.get(pk=pk)
         except Order.DoesNotExist:
             raise Http404
-        order.status = Order.STATUS_PAID
-        order.save()
         try:
             orderwebpay = OrderWebPay.objects.filter(order=order).order_by('-pk')[0]
         except IndexError:
             raise Http404
-        for post_key in (
+
+        # номер заказа приходит в POST-параметре 'site_order_id',
+        # а не в GET параметре wsb_order_num, как описано в документации webpay
+        #
+        post_keys = (
             'transaction_id',
             'batch_timestamp',
-           ):
+            'currency_id',
+            'amount',
+            'payment_method',
+            'payment_type',
+            'order_id',
+            'rrn',
+            'wsb_signature',
+        )
+
+        input_data = dict()
+        for post_key in post_keys:
             model_key = 'order_ident' if post_key == 'order_id' else post_key
-            setattr(orderwebpay, model_key, request.DATA.get(post_key))
+            input_data[model_key] = request.DATA.get(post_key)
+
+        if input_data['payment_type'] in OrderWebPay.SUCCESS_PAY_TYPES:
+            order.status = Order.STATUS_PAID
+            order.save()
+
+        for key in input_data:
+            setattr(orderwebpay, key, input_data[key])
             orderwebpay.save()
         return Response('', status=200)
 
