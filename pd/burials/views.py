@@ -1234,10 +1234,7 @@ class ApiClientPlaceGravesView(APIView):
             raise Http404
         if customplace.user != request.user:
             raise Http404
-        place = customplace.place
-        gallery = place.get_photo_gallery(request)
-        photo = gallery and gallery[0]['photo'] or None
-        return Response(data=customplace.place.graves_list(), status=200)
+        return Response(data=customplace.graves_list(), status=200)
 
 api_client_place_graves = ApiClientPlaceGravesView.as_view()
 

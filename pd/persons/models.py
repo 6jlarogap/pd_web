@@ -24,16 +24,7 @@ class IDDocumentType(models.Model):
         verbose_name_plural = (_(u"типы документов"))
         ordering = ('name', )
 
-class BasePerson(models.Model):
-    """
-    Физическое лицо
-    """
-    last_name = models.CharField(_(u"Фамилия"), max_length=255, blank=True)
-    first_name = models.CharField(_(u"Имя"), max_length=255, blank=True)
-    middle_name = models.CharField(_(u"Отчество"), max_length=255, blank=True)
-    birth_date = UnclearDateModelField(_(u"Дата рождения"), serialize=False, blank=True, null=True)
-
-    address = models.ForeignKey(Location, editable=False, null=True)
+class PersonMixin(object):
 
     def __unicode__(self):
         if self.last_name.strip():
@@ -48,11 +39,6 @@ class BasePerson(models.Model):
 
     def full_human_name(self):
         return ' '.join((self.last_name, self.first_name, self.middle_name)).strip()
-
-    def age(self):
-        start = self.birth_date
-        finish = (self.death_date or datetime.date.today())
-        return int((finish - start).days / 365.25)
 
     def get_initials(self):
         initials = u""
@@ -69,6 +55,22 @@ class BasePerson(models.Model):
     def full_name_complete(self):
         fio = u"%s %s %s" % (self.last_name, self.first_name, self.middle_name)
         return fio.strip() or _(u"Неизвестный")
+
+class BasePerson(PersonMixin, models.Model):
+    """
+    Физическое лицо
+    """
+    last_name = models.CharField(_(u"Фамилия"), max_length=255, blank=True)
+    first_name = models.CharField(_(u"Имя"), max_length=255, blank=True)
+    middle_name = models.CharField(_(u"Отчество"), max_length=255, blank=True)
+    birth_date = UnclearDateModelField(_(u"Дата рождения"), serialize=False, blank=True, null=True)
+
+    address = models.ForeignKey(Location, editable=False, null=True)
+
+    def age(self):
+        start = self.birth_date
+        finish = (self.death_date or datetime.date.today())
+        return int((finish - start).days / 365.25)
 
     def delete(self):
         try:
@@ -381,7 +383,40 @@ class CustomPlace(BaseModel):
             for burial in self.place.burials_available_closed():
                 self.add_custom_deadman(burial)
 
-class CustomPerson(BaseModel):
+    def graves_list(self):
+        graves = []
+        if self.place:
+            for g in self.place.graves_qs():
+                grave = {'graveNumber': g.grave_number}
+                grave['burials'] = []
+                for b in g.burial_set.filter(deadman__isnull=False):
+                    # Захоронение могло быть аннулировано, эксгумировано, превращено
+                    # в биоотходы, но ссылка в customperson на
+                    # b.deadman.baseperson_ptr там должна была остаться
+                    try:
+                        cp = CustomPerson.objects.get(
+                            customplace=self,
+                            person=b.deadman.baseperson_ptr,
+                        )
+                        grave['burials'].append(
+                            {
+                                'id': b.pk,
+                                'personId': cp.pk,
+                                'fio': cp.full_name_complete() or _(u"Неизвестный"),
+                                'lastName': cp.last_name,
+                                'firstName': cp.first_name,
+                                'middleName': cp.middle_name,
+                                'photo': None,
+                                'birthDate': cp.birth_date and cp.birth_date.str_safe() or None,
+                                'deathDate': cp.death_date and cp.death_date.str_safe() or None,
+                            }
+                        )
+                    except CustomPerson.DoesNotExist:
+                        pass
+                graves.append(grave)
+        return graves
+
+class CustomPerson(PersonMixin, BaseModel):
     """
     Человек, чаще усопший, но возможно живой
     """
