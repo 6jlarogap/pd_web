@@ -44,7 +44,7 @@
                         {% if b.ugh and b.is_approved %}
                             <input type="submit" class="btn btn-commit-burial" name="disapprove" value="{% trans "cохранить и отменить согласование" %}"/>
                         {% endif %}
-                        {% if not b.is_full %}
+                        {% if not b.is_full and not b.is_closed %}
                             <input type="submit" class="btn btn-commit-burial" name="complete" value="{% trans "cохранить и закрыть" %}"/>
                         {% endif %}
                     {% endif %}
