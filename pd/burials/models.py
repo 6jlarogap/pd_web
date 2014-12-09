@@ -1023,6 +1023,9 @@ class Burial(SafeDeleteMixin, GetLogsMixin, BaseModel):
                         request,
                         _(u"Создан пользователь кабинета %s, пароль %s") % (place.responsible.login_phone, password, ),
                     )
+            if not place.responsible.user:
+                place.responsible.user = user
+                place.responsible.save()
             customplace, created_ = CustomPlace.objects.get_or_create(user=user, place=place)
             if created_:
                 customplace.fill_custom_deadmen()

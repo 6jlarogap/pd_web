@@ -385,6 +385,8 @@ class PlaceViewSet(viewsets.ModelViewSet):
                     email_error_text = _(u"Пользователь %s не смог получить пароль после закрытия захоронения" % \
                                         (object.responsible.login_phone,))
                 customplace, created_ = CustomPlace.objects.get_or_create(user=user, place=object)
+                if not object.responsible.user:
+                    object.responsible.user = user
                 if created_:
                     customplace.fill_custom_deadmen()
                 if not settings.DEBUG:
