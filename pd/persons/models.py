@@ -345,6 +345,11 @@ class CustomPerson(BaseModel):
     class Meta:
         ordering = ('last_name', 'first_name', 'middle_name', )
 
+    # Регистрируемые в ОМС усопшие получают копию в этой таблице.
+    # Поскольку предполагается здесь хранить и живых лиц, то
+    # ссылку делаем на Person, как живое, так и мертвое.
+    #
+    person = models.OneToOneField(BasePerson, verbose_name=_(u"Лицо"), null=True)
     last_name = models.CharField(_(u"Фамилия"), max_length=255, blank=True)
     first_name = models.CharField(_(u"Имя"), max_length=255, blank=True)
     middle_name = models.CharField(_(u"Отчество"), max_length=255, blank=True)
