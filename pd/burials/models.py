@@ -247,6 +247,9 @@ class Place(SafeDeleteMixin, GeoPointModel):
         q_ex = Q(status=Burial.STATUS_EXHUMATED) | Q(annulated=True)
         return self.burial_set.exclude(q_ex)
 
+    def burials_available_closed(self):
+        return self.burial_set.filter(status=Burial.STATUS_CLOSED).exclude(annulated=True)
+
     def burial_count(self):
         return self.burials_available().distinct('grave').count()
 
@@ -1020,7 +1023,11 @@ class Burial(SafeDeleteMixin, GetLogsMixin, BaseModel):
                         request,
                         _(u"Создан пользователь кабинета %s, пароль %s") % (place.responsible.login_phone, password, ),
                     )
-            CustomPlace.objects.get_or_create(user=user, place=place)
+            customplace, created_ = CustomPlace.objects.get_or_create(user=user, place=place)
+            if created_:
+                customplace.fill_custom_deadmen()
+            else:
+                customplace.add_custom_deadman(self)
             if not settings.DEBUG:
                 sent, message = send_sms(
                     phone_number=place.responsible.login_phone,

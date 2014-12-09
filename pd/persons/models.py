@@ -78,7 +78,24 @@ class BasePerson(models.Model):
         try:
             super(BasePerson, self).delete()
         except ProtectedError:
-            pass
+            # При смене усопшего на биоотходы мы пытаемся удалить усопшего.
+            # Если при этом он был привязан к Custom(Dead)Person,
+            # то удаление не пройдет, а данные "усопшего"-биоотходов
+            # могут быть где-то продемонстрированы
+            #
+            if self.last_name or self.first_name or self.middle_name or self.birth_date:
+                self.last_name = ''
+                self.first_name = ''
+                self.middle_name = ''
+                self.birth_date = None
+                self.save()
+            try:
+                deadperson = self.deadperson
+                if deadperson.death_date:
+                    deadperson.death_date = None
+                    deadperson.save()
+            except DeadPerson.DoesNotExist:
+                pass
         else:
             try:
                 self.address.delete()
@@ -338,6 +355,32 @@ class CustomPlace(BaseModel):
     class Meta:
         unique_together = ('user', 'place', )
 
+    def add_custom_deadman(self, burial):
+        """
+        Добавить копияю усопшего (CustomPerson) из Burial
+        """
+        deadman = burial.deadman
+        if deadman:
+            customperson, created_ = CustomPerson.objects.get_or_create(
+                customplace=self,
+                person=deadman.baseperson_ptr,
+                defaults=dict(
+                    last_name=deadman.last_name,
+                    first_name=deadman.first_name,
+                    middle_name=deadman.middle_name,
+                    is_dead=True,
+                    birth_date=deadman.birth_date,
+                    death_date=deadman.death_date,
+            ))
+
+    def fill_custom_deadmen(self):
+        """
+        Заполнить место, привязанное к place от омс копиями усопших (CustomPersons)
+        """
+        if self.place:
+            for burial in self.place.burials_available_closed():
+                self.add_custom_deadman(burial)
+
 class CustomPerson(BaseModel):
     """
     Человек, чаще усопший, но возможно живой
@@ -349,6 +392,7 @@ class CustomPerson(BaseModel):
     # Поскольку предполагается здесь хранить и живых лиц, то
     # ссылку делаем на Person, как живое, так и мертвое.
     #
+    customplace = models.ForeignKey(CustomPlace, verbose_name=_(u"Место захоронения"), blank=True, null=True)
     person = models.OneToOneField(BasePerson, verbose_name=_(u"Лицо"), null=True)
     last_name = models.CharField(_(u"Фамилия"), max_length=255, blank=True)
     first_name = models.CharField(_(u"Имя"), max_length=255, blank=True)
@@ -356,7 +400,6 @@ class CustomPerson(BaseModel):
     birth_date = UnclearDateModelField(_(u"Дата рождения"), blank=True, null=True)
     death_date = UnclearDateModelField(_(u"Дата смерти"), blank=True, null=True)
     is_dead = models.BooleanField(_(u"Уcопший"), default=True)
-    customplace = models.ForeignKey(CustomPlace, verbose_name=_(u"Место захоронения"), blank=True, null=True)
     memory_text = models.TextField(_(u"Памятный текст"), null=True)
 
 class MemoryGallery(Files):
