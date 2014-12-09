@@ -384,7 +384,11 @@ class PlaceViewSet(viewsets.ModelViewSet):
                     )
                     email_error_text = _(u"Пользователь %s не смог получить пароль после закрытия захоронения" % \
                                         (object.responsible.login_phone,))
-                CustomPlace.objects.get_or_create(user=user, place=object)
+                customplace, created_ = CustomPlace.objects.get_or_create(user=user, place=object)
+                if not object.responsible.user:
+                    object.responsible.user = user
+                if created_:
+                    customplace.fill_custom_deadmen()
                 if not settings.DEBUG:
                     sent, message = send_sms(
                         phone_number=object.responsible.login_phone,
@@ -1230,10 +1234,7 @@ class ApiClientPlaceGravesView(APIView):
             raise Http404
         if customplace.user != request.user:
             raise Http404
-        place = customplace.place
-        gallery = place.get_photo_gallery(request)
-        photo = gallery and gallery[0]['photo'] or None
-        return Response(data=customplace.place.graves_list(), status=200)
+        return Response(data=customplace.graves_list(), status=200)
 
 api_client_place_graves = ApiClientPlaceGravesView.as_view()
 

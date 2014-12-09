@@ -24,16 +24,7 @@ class IDDocumentType(models.Model):
         verbose_name_plural = (_(u"типы документов"))
         ordering = ('name', )
 
-class BasePerson(models.Model):
-    """
-    Физическое лицо
-    """
-    last_name = models.CharField(_(u"Фамилия"), max_length=255, blank=True)
-    first_name = models.CharField(_(u"Имя"), max_length=255, blank=True)
-    middle_name = models.CharField(_(u"Отчество"), max_length=255, blank=True)
-    birth_date = UnclearDateModelField(_(u"Дата рождения"), serialize=False, blank=True, null=True)
-
-    address = models.ForeignKey(Location, editable=False, null=True)
+class PersonMixin(object):
 
     def __unicode__(self):
         if self.last_name.strip():
@@ -48,11 +39,6 @@ class BasePerson(models.Model):
 
     def full_human_name(self):
         return ' '.join((self.last_name, self.first_name, self.middle_name)).strip()
-
-    def age(self):
-        start = self.birth_date
-        finish = (self.death_date or datetime.date.today())
-        return int((finish - start).days / 365.25)
 
     def get_initials(self):
         initials = u""
@@ -70,6 +56,22 @@ class BasePerson(models.Model):
         fio = u"%s %s %s" % (self.last_name, self.first_name, self.middle_name)
         return fio.strip() or _(u"Неизвестный")
 
+class BasePerson(PersonMixin, models.Model):
+    """
+    Физическое лицо
+    """
+    last_name = models.CharField(_(u"Фамилия"), max_length=255, blank=True)
+    first_name = models.CharField(_(u"Имя"), max_length=255, blank=True)
+    middle_name = models.CharField(_(u"Отчество"), max_length=255, blank=True)
+    birth_date = UnclearDateModelField(_(u"Дата рождения"), serialize=False, blank=True, null=True)
+
+    address = models.ForeignKey(Location, editable=False, null=True)
+
+    def age(self):
+        start = self.birth_date
+        finish = (self.death_date or datetime.date.today())
+        return int((finish - start).days / 365.25)
+
     def delete(self):
         try:
             self.personid.delete()
@@ -78,7 +80,24 @@ class BasePerson(models.Model):
         try:
             super(BasePerson, self).delete()
         except ProtectedError:
-            pass
+            # При смене усопшего на биоотходы мы пытаемся удалить усопшего.
+            # Если при этом он был привязан к Custom(Dead)Person,
+            # то удаление не пройдет, а данные "усопшего"-биоотходов
+            # могут быть где-то продемонстрированы
+            #
+            if self.last_name or self.first_name or self.middle_name or self.birth_date:
+                self.last_name = ''
+                self.first_name = ''
+                self.middle_name = ''
+                self.birth_date = None
+                self.save()
+            try:
+                deadperson = self.deadperson
+                if deadperson.death_date:
+                    deadperson.death_date = None
+                    deadperson.save()
+            except DeadPerson.DoesNotExist:
+                pass
         else:
             try:
                 self.address.delete()
@@ -338,20 +357,84 @@ class CustomPlace(BaseModel):
     class Meta:
         unique_together = ('user', 'place', )
 
-class CustomPerson(BaseModel):
+    def add_custom_deadman(self, burial):
+        """
+        Добавить копияю усопшего (CustomPerson) из Burial
+        """
+        deadman = burial.deadman
+        if deadman:
+            customperson, created_ = CustomPerson.objects.get_or_create(
+                customplace=self,
+                person=deadman.baseperson_ptr,
+                defaults=dict(
+                    last_name=deadman.last_name,
+                    first_name=deadman.first_name,
+                    middle_name=deadman.middle_name,
+                    is_dead=True,
+                    birth_date=deadman.birth_date,
+                    death_date=deadman.death_date,
+            ))
+
+    def fill_custom_deadmen(self):
+        """
+        Заполнить место, привязанное к place от омс копиями усопших (CustomPersons)
+        """
+        if self.place:
+            for burial in self.place.burials_available_closed():
+                self.add_custom_deadman(burial)
+
+    def graves_list(self):
+        graves = []
+        if self.place:
+            for g in self.place.graves_qs():
+                grave = {'graveNumber': g.grave_number}
+                grave['burials'] = []
+                for b in g.burial_set.filter(deadman__isnull=False):
+                    # Захоронение могло быть аннулировано, эксгумировано, превращено
+                    # в биоотходы, но ссылка в customperson на
+                    # b.deadman.baseperson_ptr там должна была остаться
+                    try:
+                        cp = CustomPerson.objects.get(
+                            customplace=self,
+                            person=b.deadman.baseperson_ptr,
+                        )
+                        grave['burials'].append(
+                            {
+                                'id': b.pk,
+                                'personId': cp.pk,
+                                'fio': cp.full_name_complete() or _(u"Неизвестный"),
+                                'lastName': cp.last_name,
+                                'firstName': cp.first_name,
+                                'middleName': cp.middle_name,
+                                'photo': None,
+                                'birthDate': cp.birth_date and cp.birth_date.str_safe() or None,
+                                'deathDate': cp.death_date and cp.death_date.str_safe() or None,
+                            }
+                        )
+                    except CustomPerson.DoesNotExist:
+                        pass
+                graves.append(grave)
+        return graves
+
+class CustomPerson(PersonMixin, BaseModel):
     """
     Человек, чаще усопший, но возможно живой
     """
     class Meta:
         ordering = ('last_name', 'first_name', 'middle_name', )
 
+    # Регистрируемые в ОМС усопшие получают копию в этой таблице.
+    # Поскольку предполагается здесь хранить и живых лиц, то
+    # ссылку делаем на Person, как живое, так и мертвое.
+    #
+    customplace = models.ForeignKey(CustomPlace, verbose_name=_(u"Место захоронения"), blank=True, null=True)
+    person = models.OneToOneField(BasePerson, verbose_name=_(u"Лицо"), null=True)
     last_name = models.CharField(_(u"Фамилия"), max_length=255, blank=True)
     first_name = models.CharField(_(u"Имя"), max_length=255, blank=True)
     middle_name = models.CharField(_(u"Отчество"), max_length=255, blank=True)
     birth_date = UnclearDateModelField(_(u"Дата рождения"), blank=True, null=True)
     death_date = UnclearDateModelField(_(u"Дата смерти"), blank=True, null=True)
     is_dead = models.BooleanField(_(u"Уcопший"), default=True)
-    customplace = models.ForeignKey(CustomPlace, verbose_name=_(u"Место захоронения"), blank=True, null=True)
     memory_text = models.TextField(_(u"Памятный текст"), null=True)
 
 class MemoryGallery(Files):

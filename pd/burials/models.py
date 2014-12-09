@@ -247,6 +247,9 @@ class Place(SafeDeleteMixin, GeoPointModel):
         q_ex = Q(status=Burial.STATUS_EXHUMATED) | Q(annulated=True)
         return self.burial_set.exclude(q_ex)
 
+    def burials_available_closed(self):
+        return self.burial_set.filter(status=Burial.STATUS_CLOSED).exclude(annulated=True)
+
     def burial_count(self):
         return self.burials_available().distinct('grave').count()
 
@@ -348,6 +351,9 @@ class Place(SafeDeleteMixin, GeoPointModel):
                 break
         return result
 
+    def graves_qs(self):
+        return Grave.objects.filter(place=self).order_by('grave_number')
+
     def get_photo_gallery(self, request):
         """
         Получить все фото, относящиеся к месту.
@@ -397,27 +403,6 @@ class Place(SafeDeleteMixin, GeoPointModel):
         if cemetery_address:
             result += _(u', %s') % cemetery_address
         return result
-
-    def graves_list(self):
-        graves = []
-        for g in Grave.objects.filter(place=self).order_by('grave_number'):
-            grave = {'graveNumber': g.grave_number}
-            grave['burials'] = []
-            for b in g.burial_set.exclude(burial_container=Burial.CONTAINER_BIO).exclude(annulated=True):
-                grave['burials'].append(
-                    {
-                        'id': b.pk,
-                        'fio': b.deadman and b.deadman.full_name_complete() or _(u"Неизвестный"),
-                        'lastName': b.deadman and b.deadman.last_name,
-                        'firstName': b.deadman and b.deadman.first_name,
-                        'middleName': b.deadman and b.deadman.middle_name,
-                        'photo': None,
-                        'birthDate': b.deadman and b.deadman.birth_date and b.deadman.birth_date.str_safe() or None,
-                        'deathDate': b.deadman and b.deadman.death_date and b.deadman.death_date.str_safe() or None,
-                    }
-                )
-            graves.append(grave)
-        return graves
 
 class PlaceSize(models.Model):
     org = models.ForeignKey(Org, verbose_name=_(u"Организация"), editable=False, on_delete=models.PROTECT) 
@@ -1020,7 +1005,14 @@ class Burial(SafeDeleteMixin, GetLogsMixin, BaseModel):
                         request,
                         _(u"Создан пользователь кабинета %s, пароль %s") % (place.responsible.login_phone, password, ),
                     )
-            CustomPlace.objects.get_or_create(user=user, place=place)
+            if not place.responsible.user:
+                place.responsible.user = user
+                place.responsible.save()
+            customplace, created_ = CustomPlace.objects.get_or_create(user=user, place=place)
+            if created_:
+                customplace.fill_custom_deadmen()
+            else:
+                customplace.add_custom_deadman(self)
             if not settings.DEBUG:
                 sent, message = send_sms(
                     phone_number=place.responsible.login_phone,

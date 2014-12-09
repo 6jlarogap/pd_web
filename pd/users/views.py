@@ -347,7 +347,7 @@ class ApiProfileView(APIView):
             place['location'] = p.location_dict()
             place['gallery'] = p.get_photo_gallery(request)
             place['photo'] = place['gallery'][0]['photo'] if place['gallery'] else None
-            place['graves'] = p.graves_list()
+            place['graves'] = cp.graves_list()
             data['places'].append(place)
 
         return Response(status=200, data=data)
