@@ -26,6 +26,19 @@ class GetGalleryMixin(object):
         request = self.context.get('request')
         return obj.get_photo_gallery(request) if request else []
 
+class ArchCemeterySerializer(serializers.ModelSerializer):
+    """
+    Архив всех данных ОМС по захоронениям
+    
+    Внешний элемент - кладбище. Внутри участки, места, захоронения, усопшие ...
+    """
+    time_begin = TimeField()
+    time_end = TimeField()
+
+    class Meta:
+        model = Cemetery
+        fields = ('id', 'name', 'time_begin', 'time_end', )
+
 class SubCemeterySerializer(serializers.ModelSerializer):
     """
     area subelement
