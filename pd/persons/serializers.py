@@ -4,8 +4,8 @@ from django.contrib.auth.models import Group, Permission
 from rest_framework import serializers
 from rest_framework.fields import Field, TimeField, DecimalField
 
-from persons.models import AlivePerson, DeadPerson, Phone, CustomPlace
-from rest_api.fields import UnclearDateFieldSerializer
+from persons.models import AlivePerson, DeadPerson, Phone, CustomPlace, CustomPerson
+from rest_api.fields import UnclearDateFieldSerializer, UnclearDateFieldMixin
 
 
 class PhoneSerializer(serializers.HyperlinkedModelSerializer):
@@ -32,9 +32,9 @@ class AlivePersonSerializer(serializers.HyperlinkedModelSerializer):
 
 class CustomPlaceSerializer(serializers.HyperlinkedModelSerializer):
     titlePhoto = serializers.SerializerMethodField('titlePhoto_func')
-    omsData = serializers.SerializerMethodField('omsData_func')
+    omsData = Field(source='oms_data')
     address = Field(source='address')
-    location = Field('location_dict')
+    location = Field(source='location_dict')
 
     class Meta:
         model = CustomPlace
@@ -43,16 +43,6 @@ class CustomPlaceSerializer(serializers.HyperlinkedModelSerializer):
     def titlePhoto_func(self, customplace):
         return customplace.title_photo(self.context['request'])
 
-    def omsData_func(self, customplace):
-        place = customplace.place
-        if place:
-            return dict(
-                address=place.address(),
-                location=place.location_dict(),
-            )
-        else:
-            return None
-
 class DeadPersonSerializer(serializers.HyperlinkedModelSerializer):
     birth_date = UnclearDateFieldSerializer()
     death_date = UnclearDateFieldSerializer()
@@ -60,3 +50,37 @@ class DeadPersonSerializer(serializers.HyperlinkedModelSerializer):
         model = DeadPerson
         fields = ('id', 'first_name', 'last_name', 'middle_name', 'birth_date', 'death_date')
 
+class CustomPersonSerializer(UnclearDateFieldMixin, serializers.HyperlinkedModelSerializer):
+    birthDate = serializers.SerializerMethodField('birth_date')
+    deathDate = serializers.SerializerMethodField('death_date')
+    omsData = Field('oms_data')
+
+    class Meta:
+        model = CustomPerson
+        fields = ('id', 'first_name', 'last_name', 'middle_name',
+                  'birthDate', 'deathDate', 'omsData',
+        )
+
+    def restore_object(self, attrs, instance=None):
+        data = self.context['request'].DATA
+        customplace = self.context.get('customplace')
+
+        fields_got = dict(
+            last_name=data.get('lastName'),
+            first_name=data.get('firstName'),
+            middle_name=data.get('middleName'),
+        )
+        fields = dict()
+        for k in fields_got:
+            if fields_got[k] is not None:
+                fields[k] = fields_got[k]
+        if 'birthDate' in data:
+            fields['birth_date'] = self.set_unclear_date(data['birthDate'])
+        if 'deathDate' in data:
+            fields['death_date'] = self.set_unclear_date(data['deathDate'])
+        if instance:
+            for k in fields:
+                setattr(instance, k, fields[k])
+            return instance
+        else:
+            return CustomPerson(customplace=customplace, **fields)
