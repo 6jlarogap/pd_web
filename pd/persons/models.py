@@ -4,13 +4,15 @@ import copy
 from django.db import models
 from django.utils.translation import ugettext as _
 from django.db.models.deletion import ProtectedError
+from django.db.models.loading import get_model
 from django.contrib.contenttypes import generic
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.auth.models import User
 
 import datetime
-from geo.models import Location
+from geo.models import Location, LocationMixin
 from pd.models import UnclearDate, UnclearDateModelField, BaseModel, Files, validate_phone_as_number
+from pd.utils import utcisoformat
 from users.models import Org, PhonesMixin
 
 class IDDocumentType(models.Model):
@@ -349,7 +351,7 @@ class Phone(BaseModel):
                 number=phone.lstrip('+'),
             )
 
-class CustomPlace(BaseModel):
+class CustomPlace(LocationMixin, BaseModel):
     address = models.ForeignKey(Location, verbose_name=_(u"Адрес"), null=True)
     user = models.ForeignKey('auth.User', verbose_name=_(u"Владелец или указавший место"))
     place = models.ForeignKey('burials.Place', verbose_name=_(u"Место"), null=True)
@@ -415,6 +417,27 @@ class CustomPlace(BaseModel):
                         pass
                 graves.append(grave)
         return graves
+
+    def gallery(self, request):
+        ResultFile = get_model('orders', 'ResultFile')
+        gallery = [dict(
+                    photo=request.build_absolute_uri(photo.bfile.url),
+                    createdAt=utcisoformat(photo.date_of_creation),
+                   ) \
+                   for photo in ResultFile.objects.filter(
+                       order__customplace=self,
+                       type=ResultFile.TYPE_IMAGE,
+                       )
+        ]
+
+        if self.place:
+            gallery += self.place.get_photo_gallery(request)
+        gallery = sorted(gallery, key=lambda photo: photo['createdAt'], reverse=True)
+        return gallery
+
+    def title_photo(self, request):
+        gallery = self.gallery(request)
+        return gallery[0]['photo'] if gallery else None
 
 class CustomPerson(PersonMixin, BaseModel):
     """

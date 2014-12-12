@@ -10,7 +10,7 @@ from django.utils.translation import ugettext as _
 
 from persons.models import DeadPerson, AlivePerson, BasePerson, DocumentSource, Phone, \
                            CustomPlace, CustomPerson, MemoryGallery
-from serializers import AlivePersonSerializer, DeadPersonSerializer, PhoneSerializer
+from persons.serializers import AlivePersonSerializer, DeadPersonSerializer, PhoneSerializer, CustomPlaceSerializer
 
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -22,6 +22,7 @@ from pd.models import UnclearDate, SafeDeleteMixin
 from burials.models import Place 
 from logs.models import write_log
 from users.models import PermitIfCabinet
+from orders.models import ResultFile
 from geo.models import Location
 
 from pd.utils import utcisoformat
@@ -230,6 +231,18 @@ class ApiClientCustomplacesView(ApiClientCustomplacesMixin, APIView):
 
 api_client_customplaces = ApiClientCustomplacesView.as_view()
 
+class ApiClientPlacesView(APIView):
+    permission_classes = (PermitIfCabinet,)
+
+    def get(self, request):
+        return Response(
+            data=[CustomPlaceSerializer(customplace,context=dict(request=request)).data \
+                  for customplace in CustomPlace.objects.filter(user=request.user).order_by('pk')],
+            status=200,
+        )
+
+api_client_places = ApiClientPlacesView.as_view()
+
 class ApiClientCustomplacesDetailView(ApiClientCustomplacesMixin, SafeDeleteMixin, APIView):
     """
     Edit or delete CustomPlace
@@ -282,6 +295,24 @@ class ApiClientCustomplacesDetailView(ApiClientCustomplacesMixin, SafeDeleteMixi
         return Response({"status": "success"}, 200)
 
 api_client_customplaces_detail = ApiClientCustomplacesDetailView.as_view()
+
+class ApiClientPlacesDetailView(ApiClientCustomplacesMixin, APIView):
+    permission_classes = (PermitIfCabinet,)
+
+    def get_object(self, pk):
+        try:
+            customplace = CustomPlace.objects.get(pk=pk)
+        except CustomPlace.DoesNotExist:
+            raise Http404
+        return customplace
+
+    def get(self, request, pk):
+        return Response(
+            data=CustomPlaceSerializer(self.get_object(pk),context=dict(request=request)).data,
+            status=200,
+        )
+
+api_client_places_detail = ApiClientPlacesDetailView.as_view()
 
 class ApiCustompersonMixin(object):
 

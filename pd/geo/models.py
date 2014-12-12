@@ -20,7 +20,10 @@ class GeoPointModel(BaseModel):
         abstract = True
 
     def location_dict(self):
-        return dict(latitude=self.lat, longitude=self.lng)
+        if self.lat is not None and self.lng is not None:
+            return dict(latitude=self.lat, longitude=self.lng)
+        else:
+            return None
 
 class CoordinatesModel(models.Model):
     """
@@ -252,8 +255,15 @@ class Location(models.Model):
             self.save()
 
     def location_dict(self):
-        return dict(latitude=self.gps_y, longitude=self.gps_x)
+        if self.gps_y is not None and self.gps_x is not None:
+            return dict(latitude=self.gps_y, longitude=self.gps_x)
+        else:
+            return None
 
-    @classmethod
-    def empty_location_dict(cls):
-        return dict(latitude=None, longitude=None)
+class LocationMixin(object):
+
+    def location_dict(self):
+        if self.address:
+            return self.address.location_dict()
+        else:
+            return None

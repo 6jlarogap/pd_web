@@ -1173,57 +1173,6 @@ class PlaceCertificateView(UGHRequiredMixin, DetailView):
 
 place_certificate = PlaceCertificateView.as_view()
 
-class ApiClientPlacesDetailView(APIView):
-    permission_classes = (PermitIfTradeOrCabinet,)
-
-    def get(self, request, pk):
-        try:
-            customplace = CustomPlace.objects.get(pk=pk)
-        except CustomPlace.DoesNotExist:
-            raise Http404
-        grant_access = False
-        if is_cabinet_user(request.user):
-            if customplace.user == request.user:
-                grant_access = True
-        elif is_trade_user(request.user):
-            if Order.objects.filter(customplace=customplace, loru=request.user.profile.org).exists():
-                grant_access = True
-        if not grant_access:
-            raise Http404
-
-        gallery = [dict(
-                    photo=request.build_absolute_uri(photo.bfile.url),
-                    createdAt=utcisoformat(photo.date_of_creation),
-                   ) \
-                   for photo in ResultFile.objects.filter(
-                       order__customplace=customplace,
-                       type=ResultFile.TYPE_IMAGE,
-                       )
-        ]
-
-        if customplace.place:
-            place = customplace.place
-            gallery += place.get_photo_gallery(request)
-            data=dict(
-                address=place.address(),
-                location=place.location_dict(),
-            )
-        else:
-            data = dict(
-                address = unicode(customplace.address),
-                location = customplace.address and customplace.address.location_dict() or \
-                                                   Location.empty_location_dict()
-            )
-        gallery = sorted(gallery, key=lambda photo: photo['createdAt'], reverse=True)
-        photo = gallery[0]['photo'] if gallery else None
-        data.update(dict(
-            gallery=gallery,
-            photo=photo,
-        ))
-        return Response(data, status=200)
-
-api_client_places_detail = ApiClientPlacesDetailView.as_view()
-
 class ApiClientPlaceGravesView(APIView):
     permission_classes = (PermitIfCabinet,)
 
