@@ -10,7 +10,8 @@ from django.utils.translation import ugettext as _
 
 from persons.models import DeadPerson, AlivePerson, BasePerson, DocumentSource, Phone, \
                            CustomPlace, CustomPerson, MemoryGallery
-from persons.serializers import AlivePersonSerializer, DeadPersonSerializer, PhoneSerializer, CustomPlaceSerializer
+from persons.serializers import AlivePersonSerializer, DeadPersonSerializer, PhoneSerializer, \
+                                CustomPlaceSerializer, CustomPersonSerializer
 
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -136,6 +137,13 @@ class PhoneViewSet(viewsets.ModelViewSet):
 
 class ApiClientCustomplacesMixin(object):
 
+    def get_object(self, pk):
+        try:
+            customplace = CustomPlace.objects.get(pk=pk)
+        except CustomPlace.DoesNotExist:
+            raise Http404
+        return customplace
+
     def create_deadmen(self, deadmen, customplace):
         if deadmen is not None:
             for deadman in deadmen:
@@ -151,6 +159,7 @@ class ApiClientCustomplacesMixin(object):
                     )
                 except ValueError:
                     raise ServiceException("Invalid death or birth date")
+
 
 class ApiClientCustomplacesView(ApiClientCustomplacesMixin, APIView):
     """
@@ -249,13 +258,6 @@ class ApiClientCustomplacesDetailView(ApiClientCustomplacesMixin, SafeDeleteMixi
     """
     permission_classes = (PermitIfCabinet,)
 
-    def get_object(self, pk):
-        try:
-            customplace = CustomPlace.objects.get(pk=pk)
-        except CustomPlace.DoesNotExist:
-            raise Http404
-        return customplace
-
     @transaction.commit_on_success
     def put(self, request, pk):
         customplace = self.get_object(pk=pk)
@@ -298,13 +300,6 @@ api_client_customplaces_detail = ApiClientCustomplacesDetailView.as_view()
 
 class ApiClientPlacesDetailView(ApiClientCustomplacesMixin, APIView):
     permission_classes = (PermitIfCabinet,)
-
-    def get_object(self, pk):
-        try:
-            customplace = CustomPlace.objects.get(pk=pk)
-        except CustomPlace.DoesNotExist:
-            raise Http404
-        return customplace
 
     def get(self, request, pk):
         return Response(
@@ -422,3 +417,37 @@ class ApiCustompersonMemoryGalleryView(ApiCustompersonMixin, ApiMemoryGalleryMix
         return Response({"status": "success"}, 200)
 
 api_customperson_memory_gallery = ApiCustompersonMemoryGalleryView.as_view()
+
+class ApiClientPlacesDeadmansView(ApiClientCustomplacesMixin, APIView):
+    permission_classes = (PermitIfCabinet,)
+
+    def get(self, request, pk):
+        return Response(
+            data=[CustomPersonSerializer(customperson).data \
+                  for customperson in CustomPerson.objects.filter(customplace=self.get_object(pk))],
+            status=200,
+        )
+
+api_client_places_deadmans = ApiClientPlacesDeadmansView.as_view()
+
+class ApiClientPlacesDeadmansDetailView(ApiClientCustomplacesMixin, APIView):
+    permission_classes = (PermitIfCabinet,)
+
+    def put(self, request, pk, deadman_pk):
+        customplace=self.get_object(pk)
+        try:
+            customperson=CustomPerson.objects.get(customplace=customplace,pk=deadman_pk)
+        except CustomPerson.DoesNotExist:
+            raise Http404
+        serializer = CustomPersonSerializer(
+            customperson,
+            data=request.DATA,
+            context=dict(request=request),
+        )
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=200)
+        return Response(serializer.errors, status=400)
+
+api_client_places_deadmans_detail = ApiClientPlacesDeadmansDetailView.as_view()
+
