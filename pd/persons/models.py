@@ -439,6 +439,16 @@ class CustomPlace(LocationMixin, BaseModel):
         gallery = self.gallery(request)
         return gallery[0]['photo'] if gallery else None
 
+    def oms_data(self):
+        place = self.place
+        if place:
+            return dict(
+                address=place.address(),
+                location=place.location_dict(),
+            )
+        else:
+            return None
+
 class CustomPerson(PersonMixin, BaseModel):
     """
     Человек, чаще усопший, но возможно живой
@@ -459,6 +469,21 @@ class CustomPerson(PersonMixin, BaseModel):
     death_date = UnclearDateModelField(_(u"Дата смерти"), blank=True, null=True)
     is_dead = models.BooleanField(_(u"Уcопший"), default=True)
     memory_text = models.TextField(_(u"Памятный текст"), null=True)
+
+    def oms_data(self):
+        try:
+            deadman = self.person.deadperson
+            burial = deadman.burial_set.all()[0]
+        except (AttributeError, DeadPerson.DoesNotExist, IndexError,):
+            return None
+        return dict(
+            lastName=deadman.last_name,
+            firstName=deadman.first_name,
+            middleName=deadman.middle_name,
+            birthDate = deadman.birth_date and deadman.birth_date.str_safe() or None,
+            deathDate = deadman.death_date and deadman.death_date.str_safe() or None,
+            grave = burial.grave_number,
+        )
 
 class MemoryGallery(Files):
     """

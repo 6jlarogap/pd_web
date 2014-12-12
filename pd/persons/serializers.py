@@ -32,7 +32,7 @@ class AlivePersonSerializer(serializers.HyperlinkedModelSerializer):
 
 class CustomPlaceSerializer(serializers.HyperlinkedModelSerializer):
     titlePhoto = serializers.SerializerMethodField('titlePhoto_func')
-    omsData = serializers.SerializerMethodField('omsData_func')
+    omsData = Field(source='oms_data')
     address = Field(source='address')
     location = Field(source='location_dict')
 
@@ -42,16 +42,6 @@ class CustomPlaceSerializer(serializers.HyperlinkedModelSerializer):
 
     def titlePhoto_func(self, customplace):
         return customplace.title_photo(self.context['request'])
-
-    def omsData_func(self, customplace):
-        place = customplace.place
-        if place:
-            return dict(
-                address=place.address(),
-                location=place.location_dict(),
-            )
-        else:
-            return None
 
 class DeadPersonSerializer(serializers.HyperlinkedModelSerializer):
     birth_date = UnclearDateFieldSerializer()
@@ -63,22 +53,13 @@ class DeadPersonSerializer(serializers.HyperlinkedModelSerializer):
 class CustomPersonSerializer(UnclearDateFieldMixin, serializers.HyperlinkedModelSerializer):
     birthDate = serializers.SerializerMethodField('birth_date')
     deathDate = serializers.SerializerMethodField('death_date')
-    fio = Field(source='full_human_name')
-    graveNumber = serializers.SerializerMethodField('graveNumber_func')
+    omsData = Field('oms_data')
 
     class Meta:
         model = CustomPerson
-        fields = ('id', 'fio', 'first_name', 'last_name', 'middle_name',
-                  'birthDate', 'deathDate', 'graveNumber',
+        fields = ('id', 'first_name', 'last_name', 'middle_name',
+                  'birthDate', 'deathDate', 'omsData',
         )
-
-    def graveNumber_func(self, customperson):
-        result = None
-        try:
-            return customperson.person.deadperson.burial_set.all()[0].grave_number
-        except (AttributeError, DeadPerson.DoesNotExist,):
-            pass
-        return
 
     def restore_object(self, attrs, instance=None):
         data = self.context['request'].DATA
