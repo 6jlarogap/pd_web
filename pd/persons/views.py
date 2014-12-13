@@ -22,9 +22,9 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.parsers import MultiPartParser
 
 from pd.models import UnclearDate, SafeDeleteMixin
-from burials.models import Place 
+from burials.models import Place, PlacePhoto
 from logs.models import write_log
-from users.models import PermitIfCabinet
+from users.models import PermitIfCabinet, user_dict
 from orders.models import ResultFile
 from geo.models import Location
 
@@ -470,3 +470,43 @@ class ApiClientDeadmansView(APIView):
         )
 
 api_client_deadmans = ApiClientDeadmansView.as_view()
+
+class ApiClientPlacesAttachmentsView(ApiClientCustomplacesMixin, APIView):
+    permission_classes = (PermitIfCabinet,)
+
+    def get(self, request, pk):
+        customplace = self.get_object(pk)
+        gallery = [dict(
+                    id=resultfile.pk,
+                    title=None,
+                    type=resultfile.type,
+                    url=request.build_absolute_uri(resultfile.bfile.url),
+                    createdAt=utcisoformat(resultfile.date_of_creation),
+                    createdBy=user_dict(resultfile.creator),
+                ) \
+                for resultfile in ResultFile.objects.filter(
+                    order__customplace=customplace,
+                    ).order_by('-date_of_creation') \
+                if resultfile.bfile
+        ]
+        if customplace.place:
+            gallery += [dict(
+                        id=placephoto.pk,
+                        title=None,
+                        type=ResultFile.TYPE_IMAGE,
+                        url=request.build_absolute_uri(placephoto.bfile.url),
+                        createdAt=utcisoformat(placephoto.date_of_creation),
+                        createdBy=user_dict(placephoto.creator),
+                    ) \
+                    for placephoto in PlacePhoto.objects.filter(
+                        place=customplace.place,
+                        ).order_by('-date_of_creation') \
+                    if placephoto.bfile
+            ]
+        return Response(
+            data=gallery,
+            status=200,
+        )
+
+api_client_places_attachments = ApiClientPlacesAttachmentsView.as_view()
+
