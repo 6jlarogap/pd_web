@@ -500,7 +500,7 @@ class ApiClientPlacesAttachmentsView(ApiClientCustomplacesMixin, APIView):
                     ) \
                     for placephoto in PlacePhoto.objects.filter(
                         place=customplace.place,
-                        ).order_by('-date_of_creation')
+                        ).order_by('-date_of_creation') \
                     if placephoto.bfile
             ]
         return Response(
