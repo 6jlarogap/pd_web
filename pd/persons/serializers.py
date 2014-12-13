@@ -127,7 +127,7 @@ class CustomPerson2Serializer(BaseCustomPersonSerializer):
 
     class Meta:
         model = CustomPerson
-        fields = ('id', 'first_name', 'last_name', 'middle_name',
+        fields = ('id', 'firstName', 'lastName', 'middleName',
                   'birthDate', 'deathDate', 'grave'
         )
 
