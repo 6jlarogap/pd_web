@@ -484,6 +484,17 @@ class Grave(GeoPointModel):
 class PlacePhoto(Files, GeoPointModel):
     place = models.ForeignKey(Place)
 
+    def save(self, *args, **kwargs):
+        try:
+            customplace = CustomPlace.objects.get(place=self.place)
+        except CustomPlace.DoesNotExist:
+            customplace = None
+        result = super(PlacePhoto, self).save(*args, **kwargs)
+        if customplace and self.bfile:
+            customplace.update_title_photo(self.bfile)
+        return result
+
+
     def is_accessible_anonymous(self):
         """
         Доступно ли анонимному пользователю

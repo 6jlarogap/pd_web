@@ -41,7 +41,7 @@ class CustomPlaceSerializer(serializers.HyperlinkedModelSerializer):
         fields = ('id', 'omsData', 'titlePhoto', 'address', 'location', )
 
     def titlePhoto_func(self, customplace):
-        return customplace.title_photo(self.context['request'])
+        return customplace.title_photo_(self.context['request'])
 
 class DeadPersonSerializer(serializers.HyperlinkedModelSerializer):
     birth_date = UnclearDateFieldSerializer()
