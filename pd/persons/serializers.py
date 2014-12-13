@@ -31,14 +31,9 @@ class AlivePersonSerializer(serializers.HyperlinkedModelSerializer):
         fields = ('id', 'first_name', 'last_name', 'middle_name', 'address', 'phones', 'login_phone', 'address_str')
 
 
-class DeadPersonIdSerializer(serializers.HyperlinkedModelSerializer):
-    class Meta:
-        model = DeadPerson
-        fields = ('id', )
-
 class CustomPlaceListSerializer(CreatedAtMixin, serializers.HyperlinkedModelSerializer):
     titlePhoto = HyperlinkedFileField(source='title_photo')
-    deadmans = DeadPersonIdSerializer(many=True, source='customperson_set')
+    deadmans = serializers.SerializerMethodField('deadmans_func')
     address = serializers.SerializerMethodField('address_func')
     location = serializers.SerializerMethodField('location_func')
     createdAt = serializers.SerializerMethodField('createdAt_func')
@@ -64,6 +59,11 @@ class CustomPlaceListSerializer(CreatedAtMixin, serializers.HyperlinkedModelSeri
         else:
             location = None
         return location
+
+    def deadmans_func(self, customplace):
+        return [ custompernson.pk for custompernson in CustomPerson.objects.filter(
+            customplace=customplace,
+        )]
 
 class CustomPlaceDetailSerializer(serializers.HyperlinkedModelSerializer):
     titlePhoto = HyperlinkedFileField(source='title_photo')
