@@ -61,7 +61,7 @@ class CustomPlaceListSerializer(CreatedAtMixin, serializers.HyperlinkedModelSeri
         return location
 
     def deadmans_func(self, customplace):
-        return [ custompernson.pk for custompernson in CustomPerson.objects.filter(
+        return [ customperson.pk for customperson in CustomPerson.objects.filter(
             customplace=customplace,
         )]
 
