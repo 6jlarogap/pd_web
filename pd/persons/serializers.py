@@ -82,14 +82,19 @@ class DeadPersonSerializer(serializers.HyperlinkedModelSerializer):
         model = DeadPerson
         fields = ('id', 'first_name', 'last_name', 'middle_name', 'birth_date', 'death_date')
 
-class CustomPersonSerializer(UnclearDateFieldMixin, serializers.HyperlinkedModelSerializer):
+class BaseCustomPersonSerializer(UnclearDateFieldMixin, serializers.HyperlinkedModelSerializer):
     birthDate = serializers.SerializerMethodField('birth_date')
     deathDate = serializers.SerializerMethodField('death_date')
-    omsData = Field('oms_data')
+    lastName = Field(source='last_name')
+    firstName = Field(source='first_name')
+    middleName = Field(source='middle_name')
+
+class CustomPersonSerializer(BaseCustomPersonSerializer):
+    omsData = Field(source='oms_data')
 
     class Meta:
         model = CustomPerson
-        fields = ('id', 'first_name', 'last_name', 'middle_name',
+        fields = ('id', 'firstName', 'lastName', 'middleName',
                   'birthDate', 'deathDate', 'omsData',
         )
 
@@ -116,3 +121,18 @@ class CustomPersonSerializer(UnclearDateFieldMixin, serializers.HyperlinkedModel
             return instance
         else:
             return CustomPerson(customplace=customplace, **fields)
+
+class CustomPerson2Serializer(BaseCustomPersonSerializer):
+    grave = serializers.SerializerMethodField('grave_func')
+
+    class Meta:
+        model = CustomPerson
+        fields = ('id', 'firstName', 'lastName', 'middleName',
+                  'birthDate', 'deathDate', 'grave'
+        )
+
+    def grave_func(self, customperson):
+        try:
+            return customperson.person.deadperson.burial_set.all()[0].grave_number
+        except (AttributeError, DeadPerson.DoesNotExist, IndexError,):
+            return None
