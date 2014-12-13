@@ -11,7 +11,8 @@ from django.utils.translation import ugettext as _
 from persons.models import DeadPerson, AlivePerson, BasePerson, DocumentSource, Phone, \
                            CustomPlace, CustomPerson, MemoryGallery
 from persons.serializers import AlivePersonSerializer, DeadPersonSerializer, PhoneSerializer, \
-                                CustomPlaceSerializer, CustomPersonSerializer
+                                CustomPlaceDetailSerializer, CustomPlaceListSerializer, \
+                                CustomPersonSerializer
 
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -245,7 +246,7 @@ class ApiClientPlacesView(APIView):
 
     def get(self, request):
         return Response(
-            data=[CustomPlaceSerializer(customplace,context=dict(request=request)).data \
+            data=[CustomPlaceListSerializer(customplace,context=dict(request=request)).data \
                   for customplace in CustomPlace.objects.filter(user=request.user).order_by('pk')],
             status=200,
         )
@@ -303,7 +304,7 @@ class ApiClientPlacesDetailView(ApiClientCustomplacesMixin, APIView):
 
     def get(self, request, pk):
         return Response(
-            data=CustomPlaceSerializer(self.get_object(pk),context=dict(request=request)).data,
+            data=CustomPlaceDetailSerializer(self.get_object(pk),context=dict(request=request)).data,
             status=200,
         )
 

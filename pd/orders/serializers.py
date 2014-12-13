@@ -14,15 +14,8 @@ from orders.models import Order, ProductCategory, Product, Service, Measure, Org
 from users.models import Org, is_cabinet_user, is_trade_user, UserPhoto
 from users.serializers import OrgSerializer, OrgShortSerializer, OrgShort3Serializer, OrgShort4Serializer, \
                               UserFioSerializer
-from pd.utils import utcisoformat, str_to_bool_or_None
+from pd.utils import utcisoformat, str_to_bool_or_None, CreatedAtMixin
 from pd.views import ServiceException
-
-class CreatedAtMixin(object):
-    def createdAt_func(self, instance):
-        return utcisoformat(instance.dt_created)
-
-    def modifiedAt_func(self, instance):
-        return utcisoformat(instance.dt_modified)
 
 class ProductCategorySerializer(serializers.HyperlinkedModelSerializer):
     icon = HyperlinkedFileField()
