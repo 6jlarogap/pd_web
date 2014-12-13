@@ -441,27 +441,6 @@ class CustomPlace(LocationMixin, BaseModel):
         self.title_photo = photo
         self.save()
 
-    def gallery(self, request):
-        ResultFile = get_model('orders', 'ResultFile')
-        gallery = [dict(
-                    photo=request.build_absolute_uri(photo.bfile.url),
-                    createdAt=utcisoformat(photo.date_of_creation),
-                   ) \
-                   for photo in ResultFile.objects.filter(
-                       order__customplace=self,
-                       type=ResultFile.TYPE_IMAGE,
-                       )
-        ]
-
-        if self.place:
-            gallery += self.place.get_photo_gallery(request)
-        gallery = sorted(gallery, key=lambda photo: photo['createdAt'], reverse=True)
-        return gallery
-
-    def title_photo_(self, request):
-        gallery = self.gallery(request)
-        return gallery[0]['photo'] if gallery else None
-
     def oms_data(self):
         place = self.place
         if place:

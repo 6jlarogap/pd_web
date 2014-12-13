@@ -5,7 +5,7 @@ from rest_framework import serializers
 from rest_framework.fields import Field, TimeField, DecimalField
 
 from persons.models import AlivePerson, DeadPerson, Phone, CustomPlace, CustomPerson
-from rest_api.fields import UnclearDateFieldSerializer, UnclearDateFieldMixin
+from rest_api.fields import UnclearDateFieldSerializer, UnclearDateFieldMixin, HyperlinkedFileField
 
 
 class PhoneSerializer(serializers.HyperlinkedModelSerializer):
@@ -31,7 +31,7 @@ class AlivePersonSerializer(serializers.HyperlinkedModelSerializer):
 
 
 class CustomPlaceSerializer(serializers.HyperlinkedModelSerializer):
-    titlePhoto = serializers.SerializerMethodField('titlePhoto_func')
+    titlePhoto = HyperlinkedFileField(source='title_photo')
     omsData = Field(source='oms_data')
     address = Field(source='address')
     location = Field(source='location_dict')
@@ -39,9 +39,6 @@ class CustomPlaceSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = CustomPlace
         fields = ('id', 'omsData', 'titlePhoto', 'address', 'location', )
-
-    def titlePhoto_func(self, customplace):
-        return customplace.title_photo_(self.context['request'])
 
 class DeadPersonSerializer(serializers.HyperlinkedModelSerializer):
     birth_date = UnclearDateFieldSerializer()
