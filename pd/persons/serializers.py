@@ -7,6 +7,7 @@ from rest_framework.fields import Field, TimeField, DecimalField
 from persons.models import AlivePerson, DeadPerson, Phone, CustomPlace, CustomPerson
 from rest_api.fields import UnclearDateFieldSerializer, UnclearDateFieldMixin, HyperlinkedFileField
 
+from pd.utils import CreatedAtMixin
 
 class PhoneSerializer(serializers.HyperlinkedModelSerializer):
     #person = serializers.PrimaryKeyRelatedField()
@@ -30,7 +31,41 @@ class AlivePersonSerializer(serializers.HyperlinkedModelSerializer):
         fields = ('id', 'first_name', 'last_name', 'middle_name', 'address', 'phones', 'login_phone', 'address_str')
 
 
-class CustomPlaceSerializer(serializers.HyperlinkedModelSerializer):
+class DeadPersonIdSerializer(serializers.HyperlinkedModelSerializer):
+    class Meta:
+        model = DeadPerson
+        fields = ('id', )
+
+class CustomPlaceListSerializer(CreatedAtMixin, serializers.HyperlinkedModelSerializer):
+    titlePhoto = HyperlinkedFileField(source='title_photo')
+    deadmans = DeadPersonIdSerializer(many=True, source='customperson_set')
+    address = serializers.SerializerMethodField('address_func')
+    location = serializers.SerializerMethodField('location_func')
+    createdAt = serializers.SerializerMethodField('createdAt_func')
+
+    class Meta:
+        model = CustomPlace
+        fields = ('id', 'titlePhoto', 'deadmans', 'address', 'location', 'createdAt', )
+
+    def address_func(self, customplace):
+        if customplace.address:
+            address = unicode(customplace.address)
+        elif customplace.place:
+            address = customplace.place.address()
+        else:
+            address = None
+        return address
+
+    def location_func(self, customplace):
+        if customplace.address:
+            location = customplace.address.location_dict()
+        elif customplace.place:
+            location = customplace.place.location_dict()
+        else:
+            location = None
+        return location
+
+class CustomPlaceDetailSerializer(serializers.HyperlinkedModelSerializer):
     titlePhoto = HyperlinkedFileField(source='title_photo')
     omsData = Field(source='oms_data')
     address = Field(source='address')

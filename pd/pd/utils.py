@@ -101,3 +101,10 @@ class EmailMessage(EmailMessage):
         if settings.BCC_OUR_MAIL:
             self.bcc.append(settings.BCC_OUR_MAIL)
         super(EmailMessage, self).send(**kwargs)
+
+class CreatedAtMixin(object):
+    def createdAt_func(self, instance):
+        return utcisoformat(instance.dt_created)
+
+    def modifiedAt_func(self, instance):
+        return utcisoformat(instance.dt_modified)
