@@ -24,7 +24,7 @@ from rest_framework.parsers import MultiPartParser
 from pd.models import UnclearDate, SafeDeleteMixin
 from burials.models import Place, PlacePhoto
 from logs.models import write_log
-from users.models import PermitIfCabinet
+from users.models import PermitIfCabinet, user_dict
 from orders.models import ResultFile
 from geo.models import Location
 
@@ -482,6 +482,7 @@ class ApiClientPlacesAttachmentsView(ApiClientCustomplacesMixin, APIView):
                     type=resultfile.type,
                     url=request.build_absolute_uri(resultfile.bfile.url),
                     createdAt=utcisoformat(resultfile.date_of_creation),
+                    createdBy=user_dict(resultfile.creator),
                 ) \
                 for resultfile in ResultFile.objects.filter(
                     order__customplace=customplace,
@@ -495,6 +496,7 @@ class ApiClientPlacesAttachmentsView(ApiClientCustomplacesMixin, APIView):
                         type=ResultFile.TYPE_IMAGE,
                         url=request.build_absolute_uri(placephoto.bfile.url),
                         createdAt=utcisoformat(placephoto.date_of_creation),
+                        createdBy=user_dict(placephoto.creator),
                     ) \
                     for placephoto in PlacePhoto.objects.filter(
                         place=customplace.place,
