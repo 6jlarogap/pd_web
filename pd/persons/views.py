@@ -1,6 +1,7 @@
 # coding=utf-8
 
 import json
+import re
 
 from django.db import transaction, IntegrityError
 from django.db.models.query_utils import Q
@@ -12,7 +13,7 @@ from persons.models import DeadPerson, AlivePerson, BasePerson, DocumentSource, 
                            CustomPlace, CustomPerson, MemoryGallery
 from persons.serializers import AlivePersonSerializer, DeadPersonSerializer, PhoneSerializer, \
                                 CustomPlaceDetailSerializer, CustomPlaceListSerializer, \
-                                CustomPersonSerializer
+                                CustomPersonSerializer, CustomPerson2Serializer
 
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -452,3 +453,20 @@ class ApiClientPlacesDeadmansDetailView(ApiClientCustomplacesMixin, APIView):
 
 api_client_places_deadmans_detail = ApiClientPlacesDeadmansDetailView.as_view()
 
+class ApiClientDeadmansView(APIView):
+    permission_classes = (PermitIfCabinet,)
+
+    def get(self, request):
+        data = list()
+        for pk in re.split(r'[,\s]+', request.GET.get('ids', '').strip()):
+            try:
+                customperson=CustomPerson.objects.get(pk=pk,customplace__user=request.user)
+            except CustomPerson.DoesNotExist:
+                raise Http404
+            data.append(CustomPerson2Serializer(customperson).data)
+        return Response(
+            data=data,
+            status=200,
+        )
+
+api_client_deadmans = ApiClientDeadmansView.as_view()
