@@ -542,6 +542,14 @@ class ResultFile(Files):
     order = models.ForeignKey(Order, verbose_name=_(u"Заказ"), )
     type = models.CharField(_(u"Тип"), max_length=255, choices=RESULT_TYPES, default=TYPE_IMAGE)
 
+    def save(self, *args, **kwargs):
+        if not self.type or self.type == self.TYPE_IMAGE:
+            customplace = self.order.customplace
+        result = super(ResultFile, self).save(*args, **kwargs)
+        if customplace and self.bfile:
+            customplace.update_title_photo(self.bfile)
+        return result
+
 class OrderItem(models.Model):
     order = models.ForeignKey(Order, editable=False)
     product = models.ForeignKey(Product, verbose_name=_(u"Товар"))

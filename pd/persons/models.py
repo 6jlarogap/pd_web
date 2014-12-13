@@ -355,6 +355,13 @@ class CustomPlace(LocationMixin, BaseModel):
     address = models.ForeignKey(Location, verbose_name=_(u"Адрес"), null=True)
     user = models.ForeignKey('auth.User', verbose_name=_(u"Владелец или указавший место"))
     place = models.ForeignKey('burials.Place', verbose_name=_(u"Место"), null=True)
+    # Основное фото места. Оно не грузится от клиента, а копируется из PlacePhoto
+    # или из результатов выполнения заказа, как только появляется новое фото места или
+    # новый результат заказа, привязанного к этому customPlace. Параметр upload_to
+    # указывается, потому что обязателен
+    #
+    title_photo = models.ImageField(_(u"Основное Фото"), upload_to='.', null=True)
+
 
     class Meta:
         unique_together = ('user', 'place', )
@@ -418,26 +425,21 @@ class CustomPlace(LocationMixin, BaseModel):
                 graves.append(grave)
         return graves
 
-    def gallery(self, request):
-        ResultFile = get_model('orders', 'ResultFile')
-        gallery = [dict(
-                    photo=request.build_absolute_uri(photo.bfile.url),
-                    createdAt=utcisoformat(photo.date_of_creation),
-                   ) \
-                   for photo in ResultFile.objects.filter(
-                       order__customplace=self,
-                       type=ResultFile.TYPE_IMAGE,
-                       )
-        ]
+    def save(self, *args, **kwargs):
+        # При создании нового CustomPlace, если к нему привязано Place
+        # от ОМС, заполнить title_photo самой свежей из PlacePhoto
+        if not self.pk and self.place:
+            PlacePhoto = get_model('burials', 'PlacePhoto')
+            try:
+                self.title_photo = PlacePhoto.objects.filter(place=self.place). \
+                                   order_by('-date_of_creation')[0].bfile
+            except IndexError:
+                pass
+        return super(CustomPlace, self).save(*args, **kwargs)
 
-        if self.place:
-            gallery += self.place.get_photo_gallery(request)
-        gallery = sorted(gallery, key=lambda photo: photo['createdAt'], reverse=True)
-        return gallery
-
-    def title_photo(self, request):
-        gallery = self.gallery(request)
-        return gallery[0]['photo'] if gallery else None
+    def update_title_photo(self, photo):
+        self.title_photo = photo
+        self.save()
 
     def oms_data(self):
         place = self.place
