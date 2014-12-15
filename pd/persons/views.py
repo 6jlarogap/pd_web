@@ -149,6 +149,8 @@ class ApiClientCustomplacesMixin(object):
 
     def create_deadmen(self, deadmen, customplace):
         if deadmen is not None:
+            if type(deadmen) is dict:
+                deadmen = [deadmen]
             for deadman in deadmen:
                 try:
                     CustomPerson.objects.create(
@@ -161,8 +163,21 @@ class ApiClientCustomplacesMixin(object):
                         death_date=deadman.get('deathDate') and UnclearDate.from_str_safe(deadman['deathDate']) or None,
                     )
                 except ValueError:
-                    raise ServiceException("Invalid death or birth date")
+                    # foolproof, ибо должно быть ранее проверено
+                    raise ServiceException(_(u"Неверная дата рождения или смерти"))
 
+    def check_life_dates(self):
+        birth_date = self.request.DATA.get('birthDate')
+        death_date = self.request.DATA.get('deathDate')
+        message = UnclearDate.check_safe_str(birth_date, check_today=True)
+        if message:
+            return _(u"Дата рождения: %s") % message
+        message = UnclearDate.check_safe_str(death_date, check_today=True)
+        if message:
+            return _(u"Дата смерти: %s") % message
+        if birth_date and death_date and birth_date > death_date:
+            return _(u"Дата смерти раньше даты рождения")
+        return ""
 
 class ApiClientCustomplacesView(ApiClientCustomplacesMixin, APIView):
     """
@@ -453,6 +468,23 @@ class ApiClientPlacesDeadmansView(ApiClientCustomplacesMixin, APIView):
             status=200,
         )
 
+    def post(self, request, pk):
+        customplace=self.get_object(pk)
+        message = self.check_life_dates()
+        if message:
+            return Response({"status": "error", "message": message}, 400)
+        serializer = CustomPersonSerializer(
+            data=request.DATA,
+            context=dict(
+                request=request,
+                customplace=customplace,
+            ),
+        )
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=200)
+        return Response(serializer.errors, status=400)
+
 api_client_places_deadmans = ApiClientPlacesDeadmansView.as_view()
 
 class ApiClientPlacesDeadmansDetailView(ApiClientCustomplacesMixin, APIView):
@@ -464,6 +496,9 @@ class ApiClientPlacesDeadmansDetailView(ApiClientCustomplacesMixin, APIView):
             customperson=CustomPerson.objects.get(customplace=customplace,pk=deadman_pk)
         except CustomPerson.DoesNotExist:
             raise Http404
+        message = self.check_life_dates()
+        if message:
+            return Response({"status": "error", "message": message}, 400)
         serializer = CustomPersonSerializer(
             customperson,
             data=request.DATA,

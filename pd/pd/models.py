@@ -14,6 +14,7 @@ from django.utils.translation import ugettext as _
 from django.core.exceptions import ValidationError
 from south.modelsinspector import add_introspection_rules
 from logs.models import Log
+from pd.views import ServiceException
 
 class SafeDeleteMixin(object):
     
@@ -37,6 +38,9 @@ class SafeDeleteMixin(object):
                 pass
 
 class UnclearDate:
+
+    SAFE_STR_REGEX = r'^(\d{4})(?:\-(\d{2}))?(?:\-(\d{2}))?$'
+
     def __init__(self, year, month=None, day=None):
         self.d = datetime.date(year, month or 1, day or 1)
         self.no_day = not day
@@ -78,7 +82,7 @@ class UnclearDate:
         """
         Сделать UnclearDate из yyyy-mm-dd, yyyy-mm, yyyy
         """
-        m = re.search(r'^(\d{4})(?:\-(\d{2}))?(?:\-(\d{2}))?$', s)
+        m = re.search(cls.SAFE_STR_REGEX, s)
         if not m:
             raise ValueError('Invalid data to make an UnclearDate object')
         day = m.group(3)
@@ -151,6 +155,57 @@ class UnclearDate:
         self_date, other_date = self.prepare_compare(other)
         return self_date > other_date
 
+    @classmethod
+    def check_safe_str(cls, s, check_today=False):
+        """
+        Проверка правильности строки "гггг-мм-дд", "гггг-мм", "гггг", или None, если дата не задана
+
+        check_today - надо ли еще проверять, чтобы не было больше текущей даты
+        Может возвратить непустое сообщение об ошибке
+        """
+        message = ''
+        if isinstance(s, basestring):
+            s = s.strip()
+        if s:
+            try:
+                m = re.search(cls.SAFE_STR_REGEX, s)
+                if not m:
+                    raise ServiceException(_(u"Неверный формат даты. Допускается ГГГГ-ММ-ДД, ГГГГ-ММ, ГГГГ"))
+                year = m.group(1)
+                month = m.group(2)
+                day = m.group(3)
+
+                year = int(year)
+                if month:
+                    month = int(month)
+                else:
+                    month = None
+                if day:
+                    day = int(day)
+                else:
+                    day = None
+
+                if not year:
+                    raise ServiceException(_(u"Неверный год"))
+                if month is not None and not (1 <= month <= 12):
+                    raise ServiceException(_(u"Неверный месяц"))
+                if day is not None and not (1 <= day <= 31):
+                    raise ServiceException(_(u"Неверный день месяца"))
+
+                if month and day:
+                    try:
+                        datetime.datetime.strptime("%d-%02d-%02d" % (year, month, day), "%Y-%m-%d")
+                    except ValueError:
+                        raise ServiceException(_(u"Неверная дата"))
+
+                if check_today:
+                    t_month = month if month else 1
+                    t_day = day if day else 1
+                    if datetime.date.today() < datetime.date(year, t_month, t_day):
+                        raise ServiceException(_(u"Дата больше текущей"))
+            except ServiceException as excpt:
+                message = excpt.message
+        return message
 
 class UnclearDateCreator(object):
     # http://blog.elsdoerfer.name/2008/01/08/fuzzydates-or-one-django-model-field-multiple-database-columns/
