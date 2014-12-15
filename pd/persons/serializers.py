@@ -4,6 +4,7 @@ from django.contrib.auth.models import Group, Permission
 from rest_framework import serializers
 from rest_framework.fields import Field, TimeField, DecimalField
 
+from geo.models import Location
 from persons.models import AlivePerson, DeadPerson, Phone, CustomPlace, CustomPerson
 from rest_api.fields import UnclearDateFieldSerializer, UnclearDateFieldMixin, HyperlinkedFileField
 
@@ -65,11 +66,42 @@ class CustomPlaceListSerializer(CreatedAtMixin, serializers.HyperlinkedModelSeri
             customplace=customplace,
         )]
 
-class CustomPlaceDetailSerializer(serializers.HyperlinkedModelSerializer):
-    titlePhoto = HyperlinkedFileField(source='title_photo')
-    omsData = Field(source='oms_data')
+class CustomPlaceEditSerializer(serializers.HyperlinkedModelSerializer):
     address = Field(source='address')
     location = Field(source='location_dict')
+
+    class Meta:
+        model = CustomPlace
+        fields = ('address', 'location', )
+
+    def restore_object(self, attrs, instance=None):
+        data = self.context['request'].DATA
+
+        address=data.get('address')
+        location=data.get('location')
+        l = None
+        if address or location:
+            if instance and instance.address:
+                l = instance.address 
+            else:
+                l = Location()
+            if address:
+                l.addr_str = address
+            if location:
+                l.gps_x = location.get("longitude")
+                l.gps_y = location.get("latitude")
+            l.save()
+        if instance:
+            return instance
+        else:
+            return CustomPlace(
+                user=self.context['request'].user,
+                address=l,
+            )
+
+class CustomPlaceDetailSerializer(CustomPlaceEditSerializer):
+    titlePhoto = HyperlinkedFileField(source='title_photo')
+    omsData = Field(source='oms_data')
 
     class Meta:
         model = CustomPlace
