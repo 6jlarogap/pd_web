@@ -253,6 +253,16 @@ class ApiClientPlacesView(APIView):
             status=200,
         )
 
+    def post(self, request):
+        serializer = CustomPlaceEditSerializer(
+            data=request.DATA,
+            context=dict(request=request),
+        )
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=200)
+        return Response(serializer.errors, status=400)
+
 api_client_places = ApiClientPlacesView.as_view()
 
 class ApiClientCustomplacesDetailView(ApiClientCustomplacesMixin, SafeDeleteMixin, APIView):

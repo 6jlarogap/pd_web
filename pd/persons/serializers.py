@@ -72,7 +72,7 @@ class CustomPlaceEditSerializer(serializers.HyperlinkedModelSerializer):
 
     class Meta:
         model = CustomPlace
-        fields = ('address', 'location', )
+        fields = ('id', 'address', 'location', )
 
     def restore_object(self, attrs, instance=None):
         data = self.context['request'].DATA
