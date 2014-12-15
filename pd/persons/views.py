@@ -13,6 +13,7 @@ from persons.models import DeadPerson, AlivePerson, BasePerson, DocumentSource, 
                            CustomPlace, CustomPerson, MemoryGallery
 from persons.serializers import AlivePersonSerializer, DeadPersonSerializer, PhoneSerializer, \
                                 CustomPlaceDetailSerializer, CustomPlaceListSerializer, \
+                                CustomPlaceEditSerializer, \
                                 CustomPersonSerializer, CustomPerson2Serializer
 
 from rest_framework.response import Response
@@ -252,6 +253,16 @@ class ApiClientPlacesView(APIView):
             status=200,
         )
 
+    def post(self, request):
+        serializer = CustomPlaceEditSerializer(
+            data=request.DATA,
+            context=dict(request=request),
+        )
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=200)
+        return Response(serializer.errors, status=400)
+
 api_client_places = ApiClientPlacesView.as_view()
 
 class ApiClientCustomplacesDetailView(ApiClientCustomplacesMixin, SafeDeleteMixin, APIView):
@@ -308,6 +319,18 @@ class ApiClientPlacesDetailView(ApiClientCustomplacesMixin, APIView):
             data=CustomPlaceDetailSerializer(self.get_object(pk),context=dict(request=request)).data,
             status=200,
         )
+
+    def put(self, request, pk):
+        customplace = self.get_object(pk)
+        serializer = CustomPlaceEditSerializer(
+            customplace,
+            data=request.DATA,
+            context=dict(request=request),
+        )
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=200)
+        return Response(serializer.errors, status=400)
 
 api_client_places_detail = ApiClientPlacesDetailView.as_view()
 
@@ -461,7 +484,7 @@ class ApiClientDeadmansView(APIView):
         for pk in re.split(r'[,\s]+', request.GET.get('ids', '').strip()):
             try:
                 customperson=CustomPerson.objects.get(pk=pk,customplace__user=request.user)
-            except CustomPerson.DoesNotExist:
+            except (ValueError, CustomPerson.DoesNotExist, ):
                 raise Http404
             data.append(CustomPerson2Serializer(customperson).data)
         return Response(
