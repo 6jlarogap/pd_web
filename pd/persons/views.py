@@ -461,7 +461,7 @@ class ApiClientDeadmansView(APIView):
         for pk in re.split(r'[,\s]+', request.GET.get('ids', '').strip()):
             try:
                 customperson=CustomPerson.objects.get(pk=pk,customplace__user=request.user)
-            except CustomPerson.DoesNotExist:
+            except (ValueError, CustomPerson.DoesNotExist, ):
                 raise Http404
             data.append(CustomPerson2Serializer(customperson).data)
         return Response(
