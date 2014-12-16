@@ -37,7 +37,9 @@ class ArchCemeterySerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Cemetery
-        fields = ('id', 'name', 'time_begin', 'time_end', )
+        fields = ('id', 'name', 'time_begin', 'time_end',
+                  'places_algo', 'archive_burial_fact_date_required',
+        )
 
 class SubCemeterySerializer(serializers.ModelSerializer):
     """

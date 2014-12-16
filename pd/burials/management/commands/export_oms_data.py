@@ -1,11 +1,30 @@
 # -*- coding: utf-8 -*-
-
-import os, zipfile
+#
+# export_oms_data.py
+#
+# Архивация информации по захоронениям у всех ОМС, так чтобы была возможность
+# создать их заново из этой информации. Архивы записываются в
+# MEDIA_ROOT/org-data/:омс_id/org-data.zip
+#
+# TODO: Ограничить доступ к этим архивам.
+#
+# Запуск: ./manage.py export_oms_data
+#
+# NB: 
+#   - выводим данные во временные файлы, из которых делаем zip- архивы
+#   - выводим запись за записью из таблиц. Ибо количество захоронений может быть
+#     огромным, посему сериализация всех захоронений одного ОМС может
+#     породить структуру данных, которая не вместится в память
+#
+import os, zipfile, tempfile
 from xml.dom import minidom
+from xml.etree import ElementTree as ET
 
 from django.core.management.base import NoArgsCommand
+from django.db.models.query_utils import Q
 
 from rest_framework.renderers import XMLRenderer
+from rest_framework.compat import StringIO
 
 from django.conf import settings
 
@@ -21,24 +40,74 @@ MEDIA_STORAGE = 'org-data'
 #
 XML_NAME = ZIP_NAME = 'org-data'
 
+def xml_indent(elem, level=0):
+    i = "\n" + level*"  "
+    if len(elem):
+        if not elem.tail or not elem.tail.strip():
+            elem.tail = i
+        for elem in elem:
+            xml_indent(elem, level+1)
+        if not elem.tail or not elem.tail.strip():
+            elem.tail = i
+    else:
+        if level and (not elem.tail or not elem.tail.strip()):
+            elem.tail = i
+
 class Command(NoArgsCommand):
     help = 'Collect OMS data and put it to media'
+    
+    # Дескриптор временного файла:
+    #
+    f = None
+    
+    def handle_model(self, title, serializer, queryset):
+        for c in serializer.Meta.model.objects.filter(queryset):
+            r = ET.Element(title)
+            data = serializer(c).data
+            for key in data.keys():
+                t = ET.SubElement(r, key)
+                t.text = unicode(data[key])
+            xml_indent(r)
+            st = ET.tostring(r, encoding="utf-8", method="xml")
+            self.f.write(st)
 
     def handle_ugh(self, ugh):
+        folder = os.path.join(settings.MEDIA_ROOT, MEDIA_STORAGE, "%s" % ugh.pk)
         try:
-            folder = os.path.join(settings.MEDIA_ROOT, MEDIA_STORAGE, "%s" % ugh.pk)
             os.mkdir(folder)
         except OSError:
             pass
 
-        xml = minidom.parseString(XMLRenderer().render(dict(
-            cemeteries=[ArchCemeterySerializer(c).data for c in Cemetery.objects.filter(ugh=ugh)]
-        )))
+        try:
+            self.f = tempfile.NamedTemporaryFile(delete=False)
+            
+            # Заголовок: <?xml version='1.0' encoding='utf-8'?>
+            #
+            temp_stream = StringIO()
+            temp_et = ET.Element('cem')
+            ET.ElementTree(temp_et).write(temp_stream, encoding="utf-8", xml_declaration=True)
+            self.f.write(u"%s\n<root>\n" % temp_stream.getvalue().split("\n", 1)[0])
 
-        fname = "%s.xml" % XML_NAME
-        zip_name = os.path.join(folder, "%s.zip" % ZIP_NAME)
-        with zipfile.ZipFile(zip_name,'w') as zip_: zip_.writestr(fname, xml.toprettyxml().encode('utf-8'))
+            for (title, serializer, queryset) in \
+                    ( 
+                        ('cemetery', ArchCemeterySerializer, Q(ugh=ugh)),
+                    ):
+                self.handle_model(title, serializer, queryset)
 
+            self.f.write(u"</root>\n")
+            self.f.close()
+            fname = "%s.xml" % XML_NAME
+            zip_name = os.path.join(folder, "%s.zip" % ZIP_NAME)
+            with zipfile.ZipFile(zip_name, 'w') as zip_:
+                zip_.write(self.f.name, arcname=fname)        
+        finally:
+            try:
+                os.unlink(self.f.name)
+            except (OSError, AttributeError,):
+                pass
+
+    # Главная функция
+    #
     def handle_noargs(self, **options):
         
         try:
