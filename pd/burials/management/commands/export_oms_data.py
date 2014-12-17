@@ -32,6 +32,10 @@ from burials.models import Cemetery
 from users.models import Org
 
 from burials.serializers import ArchCemeterySerializer
+from geo.serializers import ArchCountrySerializer, ArchRegionSerializer, \
+                            ArchCitySerializer, ArchStreetSerializer, \
+                            ArchLocationSerializer
+from users.serializers import ArchUserSerializer, ArchProfileSerializer
 
 # парка в settings.MEDIA_ROOT, где будем складывать архивы /<pk>/org-data.zip:
 #
@@ -61,12 +65,20 @@ class Command(NoArgsCommand):
     f = None
     
     def handle_model(self, title, serializer, queryset):
-        for c in serializer.Meta.model.objects.filter(queryset):
+        objects = serializer.Meta.model.objects
+        if queryset:
+            where = objects.filter(queryset).distinct()
+        else:
+            where = objects.all()
+        for c in where:
             r = ET.Element(title)
             data = serializer(c).data
             for key in data.keys():
                 t = ET.SubElement(r, key)
-                t.text = unicode(data[key])
+                if data[key] is None:
+                    t.text = ''
+                else:
+                    t.text = unicode(data[key])
             xml_indent(r)
             st = ET.tostring(r, encoding="utf-8", method="xml")
             self.f.write(st)
@@ -88,9 +100,42 @@ class Command(NoArgsCommand):
             ET.ElementTree(temp_et).write(temp_stream, encoding="utf-8", xml_declaration=True)
             self.f.write(u"%s\n<root>\n" % temp_stream.getvalue().split("\n", 1)[0])
 
+            user_qs = Q(
+                profile__org=ugh,
+                # cemetery_creator:
+                cemetery__ugh=ugh,
+            )
+            profile_qs = Q(
+                org=ugh,
+                # cemetery_creator:
+                user__cemetery__ugh=ugh,
+            )
+
+            country_qs = Q(
+                region__city__street__location__cemetery__ugh=ugh,
+            )
+            region_qs = Q(
+                city__street__location__cemetery__ugh=ugh,
+            )
+            city_qs = Q(
+                street__location__cemetery__ugh=ugh,
+            )
+            street_qs = Q(
+                location__cemetery__ugh=ugh,
+            )
+            location_qs = Q(
+                cemetery__ugh=ugh,
+            )
             for (title, serializer, queryset) in \
                     ( 
+                        ('country', ArchCountrySerializer, country_qs),
+                        ('region', ArchRegionSerializer, region_qs),
+                        ('city', ArchCitySerializer, city_qs),
+                        ('street', ArchStreetSerializer, street_qs),
                         ('cemetery', ArchCemeterySerializer, Q(ugh=ugh)),
+                        ('location', ArchLocationSerializer, location_qs),
+                        ('user', ArchUserSerializer, user_qs),
+                        ('profile', ArchProfileSerializer, profile_qs),
                     ):
                 self.handle_model(title, serializer, queryset)
 

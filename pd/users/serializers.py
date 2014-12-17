@@ -10,7 +10,8 @@ from pd.utils import PhonesFromTextMixin, utcisoformat
 from django.contrib.auth.models import User
 
 from geo.models import Location
-from users.models import Org, Store, FavoriteSupplier, UserPhoto, is_cabinet_user, is_trade_user, get_profile
+from users.models import Org, Store, FavoriteSupplier, UserPhoto, is_cabinet_user, is_trade_user, \
+                         Profile, get_profile
 from persons.models import Phone
 from orders.models import Order, Product
 
@@ -251,3 +252,16 @@ class UserSettingsSerializer(UserProfileMixin, serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ('firstName', 'lastName', 'middleName', 'avatarUrl', 'loginPhone', )
+
+class ArchUserSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = User
+        fields = ('id', 'username', 'email', 'is_active', )
+
+class ArchProfileSerializer(serializers.ModelSerializer):
+    user_id = serializers.Field('user.id')
+
+    class Meta:
+        model = Profile
+        fields = ('id', 'user_id', 'user_last_name', 'user_first_name', 'user_middle_name', )
