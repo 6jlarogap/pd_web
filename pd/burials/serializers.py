@@ -7,7 +7,7 @@ from rest_framework.fields import Field, TimeField
 
 
 from burials.models import Cemetery, Place, Area, Grave, Burial, AreaPhoto, BurialFiles, ExhumationRequest, \
-    AreaPurpose, PlaceSize, PlaceStatus
+    AreaPurpose, PlaceSize, PlaceStatus, CemeteryCoordinates, AreaCoordinates
 
 
 from geo.models import Location
@@ -25,21 +25,6 @@ class GetGalleryMixin(object):
     def gallery_func(self, obj):
         request = self.context.get('request')
         return obj.get_photo_gallery(request) if request else []
-
-class ArchCemeterySerializer(serializers.ModelSerializer):
-    """
-    Архив всех данных ОМС по захоронениям
-    
-    Внешний элемент - кладбище. Внутри участки, места, захоронения, усопшие ...
-    """
-    time_begin = TimeField()
-    time_end = TimeField()
-
-    class Meta:
-        model = Cemetery
-        fields = ('id', 'name', 'time_begin', 'time_end',
-                  'places_algo', 'archive_burial_fact_date_required',
-        )
 
 class SubCemeterySerializer(serializers.ModelSerializer):
     """
@@ -257,3 +242,48 @@ class PlaceSizeSerializer(serializers.ModelSerializer):
         model = PlaceSize
         fields = ('graves_count', 'place_length', 'place_width')
       
+
+class ArchCemeterySerializer(serializers.ModelSerializer):
+    time_begin = TimeField()
+    time_end = TimeField()
+    creator_id = serializers.Field('creator.id')
+    ugh_id = serializers.Field('ugh.id')
+    address_id = serializers.Field('address.id')
+
+    class Meta:
+        model = Cemetery
+        fields = (
+            'id', 'name', 'time_begin', 'time_end',
+            'places_algo', 'places_algo_archive', 'time_slots',
+            'archive_burial_fact_date_required',
+            'creator_id', 'ugh_id', 'address_id',
+            'archive_burial_fact_date_required', 'archive_burial_account_number_required',
+            'square',
+            'dt_created', 'dt_modified',
+        )
+
+class ArchCemeteryCoordinatesSerializer(serializers.ModelSerializer):
+    cemetery_id = serializers.Field('cemetery.id')
+
+    class Meta:
+        model = CemeteryCoordinates
+        fields = ('cemetery_id', 'angle_number', 'lat', 'lng',)
+
+class ArchAreaCoordinatesSerializer(serializers.ModelSerializer):
+    area_id = serializers.Field('area.id')
+
+    class Meta:
+        model = AreaCoordinates
+        fields = ('area_id', 'angle_number', 'lat', 'lng',)
+
+class ArchAreaSerializer(serializers.ModelSerializer):
+    purpose_id = serializers.Field('purpose.id')
+    cemetery_id = serializers.Field('cemetery.id')
+
+    class Meta:
+        model = Area
+        fields = (
+            'id', 'cemetery_id', 'name', 'purpose_id', 'availability',
+            'places_count', 'square',
+            'dt_created', 'dt_modified',
+        )

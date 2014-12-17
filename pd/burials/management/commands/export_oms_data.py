@@ -31,10 +31,14 @@ from django.conf import settings
 from burials.models import Cemetery
 from users.models import Org
 
-from burials.serializers import ArchCemeterySerializer
+from burials.serializers import ArchCemeterySerializer, ArchCemeteryCoordinatesSerializer, \
+                                AreaPurposeSerializer, ArchAreaSerializer, \
+                                ArchAreaCoordinatesSerializer
+
 from geo.serializers import ArchCountrySerializer, ArchRegionSerializer, \
                             ArchCitySerializer, ArchStreetSerializer, \
                             ArchLocationSerializer
+
 from users.serializers import ArchUserSerializer, ArchProfileSerializer
 
 # парка в settings.MEDIA_ROOT, где будем складывать архивы /<pk>/org-data.zip:
@@ -101,15 +105,22 @@ class Command(NoArgsCommand):
             self.f.write(u"%s\n<root>\n" % temp_stream.getvalue().split("\n", 1)[0])
 
             user_qs =       Q(profile__org=ugh) | \
-                            Q(cemetery__ugh=ugh)                    # cemetery_creator:
+                            Q(cemetery__ugh=ugh) | \
+                            Q(profile__org__placesize__org=ugh)
             profile_qs =    Q(org=ugh) | \
-                            Q(user__cemetery__ugh=ugh)              # cemetery_creator:
+                            Q(user__cemetery__ugh=ugh) | \
+                            Q(org__placesize__org=ugh)
 
-            country_qs = Q(region__city__street__location__cemetery__ugh=ugh)
-            region_qs = Q(city__street__location__cemetery__ugh=ugh)
-            city_qs = Q(street__location__cemetery__ugh=ugh)
-            street_qs = Q(location__cemetery__ugh=ugh)
-            location_qs = Q(cemetery__ugh=ugh)
+            country_qs =    Q(region__city__street__location__cemetery__ugh=ugh)
+            region_qs =     Q(city__street__location__cemetery__ugh=ugh)
+            city_qs =       Q(street__location__cemetery__ugh=ugh)
+            street_qs =     Q(location__cemetery__ugh=ugh)
+            location_qs =   Q(cemetery__ugh=ugh)
+            
+            cemetery_qs =   Q(ugh=ugh)
+            cemeterycoordinates_qs = Q(cemetery__ugh=ugh)
+            area_qs =       Q(cemetery__ugh=ugh)
+            areacoordinates_qs = Q(area__cemetery__ugh=ugh)
 
             for (title, serializer, queryset) in \
                     ( 
@@ -117,8 +128,14 @@ class Command(NoArgsCommand):
                         ('region', ArchRegionSerializer, region_qs),
                         ('city', ArchCitySerializer, city_qs),
                         ('street', ArchStreetSerializer, street_qs),
-                        ('cemetery', ArchCemeterySerializer, Q(ugh=ugh)),
                         ('location', ArchLocationSerializer, location_qs),
+
+                        ('cemetery', ArchCemeterySerializer, cemetery_qs),
+                        ('cemeterycoordinates', ArchCemeteryCoordinatesSerializer, cemeterycoordinates_qs),
+                        ('areapurpose', AreaPurposeSerializer, None),
+                        ('area', ArchAreaSerializer, area_qs),
+                        ('areacoordinates', ArchAreaCoordinatesSerializer, areacoordinates_qs),
+
                         ('user', ArchUserSerializer, user_qs),
                         ('profile', ArchProfileSerializer, profile_qs),
                     ):
