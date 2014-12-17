@@ -100,32 +100,17 @@ class Command(NoArgsCommand):
             ET.ElementTree(temp_et).write(temp_stream, encoding="utf-8", xml_declaration=True)
             self.f.write(u"%s\n<root>\n" % temp_stream.getvalue().split("\n", 1)[0])
 
-            user_qs = Q(
-                profile__org=ugh,
-                # cemetery_creator:
-                cemetery__ugh=ugh,
-            )
-            profile_qs = Q(
-                org=ugh,
-                # cemetery_creator:
-                user__cemetery__ugh=ugh,
-            )
+            user_qs =       Q(profile__org=ugh) | \
+                            Q(cemetery__ugh=ugh)                    # cemetery_creator:
+            profile_qs =    Q(org=ugh) | \
+                            Q(user__cemetery__ugh=ugh)              # cemetery_creator:
 
-            country_qs = Q(
-                region__city__street__location__cemetery__ugh=ugh,
-            )
-            region_qs = Q(
-                city__street__location__cemetery__ugh=ugh,
-            )
-            city_qs = Q(
-                street__location__cemetery__ugh=ugh,
-            )
-            street_qs = Q(
-                location__cemetery__ugh=ugh,
-            )
-            location_qs = Q(
-                cemetery__ugh=ugh,
-            )
+            country_qs = Q(region__city__street__location__cemetery__ugh=ugh)
+            region_qs = Q(city__street__location__cemetery__ugh=ugh)
+            city_qs = Q(street__location__cemetery__ugh=ugh)
+            street_qs = Q(location__cemetery__ugh=ugh)
+            location_qs = Q(cemetery__ugh=ugh)
+
             for (title, serializer, queryset) in \
                     ( 
                         ('country', ArchCountrySerializer, country_qs),
