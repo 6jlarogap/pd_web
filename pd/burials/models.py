@@ -573,18 +573,20 @@ class Burial(SafeDeleteMixin, GetLogsMixin, BaseModel):
     loru_agent_director = models.BooleanField(_(u"Директор-Агент"), default=False, blank=True)
     loru_agent = models.ForeignKey(Profile, verbose_name=_(u"Агент"), null=True, blank=True,
                               limit_choices_to={'is_agent': True}, on_delete=models.PROTECT,
-                              related_name='agent_burials',)
+                              related_name='loru_agent_burials',)
     loru_dover = models.ForeignKey(Dover, verbose_name=_(u"Доверенность"), null=True, blank=True,
-                              related_name='dover_burials', on_delete=models.PROTECT)
+                              related_name='loru_dover_burials', on_delete=models.PROTECT)
     applicant_organization = models.ForeignKey(Org, verbose_name=_(u"Заявитель-ЮЛ"), null=True, blank=True,
-                                               related_name='loru_created', on_delete=models.PROTECT)
+                                               related_name='applicant_organization_burials', on_delete=models.PROTECT)
     agent_director = models.BooleanField(_(u"Директор-Агент"), default=False, blank=True)
     agent = models.ForeignKey(Profile, verbose_name=_(u"Агент"), null=True, blank=True,
-                              limit_choices_to={'is_agent': True}, on_delete=models.PROTECT)
-    dover = models.ForeignKey(Dover, verbose_name=_(u"Доверенность"), null=True, blank=True, on_delete=models.PROTECT)
+                              limit_choices_to={'is_agent': True}, on_delete=models.PROTECT,
+                              related_name='agent_burials',)
+    dover = models.ForeignKey(Dover, verbose_name=_(u"Доверенность"), null=True, blank=True, on_delete=models.PROTECT,
+                              related_name='dover_burials')
 
     status = models.CharField(_(u"Статус"), max_length=255, choices=STATUS_CHOICES, default=STATUS_DRAFT, editable=False)
-    changed_by = models.ForeignKey('auth.User', editable=False, null=True, related_name='changed_requests',
+    changed_by = models.ForeignKey('auth.User', editable=False, null=True, related_name='changed_by_burials',
                                    on_delete=models.PROTECT)
     annulated = models.BooleanField(_(u"Аннулировано"), default=False, blank=True)
     flag_no_applicant_doc_required = models.BooleanField(_(u"Документ заявителя-ФЛ не требуется"),
