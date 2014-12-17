@@ -396,7 +396,6 @@ class OrderEditProducts(LORURequiredMixin, View):
         return Order.objects.filter(loru=self.request.user.profile.org)
 
     def get_formset(self):
-        print self.request
         return OrderItemFormset(request=self.request, data=self.request.POST or None, instance=self.get_object())
 
     def get_object(self):
