@@ -33,7 +33,7 @@ from users.models import Org
 
 from burials.serializers import ArchCemeterySerializer, ArchCemeteryCoordinatesSerializer, \
                                 AreaPurposeSerializer, ArchAreaSerializer, \
-                                ArchAreaCoordinatesSerializer
+                                ArchAreaCoordinatesSerializer, ArchPlaceSizeSerializer
 
 from geo.serializers import ArchCountrySerializer, ArchRegionSerializer, \
                             ArchCitySerializer, ArchStreetSerializer, \
@@ -105,11 +105,9 @@ class Command(NoArgsCommand):
             self.f.write(u"%s\n<root>\n" % temp_stream.getvalue().split("\n", 1)[0])
 
             user_qs =       Q(profile__org=ugh) | \
-                            Q(cemetery__ugh=ugh) | \
-                            Q(profile__org__placesize__org=ugh)
+                            Q(cemetery__ugh=ugh)
             profile_qs =    Q(org=ugh) | \
-                            Q(user__cemetery__ugh=ugh) | \
-                            Q(org__placesize__org=ugh)
+                            Q(user__cemetery__ugh=ugh)
 
             country_qs =    Q(region__city__street__location__cemetery__ugh=ugh)
             region_qs =     Q(city__street__location__cemetery__ugh=ugh)
@@ -121,6 +119,7 @@ class Command(NoArgsCommand):
             cemeterycoordinates_qs = Q(cemetery__ugh=ugh)
             area_qs =       Q(cemetery__ugh=ugh)
             areacoordinates_qs = Q(area__cemetery__ugh=ugh)
+            placesize_qs =  Q(org=ugh)
 
             for (title, serializer, queryset) in \
                     ( 
@@ -135,6 +134,7 @@ class Command(NoArgsCommand):
                         ('areapurpose', AreaPurposeSerializer, None),
                         ('area', ArchAreaSerializer, area_qs),
                         ('areacoordinates', ArchAreaCoordinatesSerializer, areacoordinates_qs),
+                        ('placesize', ArchPlaceSizeSerializer, placesize_qs),
 
                         ('user', ArchUserSerializer, user_qs),
                         ('profile', ArchProfileSerializer, profile_qs),

@@ -7,7 +7,7 @@ from rest_framework.fields import Field, TimeField
 
 
 from burials.models import Cemetery, Place, Area, Grave, Burial, AreaPhoto, BurialFiles, ExhumationRequest, \
-    AreaPurpose, PlaceSize, PlaceStatus, CemeteryCoordinates, AreaCoordinates
+    AreaPurpose, PlaceSize, PlaceStatus, CemeteryCoordinates, AreaCoordinates, PlaceSize
 
 
 from geo.models import Location
@@ -287,3 +287,10 @@ class ArchAreaSerializer(serializers.ModelSerializer):
             'places_count', 'square',
             'dt_created', 'dt_modified',
         )
+
+class ArchPlaceSizeSerializer(serializers.ModelSerializer):
+    org_id = serializers.Field('org.id')
+
+    class Meta:
+        model = PlaceSize
+        fields = ('id', 'org_id', 'graves_count', 'place_length', 'place_width', )
