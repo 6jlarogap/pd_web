@@ -35,7 +35,8 @@ from billing.serializers import ArchCurrencySerializer
 
 from burials.serializers import ArchCemeterySerializer, ArchCemeteryCoordinatesSerializer, \
                                 AreaPurposeSerializer, ArchAreaSerializer, \
-                                ArchAreaCoordinatesSerializer, ArchPlaceSizeSerializer
+                                ArchAreaCoordinatesSerializer, ArchPlaceSizeSerializer, \
+                                ArchPlacePhotoSerializer, ArchPlaceSerializer
 
 from geo.serializers import ArchCountrySerializer, ArchRegionSerializer, \
                             ArchCitySerializer, ArchStreetSerializer, \
@@ -130,6 +131,7 @@ class Command(NoArgsCommand):
             area_qs =       Q(cemetery__ugh=ugh)
             areacoordinates_qs = Q(area__cemetery__ugh=ugh)
             placesize_qs =  Q(org=ugh)
+            placephoto_qs = Q(place__cemetery__ugh=ugh)
 
             user_qs =       Q(profile__org=ugh)
             profile_qs =    Q(org=ugh)
@@ -142,6 +144,7 @@ class Command(NoArgsCommand):
                             Q(person__aliveperson__place__cemetery__ugh=ugh)
             aliveperson_qs = Q(applied_burials__ugh=ugh) | \
                              Q(place__cemetery__ugh=ugh)
+            place_qs =      Q(cemetery__ugh=ugh)
 
             for (title, serializer, queryset) in \
                     ( 
@@ -168,6 +171,9 @@ class Command(NoArgsCommand):
                         ('iddocumentsource', ArchDocumentSourceSerializer, iddocumentsource_qs),
                         ('aliveperson', ArchAlivePersonSerializer, aliveperson_qs),
                         ('personid', ArchPersonIDSerializer, personid_qs),
+
+                        ('place', ArchPlaceSerializer, place_qs),
+                        ('placephoto', ArchPlacePhotoSerializer, placephoto_qs),
                     ):
                 self.handle_model(title, serializer, queryset)
 

@@ -7,11 +7,12 @@ from rest_framework.fields import Field, TimeField
 
 
 from burials.models import Cemetery, Place, Area, Grave, Burial, AreaPhoto, BurialFiles, ExhumationRequest, \
-    AreaPurpose, PlaceSize, PlaceStatus, CemeteryCoordinates, AreaCoordinates, PlaceSize
+    AreaPurpose, PlaceSize, PlaceStatus, CemeteryCoordinates, AreaCoordinates, PlaceSize, PlacePhoto
 
 
 from geo.models import Location
 from geo.serializers import LocationSerializer
+from pd.serializers import ArchFilesSerializer
 
 from persons.serializers import AlivePersonSerializer, DeadPersonSerializer, PhoneSerializer
 
@@ -294,3 +295,23 @@ class ArchPlaceSizeSerializer(serializers.ModelSerializer):
     class Meta:
         model = PlaceSize
         fields = ('id', 'org_id', 'graves_count', 'place_length', 'place_width', )
+
+class ArchPlacePhotoSerializer(ArchFilesSerializer):
+    place_id = serializers.Field('place.id')
+
+    class Meta:
+        model = PlacePhoto
+        fields = ('id', 'place_id', 'lat', 'lng',
+                  'bfile', 'comment', 'original_name', 'comment', 'creator_id', 'date_of_creation', )
+
+class ArchPlaceSerializer(serializers.ModelSerializer):
+    cemetery_id = serializers.Field('cemetery.id')
+    area_id = serializers.Field('area.id')
+    responsible_id = serializers.Field('responsible.id')
+
+    class Meta:
+        model = Place
+        fields = ('id', 'cemetery_id', 'area_id', 'row', 'oldplace', 'place',
+                  'available_count', 'responsible_id', 'place_length', 'place_width',
+                  'dt_wrong_fio', 'dt_military', 'dt_size_violated', 'dt_unowned', 'dt_unindentified',
+                  'lat', 'lng', )
