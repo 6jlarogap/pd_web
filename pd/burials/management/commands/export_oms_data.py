@@ -42,7 +42,7 @@ from geo.serializers import ArchCountrySerializer, ArchRegionSerializer, \
                             ArchLocationSerializer
 
 from persons.serializers import ArchIDDocumentTypeSerializer, ArchDocumentSourceSerializer, \
-                                ArchPersonIDSerializer
+                                ArchPersonIDSerializer, ArchAlivePersonSerializer
 
 from users.serializers import ArchUserSerializer, ArchProfileSerializer, ArchOrgSerializer
 
@@ -110,15 +110,20 @@ class Command(NoArgsCommand):
             self.f.write(u"%s\n<root>\n" % temp_stream.getvalue().split("\n", 1)[0])
 
             country_qs =    Q(region__city__street__location__cemetery__ugh=ugh) | \
-                            Q(region__city__street__location__org=ugh)
+                            Q(region__city__street__location__org=ugh) | \
+                            Q(region__city__street__location__baseperson__aliveperson__applied_burials__ugh=ugh)
             region_qs =     Q(city__street__location__cemetery__ugh=ugh) | \
-                            Q(city__street__location__org=ugh)
+                            Q(city__street__location__org=ugh) | \
+                            Q(city__street__location__baseperson__aliveperson__applied_burials__ugh=ugh)
             city_qs =       Q(street__location__cemetery__ugh=ugh) | \
-                            Q(street__location__org=ugh)
+                            Q(street__location__org=ugh) | \
+                            Q(street__location__baseperson__aliveperson__applied_burials__ugh=ugh)
             street_qs =     Q(location__cemetery__ugh=ugh) | \
-                            Q(location__org=ugh)
+                            Q(location__org=ugh) | \
+                            Q(location__baseperson__aliveperson__applied_burials__ugh=ugh)
             location_qs =   Q(cemetery__ugh=ugh) | \
-                            Q(org=ugh)
+                            Q(org=ugh) | \
+                            Q(baseperson__aliveperson__applied_burials__ugh=ugh)
             
             cemetery_qs =   Q(ugh=ugh)
             cemeterycoordinates_qs = Q(cemetery__ugh=ugh)
@@ -130,8 +135,13 @@ class Command(NoArgsCommand):
             profile_qs =    Q(org=ugh)
             currency_qs =   Q(org=ugh)
             org_qs =        Q(pk=ugh.pk)
-            personid_qs =   Q(person__aliveperson__applied_burials__ugh=ugh)
-            iddocumentsource_qs =   Q(personid__person__aliveperson__applied_burials__ugh=ugh)
+            
+            iddocumentsource_qs = Q(personid__person__aliveperson__applied_burials__ugh=ugh) | \
+                                  Q(personid__person__aliveperson__place__cemetery__ugh=ugh)
+            personid_qs =   Q(person__aliveperson__applied_burials__ugh=ugh) | \
+                            Q(person__aliveperson__place__cemetery__ugh=ugh)
+            aliveperson_qs = Q(applied_burials__ugh=ugh) | \
+                             Q(place__cemetery__ugh=ugh)
 
             for (title, serializer, queryset) in \
                     ( 
@@ -156,7 +166,7 @@ class Command(NoArgsCommand):
 
                         ('iddocumenttype', ArchIDDocumentTypeSerializer, None),
                         ('iddocumentsource', ArchDocumentSourceSerializer, iddocumentsource_qs),
-                        # put persons here
+                        ('aliveperson', ArchAlivePersonSerializer, aliveperson_qs),
                         ('personid', ArchPersonIDSerializer, personid_qs),
                     ):
                 self.handle_model(title, serializer, queryset)

@@ -24,6 +24,14 @@ class UnclearDateFieldSerializer(serializers.Field):
             return obj
 
 
+class UnclearDateFieldSafeSerializer(serializers.Field):
+    def to_native(self, obj):
+        if obj is not None:
+            return obj.str_safe()
+        else:
+            return obj
+
+
 class ThumbnailFieldSerializer(serializers.Field):
     """
     Field to frontend conversion

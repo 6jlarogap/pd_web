@@ -7,7 +7,8 @@ from rest_framework.fields import Field, TimeField, DecimalField
 from geo.models import Location
 from persons.models import AlivePerson, DeadPerson, Phone, CustomPlace, CustomPerson, \
                            IDDocumentType, DocumentSource, PersonID
-from rest_api.fields import UnclearDateFieldSerializer, UnclearDateFieldMixin, HyperlinkedFileField
+from rest_api.fields import UnclearDateFieldSerializer, UnclearDateFieldMixin, UnclearDateFieldSafeSerializer, \
+                            HyperlinkedFileField
 
 from pd.utils import CreatedAtMixin
 
@@ -189,3 +190,18 @@ class ArchPersonIDSerializer(serializers.ModelSerializer):
         model = PersonID
         fields = ('id', 'person_id', 'id_type_id', 'series', 'number', 'source_id', 'date')
 
+class ArchAlivePersonSerializer(serializers.ModelSerializer):
+    address_id = serializers.Field('address.id')
+    user_id = serializers.Field('user.id')
+    birth_date = UnclearDateFieldSafeSerializer()
+
+    class Meta:
+        model = AlivePerson
+        fields = (
+            'id', 'last_name', 'first_name', 'middle_name', 'birth_date',
+            'address_id', 'phones',
+            # 'user_id' # расшифровку пользователя-кабинетчика не даем в ОМС.
+            #             Кабинетчик мог их поменять, а эти изменения волновать
+            #             ОМС не должны
+            'login_phone',
+        )
