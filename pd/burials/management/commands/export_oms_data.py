@@ -31,6 +31,8 @@ from django.conf import settings
 from burials.models import Cemetery
 from users.models import Org
 
+from billing.serializers import ArchCurrencySerializer
+
 from burials.serializers import ArchCemeterySerializer, ArchCemeteryCoordinatesSerializer, \
                                 AreaPurposeSerializer, ArchAreaSerializer, \
                                 ArchAreaCoordinatesSerializer, ArchPlaceSizeSerializer
@@ -39,7 +41,7 @@ from geo.serializers import ArchCountrySerializer, ArchRegionSerializer, \
                             ArchCitySerializer, ArchStreetSerializer, \
                             ArchLocationSerializer
 
-from users.serializers import ArchUserSerializer, ArchProfileSerializer
+from users.serializers import ArchUserSerializer, ArchProfileSerializer, ArchOrgSerializer
 
 # парка в settings.MEDIA_ROOT, где будем складывать архивы /<pk>/org-data.zip:
 #
@@ -104,22 +106,27 @@ class Command(NoArgsCommand):
             ET.ElementTree(temp_et).write(temp_stream, encoding="utf-8", xml_declaration=True)
             self.f.write(u"%s\n<root>\n" % temp_stream.getvalue().split("\n", 1)[0])
 
-            user_qs =       Q(profile__org=ugh) | \
-                            Q(cemetery__ugh=ugh)
-            profile_qs =    Q(org=ugh) | \
-                            Q(user__cemetery__ugh=ugh)
-
-            country_qs =    Q(region__city__street__location__cemetery__ugh=ugh)
-            region_qs =     Q(city__street__location__cemetery__ugh=ugh)
-            city_qs =       Q(street__location__cemetery__ugh=ugh)
-            street_qs =     Q(location__cemetery__ugh=ugh)
-            location_qs =   Q(cemetery__ugh=ugh)
+            country_qs =    Q(region__city__street__location__cemetery__ugh=ugh) | \
+                            Q(region__city__street__location__org=ugh)
+            region_qs =     Q(city__street__location__cemetery__ugh=ugh) | \
+                            Q(city__street__location__org=ugh)
+            city_qs =       Q(street__location__cemetery__ugh=ugh) | \
+                            Q(street__location__org=ugh)
+            street_qs =     Q(location__cemetery__ugh=ugh) | \
+                            Q(location__org=ugh)
+            location_qs =   Q(cemetery__ugh=ugh) | \
+                            Q(org=ugh)
             
             cemetery_qs =   Q(ugh=ugh)
             cemeterycoordinates_qs = Q(cemetery__ugh=ugh)
             area_qs =       Q(cemetery__ugh=ugh)
             areacoordinates_qs = Q(area__cemetery__ugh=ugh)
             placesize_qs =  Q(org=ugh)
+
+            user_qs =       Q(profile__org=ugh)
+            profile_qs =    Q(org=ugh)
+            currency_qs =   Q(org=ugh)
+            org_qs =        Q(pk=ugh.pk)
 
             for (title, serializer, queryset) in \
                     ( 
@@ -129,6 +136,12 @@ class Command(NoArgsCommand):
                         ('street', ArchStreetSerializer, street_qs),
                         ('location', ArchLocationSerializer, location_qs),
 
+                        ('currency', ArchCurrencySerializer, currency_qs),
+                        ('org', ArchOrgSerializer, org_qs),
+
+                        ('user', ArchUserSerializer, user_qs),
+                        ('profile', ArchProfileSerializer, profile_qs),
+
                         ('cemetery', ArchCemeterySerializer, cemetery_qs),
                         ('cemeterycoordinates', ArchCemeteryCoordinatesSerializer, cemeterycoordinates_qs),
                         ('areapurpose', AreaPurposeSerializer, None),
@@ -136,8 +149,6 @@ class Command(NoArgsCommand):
                         ('areacoordinates', ArchAreaCoordinatesSerializer, areacoordinates_qs),
                         ('placesize', ArchPlaceSizeSerializer, placesize_qs),
 
-                        ('user', ArchUserSerializer, user_qs),
-                        ('profile', ArchProfileSerializer, profile_qs),
                     ):
                 self.handle_model(title, serializer, queryset)
 

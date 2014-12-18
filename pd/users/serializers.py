@@ -261,7 +261,23 @@ class ArchUserSerializer(serializers.ModelSerializer):
 
 class ArchProfileSerializer(serializers.ModelSerializer):
     user_id = serializers.Field('user.id')
+    org_id = serializers.Field('org.id')
 
     class Meta:
         model = Profile
-        fields = ('id', 'user_id', 'user_last_name', 'user_first_name', 'user_middle_name', )
+        fields = ('id', 'user_id', 'org_id', 'user_last_name', 'user_first_name', 'user_middle_name', )
+
+class ArchOrgSerializer(serializers.ModelSerializer):
+    off_address_id = serializers.Field('off_address.id')
+    currency_id = serializers.Field('currency.id')
+
+    class Meta:
+        model = Org
+        fields = (
+            'id', 'type', 'name', 'full_name', 'description',
+            'inn', 'kpp', 'ogrn', 'director', 'basis', 'email',
+            'phones', 'sms_phone', 'fax', 'off_address_id',
+            'numbers_algo', 'plan_date_days_before',
+            'max_graves_count', 'worktime', 'site',
+            'currency_id', 
+        )
