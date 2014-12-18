@@ -5,7 +5,8 @@ from rest_framework import serializers
 from rest_framework.fields import Field, TimeField, DecimalField
 
 from geo.models import Location
-from persons.models import AlivePerson, DeadPerson, Phone, CustomPlace, CustomPerson
+from persons.models import AlivePerson, DeadPerson, Phone, CustomPlace, CustomPerson, \
+                           IDDocumentType, DocumentSource, PersonID
 from rest_api.fields import UnclearDateFieldSerializer, UnclearDateFieldMixin, HyperlinkedFileField
 
 from pd.utils import CreatedAtMixin
@@ -168,3 +169,23 @@ class CustomPerson2Serializer(BaseCustomPersonSerializer):
             return customperson.person.deadperson.burial_set.all()[0].grave_number
         except (AttributeError, DeadPerson.DoesNotExist, IndexError,):
             return None
+
+class ArchIDDocumentTypeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = IDDocumentType
+        fields = ('id', 'name', )
+
+class ArchDocumentSourceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DocumentSource
+        fields = ('id', 'name', )
+
+class ArchPersonIDSerializer(serializers.ModelSerializer):
+    person_id = serializers.Field('person.id')
+    id_type_id = serializers.Field('id_type.id')
+    source_id = serializers.Field('source.id')
+
+    class Meta:
+        model = PersonID
+        fields = ('id', 'person_id', 'id_type_id', 'series', 'number', 'source_id', 'date')
+

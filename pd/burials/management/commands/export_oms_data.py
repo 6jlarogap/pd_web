@@ -41,6 +41,9 @@ from geo.serializers import ArchCountrySerializer, ArchRegionSerializer, \
                             ArchCitySerializer, ArchStreetSerializer, \
                             ArchLocationSerializer
 
+from persons.serializers import ArchIDDocumentTypeSerializer, ArchDocumentSourceSerializer, \
+                                ArchPersonIDSerializer
+
 from users.serializers import ArchUserSerializer, ArchProfileSerializer, ArchOrgSerializer
 
 # парка в settings.MEDIA_ROOT, где будем складывать архивы /<pk>/org-data.zip:
@@ -127,6 +130,8 @@ class Command(NoArgsCommand):
             profile_qs =    Q(org=ugh)
             currency_qs =   Q(org=ugh)
             org_qs =        Q(pk=ugh.pk)
+            personid_qs =   Q(person__aliveperson__applied_burials__ugh=ugh)
+            iddocumentsource_qs =   Q(personid__person__aliveperson__applied_burials__ugh=ugh)
 
             for (title, serializer, queryset) in \
                     ( 
@@ -149,6 +154,10 @@ class Command(NoArgsCommand):
                         ('areacoordinates', ArchAreaCoordinatesSerializer, areacoordinates_qs),
                         ('placesize', ArchPlaceSizeSerializer, placesize_qs),
 
+                        ('iddocumenttype', ArchIDDocumentTypeSerializer, None),
+                        ('iddocumentsource', ArchDocumentSourceSerializer, iddocumentsource_qs),
+                        # put persons here
+                        ('personid', ArchPersonIDSerializer, personid_qs),
                     ):
                 self.handle_model(title, serializer, queryset)
 
