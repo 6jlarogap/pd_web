@@ -74,6 +74,27 @@ class Command(NoArgsCommand):
     #
     f = None
     
+    def handle_fields(self, r, d):
+        if isinstance(d, dict):
+            for k, v in d.iteritems():
+                s = ET.SubElement(r, k)
+                self.handle_fields(s, v)
+        elif isinstance(d, tuple) or isinstance(d, list):
+            for v in d:
+                s = ET.SubElement(r, 'list-item')
+                self.handle_fields(s, v)
+        elif d is None:
+            r.text = d
+        else:
+            r.text = unicode(d)
+        return r
+
+    def handle_rec(self, data, title):
+        r = ET.Element(title)
+        xml = self.handle_fields(r, data)
+        xml_indent(xml)
+        return ET.tostring(xml, encoding="utf-8", method="xml")
+
     def handle_model(self, title, serializer, queryset):
         objects = serializer.Meta.model.objects
         if queryset:
@@ -81,16 +102,8 @@ class Command(NoArgsCommand):
         else:
             where = objects.all()
         for c in where:
-            r = ET.Element(title)
             data = serializer(c).data
-            for key in data.keys():
-                t = ET.SubElement(r, key)
-                if data[key] is None:
-                    t.text = ''
-                else:
-                    t.text = unicode(data[key])
-            xml_indent(r)
-            st = ET.tostring(r, encoding="utf-8", method="xml")
+            st = self.handle_rec(data, title)
             self.f.write(st)
 
     def handle_ugh(self, ugh):
@@ -152,28 +165,28 @@ class Command(NoArgsCommand):
                         ('region', ArchRegionSerializer, region_qs),
                         ('city', ArchCitySerializer, city_qs),
                         ('street', ArchStreetSerializer, street_qs),
-                        ('location', ArchLocationSerializer, location_qs),
+                        #('location', ArchLocationSerializer, location_qs),
 
                         ('currency', ArchCurrencySerializer, currency_qs),
                         ('org', ArchOrgSerializer, org_qs),
 
-                        ('user', ArchUserSerializer, user_qs),
-                        ('profile', ArchProfileSerializer, profile_qs),
+                        #('user', ArchUserSerializer, user_qs),
+                        #('profile', ArchProfileSerializer, profile_qs),
 
-                        ('cemetery', ArchCemeterySerializer, cemetery_qs),
-                        ('cemeterycoordinates', ArchCemeteryCoordinatesSerializer, cemeterycoordinates_qs),
-                        ('areapurpose', AreaPurposeSerializer, None),
-                        ('area', ArchAreaSerializer, area_qs),
-                        ('areacoordinates', ArchAreaCoordinatesSerializer, areacoordinates_qs),
-                        ('placesize', ArchPlaceSizeSerializer, placesize_qs),
+                        #('cemetery', ArchCemeterySerializer, cemetery_qs),
+                        #('cemeterycoordinates', ArchCemeteryCoordinatesSerializer, cemeterycoordinates_qs),
+                        #('areapurpose', AreaPurposeSerializer, None),
+                        #('area', ArchAreaSerializer, area_qs),
+                        #('areacoordinates', ArchAreaCoordinatesSerializer, areacoordinates_qs),
+                        #('placesize', ArchPlaceSizeSerializer, placesize_qs),
 
-                        ('iddocumenttype', ArchIDDocumentTypeSerializer, None),
-                        ('iddocumentsource', ArchDocumentSourceSerializer, iddocumentsource_qs),
-                        ('aliveperson', ArchAlivePersonSerializer, aliveperson_qs),
-                        ('personid', ArchPersonIDSerializer, personid_qs),
+                        #('iddocumenttype', ArchIDDocumentTypeSerializer, None),
+                        #('iddocumentsource', ArchDocumentSourceSerializer, iddocumentsource_qs),
+                        #('aliveperson', ArchAlivePersonSerializer, aliveperson_qs),
+                        #('personid', ArchPersonIDSerializer, personid_qs),
 
-                        ('place', ArchPlaceSerializer, place_qs),
-                        ('placephoto', ArchPlacePhotoSerializer, placephoto_qs),
+                        #('place', ArchPlaceSerializer, place_qs),
+                        #('placephoto', ArchPlacePhotoSerializer, placephoto_qs),
                     ):
                 self.handle_model(title, serializer, queryset)
 
