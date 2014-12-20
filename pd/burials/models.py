@@ -71,6 +71,7 @@ class Cemetery(GetLogsMixin, BaseModel, PhonesMixin):
     archive_burial_fact_date_required = models.BooleanField(_(u"Дата архивного захоронения обязательна"), default=True)
     archive_burial_account_number_required = models.BooleanField(_(u"Номер архивного захоронения обязателен"), default=True)
     square = models.FloatField(_(u"Площадь"), null=True, editable=False)
+    # phones: могут быть разных типов, пользуемся моделью persons.Phone
 
     class Meta:
         verbose_name = _(u"Кладбище")

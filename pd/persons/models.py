@@ -219,6 +219,7 @@ class AlivePerson(BasePerson, PhonesMixin):
                   help_text=_(u'В международном формате, начиная с кода страны, без "+", например 79101234567'),
                   validators = [validate_phone_as_number, ],
                   editable=False)
+    # phones: могут быть разных типов, пользуемся моделью persons.Phone
 
 class DocumentSource(models.Model):
     name = models.CharField(_(u"Наименование органа"), max_length=255, unique=True)
@@ -310,18 +311,19 @@ class DeathCertificateScan(Files):
     deathcertificate = models.OneToOneField(DeathCertificate)
 
 
-PHONE_TYPE_MOBILE = 0
-PHONE_TYPE_CITY = 1
-PHONE_TYPE_FAX = 2
-
-PHONE_TYPE_CHOICES = (
-    (PHONE_TYPE_MOBILE, _(u"Мобильный")),
-    (PHONE_TYPE_CITY, _(u"Городской")),
-    (PHONE_TYPE_FAX, _(u"Факс"))
-)
-
-
 class Phone(BaseModel):
+    PHONE_TYPE_MOBILE = 0
+    PHONE_TYPE_CITY = 1
+    PHONE_TYPE_FAX = 2
+    PHONE_TYPE_OTHER = 3
+
+    PHONE_TYPE_CHOICES = (
+        (PHONE_TYPE_MOBILE, _(u"Мобильный")),
+        (PHONE_TYPE_CITY, _(u"Городской")),
+        (PHONE_TYPE_FAX, _(u"Факс")),
+        (PHONE_TYPE_OTHER, _(u"Иной"))
+    )
+
     ct = models.ForeignKey('contenttypes.ContentType', null=True, blank=True, editable=False, verbose_name=_(u"Тип"))
     obj_id = models.PositiveIntegerField(null=True, blank=True, editable=False, verbose_name=_(u"ID объекта"), db_index=True)
     obj = generic.GenericForeignKey(ct_field='ct', fk_field='obj_id')
@@ -333,7 +335,7 @@ class Phone(BaseModel):
         verbose_name_plural = _(u"Телефоны")
 
     def __unicode__(self):
-         for k, v in PHONE_TYPE_CHOICES:  
+         for k, v in self.PHONE_TYPE_CHOICES:  
              if k == self.phonetype:  
                  return _(u"%s: %s") % (v, self.number)
 

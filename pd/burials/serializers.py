@@ -14,7 +14,7 @@ from geo.models import Location
 from geo.serializers import LocationSerializer
 from pd.serializers import ArchFilesSerializer
 
-from persons.serializers import AlivePersonSerializer, DeadPersonSerializer, PhoneSerializer
+from persons.serializers import AlivePersonSerializer, DeadPersonSerializer, PhoneSerializer, ArchPhoneSerializer
 
 from rest_api.fields import UnclearDateFieldSerializer
 
@@ -250,6 +250,7 @@ class ArchCemeterySerializer(serializers.ModelSerializer):
     creator_id = serializers.Field('creator.id')
     ugh_id = serializers.Field('ugh.id')
     address_id = serializers.Field('address.id')
+    phones = ArchPhoneSerializer(many=True, source='phone_set')
 
     class Meta:
         model = Cemetery
@@ -260,6 +261,7 @@ class ArchCemeterySerializer(serializers.ModelSerializer):
             'creator_id', 'ugh_id', 'address_id',
             'archive_burial_fact_date_required', 'archive_burial_account_number_required',
             'square',
+            'phones',
             'dt_created', 'dt_modified',
         )
 

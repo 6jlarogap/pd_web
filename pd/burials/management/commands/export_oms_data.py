@@ -165,28 +165,28 @@ class Command(NoArgsCommand):
                         ('region', ArchRegionSerializer, region_qs),
                         ('city', ArchCitySerializer, city_qs),
                         ('street', ArchStreetSerializer, street_qs),
-                        #('location', ArchLocationSerializer, location_qs),
+                        ('location', ArchLocationSerializer, location_qs),
 
                         ('currency', ArchCurrencySerializer, currency_qs),
                         ('org', ArchOrgSerializer, org_qs),
 
-                        #('user', ArchUserSerializer, user_qs),
-                        #('profile', ArchProfileSerializer, profile_qs),
+                        ('user', ArchUserSerializer, user_qs),
+                        ('profile', ArchProfileSerializer, profile_qs),
 
-                        #('cemetery', ArchCemeterySerializer, cemetery_qs),
-                        #('cemeterycoordinates', ArchCemeteryCoordinatesSerializer, cemeterycoordinates_qs),
-                        #('areapurpose', AreaPurposeSerializer, None),
-                        #('area', ArchAreaSerializer, area_qs),
-                        #('areacoordinates', ArchAreaCoordinatesSerializer, areacoordinates_qs),
-                        #('placesize', ArchPlaceSizeSerializer, placesize_qs),
+                        ('cemetery', ArchCemeterySerializer, cemetery_qs),
+                        ('cemeterycoordinates', ArchCemeteryCoordinatesSerializer, cemeterycoordinates_qs),
+                        ('areapurpose', AreaPurposeSerializer, None),
+                        ('area', ArchAreaSerializer, area_qs),
+                        ('areacoordinates', ArchAreaCoordinatesSerializer, areacoordinates_qs),
+                        ('placesize', ArchPlaceSizeSerializer, placesize_qs),
 
-                        #('iddocumenttype', ArchIDDocumentTypeSerializer, None),
-                        #('iddocumentsource', ArchDocumentSourceSerializer, iddocumentsource_qs),
-                        #('aliveperson', ArchAlivePersonSerializer, aliveperson_qs),
-                        #('personid', ArchPersonIDSerializer, personid_qs),
+                        ('iddocumenttype', ArchIDDocumentTypeSerializer, None),
+                        ('iddocumentsource', ArchDocumentSourceSerializer, iddocumentsource_qs),
+                        ('aliveperson', ArchAlivePersonSerializer, aliveperson_qs),
+                        ('personid', ArchPersonIDSerializer, personid_qs),
 
-                        #('place', ArchPlaceSerializer, place_qs),
-                        #('placephoto', ArchPlacePhotoSerializer, placephoto_qs),
+                        ('place', ArchPlaceSerializer, place_qs),
+                        ('placephoto', ArchPlacePhotoSerializer, placephoto_qs),
                     ):
                 self.handle_model(title, serializer, queryset)
 

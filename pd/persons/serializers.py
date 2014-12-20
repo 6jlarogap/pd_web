@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import re
 
 from django.contrib.auth.models import Group, Permission
 from rest_framework import serializers
@@ -190,10 +191,16 @@ class ArchPersonIDSerializer(serializers.ModelSerializer):
         model = PersonID
         fields = ('id', 'person_id', 'id_type_id', 'series', 'number', 'source_id', 'date')
 
+class ArchPhoneSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Phone
+        fields = ('phonetype', 'number',)
+
 class ArchAlivePersonSerializer(serializers.ModelSerializer):
     address_id = serializers.Field('address.id')
     user_id = serializers.Field('user.id')
     birth_date = UnclearDateFieldSafeSerializer()
+    phones = serializers.SerializerMethodField('phones_func')
 
     class Meta:
         model = AlivePerson
@@ -205,3 +212,17 @@ class ArchAlivePersonSerializer(serializers.ModelSerializer):
             #             ОМС не должны
             'login_phone',
         )
+
+    def phones_func(self, aliveperson):
+        phones = list()
+        if hasattr(aliveperson, 'phones') and aliveperson.phones:
+            for phone in re.split(r'[,;\n]+', aliveperson.phones):
+                phone = re.sub(r'[-\s]+', '', phone)
+                if re.match(r'^\d{5,}$', phone):
+                    phones.append(dict(
+                        phonetype=Phone.PHONE_TYPE_OTHER,
+                        number=phone,
+                    ))
+        for phone in aliveperson.phone_set.all():
+            phones.append(ArchPhoneSerializer(phone).data)
+        return phones
