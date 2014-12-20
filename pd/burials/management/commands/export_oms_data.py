@@ -128,19 +128,38 @@ class Command(NoArgsCommand):
 
             country_qs =    Q(region__city__street__location__cemetery__ugh=ugh) | \
                             Q(region__city__street__location__org=ugh) | \
-                            Q(region__city__street__location__baseperson__aliveperson__applied_burials__ugh=ugh)
+                            Q(region__city__street__location__baseperson__aliveperson__applied_burials__ugh=ugh) | \
+                            Q(region__city__street__location__org__burial__ugh=ugh) | \
+                            Q(region__city__street__location__org__applicant_organization_burials__ugh=ugh) | \
+                            Q(region__city__street__location__org__exhumationrequest__burial__ugh=ugh)
+
             region_qs =     Q(city__street__location__cemetery__ugh=ugh) | \
                             Q(city__street__location__org=ugh) | \
-                            Q(city__street__location__baseperson__aliveperson__applied_burials__ugh=ugh)
+                            Q(city__street__location__baseperson__aliveperson__applied_burials__ugh=ugh) | \
+                            Q(city__street__location__org__burial__ugh=ugh) | \
+                            Q(city__street__location__org__applicant_organization_burials__ugh=ugh) | \
+                            Q(city__street__location__org__exhumationrequest__burial__ugh=ugh)
+
             city_qs =       Q(street__location__cemetery__ugh=ugh) | \
                             Q(street__location__org=ugh) | \
-                            Q(street__location__baseperson__aliveperson__applied_burials__ugh=ugh)
+                            Q(street__location__baseperson__aliveperson__applied_burials__ugh=ugh) | \
+                            Q(street__location__org__burial__ugh=ugh) | \
+                            Q(street__location__org__applicant_organization_burials__ugh=ugh) | \
+                            Q(street__location__org__exhumationrequest__burial__ugh=ugh)
+
             street_qs =     Q(location__cemetery__ugh=ugh) | \
                             Q(location__org=ugh) | \
-                            Q(location__baseperson__aliveperson__applied_burials__ugh=ugh)
+                            Q(location__baseperson__aliveperson__applied_burials__ugh=ugh) | \
+                            Q(location__org__burial__ugh=ugh) | \
+                            Q(location__org__applicant_organization_burials__ugh=ugh) | \
+                            Q(location__org__exhumationrequest__burial__ugh=ugh)
+
             location_qs =   Q(cemetery__ugh=ugh) | \
                             Q(org=ugh) | \
-                            Q(baseperson__aliveperson__applied_burials__ugh=ugh)
+                            Q(baseperson__aliveperson__applied_burials__ugh=ugh) | \
+                            Q(org__burial__ugh=ugh) | \
+                            Q(org__applicant_organization_burials__ugh=ugh) | \
+                            Q(org__exhumationrequest__burial__ugh=ugh)
             
             cemetery_qs =   Q(ugh=ugh)
             cemeterycoordinates_qs = Q(cemetery__ugh=ugh)
@@ -154,14 +173,21 @@ class Command(NoArgsCommand):
             profile_qs =    Q(org=ugh)
             currency_qs =   Q(org=ugh)
             reason_qs =     Q(org=ugh)
-            org_qs =        Q(pk=ugh.pk)
+
+            org_qs =        Q(pk=ugh.pk) | \
+                            Q(burial__ugh=ugh) | \
+                            Q(applicant_organization_burials__ugh=ugh) | \
+                            Q(exhumationrequest__burial__ugh=ugh)
             
             iddocumentsource_qs = Q(personid__person__aliveperson__applied_burials__ugh=ugh) | \
-                                  Q(personid__person__aliveperson__place__cemetery__ugh=ugh)
-            personid_qs =   Q(person__aliveperson__applied_burials__ugh=ugh) | \
-                            Q(person__aliveperson__place__cemetery__ugh=ugh)
+                                  Q(personid__person__aliveperson__place__cemetery__ugh=ugh) | \
+                                  Q(personid__person__aliveperson__exhumationrequest__burial__ugh=ugh)
             aliveperson_qs = Q(applied_burials__ugh=ugh) | \
-                             Q(place__cemetery__ugh=ugh)
+                             Q(place__cemetery__ugh=ugh) | \
+                             Q(exhumationrequest__burial__ugh=ugh)
+            personid_qs =   Q(person__aliveperson__applied_burials__ugh=ugh) | \
+                            Q(person__aliveperson__place__cemetery__ugh=ugh) | \
+                            Q(person__aliveperson__exhumationrequest__burial__ugh=ugh)
             place_qs =      Q(cemetery__ugh=ugh)
 
             deadperson_qs = Q(burial__ugh=ugh)
@@ -170,14 +196,14 @@ class Command(NoArgsCommand):
 
             for (title, serializer, queryset) in \
                     ( 
-                        #('country', ArchCountrySerializer, country_qs),
-                        #('region', ArchRegionSerializer, region_qs),
-                        #('city', ArchCitySerializer, city_qs),
-                        #('street', ArchStreetSerializer, street_qs),
-                        #('location', ArchLocationSerializer, location_qs),
+                        ('country', ArchCountrySerializer, country_qs),
+                        ('region', ArchRegionSerializer, region_qs),
+                        ('city', ArchCitySerializer, city_qs),
+                        ('street', ArchStreetSerializer, street_qs),
+                        ('location', ArchLocationSerializer, location_qs),
 
                         #('currency', ArchCurrencySerializer, currency_qs),
-                        #('org', ArchOrgSerializer, org_qs),
+                        ('org', ArchOrgSerializer, org_qs),
 
                         #('user', ArchUserSerializer, user_qs),
                         #('profile', ArchProfileSerializer, profile_qs),
@@ -202,7 +228,7 @@ class Command(NoArgsCommand):
                         #('deathcertificate', ArchDeathCertificateSerializer, deathcertificate_qs),
                         #('deathcertificatescan', ArchDeathCertificateScanSerializer, deathcertificatescan_qs),
 
-                        ('reason', ArchReasonSerializer, reason_qs),
+                        #('reason', ArchReasonSerializer, reason_qs),
                     ):
                 self.handle_model(title, serializer, queryset)
 
