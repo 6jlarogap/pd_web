@@ -36,14 +36,17 @@ from billing.serializers import ArchCurrencySerializer
 from burials.serializers import ArchCemeterySerializer, ArchCemeteryCoordinatesSerializer, \
                                 AreaPurposeSerializer, ArchAreaSerializer, \
                                 ArchAreaCoordinatesSerializer, ArchPlaceSizeSerializer, \
-                                ArchPlacePhotoSerializer, ArchPlaceSerializer
+                                ArchPlacePhotoSerializer, ArchPlaceSerializer, \
+                                ArchAreaPhotoSerializer, ArchReasonSerializer
 
 from geo.serializers import ArchCountrySerializer, ArchRegionSerializer, \
                             ArchCitySerializer, ArchStreetSerializer, \
                             ArchLocationSerializer
 
 from persons.serializers import ArchIDDocumentTypeSerializer, ArchDocumentSourceSerializer, \
-                                ArchPersonIDSerializer, ArchAlivePersonSerializer
+                                ArchPersonIDSerializer, ArchAlivePersonSerializer, \
+                                ArchDeathCertificateSerializer, ArchDeathCertificateScanSerializer, \
+                                ArchDeadPersonSerializer
 
 from users.serializers import ArchUserSerializer, ArchProfileSerializer, ArchOrgSerializer
 
@@ -54,19 +57,6 @@ MEDIA_STORAGE = 'org-data'
 #
 XML_NAME = ZIP_NAME = 'org-data'
 
-def xml_indent(elem, level=0):
-    i = "\n" + level*"  "
-    if len(elem):
-        if not elem.tail or not elem.tail.strip():
-            elem.tail = i
-        for elem in elem:
-            xml_indent(elem, level+1)
-        if not elem.tail or not elem.tail.strip():
-            elem.tail = i
-    else:
-        if level and (not elem.tail or not elem.tail.strip()):
-            elem.tail = i
-
 class Command(NoArgsCommand):
     help = 'Collect OMS data and put it to media'
     
@@ -74,6 +64,19 @@ class Command(NoArgsCommand):
     #
     f = None
     
+    def xml_indent(self, elem, level=0):
+        i = "\n" + level*"  "
+        if len(elem):
+            if not elem.tail or not elem.tail.strip():
+                elem.tail = i
+            for elem in elem:
+                self.xml_indent(elem, level+1)
+            if not elem.tail or not elem.tail.strip():
+                elem.tail = i
+        else:
+            if level and (not elem.tail or not elem.tail.strip()):
+                elem.tail = i
+
     def handle_fields(self, r, d):
         if isinstance(d, dict):
             for k, v in d.iteritems():
@@ -92,7 +95,7 @@ class Command(NoArgsCommand):
     def handle_rec(self, data, title):
         r = ET.Element(title)
         xml = self.handle_fields(r, data)
-        xml_indent(xml)
+        self.xml_indent(xml)
         return ET.tostring(xml, encoding="utf-8", method="xml")
 
     def handle_model(self, title, serializer, queryset):
@@ -142,6 +145,7 @@ class Command(NoArgsCommand):
             cemetery_qs =   Q(ugh=ugh)
             cemeterycoordinates_qs = Q(cemetery__ugh=ugh)
             area_qs =       Q(cemetery__ugh=ugh)
+            areaphoto_qs =  Q(area__cemetery__ugh=ugh)
             areacoordinates_qs = Q(area__cemetery__ugh=ugh)
             placesize_qs =  Q(org=ugh)
             placephoto_qs = Q(place__cemetery__ugh=ugh)
@@ -149,6 +153,7 @@ class Command(NoArgsCommand):
             user_qs =       Q(profile__org=ugh)
             profile_qs =    Q(org=ugh)
             currency_qs =   Q(org=ugh)
+            reason_qs =     Q(org=ugh)
             org_qs =        Q(pk=ugh.pk)
             
             iddocumentsource_qs = Q(personid__person__aliveperson__applied_burials__ugh=ugh) | \
@@ -159,34 +164,45 @@ class Command(NoArgsCommand):
                              Q(place__cemetery__ugh=ugh)
             place_qs =      Q(cemetery__ugh=ugh)
 
+            deadperson_qs = Q(burial__ugh=ugh)
+            deathcertificate_qs = Q(person__burial__ugh=ugh)
+            deathcertificatescan_qs = Q(deathcertificate__person__burial__ugh=ugh)
+
             for (title, serializer, queryset) in \
                     ( 
-                        ('country', ArchCountrySerializer, country_qs),
-                        ('region', ArchRegionSerializer, region_qs),
-                        ('city', ArchCitySerializer, city_qs),
-                        ('street', ArchStreetSerializer, street_qs),
-                        ('location', ArchLocationSerializer, location_qs),
+                        #('country', ArchCountrySerializer, country_qs),
+                        #('region', ArchRegionSerializer, region_qs),
+                        #('city', ArchCitySerializer, city_qs),
+                        #('street', ArchStreetSerializer, street_qs),
+                        #('location', ArchLocationSerializer, location_qs),
 
-                        ('currency', ArchCurrencySerializer, currency_qs),
-                        ('org', ArchOrgSerializer, org_qs),
+                        #('currency', ArchCurrencySerializer, currency_qs),
+                        #('org', ArchOrgSerializer, org_qs),
 
-                        ('user', ArchUserSerializer, user_qs),
-                        ('profile', ArchProfileSerializer, profile_qs),
+                        #('user', ArchUserSerializer, user_qs),
+                        #('profile', ArchProfileSerializer, profile_qs),
 
-                        ('cemetery', ArchCemeterySerializer, cemetery_qs),
-                        ('cemeterycoordinates', ArchCemeteryCoordinatesSerializer, cemeterycoordinates_qs),
-                        ('areapurpose', AreaPurposeSerializer, None),
-                        ('area', ArchAreaSerializer, area_qs),
-                        ('areacoordinates', ArchAreaCoordinatesSerializer, areacoordinates_qs),
-                        ('placesize', ArchPlaceSizeSerializer, placesize_qs),
+                        #('cemetery', ArchCemeterySerializer, cemetery_qs),
+                        #('cemeterycoordinates', ArchCemeteryCoordinatesSerializer, cemeterycoordinates_qs),
+                        #('areapurpose', AreaPurposeSerializer, None),
+                        #('area', ArchAreaSerializer, area_qs),
+                        #('areaphoto', ArchAreaPhotoSerializer, areaphoto_qs),
+                        #('areacoordinates', ArchAreaCoordinatesSerializer, areacoordinates_qs),
+                        #('placesize', ArchPlaceSizeSerializer, placesize_qs),
 
-                        ('iddocumenttype', ArchIDDocumentTypeSerializer, None),
-                        ('iddocumentsource', ArchDocumentSourceSerializer, iddocumentsource_qs),
-                        ('aliveperson', ArchAlivePersonSerializer, aliveperson_qs),
-                        ('personid', ArchPersonIDSerializer, personid_qs),
+                        #('iddocumenttype', ArchIDDocumentTypeSerializer, None),
+                        #('iddocumentsource', ArchDocumentSourceSerializer, iddocumentsource_qs),
+                        #('aliveperson', ArchAlivePersonSerializer, aliveperson_qs),
+                        #('personid', ArchPersonIDSerializer, personid_qs),
 
-                        ('place', ArchPlaceSerializer, place_qs),
-                        ('placephoto', ArchPlacePhotoSerializer, placephoto_qs),
+                        #('place', ArchPlaceSerializer, place_qs),
+                        #('placephoto', ArchPlacePhotoSerializer, placephoto_qs),
+
+                        #('deadperson', ArchDeadPersonSerializer, deadperson_qs),
+                        #('deathcertificate', ArchDeathCertificateSerializer, deathcertificate_qs),
+                        #('deathcertificatescan', ArchDeathCertificateScanSerializer, deathcertificatescan_qs),
+
+                        ('reason', ArchReasonSerializer, reason_qs),
                     ):
                 self.handle_model(title, serializer, queryset)
 

@@ -7,7 +7,8 @@ from rest_framework.fields import Field, TimeField
 
 
 from burials.models import Cemetery, Place, Area, Grave, Burial, AreaPhoto, BurialFiles, ExhumationRequest, \
-    AreaPurpose, PlaceSize, PlaceStatus, CemeteryCoordinates, AreaCoordinates, PlaceSize, PlacePhoto
+    AreaPurpose, PlaceSize, PlaceStatus, CemeteryCoordinates, AreaCoordinates, PlaceSize, PlacePhoto, \
+    Reason
 
 
 from geo.models import Location
@@ -291,6 +292,14 @@ class ArchAreaSerializer(serializers.ModelSerializer):
             'dt_created', 'dt_modified',
         )
 
+class ArchAreaPhotoSerializer(ArchFilesSerializer):
+    area_id = serializers.Field('area.id')
+
+    class Meta:
+        model = AreaPhoto
+        fields = ('id', 'area_id', 'lat', 'lng',
+                  'bfile', 'comment', 'original_name', 'comment', 'creator_id', 'date_of_creation', )
+
 class ArchPlaceSizeSerializer(serializers.ModelSerializer):
     org_id = serializers.Field('org.id')
 
@@ -317,3 +326,10 @@ class ArchPlaceSerializer(serializers.ModelSerializer):
                   'available_count', 'responsible_id', 'place_length', 'place_width',
                   'dt_wrong_fio', 'dt_military', 'dt_size_violated', 'dt_unowned', 'dt_unindentified',
                   'lat', 'lng', )
+
+class ArchReasonSerializer(serializers.ModelSerializer):
+    org_id = serializers.Field('org.id')
+
+    class Meta:
+        model = Reason
+        fields = ('id', 'org_id', 'reason_type', 'name', 'text', )
