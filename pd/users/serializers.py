@@ -10,7 +10,8 @@ from pd.utils import PhonesFromTextMixin, utcisoformat
 from django.contrib.auth.models import User
 
 from geo.models import Location
-from users.models import Org, Store, FavoriteSupplier, UserPhoto, is_cabinet_user, is_trade_user, get_profile
+from users.models import Org, Store, FavoriteSupplier, UserPhoto, is_cabinet_user, is_trade_user, \
+                         Profile, Dover, get_profile
 from persons.models import Phone
 from orders.models import Order, Product
 
@@ -251,3 +252,40 @@ class UserSettingsSerializer(UserProfileMixin, serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ('firstName', 'lastName', 'middleName', 'avatarUrl', 'loginPhone', )
+
+class ArchUserSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = User
+        fields = ('id', 'username', 'email', 'is_active', )
+
+class ArchProfileSerializer(serializers.ModelSerializer):
+    user_id = serializers.Field('user.id')
+    org_id = serializers.Field('org.id')
+
+    class Meta:
+        model = Profile
+        fields = ('id', 'user_id', 'org_id', 'user_last_name', 'user_first_name', 'user_middle_name', )
+
+class ArchOrgSerializer(serializers.ModelSerializer):
+    off_address_id = serializers.Field('off_address.id')
+    currency_id = serializers.Field('currency.id')
+
+    class Meta:
+        model = Org
+        fields = (
+            'id', 'type', 'name', 'full_name', 'description',
+            'inn', 'kpp', 'ogrn', 'director', 'basis', 'email',
+            'phones', 'sms_phone', 'fax', 'off_address_id',
+            'numbers_algo', 'plan_date_days_before',
+            'max_graves_count', 'worktime', 'site',
+            'currency_id', 
+        )
+
+class ArchDoverSerializer(serializers.ModelSerializer):
+    agent_id = serializers.Field('agent.id')
+    target_org_id = serializers.Field('target_org.id')
+
+    class Meta:
+        model = Dover
+        fields = ('id', 'agent_id', 'target_org_id', 'number', 'begin', 'end', 'document')
