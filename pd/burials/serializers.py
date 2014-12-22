@@ -17,7 +17,7 @@ from pd.serializers import ArchFilesSerializer
 
 from persons.serializers import AlivePersonSerializer, DeadPersonSerializer, PhoneSerializer, ArchPhoneSerializer
 
-from rest_api.fields import UnclearDateFieldSerializer
+from rest_api.fields import UnclearDateFieldSerializer, UnclearDateFieldSafeSerializer
 
 from django.core.exceptions import ValidationError
 
@@ -325,7 +325,8 @@ class ArchPlaceSerializer(serializers.ModelSerializer):
         fields = ('id', 'cemetery_id', 'area_id', 'row', 'oldplace', 'place',
                   'available_count', 'responsible_id', 'place_length', 'place_width',
                   'dt_wrong_fio', 'dt_military', 'dt_size_violated', 'dt_unowned', 'dt_unindentified',
-                  'lat', 'lng', )
+                  'lat', 'lng',
+        )
 
 class ArchReasonSerializer(serializers.ModelSerializer):
     org_id = serializers.Field('org.id')
@@ -333,3 +334,68 @@ class ArchReasonSerializer(serializers.ModelSerializer):
     class Meta:
         model = Reason
         fields = ('id', 'org_id', 'reason_type', 'name', 'text', )
+
+class ArchBurialSerializer(serializers.ModelSerializer):
+    place_id = serializers.Field('place.id')
+    cemetery_id = serializers.Field('cemetery.id')
+    area_id = serializers.Field('area.id')
+    place_id = serializers.Field('place.id')
+    grave_id = serializers.Field('grave.id')
+    responsible_id = serializers.Field('responsible.id')
+    plan_time = TimeField()
+    fact_date = UnclearDateFieldSafeSerializer()
+    deadman_id = serializers.Field('deadman.id')
+    applicant_id = serializers.Field('applicant.id')
+    ugh_id = serializers.Field('ugh.id')
+    loru_id = serializers.Field('loru.id')
+    loru_agent_id = serializers.Field('loru_agent.id')
+    loru_dover_id = serializers.Field('loru_dover.id')
+    applicant_organization_id = serializers.Field('applicant_organization.id')
+    agent_id = serializers.Field('agent.id')
+    dover_id = serializers.Field('dover.id')
+    changed_by_id = serializers.Field('changed_by.id')
+
+    class Meta:
+        model = Burial
+        fields = (
+            'id', 'burial_type', 'burial_container', 'source_type', 'account_number',
+            'place_id', 'cemetery_id', 'area_id', 'row', 'place_number', 'grave_id',
+            'grave_number', 'desired_graves_count', 'place_length', 'place_width',
+            'responsible_id', 'plan_date', 'plan_time', 'fact_date', 'deadman_id',
+            'applicant_id', 'ugh_id', 'loru_id', 'loru_agent_director', 'loru_agent_id',
+            'loru_dover_id', 'applicant_organization_id', 'agent_director', 'agent_id',
+            'dover_id', 'status', 'changed_by_id', 'annulated', 'flag_no_applicant_doc_required',
+        )
+
+class ArchBurialFilesSerializer(ArchFilesSerializer):
+    burial_id = serializers.Field('burial.id')
+
+    class Meta:
+        model = BurialFiles
+        fields = ('id', 'burial_id',
+                  'bfile', 'comment', 'original_name', 'comment', 'creator_id', 'date_of_creation',
+        )
+
+class ArchExhumationRequestSerializer(ArchFilesSerializer):
+    burial_id = serializers.Field('burial.id')
+    place_id = serializers.Field('place.id')
+    plan_time = TimeField()
+    applicant_id = serializers.Field('applicant.id')
+    applicant_organization_id = serializers.Field('applicant_organization.id')
+    agent_id = serializers.Field('agent.id')
+    dover_id = serializers.Field('dover.id')
+
+    class Meta:
+        model = ExhumationRequest
+        fields = ('id', 'burial_id', 'place_id',  'plan_date', 'plan_time', 'fact_date',
+                  'applicant', 'applicant_organization_id', 'agent_director', 'agent_id',
+                  'dover_id',
+        )
+
+class ArchGraveSerializer(serializers.ModelSerializer):
+    place_id = serializers.Field('place.id')
+
+    class Meta:
+        model = Grave
+        fields = ('id', 'place_id', 'grave_number', 'is_wrong_fio', 'is_military', )
+

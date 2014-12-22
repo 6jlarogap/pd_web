@@ -11,7 +11,7 @@ from django.contrib.auth.models import User
 
 from geo.models import Location
 from users.models import Org, Store, FavoriteSupplier, UserPhoto, is_cabinet_user, is_trade_user, \
-                         Profile, get_profile
+                         Profile, Dover, get_profile
 from persons.models import Phone
 from orders.models import Order, Product
 
@@ -281,3 +281,11 @@ class ArchOrgSerializer(serializers.ModelSerializer):
             'max_graves_count', 'worktime', 'site',
             'currency_id', 
         )
+
+class ArchDoverSerializer(serializers.ModelSerializer):
+    agent_id = serializers.Field('agent.id')
+    target_org_id = serializers.Field('target_org.id')
+
+    class Meta:
+        model = Dover
+        fields = ('id', 'agent_id', 'target_org_id', 'number', 'begin', 'end', 'document')

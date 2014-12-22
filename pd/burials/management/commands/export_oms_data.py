@@ -37,7 +37,9 @@ from burials.serializers import ArchCemeterySerializer, ArchCemeteryCoordinatesS
                                 AreaPurposeSerializer, ArchAreaSerializer, \
                                 ArchAreaCoordinatesSerializer, ArchPlaceSizeSerializer, \
                                 ArchPlacePhotoSerializer, ArchPlaceSerializer, \
-                                ArchAreaPhotoSerializer, ArchReasonSerializer
+                                ArchAreaPhotoSerializer, ArchReasonSerializer, \
+                                ArchBurialSerializer, ArchBurialFilesSerializer, \
+                                ArchExhumationRequestSerializer, ArchGraveSerializer
 
 from geo.serializers import ArchCountrySerializer, ArchRegionSerializer, \
                             ArchCitySerializer, ArchStreetSerializer, \
@@ -48,7 +50,8 @@ from persons.serializers import ArchIDDocumentTypeSerializer, ArchDocumentSource
                                 ArchDeathCertificateSerializer, ArchDeathCertificateScanSerializer, \
                                 ArchDeadPersonSerializer
 
-from users.serializers import ArchUserSerializer, ArchProfileSerializer, ArchOrgSerializer
+from users.serializers import ArchUserSerializer, ArchProfileSerializer, ArchOrgSerializer, \
+                              ArchDoverSerializer
 
 # парка в settings.MEDIA_ROOT, где будем складывать архивы /<pk>/org-data.zip:
 #
@@ -169,8 +172,15 @@ class Command(NoArgsCommand):
             placesize_qs =  Q(org=ugh)
             placephoto_qs = Q(place__cemetery__ugh=ugh)
 
-            user_qs =       Q(profile__org=ugh)
-            profile_qs =    Q(org=ugh)
+            user_qs =       Q(profile__org=ugh) | \
+                            Q(profile__loru_agent_burials__ugh=ugh) | \
+                            Q(profile__agent_burials__ugh=ugh)
+            profile_qs =    Q(org=ugh) | \
+                            Q(loru_agent_burials__ugh=ugh) | \
+                            Q(agent_burials__ugh=ugh)
+            dover_qs =      Q(agent__loru_agent_burials__ugh=ugh) | \
+                            Q(agent__agent_burials__ugh=ugh)
+
             currency_qs =   Q(org=ugh)
             reason_qs =     Q(org=ugh)
 
@@ -189,6 +199,10 @@ class Command(NoArgsCommand):
                             Q(person__aliveperson__place__cemetery__ugh=ugh) | \
                             Q(person__aliveperson__exhumationrequest__burial__ugh=ugh)
             place_qs =      Q(cemetery__ugh=ugh)
+            grave_qs =      Q(place__cemetery__ugh=ugh)
+            burial_qs =     Q(ugh=ugh)
+            burialfiles_qs = Q(burial__ugh=ugh)
+            exhumationrequest_qs = Q(burial__ugh=ugh)
 
             deadperson_qs = Q(burial__ugh=ugh)
             deathcertificate_qs = Q(person__burial__ugh=ugh)
@@ -202,33 +216,38 @@ class Command(NoArgsCommand):
                         ('street', ArchStreetSerializer, street_qs),
                         ('location', ArchLocationSerializer, location_qs),
 
-                        #('currency', ArchCurrencySerializer, currency_qs),
+                        ('currency', ArchCurrencySerializer, currency_qs),
                         ('org', ArchOrgSerializer, org_qs),
 
-                        #('user', ArchUserSerializer, user_qs),
-                        #('profile', ArchProfileSerializer, profile_qs),
+                        ('user', ArchUserSerializer, user_qs),
+                        ('profile', ArchProfileSerializer, profile_qs),
+                        ('dover', ArchDoverSerializer, dover_qs),
 
-                        #('cemetery', ArchCemeterySerializer, cemetery_qs),
-                        #('cemeterycoordinates', ArchCemeteryCoordinatesSerializer, cemeterycoordinates_qs),
-                        #('areapurpose', AreaPurposeSerializer, None),
-                        #('area', ArchAreaSerializer, area_qs),
-                        #('areaphoto', ArchAreaPhotoSerializer, areaphoto_qs),
-                        #('areacoordinates', ArchAreaCoordinatesSerializer, areacoordinates_qs),
-                        #('placesize', ArchPlaceSizeSerializer, placesize_qs),
+                        ('cemetery', ArchCemeterySerializer, cemetery_qs),
+                        ('cemeterycoordinates', ArchCemeteryCoordinatesSerializer, cemeterycoordinates_qs),
+                        ('areapurpose', AreaPurposeSerializer, None),
+                        ('area', ArchAreaSerializer, area_qs),
+                        ('areaphoto', ArchAreaPhotoSerializer, areaphoto_qs),
+                        ('areacoordinates', ArchAreaCoordinatesSerializer, areacoordinates_qs),
+                        ('placesize', ArchPlaceSizeSerializer, placesize_qs),
 
-                        #('iddocumenttype', ArchIDDocumentTypeSerializer, None),
-                        #('iddocumentsource', ArchDocumentSourceSerializer, iddocumentsource_qs),
-                        #('aliveperson', ArchAlivePersonSerializer, aliveperson_qs),
-                        #('personid', ArchPersonIDSerializer, personid_qs),
+                        ('iddocumenttype', ArchIDDocumentTypeSerializer, None),
+                        ('iddocumentsource', ArchDocumentSourceSerializer, iddocumentsource_qs),
+                        ('aliveperson', ArchAlivePersonSerializer, aliveperson_qs),
+                        ('personid', ArchPersonIDSerializer, personid_qs),
 
-                        #('place', ArchPlaceSerializer, place_qs),
-                        #('placephoto', ArchPlacePhotoSerializer, placephoto_qs),
+                        ('place', ArchPlaceSerializer, place_qs),
+                        ('placephoto', ArchPlacePhotoSerializer, placephoto_qs),
+                        ('grave', ArchGraveSerializer, grave_qs),
 
-                        #('deadperson', ArchDeadPersonSerializer, deadperson_qs),
-                        #('deathcertificate', ArchDeathCertificateSerializer, deathcertificate_qs),
-                        #('deathcertificatescan', ArchDeathCertificateScanSerializer, deathcertificatescan_qs),
+                        ('deadperson', ArchDeadPersonSerializer, deadperson_qs),
+                        ('deathcertificate', ArchDeathCertificateSerializer, deathcertificate_qs),
+                        ('deathcertificatescan', ArchDeathCertificateScanSerializer, deathcertificatescan_qs),
+                        ('burial', ArchBurialSerializer, burial_qs),
+                        ('burialfiles', ArchBurialFilesSerializer, burialfiles_qs),
+                        ('exhumationrequest', ArchExhumationRequestSerializer, exhumationrequest_qs),
 
-                        #('reason', ArchReasonSerializer, reason_qs),
+                        ('reason', ArchReasonSerializer, reason_qs),
                     ):
                 self.handle_model(title, serializer, queryset)
 
