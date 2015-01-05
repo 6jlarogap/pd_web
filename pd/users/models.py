@@ -784,6 +784,14 @@ class Store(models.Model, PhonesMixin):
     address = models.ForeignKey('geo.Location', verbose_name=_(u"Адрес"))
     # phones: могут быть разных типов, пользуемся моделью persons.Phone
 
+    def delete(self):
+        self.phone_set.delete()
+        super(Store, self).delete()
+        try:
+            self.address.delete()
+        except (AttributeError, IntegrityError):
+            pass
+
 class FavoriteSupplier(models.Model):
     """
     Избранные поставщики у ЛОРУ

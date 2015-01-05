@@ -221,6 +221,13 @@ class AlivePerson(BasePerson, PhonesMixin):
                   editable=False)
     # phones: могут быть разных типов, пользуемся моделью persons.Phone
 
+    def delete(self):
+        self.phone_set.delete()
+        try:
+            super(AlivePerson, self).delete()
+        except ProtectedError:
+            pass
+
 class DocumentSource(models.Model):
     name = models.CharField(_(u"Наименование органа"), max_length=255, unique=True)
 

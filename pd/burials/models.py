@@ -119,6 +119,18 @@ class Cemetery(GetLogsMixin, BaseModel, PhonesMixin):
     def work_time(self):
         return "%s-%s" % (self.time_begin or u'00:00:00', self.time_end or u'00:00:00')
 
+    def delete(self):
+        self.phone_set.delete()
+        self.coordinates.all().delete()
+        try:
+            super(Cemetery, self).delete()
+        except IntegrityError:
+            pass
+        else:
+            try:
+                self.address.delete()
+            except (AttributeError, IntegrityError):
+                pass
 
 
 class CemeteryCoordinates(CoordinatesModel):
