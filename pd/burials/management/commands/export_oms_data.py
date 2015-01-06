@@ -49,7 +49,7 @@ from persons.serializers import ArchIDDocumentTypeSerializer, ArchDocumentSource
                                 ArchDeadPersonSerializer
 
 from users.serializers import ArchUserSerializer, ArchProfileSerializer, ArchOrgSerializer, \
-                              ArchDoverSerializer
+                              ArchDoverSerializer, ArchProfileLORUSerializer
 
 # парка в settings.MEDIA_ROOT, где будем складывать архивы /<pk>/org-data.zip:
 #
@@ -187,6 +187,8 @@ class Command(NoArgsCommand):
                             Q(applicant_organization_burials__ugh=ugh) | \
                             Q(exhumationrequest__burial__ugh=ugh)
             
+            profileloru_qs = Q(org=ugh)
+
             iddocumentsource_qs = Q(personid__person__aliveperson__applied_burials__ugh=ugh) | \
                                   Q(personid__person__aliveperson__place__cemetery__ugh=ugh) | \
                                   Q(personid__person__aliveperson__exhumationrequest__burial__ugh=ugh)
@@ -216,6 +218,7 @@ class Command(NoArgsCommand):
 
                         ('currency', ArchCurrencySerializer, currency_qs),
                         ('org', ArchOrgSerializer, org_qs),
+                        ('profileloru', ArchProfileLORUSerializer, profileloru_qs),
 
                         ('user', ArchUserSerializer, user_qs),
                         ('profile', ArchProfileSerializer, profile_qs),
