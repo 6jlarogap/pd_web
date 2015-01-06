@@ -11,7 +11,7 @@ from django.contrib.auth.models import User
 
 from geo.models import Location
 from users.models import Org, Store, FavoriteSupplier, UserPhoto, is_cabinet_user, is_trade_user, \
-                         Profile, Dover, get_profile
+                         Profile, Dover, ProfileLORU, get_profile
 from persons.models import Phone
 from orders.models import Order, Product
 
@@ -289,3 +289,12 @@ class ArchDoverSerializer(serializers.ModelSerializer):
     class Meta:
         model = Dover
         fields = ('id', 'agent_id', 'target_org_id', 'number', 'begin', 'end', 'document')
+
+class ArchProfileLORUSerializer(serializers.ModelSerializer):
+    ugh_id = serializers.Field('ugh.id')
+    loru_id = serializers.Field('loru.id')
+
+    class Meta:
+        model = ProfileLORU
+        fields = ('id', 'ugh_id', 'loru_id',)
+
