@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import copy
-from django.db import models
+from django.db import models, IntegrityError
 from django.utils.translation import ugettext as _
 from django.db.models.deletion import ProtectedError
 from django.db.models.loading import get_model
@@ -460,6 +460,18 @@ class CustomPlace(LocationMixin, BaseModel):
         else:
             return None
 
+    def delete(self):
+        self.customperson_set.all().delete()
+        try:
+            super(CustomPlace, self).delete()
+        except IntegrityError:
+            pass
+        else:
+            try:
+                self.address.delete()
+            except (AttributeError, IntegrityError):
+                pass
+
 class CustomPerson(PersonMixin, BaseModel):
     """
     Человек, чаще усопший, но возможно живой
@@ -480,6 +492,13 @@ class CustomPerson(PersonMixin, BaseModel):
     death_date = UnclearDateModelField(_(u"Дата смерти"), blank=True, null=True)
     is_dead = models.BooleanField(_(u"Уcопший"), default=True)
     memory_text = models.TextField(_(u"Памятный текст"), null=True)
+
+    def delete(self):
+        self.memorygallery_set.all().delete()
+        try:
+            super(CustomPerson, self).delete()
+        except IntegrityError:
+            pass
 
     def oms_data(self):
         try:

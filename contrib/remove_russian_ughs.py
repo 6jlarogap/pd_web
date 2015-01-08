@@ -21,9 +21,9 @@ from burials.models import Cemetery, CemeteryCoordinates, Area, AreaCoordinates,
                            Burial, BurialFiles, Reason, ExhumationRequest
 from orders.models import Order, OrderItem, ServiceItem, OrgService, OrgServicePrice, \
                           OrderComment, ResultFile
-from persons.models import DeadPerson, AlivePerson
+from persons.models import DeadPerson, AlivePerson, CustomPlace
 
-@transaction.commit_on_success
+# @transaction.commit_on_success
 def main():
     
     ugh_qs = Q(type=Org.PROFILE_UGH, currency__code='RUR')
@@ -53,8 +53,16 @@ def main():
         ServiceItem.objects.filter(orgservice__org=org).delete()
         OrgServicePrice.objects.filter(orgservice__org=org).delete()
         OrgService.objects.filter(org=org).delete()
+        for aliveperson in AlivePerson.objects.filter(
+                Q(order__loru=org) | \
+                Q(order__loru__isnull=True) | \
+                Q(order__burial__ugh=org)
+            ):
+            Order.objects.filter(applicant=aliveperson).update(applicant=None)
+            aliveperson.delete()
         Order.objects.filter(
             Q(loru=org) | \
+            Q(loru__isnull=True) | \
             Q(applicant_organization=org) | \
             Q(agent__org=org) | \
             Q(dover__agent__org=org) | Q(dover__target_org=org) | \
@@ -83,6 +91,9 @@ def main():
         for aliveperson in AlivePerson.objects.filter(applied_burials__ugh=ugh):
             Burial.objects.filter(applicant=aliveperson).update(applicant=None)
             aliveperson.delete()
+        for aliveperson in AlivePerson.objects.filter(responsible_burials__ugh=ugh):
+            Burial.objects.filter(responsible=aliveperson).update(applicant=None)
+            aliveperson.delete()
         for aliveperson in AlivePerson.objects.filter(exhumationrequest__burial__ugh=ugh):
             ExhumationRequest.objects.filter(applicant=aliveperson).update(applicant=None)
             aliveperson.delete()
@@ -95,7 +106,23 @@ def main():
         PlaceSize.objects.filter(org=ugh).delete()
         PlacePhoto.objects.filter(place__cemetery__ugh=ugh).delete()
         Grave.objects.filter(place__cemetery__ugh=ugh).delete()
+
+        for aliveperson in AlivePerson.objects.filter(place__cemetery__ugh=ugh):
+            if aliveperson.user:
+                CustomPlace.objects.filter(user=aliveperson.user).delete()
+                customerprofile = aliveperson.user.customerprofile
+                user = customerprofile.user
+                aliveperson.user = None
+                aliveperson.save()
+                customerprofile.user = None
+                customerprofile.save()
+                user.delete()
+                customerprofile.delete()
+            Place.objects.filter(responsible=aliveperson).update(responsible=None)
+            aliveperson.delete()
+
         Place.objects.filter(cemetery__ugh=ugh).delete()
+
         AreaCoordinates.objects.filter(area__cemetery__ugh=ugh).delete()
         Area.objects.filter(cemetery__ugh=ugh).delete()
         CemeteryCoordinates.objects.filter(cemetery__ugh=ugh).delete()
