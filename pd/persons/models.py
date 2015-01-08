@@ -198,7 +198,7 @@ class DeadPerson(BasePerson):
             pass
         try:
             super(DeadPerson, self).delete()
-        except ProtectedError:
+        except (ProtectedError, BasePerson.DoesNotExist,):
             pass
 
 class AlivePerson(BasePerson, PhonesMixin):
@@ -225,7 +225,7 @@ class AlivePerson(BasePerson, PhonesMixin):
         self.phone_set.delete()
         try:
             super(AlivePerson, self).delete()
-        except ProtectedError:
+        except (ProtectedError, BasePerson.DoesNotExist,):
             pass
 
 class DocumentSource(models.Model):
