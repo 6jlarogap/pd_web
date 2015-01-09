@@ -15,7 +15,8 @@ from django.db import transaction, IntegrityError
 from django.db.models.query_utils import Q
 from django.db.models.query_utils import Q
 
-from users.models import Org, ProfileLORU, Profile, Dover, OrgCertificate
+from django.contrib.auth.models import User
+from users.models import Org, ProfileLORU, Profile, Dover, OrgCertificate, CustomerProfile
 from burials.models import Cemetery, CemeteryCoordinates, Area, AreaCoordinates, \
                            Place, PlaceSize, PlacePhoto, Grave, \
                            Burial, BurialFiles, Reason, ExhumationRequest
@@ -135,20 +136,22 @@ def main():
         i = 0
         for aliveperson in AlivePerson.objects.filter(place__cemetery__ugh=ugh):
             i += 1
-            if aliveperson.user:
-                CustomPlace.objects.filter(user=aliveperson.user).delete()
-                customerprofile = aliveperson.user.customerprofile
-                user = customerprofile.user
-                aliveperson.user = None
-                aliveperson.save()
+            Place.objects.filter(responsible=aliveperson).update(responsible=None)
+            try:
+                user = aliveperson.user
+            except User.DoesNotExist:
+                user = None
+            aliveperson.delete()
+            if user:
+                CustomPlace.objects.filter(user=user).delete()
+                AlivePerson.objects.filter(user=user).update(user=None)
+                customerprofile = user.customerprofile
                 customerprofile.user = None
                 customerprofile.save()
                 user.delete()
                 customerprofile.delete()
-            Place.objects.filter(responsible=aliveperson).update(responsible=None)
-            aliveperson.delete()
             if i % 100 == 0:
-                print "%d burial responsibles removed" % i
+                print "%d place responsibles removed" % i
 
         print 'removing places'
         PlaceSize.objects.filter(org=ugh).delete()
