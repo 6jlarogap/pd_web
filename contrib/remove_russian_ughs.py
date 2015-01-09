@@ -37,29 +37,38 @@ def main():
                 #Q(ugh_list__ugh=ugh) | \
                 #Q(order__burial__ugh=ugh)
     #org_qs &= Q(currency__code='RUR')
-                    
+    print 'Looking for russian orgs...'
     for org in Org.objects.filter(org_qs).distinct():
+        print org
         ProfileLORU.objects.filter(loru=org).delete()
 
-        OrderComment.objects.filter(order__loru=org).delete()
-        ResultFile.objects.filter(order__loru=org).delete()
+        print 'removing orderItems'
         OrderItem.objects.filter(
             Q(order__loru=org) | \
+            Q(order__loru__isnull=True) | \
             Q(order__applicant_organization=org) | \
             Q(order__agent__org=org) | \
             Q(order__dover__agent__org=org) | Q(order__dover__target_org=org) | \
             Q(order__burial__ugh=org)
         ).delete()
-        ServiceItem.objects.filter(orgservice__org=org).delete()
         OrgServicePrice.objects.filter(orgservice__org=org).delete()
         OrgService.objects.filter(org=org).delete()
+        ServiceItem.objects.filter(orgservice__org=org).delete()
+
+        print 'removing order applicants- alivepersons'
+        i = 0
         for aliveperson in AlivePerson.objects.filter(
                 Q(order__loru=org) | \
-                Q(order__loru__isnull=True) | \
                 Q(order__burial__ugh=org)
             ):
+            i += 1 
             Order.objects.filter(applicant=aliveperson).update(applicant=None)
             aliveperson.delete()
+            if i % 100 == 0:
+                print "%d order applicants removed" % i
+        print 'removing orders'
+        OrderComment.objects.filter(order__loru=org).delete()
+        ResultFile.objects.filter(order__loru=org).delete()
         Order.objects.filter(
             Q(loru=org) | \
             Q(loru__isnull=True) | \
@@ -69,6 +78,7 @@ def main():
             Q(burial__ugh=org)
         ).delete()
 
+        print 'Marking dependent fields in Burials as None'
         Burial.objects.filter(applicant_organization=org).update(applicant_organization=None)
         Burial.objects.filter(agent__org=org).update(agent=None)
         Burial.objects.filter(Q(dover__agent__org=org) | Q(dover__target_org=org)).update(dover=None)
@@ -80,34 +90,51 @@ def main():
         Burial.objects.filter(Q(loru_dover__agent__org=org) | Q(loru_dover__target_org=org)).update(loru_dover=None)
 
         Burial.objects.filter(changed_by__profile__org=org).update(changed_by=None)
+        print 'removing dovers'
         Dover.objects.filter(Q(agent__org=org) | Q(target_org=org)).delete()
         if org.type != Org.PROFILE_UGH:
             remove_org(org)
+            print 'Org deleted'
 
+    print 'Looking for russian UGHs...'
     for ugh in Org.objects.filter(ugh_qs):
+        print ugh
+        print 'removing deadmen in burial'
+        i = 0
         for deadperson in DeadPerson.objects.filter(burial__ugh=ugh):
+            i += 1 
             Burial.objects.filter(deadman=deadperson).update(deadman=None)
             deadperson.delete()
+            if i % 100 == 0:
+                print "%d deadmen removed" % i
+        print 'removing burial applicants- alivepersons'
+        i = 0
         for aliveperson in AlivePerson.objects.filter(applied_burials__ugh=ugh):
+            i += 1 
             Burial.objects.filter(applicant=aliveperson).update(applicant=None)
             aliveperson.delete()
+            if i % 100 == 0:
+                print "%d burial applicants removed" % i
+        print 'removing non-closed burial responsibles- alivepersons'
         for aliveperson in AlivePerson.objects.filter(responsible_burials__ugh=ugh):
             Burial.objects.filter(responsible=aliveperson).update(applicant=None)
             aliveperson.delete()
+        print 'removing exhumationrequest applicants- alivepersons'
         for aliveperson in AlivePerson.objects.filter(exhumationrequest__burial__ugh=ugh):
             ExhumationRequest.objects.filter(applicant=aliveperson).update(applicant=None)
             aliveperson.delete()
 
-        # TODO AlivePerson - заказчики заказов, responsibles незакрытых захоронений
-
+        print 'removing burials'
         ExhumationRequest.objects.filter(burial__ugh=ugh).delete()
         BurialFiles.objects.filter(burial__ugh=ugh).delete()
         Burial.objects.filter(ugh=ugh).delete()
-        PlaceSize.objects.filter(org=ugh).delete()
-        PlacePhoto.objects.filter(place__cemetery__ugh=ugh).delete()
+        print 'removing graves'
         Grave.objects.filter(place__cemetery__ugh=ugh).delete()
 
+        print 'removing place responsibles- alivepersons'
+        i = 0
         for aliveperson in AlivePerson.objects.filter(place__cemetery__ugh=ugh):
+            i += 1
             if aliveperson.user:
                 CustomPlace.objects.filter(user=aliveperson.user).delete()
                 customerprofile = aliveperson.user.customerprofile
@@ -120,16 +147,24 @@ def main():
                 customerprofile.delete()
             Place.objects.filter(responsible=aliveperson).update(responsible=None)
             aliveperson.delete()
+            if i % 100 == 0:
+                print "%d burial responsibles removed" % i
 
+        print 'removing places'
+        PlaceSize.objects.filter(org=ugh).delete()
+        PlacePhoto.objects.filter(place__cemetery__ugh=ugh).delete()
         Place.objects.filter(cemetery__ugh=ugh).delete()
 
+        print 'removing areas'
         AreaCoordinates.objects.filter(area__cemetery__ugh=ugh).delete()
         Area.objects.filter(cemetery__ugh=ugh).delete()
+        print 'removing cemeteries'
         CemeteryCoordinates.objects.filter(cemetery__ugh=ugh).delete()
         Cemetery.objects.filter(ugh=ugh).delete()
         Reason.objects.filter(org=ugh).delete()
         
         remove_org(ugh)
+        print 'UGH deleted'
 
 def remove_org(org):
     org.store_set.all().delete()
