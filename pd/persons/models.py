@@ -401,39 +401,6 @@ class CustomPlace(LocationMixin, BaseModel):
             for burial in self.place.burials_available_closed():
                 self.add_custom_deadman(burial)
 
-    def graves_list(self):
-        graves = []
-        if self.place:
-            for g in self.place.graves_qs():
-                grave = {'graveNumber': g.grave_number}
-                grave['burials'] = []
-                for b in g.burial_set.filter(deadman__isnull=False):
-                    # Захоронение могло быть аннулировано, эксгумировано, превращено
-                    # в биоотходы, но ссылка в customperson на
-                    # b.deadman.baseperson_ptr там должна была остаться
-                    try:
-                        cp = CustomPerson.objects.get(
-                            customplace=self,
-                            person=b.deadman.baseperson_ptr,
-                        )
-                        grave['burials'].append(
-                            {
-                                'id': b.pk,
-                                'personId': cp.pk,
-                                'fio': cp.full_name_complete() or _(u"Неизвестный"),
-                                'lastName': cp.last_name,
-                                'firstName': cp.first_name,
-                                'middleName': cp.middle_name,
-                                'photo': None,
-                                'birthDate': cp.birth_date and cp.birth_date.str_safe() or None,
-                                'deathDate': cp.death_date and cp.death_date.str_safe() or None,
-                            }
-                        )
-                    except CustomPerson.DoesNotExist:
-                        pass
-                graves.append(grave)
-        return graves
-
     def save(self, *args, **kwargs):
         # При создании нового CustomPlace, если к нему привязано Place
         # от ОМС, заполнить title_photo самой свежей из PlacePhoto
