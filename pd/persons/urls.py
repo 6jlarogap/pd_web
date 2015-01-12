@@ -11,17 +11,13 @@ urlpatterns = patterns('persons.views',
     url(r'^autocomplete/middlename/', 'autocomplete_middle_name', name='autocomplete_middle_name'),
     url(r'^autocomplete/docsources/', 'autocomplete_docsources', name='autocomplete_docsources'),
     
-    # TODO remove it, после согласования с fron-end
-    url(r'^api/client/customplaces/?$', 'api_client_customplaces', name='api_client_customplaces'),
-    # TODO remove it, после согласования с fron-end
-    url(r'^api/client/customplaces/(?P<pk>\d+)/?$', 'api_client_customplaces_detail', name='api_client_customplaces_detail'),
-
     url(r'^api/client/places/?$', 'api_client_places', name='api_client_places'),
     url(r'^api/client/places/(?P<pk>\d+)/?$', 'api_client_places_detail', name='api_client_places_detail'),
     url(r'^api/client/places/(?P<pk>\d+)/deadmans/?$', 'api_client_places_deadmans', name='api_client_places_deadmans'),
     url(r'^api/client/places/(?P<pk>\d+)/attachments/?$', 'api_client_places_attachments', name='api_client_places_attachments'),
     url(r'^api/client/places/(?P<pk>\d+)/deadmans/(?P<deadman_pk>\d+)/?$',
                     'api_client_places_deadmans_detail', name='api_client_places_deadmans_detail'),
+    url(r'^api/client/places/(?P<pk>\d+)/orders/?$', 'api_client_places_orders', name='api_client_places_orders'),
 
     url(r'^api/client/deadmans/?$', 'api_client_deadmans', name='api_client_deadmans'),
 

@@ -31,13 +31,10 @@ from burials.models import Cemetery, Place, Area, BurialFiles, Grave, Burial, Ar
                            ExhumationRequest, AreaPurpose, PlaceSize
 from burials.burials_views import *
 from logs.models import write_log, log_object, prepare_m2m_log, compare_obj
-from users.models import Profile, Org, CustomerProfile, PermitIfUgh, PermitIfCabinet, PermitIfTradeOrCabinet, \
-                         is_cabinet_user, is_trade_user
+from users.models import Profile, Org, CustomerProfile, PermitIfUgh
 from users.views import SupervisorRequiredMixin, UGHRequiredMixin, LoginRequiredMixin
 from persons.models import Phone, AlivePerson, CustomPlace
 from geo.models import Location
-from orders.models import Order, ResultFile
-from orders.serializers import OrderSerializer
 
 from rest_framework import generics, viewsets
 from rest_framework.views import APIView
@@ -1172,33 +1169,3 @@ class PlaceCertificateView(UGHRequiredMixin, DetailView):
         )
 
 place_certificate = PlaceCertificateView.as_view()
-
-class ApiClientPlaceGravesView(APIView):
-    permission_classes = (PermitIfCabinet,)
-
-    def get(self, request, pk):
-        try:
-            customplace = CustomPlace.objects.get(pk=pk, place__isnull=False)
-        except CustomPlace.DoesNotExist:
-            raise Http404
-        if customplace.user != request.user:
-            raise Http404
-        return Response(data=customplace.graves_list(), status=200)
-
-api_client_place_graves = ApiClientPlaceGravesView.as_view()
-
-class ApiClientPlacesOrdersView(APIView):
-    permission_classes = (PermitIfCabinet,)
-
-    def get(self, request, pk):
-        try:
-            customplace = CustomPlace.objects.get(pk=pk)
-        except CustomPlace.DoesNotExist:
-            raise Http404
-        if customplace.user != request.user:
-            raise Http404
-        return Response(data=[OrderSerializer(o).data \
-                              for o in Order.objects.filter(customplace=customplace) \
-                        ], status=200)
-
-api_client_places_orders = ApiClientPlacesOrdersView.as_view()
