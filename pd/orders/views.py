@@ -8,6 +8,9 @@ import string
 import re
 import hashlib
 
+import magic
+from PIL import Image
+
 from django.conf import settings
 from django.contrib import messages
 from django.core.urlresolvers import reverse
@@ -1773,11 +1776,34 @@ class ApiOrderResultView(APIView):
                     break
             else:
                 raise ServiceException(_(u"Тип %s файла результата выполнения заказа не предусмотрен") % type_)
-            file_ = 'file'
-            if file_ not in request.FILES:
-                raise ServiceException(_(u"Не получен загружаемый файл '%s'") % file_)
+            if 'file' not in request.FILES:
+                raise ServiceException(_(u"Не получен загружаемый файл 'file'"))
+            uploaded_file = request.FILES['file']
+            if type_ == 'image':
+                if uploaded_file.size > ResultFile.MAX_IMAGE_SIZE * 1024 * 1024:
+                    raise ServiceException(_(u"Размер изображения превышает %d Мб") % ResultFile.MAX_IMAGE_SIZE)
+                try:
+                    Image.open(uploaded_file)
+                except IOError:
+                    raise ServiceException(_(u"Загруженный файл не является изображением"))
+            elif type_ == 'video':
+                for chunk in uploaded_file.chunks(chunk_size=min(uploaded_file.size, 128*1024)):
+                    chunk0 = chunk
+                    break
+                mimetype = magic.from_buffer(chunk0, mime=True)
+                valid = False
+                if mimetype:
+                    if re.search(r'video|ogg|mpeg|webm|avi', mimetype.lower()):
+                       valid = True 
+                    else:
+                        mimetype0 = magic.from_buffer(chunk0)
+                        if re.search(r'iso', mimetype0.lower()):
+                            # flv: ISO media
+                            valid = True
+                if not valid:
+                    raise ServiceException(_(u"Загруженный файл не является видео"))
             resultfile = ResultFile.objects.create(
-                bfile=request.FILES[file_],
+                bfile=uploaded_file,
                 order=order,
                 type=type_,
                 creator=request.user,
