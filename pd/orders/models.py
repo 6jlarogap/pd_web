@@ -539,10 +539,14 @@ class ResultFile(Files):
         (TYPE_VIDEO, _(u"Видео")),
     )
 
+    # Мегабайт:
+    MAX_IMAGE_SIZE = 10
+
     order = models.ForeignKey(Order, verbose_name=_(u"Заказ"), )
     type = models.CharField(_(u"Тип"), max_length=255, choices=RESULT_TYPES, default=TYPE_IMAGE)
 
     def save(self, *args, **kwargs):
+        customplace = None
         if not self.type or self.type == self.TYPE_IMAGE:
             customplace = self.order.customplace
         result = super(ResultFile, self).save(*args, **kwargs)
