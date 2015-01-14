@@ -8,6 +8,9 @@ import string
 import re
 import hashlib
 
+import magic
+from PIL import Image
+
 from django.conf import settings
 from django.contrib import messages
 from django.core.urlresolvers import reverse
@@ -1710,7 +1713,7 @@ class ApiOrderCommentsView(APIView):
         try:
             order = Order.objects.get(pk=pk)
             if not order.is_accessible(request.user):
-                return Response(data=dict(detail='You are not authorized to this order'), status=403)
+                raise Http404
         except Order.DoesNotExist:
             raise Http404
         data=[OrderCommentsSerializer(ordercomment, context=dict(
@@ -1724,7 +1727,7 @@ class ApiOrderCommentsView(APIView):
         try:
             order = Order.objects.get(pk=pk)
             if not order.is_accessible(request.user):
-                return Response(data=dict(detail='You are not authorized to this order'), status=403)
+                raise Http404
         except Order.DoesNotExist:
             raise Http404
         comment = request.DATA.get('comment')
@@ -1748,7 +1751,7 @@ class ApiOrderResultView(APIView):
         try:
             order = Order.objects.get(pk=pk, type=Order.TYPE_CUSTOMER)
             if not order.is_accessible(request.user):
-                return Response(data=dict(detail='You are not authorized to this order'), status=403)
+                raise Http404
         except Order.DoesNotExist:
             raise Http404
         return Response(data=[OrderResultsSerializer(resultfile, context=dict(request=request)).data \
@@ -1773,11 +1776,34 @@ class ApiOrderResultView(APIView):
                     break
             else:
                 raise ServiceException(_(u"Тип %s файла результата выполнения заказа не предусмотрен") % type_)
-            file_ = 'file'
-            if file_ not in request.FILES:
-                raise ServiceException(_(u"Не получен загружаемый файл '%s'") % file_)
+            if 'file' not in request.FILES:
+                raise ServiceException(_(u"Не получен загружаемый файл 'file'"))
+            uploaded_file = request.FILES['file']
+            if type_ == 'image':
+                if uploaded_file.size > ResultFile.MAX_IMAGE_SIZE * 1024 * 1024:
+                    raise ServiceException(_(u"Размер изображения превышает %d Мб") % ResultFile.MAX_IMAGE_SIZE)
+                try:
+                    Image.open(uploaded_file)
+                except IOError:
+                    raise ServiceException(_(u"Загруженный файл не является изображением"))
+            elif type_ == 'video':
+                for chunk in uploaded_file.chunks(chunk_size=min(uploaded_file.size, 128*1024)):
+                    chunk0 = chunk
+                    break
+                mimetype = magic.from_buffer(chunk0, mime=True)
+                valid = False
+                if mimetype:
+                    if re.search(r'video|ogg|mpeg|webm|avi', mimetype.lower()):
+                       valid = True 
+                    else:
+                        mimetype0 = magic.from_buffer(chunk0)
+                        if re.search(r'iso', mimetype0.lower()):
+                            # flv: ISO media
+                            valid = True
+                if not valid:
+                    raise ServiceException(_(u"Загруженный файл не является видео"))
             resultfile = ResultFile.objects.create(
-                bfile=request.FILES[file_],
+                bfile=uploaded_file,
                 order=order,
                 type=type_,
                 creator=request.user,
@@ -1799,7 +1825,7 @@ class ApiServiceOrderDetailView(APIView):
         try:
             order = Order.objects.get(pk=pk, type=Order.TYPE_CUSTOMER)
             if not order.is_accessible(request.user):
-                return Response(data=dict(detail='You are not authorized to this order'), status=403)
+                raise Http404
         except Order.DoesNotExist:
             raise Http404
         return Response(
@@ -1817,7 +1843,7 @@ class ApiServiceOrderPutView(APIView):
         try:
             order = Order.objects.get(pk=pk, type=Order.TYPE_CUSTOMER)
             if not order.is_accessible(request.user):
-                return Response(data=dict(detail='You are not authorized to this order'), status=403)
+                raise Http404
         except Order.DoesNotExist:
             raise Http404
         kwargs = dict()
@@ -1844,31 +1870,38 @@ class ApiServiceOrderPutView(APIView):
 
 api_client_orders_put_status = ApiServiceOrderPutView.as_view()
 
-class ApiClientOrderPaymentsView(APIView):
-    permission_classes = (PermitIfCabinet,)
+class ApiOrderPaymentsMixin(object):
 
     PAY_SYSTEM_WEBPAY = 'webpay'
     PAY_SYSTEM_TYPES = (PAY_SYSTEM_WEBPAY, )
 
-    def post(self, request, pk):
+    def check_order_pay_system(self, order_pk, pay_system):
+        if not pay_system:
+            raise ServiceException(_(u"Не задан тип платежной системы"))
+        if pay_system not in self.PAY_SYSTEM_TYPES:
+            raise ServiceException(_(u"Платежная система %s не предусмотрена") % pay_system)
         try:
-            pay_system = request.DATA.get('type')
-            if not pay_system:
-                raise ServiceException(_(u"Не задан тип платежной системы"))
-            if pay_system not in self.PAY_SYSTEM_TYPES:
-                raise ServiceException(_(u"Платежная система %s не предусмотрена") % pay_system)
+            order = Order.objects.get(pk=order_pk)
+        except Order.DoesNotExist:
+            raise Http404
+        if not order.is_accessible(self.request.user):
+            raise Http404
+        system_not_supported = _(u"Исполнитель заказа, %s, не поддерживает платежи в системе %s")
+        if pay_system == self.PAY_SYSTEM_WEBPAY:
             try:
-                order = Order.objects.get(pk=pk)
-            except Order.DoesNotExist:
-                raise Http404
-            if not order.is_accessible(request.user):
-                return Response(data=dict(detail='You are not authorized to this order'), status=403)
-            system_not_supported = _(u"Исполнитель заказа, %s, не поддерживает платежи в системе %s")
+                pay_data = OrgWebPay.objects.get(org=order.loru)
+            except OrgWebPay.DoesNotExist:
+                raise ServiceException(system_not_supported % (order.loru, pay_system,))
+        return order, pay_data
+
+class ApiOrderPaymentsView(ApiOrderPaymentsMixin, APIView):
+    permission_classes = (PermitIfCabinet,)
+
+    def get(self, request, pk, pay_system):
+        try:
+            order, pay_data = self.check_order_pay_system(order_pk=pk, pay_system=pay_system)
             if pay_system == self.PAY_SYSTEM_WEBPAY:
-                try:
-                    orgwebpay = OrgWebPay.objects.get(org=order.loru)
-                except OrgWebPay.DoesNotExist:
-                    raise ServiceException(system_not_supported % (order.loru, pay_system,))
+                orgwebpay = pay_data
                 items = []
                 for serviceitem in ServiceItem.objects.filter(order=order).order_by('pk'):
                     items.append(dict(
@@ -1919,38 +1952,98 @@ class ApiClientOrderPaymentsView(APIView):
                     wsb_order_num=data['wsb_order_num'],
                 )
         except ServiceException as excpt:
+            transaction.rollback()
             return Response(data=dict(status='error', message=excpt.message), status=400)
         return Response(data=data, status=200)
 
-api_client_orders_payments = ApiClientOrderPaymentsView.as_view()
+api_orders_payments = ApiOrderPaymentsView.as_view()
 
 class ApiWebPayNotifyView(APIView):
     parser_classes = (FormParser,)
     renderer_classes = (StaticHTMLRenderer, )
 
+    @transaction.commit_on_success
     def post(self, request, pk):
-        print "api_orders_webpay_notify GET:"
-        print request.GET
-        print "api_orders_webpay_notify DATA:"
-        print request.DATA
-        print "OrderId: ", pk
         try:
             order = Order.objects.get(pk=pk)
         except Order.DoesNotExist:
             raise Http404
-        order.status = Order.STATUS_PAID
-        order.save()
         try:
             orderwebpay = OrderWebPay.objects.filter(order=order).order_by('-pk')[0]
         except IndexError:
             raise Http404
-        for post_key in (
+
+        # номер заказа приходит в POST-параметре 'site_order_id',
+        # а не в GET параметре wsb_order_num, как описано в документации webpay
+        #
+        post_keys = (
             'transaction_id',
             'batch_timestamp',
-           ):
+            'currency_id',
+            'amount',
+            'payment_method',
+            'payment_type',
+            'order_id',
+            'rrn',
+            'wsb_signature',
+        )
+
+        input_data = dict()
+        for post_key in post_keys:
             model_key = 'order_ident' if post_key == 'order_id' else post_key
-            setattr(orderwebpay, model_key, request.DATA.get(post_key))
+            input_data[model_key] = request.DATA.get(post_key)
+
+        if input_data['payment_type'] in OrderWebPay.SUCCESS_PAY_TYPES:
+            order.status = Order.STATUS_PAID
+            order.save()
+
+        for key in input_data:
+            setattr(orderwebpay, key, input_data[key])
             orderwebpay.save()
         return Response('', status=200)
 
 api_orders_webpay_notify = ApiWebPayNotifyView.as_view()
+
+class ApiClientOrderPaymentsView(ApiOrderPaymentsMixin, APIView):
+    permission_classes = (PermitIfCabinet,)
+
+    @transaction.commit_on_success
+    def post(self, request, pk):
+        """
+        Отметка заказа как оплаченного
+
+        На входе:
+            type: тип платежносй системы
+            paymentToken - номер транзакции, который платежная система возвращает во front-end
+            в случае успешного платежа, и который front-end будет передавать в апи для валидации
+            и последующей смены статуса заказа на Оплаченый, в случае успешной валидации.
+
+            Для webpay - это атрибут wsb_tid. Не смотря на то, что сервер получает wsb_notify_url
+            front-end будет передавать в апи и этот запрос, на случай если wsb_notify_url
+            не достучался до сервера или по др. причине, даже если ранее апи уже выставило
+            статус для заказа paid, при получении этого запроса - должен будет вернуть 201,
+            либо если еще не выставило, то выставить и вернуть 201
+        """
+        pay_system = request.DATA.get('type')
+        try:
+            order, pay_data = self.check_order_pay_system(order_pk=pk, pay_system=pay_system)
+            if pay_system == self.PAY_SYSTEM_WEBPAY:
+                transaction_id = request.DATA.get('paymentToken')
+                if not transaction_id:
+                    raise ServiceException(_(u"Не задан параметр paymentToken (идентификатор транзакции webpay)"))
+            try:
+                orderwebpay = OrderWebPay.objects.filter(order=order).order_by('-pk')[0]
+            except IndexError:
+                raise ServiceException(_(u"Не была выставлена оплата за заказ"))
+            if not orderwebpay.transaction_id:
+                orderwebpay.transaction_id=transaction_id
+                orderwebpay.save()
+            if order.status != Order.STATUS_PAID:
+                order.status = Order.STATUS_PAID
+                order.save()
+        except ServiceException as excpt:
+            transaction.rollback()
+            return Response(data=dict(status='error', message=excpt.message), status=400)
+        return Response(data={}, status=201)
+
+api_client_orders_payments = ApiClientOrderPaymentsView.as_view()

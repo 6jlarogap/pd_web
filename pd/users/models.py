@@ -99,6 +99,15 @@ class CommonProfile(BaseModel):
         password = ''.join(random.choice(chars) for x in range(5))
         return password
 
+    def user_dict(self):
+        return dict(
+            id=self.user.pk,
+            lastName=self.user_last_name,
+            firstName=self.user_first_name,
+            middleName=self.user_middle_name,
+            organization=None,
+        )
+
 class CustomerProfile(CommonProfile):
     # Дата/время согласия с пользовательским соглашением, служит еще как BooleanField:
     tc_confirmed = models.DateTimeField(_(u"Подтверждено пользовательское соглашение"), null=True, editable=False)
@@ -167,6 +176,16 @@ class Profile(CommonProfile):
             return ','.join([self.lat, self.lng])
         return ''
 
+    def user_dict(self):
+        result = super(Profile, self).user_dict()
+        result.update(dict(
+            organization=dict(
+                id=self.org.pk,
+                name=self.org.name,
+            ) if self.org else None
+        ))
+        return result
+
 def is_cabinet_user(user):
     try:
         user.customerprofile
@@ -203,6 +222,14 @@ def get_profile(user):
             except (AttributeError, Profile.DoesNotExist, ):
                 pass
     return profile
+
+def user_dict(user):
+    result = None
+    if user:
+        profile = get_profile(user)
+        if profile:
+            result = profile.user_dict()
+    return result
 
 class PermitIfTrade(permissions.BasePermission):
     def has_permission(self, request, view):
@@ -756,6 +783,14 @@ class Store(models.Model, PhonesMixin):
     loru = models.ForeignKey(Org, verbose_name=_(u"ЛОРУ"), on_delete=models.PROTECT)
     address = models.ForeignKey('geo.Location', verbose_name=_(u"Адрес"))
     # phones: могут быть разных типов, пользуемся моделью persons.Phone
+
+    def delete(self):
+        self.phone_set.delete()
+        super(Store, self).delete()
+        try:
+            self.address.delete()
+        except (AttributeError, IntegrityError):
+            pass
 
 class FavoriteSupplier(models.Model):
     """

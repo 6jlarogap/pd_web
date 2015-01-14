@@ -494,6 +494,12 @@ class OrderWebPay(BaseModel):
         (PAY_TYPE_VOIDED, _(u"Voided (Сброшенная после авторизации)")),
     )
 
+    # Успешной оплате соответствуют следующие типы PAY_TYPE
+    SUCCESS_PAY_TYPES = (
+        PAY_TYPE_COMPLETED,
+        PAY_TYPE_AUTHORIZED,
+    )
+
     order = models.ForeignKey(Order, verbose_name=_(u"Заказ"))
 
     # Этот номер, wsb_order_num, "наш" номер заказа, формируемый функцией
@@ -533,8 +539,20 @@ class ResultFile(Files):
         (TYPE_VIDEO, _(u"Видео")),
     )
 
+    # Мегабайт:
+    MAX_IMAGE_SIZE = 10
+
     order = models.ForeignKey(Order, verbose_name=_(u"Заказ"), )
     type = models.CharField(_(u"Тип"), max_length=255, choices=RESULT_TYPES, default=TYPE_IMAGE)
+
+    def save(self, *args, **kwargs):
+        customplace = None
+        if not self.type or self.type == self.TYPE_IMAGE:
+            customplace = self.order.customplace
+        result = super(ResultFile, self).save(*args, **kwargs)
+        if customplace and self.bfile:
+            customplace.update_title_photo(self.bfile)
+        return result
 
 class OrderItem(models.Model):
     order = models.ForeignKey(Order, editable=False)

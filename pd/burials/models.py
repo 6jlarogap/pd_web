@@ -71,6 +71,7 @@ class Cemetery(GetLogsMixin, BaseModel, PhonesMixin):
     archive_burial_fact_date_required = models.BooleanField(_(u"Дата архивного захоронения обязательна"), default=True)
     archive_burial_account_number_required = models.BooleanField(_(u"Номер архивного захоронения обязателен"), default=True)
     square = models.FloatField(_(u"Площадь"), null=True, editable=False)
+    # phones: могут быть разных типов, пользуемся моделью persons.Phone
 
     class Meta:
         verbose_name = _(u"Кладбище")
@@ -118,6 +119,18 @@ class Cemetery(GetLogsMixin, BaseModel, PhonesMixin):
     def work_time(self):
         return "%s-%s" % (self.time_begin or u'00:00:00', self.time_end or u'00:00:00')
 
+    def delete(self):
+        self.phone_set.delete()
+        self.coordinates.all().delete()
+        try:
+            super(Cemetery, self).delete()
+        except IntegrityError:
+            pass
+        else:
+            try:
+                self.address.delete()
+            except (AttributeError, IntegrityError):
+                pass
 
 
 class CemeteryCoordinates(CoordinatesModel):
@@ -247,6 +260,9 @@ class Place(SafeDeleteMixin, GeoPointModel):
         q_ex = Q(status=Burial.STATUS_EXHUMATED) | Q(annulated=True)
         return self.burial_set.exclude(q_ex)
 
+    def burials_available_closed(self):
+        return self.burial_set.filter(status=Burial.STATUS_CLOSED).exclude(annulated=True)
+
     def burial_count(self):
         return self.burials_available().distinct('grave').count()
 
@@ -348,6 +364,9 @@ class Place(SafeDeleteMixin, GeoPointModel):
                 break
         return result
 
+    def graves_qs(self):
+        return Grave.objects.filter(place=self).order_by('grave_number')
+
     def get_photo_gallery(self, request):
         """
         Получить все фото, относящиеся к месту.
@@ -397,27 +416,6 @@ class Place(SafeDeleteMixin, GeoPointModel):
         if cemetery_address:
             result += _(u', %s') % cemetery_address
         return result
-
-    def graves_list(self):
-        graves = []
-        for g in Grave.objects.filter(place=self).order_by('grave_number'):
-            grave = {'graveNumber': g.grave_number}
-            grave['burials'] = []
-            for b in g.burial_set.exclude(burial_container=Burial.CONTAINER_BIO).exclude(annulated=True):
-                grave['burials'].append(
-                    {
-                        'id': b.pk,
-                        'fio': b.deadman and b.deadman.full_name_complete() or _(u"Неизвестный"),
-                        'lastName': b.deadman and b.deadman.last_name,
-                        'firstName': b.deadman and b.deadman.first_name,
-                        'middleName': b.deadman and b.deadman.middle_name,
-                        'photo': None,
-                        'birthDate': b.deadman and b.deadman.birth_date and b.deadman.birth_date.str_safe() or None,
-                        'deathDate': b.deadman and b.deadman.death_date and b.deadman.death_date.str_safe() or None,
-                    }
-                )
-            graves.append(grave)
-        return graves
 
 class PlaceSize(models.Model):
     org = models.ForeignKey(Org, verbose_name=_(u"Организация"), editable=False, on_delete=models.PROTECT) 
@@ -498,6 +496,17 @@ class Grave(GeoPointModel):
 
 class PlacePhoto(Files, GeoPointModel):
     place = models.ForeignKey(Place)
+
+    def save(self, *args, **kwargs):
+        try:
+            customplace = CustomPlace.objects.get(place=self.place)
+        except CustomPlace.DoesNotExist:
+            customplace = None
+        result = super(PlacePhoto, self).save(*args, **kwargs)
+        if customplace and self.bfile:
+            customplace.update_title_photo(self.bfile)
+        return result
+
 
     def is_accessible_anonymous(self):
         """
@@ -621,18 +630,20 @@ class Burial(SafeDeleteMixin, GetLogsMixin, BaseModel):
     loru_agent_director = models.BooleanField(_(u"Директор-Агент"), default=False, blank=True)
     loru_agent = models.ForeignKey(Profile, verbose_name=_(u"Агент"), null=True, blank=True,
                               limit_choices_to={'is_agent': True}, on_delete=models.PROTECT,
-                              related_name='agent_burials',)
+                              related_name='loru_agent_burials',)
     loru_dover = models.ForeignKey(Dover, verbose_name=_(u"Доверенность"), null=True, blank=True,
-                              related_name='dover_burials', on_delete=models.PROTECT)
+                              related_name='loru_dover_burials', on_delete=models.PROTECT)
     applicant_organization = models.ForeignKey(Org, verbose_name=_(u"Заявитель-ЮЛ"), null=True, blank=True,
-                                               related_name='loru_created', on_delete=models.PROTECT)
+                                               related_name='applicant_organization_burials', on_delete=models.PROTECT)
     agent_director = models.BooleanField(_(u"Директор-Агент"), default=False, blank=True)
     agent = models.ForeignKey(Profile, verbose_name=_(u"Агент"), null=True, blank=True,
-                              limit_choices_to={'is_agent': True}, on_delete=models.PROTECT)
-    dover = models.ForeignKey(Dover, verbose_name=_(u"Доверенность"), null=True, blank=True, on_delete=models.PROTECT)
+                              limit_choices_to={'is_agent': True}, on_delete=models.PROTECT,
+                              related_name='agent_burials',)
+    dover = models.ForeignKey(Dover, verbose_name=_(u"Доверенность"), null=True, blank=True, on_delete=models.PROTECT,
+                              related_name='dover_burials')
 
     status = models.CharField(_(u"Статус"), max_length=255, choices=STATUS_CHOICES, default=STATUS_DRAFT, editable=False)
-    changed_by = models.ForeignKey('auth.User', editable=False, null=True, related_name='changed_requests',
+    changed_by = models.ForeignKey('auth.User', editable=False, null=True, related_name='changed_by_burials',
                                    on_delete=models.PROTECT)
     annulated = models.BooleanField(_(u"Аннулировано"), default=False, blank=True)
     flag_no_applicant_doc_required = models.BooleanField(_(u"Документ заявителя-ФЛ не требуется"),
@@ -1020,7 +1031,14 @@ class Burial(SafeDeleteMixin, GetLogsMixin, BaseModel):
                         request,
                         _(u"Создан пользователь кабинета %s, пароль %s") % (place.responsible.login_phone, password, ),
                     )
-            CustomPlace.objects.get_or_create(user=user, place=place)
+            if not place.responsible.user:
+                place.responsible.user = user
+                place.responsible.save()
+            customplace, created_ = CustomPlace.objects.get_or_create(user=user, place=place)
+            if created_:
+                customplace.fill_custom_deadmen()
+            else:
+                customplace.add_custom_deadman(self)
             if not settings.DEBUG:
                 sent, message = send_sms(
                     phone_number=place.responsible.login_phone,

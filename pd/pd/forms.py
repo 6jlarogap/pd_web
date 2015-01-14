@@ -182,7 +182,8 @@ class UnclearSelectDateWidget(SelectDateWidget):
 
     def __init__(self, attrs=None, years=None, required=True):
         if not years:
-            years = range(datetime.date.today().year, 1899, -1)
+            # С 20 декабря будет показан и следующий год
+            years = range((datetime.date.today() + datetime.timedelta(days=12)).year, 1899, -1)
         return super(UnclearSelectDateWidget, self).__init__(attrs, years, required)
 
     def render(self, name, value, attrs=None):

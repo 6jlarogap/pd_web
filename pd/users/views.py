@@ -339,16 +339,6 @@ class ApiProfileView(APIView):
         data['middleName'] = profile.user_middle_name
         data['loginPhone'] = request.user.customerprofile.login_phone
         data['username'] = request.user.username
-        data['places'] = []
-        for cp in CustomPlace.objects.filter(place__responsible__user=request.user).select_related('place'):
-            place={'id': cp.pk}
-            p = cp.place
-            place['address'] = p.address()
-            place['location'] = p.location_dict()
-            place['gallery'] = p.get_photo_gallery(request)
-            place['photo'] = place['gallery'][0]['photo'] if place['gallery'] else None
-            place['graves'] = p.graves_list()
-            data['places'].append(place)
 
         return Response(status=200, data=data)
 
