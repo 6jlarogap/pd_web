@@ -5,4 +5,8 @@
         <field type="CharField" name="name">trade</field>
         <field type="FileField" name="title">Торговля</field>
     </object>
+    <object pk="2" model="users.orgability">
+        <field type="CharField" name="name">personal-data</field>
+        <field type="FileField" name="title">Первональные данные</field>
+    </object>
 </django-objects>
