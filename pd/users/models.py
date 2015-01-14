@@ -199,6 +199,12 @@ def is_trade_user(user):
     except (AttributeError, Profile.DoesNotExist, ):
         return False
     
+def is_loru_user(user):
+    try:
+        return user.profile.is_loru()
+    except (AttributeError, Profile.DoesNotExist, ):
+        return False
+    
 def is_ugh_user(user):
     try:
         return user.profile.is_ugh()
@@ -564,6 +570,9 @@ class OrgAbility(models.Model):
     name = models.CharField(_(u"Название"), max_length=255, unique=True, choices=ORG_ABILITIES)
     title = models.CharField(_(u"Заглавие"), max_length=255)
 
+    def __unicode__(self):
+        return self.title
+
 class Org(GetLogsMixin, BaseModel):
     NUM_EMPTY = 'empty'
     NUM_YEAR_UGH = 'year_ugh'
@@ -734,7 +743,7 @@ class Org(GetLogsMixin, BaseModel):
                 result.append(favorite_item(favorite.supplier))
         return result
 
-    def can_pdata(self):
+    def can_personal_data(self):
         """
         Может ли организация оперировать персональными данными
         """
