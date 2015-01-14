@@ -556,8 +556,10 @@ class Oauth(models.Model):
 
 class OrgAbility(models.Model):
     ABILITY_TRADE = 'trade'
+    ABILITY_PERSONAL_DATA = 'personal-data'
     ORG_ABILITIES = (
         (ABILITY_TRADE, _(u'Торговля')),
+        (ABILITY_PERSONAL_DATA, _(u'Персональные данные')),
     )
     name = models.CharField(_(u"Название"), max_length=255, unique=True, choices=ORG_ABILITIES)
     title = models.CharField(_(u"Заглавие"), max_length=255)
@@ -731,6 +733,12 @@ class Org(GetLogsMixin, BaseModel):
             for favorite in favorites:
                 result.append(favorite_item(favorite.supplier))
         return result
+
+    def can_pdata(self):
+        """
+        Может ли организация оперировать персональными данными
+        """
+        return self.ability.filter(name=OrgAbility.ABILITY_PERSONAL_DATA).exists()
 
 class OrgWebPay(BaseModel):
     """
