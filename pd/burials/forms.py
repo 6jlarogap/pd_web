@@ -30,6 +30,8 @@ from logs.models import write_log
 from pd.models import SafeDeleteMixin
 from pd.forms import AppOrgFormMixin
 
+OPF_CHOICES = (('person', _(u'ФЛ')), ('org', _(u'ЮЛ')))
+
 class BaseCemeteryForm(forms.ModelForm):
     def clean_time_slots(self):
         slots = self.cleaned_data['time_slots'].split('\n')
@@ -327,32 +329,13 @@ class BurialPublicListForm(forms.Form):
             #raise forms.ValidationError(_(u'Обязательные поля: ФИО и Кладбище'))
         #return cd
 
-class OpfFormMixin(object):
-
-    def init_opf_form(self, burial=None, label=''):
-        if not burial:
-            burial = self.instance
-        choices = [('person', _(u'ФЛ')), ('org', _(u'ЮЛ'))]
-        if not burial.can_personal_data(self.request):
-            choices.pop(0)
-        self.fields['opf'] = forms.ChoiceField(label=label, choices=choices, widget=forms.RadioSelect)
-
-class BurialForm(
-    OpfFormMixin,
-    PartialFormMixin,
-    ChildrenJSONMixin,
-    LoggingFormMixin,
-    SafeDeleteMixin,
-    StrippedStringsMixin,
-    AppOrgFormMixin,
-    forms.ModelForm
-    ):
-
+class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDeleteMixin, StrippedStringsMixin, AppOrgFormMixin, forms.ModelForm):
     COFFIN = 'coffin'
     URN = 'urn'
 
     burial_container = forms.ChoiceField(label=_(u"Тип захоронения"), choices=Burial.BURIAL_CONTAINERS, widget=forms.RadioSelect,  required=False)
     burial_type = forms.ChoiceField(label=_(u"Вид захоронения"), choices=Burial.BURIAL_TYPES, widget=forms.RadioSelect,  required=False)
+    opf = forms.ChoiceField(label='', choices=OPF_CHOICES, widget=forms.RadioSelect)
     loru = forms.CharField(required=False, label=_(u'Посредник'))
 
     class Meta:
@@ -363,7 +346,6 @@ class BurialForm(
     def __init__(self, request, *args, **kwargs):
         super(BurialForm, self).__init__(*args, **kwargs)
         self.request = request
-        self.init_opf_form(burial=self.instance, label='')
         self.init_app_org_label()
         self.fields['cemetery'].queryset = Cemetery.objects.filter(
             Q(ugh__isnull=True) |
@@ -431,7 +413,7 @@ class BurialForm(
         self.fields['dover'].queryset = self.fields['dover'].queryset.select_related('agent', 'agent__user')
 
         self.fields.keyOrder.insert(self.fields.keyOrder.index('applicant_organization'), self.fields.keyOrder.pop(-1))
-        if self.instance.pk and self.instance.applicant:
+        if self.instance.pk and self.instance.applicant and self.instance.can_personal_data(self.request):
             self.initial['opf'] = 'person'
         else:
             self.initial['opf'] = 'org'
@@ -530,7 +512,7 @@ class BurialForm(
         applicant_form_initial = {}
         applicant_address_form_initial = {}
         applicant_id_form_initial = {}
-        if not self.instance.pk and self.order and self.order.applicant:
+        if not self.instance.pk and self.order and self.order.applicant and self.instance.can_personal_data(self.request):
             self.initial['opf'] = 'person'
             for f in AlivePersonForm.base_fields.keys():
                 applicant_form_initial[f] = getattr(self.order.applicant, f)
@@ -1580,13 +1562,8 @@ class AddDocTypeForm(forms.ModelForm):
     class Meta:
         model = IDDocumentType
 
-class ExhumationForm(
-    ChildrenJSONMixin,
-    SafeDeleteMixin,
-    OpfFormMixin,
-    forms.ModelForm
-    ):
-    # opf = forms.ChoiceField(label=_(u'ОПФ'), choices=OPF_CHOICES, widget=forms.RadioSelect, initial='person')
+class ExhumationForm(ChildrenJSONMixin, SafeDeleteMixin, forms.ModelForm):
+    opf = forms.ChoiceField(label=_(u'ОПФ'), choices=OPF_CHOICES, widget=forms.RadioSelect, initial='person')
 
     class Meta:
         model = ExhumationRequest
@@ -1596,7 +1573,6 @@ class ExhumationForm(
         super(ExhumationForm, self).__init__(*args, **kwargs)
         self.request = request
         self.burial = burial
-        self.init_opf_form(burial=burial, label=_(u'ОПФ'))
 
         self.fields.keyOrder.insert(0, self.fields.keyOrder.pop(-1))
 

@@ -823,12 +823,14 @@ class Burial(SafeDeleteMixin, GetLogsMixin, BaseModel):
         if is_ugh_user(request.user):
             return request.user.profile.org.can_personal_data()
         elif is_loru_user(request.user):
-            ugh = self.ugh or self.cemetery and self.cemetery.ugh
+            ugh = self.ugh
             if ugh:
                 return ugh.can_personal_data()
-            # Пока лору не заполнил, на каком кладбище, можно вводить персональные данные
+            # Пока лору не заполнил, на каком кладбище, посмотрим, есть
+            # ли он в реестре какого-то ОМС с возможностью персональных
+            # данных, и если есть, то разрешим
             else:
-                return True
+                return request.user.profile.org.can_personal_data()
         else:
             return False
 

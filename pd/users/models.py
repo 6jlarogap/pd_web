@@ -745,9 +745,16 @@ class Org(GetLogsMixin, BaseModel):
 
     def can_personal_data(self):
         """
-        Может ли организация оперировать персональными данными
+        Может ли организация оперировать персональными данными в захоронениях
         """
-        return self.ability.filter(name=OrgAbility.ABILITY_PERSONAL_DATA).exists()
+        if self.type == self.PROFILE_UGH:
+            return self.ability.filter(name=OrgAbility.ABILITY_PERSONAL_DATA).exists()
+        elif self.type == self.PROFILE_LORU:
+            # Если этот лору состоит в реестре у ОМС, никто из которых
+            # не может вводить персональные данные, то и ему это запрещено
+            return self.ugh_list.filter(ugh__ability__name=OrgAbility.ABILITY_PERSONAL_DATA).exists()
+        else:
+            return False
 
 class OrgWebPay(BaseModel):
     """

@@ -23,7 +23,7 @@ from burials.models import Reason, Burial, Cemetery, Place, ExhumationRequest
 from persons.models import DeathCertificate
 from logs.models import write_log
 from orders.models import Order
-from users.models import Org, is_cabinet_user
+from users.models import Org, Profile, is_cabinet_user
 from pd.forms import CommentForm
 from pd.views import PaginateListView, FormInvalidMixin, get_front_end_url
 from reports.models import make_report
@@ -1076,6 +1076,27 @@ class GetCemeteryTimes(View):
         return HttpResponse(json.dumps({c.pk: data}), mimetype='application/json')
 
 cemetery_times = GetCemeteryTimes.as_view()
+
+class GetCemeteryPersonalData(View):
+    def get(self, request, *args, **kwargs):
+        pk=request.GET.get('cem')
+        if not request.user.is_authenticated() or pk is None:
+            return redirect('/')
+        result = False
+        if pk:
+            try:
+                c = Cemetery.objects.get(pk=pk)
+                result = c.ugh.can_personal_data()
+            except (ValueError, AttributeError, Cemetery.DoesNotExist,):
+                pass
+        else:
+            try:
+                result = request.user.profile.org.can_personal_data()
+            except (AttributeError, Profile.DoesNotExist,):
+                pass
+        return HttpResponse(json.dumps({'result': result}), mimetype='application/json')
+
+cemetery_personal_data = GetCemeteryPersonalData.as_view()
 
 class ExhumateView(ArchiveMixin, DetailView):
     context_object_name = 'burial'

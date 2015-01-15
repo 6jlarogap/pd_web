@@ -14,8 +14,10 @@
     {% endif %}
 </h2>
 <div id="cont_applicant">
-    {{ form.opf.errors }}
-    <p>{{ form.opf.label_tag }} {{ form.opf }}<span class="helptext">{{ form.opf.help_text }}</span></p>
+    <div id="opf_choice">
+        {{ form.opf.errors }}
+        <p>{{ form.opf.label_tag }} {{ form.opf }}<span class="helptext">{{ form.opf.help_text }}</span></p>
+    </div>
 
     <div id="applicant_form_org">
         {{ form.applicant_organization.errors }}
