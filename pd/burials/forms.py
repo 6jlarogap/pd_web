@@ -541,7 +541,7 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
                         # что из модели, на которой форма основана:
                         pass
         applicant_id_form_initial['flag_no_applicant_doc_required'] = self.instance.flag_no_applicant_doc_required \
-            if self.instance.pk else False
+            if self.instance.pk and self.instance.can_personal_data(self.request) else False
 
         self.applicant_form = AlivePersonForm(data=data, prefix='applicant',
                                               instance=applicant,
@@ -1562,8 +1562,8 @@ class AddDocTypeForm(forms.ModelForm):
     class Meta:
         model = IDDocumentType
 
-class ExhumationForm(ChildrenJSONMixin, SafeDeleteMixin, forms.ModelForm):
-    opf = forms.ChoiceField(label=_(u'ОПФ'), choices=OPF_CHOICES, widget=forms.RadioSelect, initial='person')
+class ExhumationForm(ChildrenJSONMixin, SafeDeleteMixin, AppOrgFormMixin, forms.ModelForm):
+    opf = forms.ChoiceField(label='', choices=OPF_CHOICES, widget=forms.RadioSelect, initial='person')
 
     class Meta:
         model = ExhumationRequest
@@ -1573,6 +1573,7 @@ class ExhumationForm(ChildrenJSONMixin, SafeDeleteMixin, forms.ModelForm):
         super(ExhumationForm, self).__init__(*args, **kwargs)
         self.request = request
         self.burial = burial
+        self.init_app_org_label()
 
         self.fields.keyOrder.insert(0, self.fields.keyOrder.pop(-1))
 

@@ -35,7 +35,7 @@
             {% elif b.agent_director %}
                 <dt>{% trans "Агент" %}:</dt><dd>{% trans "Директор" %}</dd>
             {% endif %}
-        {% elif b.applicant and show_private_data %}
+        {% elif b.applicant and show_private_data and can_personal_data %}
             <dt>{% trans "Заявитель-ФЛ" %}:</dt>
                 <dd>{{ b.applicant }}</dd>
                 <dd>{% trans "Адрес:" %} {{ b.applicant.address|default:"не указан" }}</dd>
@@ -88,15 +88,15 @@
                 {{ b.deadman.death_date|default_if_none:"..." }}
             {% endif %}
         </dd>
-        {% if not b.is_bio %}
-        <dt>
-            {% if b.dc_filled %}
-                {% trans "Свидетельство о смерти" %}:
-            {% else %}
-                <span style="color:red"><b><big>{% trans "Свидетельство о смерти" %}:
-                                                {% trans "не заполнено!" %}</big></b></span>
-            {% endif %}
-        <dt>
+        {% if not b.is_bio and can_personal_data %}
+            <dt>
+                {% if b.dc_filled %}
+                    {% trans "Свидетельство о смерти" %}:
+                {% else %}
+                    <span style="color:red"><b><big>{% trans "Свидетельство о смерти" %}:
+                                                    {% trans "не заполнено!" %}</big></b></span>
+                {% endif %}
+            <dt>
             {% if b.deadman.deathcertificate %}
                 {% with dc=b.deadman.deathcertificate %}
                     <dd>{% trans "Номер" %}*: {{ dc.s_number }}</dd>

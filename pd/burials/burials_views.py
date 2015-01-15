@@ -447,6 +447,7 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
             'show_private_data': self.request.user.profile.is_ugh() or \
                                  b.is_full() and not b.is_closed() and not b.is_exhumated() and \
                                  b.loru and b.loru == self.request.user.profile.org,
+            'can_personal_data': b.can_personal_data(self.request),
             'place': b.get_place(),
         }
 

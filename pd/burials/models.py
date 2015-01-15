@@ -816,23 +816,26 @@ class Burial(SafeDeleteMixin, GetLogsMixin, BaseModel):
         except ExhumationRequest.DoesNotExist:
             return
 
-    def can_personal_data(self, request):
+    def can_personal_data(self, request=None):
         """
         Можно ли вводить и показывать персональные данные
         """
-        if is_ugh_user(request.user):
-            return request.user.profile.org.can_personal_data()
-        elif is_loru_user(request.user):
-            ugh = self.ugh
-            if ugh:
-                return ugh.can_personal_data()
-            # Пока лору не заполнил, на каком кладбище, посмотрим, есть
-            # ли он в реестре какого-то ОМС с возможностью персональных
-            # данных, и если есть, то разрешим
-            else:
+        ugh = self.ugh
+        if request:
+            if is_ugh_user(request.user):
                 return request.user.profile.org.can_personal_data()
+            elif is_loru_user(request.user):
+                if ugh:
+                    return ugh.can_personal_data()
+                # Пока лору не заполнил, на каком кладбище, посмотрим, есть
+                # ли он в реестре какого-то ОМС с возможностью персональных
+                # данных, и если есть, то разрешим
+                else:
+                    return request.user.profile.org.can_personal_data()
+            else:
+                return False
         else:
-            return False
+            return bool(ugh and ugh.can_personal_data())
 
     @property
     def status_str(self):
