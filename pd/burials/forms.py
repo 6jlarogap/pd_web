@@ -920,18 +920,26 @@ class BurialCommitForm(BurialForm):
 
         StrippedStringsMixin.clean(self)
 
+        cemetery = self.cleaned_data.get('cemetery')
+        if self.request.user.profile.is_ugh():
+            can_personal_data = self.request.user.profile.org.can_personal_data()
+        else:
+            can_personal_data = self.instance.can_personal_data(self.request) if self.instance.pk else \
+                                cemetery and cemetery.ugh and cemetery.ugh.can_personal_data()
+
         if not self.instance.is_archive() and not self.instance.is_transferred() and not self.request.REQUEST.get('archive'):
-            if not self.cleaned_data.get('applicant_organization') and not self.applicant_form.is_valid_data():
+            if can_personal_data and not self.cleaned_data.get('applicant_organization') and not self.applicant_form.is_valid_data():
                 raise forms.ValidationError(_(u"Нужно указать либо Заявителя-ЮЛ, либо Заявителя-ФЛ"))
 
-            if self.cleaned_data.get('opf') == 'person':
+            if can_personal_data and self.cleaned_data.get('opf') == 'person':
                 if not self.applicant_form.is_valid_data():
-                    raise forms.ValidationError(_(u"Нужно указать Заявителя-ФЛ"))
+                    raise forms.ValidationError(_(u"Если выбран заявитель-ФЛ, то надо его (ее) указать"))
 
             if self.cleaned_data.get('opf') == 'org':
-                if not self.cleaned_data.get('applicant_organization'):
-                    raise forms.ValidationError(_(u"Нужно указать Заявителя-ЮЛ"))
-                if not self.cleaned_data.get('agent_director'):
+                applicant_organization = self.cleaned_data.get('applicant_organization')
+                if not applicant_organization and can_personal_data:
+                    raise forms.ValidationError(_(u"Если выбран заявитель-ЮЛ, то надо его указать"))
+                if applicant_organization and not self.cleaned_data.get('agent_director'):
                     if not self.cleaned_data.get('agent') or not self.cleaned_data.get('dover'):
                         msg = _(u"Нужно указать Агента и Доверенность или указать, что Агент - Директор")
                         raise forms.ValidationError(msg)
@@ -975,7 +983,6 @@ class BurialCommitForm(BurialForm):
         elif self.request.user.profile.is_loru() and self.request.REQUEST.get('ready'):
             msg_complete = _(u'отправлять на согласование')
 
-        cemetery = self.cleaned_data.get('cemetery')
         area = self.cleaned_data.get('area')
         row = self.cleaned_data.get('row')
         place_number = self.cleaned_data.get('place_number') or ''
@@ -1163,7 +1170,7 @@ class BurialCommitForm(BurialForm):
                     self.instance.is_transferred() or \
                     self.request.user.profile.is_loru() or \
                     self.cleaned_data.get('burial_container') == Burial.CONTAINER_BIO or \
-                    not self.instance.can_personal_data(self.request)
+                    not can_personal_data
                    ):
                 if not self.dc_form.cleaned_data.get("s_number").strip():
                     raise forms.ValidationError(_(u"Не заполнен номер свидетельства о смерти"))
@@ -1325,7 +1332,7 @@ class BurialApproveCloseForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelFor
 
             # и лору, и угх в отправленном на согласовании или в место-обследуемом зх
             # могут править СоС
-            if not self.instance.is_bio():
+            if not self.instance.is_bio() and self.instance.can_personal_data(self.request):
                 try:
                     dc = self.instance and self.instance.deadman and self.instance.deadman.deathcertificate
                 except DeathCertificate.DoesNotExist:

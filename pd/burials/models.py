@@ -820,11 +820,11 @@ class Burial(SafeDeleteMixin, GetLogsMixin, BaseModel):
         """
         Можно ли вводить и показывать персональные данные
         """
-        ugh = self.ugh
         if request:
             if is_ugh_user(request.user):
                 return request.user.profile.org.can_personal_data()
             elif is_loru_user(request.user):
+                ugh = self.ugh or self.cemetery and self.cemetery.ugh
                 if ugh:
                     return ugh.can_personal_data()
                 # Пока лору не заполнил, на каком кладбище, посмотрим, есть
@@ -835,6 +835,7 @@ class Burial(SafeDeleteMixin, GetLogsMixin, BaseModel):
             else:
                 return False
         else:
+            ugh = self.ugh or self.cemetery and self.cemetery.ugh
             return bool(ugh and ugh.can_personal_data())
 
     @property

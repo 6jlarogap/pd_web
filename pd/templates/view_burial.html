@@ -198,7 +198,7 @@
             {# Пока мы разрешаем ЛОРУ работать только со "своими" захоронениями #}
             {# Если это изменится, то условие (b.loru and b.loru == user.profile.org), #}
             {# при котором здесь оказываемся, придется в ряде случаев пересмотреть! #}
-            {% if b.can_approve and not b.is_bio %}
+            {% if b.can_approve and not b.is_bio and b.can_personal_data %}
                 <h2>{% trans "Свидетельство о смерти" %}</h2>
                 {% with approve_close_form.dc_form as form %}
                     {% include "deathcertificate.html" %}
@@ -274,7 +274,7 @@
                     {# Здесь в форме остается только желаемое число могил на новое (!) место #}
                     {{ approve_close_form.as_p }}
                 {% endif %}
-                {% if not b.is_bio %}
+                {% if not b.is_bio and b.can_personal_data %}
                     <h2>{% trans "Свидетельство о смерти" %}</h2>
                     {% with approve_close_form.dc_form as form %}
                         {% include "deathcertificate.html" %}
