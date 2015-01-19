@@ -1162,7 +1162,8 @@ class BurialCommitForm(BurialForm):
             if not (self.instance.is_archive() or self.request.REQUEST.get('archive') or \
                     self.instance.is_transferred() or \
                     self.request.user.profile.is_loru() or \
-                    self.cleaned_data.get('burial_container') == Burial.CONTAINER_BIO \
+                    self.cleaned_data.get('burial_container') == Burial.CONTAINER_BIO or \
+                    not self.instance.can_personal_data(self.request)
                    ):
                 if not self.dc_form.cleaned_data.get("s_number").strip():
                     raise forms.ValidationError(_(u"Не заполнен номер свидетельства о смерти"))

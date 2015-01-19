@@ -169,6 +169,8 @@
                     {% if b.get_responsible.login_phone %}
                         <br />{% trans "Мобильный телефон для входа в кабинет" %}: {{ b.get_responsible.login_phone }}
                     {% endif %}
+                {% else %}
+                    {% trans "не указан" %}
                 {% endif %}
             {% else %}
                 {% if b.get_responsible %}
