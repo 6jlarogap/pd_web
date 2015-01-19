@@ -1087,7 +1087,7 @@ class GetCemeteryPersonalData(View):
         if pk:
             try:
                 c = Cemetery.objects.get(pk=pk)
-                result = c.ugh.can_personal_data()
+                result = c.ugh and c.ugh.can_personal_data()
             except (ValueError, AttributeError, Cemetery.DoesNotExist,):
                 pass
         else:

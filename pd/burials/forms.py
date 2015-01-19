@@ -1601,6 +1601,8 @@ class ExhumationForm(ChildrenJSONMixin, SafeDeleteMixin, AppOrgFormMixin, forms.
 
         # Отсутствие выбора будет в выпадающем списке не "---", а ""
         self.fields['applicant_organization'].empty_label = ''
+        self.fields['applicant_organization'].inactive_queryset = \
+            Org.objects.filter(Q(profile=None) | ~Q(profile__user__is_active=True)).distinct()
 
         self.forms = self.construct_forms()
 
