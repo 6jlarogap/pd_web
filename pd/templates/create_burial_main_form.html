@@ -130,10 +130,12 @@
                 {% include "location_form.html" %}
             {% endwith %}
         </div>
-        <h3>{% trans "Свидетельство о смерти" %}</h3>
-        {% with form.dc_form as form %}
-            {% include "deathcertificate.html" %}
-        {% endwith %}
+        <div id="show_deathcertificate" >
+            <h3>{% trans "Свидетельство о смерти" %}</h3>
+            {% with form.dc_form as form %}
+                {% include "deathcertificate.html" %}
+            {% endwith %}
+        </div>
 </div>
 
 <h2>{% trans "Место" %} {{ form.instance.get_place|default:"" }}</h2>

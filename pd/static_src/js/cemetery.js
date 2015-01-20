@@ -399,6 +399,27 @@ function updateTimes() {
     $('#id_plan_time').val(val);
 }
 
+function checkPersonalData() {
+    var cem = $('#id_cemetery').val();
+    if (!cem) {
+        cem = '';
+    }
+    $.getJSON('/cemetery_personal_data/?cem='+cem, function(data) {
+        var opf_id = '#id_opf_';
+        if (data.result) {
+            // можно показывать персональные данные
+            $('#opf_choice').show();
+            $('#show_deathcertificate').show();
+        } else {
+            $(opf_id+'0').removeAttr('checked');
+            $(opf_id+'1').attr('checked', 'checked');
+            $('input[name=opf]').change();
+            $('#opf_choice').hide();
+            $('#show_deathcertificate').hide();
+        }
+    });
+}
+
 $(function() {
     updateControls();
 
@@ -458,6 +479,9 @@ $(function() {
 
     $('#id_cemetery').change(updateTimes);
     updateTimes();
+
+    $('#id_cemetery').change(checkPersonalData);
+    checkPersonalData();
 
     $('#id_agent').change(updateDover);
     $('#id_agent').change(function() {
