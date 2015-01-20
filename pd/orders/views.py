@@ -1529,7 +1529,9 @@ class ApiClientAvailablePerformersView(ApiServicePriceMixin, APIView):
         Выбираются исполнители, подписавшиеся на сервис.
             - если сервис требует транспортных расходов, то еще и подписавшиеся
               на сервис delivery.
-        Из них выбираются те, кто имеют склады с коодинатами
+        Из них выбираются те, кто 
+            - имеют склады с коодинатами
+            - имеют account в платежной системе, пока только webpay
         Из этих складов выбираются ближайший
         """
         message = self.check_input_message(request)
@@ -1540,6 +1542,8 @@ class ApiClientAvailablePerformersView(ApiServicePriceMixin, APIView):
             loru__orgservice__service=self.data.service,
             loru__orgservice__enabled=True,
         )
+        q_payable = Q(loru__orgwebpay__org__isnull=False)
+        q &= q_payable
         if self.data.need_delivery:
             q &= Q(
                 address__gps_x__isnull=False,
