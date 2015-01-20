@@ -16,7 +16,7 @@ from pd.utils import utcisoformat
 from persons.models import DeadPerson, DeathCertificate, CustomPlace
 from reports.models import Report
 from users.models import Org, Profile, Dover, ProfileLORU, CustomerProfile, PhonesMixin, \
-                         is_ugh_user, is_cabinet_user
+                         is_ugh_user, is_cabinet_user, is_loru_user
 from logs.models import Log
 from geo.models import GeoPointModel, CoordinatesModel
 
@@ -815,6 +815,28 @@ class Burial(SafeDeleteMixin, GetLogsMixin, BaseModel):
             return self.exhumationrequest
         except ExhumationRequest.DoesNotExist:
             return
+
+    def can_personal_data(self, request=None):
+        """
+        Можно ли вводить и показывать персональные данные
+        """
+        if request:
+            if is_ugh_user(request.user):
+                return request.user.profile.org.can_personal_data()
+            elif is_loru_user(request.user):
+                ugh = self.ugh or self.cemetery and self.cemetery.ugh
+                if ugh:
+                    return ugh.can_personal_data()
+                # Пока лору не заполнил, на каком кладбище, посмотрим, есть
+                # ли он в реестре какого-то ОМС с возможностью персональных
+                # данных, и если есть, то разрешим
+                else:
+                    return request.user.profile.org.can_personal_data()
+            else:
+                return False
+        else:
+            ugh = self.ugh or self.cemetery and self.cemetery.ugh
+            return bool(ugh and ugh.can_personal_data())
 
     @property
     def status_str(self):
