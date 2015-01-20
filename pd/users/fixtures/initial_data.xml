@@ -7,6 +7,6 @@
     </object>
     <object pk="2" model="users.orgability">
         <field type="CharField" name="name">personal-data</field>
-        <field type="FileField" name="title">Первональные данные</field>
+        <field type="FileField" name="title">Перcональные данные в захоронениях</field>
     </object>
 </django-objects>

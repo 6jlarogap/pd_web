@@ -54,7 +54,7 @@ from users.forms import UserAddForm, RegisterForm, LoruFormset, ProfileForm, Use
                         LoruOrdersStatsForm
 from users.models import Profile, Org, RegisterProfile, ProfileLORU, CustomerProfile, Store, \
                          get_mail_footer, is_cabinet_user, PermitIfTrade, PermitIfTradeOrSupervisor, \
-                         PermitIfCabinet, Oauth, \
+                         PermitIfCabinet, Oauth, OrgAbility, \
                          BankAccount, BankAccountRegister, OrgCertificate, OrgContract, \
                          RegisterProfileContract, RegisterProfileScan, FavoriteSupplier, \
                          UserPhoto, \
@@ -1478,6 +1478,9 @@ class RegistrantApprove(SupervisorRequiredMixin, View):
                             off_address=off_address,
                             currency = registrant.org_currency,
                 )
+                if org.type == Org.PROFILE_UGH:
+                    pd_ability = OrgAbility.objects.get(name=OrgAbility.ABILITY_PERSONAL_DATA)
+                    org.ability.add(pd_ability)
                 for bank in registrant.bankaccountregister_set.all():
                     if bank.off_address:
                         bank_address = copy.deepcopy(bank.off_address)
