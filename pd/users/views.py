@@ -140,13 +140,17 @@ class ApiAuthSigninView(APIView):
         user_backend = 'django.contrib.auth.backends.ModelBackend'
         confirm_tc = request.DATA.get('confirmTC')
         oauth = request.DATA.get('oauth')
+        password = None
         if user:
             user.backend = user_backend
         else:
             username = request.DATA.get('username')
             password = request.DATA.get('password')
             if username and password:
-                user = authenticate(username=username, password=password)
+                try:
+                    user = User.objects.get(username=username)
+                except User.DoesNotExist:
+                    user = None
             elif oauth:
                 user, oauth_rec, message = Oauth.check_token(
                     oauth,
@@ -155,9 +159,12 @@ class ApiAuthSigninView(APIView):
                     user.backend = user_backend
         if user:
             if user.is_active:
-                token, created = Token.objects.get_or_create(user=user)
+                if password:
+                    user = authenticate(username=username, password=password)
+                if user:
+                    token, created = Token.objects.get_or_create(user=user)
             else:
-                data['message'] = _(u'Пользователь %s не активен') % user.username
+                data['message'] = _(u'Пользователь не активен')
         if token:
             username = user.username
             tc_confirmed = True
@@ -234,7 +241,7 @@ class ApiAuthSigninView(APIView):
                 data['message'] = 'unconfirmed_tc'
         elif oauth and not user:
             data.update(message)
-        else:
+        elif not data.get('message'):
             data['message'] = 'Wrong username or password'
         return Response(data=data, status=status_code)
 
