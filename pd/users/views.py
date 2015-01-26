@@ -150,7 +150,8 @@ class ApiAuthSigninView(APIView):
                 try:
                     user = User.objects.get(username=username)
                 except User.DoesNotExist:
-                    user = None
+                    data['message'] = _(u"Пользователь %s отсутствует в системе") % username
+                    data['errorCode'] = 'wrong_username'
             elif oauth:
                 user, oauth_rec, message = Oauth.check_token(
                     oauth,
@@ -161,10 +162,14 @@ class ApiAuthSigninView(APIView):
             if user.is_active:
                 if password:
                     user = authenticate(username=username, password=password)
+                    if not user:
+                        data['message'] = _(u"Неверный пароль")
+                        data['errorCode'] = 'wrong_password'
                 if user:
                     token, created = Token.objects.get_or_create(user=user)
             else:
                 data['message'] = _(u'Пользователь не активен')
+                data['errorCode'] = 'user_not_active'
         if token:
             username = user.username
             tc_confirmed = True
@@ -238,7 +243,7 @@ class ApiAuthSigninView(APIView):
                 write_log(request, request.user, _(u'Вход в систему'))
                 LoginLog.write(request)
             else:
-                data['message'] = 'unconfirmed_tc'
+                data['message'] = data['errorCode'] = 'unconfirmed_tc'
         elif oauth and not user:
             data.update(message)
         elif not data.get('message'):
