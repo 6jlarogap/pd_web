@@ -46,7 +46,7 @@ class CustomPlaceListSerializer(CreatedAtMixin, serializers.HyperlinkedModelSeri
 
     class Meta:
         model = CustomPlace
-        fields = ('id', 'titlePhoto', 'deadmans', 'address', 'location', 'createdAt', )
+        fields = ('id', 'name', 'titlePhoto', 'deadmans', 'address', 'location', 'createdAt', )
 
     def address_func(self, customplace):
         if customplace.address:
@@ -77,11 +77,12 @@ class CustomPlaceEditSerializer(serializers.HyperlinkedModelSerializer):
 
     class Meta:
         model = CustomPlace
-        fields = ('id', 'address', 'location', )
+        fields = ('id', 'name', 'address', 'location', )
 
     def restore_object(self, attrs, instance=None):
         data = self.context['request'].DATA
 
+        name = data.get('name')
         address=data.get('address')
         location=data.get('location')
         l = None
@@ -97,9 +98,12 @@ class CustomPlaceEditSerializer(serializers.HyperlinkedModelSerializer):
                 l.gps_y = location.get("latitude")
             l.save()
         if instance:
+            if name is not None:
+                instance.name = name
             return instance
         else:
             return CustomPlace(
+                name = name or '',
                 user=self.context['request'].user,
                 address=l,
             )
@@ -110,7 +114,7 @@ class CustomPlaceDetailSerializer(CustomPlaceEditSerializer):
 
     class Meta:
         model = CustomPlace
-        fields = ('id', 'omsData', 'titlePhoto', 'address', 'location', )
+        fields = ('id', 'name', 'omsData', 'titlePhoto', 'address', 'location', )
 
 class DeadPersonSerializer(serializers.HyperlinkedModelSerializer):
     birth_date = UnclearDateFieldSerializer()
