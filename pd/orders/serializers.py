@@ -354,6 +354,7 @@ class ServiceItemSerializer(serializers.ModelSerializer):
 
 class ServiceOrderDetailSerializer(serializers.ModelSerializer):
     type = serializers.Field(source='service_name')
+    supplierId = serializers.Field(source='loru.pk')
     placeId = serializers.Field(source='customplace.pk')
     number = serializers.Field(source='number_verbose')
     isArchived = serializers.Field(source='archived')
@@ -363,6 +364,6 @@ class ServiceOrderDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = Order
         fields = (
-            'id', 'number', 'type', 'placeId', 'status', 'isArchived',
+            'id', 'supplierId', 'number', 'type', 'placeId', 'status', 'isArchived',
             'clientRating', 'services',
         )
