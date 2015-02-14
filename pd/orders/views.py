@@ -667,13 +667,13 @@ class ProductsViewSet(ProductCategoryQsMixin, viewsets.ReadOnlyModelViewSet):
     paginate_by = None
 
     def get_queryset(self):
+        qs = Q()
+
         store_ids = self.request.GET.getlist('filter[supplierStore]')
         while store_ids.count(u''):
             store_ids.remove(u'')
         if store_ids:
-            qs = Q(loru__store__pk__in=store_ids)
-        else:
-            return Product.objects.none()
+            qs &= Q(loru__store__pk__in=store_ids)
 
         loru_ids = self.request.GET.getlist('filter[supplier]')
         while loru_ids.count(u''):
