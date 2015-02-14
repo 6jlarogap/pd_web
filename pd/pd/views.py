@@ -56,6 +56,14 @@ class OurThumbnailView(ThumbnailView):
                         raise Http404
                 except IndexError:
                     raise Http404
+            elif what == 'order-results':
+                # Результат выполнения заказа может быть доступен исполнителю и заказчику
+                try:
+                    order = get_model('orders', 'Order').objects.filter(pk=pk)[0]
+                    if not order.is_accessible(request.user):
+                        raise Http404
+                except IndexError:
+                    raise Http404
 
         elif re.search(settings.ANONYMOUS_URLS_REGEX, request.path):
             pass
