@@ -1881,7 +1881,7 @@ class ApiServiceOrderPutView(APIView):
                         product = Product.objects.get(pk=item['productId'])
                     except Product.DoesNotExist:
                         raise ServiceException(_(u"Не найден товар/услуга, productId = %s") % item['productId'])
-                    if product.loru != order.loru:
+                    if product.loru != loru:
                         raise ServiceException(_(u"Товар/услуга, productId = %s, - не от исполнителя заказа") % item['productId'])
                     quantity = item.get('quantity', 1.00)
                     OrderItem.objects.create(
