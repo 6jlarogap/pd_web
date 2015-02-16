@@ -1845,32 +1845,59 @@ class ApiServiceOrderPutView(APIView):
     @transaction.commit_on_success
     def put(self, request, pk):
         try:
-            order = Order.objects.get(pk=pk, type=Order.TYPE_CUSTOMER)
-            if not order.is_accessible(request.user):
+            try:
+                order = Order.objects.get(pk=pk, type=Order.TYPE_CUSTOMER)
+                if not order.is_accessible(request.user):
+                    raise Http404
+            except Order.DoesNotExist:
                 raise Http404
-        except Order.DoesNotExist:
-            raise Http404
-        kwargs = dict()
+            kwargs = dict()
 
-        status = request.DATA.get('status')
-        if status:
-            for st in Order.STATUS_TYPES:
-                if status == st[0]:
-                    break
-            else:
-                return Response(data=dict(status='error', message=_(u"Статус %s не предусмотрен") % status), status=400)
-            kwargs.update(dict(status=status))
+            status = request.DATA.get('status')
+            if status:
+                for st in Order.STATUS_TYPES:
+                    if status == st[0]:
+                        break
+                else:
+                    raise ServiceException(_(u"Статус %s не предусмотрен") % status)
+                kwargs.update(dict(status=status))
 
-        if 'clientRating' in request.DATA:
-            kwargs.update(dict(applicant_approved=request.DATA['clientRating']))
+            if 'clientRating' in request.DATA:
+                kwargs.update(dict(applicant_approved=request.DATA['clientRating']))
 
-        archived = request.DATA.get('isArchived')
-        if archived is not None:
-            kwargs.update(dict(archived=archived))
+            archived = request.DATA.get('isArchived')
+            if archived is not None:
+                kwargs.update(dict(archived=archived))
 
-        if kwargs:
-            Order.objects.filter(pk=order.pk).update(**kwargs)
-        return Response(data=dict(status='succes'), status=200)
+            product_items = request.DATA.get('products')
+            if product_items is not None:
+                if order.status != Order.STATUS_POSTED:
+                    raise ServiceException(_(u"Набор товаров/услуг можно изменять только в размещенном заказе"))
+                for orderitem in order.orderitem_set.all():
+                    orderitem.delete()
+                loru = order.loru
+                for item in product_items:
+                    try:
+                        product = Product.objects.get(pk=item['productId'])
+                    except Product.DoesNotExist:
+                        raise ServiceException(_(u"Не найден товар/услуга, productId = %s") % item['productId'])
+                    if product.loru != order.loru:
+                        raise ServiceException(_(u"Товар/услуга, productId = %s, - не от исполнителя заказа") % item['productId'])
+                    quantity = item.get('quantity', 1.00)
+                    OrderItem.objects.create(
+                        order=order,
+                        product=product,
+                        quantity=quantity,
+                        cost=product.price,
+                    )
+
+            if kwargs:
+                Order.objects.filter(pk=order.pk).update(**kwargs)
+            return Response(data=dict(status='success'), status=200)
+
+        except ServiceException as excpt:
+            transaction.rollback()
+            return Response(data=dict(status='error', message=excpt.message), status=400)
 
 api_client_orders_put_status = ApiServiceOrderPutView.as_view()
 
