@@ -441,13 +441,15 @@ class Order(GetLogsMixin, BaseModel):
                      self.applicant.user == user
         return bool(result)
         
-class ServiceItem(models.Model):
-    order = models.ForeignKey(Order)
-    orgservice = models.ForeignKey(OrgService, verbose_name=_(u"Услуга"), on_delete=models.PROTECT)
-    cost = models.DecimalField(_(u"Цена"), max_digits=20, decimal_places=2)
+class OrderItemMixin(object):
 
     def cost_float(self):
         return float(self.cost)
+
+class ServiceItem(OrderItemMixin, models.Model):
+    order = models.ForeignKey(Order)
+    orgservice = models.ForeignKey(OrgService, verbose_name=_(u"Услуга"), on_delete=models.PROTECT)
+    cost = models.DecimalField(_(u"Цена"), max_digits=20, decimal_places=2)
 
 class OrderComment(BaseModel):
 
@@ -554,7 +556,7 @@ class ResultFile(Files):
             customplace.update_title_photo(self.bfile)
         return result
 
-class OrderItem(models.Model):
+class OrderItem(OrderItemMixin, models.Model):
     order = models.ForeignKey(Order, editable=False)
     product = models.ForeignKey(Product, verbose_name=_(u"Товар"))
     quantity = models.DecimalField(_(u"Кол-во"), max_digits=20, decimal_places=2, default=1)
@@ -608,6 +610,9 @@ class OrderItem(models.Model):
     @property
     def total(self):
         return self.cost * self.quantity
+
+    def quantity_float(self):
+        return float(self.quantity)
 
 class CatafalqueData(models.Model):
     order = models.OneToOneField('orders.Order', editable=False)
