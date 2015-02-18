@@ -1710,16 +1710,22 @@ class ApiServiceOrdersView(APIView):
 
 api_orders = ApiServiceOrdersView.as_view()
 
-class ApiOrderCommentsView(APIView):
-    permission_classes = (PermitIfTradeOrCabinet,)
+class ApiOrderMixin(object):
 
-    def get(self, request, pk):
+    def get_order(self, pk):
         try:
             order = Order.objects.get(pk=pk)
-            if not order.is_accessible(request.user):
+            if not order.is_accessible(self.request.user):
                 raise Http404
         except Order.DoesNotExist:
             raise Http404
+        return order
+
+class ApiOrderCommentsView(ApiOrderMixin, APIView):
+    permission_classes = (PermitIfTradeOrCabinet,)
+
+    def get(self, request, pk):
+        order = self.get_order(pk=pk)
         data=[OrderCommentsSerializer(ordercomment, context=dict(
                 request=request,
               )).data for ordercomment in OrderComment.objects.filter(order=order).order_by('dt_created')
@@ -1728,12 +1734,7 @@ class ApiOrderCommentsView(APIView):
 
     @transaction.commit_on_success
     def post(self, request, pk):
-        try:
-            order = Order.objects.get(pk=pk)
-            if not order.is_accessible(request.user):
-                raise Http404
-        except Order.DoesNotExist:
-            raise Http404
+        order = self.get_order(pk=pk)
         comment = request.DATA.get('comment')
         if comment is not None:
             ordercomment = OrderComment.objects.create(
@@ -1747,17 +1748,12 @@ class ApiOrderCommentsView(APIView):
 
 api_orders_comments = ApiOrderCommentsView.as_view()
 
-class ApiOrderResultView(APIView):
+class ApiOrderResultView(ApiOrderMixin, APIView):
     permission_classes = (PermitIfTradeOrCabinet,)
     parser_classes = (MultiPartParser,)
 
     def get(self, request, pk):
-        try:
-            order = Order.objects.get(pk=pk, type=Order.TYPE_CUSTOMER)
-            if not order.is_accessible(request.user):
-                raise Http404
-        except Order.DoesNotExist:
-            raise Http404
+        order = self.get_order(pk=pk)
         return Response(data=[OrderResultsSerializer(resultfile, context=dict(request=request)).data \
                         for resultfile in ResultFile.objects.filter(order=order).order_by('date_of_creation')],
                     status=200)
@@ -1765,13 +1761,9 @@ class ApiOrderResultView(APIView):
     @transaction.commit_on_success
     def post(self, request, pk):
         try:
-            try:
-                order = Order.objects.get(pk=pk)
-                if not is_trade_user(request.user) or \
-                   not (order.loru and order.loru == request.user.profile.org):
-                    return Response(data=dict(detail='You are not authorized to post to this order'), status=403)
-            except Order.DoesNotExist:
-                raise Http404
+            order = self.get_order(pk=pk)
+            if not is_trade_user(request.user):
+                return Response(data=dict(detail='You are not authorized to post to this order'), status=403)
             type_ = request.DATA.get('type')
             if not type_:
                 raise ServiceException(_(u"Не задан тип загружаемого файла"))
@@ -1822,16 +1814,11 @@ class ApiOrderResultView(APIView):
 
 api_orders_results = ApiOrderResultView.as_view()
 
-class ApiServiceOrderDetailView(APIView):
+class ApiServiceOrderDetailView(ApiOrderMixin, APIView):
     permission_classes = (PermitIfTradeOrCabinet,)
 
     def get(self, request, pk):
-        try:
-            order = Order.objects.get(pk=pk, type=Order.TYPE_CUSTOMER)
-            if not order.is_accessible(request.user):
-                raise Http404
-        except Order.DoesNotExist:
-            raise Http404
+        order = self.get_order(pk=pk)
         return Response(
             data=ServiceOrderDetailSerializer(order, context=dict(request=request)).data,
             status=200,
@@ -1839,18 +1826,13 @@ class ApiServiceOrderDetailView(APIView):
 
 api_orders_detail = ApiServiceOrderDetailView.as_view()
 
-class ApiServiceOrderPutView(APIView):
+class ApiServiceOrderPutView(ApiOrderMixin, APIView):
     permission_classes = (PermitIfTradeOrCabinet,)
 
     @transaction.commit_on_success
     def put(self, request, pk):
         try:
-            try:
-                order = Order.objects.get(pk=pk, type=Order.TYPE_CUSTOMER)
-                if not order.is_accessible(request.user):
-                    raise Http404
-            except Order.DoesNotExist:
-                raise Http404
+            order = self.get_order(pk=pk)
             kwargs = dict()
 
             status = request.DATA.get('status')
@@ -1898,6 +1880,11 @@ class ApiServiceOrderPutView(APIView):
         except ServiceException as excpt:
             transaction.rollback()
             return Response(data=dict(status='error', message=excpt.message), status=400)
+
+    def delete(self, request, pk):
+        order = self.get_order(pk=pk)
+        order.delete()
+        return Response(data=dict(status='success'), status=200)
 
 api_client_orders_put_status = ApiServiceOrderPutView.as_view()
 
