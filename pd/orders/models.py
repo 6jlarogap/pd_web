@@ -6,7 +6,8 @@ from autoslug import AutoSlugField
 
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
-from django.db import models
+from django.db import models, transaction, IntegrityError
+from django.db.models.loading import get_model
 from django.utils.translation import ugettext as _
 from django.db.models import Sum
 from django.db.models.query_utils import Q
@@ -265,6 +266,29 @@ class Order(GetLogsMixin, BaseModel):
                     self.number = 1
         return super(Order, self).save(*args, **kwargs)
 
+    @transaction.commit_on_success
+    def delete(self):
+        for app, model in (
+            ('orders', 'OrderComment'),
+            ('orders', 'ResultFile'),
+            ('orders', 'Route'),
+            ('orders', 'OrderWebPay'),
+            ('orders', 'ServiceItem'),
+            ('orders', 'OrderItem'),
+           ):
+            model = get_model(app, model)
+            for item in model.objects.filter(order=self):
+                item.delete()
+        address = self.address
+        if address:
+            self.address = None
+            self.save()
+            try:
+                address.delete()
+            except IntegrityError:
+                pass
+        super(Order, self).delete()
+
     def annulate(self):
         self.annulated = True
         b = self.burial
@@ -429,7 +453,7 @@ class Order(GetLogsMixin, BaseModel):
 
     def is_accessible(self, user):
         """
-        Доступность ResultFile, OrderComments от этого Order и самого Order
+        Доступность ResultFile, OrderComment от этого Order и самого Order
         """
         result = False
         if is_trade_user(user):
