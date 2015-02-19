@@ -127,6 +127,7 @@ class ProductEditSerializer(serializers.HyperlinkedModelSerializer):
     tradePrice = Field(source='price_wholesale')
     isShownInRetailCatalog = Field(source='is_public_catalog')
     isShownInTradeCatalog = Field(source='is_wholesale')
+    isAvailableForVisitOrder = Field(source='is_for_visit')
     imageUrl = HyperlinkedFileField(source='photo', required=False)
     
     class Meta:
@@ -138,7 +139,7 @@ class ProductEditSerializer(serializers.HyperlinkedModelSerializer):
             'measurementUnit', 'isDefault',
             'retailPrice', 'tradePrice', 'currency',
             'isShownInRetailCatalog', 'isShownInTradeCatalog',
-            'imageUrl', 
+            'isAvailableForVisitOrder', 'imageUrl', 
         )
 
     def typeName_func(self, instance):
@@ -188,6 +189,7 @@ class ProductEditSerializer(serializers.HyperlinkedModelSerializer):
             sku=data.get('sku'),
             is_public_catalog=is_public_catalog,
             is_wholesale=is_wholesale,
+            is_for_visit=str_to_bool_or_None(data.get('isAvailableForVisitOrder')),
             photo=image if image else None,
         )
         fields = dict()
