@@ -140,6 +140,7 @@ class Product(BaseModel):
     sku = models.CharField(_(u"Артикул"), max_length=255, blank=True, default='')
     is_public_catalog = models.BooleanField(_(u"Показать в публичном каталоге"), default=False)
     is_wholesale = models.BooleanField(_(u"Показать в каталоге оптовикам"), default=False)
+    is_for_visit = models.BooleanField(_(u"Доступно для посещения места захоронения"), default=False)
 
     class Meta:
         verbose_name = _(u"Товар")
