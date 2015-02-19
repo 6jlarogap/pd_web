@@ -1875,7 +1875,10 @@ class ApiServiceOrderPutView(ApiOrderMixin, APIView):
 
             if kwargs:
                 Order.objects.filter(pk=order.pk).update(**kwargs)
-            return Response(data=dict(status='success'), status=200)
+            return Response(
+                data=ServiceOrderDetailSerializer(order, context=dict(request=request)).data,
+                status=200,
+            )
 
         except ServiceException as excpt:
             transaction.rollback()
