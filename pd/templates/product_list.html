@@ -32,9 +32,9 @@
                     {% endif %}
                 </td>
                 <td>
-                    {% if c.is_public_catalog%}{% trans "В публичном каталоге" %}{% endif %}
-                    {% if c.is_public_catalog and c.is_wholesale %}<br />{% endif %}
-                    {% if c.is_wholesale %}{% trans "Оптовикам" %}{% endif %}
+                    {% if c.is_public_catalog%}{% trans "В публичном каталоге" %}.<br />{% endif %}
+                    {% if c.is_wholesale %}{% trans "Оптовикам" %}.<br />{% endif %}
+                    {% if c.is_for_visit %}{% trans "Для посещений мест захоронений" %}.{% endif %}
                 </td>
                 <td>
                     {% if c.photo %}
