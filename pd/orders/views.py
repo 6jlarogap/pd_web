@@ -62,7 +62,7 @@ from orders.serializers import ProductCategorySerializer, ProductsSerializer, Pr
                                ServiceOrderSerializer, OrderCommentsSerializer, ServiceOrderDetailSerializer, \
                                OrderResultsSerializer
 
-from pd.utils import EmailMessage
+from pd.utils import EmailMessage, str_to_bool_or_None
 from pd.models import validate_phone_as_number
 
 from sms_service.utils import send_sms
@@ -692,6 +692,10 @@ class ProductsViewSet(ProductCategoryQsMixin, viewsets.ReadOnlyModelViewSet):
         if self.request.GET.get('filter[productType]', '').lower() == 'opt':
             q_public_whole = Q(is_wholesale=True)
         qs &= q_public_whole
+
+        is_for_visit = str_to_bool_or_None(self.request.GET.get('filter[isAvailableForVisitOrder]'))
+        if is_for_visit is not None:
+            qs &= Q(is_for_visit=is_for_visit)
 
         ordered = None
         orders = {'price': 'price', 'date': 'dt_created', }
