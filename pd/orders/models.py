@@ -25,6 +25,8 @@ class Service(models.Model):
 
     Перечисляются в fixtures
     """
+    SERVICE_DELIVERY = 'delivery'
+
     name = models.CharField(_(u"Название"), max_length=255, unique=True)
     title = models.CharField(_(u"Заглавие"), max_length=255)
     description = models.TextField(_(u"Описание"), default='')
@@ -123,7 +125,7 @@ class Product(BaseModel):
     
     PRODUCT_NAME_MAXLEN = 60
 
-    loru = models.ForeignKey(Org, null=True, verbose_name=_(u"ЛОРУ"))
+    loru = models.ForeignKey(Org, null=True, verbose_name=_(u"Поставщик"))
     name = models.CharField(_(u"Название"), max_length=255)
     slug = AutoSlugField(populate_from='name', max_length=255, editable=False,
                          unique=True, null=True, always_update=True)
@@ -430,8 +432,8 @@ class Order(GetLogsMixin, BaseModel):
         result = type_delivery = type_org = None
         if self.is_type_customer():
             for serviceitem in ServiceItem.objects.filter(order=self):
-                if serviceitem.orgservice.service.name == 'delivery':
-                    type_delivery = 'delivery'
+                if serviceitem.orgservice.service.name == Service.SERVICE_DELIVERY:
+                    type_delivery = Service.SERVICE_DELIVERY
                 elif not type_org:
                     type_org = serviceitem.orgservice.service.name
             return type_org or type_delivey

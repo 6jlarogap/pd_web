@@ -13,8 +13,7 @@ from geo.models import Location
 from users.models import Org, Store, FavoriteSupplier, UserPhoto, is_cabinet_user, is_trade_user, \
                          Profile, Dover, ProfileLORU, get_profile
 from persons.models import Phone
-from orders.models import Order, Product
-
+from orders.models import Order, Product, Service, OrgServicePrice
 class OrgSerializerMixin(object):
 
     def catalog_qs(self, loru, catalog=None):
@@ -205,6 +204,29 @@ class OrgOptSupplierSerializer(serializers.ModelSerializer):
       except IndexError:
           return None
 
+class ShopSerializer(serializers.ModelSerializer):
+    title = Field(source='name')
+    itemPrice = serializers.SerializerMethodField('itemPrice_func')
+
+    class Meta:
+        model = Org
+        fields = ('id', 'title', 'description', 'itemPrice',)
+
+    def itemPrice_func(self, instance):
+        try:
+            price_km = OrgServicePrice.objects.get(
+                orgservice__org=instance,
+                orgservice__service__name=Service.SERVICE_DELIVERY,
+                orgservice__enabled=True,
+                measure__name='km',
+            )
+            return dict(
+                price=float(price_km.price),
+                currency=instance.currency.code,
+            )
+        except OrgServicePrice.DoesNotExist:
+            return None
+
 class UserProfileMixin(object):
 
     def firstName_func(self, user):
@@ -297,4 +319,3 @@ class ArchProfileLORUSerializer(serializers.ModelSerializer):
     class Meta:
         model = ProfileLORU
         fields = ('id', 'ugh_id', 'loru_id',)
-

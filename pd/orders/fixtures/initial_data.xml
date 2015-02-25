@@ -111,7 +111,7 @@
     </object>
     <object pk="2" model="orders.service">
         <field type="CharField" name="name">delivery</field>
-        <field type="CharField" name="title">Доставка</field>
+        <field type="CharField" name="title">Выезд, доставка</field>
         <field type="TextField" name="description">Транспортные услуги</field>
     </object>
     <!--- Measure: Возможные единицы оказываемых услуг (сервисов) -->
