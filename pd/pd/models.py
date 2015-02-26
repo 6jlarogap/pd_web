@@ -371,7 +371,7 @@ def files_upload_to(instance, filename):
                 today_pk_dir % instance.user.pk, fname)
     elif isinstance(instance, get_model('persons', 'CustomPerson')):
         return os.path.join('customperson-photos',
-                today_pk_dir % instance.user.pk, fname)
+                today_pk_dir % instance.pk, fname)
     else:
         return os.path.join('files', fname)
 

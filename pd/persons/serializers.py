@@ -222,6 +222,12 @@ class CustomPerson3Serializer(UnclearDateFieldMixin, serializers.ModelSerializer
             fields['birth_date'] = self.set_unclear_date(data['dob'])
         if 'dod' in data:
             fields['dod'] = self.set_unclear_date(data['dod'])
+        photo = self.context['request'].FILES.get('photo')
+        remove_photo = 'photo' in data and data['photo'] is None
+        if photo or remove_photo:
+            fields.update(dict(photo=photo))
+            if instance:
+                instance.delete_from_media()
         if instance:
             for k in fields:
                 setattr(instance, k, fields[k])

@@ -289,7 +289,6 @@ class ApiCustompersonMemoryGalleryView(ApiCustompersonMixin, ApiMemoryGalleryMix
             data.append(item)
         return Response(data, 200)
 
-
     def post(self, request, pk):
         customperson = self.get_customperson(pk)
         fields = {
