@@ -7,7 +7,7 @@ from rest_framework.fields import Field, TimeField, DecimalField
 
 from geo.models import Location
 from persons.models import AlivePerson, DeadPerson, Phone, CustomPlace, CustomPerson, \
-                           IDDocumentType, DocumentSource, PersonID, \
+                           MemoryGallery, IDDocumentType, DocumentSource, PersonID, \
                            DeathCertificate, DeathCertificateScan
 from rest_api.fields import UnclearDateFieldSerializer, UnclearDateFieldMixin, UnclearDateFieldSafeSerializer, \
                             HyperlinkedFileField
@@ -177,6 +177,32 @@ class CustomPerson2Serializer(BaseCustomPersonSerializer):
             return customperson.person.deadperson.burial_set.all()[0].grave_number
         except (AttributeError, DeadPerson.DoesNotExist, IndexError,):
             return None
+
+class MemoryGallerySerializer(CreatedAtMixin, serializers.ModelSerializer):
+    mediaContent = HyperlinkedFileField(source='bfile', required=False)
+    addedAt = serializers.SerializerMethodField('createdAt_func')
+    eventDate = UnclearDateFieldSafeSerializer(source='event_date')
+
+    class Meta:
+        model = MemoryGallery
+        fields = ('id', 'type', 'text', 'mediaContent', 'addedAt', 'eventDate', )
+
+class CustomPerson3Serializer(UnclearDateFieldMixin, serializers.ModelSerializer):
+    lastname = Field(source='last_name')
+    firstname = Field(source='first_name')
+    middlename = Field(source='middle_name')
+    commonText = serializers.Field(source='memory_text')
+    dob = serializers.SerializerMethodField('birth_date')
+    dod = serializers.SerializerMethodField('death_date')
+    photo = HyperlinkedFileField(source='photo', required=False)
+    gallery = MemoryGallerySerializer(many=True, source='memorygallery_set')
+
+    class Meta:
+        model = CustomPerson
+        fields = (
+            'id', 'lastname', 'firstname', 'middlename',
+            'commonText', 'dob', 'dod', 'photo', 'gallery',
+        )
 
 class ArchIDDocumentTypeSerializer(serializers.ModelSerializer):
     class Meta:

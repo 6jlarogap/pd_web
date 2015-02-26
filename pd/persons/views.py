@@ -14,7 +14,8 @@ from persons.models import DeadPerson, AlivePerson, BasePerson, DocumentSource, 
 from persons.serializers import AlivePersonSerializer, DeadPersonSerializer, PhoneSerializer, \
                                 CustomPlaceDetailSerializer, CustomPlaceListSerializer, \
                                 CustomPlaceEditSerializer, \
-                                CustomPersonSerializer, CustomPerson2Serializer
+                                CustomPersonSerializer, CustomPerson2Serializer, \
+                                CustomPerson3Serializer
 from orders.serializers import OrderSerializer
 
 from rest_framework.response import Response
@@ -237,21 +238,10 @@ class ApiCustompersonMemoryView(ApiCustompersonMixin, ApiMemoryGalleryMixin, API
 
     def get(self, request, pk):
         customperson = self.get_object(pk)
-        data = {
-            'photo': None,
-            'lastname' : customperson.last_name,
-            'firstname' : customperson.first_name,
-            'middlename' : customperson.middle_name,
-            'dob' : customperson.birth_date and customperson.birth_date.str_safe() or None,
-            'dod' : customperson.death_date and customperson.death_date.str_safe() or None,
-            'commonText': customperson.memory_text,
-        }
-        gallery = []
-        for m in MemoryGallery.objects.filter(customperson=customperson):
-            item = self.gallery_dict(m, request)
-            gallery.append(item)
-        data['gallery'] = gallery
-        return Response(data, 200)
+        return Response(
+            data=CustomPerson3Serializer(customperson, context=dict(request=request)).data,
+            status=200
+        )
         
     def put(self, request, pk):
         customperson = self.get_object(pk)
