@@ -3,6 +3,8 @@
 import json
 import re
 
+from PIL import Image
+
 from django.db import transaction, IntegrityError
 from django.db.models.query_utils import Q
 from django.http import Http404, HttpResponse
@@ -151,7 +153,7 @@ class ApiClientPlacesMixin(object):
             raise Http404
         return customplace
 
-    def check_life_dates(self):
+    def check_life_dates(self, instance=None):
         birth_date = self.request.DATA.get('birthDate') or self.request.DATA.get('dob')
         death_date = self.request.DATA.get('deathDate') or self.request.DATA.get('dod')
         message = UnclearDate.check_safe_str(birth_date, check_today=True)
@@ -160,8 +162,14 @@ class ApiClientPlacesMixin(object):
         message = UnclearDate.check_safe_str(death_date, check_today=True)
         if message:
             return _(u"Дата смерти: %s") % message
+        msg_dates = _(u"Дата смерти раньше даты рождения")
         if birth_date and death_date and birth_date > death_date:
-            return _(u"Дата смерти раньше даты рождения")
+            return msg_dates
+        if instance:
+            if birth_date and not death_date and instance.death_date and birth_date > instance.death_date.str_safe():
+                return msg_dates
+            if not birth_date and death_date and instance.birth_date and instance.birth_date.str_safe() > death_date:
+                return msg_dates
         return ""
 
 class ApiClientPlacesView(APIView):
@@ -244,19 +252,30 @@ class ApiCustompersonMemoryView(ApiCustompersonMixin, ApiClientPlacesMixin, APIV
         )
         
     def put(self, request, pk):
-        customperson = self.get_customperson(pk)
-        message = self.check_life_dates()
-        if message:
-            return Response({"status": "error", "message": message}, 400)
-        serializer = CustomPerson3Serializer(
-            customperson,
-            data=request.DATA,
-            context=dict(request=request),
-        )
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=200)
-        return Response(serializer.errors, status=400)
+        try:
+            customperson = self.get_customperson(pk)
+            message = self.check_life_dates(instance=customperson)
+            if message:
+                raise ServiceException(message)
+            photo = request.FILES.get('photo')
+            if photo:
+                if photo.size > CustomPerson.MAX_PHOTO_SIZE * 1024 * 1024:
+                    raise ServiceException(_(u"Размер фото превышает %d Мб") % CustomPerson.MAX_PHOTO_SIZE)
+                try:
+                    Image.open(photo)
+                except IOError:
+                    raise ServiceException(_(u"Загруженное фото не является изображением"))
+            serializer = CustomPerson3Serializer(
+                customperson,
+                data=request.DATA,
+                context=dict(request=request),
+            )
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data, status=200)
+            return Response(serializer.errors, status=400)
+        except ServiceException as excpt:
+            return Response(data=dict(status='error', message=excpt.message), status=400)
 
 api_customperson_memory = ApiCustompersonMemoryView.as_view()
 

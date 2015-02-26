@@ -221,7 +221,7 @@ class CustomPerson3Serializer(UnclearDateFieldMixin, serializers.ModelSerializer
         if 'dob' in data:
             fields['birth_date'] = self.set_unclear_date(data['dob'])
         if 'dod' in data:
-            fields['dod'] = self.set_unclear_date(data['dod'])
+            fields['death_date'] = self.set_unclear_date(data['dod'])
         photo = self.context['request'].FILES.get('photo')
         remove_photo = 'photo' in data and data['photo'] is None
         if photo or remove_photo:
