@@ -195,7 +195,7 @@ class CustomPerson3Serializer(UnclearDateFieldMixin, serializers.ModelSerializer
     dob = serializers.SerializerMethodField('birth_date')
     dod = serializers.SerializerMethodField('death_date')
     photo = HyperlinkedFileField(source='photo', required=False)
-    gallery = MemoryGallerySerializer(many=True, source='memorygallery_set')
+    gallery = MemoryGallerySerializer(many=True, source='memorygallery_set', required=False)
 
     class Meta:
         model = CustomPerson
@@ -203,6 +203,31 @@ class CustomPerson3Serializer(UnclearDateFieldMixin, serializers.ModelSerializer
             'id', 'lastname', 'firstname', 'middlename',
             'commonText', 'dob', 'dod', 'photo', 'gallery',
         )
+
+    def restore_object(self, attrs, instance=None):
+        data = self.context['request'].DATA
+        customplace = self.context.get('customplace')
+
+        fields_got = dict(
+            last_name=data.get('lastname'),
+            first_name=data.get('firstname'),
+            middle_name=data.get('middlename'),
+            memory_text=data.get('commonText'),
+        )
+        fields = dict()
+        for k in fields_got:
+            if fields_got[k] is not None:
+                fields[k] = fields_got[k]
+        if 'dob' in data:
+            fields['birth_date'] = self.set_unclear_date(data['dob'])
+        if 'dod' in data:
+            fields['dod'] = self.set_unclear_date(data['dod'])
+        if instance:
+            for k in fields:
+                setattr(instance, k, fields[k])
+            return instance
+        else:
+            return CustomPerson(customplace=customplace, **fields)
 
 class ArchIDDocumentTypeSerializer(serializers.ModelSerializer):
     class Meta:
