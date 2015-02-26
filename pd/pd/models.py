@@ -315,7 +315,10 @@ def upload_slugified(instance, filename):
         return os.path.join('icons', fname)
 
 def files_upload_to(instance, filename):
-    instance.original_name = filename
+    if hasattr(instance, 'original_name'):
+        instance.original_name = filename
+    elif hasattr(instance, 'original_filename'):
+        instance.original_filename = filename
     fname = u'.'.join(map(pytils.translit.slugify, filename.rsplit('.', 1)))
     today = datetime.date.today()
     
@@ -366,11 +369,32 @@ def files_upload_to(instance, filename):
     elif isinstance(instance, get_model('users', 'UserPhoto')):
         return os.path.join('user-photos',
                 today_pk_dir % instance.user.pk, fname)
+    elif isinstance(instance, get_model('persons', 'CustomPerson')):
+        return os.path.join('customperson-photos',
+                today_pk_dir % instance.pk, fname)
     else:
         return os.path.join('files', fname)
 
+class DeleteFileMixin(object):
 
-class Files(models.Model):
+    def delete_from_media(self):
+        if hasattr(self, 'bfile'):
+            file_ = self.bfile
+        elif hasattr(self, 'photo'):
+            file_ = self.photo
+        else:
+            return
+        if file_ and os.path.exists(file_.path):
+            os.remove(file_.path)
+            thmb = os.path.join(settings.THUMBNAILS_STORAGE_ROOT, file_.name)
+            if os.path.exists(thmb):
+                shutil.rmtree(thmb)
+
+    def delete(self):
+        self.delete_from_media()
+        super(DeleteFileMixin, self).delete()
+
+class Files(DeleteFileMixin, models.Model):
     """
     Базовый класс для файлов
     """
@@ -384,16 +408,18 @@ class Files(models.Model):
                                 on_delete=models.PROTECT)
     date_of_creation = models.DateTimeField(auto_now_add=True)
 
-    def delete_from_media(self):
-        if self.bfile and os.path.exists(self.bfile.path):
-            os.remove(self.bfile.path)
-            thmb = os.path.join(settings.THUMBNAILS_STORAGE_ROOT, self.bfile.name)
-            if os.path.exists(thmb):
-                shutil.rmtree(thmb)
+class PhotoModel(DeleteFileMixin, models.Model):
+    """
+    Базовый (дополнительный) класс для моделей, у которых есть фото объекта
+    """
+    # Мегабайт:
+    MAX_PHOTO_SIZE = 10
 
-    def delete(self):
-        self.delete_from_media()
-        super(Files, self).delete()
+    class Meta:
+        abstract = True
+
+    photo = models.ImageField(u"Фото", max_length=255, upload_to=files_upload_to, blank=True, null=True)
+    original_filename = models.CharField(max_length=255, editable=False, null=True)
 
 def validate_gt0(value):
     if value <= 0:

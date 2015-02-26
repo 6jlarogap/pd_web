@@ -11,7 +11,7 @@ from django.contrib.auth.models import User
 
 import datetime
 from geo.models import Location, LocationMixin
-from pd.models import UnclearDate, UnclearDateModelField, BaseModel, Files, validate_phone_as_number
+from pd.models import UnclearDate, UnclearDateModelField, BaseModel, Files, PhotoModel, validate_phone_as_number
 from pd.utils import utcisoformat
 from users.models import Org, PhonesMixin
 
@@ -440,7 +440,7 @@ class CustomPlace(LocationMixin, BaseModel):
             except (AttributeError, IntegrityError):
                 pass
 
-class CustomPerson(PersonMixin, BaseModel):
+class CustomPerson(PersonMixin, PhotoModel, BaseModel):
     """
     Человек, чаще усопший, но возможно живой
     """

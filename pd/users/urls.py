@@ -35,6 +35,8 @@ urlpatterns = patterns('users.views',
     url(r'^api/optplaces/suppliers/?$', 'api_optplaces_suppliers', name='api_optplaces_suppliers'),
     url(r'^api/optplaces/suppliers/(?P<pk>[\w-]+)/?$', 'api_optplaces_suppliers_detail', name='api_optplaces_suppliers_detail'),
 
+    url(r'^api/shops/?$', 'api_shops', name='api_shops'),
+
     url(r'^api/org/signup/?$', 'api_org_signup', name='api_org_signup'),
 
     url(r'^api/education/?$', 'api_education', name='api_education'),

@@ -104,7 +104,13 @@ class EmailMessage(EmailMessage):
 
 class CreatedAtMixin(object):
     def createdAt_func(self, instance):
-        return utcisoformat(instance.dt_created)
+        if hasattr(instance, 'dt_created'):
+            dt_created = instance.dt_created
+        elif hasattr(instance, 'date_of_creation'):
+            dt_created = instance.date_of_creation
+        else:
+            return ""
+        return utcisoformat(dt_created)
 
     def modifiedAt_func(self, instance):
         return utcisoformat(instance.dt_modified)

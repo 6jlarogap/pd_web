@@ -1454,7 +1454,7 @@ class ApiServicePriceMixin(object):
             if self.data.customplace.user != request.user:
                 raise ServiceException(_(u'Пользователь %s не имеет прав на запрос по этому месту') % request.user.username)
             
-            self.data.need_delivery = self.data.service_name in ('photo', 'delivery')
+            self.data.need_delivery = self.data.service_name in ('photo', Service.SERVICE_DELIVERY)
             if self.data.need_delivery:
                 if request.method == 'GET':
                     latitude = req_dict.get('location[latitude]')
@@ -1472,11 +1472,11 @@ class ApiServicePriceMixin(object):
                     raise ServiceException(_(u'Не заданы и не удалось выяснить координаты места'))
                 self.data.latitude = float(latitude)
                 self.data.longitude = float(longitude)
-                if request.method == 'POST' and self.data.service_name != 'delivery':
+                if request.method == 'POST' and self.data.service_name != Service.SERVICE_DELIVERY:
                     try:
                         self.data.orgservice_delivery = OrgService.objects.get(
                             org=org,
-                            service__name='delivery',
+                            service__name=Service.SERVICE_DELIVERY,
                             enabled=True
                         )
                     except OrgService.DoesNotExist:
@@ -1493,7 +1493,7 @@ class ApiServicePriceMixin(object):
         """
         Цена за услугу у огранизации
         """
-        if self.data.service.name == 'delivery':
+        if self.data.service.name == Service.SERVICE_DELIVERY:
             # цена за доставку считается не по организации, а по складам
             price_service = 0
         elif self.data.service.name in ('photo', ):
@@ -1513,7 +1513,7 @@ class ApiServicePriceMixin(object):
         result = 0.00
         for m in OrgServicePrice.objects.filter(
             orgservice__org=org,
-            orgservice__service__name='delivery'
+            orgservice__service__name=Service.SERVICE_DELIVERY
             ).values('measure__name', 'price'):
             if m['measure__name'] == 'km':
                 result += float(m['price']) * km
@@ -1553,7 +1553,7 @@ class ApiClientAvailablePerformersView(ApiServicePriceMixin, APIView):
                 address__gps_x__isnull=False,
                 address__gps_y__isnull=False,
             )
-            if self.data.service_name != 'delivery':
+            if self.data.service_name != Service.SERVICE_DELIVERY:
                 orgs = [orgservice.org for orgservice in OrgService.objects.filter(
                     service=self.data.service,
                     enabled=True,
@@ -1667,7 +1667,7 @@ class ApiClientOrdersView(ApiServicePriceMixin, APIView):
         )
         # будут назначены loru_number, number:
         order.save()
-        if self.data.service_name != 'delivery':
+        if self.data.service_name != Service.SERVICE_DELIVERY:
             item_service = ServiceItem.objects.create(
                 order=order,
                 orgservice=self.data.orgservice,

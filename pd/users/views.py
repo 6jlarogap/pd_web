@@ -64,13 +64,13 @@ from pd.utils import host_country_code, phones_from_text, EmailMessage
 from persons.models import AlivePerson, Phone, CustomPlace
 from burials.models import Cemetery, Area, Burial, Place, Grave
 from billing.models import Wallet, Rate, Currency
-from orders.models import Product, Order
+from orders.models import Product, Order, Service
 from pd.views import PaginateListView, RequestToFormMixin, FormInvalidMixin, get_front_end_url, ServiceException
 from geo.models import Location, Country
 
 from users.serializers import StoreSerializer, OrgSerializer, OrgShort2Serializer, \
                               OrgShort3Serializer, OrgOptSupplierSerializer, OrgShort5Serializer, \
-                              UserSettingsSerializer
+                              UserSettingsSerializer, ShopSerializer
 
 from sms_service.utils import send_sms
 
@@ -2450,7 +2450,7 @@ class ApiCatalogSuppliersView(APIView):
             data = [ OrgShort2Serializer(
                                     loru,
                                     context = dict(request=request),
-                     ).data for loru in Org.objects.filter(type=Org.PROFILE_LORU) ],
+                     ).data for loru in Org.objects.filter(ability__name=OrgAbility.ABILITY_TRADE) ],
             status=200
         )
 
@@ -2468,10 +2468,10 @@ api_catalog_suppliers_detail = OrgDetailView.as_view()
 
 class ApiOptplacesSuppliersView(APIView):
     permission_classes = (PermitIfTradeOrSupervisor, )
-
     def get(self, request):
         return Response(
-            data = [ OrgOptSupplierSerializer(loru).data for loru in Org.objects.filter(type=Org.PROFILE_LORU) ],
+            data = [ OrgOptSupplierSerializer(loru).data for \
+                        loru in Org.objects.filter(ability__name=OrgAbility.ABILITY_TRADE) ],
             status=200
         )
 
@@ -2489,3 +2489,35 @@ class ApiOptplacesSupplierDetailView(APIView):
 
 api_optplaces_suppliers_detail = ApiOptplacesSupplierDetailView.as_view()
 
+class ApiShopsView(APIView):
+
+    def get(self, request):
+        q = Q(orgservice__service__name=Service.SERVICE_DELIVERY) & \
+            Q(orgservice__enabled=True) & \
+            Q(orgservice__orgserviceprice__measure__name='km')
+
+        category_ids_got = self.request.GET.getlist('category[]')
+        category_ids = []
+        for category_id in category_ids_got:
+            try:
+                # может быть '', 'null'
+                category_ids.append(int(category_id))
+            except ValueError:
+                pass
+        if category_ids:
+            q &= Q(product__productcategory__pk__in=category_ids) & Q(product__is_for_visit=True)
+
+        s = request.GET.get('query')
+        if s:
+            q2 = Q(off_address__city__name__icontains=s) | \
+                 Q(off_address__addr_str__icontains=s) | \
+                 Q(product__name__icontains=s) & Q(product__is_for_visit=True)
+            q &=q2
+
+        return Response(
+            data = [ ShopSerializer(shop).data for \
+                        shop in Org.objects.filter(q).distinct() ],
+            status=200
+        )
+
+api_shops = ApiShopsView.as_view()
