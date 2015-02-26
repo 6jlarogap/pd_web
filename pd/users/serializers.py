@@ -14,6 +14,7 @@ from users.models import Org, Store, FavoriteSupplier, UserPhoto, is_cabinet_use
                          Profile, Dover, ProfileLORU, get_profile
 from persons.models import Phone
 from orders.models import Order, Product, Service, OrgServicePrice
+
 class OrgSerializerMixin(object):
 
     def catalog_qs(self, loru, catalog=None):

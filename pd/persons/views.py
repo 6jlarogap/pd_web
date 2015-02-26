@@ -21,7 +21,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework import generics, viewsets
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.parsers import MultiPartParser
+from rest_framework.parsers import MultiPartParser, JSONParser
 
 from pd.models import UnclearDate, SafeDeleteMixin
 from burials.models import Place, PlacePhoto
@@ -213,6 +213,9 @@ class ApiCustompersonMixin(object):
     def get_object(self, pk):
         try:
             customperson = CustomPerson.objects.get(pk=pk)
+            if customperson.customplace and \
+               customperson.customplace.user != self.request.user:
+                raise Http404
         except CustomPerson.DoesNotExist:
             raise Http404
         return customperson
@@ -230,12 +233,13 @@ class ApiMemoryGalleryMixin(object):
 
 class ApiCustompersonMemoryView(ApiCustompersonMixin, ApiMemoryGalleryMixin, APIView):
     permission_classes = (PermitIfCabinet,)
+    parser_classes = (MultiPartParser, JSONParser, )
 
     def get(self, request, pk):
         customperson = self.get_object(pk)
         data = {
             'photo': None,
-            'lasttname' : customperson.last_name,
+            'lastname' : customperson.last_name,
             'firstname' : customperson.first_name,
             'middlename' : customperson.middle_name,
             'dob' : customperson.birth_date and customperson.birth_date.str_safe() or None,
@@ -249,7 +253,7 @@ class ApiCustompersonMemoryView(ApiCustompersonMixin, ApiMemoryGalleryMixin, API
         data['gallery'] = gallery
         return Response(data, 200)
         
-    def patch(self, request, pk):
+    def put(self, request, pk):
         customperson = self.get_object(pk)
         mapping = dict(
            lastname='last_name',
