@@ -9,6 +9,7 @@ from geo.models import Location
 from persons.models import AlivePerson, DeadPerson, Phone, CustomPlace, CustomPerson, \
                            MemoryGallery, IDDocumentType, DocumentSource, PersonID, \
                            DeathCertificate, DeathCertificateScan
+from users.models import get_profile
 from rest_api.fields import UnclearDateFieldSerializer, UnclearDateFieldMixin, UnclearDateFieldSafeSerializer, \
                             HyperlinkedFileField
 
@@ -186,6 +187,29 @@ class MemoryGallerySerializer(CreatedAtMixin, serializers.ModelSerializer):
     class Meta:
         model = MemoryGallery
         fields = ('id', 'type', 'text', 'mediaContent', 'addedAt', 'eventDate', )
+
+class MemoryGallery2Serializer(MemoryGallerySerializer):
+    createdBy = serializers.SerializerMethodField('createdBy_func')
+
+    class Meta:
+        model = MemoryGallery
+        fields = (
+            'id', 'type', 'text', 'mediaContent', 'addedAt', 'eventDate',
+            'createdBy',
+        )
+
+    def createdBy_func(self, instance):
+        user = instance.creator
+        if user:
+           profile = get_profile(user)
+           return dict(
+               id=user.pk,
+               lastname=profile.user_last_name,
+               firstname=profile.user_first_name,
+               middlename=profile.user_middle_name,
+           )
+        else:
+            return None
 
 class CustomPerson3Serializer(UnclearDateFieldMixin, serializers.ModelSerializer):
     lastname = Field(source='last_name')

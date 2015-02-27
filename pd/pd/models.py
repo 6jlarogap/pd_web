@@ -80,8 +80,10 @@ class UnclearDate:
     @classmethod
     def from_str_safe(cls, s):
         """
-        Сделать UnclearDate из yyyy-mm-dd, yyyy-mm, yyyy
+        Сделать UnclearDate из yyyy-mm-dd, yyyy-mm, yyyy, или из None
         """
+        if not s:
+            return None
         m = re.search(cls.SAFE_STR_REGEX, s)
         if not m:
             raise ValueError('Invalid data to make an UnclearDate object')

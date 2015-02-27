@@ -8,9 +8,6 @@ import string
 import re
 import hashlib
 
-import magic
-from PIL import Image
-
 from django.conf import settings
 from django.contrib import messages
 from django.core.urlresolvers import reverse
@@ -62,7 +59,7 @@ from orders.serializers import ProductCategorySerializer, ProductsSerializer, Pr
                                ServiceOrderSerializer, OrderCommentsSerializer, ServiceOrderDetailSerializer, \
                                OrderResultsSerializer
 
-from pd.utils import EmailMessage, str_to_bool_or_None
+from pd.utils import EmailMessage, str_to_bool_or_None, get_image, is_video
 from pd.models import validate_phone_as_number
 
 from sms_service.utils import send_sms
@@ -1779,28 +1776,13 @@ class ApiOrderResultView(ApiOrderMixin, APIView):
             if 'file' not in request.FILES:
                 raise ServiceException(_(u"Не получен загружаемый файл 'file'"))
             uploaded_file = request.FILES['file']
-            if type_ == 'image':
+            if type_ == ResultFile.TYPE_IMAGE:
                 if uploaded_file.size > ResultFile.MAX_IMAGE_SIZE * 1024 * 1024:
                     raise ServiceException(_(u"Размер изображения превышает %d Мб") % ResultFile.MAX_IMAGE_SIZE)
-                try:
-                    Image.open(uploaded_file)
-                except IOError:
+                if not get_image(uploaded_file):
                     raise ServiceException(_(u"Загруженный файл не является изображением"))
-            elif type_ == 'video':
-                for chunk in uploaded_file.chunks(chunk_size=min(uploaded_file.size, 128*1024)):
-                    chunk0 = chunk
-                    break
-                mimetype = magic.from_buffer(chunk0, mime=True)
-                valid = False
-                if mimetype:
-                    if re.search(r'video|ogg|mpeg|webm|avi', mimetype.lower()):
-                       valid = True 
-                    else:
-                        mimetype0 = magic.from_buffer(chunk0)
-                        if re.search(r'iso', mimetype0.lower()):
-                            # flv: ISO media
-                            valid = True
-                if not valid:
+            elif type_ == ResultFile.TYPE_VIDEO:
+                if not is_video(uploaded_file):
                     raise ServiceException(_(u"Загруженный файл не является видео"))
             resultfile = ResultFile.objects.create(
                 bfile=uploaded_file,
