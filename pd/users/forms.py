@@ -439,6 +439,14 @@ class RegisterForm(forms.ModelForm):
         self.address_form.fields['region_name'].required = True
         self.address_form.fields['city_name'].required = True
         
+    def clean_org_name(self):
+        org_name=self.cleaned_data.get('org_name', '').strip()
+        if not org_name:
+            raise forms.ValidationError(_(u"Пустое название организации"))
+        if re.search(r'^[\d\s]+$', org_name):
+            raise forms.ValidationError(_(u"Невозможное название организации (только из цифр)"))
+        return org_name
+
     def clean_user_name(self):
         user_name=self.cleaned_data['user_name']
         if User.objects.filter(username=user_name).exists():
