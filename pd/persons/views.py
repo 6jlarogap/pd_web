@@ -228,7 +228,7 @@ class ApiCustompersonMixin(object):
             raise Http404
         return customperson
 
-class ApiCustompersonMemoryView(ApiCustompersonMixin, ApiClientPlacesMixin, APIView):
+class ApiCustompersonDetailView(ApiCustompersonMixin, ApiClientPlacesMixin, APIView):
     permission_classes = (PermitIfCabinet,)
     parser_classes = (MultiPartParser, JSONParser, )
 
@@ -263,7 +263,7 @@ class ApiCustompersonMemoryView(ApiCustompersonMixin, ApiClientPlacesMixin, APIV
         except ServiceException as excpt:
             return Response(data=dict(status='error', message=excpt.message), status=400)
 
-api_customperson_memory = ApiCustompersonMemoryView.as_view()
+api_customperson_detail = ApiCustompersonDetailView.as_view()
 
 class ApiCustompersonMemoryGalleryView(ApiCustompersonMixin, APIView):
     permission_classes = (PermitIfCabinet,)
@@ -283,7 +283,7 @@ class ApiCustompersonMemoryGalleryView(ApiCustompersonMixin, APIView):
             filter = filter[:limit]
 
         return Response(
-            [ MemoryGallerySerializer(gallery_item, context=dict(request=request)).data \
+            [ MemoryGallery2Serializer(gallery_item, context=dict(request=request)).data \
               for gallery_item in filter ],
             status=200,
         )
@@ -329,6 +329,37 @@ class ApiCustompersonMemoryGalleryView(ApiCustompersonMixin, APIView):
             return Response(data=dict(status='error', message=excpt.message), status=400)
 
 api_customperson_memory_gallery = ApiCustompersonMemoryGalleryView.as_view()
+
+class ApiCustompersonMemoryPhotoView(ApiCustompersonMixin, APIView):
+    permission_classes = (PermitIfCabinet,)
+    parser_classes = (MultiPartParser, )
+
+    def post(self, request, pk):
+        try:
+            customperson = self.get_customperson(pk)
+            fields = {
+                'customperson': customperson,
+                'type': MemoryGallery.TYPE_IMAGE,
+                'creator': request.user,
+            }
+            file_ = request.FILES.get('photo')
+            if file_:
+                fields['bfile'] = file_
+            else:
+                raise ServiceException(_(u'Не получено загружаемое фото (photo)'))
+            if file_.size > MemoryGallery.MAX_IMAGE_SIZE * 1024 * 1024:
+                raise ServiceException(
+                    _(u"Размер изображения не должен превышать %sМб") % MemoryGallery.MAX_IMAGE_SIZE
+                )
+            gallery_item = MemoryGallery.objects.create(**fields)
+            return Response(
+                data=MemoryGallery2Serializer(gallery_item, context=dict(request=request)).data,
+                status=200,
+            )
+        except ServiceException as excpt:
+            return Response(data=dict(status='error', message=excpt.message), status=400)
+
+api_customperson_memory_photo = ApiCustompersonMemoryPhotoView.as_view()
 
 class ApiClientPlacesDeadmansView(ApiClientPlacesMixin, APIView):
     permission_classes = (PermitIfCabinet,)
