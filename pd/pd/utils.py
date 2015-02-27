@@ -9,6 +9,9 @@ import datetime
 from pytz import timezone, utc
 import re
 
+from PIL import Image
+import magic
+
 class DigitsValidator(RegexValidator):
     regex = '^\d+$'
     message = _(u'Допускаются только цифры')
@@ -114,3 +117,31 @@ class CreatedAtMixin(object):
 
     def modifiedAt_func(self, instance):
         return utcisoformat(instance.dt_modified)
+
+def get_image(image):
+    """
+    Является ли загруженный файл фото? Если да, то возвращает Image(фото)
+    """
+    try:
+        return Image.open(image)
+    except IOError:
+        return None
+
+def is_video(video):
+    """
+    Является ли загруженный файл video
+    """
+    valid = False
+    for chunk in video.chunks(chunk_size=min(video.size, 128*1024)):
+        chunk0 = chunk
+        break
+    mimetype = magic.from_buffer(chunk0, mime=True)
+    if mimetype:
+        if re.search(r'video|ogg|mpeg|webm|avi', mimetype.lower()):
+            valid = True 
+        else:
+            mimetype0 = magic.from_buffer(chunk0)
+            if re.search(r'iso', mimetype0.lower()):
+                # flv: ISO media
+                valid = True
+    return valid

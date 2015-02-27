@@ -496,6 +496,9 @@ class MemoryGallery(Files):
         (TYPE_TEXT, _(u"Текст"))
     )
 
+    # Мегабайт:
+    MAX_IMAGE_SIZE = 10
+
     customperson = models.ForeignKey(CustomPerson)
     type = models.CharField(_(u"Тип"), max_length=255, choices=TYPE_CHOICES)
     text = models.TextField(_(u"Текст"), null=True)

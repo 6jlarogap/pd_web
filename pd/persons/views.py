@@ -3,8 +3,6 @@
 import json
 import re
 
-from PIL import Image
-
 from django.db import transaction, IntegrityError
 from django.db.models.query_utils import Q
 from django.http import Http404, HttpResponse
@@ -17,7 +15,8 @@ from persons.serializers import AlivePersonSerializer, DeadPersonSerializer, Pho
                                 CustomPlaceDetailSerializer, CustomPlaceListSerializer, \
                                 CustomPlaceEditSerializer, \
                                 CustomPersonSerializer, CustomPerson2Serializer, \
-                                CustomPerson3Serializer
+                                CustomPerson3Serializer, \
+                                MemoryGallerySerializer, MemoryGallery2Serializer
 from orders.serializers import OrderSerializer
 
 from rest_framework.response import Response
@@ -33,7 +32,7 @@ from users.models import PermitIfCabinet, user_dict
 from orders.models import Order, ResultFile
 from geo.models import Location
 
-from pd.utils import utcisoformat
+from pd.utils import utcisoformat, get_image, is_video
 from pd.views import ServiceException
 
 
@@ -229,17 +228,6 @@ class ApiCustompersonMixin(object):
             raise Http404
         return customperson
 
-class ApiMemoryGalleryMixin(object):
-
-    def gallery_dict(self, m, request):
-        return {
-            'type': m.type,
-            'text': m.text,
-            'mediaContent': m.bfile and request.build_absolute_uri(m.bfile.url) or None,
-            'eventDate': m.event_date and UnclearDate.str_safe(m.event_date) or None,
-            'createdAt': utcisoformat(m.date_of_creation),
-        }
-
 class ApiCustompersonMemoryView(ApiCustompersonMixin, ApiClientPlacesMixin, APIView):
     permission_classes = (PermitIfCabinet,)
     parser_classes = (MultiPartParser, JSONParser, )
@@ -261,9 +249,7 @@ class ApiCustompersonMemoryView(ApiCustompersonMixin, ApiClientPlacesMixin, APIV
             if photo:
                 if photo.size > CustomPerson.MAX_PHOTO_SIZE * 1024 * 1024:
                     raise ServiceException(_(u"Размер фото превышает %d Мб") % CustomPerson.MAX_PHOTO_SIZE)
-                try:
-                    Image.open(photo)
-                except IOError:
+                if not get_image(photo):
                     raise ServiceException(_(u"Загруженное фото не является изображением"))
             serializer = CustomPerson3Serializer(
                 customperson,
@@ -279,9 +265,9 @@ class ApiCustompersonMemoryView(ApiCustompersonMixin, ApiClientPlacesMixin, APIV
 
 api_customperson_memory = ApiCustompersonMemoryView.as_view()
 
-class ApiCustompersonMemoryGalleryView(ApiCustompersonMixin, ApiMemoryGalleryMixin, APIView):
+class ApiCustompersonMemoryGalleryView(ApiCustompersonMixin, APIView):
     permission_classes = (PermitIfCabinet,)
-    parser_classes = (MultiPartParser,)
+    parser_classes = (MultiPartParser, JSONParser, )
     
     def get(self, request, pk):
         customperson = self.get_customperson(pk)
@@ -296,32 +282,51 @@ class ApiCustompersonMemoryGalleryView(ApiCustompersonMixin, ApiMemoryGalleryMix
         elif limit:
             filter = filter[:limit]
 
-        data = []
-        for m in filter:
-            item = self.gallery_dict(m, request)
-            item['createdBy'] = {
-                    'id': request.user.pk,
-                    'lastname': m.creator.customerprofile.user_last_name,
-                    'firstname': m.creator.customerprofile.user_first_name,
-                    'middlename': m.creator.customerprofile.user_middle_name,
-                 }
-            data.append(item)
-        return Response(data, 200)
+        return Response(
+            [ MemoryGallerySerializer(gallery_item, context=dict(request=request)).data \
+              for gallery_item in filter ],
+            status=200,
+        )
 
     def post(self, request, pk):
-        customperson = self.get_customperson(pk)
-        fields = {
-            'customperson': customperson,
-            'type': request.DATA.get('type'),
-            'text': request.DATA.get('text'),
-            'event_date': request.DATA.get('eventDate') and UnclearDate.from_str_safe(request.DATA['eventDate']) or None,
-            'creator': request.user,
-        }
-        file_ = request.FILES.get('mediaContent')
-        if file_:
-            fields['bfile'] = file_
-        MemoryGallery.objects.create(**fields)
-        return Response({"status": "success"}, 200)
+        try:
+            customperson = self.get_customperson(pk)
+            fields = {
+                'customperson': customperson,
+                'type': request.DATA.get('type'),
+                'text': request.DATA.get('text'),
+                'event_date': UnclearDate.from_str_safe(request.DATA.get('eventDate')),
+                'creator': request.user,
+            }
+            file_ = request.FILES.get('mediaContent')
+            if file_:
+                fields['bfile'] = file_
+            if not fields['type']:
+                raise ServiceException(_(u'Не задан тип (type)'))
+            if fields['type'] not in [type_[0] for type_ in MemoryGallery.TYPE_CHOICES]:
+                raise ServiceException(_(u'Неверный тип (type)'))
+            if fields['type'] != MemoryGallery.TYPE_TEXT and not file_:
+                raise ServiceException(_(u'Тип (type) %s требует загружаемого файла') % fields['type'])
+            if fields['type'] == MemoryGallery.TYPE_TEXT and \
+               (not fields['text'] or not fields['text'].strip()):
+                raise ServiceException(_(u'Тип (type) %s требует непустой текст') % fields['type'])
+            if fields['type'] == MemoryGallery.TYPE_IMAGE:
+                if file_.size > MemoryGallery.MAX_IMAGE_SIZE * 1024 * 1024:
+                    raise ServiceException(
+                        _(u"Размер изображения не должен превышать %sМб") % MemoryGallery.MAX_IMAGE_SIZE
+                    )
+                if not get_image(file_):
+                    raise ServiceException(_(u"Прикрепленный файл не является изображением"))
+            elif fields['type'] == MemoryGallery.TYPE_VIDEO:
+                if not is_video(file_):
+                    raise ServiceException(_(u"Загруженный файл не является видео"))
+            gallery_item = MemoryGallery.objects.create(**fields)
+            return Response(
+                data=MemoryGallery2Serializer(gallery_item, context=dict(request=request)).data,
+                status=200,
+            )
+        except ServiceException as excpt:
+            return Response(data=dict(status='error', message=excpt.message), status=400)
 
 api_customperson_memory_gallery = ApiCustompersonMemoryGalleryView.as_view()
 

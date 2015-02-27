@@ -9,7 +9,6 @@ import os
 import csv
 import copy
 import re
-from PIL import Image
 
 from django.conf import settings
 from django.contrib import messages
@@ -60,7 +59,7 @@ from users.models import Profile, Org, RegisterProfile, ProfileLORU, CustomerPro
                          UserPhoto, \
                          is_supervisor, is_ugh_user, get_default_currency, get_profile
 from pd.models import validate_phone_as_number, validate_username
-from pd.utils import host_country_code, phones_from_text, EmailMessage
+from pd.utils import host_country_code, phones_from_text, EmailMessage, get_image
 from persons.models import AlivePerson, Phone, CustomPlace
 from burials.models import Cemetery, Area, Burial, Place, Grave
 from billing.models import Wallet, Rate, Currency
@@ -494,9 +493,8 @@ class ApiSettings(APIView):
             if avatar:
                 if avatar.size > UserPhoto.MAX_SIZE * 1024 * 1024:
                     raise ServiceException(_(u"Размер изображения не должен превышать %sМб") % UserPhoto.MAX_SIZE)
-                try:
-                    image = Image.open(avatar)
-                except IOError:
+                image = get_image(avatar)
+                if not image:
                     raise ServiceException(_(u"Прикрепленный файл не является изображением"))
                 if image.size[0] <= UserPhoto.MIN_SIZE_X:
                     raise ServiceException(_(u"Ширина картинки должна быть больше %s px") % UserPhoto.MIN_SIZE_X)
