@@ -2301,6 +2301,8 @@ class ApiOrgSignupView(CheckRecaptchaMixin, RegisterMixin, APIView):
             org_name = request.DATA.get('orgName', '').strip()
             if not org_name:
                 raise ServiceException(_(u'Не задано краткое наименование организации'))
+            if re.search(r'^[\d\s]+$', org_name):
+                raise ServiceException(_(u'Невозможное название организации (только из цифр)'))
             org_types = dict(loru=Org.PROFILE_LORU, oms=Org.PROFILE_UGH)
             org_type = request.DATA.get('orgType')
             if not org_type or org_type not in org_types:
@@ -2455,11 +2457,15 @@ class ApiCatalogSuppliersView(APIView):
 api_catalog_suppliers = ApiCatalogSuppliersView.as_view()
 
 class OrgDetailView(APIView):
-    """
-    Показ ЛОРУ в публичном каталоге только!!!
-    """
     def get(self, request, org_slug):
-        obj = get_object_or_404(Org, slug=org_slug)
+        """
+        Запрос данных организации по slug, или по id, если org_slug состоит только из цифр
+        """
+        if re.search(r'^\d+$', org_slug):
+            kwargs = dict(pk=org_slug)
+        else:
+            kwargs = dict(slug=org_slug)
+        obj = get_object_or_404(Org, **kwargs)
         return Response(status=200, data=OrgSerializer(obj, context = dict(request=request)).data)
 
 api_catalog_suppliers_detail = OrgDetailView.as_view()
