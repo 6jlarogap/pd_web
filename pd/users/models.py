@@ -793,6 +793,12 @@ class OrgCertificate(Files):
     """
     org = models.OneToOneField(Org)
 
+class OrgGallery(Files):
+    """
+    Галерея организации. Для поставщиков товаров/услуг: образцы работ
+    """
+    org = models.ForeignKey(Org)
+
 class OrgContract(Files):
     """
     Сгенерированный pdf договора с заказчиком
