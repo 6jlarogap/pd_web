@@ -13,7 +13,7 @@ from users.models import get_profile
 from rest_api.fields import UnclearDateFieldSerializer, UnclearDateFieldMixin, UnclearDateFieldSafeSerializer, \
                             HyperlinkedFileField
 
-from pd.utils import CreatedAtMixin
+from pd.utils import CreatedAtMixin, utcisoformat
 from pd.serializers import ArchFilesSerializer
 
 class PhoneSerializer(serializers.HyperlinkedModelSerializer):
@@ -219,7 +219,7 @@ class CustomPerson3Serializer(UnclearDateFieldMixin, serializers.ModelSerializer
     dob = serializers.SerializerMethodField('birth_date')
     dod = serializers.SerializerMethodField('death_date')
     photo = HyperlinkedFileField(source='photo', required=False)
-    gallery = MemoryGallerySerializer(many=True, source='memorygallery_set', required=False)
+    gallery = serializers.SerializerMethodField('gallery_func')
 
     class Meta:
         model = CustomPerson
@@ -227,6 +227,20 @@ class CustomPerson3Serializer(UnclearDateFieldMixin, serializers.ModelSerializer
             'id', 'lastname', 'firstname', 'middlename',
             'commonText', 'dob', 'dod', 'photo', 'gallery',
         )
+
+    def gallery_func(self, instance):
+        return [
+            dict(
+                photoUrl=self.context['request'].build_absolute_uri(item.bfile.url),
+                title=item.text,
+                addedAt=utcisoformat(item.date_of_creation),
+            ) \
+            for item in MemoryGallery.objects.filter(
+                        customperson=instance,
+                        type=MemoryGallery.TYPE_IMAGE,
+                        bfile__gt='',
+                        )
+        ]
 
     def restore_object(self, attrs, instance=None):
         data = self.context['request'].DATA

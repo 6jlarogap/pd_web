@@ -404,7 +404,7 @@ class Files(DeleteFileMixin, models.Model):
         abstract = True
         
     bfile = models.FileField(u"Файл", max_length=255, upload_to=files_upload_to, blank=True)
-    comment = models.CharField(u"Описание", max_length=96, blank=True)
+    comment = models.CharField(u"Описание", max_length=255, blank=True)
     original_name = models.CharField(max_length=255, editable=False)
     creator = models.ForeignKey('auth.User', verbose_name=_(u"Создатель"), editable=False, null=True,
                                 on_delete=models.PROTECT)
