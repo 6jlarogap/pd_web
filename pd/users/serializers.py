@@ -5,13 +5,14 @@ from rest_framework.fields import Field
 
 from django.db.models.query_utils import Q
 
+from rest_api.fields import HyperlinkedFileField
 from pd.utils import PhonesFromTextMixin, utcisoformat
 
 from django.contrib.auth.models import User
 
 from geo.models import Location
 from users.models import Org, Store, FavoriteSupplier, UserPhoto, is_cabinet_user, is_trade_user, \
-                         Profile, Dover, ProfileLORU, get_profile
+                         Profile, Dover, ProfileLORU, get_profile, OrgGallery
 from persons.models import Phone
 from orders.models import Order, Product, Service, OrgServicePrice
 
@@ -208,10 +209,11 @@ class OrgOptSupplierSerializer(serializers.ModelSerializer):
 class ShopSerializer(serializers.ModelSerializer):
     title = Field(source='name')
     itemPrice = serializers.SerializerMethodField('itemPrice_func')
+    titleImageUrl = serializers.SerializerMethodField('titleImageUrl_func')
 
     class Meta:
         model = Org
-        fields = ('id', 'title', 'description', 'itemPrice',)
+        fields = ('id', 'title', 'description', 'titleImageUrl', 'itemPrice',)
 
     def itemPrice_func(self, instance):
         try:
@@ -227,6 +229,23 @@ class ShopSerializer(serializers.ModelSerializer):
             )
         except OrgServicePrice.DoesNotExist:
             return None
+
+    def titleImageUrl_func(self, instance):
+        try:
+            return self.context['request'].build_absolute_uri(
+                OrgGallery.objects.filter(org=instance). \
+                    order_by('-date_of_creation')[0].bfile.url
+            )
+        except IndexError:
+            return None
+
+class OrgGallerySerializer(serializers.ModelSerializer):
+    title = Field(source='comment')
+    photoUrl = HyperlinkedFileField(source='bfile')
+
+    class Meta:
+        model = OrgGallery
+        fields = ('id', 'title', 'photoUrl',)
 
 class UserProfileMixin(object):
 

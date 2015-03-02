@@ -56,7 +56,7 @@ from users.models import Profile, Org, RegisterProfile, ProfileLORU, CustomerPro
                          PermitIfCabinet, Oauth, OrgAbility, \
                          BankAccount, BankAccountRegister, OrgCertificate, OrgContract, \
                          RegisterProfileContract, RegisterProfileScan, FavoriteSupplier, \
-                         UserPhoto, \
+                         UserPhoto, OrgGallery, \
                          is_supervisor, is_ugh_user, get_default_currency, get_profile
 from pd.models import validate_phone_as_number, validate_username
 from pd.utils import host_country_code, phones_from_text, EmailMessage, get_image
@@ -69,7 +69,7 @@ from geo.models import Location, Country
 
 from users.serializers import StoreSerializer, OrgSerializer, OrgShort2Serializer, \
                               OrgShort3Serializer, OrgOptSupplierSerializer, OrgShort5Serializer, \
-                              UserSettingsSerializer, ShopSerializer
+                              UserSettingsSerializer, ShopSerializer, OrgGallerySerializer
 
 from sms_service.utils import send_sms
 
@@ -2500,7 +2500,7 @@ class ApiShopsView(APIView):
             Q(orgservice__enabled=True) & \
             Q(orgservice__orgserviceprice__measure__name='km')
 
-        category_ids_got = self.request.GET.getlist('category[]')
+        category_ids_got = self.request.GET.getlist('categories')
         category_ids = []
         for category_id in category_ids_got:
             try:
@@ -2519,9 +2519,69 @@ class ApiShopsView(APIView):
             q &=q2
 
         return Response(
-            data = [ ShopSerializer(shop).data for \
+            data = [ ShopSerializer(shop, context=dict(request=request)).data for \
                         shop in Org.objects.filter(q).distinct() ],
             status=200
         )
 
 api_shops = ApiShopsView.as_view()
+
+class ApiShopsMixin(object):
+
+    def get_shop(self, pk, authorized_only=False):
+        """
+        Получить магазин (поставщик) по pk
+
+        Если authorized_only==True, то проверка, авторизован ли пользователь,
+        чтоб менять данные по этому поставщику
+        """
+        try:
+            shop = Org.objects.get(pk=pk)
+            if authorized_only:
+                try:
+                    if self.request.user.profile.org != shop:
+                        raise Http404
+                except (Profile.DoesNotExist, AttributeError):
+                    raise Http404
+            return shop
+        except Org.DoesNotExist:
+            raise Http404
+
+class ApiShopsGalleryView(ApiShopsMixin, APIView):
+    parser_classes = (MultiPartParser,)
+    
+    def get(self, request, pk):
+        shop = self.get_shop(pk, authorized_only=False)
+        return Response(
+            data = [
+                OrgGallerySerializer(item, context=dict(request=request)).data \
+                    for item in OrgGallery.objects.filter(org=shop).order_by('-date_of_creation')
+            ],
+            status=200
+        )
+
+    def post(self, request, pk):
+        try:
+            shop = self.get_shop(pk, authorized_only=True)
+            photo = request.FILES.get('photo')
+            if photo:
+                if photo.size > OrgGallery.MAX_IMAGE_SIZE * 1024 * 1024:
+                    raise ServiceException(_(u"Размер фото превышает %d Мб") % OrgGallery.MAX_IMAGE_SIZE)
+                if not get_image(photo):
+                    raise ServiceException(_(u"Загруженное фото не является изображением"))
+            else:
+                raise ServiceException(_(u"Нет загружаемого фото (photo)"))
+            item = OrgGallery.objects.create(
+                org=shop,
+                bfile=photo,
+                creator=request.user,
+                comment=request.DATA.get('title'),
+            )
+            return Response(
+                data = OrgGallerySerializer(item, context=dict(request=request)).data,
+                status=200
+            )
+        except ServiceException as excpt:
+            return Response(data=dict(status='error', message=excpt.message), status=400)
+
+api_shops_gallery = ApiShopsGalleryView.as_view()

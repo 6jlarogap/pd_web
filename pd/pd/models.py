@@ -374,6 +374,9 @@ def files_upload_to(instance, filename):
     elif isinstance(instance, get_model('persons', 'CustomPerson')):
         return os.path.join('customperson-photos',
                 today_pk_dir % instance.pk, fname)
+    elif isinstance(instance, get_model('users', 'OrgGallery')):
+        return os.path.join('org-gallery',
+                today_pk_dir % instance.org.pk, fname)
     else:
         return os.path.join('files', fname)
 
@@ -400,6 +403,10 @@ class Files(DeleteFileMixin, models.Model):
     """
     Базовый класс для файлов
     """
+
+    # Ограничение по размеру, Мегабайт, если загружаемый файл является фото:
+    MAX_IMAGE_SIZE = 10
+
     class Meta:
         abstract = True
         
