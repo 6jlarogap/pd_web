@@ -37,6 +37,7 @@ urlpatterns = patterns('users.views',
 
     url(r'^api/shops/?$', 'api_shops', name='api_shops'),
     url(r'^api/shops/(?P<pk>\d+)/gallery/?$', 'api_shops_gallery', name='api_shops_gallery'),
+    url(r'^api/shops/(?P<pk>\d+)/?$', 'api_shops_detail', name='api_shops_detail'),
 
     url(r'^api/org/signup/?$', 'api_org_signup', name='api_org_signup'),
 

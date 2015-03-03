@@ -206,7 +206,19 @@ class OrgOptSupplierSerializer(serializers.ModelSerializer):
       except IndexError:
           return None
 
-class ShopSerializer(serializers.ModelSerializer):
+class ShopSerializerMixin(object):
+
+    def titleImageUrl_func(self, instance):
+        try:
+            return self.context['request'].build_absolute_uri(
+                OrgGallery.objects.filter(org=instance). \
+                    order_by('-date_of_creation')[0].bfile.url
+            )
+        except IndexError:
+            return None
+
+
+class ShopSerializer(ShopSerializerMixin, serializers.ModelSerializer):
     title = Field(source='name')
     itemPrice = serializers.SerializerMethodField('itemPrice_func')
     titleImageUrl = serializers.SerializerMethodField('titleImageUrl_func')
@@ -230,14 +242,23 @@ class ShopSerializer(serializers.ModelSerializer):
         except OrgServicePrice.DoesNotExist:
             return None
 
-    def titleImageUrl_func(self, instance):
-        try:
-            return self.context['request'].build_absolute_uri(
-                OrgGallery.objects.filter(org=instance). \
-                    order_by('-date_of_creation')[0].bfile.url
-            )
-        except IndexError:
-            return None
+class ShopDetailSerializer(ShopSerializerMixin, serializers.ModelSerializer):
+    title = Field(source='name')
+    titleImageUrl = serializers.SerializerMethodField('titleImageUrl_func')
+    contacts = serializers.SerializerMethodField('contacts_func')
+
+    class Meta:
+        model = Org
+        fields = ('id', 'title', 'description', 'titleImageUrl', 'contacts')
+
+    def contacts_func(self, org):
+        return dict(
+            email=org.email,
+            phones=org.phone_list(),
+            fax=org.fax,
+            address=org.off_address,
+            site=org.site,
+        )
 
 class OrgGallerySerializer(serializers.ModelSerializer):
     title = Field(source='comment')
