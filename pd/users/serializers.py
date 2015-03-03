@@ -6,13 +6,13 @@ from rest_framework.fields import Field
 from django.db.models.query_utils import Q
 
 from rest_api.fields import HyperlinkedFileField
-from pd.utils import PhonesFromTextMixin, utcisoformat
+from pd.utils import PhonesFromTextMixin, utcisoformat, CreatedAtMixin
 
 from django.contrib.auth.models import User
 
 from geo.models import Location
 from users.models import Org, Store, FavoriteSupplier, UserPhoto, is_cabinet_user, is_trade_user, \
-                         Profile, Dover, ProfileLORU, get_profile, OrgGallery
+                         Profile, Dover, ProfileLORU, get_profile, OrgGallery, OrgReview
 from persons.models import Phone
 from orders.models import Order, Product, Service, OrgServicePrice
 
@@ -304,6 +304,20 @@ class UserFioSerializer(UserProfileMixin, serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ('id', 'firstName', 'lastName', 'middleName')
+
+class OrgReviewSerializer(CreatedAtMixin, serializers.ModelSerializer):
+    isPositive = Field(source='is_positive')
+    author = UserFioSerializer(source='creator')
+    createdAt = serializers.SerializerMethodField('createdAt_func')
+    title = Field(source='subject')
+    commonText = Field(source='common_text')
+    positiveText = Field(source='positive_text')
+    negativeText = Field(source='negative_text')
+
+    class Meta:
+        model = OrgReview
+        fields = ('id', 'isPositive', 'title', 'commonText', 'positiveText', 
+                  'negativeText', 'createdAt', 'author')
 
 class UserSettingsSerializer(UserProfileMixin, serializers.ModelSerializer):
     firstName = serializers.SerializerMethodField('firstName_func')
