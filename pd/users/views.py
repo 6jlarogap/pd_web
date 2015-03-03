@@ -69,7 +69,8 @@ from geo.models import Location, Country
 
 from users.serializers import StoreSerializer, OrgSerializer, OrgShort2Serializer, \
                               OrgShort3Serializer, OrgOptSupplierSerializer, OrgShort5Serializer, \
-                              UserSettingsSerializer, ShopSerializer, OrgGallerySerializer
+                              UserSettingsSerializer, ShopSerializer, OrgGallerySerializer, \
+                              ShopDetailSerializer
 
 from sms_service.utils import send_sms
 
@@ -2585,3 +2586,14 @@ class ApiShopsGalleryView(ApiShopsMixin, APIView):
             return Response(data=dict(status='error', message=excpt.message), status=400)
 
 api_shops_gallery = ApiShopsGalleryView.as_view()
+
+class ApiShopsDetailView(ApiShopsMixin, APIView):
+
+    def get(self, request, pk):
+        shop = self.get_shop(pk, authorized_only=False)
+        return Response(
+            data = ShopDetailSerializer(shop, context=dict(request=request)).data,
+            status=200
+        )
+
+api_shops_detail = ApiShopsDetailView.as_view()
