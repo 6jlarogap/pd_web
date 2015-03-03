@@ -799,6 +799,20 @@ class OrgGallery(Files):
     """
     org = models.ForeignKey(Org)
 
+class OrgReview(BaseModel):
+    """
+    Отзывы об организации. Для поставщиков
+    """
+    org = models.ForeignKey(Org, editable=False, on_delete=models.PROTECT)
+    subject = models.CharField(_(u"Тема отзыва"), max_length=255, blank=True)
+    is_positive = models.NullBooleanField(_(u"Оценка положительная/отрицательна/без оценки"),
+                                           null=True)
+    common_text = models.TextField(_(u"Текст"), blank=True, null=True)
+    positive_text = models.TextField(_(u"Текст положительной оценки"), blank=True, null=True)
+    negative_text = models.TextField(_(u"Текст отрицательной оценки"), blank=True, null=True)
+    creator = models.ForeignKey('auth.User', verbose_name=_(u"Создатель"),
+                                on_delete=models.PROTECT, editable=False)
+
 class OrgContract(Files):
     """
     Сгенерированный pdf договора с заказчиком

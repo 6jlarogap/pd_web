@@ -17,7 +17,7 @@ from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.models import User
 from django.contrib.auth.hashers import make_password
 from django.core.validators import validate_email
-from django.core.exceptions import ValidationError
+from django.core.exceptions import ValidationError, PermissionDenied
 from django.core.urlresolvers import reverse
 from django.core.files.base import ContentFile
 from django.core.paginator import Paginator
@@ -53,10 +53,10 @@ from users.forms import UserAddForm, RegisterForm, LoruFormset, ProfileForm, Use
                         LoruOrdersStatsForm
 from users.models import Profile, Org, RegisterProfile, ProfileLORU, CustomerProfile, Store, \
                          get_mail_footer, is_cabinet_user, PermitIfTrade, PermitIfTradeOrSupervisor, \
-                         PermitIfCabinet, Oauth, OrgAbility, \
+                         PermitIfCabinet, PermitIfTradeOrCabinet, Oauth, OrgAbility, \
                          BankAccount, BankAccountRegister, OrgCertificate, OrgContract, \
                          RegisterProfileContract, RegisterProfileScan, FavoriteSupplier, \
-                         UserPhoto, OrgGallery, \
+                         UserPhoto, OrgGallery, OrgReview, \
                          is_supervisor, is_ugh_user, get_default_currency, get_profile
 from pd.models import validate_phone_as_number, validate_username
 from pd.utils import host_country_code, phones_from_text, EmailMessage, get_image
@@ -70,7 +70,7 @@ from geo.models import Location, Country
 from users.serializers import StoreSerializer, OrgSerializer, OrgShort2Serializer, \
                               OrgShort3Serializer, OrgOptSupplierSerializer, OrgShort5Serializer, \
                               UserSettingsSerializer, ShopSerializer, OrgGallerySerializer, \
-                              ShopDetailSerializer
+                              ShopDetailSerializer, OrgReviewSerializer
 
 from sms_service.utils import send_sms
 
@@ -2597,3 +2597,51 @@ class ApiShopsDetailView(ApiShopsMixin, APIView):
         )
 
 api_shops_detail = ApiShopsDetailView.as_view()
+
+class ApiShopsReviewsView(ApiShopsMixin, APIView):
+
+    def get(self, request, pk):
+        shop = self.get_shop(pk, authorized_only=False)
+        return Response(
+            data = [ OrgReviewSerializer(review).data \
+                     for review in OrgReview.objects.filter(org=shop).order_by('-dt_created')],
+            status=200
+        )
+
+    def post(self, request, pk):
+        try:
+            shop = self.get_shop(pk, authorized_only=False)
+            if not is_cabinet_user(request.user):
+                raise PermissionDenied
+            mapping = dict(
+                title='subject',
+                commonText='common_text',
+                positiveText='positive_text',
+                negativeText='negative_text',
+            )
+            kwargs = dict()
+            for key in mapping:
+                if request.DATA.get(key) is not None:
+                    kwargs[mapping[key]] = request.DATA[key]
+            if 'isPositive' in request.DATA:
+                kwargs['is_positive'] = request.DATA['isPositive']
+            # Не должно быть пустого отзыва. Хотя бы только оценка
+            if kwargs.get('is_positive') not in (True, False):
+                for key in mapping:
+                    if kwargs.get(mapping[key]):
+                        break
+                else:
+                    raise ServiceException(_(u"Пустой отзыв недопустим"))
+            kwargs.update(dict(
+                org=shop,
+                creator=request.user,
+            ))
+            review = OrgReview.objects.create(**kwargs)
+            return Response(
+                data = OrgReviewSerializer(review).data,
+                status=200
+            )
+        except ServiceException as excpt:
+            return Response(data=dict(status='error', message=excpt.message), status=400)
+
+api_shops_reviews = ApiShopsReviewsView.as_view()
