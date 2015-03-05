@@ -54,13 +54,13 @@ function AreaViewCtrl($scope, $rootScope, $http, $routeParams, $resource, $locat
 
 			$scope.area = area;
 
-            $scope.editor = {};
-            $scope.editor.caretaker = area.caretaker;
-            $scope.editor.caretakers = area.caretakers;
-            $scope.caretaker_show = caretakerShow(
-                area.caretaker,
-                area.caretakers
-            );
+		$scope.editor = {};
+		$scope.editor.caretaker = area.caretaker;
+		$scope.editor.caretakers = area.caretakers;
+		$scope.caretaker_show = caretakerShow(
+		area.caretaker,
+		area.caretakers
+		);
 
 			$scope.place = {
 			        row :'',
@@ -140,7 +140,7 @@ function AreaViewCtrl($scope, $rootScope, $http, $routeParams, $resource, $locat
 	};
 	$scope.saveEditForm = function() {
 		$scope.area.cemetery_id = $routeParams.cemetery_id;
-        $scope.area.caretaker = $scope.editor.caretaker;
+	$scope.area.caretaker = $scope.editor.caretaker;
 		$scope.area.$update({cemetery_id: $routeParams.cemetery_id}, function(){
 			$scope.closeEditForm();
 			$scope.update();
