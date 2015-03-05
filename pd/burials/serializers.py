@@ -82,10 +82,11 @@ class AreaSerializer(serializers.ModelSerializer):
     purpose = serializers.PrimaryKeyRelatedField()
     cemetery = serializers.PrimaryKeyRelatedField()
     places_count = serializers.IntegerField(required=True)
+    caretaker = serializers.PrimaryKeyRelatedField(required=False)
 
     class Meta:
         model = Area
-        fields = ('id', 'cemetery', 'name', 'availability', 'places_count', 'purpose')
+        fields = ('id', 'cemetery', 'name', 'availability', 'places_count', 'purpose', 'caretaker')
 
     def is_valid(self):
         valid = not self.errors

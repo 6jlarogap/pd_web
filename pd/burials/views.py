@@ -98,7 +98,7 @@ class CaretakerMixin(object):
             ugh = obj.ugh
         else:
         # Area. Place
-            ugh = cemetery.ugh
+            ugh = obj.cemetery.ugh
         return [
             UserFioLoginSerializer(user).data \
                 for user in User.objects.filter(
@@ -260,7 +260,7 @@ class CemeteryEdit(UGHRequiredMixin, RequestToFormMixin, FormInvalidMixin, Updat
         return redirect('manage_cemeteries')
 
 
-class AreaViewSet(viewsets.ModelViewSet):
+class AreaViewSet(CaretakerMixin, viewsets.ModelViewSet):
     model = Area
     serializer_class = AreaSerializer
     permission_classes = (IsAuthenticated,)
@@ -289,8 +289,8 @@ class AreaViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(self.object)
         data = serializer.data
         data["max_graves_count"] = request.user.profile.org.max_graves_count
+        data['caretakers'] = self.get_caretakers(self.object)
         return Response(data)
-
 
 
 class ApiOmsPlacesViewSet(viewsets.ReadOnlyModelViewSet):

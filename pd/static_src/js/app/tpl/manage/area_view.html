@@ -10,8 +10,10 @@
 	  <dd>{{area.availability|list:AVAILABILITY_CHOICES}}</dd>
 	  <dt>Назначение</dt>
 	  <dd>{{area.purpose|objList:PURPOSE_LIST}}</dd>
-	  <dt>Кол-во могил в месте</dt>
-	  <dd>{{area.places_count}}</dd>
+      <dt>Кол-во могил в месте</dt>
+      <dd>{{area.places_count}}</dd>
+      <dt>Ответственный смотритель</dt>
+      <dd>{{ caretaker_show }}</dd>
 	</dl>
 </div>
 
@@ -32,18 +34,10 @@
 
 <!-- POPUP form -->
 <div modal="isEditorOpen" close="closeEditForm()">
-    <form name="areaEditForm" novalidate>
         <div class="modal-header">
             <h3>Редактировать участок "{{area.name}}"</h3>
         </div>
-        <div class="modal-body">
-        	<div ng-include src="'/static/js/app/tpl/manage/form_edit_area.html'+version_str"></div>
-        </div>
-        <div class="modal-footer">
-        	<button class="btn btn-primary" ng-disabled="areaEditForm.$invalid" ng-click="saveEditForm()">Сохранить</button>
-            <button class="btn cancel" ng-click="closeEditForm()">Отменить</button>
-        </div>
-    </form>
+	<div ng-include src="'/static/js/app/tpl/manage/form_edit_area.html'+version_str"></div>
 </div>
 <!-- EOF POPUP form -->
 

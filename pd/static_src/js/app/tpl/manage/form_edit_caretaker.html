@@ -1,5 +1,6 @@
-<p><label for="id_caretaker">Ответственный смотритель:</label>
-<select ng-model="editor.caretaker" ng-options="caretaker.id as caretaker.fio for caretaker in editor.caretakers">
-<option value="">Смотритель не задан</option>  
-</select>
+<p>
+    <label for="id_caretaker">Ответственный смотритель:</label>
+    <select ng-model="editor.caretaker" ng-options="caretaker.id as caretaker.fio for caretaker in editor.caretakers">
+        <option value="">Смотритель не назначен</option> 
+    </select>
 </p>
