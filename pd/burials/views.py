@@ -332,7 +332,7 @@ class ApiCatalogPlacesViewSet(viewsets.ReadOnlyModelViewSet):
         return Place.objects.filter(q).distinct()
 
 
-class PlaceViewSet(viewsets.ModelViewSet):
+class PlaceViewSet(CaretakerMixin, viewsets.ModelViewSet):
     model = Place
     serializer_class = PlaceSerializer
     permission_classes = (IsAuthenticated,)
@@ -536,6 +536,7 @@ class PlaceViewSet(viewsets.ModelViewSet):
             data["responsible"] = AlivePersonSerializer(place.responsible).data 
             if place.responsible.address:
                 data["responsible_address"] = LocationStaticSerializer(place.responsible.address).data
+        data['caretakers'] = self.get_caretakers(cemetery)
         return Response(status=200, data=data)
 
 

@@ -147,12 +147,14 @@ class PlaceSerializer(GetGalleryMixin, serializers.ModelSerializer):
     dt_size_violated = serializers.DateTimeField(required=False)
     dt_unowned = serializers.DateTimeField(required=False)
     dt_unindentified = serializers.DateTimeField(required=False)
+    caretaker = serializers.PrimaryKeyRelatedField(required=False)
 
     class Meta:
         model = Place
-        fields = ('id', 'cemetery', 'lat', 'lng', 'area', 'row', 'place', 'responsible', 'responsible_txt', \
+        fields = ('id', 'cemetery', 'lat', 'lng', 'area', 'row', 'place', 'responsible', 'responsible_txt',
                   'place_length', 'place_width', 'gallery',
-                  'dt_wrong_fio', 'dt_military', 'dt_size_violated', 'dt_unowned', 'dt_unindentified', 
+                  'dt_wrong_fio', 'dt_military', 'dt_size_violated', 'dt_unowned', 'dt_unindentified',
+                  'caretaker',
                  ) 
 
     def responsible_str(self, obj):
