@@ -44,4 +44,19 @@
       </div>
     </form>
   </tab>
+  <tab heading="Ответственный смотритель">
+    <form name="cemeteryCareTakerForm">
+      <div class="modal-body">
+        <div ng-include src="'/static/js/app/tpl/manage/form_edit_caretaker.html'+version_str"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary"
+                ng-disabled="is_editor_disabled(cemeteryEditForm)"
+                ng-click="saveEditForm()">
+          Сохранить
+        </button>
+        <button class="btn cancel" ng-click="closeEditForm()">Отменить</button>
+      </div>
+    </form>
+  </tab>
 </tabset>

@@ -72,6 +72,8 @@ class Cemetery(GetLogsMixin, BaseModel, PhonesMixin):
     archive_burial_account_number_required = models.BooleanField(_(u"Номер архивного захоронения обязателен"), default=True)
     square = models.FloatField(_(u"Площадь"), null=True, editable=False)
     # phones: могут быть разных типов, пользуемся моделью persons.Phone
+    caretaker = models.ForeignKey('auth.User', verbose_name=_(u"Ответственный смотритель"), null=True, editable=False,
+                                  related_name='caretaker_cemeteries', on_delete=models.PROTECT)
 
     class Meta:
         verbose_name = _(u"Кладбище")
@@ -169,6 +171,8 @@ class Area(BaseModel):
     purpose = models.ForeignKey(AreaPurpose, verbose_name=_(u"Назначение"), null=True, on_delete=models.PROTECT)
     places_count = models.PositiveIntegerField(_(u"Макс. кол-во могил в месте"), default=1)
     square = models.FloatField(_(u"Площадь"), null=True, editable=False)
+    caretaker = models.ForeignKey('auth.User', verbose_name=_(u"Ответственный смотритель"), null=True, editable=False,
+                                  related_name='caretaker_areas', on_delete=models.PROTECT)
 
     class Meta:
         verbose_name = _(u"Участок")
@@ -226,6 +230,8 @@ class Place(SafeDeleteMixin, GeoPointModel):
     dt_size_violated = models.DateTimeField(_(u"Нарушение размеров /дата установки признака/"), null=True, editable=False)
     dt_unowned = models.DateTimeField(_(u"Заброшенное /дата установки признака/"), null=True, editable=False)
     dt_unindentified = models.DateTimeField(_(u"Неопознанное /дата установки признака/"), null=True, editable=False)
+    caretaker = models.ForeignKey('auth.User', verbose_name=_(u"Ответственный смотритель"), null=True, editable=False,
+                                  related_name='caretaker_places', on_delete=models.PROTECT)
 
     objects = PlaceManager()
 
@@ -416,6 +422,9 @@ class Place(SafeDeleteMixin, GeoPointModel):
         if cemetery_address:
             result += _(u', %s') % cemetery_address
         return result
+
+    def get_caretaker(self):
+        return self.caretaker or self.area.caretaker or self.cemetery.caretaker or None
 
 class PlaceSize(models.Model):
     org = models.ForeignKey(Org, verbose_name=_(u"Организация"), editable=False, on_delete=models.PROTECT) 
