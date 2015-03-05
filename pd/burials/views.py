@@ -152,7 +152,6 @@ class CemeteryViewSet(CaretakerMixin, viewsets.ModelViewSet):
     
 
     def pre_save(self, obj):
-	print self.request.DATA
         address = self.request.DATA.get('obj_address')
         address_serializer = LocationDataSerializer(obj.address, data=address, partial=True)
         
