@@ -54,7 +54,7 @@ function AreaViewCtrl($scope, $rootScope, $http, $routeParams, $resource, $locat
 
 			$scope.area = area;
 
-            $scope.editor = {}
+            $scope.editor = {};
             $scope.editor.caretaker = area.caretaker;
             $scope.editor.caretakers = area.caretakers;
             $scope.caretaker_show = caretakerShow(
