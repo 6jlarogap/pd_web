@@ -98,7 +98,7 @@ class CaretakerMixin(object):
             ugh = obj.ugh
         else:
         # Area. Place
-            ugh = cemetery.ugh
+            ugh = obj.cemetery.ugh
         return [
             UserFioLoginSerializer(user).data \
                 for user in User.objects.filter(
@@ -260,7 +260,7 @@ class CemeteryEdit(UGHRequiredMixin, RequestToFormMixin, FormInvalidMixin, Updat
         return redirect('manage_cemeteries')
 
 
-class AreaViewSet(viewsets.ModelViewSet):
+class AreaViewSet(CaretakerMixin, viewsets.ModelViewSet):
     model = Area
     serializer_class = AreaSerializer
     permission_classes = (IsAuthenticated,)
@@ -289,8 +289,8 @@ class AreaViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(self.object)
         data = serializer.data
         data["max_graves_count"] = request.user.profile.org.max_graves_count
+        data['caretakers'] = self.get_caretakers(self.object)
         return Response(data)
-
 
 
 class ApiOmsPlacesViewSet(viewsets.ReadOnlyModelViewSet):
@@ -332,7 +332,7 @@ class ApiCatalogPlacesViewSet(viewsets.ReadOnlyModelViewSet):
         return Place.objects.filter(q).distinct()
 
 
-class PlaceViewSet(viewsets.ModelViewSet):
+class PlaceViewSet(CaretakerMixin, viewsets.ModelViewSet):
     model = Place
     serializer_class = PlaceSerializer
     permission_classes = (IsAuthenticated,)
@@ -536,6 +536,7 @@ class PlaceViewSet(viewsets.ModelViewSet):
             data["responsible"] = AlivePersonSerializer(place.responsible).data 
             if place.responsible.address:
                 data["responsible_address"] = LocationStaticSerializer(place.responsible.address).data
+        data['caretakers'] = self.get_caretakers(cemetery)
         return Response(status=200, data=data)
 
 

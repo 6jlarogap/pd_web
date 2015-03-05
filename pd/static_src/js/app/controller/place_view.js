@@ -103,6 +103,13 @@
       $scope.item.place_length = parseFloat($scope.item.place_length); // html5 input[type=number]
       $scope.item.place_width = parseFloat($scope.item.place_width);
 
+      $scope.editor.caretaker = result.place.caretaker;
+      $scope.editor.caretakers = result.caretakers;
+      $scope.caretaker_show = caretakerShow(
+            result.place.caretaker,
+            result.caretakers
+      );
+
       $scope.place_log = [];
       angular.forEach(result.log, function (item) {
         $scope.place_log.push(new Log(item));
@@ -322,6 +329,7 @@
     if (form.$valid) {
       var url = '/manage/cemetery/{0}/area/{1}/place/{2}'.format($scope.item.cemetery, $scope.item.area, $scope.item.id);
       $scope.loading = true;
+      $scope.editor.item.caretaker = $scope.editor.caretaker;
       $scope.editor.item.$update({
         cemetery_id: $routeParams.cemetery_id,
         area_id: $routeParams.area_id
