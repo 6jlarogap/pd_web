@@ -56,6 +56,7 @@ class CemeterySerializer(serializers.ModelSerializer):
     address = Field(source='address_id')
     time_begin = TimeField()
     time_end = TimeField()
+    caretaker = serializers.PrimaryKeyRelatedField(required=False)
     #phones = serializers.SerializerMethodField('get_phones')
 
     class Meta:
@@ -63,7 +64,7 @@ class CemeterySerializer(serializers.ModelSerializer):
         fields = ('id', 'name', 'work_time', 'area_cnt', 'time_begin', 'time_end', \
                   'places_algo', 'places_algo_archive', \
                   'archive_burial_fact_date_required', 'archive_burial_account_number_required', \
-                  'address', 'time_slots')
+                  'address', 'time_slots', 'caretaker')
     
     def get_phones(self, obj):
         return PhoneSerializer(obj.phone_set.all()).data

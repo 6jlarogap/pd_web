@@ -31,6 +31,7 @@ from burials.models import Cemetery, Place, Area, BurialFiles, Grave, Burial, Ar
                            ExhumationRequest, AreaPurpose, PlaceSize
 from burials.burials_views import *
 from logs.models import write_log, log_object, prepare_m2m_log, compare_obj
+from django.contrib.auth.models import User
 from users.models import Profile, Org, CustomerProfile, PermitIfUgh
 from users.views import SupervisorRequiredMixin, UGHRequiredMixin, LoginRequiredMixin
 from persons.models import Phone, AlivePerson, CustomPlace
@@ -51,6 +52,7 @@ from serializers import CemeterySerializer, AreaSerializer, PlaceSerializer, Are
     ApiOmsPlacesSerializer, ApiCatalogPlacesSerializer
 
 from persons.serializers import AlivePersonSerializer, PhoneSerializer
+from users.serializers import UserFioLoginSerializer
 from geo.serializers import LocationSerializer, LocationStaticSerializer, LocationDataSerializer
 from logs.serializers import LogSerializer
 
@@ -89,7 +91,24 @@ def getPlace(request):
     else:
         return get_object_or_404(Place, id=place_id, cemetery__ugh=request.user.profile.org)
 
-class CemeteryViewSet(viewsets.ModelViewSet):
+class CaretakerMixin(object):
+
+    def get_caretakers(self, obj):
+        if isinstance(obj, Cemetery):
+            ugh = obj.ugh
+        else:
+        # Area. Place
+            ugh = cemetery.ugh
+        return [
+            UserFioLoginSerializer(user).data \
+                for user in User.objects.filter(
+                                profile__org=ugh,
+                                is_active=True,
+                            )
+        ]
+
+
+class CemeteryViewSet(CaretakerMixin, viewsets.ModelViewSet):
     model = Cemetery
     form_class = CemeteryForm
     serializer_class = CemeterySerializer
@@ -133,6 +152,7 @@ class CemeteryViewSet(viewsets.ModelViewSet):
     
 
     def pre_save(self, obj):
+	print self.request.DATA
         address = self.request.DATA.get('obj_address')
         address_serializer = LocationDataSerializer(obj.address, data=address, partial=True)
         
@@ -190,7 +210,7 @@ class CemeteryViewSet(viewsets.ModelViewSet):
         data["cemetery"]["max_graves_count"] = request.user.profile.org.max_graves_count
         if cemetery.address:
             data["address"] = LocationStaticSerializer(cemetery.address).data
-
+        data['caretakers'] = self.get_caretakers(cemetery)
         return Response(status=200, data=data)
 
 
