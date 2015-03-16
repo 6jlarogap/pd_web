@@ -66,6 +66,7 @@ class BasePerson(PersonMixin, models.Model):
     first_name = models.CharField(_(u"Имя"), max_length=255, blank=True)
     middle_name = models.CharField(_(u"Отчество"), max_length=255, blank=True)
     birth_date = UnclearDateModelField(_(u"Дата рождения"), serialize=False, blank=True, null=True)
+    ident_number = models.CharField(_(u"Идентификационный номер"), max_length=255, blank=True)
 
     address = models.ForeignKey(Location, editable=False, null=True)
 

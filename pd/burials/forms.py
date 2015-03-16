@@ -7,6 +7,7 @@ import re
 
 from django import forms
 from django.contrib import messages
+from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
 from django.db import models
@@ -1163,6 +1164,14 @@ class BurialCommitForm(BurialForm):
                deadman_death_date > fact_date:
                 msg = _(u"Фактическая дата захоронения не может быть раньше даты смерти")
                 raise forms.ValidationError(msg)
+
+        if settings.DEADMAN_IDENT_NUMBER_ALLOW and \
+           not (self.instance.is_archive() or self.request.REQUEST.get('archive')) and \
+           not self.instance.is_transferred() and \
+           self.deadman_form.cleaned_data.get("last_name") and \
+           not self.deadman_form.cleaned_data.get("ident_number"):
+            msg = _(u"Нет идентификационного номера для усопшего")
+            raise forms.ValidationError(msg)
 
         if self.dc_form.is_valid():
             death_certificate_release_date = self.dc_form.cleaned_data.get('release_date')
