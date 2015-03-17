@@ -211,6 +211,7 @@ class BurialSearchForm(forms.Form):
 
     fio = forms.CharField(required=False, max_length=100, label=_(u"ФИО"))
     no_last_name = forms.BooleanField(required=False, initial=False, label=_(u"Неизв."))
+    ident_number_search = forms.CharField(required=False, max_length=100, label=_(u"Идентификационный номер"))
     birth_date_from = forms.DateField(required=False, label=_(u"Дата рожд. с"))
     birth_date_to = forms.DateField(required=False, label=_(u"по"))
     death_date_from = forms.DateField(required=False, label=_(u"Дата смерти с"))
@@ -234,6 +235,11 @@ class BurialSearchForm(forms.Form):
     status = forms.TypedChoiceField(required=False, label=_(u"Статус"), choices=EMPTY + Burial.STATUS_CHOICES)
     annulated = forms.BooleanField(required=False, initial=False, label=_(u"Аннулировано"))
     per_page = forms.ChoiceField(label=_(u"На странице"), choices=PAGE_CHOICES, initial=25, required=False)
+
+    def __init__(self, *args, **kwargs):
+        super(BurialSearchForm, self).__init__(*args, **kwargs)
+        if not settings.DEADMAN_IDENT_NUMBER_ALLOW:
+            del self.fields['ident_number_search']
 
 class ResponsibleForm(AlivePersonForm):
     WHERE_FROM_PLACE = u'place'
