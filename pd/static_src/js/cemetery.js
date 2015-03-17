@@ -1018,6 +1018,22 @@ $(function() {
         }
     });
 
+    $('#id_no_last_name').change(function() {
+        if ($('#id_ident_number_search').length) {
+            if ($(this).is(':checked')) {
+                $('#id_ident_number_search').attr("disabled", "disabled");
+            } else {
+                $('#id_ident_number_search').removeAttr("disabled");
+            }
+        }
+        if ($(this).is(':checked')) {
+            $('#id_fio').attr("disabled", "disabled");
+        } else {
+            $('#id_fio').removeAttr("disabled");
+        }
+    });
+    $('#id_no_last_name').change();
+
     var ac_options = {
         bounds: USER_DEFAULT_BOUNDS,
         types: ['geocode'],

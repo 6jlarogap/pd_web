@@ -475,7 +475,7 @@ class BurialsListView(PaginateListView):
         if form.data and form.is_valid():
             if form.cleaned_data['operation']:
                 burials = burials.filter(burial_type=form.cleaned_data['operation'])
-            if form.cleaned_data['fio']:
+            if form.cleaned_data['fio'] and not form.cleaned_data['no_last_name']:
                 fio = [f.strip('.') for f in form.cleaned_data['fio'].split(' ')]
                 q = Q()
                 if len(fio) > 2:
@@ -485,6 +485,10 @@ class BurialsListView(PaginateListView):
                 if len(fio) > 0:
                     q &= Q(deadman__last_name__istartswith=fio[0])
                 burials = burials.filter(q)
+            if settings.DEADMAN_IDENT_NUMBER_ALLOW and \
+               form.cleaned_data.get('ident_number_search', '').strip() and \
+               not form.cleaned_data['no_last_name']:
+                burials = burials.filter(deadman__ident_number__icontains=form.cleaned_data['ident_number_search'])
             if form.cleaned_data['birth_date_from']:
                 burials = burials.filter(deadman__birth_date__gte=form.cleaned_data['birth_date_from'])
             if form.cleaned_data['birth_date_to']:
