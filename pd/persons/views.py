@@ -15,7 +15,7 @@ from persons.serializers import AlivePersonSerializer, DeadPersonSerializer, Pho
                                 CustomPlaceDetailSerializer, CustomPlaceListSerializer, \
                                 CustomPlaceEditSerializer, \
                                 CustomPersonSerializer, CustomPerson2Serializer, \
-                                CustomPerson3Serializer, \
+                                CustomPerson3Serializer, CustomPerson4Serializer, \
                                 MemoryGallerySerializer, MemoryGallery2Serializer
 from orders.serializers import OrderSerializer
 
@@ -306,7 +306,7 @@ class ApiCustompersonMemoryGalleryView(ApiCustompersonMixin, APIView):
             if fields['type'] not in [type_[0] for type_ in MemoryGallery.TYPE_CHOICES]:
                 raise ServiceException(_(u'Неверный тип (type)'))
             if fields['type'] != MemoryGallery.TYPE_TEXT and not file_:
-                raise ServiceException(_(u'Тип (type) %s требует загружаемого файла') % fields['type'])
+                raise ServiceException(_(u'Тип (type) %s требует загружаемого файла (mediaContent)') % fields['type'])
             if fields['type'] == MemoryGallery.TYPE_TEXT and \
                (not fields['text'] or not fields['text'].strip()):
                 raise ServiceException(_(u'Тип (type) %s требует непустой текст') % fields['type'])
@@ -404,7 +404,7 @@ class ApiClientPlacesDeadmansDetailView(ApiClientPlacesMixin, ApiCustompersonMix
         serializer = CustomPersonSerializer(
             customperson,
             data=request.DATA,
-            context=dict(request=request),
+            context=dict(request=request, customplace=customplace),
         )
         if serializer.is_valid():
             serializer.save()
@@ -430,6 +430,19 @@ class ApiClientDeadmansView(APIView):
         )
 
 api_client_deadmans = ApiClientDeadmansView.as_view()
+
+class ApiClientPersonsView(APIView):
+    permission_classes = (PermitIfCabinet,)
+
+    def get(self, request):
+        return Response(
+            data=[ CustomPerson4Serializer(customperson, context=dict(request=request)).data \
+                   for customperson in CustomPerson.objects.filter(customplace__user=request.user)
+            ],
+            status=200,
+        )
+
+api_client_persons = ApiClientPersonsView.as_view()
 
 class ApiClientPlacesAttachmentsView(ApiClientPlacesMixin, APIView):
     permission_classes = (PermitIfCabinet,)

@@ -131,15 +131,6 @@ class BaseCustomPersonSerializer(UnclearDateFieldMixin, serializers.HyperlinkedM
     firstName = Field(source='first_name')
     middleName = Field(source='middle_name')
 
-class CustomPersonSerializer(BaseCustomPersonSerializer):
-    omsData = Field(source='oms_data')
-
-    class Meta:
-        model = CustomPerson
-        fields = ('id', 'firstName', 'lastName', 'middleName',
-                  'birthDate', 'deathDate', 'omsData',
-        )
-
     def restore_object(self, attrs, instance=None):
         data = self.context['request'].DATA
         customplace = self.context.get('customplace')
@@ -158,11 +149,22 @@ class CustomPersonSerializer(BaseCustomPersonSerializer):
         if 'deathDate' in data:
             fields['death_date'] = self.set_unclear_date(data['deathDate'])
         if instance:
+            if 'customplace' in self.context:
+                fields['customplace'] = customplace
             for k in fields:
                 setattr(instance, k, fields[k])
             return instance
         else:
             return CustomPerson(customplace=customplace, **fields)
+
+class CustomPersonSerializer(BaseCustomPersonSerializer):
+    omsData = Field(source='oms_data')
+
+    class Meta:
+        model = CustomPerson
+        fields = ('id', 'firstName', 'lastName', 'middleName',
+                  'birthDate', 'deathDate', 'omsData',
+        )
 
 class CustomPerson2Serializer(BaseCustomPersonSerializer):
     grave = serializers.SerializerMethodField('grave_func')
@@ -272,6 +274,16 @@ class CustomPerson3Serializer(UnclearDateFieldMixin, serializers.ModelSerializer
             return instance
         else:
             return CustomPerson(customplace=customplace, **fields)
+
+class CustomPerson4Serializer(BaseCustomPersonSerializer):
+    titlePhoto = HyperlinkedFileField(source='title_photo')
+    placeId = serializers.Field('customplace.id')
+
+    class Meta:
+        model = CustomPerson
+        fields = ('id', 'firstName', 'lastName', 'middleName',
+                  'birthDate', 'deathDate', 'titlePhoto', 'placeId',
+        )
 
 class ArchIDDocumentTypeSerializer(serializers.ModelSerializer):
     class Meta:
