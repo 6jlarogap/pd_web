@@ -403,7 +403,7 @@ class ApiClientPlacesDeadmansDetailView(ApiClientPlacesMixin, ApiCustompersonMix
         serializer = CustomPersonSerializer(
             customperson,
             data=request.DATA,
-            context=dict(request=request, customplace=customplace),
+            context=dict(request=request),
         )
         if serializer.is_valid():
             serializer.save()
