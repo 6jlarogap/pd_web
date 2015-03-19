@@ -134,9 +134,11 @@ class BaseCustomPersonSerializer(UnclearDateFieldMixin, serializers.HyperlinkedM
     def restore_object(self, attrs, instance=None):
         data = self.context['request'].DATA
 
-        # - post:   из view всегда придет contect['customplace']
-        # - put:    может прийти customplace (реальный или null), тогда правим.
-        #           Если не придет, то не затрагиваем customplace при правке
+        # - post:   из view всегда придет context['customplace']
+        # - put:    может прийти context['customplace'] (реальный или null),
+        #           тогда правим customplace в instance. Корректность
+        #           customplace проверяется во view.
+        #           Если не придет, то не затрагиваем customplace при правке.
         #
         customplace = self.context.get('customplace')
 
