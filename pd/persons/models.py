@@ -379,7 +379,7 @@ class CustomPlace(LocationMixin, BaseModel):
 
     def add_custom_deadman(self, burial):
         """
-        Добавить копияю усопшего (CustomPerson) из Burial
+        Добавить копию усопшего (CustomPerson) из Burial
         """
         deadman = burial.deadman
         if deadman:
@@ -387,6 +387,7 @@ class CustomPlace(LocationMixin, BaseModel):
                 customplace=self,
                 person=deadman.baseperson_ptr,
                 defaults=dict(
+                    user=self.user,
                     last_name=deadman.last_name,
                     first_name=deadman.first_name,
                     middle_name=deadman.middle_name,
@@ -452,6 +453,7 @@ class CustomPerson(PersonMixin, PhotoModel, BaseModel):
     # Поскольку предполагается здесь хранить и живых лиц, то
     # ссылку делаем на Person, как живое, так и мертвое.
     #
+    user = models.ForeignKey('auth.User', verbose_name=_(u"Владелец или указавший захороненного"))
     customplace = models.ForeignKey(CustomPlace, verbose_name=_(u"Место захоронения"), blank=True, null=True)
     person = models.OneToOneField(BasePerson, verbose_name=_(u"Лицо"), null=True)
     last_name = models.CharField(_(u"Фамилия"), max_length=255, blank=True)
