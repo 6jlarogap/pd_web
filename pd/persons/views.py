@@ -15,7 +15,7 @@ from persons.serializers import AlivePersonSerializer, DeadPersonSerializer, Pho
                                 CustomPlaceDetailSerializer, CustomPlaceListSerializer, \
                                 CustomPlaceEditSerializer, \
                                 CustomPersonSerializer, CustomPerson2Serializer, \
-                                CustomPerson3Serializer, \
+                                CustomPerson3Serializer, CustomPerson4Serializer, \
                                 MemoryGallerySerializer, MemoryGallery2Serializer
 from orders.serializers import OrderSerializer
 
@@ -221,8 +221,7 @@ class ApiCustompersonMixin(object):
     def get_customperson(self, pk):
         try:
             customperson = CustomPerson.objects.get(pk=pk)
-            if customperson.customplace and \
-               customperson.customplace.user != self.request.user:
+            if customperson.user != self.request.user:
                 raise Http404
         except CustomPerson.DoesNotExist:
             raise Http404
@@ -306,7 +305,7 @@ class ApiCustompersonMemoryGalleryView(ApiCustompersonMixin, APIView):
             if fields['type'] not in [type_[0] for type_ in MemoryGallery.TYPE_CHOICES]:
                 raise ServiceException(_(u'Неверный тип (type)'))
             if fields['type'] != MemoryGallery.TYPE_TEXT and not file_:
-                raise ServiceException(_(u'Тип (type) %s требует загружаемого файла') % fields['type'])
+                raise ServiceException(_(u'Тип (type) %s требует загружаемого файла (mediaContent)') % fields['type'])
             if fields['type'] == MemoryGallery.TYPE_TEXT and \
                (not fields['text'] or not fields['text'].strip()):
                 raise ServiceException(_(u'Тип (type) %s требует непустой текст') % fields['type'])
@@ -396,7 +395,7 @@ class ApiClientPlacesDeadmansDetailView(ApiClientPlacesMixin, ApiCustompersonMix
     def put(self, request, pk, deadman_pk):
         customplace = self.get_customplace(pk)
         customperson = self.get_customperson(deadman_pk)
-        if customperson.customplace and customperson.customplace != customplace:
+        if not customperson.customplace or customperson.customplace != customplace:
             raise Http404
         message = self.check_life_dates()
         if message:
@@ -420,7 +419,7 @@ class ApiClientDeadmansView(APIView):
         data = list()
         for pk in re.split(r'[,\s]+', request.GET.get('ids', '').strip()):
             try:
-                customperson=CustomPerson.objects.get(pk=pk,customplace__user=request.user)
+                customperson=CustomPerson.objects.get(pk=pk, user=request.user)
             except (ValueError, CustomPerson.DoesNotExist, ):
                 raise Http404
             data.append(CustomPerson2Serializer(customperson).data)
@@ -430,6 +429,78 @@ class ApiClientDeadmansView(APIView):
         )
 
 api_client_deadmans = ApiClientDeadmansView.as_view()
+
+class ApiClientPersonsView(ApiClientPlacesMixin, APIView):
+    permission_classes = (PermitIfCabinet,)
+
+    def get(self, request):
+        return Response(
+            data=[ CustomPerson4Serializer(customperson, context=dict(request=request)).data \
+                   for customperson in CustomPerson.objects.filter(user=request.user)
+            ],
+            status=200,
+        )
+
+    def post(self, request):
+        try:
+            customplace_id = request.DATA.get('placeId')
+            if customplace_id:
+                customplace = self.get_customplace(customplace_id)
+            else:
+                customplace = None
+            message = self.check_life_dates()
+            if message:
+                raise ServiceException(message)
+            serializer = CustomPerson4Serializer(
+                data=request.DATA,
+                context=dict(request=request, customplace=customplace),
+            )
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data, status=200)
+            return Response(serializer.errors, status=400)
+        except ServiceException as excpt:
+            return Response(data=dict(status='error', message=excpt.message), status=400)
+
+api_client_persons = ApiClientPersonsView.as_view()
+
+class ApiClientPersonsDetailView(ApiClientPlacesMixin, ApiCustompersonMixin, APIView):
+    permission_classes = (PermitIfCabinet,)
+
+    def get(self, request, pk):
+        customperson = self.get_customperson(pk)
+        return Response(
+            data=CustomPerson4Serializer(customperson, context=dict(request=request)).data,
+            status=200,
+        )
+
+    def put(self, request, pk):
+        try:
+            customperson = self.get_customperson(pk)
+            context = dict(request=request)
+            if 'placeId' in request.DATA:
+                customplace_id = request.DATA['placeId']
+                if customplace_id:
+                    customplace = self.get_customplace(customplace_id)
+                else:
+                    customplace = None
+                context['customplace'] = customplace
+            message = self.check_life_dates()
+            if message:
+                raise ServiceException(message)
+            serializer = CustomPerson4Serializer(
+                customperson,
+                data=request.DATA,
+                context=context,
+            )
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data, status=200)
+            return Response(serializer.errors, status=400)
+        except ServiceException as excpt:
+            return Response(data=dict(status='error', message=excpt.message), status=400)
+
+api_client_persons_detail = ApiClientPersonsDetailView.as_view()
 
 class ApiClientPlacesAttachmentsView(ApiClientPlacesMixin, APIView):
     permission_classes = (PermitIfCabinet,)
