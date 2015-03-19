@@ -22,6 +22,7 @@ urlpatterns = patterns('persons.views',
     url(r'^api/client/deadmans/?$', 'api_client_deadmans', name='api_client_deadmans'),
 
     url(r'^api/client/persons/?$', 'api_client_persons', name='api_client_persons'),
+    url(r'^api/client/persons/(?P<pk>\d+)/?$', 'api_client_persons_detail', name='api_client_persons_detail'),
 
     url(r'^api/custompersons/(?P<pk>\d+)/?$', 'api_customperson_detail', name='api_customperson_detail'),
     url(r'^api/custompersons/(?P<pk>\d+)/memories/?$', 'api_customperson_memory_gallery', name='api_customperson_memory_gallery'),

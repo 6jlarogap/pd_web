@@ -464,6 +464,44 @@ class ApiClientPersonsView(ApiClientPlacesMixin, APIView):
 
 api_client_persons = ApiClientPersonsView.as_view()
 
+class ApiClientPersonsDetailView(ApiClientPlacesMixin, ApiCustompersonMixin, APIView):
+    permission_classes = (PermitIfCabinet,)
+
+    def get(self, request, pk):
+        customperson = self.get_customperson(pk)
+        return Response(
+            data=CustomPerson4Serializer(customperson, context=dict(request=request)).data,
+            status=200,
+        )
+
+    def put(self, request, pk):
+        try:
+            customperson = self.get_customperson(pk)
+            context = dict(request=request)
+            if 'placeId' in request.DATA:
+                customplace_id = request.DATA['placeId']
+                if customplace_id:
+                    customplace = self.get_customplace(customplace_id)
+                else:
+                    customplace = None
+                context['customplace'] = customplace
+            message = self.check_life_dates()
+            if message:
+                raise ServiceException(message)
+            serializer = CustomPerson4Serializer(
+                customperson,
+                data=request.DATA,
+                context=context,
+            )
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data, status=200)
+            return Response(serializer.errors, status=400)
+        except ServiceException as excpt:
+            return Response(data=dict(status='error', message=excpt.message), status=400)
+
+api_client_persons_detail = ApiClientPersonsDetailView.as_view()
+
 class ApiClientPlacesAttachmentsView(ApiClientPlacesMixin, APIView):
     permission_classes = (PermitIfCabinet,)
 
