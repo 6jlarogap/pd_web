@@ -32,7 +32,7 @@
         </dl>
 
         <table ng-hide="editor.isResponsibleEdited" class="pd-form">
-          <tr>
+          <tr ng-show="editor.create_cabinet">
             <th width="200px">
               <label>Мобильный телефон<br/> для входа в кабинет:</label>
             </th>
@@ -79,7 +79,7 @@
         </dl>
 
         <table ng-show="editor.isResponsibleEdited" class="pd-form">
-          <tr>
+          <tr ng-show="editor.create_cabinet">
             <th width="200px">
               <label>Мобильный телефон<br/> для входа в кабинет:</label>
             </th>

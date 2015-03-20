@@ -104,6 +104,7 @@
       $scope.item.place_width = parseFloat($scope.item.place_width);
 
       $scope.editor.caretaker = result.place.caretaker;
+      $scope.editor.create_cabinet = result.place.create_cabinet;
       $scope.editor.caretakers = result.caretakers;
       $scope.caretaker_show = caretakerShow(
             result.place.caretaker,
