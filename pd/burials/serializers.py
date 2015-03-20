@@ -1,5 +1,6 @@
 # coding=utf-8
 
+from django.conf import settings
 from django.contrib.auth.models import Group, Permission
 from django.utils.translation import ugettext as _
 from rest_framework import serializers
@@ -148,14 +149,18 @@ class PlaceSerializer(GetGalleryMixin, serializers.ModelSerializer):
     dt_unowned = serializers.DateTimeField(required=False)
     dt_unindentified = serializers.DateTimeField(required=False)
     caretaker = serializers.PrimaryKeyRelatedField(required=False)
+    create_cabinet = serializers.SerializerMethodField('create_cabinet_func')
 
     class Meta:
         model = Place
         fields = ('id', 'cemetery', 'lat', 'lng', 'area', 'row', 'place', 'responsible', 'responsible_txt',
                   'place_length', 'place_width', 'gallery',
                   'dt_wrong_fio', 'dt_military', 'dt_size_violated', 'dt_unowned', 'dt_unindentified',
-                  'caretaker',
+                  'caretaker', 'create_cabinet',
                  ) 
+
+    def create_cabinet_func(self, obj):
+        return settings.CREATE_CABINET_ALLOW
 
     def responsible_str(self, obj):
         if obj.responsible:

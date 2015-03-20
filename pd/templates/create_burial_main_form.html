@@ -212,7 +212,7 @@
         {{ form.responsible_form.middle_name.errors }}
         <p>{{ form.responsible_form.middle_name.label_tag }} {{ form.responsible_form.middle_name }}<span class="helptext">{{ form.responsible_form.middle_name.help_text }}</span></p>
 
-        {% if form.responsible_form.login_phone_ %}
+        {% if form.responsible_form.login_phone_ and global_context_CREATE_CABINET_ALLOW %}
             {{ form.responsible_form.login_phone_.errors }}
             <p>
             {{ form.responsible_form.login_phone_.label_tag }}
