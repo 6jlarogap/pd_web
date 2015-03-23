@@ -53,4 +53,6 @@ class UnclearDateFieldMixin(object):
         return instance.death_date and instance.death_date.str_safe() or None
 
     def set_unclear_date(self, s):
+        if s and s.lower() == 'null':
+            s = None
         return UnclearDate.from_str_safe(s)

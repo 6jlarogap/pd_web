@@ -160,7 +160,7 @@ class UnclearDate:
     @classmethod
     def check_safe_str(cls, s, check_today=False):
         """
-        Проверка правильности строки "гггг-мм-дд", "гггг-мм", "гггг", или None, если дата не задана
+        Проверка правильности строки "гггг-мм-дд", "гггг-мм", "гггг", или None ("null"), если дата не задана
 
         check_today - надо ли еще проверять, чтобы не было больше текущей даты
         Может возвратить непустое сообщение об ошибке
@@ -168,6 +168,8 @@ class UnclearDate:
         message = ''
         if isinstance(s, basestring):
             s = s.strip()
+            if s.lower() == 'null':
+                s = None
         if s:
             try:
                 m = re.search(cls.SAFE_STR_REGEX, s)
