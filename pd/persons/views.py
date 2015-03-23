@@ -32,7 +32,7 @@ from users.models import PermitIfCabinet, user_dict
 from orders.models import Order, ResultFile
 from geo.models import Location
 
-from pd.utils import utcisoformat, get_image, is_video
+from pd.utils import utcisoformat, get_image, is_video, str_to_bool_or_None
 from pd.views import ServiceException
 
 
@@ -154,7 +154,11 @@ class ApiClientPlacesMixin(object):
 
     def check_life_dates(self, instance=None):
         birth_date = self.request.DATA.get('birthDate') or self.request.DATA.get('dob')
+        if birth_date and birth_date.lower() == 'null':
+            birth_date = None
         death_date = self.request.DATA.get('deathDate') or self.request.DATA.get('dod')
+        if death_date and death_date.lower() == 'null':
+            death_date = None
         message = UnclearDate.check_safe_str(birth_date, check_today=True)
         if message:
             return _(u"Дата рождения: %s") % message
@@ -241,9 +245,23 @@ class ApiCustompersonDetailView(ApiCustompersonMixin, ApiClientPlacesMixin, APIV
     def put(self, request, pk):
         try:
             customperson = self.get_customperson(pk)
+            context = dict(request=request)
+            if 'placeId' in request.DATA:
+                customplace_id = request.DATA['placeId']
+                if customplace_id:
+                    customplace = self.get_customplace(customplace_id)
+                else:
+                    customplace = None
+                context['customplace'] = customplace
             message = self.check_life_dates(instance=customperson)
             if message:
                 raise ServiceException(message)
+            is_dead = str_to_bool_or_None(request.DATA.get('isDead'))
+            if is_dead == False:
+                if UnclearDate.from_str_safe(request.DATA.get('dod')):
+                    raise ServiceException(u'Нельзя задавать дату смерти для живого человека')
+                if request.DATA.get('placeId'):
+                    raise ServiceException(u'Живой человек не может иметь место захоронения')
             photo = request.FILES.get('photo')
             if photo:
                 if photo.size > CustomPerson.MAX_PHOTO_SIZE * 1024 * 1024:
@@ -253,7 +271,7 @@ class ApiCustompersonDetailView(ApiCustompersonMixin, ApiClientPlacesMixin, APIV
             serializer = CustomPerson3Serializer(
                 customperson,
                 data=request.DATA,
-                context=dict(request=request),
+                context=context,
             )
             if serializer.is_valid():
                 serializer.save()
@@ -328,37 +346,6 @@ class ApiCustompersonMemoryGalleryView(ApiCustompersonMixin, APIView):
             return Response(data=dict(status='error', message=excpt.message), status=400)
 
 api_customperson_memory_gallery = ApiCustompersonMemoryGalleryView.as_view()
-
-class ApiCustompersonMemoryPhotoView(ApiCustompersonMixin, APIView):
-    permission_classes = (PermitIfCabinet,)
-    parser_classes = (MultiPartParser, )
-
-    def post(self, request, pk):
-        try:
-            customperson = self.get_customperson(pk)
-            fields = {
-                'customperson': customperson,
-                'type': MemoryGallery.TYPE_IMAGE,
-                'creator': request.user,
-            }
-            file_ = request.FILES.get('photo')
-            if file_:
-                fields['bfile'] = file_
-            else:
-                raise ServiceException(_(u'Не получено загружаемое фото (photo)'))
-            if file_.size > MemoryGallery.MAX_IMAGE_SIZE * 1024 * 1024:
-                raise ServiceException(
-                    _(u"Размер изображения не должен превышать %sМб") % MemoryGallery.MAX_IMAGE_SIZE
-                )
-            gallery_item = MemoryGallery.objects.create(**fields)
-            return Response(
-                data=MemoryGallery2Serializer(gallery_item, context=dict(request=request)).data,
-                status=200,
-            )
-        except ServiceException as excpt:
-            return Response(data=dict(status='error', message=excpt.message), status=400)
-
-api_customperson_memory_photo = ApiCustompersonMemoryPhotoView.as_view()
 
 class ApiClientPlacesDeadmansView(ApiClientPlacesMixin, APIView):
     permission_classes = (PermitIfCabinet,)

@@ -13,7 +13,7 @@ from users.models import get_profile
 from rest_api.fields import UnclearDateFieldSerializer, UnclearDateFieldMixin, UnclearDateFieldSafeSerializer, \
                             HyperlinkedFileField
 
-from pd.utils import CreatedAtMixin, utcisoformat
+from pd.utils import CreatedAtMixin, utcisoformat, str_to_bool_or_None
 from pd.serializers import ArchFilesSerializer
 
 class PhoneSerializer(serializers.HyperlinkedModelSerializer):
@@ -229,12 +229,15 @@ class CustomPerson3Serializer(UnclearDateFieldMixin, serializers.ModelSerializer
     dod = serializers.SerializerMethodField('death_date')
     photo = HyperlinkedFileField(source='photo', required=False)
     gallery = serializers.SerializerMethodField('gallery_func')
+    isDead = Field(source='is_dead')
+    placeId = Field(source='customplace.id')
 
     class Meta:
         model = CustomPerson
         fields = (
             'id', 'lastname', 'firstname', 'middlename',
             'commonText', 'dob', 'dod', 'photo', 'gallery',
+            'isDead', 'placeId',
         )
 
     def gallery_func(self, instance):
@@ -260,6 +263,7 @@ class CustomPerson3Serializer(UnclearDateFieldMixin, serializers.ModelSerializer
             first_name=data.get('firstname'),
             middle_name=data.get('middlename'),
             memory_text=data.get('commonText'),
+            is_dead=str_to_bool_or_None(data.get('isDead')),
         )
         fields = dict()
         for k in fields_got:
@@ -276,6 +280,8 @@ class CustomPerson3Serializer(UnclearDateFieldMixin, serializers.ModelSerializer
             if instance:
                 instance.delete_from_media()
         if instance:
+            if 'customplace' in self.context:
+                fields['customplace'] = customplace
             for k in fields:
                 setattr(instance, k, fields[k])
             return instance

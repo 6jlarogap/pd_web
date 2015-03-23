@@ -78,7 +78,8 @@ def str_to_bool_or_None(s):
     """
     Строку 'true' или 'false' преобразовать в boolean True/False или None, если строка не 'true'/'false'
 
-    Применяется при разборе multipart/form-data параметров, чтоб были аналогичны разбору json параметров
+    Применяется при разборе multipart/form-data параметров, чтоб были аналогичны разбору json параметров,
+    но с сохранением совместимости, если передаются булевы параметры
     """
     result = None
     if isinstance(s, basestring):
@@ -87,6 +88,8 @@ def str_to_bool_or_None(s):
             result = True
         elif s == 'false':
             result = False
+    elif isinstance(s, bool):
+        result = s
     return result
 
 class EmailMessage(EmailMessage):
