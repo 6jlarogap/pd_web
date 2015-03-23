@@ -258,7 +258,7 @@ class ApiCustompersonDetailView(ApiCustompersonMixin, ApiClientPlacesMixin, APIV
                 raise ServiceException(message)
             is_dead = str_to_bool_or_None(request.DATA.get('isDead'))
             if is_dead == False:
-                if request.DATA.get('dod'):
+                if UnclearDate.from_str_safe(request.DATA.get('dod')):
                     raise ServiceException(u'Нельзя задавать дату смерти для живого человека')
                 if request.DATA.get('placeId'):
                     raise ServiceException(u'Живой человек не может иметь место захоронения')
