@@ -248,6 +248,8 @@ class ApiCustompersonDetailView(ApiCustompersonMixin, ApiClientPlacesMixin, APIV
             context = dict(request=request)
             if 'placeId' in request.DATA:
                 customplace_id = request.DATA['placeId']
+                if isinstance(customplace_id, basestring) and customplace_id == 'null':
+                    customplace_id = None
                 if customplace_id:
                     customplace = self.get_customplace(customplace_id)
                 else:
