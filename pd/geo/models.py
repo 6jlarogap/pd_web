@@ -19,12 +19,32 @@ class GeoPointModel(BaseModel):
     class Meta:
         abstract = True
 
+    def location_dict(self):
+        if self.lat is not None and self.lng is not None:
+            return dict(latitude=self.lat, longitude=self.lng)
+        else:
+            return None
 
 class CoordinatesModel(models.Model):
     """
     Базовая модель для списка координат объекта: вершин многоугольника
     """
+    # TODO  Убрать этот базовый класс, а модель на его основе, burials.CemeteryCoordinates
+    #       привести к PointsModel (неудачное название angle_number)
+    #
     angle_number = models.PositiveIntegerField(_(u"Порядок следования углов многоугольника"))
+    lat = models.FloatField(_(u"Широта"))
+    lng = models.FloatField(_(u"Долгота"))
+
+    class Meta:
+        abstract = True
+
+
+class PointsModel(models.Model):
+    """
+    Базовая модель для списка координат: маршрута или вершин многоугольника
+    """
+    index = models.PositiveIntegerField(_(u"Порядок следования точек, начиная с 0"))
     lat = models.FloatField(_(u"Широта"))
     lng = models.FloatField(_(u"Долгота"))
 
@@ -234,3 +254,16 @@ class Location(models.Model):
                 pass
             self.save()
 
+    def location_dict(self):
+        if self.gps_y is not None and self.gps_x is not None:
+            return dict(latitude=self.gps_y, longitude=self.gps_x)
+        else:
+            return None
+
+class LocationMixin(object):
+
+    def location_dict(self):
+        if self.address:
+            return self.address.location_dict()
+        else:
+            return None

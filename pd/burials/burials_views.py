@@ -3,6 +3,7 @@ import datetime
 import json
 from django import db
 
+from django.conf import settings
 from django.contrib import messages
 from django.core.urlresolvers import reverse
 from django.db import transaction
@@ -22,9 +23,9 @@ from burials.models import Reason, Burial, Cemetery, Place, ExhumationRequest
 from persons.models import DeathCertificate
 from logs.models import write_log
 from orders.models import Order
-from users.models import Org
+from users.models import Org, Profile, is_cabinet_user
 from pd.forms import CommentForm
-from pd.views import PaginateListView, FormInvalidMixin
+from pd.views import PaginateListView, FormInvalidMixin, get_front_end_url
 from reports.models import make_report
 
 class BurialGetOrderMixin:
@@ -63,6 +64,17 @@ class BurialsListGenericMixin:
 
 class DashboardView(BurialsListGenericMixin, TemplateView):
     template_name = 'dashboard.html'
+
+    def get(self, request, *args, **kwargs):
+        if is_cabinet_user(request.user):
+            if settings.REDIRECT_LOGIN_TO_FRONT_END:
+                return redirect(get_front_end_url(request))
+            else:
+                return render_to_response(
+                    'simple_message.html',
+                    dict(message=_(u"Рабочее место пользователя кабинета организовано другими средствами"))
+                )
+        return super(DashboardView, self).get(request, *args, **kwargs)
 
     def get_qs_filter(self):
       if self.request.user.is_authenticated() and self.request.user.profile.is_loru():
@@ -435,6 +447,7 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
             'show_private_data': self.request.user.profile.is_ugh() or \
                                  b.is_full() and not b.is_closed() and not b.is_exhumated() and \
                                  b.loru and b.loru == self.request.user.profile.org,
+            'can_personal_data': b.can_personal_data(self.request),
             'place': b.get_place(),
         }
 
@@ -462,7 +475,7 @@ class BurialsListView(PaginateListView):
         if form.data and form.is_valid():
             if form.cleaned_data['operation']:
                 burials = burials.filter(burial_type=form.cleaned_data['operation'])
-            if form.cleaned_data['fio']:
+            if form.cleaned_data['fio'] and not form.cleaned_data['no_last_name']:
                 fio = [f.strip('.') for f in form.cleaned_data['fio'].split(' ')]
                 q = Q()
                 if len(fio) > 2:
@@ -472,6 +485,10 @@ class BurialsListView(PaginateListView):
                 if len(fio) > 0:
                     q &= Q(deadman__last_name__istartswith=fio[0])
                 burials = burials.filter(q)
+            if settings.DEADMAN_IDENT_NUMBER_ALLOW and \
+               form.cleaned_data.get('ident_number_search', '').strip() and \
+               not form.cleaned_data['no_last_name']:
+                burials = burials.filter(deadman__ident_number__icontains=form.cleaned_data['ident_number_search'])
             if form.cleaned_data['birth_date_from']:
                 burials = burials.filter(deadman__birth_date__gte=form.cleaned_data['birth_date_from'])
             if form.cleaned_data['birth_date_to']:
@@ -1064,6 +1081,27 @@ class GetCemeteryTimes(View):
         return HttpResponse(json.dumps({c.pk: data}), mimetype='application/json')
 
 cemetery_times = GetCemeteryTimes.as_view()
+
+class GetCemeteryPersonalData(View):
+    def get(self, request, *args, **kwargs):
+        pk=request.GET.get('cem')
+        if not request.user.is_authenticated() or pk is None:
+            return redirect('/')
+        result = False
+        if pk:
+            try:
+                c = Cemetery.objects.get(pk=pk)
+                result = c.ugh and c.ugh.can_personal_data()
+            except (ValueError, AttributeError, Cemetery.DoesNotExist,):
+                pass
+        else:
+            try:
+                result = request.user.profile.org.can_personal_data()
+            except (AttributeError, Profile.DoesNotExist,):
+                pass
+        return HttpResponse(json.dumps({'result': result}), mimetype='application/json')
+
+cemetery_personal_data = GetCemeteryPersonalData.as_view()
 
 class ExhumateView(ArchiveMixin, DetailView):
     context_object_name = 'burial'

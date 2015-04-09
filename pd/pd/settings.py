@@ -162,7 +162,12 @@ SOUTH_TESTS_MIGRATE = False
 
 INTERNAL_IPS = ['127.0.0.1',]
 
-ACCOUNT_ACTIVATION_DAYS = 7
+# Разрешить вводить идентификационный номер для усопшего:
+DEADMAN_IDENT_NUMBER_ALLOW = False
+
+# Разрешить формирование кабинетов отвественного, посредством задания
+# мобильного телефона для входа отвественного:
+CREATE_CABINET_ALLOW = True
 
 # LOGIN_URL, все REGISTER_URLS_REGEX, и некоторые другие -- в списке url,
 # к которым возможен доступ без регистрации, см. pd/middleware.py
@@ -202,7 +207,7 @@ SENTRY_TESTING = True
 
 DEBUG_TOOLBAR_CONFIG = {'INTERCEPT_REDIRECTS': False}
 
-SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False
 SESSION_SAVE_EVERY_REQUEST = True
 
 # Google reCaptcha keys, поучаемые из http://www.google.com/recaptcha,
@@ -213,16 +218,23 @@ RECAPTCHA_PRIVATE_KEY = 'another-string-of-hex-and-digits'
 RECAPTCHA_USE_SSL = False
 
 # Для отправки кода активации и прочей почты,
-# Здесь приведены параметры, отработанные для отправки
-# через smtp-сервер @gmail.com
 #
-EMAIL_HOST = 'smtp.googlemail.com'
-EMAIL_PORT = 587
-EMAIL_HOST_USER = 'EMAIL-HOST-USER@gmail.com'
-EMAIL_HOST_PASSWORD = 'SECRET'
-EMAIL_USE_TLS = True
-EMAIL_USE_SSL = False
+# По умолчанию почта отправляется через localhost:25.
+# Если не настроен почтовый сервер на этом хосте,
+# то необходимо заполнить параметры отправки почты
+# в local_settings.py
+
+# Этот адрес применяется как "От кого" в письмах,
+# отправляемых от имени системы. Подлежит замене
+# в local_settings.py
+#
 DEFAULT_FROM_EMAIL = 'EMAIL-HOST-USER@gmail.com'
+
+# На этот адрес доставляются скрытые копии всех писем, отправленных
+# с этого сервера. Если не задан (None), то такие копии не
+# доставляются
+#
+BCC_OUR_MAIL = None 
 
 # Для учета настроек, необязательных на сайтах разработчиков
 #

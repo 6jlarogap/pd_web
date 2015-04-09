@@ -15,6 +15,23 @@ from django.conf import settings
 
 from restthumbnails.views import ThumbnailView
 
+def is_user_accessible(request, user):
+    """
+    Имеет ли доступ request.user к данным user, например, к его фото
+    """
+    result = False
+    if user == request.user:
+        result = True
+    else:
+        Profile = get_model('users', 'Profile')
+        try:
+            user.profile
+            if user.profile.org == request.user.profile.org:
+                result = True
+        except (AttributeError, Profile.DoesNotExist,):
+                pass
+    return result
+
 class OurThumbnailView(ThumbnailView):
 
     def get(self, request, *args, **kwargs):
@@ -31,6 +48,23 @@ class OurThumbnailView(ThumbnailView):
                         raise Http404
                 except IndexError:
                     raise Http404
+            elif what == 'user-photos':
+                # Фото пользователя может смотреть либо он сам, либо любой из его организации
+                try:
+                    user = get_model('auth', 'User').objects.filter(pk=pk)[0]
+                    if not is_user_accessible(request, user):
+                        raise Http404
+                except IndexError:
+                    raise Http404
+            elif what == 'order-results':
+                # Результат выполнения заказа может быть доступен исполнителю и заказчику
+                try:
+                    order = get_model('orders', 'Order').objects.filter(pk=pk)[0]
+                    if not order.is_accessible(request.user):
+                        raise Http404
+                except IndexError:
+                    raise Http404
+
         elif re.search(settings.ANONYMOUS_URLS_REGEX, request.path):
             pass
         else:
@@ -49,7 +83,7 @@ class PaginateListView(ListView):
     
     * В классе-потомке могут быть переопределены переменные, см. ниже:
     """
-    DISPLAY_OPTIONS = ['page', 'print']
+    DISPLAY_OPTIONS = ['page', 'print', 'sort']
     
     # Параметр get-запроса для сортировки по умолчанию
     # (именно get-запроса, а поля из таблицы!)
@@ -112,9 +146,10 @@ def media_xsendfile(request, path, document_root):
         # Нижеследующее отработает только под сервером Apache с mod_xsendfile
         #
         # Например: death-certificates/2013/11/06/5998/1376137215179.jpg
+        # Или:      org-data/<org_pk>/org-data.zip
         # Должны получить две группы: 'death-certificates' и  '5998'
         #
-        m= re.search(r'^/?([^/]+).*/(\d+)/[^/]+$',path)
+        m = re.search(r'^/?([^/]+).*/(\d+)/[^/]+$',path)
         if m:
             what = m.group(1)
             pk = m.group(2)
@@ -146,7 +181,6 @@ def media_xsendfile(request, path, document_root):
                     raise Http404
             elif what == 'memory-gallery':
                 try:
-                    org = get_model('users', 'Org').objects.filter(pk=pk)[0]
                     if pk != str(request.user.pk):
                         raise Http404
                 except IndexError:
@@ -158,14 +192,35 @@ def media_xsendfile(request, path, document_root):
                         raise Http404
                 except (AttributeError, Profile.DoesNotExist, ):
                     raise Http404
+            elif what == 'order-results':
+                try:
+                    order = get_model('orders', 'Order').objects.filter(pk=pk)[0]
+                    if not order.is_accessible(request.user):
+                        raise Http404
+                except IndexError:
+                    raise Http404
+            elif what == 'user-photos':
+                try:
+                    user = get_model('auth', 'User').objects.filter(pk=pk)[0]
+                    if not is_user_accessible(request, user):
+                        raise Http404
+                except IndexError:
+                    raise Http404
+            elif what == 'org-data':
+                try:
+                    Profile = get_model('users', 'Profile')
+                    if pk != str(request.user.profile.org.pk):
+                        raise Http404
+                except (AttributeError, Profile.DoesNotExist, ):
+                    raise Http404
+            # Файлы остальных объектов, подпадающих под m, пока отдаем без проверки,
+            # имеет ли к ним доступ пользователь request.user
         else:
             # Для товаров, их категорий, поддержки и др.: открыто всем
-            if re.search(r'^(?:product\-photo|icons|support)/',path):
+            if re.search(r'^/?(?:product\-photo|icons|support)/',path):
                 pass
             else:
                 raise Http404
-        # Файлы остальных обхъектов пока отдаем без проверки, имеет ли к ним доступ
-        # пользователь request.user
         response = HttpResponse()
         response['Content-Type'] = mimetypes.guess_type(filename)[0] or 'application/octet-stream'
         # Так в любом случае идет предложение или сохранить, или открыть файл, но
@@ -208,9 +263,15 @@ def get_front_end_url(request):
             result += host + '/'
     return result
 
+def get_host_url(request):
+        return u"%s://%s/" % (
+            'https' if request.is_secure() else 'http',
+            request.get_host(),
+        )
+
 class ServiceException(Exception):
     """
-    Чтобы не плодить депочки if (try) else ... if (try) ... else
+    Чтобы не плодить цепочки if (try) else ... if (try) ... else
     
     Пример:
     try:

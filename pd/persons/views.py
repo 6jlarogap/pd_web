@@ -1,8 +1,9 @@
 # coding=utf-8
 
 import json
+import re
 
-from django.db import transaction
+from django.db import transaction, IntegrityError
 from django.db.models.query_utils import Q
 from django.http import Http404, HttpResponse
 from django.views.generic.base import View
@@ -10,21 +11,28 @@ from django.utils.translation import ugettext as _
 
 from persons.models import DeadPerson, AlivePerson, BasePerson, DocumentSource, Phone, \
                            CustomPlace, CustomPerson, MemoryGallery
-from serializers import AlivePersonSerializer, DeadPersonSerializer, PhoneSerializer
+from persons.serializers import AlivePersonSerializer, DeadPersonSerializer, PhoneSerializer, \
+                                CustomPlaceDetailSerializer, CustomPlaceListSerializer, \
+                                CustomPlaceEditSerializer, \
+                                CustomPersonSerializer, CustomPerson2Serializer, \
+                                CustomPerson3Serializer, CustomPerson4Serializer, \
+                                MemoryGallerySerializer, MemoryGallery2Serializer
+from orders.serializers import OrderSerializer
 
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework import generics, viewsets
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.parsers import MultiPartParser
+from rest_framework.parsers import MultiPartParser, JSONParser
 
 from pd.models import UnclearDate, SafeDeleteMixin
-from burials.models import Place 
+from burials.models import Place, PlacePhoto
 from logs.models import write_log
-from users.models import PermitIfCabinet
+from users.models import PermitIfCabinet, user_dict
+from orders.models import Order, ResultFile
 from geo.models import Location
 
-from pd.utils import utcisoformat
+from pd.utils import utcisoformat, get_image, is_video, str_to_bool_or_None
 from pd.views import ServiceException
 
 
@@ -133,220 +141,155 @@ class PhoneViewSet(viewsets.ModelViewSet):
         else:
             write_log(self.request, object, _(u'Телефон создан'))
 
-class ApiClientCustomplacesMixin(object):
+class ApiClientPlacesMixin(object):
 
-    def create_deadmen(self, deadmen, customplace):
-        if deadmen is not None:
-            for deadman in deadmen:
-                try:
-                    CustomPerson.objects.create(
-                        customplace=customplace,
-                        last_name=deadman.get('lastname') or '',
-                        first_name=deadman.get('firstname') or '',
-                        middle_name=deadman.get('middlename') or '',
-                        is_dead=True,
-                        birth_date=deadman.get('birthDate') and UnclearDate.from_str_safe(deadman['birthDate']) or None,
-                        death_date=deadman.get('deathDate') and UnclearDate.from_str_safe(deadman['deathDate']) or None,
-                    )
-                except ValueError:
-                    raise ServiceException("Invalid death or birth date")
-
-class ApiClientCustomplacesView(ApiClientCustomplacesMixin, APIView):
-    """
-    Создать CustomPlace (post) with CustomBurials или вернуть массив CustomPlaces (get)
-
-    CustomPlace:
-    {
-        "address": "Строка адреса",
-        "location": {
-            "longitude": 54.12331,
-            "latitude": 28.54334
-        },
-        "deadmens": [
-            {
-                "lastname": "Петров",
-                "firstname": "Петр",
-                "middlename": "Петрович",
-                "birthDate": "1995-01-02T21:00:00.000Z",
-                "deathDate": "2014-05-10T21:00:00.000Z"
-            },
-            {
-                "lastname": "Иванов",
-                "firstname": "Иван",
-                "middlename": "Иванович",
-                "birthDate": "1995-07-02T21:00:00.000Z",
-                "deathDate": "2013-05-09T21:00:00.000Z"
-            }
-        ]
-    }
-    """
-    permission_classes = (PermitIfCabinet,)
-    
-    @transaction.commit_on_success
-    def post(self, request):
-        deadmen = request.DATA.get('deadmens')
-        address = None
-        location = request.DATA.get('location')
-        addr_str = request.DATA.get('address')
-        if addr_str or location:
-            address = Location.objects.create(
-                addr_str=addr_str or '',
-                gps_x=location and location['longitude'] or None,
-                gps_y=location and location['latitude'] or None,
-            )
-        customplace = CustomPlace.objects.create(user=request.user,address=address)
-        try:
-            self.create_deadmen(deadmen, customplace)
-        except ServiceException as excpt:
-            transaction.rollback()
-            return Response({"status": "error", "message": excpt.message}, 400)
-        return Response({"status": "success"}, 200)
-
-    def get(self, request):
-        data = []
-        for p in CustomPlace.objects.filter(user=request.user).order_by('pk'):
-            place=dict(
-                id=p.pk,
-                address=p.address and unicode(p.address) or None,
-                location=p.address and dict(
-                    longitude=p.address.gps_x,
-                    latitude=p.address.gps_y,
-                ) or None,
-            )
-            deadmen=[]
-            for d in CustomPerson.objects.filter(customplace=p).order_by('pk'):
-                deadman = dict(
-                    id=d.pk,
-                    lastname=d.last_name,
-                    firstname=d.first_name,
-                    middlename=d.middle_name,
-                    birthDate=d.birth_date and d.birth_date.str_safe() or None,
-                    deathDate=d.death_date and d.death_date.str_safe() or None,
-                )
-                deadmen.append(deadman)
-            place['deadmens'] = deadmen
-            data.append(place)
-        return Response(data, 200)
-
-api_client_customplaces = ApiClientCustomplacesView.as_view()
-
-class ApiClientCustomplacesDetailView(ApiClientCustomplacesMixin, SafeDeleteMixin, APIView):
-    """
-    Edit or delete CustomPlace
-    """
-    permission_classes = (PermitIfCabinet,)
-
-    def get_object(self, pk):
+    def get_customplace(self, pk):
         try:
             customplace = CustomPlace.objects.get(pk=pk)
         except CustomPlace.DoesNotExist:
             raise Http404
+        if customplace.user and customplace.user != self.request.user:
+            raise Http404
         return customplace
 
-    @transaction.commit_on_success
+    def check_life_dates(self, instance=None):
+        birth_date = self.request.DATA.get('birthDate') or self.request.DATA.get('dob')
+        if birth_date and birth_date.lower() == 'null':
+            birth_date = None
+        death_date = self.request.DATA.get('deathDate') or self.request.DATA.get('dod')
+        if death_date and death_date.lower() == 'null':
+            death_date = None
+        message = UnclearDate.check_safe_str(birth_date, check_today=True)
+        if message:
+            return _(u"Дата рождения: %s") % message
+        message = UnclearDate.check_safe_str(death_date, check_today=True)
+        if message:
+            return _(u"Дата смерти: %s") % message
+        msg_dates = _(u"Дата смерти раньше даты рождения")
+        if birth_date and death_date and birth_date > death_date:
+            return msg_dates
+        if instance:
+            if birth_date and not death_date and instance.death_date and birth_date > instance.death_date.str_safe():
+                return msg_dates
+            if not birth_date and death_date and instance.birth_date and instance.birth_date.str_safe() > death_date:
+                return msg_dates
+        return ""
+
+class ApiClientPlacesView(APIView):
+    permission_classes = (PermitIfCabinet,)
+
+    def get(self, request):
+        return Response(
+            data=[CustomPlaceListSerializer(customplace,context=dict(request=request)).data \
+                  for customplace in CustomPlace.objects.filter(user=request.user).order_by('pk')],
+            status=200,
+        )
+
+    def post(self, request):
+        serializer = CustomPlaceEditSerializer(
+            data=request.DATA,
+            context=dict(request=request),
+        )
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=200)
+        return Response(serializer.errors, status=400)
+
+api_client_places = ApiClientPlacesView.as_view()
+
+class ApiClientPlacesDetailView(ApiClientPlacesMixin, APIView):
+    permission_classes = (PermitIfCabinet,)
+
+    def get(self, request, pk):
+        return Response(
+            data=CustomPlaceDetailSerializer(self.get_customplace(pk),context=dict(request=request)).data,
+            status=200,
+        )
+
     def put(self, request, pk):
-        customplace = self.get_object(pk=pk)
-        location = request.DATA.get('location')
-        addr_str = request.DATA.get('address')
-        if addr_str or location:
-            address = Location.objects.get(pk=customplace.address.pk) if customplace.address else Location()
-            fields=dict()
-            if addr_str is not None:
-                fields['addr_str'] = addr_str
-            if location is not None:
-                fields['gps_x'] = location['longitude']
-                fields['gps_y'] = location['latitude']
-            for f in fields:
-                setattr(address, f, fields[f])
-            address.save()
-        deadmen = request.DATA.get('deadmens')
-        if deadmen is not None:
-            CustomPerson.objects.filter(customplace=customplace).delete()
-            try:
-                self.create_deadmen(deadmen, customplace)
-            except ServiceException as excpt:
-                transaction.rollback()
-                return Response({"status": "error", "message": excpt.message}, 400)
-        return Response({"status": "success"}, 200)
+        customplace = self.get_customplace(pk)
+        serializer = CustomPlaceEditSerializer(
+            customplace,
+            data=request.DATA,
+            context=dict(request=request),
+        )
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=200)
+        return Response(serializer.errors, status=400)
 
-    @transaction.commit_on_success
-    def delete(self, request, pk):
-        customplace = self.get_object(pk=pk)
-        self.safe_delete('address', customplace)
-        CustomPerson.objects.filter(customplace=customplace).delete()
-        customplace.delete()
-        return Response({"status": "success"}, 200)
-
-api_client_customplaces_detail = ApiClientCustomplacesDetailView.as_view()
+api_client_places_detail = ApiClientPlacesDetailView.as_view()
 
 class ApiCustompersonMixin(object):
 
-    def get_object(self, pk):
+    def get_customperson(self, pk):
         try:
             customperson = CustomPerson.objects.get(pk=pk)
+            if customperson.user != self.request.user:
+                raise Http404
         except CustomPerson.DoesNotExist:
             raise Http404
         return customperson
 
-class ApiMemoryGalleryMixin(object):
-
-    def gallery_dict(self, m, request):
-        return {
-            'type': m.type,
-            'text': m.text,
-            'mediaContent': m.bfile and request.build_absolute_uri(m.bfile.url) or None,
-            'eventDate': m.event_date and UnclearDate.str_safe(m.event_date) or None,
-            'createdAt': utcisoformat(m.date_of_creation),
-        }
-
-class ApiCustompersonMemoryView(ApiCustompersonMixin, ApiMemoryGalleryMixin, APIView):
+class ApiCustompersonDetailView(ApiCustompersonMixin, ApiClientPlacesMixin, APIView):
     permission_classes = (PermitIfCabinet,)
+    parser_classes = (MultiPartParser, JSONParser, )
 
     def get(self, request, pk):
-        customperson = self.get_object(pk)
-        data = {
-            'photo': None,
-            'lasttname' : customperson.last_name,
-            'firstname' : customperson.first_name,
-            'middlename' : customperson.middle_name,
-            'dob' : customperson.birth_date and customperson.birth_date.str_safe() or None,
-            'dod' : customperson.death_date and customperson.death_date.str_safe() or None,
-            'commonText': customperson.memory_text,
-        }
-        gallery = []
-        for m in MemoryGallery.objects.filter(customperson=customperson):
-            item = self.gallery_dict(m, request)
-            gallery.append(item)
-        data['gallery'] = gallery
-        return Response(data, 200)
-        
-    def patch(self, request, pk):
-        customperson = self.get_object(pk)
-        mapping = dict(
-           lastname='last_name',
-           firstname='first_name',
-           middlename='middle_name',
-           commonText='memory_text',
+        customperson = self.get_customperson(pk)
+        return Response(
+            data=CustomPerson3Serializer(customperson, context=dict(request=request)).data,
+            status=200
         )
-        fields = dict()
-        for f in mapping:
-            got = request.DATA.get(f)
-            if got is not None:
-                fields[mapping[f]] = got
-        if fields:
-            for f in fields:
-                setattr(customperson, f, fields[f])
-            customperson.save()
-        return Response({"status": "success"}, 200)
+        
+    def put(self, request, pk):
+        try:
+            customperson = self.get_customperson(pk)
+            context = dict(request=request)
+            if 'placeId' in request.DATA:
+                customplace_id = request.DATA['placeId']
+                if isinstance(customplace_id, basestring) and customplace_id == 'null':
+                    customplace_id = None
+                if customplace_id:
+                    customplace = self.get_customplace(customplace_id)
+                else:
+                    customplace = None
+                context['customplace'] = customplace
+            message = self.check_life_dates(instance=customperson)
+            if message:
+                raise ServiceException(message)
+            is_dead = str_to_bool_or_None(request.DATA.get('isDead'))
+            if is_dead == False:
+                if UnclearDate.from_str_safe(request.DATA.get('dod')):
+                    raise ServiceException(u'Нельзя задавать дату смерти для живого человека')
+                if request.DATA.get('placeId'):
+                    raise ServiceException(u'Живой человек не может иметь место захоронения')
+            photo = request.FILES.get('photo')
+            if photo:
+                if photo.size > CustomPerson.MAX_PHOTO_SIZE * 1024 * 1024:
+                    raise ServiceException(_(u"Размер фото превышает %d Мб") % CustomPerson.MAX_PHOTO_SIZE)
+                if not get_image(photo):
+                    raise ServiceException(_(u"Загруженное фото не является изображением"))
+            serializer = CustomPerson3Serializer(
+                customperson,
+                data=request.DATA,
+                context=context,
+            )
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data, status=200)
+            return Response(serializer.errors, status=400)
+        except ServiceException as excpt:
+            return Response(data=dict(status='error', message=excpt.message), status=400)
 
-api_customperson_memory = ApiCustompersonMemoryView.as_view()
+api_customperson_detail = ApiCustompersonDetailView.as_view()
 
-class ApiCustompersonMemoryGalleryView(ApiCustompersonMixin, ApiMemoryGalleryMixin, APIView):
+class ApiCustompersonMemoryGalleryView(ApiCustompersonMixin, APIView):
     permission_classes = (PermitIfCabinet,)
-    parser_classes = (MultiPartParser,)
+    parser_classes = (MultiPartParser, JSONParser, )
     
     def get(self, request, pk):
-        customperson = self.get_object(pk)
+        customperson = self.get_customperson(pk)
 
         offset = self.request.GET.get('offset') and int(self.request.GET.get('offset'))
         limit = self.request.GET.get('limit') and int(self.request.GET.get('limit'))
@@ -358,32 +301,242 @@ class ApiCustompersonMemoryGalleryView(ApiCustompersonMixin, ApiMemoryGalleryMix
         elif limit:
             filter = filter[:limit]
 
-        data = []
-        for m in filter:
-            item = self.gallery_dict(m, request)
-            item['createdBy'] = {
-                    'id': request.user.pk,
-                    'lastname': m.creator.customerprofile.user_last_name,
-                    'firstname': m.creator.customerprofile.user_first_name,
-                    'middlename': m.creator.customerprofile.user_middle_name,
-                 }
-            data.append(item)
-        return Response(data, 200)
-
+        return Response(
+            [ MemoryGallery2Serializer(gallery_item, context=dict(request=request)).data \
+              for gallery_item in filter ],
+            status=200,
+        )
 
     def post(self, request, pk):
-        customperson = self.get_object(pk)
-        fields = {
-            'customperson': customperson,
-            'type': request.DATA.get('type'),
-            'text': request.DATA.get('text'),
-            'event_date': request.DATA.get('eventDate') and UnclearDate.from_str_safe(request.DATA['eventDate']) or None,
-            'creator': request.user,
-        }
-        file_ = request.FILES.get('mediaContent')
-        if file_:
-            fields['bfile'] = file_
-        MemoryGallery.objects.create(**fields)
-        return Response({"status": "success"}, 200)
+        try:
+            customperson = self.get_customperson(pk)
+            fields = {
+                'customperson': customperson,
+                'type': request.DATA.get('type'),
+                'text': request.DATA.get('text'),
+                'event_date': UnclearDate.from_str_safe(request.DATA.get('eventDate')),
+                'creator': request.user,
+            }
+            file_ = request.FILES.get('mediaContent')
+            if file_:
+                fields['bfile'] = file_
+            if not fields['type']:
+                raise ServiceException(_(u'Не задан тип (type)'))
+            if fields['type'] not in [type_[0] for type_ in MemoryGallery.TYPE_CHOICES]:
+                raise ServiceException(_(u'Неверный тип (type)'))
+            if fields['type'] != MemoryGallery.TYPE_TEXT and not file_:
+                raise ServiceException(_(u'Тип (type) %s требует загружаемого файла (mediaContent)') % fields['type'])
+            if fields['type'] == MemoryGallery.TYPE_TEXT and \
+               (not fields['text'] or not fields['text'].strip()):
+                raise ServiceException(_(u'Тип (type) %s требует непустой текст') % fields['type'])
+            if fields['type'] == MemoryGallery.TYPE_IMAGE:
+                if file_.size > MemoryGallery.MAX_IMAGE_SIZE * 1024 * 1024:
+                    raise ServiceException(
+                        _(u"Размер изображения не должен превышать %sМб") % MemoryGallery.MAX_IMAGE_SIZE
+                    )
+                if not get_image(file_):
+                    raise ServiceException(_(u"Прикрепленный файл не является изображением"))
+            elif fields['type'] == MemoryGallery.TYPE_VIDEO:
+                if not is_video(file_):
+                    raise ServiceException(_(u"Загруженный файл не является видео"))
+            gallery_item = MemoryGallery.objects.create(**fields)
+            return Response(
+                data=MemoryGallery2Serializer(gallery_item, context=dict(request=request)).data,
+                status=200,
+            )
+        except ServiceException as excpt:
+            return Response(data=dict(status='error', message=excpt.message), status=400)
 
 api_customperson_memory_gallery = ApiCustompersonMemoryGalleryView.as_view()
+
+class ApiClientPlacesDeadmansView(ApiClientPlacesMixin, APIView):
+    permission_classes = (PermitIfCabinet,)
+
+    def get(self, request, pk):
+        return Response(
+            data=[CustomPersonSerializer(customperson).data \
+                  for customperson in CustomPerson.objects.filter(customplace=self.get_customplace(pk))],
+            status=200,
+        )
+
+    def post(self, request, pk):
+        customplace=self.get_customplace(pk)
+        message = self.check_life_dates()
+        if message:
+            return Response({"status": "error", "message": message}, 400)
+        serializer = CustomPersonSerializer(
+            data=request.DATA,
+            context=dict(
+                request=request,
+                customplace=customplace,
+            ),
+        )
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=200)
+        return Response(serializer.errors, status=400)
+
+api_client_places_deadmans = ApiClientPlacesDeadmansView.as_view()
+
+class ApiClientPlacesDeadmansDetailView(ApiClientPlacesMixin, ApiCustompersonMixin, APIView):
+    permission_classes = (PermitIfCabinet,)
+
+    def put(self, request, pk, deadman_pk):
+        customplace = self.get_customplace(pk)
+        customperson = self.get_customperson(deadman_pk)
+        if not customperson.customplace or customperson.customplace != customplace:
+            raise Http404
+        message = self.check_life_dates()
+        if message:
+            return Response({"status": "error", "message": message}, 400)
+        serializer = CustomPersonSerializer(
+            customperson,
+            data=request.DATA,
+            context=dict(request=request),
+        )
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=200)
+        return Response(serializer.errors, status=400)
+
+api_client_places_deadmans_detail = ApiClientPlacesDeadmansDetailView.as_view()
+
+class ApiClientDeadmansView(APIView):
+    permission_classes = (PermitIfCabinet,)
+
+    def get(self, request):
+        data = list()
+        for pk in re.split(r'[,\s]+', request.GET.get('ids', '').strip()):
+            try:
+                customperson=CustomPerson.objects.get(pk=pk, user=request.user)
+            except (ValueError, CustomPerson.DoesNotExist, ):
+                raise Http404
+            data.append(CustomPerson2Serializer(customperson).data)
+        return Response(
+            data=data,
+            status=200,
+        )
+
+api_client_deadmans = ApiClientDeadmansView.as_view()
+
+class ApiClientPersonsView(ApiClientPlacesMixin, APIView):
+    permission_classes = (PermitIfCabinet,)
+
+    def get(self, request):
+        return Response(
+            data=[ CustomPerson4Serializer(customperson, context=dict(request=request)).data \
+                   for customperson in CustomPerson.objects.filter(user=request.user)
+            ],
+            status=200,
+        )
+
+    def post(self, request):
+        try:
+            customplace_id = request.DATA.get('placeId')
+            if customplace_id:
+                customplace = self.get_customplace(customplace_id)
+            else:
+                customplace = None
+            message = self.check_life_dates()
+            if message:
+                raise ServiceException(message)
+            serializer = CustomPerson4Serializer(
+                data=request.DATA,
+                context=dict(request=request, customplace=customplace),
+            )
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data, status=200)
+            return Response(serializer.errors, status=400)
+        except ServiceException as excpt:
+            return Response(data=dict(status='error', message=excpt.message), status=400)
+
+api_client_persons = ApiClientPersonsView.as_view()
+
+class ApiClientPersonsDetailView(ApiClientPlacesMixin, ApiCustompersonMixin, APIView):
+    permission_classes = (PermitIfCabinet,)
+
+    def get(self, request, pk):
+        customperson = self.get_customperson(pk)
+        return Response(
+            data=CustomPerson4Serializer(customperson, context=dict(request=request)).data,
+            status=200,
+        )
+
+    def put(self, request, pk):
+        try:
+            customperson = self.get_customperson(pk)
+            context = dict(request=request)
+            if 'placeId' in request.DATA:
+                customplace_id = request.DATA['placeId']
+                if customplace_id:
+                    customplace = self.get_customplace(customplace_id)
+                else:
+                    customplace = None
+                context['customplace'] = customplace
+            message = self.check_life_dates()
+            if message:
+                raise ServiceException(message)
+            serializer = CustomPerson4Serializer(
+                customperson,
+                data=request.DATA,
+                context=context,
+            )
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data, status=200)
+            return Response(serializer.errors, status=400)
+        except ServiceException as excpt:
+            return Response(data=dict(status='error', message=excpt.message), status=400)
+
+api_client_persons_detail = ApiClientPersonsDetailView.as_view()
+
+class ApiClientPlacesAttachmentsView(ApiClientPlacesMixin, APIView):
+    permission_classes = (PermitIfCabinet,)
+
+    def get(self, request, pk):
+        customplace = self.get_customplace(pk)
+        gallery = [dict(
+                    id=resultfile.pk,
+                    title=None,
+                    type=resultfile.type,
+                    url=request.build_absolute_uri(resultfile.bfile.url),
+                    createdAt=utcisoformat(resultfile.date_of_creation),
+                    createdBy=user_dict(resultfile.creator),
+                ) \
+                for resultfile in ResultFile.objects.filter(
+                    order__customplace=customplace,
+                    ).order_by('-date_of_creation') \
+                if resultfile.bfile
+        ]
+        if customplace.place:
+            gallery += [dict(
+                        id=placephoto.pk,
+                        title=None,
+                        type=ResultFile.TYPE_IMAGE,
+                        url=request.build_absolute_uri(placephoto.bfile.url),
+                        createdAt=utcisoformat(placephoto.date_of_creation),
+                        createdBy=user_dict(placephoto.creator),
+                    ) \
+                    for placephoto in PlacePhoto.objects.filter(
+                        place=customplace.place,
+                        ).order_by('-date_of_creation') \
+                    if placephoto.bfile
+            ]
+        return Response(
+            data=gallery,
+            status=200,
+        )
+
+api_client_places_attachments = ApiClientPlacesAttachmentsView.as_view()
+
+class ApiClientPlacesOrdersView(ApiClientPlacesMixin, APIView):
+    permission_classes = (PermitIfCabinet,)
+
+    def get(self, request, pk):
+        customplace=self.get_customplace(pk)
+        return Response(data=[OrderSerializer(o).data \
+                              for o in Order.objects.filter(customplace=customplace) \
+                        ], status=200)
+
+api_client_places_orders = ApiClientPlacesOrdersView.as_view()

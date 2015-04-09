@@ -11,6 +11,7 @@ urlpatterns = patterns('users.views',
     url(r'^api/auth/signup/?$', 'api_auth_signup', name='api_auth_signup'),
     url(r'^api/auth/signout/?$', 'api_auth_signout', name='api_auth_signout'),
 
+    url(r'^api/profile/?$', 'api_profile', name='api_profile'),
     url(r'^api/settings/?$', 'api_settings', name='api_settings'),
 
     url(r'^api/settings/oauth_providers/?$', 'api_settings_oauth_providers', name='api_settings_oauth_providers'),
@@ -21,11 +22,23 @@ urlpatterns = patterns('users.views',
     url(r'^api/loru/stores/?$', 'api_loru_stores', name='api_loru_stores'),
     url(r'^api/loru/stores/(?P<pk>\d+)/?$', 'api_loru_store_detail', name='api_loru_store_detail'),
 
+    url(r'^api/loru/favorite_suppliers/?$', 'api_loru_favorite_suppliers', name='api_loru_favorite_suppliers'),
+    url(
+        r'^api/loru/favorite_suppliers/(?P<supplier_id>\d+)/?$',
+        'api_loru_favorite_suppliers_edit',
+        name='api_loru_favorite_suppliers_edit'
+    ),
+
     url(r'^api/catalog/suppliers/?$', 'api_catalog_suppliers', name='api_catalog_suppliers'),
     url(r'^api/catalog/suppliers/(?P<org_slug>[\w-]+)/?$', 'api_catalog_suppliers_detail', name='api_catalog_suppliers_detail'),
 
     url(r'^api/optplaces/suppliers/?$', 'api_optplaces_suppliers', name='api_optplaces_suppliers'),
     url(r'^api/optplaces/suppliers/(?P<pk>[\w-]+)/?$', 'api_optplaces_suppliers_detail', name='api_optplaces_suppliers_detail'),
+
+    url(r'^api/shops/?$', 'api_shops', name='api_shops'),
+    url(r'^api/shops/(?P<pk>\d+)/gallery/?$', 'api_shops_gallery', name='api_shops_gallery'),
+    url(r'^api/shops/(?P<pk>\d+)/?$', 'api_shops_detail', name='api_shops_detail'),
+    url(r'^api/shops/(?P<pk>\d+)/reviews/?$', 'api_shops_reviews', name='api_shops_reviews'),
 
     url(r'^api/org/signup/?$', 'api_org_signup', name='api_org_signup'),
 
@@ -41,7 +54,7 @@ urlpatterns = patterns('users.views',
         
     url(r'^support/$', 'support', name='support'),
     url(r'^support/thanks/$', 'support_thanks', name='support_thanks'),
-    url(r'^tutorial$', 'tutorial', name='tutorial'),
+    url(r'^tutorial/$', 'tutorial', name='tutorial'),
     
     url(r'^registrants/$', 'registrants', name='registrants'),
     url(r'^registrant/(?P<pk>\d+)/delete/$', 'registrant_delete', name='registrant_delete'),
@@ -51,6 +64,7 @@ urlpatterns = patterns('users.views',
     url(r'^oms_burialstats/', 'oms_burial_stats', name='oms_burial_stats'),
     url(r'^oms_currentstats/', 'oms_current_stats', name='oms_current_stats'),
     url(r'^loru_currentstats/', 'loru_current_stats', name='loru_current_stats'),
+    url(r'^loru_orderstats/', 'loru_order_stats', name='loru_order_stats'),
         
     url(r'^profile/', 'profile', name='profile'),
     url(r'^loruregistry/', 'loru_registry', name='loru_registry'),

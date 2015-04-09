@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-import os
+import os, shutil
 import pytils
 import datetime
 import re
@@ -14,6 +14,7 @@ from django.utils.translation import ugettext as _
 from django.core.exceptions import ValidationError
 from south.modelsinspector import add_introspection_rules
 from logs.models import Log
+from pd.views import ServiceException
 
 class SafeDeleteMixin(object):
     
@@ -37,6 +38,9 @@ class SafeDeleteMixin(object):
                 pass
 
 class UnclearDate:
+
+    SAFE_STR_REGEX = r'^(\d{4})(?:\-(\d{2}))?(?:\-(\d{2}))?$'
+
     def __init__(self, year, month=None, day=None):
         self.d = datetime.date(year, month or 1, day or 1)
         self.no_day = not day
@@ -76,9 +80,11 @@ class UnclearDate:
     @classmethod
     def from_str_safe(cls, s):
         """
-        Сделать UnclearDate из yyyy-mm-dd, yyyy-mm, yyyy
+        Сделать UnclearDate из yyyy-mm-dd, yyyy-mm, yyyy, или из None ('null')
         """
-        m = re.search(r'^(\d{4})(?:\-(\d{2}))?(?:\-(\d{2}))?$', s)
+        if not s or s.lower() == 'null':
+            return None
+        m = re.search(cls.SAFE_STR_REGEX, s)
         if not m:
             raise ValueError('Invalid data to make an UnclearDate object')
         day = m.group(3)
@@ -151,6 +157,59 @@ class UnclearDate:
         self_date, other_date = self.prepare_compare(other)
         return self_date > other_date
 
+    @classmethod
+    def check_safe_str(cls, s, check_today=False):
+        """
+        Проверка правильности строки "гггг-мм-дд", "гггг-мм", "гггг", или None ("null"), если дата не задана
+
+        check_today - надо ли еще проверять, чтобы не было больше текущей даты
+        Может возвратить непустое сообщение об ошибке
+        """
+        message = ''
+        if isinstance(s, basestring):
+            s = s.strip()
+            if s.lower() == 'null':
+                s = None
+        if s:
+            try:
+                m = re.search(cls.SAFE_STR_REGEX, s)
+                if not m:
+                    raise ServiceException(_(u"Неверный формат даты. Допускается ГГГГ-ММ-ДД, ГГГГ-ММ, ГГГГ"))
+                year = m.group(1)
+                month = m.group(2)
+                day = m.group(3)
+
+                year = int(year)
+                if month:
+                    month = int(month)
+                else:
+                    month = None
+                if day:
+                    day = int(day)
+                else:
+                    day = None
+
+                if not year:
+                    raise ServiceException(_(u"Неверный год"))
+                if month is not None and not (1 <= month <= 12):
+                    raise ServiceException(_(u"Неверный месяц"))
+                if day is not None and not (1 <= day <= 31):
+                    raise ServiceException(_(u"Неверный день месяца"))
+
+                if month and day:
+                    try:
+                        datetime.datetime.strptime("%d-%02d-%02d" % (year, month, day), "%Y-%m-%d")
+                    except ValueError:
+                        raise ServiceException(_(u"Неверная дата"))
+
+                if check_today:
+                    t_month = month if month else 1
+                    t_day = day if day else 1
+                    if datetime.date.today() < datetime.date(year, t_month, t_day):
+                        raise ServiceException(_(u"Дата больше текущей"))
+            except ServiceException as excpt:
+                message = excpt.message
+        return message
 
 class UnclearDateCreator(object):
     # http://blog.elsdoerfer.name/2008/01/08/fuzzydates-or-one-django-model-field-multiple-database-columns/
@@ -260,7 +319,10 @@ def upload_slugified(instance, filename):
         return os.path.join('icons', fname)
 
 def files_upload_to(instance, filename):
-    instance.original_name = filename
+    if hasattr(instance, 'original_name'):
+        instance.original_name = filename
+    elif hasattr(instance, 'original_filename'):
+        instance.original_filename = filename
     fname = u'.'.join(map(pytils.translit.slugify, filename.rsplit('.', 1)))
     today = datetime.date.today()
     
@@ -296,9 +358,6 @@ def files_upload_to(instance, filename):
     elif isinstance(instance, get_model('users', 'RegisterProfileContract')):
         return os.path.join('register-profile-contracts',
                 today_pk_dir % instance.registerprofile.pk, fname)
-    elif isinstance(instance, get_model('users', 'CustomerProfilePhoto')):
-        return os.path.join('customer-profile',
-                today_pk_dir % instance.customerprofile.user.pk, fname)
     elif isinstance(instance, get_model('users', 'OrgCertificate')):
         return os.path.join('org-certificates',
                 today_pk_dir % instance.org.pk, fname)
@@ -308,34 +367,70 @@ def files_upload_to(instance, filename):
     elif isinstance(instance, get_model('persons', 'MemoryGallery')):
         return os.path.join('memory-gallery',
                 today_pk_dir % instance.creator.pk, fname)
+    elif isinstance(instance, get_model('orders', 'ResultFile')):
+        return os.path.join('order-results',
+                today_pk_dir % instance.order.pk, fname)
+    elif isinstance(instance, get_model('users', 'UserPhoto')):
+        return os.path.join('user-photos',
+                today_pk_dir % instance.user.pk, fname)
+    elif isinstance(instance, get_model('persons', 'CustomPerson')):
+        return os.path.join('customperson-photos',
+                today_pk_dir % instance.pk, fname)
+    elif isinstance(instance, get_model('users', 'OrgGallery')):
+        return os.path.join('org-gallery',
+                today_pk_dir % instance.org.pk, fname)
     else:
         return os.path.join('files', fname)
 
+class DeleteFileMixin(object):
 
-class Files(models.Model):
+    def delete_from_media(self):
+        if hasattr(self, 'bfile'):
+            file_ = self.bfile
+        elif hasattr(self, 'photo'):
+            file_ = self.photo
+        else:
+            return
+        if file_ and os.path.exists(file_.path):
+            os.remove(file_.path)
+            thmb = os.path.join(settings.THUMBNAILS_STORAGE_ROOT, file_.name)
+            if os.path.exists(thmb):
+                shutil.rmtree(thmb)
+
+    def delete(self):
+        self.delete_from_media()
+        super(DeleteFileMixin, self).delete()
+
+class Files(DeleteFileMixin, models.Model):
     """
     Базовый класс для файлов
     """
+
+    # Ограничение по размеру, Мегабайт, если загружаемый файл является фото:
+    MAX_IMAGE_SIZE = 10
+
     class Meta:
         abstract = True
         
-    bfile = models.FileField(u"Файл", upload_to=files_upload_to, blank=True)
-    comment = models.CharField(u"Описание", max_length=96, blank=True)
+    bfile = models.FileField(u"Файл", max_length=255, upload_to=files_upload_to, blank=True)
+    comment = models.CharField(u"Описание", max_length=255, blank=True)
     original_name = models.CharField(max_length=255, editable=False)
     creator = models.ForeignKey('auth.User', verbose_name=_(u"Создатель"), editable=False, null=True,
                                 on_delete=models.PROTECT)
     date_of_creation = models.DateTimeField(auto_now_add=True)
 
-    def delete_from_media(self):
-        if self.bfile and os.path.exists(self.bfile.path):
-            os.remove(self.bfile.path)
-            thmb = os.path.join(settings.THUMBNAILS_STORAGE_ROOT, self.bfile.name)
-            if os.path.exists(thmb):
-                os.shutil.rmtree(thmb)
+class PhotoModel(DeleteFileMixin, models.Model):
+    """
+    Базовый (дополнительный) класс для моделей, у которых есть фото объекта
+    """
+    # Мегабайт:
+    MAX_PHOTO_SIZE = 10
 
-    def delete(self):
-        self.delete_from_media()
-        super(Files, self).delete()
+    class Meta:
+        abstract = True
+
+    photo = models.ImageField(u"Фото", max_length=255, upload_to=files_upload_to, blank=True, null=True)
+    original_filename = models.CharField(max_length=255, editable=False, null=True)
 
 def validate_gt0(value):
     if value <= 0:

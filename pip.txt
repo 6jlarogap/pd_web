@@ -26,3 +26,5 @@ django-wkhtmltopdf==1.2.2
 pytz
 ExifRead==1.4.2
 django-autoslug==1.7.2
+LatLon==1.0.2
+python-magic==0.4.6

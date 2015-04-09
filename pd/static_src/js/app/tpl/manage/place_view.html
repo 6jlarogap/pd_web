@@ -77,6 +77,10 @@
         <td>длина {{item.place_length || '-'}}м, ширина {{item.place_width || '-'}}м</td>
       </tr>
       <tr>
+        <th>Ответственный смотритель</th>
+        <td>{{ caretaker_show }}</td>
+      </tr>
+      <tr>
         <th><a href="/places/{{item.id}}/certificate" target="_blank">Паспорт места</a></th>
         <td></td>
       </tr>
@@ -116,7 +120,7 @@
         <th width="200px">Адрес:</th>
         <td>{{responsible.address_str || '-'}}</td>
       </tr>
-      <tr>
+      <tr ng-show="item.create_cabinet">
         <th>Мобильный телефон для входа в кабинет:</th>
         <td ng-hide="responsible.login_phone">
           <span class="label label-important">Не указан</span>
@@ -255,6 +259,9 @@
 
 <!-- POPUP Place edit form -->
 <div modal="isPlaceEditorOpen" close="closeEditForm('isPlaceEditorOpen')">
+  <div class="modal-header">
+    <h3>Редактировать место "{{editor.item.place}}"</h3>
+  </div>
   <div ng-include src="'/static/js/app/tpl/manage/form_edit_place.html'+version_str"></div>
 </div>
 <!-- EOF POPUP form -->

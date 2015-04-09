@@ -38,6 +38,17 @@ class PhonesMixin(object):
     def phone_list(self):
         return [ phone.number for phone in self.phone_set ]
 
+class UserPhoto(Files):
+    """
+    Аватарки пользователя
+    """
+    # Макс. размер в мегабайтах
+    MAX_SIZE = 5
+    # Мин. ширина в пикселях
+    MIN_SIZE_X = 200
+
+    user = models.OneToOneField(User, related_name='user_photo_list')
+
 class CommonProfile(BaseModel):
     USERNAME_HELPTEXT = _(u'До 30 символов: латинские буквы, цифры, дефисы, знаки подчеркивания, @')
 
@@ -53,13 +64,13 @@ class CommonProfile(BaseModel):
     def __unicode__(self):
         return self.user and (self.full_name() or self.user.username) or u'%s' % self.pk
 
-    def full_name(self):
+    def full_name(self, put_middle_name=True):
         name = ""
         if self.user_last_name:
             name = self.user_last_name
             if self.user_first_name:
                 name = u"{0} {1}".format(name, self.user_first_name)
-                if self.user_middle_name:
+                if put_middle_name and self.user_middle_name:
                     name = u"{0} {1}".format(name, self.user_middle_name)
         if not name:
             name = self.user.get_full_name()
@@ -87,6 +98,15 @@ class CommonProfile(BaseModel):
             chars = chars.replace(c, '')
         password = ''.join(random.choice(chars) for x in range(5))
         return password
+
+    def user_dict(self):
+        return dict(
+            id=self.user.pk,
+            lastName=self.user_last_name,
+            firstName=self.user_first_name,
+            middleName=self.user_middle_name,
+            organization=None,
+        )
 
 class CustomerProfile(CommonProfile):
     # Дата/время согласия с пользовательским соглашением, служит еще как BooleanField:
@@ -119,11 +139,10 @@ class CustomerProfile(CommonProfile):
                                         'login_phone': decimal.Decimal(responsible.login_phone)
                                     }
                                 )
-        return password
+        responsible.user = user
+        responsible.save()
+        return user, password
 
-class CustomerProfilePhoto(Files):
-    customerprofile = models.OneToOneField(CustomerProfile)
-    
 class Profile(CommonProfile):
     org = models.ForeignKey('users.Org', null=True)
 
@@ -137,6 +156,9 @@ class Profile(CommonProfile):
 
     def is_loru(self):
         return self.org and self.org.type == Org.PROFILE_LORU
+
+    def is_trade(self):
+        return self.org and self.org.ability.filter(name=OrgAbility.ABILITY_TRADE).exists()
 
     def is_ugh(self):
         return self.org and self.org.type == Org.PROFILE_UGH
@@ -154,11 +176,27 @@ class Profile(CommonProfile):
             return ','.join([self.lat, self.lng])
         return ''
 
+    def user_dict(self):
+        result = super(Profile, self).user_dict()
+        result.update(dict(
+            organization=dict(
+                id=self.org.pk,
+                name=self.org.name,
+            ) if self.org else None
+        ))
+        return result
+
 def is_cabinet_user(user):
     try:
         user.customerprofile
         return True
     except (AttributeError, CustomerProfile.DoesNotExist, ):
+        return False
+    
+def is_trade_user(user):
+    try:
+        return user.profile.is_trade()
+    except (AttributeError, Profile.DoesNotExist, ):
         return False
     
 def is_loru_user(user):
@@ -179,13 +217,37 @@ def is_supervisor(user):
     except (AttributeError, Profile.DoesNotExist, ):
         return False
 
-class PermitIfLoru(permissions.BasePermission):
-    def has_permission(self, request, view):
-        return is_loru_user(request.user)
+def get_profile(user):
+    profile = None
+    if user:
+        if is_cabinet_user(user):
+            profile = user.customerprofile
+        else:
+            try:
+                profile = user.profile
+            except (AttributeError, Profile.DoesNotExist, ):
+                pass
+    return profile
 
-class PermitIfLoruOrSupervisor(permissions.BasePermission):
+def user_dict(user):
+    result = None
+    if user:
+        profile = get_profile(user)
+        if profile:
+            result = profile.user_dict()
+    return result
+
+class PermitIfTrade(permissions.BasePermission):
     def has_permission(self, request, view):
-        return is_loru_user(request.user) or is_supervisor(request.user)
+        return is_trade_user(request.user)
+
+class PermitIfTradeOrSupervisor(permissions.BasePermission):
+    def has_permission(self, request, view):
+        return is_trade_user(request.user) or is_supervisor(request.user)
+
+class PermitIfTradeOrCabinet(permissions.BasePermission):
+    def has_permission(self, request, view):
+        return is_trade_user(request.user) or is_cabinet_user(request.user)
 
 class PermitIfUgh(permissions.BasePermission):
     def has_permission(self, request, view):
@@ -221,7 +283,7 @@ def get_mail_footer(user):
 
 def get_default_currency():
     Currency = models.get_model('billing', 'Currency')
-    return Currency.objects.get(code=settings.CURRENCY_DEFAULT_CODE)
+    return Currency.objects.only('pk').get(code=settings.CURRENCY_DEFAULT_CODE)
 
 class Oauth(models.Model):
     PROVIDER_YANDEX = 'yandex'
@@ -498,6 +560,19 @@ class Oauth(models.Model):
             message['message'] = excpt.message
         return user, oauth, message
 
+class OrgAbility(models.Model):
+    ABILITY_TRADE = 'trade'
+    ABILITY_PERSONAL_DATA = 'personal-data'
+    ORG_ABILITIES = (
+        (ABILITY_TRADE, _(u'Торговля')),
+        (ABILITY_PERSONAL_DATA, _(u'Персональные данные')),
+    )
+    name = models.CharField(_(u"Название"), max_length=255, unique=True, choices=ORG_ABILITIES)
+    title = models.CharField(_(u"Заглавие"), max_length=255)
+
+    def __unicode__(self):
+        return self.title
+
 class Org(GetLogsMixin, BaseModel):
     NUM_EMPTY = 'empty'
     NUM_YEAR_UGH = 'year_ugh'
@@ -544,6 +619,7 @@ class Org(GetLogsMixin, BaseModel):
     )
     
     type = models.CharField(_(u"Тип"), max_length=255, choices=PROFILE_TYPES)
+    ability = models.ManyToManyField(OrgAbility, editable=False)
     name = models.CharField(_(u"Название организации"), max_length=255, default='')
     slug = AutoSlugField(populate_from='name', max_length=255, editable=False,
                          unique=True, null=True, always_update=True)
@@ -558,6 +634,10 @@ class Org(GetLogsMixin, BaseModel):
                              choices=BASIS_CHOICES, default=BASIS_CHARTER)
     email = models.EmailField(_(u"Email"), null=True, blank=True)
     phones = models.TextField(_(u"Телефоны"), blank=True, null=True)
+    sms_phone = models.DecimalField(_(u"Мобильный телефон для СМС- уведомлений"), max_digits=15, decimal_places=0,
+                  blank=True, null=True,
+                  help_text=_(u'В международном формате, начиная с кода страны, без "+", например 79101234567'),
+                  validators = [validate_phone_as_number, ])
     fax = models.CharField(_(u"Факс"), max_length=20, default='', blank=True)
     off_address = models.ForeignKey('geo.Location', verbose_name=_(u"Юр. адрес"), null=True, blank=True)
     numbers_algo = models.CharField(_(u"Заполнение номера захоронения"), max_length=255, choices=NUM_TYPES,
@@ -643,11 +723,95 @@ class Org(GetLogsMixin, BaseModel):
     def phone_list(self):
         return phones_from_text(self.phones)
 
+    def favorites_for_template(self):
+        """
+        [dict(name=favorite_name1, pk=favorite_pk1), dict(name=favorite_name2, pk=favorite_pk2), ...]
+
+        Для шаблона, где в меню показаны избранные поставщики
+        """
+        def favorite_item(loru):
+            name = loru.name.strip()
+            if len(name) > 50:
+                name = u"%s..." % name[:47]
+            return dict(name=name, pk=loru.pk)
+
+        result = []
+        favorites = FavoriteSupplier.objects.filter(loru=self).exclude(supplier=self).order_by('supplier__name')
+        if favorites.count():
+            result.append(favorite_item(self))
+            for favorite in favorites:
+                result.append(favorite_item(favorite.supplier))
+        return result
+
+    def can_personal_data(self):
+        """
+        Может ли организация оперировать персональными данными в захоронениях
+        """
+        if self.type == self.PROFILE_UGH:
+            return self.ability.filter(name=OrgAbility.ABILITY_PERSONAL_DATA).exists()
+        elif self.type == self.PROFILE_LORU:
+            # Если этот лору состоит в реестре у ОМС, никто из которых
+            # не может вводить персональные данные, то и ему это запрещено
+            return self.ugh_list.filter(ugh__ability__name=OrgAbility.ABILITY_PERSONAL_DATA).exists()
+        else:
+            return False
+
+class OrgWebPay(BaseModel):
+    """
+    Данные, в том числе секретные, поставщика в платежной системе WebPay
+    """
+    org = models.OneToOneField(Org)
+    wsb_storeid = models.CharField(_(u"Идентификатор организации в системе WebPay"), max_length=255)
+    secret = models.CharField(_(u"Секретный ключ"), max_length=255)
+
+    # Это название должно совпадать с org.name, но в WebPay заказчик может ввести другое название.
+    # Не исключено, что WebPay проверяет или будет проверять совпадение wsb_store в запросе
+    # на оплату и наименование организации, каким оно прописано в WebPay
+    #
+    wsb_store = models.CharField(_(u"Название организации на форме оплаты WebPay"), max_length=255)
+
+    # WebPay сейчас работает только с BYR; кроме того, валюта есть свойство организации,
+    # так что поле wsb_currency_id может оказаться избыточным.
+    # Но не исключается, что
+    # - WebPay будет работать с другими валютами, в т.ч. с конвертацией,
+    # - при возможности конвертации валюта организации может отличаться от WebPay
+    # Посему, несмотря на избыточность поля, храним его в этой таблице
+    #
+    wsb_currency_id = models.CharField(_(u"Код валюты согласно ISO4271"), max_length=255, default='BYR')
+
+    #  Версия формы оплаты, сейчас "2", но могут появляться новые
+    #
+    wsb_version = models.CharField(_(u"Версия формы оплаты"), max_length=255)
+
+    # Будет устанавливаться в False по окончании тестирования
+    #
+    wsb_test = models.BooleanField(_(u"Тестовая среда"), default=True)
+
 class OrgCertificate(Files):
     """
     Сканы свидетельств о регистрации
     """
     org = models.OneToOneField(Org)
+
+class OrgGallery(Files):
+    """
+    Галерея организации. Для поставщиков товаров/услуг: образцы работ
+    """
+    org = models.ForeignKey(Org)
+
+class OrgReview(BaseModel):
+    """
+    Отзывы об организации. Для поставщиков
+    """
+    org = models.ForeignKey(Org, editable=False, on_delete=models.PROTECT)
+    subject = models.CharField(_(u"Тема отзыва"), max_length=255, blank=True)
+    is_positive = models.NullBooleanField(_(u"Оценка положительная/отрицательна/без оценки"),
+                                           null=True)
+    common_text = models.TextField(_(u"Текст"), blank=True, null=True)
+    positive_text = models.TextField(_(u"Текст положительной оценки"), blank=True, null=True)
+    negative_text = models.TextField(_(u"Текст отрицательной оценки"), blank=True, null=True)
+    creator = models.ForeignKey('auth.User', verbose_name=_(u"Создатель"),
+                                on_delete=models.PROTECT, editable=False)
 
 class OrgContract(Files):
     """
@@ -660,12 +824,29 @@ class Store(models.Model, PhonesMixin):
     Склады, магазины у ЛОРУ
     """
     name = models.CharField(_(u"Название"), max_length=255, default='')
-    loru = models.ForeignKey(
-        Org, verbose_name=_(u"ЛОРУ"), limit_choices_to={'type': Org.PROFILE_LORU},
-        on_delete=models.PROTECT,
-    )
+    loru = models.ForeignKey(Org, verbose_name=_(u"ЛОРУ"), on_delete=models.PROTECT)
     address = models.ForeignKey('geo.Location', verbose_name=_(u"Адрес"))
     # phones: могут быть разных типов, пользуемся моделью persons.Phone
+
+    def delete(self):
+        self.phone_set.delete()
+        super(Store, self).delete()
+        try:
+            self.address.delete()
+        except (AttributeError, IntegrityError):
+            pass
+
+class FavoriteSupplier(models.Model):
+    """
+    Избранные поставщики у ЛОРУ
+    """
+    loru = models.ForeignKey(Org, verbose_name=_(u"ЛОРУ"),
+        related_name='favorite_loru', on_delete=models.PROTECT, )
+    supplier = models.ForeignKey(Org, verbose_name=_(u"ЛОРУ"),
+        related_name='favorite_supplier_list', on_delete=models.PROTECT, )
+
+    class Meta:
+        unique_together = ('loru', 'supplier', )
 
 class BankAccountCommon(models.Model):
     """

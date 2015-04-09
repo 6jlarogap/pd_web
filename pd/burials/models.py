@@ -10,11 +10,13 @@ from django.utils.translation import ugettext_lazy as _
 from django.db.models.query_utils import Q
 from django.conf import settings
 from pd.models import UnclearDateModelField, BaseModel, Files, GetLogsMixin, validate_gt0, SafeDeleteMixin
+from pd.views import get_front_end_url
+from pd.utils import utcisoformat
 
-from persons.models import DeadPerson, DeathCertificate
+from persons.models import DeadPerson, DeathCertificate, CustomPlace
 from reports.models import Report
 from users.models import Org, Profile, Dover, ProfileLORU, CustomerProfile, PhonesMixin, \
-                         is_ugh_user, is_cabinet_user
+                         is_ugh_user, is_cabinet_user, is_loru_user
 from logs.models import Log
 from geo.models import GeoPointModel, CoordinatesModel
 
@@ -69,6 +71,9 @@ class Cemetery(GetLogsMixin, BaseModel, PhonesMixin):
     archive_burial_fact_date_required = models.BooleanField(_(u"Дата архивного захоронения обязательна"), default=True)
     archive_burial_account_number_required = models.BooleanField(_(u"Номер архивного захоронения обязателен"), default=True)
     square = models.FloatField(_(u"Площадь"), null=True, editable=False)
+    # phones: могут быть разных типов, пользуемся моделью persons.Phone
+    caretaker = models.ForeignKey('auth.User', verbose_name=_(u"Ответственный смотритель"), null=True, editable=False,
+                                  related_name='caretaker_cemeteries', on_delete=models.PROTECT)
 
     class Meta:
         verbose_name = _(u"Кладбище")
@@ -116,9 +121,23 @@ class Cemetery(GetLogsMixin, BaseModel, PhonesMixin):
     def work_time(self):
         return "%s-%s" % (self.time_begin or u'00:00:00', self.time_end or u'00:00:00')
 
+    def delete(self):
+        self.phone_set.delete()
+        self.coordinates.all().delete()
+        try:
+            super(Cemetery, self).delete()
+        except IntegrityError:
+            pass
+        else:
+            try:
+                self.address.delete()
+            except (AttributeError, IntegrityError):
+                pass
 
 
 class CemeteryCoordinates(CoordinatesModel):
+    #TODO:
+    # Перевести эту модель к PointsModel
     cemetery = models.ForeignKey(Cemetery, verbose_name=_(u"Кладбище"), on_delete=models.PROTECT, related_name='coordinates')
 
     class Meta:
@@ -152,6 +171,8 @@ class Area(BaseModel):
     purpose = models.ForeignKey(AreaPurpose, verbose_name=_(u"Назначение"), null=True, on_delete=models.PROTECT)
     places_count = models.PositiveIntegerField(_(u"Макс. кол-во могил в месте"), default=1)
     square = models.FloatField(_(u"Площадь"), null=True, editable=False)
+    caretaker = models.ForeignKey('auth.User', verbose_name=_(u"Ответственный смотритель"), null=True, editable=False,
+                                  related_name='caretaker_areas', on_delete=models.PROTECT)
 
     class Meta:
         verbose_name = _(u"Участок")
@@ -209,6 +230,8 @@ class Place(SafeDeleteMixin, GeoPointModel):
     dt_size_violated = models.DateTimeField(_(u"Нарушение размеров /дата установки признака/"), null=True, editable=False)
     dt_unowned = models.DateTimeField(_(u"Заброшенное /дата установки признака/"), null=True, editable=False)
     dt_unindentified = models.DateTimeField(_(u"Неопознанное /дата установки признака/"), null=True, editable=False)
+    caretaker = models.ForeignKey('auth.User', verbose_name=_(u"Ответственный смотритель"), null=True, editable=False,
+                                  related_name='caretaker_places', on_delete=models.PROTECT)
 
     objects = PlaceManager()
 
@@ -242,6 +265,9 @@ class Place(SafeDeleteMixin, GeoPointModel):
     def burials_available(self):
         q_ex = Q(status=Burial.STATUS_EXHUMATED) | Q(annulated=True)
         return self.burial_set.exclude(q_ex)
+
+    def burials_available_closed(self):
+        return self.burial_set.filter(status=Burial.STATUS_CLOSED).exclude(annulated=True)
 
     def burial_count(self):
         return self.burials_available().distinct('grave').count()
@@ -344,6 +370,9 @@ class Place(SafeDeleteMixin, GeoPointModel):
                 break
         return result
 
+    def graves_qs(self):
+        return Grave.objects.filter(place=self).order_by('grave_number')
+
     def get_photo_gallery(self, request):
         """
         Получить все фото, относящиеся к месту.
@@ -354,7 +383,7 @@ class Place(SafeDeleteMixin, GeoPointModel):
                 gallery.append(
                     {
                         'photo': request.build_absolute_uri(pph.bfile.url),
-                        'addedAt': pph.date_of_creation,
+                        'createdAt': utcisoformat(pph.date_of_creation),
                     }
                 )
         return gallery
@@ -369,6 +398,33 @@ class Place(SafeDeleteMixin, GeoPointModel):
             if value:
                 result.append(f)
         return result
+
+    @classmethod
+    def log_login_phone_change(cls, request, old_login_phone):
+        """
+        Записать в журнал по всем местам и захоронениям изменение login_phone
+        """
+        for place in cls.objects.filter(responsible__user=request.user):
+            message = _(u"Ответственный изменил телефон входа в систему c %s на %s") % (
+                old_login_phone,
+                place.responsible.login_phone,
+            )
+            write_log(request, place, message)
+            for burial in place.burial_set.all():
+                write_log(request, burial, message)
+
+    def address(self):
+        result = _(u'Кладбище %s, участок %s') % (self.cemetery.name, self.area.name, )
+        if self.row:
+            result += _(u', ряд %s') % self.row
+        result += _(u', место %s') % self.place
+        cemetery_address = self.cemetery.address and self.cemetery.address.__unicode__() or ''
+        if cemetery_address:
+            result += _(u', %s') % cemetery_address
+        return result
+
+    def get_caretaker(self):
+        return self.caretaker or self.area.caretaker or self.cemetery.caretaker or None
 
 class PlaceSize(models.Model):
     org = models.ForeignKey(Org, verbose_name=_(u"Организация"), editable=False, on_delete=models.PROTECT) 
@@ -449,6 +505,17 @@ class Grave(GeoPointModel):
 
 class PlacePhoto(Files, GeoPointModel):
     place = models.ForeignKey(Place)
+
+    def save(self, *args, **kwargs):
+        try:
+            customplace = CustomPlace.objects.get(place=self.place)
+        except CustomPlace.DoesNotExist:
+            customplace = None
+        result = super(PlacePhoto, self).save(*args, **kwargs)
+        if customplace and self.bfile:
+            customplace.update_title_photo(self.bfile)
+        return result
+
 
     def is_accessible_anonymous(self):
         """
@@ -572,18 +639,20 @@ class Burial(SafeDeleteMixin, GetLogsMixin, BaseModel):
     loru_agent_director = models.BooleanField(_(u"Директор-Агент"), default=False, blank=True)
     loru_agent = models.ForeignKey(Profile, verbose_name=_(u"Агент"), null=True, blank=True,
                               limit_choices_to={'is_agent': True}, on_delete=models.PROTECT,
-                              related_name='agent_burials',)
+                              related_name='loru_agent_burials',)
     loru_dover = models.ForeignKey(Dover, verbose_name=_(u"Доверенность"), null=True, blank=True,
-                              related_name='dover_burials', on_delete=models.PROTECT)
+                              related_name='loru_dover_burials', on_delete=models.PROTECT)
     applicant_organization = models.ForeignKey(Org, verbose_name=_(u"Заявитель-ЮЛ"), null=True, blank=True,
-                                               related_name='loru_created', on_delete=models.PROTECT)
+                                               related_name='applicant_organization_burials', on_delete=models.PROTECT)
     agent_director = models.BooleanField(_(u"Директор-Агент"), default=False, blank=True)
     agent = models.ForeignKey(Profile, verbose_name=_(u"Агент"), null=True, blank=True,
-                              limit_choices_to={'is_agent': True}, on_delete=models.PROTECT)
-    dover = models.ForeignKey(Dover, verbose_name=_(u"Доверенность"), null=True, blank=True, on_delete=models.PROTECT)
+                              limit_choices_to={'is_agent': True}, on_delete=models.PROTECT,
+                              related_name='agent_burials',)
+    dover = models.ForeignKey(Dover, verbose_name=_(u"Доверенность"), null=True, blank=True, on_delete=models.PROTECT,
+                              related_name='dover_burials')
 
     status = models.CharField(_(u"Статус"), max_length=255, choices=STATUS_CHOICES, default=STATUS_DRAFT, editable=False)
-    changed_by = models.ForeignKey('auth.User', editable=False, null=True, related_name='changed_requests',
+    changed_by = models.ForeignKey('auth.User', editable=False, null=True, related_name='changed_by_burials',
                                    on_delete=models.PROTECT)
     annulated = models.BooleanField(_(u"Аннулировано"), default=False, blank=True)
     flag_no_applicant_doc_required = models.BooleanField(_(u"Документ заявителя-ФЛ не требуется"),
@@ -755,6 +824,28 @@ class Burial(SafeDeleteMixin, GetLogsMixin, BaseModel):
             return self.exhumationrequest
         except ExhumationRequest.DoesNotExist:
             return
+
+    def can_personal_data(self, request=None):
+        """
+        Можно ли вводить и показывать персональные данные
+        """
+        if request:
+            if is_ugh_user(request.user):
+                return request.user.profile.org.can_personal_data()
+            elif is_loru_user(request.user):
+                ugh = self.ugh or self.cemetery and self.cemetery.ugh
+                if ugh:
+                    return ugh.can_personal_data()
+                # Пока лору не заполнил, на каком кладбище, посмотрим, есть
+                # ли он в реестре какого-то ОМС с возможностью персональных
+                # данных, и если есть, то разрешим
+                else:
+                    return request.user.profile.org.can_personal_data()
+            else:
+                return False
+        else:
+            ugh = self.ugh or self.cemetery and self.cemetery.ugh
+            return bool(ugh and ugh.can_personal_data())
 
     @property
     def status_str(self):
@@ -947,15 +1038,23 @@ class Burial(SafeDeleteMixin, GetLogsMixin, BaseModel):
         
         if place.responsible and \
            place.responsible.login_phone and \
+           request and \
            old_status != self.STATUS_CLOSED:
             try:
                 customerprofile = CustomerProfile.objects.get(login_phone=place.responsible.login_phone)
+                user = customerprofile.user
                 text = _(u'Место %s прикреплено. pohoronnoedelo.ru') % place.pk
                 email_error_text = _(u"Пользователь %s (телефон %s) не смог получить СМС после прикрепления места %s" % \
                                     (customerprofile.user.username, place.responsible.login_phone, place.pk,))
             except CustomerProfile.DoesNotExist:
-                password = CustomerProfile.create_cabinet(place.responsible)
-                text = _(u'https://pohoronnoedelo.ru login: %s parol: %s') % (place.responsible.login_phone, password,)
+                # create_cabinet() создаст user, customerprofile с login_phone,
+                # а также занесет в place.responsible нового user
+                user, password = CustomerProfile.create_cabinet(place.responsible)
+                text = _(u'%s login: %s parol: %s') % (
+                    get_front_end_url(request).rstrip('/'),
+                    place.responsible.login_phone,
+                    password,
+                )
                 email_error_text = _(u"Пользователь %s не смог получить пароль после закрытия захоронения" % \
                                     (place.responsible.login_phone,))
                 if request and settings.DEBUG:
@@ -963,12 +1062,20 @@ class Burial(SafeDeleteMixin, GetLogsMixin, BaseModel):
                         request,
                         _(u"Создан пользователь кабинета %s, пароль %s") % (place.responsible.login_phone, password, ),
                     )
+            if not place.responsible.user:
+                place.responsible.user = user
+                place.responsible.save()
+            customplace, created_ = CustomPlace.objects.get_or_create(user=user, place=place)
+            if created_:
+                customplace.fill_custom_deadmen()
+            else:
+                customplace.add_custom_deadman(self)
             if not settings.DEBUG:
                 sent, message = send_sms(
                     phone_number=place.responsible.login_phone,
                     text=text,
                     email_error_text=email_error_text,
-                    user=request and request.user or None,
+                    user=request.user,
                 )
 
         # Очистим "пустышку" свидетельства о смерти, где

@@ -3,7 +3,6 @@ import re
 
 from django.conf import settings
 from django import forms
-from django.core.mail import EmailMessage
 from django.core.exceptions import ValidationError
 from django.contrib.auth.models import User
 from django.forms.models import inlineformset_factory, BaseInlineFormSet
@@ -16,7 +15,7 @@ from geo.forms import LocationForm
 from pd.forms import ChildrenJSONMixin, LoggingFormMixin, OurReCaptchaField, StrippedStringsMixin, \
                      CustomUploadModelForm, CustomClearableFileInput
 from pd.models import validate_phone_as_number, validate_username
-from pd.utils import host_country_code
+from pd.utils import host_country_code, EmailMessage
 from burials.models import Cemetery, PlaceSize, Reason, Burial
 from logs.models import write_log
 
@@ -440,6 +439,14 @@ class RegisterForm(forms.ModelForm):
         self.address_form.fields['region_name'].required = True
         self.address_form.fields['city_name'].required = True
         
+    def clean_org_name(self):
+        org_name=self.cleaned_data.get('org_name', '').strip()
+        if not org_name:
+            raise forms.ValidationError(_(u"Пустое название организации"))
+        if re.search(r'^[\d\s]+$', org_name):
+            raise forms.ValidationError(_(u"Невозможное название организации (только из цифр)"))
+        return org_name
+
     def clean_user_name(self):
         user_name=self.cleaned_data['user_name']
         if User.objects.filter(username=user_name).exists():
@@ -482,6 +489,12 @@ class OrgBurialStatsForm(forms.Form):
     date_from = forms.DateField(required=False, label=_(u"С"))
     date_to = forms.DateField(required=False, label=_(u"по"))
     status = forms.TypedChoiceField(required=False, label=_(u"Статус"), choices=EMPTY + Burial.STATUS_CHOICES)
+
+class LoruOrdersStatsForm(forms.Form):
+
+    date_from = forms.DateField(required=False, label=_(u"С"))
+    date_to = forms.DateField(required=False, label=_(u"по"))
+    supplier = forms.CharField(required=False, max_length=60, label=_(u"Поставщик"))
 
 class SupportForm(forms.Form):
     user_last_name = forms.CharField(label=_(u"Фамилия"), max_length=100, required=True)
@@ -592,13 +605,15 @@ class SupportForm(forms.Form):
             )
         email_text += get_mail_footer(self.request.user)
         email_to = settings.SUPPORT_EMAILS
-        # Некоторые почтовые серверы подменяют поле From: письма
-        # на тот почтовый ящик, через который шла аутентификация
-        # при отправке письма (settings.EMAIL_HOST_USER)
-        #
         headers = {}
         if email_from:
             headers['Reply-To'] = email_from
+        # Если в From: поставить задавшего вопрос, например, user@yandex.ru,
+        # то письмо придет в email_to (адреса гугловской почты) с "замечаниями"
+        # в заголовке, что письмо пришло не от yandex, так и в спам может попасть.
+        # Посему реальный отправитель будет в Reply-To:
+        #
+        email_from = _(u"Вопрос в поддержку <%s>") % settings.DEFAULT_FROM_EMAIL
         EmailMessage(email_subject, email_text, email_from, email_to, headers=headers, ).send()
 
 class TestCaptchaForm(forms.Form):

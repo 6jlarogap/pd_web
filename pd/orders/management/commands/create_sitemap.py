@@ -25,8 +25,8 @@ from geo.models import Country, Location
 #   1:  сайт, но без доменного окончания, например, https://pohoronnoedelo,
 #       по умолчанию https://pohoronnoedelo. Этот сайт, вместе с доменным
 #       суффиксом будет фигурировать в вых. sitemap_XX.xml
-#   2:  default или nodefault (по умолчанию). Если default, то
-#       вся информация будет в вых sitemap_XX, где XX - DEFAULT_DOMAIN
+#   2:  домен, например, ru, by. Если параметр указан, то
+#       вся информация будет в вых sitemap_XX, где XX - указанный домен
 
 DOMAINS_ = dict(
     ru=dict(name=u'Россия', obj_country=None,),
@@ -37,7 +37,7 @@ DEFAULT_DOMAIN = 'ru'
 YANDEX_GEOCODE_URL = "http://geocode-maps.yandex.ru/1.x/?geocode=%s,%s&format=json&results=1"
     
 class Command(BaseCommand):
-    args = "<front-end url-WITHOUT-DOMAIN>(default: https://pohoronnoedelo) <default|nodefault>(if 'default', only default domain)>"
+    args = "<front-end url-WITHOUT-DOMAIN>(default: https://pohoronnoedelo) <domain|default>(if present, all products/suppriers are from that)>"
     help = "Create sitemap.xml for domains"
     
     def handle(self, *args, **options):
@@ -46,10 +46,17 @@ class Command(BaseCommand):
         except IndexError:
             url = 'https://pohoronnoedelo'
 
+        default_domain = DEFAULT_DOMAIN
         DOMAINS = DOMAINS_
         try:
-            if args[1].lower() == 'default':
-                DOMAINS = { DEFAULT_DOMAIN: DOMAINS_[DEFAULT_DOMAIN] }
+            domain = args[1].lower()
+            if domain:
+                if domain == 'default':
+                    domain = default_domain
+                if domain not in DOMAINS:
+                    raise Exception("Domain '%s' is not in supported domains" % domain)
+                default_domain = domain
+                DOMAINS = { default_domain: DOMAINS_[default_domain] }
         except IndexError:
             pass
 
@@ -95,10 +102,10 @@ class Command(BaseCommand):
         for domain in DOMAINS:
             if len(DOMAINS) > 1:
                 q_domain_products = Q(loru__off_address__country__name=DOMAINS[domain]['name'])
-                if domain == DEFAULT_DOMAIN:
+                if domain == default_domain:
                     q_domain_products |= ~Q(loru__off_address__country__name__in=all_countries)
                 q_domain_suppliers = Q(off_address__country__name=DOMAINS[domain]['name'])
-                if domain == DEFAULT_DOMAIN:
+                if domain == default_domain:
                     q_domain_suppliers |= ~Q(off_address__country__name__in=all_countries)
             else:
                 q_domain_products = q_domain_suppliers = Q()

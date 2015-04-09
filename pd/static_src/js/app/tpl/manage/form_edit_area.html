@@ -1,29 +1,48 @@
-<div class="row-fluid">
-	<label for="id_area_set-0-name">Название участка:</label>
-	<input required	name="area_name" type="text" ng-model="area.name" maxlength="255"/>
-	<span class="error" ng-show="areaEditForm.area_name.$error.required">Не указано название участка</span>
-</div>
-<div class="row-fluid">
-	<label for="id_area_set-0-availability">Открытость:</label>
-	<select ng-model="area.availability">
-		<option value="open">Открыт</option>
-		<option value="old_only">Только подзахоронения</option>
-		<option value="closed">Закрыт</option>
-	</select>
-</div>
-<div class="row-fluid">
-	<label for="id_area_set-0-purpose">Назначение:</label>
-	<select ng-model="area.purpose" ng-options="value.id as value.name for value in PURPOSE_LIST">
-	</select>
-</div>
-<div class="row-fluid">
-    <label for="id_area_set-0-places_count">Кол-во могил в месте:</label>
-    <input type="number" name="places_count" min="1" max="{{area.max_graves_count}}" required ng-model="area.places_count"/>
-    <span class="error" ng-show="areaEditForm.places_count.$error.required">Не указано количество мест</span>
-    <span class="error" ng-show="areaEditForm.places_count.$error.min">Число должно быть больше 0</span> 
-    <span class="error" ng-show="areaEditForm.places_count.$error.max">Число должно быть меньше, либо равным {{area_max_places}}</span>
-</div>
-<!--div class="row-fluid">
-	<label for="id_area_set-0-places_count">Кол-во могил в месте:</label>
-	{{area.places_count}}
-</div-->
+<tabset>
+    <tab heading="Участок">
+        <form name="areaEditForm" novalidate>
+            <div class="modal-body">
+                <div class="row-fluid">
+                    <label>Название участка:</label>
+                    <input required	name="area_name" type="text" ng-model="area.name" maxlength="255"/>
+                    <span class="error" ng-show="areaEditForm.area_name.$error.required">Не указано название участка</span>
+                </div>
+                <div class="row-fluid">
+                    <label>Открытость:</label>
+                    <select ng-model="area.availability">
+                        <option value="open">Открыт</option>
+                        <option value="old_only">Только подзахоронения</option>
+                        <option value="closed">Закрыт</option>
+                    </select>
+                </div>
+                <div class="row-fluid">
+                    <label>Назначение:</label>
+                    <select ng-model="area.purpose" ng-options="value.id as value.name for value in PURPOSE_LIST">
+                    </select>
+                </div>
+                <div class="row-fluid">
+                    <label>Кол-во могил в месте:</label>
+                    <input type="number" name="places_count" min="1" max="{{area_max_places}}" required ng-model="area.places_count" />
+                    <span class="error" ng-show="areaEditForm.places_count.$error.required">Не указано количество могил</span>
+                    <span class="error" ng-show="areaEditForm.places_count.$error.min">Число должно быть больше 0</span> 
+                    <span class="error" ng-show="areaEditForm.places_count.$error.max">Число должно быть меньше, либо равным {{area_max_places}}</span>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" ng-disabled="areaEditForm.$invalid" ng-click="saveEditForm()">Сохранить</button>
+                <button class="btn cancel" ng-click="closeEditForm()">Отменить</button>
+            </div>
+        </form>
+    </tab>
+    <tab heading="Ответственный смотритель">
+        <form name="areaCareTakerForm">
+            <div class="modal-body">
+                <div ng-include src="'/static/js/app/tpl/manage/form_edit_caretaker.html'+version_str"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" ng-disabled="areaEditForm.$invalid" ng-click="saveEditForm()">Сохранить</button>
+                <button class="btn cancel" ng-click="closeEditForm()">Отменить</button>
+            </div>
+        </form>
+    </tab>
+</tabset>

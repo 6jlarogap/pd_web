@@ -16,11 +16,11 @@ from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.models import User
 from django.contrib.auth.hashers import make_password
-from django.core.mail import send_mail, EmailMessage
 from django.core.validators import validate_email
-from django.core.exceptions import ValidationError
+from django.core.exceptions import ValidationError, PermissionDenied
 from django.core.urlresolvers import reverse
 from django.core.files.base import ContentFile
+from django.core.paginator import Paginator
 from django.db import transaction, connection, IntegrityError
 from django.db.models import Sum
 from django.db.models.query_utils import Q
@@ -30,6 +30,7 @@ from django.shortcuts import redirect, render, get_object_or_404
 from django.template.loader import render_to_string
 from django.utils.translation import ugettext_lazy as _
 from django.utils.encoding import smart_unicode
+from django.utils.formats import number_format
 from django.views.generic.base import View, TemplateView
 from django.views.generic.edit import UpdateView, CreateView, FormView
 from django.views.generic.detail import DetailView
@@ -43,34 +44,67 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.authtoken.models import Token
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.parsers import MultiPartParser
+from rest_framework.parsers import MultiPartParser, JSONParser
 
-from burials.views import UGHRequiredMixin, LoginRequiredMixin, SupervisorRequiredMixin
 from logs.models import Log, write_log, LoginLog
 from users.forms import UserAddForm, RegisterForm, LoruFormset, ProfileForm, UserProfileForm, \
                         UserDataForm, ChangePasswordForm, BankAccountFormset, OrgForm, \
-                        OrgLogForm, LoginLogForm, OrgBurialStatsForm, SupportForm, TestCaptchaForm
+                        OrgLogForm, LoginLogForm, OrgBurialStatsForm, SupportForm, TestCaptchaForm, \
+                        LoruOrdersStatsForm
 from users.models import Profile, Org, RegisterProfile, ProfileLORU, CustomerProfile, Store, \
-                         get_mail_footer, is_cabinet_user, PermitIfLoru, PermitIfLoruOrSupervisor, Oauth, \
+                         get_mail_footer, is_cabinet_user, PermitIfTrade, PermitIfTradeOrSupervisor, \
+                         PermitIfCabinet, PermitIfTradeOrCabinet, Oauth, OrgAbility, \
                          BankAccount, BankAccountRegister, OrgCertificate, OrgContract, \
-                         RegisterProfileContract, RegisterProfileScan, \
-                         is_loru_user, is_supervisor, get_default_currency
+                         RegisterProfileContract, RegisterProfileScan, FavoriteSupplier, \
+                         UserPhoto, OrgGallery, OrgReview, \
+                         is_supervisor, is_ugh_user, get_default_currency, get_profile
 from pd.models import validate_phone_as_number, validate_username
-from pd.utils import host_country_code, phones_from_text
-from persons.models import AlivePerson, Phone
-from burials.models import Cemetery, Area, Burial, Place
+from pd.utils import host_country_code, phones_from_text, EmailMessage, get_image
+from persons.models import AlivePerson, Phone, CustomPlace
+from burials.models import Cemetery, Area, Burial, Place, Grave
 from billing.models import Wallet, Rate, Currency
-from orders.models import Product, Order, Iorder, IorderItem
+from orders.models import Product, Order, Service
 from pd.views import PaginateListView, RequestToFormMixin, FormInvalidMixin, get_front_end_url, ServiceException
 from geo.models import Location, Country
 
 from users.serializers import StoreSerializer, OrgSerializer, OrgShort2Serializer, \
-                              OrgOptSupplierSerializer, OrgShort4Serializer
+                              OrgShort3Serializer, OrgOptSupplierSerializer, OrgShort5Serializer, \
+                              UserSettingsSerializer, ShopSerializer, OrgGallerySerializer, \
+                              ShopDetailSerializer, OrgReviewSerializer
 
 from sms_service.utils import send_sms
 
 User._meta.get_field_by_name('email')[0]._unique = True
 User._meta.get_field_by_name('email')[0].null=True
+
+class SupervisorRequiredMixin:
+    def dispatch(self, request, *args, **kwargs):
+        if is_supervisor(request.user):
+            return View.dispatch(self, request, *args, **kwargs)
+        raise Http404
+
+class SupervisorProductionRequiredMixin:
+    """
+    Быть и супервизором на основном (производственном) сайте
+    """
+    def dispatch(self, request, *args, **kwargs):
+        if is_supervisor(request.user) and settings.PRODUCTION_SITE:
+            return View.dispatch(self, request, *args, **kwargs)
+        raise Http404
+
+class UGHRequiredMixin:
+    def dispatch(self, request, *args, **kwargs):
+        self.request = request
+        if not is_ugh_user(request.user):
+            return redirect('/')
+        return View.dispatch(self, request, *args, **kwargs)
+
+class LoginRequiredMixin:
+    def dispatch(self, request, *args, **kwargs):
+        self.request = request
+        if not request.user.is_authenticated():
+            return redirect('/')
+        return View.dispatch(self, request, *args, **kwargs)
 
 class CheckRecaptchaMixin(object):
     
@@ -106,13 +140,18 @@ class ApiAuthSigninView(APIView):
         user_backend = 'django.contrib.auth.backends.ModelBackend'
         confirm_tc = request.DATA.get('confirmTC')
         oauth = request.DATA.get('oauth')
+        password = None
         if user:
             user.backend = user_backend
         else:
             username = request.DATA.get('username')
             password = request.DATA.get('password')
             if username and password:
-                user = authenticate(username=username, password=password)
+                try:
+                    user = User.objects.get(username=username)
+                except User.DoesNotExist:
+                    data['message'] = _(u"Пользователь %s отсутствует в системе") % username
+                    data['errorCode'] = 'wrong_username'
             elif oauth:
                 user, oauth_rec, message = Oauth.check_token(
                     oauth,
@@ -121,13 +160,21 @@ class ApiAuthSigninView(APIView):
                     user.backend = user_backend
         if user:
             if user.is_active:
-                token, created = Token.objects.get_or_create(user=user)
+                if password:
+                    user = authenticate(username=username, password=password)
+                    if not user:
+                        data['message'] = _(u"Неверный пароль")
+                        data['errorCode'] = 'wrong_password'
+                if user:
+                    token, created = Token.objects.get_or_create(user=user)
             else:
-                data['message'] = _(u'Пользователь %s не активен') % user.username
+                data['message'] = _(u'Пользователь не активен')
+                data['errorCode'] = 'user_not_active'
         if token:
             username = user.username
             tc_confirmed = True
             role = None
+            org_abilities = []
             try:
                 user.customerprofile
             except CustomerProfile.DoesNotExist:
@@ -148,11 +195,18 @@ class ApiAuthSigninView(APIView):
             if tc_confirmed:
                 login(request, user)
 
-                profile = { 'email': user.email or None, 'photo': None }
+                profile = dict(
+                    id=user.pk,
+                    email=user.email or None,
+                )
                 pr = user.customerprofile if role == 'ROLE_CLIENT' else user.profile
                 profile['lastname'] = pr.user_last_name or user.last_name or None
                 profile['firstname'] = pr.user_first_name or user.first_name or None
                 profile['middlename'] = pr.user_middle_name or None
+                try:
+                    profile['photo'] = request.build_absolute_uri(UserPhoto.objects.get(user=user).bfile.url)
+                except UserPhoto.DoesNotExist:
+                    profile['photo'] = None
                 profile['username'] = pr.user.username
                 if role == 'ROLE_CLIENT':
                     org = { 'id': None, 'name': None, 'location': None }
@@ -162,6 +216,7 @@ class ApiAuthSigninView(APIView):
                         user.customerprofile.save()
                 else:
                     org = { 'id': user.profile.org.pk, 'name': user.profile.org.name or None }
+                    org_abilities = [ f.name for f in pr.org.ability.all() ]
                     if user.profile.org.off_address:
                         org['location'] = {
                             'address': unicode(user.profile.org.off_address),
@@ -181,16 +236,17 @@ class ApiAuthSigninView(APIView):
                     'profile': profile,
                     'org': org,
                     'role': role,
+                    'orgAbilities': org_abilities,
                     'isSupervisor': is_supervisor(user),
                  })
                 status_code = 200
                 write_log(request, request.user, _(u'Вход в систему'))
                 LoginLog.write(request)
             else:
-                data['message'] = 'unconfirmed_tc'
+                data['message'] = data['errorCode'] = 'unconfirmed_tc'
         elif oauth and not user:
             data.update(message)
-        else:
+        elif not data.get('message'):
             data['message'] = 'Wrong username or password'
         return Response(data=data, status=status_code)
 
@@ -203,7 +259,7 @@ class ApiAuthSignoutView(APIView):
     permission_classes = (IsAuthenticated,)
     
     def post(self, request):
-        print u'DEBUG: %s:%s /API/AUTH/SIGNOUT' % (request.get_host(), request.user.username, )
+        # print u'DEBUG: %s:%s /API/AUTH/SIGNOUT' % (request.get_host(), request.user.username, )
         logout(request)
         return Response(data={}, status=200)
 
@@ -278,6 +334,28 @@ class ApiAuthSignupView(CheckRecaptchaMixin, ApiAuthSigninView):
 
 api_auth_signup = ApiAuthSignupView.as_view()
     
+class ApiProfileView(APIView):
+    permission_classes = (PermitIfCabinet,)
+
+    def get(self, request):
+        profile = request.user.customerprofile
+        data = {
+            'id': request.user.pk,
+        }
+        try:
+            data['photo'] = request.build_absolute_uri(UserPhoto.objects.get(user=request.user).bfile.url)
+        except UserPhoto.DoesNotExist:
+            data['photo'] = None
+        data['lastName'] = profile.user_last_name
+        data['firstName'] = profile.user_first_name
+        data['middleName'] = profile.user_middle_name
+        data['loginPhone'] = request.user.customerprofile.login_phone
+        data['username'] = request.user.username
+
+        return Response(status=200, data=data)
+
+api_profile = ApiProfileView.as_view()
+
 class ApiSettingsOauthProvidersView(APIView):
     permission_classes = (IsAuthenticated,)
 
@@ -318,6 +396,7 @@ api_settings_oauth_providers_delete = ApiSettingsOauthProvidersDeleteView.as_vie
 
 class ApiSettings(APIView):
     permission_classes = (IsAuthenticated,)
+    parser_classes = (MultiPartParser, JSONParser, )
     
     def get(self, request):
         data = dict(oauthProviders=[])
@@ -332,19 +411,27 @@ class ApiSettings(APIView):
     @transaction.commit_on_success
     def put(self, request):
         """
-        Поменять пароль и фотку пользователя
+        Поменять данные пользователя
         
         Input data
         {
-           # avatar, пока не применяем
+           "avatar",
+                - None в json-input, тогда удаляем картинку
+                - request.FILES['avatar'], в multipart-input,
+                  тогда устанавляваем фото
            "username": "somebody",
            "loginPhone": "375297542270",
-            "oldPassword": "1234567",
-            "newPassword": "7654321"
+           "oldPassword": "1234567",
+           "newPassword": "7654321",
+           "lastName": "Моя-новая-фамилия",
+           "firstName": "Мое-новое-имя",
+           "middleName": "Мое-новое-отчество"
          }
         """
         try:
             user = request.user
+            profile = get_profile(user)
+            change_profile = False
             old_username = user.username
             old_password = request.DATA.get('oldPassword')
             if old_password:
@@ -353,21 +440,21 @@ class ApiSettings(APIView):
                     raise ServiceException(_(u'Неверно указан действующий пароль'))
 
             login_phone = request.DATA.get('loginPhone')
-            if login_phone:
+            if login_phone and is_cabinet_user(user):
                 try:
                     new_login_phone = decimal.Decimal(login_phone)
                     validate_phone_as_number(new_login_phone)
                 except (TypeError, decimal.InvalidOperation, ValidationError, ):
                     raise ServiceException(_(u'Неверный формат телефона'))
-                if is_cabinet_user(user):
-                    old_login_phone = user.customerprofile.login_phone
-                    if new_login_phone != old_login_phone:
-                        try:
-                            user.customerprofile.login_phone = new_login_phone
-                            user.customerprofile.save()
-                            AlivePerson.objects.filter(login_phone=old_login_phone).update(login_phone=new_login_phone)
-                        except IntegrityError:
-                            raise ServiceException(_(u'Такой номер телефона ответственного уже имеется'))
+                old_login_phone = profile.login_phone
+                if new_login_phone != old_login_phone:
+                    try:
+                        profile.login_phone = new_login_phone
+                        change_profile = True
+                        AlivePerson.objects.filter(user=user).update(login_phone=new_login_phone)
+                        Place.log_login_phone_change(request, old_login_phone)
+                    except IntegrityError:
+                        raise ServiceException(_(u'Такой номер телефона ответственного уже имеется'))
 
             new_username = request.DATA.get('username')
             if new_username:
@@ -391,6 +478,44 @@ class ApiSettings(APIView):
                 except IntegrityError:
                     raise ServiceException(_(u'Пользователь с таким именем для входа в систему уже имеется'))
 
+            user_last_name = request.DATA.get('lastName')
+            if user_last_name is not None:
+                change_profile = True
+                profile.user_last_name = user_last_name
+            user_first_name = request.DATA.get('firstName')
+            if user_first_name is not None:
+                change_profile = True
+                profile.user_first_name = user_first_name
+            user_middle_name = request.DATA.get('middleName')
+            if user_middle_name is not None:
+                change_profile = True
+                profile.user_middle_name = user_middle_name
+            avatar = request.FILES.get('avatar')
+            if avatar:
+                if avatar.size > UserPhoto.MAX_SIZE * 1024 * 1024:
+                    raise ServiceException(_(u"Размер изображения не должен превышать %sМб") % UserPhoto.MAX_SIZE)
+                image = get_image(avatar)
+                if not image:
+                    raise ServiceException(_(u"Прикрепленный файл не является изображением"))
+                if image.size[0] <= UserPhoto.MIN_SIZE_X:
+                    raise ServiceException(_(u"Ширина картинки должна быть больше %s px") % UserPhoto.MIN_SIZE_X)
+                userphoto, created_ = UserPhoto.objects.get_or_create(
+                    user=user,
+                    defaults=dict(
+                        creator=user,
+                        bfile=avatar,
+                ))
+                if not created_:
+                    userphoto.delete_from_media()
+                    userphoto.bfile.save(avatar.name, avatar)
+                change_profile = True
+            elif 'avatar' in request.DATA and request.DATA['avatar'] is None:
+                for photo in UserPhoto.objects.filter(user=user):
+                    photo.delete()
+                    change_profile = True
+
+            if change_profile:
+                profile.save()
         except ServiceException as excpt:
             transaction.rollback()
             data = { 'status': 'error',
@@ -398,7 +523,7 @@ class ApiSettings(APIView):
                    }
             status_code = 400
         else:
-            data = {}
+            data = UserSettingsSerializer(user,context=dict(request=request)).data
             status_code = 200
         return Response(data=data, status=status_code)
 
@@ -484,7 +609,7 @@ class AuthGetPasswordBySMSView(CheckRecaptchaMixin, APIView):
                         sent, message = send_sms(
                             phone_number=login_phone,
                             text=_(u'Vash parol na PohoronnoeDelo: %s') % password,
-                            email_error_text = _(u"Пользователь %s (телефон %s) не смог получить или заменить пароль" % \
+                            email_error_text = _(u"Пользователь %s (телефон %s) не смог заменить пароль" % \
                                                (user.username, login_phone)),
                         )
         if not message:
@@ -564,9 +689,13 @@ class ApiFeedBack(CheckRecaptchaMixin, APIView):
                 email_subject = _(u'Вопрос в поддержку')
             
             if request.user.is_authenticated():
-                if not request.user.email and email_from:
-                    request.user.email = email_from
-                    request.user.save()
+                user_email = request.user.email
+                if not user_email and email_from:
+                    try:
+                        request.user.email = email_from
+                        request.user.save()
+                    except IntegrityError:
+                        request.user.email = user_email
 
                 if is_cabinet_user(request.user):
                     profile = request.user.customerprofile
@@ -602,6 +731,12 @@ class ApiFeedBack(CheckRecaptchaMixin, APIView):
             headers = {}
             if email_from:
                 headers['Reply-To'] = email_from
+            # Если в From: поставить задавшего вопрос, например, user@yandex.ru,
+            # то письмо придет в email_to (адреса гугловской почты) с "замечаниями"
+            # в заголовке, что письмо пришло не от yandex, так и в спам может попасть.
+            # Посему реальный отправитель будет в Reply-To:
+            #
+            email_from = _(u"Вопрос в поддержку <%s>") % settings.DEFAULT_FROM_EMAIL
             EmailMessage(email_subject, email_text, email_from, email_to, headers=headers, ).send()
             data = { 'status': 'success',
                      'message': '',
@@ -617,7 +752,7 @@ class ApiFeedBack(CheckRecaptchaMixin, APIView):
 api_feedback = ApiFeedBack.as_view()
 
 class ApiLoruPlaces(APIView):
-    permission_classes = (PermitIfLoru,)
+    permission_classes = (PermitIfTrade,)
 
     """
     Вернуть массив, в котором только "ОМС" публичного каталога
@@ -725,7 +860,7 @@ class LogoutView(View):
         if not request.user.is_authenticated():
             return redirect('/')
         write_log(request, request.user, _(u'Выход из системы'))
-        print u'DEBUG: %s:%s /LOGOUT' % (request.get_host(), request.user.username, )
+        # print u'DEBUG: %s:%s /LOGOUT' % (request.get_host(), request.user.username, )
         logout(request)
         if request.GET.get("redirectUrl"):
             response = redirect(request.GET.get("redirectUrl"))
@@ -738,7 +873,7 @@ class LogoutView(View):
 
 ulogout = LogoutView.as_view()
 
-class RegistrationOldView(SupervisorRequiredMixin, View):
+class RegistrationOldView(SupervisorProductionRequiredMixin, View):
     """
     Регистрация
     """
@@ -1050,7 +1185,7 @@ class OrgLogView(LoginRequiredMixin, PaginateListView):
             if form.cleaned_data['date_from']:
                 logs = logs.filter(dt__gte=form.cleaned_data['date_from'])
             if form.cleaned_data['date_to']:
-                logs = logs.filter(dt__lte=form.cleaned_data['date_to']+datetime.timedelta(days=1))
+                logs = logs.filter(dt__lt=form.cleaned_data['date_to']+datetime.timedelta(days=1))
 
         sort = self.request.GET.get('sort', self.SORT_DEFAULT)
         SORT_FIELDS = {
@@ -1088,7 +1223,7 @@ class LoginLogView(SupervisorRequiredMixin, PaginateListView):
             if form.cleaned_data['date_from']:
                 logs = logs.filter(dt__gte=form.cleaned_data['date_from'])
             if form.cleaned_data['date_to']:
-                logs = logs.filter(dt__lte=form.cleaned_data['date_to']+datetime.timedelta(days=1))
+                logs = logs.filter(dt__lt=form.cleaned_data['date_to']+datetime.timedelta(days=1))
 
         sort = self.request.GET.get('sort', self.SORT_DEFAULT)
         SORT_FIELDS = {
@@ -1137,7 +1272,7 @@ class RegisterMixin(object):
         )
         email_from = settings.DEFAULT_FROM_EMAIL
         email_to = (obj.user_email, )
-        send_mail(email_subject, email_text, email_from, email_to)
+        EmailMessage(email_subject, email_text, email_from, email_to).send()
         
 class RegisterView(RegisterMixin, CreateView):
     """
@@ -1195,7 +1330,7 @@ class RegisterActivation(DetailView):
                 self.object.save()
                 write_log(None, self.object, _(u'%s : получено подтверждение') % self.object)
                 for r in RegisterProfile.objects.filter(
-                        status__in=(RegisterProfile.STATUS_DECLINED, RegisterProfile.STATUS_APPROVED, ),
+                        status__in=(RegisterProfile.STATUS_APPROVED, ),
                         dt_modified__lt=datetime.datetime.now() - \
                                         datetime.timedelta(days=RegisterProfile.CLEAR_PROCESSED),):
                     r.delete()
@@ -1206,8 +1341,8 @@ class RegisterActivation(DetailView):
                             u'Спасибо за подтверждение заявки на регистрацию!\n'
                             u'Ваша заявка принята на <b>рассмотрение администратора системы</b>\n'
                 )
-                email_subject = "%s %s" % (unicode(_(u"Заявка на регистрацию на")),
-                                           unicode(_(u"ПохоронноеДело")),
+                email_subject = "%s %s" % (unicode(_(u"Заявка на регистрацию в")),
+                                           unicode(_(u"Похоронное Дело")),
                                           )
                 try:
                     scan = self.object.registerprofilescan
@@ -1354,6 +1489,9 @@ class RegistrantApprove(SupervisorRequiredMixin, View):
                             off_address=off_address,
                             currency = registrant.org_currency,
                 )
+                if org.type == Org.PROFILE_UGH:
+                    pd_ability = OrgAbility.objects.get(name=OrgAbility.ABILITY_PERSONAL_DATA)
+                    org.ability.add(pd_ability)
                 for bank in registrant.bankaccountregister_set.all():
                     if bank.off_address:
                         bank_address = copy.deepcopy(bank.off_address)
@@ -1410,16 +1548,14 @@ class RegistrantApprove(SupervisorRequiredMixin, View):
                 write_log(request, registrant, _(u'%s : одобрена') % registrant)
                 email_subject = unicode(_(u"Заявка на регистрацию одобрена"))
                 email_text = render_to_string(
-                                'register_approved_email.txt',
-                                { 'host': '%s://%s' % (self.request.is_secure() and 'https' or 'http',
-                                                    self.request.get_host(),
-                                                    ),
-                                'obj': registrant,
-                                }
-                            )
+                    'register_approved_email.txt',
+                    dict(
+                        host=get_front_end_url(request),
+                        obj=registrant,
+                ))
                 email_from = settings.DEFAULT_FROM_EMAIL
                 email_to = (registrant.user_email, )
-                send_mail(email_subject, email_text, email_from, email_to )
+                EmailMessage(email_subject, email_text, email_from, email_to, ).send()
         return redirect('registrants')
 
 registrant_approve = RegistrantApprove.as_view()
@@ -1434,7 +1570,7 @@ class RegistrantDecline(SupervisorRequiredMixin, View):
 
 registrant_decline = RegistrantDecline.as_view()
 
-class OmsBurialStatsView(SupervisorRequiredMixin, TemplateView):
+class OmsBurialStatsView(SupervisorProductionRequiredMixin, TemplateView):
     template_name = 'oms_burial_stats.html'
 
     def get_context_data(self, **kwargs):
@@ -1444,7 +1580,7 @@ class OmsBurialStatsView(SupervisorRequiredMixin, TemplateView):
             if form.cleaned_data['date_from']:
                 q &= Q(dt_modified__gte=form.cleaned_data['date_from'])
             if form.cleaned_data['date_to']:
-                q &= Q(dt_modified__lte=form.cleaned_data['date_to'])
+                q &= Q(dt_modified__lt=form.cleaned_data['date_to']+datetime.timedelta(days=1))
             if form.cleaned_data['status']:
                 q &= Q(status=form.cleaned_data['status'])
             else:
@@ -1494,7 +1630,119 @@ class OmsBurialStatsView(SupervisorRequiredMixin, TemplateView):
 
 oms_burial_stats = OmsBurialStatsView.as_view()
 
-class OmsCurrentStatsView(SupervisorRequiredMixin, TemplateView):
+class LoruOrderStatsView(SupervisorProductionRequiredMixin, PaginateListView):
+    template_name = 'loru_order_stats.html'
+    queryset = Org.objects.none()
+
+    def get_context_data(self, **kwargs):
+
+        def sort_key(org):
+            sort_parm = re.sub(r'^\-', '', sort)
+            try:
+                result = org[sort_parm]
+            except KeyError:
+                result = org['name']
+            return result
+
+        data = super(LoruOrderStatsView, self).get_context_data(**kwargs)
+        form = self.get_form()
+        orgs = []
+        sort = self.request.GET.get('sort', 'name')
+        total={}
+        total['loru_count'] = total['num_orders']= total['sum_orders'] = 0
+
+        if form.data and form.is_valid():
+            q_opt_order = Q(type=Order.TYPE_TRADE, annulated = False)
+            q_order = Q(loru__isnull=False, annulated = False)
+            if form.cleaned_data.get('date_from'):
+                q_order &= Q(dt__gte=form.cleaned_data['date_from'])
+                q_opt_order &= Q(dt_created__gte=form.cleaned_data['date_from'])
+            if form.cleaned_data.get('date_to'):
+                q_order &= Q(dt__lt=form.cleaned_data['date_to']+datetime.timedelta(days=1))
+                q_opt_order &= Q(dt_created__lt=form.cleaned_data['date_to']+datetime.timedelta(days=1))
+            supplier_name = form.cleaned_data.get('supplier')
+            if supplier_name:
+                q_order &= Q(loru__name__icontains=supplier_name)
+                q_opt_order &= Q(supplier__name__icontains=supplier_name)
+
+            pks = {}
+            currencies = set()
+            for opt_order in Order.objects.filter(q_opt_order). \
+                            select_related('loru', 'loru__name', 'loru__currency'):
+                org_pk = opt_order.loru.pk
+                if org_pk not in pks:
+                    pks[org_pk] = dict(
+                        name=opt_order.loru.name,
+                        currency=opt_order.loru.currency.code,
+                        num_orders=0,
+                        sum_orders=0,
+                    )
+                    if len(currencies) < 2:
+                        currencies.add(opt_order.loru.currency)
+                org = pks[org_pk]
+                org['num_orders'] += 1
+                total['num_orders'] += 1
+                
+                this_sum= opt_order.total
+                org['sum_orders'] += this_sum
+                total['sum_orders'] +=  this_sum
+
+            for order in Order.objects.filter(q_order). \
+                            select_related('loru', 'loru__name', 'loru__currency'):
+                org_pk = order.loru.pk
+                if org_pk not in pks:
+                    pks[org_pk] = dict(
+                        name=order.loru.name,
+                        currency=order.loru.currency.code,
+                        num_orders=0,
+                        sum_orders=0,
+                    )
+                    if len(currencies) < 2:
+                        currencies.add(order.loru.currency)
+                org = pks[org_pk]
+                org['num_orders'] += 1
+                total['num_orders'] += 1
+
+                this_sum = order.total
+                org['sum_orders'] += this_sum
+                total['sum_orders'] +=  this_sum
+
+            orgs = pks.values()
+
+            all_sum_integers = True
+            for org in orgs:
+                f_sum = float(org['sum_orders'])
+                if f_sum - f_sum // 1 != 0.0:
+                    all_sum_integers = False
+                    break
+            if all_sum_integers:
+                for org in orgs:
+                    org['sum_orders'] = int(org['sum_orders'])
+                total['sum_orders'] = int(total['sum_orders'])
+
+            for org in orgs:
+                org['sum_orders'] = number_format(org['sum_orders'], force_grouping=True)
+            total['sum_orders'] = number_format(total['sum_orders'], force_grouping=True)
+
+            total['currency'] = orgs[0]['currency'] if len(currencies) == 1 else ''
+            orgs.sort(key=sort_key, reverse=sort.startswith('-'))
+
+        total['loru_count'] = len(orgs)
+        data.update({
+            'orgs': orgs,
+            'total': total,
+            'sort': sort,
+            'paginator': Paginator(orgs, per_page=25)
+        })
+        return data
+
+
+    def get_form(self):
+        return LoruOrdersStatsForm(data=self.request.GET or None)
+
+loru_order_stats = LoruOrderStatsView.as_view()
+
+class OmsCurrentStatsView(SupervisorProductionRequiredMixin, TemplateView):
     template_name = 'oms_current_stats.html'
 
     def get_context_data(self, **kwargs):
@@ -1595,7 +1843,7 @@ class OmsCurrentStatsView(SupervisorRequiredMixin, TemplateView):
 
 oms_current_stats = OmsCurrentStatsView.as_view()
 
-class LoruCurrentStatsView(SupervisorRequiredMixin, TemplateView):
+class LoruCurrentStatsView(SupervisorProductionRequiredMixin, TemplateView):
     template_name = 'loru_current_stats.html'
 
     def get_context_data(self, **kwargs):
@@ -1617,7 +1865,7 @@ class LoruCurrentStatsView(SupervisorRequiredMixin, TemplateView):
         total['num_products'] = total['num_published_products'] = \
         total['num_published_wholesales'] = \
         total['num_orders'] = \
-        total['num_iorders_in'] = total['num_iorders_out'] = \
+        total['num_opt_orders_in'] = total['num_opt_orders_out'] = \
         total['num_burials'] = 0
         catalog_org_pk = Org.get_catalog_org_pk()
         q_published = Q(is_public_catalog=True)
@@ -1656,15 +1904,15 @@ class LoruCurrentStatsView(SupervisorRequiredMixin, TemplateView):
 
             org['currency'] = o.currency.code
 
-            org['num_iorders_in'] = Iorder.objects.filter(supplier=o).count()
-            total['num_iorders_in'] += org['num_iorders_in']
-            org['sum_iorders_in'] = IorderItem.objects.filter(iorder__supplier=o). \
-                aggregate(total=Sum('price_wholesale'))['total'] or 0
+            org['num_opt_orders_in'] = Order.objects.filter(loru=o, type=Order.TYPE_TRADE).count()
+            total['num_opt_orders_in'] += org['num_opt_orders_in']
+            org['sum_opt_orders_in'] = Order.objects.filter(loru=o, type=Order.TYPE_TRADE). \
+                aggregate(total=Sum('cost'))['total'] or 0
 
-            org['num_iorders_out'] = Iorder.objects.filter(customer=o).count()
-            total['num_iorders_out'] += org['num_iorders_out']
-            org['sum_iorders_out'] = IorderItem.objects.filter(iorder__customer=o). \
-                aggregate(total=Sum('price_wholesale'))['total'] or 0
+            org['num_opt_orders_out'] = Order.objects.filter(applicant_organization=o, type=Order.TYPE_TRADE).count()
+            total['num_opt_orders_out'] += org['num_opt_orders_out']
+            org['sum_opt_orders_out'] = Order.objects.filter(applicant_organization=o, type=Order.TYPE_TRADE). \
+                aggregate(total=Sum('cost'))['total'] or 0
 
             org['num_burials'] = Burial.objects.filter(
                 source_type=Burial.SOURCE_FULL,
@@ -1851,11 +2099,62 @@ class Tutorial(TemplateView):
 
 tutorial = Tutorial.as_view()
 
+class FavoriteSupplierList(APIView):
+    """
+    List all loru's favorite suppliers
+    """
+    permission_classes = (PermitIfTrade,)
+
+    def get(self, request):
+        my_org = request.user.profile.org
+        data_self = [OrgShort3Serializer(my_org).data]
+        data_other = [OrgShort3Serializer(f.supplier).data for f in FavoriteSupplier.objects.filter(
+                Q(loru=my_org) & ~Q(supplier=my_org),
+        )]
+        return Response(data=data_self + data_other, status=200)
+
+api_loru_favorite_suppliers = FavoriteSupplierList.as_view()
+
+class FavoriteSupplierEdit(APIView):
+    """
+    Add or delete loru's favorite suppliers
+    """
+    permission_classes = (PermitIfTrade,)
+
+    def post(self, request, supplier_id):
+        try:
+            try:
+                supplier = Org.objects.get(pk=supplier_id)
+            except Org.DoesNotExist:
+                raise ServiceException(_(u'Нет такого поставщика: %s') % supplier_id)
+            if supplier.type != Org.PROFILE_LORU:
+                raise ServiceException(_(u'Id = %s : это не поставщик (ЛОРУ)') % supplier_id)
+            FavoriteSupplier.objects.get_or_create(
+                loru=request.user.profile.org,
+                supplier=supplier,
+            )
+        except ServiceException as excpt:
+            data = dict(status='error', message=excpt.message)
+            status_code = 400
+        else:
+            data = dict()
+            status_code = 200
+        return Response(data, status=status_code)
+
+    def delete(self, request, supplier_id):
+        FavoriteSupplier.objects.filter(
+            loru=request.user.profile.org,
+            supplier__pk=supplier_id,
+        ).delete()
+        return Response(data={}, status=200)
+
+api_loru_favorite_suppliers_edit = FavoriteSupplierEdit.as_view()
+
 class StoreList(APIView):
     """
     List all stores, or create a new store.
     """
-    permission_classes = (PermitIfLoru,)
+    permission_classes = (PermitIfTrade,)
 
     def get(self, request, format=None):
         stores = Store.objects.filter(loru=request.user.profile.org)
@@ -1878,7 +2177,7 @@ class StoreDetail(APIView):
     """
     Retrieve, update or delete a store instance.
     """
-    permission_classes = (PermitIfLoru,)
+    permission_classes = (PermitIfTrade,)
 
     def get_object(self, request, pk):
         try:
@@ -2003,6 +2302,8 @@ class ApiOrgSignupView(CheckRecaptchaMixin, RegisterMixin, APIView):
             org_name = request.DATA.get('orgName', '').strip()
             if not org_name:
                 raise ServiceException(_(u'Не задано краткое наименование организации'))
+            if re.search(r'^[\d\s]+$', org_name):
+                raise ServiceException(_(u'Невозможное название организации (только из цифр)'))
             org_types = dict(loru=Org.PROFILE_LORU, oms=Org.PROFILE_UGH)
             org_type = request.DATA.get('orgType')
             if not org_type or org_type not in org_types:
@@ -2147,28 +2448,35 @@ class ApiCatalogSuppliersView(APIView):
 
     def get(self, request):
         return Response(
-            data = [ OrgShort2Serializer(loru).data for loru in Org.objects.filter(type=Org.PROFILE_LORU) ],
+            data = [ OrgShort2Serializer(
+                                    loru,
+                                    context = dict(request=request),
+                     ).data for loru in Org.objects.filter(ability__name=OrgAbility.ABILITY_TRADE) ],
             status=200
         )
 
 api_catalog_suppliers = ApiCatalogSuppliersView.as_view()
 
 class OrgDetailView(APIView):
-    """
-    Показ ЛОРУ в публичном каталоге только!!!
-    """
     def get(self, request, org_slug):
-        obj = get_object_or_404(Org, slug=org_slug)
-        return Response(status=200, data=OrgSerializer(obj).data)
+        """
+        Запрос данных организации по slug, или по id, если org_slug состоит только из цифр
+        """
+        if re.search(r'^\d+$', org_slug):
+            kwargs = dict(pk=org_slug)
+        else:
+            kwargs = dict(slug=org_slug)
+        obj = get_object_or_404(Org, **kwargs)
+        return Response(status=200, data=OrgSerializer(obj, context = dict(request=request)).data)
 
 api_catalog_suppliers_detail = OrgDetailView.as_view()
 
 class ApiOptplacesSuppliersView(APIView):
-    permission_classes = (PermitIfLoruOrSupervisor, )
-
+    permission_classes = (PermitIfTradeOrSupervisor, )
     def get(self, request):
         return Response(
-            data = [ OrgOptSupplierSerializer(loru).data for loru in Org.objects.filter(type=Org.PROFILE_LORU) ],
+            data = [ OrgOptSupplierSerializer(loru).data for \
+                        loru in Org.objects.filter(ability__name=OrgAbility.ABILITY_TRADE) ],
             status=200
         )
 
@@ -2182,7 +2490,158 @@ class ApiOptplacesSupplierDetailView(APIView):
     """
     def get(self, request, pk):
         obj = get_object_or_404(Org, pk=pk)
-        return Response(status=200, data=OrgShort4Serializer(obj).data)
+        return Response(status=200, data=OrgShort5Serializer(obj, context=dict(request=request)).data)
 
 api_optplaces_suppliers_detail = ApiOptplacesSupplierDetailView.as_view()
 
+class ApiShopsView(APIView):
+
+    def get(self, request):
+        q = Q(orgservice__service__name=Service.SERVICE_DELIVERY) & \
+            Q(orgservice__enabled=True) & \
+            Q(orgservice__orgserviceprice__measure__name='km')
+
+        category_ids_got = self.request.GET.getlist('categories')
+        category_ids = []
+        for category_id in category_ids_got:
+            try:
+                # может быть '', 'null'
+                category_ids.append(int(category_id))
+            except ValueError:
+                pass
+        if category_ids:
+            q &= Q(product__productcategory__pk__in=category_ids) & Q(product__is_for_visit=True)
+
+        s = request.GET.get('query')
+        if s:
+            q2 = Q(off_address__city__name__icontains=s) | \
+                 Q(off_address__addr_str__icontains=s) | \
+                 Q(product__name__icontains=s) & Q(product__is_for_visit=True)
+            q &=q2
+
+        return Response(
+            data = [ ShopSerializer(shop, context=dict(request=request)).data for \
+                        shop in Org.objects.filter(q).distinct() ],
+            status=200
+        )
+
+api_shops = ApiShopsView.as_view()
+
+class ApiShopsMixin(object):
+
+    def get_shop(self, pk, authorized_only=False):
+        """
+        Получить магазин (поставщик) по pk
+
+        Если authorized_only==True, то проверка, авторизован ли пользователь,
+        чтоб менять данные по этому поставщику
+        """
+        try:
+            shop = Org.objects.get(pk=pk)
+            if authorized_only:
+                try:
+                    if self.request.user.profile.org != shop:
+                        raise Http404
+                except (Profile.DoesNotExist, AttributeError):
+                    raise Http404
+            return shop
+        except Org.DoesNotExist:
+            raise Http404
+
+class ApiShopsGalleryView(ApiShopsMixin, APIView):
+    parser_classes = (MultiPartParser,)
+    
+    def get(self, request, pk):
+        shop = self.get_shop(pk, authorized_only=False)
+        return Response(
+            data = [
+                OrgGallerySerializer(item, context=dict(request=request)).data \
+                    for item in OrgGallery.objects.filter(org=shop).order_by('-date_of_creation')
+            ],
+            status=200
+        )
+
+    def post(self, request, pk):
+        try:
+            shop = self.get_shop(pk, authorized_only=True)
+            photo = request.FILES.get('photo')
+            if photo:
+                if photo.size > OrgGallery.MAX_IMAGE_SIZE * 1024 * 1024:
+                    raise ServiceException(_(u"Размер фото превышает %d Мб") % OrgGallery.MAX_IMAGE_SIZE)
+                if not get_image(photo):
+                    raise ServiceException(_(u"Загруженное фото не является изображением"))
+            else:
+                raise ServiceException(_(u"Нет загружаемого фото (photo)"))
+            item = OrgGallery.objects.create(
+                org=shop,
+                bfile=photo,
+                creator=request.user,
+                comment=request.DATA.get('title'),
+            )
+            return Response(
+                data = OrgGallerySerializer(item, context=dict(request=request)).data,
+                status=200
+            )
+        except ServiceException as excpt:
+            return Response(data=dict(status='error', message=excpt.message), status=400)
+
+api_shops_gallery = ApiShopsGalleryView.as_view()
+
+class ApiShopsDetailView(ApiShopsMixin, APIView):
+
+    def get(self, request, pk):
+        shop = self.get_shop(pk, authorized_only=False)
+        return Response(
+            data = ShopDetailSerializer(shop, context=dict(request=request)).data,
+            status=200
+        )
+
+api_shops_detail = ApiShopsDetailView.as_view()
+
+class ApiShopsReviewsView(ApiShopsMixin, APIView):
+
+    def get(self, request, pk):
+        shop = self.get_shop(pk, authorized_only=False)
+        return Response(
+            data = [ OrgReviewSerializer(review).data \
+                     for review in OrgReview.objects.filter(org=shop).order_by('-dt_created')],
+            status=200
+        )
+
+    def post(self, request, pk):
+        try:
+            shop = self.get_shop(pk, authorized_only=False)
+            if not is_cabinet_user(request.user):
+                raise PermissionDenied
+            mapping = dict(
+                title='subject',
+                commonText='common_text',
+                positiveText='positive_text',
+                negativeText='negative_text',
+            )
+            kwargs = dict()
+            for key in mapping:
+                if request.DATA.get(key) is not None:
+                    kwargs[mapping[key]] = request.DATA[key]
+            if 'isPositive' in request.DATA:
+                kwargs['is_positive'] = request.DATA['isPositive']
+            # Не должно быть пустого отзыва. Хотя бы только оценка
+            if kwargs.get('is_positive') not in (True, False):
+                for key in mapping:
+                    if kwargs.get(mapping[key]):
+                        break
+                else:
+                    raise ServiceException(_(u"Пустой отзыв недопустим"))
+            kwargs.update(dict(
+                org=shop,
+                creator=request.user,
+            ))
+            review = OrgReview.objects.create(**kwargs)
+            return Response(
+                data = OrgReviewSerializer(review).data,
+                status=200
+            )
+        except ServiceException as excpt:
+            return Response(data=dict(status='error', message=excpt.message), status=400)
+
+api_shops_reviews = ApiShopsReviewsView.as_view()

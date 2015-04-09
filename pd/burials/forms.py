@@ -7,6 +7,7 @@ import re
 
 from django import forms
 from django.contrib import messages
+from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
 from django.db import models
@@ -210,6 +211,7 @@ class BurialSearchForm(forms.Form):
 
     fio = forms.CharField(required=False, max_length=100, label=_(u"ФИО"))
     no_last_name = forms.BooleanField(required=False, initial=False, label=_(u"Неизв."))
+    ident_number_search = forms.CharField(required=False, max_length=100, label=_(u"Идентификационный номер"))
     birth_date_from = forms.DateField(required=False, label=_(u"Дата рожд. с"))
     birth_date_to = forms.DateField(required=False, label=_(u"по"))
     death_date_from = forms.DateField(required=False, label=_(u"Дата смерти с"))
@@ -233,6 +235,11 @@ class BurialSearchForm(forms.Form):
     status = forms.TypedChoiceField(required=False, label=_(u"Статус"), choices=EMPTY + Burial.STATUS_CHOICES)
     annulated = forms.BooleanField(required=False, initial=False, label=_(u"Аннулировано"))
     per_page = forms.ChoiceField(label=_(u"На странице"), choices=PAGE_CHOICES, initial=25, required=False)
+
+    def __init__(self, *args, **kwargs):
+        super(BurialSearchForm, self).__init__(*args, **kwargs)
+        if not settings.DEADMAN_IDENT_NUMBER_ALLOW:
+            del self.fields['ident_number_search']
 
 class ResponsibleForm(AlivePersonForm):
     WHERE_FROM_PLACE = u'place'
@@ -413,7 +420,7 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
         self.fields['dover'].queryset = self.fields['dover'].queryset.select_related('agent', 'agent__user')
 
         self.fields.keyOrder.insert(self.fields.keyOrder.index('applicant_organization'), self.fields.keyOrder.pop(-1))
-        if self.instance.pk and self.instance.applicant:
+        if self.instance.pk and self.instance.applicant and self.instance.can_personal_data(self.request):
             self.initial['opf'] = 'person'
         else:
             self.initial['opf'] = 'org'
@@ -512,7 +519,7 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
         applicant_form_initial = {}
         applicant_address_form_initial = {}
         applicant_id_form_initial = {}
-        if not self.instance.pk and self.order and self.order.applicant:
+        if not self.instance.pk and self.order and self.order.applicant and self.instance.can_personal_data(self.request):
             self.initial['opf'] = 'person'
             for f in AlivePersonForm.base_fields.keys():
                 applicant_form_initial[f] = getattr(self.order.applicant, f)
@@ -541,7 +548,7 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
                         # что из модели, на которой форма основана:
                         pass
         applicant_id_form_initial['flag_no_applicant_doc_required'] = self.instance.flag_no_applicant_doc_required \
-            if self.instance.pk else False
+            if self.instance.pk and self.instance.can_personal_data(self.request) else False
 
         self.applicant_form = AlivePersonForm(data=data, prefix='applicant',
                                               instance=applicant,
@@ -856,8 +863,9 @@ class BurialCommitForm(BurialForm):
             cemetery = self.instance.cemetery or None
 
         if self.fields.get('fact_date'):
-            self.fields['fact_date'].required = True
-            if (self.instance.is_archive() or self.request.REQUEST.get('archive')) and \
+            if self.instance.is_transferred():
+                self.fields['fact_date'].required = False
+            elif (self.instance.is_archive() or self.request.REQUEST.get('archive')) and \
                cemetery and not cemetery.archive_burial_fact_date_required:
                 self.fields['fact_date'].required = False
             else:
@@ -919,18 +927,26 @@ class BurialCommitForm(BurialForm):
 
         StrippedStringsMixin.clean(self)
 
+        cemetery = self.cleaned_data.get('cemetery')
+        if self.request.user.profile.is_ugh():
+            can_personal_data = self.request.user.profile.org.can_personal_data()
+        else:
+            can_personal_data = self.instance.can_personal_data(self.request) if self.instance.pk else \
+                                cemetery and cemetery.ugh and cemetery.ugh.can_personal_data()
+
         if not self.instance.is_archive() and not self.instance.is_transferred() and not self.request.REQUEST.get('archive'):
-            if not self.cleaned_data.get('applicant_organization') and not self.applicant_form.is_valid_data():
+            if can_personal_data and not self.cleaned_data.get('applicant_organization') and not self.applicant_form.is_valid_data():
                 raise forms.ValidationError(_(u"Нужно указать либо Заявителя-ЮЛ, либо Заявителя-ФЛ"))
 
-            if self.cleaned_data.get('opf') == 'person':
+            if can_personal_data and self.cleaned_data.get('opf') == 'person':
                 if not self.applicant_form.is_valid_data():
-                    raise forms.ValidationError(_(u"Нужно указать Заявителя-ФЛ"))
+                    raise forms.ValidationError(_(u"Если выбран заявитель-ФЛ, то надо его (ее) указать"))
 
             if self.cleaned_data.get('opf') == 'org':
-                if not self.cleaned_data.get('applicant_organization'):
-                    raise forms.ValidationError(_(u"Нужно указать Заявителя-ЮЛ"))
-                if not self.cleaned_data.get('agent_director'):
+                applicant_organization = self.cleaned_data.get('applicant_organization')
+                if not applicant_organization and can_personal_data:
+                    raise forms.ValidationError(_(u"Если выбран заявитель-ЮЛ, то надо его указать"))
+                if applicant_organization and not self.cleaned_data.get('agent_director'):
                     if not self.cleaned_data.get('agent') or not self.cleaned_data.get('dover'):
                         msg = _(u"Нужно указать Агента и Доверенность или указать, что Агент - Директор")
                         raise forms.ValidationError(msg)
@@ -974,7 +990,6 @@ class BurialCommitForm(BurialForm):
         elif self.request.user.profile.is_loru() and self.request.REQUEST.get('ready'):
             msg_complete = _(u'отправлять на согласование')
 
-        cemetery = self.cleaned_data.get('cemetery')
         area = self.cleaned_data.get('area')
         row = self.cleaned_data.get('row')
         place_number = self.cleaned_data.get('place_number') or ''
@@ -1156,12 +1171,21 @@ class BurialCommitForm(BurialForm):
                 msg = _(u"Фактическая дата захоронения не может быть раньше даты смерти")
                 raise forms.ValidationError(msg)
 
+        if settings.DEADMAN_IDENT_NUMBER_ALLOW and \
+           not (self.instance.is_archive() or self.request.REQUEST.get('archive')) and \
+           not self.instance.is_transferred() and \
+           self.deadman_form.cleaned_data.get("last_name") and \
+           not self.deadman_form.cleaned_data.get("ident_number"):
+            msg = _(u"Нет идентификационного номера для усопшего")
+            raise forms.ValidationError(msg)
+
         if self.dc_form.is_valid():
             death_certificate_release_date = self.dc_form.cleaned_data.get('release_date')
             if not (self.instance.is_archive() or self.request.REQUEST.get('archive') or \
                     self.instance.is_transferred() or \
                     self.request.user.profile.is_loru() or \
-                    self.cleaned_data.get('burial_container') == Burial.CONTAINER_BIO \
+                    self.cleaned_data.get('burial_container') == Burial.CONTAINER_BIO or \
+                    not can_personal_data
                    ):
                 if not self.dc_form.cleaned_data.get("s_number").strip():
                     raise forms.ValidationError(_(u"Не заполнен номер свидетельства о смерти"))
@@ -1323,7 +1347,7 @@ class BurialApproveCloseForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelFor
 
             # и лору, и угх в отправленном на согласовании или в место-обследуемом зх
             # могут править СоС
-            if not self.instance.is_bio():
+            if not self.instance.is_bio() and self.instance.can_personal_data(self.request):
                 try:
                     dc = self.instance and self.instance.deadman and self.instance.deadman.deathcertificate
                 except DeathCertificate.DoesNotExist:
@@ -1472,8 +1496,8 @@ class AddAgentForm(forms.ModelForm):
         profile.is_agent=True
         user = User()
         user.is_active = False
-        user.email = org.email or ''
-        user.username = org.email
+        user.email = None
+        user.username = org.email or ''
         user.last_name = profile.user_last_name
         user.first_name = profile.user_first_name
         if profile.user_middle_name:
@@ -1523,6 +1547,7 @@ class AddOrgForm(StrippedStringsMixin, BaseOrgForm):
                    'worktime', 'site', 
                    'currency', 'director',
                    'description', 'is_wholesale_with_vat',
+                   'sms_phone',
         )
     
     def __init__(self, request, *args, **kwargs):
@@ -1560,8 +1585,8 @@ class AddDocTypeForm(forms.ModelForm):
     class Meta:
         model = IDDocumentType
 
-class ExhumationForm(ChildrenJSONMixin, SafeDeleteMixin, forms.ModelForm):
-    opf = forms.ChoiceField(label=_(u'ОПФ'), choices=OPF_CHOICES, widget=forms.RadioSelect, initial='person')
+class ExhumationForm(ChildrenJSONMixin, SafeDeleteMixin, AppOrgFormMixin, forms.ModelForm):
+    opf = forms.ChoiceField(label='', choices=OPF_CHOICES, widget=forms.RadioSelect, initial='person')
 
     class Meta:
         model = ExhumationRequest
@@ -1571,6 +1596,7 @@ class ExhumationForm(ChildrenJSONMixin, SafeDeleteMixin, forms.ModelForm):
         super(ExhumationForm, self).__init__(*args, **kwargs)
         self.request = request
         self.burial = burial
+        self.init_app_org_label()
 
         self.fields.keyOrder.insert(0, self.fields.keyOrder.pop(-1))
 
@@ -1590,6 +1616,8 @@ class ExhumationForm(ChildrenJSONMixin, SafeDeleteMixin, forms.ModelForm):
 
         # Отсутствие выбора будет в выпадающем списке не "---", а ""
         self.fields['applicant_organization'].empty_label = ''
+        self.fields['applicant_organization'].inactive_queryset = \
+            Org.objects.filter(Q(profile=None) | ~Q(profile__user__is_active=True)).distinct()
 
         self.forms = self.construct_forms()
 

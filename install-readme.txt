@@ -12,13 +12,14 @@ install-readme.txt, utf8 code page
         - средства разработки:
             * python, не ниже 2.6
               - пакеты python, которые могут не быть в его "стандартной поставке":
-                  * (ubuntu) python-all-devdev
+                  * (ubuntu) python-all-dev
                     - (ubuntu 14.04) это автоматически установит c/c++, g++
                   * (ubuntu) python-virtualenv
                   * (ubuntu) python-pycurl
 
          - postgresql,
-            * в т.ч. для разработчика (ubuntu 14.04, postgresql-server-dev-all)
+            * в т.ч. для разработчика (ubuntu 14.04:
+              sudo apt-get install postgres postgresql-server-dev-all)
             полагаем, что используется база postgresql на localhost,
             в которой пользователю postgres всё дозволено. Это достигается
             правкой pg_hba.conf (на ubuntu 14.04 в /etc/postgresql/9.3/main/)
@@ -161,7 +162,7 @@ install-readme.txt, utf8 code page
             </FilesMatch>
         </VirtualHost>
 
-    * Добавить в /etc/apache2/conf.d (Debian/Ubuntu) файл, например,
+    * Добавить в конфигурацию (/etc/apache2/conf-enabled, Ubuntu 14.04) файл, например,
       с именем reqtimeout следующего содержания:
     
         # Minimize IOError request data read exeptions when posting data
@@ -186,3 +187,43 @@ install-readme.txt, utf8 code page
             где /home/www-data/resubmit_sitemap.sh содержит:
             #! /bin/bash
             wget www.google.com/webmasters/tools/ping?sitemap=https%3A%2F%2Fpohoronnoedelo.ru%2Fsitemap.xml
+
+    * Почта.
+      - системные настройки:
+        Система использует отправку различной почты. Если на localhost НЕ НАСТРОЕН почтовый сервер,
+        то необходимо заполнить параметры EMAIL_..., см. local_settings.py.example.
+
+        На ПРОИЗВОДСТВЕННОМ localhost, а также на "главном" разработческом, настраиваем почтовый сервер
+        в минимальной и безопасной конфигурации:
+            * слушает только localhost
+            * пересылает почту только от localhost
+        Установка:
+            - sudo apt-get install postfix
+              (На Ubuntu 14.4 спросит, в какой конфигурации, выбираем local only)
+            - подправить /etc/postfix в соответствии с contrib/email-server/postfix/main.cf,
+              для сравнения там есть оригинальный mail.cf.Orig
+        ВАЖНО:
+            - почта с системы уходит, подписанная (MAIL FROM: в smtp заголовках) как от
+              info@pohoronnoedelo.ru, параметр DEFAULT_FROM_EMAIL в local_settings.py.
+              Почтовый домен @pohoronnoedelo.ru обслуживается в Google.
+              Если отправляем почту на адреса, тоже обслуживаемые Google,
+              тот может обнаружить, что письмо получено с сервера, не авторизованного
+              для отправки с него google- почты. Дабы это не случилось, нужна запись
+              в DNS:
+              
+              pohoronnoedelo.ru TXT     v=spf1 include:_spf.google.com ip4:46.182.24.67 ~all
+              
+              Где 46.182.24.67 - адрес сервера pohoronnoedelo.ru
+
+       - Отправитель почты.
+         Тот, кто будет фигурировать по умолчанию в поле "От кого" писем от системы
+         надо заменить параметр DEFAULT_FROM_EMAIL в local_settings.py
+       
+       - Получатель скрытых копий отправленных писем.
+         ОСОБЕННО на производственном сервере, откуда письма отправляются с локального
+         почтового сервера.
+         Система отправляет письма. Некоторые из них идут нам же, так что их копии незачем
+         где-то хранить. Но очень многие идут заказчикам, и желательно иметь копию этих писем,
+         чтоб проверить, ушло ли сообщение и в каком виде ушло. Для этого
+         параметр BCC_OUR_MAIL в local_settings.py. Если не задан, то скрытые
+         копии не формируются.

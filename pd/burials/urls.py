@@ -51,10 +51,11 @@ urlpatterns = patterns('burials.views',
     #url(r'^manage/cemetery/(?P<pk>\d+)/edit/$', 'manage_cemeteries_edit', name='manage_cemeteries_edit'),
     url(r'^manage/cemetery/(?P<pk>\d+)/merge/$', 'manage_cemeteries_merge', name='manage_cemeteries_merge'),
 
+    url(r'^cemetery_personal_data/', 'cemetery_personal_data', name='cemetery_personal_data'),
+
     url(r'^cemetery_times/', 'cemetery_times', name='cemetery_times'),
     url(r'^autocomplete/cemeteries/', 'autocomplete_cemeteries', name='autocomplete_cemeteries'),
     url(r'^autocomplete/areas/', 'autocomplete_areas', name='autocomplete_areas'),
-
 
     # REST API
     #url(r'^$', TemplateView.as_view(template_name='base_angular.html'),), # v1.5

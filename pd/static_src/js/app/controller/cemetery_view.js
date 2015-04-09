@@ -60,6 +60,12 @@ function CemeteryViewCtrl($scope, $http, $resource, $location,  $routeParams,
 		    }
 
 			$scope.cemetery = new Cemetery(result.cemetery);
+			$scope.editor.caretaker = result.cemetery.caretaker;
+			$scope.editor.caretakers = result.caretakers;
+			$scope.caretaker_show = caretakerShow(
+				result.cemetery.caretaker,
+				result.caretakers
+			);
       $scope.cemetery.time_begin = moment($scope.cemetery.time_begin, 'HH:mm:ss').toDate();
       $scope.cemetery.time_end = moment($scope.cemetery.time_end, 'HH:mm:ss').toDate();
 
@@ -137,6 +143,7 @@ function CemeteryViewCtrl($scope, $http, $resource, $location,  $routeParams,
 		$scope.editor.cemetery.time_end = date2time($scope.editor.cemetery.time_end);
 		$scope.editor.cemetery.obj_phones = $scope.editor.phones;
 		$scope.editor.cemetery.obj_address = $scope.editor.cemetery_address;
+		$scope.editor.cemetery.caretaker = $scope.editor.caretaker;
 		$scope.editor.cemetery.$update(function(){
 			$scope.closeEditForm();
 			$scope.update();

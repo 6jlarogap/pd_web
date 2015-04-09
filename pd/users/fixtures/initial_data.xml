@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<django-objects version="1.0">
+    <!--- ProductCategory -->
+    <object pk="1" model="users.orgability">
+        <field type="CharField" name="name">trade</field>
+        <field type="FileField" name="title">Торговля</field>
+    </object>
+    <object pk="2" model="users.orgability">
+        <field type="CharField" name="name">personal-data</field>
+        <field type="FileField" name="title">Перcональные данные в захоронениях</field>
+    </object>
+</django-objects>

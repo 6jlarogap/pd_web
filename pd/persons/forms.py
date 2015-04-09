@@ -5,6 +5,7 @@ from django import forms
 from django.utils.translation import ugettext as _
 from django.db.models.fields.files import FieldFile
 
+from django.conf import settings
 from persons.models import DeadPerson, PersonID, DeathCertificate, DeathCertificateScan, AlivePerson, DocumentSource
 from pd.models import UnclearDate
 from users.models import Org
@@ -30,6 +31,8 @@ class DeadPersonForm(ValidDataMixin, StrippedStringsMixin, forms.ModelForm):
                 'death_date': death_date,
             })
         super(DeadPersonForm, self).__init__(*args, **kwargs)
+        if not settings.DEADMAN_IDENT_NUMBER_ALLOW:
+            del self.fields['ident_number']
 
     def is_valid_data(self):
         return self.is_valid() and len([k for k,v in self.cleaned_data.items() if v]) > 1 # more than just death date
@@ -152,10 +155,10 @@ class AlivePersonForm(ValidDataMixin, StrippedStringsMixin, forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super(AlivePersonForm, self).__init__(*args, **kwargs)
         self.fields['phones'].widget = forms.TextInput()
-        # Это требуется только для ответственного:
-        del self.fields['login_phone']
-        # У нас нет случаев, когда живому человеку в формен надо вводить день рождения:
+        # У нас нет случаев, когда живому человеку в форме надо вводить день рождения:
         del self.fields['birth_date']
+        # Идентификационный номер вводится только для усопшего:
+        del self.fields['ident_number']
 
     def is_valid_data(self):
         return self.is_valid() and self.cleaned_data.get('last_name') # last name should be present
