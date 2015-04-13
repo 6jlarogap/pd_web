@@ -1,0 +1,11 @@
+10 9-19/2       * * *   reserve python ~/backup_psql.py
+30 3        * * 1,3,5       reserve ~/backup_media.sh
+33 4            * * *   root /home/reserve/backup_frontend.sh
+
+45 4            * * *   root /home/reserve/backup_sys.sh
+
+17 1           * * *   www-data cd /home/www-data/django/pd_web/pd && ./manage.py create_sitemap https://dev.pohoronnoedelo default  >/dev/null 2>&1
+
+19 1           * * *   www-data cd /home/www-data/django/pd_prod/pd && ./manage.py create_sitemap https://pohoronnoedelo  >/dev/null 2>&1
+21 1           * * *   www-data cd /home/www-data && sh ./resubmit_sitemap.sh >/dev/null 2>&1
+

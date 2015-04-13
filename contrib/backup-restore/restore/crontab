@@ -1,0 +1,4 @@
+19,39,51        *       * * *   suprune20    python ~/users_projects/users_projects_.py > ~/users_projects/last.log 2>&1
+
+25              9-19/2  * * *   suprune20    sh ~/reserve/rsyncs.sh > ~/reserve/rsyncs.last.log 2>&1
+45              9-19/2  * * *   suprune20    python ~/reserve/restore_replicate.py > ~/reserve/restore_replicate.last.log 2>&1
