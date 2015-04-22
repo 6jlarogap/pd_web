@@ -18,7 +18,8 @@ install-readme.txt, utf8 code page
                   * (ubuntu) python-pycurl
 
          - postgresql,
-            * в т.ч. для разработчика (ubuntu 14.04, postgresql-server-dev-all)
+            * в т.ч. для разработчика (ubuntu 14.04:
+              sudo apt-get install postgres postgresql-server-dev-all)
             полагаем, что используется база postgresql на localhost,
             в которой пользователю postgres всё дозволено. Это достигается
             правкой pg_hba.conf (на ubuntu 14.04 в /etc/postgresql/9.3/main/)
@@ -161,7 +162,7 @@ install-readme.txt, utf8 code page
             </FilesMatch>
         </VirtualHost>
 
-    * Добавить в /etc/apache2/conf.d (Debian/Ubuntu) файл, например,
+    * Добавить в конфигурацию (/etc/apache2/conf-enabled, Ubuntu 14.04) файл, например,
       с именем reqtimeout следующего содержания:
     
         # Minimize IOError request data read exeptions when posting data

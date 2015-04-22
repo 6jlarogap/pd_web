@@ -33,7 +33,7 @@ urlpatterns = patterns('users.views',
     url(r'^api/catalog/suppliers/(?P<org_slug>[\w-]+)/?$', 'api_catalog_suppliers_detail', name='api_catalog_suppliers_detail'),
 
     url(r'^api/optplaces/suppliers/?$', 'api_optplaces_suppliers', name='api_optplaces_suppliers'),
-    url(r'^api/optplaces/suppliers/(?P<pk>[\w-]+)/?$', 'api_optplaces_suppliers_detail', name='api_optplaces_suppliers_detail'),
+    url(r'^api/optplaces/suppliers/(?P<pk>\d+)/?$', 'api_optplaces_suppliers_detail', name='api_optplaces_suppliers_detail'),
 
     url(r'^api/shops/?$', 'api_shops', name='api_shops'),
     url(r'^api/shops/(?P<pk>\d+)/gallery/?$', 'api_shops_gallery', name='api_shops_gallery'),
