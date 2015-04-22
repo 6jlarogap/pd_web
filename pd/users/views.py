@@ -126,7 +126,7 @@ class CheckRecaptchaMixin(object):
         ).is_valid
     
 
-class ApiAuthSigninView(APIView):
+class SessionDataMixin(object):
 
     def session_data(self, user):
         if is_cabinet_user(user):
@@ -183,6 +183,8 @@ class ApiAuthSigninView(APIView):
             'orgAbilities': org_abilities,
             'isSupervisor': is_supervisor(user),
             }
+
+class ApiAuthSigninView(SessionDataMixin, APIView):
 
     def do_post(self, request, user=None):
         """
@@ -256,7 +258,7 @@ class ApiAuthSigninView(APIView):
 
 api_auth_signin = ApiAuthSigninView.as_view()
 
-class ApiAuthSessionsView(ApiAuthSigninView):
+class ApiAuthSessionsView(SessionDataMixin, APIView):
     permission_classes = (IsAuthenticated,)
     
     def get(self, request):
