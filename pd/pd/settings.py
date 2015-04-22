@@ -253,15 +253,19 @@ PRODUCTION_SITE = False
 # SUPERVISOR_ORG_INN = 'строка'
 
 # CORS:
+#
 # Переопределить в False в local_settings.py на production server
 #
 CORS_ORIGIN_ALLOW_ALL = True
 #
 # Задать в local_settings.py на production server:
 #
-#CORS_ORIGIN_WHITELIST = (
-#   'pohoronnoedelo.ru',
-#)
+# CORS_ORIGIN_REGEX_WHITELIST = (r'^(https?://)?(\w+\.)?pohoronnoedelo\.\w+$', )
+#
+# Может быть authentication cookies, при доступе к апи из множества
+# доменов *.pohoronnoedelo.ru, посему:
+#
+CORS_ALLOW_CREDENTIALS = True
 
 # THUMB
 THUMBNAILS_FILE_SIGNATURE = '%(source)s/%(size)s~%(method)s~%(secret)s.%(extension)s'
