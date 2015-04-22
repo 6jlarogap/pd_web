@@ -12,7 +12,7 @@
 
                                                 # список баз данных,
                                                 # Python- список или кортеж
-DATABASES = ('pd_prod', )
+DATABASES = ('pd_prod', 'pd', 'pd_hram', )
                                                 # каталог резервных копий,
                                                 # должен быть предварительно создан!
 BACKUP_PATH = '/home/reserve/pgsql-backup/'

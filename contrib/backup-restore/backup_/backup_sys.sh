@@ -19,9 +19,9 @@ while [ $loopcount -lt 10 ]; do
     rm -f $BACKUP_PATH/current.tgz $FILE_LIST
     find /etc > $FILE_LIST
     find /home/www-data/django | egrep "local_settings.py$" >> $FILE_LIST
-    find /home | egrep "\.ssh/" >> $FILE_LIST
-    find /root | egrep "\.ssh/" >> $FILE_LIST
-    find /var/www | egrep "\.ssh/" >> $FILE_LIST
+    find /home -type d -links 2 | egrep "/\.ssh$" >> $FILE_LIST
+    find /root -type d -links 2 | egrep "/\.ssh$" >> $FILE_LIST
+    find /var/www  -type d -links 2| egrep "/\.ssh$" >> $FILE_LIST
     tar cfz "$BACKUP_PATH/current.tgz" -T $FILE_LIST
     rc=$?
     if [ $rc -eq 0 ]; then break; fi
