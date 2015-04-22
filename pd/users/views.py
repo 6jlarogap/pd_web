@@ -52,12 +52,13 @@ from users.forms import UserAddForm, RegisterForm, LoruFormset, ProfileForm, Use
                         OrgLogForm, LoginLogForm, OrgBurialStatsForm, SupportForm, TestCaptchaForm, \
                         LoruOrdersStatsForm
 from users.models import Profile, Org, RegisterProfile, ProfileLORU, CustomerProfile, Store, \
-                         get_mail_footer, is_cabinet_user, PermitIfTrade, PermitIfTradeOrSupervisor, \
+                         get_mail_footer, is_cabinet_user, is_loru_user, is_ugh_user, \
+                         PermitIfTrade, PermitIfTradeOrSupervisor, \
                          PermitIfCabinet, PermitIfTradeOrCabinet, Oauth, OrgAbility, \
                          BankAccount, BankAccountRegister, OrgCertificate, OrgContract, \
                          RegisterProfileContract, RegisterProfileScan, FavoriteSupplier, \
                          UserPhoto, OrgGallery, OrgReview, \
-                         is_supervisor, is_ugh_user, get_default_currency, get_profile
+                         is_supervisor, get_default_currency, get_profile
 from pd.models import validate_phone_as_number, validate_username
 from pd.utils import host_country_code, phones_from_text, EmailMessage, get_image
 from persons.models import AlivePerson, Phone, CustomPlace
@@ -124,16 +125,73 @@ class CheckRecaptchaMixin(object):
                 use_ssl=use_ssl
         ).is_valid
     
-class ApiAuthSigninView(APIView):
-    """
-    Проверка имени и пароля, (создать и) отдать token
-    """
+
+class SessionDataMixin(object):
+
+    def session_data(self, user):
+        if is_cabinet_user(user):
+            pr = user.customerprofile
+            role = 'ROLE_CLIENT'
+        elif is_ugh_user(user):
+            role = u'ROLE_OMS'
+            pr = user.profile
+        elif is_loru_user(user):
+            role = u'ROLE_LORU'
+            pr = user.profile
+        else:
+            raise Exception(u'Unknown role')
+
+        profile = dict(
+            id=user.pk,
+            email=user.email or None,
+        )
+        profile['lastname'] = pr.user_last_name or user.last_name or None
+        profile['firstname'] = pr.user_first_name or user.first_name or None
+        profile['middlename'] = pr.user_middle_name or None
+        org_abilities = []
+        try:
+            profile['photo'] = self.request.build_absolute_uri(UserPhoto.objects.get(user=user).bfile.url)
+        except UserPhoto.DoesNotExist:
+            profile['photo'] = None
+        profile['username'] = pr.user.username
+        if role == 'ROLE_CLIENT':
+            org = { 'id': None, 'name': None, 'location': None }
+            profile['mainPhone'] = pr.login_phone
+        else:
+            org = { 'id': user.profile.org.pk, 'name': user.profile.org.name or None }
+            org_abilities = [ f.name for f in pr.org.ability.all() ]
+            if user.profile.org.off_address:
+                org['location'] = {
+                    'address': unicode(user.profile.org.off_address),
+                    'coords': {
+                        'longitude': user.profile.org.off_address.gps_x,
+                        'latitude': user.profile.org.off_address.gps_y,
+                    },
+                }
+            else:
+                org['location'] = None
+            profile['mainPhone'] = None
+
+        token, created = Token.objects.get_or_create(user=user)
+        return {
+            'token': token.key,
+            'sessionId': self.request.session._get_or_create_session_key(),
+            'sessionName': settings.SESSION_COOKIE_NAME,
+            'profile': profile,
+            'org': org,
+            'role': role,
+            'orgAbilities': org_abilities,
+            'isSupervisor': is_supervisor(user),
+            }
+
+class ApiAuthSigninView(SessionDataMixin, APIView):
+
     def do_post(self, request, user=None):
         """
         Выполнить 'обычную' авторизацию, если не задан объект user как параметр,
         иначе только создать при необходимости token и вернуть данные
         """
-        token = None
+        valid = False
         data = dict(status='error')
         status_code = 400
          # Так надо для login() без предварительного authenticate()
@@ -165,80 +223,24 @@ class ApiAuthSigninView(APIView):
                     if not user:
                         data['message'] = _(u"Неверный пароль")
                         data['errorCode'] = 'wrong_password'
-                if user:
-                    token, created = Token.objects.get_or_create(user=user)
+                valid = bool(user)
             else:
                 data['message'] = _(u'Пользователь не активен')
                 data['errorCode'] = 'user_not_active'
-        if token:
-            username = user.username
+        if valid:
             tc_confirmed = True
-            role = None
-            org_abilities = []
-            try:
-                user.customerprofile
-            except CustomerProfile.DoesNotExist:
-                try:
-                    user.profile
-                except Profile.DoesNotExist:
+            if is_cabinet_user(user):
+                if user.customerprofile.tc_confirmed:
                     pass
+                elif confirm_tc:
+                    user.customerprofile.tc_confirmed = datetime.datetime.now()
+                    user.customerprofile.save()
                 else:
-                    if user.profile.is_loru():
-                        role = u'ROLE_LORU'
-                    elif user.profile.is_ugh():
-                        role = u'ROLE_OMS'
-            else:
-                role = 'ROLE_CLIENT'
-                tc_confirmed = user.customerprofile.tc_confirmed or confirm_tc
-            if not role:
-                raise Exception(u'Unknown role')
+                    tc_confirmed = False
             if tc_confirmed:
                 login(request, user)
-
-                profile = dict(
-                    id=user.pk,
-                    email=user.email or None,
-                )
-                pr = user.customerprofile if role == 'ROLE_CLIENT' else user.profile
-                profile['lastname'] = pr.user_last_name or user.last_name or None
-                profile['firstname'] = pr.user_first_name or user.first_name or None
-                profile['middlename'] = pr.user_middle_name or None
-                try:
-                    profile['photo'] = request.build_absolute_uri(UserPhoto.objects.get(user=user).bfile.url)
-                except UserPhoto.DoesNotExist:
-                    profile['photo'] = None
-                profile['username'] = pr.user.username
-                if role == 'ROLE_CLIENT':
-                    org = { 'id': None, 'name': None, 'location': None }
-                    profile['mainPhone'] = pr.login_phone
-                    if not user.customerprofile.tc_confirmed and confirm_tc:
-                        user.customerprofile.tc_confirmed = datetime.datetime.now()
-                        user.customerprofile.save()
-                else:
-                    org = { 'id': user.profile.org.pk, 'name': user.profile.org.name or None }
-                    org_abilities = [ f.name for f in pr.org.ability.all() ]
-                    if user.profile.org.off_address:
-                        org['location'] = {
-                            'address': unicode(user.profile.org.off_address),
-                            'coords': {
-                                'longitude': user.profile.org.off_address.gps_x,
-                                'latitude': user.profile.org.off_address.gps_y,
-                           },
-                        }
-                    else:
-                        org['location'] = None
-                    profile['mainPhone'] = None
-
-                data.update({
-                    'status': 'success',
-                    'token': token.key,
-                    'sessionId': request.session._get_or_create_session_key(),
-                    'profile': profile,
-                    'org': org,
-                    'role': role,
-                    'orgAbilities': org_abilities,
-                    'isSupervisor': is_supervisor(user),
-                 })
+                data.update(self.session_data(user))
+                data['status'] = 'success'
                 status_code = 200
                 write_log(request, request.user, _(u'Вход в систему'))
                 LoginLog.write(request)
@@ -247,7 +249,8 @@ class ApiAuthSigninView(APIView):
         elif oauth and not user:
             data.update(message)
         elif not data.get('message'):
-            data['message'] = 'Wrong username or password'
+            data['message'] = 'Unknown Error'
+            data['errorCode'] = 'unknown_error'
         return Response(data=data, status=status_code)
 
     def post(self, request):
@@ -255,9 +258,19 @@ class ApiAuthSigninView(APIView):
 
 api_auth_signin = ApiAuthSigninView.as_view()
 
-class ApiAuthSignoutView(APIView):
+class ApiAuthSessionsView(SessionDataMixin, APIView):
     permission_classes = (IsAuthenticated,)
     
+    def get(self, request):
+        data = self.session_data(request.user)
+        data['status'] = 'success'
+        return Response(data=data, status=200)
+
+api_auth_sessions = ApiAuthSessionsView.as_view()
+
+class ApiAuthSignoutView(APIView):
+    permission_classes = (IsAuthenticated,)
+
     def post(self, request):
         # print u'DEBUG: %s:%s /API/AUTH/SIGNOUT' % (request.get_host(), request.user.username, )
         logout(request)

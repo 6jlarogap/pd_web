@@ -8,6 +8,7 @@ urlpatterns = patterns('users.views',
     url(r'^logout/', 'ulogout', name='ulogout'),
 
     url(r'^api/auth/signin/?$', 'api_auth_signin', name='api_auth_signin'),
+    url(r'^api/auth/sessions/?$', 'api_auth_sessions', name='api_auth_sessions'),
     url(r'^api/auth/signup/?$', 'api_auth_signup', name='api_auth_signup'),
     url(r'^api/auth/signout/?$', 'api_auth_signout', name='api_auth_signout'),
 
