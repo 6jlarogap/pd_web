@@ -166,11 +166,12 @@ class BaseCustomPersonSerializer(UnclearDateFieldMixin, serializers.HyperlinkedM
 
 class CustomPersonSerializer(BaseCustomPersonSerializer):
     omsData = Field(source='oms_data')
+    titlePhoto = HyperlinkedFileField(source='title_photo', required=False)
 
     class Meta:
         model = CustomPerson
         fields = ('id', 'firstName', 'lastName', 'middleName',
-                  'birthDate', 'deathDate', 'omsData',
+                  'birthDate', 'deathDate', 'omsData', 'titlePhoto',
         )
 
 class CustomPerson2Serializer(BaseCustomPersonSerializer):

@@ -354,7 +354,7 @@ class ApiClientPlacesDeadmansView(ApiClientPlacesMixin, APIView):
 
     def get(self, request, pk):
         return Response(
-            data=[CustomPersonSerializer(customperson).data \
+            data=[CustomPersonSerializer(customperson, context=dict(request=request)).data \
                   for customperson in CustomPerson.objects.filter(customplace=self.get_customplace(pk))],
             status=200,
         )
