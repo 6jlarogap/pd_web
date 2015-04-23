@@ -87,6 +87,9 @@
                 &mdash;
                 {{ b.deadman.death_date|default_if_none:"..." }}
             {% endif %}
+            {% if global_context_DEADMAN_IDENT_NUMBER_ALLOW and b.deadman.ident_number %}
+                <br/>{% trans "Идентификационный номер" %}: {{ b.deadman.ident_number }}
+            {% endif %}
         </dd>
         {% if not b.is_bio and can_personal_data %}
             <dt>
