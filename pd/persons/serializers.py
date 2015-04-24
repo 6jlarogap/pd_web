@@ -166,7 +166,7 @@ class BaseCustomPersonSerializer(UnclearDateFieldMixin, serializers.HyperlinkedM
 
 class CustomPersonSerializer(BaseCustomPersonSerializer):
     omsData = Field(source='oms_data')
-    titlePhoto = HyperlinkedFileField(source='title_photo', required=False)
+    titlePhoto = HyperlinkedFileField(source='photo', required=False)
 
     class Meta:
         model = CustomPerson
@@ -290,7 +290,7 @@ class CustomPerson3Serializer(UnclearDateFieldMixin, serializers.ModelSerializer
             return CustomPerson(customplace=customplace, user=self.context['request'].user, **fields)
 
 class CustomPerson4Serializer(BaseCustomPersonSerializer):
-    titlePhoto = HyperlinkedFileField(source='title_photo', required=False)
+    titlePhoto = HyperlinkedFileField(source='photo', required=False)
     placeId = serializers.Field('customplace.id')
 
     class Meta:

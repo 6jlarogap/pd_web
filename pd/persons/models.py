@@ -486,13 +486,6 @@ class CustomPerson(PersonMixin, PhotoModel, BaseModel):
             grave = burial.grave_number,
         )
 
-    def title_photo(self):
-        try:
-            return MemoryGallery.objects.filter(customperson=self, type=MemoryGallery.TYPE_IMAGE). \
-                                   order_by('-date_of_creation')[0].bfile
-        except IndexError:
-            return None
-
 class MemoryGallery(Files):
     """
     Страницы памяти у CustomPerson
