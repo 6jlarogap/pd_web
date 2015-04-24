@@ -222,10 +222,11 @@ class ShopSerializer(ShopSerializerMixin, serializers.ModelSerializer):
     title = Field(source='name')
     itemPrice = serializers.SerializerMethodField('itemPrice_func')
     titleImageUrl = serializers.SerializerMethodField('titleImageUrl_func')
+    subdomainName = Field(source='subdomain')
 
     class Meta:
         model = Org
-        fields = ('id', 'title', 'description', 'titleImageUrl', 'itemPrice',)
+        fields = ('id', 'subdomainName', 'title', 'description', 'titleImageUrl', 'itemPrice',)
 
     def itemPrice_func(self, instance):
         try:
@@ -246,10 +247,11 @@ class ShopDetailSerializer(ShopSerializerMixin, serializers.ModelSerializer):
     title = Field(source='name')
     titleImageUrl = serializers.SerializerMethodField('titleImageUrl_func')
     contacts = serializers.SerializerMethodField('contacts_func')
+    subdomainName = Field(source='subdomain')
 
     class Meta:
         model = Org
-        fields = ('id', 'title', 'description', 'titleImageUrl', 'contacts')
+        fields = ('id', 'subdomainName', 'title', 'description', 'titleImageUrl', 'contacts')
 
     def contacts_func(self, org):
         return dict(

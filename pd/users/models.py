@@ -655,10 +655,12 @@ class Org(GetLogsMixin, BaseModel):
     currency = models.ForeignKey('billing.Currency', verbose_name=_(u"Валюта"), default=get_default_currency,
                                  help_text=_(u' При смене валюты она будет заменена у всех товаров (услуг) без корректировки цен'))
     is_wholesale_with_vat = models.BooleanField(_(u"Оптовые цены продуктов с НДС"), default=False)
+    subdomain = models.CharField(_(u"Поддомен"), max_length=255, null=True, editable=False)
 
     class Meta:
         verbose_name = _(u'Организация')
         verbose_name_plural = _(u'Организации')
+        unique_together = ('subdomain', )
 
     def __unicode__(self):
         return self.name
@@ -948,6 +950,7 @@ class RegisterProfile(SafeDeleteMixin, BaseModel):
                                  )
     org_fax = models.CharField(_(u"Факс"), max_length=20, default='', blank=True)
     org_address = models.ForeignKey(Location, editable=False, null=True)
+    org_subdomain = models.CharField(_(u"Поддомен"), max_length=255, null=True, editable=False)
 
     def __unicode__(self):
         fio = u'%s %s.' % (self.user_last_name, self.user_first_name[0].upper(), )
@@ -989,11 +992,15 @@ class RegisterProfile(SafeDeleteMixin, BaseModel):
 
     def same_username(self):
         return not self.is_approved() and not self.is_declined() and \
-               User.objects.filter(username__iexact=self.user_name).count()
+               User.objects.filter(username__iexact=self.user_name).exists()
 
     def same_email(self):
         return not self.is_approved() and not self.is_declined() and \
-               User.objects.filter(email__iexact=self.user_email).count()
+               User.objects.filter(email__iexact=self.user_email).exists()
+
+    def same_subdomain(self):
+        return self.org_subdomain and not self.is_approved() and not self.is_declined() and \
+               Org.objects.filter(subdomain__iexact=self.org_subdomain).exists()
 
     @classmethod
     def get_logs(cls):
