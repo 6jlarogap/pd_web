@@ -1488,22 +1488,29 @@ class RegistrantApprove(SupervisorRequiredMixin, View):
                     off_address.save(force_insert=True)
                 else:
                     off_address = None
-                org=Org.objects.create(
-                            type=registrant.org_type,
-                            name=registrant.org_name,
-                            full_name=registrant.org_full_name,
-                            inn = registrant.org_inn,
-                            director = registrant.org_director,
-                            basis = registrant.org_basis,
-                            email = registrant.user_email,
-                            phones = registrant.org_phones,
-                            fax = registrant.org_fax,
-                            ogrn = registrant.org_ogrn,
-                            off_address=off_address,
-                            currency = registrant.org_currency,
-                )
+                try:
+                    org=Org.objects.create(
+                                type=registrant.org_type,
+                                name=registrant.org_name,
+                                full_name=registrant.org_full_name,
+                                inn=registrant.org_inn,
+                                director=registrant.org_director,
+                                basis=registrant.org_basis,
+                                email=registrant.user_email,
+                                phones=registrant.org_phones,
+                                fax=registrant.org_fax,
+                                ogrn=registrant.org_ogrn,
+                                off_address=off_address,
+                                currency=registrant.org_currency,
+                                subdomain=registrant.org_subdomain,
+                    )
+                except IntegrityError:
+                    raise ServiceException(_(u"Такой поддомен уже используется в системе"))
                 if org.type == Org.PROFILE_UGH:
                     pd_ability = OrgAbility.objects.get(name=OrgAbility.ABILITY_PERSONAL_DATA)
+                    org.ability.add(pd_ability)
+                elif org.type == Org.PROFILE_LORU:
+                    pd_ability = OrgAbility.objects.get(name=OrgAbility.ABILITY_TRADE)
                     org.ability.add(pd_ability)
                 for bank in registrant.bankaccountregister_set.all():
                     if bank.off_address:
@@ -2249,9 +2256,9 @@ class ApiOrgSignupView(CheckRecaptchaMixin, RegisterMixin, APIView):
                 raise ServiceException(_(u'Неверное имя пользователя для входа в систему: %s. %s') % \
                     (username, e.messages and e.messages[0] or '', )
                 )
-            if User.objects.filter(username=username).exists():
+            if User.objects.filter(username__iexact=username).exists():
                 raise ServiceException(_(u"Имя  %s уже используется в системе") % username)
-            q = Q(user_name=username) & \
+            q = Q(user_name__iexact=username) & \
                 ~Q(status__in=(RegisterProfile.STATUS_DECLINED, RegisterProfile.STATUS_APPROVED, ))
             if RegisterProfile.objects.filter(q).exists():
                 raise ServiceException(_(u"Имя  %s уже используется среди кандидатов на регистрацию") % username)
@@ -2264,9 +2271,9 @@ class ApiOrgSignupView(CheckRecaptchaMixin, RegisterMixin, APIView):
             except ValidationError:
                 raise ServiceException(_(u'Неверный формат адреса электронной почты: %s') % email)
 
-            if User.objects.filter(email=email).exists():
+            if User.objects.filter(email__iexact=email).exists():
                 raise ServiceException(_(u"Email %s уже используется в системе") % email)
-            q = Q(user_email=email) & \
+            q = Q(user_email__iexact=email) & \
                 ~Q(status__in=(RegisterProfile.STATUS_DECLINED, RegisterProfile.STATUS_APPROVED, ))
             if RegisterProfile.objects.filter(q).exists():
                 raise ServiceException(_(u"Email %s уже используется среди кандидатов на регистрацию") % email)
@@ -2317,6 +2324,16 @@ class ApiOrgSignupView(CheckRecaptchaMixin, RegisterMixin, APIView):
                 raise ServiceException(_(u'Не задано краткое наименование организации'))
             if re.search(r'^[\d\s]+$', org_name):
                 raise ServiceException(_(u'Невозможное название организации (только из цифр)'))
+            org_subdomain = request.DATA.get('subdomainName', '').lower().strip() or None
+            if org_subdomain:
+                if not re.search(r'^[\w-]+$', org_subdomain):
+                    raise ServiceException(_(u'В поддомене допустимы лишь латинские буквы, цифры, _, -'))
+                if Org.objects.filter(subdomain__iexact=org_subdomain).exists():
+                    raise ServiceException(_(u'Есть уже организация с таким поддоменом'))
+                q = Q(org_subdomain__iexact=org_subdomain) & \
+                    ~Q(status__in=(RegisterProfile.STATUS_DECLINED, RegisterProfile.STATUS_APPROVED, ))
+                if RegisterProfile.objects.filter(q).exists():
+                    raise ServiceException(_(u'Есть уже кандидат на регистрацию с таким поддоменом'))
             org_types = dict(loru=Org.PROFILE_LORU, oms=Org.PROFILE_UGH)
             org_type = request.DATA.get('orgType')
             if not org_type or org_type not in org_types:
@@ -2348,6 +2365,7 @@ class ApiOrgSignupView(CheckRecaptchaMixin, RegisterMixin, APIView):
                 user_activation_key=user_activation_key,
                 org_type=org_type,
                 org_name=org_name,
+                org_subdomain=org_subdomain,
                 org_full_name=request.DATA.get('orgFullName', '').strip() or org_name,
                 org_currency=org_currency,
                 org_inn=org_inn,
