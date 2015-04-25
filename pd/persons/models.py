@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import copy
-from django.db import models, IntegrityError
+from django.db import models, transaction, IntegrityError
 from django.utils.translation import ugettext as _
 from django.db.models.deletion import ProtectedError
 from django.db.models.loading import get_model
@@ -430,17 +430,37 @@ class CustomPlace(LocationMixin, BaseModel):
         else:
             return None
 
+    @transaction.commit_on_success
     def delete(self):
-        self.customperson_set.all().delete()
+        for customperson in CustomPerson.objects.filter(customplace=self):
+            customperson.delete()
+
+        Order = get_model('orders', 'Order')
+        OrderComment = get_model('orders', 'OrderComment')
+        for order in Order.objects.filter(customplace=self):
+            user = order.applicant and order.applicant.user or None
+            if user:
+                comment = _(u'Место, относящееся к заказу, удалено.')
+                if self.address:
+                    comment += "\n" + _(u'Адрес: %s.') % self.address
+                    if self.address.gps_x is not None and self.address.gps_y is not None:
+                        comment += "\n" + _(u'Координаты: широта: %s, долгота: %s.') % (
+                            self.address.gps_y,
+                            self.address.gps_x,
+                        )
+                OrderComment.objects.create(
+                    order=order,
+                    user=user,
+                    comment=comment,
+                )
+            order.customplace = None
+            order.save()
+
+        super(CustomPlace, self).delete()
         try:
-            super(CustomPlace, self).delete()
-        except IntegrityError:
+            self.address.delete()
+        except (AttributeError, IntegrityError):
             pass
-        else:
-            try:
-                self.address.delete()
-            except (AttributeError, IntegrityError):
-                pass
 
 class CustomPerson(PersonMixin, PhotoModel, BaseModel):
     """
@@ -464,12 +484,11 @@ class CustomPerson(PersonMixin, PhotoModel, BaseModel):
     is_dead = models.BooleanField(_(u"Уcопший"), default=True)
     memory_text = models.TextField(_(u"Памятный текст"), null=True)
 
+    @transaction.commit_on_success
     def delete(self):
-        self.memorygallery_set.all().delete()
-        try:
-            super(CustomPerson, self).delete()
-        except IntegrityError:
-            pass
+        for memorygallery in MemoryGallery.objects.filter(customperson=self):
+            memorygallery.delete()
+        super(CustomPerson, self).delete()
 
     def oms_data(self):
         try:
