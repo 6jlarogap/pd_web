@@ -411,7 +411,9 @@ class ApiClientDeadmansView(APIView):
                 customperson=CustomPerson.objects.get(pk=pk, user=request.user)
             except (ValueError, CustomPerson.DoesNotExist, ):
                 raise Http404
-            data.append(CustomPerson2Serializer(customperson).data)
+            data.append(
+                CustomPerson2Serializer(customperson, context=dict(request=request)).data
+            )
         return Response(
             data=data,
             status=200,

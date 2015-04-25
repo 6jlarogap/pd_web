@@ -176,11 +176,12 @@ class CustomPersonSerializer(BaseCustomPersonSerializer):
 
 class CustomPerson2Serializer(BaseCustomPersonSerializer):
     grave = serializers.SerializerMethodField('grave_func')
+    photo = HyperlinkedFileField(source='photo', required=False)
 
     class Meta:
         model = CustomPerson
-        fields = ('id', 'firstName', 'lastName', 'middleName',
-                  'birthDate', 'deathDate', 'grave'
+        fields = ('id', 'firstName', 'lastName', 'middleName', 'photo',
+                  'birthDate', 'deathDate', 'grave',
         )
 
     def grave_func(self, customperson):
