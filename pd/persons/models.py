@@ -75,6 +75,7 @@ class BasePerson(PersonMixin, models.Model):
         finish = (self.death_date or datetime.date.today())
         return int((finish - start).days / 365.25)
 
+    @transaction.commit_on_success
     def delete(self):
         try:
             self.personid.delete()
@@ -192,6 +193,7 @@ class DeadPerson(BasePerson):
 
     unclear_death_date = property(get_death_date, set_death_date)
 
+    @transaction.commit_on_success
     def delete(self):
         try:
             self.deathcertificate.delete()
@@ -222,6 +224,7 @@ class AlivePerson(BasePerson, PhonesMixin):
                   editable=False)
     # phones: могут быть разных типов, пользуемся моделью persons.Phone
 
+    @transaction.commit_on_success
     def delete(self):
         self.phone_set.delete()
         try:
@@ -281,6 +284,7 @@ class DeathCertificate(BaseModel):
         self.series = self.series.upper()
         super(DeathCertificate, self).save(*args, **kwargs)
 
+    @transaction.commit_on_success
     def delete(self):
         try:
             self.deathcertificatescan.delete()
