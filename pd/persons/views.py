@@ -218,6 +218,11 @@ class ApiClientPlacesDetailView(ApiClientPlacesMixin, APIView):
             return Response(serializer.data, status=200)
         return Response(serializer.errors, status=400)
 
+    def delete(self, request, pk):
+        customplace = self.get_customplace(pk)
+        customplace.delete()
+        return Response({}, status=200)
+
 api_client_places_detail = ApiClientPlacesDetailView.as_view()
 
 class ApiCustompersonMixin(object):
@@ -399,6 +404,14 @@ class ApiClientPlacesDeadmansDetailView(ApiClientPlacesMixin, ApiCustompersonMix
             return Response(serializer.data, status=200)
         return Response(serializer.errors, status=400)
 
+    def delete(self, request, pk, deadman_pk):
+        customplace = self.get_customplace(pk)
+        customperson = self.get_customperson(deadman_pk)
+        if not customperson.customplace or customperson.customplace != customplace:
+            raise Http404
+        customperson.delete()
+        return Response({}, status=200)
+
 api_client_places_deadmans_detail = ApiClientPlacesDeadmansDetailView.as_view()
 
 class ApiClientDeadmansView(APIView):
@@ -411,7 +424,9 @@ class ApiClientDeadmansView(APIView):
                 customperson=CustomPerson.objects.get(pk=pk, user=request.user)
             except (ValueError, CustomPerson.DoesNotExist, ):
                 raise Http404
-            data.append(CustomPerson2Serializer(customperson).data)
+            data.append(
+                CustomPerson2Serializer(customperson, context=dict(request=request)).data
+            )
         return Response(
             data=data,
             status=200,
