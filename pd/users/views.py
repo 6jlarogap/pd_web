@@ -2560,15 +2560,25 @@ api_shops = ApiShopsView.as_view()
 
 class ApiShopsMixin(object):
 
-    def get_shop(self, pk, authorized_only=False):
+    def get_shop(self, pk, authorized_only=False, check_subdomain=False):
         """
         Получить магазин (поставщик) по pk
 
         Если authorized_only==True, то проверка, авторизован ли пользователь,
         чтоб менять данные по этому поставщику
+        Если check_subdomain == True, то посмотреть, есть ли get параметр findBySubdomain,
+        и если он есть, то pk это не цифровой идентификатор, а поддомен
         """
+        seek_kwargs = dict(pk=pk)
+        if check_subdomain:
+            if 'findBySubdomain' in self.request.GET:
+                seek_kwargs = dict(subdomain=pk)
+            else:
+                if not re.search(r'^\d+$', pk):
+                    # Поиск по id. Только цифры
+                    raise Http404
         try:
-            shop = Org.objects.get(pk=pk)
+            shop = Org.objects.get(**seek_kwargs)
             if authorized_only:
                 try:
                     if self.request.user.profile.org != shop:
@@ -2621,7 +2631,7 @@ api_shops_gallery = ApiShopsGalleryView.as_view()
 class ApiShopsDetailView(ApiShopsMixin, APIView):
 
     def get(self, request, pk):
-        shop = self.get_shop(pk, authorized_only=False)
+        shop = self.get_shop(pk, authorized_only=False, check_subdomain=True)
         return Response(
             data = ShopDetailSerializer(shop, context=dict(request=request)).data,
             status=200
