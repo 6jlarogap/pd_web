@@ -1162,6 +1162,11 @@ function makeDatePicker(obj) {
             if (id == 'id_plan_date' && now.getMonth() == 11 && now.getDate() >= 20) {
                 end_year = now_year + 1;
             }
+            regex = /^.+date_expire$/;
+            if (regex.test(id)) {
+                start_year = now_year -10;
+                end_year = now_year + 100;
+            }
         }
 
         $(this).after('<span class="add-on move-left"><i class="icon-calendar"></i></span>').datepicker({
@@ -1203,6 +1208,7 @@ function updateControls() {
     makeDatePicker($('input[id$=date]'));
     makeDatePicker($('input[id$=date_from]'));
     makeDatePicker($('input[id$=date_to]'));
+    makeDatePicker($('input[id$=date_expire]'));
     $('input[id$=time]').each(function(){
         if ($(this).attr('id') != 'id_worktime') {
             makeTimePicker($(this));

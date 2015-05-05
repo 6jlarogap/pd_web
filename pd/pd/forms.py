@@ -420,3 +420,19 @@ class AppOrgFormMixin(object):
             self.fields['applicant_organization'].label += _(u' (наименование или УНП)')
         else:
             self.fields['applicant_organization'].label += _(u' (наименование или ИНН)')
+
+    def opf_valid(self, main_form_class):
+        """
+        is_valid() для форм, где выбирается или организация, или физ-лицо
+        """
+        is_valid = super(main_form_class, self).is_valid()
+        if not is_valid:
+            return False
+        if self.cleaned_data.get('opf') == 'org':
+            for form_name in ('applicant_form', 'applicant_address_form', 'applicant_id_form', ):
+                try:
+                    f = getattr(self, form_name)
+                    self.forms.remove(f)
+                except (AttributeError, ValueError,):
+                    continue
+        return all([f.is_valid() for f in self.forms])
