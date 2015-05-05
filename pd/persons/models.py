@@ -249,6 +249,7 @@ class PersonID(models.Model):
     number = models.CharField(_(u"Номер"), max_length=255, blank=True, null=True)
     source = models.ForeignKey(DocumentSource, verbose_name=_(u"Кем выдан"), blank=True, null=True)
     date = models.DateField(_(u"Дата выдачи"), blank=True, null=True)
+    date_expire = models.DateField(_(u"Срок действия"), blank=True, null=True)
 
     class Meta:
         verbose_name = _(u"Удостоверение личности")

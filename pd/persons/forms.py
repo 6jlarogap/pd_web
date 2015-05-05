@@ -64,6 +64,14 @@ class PersonIDForm(ValidDataMixin, StrippedStringsMixin, forms.ModelForm):
             raise forms.ValidationError(msg)
         return release_date
 
+    def clean_date_expire(self):
+        date = self.cleaned_data.get('date')
+        date_expire = self.cleaned_data.get('date_expire')
+        if date_expire and date and date_expire < date:
+            msg = _(u'Срок действия истек до даты выдачи')
+            raise forms.ValidationError(msg)
+        return date_expire
+
 class DeathCertificateForm(StrippedStringsMixin, BaseModelForm):
     dt_modified = forms.IntegerField(widget=forms.HiddenInput, required=False, )
     zags = forms.CharField(required=False)

@@ -577,7 +577,7 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
         return forms
 
     def is_valid(self):
-        return super(BurialForm, self).is_valid() and all([f.is_valid() for f in self.forms])
+        return self.opf_valid(BurialForm)
 
     def clean_plan_time(self):
         return self.cleaned_data['plan_time'] or None
@@ -1175,6 +1175,7 @@ class BurialCommitForm(BurialForm):
            not (self.instance.is_archive() or self.request.REQUEST.get('archive')) and \
            not self.instance.is_transferred() and \
            self.deadman_form.cleaned_data.get("last_name") and \
+           not self.cleaned_data.get('burial_container') == Burial.CONTAINER_BIO and \
            not self.deadman_form.cleaned_data.get("ident_number"):
             msg = _(u"Нет идентификационного номера для усопшего")
             raise forms.ValidationError(msg)
@@ -1622,7 +1623,7 @@ class ExhumationForm(ChildrenJSONMixin, SafeDeleteMixin, AppOrgFormMixin, forms.
         self.forms = self.construct_forms()
 
     def is_valid(self):
-        return super(ExhumationForm, self).is_valid() and all([f.is_valid() for f in self.forms])
+        return self.opf_valid(ExhumationForm)
 
     def construct_forms(self):
         data = self.data or None
@@ -1639,18 +1640,19 @@ class ExhumationForm(ChildrenJSONMixin, SafeDeleteMixin, AppOrgFormMixin, forms.
         return [self.applicant_form, self.applicant_address_form, self.applicant_id_form]
 
     def clean(self):
-        exhumation_date = self.cleaned_data.get('fact_date')
-        burial_date = self.burial.fact_date
-        if burial_date and exhumation_date:
-            if burial_date.d > exhumation_date:
-                raise forms.ValidationError(_(u"Дата эксгумации не может быть раньше даты захоронения"))
-        if self.cleaned_data.get('opf') == 'org':
-            if not (self.cleaned_data.get('agent_director') or \
-                    self.cleaned_data.get('agent') and self.cleaned_data.get('dover')):
-                raise forms.ValidationError(_(u'Нет данных об агенте и/или доверенности для заявителя-ЮЛ. Изменения не сохранены'))
-        else:
-            if not self.applicant_form.is_valid_data():
-                raise forms.ValidationError(_(u"Нужно указать Заявителя-ФЛ"))
+        if self.is_valid():
+            exhumation_date = self.cleaned_data.get('fact_date')
+            burial_date = self.burial.fact_date
+            if burial_date and exhumation_date:
+                if burial_date.d > exhumation_date:
+                    raise forms.ValidationError(_(u"Дата эксгумации не может быть раньше даты захоронения"))
+            if self.cleaned_data.get('opf') == 'org':
+                if not (self.cleaned_data.get('agent_director') or \
+                        self.cleaned_data.get('agent') and self.cleaned_data.get('dover')):
+                    raise forms.ValidationError(_(u'Нет данных об агенте и/или доверенности для заявителя-ЮЛ. Изменения не сохранены'))
+            else:
+                if not self.applicant_form.is_valid_data():
+                    raise forms.ValidationError(_(u"Нужно указать Заявителя-ФЛ"))
         return self.cleaned_data
 
     def save(self, commit=True, *args, **kwargs):

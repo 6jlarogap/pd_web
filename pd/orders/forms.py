@@ -147,7 +147,7 @@ class OrderForm(ChildrenJSONMixin, SafeDeleteMixin, AppOrgFormMixin, forms.Model
         self.forms = self.construct_forms()
 
     def is_valid(self):
-        return super(OrderForm, self).is_valid() and all([f.is_valid() for f in self.forms])
+        return self.opf_valid(OrderForm)
 
     def clean(self):
         if self.cleaned_data.get('opf') == Org.OPF_ORG:
