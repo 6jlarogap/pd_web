@@ -158,7 +158,7 @@ class Profile(CommonProfile):
         return self.org and self.org.type == Org.PROFILE_LORU
 
     def is_trade(self):
-        return self.org and self.org.ability.filter(name=OrgAbility.ABILITY_TRADE).exists()
+        return self.org and self.org.is_trade()
 
     def is_ugh(self):
         return self.org and self.org.type == Org.PROFILE_UGH
@@ -757,6 +757,9 @@ class Org(GetLogsMixin, BaseModel):
             return self.ugh_list.filter(ugh__ability__name=OrgAbility.ABILITY_PERSONAL_DATA).exists()
         else:
             return False
+
+    def is_trade(self):
+        return self.ability.filter(name=OrgAbility.ABILITY_TRADE).exists()
 
 class OrgWebPay(BaseModel):
     """

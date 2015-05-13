@@ -377,6 +377,8 @@ class CustomPlace(LocationMixin, BaseModel):
     # указывается, потому что обязателен
     #
     title_photo = models.ImageField(_(u"Основное Фото"), upload_to='.', null=True)
+    favorite_performer = models.ForeignKey(Org, verbose_name=_(u"Предпочтительный исполнитель"),
+                                           null=True, blank=True)
 
 
     class Meta:
