@@ -28,7 +28,7 @@ from rest_framework.parsers import MultiPartParser, JSONParser
 from pd.models import UnclearDate, SafeDeleteMixin
 from burials.models import Place, PlacePhoto
 from logs.models import write_log
-from users.models import PermitIfCabinet, user_dict
+from users.models import Org, PermitIfCabinet, user_dict
 from orders.models import Order, ResultFile
 from geo.models import Location
 
@@ -208,10 +208,26 @@ class ApiClientPlacesDetailView(ApiClientPlacesMixin, APIView):
 
     def put(self, request, pk):
         customplace = self.get_customplace(pk)
+        context = dict(request=request)
+        if 'performerId' in request.DATA:
+            favorite_performer_id = request.DATA['performerId']
+            if favorite_performer_id:
+                message = None
+                try:
+                    favorite_performer = Org.objects.get(pk=favorite_performer_id)
+                    if not favorite_performer.is_trade():
+                        message = _(u'Организация, performerId: %s, не может выполнять заказы') % favorite_performer_id
+                except Org.DoesNotExist:
+                        message = _(u'Оганизация, performerId: %s, не существует') % favorite_performer_id
+                if message:
+                    return Response(dict(status='error', message=message), status=400)
+                context['favorite_performer'] = favorite_performer
+            else:
+                context['favorite_performer'] = None
         serializer = CustomPlaceEditSerializer(
             customplace,
             data=request.DATA,
-            context=dict(request=request),
+            context=context,
         )
         if serializer.is_valid():
             serializer.save()
