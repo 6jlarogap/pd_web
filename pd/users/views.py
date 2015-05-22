@@ -1450,7 +1450,7 @@ class RegistrantApprove(SupervisorRequiredMixin, View):
                 host = get_front_end_url(request)
                 # Пользователю должно прийти письмо, в котором домен адреса Похоронного Дела
                 # должен совпасть с доменом его страны, а не обязательно домена супервизора
-                if registrant.org_address.country:
+                if registrant.org_address and registrant.org_address.country:
                     countries = { u'Россия': 'ru', u'Беларусь': 'by' }
                     if registrant.org_address.country.name in countries:
                         registrant_domain = countries[registrant.org_address.country.name]
