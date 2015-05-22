@@ -1349,7 +1349,7 @@ class RegisterActivation(DetailView):
                     r.delete()
                     write_log(None, self.object,
                               _(u'%s : автоматическое удаление по истечении %s дней') % \
-                                (self.object, RegisterProfile.CLEAR_PROCESSED, ))
+                                (r, RegisterProfile.CLEAR_PROCESSED, ))
                 explain = _(
                             u'Спасибо за подтверждение заявки на регистрацию!\n'
                             u'Ваша заявка принята на <b>рассмотрение администратора системы</b>\n'
