@@ -1447,12 +1447,27 @@ class RegistrantApprove(SupervisorRequiredMixin, View):
                 transaction.rollback()
                 messages.error(request, excpt.message)
             else:
+                host = get_front_end_url(request)
+                # Пользователю должно прийти письмо, в котором домен адреса Похоронного Дела
+                # должен совпасть с доменом его страны, а не обязательно домена супервизора
+                if registrant.org_address and registrant.org_address.country:
+                    countries = { u'Россия': 'ru', u'Беларусь': 'by' }
+                    if registrant.org_address.country.name in countries:
+                        registrant_domain = countries[registrant.org_address.country.name]
+                        match = re.search(r'^(https?\://[\.\w\-]+\.)(\w{2,})(\:\d{1,5})?(/)?$', host)
+                        if match and match.group(2) != registrant_domain:
+                            host = "%s%s%s%s" % (
+                                match.group(1),
+                                registrant_domain,
+                                match.group(3),
+                                match.group(4),
+                            )
                 write_log(request, registrant, _(u'%s : одобрена') % registrant)
                 email_subject = unicode(_(u"Заявка на регистрацию одобрена"))
                 email_text = render_to_string(
                     'register_approved_email.txt',
                     dict(
-                        host=get_front_end_url(request),
+                        host=host,
                         obj=registrant,
                 ))
                 email_from = settings.DEFAULT_FROM_EMAIL
