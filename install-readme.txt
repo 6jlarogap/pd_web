@@ -19,7 +19,7 @@ install-readme.txt, utf8 code page
 
          - postgresql,
             * в т.ч. для разработчика (ubuntu 14.04:
-              sudo apt-get install postgres postgresql-server-dev-all)
+              sudo apt-get install postgresql postgresql-server-dev-all)
             полагаем, что используется база postgresql на localhost,
             в которой пользователю postgres всё дозволено. Это достигается
             правкой pg_hba.conf (на ubuntu 14.04 в /etc/postgresql/9.3/main/)

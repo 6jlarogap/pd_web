@@ -119,7 +119,9 @@
                                     </a>
                                     <ul class="dropdown-menu">
                                         {% if user.profile.is_ugh %}
-                                            <li><a href="{{ global_context_FRONT_END_URL }}oms/placesmap">{% trans "Карта захоронений" %}</a></li>
+                                            {% if global_context_REDIRECT_LOGIN_TO_FRONT_END %}
+                                                <li><a href="{{ global_context_FRONT_END_URL }}oms/placesmap">{% trans "Карта захоронений" %}</a></li>
+                                            {% endif %}
                                             <li><a href="{% url loru_registry %}">{% trans "Реестр ЛОРУ" %}</a></li>
                                             <li class="divider"></li>
                                         {% endif %}
