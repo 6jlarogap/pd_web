@@ -628,7 +628,7 @@ class Org(GetLogsMixin, BaseModel):
     inn = models.CharField(_(u"ИНН"), max_length=255, default='', blank=True)
     kpp = models.CharField(_(u"КПП"), max_length=255, default='', blank=True)
     ogrn = models.CharField(_(u"ОГРН/ОГРЮЛ"), max_length=255, default='', blank=True)
-    director = models.CharField(_(u"Директор (в родительном падеже, например, Иванова Ивана Ивановича)"),
+    director = models.CharField(_(u"Директор"),
                                 max_length=255, default='', blank=True)
     basis = models.CharField(_(u"Основание действия директора"), max_length=255, 
                              choices=BASIS_CHOICES, default=BASIS_CHARTER)
@@ -944,7 +944,7 @@ class RegisterProfile(SafeDeleteMixin, BaseModel):
     org_currency = models.ForeignKey('billing.Currency', verbose_name=_(u"Валюта"), default=get_default_currency)
     org_inn = models.CharField(_(u"ИНН"), max_length=255, default='')
     org_ogrn = models.CharField(_(u"ОГРН/ОГРЮЛ"), max_length=255, default='', blank=True)
-    org_director = models.CharField(_(u"Директор (в родительном падеже, например, Иванова Ивана Ивановича)"),
+    org_director = models.CharField(_(u"Директор"),
                                     max_length=255, default='')
     org_basis = models.CharField(_(u"Основание действия директора"), max_length=255, 
                              choices=Org.BASIS_CHOICES, default=Org.BASIS_CHARTER)
