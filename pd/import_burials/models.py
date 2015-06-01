@@ -267,12 +267,15 @@ def do_import_burials_minsk(csv_fileobj, cemetery, user):
                     building=row[building].strip(),
                     flat=row[flat].strip(),
                 )
+            phones = row[phone].strip()
+            if phones:
+                phones = phones.replace("\n", "; ")
             applicant = AlivePerson.objects.create(
                 last_name=row[applicant_ln],
                 first_name=row[applicant_fn].strip(),
                 middle_name=row[applicant_mn].strip(),
                 address=location,
-                phones=row[phone]
+                phones=phones,
             )
 
         graves_count = place.get_graves_count()

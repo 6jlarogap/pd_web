@@ -84,7 +84,7 @@ class ProfileForm(ChildrenJSONMixin, forms.ModelForm):
     org_inn = forms.CharField(label=_(u"ИНН организации"))
     org_kpp = forms.CharField(label=_(u"КПП организации"), required=False)
     org_ogrn = forms.CharField(label=_(u"ОГРН организации"), required=False)
-    org_director = forms.CharField(label=_(u"Директор (в родительном падеже, например, Иванова Ивана Ивановича)"),
+    org_director = forms.CharField(label=_(u"Директор"),
                                    required=False)
     org_email = forms.EmailField(label=_(u"Email"), required=False)
     org_phones = forms.CharField(label=_(u"Телефоны"), required=False)
@@ -421,10 +421,16 @@ class RegisterForm(forms.ModelForm):
     class Meta:
         model = RegisterProfile
         # Задаем порядок полей:
+        #fields = ('user_name', 'password1', 'password2',
+                  #'user_last_name', 'user_first_name', 'user_middle_name', 'user_email',
+                  #'org_type', 'org_name', 'org_full_name', 'org_currency', 'org_inn', 'org_ogrn',
+                  #'org_director', 'org_basis', 'org_phones', 'org_fax', 
+                  #'captcha',
+                 #)
         fields = ('user_name', 'password1', 'password2',
                   'user_last_name', 'user_first_name', 'user_middle_name', 'user_email',
-                  'org_type', 'org_name', 'org_full_name', 'org_currency', 'org_inn', 'org_ogrn',
-                  'org_director', 'org_basis', 'org_phones', 'org_fax', 
+                  'org_type', 'org_name', 'org_full_name',
+                  'org_director', 'org_phones', 'org_fax', 
                   'captcha',
                  )
 
