@@ -84,7 +84,10 @@ class LoggingFormMixin:
         self.changed_list = []
         obj = self.instance
         if obj and obj.pk:
-            obj = Burial.objects.get(pk=obj.pk)
+            if isinstance(obj, Burial):
+                obj = Burial.objects.get(pk=obj.pk)
+            else:
+                obj = None
             forms = self.forms if hasattr(self, 'forms') else []
             for form in [self] + forms:
                 prefix = self.get_prefix(form)
