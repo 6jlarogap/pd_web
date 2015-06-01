@@ -5,7 +5,7 @@ from django.contrib import messages
 from django.contrib.contenttypes.models import ContentType
 from django.db import models, connection
 from django.db.models import Count, Avg
-from django.db.models.deletion import ProtectedError
+from django.db.models.deletion import ProtectedError, IntegrityError
 from django.utils.translation import ugettext_lazy as _
 from django.db.models.query_utils import Q
 from django.conf import settings
