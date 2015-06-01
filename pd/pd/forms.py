@@ -92,7 +92,6 @@ class LoggingFormMixin:
             for form in [self] + forms:
                 prefix = self.get_prefix(form)
                 for f in form.changed_data:
-                    print obj and getattr(obj, f, None)
                     old_value = obj and getattr(obj, f, None) or form.initial.get(f)
                     new_value = form.cleaned_data.get(f)
                     if not old_value and not isinstance(old_value, bool):
