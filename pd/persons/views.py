@@ -347,6 +347,8 @@ class ApiCustompersonMemoryGalleryView(ApiCustompersonMixin, APIView):
                 raise ServiceException(_(u'Неверный тип (type)'))
             if fields['type'] != MemoryGallery.TYPE_TEXT and not file_:
                 raise ServiceException(_(u'Тип (type) %s требует загружаемого файла (mediaContent)') % fields['type'])
+            if fields['type'] == MemoryGallery.TYPE_TEXT and file_:
+                raise ServiceException(_(u'Тип (type) %s исключает загружаемый файл (mediaContent)') % fields['type'])
             if fields['type'] == MemoryGallery.TYPE_TEXT and \
                (not fields['text'] or not fields['text'].strip()):
                 raise ServiceException(_(u'Тип (type) %s требует непустой текст') % fields['type'])
@@ -355,17 +357,20 @@ class ApiCustompersonMemoryGalleryView(ApiCustompersonMixin, APIView):
                     raise ServiceException(
                         _(u"Размер изображения не должен превышать %sМб") % MemoryGallery.MAX_IMAGE_SIZE
                     )
-                if not get_image(file_):
+                file_content = ContentFile(file_.read())
+                if not get_image(file_content):
                     raise ServiceException(_(u"Прикрепленный файл не является изображением"))
             elif fields['type'] == MemoryGallery.TYPE_VIDEO:
-                if not is_video(file_):
+                file_content = ContentFile(file_.read())
+                if not is_video(file_content):
                     raise ServiceException(_(u"Загруженный файл не является видео"))
             gallery_item = MemoryGallery.objects.create(**fields)
-            # Можно было: if file_: fields['bfile'] = file_, после чего ... create(**fields), однако (!)
+            # Можно было: if file_: fields['bfile'] = file_, без промежуточного буфера file_content,
+            # после чего ... create(**fields), однако (!)
             # в gallery_item.bfile.path фигурирует gallery_item.pk, что еще неизвестно при .create(),
             # посему gallery_item.bfile сохраняем отдельно в уже созданный gallery_item
             if file_:
-                gallery_item.bfile.save(file_.name, ContentFile(file_.read()))
+                gallery_item.bfile.save(file_.name, file_content)
             return Response(
                 data=MemoryGallery2Serializer(gallery_item, context=dict(request=request)).data,
                 status=200,
