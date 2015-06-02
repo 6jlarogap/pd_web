@@ -181,7 +181,8 @@ def media_xsendfile(request, path, document_root):
                     raise Http404
             elif what == 'memory-gallery':
                 try:
-                    if pk != str(request.user.pk):
+                    memory = get_model('persons', 'MemoryGallery').objects.filter(pk=pk)[0]
+                    if not memory.creator or memory.creator != request.user:
                         raise Http404
                 except IndexError:
                     raise Http404
