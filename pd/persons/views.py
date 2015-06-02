@@ -3,6 +3,7 @@
 import json
 import re
 
+from django.core.files.base import ContentFile
 from django.db import transaction, IntegrityError
 from django.db.models.query_utils import Q
 from django.http import Http404, HttpResponse
@@ -328,6 +329,7 @@ class ApiCustompersonMemoryGalleryView(ApiCustompersonMixin, APIView):
             status=200,
         )
 
+    @transaction.commit_on_success
     def post(self, request, pk):
         try:
             customperson = self.get_customperson(pk)
@@ -339,8 +341,6 @@ class ApiCustompersonMemoryGalleryView(ApiCustompersonMixin, APIView):
                 'creator': request.user,
             }
             file_ = request.FILES.get('mediaContent')
-            if file_:
-                fields['bfile'] = file_
             if not fields['type']:
                 raise ServiceException(_(u'Не задан тип (type)'))
             if fields['type'] not in [type_[0] for type_ in MemoryGallery.TYPE_CHOICES]:
@@ -361,6 +361,11 @@ class ApiCustompersonMemoryGalleryView(ApiCustompersonMixin, APIView):
                 if not is_video(file_):
                     raise ServiceException(_(u"Загруженный файл не является видео"))
             gallery_item = MemoryGallery.objects.create(**fields)
+            # Можно было: if file_: fields['bfile'] = file_, после чего ... create(**fields), однако (!)
+            # в gallery_item.bfile.path фигурирует gallery_item.pk, что еще неизвестно при .create(),
+            # посему gallery_item.bfile сохраняем отдельно в уже созданный gallery_item
+            if file_:
+                gallery_item.bfile.save(file_.name, ContentFile(file_.read()))
             return Response(
                 data=MemoryGallery2Serializer(gallery_item, context=dict(request=request)).data,
                 status=200,
