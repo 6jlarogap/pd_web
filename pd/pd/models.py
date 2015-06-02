@@ -366,7 +366,7 @@ def files_upload_to(instance, filename):
                 today_pk_dir % instance.org.pk, fname)
     elif isinstance(instance, get_model('persons', 'MemoryGallery')):
         return os.path.join('memory-gallery',
-                today_pk_dir % instance.creator.pk, fname)
+                today_pk_dir % instance.pk, fname)
     elif isinstance(instance, get_model('orders', 'ResultFile')):
         return os.path.join('order-results',
                 today_pk_dir % instance.order.pk, fname)
