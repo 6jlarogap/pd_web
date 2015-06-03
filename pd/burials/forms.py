@@ -369,9 +369,9 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
             self.initial['plan_time'] = self.instance.plan_time.strftime('%H:%M')
 
         if not self.instance.plan_date:
-            date_diff = 1
-            if datetime.date.today().weekday() == 5 and request.user.profile.is_ugh():
-                date_diff = 2 # Saturday
+            date_diff = settings.BURIAL_PLAN_DATE_DAYS_FROM_TODAY > 0 and settings.BURIAL_PLAN_DATE_DAYS_FROM_TODAY or 0
+            if date_diff and datetime.date.today().weekday() == 5 and request.user.profile.is_ugh():
+                date_diff += 1 # Saturday
             self.initial['plan_date'] = datetime.date.today() + datetime.timedelta(date_diff)
 
         self.order = None
@@ -437,7 +437,7 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
             del self.fields['fact_date']
             if self.instance.account_number:
                 self.fields['account_number'].widget.attrs.update({'readonly':'True'})
-            else:
+            elif self.request.user.profile.org.numbers_algo != Org.NUM_MANUAL:
                 del self.fields['account_number']
                 
         if 'account_number' in self.fields and \
@@ -550,7 +550,7 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
                         # что из модели, на которой форма основана:
                         pass
         applicant_id_form_initial['flag_no_applicant_doc_required'] = self.instance.flag_no_applicant_doc_required \
-            if self.instance.pk and self.instance.can_personal_data(self.request) else False
+            if self.instance.pk and self.instance.can_personal_data(self.request) else True
 
         self.applicant_form = AlivePersonForm(data=data, prefix='applicant',
                                               instance=applicant,
@@ -673,6 +673,10 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
 
         if self.deadman_form.is_valid() and self.instance.burial_container != Burial.CONTAINER_BIO:
             deadman = self.deadman_form.save(commit=False)
+            if settings.DEADMAN_IDENT_NUMBER_ALLOW and \
+                self.deadman_form.cleaned_data.get("ident_number"):
+                deadman.ident_number = deadman.ident_number.upper()
+
             if self.deadman_address_form.is_valid_data():
                 # Хотя бы одно поле из адреса заполнено
                 deadman.address = self.deadman_address_form.save()
@@ -1173,23 +1177,30 @@ class BurialCommitForm(BurialForm):
                 msg = _(u"Фактическая дата захоронения не может быть раньше даты смерти")
                 raise forms.ValidationError(msg)
 
+        #if settings.DEADMAN_IDENT_NUMBER_ALLOW and \
+           #not (self.instance.is_archive() or self.request.REQUEST.get('archive')) and \
+           #not self.instance.is_transferred() and \
+           #self.deadman_form.cleaned_data.get("last_name") and \
+           #not self.cleaned_data.get('burial_container') == Burial.CONTAINER_BIO and \
+           #not self.deadman_form.cleaned_data.get("ident_number"):
+            #msg = _(u"Нет идентификационного номера для усопшего")
+            #raise forms.ValidationError(msg)
+
         if settings.DEADMAN_IDENT_NUMBER_ALLOW and \
-           not (self.instance.is_archive() or self.request.REQUEST.get('archive')) and \
-           not self.instance.is_transferred() and \
-           self.deadman_form.cleaned_data.get("last_name") and \
-           not self.cleaned_data.get('burial_container') == Burial.CONTAINER_BIO and \
-           not self.deadman_form.cleaned_data.get("ident_number"):
-            msg = _(u"Нет идентификационного номера для усопшего")
+           self.deadman_form.cleaned_data.get("ident_number"):
+           if not re.search(r'^[A-Za-z0-9]{10,}$', self.deadman_form.cleaned_data["ident_number"]):
+            msg = _(u"Идентификационный номер усопшего: не менее 10 цифр и латинских символов")
             raise forms.ValidationError(msg)
 
         if self.dc_form.is_valid():
             death_certificate_release_date = self.dc_form.cleaned_data.get('release_date')
-            if not (self.instance.is_archive() or self.request.REQUEST.get('archive') or \
+            if not (not settings.DEATH_CERTIFICATE_REQUIRED or \
+                    self.instance.is_archive() or self.request.REQUEST.get('archive') or \
                     self.instance.is_transferred() or \
                     self.request.user.profile.is_loru() or \
                     self.cleaned_data.get('burial_container') == Burial.CONTAINER_BIO or \
                     not can_personal_data
-                   ):
+               ):
                 if not self.dc_form.cleaned_data.get("s_number").strip():
                     raise forms.ValidationError(_(u"Не заполнен номер свидетельства о смерти"))
                 if not death_certificate_release_date:
