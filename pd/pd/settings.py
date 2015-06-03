@@ -397,6 +397,12 @@ YANDEX_API_KEYS = [
     
 WKHTMLTOPDF_CMD = '/usr/local/bin/wkhtmltopdf'
 
+# Обязательность свидетельства о смерти
+DEATH_CERTIFICATE_REQUIRED = True
+
+# Когда предлагать плановую дату захронения, сколько дней от сегодняшней даты
+BURIAL_PLAN_DATE_DAYS_FROM_TODAY = 1
+
 try:
     from local_settings import *
 except ImportError:

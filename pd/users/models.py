@@ -575,12 +575,14 @@ class OrgAbility(models.Model):
 
 class Org(GetLogsMixin, BaseModel):
     NUM_EMPTY = 'empty'
+    NUM_MANUAL = 'manual'
     NUM_YEAR_UGH = 'year_ugh'
     NUM_YEAR_CEMETERY = 'year_cemetery'
     NUM_YEAR_MONTH_UGH = 'year_month_ugh'
     NUM_YEAR_MONTH_CEMETERY = 'year_month_cemetery'
     NUM_TYPES = (
         (NUM_EMPTY, _(u'Оставить пустым')),
+        (NUM_MANUAL, _(u'Вручную')),
         (NUM_YEAR_UGH, _(u'Год + порядковый (в пределах организации)')),
         (NUM_YEAR_CEMETERY, _(u'Год + порядковый (в пределах кладбища)')),
         (NUM_YEAR_MONTH_UGH, _(u'Год + месяц + порядковый (в пределах организации)')),
