@@ -1,15 +1,6 @@
 {% load i18n %}
 <tr>
     <th>
-        {% if sort == '-pk' %}
-            {% if sort == '-pk' %}<i class="icon icon-arrow-down"></i>{% endif %}
-            <a href="?{{ GET_PARAMS }}&sort=pk">{% trans "Номер" %}</a>
-        {% else %}
-            {% if sort == 'pk' %}<i class="icon icon-arrow-up"></i>{% endif %}
-            <a href="?{{ GET_PARAMS }}&sort=-pk">{% trans "Номер" %}</a>
-        {% endif %}
-    </th>
-    <th>
         {% if sort == 'account_number' %}
             {% if sort == 'account_number' %}<i class="icon icon-arrow-up"></i>{% endif %}
             <a href="?{{ GET_PARAMS }}&sort=-account_number">{% trans "Номер в книге" %}</a>
@@ -101,7 +92,6 @@
     {% else %}
         <tr>
     {% endif %}
-        <td>{{ b.pk }}</td>
         <td>{{ b.account_number|default:"" }}</td>
         {% if user.profile.is_ugh %}
             <td>{{ b.get_source_type_display }}
@@ -117,7 +107,13 @@
                 {{ b.applicant }}
             {% endif %}
         </td>
-        <td>{% if b.cemetery %}{{ b.cemetery }} / {{ b.ugh_name }}{% endif %}</td>
+        <td>{% if b.cemetery %}
+                {{ b.cemetery }}
+                {% if user.profile.is_loru %}
+                    / {{ b.ugh_name }}
+                {% endif %}
+            {% endif %}
+        </td>
         <td>
             {% with burial=b %}{% include "burial_place.html" %}{% endwith %}
         </td>
@@ -156,11 +152,11 @@
                 <a class="btn" href="{% url view_burial b.pk %}">{% trans "просмотр" %}</a>
                 {# (Ручные, архивные), перенесенные, закрытые: #}
                 {% if b.is_ugh or b.is_transferred or b.is_closed %}
-                    <a class="btn" href="{% url edit_burial b.pk %}">{% trans "правка" %}</a>
+                    <br /><a class="btn" href="{% url edit_burial b.pk %}">{% trans "правка" %}</a>
                 {% endif %}
                 {% if b.get_place %}
                     {# Эксгумированое зх не имеет b.place, но его место можно найти как b.get_place #}
-                    <a class="btn" href="/manage/cemetery/{{ b.cemetery.pk}}/area/{{ b.area.pk }}/place/{{ b.get_place.pk }}">{% trans "место" %}</a>
+                    <br /><a class="btn" href="/manage/cemetery/{{ b.cemetery.pk}}/area/{{ b.area.pk }}/place/{{ b.get_place.pk }}">{% trans "место" %}</a>
                 {% endif %}
             {% endif %}
             {% if not b.is_bio and not b.dc_filled and b.can_personal_data %}
