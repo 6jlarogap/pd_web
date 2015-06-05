@@ -1205,6 +1205,12 @@ class Burial(SafeDeleteMixin, GetLogsMixin, BaseModel):
             pass
         return result
         
+class BurialComment(BaseModel):
+
+    burial = models.ForeignKey(Burial, verbose_name=_(u"Захоронение"), )
+    creator = models.ForeignKey('auth.User', verbose_name=_(u"Создатель"), )
+    comment = models.TextField(_(u"Комментарий"), )
+
 class BurialFiles(Files):
     """
     Файлы, связанные с захоронением
