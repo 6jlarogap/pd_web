@@ -10,7 +10,7 @@ from django.contrib import messages
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
-from django.db import models
+from django.db import models, transaction
 from django.db.models.aggregates import Max
 from django.db.models.deletion import ProtectedError
 from django.forms.models import inlineformset_factory, BaseInlineFormSet
@@ -18,7 +18,7 @@ from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext_lazy as _
 from django.db.models.query_utils import Q
 
-from burials.models import Cemetery, Area, Burial, Place, ExhumationRequest, BurialFiles, Grave, PlaceSize
+from burials.models import Cemetery, Area, Burial, Place, ExhumationRequest, BurialComment, BurialFiles, Grave, PlaceSize
 from persons.models import AlivePerson
 from geo.forms import LocationForm
 from orders.models import Order
@@ -634,6 +634,7 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
             prefix = _(u"Заявитель ")
         return prefix
 
+    @transaction.commit_on_success
     def save(self, commit=True, **kwargs):
         request = self.request
         self.collect_log_data()
@@ -763,9 +764,14 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
 
         self.instance.save()
         if self.comment_form.is_valid():
-            comment = self.comment_form.cleaned_data['comment']
+            comment = self.comment_form.cleaned_data.get('comment', '').strip()
             if comment:
                 write_log(request, self.instance, _(u'Комментарий: %s') % comment)
+                BurialComment.objects.create(
+                    creator=request.user,
+                    burial=self.instance,
+                    comment=comment,
+                )
 
         if self.order:
             self.order.burial = self.instance

@@ -27,7 +27,7 @@ from pd.models import validate_phone_as_number
 from pd.utils import utcisoformat
 
 from burials.forms import CemeteryForm, AreaFormset, PlaceEditForm, AddOrgForm, AreaMergeForm, BurialfileCommentEditForm
-from burials.models import Cemetery, Place, Area, BurialFiles, Grave, Burial, AreaPhoto, PlacePhoto, \
+from burials.models import Cemetery, Place, Area, BurialFiles, Grave, Burial, BurialComment, AreaPhoto, PlacePhoto, \
                            ExhumationRequest, AreaPurpose, PlaceSize
 from burials.burials_views import *
 from logs.models import write_log, log_object, prepare_m2m_log, compare_obj
@@ -1012,10 +1012,16 @@ class CommentView(BurialsListGenericMixin, LoginRequiredMixin, DetailView):
         return redirect('view_burial', self.get_object().pk)
 
     def post(self, request, *args, **kwargs):
+        burial = self.get_object()
         comment = request.POST.get('comment').strip()
         if comment:
-            write_log(request, self.get_object(), _(u'Комментарий: %s') % comment)
-        return redirect('view_burial', self.get_object().pk)
+            write_log(request, burial, _(u'Комментарий: %s') % comment)
+            BurialComment.objects.create(
+                creator=request.user,
+                burial=burial,
+                comment=comment,
+            )
+        return redirect('view_burial', burial.pk)
 
 burial_comment = CommentView.as_view()
 
