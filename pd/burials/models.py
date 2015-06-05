@@ -1211,6 +1211,9 @@ class BurialComment(BaseModel):
     creator = models.ForeignKey('auth.User', verbose_name=_(u"Создатель"), )
     comment = models.TextField(_(u"Комментарий"), )
 
+    class Meta:
+        ordering = ['-pk']
+
 class BurialFiles(Files):
     """
     Файлы, связанные с захоронением

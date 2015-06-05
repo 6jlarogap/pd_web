@@ -74,6 +74,9 @@
             <a href="?{{ GET_PARAMS }}&sort=status">{% trans "Статус" %}</a>
         {% endif %}
     </th>
+    <th>
+        {% trans "Комментарии" %}
+    </th>
     {% if user.profile.is_loru %}
         <th>
             {% trans "Заказ(ы)" %}
@@ -134,6 +137,15 @@
             <br/>
             {{ b.changed_by.profile|default:"" }}
         </th>
+        <td>
+            {% for comment in b.burialcomment_set.all %}
+                <i>{{ comment.dt_created.date }}</i><br>
+                {{ comment.comment|linebreaksbr }}
+                {% if not forloop.last %}
+                    <br />
+                {% endif %}
+            {% endfor %}
+        </td>
         {% if user.profile.is_loru %}
             <td>
                 {% with burial=b %}{% include "burial_orders.html" %}{% endwith %}
