@@ -178,9 +178,9 @@ class StrippedStringsMixin(object):
 
 class CommentForm(StrippedStringsMixin, forms.Form):
     comment = forms.CharField(
-        label=_(u'Комментарий'),
+        label='',
         widget=forms.Textarea(
-            attrs={'rows': 10, 'cols': 60, 'style': 'widhth: 400px;'}
+            attrs={'rows': 10, 'cols': 60, }
         ),
         required=False,
     )
