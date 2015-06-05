@@ -177,7 +177,13 @@ class StrippedStringsMixin(object):
        return self.cleaned_data
 
 class CommentForm(StrippedStringsMixin, forms.Form):
-    comment = forms.CharField(label=_(u'Комментарий'), widget=forms.Textarea, required=False)
+    comment = forms.CharField(
+        label='',
+        widget=forms.Textarea(
+            attrs={'rows': 10, 'cols': 60, }
+        ),
+        required=False,
+    )
 
 class UnclearSelectDateWidget(SelectDateWidget):
     month_unclear = False

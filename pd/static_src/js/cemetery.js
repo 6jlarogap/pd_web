@@ -109,6 +109,8 @@ function setup_address_autocompletes() {
     $('input[id=id_loru]').attr('autocomplete', 'off').typeahead(loru_typeahed);
     $('input[id=id_supplier]').attr('autocomplete', 'off').css('width', '400px').typeahead(loru_typeahed);
 
+    $('textarea[id$=comment]').css('width', '400px');
+
     $('input[id=id_loru_in_burials]').attr('autocomplete', 'off').typeahead({
         items: 100,
         onselect: function() {

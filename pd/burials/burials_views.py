@@ -557,6 +557,9 @@ class BurialsListView(PaginateListView):
             else:
                 burials = burials.filter(annulated=False)
 
+            if form.cleaned_data.get('comment'):
+                burials = burials.filter(burialcomment__comment__icontains=form.cleaned_data['comment'])
+
             if form.cleaned_data.get('status') == Burial.STATUS_EXHUMATED:
                 burials = burials.filter(status=Burial.STATUS_EXHUMATED)
             else:
@@ -566,8 +569,6 @@ class BurialsListView(PaginateListView):
 
         sort = self.request.GET.get('sort', self.SORT_DEFAULT)
         SORT_FIELDS = {
-            'pk': 'pk',
-            '-pk': '-pk',
             'account_number': 'account_number',
             '-account_number': '-account_number',
             'cemetery': 'cemetery__name',
@@ -585,7 +586,10 @@ class BurialsListView(PaginateListView):
             'status': 'status',
             '-status': '-status',
         }
-        s = SORT_FIELDS[sort]
+        try:
+            s = SORT_FIELDS[sort]
+        except KeyError:
+            s = self.SORT_DEFAULT
         if not isinstance(s, list):
             s = [s]
 
