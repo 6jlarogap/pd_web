@@ -1004,6 +1004,13 @@ $(function() {
         }
     });
 
+    $('.ugh_search_burials #id_account_number_from').change(function() {
+        var val = $(this).val();
+        if (val && !$('#id_account_number_to').val()) {
+            $('#id_account_number_to').val(val);
+        }
+    });
+
     $('.product_edit #id_price, .product_edit #id_price_wholesale').change(function() {
         var val = $(this).val();
         var other_price = "";
