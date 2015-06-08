@@ -39,7 +39,9 @@
                 {% if not b.annulated %}
                     {% if user.profile.is_ugh %}
                         {% if b.is_draft or not b.pk %}
-                            <input type="submit" class="btn btn-commit-burial" name="approve" value="{% trans "cохранить и согласовать" %}"/>
+                        {% if not request.REQUEST.archive and not form.instance.is_archive %}
+                                <input type="submit" class="btn btn-commit-burial" name="approve" value="{% trans "cохранить и согласовать" %}"/>
+                            {% endif %}
                         {% endif %}
                         {% if b.ugh and b.is_approved %}
                             <input type="submit" class="btn btn-commit-burial" name="disapprove" value="{% trans "cохранить и отменить согласование" %}"/>
