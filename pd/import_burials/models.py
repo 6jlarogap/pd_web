@@ -332,7 +332,7 @@ def do_import_burials_minsk(csv_fileobj, cemetery, user):
         request = HttpRequest()
         request.user = user
         if row[comment]:
-            write_log(request, burial, row[comment])
+            write_log(request, burial, u"Комментарий: %s" % row[comment])
         write_log(request, burial, _(u"Импорт"))
         
         if row[file_names]:
