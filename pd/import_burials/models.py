@@ -16,7 +16,7 @@ from django.core.exceptions import ValidationError
 
 from django.utils.translation import ugettext as _
 
-from burials.models import Burial, ExhumationRequest, Cemetery, Area, Place, AreaPurpose, Grave, BurialFiles
+from burials.models import Burial, BurialComment, ExhumationRequest, Cemetery, Area, Place, AreaPurpose, Grave, BurialFiles
 from geo.models import Location, Country, Region, City, Street
 from logs.models import write_log
 from orders.models import Product, Order, OrderItem, CoffinData, CatafalqueData, AddInfoData
@@ -333,6 +333,11 @@ def do_import_burials_minsk(csv_fileobj, cemetery, user):
         request.user = user
         if row[comment]:
             write_log(request, burial, u"Комментарий: %s" % row[comment])
+            BurialComment.objects.create(
+                burial=burial,
+                creator=user,
+                comment=row[comment],
+            )
         write_log(request, burial, _(u"Импорт"))
         
         if row[file_names]:
