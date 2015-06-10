@@ -22,13 +22,10 @@ class DeadPersonForm(ValidDataMixin, StrippedStringsMixin, forms.ModelForm):
 
     def __init__(self, request, *args, **kwargs):
         kwargs.setdefault('initial', {})
-        if request.user.profile.is_loru():
-            death_date = datetime.date.today()
-        else:
-            death_date = datetime.date.today() - datetime.timedelta(1)
-        if not kwargs.get('instance'):
+        if request.user.profile.is_loru() and \
+           not kwargs.get('instance'):
             kwargs['initial'].update({
-                'death_date': death_date,
+                'death_date': datetime.date.today(),
             })
         super(DeadPersonForm, self).__init__(*args, **kwargs)
         if not settings.DEADMAN_IDENT_NUMBER_ALLOW:
