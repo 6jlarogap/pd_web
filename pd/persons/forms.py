@@ -21,15 +21,18 @@ class DeadPersonForm(ValidDataMixin, StrippedStringsMixin, forms.ModelForm):
         model = DeadPerson
 
     def __init__(self, request, *args, **kwargs):
+        death_date = None
         kwargs.setdefault('initial', {})
-        if request.user.profile.is_loru() and \
-           not kwargs.get('instance'):
+        death_date_offer = request.user.profile.org.death_date_offer
+        if death_date_offer and request.user.profile.is_loru():
+            death_date = datetime.date.today()
+        elif death_date_offer and request.user.profile.is_ugh():
+            death_date = datetime.date.today() - datetime.timedelta(1)
+        if death_date and not kwargs.get('instance'):
             kwargs['initial'].update({
-                'death_date': datetime.date.today(),
+                'death_date': death_date,
             })
         super(DeadPersonForm, self).__init__(*args, **kwargs)
-        if not settings.DEADMAN_IDENT_NUMBER_ALLOW:
-            del self.fields['ident_number']
 
     def is_valid_data(self):
         return self.is_valid() and len([k for k,v in self.cleaned_data.items() if v]) > 1 # more than just death date
