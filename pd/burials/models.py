@@ -55,7 +55,7 @@ class Cemetery(GetLogsMixin, BaseModel, PhonesMixin):
     time_begin = models.TimeField(_(u"Начало работы"), null=True, blank=True)
     time_end = models.TimeField(_(u"Окончание работы"), null=True, blank=True)
     places_algo = models.CharField(_(u"Расстановка номеров мест новых ручных и электронных захоронений"),
-                                max_length=255, choices=PLACE_TYPES, default=PLACE_AREA)
+                                max_length=255, choices=PLACE_TYPES, default=PLACE_MANUAL)
     # - все архивные захоронения (новые, подзахоронения, захоронения в существующиую)
     # - ручные и электронные подзахоронения и захоронения в существующиую
     places_algo_archive = models.CharField(_(u"Расстановка номеров существующих, но неучтенных мест"),

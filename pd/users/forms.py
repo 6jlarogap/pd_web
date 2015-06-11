@@ -299,6 +299,8 @@ class OrgForm(StrippedStringsMixin, BaseOrgForm):
         self.address_form = LocationForm(data=self.data or None, prefix='address', instance=self.instance.off_address)
         self.forms = [self.address_form, ]
         # self.bank_formset = BankAccountFormset(data=request.POST or None, instance=request.user.profile.org)
+        if not self.is_own_org:
+            del self.fields['death_date_offer']
         if not self.is_own_org or not self.request.user.profile.is_ugh():
             del self.fields['numbers_algo']
             del self.fields['plan_date_days_before']
