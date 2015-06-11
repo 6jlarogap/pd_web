@@ -300,6 +300,7 @@ def do_import_burials_minsk(csv_fileobj, cemetery, user):
                                                 else Burial.CONTAINER_COFFIN
 
         row[deadman_ln] = row[deadman_ln].strip()
+        deadman = None
         if row[deadman_ln] and row[deadman_ln] != u'*' and \
            row[deadman_ln].lower != u'неизвестен':
             deadman = DeadPerson.objects.create(
