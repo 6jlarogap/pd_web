@@ -1488,6 +1488,7 @@ class RegistrantApprove(SupervisorRequiredMixin, View):
                     off_address.save(force_insert=True)
                 else:
                     off_address = None
+                death_date_offer = True if registrant.org_type == Org.PROFILE_LORU else False
                 try:
                     org=Org.objects.create(
                                 type=registrant.org_type,
@@ -1503,6 +1504,7 @@ class RegistrantApprove(SupervisorRequiredMixin, View):
                                 off_address=off_address,
                                 currency=registrant.org_currency,
                                 subdomain=registrant.org_subdomain,
+                                death_date_offer=death_date_offer,
                     )
                 except IntegrityError:
                     raise ServiceException(_(u"Такой поддомен уже используется в системе"))
