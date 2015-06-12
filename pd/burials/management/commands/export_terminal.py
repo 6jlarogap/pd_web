@@ -3,14 +3,14 @@
 # export_terminal.py
 # ------------------
 
-# Запуск: : ./manage.py export_terminal
+# Запуск: : ./manage.py export_terminal каталог_для_результатов
 
 # Формирование .csv файлов для имеющихся терминалов на кладбищах
 
 import sys, csv
 
 from django import db
-from django.core.management.base import NoArgsCommand
+from django.core.management.base import BaseCommand
 from django.db.models.query_utils import Q
 
 from burials.models import Place, Grave, Burial, Cemetery
@@ -48,14 +48,18 @@ CEMETERIES = (
    ),
 )
 
-EXPORT_PATH = '/home/suprune20'
-
 # --------- ----------------------------------------------
 
-class Command(NoArgsCommand):
+class Command(BaseCommand):
+    args = 'output_folder'
     help = "Form export csv files for terminal at some cemeteries"
 
-    def handle_noargs(self, **options):
+    def handle(self, *args, **options):
+        try:
+            export_path=args[0]
+        except IndexError:
+            print "No export path specified as the parameter"
+            quit()
         for cemetery_parms in CEMETERIES:
             print "Processing bundle of cemeteries for %s" % cemetery_parms['export']
             cemeteries = []
@@ -69,7 +73,7 @@ class Command(NoArgsCommand):
                 print "    !!! No cemeteries in system found for bundle %s" % cemetery_parms['export']
                 continue
             csv.register_dialect(cemetery_parms['export'], **cemetery_parms['csv_kwargs'])
-            f = open("%s/%s.csv" % (EXPORT_PATH, cemetery_parms['export'],), "w")
+            f = open("%s/%s.csv" % (export_path, cemetery_parms['export'],), "w")
             writer = csv.writer(f, cemetery_parms['export'])
             q = Q(
                     annulated=False,
@@ -112,4 +116,3 @@ class Command(NoArgsCommand):
                     writer.writerow(columns)
                     db.reset_queries()
             f.close()
-
