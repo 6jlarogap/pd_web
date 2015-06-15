@@ -31,7 +31,7 @@ from logs.models import write_log
 from pd.models import SafeDeleteMixin
 from pd.forms import AppOrgFormMixin
 
-OPF_CHOICES = (('person', _(u'ФЛ')), ('org', _(u'ЮЛ')))
+OPF_CHOICES = list(Org.OPF_CHOICES)[1:]
 
 class BaseCemeteryForm(forms.ModelForm):
     def clean_time_slots(self):
@@ -421,12 +421,12 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
         self.fields['dover'].queryset = self.fields['dover'].queryset.select_related('agent', 'agent__user')
 
         self.fields.keyOrder.insert(self.fields.keyOrder.index('applicant_organization'), self.fields.keyOrder.pop(-1))
-        #if self.instance.pk and self.instance.applicant and self.instance.can_personal_data(self.request):
-            #self.initial['opf'] = 'person'
-        #else:
-            #self.initial['opf'] = 'org'
-        # В Беларуси по умолчанию пусть будет заказчик: ФЛ
-        self.initial['opf'] = 'person'
+        if self.instance.pk and self.instance.applicant and self.instance.can_personal_data(self.request):
+            self.initial['opf'] = Org.OPF_PERSON
+        elif self.request.user.profile.org.opf_burial == Org.OPF_ORG:
+            self.initial['opf'] = Org.OPF_ORG
+        else:
+            self.initial['opf'] = Org.OPF_PERSON
 
         if self.request.user.profile.is_ugh() and self.request.REQUEST.get('archive'):
             del self.fields['plan_date']
@@ -523,7 +523,7 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
         applicant_address_form_initial = {}
         applicant_id_form_initial = {}
         if not self.instance.pk and self.order and self.order.applicant and self.instance.can_personal_data(self.request):
-            self.initial['opf'] = 'person'
+            self.initial['opf'] = Org.OPF_PERSON
             for f in AlivePersonForm.base_fields.keys():
                 applicant_form_initial[f] = getattr(self.order.applicant, f)
             cust_address = self.order.applicant.address
@@ -608,7 +608,7 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
 
         if self.responsible_form.is_valid():
             if self.responsible_form.cleaned_data.get('take_from') == ResponsibleForm.WHERE_FROM_APPLICANT:
-                if self.cleaned_data.get('opf') != 'person':
+                if self.cleaned_data.get('opf') != Org.OPF_PERSON:
                     raise forms.ValidationError(_(u"Невозможно указать Заявителя - Ответственного. Заявитель не ФЛ."))
 
         return self.cleaned_data
@@ -692,7 +692,7 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
         else:
             self.safe_delete('deadman', self.instance)
 
-        if self.cleaned_data.get('opf') == 'person':
+        if self.cleaned_data.get('opf') == Org.OPF_PERSON:
             self.instance.applicant_organization = None
             self.instance.agent_director = False
             self.instance.agent = None
@@ -930,7 +930,7 @@ class BurialCommitForm(BurialForm):
         pass
 
     def setup_required_applicant_id(self):
-        if self.data.get('opf') == 'person' and not self.data.get('applicant-pid-flag_no_applicant_doc_required') and \
+        if self.data.get('opf') == Org.OPF_PERSON and not self.data.get('applicant-pid-flag_no_applicant_doc_required') and \
            not (self.instance.is_archive() or self.request.REQUEST.get('archive')):
             for f in self.applicant_id_form.fields:
                 if f in ['id_type', 'series', 'number',]:
@@ -951,11 +951,11 @@ class BurialCommitForm(BurialForm):
             if can_personal_data and not self.cleaned_data.get('applicant_organization') and not self.applicant_form.is_valid_data():
                 raise forms.ValidationError(_(u"Нужно указать либо Заявителя-ЮЛ, либо Заявителя-ФЛ"))
 
-            if can_personal_data and self.cleaned_data.get('opf') == 'person':
+            if can_personal_data and self.cleaned_data.get('opf') == Org.OPF_PERSON:
                 if not self.applicant_form.is_valid_data():
                     raise forms.ValidationError(_(u"Если выбран заявитель-ФЛ, то надо его (ее) указать"))
 
-            if self.cleaned_data.get('opf') == 'org':
+            if self.cleaned_data.get('opf') == Org.OPF_ORG:
                 applicant_organization = self.cleaned_data.get('applicant_organization')
                 if not applicant_organization and can_personal_data:
                     raise forms.ValidationError(_(u"Если выбран заявитель-ЮЛ, то надо его указать"))
@@ -1607,7 +1607,7 @@ class AddDocTypeForm(forms.ModelForm):
         model = IDDocumentType
 
 class ExhumationForm(ChildrenJSONMixin, SafeDeleteMixin, AppOrgFormMixin, forms.ModelForm):
-    opf = forms.ChoiceField(label='', choices=OPF_CHOICES, widget=forms.RadioSelect, initial='person')
+    opf = forms.ChoiceField(label='', choices=OPF_CHOICES, widget=forms.RadioSelect, initial=Org.OPF_PERSON)
 
     class Meta:
         model = ExhumationRequest
@@ -1622,9 +1622,9 @@ class ExhumationForm(ChildrenJSONMixin, SafeDeleteMixin, AppOrgFormMixin, forms.
         self.fields.keyOrder.insert(0, self.fields.keyOrder.pop(-1))
 
         if self.instance.applicant:
-            self.initial['opf'] = 'person'
+            self.initial['opf'] = Org.OPF_PERSON
         else:
-            self.initial['opf'] = 'org'
+            self.initial['opf'] = Org.OPF_ORG
 
         if burial.cemetery and burial.cemetery.time_slots and self.fields.get('plan_time'):
             choices = [('', '----------')] + burial.cemetery.get_time_choices(
@@ -1666,7 +1666,7 @@ class ExhumationForm(ChildrenJSONMixin, SafeDeleteMixin, AppOrgFormMixin, forms.
             if burial_date and exhumation_date:
                 if burial_date.d > exhumation_date:
                     raise forms.ValidationError(_(u"Дата эксгумации не может быть раньше даты захоронения"))
-            if self.cleaned_data.get('opf') == 'org':
+            if self.cleaned_data.get('opf') == Org.OPF_ORG:
                 if not (self.cleaned_data.get('agent_director') or \
                         self.cleaned_data.get('agent') and self.cleaned_data.get('dover')):
                     raise forms.ValidationError(_(u'Нет данных об агенте и/или доверенности для заявителя-ЮЛ. Изменения не сохранены'))
@@ -1685,7 +1685,7 @@ class ExhumationForm(ChildrenJSONMixin, SafeDeleteMixin, AppOrgFormMixin, forms.
             self.instance.agent = None
             self.instance.dover = None
 
-        if self.cleaned_data.get('opf') == 'person' and self.applicant_form.is_valid_data():
+        if self.cleaned_data.get('opf') == Org.OPF_PERSON and self.applicant_form.is_valid_data():
             applicant = self.applicant_form.save(commit=False)
             if self.applicant_address_form.is_valid_data():
                 applicant.address = self.applicant_address_form.save()
