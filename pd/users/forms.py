@@ -301,6 +301,7 @@ class OrgForm(StrippedStringsMixin, BaseOrgForm):
         # self.bank_formset = BankAccountFormset(data=request.POST or None, instance=request.user.profile.org)
         if not self.is_own_org:
             del self.fields['death_date_offer']
+            del self.fields['opf_burial']
         if not self.is_own_org or not self.request.user.profile.is_ugh():
             del self.fields['numbers_algo']
             del self.fields['plan_date_days_before']

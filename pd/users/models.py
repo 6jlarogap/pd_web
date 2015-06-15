@@ -645,6 +645,8 @@ class Org(GetLogsMixin, BaseModel):
     numbers_algo = models.CharField(_(u"Заполнение номера захоронения"), max_length=255, choices=NUM_TYPES,
                                     default=NUM_MANUAL)
     # название поля не заканчивается на date, чтоб не угодить под специфический datePicker widget для дат:
+    opf_burial = models.CharField(_(u"Заявитель по умолчанию в захоронении"), max_length=255,
+                                    choices=list(OPF_CHOICES)[1:], default=OPF_ORG)
     death_date_offer = models.BooleanField(_(u"Предлагать дату смерти в новом захоронении"), default=False)
     opf_order = models.CharField(_(u"Заказчик по умолчанию в заказе"), max_length=255,
                                     choices=list(OPF_CHOICES)[1:], default=OPF_ORG)
