@@ -8,9 +8,6 @@ import string
 import re
 import hashlib
 
-import magic
-from PIL import Image
-
 from django.conf import settings
 from django.contrib import messages
 from django.core.urlresolvers import reverse
@@ -62,7 +59,7 @@ from orders.serializers import ProductCategorySerializer, ProductsSerializer, Pr
                                ServiceOrderSerializer, OrderCommentsSerializer, ServiceOrderDetailSerializer, \
                                OrderResultsSerializer
 
-from pd.utils import EmailMessage
+from pd.utils import EmailMessage, str_to_bool_or_None, get_image, is_video
 from pd.models import validate_phone_as_number
 
 from sms_service.utils import send_sms
@@ -667,13 +664,13 @@ class ProductsViewSet(ProductCategoryQsMixin, viewsets.ReadOnlyModelViewSet):
     paginate_by = None
 
     def get_queryset(self):
+        qs = Q()
+
         store_ids = self.request.GET.getlist('filter[supplierStore]')
         while store_ids.count(u''):
             store_ids.remove(u'')
         if store_ids:
-            qs = Q(loru__store__pk__in=store_ids)
-        else:
-            return Product.objects.none()
+            qs &= Q(loru__store__pk__in=store_ids)
 
         loru_ids = self.request.GET.getlist('filter[supplier]')
         while loru_ids.count(u''):
@@ -692,6 +689,10 @@ class ProductsViewSet(ProductCategoryQsMixin, viewsets.ReadOnlyModelViewSet):
         if self.request.GET.get('filter[productType]', '').lower() == 'opt':
             q_public_whole = Q(is_wholesale=True)
         qs &= q_public_whole
+
+        is_for_visit = str_to_bool_or_None(self.request.GET.get('filter[isAvailableForVisitOrder]'))
+        if is_for_visit is not None:
+            qs &= Q(is_for_visit=is_for_visit)
 
         ordered = None
         orders = {'price': 'price', 'date': 'dt_created', }
@@ -1450,7 +1451,7 @@ class ApiServicePriceMixin(object):
             if self.data.customplace.user != request.user:
                 raise ServiceException(_(u'Пользователь %s не имеет прав на запрос по этому месту') % request.user.username)
             
-            self.data.need_delivery = self.data.service_name in ('photo', 'delivery')
+            self.data.need_delivery = self.data.service_name in ('photo', Service.SERVICE_DELIVERY)
             if self.data.need_delivery:
                 if request.method == 'GET':
                     latitude = req_dict.get('location[latitude]')
@@ -1468,11 +1469,11 @@ class ApiServicePriceMixin(object):
                     raise ServiceException(_(u'Не заданы и не удалось выяснить координаты места'))
                 self.data.latitude = float(latitude)
                 self.data.longitude = float(longitude)
-                if request.method == 'POST' and self.data.service_name != 'delivery':
+                if request.method == 'POST' and self.data.service_name != Service.SERVICE_DELIVERY:
                     try:
                         self.data.orgservice_delivery = OrgService.objects.get(
                             org=org,
-                            service__name='delivery',
+                            service__name=Service.SERVICE_DELIVERY,
                             enabled=True
                         )
                     except OrgService.DoesNotExist:
@@ -1489,7 +1490,7 @@ class ApiServicePriceMixin(object):
         """
         Цена за услугу у огранизации
         """
-        if self.data.service.name == 'delivery':
+        if self.data.service.name == Service.SERVICE_DELIVERY:
             # цена за доставку считается не по организации, а по складам
             price_service = 0
         elif self.data.service.name in ('photo', ):
@@ -1509,7 +1510,7 @@ class ApiServicePriceMixin(object):
         result = 0.00
         for m in OrgServicePrice.objects.filter(
             orgservice__org=org,
-            orgservice__service__name='delivery'
+            orgservice__service__name=Service.SERVICE_DELIVERY
             ).values('measure__name', 'price'):
             if m['measure__name'] == 'km':
                 result += float(m['price']) * km
@@ -1529,7 +1530,9 @@ class ApiClientAvailablePerformersView(ApiServicePriceMixin, APIView):
         Выбираются исполнители, подписавшиеся на сервис.
             - если сервис требует транспортных расходов, то еще и подписавшиеся
               на сервис delivery.
-        Из них выбираются те, кто имеют склады с коодинатами
+        Из них выбираются те, кто 
+            - имеют склады с коодинатами
+            - имеют account в платежной системе, пока только webpay
         Из этих складов выбираются ближайший
         """
         message = self.check_input_message(request)
@@ -1540,12 +1543,14 @@ class ApiClientAvailablePerformersView(ApiServicePriceMixin, APIView):
             loru__orgservice__service=self.data.service,
             loru__orgservice__enabled=True,
         )
+        q_payable = Q(loru__orgwebpay__org__isnull=False)
+        q &= q_payable
         if self.data.need_delivery:
             q &= Q(
                 address__gps_x__isnull=False,
                 address__gps_y__isnull=False,
             )
-            if self.data.service_name != 'delivery':
+            if self.data.service_name != Service.SERVICE_DELIVERY:
                 orgs = [orgservice.org for orgservice in OrgService.objects.filter(
                     service=self.data.service,
                     enabled=True,
@@ -1659,7 +1664,7 @@ class ApiClientOrdersView(ApiServicePriceMixin, APIView):
         )
         # будут назначены loru_number, number:
         order.save()
-        if self.data.service_name != 'delivery':
+        if self.data.service_name != Service.SERVICE_DELIVERY:
             item_service = ServiceItem.objects.create(
                 order=order,
                 orgservice=self.data.orgservice,
@@ -1706,16 +1711,22 @@ class ApiServiceOrdersView(APIView):
 
 api_orders = ApiServiceOrdersView.as_view()
 
-class ApiOrderCommentsView(APIView):
-    permission_classes = (PermitIfTradeOrCabinet,)
+class ApiOrderMixin(object):
 
-    def get(self, request, pk):
+    def get_order(self, pk):
         try:
             order = Order.objects.get(pk=pk)
-            if not order.is_accessible(request.user):
+            if not order.is_accessible(self.request.user):
                 raise Http404
         except Order.DoesNotExist:
             raise Http404
+        return order
+
+class ApiOrderCommentsView(ApiOrderMixin, APIView):
+    permission_classes = (PermitIfTradeOrCabinet,)
+
+    def get(self, request, pk):
+        order = self.get_order(pk=pk)
         data=[OrderCommentsSerializer(ordercomment, context=dict(
                 request=request,
               )).data for ordercomment in OrderComment.objects.filter(order=order).order_by('dt_created')
@@ -1724,12 +1735,7 @@ class ApiOrderCommentsView(APIView):
 
     @transaction.commit_on_success
     def post(self, request, pk):
-        try:
-            order = Order.objects.get(pk=pk)
-            if not order.is_accessible(request.user):
-                raise Http404
-        except Order.DoesNotExist:
-            raise Http404
+        order = self.get_order(pk=pk)
         comment = request.DATA.get('comment')
         if comment is not None:
             ordercomment = OrderComment.objects.create(
@@ -1743,17 +1749,12 @@ class ApiOrderCommentsView(APIView):
 
 api_orders_comments = ApiOrderCommentsView.as_view()
 
-class ApiOrderResultView(APIView):
+class ApiOrderResultView(ApiOrderMixin, APIView):
     permission_classes = (PermitIfTradeOrCabinet,)
     parser_classes = (MultiPartParser,)
 
     def get(self, request, pk):
-        try:
-            order = Order.objects.get(pk=pk, type=Order.TYPE_CUSTOMER)
-            if not order.is_accessible(request.user):
-                raise Http404
-        except Order.DoesNotExist:
-            raise Http404
+        order = self.get_order(pk=pk)
         return Response(data=[OrderResultsSerializer(resultfile, context=dict(request=request)).data \
                         for resultfile in ResultFile.objects.filter(order=order).order_by('date_of_creation')],
                     status=200)
@@ -1761,13 +1762,9 @@ class ApiOrderResultView(APIView):
     @transaction.commit_on_success
     def post(self, request, pk):
         try:
-            try:
-                order = Order.objects.get(pk=pk)
-                if not is_trade_user(request.user) or \
-                   not (order.loru and order.loru == request.user.profile.org):
-                    return Response(data=dict(detail='You are not authorized to post to this order'), status=403)
-            except Order.DoesNotExist:
-                raise Http404
+            order = self.get_order(pk=pk)
+            if not is_trade_user(request.user):
+                return Response(data=dict(detail='You are not authorized to post to this order'), status=403)
             type_ = request.DATA.get('type')
             if not type_:
                 raise ServiceException(_(u"Не задан тип загружаемого файла"))
@@ -1779,28 +1776,13 @@ class ApiOrderResultView(APIView):
             if 'file' not in request.FILES:
                 raise ServiceException(_(u"Не получен загружаемый файл 'file'"))
             uploaded_file = request.FILES['file']
-            if type_ == 'image':
+            if type_ == ResultFile.TYPE_IMAGE:
                 if uploaded_file.size > ResultFile.MAX_IMAGE_SIZE * 1024 * 1024:
                     raise ServiceException(_(u"Размер изображения превышает %d Мб") % ResultFile.MAX_IMAGE_SIZE)
-                try:
-                    Image.open(uploaded_file)
-                except IOError:
+                if not get_image(uploaded_file):
                     raise ServiceException(_(u"Загруженный файл не является изображением"))
-            elif type_ == 'video':
-                for chunk in uploaded_file.chunks(chunk_size=min(uploaded_file.size, 128*1024)):
-                    chunk0 = chunk
-                    break
-                mimetype = magic.from_buffer(chunk0, mime=True)
-                valid = False
-                if mimetype:
-                    if re.search(r'video|ogg|mpeg|webm|avi', mimetype.lower()):
-                       valid = True 
-                    else:
-                        mimetype0 = magic.from_buffer(chunk0)
-                        if re.search(r'iso', mimetype0.lower()):
-                            # flv: ISO media
-                            valid = True
-                if not valid:
+            elif type_ == ResultFile.TYPE_VIDEO:
+                if not is_video(uploaded_file):
                     raise ServiceException(_(u"Загруженный файл не является видео"))
             resultfile = ResultFile.objects.create(
                 bfile=uploaded_file,
@@ -1818,16 +1800,11 @@ class ApiOrderResultView(APIView):
 
 api_orders_results = ApiOrderResultView.as_view()
 
-class ApiServiceOrderDetailView(APIView):
+class ApiServiceOrderDetailView(ApiOrderMixin, APIView):
     permission_classes = (PermitIfTradeOrCabinet,)
 
     def get(self, request, pk):
-        try:
-            order = Order.objects.get(pk=pk, type=Order.TYPE_CUSTOMER)
-            if not order.is_accessible(request.user):
-                raise Http404
-        except Order.DoesNotExist:
-            raise Http404
+        order = self.get_order(pk=pk)
         return Response(
             data=ServiceOrderDetailSerializer(order, context=dict(request=request)).data,
             status=200,
@@ -1835,38 +1812,68 @@ class ApiServiceOrderDetailView(APIView):
 
 api_orders_detail = ApiServiceOrderDetailView.as_view()
 
-class ApiServiceOrderPutView(APIView):
+class ApiServiceOrderPutView(ApiOrderMixin, APIView):
     permission_classes = (PermitIfTradeOrCabinet,)
 
     @transaction.commit_on_success
     def put(self, request, pk):
         try:
-            order = Order.objects.get(pk=pk, type=Order.TYPE_CUSTOMER)
-            if not order.is_accessible(request.user):
-                raise Http404
-        except Order.DoesNotExist:
-            raise Http404
-        kwargs = dict()
+            order = self.get_order(pk=pk)
+            kwargs = dict()
 
-        status = request.DATA.get('status')
-        if status:
-            for st in Order.STATUS_TYPES:
-                if status == st[0]:
-                    break
-            else:
-                return Response(data=dict(status='error', message=_(u"Статус %s не предусмотрен") % status), status=400)
-            kwargs.update(dict(status=status))
+            status = request.DATA.get('status')
+            if status:
+                for st in Order.STATUS_TYPES:
+                    if status == st[0]:
+                        break
+                else:
+                    raise ServiceException(_(u"Статус %s не предусмотрен") % status)
+                kwargs.update(dict(status=status))
 
-        if 'clientRating' in request.DATA:
-            kwargs.update(dict(applicant_approved=request.DATA['clientRating']))
+            if 'clientRating' in request.DATA:
+                kwargs.update(dict(applicant_approved=request.DATA['clientRating']))
 
-        archived = request.DATA.get('isArchived')
-        if archived is not None:
-            kwargs.update(dict(archived=archived))
+            archived = request.DATA.get('isArchived')
+            if archived is not None:
+                kwargs.update(dict(archived=archived))
 
-        if kwargs:
-            Order.objects.filter(pk=order.pk).update(**kwargs)
-        return Response(data=dict(status='succes'), status=200)
+            product_items = request.DATA.get('products')
+            if product_items is not None:
+                if order.status != Order.STATUS_POSTED:
+                    raise ServiceException(_(u"Набор товаров/услуг можно изменять только в размещенном заказе"))
+                for orderitem in order.orderitem_set.all():
+                    orderitem.delete()
+                loru = order.loru
+                for item in product_items:
+                    try:
+                        product = Product.objects.get(pk=item['productId'])
+                    except Product.DoesNotExist:
+                        raise ServiceException(_(u"Не найден товар/услуга, productId = %s") % item['productId'])
+                    if product.loru != loru:
+                        raise ServiceException(_(u"Товар/услуга, productId = %s, - не от исполнителя заказа") % item['productId'])
+                    quantity = item.get('quantity', 1.00)
+                    OrderItem.objects.create(
+                        order=order,
+                        product=product,
+                        quantity=quantity,
+                        cost=product.price,
+                    )
+
+            if kwargs:
+                Order.objects.filter(pk=order.pk).update(**kwargs)
+            return Response(
+                data=ServiceOrderDetailSerializer(order, context=dict(request=request)).data,
+                status=200,
+            )
+
+        except ServiceException as excpt:
+            transaction.rollback()
+            return Response(data=dict(status='error', message=excpt.message), status=400)
+
+    def delete(self, request, pk):
+        order = self.get_order(pk=pk)
+        order.delete()
+        return Response(data=dict(status='success'), status=200)
 
 api_client_orders_put_status = ApiServiceOrderPutView.as_view()
 

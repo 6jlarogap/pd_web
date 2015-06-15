@@ -109,6 +109,8 @@ function setup_address_autocompletes() {
     $('input[id=id_loru]').attr('autocomplete', 'off').typeahead(loru_typeahed);
     $('input[id=id_supplier]').attr('autocomplete', 'off').css('width', '400px').typeahead(loru_typeahed);
 
+    $('textarea[id$=comment]').css('width', '400px');
+
     $('input[id=id_loru_in_burials]').attr('autocomplete', 'off').typeahead({
         items: 100,
         onselect: function() {
@@ -1002,6 +1004,13 @@ $(function() {
         }
     });
 
+    $('.ugh_search_burials #id_account_number_from').change(function() {
+        var val = $(this).val();
+        if (val && !$('#id_account_number_to').val()) {
+            $('#id_account_number_to').val(val);
+        }
+    });
+
     $('.product_edit #id_price, .product_edit #id_price_wholesale').change(function() {
         var val = $(this).val();
         var other_price = "";
@@ -1018,10 +1027,26 @@ $(function() {
         }
     });
 
+    $('#id_no_last_name').change(function() {
+        if ($('#id_ident_number_search').length) {
+            if ($(this).is(':checked')) {
+                $('#id_ident_number_search').attr("disabled", "disabled");
+            } else {
+                $('#id_ident_number_search').removeAttr("disabled");
+            }
+        }
+        if ($(this).is(':checked')) {
+            $('#id_fio').attr("disabled", "disabled");
+        } else {
+            $('#id_fio').removeAttr("disabled");
+        }
+    });
+    $('#id_no_last_name').change();
+
     var ac_options = {
         bounds: USER_DEFAULT_BOUNDS,
         types: ['geocode'],
-        componentRestrictions: {country: 'ru'}
+        componentRestrictions: {country: 'by'}
     };
     $('input[id$=addr_str]').css('width', '650px');
 
@@ -1146,6 +1171,11 @@ function makeDatePicker(obj) {
             if (id == 'id_plan_date' && now.getMonth() == 11 && now.getDate() >= 20) {
                 end_year = now_year + 1;
             }
+            regex = /^.+date_expire$/;
+            if (regex.test(id)) {
+                start_year = now_year -10;
+                end_year = now_year + 100;
+            }
         }
 
         $(this).after('<span class="add-on move-left"><i class="icon-calendar"></i></span>').datepicker({
@@ -1187,6 +1217,7 @@ function updateControls() {
     makeDatePicker($('input[id$=date]'));
     makeDatePicker($('input[id$=date_from]'));
     makeDatePicker($('input[id$=date_to]'));
+    makeDatePicker($('input[id$=date_expire]'));
     $('input[id$=time]').each(function(){
         if ($(this).attr('id') != 'id_worktime') {
             makeTimePicker($(this));

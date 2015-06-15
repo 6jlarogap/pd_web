@@ -158,7 +158,7 @@ class Profile(CommonProfile):
         return self.org and self.org.type == Org.PROFILE_LORU
 
     def is_trade(self):
-        return self.org and self.org.ability.filter(name=OrgAbility.ABILITY_TRADE).exists()
+        return self.org and self.org.is_trade()
 
     def is_ugh(self):
         return self.org and self.org.type == Org.PROFILE_UGH
@@ -575,12 +575,14 @@ class OrgAbility(models.Model):
 
 class Org(GetLogsMixin, BaseModel):
     NUM_EMPTY = 'empty'
+    NUM_MANUAL = 'manual'
     NUM_YEAR_UGH = 'year_ugh'
     NUM_YEAR_CEMETERY = 'year_cemetery'
     NUM_YEAR_MONTH_UGH = 'year_month_ugh'
     NUM_YEAR_MONTH_CEMETERY = 'year_month_cemetery'
     NUM_TYPES = (
         (NUM_EMPTY, _(u'Оставить пустым')),
+        (NUM_MANUAL, _(u'Вручную')),
         (NUM_YEAR_UGH, _(u'Год + порядковый (в пределах организации)')),
         (NUM_YEAR_CEMETERY, _(u'Год + порядковый (в пределах кладбища)')),
         (NUM_YEAR_MONTH_UGH, _(u'Год + месяц + порядковый (в пределах организации)')),
@@ -628,7 +630,7 @@ class Org(GetLogsMixin, BaseModel):
     inn = models.CharField(_(u"ИНН"), max_length=255, default='', blank=True)
     kpp = models.CharField(_(u"КПП"), max_length=255, default='', blank=True)
     ogrn = models.CharField(_(u"ОГРН/ОГРЮЛ"), max_length=255, default='', blank=True)
-    director = models.CharField(_(u"Директор (в родительном падеже, например, Иванова Ивана Ивановича)"),
+    director = models.CharField(_(u"Директор"),
                                 max_length=255, default='', blank=True)
     basis = models.CharField(_(u"Основание действия директора"), max_length=255, 
                              choices=BASIS_CHOICES, default=BASIS_CHARTER)
@@ -641,13 +643,17 @@ class Org(GetLogsMixin, BaseModel):
     fax = models.CharField(_(u"Факс"), max_length=20, default='', blank=True)
     off_address = models.ForeignKey('geo.Location', verbose_name=_(u"Юр. адрес"), null=True, blank=True)
     numbers_algo = models.CharField(_(u"Заполнение номера захоронения"), max_length=255, choices=NUM_TYPES,
-                                    default=NUM_EMPTY)
+                                    default=NUM_MANUAL)
+    # название поля не заканчивается на date, чтоб не угодить под специфический datePicker widget для дат:
+    opf_burial = models.CharField(_(u"Заявитель по умолчанию в захоронении"), max_length=255,
+                                    choices=list(OPF_CHOICES)[1:], default=OPF_ORG)
+    death_date_offer = models.BooleanField(_(u"Предлагать дату смерти в новом захоронении"), default=False)
     opf_order = models.CharField(_(u"Заказчик по умолчанию в заказе"), max_length=255,
                                     choices=list(OPF_CHOICES)[1:], default=OPF_ORG)
     opf_order_customer_mandatory = models.BooleanField(_(u"Данные заказчика при оформлении заказа обязательны"),
                                     default=True)
     # название поля не заканчивается на date, чтоб не угодить под специфический datePicker widget для дат:
-    plan_date_days_before = models.PositiveIntegerField(_(u"Кол-во дней для ввода плановой даты захоронения в прошлом"), default=0)
+    plan_date_days_before = models.PositiveIntegerField(_(u"Кол-во дней для ввода плановой даты захоронения в прошлом"), default=3)
     max_graves_count = models.PositiveIntegerField(_(u"Максимальное число могил в месте"), default=5,
                                 validators=[validate_gt0])
     worktime = models.CharField(_(u"Время работы (ЧЧ:ММ - ЧЧ:ММ)"), max_length=255, default='', blank=True)
@@ -655,10 +661,12 @@ class Org(GetLogsMixin, BaseModel):
     currency = models.ForeignKey('billing.Currency', verbose_name=_(u"Валюта"), default=get_default_currency,
                                  help_text=_(u' При смене валюты она будет заменена у всех товаров (услуг) без корректировки цен'))
     is_wholesale_with_vat = models.BooleanField(_(u"Оптовые цены продуктов с НДС"), default=False)
+    subdomain = models.CharField(_(u"Поддомен"), max_length=255, null=True, editable=False)
 
     class Meta:
         verbose_name = _(u'Организация')
         verbose_name_plural = _(u'Организации')
+        unique_together = ('subdomain', )
 
     def __unicode__(self):
         return self.name
@@ -756,6 +764,9 @@ class Org(GetLogsMixin, BaseModel):
         else:
             return False
 
+    def is_trade(self):
+        return self.ability.filter(name=OrgAbility.ABILITY_TRADE).exists()
+
 class OrgWebPay(BaseModel):
     """
     Данные, в том числе секретные, поставщика в платежной системе WebPay
@@ -792,6 +803,26 @@ class OrgCertificate(Files):
     Сканы свидетельств о регистрации
     """
     org = models.OneToOneField(Org)
+
+class OrgGallery(Files):
+    """
+    Галерея организации. Для поставщиков товаров/услуг: образцы работ
+    """
+    org = models.ForeignKey(Org)
+
+class OrgReview(BaseModel):
+    """
+    Отзывы об организации. Для поставщиков
+    """
+    org = models.ForeignKey(Org, editable=False, on_delete=models.PROTECT)
+    subject = models.CharField(_(u"Тема отзыва"), max_length=255, blank=True)
+    is_positive = models.NullBooleanField(_(u"Оценка положительная/отрицательна/без оценки"),
+                                           null=True)
+    common_text = models.TextField(_(u"Текст"), blank=True, null=True)
+    positive_text = models.TextField(_(u"Текст положительной оценки"), blank=True, null=True)
+    negative_text = models.TextField(_(u"Текст отрицательной оценки"), blank=True, null=True)
+    creator = models.ForeignKey('auth.User', verbose_name=_(u"Создатель"),
+                                on_delete=models.PROTECT, editable=False)
 
 class OrgContract(Files):
     """
@@ -919,7 +950,7 @@ class RegisterProfile(SafeDeleteMixin, BaseModel):
     org_currency = models.ForeignKey('billing.Currency', verbose_name=_(u"Валюта"), default=get_default_currency)
     org_inn = models.CharField(_(u"ИНН"), max_length=255, default='')
     org_ogrn = models.CharField(_(u"ОГРН/ОГРЮЛ"), max_length=255, default='', blank=True)
-    org_director = models.CharField(_(u"Директор (в родительном падеже, например, Иванова Ивана Ивановича)"),
+    org_director = models.CharField(_(u"Директор"),
                                     max_length=255, default='')
     org_basis = models.CharField(_(u"Основание действия директора"), max_length=255, 
                              choices=Org.BASIS_CHOICES, default=Org.BASIS_CHARTER)
@@ -928,6 +959,7 @@ class RegisterProfile(SafeDeleteMixin, BaseModel):
                                  )
     org_fax = models.CharField(_(u"Факс"), max_length=20, default='', blank=True)
     org_address = models.ForeignKey(Location, editable=False, null=True)
+    org_subdomain = models.CharField(_(u"Поддомен"), max_length=255, null=True, editable=False)
 
     def __unicode__(self):
         fio = u'%s %s.' % (self.user_last_name, self.user_first_name[0].upper(), )
@@ -969,11 +1001,15 @@ class RegisterProfile(SafeDeleteMixin, BaseModel):
 
     def same_username(self):
         return not self.is_approved() and not self.is_declined() and \
-               User.objects.filter(username__iexact=self.user_name).count()
+               User.objects.filter(username__iexact=self.user_name).exists()
 
     def same_email(self):
         return not self.is_approved() and not self.is_declined() and \
-               User.objects.filter(email__iexact=self.user_email).count()
+               User.objects.filter(email__iexact=self.user_email).exists()
+
+    def same_subdomain(self):
+        return self.org_subdomain and not self.is_approved() and not self.is_declined() and \
+               Org.objects.filter(subdomain__iexact=self.org_subdomain).exists()
 
     @classmethod
     def get_logs(cls):

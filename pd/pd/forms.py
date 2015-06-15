@@ -84,7 +84,10 @@ class LoggingFormMixin:
         self.changed_list = []
         obj = self.instance
         if obj and obj.pk:
-            obj = Burial.objects.get(pk=obj.pk)
+            if isinstance(obj, Burial):
+                obj = Burial.objects.get(pk=obj.pk)
+            else:
+                obj = None
             forms = self.forms if hasattr(self, 'forms') else []
             for form in [self] + forms:
                 prefix = self.get_prefix(form)
@@ -174,7 +177,13 @@ class StrippedStringsMixin(object):
        return self.cleaned_data
 
 class CommentForm(StrippedStringsMixin, forms.Form):
-    comment = forms.CharField(label=_(u'Комментарий'), widget=forms.Textarea, required=False)
+    comment = forms.CharField(
+        label='',
+        widget=forms.Textarea(
+            attrs={'rows': 10, 'cols': 60, }
+        ),
+        required=False,
+    )
 
 class UnclearSelectDateWidget(SelectDateWidget):
     month_unclear = False
@@ -420,3 +429,19 @@ class AppOrgFormMixin(object):
             self.fields['applicant_organization'].label += _(u' (наименование или УНП)')
         else:
             self.fields['applicant_organization'].label += _(u' (наименование или ИНН)')
+
+    def opf_valid(self, main_form_class):
+        """
+        is_valid() для форм, где выбирается или организация, или физ-лицо
+        """
+        is_valid = super(main_form_class, self).is_valid()
+        if not is_valid:
+            return False
+        if self.cleaned_data.get('opf') == 'org':
+            for form_name in ('applicant_form', 'applicant_address_form', 'applicant_id_form', ):
+                try:
+                    f = getattr(self, form_name)
+                    self.forms.remove(f)
+                except (AttributeError, ValueError,):
+                    continue
+        return all([f.is_valid() for f in self.forms])

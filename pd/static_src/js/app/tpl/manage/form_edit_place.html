@@ -1,131 +1,148 @@
-<form novalidate name="placeEditForm" class="form-horizontal">
-  <div class="modal-header">
-    <h3>Редактировать место "{{editor.item.place}}"</h3>
-  </div>
-  <div class="modal-body">
+<tabset>
+    <tab heading="Место">
+        <form novalidate name="placeEditForm" class="form-horizontal">
+        <div class="modal-body">
 
-    <dl class="dl-horizontal">
-      <dt>
-        <label for="id_place_set-cemetery">Кладбище:</label>
-      </dt>
-      <dd>{{cemetery.name}}
-        <!-- input name="placeCemetery" id="id_place_set-cemetery" type="text" ng-model="cemetery.name"
-               required maxlength="255" typeahead-min-length="0"
-               typeahead="c.name for c in cemetery_list | filter:$viewValue | limitTo:8"
-               typeahead-editable="false" typeahead-on-select="onCemeteryChanged($item, $model)" />
-        <span class="error" ng-show="placeEditForm.placeCemetery.$error.required">Не указано кладбище</span -->
-      </dd>
+            <dl class="dl-horizontal">
+            <dt>
+                <label for="id_place_set-cemetery">Кладбище:</label>
+            </dt>
+            <dd>{{cemetery.name}}
+                <!-- input name="placeCemetery" id="id_place_set-cemetery" type="text" ng-model="cemetery.name"
+                    required maxlength="255" typeahead-min-length="0"
+                    typeahead="c.name for c in cemetery_list | filter:$viewValue | limitTo:8"
+                    typeahead-editable="false" typeahead-on-select="onCemeteryChanged($item, $model)" />
+                <span class="error" ng-show="placeEditForm.placeCemetery.$error.required">Не указано кладбище</span -->
+            </dd>
 
-      <dt>
-        <label for="id_place_set-area">Участок:</label>
-      </dt>
-      <dd>{{area.name}}
-        <!-- input name="placeArea" id="id_place_set-area" type="text" ng-model="area.name" required maxlength="255"
-               typeahead="a.name for a in area_list | filter:$viewValue | limitTo:8"
-               typeahead-min-length="0" typeahead-editable="false" typeahead-on-select="onAreaChanged($item, $model)"/>
-        <span class="error" ng-show="placeEditForm.placeArea.$error.required">Не указан участок</span-->
-      </dd>
-    </dl>
+            <dt>
+                <label for="id_place_set-area">Участок:</label>
+            </dt>
+            <dd>{{area.name}}
+                <!-- input name="placeArea" id="id_place_set-area" type="text" ng-model="area.name" required maxlength="255"
+                    typeahead="a.name for a in area_list | filter:$viewValue | limitTo:8"
+                    typeahead-min-length="0" typeahead-editable="false" typeahead-on-select="onAreaChanged($item, $model)"/>
+                <span class="error" ng-show="placeEditForm.placeArea.$error.required">Не указан участок</span-->
+            </dd>
+            </dl>
 
-    <div class="control-group" ng-class="{error: placeEditForm.placeRow.$dirty && placeEditForm.placeRow.$invalid}">
-      <label class="control-label" for="placeRow">Ряд</label>
-      <div class="controls">
-        <input name="placeRow" id="placeRow" type="text" ng-model="editor.item.row" maxlength="255"/>
-      </div>
-    </div>
+            <div class="control-group" ng-class="{error: placeEditForm.placeRow.$dirty && placeEditForm.placeRow.$invalid}">
+            <label class="control-label" for="placeRow">Ряд</label>
+            <div class="controls">
+                <input name="placeRow" id="placeRow" type="text" ng-model="editor.item.row" maxlength="255"/>
+            </div>
+            </div>
 
-    <div class="control-group" ng-class="{error: placeEditForm.placeName.$dirty && placeEditForm.placeName.$invalid}">
-      <label class="control-label" for="placeName">Место</label>
-      <div class="controls">
-        <input name="placeName" id="placeName" type="text" required ng-model="editor.item.place"
-               maxlength="255"/>
-        <span class="help-block" ng-show="placeEditForm.placeName.$error.required">Не указано название места</span>
-        <span class="help-block" ng-show="placeEditForm.places_count.$error.min">Число должно быть больше 0</span>
-        <span class="help-block"
-              ng-show="placeEditForm.places_count.$error.max">Число должно быть меньше, либо равным 7</span>
-      </div>
-    </div>
+            <div class="control-group" ng-class="{error: placeEditForm.placeName.$dirty && placeEditForm.placeName.$invalid}">
+            <label class="control-label" for="placeName">Место</label>
+            <div class="controls">
+                <input name="placeName" id="placeName" type="text" required ng-model="editor.item.place"
+                    maxlength="255"/>
+                <span class="help-block" ng-show="placeEditForm.placeName.$error.required">Не указано название места</span>
+                <span class="help-block" ng-show="placeEditForm.places_count.$error.min">Число должно быть больше 0</span>
+                <span class="help-block"
+                    ng-show="placeEditForm.places_count.$error.max">Число должно быть меньше, либо равным 7</span>
+            </div>
+            </div>
 
-    <div class="control-group" ng-class="{error: placeEditForm.placeLen.$dirty && placeEditForm.placeLen.$invalid}">
-      <label class="control-label" for="placeLen">Длина</label>
-      <div class="controls">
-        <input name="placeLen" id="placeLen" type="number" step="0.01" min="0.1" max="10"
-               ng-model="editor.item.place_length" maxlength="14"/>
-        <span class="help-block" ng-show="placeEditForm.placeLen.$error.required">Не указано</span>
-        <span class="help-block " ng-show="placeEditForm.placeLen.$error.min">Число должно быть больше 0</span>
-        <span class="help-block" ng-show="placeEditForm.placeLen.$error.max">Число должно быть меньше либо равным 10</span>
-      </div>
-    </div>
+            <div class="control-group" ng-class="{error: placeEditForm.placeLen.$dirty && placeEditForm.placeLen.$invalid}">
+            <label class="control-label" for="placeLen">Длина</label>
+            <div class="controls">
+                <input name="placeLen" id="placeLen" type="number" step="0.01" min="0.1" max="10"
+                    ng-model="editor.item.place_length" maxlength="14"/>
+                <span class="help-block" ng-show="placeEditForm.placeLen.$error.required">Не указано</span>
+                <span class="help-block " ng-show="placeEditForm.placeLen.$error.min">Число должно быть больше 0</span>
+                <span class="help-block" ng-show="placeEditForm.placeLen.$error.max">Число должно быть меньше либо равным 10</span>
+            </div>
+            </div>
 
-    <div class="control-group" ng-class="{error: placeEditForm.placeW.$dirty && placeEditForm.placeW.$invalid}">
-      <label class="control-label" for="placeW">Ширина</label>
-      <div class="controls">
-        <input name="placeW" id="placeW" step="0.01" min="0.1" max="10" type="number"
-               ng-model="editor.item.place_width" maxlength="14"/>
-        <span class="help-block" ng-show="placeEditForm.placeW.$error.required">Не указано</span>
-        <span class="help-block" ng-show="placeEditForm.placeW.$error.min">Число должно быть больше 0</span>
-        <span class="help-block" ng-show="placeEditForm.placeW.$error.max">Число должно быть меньше либо равным 10</span>
-      </div>
-    </div>
+            <div class="control-group" ng-class="{error: placeEditForm.placeW.$dirty && placeEditForm.placeW.$invalid}">
+            <label class="control-label" for="placeW">Ширина</label>
+            <div class="controls">
+                <input name="placeW" id="placeW" step="0.01" min="0.1" max="10" type="number"
+                    ng-model="editor.item.place_width" maxlength="14"/>
+                <span class="help-block" ng-show="placeEditForm.placeW.$error.required">Не указано</span>
+                <span class="help-block" ng-show="placeEditForm.placeW.$error.min">Число должно быть больше 0</span>
+                <span class="help-block" ng-show="placeEditForm.placeW.$error.max">Число должно быть меньше либо равным 10</span>
+            </div>
+            </div>
 
-    <div class="control-group">
-      <label class="control-label" for="sizeViolated">Нарушение размеров</label>
-      <div class="controls">
-        <input pd-dt-checkbox type="checkbox" id="sizeViolated" name="sizeViolated"
-               ng-model="editor.item.dt_size_violated" />
-        <span class="help-inline" ng-show="editor.item.dt_size_violated">
-          {{ editor.item.dt_size_violated|momentDate:'DD-MM-YYYY HH:mm' }}
-        </span>
-      </div>
-    </div>
+            <div class="control-group">
+            <label class="control-label" for="sizeViolated">Нарушение размеров</label>
+            <div class="controls">
+                <input pd-dt-checkbox type="checkbox" id="sizeViolated" name="sizeViolated"
+                    ng-model="editor.item.dt_size_violated" />
+                <span class="help-inline" ng-show="editor.item.dt_size_violated">
+                {{ editor.item.dt_size_violated|momentDate:'DD-MM-YYYY HH:mm' }}
+                </span>
+            </div>
+            </div>
 
-    <div class="control-group">
-      <label class="control-label" for="unowned">Заброшенное</label>
-      <div class="controls">
-        <input pd-dt-checkbox type="checkbox" id="unowned" name="unowned" ng-model="editor.item.dt_unowned" />
-        <span class="help-inline" ng-show="editor.item.dt_unowned">
-          {{ editor.item.dt_unowned|momentDate:'DD-MM-YYYY HH:mm' }}
-        </span>
-      </div>
-    </div>
+            <div class="control-group">
+            <label class="control-label" for="unowned">Заброшенное</label>
+            <div class="controls">
+                <input pd-dt-checkbox type="checkbox" id="unowned" name="unowned" ng-model="editor.item.dt_unowned" />
+                <span class="help-inline" ng-show="editor.item.dt_unowned">
+                {{ editor.item.dt_unowned|momentDate:'DD-MM-YYYY HH:mm' }}
+                </span>
+            </div>
+            </div>
 
-    <div class="control-group">
-      <label class="control-label" for="unindentified">Неопознанное</label>
-      <div class="controls">
-        <input pd-dt-checkbox type="checkbox" id="unindentified" name="unindentified"
-               ng-model="editor.item.dt_unindentified" />
-        <span class="help-inline" ng-show="editor.item.dt_unindentified">
-          {{ editor.item.dt_unindentified|momentDate:'DD-MM-YYYY HH:mm' }}
-        </span>
-      </div>
-    </div>
+            <div class="control-group">
+            <label class="control-label" for="unindentified">Неопознанное</label>
+            <div class="controls">
+                <input pd-dt-checkbox type="checkbox" id="unindentified" name="unindentified"
+                    ng-model="editor.item.dt_unindentified" />
+                <span class="help-inline" ng-show="editor.item.dt_unindentified">
+                {{ editor.item.dt_unindentified|momentDate:'DD-MM-YYYY HH:mm' }}
+                </span>
+            </div>
+            </div>
 
-    <div class="control-group">
-      <label class="control-label" for="military">Воинское</label>
-      <div class="controls">
-        <input pd-dt-checkbox type="checkbox" id="military" name="military" ng-model="editor.item.dt_military" />
-        <span class="help-inline" ng-show="editor.item.dt_military">
-          {{ editor.item.dt_military|momentDate:'DD-MM-YYYY HH:mm' }}
-        </span>
-      </div>
-    </div>
+            <div class="control-group">
+            <label class="control-label" for="military">Воинское</label>
+            <div class="controls">
+                <input pd-dt-checkbox type="checkbox" id="military" name="military" ng-model="editor.item.dt_military" />
+                <span class="help-inline" ng-show="editor.item.dt_military">
+                {{ editor.item.dt_military|momentDate:'DD-MM-YYYY HH:mm' }}
+                </span>
+            </div>
+            </div>
 
-    <div class="control-group">
-      <label class="control-label" for="wrongFIO">Неверные ФИО</label>
-      <div class="controls">
-        <input pd-dt-checkbox type="checkbox" id="wrongFIO" name="wrongFIO" ng-model="editor.item.dt_wrong_fio" />
-        <span class="help-inline" ng-show="editor.item.dt_wrong_fio">
-          {{ editor.item.dt_wrong_fio|momentDate:'DD-MM-YYYY HH:mm' }}
-        </span>
-      </div>
-    </div>
+            <div class="control-group">
+            <label class="control-label" for="wrongFIO">Неверные ФИО</label>
+            <div class="controls">
+                <input pd-dt-checkbox type="checkbox" id="wrongFIO" name="wrongFIO" ng-model="editor.item.dt_wrong_fio" />
+                <span class="help-inline" ng-show="editor.item.dt_wrong_fio">
+                {{ editor.item.dt_wrong_fio|momentDate:'DD-MM-YYYY HH:mm' }}
+                </span>
+            </div>
+            </div>
 
-  </div>
-  <div class="modal-footer">
-    <button class="btn btn-primary" ng-disabled="loading || placeEditForm.$invalid"
-            ng-click="savePlaceEditForm(placeEditForm)">
-      Сохранить
-    </button>
-    <button class="btn cancel" ng-click="closeEditForm('isPlaceEditorOpen')">Отменить</button>
-  </div>
-</form>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-primary" ng-disabled="loading || placeEditForm.$invalid"
+                    ng-click="savePlaceEditForm(placeEditForm)">
+            Сохранить
+            </button>
+            <button class="btn cancel" ng-click="closeEditForm('isPlaceEditorOpen')">Отменить</button>
+        </div>
+        </form>
+    </tab>
+
+    <tab heading="Ответственный смотритель">
+        <form name="placeCareTakerForm">
+            <div class="modal-body">
+                <div ng-include src="'/static/js/app/tpl/manage/form_edit_caretaker.html'+version_str"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" ng-disabled="loading || placeEditForm.$invalid"
+                        ng-click="savePlaceEditForm(placeEditForm)">
+                Сохранить
+                </button>
+                <button class="btn cancel" ng-click="closeEditForm('isPlaceEditorOpen')">Отменить</button>
+            </div>
+        </form>
+    </tab>
+
+</tabset>

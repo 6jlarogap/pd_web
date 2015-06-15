@@ -9,6 +9,9 @@ import datetime
 from pytz import timezone, utc
 import re
 
+from PIL import Image
+import magic
+
 class DigitsValidator(RegexValidator):
     regex = '^\d+$'
     message = _(u'Допускаются только цифры')
@@ -75,7 +78,8 @@ def str_to_bool_or_None(s):
     """
     Строку 'true' или 'false' преобразовать в boolean True/False или None, если строка не 'true'/'false'
 
-    Применяется при разборе multipart/form-data параметров, чтоб были аналогичны разбору json параметров
+    Применяется при разборе multipart/form-data параметров, чтоб были аналогичны разбору json параметров,
+    но с сохранением совместимости, если передаются булевы параметры
     """
     result = None
     if isinstance(s, basestring):
@@ -84,6 +88,8 @@ def str_to_bool_or_None(s):
             result = True
         elif s == 'false':
             result = False
+    elif isinstance(s, bool):
+        result = s
     return result
 
 class EmailMessage(EmailMessage):
@@ -104,7 +110,41 @@ class EmailMessage(EmailMessage):
 
 class CreatedAtMixin(object):
     def createdAt_func(self, instance):
-        return utcisoformat(instance.dt_created)
+        if hasattr(instance, 'dt_created'):
+            dt_created = instance.dt_created
+        elif hasattr(instance, 'date_of_creation'):
+            dt_created = instance.date_of_creation
+        else:
+            return ""
+        return utcisoformat(dt_created)
 
     def modifiedAt_func(self, instance):
         return utcisoformat(instance.dt_modified)
+
+def get_image(image):
+    """
+    Является ли загруженный файл фото? Если да, то возвращает Image(фото)
+    """
+    try:
+        return Image.open(image)
+    except IOError:
+        return None
+
+def is_video(video):
+    """
+    Является ли загруженный файл video
+    """
+    valid = False
+    for chunk in video.chunks(chunk_size=min(video.size, 128*1024)):
+        chunk0 = chunk
+        break
+    mimetype = magic.from_buffer(chunk0, mime=True)
+    if mimetype:
+        if re.search(r'video|ogg|mpeg|webm|avi', mimetype.lower()):
+            valid = True 
+        else:
+            mimetype0 = magic.from_buffer(chunk0)
+            if re.search(r'iso', mimetype0.lower()):
+                # flv: ISO media
+                valid = True
+    return valid

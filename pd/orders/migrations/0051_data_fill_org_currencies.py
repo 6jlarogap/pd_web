@@ -21,14 +21,14 @@ class Migration(DataMigration):
             by=dict(name=u'Беларусь', obj_country=None, obj_currency=Currency.objects.get(code=u'BYR')),
         )
         for domain in DOMAINS_:
-           DOMAINS_[domain]['obj_country'] = Country.objects.get(
+           (DOMAINS_[domain]['obj_country'], created_) = Country.objects.get_or_create(
                name=DOMAINS_[domain]['name']
            )
 
         Product = orm['orders.Product']
         Org = orm['users.Org']
         cnt1 = cnt2 = cnt3 = 0
-        for o in Org.objects.filter(type='loru'):
+        for o in Org.objects.only("pk", "off_address", "currency").filter(type='loru'):
             products_currency = None
             same_currency = True
             if o.off_address and o.off_address.country:

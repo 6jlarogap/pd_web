@@ -5,6 +5,7 @@ from django import forms
 from django.utils.translation import ugettext as _
 from django.db.models.fields.files import FieldFile
 
+from django.conf import settings
 from persons.models import DeadPerson, PersonID, DeathCertificate, DeathCertificateScan, AlivePerson, DocumentSource
 from pd.models import UnclearDate
 from users.models import Org
@@ -20,12 +21,14 @@ class DeadPersonForm(ValidDataMixin, StrippedStringsMixin, forms.ModelForm):
         model = DeadPerson
 
     def __init__(self, request, *args, **kwargs):
+        death_date = None
         kwargs.setdefault('initial', {})
-        if request.user.profile.is_loru():
+        death_date_offer = request.user.profile.org.death_date_offer
+        if death_date_offer and request.user.profile.is_loru():
             death_date = datetime.date.today()
-        else:
+        elif death_date_offer and request.user.profile.is_ugh():
             death_date = datetime.date.today() - datetime.timedelta(1)
-        if not kwargs.get('instance'):
+        if death_date and not kwargs.get('instance'):
             kwargs['initial'].update({
                 'death_date': death_date,
             })
@@ -61,6 +64,14 @@ class PersonIDForm(ValidDataMixin, StrippedStringsMixin, forms.ModelForm):
             raise forms.ValidationError(msg)
         return release_date
 
+    def clean_date_expire(self):
+        date = self.cleaned_data.get('date')
+        date_expire = self.cleaned_data.get('date_expire')
+        if date_expire and date and date_expire < date:
+            msg = _(u'Срок действия истек до даты выдачи')
+            raise forms.ValidationError(msg)
+        return date_expire
+
 class DeathCertificateForm(StrippedStringsMixin, BaseModelForm):
     dt_modified = forms.IntegerField(widget=forms.HiddenInput, required=False, )
     zags = forms.CharField(required=False)
@@ -83,7 +94,9 @@ class DeathCertificateForm(StrippedStringsMixin, BaseModelForm):
                 scan = instance.deathcertificatescan
             except DeathCertificateScan.DoesNotExist:
                 pass
-        if (not instance or not instance.person) and not request.REQUEST.get('archive'):
+        if settings.DEATH_CERTIFICATE_REQUIRED and \
+           (not instance or not instance.person) and \
+            not request.REQUEST.get('archive'):
             kwargs['initial'].update({
                 'release_date': datetime.date.today(),
             })
@@ -154,6 +167,8 @@ class AlivePersonForm(ValidDataMixin, StrippedStringsMixin, forms.ModelForm):
         self.fields['phones'].widget = forms.TextInput()
         # У нас нет случаев, когда живому человеку в форме надо вводить день рождения:
         del self.fields['birth_date']
+        # Идентификационный номер вводится только для усопшего:
+        del self.fields['ident_number']
 
     def is_valid_data(self):
         return self.is_valid() and self.cleaned_data.get('last_name') # last name should be present

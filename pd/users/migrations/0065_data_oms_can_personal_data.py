@@ -15,7 +15,7 @@ class Migration(DataMigration):
         # посему создаем:
         pd_ability, created_ = orm['users.OrgAbility'].objects.get_or_create(
             name='personal-data',
-            defaults=dict(title=u"Перcональные данные"),
+            defaults=dict(title=u"Перcональные данные в захоронениях"),
         )
         for ugh in orm['users.Org'].objects.filter(type='ugh'):
             if ugh.profile_set.filter(user__is_active=True).exists():

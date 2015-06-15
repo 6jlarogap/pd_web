@@ -27,10 +27,11 @@ from pd.models import validate_phone_as_number
 from pd.utils import utcisoformat
 
 from burials.forms import CemeteryForm, AreaFormset, PlaceEditForm, AddOrgForm, AreaMergeForm, BurialfileCommentEditForm
-from burials.models import Cemetery, Place, Area, BurialFiles, Grave, Burial, AreaPhoto, PlacePhoto, \
+from burials.models import Cemetery, Place, Area, BurialFiles, Grave, Burial, BurialComment, AreaPhoto, PlacePhoto, \
                            ExhumationRequest, AreaPurpose, PlaceSize
 from burials.burials_views import *
 from logs.models import write_log, log_object, prepare_m2m_log, compare_obj
+from django.contrib.auth.models import User
 from users.models import Profile, Org, CustomerProfile, PermitIfUgh
 from users.views import SupervisorRequiredMixin, UGHRequiredMixin, LoginRequiredMixin
 from persons.models import Phone, AlivePerson, CustomPlace
@@ -51,6 +52,7 @@ from serializers import CemeterySerializer, AreaSerializer, PlaceSerializer, Are
     ApiOmsPlacesSerializer, ApiCatalogPlacesSerializer
 
 from persons.serializers import AlivePersonSerializer, PhoneSerializer
+from users.serializers import UserFioLoginSerializer
 from geo.serializers import LocationSerializer, LocationStaticSerializer, LocationDataSerializer
 from logs.serializers import LogSerializer
 
@@ -89,7 +91,24 @@ def getPlace(request):
     else:
         return get_object_or_404(Place, id=place_id, cemetery__ugh=request.user.profile.org)
 
-class CemeteryViewSet(viewsets.ModelViewSet):
+class CaretakerMixin(object):
+
+    def get_caretakers(self, obj):
+        if isinstance(obj, Cemetery):
+            ugh = obj.ugh
+        else:
+        # Area. Place
+            ugh = obj.cemetery.ugh
+        return [
+            UserFioLoginSerializer(user).data \
+                for user in User.objects.filter(
+                                profile__org=ugh,
+                                is_active=True,
+                            )
+        ]
+
+
+class CemeteryViewSet(CaretakerMixin, viewsets.ModelViewSet):
     model = Cemetery
     form_class = CemeteryForm
     serializer_class = CemeterySerializer
@@ -190,7 +209,7 @@ class CemeteryViewSet(viewsets.ModelViewSet):
         data["cemetery"]["max_graves_count"] = request.user.profile.org.max_graves_count
         if cemetery.address:
             data["address"] = LocationStaticSerializer(cemetery.address).data
-
+        data['caretakers'] = self.get_caretakers(cemetery)
         return Response(status=200, data=data)
 
 
@@ -241,7 +260,7 @@ class CemeteryEdit(UGHRequiredMixin, RequestToFormMixin, FormInvalidMixin, Updat
         return redirect('manage_cemeteries')
 
 
-class AreaViewSet(viewsets.ModelViewSet):
+class AreaViewSet(CaretakerMixin, viewsets.ModelViewSet):
     model = Area
     serializer_class = AreaSerializer
     permission_classes = (IsAuthenticated,)
@@ -270,8 +289,8 @@ class AreaViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(self.object)
         data = serializer.data
         data["max_graves_count"] = request.user.profile.org.max_graves_count
+        data['caretakers'] = self.get_caretakers(self.object)
         return Response(data)
-
 
 
 class ApiOmsPlacesViewSet(viewsets.ReadOnlyModelViewSet):
@@ -313,7 +332,7 @@ class ApiCatalogPlacesViewSet(viewsets.ReadOnlyModelViewSet):
         return Place.objects.filter(q).distinct()
 
 
-class PlaceViewSet(viewsets.ModelViewSet):
+class PlaceViewSet(CaretakerMixin, viewsets.ModelViewSet):
     model = Place
     serializer_class = PlaceSerializer
     permission_classes = (IsAuthenticated,)
@@ -517,6 +536,7 @@ class PlaceViewSet(viewsets.ModelViewSet):
             data["responsible"] = AlivePersonSerializer(place.responsible).data 
             if place.responsible.address:
                 data["responsible_address"] = LocationStaticSerializer(place.responsible.address).data
+        data['caretakers'] = self.get_caretakers(cemetery)
         return Response(status=200, data=data)
 
 
@@ -992,10 +1012,16 @@ class CommentView(BurialsListGenericMixin, LoginRequiredMixin, DetailView):
         return redirect('view_burial', self.get_object().pk)
 
     def post(self, request, *args, **kwargs):
+        burial = self.get_object()
         comment = request.POST.get('comment').strip()
         if comment:
-            write_log(request, self.get_object(), _(u'Комментарий: %s') % comment)
-        return redirect('view_burial', self.get_object().pk)
+            write_log(request, burial, _(u'Комментарий: %s') % comment)
+            BurialComment.objects.create(
+                creator=request.user,
+                burial=burial,
+                comment=comment,
+            )
+        return redirect('view_burial', burial.pk)
 
 burial_comment = CommentView.as_view()
 

@@ -6,7 +6,8 @@ from autoslug import AutoSlugField
 
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
-from django.db import models
+from django.db import models, transaction, IntegrityError
+from django.db.models.loading import get_model
 from django.utils.translation import ugettext as _
 from django.db.models import Sum
 from django.db.models.query_utils import Q
@@ -24,6 +25,8 @@ class Service(models.Model):
 
     Перечисляются в fixtures
     """
+    SERVICE_DELIVERY = 'delivery'
+
     name = models.CharField(_(u"Название"), max_length=255, unique=True)
     title = models.CharField(_(u"Заглавие"), max_length=255)
     description = models.TextField(_(u"Описание"), default='')
@@ -122,7 +125,7 @@ class Product(BaseModel):
     
     PRODUCT_NAME_MAXLEN = 60
 
-    loru = models.ForeignKey(Org, null=True, verbose_name=_(u"ЛОРУ"))
+    loru = models.ForeignKey(Org, null=True, verbose_name=_(u"Поставщик"))
     name = models.CharField(_(u"Название"), max_length=255)
     slug = AutoSlugField(populate_from='name', max_length=255, editable=False,
                          unique=True, null=True, always_update=True)
@@ -139,6 +142,7 @@ class Product(BaseModel):
     sku = models.CharField(_(u"Артикул"), max_length=255, blank=True, default='')
     is_public_catalog = models.BooleanField(_(u"Показать в публичном каталоге"), default=False)
     is_wholesale = models.BooleanField(_(u"Показать в каталоге оптовикам"), default=False)
+    is_for_visit = models.BooleanField(_(u"Доступно для посещения места захоронения"), default=False)
 
     class Meta:
         verbose_name = _(u"Товар")
@@ -264,6 +268,29 @@ class Order(GetLogsMixin, BaseModel):
                 except (IndexError, TypeError), e:
                     self.number = 1
         return super(Order, self).save(*args, **kwargs)
+
+    @transaction.commit_on_success
+    def delete(self):
+        for app, model in (
+            ('orders', 'OrderComment'),
+            ('orders', 'ResultFile'),
+            ('orders', 'Route'),
+            ('orders', 'OrderWebPay'),
+            ('orders', 'ServiceItem'),
+            ('orders', 'OrderItem'),
+           ):
+            model = get_model(app, model)
+            for item in model.objects.filter(order=self):
+                item.delete()
+        address = self.address
+        if address:
+            self.address = None
+            self.save()
+            try:
+                address.delete()
+            except IntegrityError:
+                pass
+        super(Order, self).delete()
 
     def annulate(self):
         self.annulated = True
@@ -405,8 +432,8 @@ class Order(GetLogsMixin, BaseModel):
         result = type_delivery = type_org = None
         if self.is_type_customer():
             for serviceitem in ServiceItem.objects.filter(order=self):
-                if serviceitem.orgservice.service.name == 'delivery':
-                    type_delivery = 'delivery'
+                if serviceitem.orgservice.service.name == Service.SERVICE_DELIVERY:
+                    type_delivery = Service.SERVICE_DELIVERY
                 elif not type_org:
                     type_org = serviceitem.orgservice.service.name
             return type_org or type_delivey
@@ -429,7 +456,7 @@ class Order(GetLogsMixin, BaseModel):
 
     def is_accessible(self, user):
         """
-        Доступность ResultFile, OrderComments от этого Order и самого Order
+        Доступность ResultFile, OrderComment от этого Order и самого Order
         """
         result = False
         if is_trade_user(user):
@@ -441,13 +468,15 @@ class Order(GetLogsMixin, BaseModel):
                      self.applicant.user == user
         return bool(result)
         
-class ServiceItem(models.Model):
-    order = models.ForeignKey(Order)
-    orgservice = models.ForeignKey(OrgService, verbose_name=_(u"Услуга"), on_delete=models.PROTECT)
-    cost = models.DecimalField(_(u"Цена"), max_digits=20, decimal_places=2)
+class OrderItemMixin(object):
 
     def cost_float(self):
         return float(self.cost)
+
+class ServiceItem(OrderItemMixin, models.Model):
+    order = models.ForeignKey(Order)
+    orgservice = models.ForeignKey(OrgService, verbose_name=_(u"Услуга"), on_delete=models.PROTECT)
+    cost = models.DecimalField(_(u"Цена"), max_digits=20, decimal_places=2)
 
 class OrderComment(BaseModel):
 
@@ -554,7 +583,7 @@ class ResultFile(Files):
             customplace.update_title_photo(self.bfile)
         return result
 
-class OrderItem(models.Model):
+class OrderItem(OrderItemMixin, models.Model):
     order = models.ForeignKey(Order, editable=False)
     product = models.ForeignKey(Product, verbose_name=_(u"Товар"))
     quantity = models.DecimalField(_(u"Кол-во"), max_digits=20, decimal_places=2, default=1)
@@ -608,6 +637,9 @@ class OrderItem(models.Model):
     @property
     def total(self):
         return self.cost * self.quantity
+
+    def quantity_float(self):
+        return float(self.quantity)
 
 class CatafalqueData(models.Model):
     order = models.OneToOneField('orders.Order', editable=False)

@@ -1,5 +1,6 @@
 # coding=utf-8
 
+from django.conf import settings
 from django.contrib.auth.models import Group, Permission
 from django.utils.translation import ugettext as _
 from rest_framework import serializers
@@ -56,6 +57,7 @@ class CemeterySerializer(serializers.ModelSerializer):
     address = Field(source='address_id')
     time_begin = TimeField()
     time_end = TimeField()
+    caretaker = serializers.PrimaryKeyRelatedField(required=False)
     #phones = serializers.SerializerMethodField('get_phones')
 
     class Meta:
@@ -63,7 +65,7 @@ class CemeterySerializer(serializers.ModelSerializer):
         fields = ('id', 'name', 'work_time', 'area_cnt', 'time_begin', 'time_end', \
                   'places_algo', 'places_algo_archive', \
                   'archive_burial_fact_date_required', 'archive_burial_account_number_required', \
-                  'address', 'time_slots')
+                  'address', 'time_slots', 'caretaker')
     
     def get_phones(self, obj):
         return PhoneSerializer(obj.phone_set.all()).data
@@ -81,10 +83,11 @@ class AreaSerializer(serializers.ModelSerializer):
     purpose = serializers.PrimaryKeyRelatedField()
     cemetery = serializers.PrimaryKeyRelatedField()
     places_count = serializers.IntegerField(required=True)
+    caretaker = serializers.PrimaryKeyRelatedField(required=False)
 
     class Meta:
         model = Area
-        fields = ('id', 'cemetery', 'name', 'availability', 'places_count', 'purpose')
+        fields = ('id', 'cemetery', 'name', 'availability', 'places_count', 'purpose', 'caretaker')
 
     def is_valid(self):
         valid = not self.errors
@@ -145,13 +148,19 @@ class PlaceSerializer(GetGalleryMixin, serializers.ModelSerializer):
     dt_size_violated = serializers.DateTimeField(required=False)
     dt_unowned = serializers.DateTimeField(required=False)
     dt_unindentified = serializers.DateTimeField(required=False)
+    caretaker = serializers.PrimaryKeyRelatedField(required=False)
+    create_cabinet = serializers.SerializerMethodField('create_cabinet_func')
 
     class Meta:
         model = Place
-        fields = ('id', 'cemetery', 'lat', 'lng', 'area', 'row', 'place', 'responsible', 'responsible_txt', \
+        fields = ('id', 'cemetery', 'lat', 'lng', 'area', 'row', 'place', 'responsible', 'responsible_txt',
                   'place_length', 'place_width', 'gallery',
-                  'dt_wrong_fio', 'dt_military', 'dt_size_violated', 'dt_unowned', 'dt_unindentified', 
+                  'dt_wrong_fio', 'dt_military', 'dt_size_violated', 'dt_unowned', 'dt_unindentified',
+                  'caretaker', 'create_cabinet',
                  ) 
+
+    def create_cabinet_func(self, obj):
+        return settings.CREATE_CABINET_ALLOW
 
     def responsible_str(self, obj):
         if obj.responsible:

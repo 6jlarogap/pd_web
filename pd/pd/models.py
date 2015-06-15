@@ -80,8 +80,10 @@ class UnclearDate:
     @classmethod
     def from_str_safe(cls, s):
         """
-        Сделать UnclearDate из yyyy-mm-dd, yyyy-mm, yyyy
+        Сделать UnclearDate из yyyy-mm-dd, yyyy-mm, yyyy, или из None ('null')
         """
+        if not s or s.lower() == 'null':
+            return None
         m = re.search(cls.SAFE_STR_REGEX, s)
         if not m:
             raise ValueError('Invalid data to make an UnclearDate object')
@@ -158,7 +160,7 @@ class UnclearDate:
     @classmethod
     def check_safe_str(cls, s, check_today=False):
         """
-        Проверка правильности строки "гггг-мм-дд", "гггг-мм", "гггг", или None, если дата не задана
+        Проверка правильности строки "гггг-мм-дд", "гггг-мм", "гггг", или None ("null"), если дата не задана
 
         check_today - надо ли еще проверять, чтобы не было больше текущей даты
         Может возвратить непустое сообщение об ошибке
@@ -166,6 +168,8 @@ class UnclearDate:
         message = ''
         if isinstance(s, basestring):
             s = s.strip()
+            if s.lower() == 'null':
+                s = None
         if s:
             try:
                 m = re.search(cls.SAFE_STR_REGEX, s)
@@ -315,7 +319,10 @@ def upload_slugified(instance, filename):
         return os.path.join('icons', fname)
 
 def files_upload_to(instance, filename):
-    instance.original_name = filename
+    if hasattr(instance, 'original_name'):
+        instance.original_name = filename
+    elif hasattr(instance, 'original_filename'):
+        instance.original_filename = filename
     fname = u'.'.join(map(pytils.translit.slugify, filename.rsplit('.', 1)))
     today = datetime.date.today()
     
@@ -359,41 +366,71 @@ def files_upload_to(instance, filename):
                 today_pk_dir % instance.org.pk, fname)
     elif isinstance(instance, get_model('persons', 'MemoryGallery')):
         return os.path.join('memory-gallery',
-                today_pk_dir % instance.creator.pk, fname)
+                today_pk_dir % instance.pk, fname)
     elif isinstance(instance, get_model('orders', 'ResultFile')):
         return os.path.join('order-results',
                 today_pk_dir % instance.order.pk, fname)
     elif isinstance(instance, get_model('users', 'UserPhoto')):
         return os.path.join('user-photos',
                 today_pk_dir % instance.user.pk, fname)
+    elif isinstance(instance, get_model('persons', 'CustomPerson')):
+        return os.path.join('customperson-photos',
+                today_pk_dir % instance.pk, fname)
+    elif isinstance(instance, get_model('users', 'OrgGallery')):
+        return os.path.join('org-gallery',
+                today_pk_dir % instance.org.pk, fname)
     else:
         return os.path.join('files', fname)
 
-
-class Files(models.Model):
-    """
-    Базовый класс для файлов
-    """
-    class Meta:
-        abstract = True
-        
-    bfile = models.FileField(u"Файл", max_length=255, upload_to=files_upload_to, blank=True)
-    comment = models.CharField(u"Описание", max_length=96, blank=True)
-    original_name = models.CharField(max_length=255, editable=False)
-    creator = models.ForeignKey('auth.User', verbose_name=_(u"Создатель"), editable=False, null=True,
-                                on_delete=models.PROTECT)
-    date_of_creation = models.DateTimeField(auto_now_add=True)
+class DeleteFileMixin(object):
 
     def delete_from_media(self):
-        if self.bfile and os.path.exists(self.bfile.path):
-            os.remove(self.bfile.path)
-            thmb = os.path.join(settings.THUMBNAILS_STORAGE_ROOT, self.bfile.name)
+        if hasattr(self, 'bfile'):
+            file_ = self.bfile
+        elif hasattr(self, 'photo'):
+            file_ = self.photo
+        else:
+            return
+        if file_ and os.path.exists(file_.path):
+            os.remove(file_.path)
+            thmb = os.path.join(settings.THUMBNAILS_STORAGE_ROOT, file_.name)
             if os.path.exists(thmb):
                 shutil.rmtree(thmb)
 
     def delete(self):
         self.delete_from_media()
-        super(Files, self).delete()
+        super(DeleteFileMixin, self).delete()
+
+class Files(DeleteFileMixin, models.Model):
+    """
+    Базовый класс для файлов
+    """
+
+    # Ограничение по размеру, Мегабайт, если загружаемый файл является фото:
+    MAX_IMAGE_SIZE = 10
+
+    class Meta:
+        abstract = True
+        
+    bfile = models.FileField(u"Файл", max_length=255, upload_to=files_upload_to, blank=True)
+    comment = models.CharField(u"Описание", max_length=255, blank=True)
+    original_name = models.CharField(max_length=255, editable=False)
+    creator = models.ForeignKey('auth.User', verbose_name=_(u"Создатель"), editable=False, null=True,
+                                on_delete=models.PROTECT)
+    date_of_creation = models.DateTimeField(auto_now_add=True)
+
+class PhotoModel(DeleteFileMixin, models.Model):
+    """
+    Базовый (дополнительный) класс для моделей, у которых есть фото объекта
+    """
+    # Мегабайт:
+    MAX_PHOTO_SIZE = 10
+
+    class Meta:
+        abstract = True
+
+    photo = models.ImageField(u"Фото", max_length=255, upload_to=files_upload_to, blank=True, null=True)
+    original_filename = models.CharField(max_length=255, editable=False, null=True)
 
 def validate_gt0(value):
     if value <= 0:

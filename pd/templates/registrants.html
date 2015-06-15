@@ -77,7 +77,7 @@
                 {{ r.get_org_type_display }}
             </td>
             <td>
-                {{ r.org_name }}<br />
+                <b>{{ r.org_name }}</b><br />
                 {% if r.org_name != r.org_full_name %}
                     ({{ r.org_full_name }})<br />
                 {% endif %}
@@ -85,6 +85,9 @@
                 {% trans "Тел." %}: {{ r.org_phones|linebreaksbr }}<br />
                 {% if r.org_address %}
                     {% trans "Адрес" %}: {{ r.org_address }}<br />
+                {% endif %}
+                {% if r.org_subdomain %}
+                    {% trans "Поддомен" %}: <b>{{ r.org_subdomain }}</b><br />
                 {% endif %}
                 {% if r.registerprofilescan %}
                     <a href="{{ r.registerprofilescan.bfile.url }}" target="_blank">{% trans "Скан документа о регистрации" %}</a><br />
@@ -109,7 +112,7 @@
                 </span>
                 </big></b>
                 {% if r.is_confirmed %}
-                    <br />{% if r.same_username or r.same_email %}<s>{% trans "одобрить" %}</s>{% else %}<a href="{% url registrant_approve r.pk %}">{% trans "одобрить" %}</a>{% endif %}
+                    <br />{% if r.same_username or r.same_email or r.same_subdomain %}<s>{% trans "одобрить" %}</s>{% else %}<a href="{% url registrant_approve r.pk %}">{% trans "одобрить" %}</a>{% endif %}
                     <br />
                         <a href="{% url registrant_decline r.pk %}"
                         {% if r.is_confirmed or r.is_to_confirm %}
@@ -139,16 +142,18 @@
                         {{ o }}<br />
                     {% endfor %}
                 {% endif %}
-                {% if r.same_username %}
+                {% if r.same_username or r.same_email or r.same_subdomain %}
                     <span style="color:red">
+                    {% if r.same_username %}
                         {% trans "Есть такой пользователь в системе" %}:<br />
-                        {% trans "Нельзя одобрять заявку" %}:<br />
-                    </span>
-                {% endif %}
-                {% if r.same_email %}
-                    <span style="color:red">
+                    {% endif %}
+                    {% if r.same_email %}
                         {% trans "Есть пользователь с таким email в системе" %}:<br />
-                        {% trans "Нельзя одобрять заявку" %}:<br />
+                    {% endif %}
+                    {% if r.same_subdomain %}
+                        {% trans "Есть организация с таким поддоменом в системе" %}:<br />
+                    {% endif %}
+                    {% trans "Нельзя одобрять заявку" %}<br />
                     </span>
                 {% endif %}
             </td>

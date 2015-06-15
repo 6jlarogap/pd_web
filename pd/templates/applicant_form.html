@@ -179,6 +179,7 @@
                 {{ form.applicant_id_form.number.label_tag }} {{ form.applicant_id_form.number }}
                 <span class="helptext">{{ form.applicant_id_form.number.help_text }}</span>
             </p>
+            <br/>
 
             {{ form.applicant_id_form.source.errors }}
             <p class="inline">
@@ -190,6 +191,12 @@
             <p class="inline">
                 {{ form.applicant_id_form.date.label_tag }} {{ form.applicant_id_form.date }}
                 <span class="helptext">{{ form.applicant_id_form.date.help_text }}</span>
+            </p>
+
+            {{ form.applicant_id_form.date_expire.errors }}
+            <p class="inline">
+                {{ form.applicant_id_form.date_expire.label_tag }} {{ form.applicant_id_form.date_expire }}
+                <span class="helptext">{{ form.applicant_id_form.date_expire.help_text }}</span>
             </p>
         </div>
     </div>

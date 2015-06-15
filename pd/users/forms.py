@@ -84,7 +84,7 @@ class ProfileForm(ChildrenJSONMixin, forms.ModelForm):
     org_inn = forms.CharField(label=_(u"ИНН организации"))
     org_kpp = forms.CharField(label=_(u"КПП организации"), required=False)
     org_ogrn = forms.CharField(label=_(u"ОГРН организации"), required=False)
-    org_director = forms.CharField(label=_(u"Директор (в родительном падеже, например, Иванова Ивана Ивановича)"),
+    org_director = forms.CharField(label=_(u"Директор"),
                                    required=False)
     org_email = forms.EmailField(label=_(u"Email"), required=False)
     org_phones = forms.CharField(label=_(u"Телефоны"), required=False)
@@ -299,6 +299,9 @@ class OrgForm(StrippedStringsMixin, BaseOrgForm):
         self.address_form = LocationForm(data=self.data or None, prefix='address', instance=self.instance.off_address)
         self.forms = [self.address_form, ]
         # self.bank_formset = BankAccountFormset(data=request.POST or None, instance=request.user.profile.org)
+        if not self.is_own_org:
+            del self.fields['death_date_offer']
+            del self.fields['opf_burial']
         if not self.is_own_org or not self.request.user.profile.is_ugh():
             del self.fields['numbers_algo']
             del self.fields['plan_date_days_before']
@@ -421,10 +424,16 @@ class RegisterForm(forms.ModelForm):
     class Meta:
         model = RegisterProfile
         # Задаем порядок полей:
+        #fields = ('user_name', 'password1', 'password2',
+                  #'user_last_name', 'user_first_name', 'user_middle_name', 'user_email',
+                  #'org_type', 'org_name', 'org_full_name', 'org_currency', 'org_inn', 'org_ogrn',
+                  #'org_director', 'org_basis', 'org_phones', 'org_fax', 
+                  #'captcha',
+                 #)
         fields = ('user_name', 'password1', 'password2',
                   'user_last_name', 'user_first_name', 'user_middle_name', 'user_email',
-                  'org_type', 'org_name', 'org_full_name', 'org_currency', 'org_inn', 'org_ogrn',
-                  'org_director', 'org_basis', 'org_phones', 'org_fax', 
+                               'org_name', 'org_full_name',
+                  'org_director', 'org_phones', 'org_fax', 
                   'captcha',
                  )
 
@@ -439,6 +448,14 @@ class RegisterForm(forms.ModelForm):
         self.address_form.fields['region_name'].required = True
         self.address_form.fields['city_name'].required = True
         
+    def clean_org_name(self):
+        org_name=self.cleaned_data.get('org_name', '').strip()
+        if not org_name:
+            raise forms.ValidationError(_(u"Пустое название организации"))
+        if re.search(r'^[\d\s]+$', org_name):
+            raise forms.ValidationError(_(u"Невозможное название организации (только из цифр)"))
+        return org_name
+
     def clean_user_name(self):
         user_name=self.cleaned_data['user_name']
         if User.objects.filter(username=user_name).exists():

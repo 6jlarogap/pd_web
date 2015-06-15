@@ -113,10 +113,14 @@
         {{ form.deadman_form.first_name.errors }}
         <p class="inline">{{ form.deadman_form.first_name.label_tag }} {{ form.deadman_form.first_name }}<span class="helptext">{{ form.deadman_form.first_name.help_text }}</span></p>
 
-        {{ form.deadman_form.cemetery.errors }}
+        {{ form.deadman_form.middle_name.errors }}
         <p class="inline">{{ form.deadman_form.middle_name.label_tag }} {{ form.deadman_form.middle_name }}<span class="helptext">{{ form.deadman_form.middle_name.help_text }}</span></p>
 
         <br/>
+        {% if global_context_DEADMAN_IDENT_NUMBER_ALLOW %}
+            {{ form.deadman_form.ident_number.errors }}
+            <p>{{ form.deadman_form.ident_number.label_tag }} {{ form.deadman_form.ident_number }}<span class="helptext">{{ form.deadman_form.ident_number.help_text }}</span></p>
+        {% endif %}
 
         {{ form.deadman_form.birth_date.errors }}
         <p class="inline">{{ form.deadman_form.birth_date.label_tag }} {{ form.deadman_form.birth_date }}<span class="helptext">{{ form.deadman_form.birth_date.help_text }}</span></p>
@@ -208,7 +212,7 @@
         {{ form.responsible_form.middle_name.errors }}
         <p>{{ form.responsible_form.middle_name.label_tag }} {{ form.responsible_form.middle_name }}<span class="helptext">{{ form.responsible_form.middle_name.help_text }}</span></p>
 
-        {% if form.responsible_form.login_phone_ %}
+        {% if form.responsible_form.login_phone_ and global_context_CREATE_CABINET_ALLOW %}
             {{ form.responsible_form.login_phone_.errors }}
             <p>
             {{ form.responsible_form.login_phone_.label_tag }}

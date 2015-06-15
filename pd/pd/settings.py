@@ -162,7 +162,12 @@ SOUTH_TESTS_MIGRATE = False
 
 INTERNAL_IPS = ['127.0.0.1',]
 
-ACCOUNT_ACTIVATION_DAYS = 7
+# Разрешить вводить идентификационный номер для усопшего:
+DEADMAN_IDENT_NUMBER_ALLOW = False
+
+# Разрешить формирование кабинетов отвественного, посредством задания
+# мобильного телефона для входа отвественного:
+CREATE_CABINET_ALLOW = True
 
 # LOGIN_URL, все REGISTER_URLS_REGEX, и некоторые другие -- в списке url,
 # к которым возможен доступ без регистрации, см. pd/middleware.py
@@ -248,15 +253,19 @@ PRODUCTION_SITE = False
 # SUPERVISOR_ORG_INN = 'строка'
 
 # CORS:
+#
 # Переопределить в False в local_settings.py на production server
 #
 CORS_ORIGIN_ALLOW_ALL = True
 #
 # Задать в local_settings.py на production server:
 #
-#CORS_ORIGIN_WHITELIST = (
-#   'pohoronnoedelo.ru',
-#)
+# CORS_ORIGIN_REGEX_WHITELIST = (r'^(https?://)?(\w+\.)?pohoronnoedelo\.\w+$', )
+#
+# Может быть authentication cookies, при доступе к апи из множества
+# доменов *.pohoronnoedelo.ru, посему:
+#
+CORS_ALLOW_CREDENTIALS = True
 
 # THUMB
 THUMBNAILS_FILE_SIGNATURE = '%(source)s/%(size)s~%(method)s~%(secret)s.%(extension)s'
@@ -387,6 +396,12 @@ YANDEX_API_KEYS = [
 ]
     
 WKHTMLTOPDF_CMD = '/usr/local/bin/wkhtmltopdf'
+
+# Обязательность свидетельства о смерти
+DEATH_CERTIFICATE_REQUIRED = True
+
+# Когда предлагать плановую дату захронения, сколько дней от сегодняшней даты
+BURIAL_PLAN_DATE_DAYS_FROM_TODAY = 1
 
 try:
     from local_settings import *

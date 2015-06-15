@@ -5,15 +5,16 @@ from rest_framework.fields import Field
 
 from django.db.models.query_utils import Q
 
-from pd.utils import PhonesFromTextMixin, utcisoformat
+from rest_api.fields import HyperlinkedFileField
+from pd.utils import PhonesFromTextMixin, utcisoformat, CreatedAtMixin
 
 from django.contrib.auth.models import User
 
 from geo.models import Location
 from users.models import Org, Store, FavoriteSupplier, UserPhoto, is_cabinet_user, is_trade_user, \
-                         Profile, Dover, ProfileLORU, get_profile
+                         Profile, Dover, ProfileLORU, get_profile, OrgGallery, OrgReview
 from persons.models import Phone
-from orders.models import Order, Product
+from orders.models import Order, Product, Service, OrgServicePrice
 
 class OrgSerializerMixin(object):
 
@@ -205,6 +206,70 @@ class OrgOptSupplierSerializer(serializers.ModelSerializer):
       except IndexError:
           return None
 
+class ShopSerializerMixin(object):
+
+    def titleImageUrl_func(self, instance):
+        try:
+            return self.context['request'].build_absolute_uri(
+                OrgGallery.objects.filter(org=instance). \
+                    order_by('-date_of_creation')[0].bfile.url
+            )
+        except IndexError:
+            return None
+
+
+class ShopSerializer(ShopSerializerMixin, serializers.ModelSerializer):
+    title = Field(source='name')
+    itemPrice = serializers.SerializerMethodField('itemPrice_func')
+    titleImageUrl = serializers.SerializerMethodField('titleImageUrl_func')
+    subdomainName = Field(source='subdomain')
+
+    class Meta:
+        model = Org
+        fields = ('id', 'subdomainName', 'title', 'description', 'titleImageUrl', 'itemPrice',)
+
+    def itemPrice_func(self, instance):
+        try:
+            price_km = OrgServicePrice.objects.get(
+                orgservice__org=instance,
+                orgservice__service__name=Service.SERVICE_DELIVERY,
+                orgservice__enabled=True,
+                measure__name='km',
+            )
+            return dict(
+                price=float(price_km.price),
+                currency=instance.currency.code,
+            )
+        except OrgServicePrice.DoesNotExist:
+            return None
+
+class ShopDetailSerializer(ShopSerializerMixin, serializers.ModelSerializer):
+    title = Field(source='name')
+    titleImageUrl = serializers.SerializerMethodField('titleImageUrl_func')
+    contacts = serializers.SerializerMethodField('contacts_func')
+    subdomainName = Field(source='subdomain')
+
+    class Meta:
+        model = Org
+        fields = ('id', 'subdomainName', 'title', 'description', 'titleImageUrl', 'contacts')
+
+    def contacts_func(self, org):
+        return dict(
+            email=org.email,
+            phones=org.phone_list(),
+            fax=org.fax,
+            address=org.off_address,
+            site=org.site,
+        )
+
+class OrgGallerySerializer(serializers.ModelSerializer):
+    title = Field(source='comment')
+    photoUrl = HyperlinkedFileField(source='bfile')
+
+    class Meta:
+        model = OrgGallery
+        fields = ('id', 'title', 'photoUrl',)
+
 class UserProfileMixin(object):
 
     def firstName_func(self, user):
@@ -241,6 +306,35 @@ class UserFioSerializer(UserProfileMixin, serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ('id', 'firstName', 'lastName', 'middleName')
+
+class UserFioLoginSerializer(UserProfileMixin, serializers.ModelSerializer):
+    fio = serializers.SerializerMethodField('fio_func')
+
+    class Meta:
+        model = User
+        fields = ('id', 'fio')
+
+    def fio_func(self, user):
+        profile = get_profile(user)
+        if profile.user_last_name:
+            return profile.full_name()
+        else:
+            return u"(%s)" % user.username
+
+
+class OrgReviewSerializer(CreatedAtMixin, serializers.ModelSerializer):
+    isPositive = Field(source='is_positive')
+    author = UserFioSerializer(source='creator')
+    createdAt = serializers.SerializerMethodField('createdAt_func')
+    title = Field(source='subject')
+    commonText = Field(source='common_text')
+    positiveText = Field(source='positive_text')
+    negativeText = Field(source='negative_text')
+
+    class Meta:
+        model = OrgReview
+        fields = ('id', 'isPositive', 'title', 'commonText', 'positiveText', 
+                  'negativeText', 'createdAt', 'author')
 
 class UserSettingsSerializer(UserProfileMixin, serializers.ModelSerializer):
     firstName = serializers.SerializerMethodField('firstName_func')
@@ -297,4 +391,3 @@ class ArchProfileLORUSerializer(serializers.ModelSerializer):
     class Meta:
         model = ProfileLORU
         fields = ('id', 'ugh_id', 'loru_id',)
-
