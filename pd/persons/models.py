@@ -264,11 +264,18 @@ class PersonID(models.Model):
 
 class DeathCertificate(BaseModel):
     """
-    Свидетельство о смерти.
+    Свидетельство о смерти. Или медицинская справка
     """
+    PROFILE_ZAGS = 'zags'
+    PROFILE_MEDIC = 'medic'
+    PROFILE_TYPES = (
+        (PROFILE_ZAGS, _(u"Свидетельство о смерти")),
+        (PROFILE_MEDIC, _(u"Медицинская справка")),
+    )
 
     person = models.OneToOneField(DeadPerson)
 
+    type = models.CharField(_(u"Тип"), max_length=255, choices=PROFILE_TYPES, default=PROFILE_ZAGS)
     s_number = models.CharField(_(u"Номер"), max_length=255, blank=True, null=True)
     series = models.CharField(_(u"Серия"), max_length=255, blank=True, null=True)
     release_date = models.DateField(_(u"Дата выдачи"), null=True, blank=True)

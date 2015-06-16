@@ -599,6 +599,20 @@ $(function() {
     });
     $('#callback_form input[name=callback]').change();
 
+
+    $('input[name=deadman-dc-type]').change(function() {
+        if ($('input[name=deadman-dc-type]:checked').val() == 'medic') {
+            $('.btn_add_zags').html('Добавить мед. учреждение');
+            $('.btn_add_zags').attr('href', '#add_org');
+            $('label[for="id_deadman-dc-zags"]').text('Мед. учреждение');
+        } else {
+            $('.btn_add_zags').html('Добавить ЗАГС');
+            $('.btn_add_zags').attr('href', '#add_zags');
+            $('label[for="id_deadman-dc-zags"]').text('ЗАГС');
+        }
+    });
+    $('input[name=deadman-dc-type]').change();
+    
     $('input[name=opf]').change(function() {
         var resp_id = '#id_responsible-take_from_';
         $(resp_id+'1').removeAttr('checked').closest('li').hide();

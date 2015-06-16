@@ -593,9 +593,11 @@ class Org(GetLogsMixin, BaseModel):
     PROFILE_LORU = 'loru'
     PROFILE_UGH = 'ugh'
     PROFILE_COMPANY = 'company'
+    PROFILE_MEDIC = 'medic'
     PROFILE_TYPES = (
         (PROFILE_COMPANY, _(u"Юрлицо")),
         (PROFILE_ZAGS, _(u"ЗАГС")),
+        (PROFILE_MEDIC, _(u"Мед. учреждение")),
         (PROFILE_LORU, _(u"ЛОРУ")),
         (PROFILE_UGH, _(u"ОМС")),
     )
