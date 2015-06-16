@@ -1395,7 +1395,8 @@ class BurialApproveCloseForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelFor
                 #   то там должны быть заполнены необходимые поля
                 # - если угх нажмет "Отправить на обследование" или "Одобрить обследование",
                 #   то СоС должно сохраниться, даже если там не всё заполнено
-                if not request.POST.get('inspect') and \
+                if settings.DEATH_CERTIFICATE_REQUIRED and \
+                   not request.POST.get('inspect') and \
                    not request.POST.get('approve-inspect'):
                     for f in self.dc_form.fields:
                         if f in ('s_number', 'release_date', 'zags',) :

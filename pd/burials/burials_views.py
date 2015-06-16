@@ -441,6 +441,7 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
             'approve_close_form': self.get_approve_close_form(),
             'comment_form': CommentForm(),
             'zags_form': AddOrgForm(request=self.request, prefix='zags', instance=Org(type=Org.PROFILE_ZAGS)),
+            'medic_form': AddOrgForm(request=self.request, prefix='medic', instance=Org(type=Org.PROFILE_MEDIC)),
             'order': self.order,
             'orders': b.get_orders(loru=self.request.user.profile.org) if self.request.user.profile.is_loru() else [],
             # Кому можно смотреть в захоронении ответственного и заявителя:
@@ -746,6 +747,7 @@ class CreateBurial(BurialGetOrderMixin, FormInvalidMixin, CreateView):
             'org_form': AddOrgForm(request=self.request, prefix='org'),
             'loru_form': AddOrgForm(request=self.request, prefix='loru', instance=Org(type=Org.PROFILE_LORU)),
             'zags_form': AddOrgForm(request=self.request, prefix='zags', instance=Org(type=Org.PROFILE_ZAGS)),
+            'medic_form': AddOrgForm(request=self.request, prefix='medic', instance=Org(type=Org.PROFILE_MEDIC)),
             'doc_type_form': AddDocTypeForm(prefix='doctype'),
             'order': self.get_order(),
         })

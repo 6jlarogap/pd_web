@@ -79,8 +79,9 @@ function setup_address_autocompletes() {
         items: 100,
         source: function (typeahead, query) {
             if (query.length < 2) { return }
+            var type_ = $('input[name=deadman-dc-type]:checked').val() == 'medic' ? 'medic' : 'zags';
             $.ajax({
-                url: ORG_URL + "?query=" + query + "&type=zags",
+                url: ORG_URL + "?query=" + query + "&type=" + type_,
                 dataType: 'json',
                 success: function(data) {
                     typeahead.process(data);
@@ -532,12 +533,13 @@ $(function() {
             // оба раза с одним неверным значением,
             // хотя ниже оно затирается
             old_zags_value = val;
+            var type_ = $('input[name=deadman-dc-type]:checked').val() == 'medic' ? 'medic' : 'zags';
             $.ajax({
-                url: ORG_URL + "?query=" + val + "&type=zags&exact=1",
+                url: ORG_URL + "?query=" + val + "&type=" + type_ + "&exact=1",
                 dataType: 'json',
                 success: function(data) {
                     if (data.length == 0) {
-                        alert("Нет такого ЗАГСа");
+                        alert(type_ == 'zags' ? "Нет такого ЗАГСа" : "Нет такого мед. учреждения");
                         zags_inp.val('');
                         old_zags_value = '';
                     }
@@ -603,7 +605,7 @@ $(function() {
     $('input[name=deadman-dc-type]').change(function() {
         if ($('input[name=deadman-dc-type]:checked').val() == 'medic') {
             $('.btn_add_zags').html('Добавить мед. учреждение');
-            $('.btn_add_zags').attr('href', '#add_org');
+            $('.btn_add_zags').attr('href', '#add_medic');
             $('label[for="id_deadman-dc-zags"]').text('Мед. учреждение');
         } else {
             $('.btn_add_zags').html('Добавить ЗАГС');
@@ -875,6 +877,23 @@ $(function() {
         })
     });
 
+    $('#add_medic').find('.btn-primary').click(function() {
+        var data = $('#add_medic form').serialize();
+        $.post('/burials/add_medic/', data, function(data){
+            if (data.pk) {
+                if (typeof ORGS_INACTIVE != "undefined") {
+                    ORGS_INACTIVE.push(data.pk.toString());
+                    var select = $('#id_applicant_organization');
+                    select.append('<option value="'+data.pk+'" selected="selected">'+data.label+'</option>');
+                }
+                $('#add_medic').modal('hide');
+                $('#id_deadman-dc-zags').val(data.label);
+            } else {
+                alert(data);
+            }
+        })
+    });
+
     $('#add_loru').find('.btn-primary').click(function() {
         var data = $('#add_loru form').serialize();
         $.post('/burials/add_loru/', data, function(data){
@@ -999,7 +1018,7 @@ $(function() {
     $('#id_country, #id_region').change();
     $('#id_lat, #id_lng').closest('p').hide();
 
-    $('#id_org-name, #id_zags-name, #id_org_name').change(function() {
+    $('#id_org-name, #id_zags-name, #id_medic-name, #id_org_name').change(function() {
         var val = $(this).val();
         var full_name = "";
         switch ($(this).attr('id')) {
@@ -1008,6 +1027,9 @@ $(function() {
                 break;
             case 'id_zags-name':
                 full_name = '#id_zags-full_name';
+                break;
+            case 'id_medic-name':
+                full_name = '#id_medic-full_name';
                 break;
             case 'id_org_name':
                 full_name = '#id_org_full_name';
