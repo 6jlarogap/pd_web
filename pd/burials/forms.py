@@ -1201,6 +1201,11 @@ class BurialCommitForm(BurialForm):
 
         if self.dc_form.is_valid():
             death_certificate_release_date = self.dc_form.cleaned_data.get('release_date')
+            death_certificate_release_date_msg = _(u"Не указана дата документа о смерти")
+            death_certificate_s_number = self.dc_form.cleaned_data.get("s_number", "").strip()
+            death_certificate_zags = self.dc_form.cleaned_data.get("zags")
+            death_certificate_zags_msg = _(u"Не указан ЗАГС/мед. учреждение, выдавшее документ о смерти")
+
             if not (not settings.DEATH_CERTIFICATE_REQUIRED or \
                     self.instance.is_archive() or self.request.REQUEST.get('archive') or \
                     self.instance.is_transferred() or \
@@ -1208,20 +1213,28 @@ class BurialCommitForm(BurialForm):
                     self.cleaned_data.get('burial_container') == Burial.CONTAINER_BIO or \
                     not can_personal_data
                ):
-                if not self.dc_form.cleaned_data.get("s_number").strip():
+                if not death_certificate_s_number:
                     raise forms.ValidationError(_(u"Не заполнен номер свидетельства о смерти"))
                 if not death_certificate_release_date:
-                    raise forms.ValidationError(_(u"Не указана дата свидетельства о смерти"))
-                if not self.dc_form.cleaned_data.get("zags"):
-                    raise forms.ValidationError(_(u"Не указан ЗАГС, выдавший свидетельство о смерти"))
+                    raise forms.ValidationError(death_certificate_release_date_msg)
+                if not death_certificate_zags:
+                    raise forms.ValidationError(death_certificate_zags_msg)
+
+            if death_certificate_s_number:
+                have_s_number = _(u"Указан номер документа о смерти")
+                if not death_certificate_release_date:
+                    raise forms.ValidationError(u"%s. %s" % (have_s_number, death_certificate_release_date_msg,))
+                if not death_certificate_zags:
+                    raise forms.ValidationError(u"%s. %s" % (have_s_number, death_certificate_zags_msg,))
+                
             if death_certificate_release_date:
                 if deadman_birth_date:
                     if deadman_birth_date > death_certificate_release_date:
-                        msg = _(u"Дата выдачи свидетельства о смерти не может быть раньше даты рождения")
+                        msg = _(u"Дата выдачи документа о смерти не может быть раньше даты рождения")
                         raise forms.ValidationError(msg)
                 if deadman_death_date:
                     if deadman_death_date> death_certificate_release_date:
-                        msg = _(u"Дата выдачи свидетельства о смерти не может быть раньше даты смерти")
+                        msg = _(u"Дата выдачи документа о смерти не может быть раньше даты смерти")
                         raise forms.ValidationError(msg)
 
         if self.responsible_form.is_valid():
@@ -1382,7 +1395,8 @@ class BurialApproveCloseForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelFor
                 #   то там должны быть заполнены необходимые поля
                 # - если угх нажмет "Отправить на обследование" или "Одобрить обследование",
                 #   то СоС должно сохраниться, даже если там не всё заполнено
-                if not request.POST.get('inspect') and \
+                if settings.DEATH_CERTIFICATE_REQUIRED and \
+                   not request.POST.get('inspect') and \
                    not request.POST.get('approve-inspect'):
                     for f in self.dc_form.fields:
                         if f in ('s_number', 'release_date', 'zags',) :
