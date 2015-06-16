@@ -100,19 +100,27 @@ class DeathCertificateForm(StrippedStringsMixin, BaseModelForm):
             kwargs['initial'].update({
                 'release_date': datetime.date.today(),
             })
+        kwargs['initial'].update(dict(
+          type=instance and instance.type or DeathCertificate.PROFILE_ZAGS,  
+        ))
         super(DeathCertificateForm, self).__init__(*args, **kwargs)
+        self.fields['type'] = forms.ChoiceField(choices=DeathCertificate.PROFILE_TYPES, widget=forms.RadioSelect())
+        self.fields['type'].label = '' # DeathCertificate._meta.get_field('type').verbose_name
         self.fields['zags'].max_length = Org._meta.get_field('name').max_length
         self.fields['zags'].label = DeathCertificate._meta.get_field('zags').verbose_name
         self.scan_form = DeathCertificateScanForm(request, prefix='dc-scan', instance = scan, files=request.FILES)
 
     def clean_zags(self):
         zags = None
+        type_ = self.cleaned_data.get('type') and self.cleaned_data['type'] or \
+                    DeathCertificate.PROFILE_ZAGS
         zags_str = self.cleaned_data.get('zags').strip()
         if zags_str:
             try:
-                zags = Org.objects.filter(name=zags_str, type=Org.PROFILE_ZAGS)[0]
+                zags = Org.objects.filter(name=zags_str, type=type_)[0]
             except IndexError:
-                raise forms.ValidationError(_(u'Нет такого ЗАГСа'))
+                raise forms.ValidationError(_(u'Нет такого ЗАГСа') if type_ == DeathCertificate.PROFILE_ZAGS \
+                                            else _(u'Нет такого мед. учреждения'))
         return zags
 
     def clean_release_date(self):

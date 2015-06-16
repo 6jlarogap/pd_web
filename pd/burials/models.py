@@ -1084,7 +1084,7 @@ class Burial(SafeDeleteMixin, GetLogsMixin, BaseModel):
         if self.is_full():
             try:
                 dc = self.deadman.deathcertificate
-                if not (dc.s_number and dc.release_date and dc.zags):
+                if not (dc.s_number and dc.zags):
                     dc.delete()
             except (AttributeError, DeathCertificate.DoesNotExist, ProtectedError):
                 pass

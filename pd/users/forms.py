@@ -228,17 +228,17 @@ class BaseOrgForm(LoggingFormMixin, forms.ModelForm):
             choices = []
             for profile_type in Org.PROFILE_TYPES:
                 if request.user.profile.is_ugh():
-                    if profile_type[0] in (Org.PROFILE_LORU, Org.PROFILE_ZAGS, Org.PROFILE_COMPANY, ):
+                    if profile_type[0] in (Org.PROFILE_LORU, Org.PROFILE_ZAGS, Org.PROFILE_MEDIC, Org.PROFILE_COMPANY, ):
                         choices.append(profile_type)
                 elif request.user.profile.is_loru():
-                    if profile_type[0] in (Org.PROFILE_ZAGS, Org.PROFILE_COMPANY, ):
+                    if profile_type[0] in (Org.PROFILE_ZAGS, Org.PROFILE_MEDIC, Org.PROFILE_COMPANY, ):
                         choices.append(profile_type)
                     # если лорику попался для редактирования другой лору:
                     elif self.instance and self.instance.pk and \
                          self.instance.type == Org.PROFILE_LORU and profile_type[0] == Org.PROFILE_LORU:
                         choices.append(profile_type)
                 else:
-                    if profile_type[0] in (Org.PROFILE_ZAGS, ):
+                    if profile_type[0] in (Org.PROFILE_ZAGS, Org.PROFILE_MEDIC, ):
                         choices.append(profile_type)
             label = self.fields['type'].label
             self.fields['type'] = forms.fields.TypedChoiceField(choices = choices)
