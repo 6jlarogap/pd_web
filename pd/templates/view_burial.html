@@ -94,17 +94,18 @@
         {% if not b.is_bio and can_personal_data %}
             <dt>
                 {% if b.dc_filled %}
-                    {% trans "Свидетельство о смерти" %}:
+                    {% trans "Документ о смерти" %}:
                 {% else %}
-                    <span style="color:red"><b><big>{% trans "Свидетельство о смерти" %}:
-                                                    {% trans "не заполнено!" %}</big></b></span>
+                    <span style="color:red"><b><big>{% trans "Документ о смерти" %}:
+                                                    {% trans "не заполнен!" %}</big></b></span>
                 {% endif %}
             <dt>
             {% if b.deadman.deathcertificate %}
                 {% with dc=b.deadman.deathcertificate %}
+                    <dd>{% trans "Тип" %}: {{ dc.get_type_display }}</dd>
                     <dd>{% trans "Номер" %}*: {{ dc.s_number }}</dd>
-                    <dd>{% trans "Серия" %}: {{ dc.series }}</dd>
-                    <dd>{% trans "Выдано" %}*: {{ dc.zags|default_if_none:"" }}</dd>
+                    {% if dc.series %}<dd>{% trans "Серия" %}: {{ dc.series }}</dd>{% endif %}
+                    <dd>{% trans "Выдан" %}*: {{ dc.zags|default_if_none:"" }}</dd>
                     <dd>{% trans "Дата" %}*: {{ dc.release_date|default_if_none:"" }}</dd>
                     <dd>{% trans "Скан" %}:
                     {% if dc.deathcertificatescan %}
@@ -202,7 +203,7 @@
             {# Если это изменится, то условие (b.loru and b.loru == user.profile.org), #}
             {# при котором здесь оказываемся, придется в ряде случаев пересмотреть! #}
             {% if b.can_approve and not b.is_bio and b.can_personal_data %}
-                <h2>{% trans "Свидетельство о смерти" %}</h2>
+                <h2>{% trans "Документ о смерти" %}</h2>
                 {% with approve_close_form.dc_form as form %}
                     {% include "deathcertificate.html" %}
                 {% endwith %}
@@ -278,7 +279,7 @@
                     {{ approve_close_form.as_p }}
                 {% endif %}
                 {% if not b.is_bio and b.can_personal_data %}
-                    <h2>{% trans "Свидетельство о смерти" %}</h2>
+                    <h2>{% trans "Документ о смерти" %}</h2>
                     {% with approve_close_form.dc_form as form %}
                         {% include "deathcertificate.html" %}
                     {% endwith %}

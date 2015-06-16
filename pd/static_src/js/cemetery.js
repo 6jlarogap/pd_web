@@ -613,7 +613,9 @@ $(function() {
             $('label[for="id_deadman-dc-zags"]').text('ЗАГС');
         }
     });
+    
     $('input[name=deadman-dc-type]').change();
+    $('input[name=deadman-dc-type]').closest('ul').addClass('unstyled');
     
     $('input[name=opf]').change(function() {
         var resp_id = '#id_responsible-take_from_';

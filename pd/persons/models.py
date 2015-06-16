@@ -279,7 +279,7 @@ class DeathCertificate(BaseModel):
     s_number = models.CharField(_(u"Номер"), max_length=255, blank=True, null=True)
     series = models.CharField(_(u"Серия"), max_length=255, blank=True, null=True)
     release_date = models.DateField(_(u"Дата выдачи"), null=True, blank=True)
-    zags = models.ForeignKey(Org, verbose_name=_(u"ЗАГС"), null=True, blank=True, limit_choices_to={'type': Org.PROFILE_ZAGS})
+    zags = models.ForeignKey(Org, verbose_name=_(u"ЗАГС"), null=True, blank=True)
 
     class Meta:
         verbose_name = _(u"свидетельство о смерти")
