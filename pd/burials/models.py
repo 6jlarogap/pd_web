@@ -1081,13 +1081,12 @@ class Burial(SafeDeleteMixin, GetLogsMixin, BaseModel):
         # Очистим "пустышку" свидетельства о смерти, где
         # не все обязательные поля заполнены
         #
-        if self.is_full():
-            try:
-                dc = self.deadman.deathcertificate
-                if not (dc.s_number and dc.zags):
-                    dc.delete()
-            except (AttributeError, DeathCertificate.DoesNotExist, ProtectedError):
-                pass
+        try:
+            dc = self.deadman.deathcertificate
+            if not (dc.s_number and dc.release_date and dc.zags):
+                dc.delete()
+        except (AttributeError, DeathCertificate.DoesNotExist, IntegrityError):
+            pass
 
         return self
 
