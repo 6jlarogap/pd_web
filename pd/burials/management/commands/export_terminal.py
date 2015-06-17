@@ -7,7 +7,7 @@
 
 # Формирование .csv файлов для имеющихся терминалов на кладбищах
 
-import sys, csv
+import sys, csv, uuid
 
 from django import db
 from django.core.management.base import BaseCommand
@@ -29,6 +29,7 @@ CEMETERIES = (
         csv_kwargs=dict(delimiter=" ", quotechar='"', quoting=csv.QUOTE_ALL),
         cemeteries=(u'Восточное', u'Уручье',),
         put_cemetery = True,
+        pk_is_uuid = True
    ),
     dict(
         export='voennoe',
@@ -99,6 +100,8 @@ class Command(BaseCommand):
                    not u'неизвестен' in last_name_lower and \
                    not u'безфамильн' in last_name_lower:
                     pk = str(deadman.pk)
+                    if cemetery_parms.get('pk_is_uuid'):
+                        pk = str(uuid.uuid1())
                     last_name = deadman.last_name.upper().encode('cp1251')
                     initials = deadman.get_initials().upper().encode('cp1251') or u"-"
                     b_date = burial.fact_date
