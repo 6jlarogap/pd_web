@@ -38,6 +38,7 @@
             <script type="text/javascript">
                 ORGS_INACTIVE = [{% for org in form.fields.applicant_organization.inactive_queryset %}"{{ org.pk }}"{% if not forloop.last %},{% endif %}{% endfor %}];
                 $(function() {
+                    $('#applicant_form_person').find('[id$=phones]').css('width', '657px');
                     $('select[name$=applicant_organization]').css('width', '295px');
                     $('select[name$=applicant_organization]').attr('autocomplete', 'off').change(function() {
                         if (ORGS_INACTIVE.indexOf($(this).val()) > -1) {

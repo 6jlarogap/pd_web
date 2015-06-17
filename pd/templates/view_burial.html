@@ -39,6 +39,7 @@
             <dt>{% trans "Заявитель-ФЛ" %}:</dt>
                 <dd>{{ b.applicant }}</dd>
                 <dd>{% trans "Адрес:" %} {{ b.applicant.address|default:"не указан" }}</dd>
+                <dd>{% trans "Телефон(ы):" %} {{ b.applicant.phones|default_if_none:"" }}</dd>
                 <dd>
                     {% with pid=b.applicant.personid %}
                         {% if pid and pid.id_type and pid.series and pid.number %}
@@ -184,9 +185,12 @@
                 {% endif %}
             {% endif %}
         </dd>
-        <dt>{% trans "План. дата и время" %}:</dt>
-        <dd>{{ b.plan_date|date:"d.m.Y"|default:"не указана" }} {{ b.plan_time|time:"H:i"|default:"Время не указано" }}</dd>
-        <dt>{% trans "Факт. дата" %}:</dt><dd>{{ b.fact_date|default:"не указана" }}</dd>
+        {% if not b.is_closed %}
+            <dt>{% trans "План. дата и время" %}:</dt>
+            <dd>{{ b.plan_date|date:"d.m.Y"|default:"не указаны" }}
+                {% if b.plan_date %}{{ b.plan_time|time:"H:i"|default:". Время не указано" }}{% endif %}</dd>
+            <dt>{% trans "Факт. дата" %}:</dt><dd>{{ b.fact_date|default:"не указана" }}</dd>
+        {% endif %}
         <dt>{% trans "Файлы" %}:</dt>
         {% for f in b.burialfiles_set.all %}
             <dd>{{ forloop.counter }}. &nbsp;
