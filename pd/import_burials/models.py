@@ -197,6 +197,8 @@ def do_import_burials_minsk(csv_fileobj, cemetery, user):
         post_index, building,
         op_type,
      ) = range(28)
+    today = datetime.date.today()
+    today_str = "{0:d}/{1:02d}/{2:02d}".format(today.year, today.month, today.day)
      
     def make_burial(row, burial_type):
         """
@@ -345,9 +347,9 @@ def do_import_burials_minsk(csv_fileobj, cemetery, user):
             files = row[file_names].split('\n')
             fcomments = row[file_comments].split('\t')
             for i, f in enumerate(files):
-                f = f.replace('ofiles/','bfiles/%s/' % burial.pk)
+                f = f.replace('ofiles/','bfiles/%s/%s/' % (today_str, burial.pk, ))
                 try:
-                    fcomment = fcomments[i] if fcomments[i] else _(u'Без комментария')
+                    fcomment = fcomments[i].strip() if fcomments[i] else _(u'Без комментария')
                 except IndexError:
                     fcomment = _(u'Без комментария')
                 BurialFiles.objects.create(
