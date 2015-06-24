@@ -7,6 +7,7 @@ import datetime
 import gc
 import json
 import codecs
+import re
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.db import transaction, connection
@@ -347,15 +348,17 @@ def do_import_burials_minsk(csv_fileobj, cemetery, user):
             files = row[file_names].split('\n')
             fcomments = row[file_comments].split('\t')
             for i, f in enumerate(files):
+                original_name = re.sub(r'^ofiles/(.+)', r'\1', f)
                 f = f.replace('ofiles/','bfiles/%s/%s/' % (today_str, burial.pk, ))
                 try:
-                    fcomment = fcomments[i].strip() if fcomments[i] else _(u'Без комментария')
+                    fcomment = fcomments[i].strip() if fcomments[i] else original_name
                 except IndexError:
-                    fcomment = _(u'Без комментария')
+                    fcomment = original_name
                 BurialFiles.objects.create(
                     burial=burial,
                     bfile=f,
                     comment=fcomment,
+                    original_name=original_name,
                 )
         
     # Будут несколько проходов по считанному файлу импорта, надо бы сохранить
