@@ -37,7 +37,7 @@ class Command(BaseCommand):
             print u"%s. No ofiles folder" % error
             quit()
         media_root = re.sub(r'/+$', '', settings.MEDIA_ROOT)
-        ofiles = re.sub(r'/+$', '', u"%s/%s" % (media_root, ofiles,))
+        ofiles = re.sub(r'/+$', '', os.path.join(media_root, ofiles))
         if not os.path.isdir(ofiles):
             print u"%s. Not found ofiles folder: %s" % (error, ofiles)
             quit()
