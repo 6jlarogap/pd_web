@@ -436,11 +436,12 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
             del self.fields['plan_time']
         elif not self.instance.is_finished():
             del self.fields['fact_date']
-            if self.instance.account_number:
-                self.fields['account_number'].widget.attrs.update({'readonly':'True'})
-            elif self.request.user.profile.org.numbers_algo != Org.NUM_MANUAL:
-                del self.fields['account_number']
-                
+            if self.request.user.profile.org.numbers_algo != Org.NUM_MANUAL:
+                if self.instance.account_number:
+                    self.fields['account_number'].widget.attrs.update({'readonly':'True'})
+                else:
+                    del self.fields['account_number']
+
         if 'account_number' in self.fields and \
            self.request.user.profile.org.numbers_algo == Org.NUM_EMPTY and \
            not self.instance.account_number:
