@@ -208,7 +208,7 @@ class AlivePerson(BasePerson, PhonesMixin):
     """
     Живое ФЛ с телефоном
     """
-    phones = models.TextField(_(u"Телефоны"), blank=True, null=True)
+    phones = models.TextField(_(u"Телефоны (если несколько, то через ; или ,)"), blank=True, null=True)
     user = models.ForeignKey('auth.User', verbose_name=_(u"Ответственный за место или пользователь- физ. лицо"),
            null=True, editable=False)
     # Оставляем здесь login_phone как хранилище для телефона логина ответственного,

@@ -75,7 +75,7 @@ function setup_address_autocompletes() {
         }
     });
 
-    $('input[id$=zags]').attr('autocomplete', 'off').typeahead({
+    $('input[id$=zags]').attr('autocomplete', 'off').css('width', '300px').typeahead({
         items: 100,
         source: function (typeahead, query) {
             if (query.length < 2) { return }
@@ -546,6 +546,21 @@ $(function() {
                 }
             });
         }
+    });
+
+    $('#id_deadman-dc-release_date').change(function() {
+        if ($(this).val()) {
+            $('#dc_btn_today').hide();
+        } else {
+            $('#dc_btn_today').show();
+        }
+    });
+    $('#id_deadman-dc-release_date').change();
+
+    $('#dc_btn_today').click(function()  {
+        var today = new Date();
+        $("#id_deadman-dc-release_date").val(today.toLocaleDateString());
+        $(this).hide();
     });
 
     old_loru_value = '';

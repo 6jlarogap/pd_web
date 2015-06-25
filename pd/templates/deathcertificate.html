@@ -12,10 +12,16 @@
 <p>{{ form.series.label_tag }} {{ form.series }}<span class="helptext">{{ form.series.help_text }}</span></p>
 
 {{ form.release_date.errors }}
-<p>{{ form.release_date.label_tag }} {{ form.release_date }}<span class="helptext">{{ form.release_date.help_text }}</span></p>
-
 <div class="inline">
+    <p>{{ form.release_date.label_tag }} {{ form.release_date }}<span class="helptext">{{ form.release_date.help_text }}</span>
+    <input type="button" class="btn inline" value="{% trans "сегодня" %}" id="dc_btn_today" />
+    </p>
+</div>
+
+<br />
+
 {{ form.zags.errors }}
+<div class="inline">
 {{ form.zags.label_tag }} {{ form.zags }}<span class="helptext">{{ form.zags.help_text }}</span>
 
     <p class="inline">

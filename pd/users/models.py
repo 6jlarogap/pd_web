@@ -38,6 +38,9 @@ class PhonesMixin(object):
     def phone_list(self):
         return [ phone.number for phone in self.phone_set ]
 
+    def phone_str_list(self):
+        return phones_from_text(self.phones)
+
 class UserPhoto(Files):
     """
     Аватарки пользователя

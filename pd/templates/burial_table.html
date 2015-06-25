@@ -108,6 +108,9 @@
                 {{ b.applicant_organization }}
             {% elif b.applicant %}
                 {{ b.applicant }}
+                {% for phone in b.applicant.phone_str_list %}
+                    <br />{{ phone }}
+                {% endfor %}
             {% endif %}
         </td>
         <td>{% if b.cemetery %}
