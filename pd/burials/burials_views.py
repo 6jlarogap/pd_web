@@ -120,10 +120,7 @@ class DashboardView(BurialsListGenericMixin, TemplateView):
 
         burials_clean = Burial1.objects.filter(qs).exclude(ex_qs).distinct()
         burials_count = burials_clean.count()
-        burials = burials_clean.select_related(
-            'ugh', 'place', 'place__cemetery', 'place__area', 'deadman', 'deadman__address', 'cemetery', 'area',
-            'applicant_organization', 'applicant', 'changed_by', 'changed_by__profile', 'cemetery__ugh', 'area__purpose'
-        ).order_by(*s)
+        burials = burials_clean.order_by(*s)
         burials.count = lambda: burials_count
         return {
             'burials': burials,

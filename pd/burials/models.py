@@ -664,13 +664,14 @@ class Burial(SafeDeleteMixin, GetLogsMixin, BaseModel):
 
     def burial1_to_burial(self):
         """
-        Возвращает сам себя. Заглушка из разряда fool-proof
+        Возвращает сам себя. Заглушка из разряда fool-proof.
 
-        При поиске захоронений делаем такой по модели Burial1,
+        При поиске захоронений делаем таковой поиск по модели Burial1,
         database view of Burial. Найденные при поиске объекты
-        Burial1 преобразуются в Burial функцией Burial1.burial1_to_burial(),
-        однако на тот случай, если что-то не учли и провели поиск по Burial,
-        оставляем эту функцию-заглушку.
+        Burial1 преобразуются в объекты Burial
+        функцией Burial1.burial1_to_burial(),
+        однако на тот случай, если что-то не учли и провели таки поиск
+        по Burial, оставляем эту функцию-заглушку.
         """
         return self
 
