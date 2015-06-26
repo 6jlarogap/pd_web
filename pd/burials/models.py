@@ -1383,4 +1383,11 @@ class Burial1(BaseModel):
         managed = False
 
     def burial1_to_burial(self):
-        return Burial.objects.get(pk=self.pk)
+        return Burial.objects.filter(pk=self.pk).select_related(
+            'ugh', 'cemetery', 'area', 'area__purpose',
+            'deadman', 'deadman__address',
+            'applicant_organization',
+            'applicant', 'applicant__address',
+            'changed_by', 'changed_by__profile', 
+            'responsible',  'responsible__address',
+        )[0]
