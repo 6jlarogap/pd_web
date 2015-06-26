@@ -663,6 +663,15 @@ class Burial(SafeDeleteMixin, GetLogsMixin, BaseModel):
         verbose_name_plural = _(u"Захоронение")
 
     def burial1_to_burial(self):
+        """
+        Возвращает сам себя. Заглушка из разряда fool-proof
+
+        При поиске захоронений делаем такой по модели Burial1,
+        database view of Burial. Найденные при поиске объекты
+        Burial1 преобразуются в Burial функцией Burial1.burial1_to_burial(),
+        однако на тот случай, если что-то не учли и провели поиск по Burial,
+        оставляем эту функцию-заглушку.
+        """
         return self
 
     def is_edit(self):
@@ -1322,6 +1331,15 @@ models.signals.post_delete.connect(calculate_free_burial_count, sender=Grave)
 models.signals.post_delete.connect(calculate_free_burial_count, sender=Burial)
 
 class Burial1(BaseModel):
+    """
+    Database View of Burial model, created or updated by ./manage.py create_burial_views yes
+
+    см. burial/management/commands/create_burial_views.py
+    Применяется при поиске и сортировке  захоронений.
+    В особенности для "числовой" сортировки по учетному номеру зх, по номеру места
+    (см. Burial1.account_number_s..., Burial1.place_number_s...).
+    Остальные поля в модели Burial1 дублируют соответствующие поля Burial.
+    """
 
     burial_type = models.CharField(_(u"Вид захоронения"), max_length=255, null=True)
     burial_container = models.CharField(_(u"Тип захоронения"), max_length=255, null=True)
