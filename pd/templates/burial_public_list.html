@@ -24,15 +24,6 @@
         <table class="table table-bordered table-striped">
             <tr>
                 <th>
-                    {% if sort == '-pk' %}
-                        {% if sort == '-pk' %}<i class="icon icon-arrow-down"></i>{% endif %}
-                        <a href="?{{ GET_PARAMS }}&sort=pk">{% trans "Номер" %}</a>
-                    {% else %}
-                        {% if sort == 'pk' %}<i class="icon icon-arrow-up"></i>{% endif %}
-                        <a href="?{{ GET_PARAMS }}&sort=-pk">{% trans "Номер" %}</a>
-                    {% endif %}
-                </th>
-                <th>
                     {% if sort == 'account_number' %}
                         {% if sort == 'account_number' %}<i class="icon icon-arrow-up"></i>{% endif %}
                         <a href="?{{ GET_PARAMS }}&sort=-account_number">{% trans "Номер в книге" %}</a>
@@ -87,13 +78,15 @@
                     {% endif %}
                 </th>
                 <th>
+                    {% trans "Комментарии" %}
+                </th>
+                <th>
                     {% trans "Заказ(ы)" %}
                 </th>
             </tr>
             {% for b1 in burials %}
                 {% with b=b1.burial1_to_burial %}
                     <tr>
-                        <td>{{ b.pk }}</td>
                         <td>{{ b.account_number|default:"" }}</td>
                         <td>{% if b.cemetery %}{{ b.cemetery }} / {{ b.ugh_name }}{% endif %}</td>
                         <td>
@@ -109,6 +102,15 @@
                             {% endif %}
                             <br />
                             <a class="btn" href="{% url view_burial b.pk %}">{% trans "просмотр" %}</a>
+                        </td>
+                        <td>
+                            {% for comment in b.burialcomment_set.all %}
+                                <i>{{ comment.dt_created.date }}</i><br>
+                                {{ comment.comment|linebreaksbr }}
+                                {% if not forloop.last %}
+                                    <br />
+                                {% endif %}
+                            {% endfor %}
                         </td>
                         <td>
                             {% with burial=b %}{% include "burial_orders.html" %}{% endwith %}
