@@ -662,6 +662,19 @@ class Burial(SafeDeleteMixin, GetLogsMixin, BaseModel):
         verbose_name = _(u"Захоронение")
         verbose_name_plural = _(u"Захоронение")
 
+    def burial1_to_burial(self):
+        """
+        Возвращает сам себя. Заглушка из разряда fool-proof.
+
+        При поиске захоронений делаем таковой поиск по модели Burial1,
+        database view of Burial. Найденные при поиске объекты
+        Burial1 преобразуются в объекты Burial
+        функцией Burial1.burial1_to_burial(),
+        однако на тот случай, если что-то не учли и провели таки поиск
+        по Burial, оставляем эту функцию-заглушку.
+        """
+        return self
+
     def is_edit(self):
         return self.is_draft() or self.is_backed() or self.is_declined()
 
@@ -1317,3 +1330,83 @@ models.signals.post_save.connect(calculate_free_burial_count, sender=Grave)
 models.signals.post_save.connect(calculate_free_burial_count, sender=Burial)
 models.signals.post_delete.connect(calculate_free_burial_count, sender=Grave)
 models.signals.post_delete.connect(calculate_free_burial_count, sender=Burial)
+
+class Burial1(BaseModel):
+    """
+    Database View of Burial model, created or updated by ./manage.py create_burial_views yes
+
+    см. burial/management/commands/create_burial_views.py
+    Применяется при поиске и сортировке  захоронений.
+    В особенности для "числовой" сортировки по учетному номеру зх, по номеру места
+    (см. Burial1.account_number_s..., Burial1.place_number_s...).
+    Остальные поля в модели Burial1 дублируют соответствующие поля Burial.
+    """
+
+    burial_type = models.CharField(_(u"Вид захоронения"), max_length=255, null=True)
+    burial_container = models.CharField(_(u"Тип захоронения"), max_length=255, null=True)
+    source_type = models.CharField(_(u"Источник"), max_length=255, null=True)
+    account_number = models.CharField(_(u"№ в книге учета"), max_length=255, null=True)
+    account_number_s1 = models.TextField(null=True)
+    account_number_s2 = models.FloatField(null=True)
+    account_number_s3 = models.TextField(null=True)
+
+    place = models.ForeignKey(Place, verbose_name=_(u"Место"), null=True, related_name='place_1_burials')
+    cemetery = models.ForeignKey(Cemetery, verbose_name=_(u"Кладбище"), null=True, related_name='cemetery_1_burials')
+    area = models.ForeignKey(Area, verbose_name=_(u"Участок"), null=True, related_name='area_1_burials')
+    row = models.CharField(_(u"Ряд"), max_length=255, null=True)
+    place_number = models.CharField(_(u"Номер места"), max_length=255, null=True)
+    place_number_s1 = models.TextField(null=True)
+    place_number_s2 = models.FloatField(null=True)
+    place_number_s3 = models.TextField(null=True)
+
+    grave = models.ForeignKey(Grave, verbose_name=_(u"Могила"),
+                              null=True, related_name='grave_1_burials')
+    grave_number = models.PositiveSmallIntegerField(_(u"Могила"), default=1)
+    desired_graves_count = models.PositiveSmallIntegerField(_(u"Число могил в новом месте"), default=1)
+    place_length = models.DecimalField(_(u"Длина, м."), max_digits=5, decimal_places=2,
+                                        null=True)
+    place_width = models.DecimalField(_(u"Ширина, м."), max_digits=5, decimal_places=2,
+                                        null=True)
+    responsible = models.ForeignKey('persons.AlivePerson', verbose_name=_(u"Ответственный"), null=True,
+                                    related_name='responsible_1_burials')
+
+    plan_date = models.DateField(_(u"План. дата"), null=True)
+    plan_time = models.TimeField(_(u"План. время"), null=True)
+    fact_date = UnclearDateModelField(_(u"Факт. дата"), null=True)
+
+    deadman = models.ForeignKey(DeadPerson, verbose_name=_(u"Усопший"), null=True, related_name='deadman_1_burials')
+
+    applicant = models.ForeignKey('persons.AlivePerson', verbose_name=_(u"Заявитель"), null=True,
+                                  related_name='applied_1_burials')
+    ugh = models.ForeignKey(Org, verbose_name=_(u"УГХ"), null=True, related_name='ugh_1_created')
+    loru = models.ForeignKey(Org, verbose_name=_(u"Посредник"), null=True, related_name='loru_1_burials')
+    loru_agent_director = models.BooleanField(_(u"Директор-Агент"), default=False)
+    loru_agent = models.ForeignKey(Profile, verbose_name=_(u"Агент"), null=True,
+                              related_name='loru_agent_1_burials',)
+    loru_dover = models.ForeignKey(Dover, verbose_name=_(u"Доверенность"), null=True,
+                              related_name='loru_dover_1_burials')
+    applicant_organization = models.ForeignKey(Org, verbose_name=_(u"Заявитель-ЮЛ"), null=True,
+                                               related_name='applicant_organization_1_burials')
+    agent_director = models.BooleanField(_(u"Директор-Агент"), default=False)
+    agent = models.ForeignKey(Profile, verbose_name=_(u"Агент"), null=True, related_name='agent_1_burials',)
+    dover = models.ForeignKey(Dover, verbose_name=_(u"Доверенность"), null=True, related_name='dover_1_burials')
+
+    status = models.CharField(_(u"Статус"), max_length=255)
+    changed_by = models.ForeignKey('auth.User', null=True, related_name='changed_by_1_burials')
+    annulated = models.BooleanField(_(u"Аннулировано"), default=False)
+    flag_no_applicant_doc_required = models.BooleanField(_(u"Документ заявителя-ФЛ не требуется"), default=False)
+
+    class Meta:
+        verbose_name = _(u"Захоронение")
+        verbose_name_plural = _(u"Захоронение")
+        managed = False
+
+    def burial1_to_burial(self):
+        return Burial.objects.filter(pk=self.pk).select_related(
+            'ugh', 'cemetery', 'area', 'area__purpose',
+            'deadman', 'deadman__address',
+            'applicant_organization',
+            'applicant', 'applicant__address',
+            'changed_by', 'changed_by__profile', 
+            'responsible',  'responsible__address',
+        )[0]
