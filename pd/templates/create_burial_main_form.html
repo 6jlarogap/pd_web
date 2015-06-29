@@ -128,6 +128,33 @@
         {{ form.deadman_form.death_date.errors }}
         <p class="inline">{{ form.deadman_form.death_date.label_tag }} {{ form.deadman_form.death_date }}<span class="helptext">{{ form.deadman_form.death_date.help_text }}</span></p>
 
+        <script type="text/javascript">
+            function setDeathDate(isLoru) {
+                var dDeath = new Date();
+                {% comment %}
+                    К лору обычно приходят родственники усопших в тот же день,
+                    в ОМС чаще приходят родственники или на кладбище хоронят тех, кто умер вчера
+                {% endcomment %}
+                if (isLoru.toLowerCase() == 'false') {
+                    dDeath.setDate(dDeath.getDate() - 1);
+                }
+                var year = dDeath.getFullYear();
+                var month = dDeath.getMonth() + 1;
+                var day = dDeath.getDate();
+                $('#id_deadman-death_date_year option:selected').removeAttr('selected');
+                $('#id_deadman-death_date_year option[value="' + year +'"]').attr('selected', 'selected');
+                $('#id_deadman-death_date_month option:selected').removeAttr('selected');
+                $('#id_deadman-death_date_month option[value="'+ month +'"]').attr('selected', 'selected');
+                $('#id_deadman-death_date_day option:selected').removeAttr('selected');
+                $('#id_deadman-death_date_day option[value="'+ day +'"]').attr('selected', 'selected');
+                $('#deadman_btn_today').hide();
+            }
+        </script>
+
+        <p class="inline-button">
+            <input type="button" class="btn" value="{% if request.user.profile.is_loru %}{% trans "сегодня" %}{% else %}{% trans "вчера" %}{% endif %}" onclick="setDeathDate('{{ request.user.profile.is_loru }}')" id="deadman_btn_today" />
+        </p>
+
         <h3>{% trans "Адрес" %}</h3>
         <div class="form_block">
             {% with form.deadman_address_form as form %}

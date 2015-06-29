@@ -3,6 +3,12 @@
     vertical-align: top;
 }
 
+.inline-button {
+    display: inline-block;
+    vertical-align: top;
+    margin-top: 22px;
+}
+
 fieldset p { display: inline-block; }
 
 #id_time_slots { height: 40px; }
