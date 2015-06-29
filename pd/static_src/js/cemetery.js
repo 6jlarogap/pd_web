@@ -548,6 +548,22 @@ $(function() {
         }
     });
 
+    $('select[name*=deadman-death_date_]').change(function() {
+        var hide_ = false;
+        $('select[name*=deadman-death_date_]').each(function() {
+            if ($(this).val() != '0') {
+                hide_ = true
+                return;
+            }
+        });
+        if (hide_) {
+            $('#deadman_btn_today').hide();
+        } else {
+            $('#deadman_btn_today').show();
+        }
+    });
+    $('select[name*=deadman-death_date_]').change();
+
     $('#id_deadman-dc-release_date').change(function() {
         if ($(this).val()) {
             $('#dc_btn_today').hide();
