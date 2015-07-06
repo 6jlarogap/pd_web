@@ -14,7 +14,7 @@ class LocationForm(PartialFormMixin, forms.ModelForm):
     city_name = forms.CharField(label=_(u"Город"), required=False)
     street_name = forms.CharField(label=_(u"Улица"), required=False)
 
-    fias_address = forms.CharField(label=_(u"Адрес"), required=False)
+    fias_address = forms.CharField(label='', required=False)
     fias_street = forms.CharField(required=False, widget=forms.HiddenInput)
 
     class Meta:

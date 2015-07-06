@@ -641,32 +641,38 @@ class Org(GetLogsMixin, BaseModel):
                              choices=BASIS_CHOICES, default=BASIS_CHARTER)
     email = models.EmailField(_(u"Email"), null=True, blank=True)
     phones = models.TextField(_(u"Телефоны"), blank=True, null=True)
+    fax = models.CharField(_(u"Факс"), max_length=20, default='', blank=True)
     sms_phone = models.DecimalField(_(u"Мобильный телефон для СМС- уведомлений"), max_digits=15, decimal_places=0,
                   blank=True, null=True,
                   help_text=_(u'В международном формате, начиная с кода страны, без "+", например 79101234567'),
                   validators = [validate_phone_as_number, ])
-    fax = models.CharField(_(u"Факс"), max_length=20, default='', blank=True)
+    worktime = models.CharField(_(u"Время работы (ЧЧ:ММ - ЧЧ:ММ)"), max_length=255, default='', blank=True)
+    site = models.URLField(_(u"Сайт"), default='', blank=True)
+    currency = models.ForeignKey('billing.Currency', verbose_name=_(u"Валюта"), default=get_default_currency,
+                                 help_text=_(u' При смене валюты она будет заменена у всех товаров (услуг) без корректировки цен'))
+    is_wholesale_with_vat = models.BooleanField(_(u"Оптовые цены продуктов с НДС"), default=False)
     off_address = models.ForeignKey('geo.Location', verbose_name=_(u"Юр. адрес"), null=True, blank=True)
+    subdomain = models.CharField(_(u"Поддомен"), max_length=255, null=True, editable=False)
+
+    # Блок настроек умолчаний по заказам у ЛОРУ -----------------------------
+    opf_order_customer_mandatory = models.BooleanField(_(u"Данные заказчика при оформлении заказа обязательны"),
+                                    default=True)
+    opf_order = models.CharField(_(u"Заказчик по умолчанию в заказе"), max_length=255,
+                                    choices=list(OPF_CHOICES)[1:], default=OPF_ORG)
+    # ----------------------------------------------------------------------
+
+    # Блок настроек умолчаний по захоронениям -------------------------------
     numbers_algo = models.CharField(_(u"Заполнение номера захоронения"), max_length=255, choices=NUM_TYPES,
                                     default=NUM_MANUAL)
     # название поля не заканчивается на date, чтоб не угодить под специфический datePicker widget для дат:
     opf_burial = models.CharField(_(u"Заявитель по умолчанию в захоронении"), max_length=255,
                                     choices=list(OPF_CHOICES)[1:], default=OPF_ORG)
     death_date_offer = models.BooleanField(_(u"Предлагать дату смерти в новом захоронении"), default=False)
-    opf_order = models.CharField(_(u"Заказчик по умолчанию в заказе"), max_length=255,
-                                    choices=list(OPF_CHOICES)[1:], default=OPF_ORG)
-    opf_order_customer_mandatory = models.BooleanField(_(u"Данные заказчика при оформлении заказа обязательны"),
-                                    default=True)
     # название поля не заканчивается на date, чтоб не угодить под специфический datePicker widget для дат:
     plan_date_days_before = models.PositiveIntegerField(_(u"Кол-во дней для ввода плановой даты захоронения в прошлом"), default=3)
     max_graves_count = models.PositiveIntegerField(_(u"Максимальное число могил в месте"), default=5,
                                 validators=[validate_gt0])
-    worktime = models.CharField(_(u"Время работы (ЧЧ:ММ - ЧЧ:ММ)"), max_length=255, default='', blank=True)
-    site = models.URLField(_(u"Сайт"), default='', blank=True)
-    currency = models.ForeignKey('billing.Currency', verbose_name=_(u"Валюта"), default=get_default_currency,
-                                 help_text=_(u' При смене валюты она будет заменена у всех товаров (услуг) без корректировки цен'))
-    is_wholesale_with_vat = models.BooleanField(_(u"Оптовые цены продуктов с НДС"), default=False)
-    subdomain = models.CharField(_(u"Поддомен"), max_length=255, null=True, editable=False)
+    # ----------------------------------------------------------------------
 
     class Meta:
         verbose_name = _(u'Организация')
@@ -768,6 +774,12 @@ class Org(GetLogsMixin, BaseModel):
             return self.ugh_list.filter(ugh__ability__name=OrgAbility.ABILITY_PERSONAL_DATA).exists()
         else:
             return False
+
+    def is_ugh(self):
+        return self.type == Org.PROFILE_UGH
+
+    def is_loru(self):
+        return self.type == Org.PROFILE_LORU
 
     def is_trade(self):
         return self.ability.filter(name=OrgAbility.ABILITY_TRADE).exists()
