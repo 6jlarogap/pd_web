@@ -215,8 +215,10 @@ class BaseOrgForm(LoggingFormMixin, forms.ModelForm):
         add_org_with_type = self.instance and not self.instance.pk and self.instance.type
         country_code = host_country_code(request)
         if country_code == 'by':
-            self.fields['inn'].label = _(u'УНП')
-            self.fields['ogrn'].label = _(u'ОКПО')
+            if 'inn' in self.fields:
+                self.fields['inn'].label = _(u'УНП')
+            if 'ogrn' in self.fields:
+                self.fields['ogrn'].label = _(u'ОКПО')
         if self.is_own_org or add_org_with_type:
             del self.fields['type']
             self.fields['type_'] = forms.CharField(widget=forms.TextInput(attrs={'readonly':'readonly'}),

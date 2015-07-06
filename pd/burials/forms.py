@@ -1577,14 +1577,8 @@ class AddDoverForm(StrippedStringsMixin, forms.ModelForm):
 class AddOrgForm(StrippedStringsMixin, BaseOrgForm):
     class Meta:
         model = Org
-        exclude = ('off_address', 'numbers_algo',
-                   'opf_order', 'opf_order_customer_mandatory',
-                   'plan_date_days_before', 'max_graves_count',
-                   'worktime', 'site', 
-                   'currency', 'director',
-                   'description', 'is_wholesale_with_vat',
-                   'sms_phone', 'death_date_offer',
-                   'hide_deadman_address',
+        fields = ('type', 'name', 'full_name', 'inn',
+                  'phones', 'fax', 'email',
         )
     
     def __init__(self, request, *args, **kwargs):
