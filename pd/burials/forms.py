@@ -1584,6 +1584,7 @@ class AddOrgForm(StrippedStringsMixin, BaseOrgForm):
                    'currency', 'director',
                    'description', 'is_wholesale_with_vat',
                    'sms_phone', 'death_date_offer',
+                   'hide_deadman_address',
         )
     
     def __init__(self, request, *args, **kwargs):
