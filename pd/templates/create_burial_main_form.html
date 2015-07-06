@@ -156,10 +156,14 @@
         </p>
 
         <h3>{% trans "Адрес" %}</h3>
-        <div class="form_block">
-            {% with form.deadman_address_form as form %}
-                {% include "location_form.html" %}
-            {% endwith %}
+        <a href="#" onclick="return contShowHide('#cont_deadman_address', '#a_cont_deadman_address', '{% trans 'развернуть' %}', '{% trans 'свернуть' %}');"
+            class="slider" data-id="cont_deadman_address" id="a_cont_deadman_address">{% if not request.user.profile.org.hide_deadman_address or form.deadman_address_form.errors %}{% trans "свернуть" %}{% else %}{% trans "развернуть" %}{% endif %}</a>
+        <div id="cont_deadman_address" {% if request.user.profile.org.hide_deadman_address and not form.deadman_address_form.errors %}style="display: none"{% endif %}>
+            <div class="form_block">
+                {% with form.deadman_address_form as form %}
+                    {% include "location_form.html" %}
+                {% endwith %}
+            </div>
         </div>
         <div id="show_deathcertificate" >
             <h3>{% trans "Документ о смерти" %}</h3>

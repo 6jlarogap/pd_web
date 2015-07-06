@@ -7,6 +7,15 @@
 <form action="" method="POST"  enctype="multipart/form-data">
     {% csrf_token %}
     {% for field in form %}
+        {% if object.is_ugh and field.name == "numbers_algo" %}
+            <h3>{% trans "Настройки при создании/правке захоронений" %}</h3>
+        {% endif %}
+        {% if object.is_loru and field.name == "opf_burial" %}
+            <h3>{% trans "Настройки при создании/правке захоронений" %}</h3>
+        {% endif %}
+        {% if object.is_loru and field.name == "opf_order_customer_mandatory" %}
+            <h3>{% trans "Настройки при создании/правке заказов" %}</h3>
+        {% endif %}
         {{ field.errors }}
         <p>{{ field.label_tag }} {{ field }}<span class="helptext">{{ field.help_text }}</span>
         </p>
