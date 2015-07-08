@@ -93,4 +93,3 @@ SMS_SERVICE = [
 # установить этот параметр в True
 #
 REDIRECT_LOGIN_TO_FRONT_END = False
-
