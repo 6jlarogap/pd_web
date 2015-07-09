@@ -300,7 +300,10 @@ class UnclearDateField(forms.DateField):
                 datetime.datetime.strptime(value, "%Y-%m-%d")
             except ValueError:
                 y, m, d = value.split('-')
-                raise forms.ValidationError(_(u'Была введена неверная дата (д-м-г): %s-%s-%s') % (d, m, y))
+                raise forms.ValidationError(
+                    _(u'Была введена неверная дата (дд-мм-гггг): %(day)s-%(month)s-%(year)s') % dict(
+                    day=d.rjust(2,'0'), month=m.rjust(2,'0'), year=y,
+                ))
         elif isinstance(value, UnclearDate) and not value.no_day and value.no_month:
             raise forms.ValidationError(_(u'Нет месяца в дате'))
         return value
@@ -368,8 +371,9 @@ class CustomUploadModelForm(forms.ModelForm):
         # - типа ...UploadFile (много разных таких типов),
         #        когда выполнен POST с прикрепленным файлом
         if bfile and not isinstance(bfile, FieldFile) and bfile.size > self.MAX_UPLOAD_SIZE_MB * 2**20:
-            raise forms.ValidationError(_(u'Попытка загрузки файла %s, превышен максимальный размер: %s Мб.') % \
-                                         (bfile._name, self.MAX_UPLOAD_SIZE_MB)
+            raise forms.ValidationError(
+                _(u'Попытка загрузки файла %(filename)s, превышен максимальный размер: %(max_size)s Мб.') % \
+                dict(filename=bfile._name, max_size=self.MAX_UPLOAD_SIZE_MB)
             )
         return bfile
 
