@@ -415,16 +415,20 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
                 timestamp_modified_really = int(DeathCertificate.objects.get(pk=dc_form.instance.pk).\
                                                         dt_modified.strftime("%s"))
                 if timestamp_modified_really > dc_form.cleaned_data['dt_modified']:
-                    messages.error(self.request,
-                    _(u"<a href='%s'>Захоронение %s</a> было изменено другим пользователем. Страница обновлена") % (
-                        reverse('view_burial', args=[self.b.pk]), self.b.pk,
+                    messages.error(
+                        self.request,
+                        _(u"<a href='%(view_burial)s'>Захоронение %(pk)s</a> было изменено другим пользователем. "
+                          u"Страница обновлена") % dict(
+                            view_burial=reverse('view_burial', args=[self.b.pk]), pk=self.b.pk,
                     ))
                     refresh = True
                     return burial, refresh
             burial = approve_close_form.save()
             if dc_form and dc_form.changed_data:
-                messages.success(self.request, _(u"<a href='%s'>Захоронение %s</a>: свидетельство о смерти сохранено") % (
-                    reverse('view_burial', args=[self.b.pk]), self.b.pk,
+                messages.success(
+                    self.request,
+                    _(u"<a href='%(view_burial)s'>Захоронение %(pk)s</a>: свидетельство о смерти сохранено") % dict(
+                        view_burial=reverse('view_burial', args=[self.b.pk]), pk=self.b.pk,
             ))
         return burial, refresh
 
@@ -806,25 +810,25 @@ class CreateBurial(BurialGetOrderMixin, FormInvalidMixin, CreateView):
                 order.save()
                 write_log(self.request, b, _(u'Захоронение откреплено от заказа %s') % order.pk)
                 write_log(self.request, order, _(u'Заказ: откреплено захоронение %s') % b.pk)
-                msg = _(u"<a href='%s'>Заказ %s</a>: откреплено захоронение") % (
-                    reverse('order_burial', args=[order.pk]),
-                    order.pk,
+                msg = _(u"<a href='%(order_burial)s'>Заказ %(pk)s</a>: откреплено захоронение") % dict(
+                    order_burial=reverse('order_burial', args=[order.pk]),
+                    pk=order.pk,
                 )
                 messages.success(self.request, msg)
 
             if action == 'ready' and self.request.user.profile.is_loru() and b.is_edit() and b.is_full():
                 b.status = Burial.STATUS_READY
                 write_log(self.request, b, _(u'Захоронение отправлено на согласование'))
-                msg = _(u"<a href='%s'>Захоронение %s</a> отправлено на согласование") % (
-                    reverse('view_burial', args=[b.pk]) + order_parm, b.pk,
+                msg = _(u"<a href='%(view_burial)s'>Захоронение %(pk)s</a> отправлено на согласование") % dict(
+                    view_burial=reverse('view_burial', args=[b.pk]) + order_parm, pk=b.pk,
                 )
                 messages.success(self.request, msg)
 
             if action == 'annulate' and self.request.user.profile.is_loru() and b.can_loru_annulate():
                 b.annulated = True
                 write_log(self.request, b, _(u'Захоронение аннулировано'))
-                msg = _(u"<a href='%s'>Захоронение %s</a> аннулировано") % (
-                    reverse('view_burial', args=[b.pk]) + order_parm, b.pk,
+                msg = _(u"<a href='%(view_burial)s'>Захоронение %(pk)s</a> аннулировано") % dict(
+                    view_burial=reverse('view_burial', args=[b.pk]) + order_parm, pk=b.pk,
                 )
                 messages.success(self.request, msg)
 
@@ -832,31 +836,38 @@ class CreateBurial(BurialGetOrderMixin, FormInvalidMixin, CreateView):
                 b.status = Burial.STATUS_APPROVED
                 b.approve(self.request.user)
                 write_log(self.request, b, _(u'Захоронение согласовано'))
-                messages.success(self.request, _(u"<a href='%s'>Захоронение %s</a> согласовано") % (
-                    reverse('view_burial', args=[b.pk]), b.pk,
+                messages.success(
+                    self.request,
+                    _(u"<a href='%(view_burial)s'>Захоронение %(pk)s</a> согласовано") % dict(
+                        view_burial=reverse('view_burial', args=[b.pk]), pk=b.pk,
                 ))
 
             if action == 'disapprove' and self.request.user.profile.is_ugh() and b.can_disapprove_ugh():
                 b.status = Burial.STATUS_DRAFT
                 write_log(self.request, b, _(u'Захоронение возвращено в статус черновика'))
-                messages.success(self.request, _(u"<a href='%s'>Захоронение %s</a> возвращено в статус черновика") % (
-                    reverse('view_burial', args=[b.pk]), b.pk,
+                messages.success(
+                    self.request,
+                    _(u"<a href='%(view_burial)s'>Захоронение %(pk)s</a> возвращено в статус черновика") % dict(
+                        view_burial=reverse('view_burial', args=[b.pk]), pk=b.pk,
                 ))
 
             if action == 'complete' and self.request.user.profile.is_ugh() and b.can_finish() and b.is_ugh():
                 b.changed_by = self.request.user
                 b.close(request=self.request)
-                messages.success(self.request, _(u"<a href='%s'>Захоронение %s</a> закрыто") % (
-                    reverse('view_burial', args=[b.pk]), b.pk,
+                messages.success(
+                    self.request,
+                    _(u"<a href='%(view_burial)s'>Захоронение %(pk)s</a> закрыто") % dict(
+                        view_burial=reverse('view_burial', args=[b.pk]), pk=b.pk,
                 ))
                 redirect_to_view = True
 
             if old_status != b.status or old_annulated != b.annulated:
                 b.save()
             elif action != 'unbind':
-                msg = _(u"Выполнить операцию не удалось: <a href='%s'>захоронение</a> в статусе \"%s\"") % (
-                    reverse('view_burial', args=[b.pk]) + order_parm,
-                    b.get_status_display(),
+                msg = _(u"Выполнить операцию не удалось: "
+                        u"<a href='%(view_burial)s'>захоронение</a> в статусе \"%(status)s\"") % dict(
+                    view_burial=reverse('view_burial', args=[b.pk]) + order_parm,
+                    status=b.get_status_display(),
                 )
                 messages.success(self.request, msg)
                 return redirect('dashboard')
