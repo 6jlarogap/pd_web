@@ -449,7 +449,10 @@ def validate_phone_as_number(value):
     min_digits = 10
     max_digits = 12
     if not re.search(r'^\d{%d,%d}$' % (min_digits, max_digits, ), str(value)):
-        raise ValidationError(_(u'Неверный номер телефона, надо от %d до %d цифр') % (min_digits, max_digits, ))
+        raise ValidationError(
+            _(u'Неверный номер телефона, надо от %(min_digits)d до %(max_digits)d цифр') % dict(
+                min_digits=min_digits, max_digits=max_digits, 
+        ))
     # Могут приходить и из json rest запросов, просто строки, а не десятичные числа из формы
     if isinstance(value, basestring) and value.startswith('0'):
         raise ValidationError(_(u'Неверный первый знак в телефоне'))
