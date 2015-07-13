@@ -6,8 +6,6 @@ UGH_NAME = u'БарЖКХ'
 CEMETERY_NAME = u'Русино'
 IMPORT_XLS = '../contrib/import_barjkh/import.xls'
 
-BURIAL_ACCT_PREFIX = '2008'
-
 # Создать в организации UGH_NAME кладбище CEMETERY_NAME, импортировать
 # данные по кладбищу из IMPORT_XLS
 #
@@ -17,9 +15,8 @@ BURIAL_ACCT_PREFIX = '2008'
 #
 # При импорте считалось:
 #
-# - учетный номер захоронения -- это поле ID_record в xls
-#   К этому номеру приставляем 2008, год до которого включительно, судя по xls,
-#   активно проводились захоронения
+# - учетный номер захоронения -- это поле ID_record в xls. Считаем, что
+#   учетный номер захоронения они проставляют вручную
 # - импортируемый xls отсортирован по дате смерти, затем по ID_record,
 #   чтоб определить, кто в могилу с каким номером захоронен: если в
 #   в месте несколько могил, то более раннее захоронение будет
@@ -214,10 +211,7 @@ def main():
             burial_type=burial_type,
             burial_container=Burial.CONTAINER_COFFIN,
             source_type=Burial.SOURCE_TRANSFERRED,
-            account_number='{}{:0>5}'.format(
-                BURIAL_ACCT_PREFIX,
-                cell_value(sheet.cell(row, C_ACCOUNT_NUMBER))
-            ),
+            account_number=cell_value(sheet.cell(row, C_ACCOUNT_NUMBER)),
             place=place,
             cemetery=cemetery,
             area=area,
