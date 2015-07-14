@@ -213,7 +213,7 @@ class PersonID(models.Model):
         verbose_name_plural = _(u"Удостоверения личности")
 
     def __unicode__(self):
-        return _(u"%s %s %s") % (self.id_type, self.series, self.number)
+        return u"%s %s %s" % (self.id_type, self.series, self.number)
 
     def save(self, *args, **kwargs):
         self.series = self.series.upper()
@@ -305,7 +305,7 @@ class Phone(BaseModel):
     def __unicode__(self):
          for k, v in PHONE_TYPE_CHOICES:  
              if k == self.phonetype:  
-                 return _(u"%s: %s") % (v, self.number)
+                 return u"%s: %s" % (v, self.number)
 
     @classmethod
     def create_default_phones(cls, instance, phones):
