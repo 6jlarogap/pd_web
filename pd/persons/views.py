@@ -103,7 +103,12 @@ class AlivePersonViewSet(viewsets.ModelViewSet):
     def pre_save(self, object):
         if object.pk:
             old_obj = self.model.objects.get(pk=object.pk)
-            write_log(self.request, object, _(u'Ответственный изменен с "%s" на "%s"') % (old_obj,object))
+            write_log(
+                self.request,
+                object,
+                _(u'Ответственный изменен с "%(old_obj)s" на "%(object)s"') % dict(
+                    old_obj=old_obj, object=object
+            ))
         else:
             write_log(self.request, object, _(u'Ответственный создан'))
 
@@ -129,7 +134,12 @@ class PhoneViewSet(viewsets.ModelViewSet):
     def pre_save(self, object):
         if object.pk:
             old_obj = self.model.objects.get(pk=object.pk)
-            write_log(self.request, object, _(u'Телефон изменен с "%s" на "%s"') % (old_obj,object))
+            write_log(
+                self.request,
+                object,
+                _(u'Телефон изменен с "%(old_obj)s" на "%(object)s"') % dict(
+                    old_obj=old_obj, object=object
+            ))
         else:
             write_log(self.request, object, _(u'Телефон создан'))
 
