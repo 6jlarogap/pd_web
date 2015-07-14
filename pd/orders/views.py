@@ -115,9 +115,9 @@ class ProductCreate(LORURequiredMixin, RequestToFormMixin, CreateView):
             self.object.sku = str(self.object.pk)
             self.object.save()
         write_log(self.request, self.object, _(u'Создание: %s') % self.object.name)
-        msg = _(u"<a href='%s'>Товар %s</a> создан") % (
-            reverse('manage_products_edit', args=[self.object.pk]),
-            self.object.name,
+        msg = _(u"<a href='%(manage_products_edit)s'>Товар %(name)s</a> создан") % dict(
+            manage_products_edit=reverse('manage_products_edit', args=[self.object.pk]),
+            name=self.object.name,
         )
         messages.success(self.request, msg)
         return redirect('manage_products')
@@ -137,9 +137,9 @@ class ProductEdit(LORURequiredMixin, RequestToFormMixin, UpdateView):
             self.object.sku = str(self.object.pk)
         self.object.save()
         write_log(self.request, self.object, _(u'Изменение: %s') % self.object.name)
-        msg = _(u"<a href='%s'>Товар %s</a> изменен") % (
-            reverse('manage_products_edit', args=[self.object.pk]),
-            self.object.name,
+        msg = _(u"<a href='%(manage_products_edit)s'>Товар %(name)s</a> изменен") % dict(
+            manage_products_edit=reverse('manage_products_edit', args=[self.object.pk]),
+            name=self.object.name,
         )
         messages.success(self.request, msg)
         return redirect('manage_products')
@@ -345,9 +345,9 @@ class OrderCreate(LORURequiredMixin, RequestToFormMixin, CreateView):
             OrderItem.objects.create(order=self.object, product=p)
 
         write_log(self.request, self.object, _(u'Заказ сохранен'))
-        msg = _(u"<a href='%s'>Заказ %s</a> сохранен") % (
-            reverse('order_edit', args=[self.object.pk]),
-            self.object.pk,
+        msg = _(u"<a href='%(order_edit)s'>Заказ %(pk)s</a> сохранен") % dict(
+            order_edit=reverse('order_edit', args=[self.object.pk]),
+            pk=self.object.pk,
         )
         messages.success(self.request, msg)
         return redirect('order_products', self.object.pk)
@@ -384,9 +384,9 @@ class OrderEdit(LORURequiredMixin, RequestToFormMixin, UpdateView):
         self.object = form.save()
 
         write_log(self.request, self.object, _(u'Заказ сохранен'))
-        msg = _(u"<a href='%s'>Заказ %s</a> сохранен") % (
-            reverse('order_edit', args=[self.object.pk]),
-            self.object.pk,
+        msg = _(u"<a href='%(order_edit)s'>Заказ %(pk)s</a> сохранен") % dict(
+            order_edit=reverse('order_edit', args=[self.object.pk]),
+            pk=self.object.pk,
         )
         messages.success(self.request, msg)
         return redirect('.')
@@ -436,9 +436,9 @@ class OrderEditProducts(LORURequiredMixin, View):
             formset.save()
 
             write_log(self.request, self.object, _(u'Заказ сохранен'))
-            msg = _(u"<a href='%s'>Заказ %s</a> сохранен") % (
-                reverse('order_edit', args=[self.object.pk]),
-                self.object.pk,
+            msg = _(u"<a href='%(order_edit)s'>Заказ %(pk)s</a> сохранен") % dict(
+                order_edit=reverse('order_edit', args=[self.object.pk]),
+                pk=self.object.pk,
             )
             messages.success(self.request, msg)
             return redirect('.')
@@ -519,9 +519,9 @@ class OrderEditServices(OrderEditProducts):
                 coffin.save()
 
             write_log(self.request, self.object, _(u'Заказ сохранен'))
-            msg = _(u"<a href='%s'>Заказ %s</a> сохранен") % (
-                reverse('order_edit', args=[self.object.pk]),
-                self.object.pk,
+            msg = _(u"<a href='%(order_edit)s'>Заказ %(pk)s</a> сохранен") % dict(
+                order_edit=reverse('order_edit', args=[self.object.pk]),
+                pk=self.object.pk,
             )
             messages.success(self.request, msg)
             return redirect('.')
@@ -626,9 +626,9 @@ class OrderBurialView(LORURequiredMixin, RequestToFormMixin, UpdateView):
             # - форма привязала к этому заказу захоронение
             write_log(self.request, self.object.burial, _(u'Захоронение прикреплено к заказу %s') % self.object.pk)
             write_log(self.request, self.object, _(u'Заказ: прикреплено захоронение %s') % self.object.burial.pk)
-            msg = _(u"<a href='%s'>Заказ %s</a>: прикреплено захоронение") % (
-                reverse('order_edit', args=[self.object.pk]),
-                self.object.pk,
+            msg = _(u"<a href='%(order_edit)s'>Заказ %(pk)s</a>: прикреплено захоронение") % dict(
+                order_edit=reverse('order_edit', args=[self.object.pk]),
+                pk=self.object.pk,
             )
             messages.success(self.request, msg)
             return redirect('.')

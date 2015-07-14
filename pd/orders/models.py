@@ -319,10 +319,14 @@ class Order(GetLogsMixin, BaseModel):
     def get_formal_org(self):
         org = self.applicant_organization
         if self.agent_director:
-            return _(u"%s, в лице директора %s") % (org, org.director)
+            return _(u"%(org)s, в лице директора %(director)s") % dict(
+                org=org, director=org.director
+            )
         else:
-            params = (org, self.agent, self.dover.number)
-            return _(u"\"%s\", в лице агента %s, действующего на основании доверенности %s") % params
+            return _(u"\"%(org)s\", в лице агента %(agent)s, "
+                     u"действующего на основании доверенности %(dover)s") % dict(
+                         org=org, agent=self.agent, dover=self.dover.number
+            )
 
     @property
     def total(self):
