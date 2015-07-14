@@ -257,7 +257,16 @@ class ApiPlaceUpload(APIView):
                 (prevPlace.dt_military is None) != (dtMilitary is None) or (prevPlace.dt_size_violated is None) != (dtSizeViolated is None) or \
                 (prevPlace.dt_unowned is None) != (dtUnowned is None) or (prevPlace.dt_unindentified is None) != (dtUnindentified is None) :
                 if (prevPlace.oldplace or "") != oldPlaceName :
-                    write_log(request, prevPlace, _(u'Переименование места (place=%s, oldplace=%s) в (place=%s, oldplace=%s)' % (prevPlace.place, prevPlace.oldplace, placeName, oldPlaceName)))
+                    write_log(
+                        request,
+                        prevPlace,
+                        _(u'Переименование места (place=%(prev_place)s, oldplace=%(prev_oldplace)s) '
+                          u'в (place=%(new_place)s, oldplace=%(new_oldplace)s)') % dict(
+                            prev_place=prevPlace.place,
+                            prev_oldplace=prevPlace.oldplace,
+                            new_place=placeName,
+                            new_oldplace=oldPlaceName
+                    ))
                     prevPlace.oldplace = oldPlaceName
                 prevPlace.place = placeName
                 prevPlace.row = rowName
@@ -295,7 +304,16 @@ class ApiPlaceUpload(APIView):
                             prevPlace = listFilterByOldName2[0]
             if prevPlace :
                 if (prevPlace.oldplace or "") != oldPlaceName :
-                    write_log(request, prevPlace, _(u'Переименование места (place=%s, oldplace=%s) в (place=%s, oldplace=%s)' % (prevPlace.place, prevPlace.oldplace, placeName, oldPlaceName)))
+                    write_log(
+                        request,
+                        prevPlace,
+                        _(u'Переименование места (place=%(prev_place)s, oldplace=%(prev_oldplace)s) '
+                          u'в (place=%(new_place)s, oldplace=%(new_oldplace)s)') % dict(
+                              prev_place=prevPlace.place,
+                              prev_oldplace=prevPlace.oldplace,
+                              new_place=placeName,
+                              new_oldplace=oldPlaceName
+                    ))
                     prevPlace.oldplace = oldPlaceName
                 prevPlace.place = placeName
                 prevPlace.row = rowName
