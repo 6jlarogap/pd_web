@@ -52,7 +52,11 @@ import_orgs = transaction.commit_on_success(ImportOrgsView.as_view())
 class ImportBurialsView(View):
     def post(self, request, *args, **kwargs):
         real_i, dupes_i = do_import_burials(request.FILES['burials-csv'], user=request.user)
-        messages.success(request, _(u"Импорт успешен, %s записей, игнорировано %s записей") % (real_i, dupes_i))
+        messages.success(
+            request,
+            _(u"Импорт успешен, %(real_i)s записей, игнорировано %(dupes_i)s записей") % dict(
+                real_i=real_i, dupes_i=dupes_i
+        ))
         return redirect('import_forms')
 
 import_burials = transaction.commit_on_success(ImportBurialsView.as_view())
@@ -90,7 +94,11 @@ import_services = transaction.commit_on_success(ImportServicesView.as_view())
 class ImportOrdersView(View):
     def post(self, request, *args, **kwargs):
         real_i, dupes_i = do_import_orders(request.FILES['orders-csv'])
-        messages.success(request, _(u"Импорт успешен, %s записей, игнорировано %s записей") % (real_i, dupes_i))
+        messages.success(
+            request,
+            _(u"Импорт успешен, %(real_i)s записей, игнорировано %(dupes_i)s записей") % dict(
+                real_i=real_i, dupes_i=dupes_i
+        ))
         return redirect('import_kaluga')
 
 import_orders = transaction.commit_on_success(ImportOrdersView.as_view())
@@ -106,7 +114,11 @@ import_docs = transaction.commit_on_success(ImportPersonDocsView.as_view())
 class ImportDeathCertsView(View):
     def post(self, request, *args, **kwargs):
         real_i, dupes_i = do_import_dcs(request.FILES['dcs-csv'])
-        messages.success(request, _(u"Импорт успешен, %s записей, игнорировано %s записей") % (real_i, dupes_i))
+        messages.success(
+            request,
+            _(u"Импорт успешен, %(real_i)s записей, игнорировано %(dupes_i)s записей") % dict(
+                real_i=real_i, dupes_i=dupes_i
+        ))
         return redirect('import_kaluga')
 
 import_dcs = transaction.commit_on_success(ImportDeathCertsView.as_view())
