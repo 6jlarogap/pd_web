@@ -982,9 +982,9 @@ class OrgEditView(LoginRequiredMixin, RequestToFormMixin, FormInvalidMixin, Upda
         return data
 
     def get_success_url(self):
-        msg = _(u"<a href='%(edit_org)s'>Организация %(pk)s</a> изменена") % dict(
+        msg = _(u"<a href='%(edit_org)s'>Организация %(org)s</a> изменена") % dict(
             edit_org=reverse('edit_org', args=[self.object.pk]),
-            pk=self.object,
+            org=self.object,
         )
         messages.success(self.request, msg)
         return reverse('edit_org', args=[self.object.pk])
