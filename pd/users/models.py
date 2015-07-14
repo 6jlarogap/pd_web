@@ -201,21 +201,21 @@ def get_mail_footer(user):
         is_customer = is_cabinet_user(user)
         pr = user.customerprofile if is_customer else user.profile
         footer = _(     u'\n\n'
-                        u'Пользователь: %s %s %s\n'
-                        u'Email: %s\n'
-                  ) % (
-                        user.username,
-                        '/' if pr.full_name() else '',
-                        pr.full_name(),
-                        user.email or '',
+                        u'Пользователь: %(username)s %(slash)s %(full_name)s\n'
+                        u'Email: %(email)s\n'
+                  ) % dict(
+                        username=user.username,
+                        slash='/' if pr.full_name() else '',
+                        full_name=pr.full_name(),
+                        email=user.email or '',
                        )
         if not is_customer:
             footer += _(    u'\n\n'
-                            u'Организация: %s\n'
-                            u'Email организации: %s\n'
-                        ) % (
-                                pr.org,
-                                pr.org and pr.org.email or '',
+                            u'Организация: %(org)s\n'
+                            u'Email организации: %(email)s\n'
+                        ) % dict(
+                                org=pr.org and pr.org or '',
+                                email=pr.org and pr.org.email or '',
                             )
     return footer
 
@@ -384,12 +384,21 @@ class Oauth(models.Model):
                 r = urllib2.urlopen(url)
                 raw_data = r.read().decode(r.info().getparam('charset') or 'utf-8')
             except urllib2.HTTPError as excpt:
-                raise ServiceException(_(u'Ошибка в ответе от провайдера %s, код: %s, статус: %s%s') % \
-                                        (provider, excpt.getcode(), excpt.reason, msg_debug))
+                raise ServiceException(
+                    _(u'Ошибка в ответе от провайдера %(provider)s, '
+                      u'код: %(code)s, статус: %(reason)s%(msg_debug)s') % dict(
+                        provider=provider,
+                        code=excpt.getcode(),
+                        reason=excpt.reason,
+                        msg_debug=msg_debug
+                ))
             except urllib2.URLError as excpt:
                 reason = u": %s" % excpt.reason if excpt.reason else ''
-                raise ServiceException(_(u'Ошибка связи с провайдером%s%s') % \
-                                        (reason, msg_debug))
+                raise ServiceException(
+                    _(u'Ошибка связи с провайдером%(reason)s%(msg_debug)s') % dict(
+                        reason=reason,
+                        msg_debug=msg_debug,
+            ))
 
             try:
                 data = json.loads(raw_data)
@@ -404,8 +413,10 @@ class Oauth(models.Model):
             except (KeyError, ValueError, ):
                 msg_debug = u" DEBUG: Request: %s. Response: %s" % (url, raw_data, ) \
                             if settings.DEBUG else u""
-                raise ServiceException(_(u"Ошибка интерпретации ответа от провайдера %s.%s") % \
-                                        (provider, msg_debug, ))
+                raise ServiceException(
+                    _(u"Ошибка интерпретации ответа от провайдера %(provider)s.%(msg_debug)s") % dict(
+                        provider=provider, msg_debug=msg_debug,
+                ))
                 
             if not uid:
                 raise ServiceException(_(u'Получен пустой uid от провайдера'))
@@ -808,8 +819,13 @@ class RegisterProfile(SafeDeleteMixin, BaseModel):
         fio = u'%s %s.' % (self.user_last_name, self.user_first_name[0].upper(), )
         if self.user_middle_name:
             fio += u'%s.' % self.user_middle_name[0].upper()
-        return _(u'Заявка: %s/"%s"/%s/%s/%s') % (self.get_org_type_display(), self.org_name,
-                                                 fio, self.user_name, self.user_email, )
+        return _(u'Заявка: %(type)s/"%(org_name)s"/%(fio)s/%(user_name)s/%(user_email)s') % dict(
+            type=self.get_org_type_display(),
+            org_name=self.org_name,
+            fio=fio,
+            user_name=self.user_name,
+            user_email=self.user_email,
+        )
     
     @transaction.commit_on_success
     def delete(self):
