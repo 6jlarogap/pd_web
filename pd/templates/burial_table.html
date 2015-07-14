@@ -1,5 +1,16 @@
 {% load i18n %}
 <tr>
+    {% if user.profile.is_loru %}
+        <th>
+            {% if sort == '-pk' %}
+                {% if sort == '-pk' %}<i class="icon icon-arrow-down"></i>{% endif %}
+                <a href="?{{ GET_PARAMS }}&sort=pk">{% trans "Номер" %}</a>
+            {% else %}
+                {% if sort == 'pk' %}<i class="icon icon-arrow-up"></i>{% endif %}
+                <a href="?{{ GET_PARAMS }}&sort=-pk">{% trans "Номер" %}</a>
+            {% endif %}
+        </th>
+    {% endif %}
     <th>
         {% if sort == 'account_number' %}
             {% if sort == 'account_number' %}<i class="icon icon-arrow-up"></i>{% endif %}
@@ -95,6 +106,9 @@
             ">
         {% else %}
             <tr>
+        {% endif %}
+        {% if user.profile.is_loru %}
+            <td>{{ b.pk }}</td>
         {% endif %}
             <td>{{ b.account_number|default:"" }}</td>
             {% if user.profile.is_ugh %}
