@@ -121,10 +121,10 @@ class BaseAreaFormset(BaseInlineFormSet):
 
     def clean(self):
         for df in getattr(self, 'deleted_forms', []):
-            if df.instance:
-                if df.instance.burial_set.exists():
-                    msg = _(u'Участок %s с <a href="/burials/?area=%s" target="_blank">захоронениями</a> удалить нельзя')
-                    raise forms.ValidationError(mark_safe(msg % (df.instance.name, df.instance.name)))
+            if df.instance and df.instance.burial_set.exists():
+                msg = _(u'Участок %(name)s с <a href="/burials/?area=%(name)s" '
+                        u'target="_blank">захоронениями</a> удалить нельзя')
+                raise forms.ValidationError(mark_safe(msg % dict(name=df.instance.name)))
 
 class AreaItemForm(StrippedStringsMixin, forms.ModelForm):
 
@@ -770,9 +770,9 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
 
         order_parm = '?order=%s' % self.order.pk if self.order else ''
         url = 'view_burial' if request.user.profile.is_ugh() else 'edit_burial'
-        msg = _(u"<a href='%s'>Захоронение %s</a> сохранено") % (
-            reverse(url, args=[self.instance.pk]) + order_parm,
-            self.instance.pk,
+        msg = _(u"<a href='%(burial_url)s'>Захоронение %(pk)s</a> сохранено") % dict(
+            burial_url=reverse(url, args=[self.instance.pk]) + order_parm,
+            pk=self.instance.pk,
         )
         messages.success(self.request, msg)
 
@@ -1028,8 +1028,10 @@ class BurialCommitForm(BurialForm):
         elif not place_number.strip() and \
            (burial_type in (Burial.BURIAL_ADD, Burial.BURIAL_OVER,)) and \
            cemetery and cemetery.places_algo_archive == Cemetery.PLACE_ARCHIVE_MANUAL and is_ugh:
-            msg = _(u"Нельзя %s %s без указания номера места для этого кладбища") % \
-                   (msg_complete, burial_type_str.lower(), )
+            msg = _(u"Нельзя %(msg_complete)s %(burial_type)s "
+                    u"без указания номера места для этого кладбища") % dict(
+                        msg_complete=msg_complete, burial_type=burial_type_str.lower(),
+                    )
             raise forms.ValidationError(msg)
         elif not place_number.strip() and area and area.availability == Area.AVAILABILITY_CLOSED:
             msg = _(u"Не указано место для закрытого участка. Нельзя %s захоронение") % msg_complete
@@ -1083,9 +1085,11 @@ class BurialCommitForm(BurialForm):
                                         Q(availability=Area.AVAILABILITY_OPEN)). \
                         aggregate(m=Max('places_count'))['m'] or 1
                 if desired_graves_count > max_grave_number_this_ugh:
-                    msg = _(u"Запрошенное число могил (%s) в новом месте превышает максимум (%s) по кладбищам этого ОМС" % \
-                            (desired_graves_count, max_grave_number_this_ugh)
-                           )
+                    msg = _(u"Запрошенное число могил (%(desired_graves_count)s) в новом месте "
+                            u"превышает максимум (%(max_grave_number)s) по кладбищам этого ОМС" % dict(
+                                desired_graves_count=desired_graves_count,
+                                max_grave_number=max_grave_number_this_ugh
+                           ))
                     raise forms.ValidationError(msg) 
             if self.request.user.profile.is_ugh() and \
                (self.cleaned_data.get('place_width') and not self.cleaned_data.get('place_length') or \
@@ -1114,9 +1118,10 @@ class BurialCommitForm(BurialForm):
             days_before = datetime.timedelta(days=days_before)
             if today > plan_date + days_before:
                 if days_before:
-                    msg = _(u"Плановая дата захоронения не может быть раньше %s %s до текущей даты") % \
-                            (days_before.days,
-                             _(u'дня') if days_before.days == 1 else _(u'дней'),
+                    msg = _(u"Плановая дата захоронения не может быть раньше "
+                            u"%(days_before)s %(days)s до текущей даты") % dict(
+                                days_before=days_before.days,
+                                days=_(u'дня') if days_before.days == 1 else _(u'дней'),
                             )
                 else:
                     msg = _(u"Плановая дата захоронения не может быть раньше текущей даты")
