@@ -161,10 +161,11 @@ class Area(BaseModel):
         unique_together = ('cemetery', 'name',)
 
     def __unicode__(self):
-        return _(u'%s (%s, %s, %s могил)') % (
-            self.name,
-            self.get_availability_display() or _(u"откр.неизв"), self.purpose or _(u"назн. неизв"),
-            self.places_count
+        return _(u'%(name)s (%(availability)s, %(purpose)s, %(places_count)s могил)') % dict(
+            name=self.name,
+            availability=self.get_availability_display() or _(u"откр.неизв"),
+            purpose=self.purpose or _(u"назн. неизв"),
+            places_count=self.places_count
         )
 
     def unique_error_message(self, model_class, unique_check):
@@ -220,16 +221,21 @@ class Place(SafeDeleteMixin, GeoPointModel):
         ordering = ['row', 'place']
 
     def __unicode__(self):
-        return _(u'Кл. %s, уч. %s, ряд %s, место %s') % (self.cemetery, self.area and self.area.name or '', self.row, self.place)
+        return _(u'Кл. %(cemetery)s, уч. %(area)s, ряд %(row)s, место %(place)s') % dict(
+            cemetery=self.cemetery,
+            area=self.area and self.area.name or '',
+            row=self.row,
+            place=self.place
+        )
 
     def full_name(self):
         result = _(u'Кладбище: %s') % self.cemetery.name
         if self.area:
-            result = _(u"%s, участок: %s") % (result, self.area.name, )
+            result = _(u"%(result)s, участок: %(area)s") % dict(result=result, area=self.area.name, )
         if self.row:
-            result = _(u"%s, ряд: %s") % (result, self.row, )
+            result = _(u"%(result)s, ряд: %(row)s") % dict(result=result, row=self.row, )
         if self.place:
-            result = _(u"%s, место: %s") % (result, self.place)
+            result = _(u"%(result)s, место: %(place)s") % dict(result=result, place=self.place)
         return result
 
     def unique_error_message(self, model_class, unique_check):
@@ -420,7 +426,9 @@ class Grave(GeoPointModel):
         ordering = ['grave_number']
 
     def __unicode__(self):
-        return _(u'Могила. место: %s номер:%d') % (self.place, self.grave_number)
+        return _(u'Могила. место: %(place)s номер:%(grave_number)d') % dict(
+            place=self.place, grave_number=self.grave_number
+        )
 
     def delete(self, using=None, request=None):
         super(Grave, self).delete(using=using)
@@ -438,7 +446,9 @@ class Grave(GeoPointModel):
                 i += 1
             if relocated > 0:
                 if relocated < i-1:
-                    arr.append( _(u'Могилы %d-%d перенумерованы') % (relocated+1, i))
+                    arr.append( _(u'Могилы %(relocated)d-%(i)d перенумерованы') % dict(
+                        relocated=relocated+1, i=i
+                    ))
                 else:
                     arr.append( _(u'Могила %d перенумерована') % (relocated+1))
             write_log(request, self.place, u"<br/>".join(arr))
@@ -446,7 +456,10 @@ class Grave(GeoPointModel):
             raise Exception('Warning: Grave::delete - "request" param is undefined')
 
     def full_name(self):
-        return _(u"%s, могила %s") % (self.place.full_name(), self.grave_number)
+        return _(u"%(place)s, могила %(grave_number)s") % dict(
+            place=self.place.full_name(),
+            grave_number=self.grave_number
+        )
 
 class PlacePhoto(Files, GeoPointModel):
     place = models.ForeignKey(Place)
