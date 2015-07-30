@@ -27,7 +27,7 @@ from pd.models import validate_phone_as_number
 from pd.utils import utcisoformat
 
 from burials.forms import CemeteryForm, AreaFormset, PlaceEditForm, AddOrgForm, AreaMergeForm, BurialfileCommentEditForm
-from burials.models import Cemetery, Place, Area, BurialFiles, Grave, Burial, AreaPhoto, PlacePhoto, \
+from burials.models import Cemetery, Place, Area, BurialFiles, Grave, Burial, BurialComment, AreaPhoto, PlacePhoto, \
                            ExhumationRequest, AreaPurpose, PlaceSize
 from burials.burials_views import *
 from logs.models import write_log, log_object, prepare_m2m_log, compare_obj
@@ -233,9 +233,9 @@ class CemeteryCreate(UGHRequiredMixin, RequestToFormMixin, FormInvalidMixin, Cre
         self.object.ugh = self.request.user.profile.org
         self.object.save()
         write_log(self.request, self.object, _(u'Кладбище создано'))
-        msg = _(u"<a href='%s'>Кладбище %s</a> создано") % (
-            reverse('manage_cemeteries_edit', args=[self.object.pk]),
-            self.object.name,
+        msg = _(u"<a href='%(manage_cemeteries_edit)s'>Кладбище %(cemetery)s</a> создано") % dict(
+            manage_cemeteries_edit=reverse('manage_cemeteries_edit', args=[self.object.pk]),
+            cemetery=self.object.name,
         )
         messages.success(self.request, msg)
         return redirect('manage_cemeteries')
@@ -252,9 +252,9 @@ class CemeteryEdit(UGHRequiredMixin, RequestToFormMixin, FormInvalidMixin, Updat
 
     def form_valid(self, form):
         self.object = form.save()
-        msg = _(u"<a href='%s'>Кладбище %s</a> изменено") % (
-            reverse('manage_cemeteries_edit', args=[self.object.pk]),
-            self.object.name,
+        msg = _(u"<a href='%(manage_cemeteries_edit)s'>Кладбище %(cemetery)s</a> изменено") % dict(
+            manage_cemeteries_edit=reverse('manage_cemeteries_edit', args=[self.object.pk]),
+            cemetery=self.object.name,
         )
         messages.success(self.request, msg)
         return redirect('manage_cemeteries')
@@ -814,9 +814,9 @@ class CemeteryMerge(UGHRequiredMixin, TemplateView):
         if form.is_valid():
             form.save()
             write_log(self.request, self.object, _(u'Участки объединены'))
-            msg = _(u"Участки <a href='%s'>кладбища %s</a> изменены") % (
-                reverse('manage_cemeteries_edit', args=[self.object.pk]),
-                self.object.name,
+            msg = _(u"Участки <a href='%(manage_cemeteries_edit)s'>кладбища %(cemetery)s</a> изменены") % dict(
+                manage_cemeteries_edit=reverse('manage_cemeteries_edit', args=[self.object.pk]),
+                cemetery=self.object.name,
             )
             messages.success(self.request, msg)
             return redirect('manage_cemeteries_edit', self.get_object().pk)
@@ -1012,10 +1012,16 @@ class CommentView(BurialsListGenericMixin, LoginRequiredMixin, DetailView):
         return redirect('view_burial', self.get_object().pk)
 
     def post(self, request, *args, **kwargs):
+        burial = self.get_object()
         comment = request.POST.get('comment').strip()
         if comment:
-            write_log(request, self.get_object(), _(u'Комментарий: %s') % comment)
-        return redirect('view_burial', self.get_object().pk)
+            write_log(request, burial, _(u'Комментарий: %s') % comment)
+            BurialComment.objects.create(
+                creator=request.user,
+                burial=burial,
+                comment=comment,
+            )
+        return redirect('view_burial', burial.pk)
 
 burial_comment = CommentView.as_view()
 
@@ -1133,7 +1139,12 @@ class PlaceCertificateView(UGHRequiredMixin, DetailView):
                 fact_date = _(u"похоронен %s") % burial.fact_date
             else:
                 fact_date = _(u"дата похорон неизвестна")
-            right.append(_(u"№: %s, %s, %s, %s") % (burial.pk, burial.deadman, lived, fact_date ))
+            right.append(_(u"№: %(pk)s, %(deadman)s, %(lived)s, %(fact_date)s") % dict(
+                            pk=burial.pk,
+                            deadman=burial.deadman,
+                            lived=lived,
+                            fact_date=fact_date
+            ))
         if not right:
             right.append(_(u"Нет захоронений"))
         table1 = make_table(left, right)
@@ -1165,9 +1176,9 @@ class PlaceCertificateView(UGHRequiredMixin, DetailView):
         yandex_api_key = None
         if place.cemetery.address and \
            place.cemetery.address.gps_x is not None and place.cemetery.address.gps_y is not None:
-            right.append(_(u"Координаты GPS/ГЛОНАСС: ш. %s, д. %s") % (
-                place.cemetery.address.gps_y,
-                place.cemetery.address.gps_x,
+            right.append(_(u"Координаты GPS/ГЛОНАСС: ш. %(lat)s, д. %(lng)s") % dict(
+                lat=place.cemetery.address.gps_y,
+                lng=place.cemetery.address.gps_x,
             ))
             host = self.request.get_host()
             for key in settings.YANDEX_API_KEYS:

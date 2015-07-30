@@ -62,8 +62,9 @@ def host_country_code(request):
 
 def phones_from_text(phones_text):
     phones = []
+    phones_text = phones_text and phones_text.strip()
     if phones_text:
-        for phone in phones_text.split('\n'):
+        for phone in re.split(r'[\n,;]+', phones_text):
             phone = phone.strip()
             if phone:
                 phones.append(phone)

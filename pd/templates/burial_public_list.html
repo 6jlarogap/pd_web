@@ -87,33 +87,47 @@
                     {% endif %}
                 </th>
                 <th>
+                    {% trans "Комментарии" %}
+                </th>
+                <th>
                     {% trans "Заказ(ы)" %}
                 </th>
             </tr>
-            {% for b in burials %}
-                <tr>
-                    <td>{{ b.pk }}</td>
-                    <td>{{ b.account_number|default:"" }}</td>
-                    <td>{% if b.cemetery %}{{ b.cemetery }} / {{ b.ugh_name }}{% endif %}</td>
-                    <td>
-                        {% with burial=b %}{% include "burial_place.html" %}{% endwith %}
-                    </td>
-                    <td><b>{{ b.deadman_or_bio }}</b></td>
-                    <td>{{ b.combined_date }}</td>
-                    <td>
-                        {{ b.status_str|default:"" }}
-                        {% if b.annulated %}
-                            <br />
-                            <span style="color:red">{% trans "АННУЛИРОВАНО" %}</span>
-                        {% endif %}
-                        <br />
-                        <a class="btn" href="{% url view_burial b.pk %}">{% trans "просмотр" %}</a>
-                    </td>
-                    <td>
-                        {% with burial=b %}{% include "burial_orders.html" %}{% endwith %}
+            {% for b1 in burials %}
+                {% with b=b1.burial1_to_burial %}
+                    <tr>
+                        <td>{{ b.pk }}</td>
+                        <td>{{ b.account_number|default:"" }}</td>
+                        <td>{% if b.cemetery %}{{ b.cemetery }} / {{ b.ugh_name }}{% endif %}</td>
+                        <td>
+                            {% with burial=b %}{% include "burial_place.html" %}{% endwith %}
                         </td>
-                    </td>
-                </tr>
+                        <td><b>{{ b.deadman_or_bio }}</b></td>
+                        <td>{{ b.combined_date }}</td>
+                        <td>
+                            {{ b.status_str|default:"" }}
+                            {% if b.annulated %}
+                                <br />
+                                <span style="color:red">{% trans "АННУЛИРОВАНО" %}</span>
+                            {% endif %}
+                            <br />
+                            <a class="btn" href="{% url view_burial b.pk %}">{% trans "просмотр" %}</a>
+                        </td>
+                        <td>
+                            {% for comment in b.burialcomment_set.all %}
+                                <i>{{ comment.dt_created.date }}</i><br>
+                                {{ comment.comment|linebreaksbr }}
+                                {% if not forloop.last %}
+                                    <br />
+                                {% endif %}
+                            {% endfor %}
+                        </td>
+                        <td>
+                            {% with burial=b %}{% include "burial_orders.html" %}{% endwith %}
+                            </td>
+                        </td>
+                    </tr>
+                {% endwith %}
             {% endfor %}
         </table>
 

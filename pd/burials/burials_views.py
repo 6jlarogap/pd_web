@@ -19,7 +19,7 @@ from django.views.generic.list import ListView
 
 from burials.forms import BurialSearchForm, BurialPublicListForm, BurialForm, BurialCommitForm, BurialApproveCloseForm, AddDocTypeForm
 from burials.forms import AddAgentForm, AddDoverForm, AddOrgForm, ExhumationForm
-from burials.models import Reason, Burial, Cemetery, Place, ExhumationRequest
+from burials.models import Reason, Burial, Burial1, Cemetery, Place, ExhumationRequest
 from persons.models import DeathCertificate
 from logs.models import write_log
 from orders.models import Order
@@ -95,12 +95,12 @@ class DashboardView(BurialsListGenericMixin, TemplateView):
         SORT_FIELDS = {
             'pk': 'pk',
             '-pk': '-pk',
-            'account_number': 'account_number',
-            '-account_number': '-account_number',
+            'account_number':  ['account_number_s1', 'account_number_s2', 'account_number_s3'],
+            '-account_number':  ['-account_number_s1', '-account_number_s2', '-account_number_s3'],
             'cemetery': 'cemetery__name',
             '-cemetery': '-cemetery__name',
-            'place': 'place_number',
-            '-place': '-place_number',
+            'place': ['place_number_s1', 'place_number_s2', 'place_number_s3'],
+            '-place': ['-place_number_s1', '-place_number_s2', '-place_number_s3'],
             'fio': 'deadman__last_name',
             '-fio': '-deadman__last_name',
             'fact_date': 'fact_date',
@@ -118,12 +118,9 @@ class DashboardView(BurialsListGenericMixin, TemplateView):
         if not isinstance(s, list):
             s = [s]
 
-        burials_clean = Burial.objects.filter(qs).exclude(ex_qs).distinct()
+        burials_clean = Burial1.objects.filter(qs).exclude(ex_qs).distinct()
         burials_count = burials_clean.count()
-        burials = burials_clean.select_related(
-            'ugh', 'place', 'place__cemetery', 'place__area', 'deadman', 'deadman__address', 'cemetery', 'area',
-            'applicant_organization', 'applicant', 'changed_by', 'changed_by__profile', 'cemetery__ugh', 'area__purpose'
-        ).order_by(*s)
+        burials = burials_clean.order_by(*s)
         burials.count = lambda: burials_count
         return {
             'burials': burials,
@@ -213,8 +210,10 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
             b.status = Burial.STATUS_BACKED
             b.account_number = None
             write_log(request, b, _(u'Захоронение отозвано'), reason)
-            messages.success(request, _(u"<a href='%s'>Захоронение %s</a> отозвано") % (
-                reverse('view_burial', args=[b.pk]) + order_parm, b.pk,
+            messages.success(
+                request,
+                _(u"<a href='%(view_burial)s'>Захоронение %(pk)s</a> отозвано") % dict(
+                    view_burial=reverse('view_burial', args=[b.pk]) + order_parm, pk=b.pk,
             ))
             redirect_to_edit = True
 
@@ -223,9 +222,9 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
             order.save()
             write_log(self.request, b, _(u'Захоронение откреплено от заказа %s') % order.pk)
             write_log(self.request, order, _(u'Заказ: откреплено захоронение %s') % b.pk)
-            msg = _(u"<a href='%s'>Заказ %s</a>: откреплено захоронение") % (
-                reverse('order_burial', args=[order.pk]),
-                order.pk,
+            msg = _(u"<a href='%(order_burial)s'>Заказ %(pk)s</a>: откреплено захоронение") % dict(
+                order_burial=reverse('order_burial', args=[order.pk]),
+                pk=order.pk,
             )
             messages.success(self.request, msg)
 
@@ -241,8 +240,10 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
             else:
                 b.status = Burial.STATUS_INSPECTING
                 write_log(request, b, _(u'Захоронение отправлено на обследование'))
-                messages.success(request, _(u"<a href='%s'>Захоронение %s</a> отправлено на обследование") % (
-                    reverse('view_burial', args=[b.pk]), b.pk,
+                messages.success(
+                    request,
+                    _(u"<a href='%(view_burial)s'>Захоронение %(pk)s</a> отправлено на обследование") % dict(
+                        view_burial=reverse('view_burial', args=[b.pk]), pk=b.pk,
                 ))
                 redirect_to_view = True
 
@@ -265,8 +266,10 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
                 b.status = Burial.STATUS_APPROVED
                 b.approve(self.request.user)
                 write_log(request, b, _(u'Захоронение согласовано'))
-                messages.success(request, _(u"<a href='%s'>Захоронение %s</a> согласовано") % (
-                    reverse('view_burial', args=[b.pk]), b.pk,
+                messages.success(
+                    request,
+                    _(u"<a href='%(view_burial)s'>Захоронение %(pk)s</a> согласовано") % dict(
+                        view_burial=reverse('view_burial', args=[b.pk]), pk=b.pk,
                 ))
                 redirect_to_view = True
 
@@ -287,8 +290,10 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
             else:
                 b.status = Burial.STATUS_READY
                 write_log(request, b, _(u'Обследование одобрено. Захоронение на согласовании'))
-                messages.success(request, _(u"Обследование одобрено. <a href='%s'>Захоронение %s</a> на согласовании") % (
-                    reverse('view_burial', args=[b.pk]), b.pk,
+                messages.success(
+                    request,
+                    _(u"Обследование одобрено. <a href='%(view_burial)s'>Захоронение %(pk)s</a> на согласовании") % dict(
+                        view_burial=reverse('view_burial', args=[b.pk]), pk=b.pk,
                 ))
                 redirect_to_view = True
             
@@ -298,14 +303,16 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
                 b.account_number = None
                 msg_declined = u'Захоронение отклонено'
                 write_log(request, b, msg_declined, reason)
-                messages.success(request, _(u"<a href='%s'>Захоронение %s</a> отклонено") % (
-                    reverse('view_burial', args=[b.pk]), b.pk,
+                messages.success(
+                    request,
+                    _(u"<a href='%(view_burial)s'>Захоронение %(pk)s</a> отклонено") % dict(
+                        view_burial=reverse('view_burial', args=[b.pk]), pk=b.pk,
                 ))
             else:
-                msg = _(u"Выполнить операцию не удалось: <a href='%s'>захоронение</a> в статусе \"%s\". "
-                        u"Не указана причина отказа.") % (
-                    reverse('view_burial', args=[b.pk]),
-                    b.get_status_display(),
+                msg = _(u"Выполнить операцию не удалось: <a href='%(view_burial)s'>захоронение</a> в статусе \"%(status)s\". "
+                        u"Не указана причина отказа.") % dict(
+                    view_burial=reverse('view_burial', args=[b.pk]),
+                    status=b.get_status_display(),
                 )
                 messages.error(request, msg)
                 return redirect(reverse('view_burial', args=[b.pk]))
@@ -317,8 +324,10 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
                 b.status = Burial.STATUS_DRAFT
                 b.save()
                 write_log(request, b, _(u'Захоронение возвращено в статус черновика'), reason)
-                messages.success(request, _(u"<a href='%s'>Захоронение %s</a> возвращено в статус черновика") % (
-                    reverse('view_burial', args=[b.pk]), b.pk,
+                messages.success(
+                    request,
+                    _(u"<a href='%(view_burial)s'>Захоронение %(pk)s</a> возвращено в статус черновика") % dict(
+                    view_burial=reverse('view_burial', args=[b.pk]), pk=b.pk,
                 ))
                 redirect_to_view = True
             else:
@@ -332,8 +341,10 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
                     return redirect(reverse('edit_burial', args=[b.pk]) + '?action=complete')
                 else:
                     b.close(request=request)
-                    messages.success(request, _(u"<a href='%s'>Захоронение %s</a> закрыто") % (
-                        reverse('view_burial', args=[b.pk]), b.pk,
+                    messages.success(
+                        request,
+                        _(u"<a href='%(view_burial)s'>Захоронение %(pk)s</a> закрыто") % dict(
+                            view_burial=reverse('view_burial', args=[b.pk]), pk=b.pk,
                     ))
             else:
                 return self.get(request, *args, **kwargs)
@@ -345,8 +356,10 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
             b.grave = None
             b.annulated = True
             write_log(request, b, _(u'Захоронение аннулировано'), reason)
-            messages.success(request, _(u"<a href='%s'>Захоронение %s</a> аннулировано") % (
-                reverse('view_burial', args=[b.pk]) + order_parm, b.pk,
+            messages.success(
+                request,
+                _(u"<a href='%(view_burial)s'>Захоронение %(pk)s</a> аннулировано") % dict(
+                    view_burial=reverse('view_burial', args=[b.pk]) + order_parm, pk=b.pk,
             ))
             redirect_to_view = True
 
@@ -358,8 +371,10 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
                 b.grave = b.place.get_or_create_graves(b.grave_number)
             b.annulated = False
             write_log(request, b, _(u'Захоронение восстановлено после аннулирования'))
-            messages.success(request, _(u"<a href='%s'>Захоронение %s</a> восстановлено после аннулирования") % (
-                reverse('view_burial', args=[b.pk]) + order_parm, b.pk,
+            messages.success(
+                request,
+                _(u"<a href='%(view_burial)s'>Захоронение %(pk)s</a> восстановлено после аннулирования") % dict(
+                    view_burial=reverse('view_burial', args=[b.pk]) + order_parm, pk=b.pk,
             ))
             redirect_to_view = request.user.profile.is_ugh()
             redirect_to_edit = request.user.profile.is_loru()
@@ -370,17 +385,18 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
             return redirect(reverse('order_burial', args=[order.pk]))
         elif request.POST.get('save-dc'):
             if not b.can_approve() and request.user.profile.is_loru():
-                msg = _(u"Выполнить операцию не удалось: другой пользователь изменил статус <a href='%s'>захоронения</a> на \"%s\"") % (
-                    reverse('view_burial', args=[b.pk]) + order_parm,
-                    b.get_status_display(),
+                msg = _(u"Выполнить операцию не удалось: другой пользователь изменил статус "
+                        u"<a href='%(view_burial)s'>захоронения</a> на \"%(status)s\"") % dict(
+                    view_burial=reverse('view_burial', args=[b.pk]) + order_parm,
+                    status=b.get_status_display(),
                 )
                 messages.error(request, msg)
                 redirect_to_edit = b.is_edit()
                 redirect_to_view = not redirect_to_edit
         else:
-            msg = _(u"Выполнить операцию не удалось: <a href='%s'>захоронение</a> в статусе \"%s\"") % (
-                reverse('view_burial', args=[b.pk]) + order_parm,
-                b.get_status_display(),
+            msg = _(u"Выполнить операцию не удалось: <a href='%(view_burial)s'>захоронение</a> в статусе \"%(status)s\"") % dict(
+                view_burial=reverse('view_burial', args=[b.pk]) + order_parm,
+                status=b.get_status_display(),
             )
             messages.error(request, msg)
             
@@ -408,16 +424,20 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
                 timestamp_modified_really = int(DeathCertificate.objects.get(pk=dc_form.instance.pk).\
                                                         dt_modified.strftime("%s"))
                 if timestamp_modified_really > dc_form.cleaned_data['dt_modified']:
-                    messages.error(self.request,
-                    _(u"<a href='%s'>Захоронение %s</a> было изменено другим пользователем. Страница обновлена") % (
-                        reverse('view_burial', args=[self.b.pk]), self.b.pk,
+                    messages.error(
+                        self.request,
+                        _(u"<a href='%(view_burial)s'>Захоронение %(pk)s</a> было изменено другим пользователем. "
+                          u"Страница обновлена") % dict(
+                            view_burial=reverse('view_burial', args=[self.b.pk]), pk=self.b.pk,
                     ))
                     refresh = True
                     return burial, refresh
             burial = approve_close_form.save()
             if dc_form and dc_form.changed_data:
-                messages.success(self.request, _(u"<a href='%s'>Захоронение %s</a>: свидетельство о смерти сохранено") % (
-                    reverse('view_burial', args=[self.b.pk]), self.b.pk,
+                messages.success(
+                    self.request,
+                    _(u"<a href='%(view_burial)s'>Захоронение %(pk)s</a>: свидетельство о смерти сохранено") % dict(
+                        view_burial=reverse('view_burial', args=[self.b.pk]), pk=self.b.pk,
             ))
         return burial, refresh
 
@@ -441,6 +461,7 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
             'approve_close_form': self.get_approve_close_form(),
             'comment_form': CommentForm(),
             'zags_form': AddOrgForm(request=self.request, prefix='zags', instance=Org(type=Org.PROFILE_ZAGS)),
+            'medic_form': AddOrgForm(request=self.request, prefix='medic', instance=Org(type=Org.PROFILE_MEDIC)),
             'order': self.order,
             'orders': b.get_orders(loru=self.request.user.profile.org) if self.request.user.profile.is_loru() else [],
             # Кому можно смотреть в захоронении ответственного и заявителя:
@@ -466,7 +487,7 @@ class BurialsListView(PaginateListView):
             return Burial.objects.none()
 
         if self.request.user.is_authenticated():
-            burials = Burial.objects.filter(
+            burials = Burial1.objects.filter(
                 Q(applicant_organization=self.request.user.profile.org) | Q(ugh=self.request.user.profile.org),
             ).order_by('-pk')
         else:
@@ -502,9 +523,9 @@ class BurialsListView(PaginateListView):
             if form.cleaned_data['burial_date_to']:
                 burials = burials.filter(fact_date__lte=form.cleaned_data['burial_date_to'])
             if form.cleaned_data['account_number_from']:
-                burials = burials.filter(account_number__gte=form.cleaned_data['account_number_from'])
+                burials = burials.filter(account_number_s2__gte=form.cleaned_data['account_number_from'])
             if form.cleaned_data['account_number_to']:
-                burials = burials.filter(account_number__lte=form.cleaned_data['account_number_to'])
+                burials = burials.filter(account_number_s2__lte=form.cleaned_data['account_number_to'])
             if form.cleaned_data['responsible']:
                 fio = [f.strip('.') for f in form.cleaned_data['responsible'].split(' ')]
                 q1r = Q(responsible__isnull=False)
@@ -557,6 +578,9 @@ class BurialsListView(PaginateListView):
             else:
                 burials = burials.filter(annulated=False)
 
+            if form.cleaned_data.get('comment'):
+                burials = burials.filter(burialcomment__comment__icontains=form.cleaned_data['comment'])
+
             if form.cleaned_data.get('status') == Burial.STATUS_EXHUMATED:
                 burials = burials.filter(status=Burial.STATUS_EXHUMATED)
             else:
@@ -566,10 +590,8 @@ class BurialsListView(PaginateListView):
 
         sort = self.request.GET.get('sort', self.SORT_DEFAULT)
         SORT_FIELDS = {
-            'pk': 'pk',
-            '-pk': '-pk',
-            'account_number': 'account_number',
-            '-account_number': '-account_number',
+            'account_number': ['account_number_s1', 'account_number_s2', 'account_number_s3'],
+            '-account_number': ['-account_number_s1', '-account_number_s2', '-account_number_s3'],
             'cemetery': 'cemetery__name',
             '-cemetery': '-cemetery__name',
             'place': 'place_number',
@@ -585,16 +607,15 @@ class BurialsListView(PaginateListView):
             'status': 'status',
             '-status': '-status',
         }
-        s = SORT_FIELDS[sort]
+        try:
+            s = SORT_FIELDS[sort]
+        except KeyError:
+            s = self.SORT_DEFAULT
         if not isinstance(s, list):
             s = [s]
 
         burials_count = burials.count()
-        burials = burials.select_related(
-            'ugh', 'place', 'place__cemetery', 'place__area', 'deadman', 'deadman__address', 'cemetery', 'area',
-            'applicant_organization', 'applicant', 'changed_by', 'changed_by__profile', 'cemetery__ugh',
-            'area__purpose', 'responsible',
-        ).order_by(*s)
+        burials = burials.order_by(*s)
         burials.count = lambda: burials_count
         return burials
 
@@ -623,7 +644,7 @@ class BurialsPublicListView(PaginateListView):
             return Burial.objects.none()
 
         if self.request.user.is_authenticated() and self.request.user.profile.is_loru():
-            burials = Burial.objects.filter(
+            burials = Burial1.objects.filter(
                 #Q(
                   #(
                    #Q(ugh__loru_list__loru=self.request.user.profile.org) &
@@ -679,9 +700,9 @@ class BurialsPublicListView(PaginateListView):
             if form.cleaned_data['burial_date_to']:
                 burials = burials.filter(fact_date__lte=form.cleaned_data['burial_date_to'])
             if form.cleaned_data['account_number_from']:
-                burials = burials.filter(account_number__gte=form.cleaned_data['account_number_from'])
+                burials = burials.filter(account_number_s2__gte=form.cleaned_data['account_number_from'])
             if form.cleaned_data['account_number_to']:
-                burials = burials.filter(account_number__lte=form.cleaned_data['account_number_to'])
+                burials = burials.filter(account_number_s2__lte=form.cleaned_data['account_number_to'])
             if form.cleaned_data['cemetery']:
                 burials = burials.filter(cemetery__name=form.cleaned_data['cemetery'])
             if form.cleaned_data['area']:
@@ -699,12 +720,12 @@ class BurialsPublicListView(PaginateListView):
         SORT_FIELDS = {
             'pk': 'pk',
             '-pk': '-pk',
-            'account_number': 'account_number',
-            '-account_number': '-account_number',
+            'account_number':  ['account_number_s1', 'account_number_s2', 'account_number_s3'],
+            '-account_number':  ['-account_number_s1', '-account_number_s2', '-account_number_s3'],
             'cemetery': 'cemetery__name',
             '-cemetery': '-cemetery__name',
-            'place': 'place_number',
-            '-place': '-place_number',
+            'place': ['place_number_s1', 'place_number_s2', 'place_number_s3'],
+            '-place': ['-place_number_s1', '-place_number_s2', '-place_number_s3'],
             'fio': 'deadman__last_name',
             '-fio': '-deadman__last_name',
             'fact_date': 'fact_date',
@@ -715,9 +736,7 @@ class BurialsPublicListView(PaginateListView):
         s = SORT_FIELDS[sort]
         if not isinstance(s, list):
             s = [s]
-        burials = burials.select_related(
-            'ugh', 'place', 'place__cemetery', 'place__area', 'deadman', 'cemetery', 'area',
-        ).order_by(*s)
+        burials = burials.order_by(*s)
         return burials
 
     def get_form(self):
@@ -742,6 +761,7 @@ class CreateBurial(BurialGetOrderMixin, FormInvalidMixin, CreateView):
             'org_form': AddOrgForm(request=self.request, prefix='org'),
             'loru_form': AddOrgForm(request=self.request, prefix='loru', instance=Org(type=Org.PROFILE_LORU)),
             'zags_form': AddOrgForm(request=self.request, prefix='zags', instance=Org(type=Org.PROFILE_ZAGS)),
+            'medic_form': AddOrgForm(request=self.request, prefix='medic', instance=Org(type=Org.PROFILE_MEDIC)),
             'doc_type_form': AddDocTypeForm(prefix='doctype'),
             'order': self.get_order(),
         })
@@ -804,25 +824,25 @@ class CreateBurial(BurialGetOrderMixin, FormInvalidMixin, CreateView):
                 order.save()
                 write_log(self.request, b, _(u'Захоронение откреплено от заказа %s') % order.pk)
                 write_log(self.request, order, _(u'Заказ: откреплено захоронение %s') % b.pk)
-                msg = _(u"<a href='%s'>Заказ %s</a>: откреплено захоронение") % (
-                    reverse('order_burial', args=[order.pk]),
-                    order.pk,
+                msg = _(u"<a href='%(order_burial)s'>Заказ %(pk)s</a>: откреплено захоронение") % dict(
+                    order_burial=reverse('order_burial', args=[order.pk]),
+                    pk=order.pk,
                 )
                 messages.success(self.request, msg)
 
             if action == 'ready' and self.request.user.profile.is_loru() and b.is_edit() and b.is_full():
                 b.status = Burial.STATUS_READY
                 write_log(self.request, b, _(u'Захоронение отправлено на согласование'))
-                msg = _(u"<a href='%s'>Захоронение %s</a> отправлено на согласование") % (
-                    reverse('view_burial', args=[b.pk]) + order_parm, b.pk,
+                msg = _(u"<a href='%(view_burial)s'>Захоронение %(pk)s</a> отправлено на согласование") % dict(
+                    view_burial=reverse('view_burial', args=[b.pk]) + order_parm, pk=b.pk,
                 )
                 messages.success(self.request, msg)
 
             if action == 'annulate' and self.request.user.profile.is_loru() and b.can_loru_annulate():
                 b.annulated = True
                 write_log(self.request, b, _(u'Захоронение аннулировано'))
-                msg = _(u"<a href='%s'>Захоронение %s</a> аннулировано") % (
-                    reverse('view_burial', args=[b.pk]) + order_parm, b.pk,
+                msg = _(u"<a href='%(view_burial)s'>Захоронение %(pk)s</a> аннулировано") % dict(
+                    view_burial=reverse('view_burial', args=[b.pk]) + order_parm, pk=b.pk,
                 )
                 messages.success(self.request, msg)
 
@@ -830,31 +850,38 @@ class CreateBurial(BurialGetOrderMixin, FormInvalidMixin, CreateView):
                 b.status = Burial.STATUS_APPROVED
                 b.approve(self.request.user)
                 write_log(self.request, b, _(u'Захоронение согласовано'))
-                messages.success(self.request, _(u"<a href='%s'>Захоронение %s</a> согласовано") % (
-                    reverse('view_burial', args=[b.pk]), b.pk,
+                messages.success(
+                    self.request,
+                    _(u"<a href='%(view_burial)s'>Захоронение %(pk)s</a> согласовано") % dict(
+                        view_burial=reverse('view_burial', args=[b.pk]), pk=b.pk,
                 ))
 
             if action == 'disapprove' and self.request.user.profile.is_ugh() and b.can_disapprove_ugh():
                 b.status = Burial.STATUS_DRAFT
                 write_log(self.request, b, _(u'Захоронение возвращено в статус черновика'))
-                messages.success(self.request, _(u"<a href='%s'>Захоронение %s</a> возвращено в статус черновика") % (
-                    reverse('view_burial', args=[b.pk]), b.pk,
+                messages.success(
+                    self.request,
+                    _(u"<a href='%(view_burial)s'>Захоронение %(pk)s</a> возвращено в статус черновика") % dict(
+                        view_burial=reverse('view_burial', args=[b.pk]), pk=b.pk,
                 ))
 
             if action == 'complete' and self.request.user.profile.is_ugh() and b.can_finish() and b.is_ugh():
                 b.changed_by = self.request.user
                 b.close(request=self.request)
-                messages.success(self.request, _(u"<a href='%s'>Захоронение %s</a> закрыто") % (
-                    reverse('view_burial', args=[b.pk]), b.pk,
+                messages.success(
+                    self.request,
+                    _(u"<a href='%(view_burial)s'>Захоронение %(pk)s</a> закрыто") % dict(
+                        view_burial=reverse('view_burial', args=[b.pk]), pk=b.pk,
                 ))
                 redirect_to_view = True
 
             if old_status != b.status or old_annulated != b.annulated:
                 b.save()
             elif action != 'unbind':
-                msg = _(u"Выполнить операцию не удалось: <a href='%s'>захоронение</a> в статусе \"%s\"") % (
-                    reverse('view_burial', args=[b.pk]) + order_parm,
-                    b.get_status_display(),
+                msg = _(u"Выполнить операцию не удалось: "
+                        u"<a href='%(view_burial)s'>захоронение</a> в статусе \"%(status)s\"") % dict(
+                    view_burial=reverse('view_burial', args=[b.pk]) + order_parm,
+                    status=b.get_status_display(),
                 )
                 messages.success(self.request, msg)
                 return redirect('dashboard')

@@ -128,14 +128,45 @@
         {{ form.deadman_form.death_date.errors }}
         <p class="inline">{{ form.deadman_form.death_date.label_tag }} {{ form.deadman_form.death_date }}<span class="helptext">{{ form.deadman_form.death_date.help_text }}</span></p>
 
+        <script type="text/javascript">
+            function setDeathDate(isLoru) {
+                var dDeath = new Date();
+                {% comment %}
+                    К лору обычно приходят родственники усопших в тот же день,
+                    в ОМС чаще приходят родственники или на кладбище хоронят тех, кто умер вчера
+                {% endcomment %}
+                if (isLoru.toLowerCase() == 'false') {
+                    dDeath.setDate(dDeath.getDate() - 1);
+                }
+                var year = dDeath.getFullYear();
+                var month = dDeath.getMonth() + 1;
+                var day = dDeath.getDate();
+                $('#id_deadman-death_date_year option:selected').removeAttr('selected');
+                $('#id_deadman-death_date_year option[value="' + year +'"]').attr('selected', 'selected');
+                $('#id_deadman-death_date_month option:selected').removeAttr('selected');
+                $('#id_deadman-death_date_month option[value="'+ month +'"]').attr('selected', 'selected');
+                $('#id_deadman-death_date_day option:selected').removeAttr('selected');
+                $('#id_deadman-death_date_day option[value="'+ day +'"]').attr('selected', 'selected');
+                $('#deadman_btn_today').hide();
+            }
+        </script>
+
+        <p class="inline-button">
+            <input type="button" class="btn" value="{% if request.user.profile.is_loru %}{% trans "сегодня" %}{% else %}{% trans "вчера" %}{% endif %}" onclick="setDeathDate('{{ request.user.profile.is_loru }}')" id="deadman_btn_today" />
+        </p>
+
         <h3>{% trans "Адрес" %}</h3>
-        <div class="form_block">
-            {% with form.deadman_address_form as form %}
-                {% include "location_form.html" %}
-            {% endwith %}
+        <a href="#" onclick="return contShowHide('#cont_deadman_address', '#a_cont_deadman_address', '{% trans 'развернуть' %}', '{% trans 'свернуть' %}');"
+            class="slider" data-id="cont_deadman_address" id="a_cont_deadman_address">{% if not request.user.profile.org.hide_deadman_address or form.deadman_address_form.errors %}{% trans "свернуть" %}{% else %}{% trans "развернуть" %}{% endif %}</a>
+        <div id="cont_deadman_address" {% if request.user.profile.org.hide_deadman_address and not form.deadman_address_form.errors %}style="display: none"{% endif %}>
+            <div class="form_block">
+                {% with form.deadman_address_form as form %}
+                    {% include "location_form.html" %}
+                {% endwith %}
+            </div>
         </div>
         <div id="show_deathcertificate" >
-            <h3>{% trans "Свидетельство о смерти" %}</h3>
+            <h3>{% trans "Документ о смерти" %}</h3>
             {% with form.dc_form as form %}
                 {% include "deathcertificate.html" %}
             {% endwith %}

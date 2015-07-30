@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import copy
-from django.db import models, IntegrityError
+from django.db import models, transaction, IntegrityError
 from django.utils.translation import ugettext as _
 from django.db.models.deletion import ProtectedError
 from django.db.models.loading import get_model
@@ -75,6 +75,7 @@ class BasePerson(PersonMixin, models.Model):
         finish = (self.death_date or datetime.date.today())
         return int((finish - start).days / 365.25)
 
+    @transaction.commit_on_success
     def delete(self):
         try:
             self.personid.delete()
@@ -192,6 +193,7 @@ class DeadPerson(BasePerson):
 
     unclear_death_date = property(get_death_date, set_death_date)
 
+    @transaction.commit_on_success
     def delete(self):
         try:
             self.deathcertificate.delete()
@@ -206,7 +208,7 @@ class AlivePerson(BasePerson, PhonesMixin):
     """
     Живое ФЛ с телефоном
     """
-    phones = models.TextField(_(u"Телефоны"), blank=True, null=True)
+    phones = models.TextField(_(u"Телефоны (если несколько, то через ; или ,)"), blank=True, null=True)
     user = models.ForeignKey('auth.User', verbose_name=_(u"Ответственный за место или пользователь- физ. лицо"),
            null=True, editable=False)
     # Оставляем здесь login_phone как хранилище для телефона логина ответственного,
@@ -222,6 +224,7 @@ class AlivePerson(BasePerson, PhonesMixin):
                   editable=False)
     # phones: могут быть разных типов, пользуемся моделью persons.Phone
 
+    @transaction.commit_on_success
     def delete(self):
         self.phone_set.delete()
         try:
@@ -246,13 +249,14 @@ class PersonID(models.Model):
     number = models.CharField(_(u"Номер"), max_length=255, blank=True, null=True)
     source = models.ForeignKey(DocumentSource, verbose_name=_(u"Кем выдан"), blank=True, null=True)
     date = models.DateField(_(u"Дата выдачи"), blank=True, null=True)
+    date_expire = models.DateField(_(u"Срок действия"), blank=True, null=True)
 
     class Meta:
         verbose_name = _(u"Удостоверение личности")
         verbose_name_plural = _(u"Удостоверения личности")
 
     def __unicode__(self):
-        return _(u"%s %s %s") % (self.id_type, self.series, self.number)
+        return u"%s %s %s" % (self.id_type, self.series, self.number)
 
     def save(self, *args, **kwargs):
         self.series = self.series.upper()
@@ -260,15 +264,22 @@ class PersonID(models.Model):
 
 class DeathCertificate(BaseModel):
     """
-    Свидетельство о смерти.
+    Свидетельство о смерти. Или медицинская справка
     """
+    PROFILE_ZAGS = 'zags'
+    PROFILE_MEDIC = 'medic'
+    PROFILE_TYPES = (
+        (PROFILE_ZAGS, _(u"Свидетельство о смерти")),
+        (PROFILE_MEDIC, _(u"Медицинская справка")),
+    )
 
     person = models.OneToOneField(DeadPerson)
 
+    type = models.CharField(_(u"Тип"), max_length=255, choices=PROFILE_TYPES, default=PROFILE_ZAGS)
     s_number = models.CharField(_(u"Номер"), max_length=255, blank=True, null=True)
     series = models.CharField(_(u"Серия"), max_length=255, blank=True, null=True)
     release_date = models.DateField(_(u"Дата выдачи"), null=True, blank=True)
-    zags = models.ForeignKey(Org, verbose_name=_(u"ЗАГС"), null=True, blank=True, limit_choices_to={'type': Org.PROFILE_ZAGS})
+    zags = models.ForeignKey(Org, verbose_name=_(u"ЗАГС"), null=True, blank=True)
 
     class Meta:
         verbose_name = _(u"свидетельство о смерти")
@@ -281,6 +292,7 @@ class DeathCertificate(BaseModel):
         self.series = self.series.upper()
         super(DeathCertificate, self).save(*args, **kwargs)
 
+    @transaction.commit_on_success
     def delete(self):
         try:
             self.deathcertificatescan.delete()
@@ -345,7 +357,7 @@ class Phone(BaseModel):
     def __unicode__(self):
          for k, v in self.PHONE_TYPE_CHOICES:  
              if k == self.phonetype:  
-                 return _(u"%s: %s") % (v, self.number)
+                 return u"%s: %s" % (v, self.number)
 
     @classmethod
     def create_default_phones(cls, instance, phones):
@@ -372,6 +384,8 @@ class CustomPlace(LocationMixin, BaseModel):
     # указывается, потому что обязателен
     #
     title_photo = models.ImageField(_(u"Основное Фото"), upload_to='.', null=True)
+    favorite_performer = models.ForeignKey(Org, verbose_name=_(u"Предпочтительный исполнитель"),
+                                           null=True, blank=True)
 
 
     class Meta:
@@ -430,17 +444,37 @@ class CustomPlace(LocationMixin, BaseModel):
         else:
             return None
 
+    @transaction.commit_on_success
     def delete(self):
-        self.customperson_set.all().delete()
+        for customperson in CustomPerson.objects.filter(customplace=self):
+            customperson.delete()
+
+        Order = get_model('orders', 'Order')
+        OrderComment = get_model('orders', 'OrderComment')
+        for order in Order.objects.filter(customplace=self):
+            user = order.applicant and order.applicant.user or None
+            if user:
+                comment = _(u'Место, относящееся к заказу, удалено.')
+                if self.address:
+                    comment += "\n" + _(u'Адрес: %s.') % self.address
+                    if self.address.gps_x is not None and self.address.gps_y is not None:
+                        comment += "\n" + _(u'Координаты: широта: %s, долгота: %s.') % (
+                            self.address.gps_y,
+                            self.address.gps_x,
+                        )
+                OrderComment.objects.create(
+                    order=order,
+                    user=user,
+                    comment=comment,
+                )
+            order.customplace = None
+            order.save()
+
+        super(CustomPlace, self).delete()
         try:
-            super(CustomPlace, self).delete()
-        except IntegrityError:
+            self.address.delete()
+        except (AttributeError, IntegrityError):
             pass
-        else:
-            try:
-                self.address.delete()
-            except (AttributeError, IntegrityError):
-                pass
 
 class CustomPerson(PersonMixin, PhotoModel, BaseModel):
     """
@@ -464,12 +498,11 @@ class CustomPerson(PersonMixin, PhotoModel, BaseModel):
     is_dead = models.BooleanField(_(u"Уcопший"), default=True)
     memory_text = models.TextField(_(u"Памятный текст"), null=True)
 
+    @transaction.commit_on_success
     def delete(self):
-        self.memorygallery_set.all().delete()
-        try:
-            super(CustomPerson, self).delete()
-        except IntegrityError:
-            pass
+        for memorygallery in MemoryGallery.objects.filter(customperson=self):
+            memorygallery.delete()
+        super(CustomPerson, self).delete()
 
     def oms_data(self):
         try:
@@ -485,13 +518,6 @@ class CustomPerson(PersonMixin, PhotoModel, BaseModel):
             deathDate = deadman.death_date and deadman.death_date.str_safe() or None,
             grave = burial.grave_number,
         )
-
-    def title_photo(self):
-        try:
-            return MemoryGallery.objects.filter(customperson=self, type=MemoryGallery.TYPE_IMAGE). \
-                                   order_by('-date_of_creation')[0].bfile
-        except IndexError:
-            return None
 
 class MemoryGallery(Files):
     """

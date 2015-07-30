@@ -19,7 +19,7 @@ from django.contrib.auth.models import User
 from users.models import Org, ProfileLORU, Profile, Dover, OrgCertificate, CustomerProfile
 from burials.models import Cemetery, CemeteryCoordinates, Area, AreaCoordinates, \
                            Place, PlaceSize, PlacePhoto, Grave, \
-                           Burial, BurialFiles, Reason, ExhumationRequest
+                           Burial, BurialFiles, BurilalComment, Reason, ExhumationRequest
 from orders.models import Order, OrderItem, ServiceItem, OrgService, OrgServicePrice, \
                           OrderComment, ResultFile
 from persons.models import DeadPerson, AlivePerson, CustomPlace
@@ -127,6 +127,7 @@ def main():
 
         print 'removing burials'
         ExhumationRequest.objects.filter(burial__ugh=ugh).delete()
+        BurialComment.objects.filter(burial__ugh=ugh).delete()
         BurialFiles.objects.filter(burial__ugh=ugh).delete()
         Burial.objects.filter(ugh=ugh).delete()
         print 'removing graves'

@@ -101,6 +101,8 @@ class PaginateListView(ListView):
         data = super(PaginateListView, self).get_context_data(**kwargs)
         get_for_paginator = u'&'.join([u'%s=%s' %  (k, v) for k,v in self.request.GET.items() if k not in self.DISPLAY_OPTIONS])
         sort = self.request.GET.get('sort', self.SORT_DEFAULT)
+        if get_for_paginator and sort and 'sort' not in self.request.GET.items():
+            get_for_paginator += u'&sort=%s' % sort
         data.update(form=self.get_form(), GET_PARAMS=get_for_paginator, sort=sort)
         return data
 
@@ -181,7 +183,8 @@ def media_xsendfile(request, path, document_root):
                     raise Http404
             elif what == 'memory-gallery':
                 try:
-                    if pk != str(request.user.pk):
+                    memory = get_model('persons', 'MemoryGallery').objects.filter(pk=pk)[0]
+                    if not memory.creator or memory.creator != request.user:
                         raise Http404
                 except IndexError:
                     raise Http404

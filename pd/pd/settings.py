@@ -95,7 +95,7 @@ TEMPLATE_DIRS = (
     os.path.join(ROOT_DIR, 'templates/'),
 )
 
-INSTALLED_APPS = (
+INSTALLED_APPS = [
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
@@ -127,7 +127,14 @@ INSTALLED_APPS = (
     'rest_api',
     'restthumbnails',
     'django_assets',
-)
+
+    # Заглушка для javascript locales.
+    # Если не подключаем специфичную локаль, то js функция gettext()
+    # будет искать здесь locale/ru/LC_MESSAGES/djangojs.mo,
+    # но найдет только locale/ru/LC_MESSAGES.
+    #
+    'django.conf',
+]
 
 from pd.logging import skip_unreadable_post
 LOGGING = {
@@ -180,8 +187,9 @@ REGISTER_URLS_REGEX = r'^/?register(?:/|$)'
 SUPPORT_URLS_REGEX = r'^/?support(?:/|$)'
 # URLs, доступ к которым регулируется в соответствующих классах.as_view():
 API_URLS_REGEX = r'^/?api(?:/|$)'
-# URLs, доступные анонимным пользователям, например в публичном каталоге:
-ANONYMOUS_URLS_REGEX = r'^/?(?:thumb|media)/product\-photo/'
+# URLs, доступные анонимным пользователям, например в публичном каталоге, 
+# а также общедоступные, например, из front-end, скрипты:
+ANONYMOUS_URLS_REGEX = r'^/?(?:(?:thumb|media)/product\-photo)|jsi18n/'
 # URLs, доступные анонимным пользователям, но при определенных условиях
 ANONYMOUS_LIMITED_URLS_REGEX = r'^/?(?:thumb|media)/place\-photos/'
 
@@ -253,15 +261,19 @@ PRODUCTION_SITE = False
 # SUPERVISOR_ORG_INN = 'строка'
 
 # CORS:
+#
 # Переопределить в False в local_settings.py на production server
 #
 CORS_ORIGIN_ALLOW_ALL = True
 #
 # Задать в local_settings.py на production server:
 #
-#CORS_ORIGIN_WHITELIST = (
-#   'pohoronnoedelo.ru',
-#)
+# CORS_ORIGIN_REGEX_WHITELIST = (r'^(https?://)?(\w+\.)?pohoronnoedelo\.\w+$', )
+#
+# Может быть authentication cookies, при доступе к апи из множества
+# доменов *.pohoronnoedelo.ru, посему:
+#
+CORS_ALLOW_CREDENTIALS = True
 
 # THUMB
 THUMBNAILS_FILE_SIGNATURE = '%(source)s/%(size)s~%(method)s~%(secret)s.%(extension)s'
@@ -393,10 +405,37 @@ YANDEX_API_KEYS = [
     
 WKHTMLTOPDF_CMD = '/usr/local/bin/wkhtmltopdf'
 
+# Обязательность свидетельства о смерти
+DEATH_CERTIFICATE_REQUIRED = True
+
+# Когда предлагать плановую дату захронения, сколько дней от сегодняшней даты
+BURIAL_PLAN_DATE_DAYS_FROM_TODAY = 1
+
+# В Беларуси говорят по русски, но терминология там согласно закона
+# несколько иная. Например, то что в РФ именуем кладбищем,
+# в Беларуси будет местом погребения. Реализуем это специфичной для РБ
+# локалью внутри специально созданного для этого приложения,
+# которое активизируем только для Беларуси, в local_settings
+#
+# это код страны, для РБ -- 'by'
+#
+SPECIFIC_RU_LOCALE = ''
+#
+# это имя приложения, для РБ -- 'locale_by'
+#
+SPECIFIC_RU_LOCALE_APP = ''
+
 try:
     from local_settings import *
 except ImportError:
     pass
+
+if SPECIFIC_RU_LOCALE:
+    SPECIFIC_RU_LOCALE_APP = 'locale_%s' % SPECIFIC_RU_LOCALE
+    LOCALE_PATHS = (
+        os.path.join(ROOT_DIR, SPECIFIC_RU_LOCALE_APP , 'locale'),
+    )
+    INSTALLED_APPS.append(SPECIFIC_RU_LOCALE_APP)
 
 # MEDIA_ROOT может измениться в local_settings
 THUMBNAILS_STORAGE_ROOT = os.path.join(MEDIA_ROOT, 'thumbnails')
@@ -410,6 +449,8 @@ try:
 except NameError:
     # Нет, не задали, да и DEFAULT_FROM_EMAIL наверняка там изменится
     SUPPORT_EMAILS = (DEFAULT_FROM_EMAIL, )
+
+
 
 import sys
 if len(sys.argv) > 1 and sys.argv[1] == 'test':

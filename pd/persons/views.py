@@ -3,6 +3,7 @@
 import json
 import re
 
+from django.core.files.base import ContentFile
 from django.db import transaction, IntegrityError
 from django.db.models.query_utils import Q
 from django.http import Http404, HttpResponse
@@ -28,7 +29,7 @@ from rest_framework.parsers import MultiPartParser, JSONParser
 from pd.models import UnclearDate, SafeDeleteMixin
 from burials.models import Place, PlacePhoto
 from logs.models import write_log
-from users.models import PermitIfCabinet, user_dict
+from users.models import Org, PermitIfCabinet, user_dict
 from orders.models import Order, ResultFile
 from geo.models import Location
 
@@ -111,7 +112,12 @@ class AlivePersonViewSet(viewsets.ModelViewSet):
     def pre_save(self, object):
         if object.pk:
             old_obj = self.model.objects.get(pk=object.pk)
-            write_log(self.request, object, _(u'Ответственный изменен с "%s" на "%s"') % (old_obj,object))
+            write_log(
+                self.request,
+                object,
+                _(u'Ответственный изменен с "%(old_obj)s" на "%(object)s"') % dict(
+                    old_obj=old_obj, object=object
+            ))
         else:
             write_log(self.request, object, _(u'Ответственный создан'))
 
@@ -137,7 +143,12 @@ class PhoneViewSet(viewsets.ModelViewSet):
     def pre_save(self, object):
         if object.pk:
             old_obj = self.model.objects.get(pk=object.pk)
-            write_log(self.request, object, _(u'Телефон изменен с "%s" на "%s"') % (old_obj,object))
+            write_log(
+                self.request,
+                object,
+                _(u'Телефон изменен с "%(old_obj)s" на "%(object)s"') % dict(
+                    old_obj=old_obj, object=object
+            ))
         else:
             write_log(self.request, object, _(u'Телефон создан'))
 
@@ -208,15 +219,36 @@ class ApiClientPlacesDetailView(ApiClientPlacesMixin, APIView):
 
     def put(self, request, pk):
         customplace = self.get_customplace(pk)
+        context = dict(request=request)
+        if 'performerId' in request.DATA:
+            favorite_performer_id = request.DATA['performerId']
+            if favorite_performer_id:
+                message = None
+                try:
+                    favorite_performer = Org.objects.get(pk=favorite_performer_id)
+                    if not favorite_performer.is_trade():
+                        message = _(u'Организация, performerId: %s, не может выполнять заказы') % favorite_performer_id
+                except Org.DoesNotExist:
+                        message = _(u'Оганизация, performerId: %s, не существует') % favorite_performer_id
+                if message:
+                    return Response(dict(status='error', message=message), status=400)
+                context['favorite_performer'] = favorite_performer
+            else:
+                context['favorite_performer'] = None
         serializer = CustomPlaceEditSerializer(
             customplace,
             data=request.DATA,
-            context=dict(request=request),
+            context=context,
         )
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=200)
         return Response(serializer.errors, status=400)
+
+    def delete(self, request, pk):
+        customplace = self.get_customplace(pk)
+        customplace.delete()
+        return Response({}, status=200)
 
 api_client_places_detail = ApiClientPlacesDetailView.as_view()
 
@@ -307,6 +339,7 @@ class ApiCustompersonMemoryGalleryView(ApiCustompersonMixin, APIView):
             status=200,
         )
 
+    @transaction.commit_on_success
     def post(self, request, pk):
         try:
             customperson = self.get_customperson(pk)
@@ -318,14 +351,14 @@ class ApiCustompersonMemoryGalleryView(ApiCustompersonMixin, APIView):
                 'creator': request.user,
             }
             file_ = request.FILES.get('mediaContent')
-            if file_:
-                fields['bfile'] = file_
             if not fields['type']:
                 raise ServiceException(_(u'Не задан тип (type)'))
             if fields['type'] not in [type_[0] for type_ in MemoryGallery.TYPE_CHOICES]:
                 raise ServiceException(_(u'Неверный тип (type)'))
             if fields['type'] != MemoryGallery.TYPE_TEXT and not file_:
                 raise ServiceException(_(u'Тип (type) %s требует загружаемого файла (mediaContent)') % fields['type'])
+            if fields['type'] == MemoryGallery.TYPE_TEXT and file_:
+                raise ServiceException(_(u'Тип (type) %s исключает загружаемый файл (mediaContent)') % fields['type'])
             if fields['type'] == MemoryGallery.TYPE_TEXT and \
                (not fields['text'] or not fields['text'].strip()):
                 raise ServiceException(_(u'Тип (type) %s требует непустой текст') % fields['type'])
@@ -334,12 +367,20 @@ class ApiCustompersonMemoryGalleryView(ApiCustompersonMixin, APIView):
                     raise ServiceException(
                         _(u"Размер изображения не должен превышать %sМб") % MemoryGallery.MAX_IMAGE_SIZE
                     )
-                if not get_image(file_):
+                file_content = ContentFile(file_.read())
+                if not get_image(file_content):
                     raise ServiceException(_(u"Прикрепленный файл не является изображением"))
             elif fields['type'] == MemoryGallery.TYPE_VIDEO:
-                if not is_video(file_):
+                file_content = ContentFile(file_.read())
+                if not is_video(file_content):
                     raise ServiceException(_(u"Загруженный файл не является видео"))
             gallery_item = MemoryGallery.objects.create(**fields)
+            # Можно было: if file_: fields['bfile'] = file_, без промежуточного буфера file_content,
+            # после чего ... create(**fields), однако (!)
+            # в gallery_item.bfile.path фигурирует gallery_item.pk, что еще неизвестно при .create(),
+            # посему gallery_item.bfile сохраняем отдельно в уже созданный gallery_item
+            if file_:
+                gallery_item.bfile.save(file_.name, file_content)
             return Response(
                 data=MemoryGallery2Serializer(gallery_item, context=dict(request=request)).data,
                 status=200,
@@ -354,7 +395,7 @@ class ApiClientPlacesDeadmansView(ApiClientPlacesMixin, APIView):
 
     def get(self, request, pk):
         return Response(
-            data=[CustomPersonSerializer(customperson).data \
+            data=[CustomPersonSerializer(customperson, context=dict(request=request)).data \
                   for customperson in CustomPerson.objects.filter(customplace=self.get_customplace(pk))],
             status=200,
         )
@@ -399,6 +440,14 @@ class ApiClientPlacesDeadmansDetailView(ApiClientPlacesMixin, ApiCustompersonMix
             return Response(serializer.data, status=200)
         return Response(serializer.errors, status=400)
 
+    def delete(self, request, pk, deadman_pk):
+        customplace = self.get_customplace(pk)
+        customperson = self.get_customperson(deadman_pk)
+        if not customperson.customplace or customperson.customplace != customplace:
+            raise Http404
+        customperson.delete()
+        return Response({}, status=200)
+
 api_client_places_deadmans_detail = ApiClientPlacesDeadmansDetailView.as_view()
 
 class ApiClientDeadmansView(APIView):
@@ -411,7 +460,9 @@ class ApiClientDeadmansView(APIView):
                 customperson=CustomPerson.objects.get(pk=pk, user=request.user)
             except (ValueError, CustomPerson.DoesNotExist, ):
                 raise Http404
-            data.append(CustomPerson2Serializer(customperson).data)
+            data.append(
+                CustomPerson2Serializer(customperson, context=dict(request=request)).data
+            )
         return Response(
             data=data,
             status=200,

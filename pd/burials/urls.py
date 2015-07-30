@@ -18,6 +18,7 @@ urlpatterns = patterns('burials.views',
     url(r'^burials/add_loru_dover/$', 'add_dover', dict(prefix='loru_'), name='add_dover'),
     url(r'^burials/add_org/$', 'add_org', name='add_org'),
     url(r'^burials/add_zags/$', 'add_org', dict(type=Org.PROFILE_ZAGS), name='add_org'),
+    url(r'^burials/add_medic/$', 'add_org', dict(type=Org.PROFILE_MEDIC), name='add_org'),
     url(r'^burials/add_loru/$', 'add_org', dict(type=Org.PROFILE_LORU), name='add_org'),
     url(r'^burials/add_doctype/$', 'add_doctype', name='add_doctype'),
 

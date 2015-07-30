@@ -84,7 +84,10 @@ class LoggingFormMixin:
         self.changed_list = []
         obj = self.instance
         if obj and obj.pk:
-            obj = Burial.objects.get(pk=obj.pk)
+            if isinstance(obj, Burial):
+                obj = Burial.objects.get(pk=obj.pk)
+            else:
+                obj = None
             forms = self.forms if hasattr(self, 'forms') else []
             for form in [self] + forms:
                 prefix = self.get_prefix(form)
@@ -174,7 +177,13 @@ class StrippedStringsMixin(object):
        return self.cleaned_data
 
 class CommentForm(StrippedStringsMixin, forms.Form):
-    comment = forms.CharField(label=_(u'Комментарий'), widget=forms.Textarea, required=False)
+    comment = forms.CharField(
+        label='',
+        widget=forms.Textarea(
+            attrs={'rows': 10, 'cols': 60, }
+        ),
+        required=False,
+    )
 
 class UnclearSelectDateWidget(SelectDateWidget):
     month_unclear = False
@@ -297,7 +306,10 @@ class UnclearDateField(forms.DateField):
                 datetime.datetime.strptime(value, "%Y-%m-%d")
             except ValueError:
                 y, m, d = value.split('-')
-                raise forms.ValidationError(_(u'Была введена неверная дата (д-м-г): %s-%s-%s') % (d, m, y))
+                raise forms.ValidationError(
+                    _(u'Была введена неверная дата (дд-мм-гггг): %(day)s-%(month)s-%(year)s') % dict(
+                    day=d.rjust(2,'0'), month=m.rjust(2,'0'), year=y,
+                ))
         elif isinstance(value, UnclearDate) and not value.no_day and value.no_month:
             raise forms.ValidationError(_(u'Нет месяца в дате'))
         return value
@@ -365,8 +377,9 @@ class CustomUploadModelForm(forms.ModelForm):
         # - типа ...UploadFile (много разных таких типов),
         #        когда выполнен POST с прикрепленным файлом
         if bfile and not isinstance(bfile, FieldFile) and bfile.size > self.MAX_UPLOAD_SIZE_MB * 2**20:
-            raise forms.ValidationError(_(u'Попытка загрузки файла %s, превышен максимальный размер: %s Мб.') % \
-                                         (bfile._name, self.MAX_UPLOAD_SIZE_MB)
+            raise forms.ValidationError(
+                _(u'Попытка загрузки файла %(filename)s, превышен максимальный размер: %(max_size)s Мб.') % \
+                dict(filename=bfile._name, max_size=self.MAX_UPLOAD_SIZE_MB)
             )
         return bfile
 
@@ -420,3 +433,19 @@ class AppOrgFormMixin(object):
             self.fields['applicant_organization'].label += _(u' (наименование или УНП)')
         else:
             self.fields['applicant_organization'].label += _(u' (наименование или ИНН)')
+
+    def opf_valid(self, main_form_class):
+        """
+        is_valid() для форм, где выбирается или организация, или физ-лицо
+        """
+        is_valid = super(main_form_class, self).is_valid()
+        if not is_valid:
+            return False
+        if self.cleaned_data.get('opf') == 'org':
+            for form_name in ('applicant_form', 'applicant_address_form', 'applicant_id_form', ):
+                try:
+                    f = getattr(self, form_name)
+                    self.forms.remove(f)
+                except (AttributeError, ValueError,):
+                    continue
+        return all([f.is_valid() for f in self.forms])

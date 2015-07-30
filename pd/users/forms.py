@@ -84,7 +84,7 @@ class ProfileForm(ChildrenJSONMixin, forms.ModelForm):
     org_inn = forms.CharField(label=_(u"ИНН организации"))
     org_kpp = forms.CharField(label=_(u"КПП организации"), required=False)
     org_ogrn = forms.CharField(label=_(u"ОГРН организации"), required=False)
-    org_director = forms.CharField(label=_(u"Директор (в родительном падеже, например, Иванова Ивана Ивановича)"),
+    org_director = forms.CharField(label=_(u"Директор"),
                                    required=False)
     org_email = forms.EmailField(label=_(u"Email"), required=False)
     org_phones = forms.CharField(label=_(u"Телефоны"), required=False)
@@ -215,8 +215,10 @@ class BaseOrgForm(LoggingFormMixin, forms.ModelForm):
         add_org_with_type = self.instance and not self.instance.pk and self.instance.type
         country_code = host_country_code(request)
         if country_code == 'by':
-            self.fields['inn'].label = _(u'УНП')
-            self.fields['ogrn'].label = _(u'ОКПО')
+            if 'inn' in self.fields:
+                self.fields['inn'].label = _(u'УНП')
+            if 'ogrn' in self.fields:
+                self.fields['ogrn'].label = _(u'ОКПО')
         if self.is_own_org or add_org_with_type:
             del self.fields['type']
             self.fields['type_'] = forms.CharField(widget=forms.TextInput(attrs={'readonly':'readonly'}),
@@ -228,17 +230,17 @@ class BaseOrgForm(LoggingFormMixin, forms.ModelForm):
             choices = []
             for profile_type in Org.PROFILE_TYPES:
                 if request.user.profile.is_ugh():
-                    if profile_type[0] in (Org.PROFILE_LORU, Org.PROFILE_ZAGS, Org.PROFILE_COMPANY, ):
+                    if profile_type[0] in (Org.PROFILE_LORU, Org.PROFILE_ZAGS, Org.PROFILE_MEDIC, Org.PROFILE_COMPANY, ):
                         choices.append(profile_type)
                 elif request.user.profile.is_loru():
-                    if profile_type[0] in (Org.PROFILE_ZAGS, Org.PROFILE_COMPANY, ):
+                    if profile_type[0] in (Org.PROFILE_ZAGS, Org.PROFILE_MEDIC, Org.PROFILE_COMPANY, ):
                         choices.append(profile_type)
                     # если лорику попался для редактирования другой лору:
                     elif self.instance and self.instance.pk and \
                          self.instance.type == Org.PROFILE_LORU and profile_type[0] == Org.PROFILE_LORU:
                         choices.append(profile_type)
                 else:
-                    if profile_type[0] in (Org.PROFILE_ZAGS, ):
+                    if profile_type[0] in (Org.PROFILE_ZAGS, Org.PROFILE_MEDIC, ):
                         choices.append(profile_type)
             label = self.fields['type'].label
             self.fields['type'] = forms.fields.TypedChoiceField(choices = choices)
@@ -299,6 +301,10 @@ class OrgForm(StrippedStringsMixin, BaseOrgForm):
         self.address_form = LocationForm(data=self.data or None, prefix='address', instance=self.instance.off_address)
         self.forms = [self.address_form, ]
         # self.bank_formset = BankAccountFormset(data=request.POST or None, instance=request.user.profile.org)
+        if not self.is_own_org:
+            del self.fields['death_date_offer']
+            del self.fields['opf_burial']
+            del self.fields['hide_deadman_address']
         if not self.is_own_org or not self.request.user.profile.is_ugh():
             del self.fields['numbers_algo']
             del self.fields['plan_date_days_before']
@@ -421,10 +427,16 @@ class RegisterForm(forms.ModelForm):
     class Meta:
         model = RegisterProfile
         # Задаем порядок полей:
+        #fields = ('user_name', 'password1', 'password2',
+                  #'user_last_name', 'user_first_name', 'user_middle_name', 'user_email',
+                  #'org_type', 'org_name', 'org_full_name', 'org_currency', 'org_inn', 'org_ogrn',
+                  #'org_director', 'org_basis', 'org_phones', 'org_fax', 
+                  #'captcha',
+                 #)
         fields = ('user_name', 'password1', 'password2',
                   'user_last_name', 'user_first_name', 'user_middle_name', 'user_email',
-                  'org_type', 'org_name', 'org_full_name', 'org_currency', 'org_inn', 'org_ogrn',
-                  'org_director', 'org_basis', 'org_phones', 'org_fax', 
+                               'org_name', 'org_full_name',
+                  'org_director', 'org_phones', 'org_fax', 
                   'captcha',
                  )
 

@@ -15,22 +15,25 @@ class Migration(DataMigration):
         # - установить им признак "комплектующие"
         # - удалить категорию "комплектующие"
 
+        print "*** Moving components to 'other products' category"
         OTHER_PRODUCTS_PK = 20
         COMPONENTS_PK = 21
 
         Product = orm['orders.Product']
         ProductCategory = orm['orders.ProductCategory']
-        other_products = ProductCategory.objects.get(pk=OTHER_PRODUCTS_PK)
-        components = ProductCategory.objects.get(pk=COMPONENTS_PK)
+        try:
+            other_products = ProductCategory.objects.get(pk=OTHER_PRODUCTS_PK)
+            components = ProductCategory.objects.get(pk=COMPONENTS_PK)
+        except ProductCategory.DoesNotExist:
+            print "*** No other products or components in the database. OK."
+        else:
+            p_components = Product.objects.filter(productcategory=components)
+            count = p_components.count()
+            p_components.update(is_component=True, productcategory=other_products)
+            print "*** %d products moved" % count
 
-        print "*** Moving components to 'other products' category"
-        p_components = Product.objects.filter(productcategory=components)
-        count = p_components.count()
-        p_components.update(is_component=True, productcategory=other_products)
-        print "*** %d products moved" % count
-
-        print "*** Removing 'components' product category"
-        components.delete()
+            print "*** Removing 'components' product category"
+            components.delete()
 
     def backwards(self, orm):
         "Write your backwards methods here."
