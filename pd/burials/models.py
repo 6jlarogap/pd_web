@@ -207,7 +207,7 @@ class AreaCoordinates(CoordinatesModel):
         unique_together = ('area', 'angle_number',)
 
 class Place(SafeDeleteMixin, GeoPointModel):
-    STATUS_LIST = ('dt_wrong_fio', 'dt_military', 'dt_size_violated', 'dt_unowned', 'dt_unindentified', )
+    STATUS_LIST = ('dt_wrong_fio', 'dt_military', 'dt_size_violated', 'dt_unowned', 'dt_free', 'dt_unindentified', )
 
     cemetery = models.ForeignKey(Cemetery, verbose_name=_(u"Кладбище"), on_delete=models.PROTECT)
     area = models.ForeignKey(Area, verbose_name=_(u"Участок"), blank=True, null=True,
@@ -230,6 +230,7 @@ class Place(SafeDeleteMixin, GeoPointModel):
     dt_military = models.DateTimeField(_(u"Воинское /дата установки признака/"), null=True, editable=False)
     dt_size_violated = models.DateTimeField(_(u"Нарушение размеров /дата установки признака/"), null=True, editable=False)
     dt_unowned = models.DateTimeField(_(u"Заброшенное /дата установки признака/"), null=True, editable=False)
+    dt_free = models.DateTimeField(_(u"Свободное /дата установки признака/"), null=True, editable=False)
     dt_unindentified = models.DateTimeField(_(u"Неопознанное /дата установки признака/"), null=True, editable=False)
     caretaker = models.ForeignKey('auth.User', verbose_name=_(u"Ответственный смотритель"), null=True, editable=False,
                                   related_name='caretaker_places', on_delete=models.PROTECT)
