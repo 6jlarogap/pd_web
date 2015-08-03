@@ -997,7 +997,7 @@ $(function() {
     var ac_options = {
         bounds: USER_DEFAULT_BOUNDS,
         types: ['geocode'],
-        componentRestrictions: {country: 'ru'}
+        componentRestrictions: {country: GOOGLE_GEOCODER_DOMAIN}
     };
     $('input[id$=addr_str]').css('width', '650px');
 
