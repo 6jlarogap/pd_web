@@ -44,9 +44,15 @@ class UnclearDate:
 
     def strftime(self, format):
         if self.no_day:
-            format = format.replace('%d.', '')
+            # Убираем день с возможными разделителями (.-/) слева или справа
+            format = re.sub(r'\.\%d|\%d\.|\-\%d|\%d\-|\/\%d|\%d\/', '', format)
+            # Убираем день, если формат был без разделителей
+            format = re.sub(r'\%d', '', format)
         if self.no_month:
-            format = format.replace('%m.', '')
+            # Убираем месяц с возможными разделителями (.-/) слева или справа
+            format = re.sub(r'\.\%m|\%m\.|\-\%m|\%m\-|\/\%m|\%m\/', '', format)
+            # Убираем месяц, если формат был без разделителей
+            format = re.sub(r'\%m', '', format)
 
         if self.d.year < 1900:
             # Есть проблема в datetime.strftime() с годами раньше 1900 (ValueError exception)
