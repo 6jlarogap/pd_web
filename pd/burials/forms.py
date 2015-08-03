@@ -1199,11 +1199,11 @@ class BurialCommitForm(BurialForm):
             #msg = _(u"Нет идентификационного номера для усопшего")
             #raise forms.ValidationError(msg)
 
-        if settings.DEADMAN_IDENT_NUMBER_ALLOW and \
-           self.deadman_form.cleaned_data.get("ident_number"):
-           if not re.search(r'^[A-Za-z0-9]{10,}$', self.deadman_form.cleaned_data["ident_number"]):
-            msg = _(u"Идентификационный номер усопшего: не менее 10 цифр и латинских символов")
-            raise forms.ValidationError(msg)
+            if settings.DEADMAN_IDENT_NUMBER_ALLOW and \
+               self.deadman_form.cleaned_data.get("ident_number") and \
+               not re.search(r'^[A-Za-z0-9]{10,}$', self.deadman_form.cleaned_data["ident_number"]):
+                    msg = _(u"Идентификационный номер усопшего: не менее 10 цифр и латинских символов")
+                    raise forms.ValidationError(msg)
 
         if self.dc_form.is_valid():
             death_certificate_release_date = self.dc_form.cleaned_data.get('release_date')

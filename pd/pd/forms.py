@@ -1,6 +1,7 @@
 # coding=utf-8
 import json
 import datetime
+import re
 from django import forms
 from django.conf import settings
 from django.db.models.fields.files import FieldFile
@@ -222,8 +223,13 @@ class UnclearSelectDateWidget(SelectDateWidget):
                     if match:
                         year_val, month_val, day_val = [int(v) for v in match.groups()]
 
-        choices = [(i, i) for i in self.years]
-        year_html = self.create_select(name, self.year_field, value, year_val, choices, {'class': 'date-year'})
+        # choices = [(i, i) for i in self.years]
+        # year_html = self.create_select(name, self.year_field, value, year_val, choices, {'class': 'date-year'})
+        year_html = self.create_year_input(name, self.year_field, year_val, {
+                    'class': 'date-year',
+                    'type': 'text',
+                    'maxlength': '4',
+        })
         # choices = zip(MONTHS.keys(), MONTHS.keys())
         choices = MONTHS.items()
         month_html = self.create_select(name, self.month_field, value, month_val, choices, {'class': 'date-month'})
@@ -276,6 +282,17 @@ class UnclearSelectDateWidget(SelectDateWidget):
         select_html = s.render(field % name, val, local_attrs)
         return select_html
 
+    def create_year_input(self, name, field, val, attrs):
+        from django.forms.widgets import Input
+        if 'id' in self.attrs:
+            id_ = self.attrs['id']
+        else:
+            id_ = 'id_%s' % name
+        local_attrs = self.build_attrs(id=field % id_, **attrs)
+        s = Input(attrs=attrs)
+        input_html = s.render(field % name, unicode(val).rjust(4, '0') if val else val, local_attrs)
+        return input_html
+
 class UnclearDateField(forms.DateField):
     widget = UnclearSelectDateWidget()
     empty_strings_allowed = True
@@ -302,6 +319,17 @@ class UnclearDateField(forms.DateField):
         if not value and self.required:
             raise forms.ValidationError(self.error_messages['required'])
         if isinstance(value, basestring):
+            value = value.strip()
+            if not re.search(r'^\d{4,}\-\d{1,2}-d{1,2}$', value):
+                r = re.search(r'\-\d{1,2}\-0$', value)
+                if r:
+                    value = value[:len(value)-1] + 'X'
+                r = re.search(r'^(.+)\-0\-(\d{1,2}|X)$', value)
+                if r:
+                    value = r.group(1) + '-X-' + r.group(2)
+                raise forms.ValidationError(
+                    _(u'Была введена неверная дата (гггг-мм-дд): %s') % value
+                )
             try:
                 datetime.datetime.strptime(value, "%Y-%m-%d")
             except ValueError:
