@@ -228,6 +228,7 @@ class ApiPlaceUpload(APIView):
         placeLength = None
         placeWidth = None
         dtWrongFio = None
+        dtFree = None
         dtMilitary = None
         dtSizeViolated = None
         dtUnowned = None
@@ -241,6 +242,8 @@ class ApiPlaceUpload(APIView):
             dtWrongFio = datetime.strptime(request.POST['dtWrongFio'], templateDateTime)
         if request.POST['dtMilitary'] :
             dtMilitary = datetime.strptime(request.POST['dtMilitary'], templateDateTime)
+        if request.POST['dtFree'] :
+            dtFree = datetime.strptime(request.POST['dtFree'], templateDateTime)
         if request.POST['dtSizeViolated'] :
             dtSizeViolated = datetime.strptime(request.POST['dtSizeViolated'], templateDateTime)
         if request.POST['dtUnowned'] :
@@ -254,7 +257,8 @@ class ApiPlaceUpload(APIView):
             prevPlace = Place.objects.get(pk = placeId)
             if (prevPlace.place or "") != placeName or (prevPlace.oldplace or "") != oldPlaceName or (prevPlace.row or "") != rowName or prevPlace.area != area or \
                 prevPlace.place_length != placeLength or prevPlace.place_width != placeWidth or (prevPlace.dt_wrong_fio is None) != (dtWrongFio is None) or \
-                (prevPlace.dt_military is None) != (dtMilitary is None) or (prevPlace.dt_size_violated is None) != (dtSizeViolated is None) or \
+                (prevPlace.dt_military is None) != (dtMilitary is None) or (prevPlace.dt_free is None) != (dtFree is None) or \
+                (prevPlace.dt_size_violated is None) != (dtSizeViolated is None) or \
                 (prevPlace.dt_unowned is None) != (dtUnowned is None) or (prevPlace.dt_unindentified is None) != (dtUnindentified is None) :
                 if (prevPlace.oldplace or "") != oldPlaceName :
                     write_log(
@@ -278,6 +282,8 @@ class ApiPlaceUpload(APIView):
                     prevPlace.dt_wrong_fio = dtWrongFio
                 if (prevPlace.dt_military is None) != (dtMilitary is None) :
                     prevPlace.dt_military = dtMilitary
+                if (prevPlace.dt_free is None) != (dtFree is None) :
+                    prevPlace.dt_free = dtFree
                 if (prevPlace.dt_size_violated is None) != (dtSizeViolated is None) :
                     prevPlace.dt_size_violated = dtSizeViolated
                 if (prevPlace.dt_unowned is None) != (dtUnowned is None) :
@@ -323,6 +329,8 @@ class ApiPlaceUpload(APIView):
                     prevPlace.dt_wrong_fio = dtWrongFio
                 if (prevPlace.dt_military is None) != (dtMilitary is None) :
                     prevPlace.dt_military = dtMilitary
+                if (prevPlace.dt_free is None) != (dtFree is None) :
+                    prevPlace.dt_free = dtFree
                 if (prevPlace.dt_size_violated is None) != (dtSizeViolated is None) :
                     prevPlace.dt_size_violated = dtSizeViolated
                 if (prevPlace.dt_unowned is None) != (dtUnowned is None) :
@@ -333,7 +341,7 @@ class ApiPlaceUpload(APIView):
                 place = prevPlace                
             else :
                 place = Place(cemetery = area.cemetery, area = area, place = placeName, row = rowName, oldplace = oldPlaceName, place_length = placeLength, place_width = placeWidth, \
-                    dt_wrong_fio = dtWrongFio, dt_military = dtMilitary, dt_size_violated = dtSizeViolated, dt_unowned = dtUnowned, dt_unindentified = dtUnindentified)  
+                    dt_wrong_fio = dtWrongFio, dt_military = dtMilitary, dt_free = dtFree, dt_size_violated = dtSizeViolated, dt_unowned = dtUnowned, dt_unindentified = dtUnindentified)  
                 place.save()
             listPlaceForResponse.append(place)
             
