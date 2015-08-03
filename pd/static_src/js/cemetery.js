@@ -112,6 +112,8 @@ function setup_address_autocompletes() {
 
     $('textarea[id$=comment]').css('width', '400px');
 
+    $('.date-year').css('width', '50px').css('color', '#555555').css('background', 'lightgray');
+
     $('input[id=id_loru_in_burials]').attr('autocomplete', 'off').typeahead({
         items: 100,
         onselect: function() {

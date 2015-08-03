@@ -65,7 +65,7 @@ class UnclearDate:
             #   1800, 1700, 1500, ...: в феврале 28 дней (как в 1900)
             d_base = 1900 if self.d.year % 400 else 2000
             d1 = datetime.date(d_base + self.d.year % 100, self.d.month, self.d.day)
-            return d1.strftime(format).replace(str(d1.year), str(self.d.year))
+            return d1.strftime(format).replace(str(d1.year), str(self.d.year).rjust(4, '0'))
         return self.d.strftime(format)
 
     def get_datetime(self):
