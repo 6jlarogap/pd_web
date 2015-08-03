@@ -78,6 +78,7 @@
         {% else %}
             USER_DEFAULT_BOUNDS = null;
         {% endif %}
+        GOOGLE_GEOCODER_DOMAIN = '{{ global_context_HOST_COUNTRY_CODE }}';
     </script>
 
     <script type="text/javascript" src="{{ STATIC_URL }}js/cemetery.js" defer="true"></script>
