@@ -514,8 +514,9 @@ class AuthGetPasswordBySMSView(CheckRecaptchaMixin, APIView):
                         sent, message = send_sms(
                             phone_number=login_phone,
                             text=_(u'Vash parol na PohoronnoeDelo: %s') % password,
-                            email_error_text = _(u"Пользователь %s (телефон %s) не смог получить или заменить пароль" % \
-                                               (user.username, login_phone)),
+                            email_error_text = _(u"Пользователь %(username)s (телефон %(login_phone)s) "
+                                                 u"не смог получить или заменить пароль" % dict(
+                                                    username=user.username, login_phone=login_phone)),
                         )
         if not message:
             status = 'success'
@@ -911,14 +912,14 @@ class UserAddView(LoginRequiredMixin, CreateView):
         self.object.profile.org = self.request.user.profile.org
         self.object.profile.save()
 
-        msg = _(u"<a href='%s'>Пользователь %s</a> создан") % (
-            reverse('edit_user', args=[self.object.pk]),
-            self.object.username,
+        msg = _(u"<a href='%(edit_user)s'>Пользователь %(username)s</a> создан") % dict(
+            edit_user=reverse('edit_user', args=[self.object.pk]),
+            username=self.object.username,
         )
         messages.success(self.request, msg)
         log_msg = _(u'Создан пользователь %s') % self.object.username
         if self.object.email:
-            log_msg = _(u"%s, email: %s") % (log_msg, self.object.email,)
+            log_msg = u"%s, email: %s" % (log_msg, self.object.email,)
         write_log(self.request, self.object, log_msg)
         write_log(self.request, self.object.profile.org, log_msg)
         return redirect(self.get_success_url())
@@ -939,9 +940,9 @@ class UserEditView(LoginRequiredMixin, RequestToFormMixin, UpdateView):
     form_class = UserDataForm
 
     def get_success_url(self):
-        msg = _(u"<a href='%s'>Пользователь %s</a> изменен") % (
-            reverse('edit_user', args=[self.object.pk]),
-            self.object.username,
+        msg = _(u"<a href='%(edit_user)s'>Пользователь %(username)s</a> изменен") % dict(
+            edit_user=reverse('edit_user', args=[self.object.pk]),
+            username=self.object.username,
         )
         messages.success(self.request, msg)
         return reverse('edit_org', args=[self.object.profile.org.pk])
@@ -949,13 +950,14 @@ class UserEditView(LoginRequiredMixin, RequestToFormMixin, UpdateView):
     def form_valid(self, form):
         form.save()
         if 'is_active' in form.changed_data:
-            msg = _(u'%s (%s) изменил(а) статус %s (%s) на %s') % \
-                    (self.request.user.profile.last_name_initials(),
-                     self.request.user.username,
-                     self.object.profile.last_name_initials(),
-                     self.object.username,
-                     _(u'активный') if self.object.is_active else _(u'неактивный'),
-                   )
+            msg = _(u'%(fio_changer)s (%(username_changer)s) изменил(а) '
+                    u'статус %(fio)s (%(username)s) на %(status)s') % dict(
+                fio_changer=self.request.user.profile.last_name_initials(),
+                username_changer=self.request.user.username,
+                fio=self.object.profile.last_name_initials(),
+                username=self.object.username,
+                status=_(u'активный') if self.object.is_active else _(u'неактивный'),
+            )
             write_log(self.request, self.object.profile.org, msg)
             write_log(self.request, self.object, msg)
         return redirect(self.get_success_url())
@@ -980,9 +982,9 @@ class OrgEditView(LoginRequiredMixin, RequestToFormMixin, FormInvalidMixin, Upda
         return data
 
     def get_success_url(self):
-        msg = _(u"<a href='%s'>Организация %s</a> изменена") % (
-            reverse('edit_org', args=[self.object.pk]),
-            self.object,
+        msg = _(u"<a href='%(edit_org)s'>Организация %(org)s</a> изменена") % dict(
+            edit_org=reverse('edit_org', args=[self.object.pk]),
+            org=self.object,
         )
         messages.success(self.request, msg)
         return reverse('edit_org', args=[self.object.pk])
@@ -995,16 +997,18 @@ class ChangePasswordView(LoginRequiredMixin, UpdateView):
     form_class = ChangePasswordForm
 
     def get_success_url(self):
-        msg = _(u"Пароль <a href='%s'>пользователя %s</a> изменен") % (
-            reverse('edit_user', args=[self.object.pk]),
-            self.object.username,
+        msg = _(u"Пароль <a href='%(edit_user)s'>пользователя %(username)s</a> изменен") % dict(
+            edit_user=reverse('edit_user', args=[self.object.pk]),
+            username=self.object.username,
         )
         messages.success(self.request, msg)
-        msg = _(u'%s (%s) изменил(а) пароль %s (%s)') % (self.request.user.profile.last_name_initials(),
-                                                         self.request.user.username,
-                                                         self.object.profile.last_name_initials(),
-                                                         self.object.username,
-                                                        )
+        msg = _(u'%(fio_changer)s (%(username_changer)s) '
+                u'изменил(а) пароль %(fio)s (%(username)s)') % dict(
+            fio_changer=self.request.user.profile.last_name_initials(),
+            username_changer=self.request.user.username,
+            fio=self.object.profile.last_name_initials(),
+            username=self.object.username,
+        )
         write_log(self.request, self.object, msg)
         write_log(self.request, self.object.profile.org, msg)
         return reverse('edit_org', args=[self.object.profile.org.pk])
@@ -1239,9 +1243,14 @@ class RegisterActivation(DetailView):
                         dt_modified__lt=datetime.datetime.now() - \
                                         datetime.timedelta(days=RegisterProfile.CLEAR_PROCESSED),):
                     r.delete()
-                    write_log(None, self.object,
-                              _(u'%s : автоматическое удаление по истечении %s дней') % \
-                                (r, RegisterProfile.CLEAR_PROCESSED, ))
+                    write_log(
+                        None,
+                        self.object,
+                        _(u'%(registerprofile)s : автоматическое удаление '
+                          u'по истечении %(clear_processed)s дней') % dict(
+                            registerprofile=r,
+                            clear_processed=RegisterProfile.CLEAR_PROCESSED,
+                    ))
                 explain = _(
                             u'Спасибо за подтверждение заявки на регистрацию!\n'
                             u'Ваша заявка принята на <b>рассмотрение администратора системы</b>\n'
@@ -2150,9 +2159,11 @@ class ApiOrgSignupView(CheckRecaptchaMixin, RegisterMixin, APIView):
             try:
                 validate_username(username)
             except ValidationError as e:
-                raise ServiceException(_(u'Неверное имя пользователя для входа в систему: %s. %s') % \
-                    (username, e.messages and e.messages[0] or '', )
-                )
+                raise ServiceException(_(u'Неверное имя пользователя для входа в систему: '
+                                         u'%(username)s. %(message)s') % dict(
+                    username=username,
+                    message=e.messages and e.messages[0] or '',
+                ))
             if User.objects.filter(username=username).exists():
                 raise ServiceException(_(u"Имя  %s уже используется в системе") % username)
             q = Q(user_name=username) & \
@@ -2282,9 +2293,12 @@ class ApiOrgSignupView(CheckRecaptchaMixin, RegisterMixin, APIView):
                     if not bank['name']:
                         raise ServiceException(_(u'Пустое наименование банка') )
                     if len(bank['name']) > name_len:
-                        raise ServiceException(_(u'Наименование банка, %s, превышает максимальную длину, %d') % \
-                            (bank['name'], name_len, )
-                        )
+                        raise ServiceException(
+                            _(u'Наименование банка, %(name)s, '
+                              u'превышает максимальную длину, %d(name_len)') % dict(
+                            name=bank['name'],
+                            name_len=name_len,
+                        ))
 
                     bank['account'] = bank['account'].strip()
                     if not re.search(r'^\d{6,%d}$' % rs_len, bank['account']):
