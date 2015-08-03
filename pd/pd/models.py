@@ -53,7 +53,12 @@ class UnclearDate:
             format = format.replace('%m.', '')
 
         if self.d.year < 1900:
-            d1 = datetime.date(1900 + self.d.year % 100, self.d.month, self.d.day)
+            # Есть проблема в datetime.strftime() с годами раньше 1900 (ValueError exception)
+            # кроме того:
+            #   1600, 1200, ...: в феврале 29 дней (как в 2000)
+            #   1800, 1700, 1500, ...: в феврале 28 дней (как в 1900)
+            d_base = 1900 if self.d.year % 400 else 2000
+            d1 = datetime.date(d_base + self.d.year % 100, self.d.month, self.d.day)
             return d1.strftime(format).replace(str(d1.year), str(self.d.year))
         return self.d.strftime(format)
 
