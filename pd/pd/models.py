@@ -184,6 +184,8 @@ class UnclearDate:
                     last = datetime.date(self.d.year, month=self.d.month, day=last_day_of_month)
                 except ValueError:
                     pass
+                else:
+                    break
         if isinstance(d, UnclearDate):
             first = d.d
             try:
