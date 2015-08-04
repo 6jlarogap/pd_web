@@ -3,6 +3,7 @@
 import os, shutil
 import pytils
 import datetime
+from dateutil.relativedelta import relativedelta
 import re
 
 from django.conf import settings
@@ -221,6 +222,42 @@ class UnclearDate:
             except ServiceException as excpt:
                 message = excpt.message
         return message
+
+    def diff(self, d):
+        """
+        Сравнить эту UnclearDate c d (UnlearDate or date or datetime)
+
+        Результат: relativedelta: словарь, включающий years, months, days
+        """
+        if not self or not d:
+            raise ValueError(_(u'Одна или обе даты для сравнения не заданы'))
+        last = self.d
+        if self.no_month:
+            try:
+                last = datetime.date(self.d.year, month=12, day=31)
+            # Мало ли что там было при переходе из одного календаря в другой?
+            except ValueError:
+                pass
+        elif self.no_day:
+            for last_day_of_month in range(31, 0, -1):
+                try:
+                    last = datetime.date(self.d.year, month=self.d.month, day=last_day_of_month)
+                except ValueError:
+                    pass
+        if isinstance(d, UnclearDate):
+            first = d.d
+            try:
+                if d.no_month:
+                    first = datetime.date(d.d.year, month=1, day=1)
+                elif d.no_day:
+                    first = datetime.date(d.d.year, month=d.d.month, day=1)
+            except ValueError:
+                pass
+        elif isinstance(d, datetime.datetime) or isinstance(d, datetime.date):
+            first = d
+        else:
+            raise ValueError(_(u'Неверный тип данного для даты для сравнения'))
+        return relativedelta(last, first)
 
 class UnclearDateCreator(object):
     # http://blog.elsdoerfer.name/2008/01/08/fuzzydates-or-one-django-model-field-multiple-database-columns/
