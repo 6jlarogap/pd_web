@@ -252,22 +252,25 @@ class UnclearSelectDateWidget(SelectDateWidget):
         y = data.get(self.year_field % name)
         m = data.get(self.month_field % name)
         d = data.get(self.day_field % name)
-        if y == m == d == "0" or y == m == d == "":
+        if not y and m == d == "0" or \
+           not y and m == d == "":
             return None
 
         self.no_day = self.no_month = False
 
         if y:
-            if settings.USE_L10N:
-                input_format = get_format('DATE_INPUT_FORMATS')[0]
-                try:
-                    ud = UnclearDate(int(y), int(m), int(d))
-                except ValueError, e:
-                    return '%s-%s-%s' % (y, m, d)
-                else:
-                    return ud
-            else:
+            y = y.strip()
+            if re.search(r'^0+$', y):
+                y = "0"
+        if (m or d) and not y:
+            y = "0"
+        if y:
+            try:
+                ud = UnclearDate(int(y), int(m), int(d))
+            except ValueError:
                 return '%s-%s-%s' % (y, m, d)
+            else:
+                return ud
         return data.get(name, None)
 
     def create_select(self, name, field, value, val, choices, attrs):
@@ -319,16 +322,9 @@ class UnclearDateField(forms.DateField):
         if not value and self.required:
             raise forms.ValidationError(self.error_messages['required'])
         if isinstance(value, basestring):
-            value = value.strip()
-            if not re.search(r'^\d{4,}\-\d{1,2}-d{1,2}$', value):
-                r = re.search(r'\-\d{1,2}\-0$', value)
-                if r:
-                    value = value[:len(value)-1] + 'X'
-                r = re.search(r'^(.+)\-0\-(\d{1,2}|X)$', value)
-                if r:
-                    value = r.group(1) + '-X-' + r.group(2)
+            if not re.search(r'^\d{1,4}\-\d{1,2}-\d{1,2}$', value):
                 raise forms.ValidationError(
-                    _(u'Была введена неверная дата (гггг-мм-дд): %s') % value
+                    _(u'Была введена неверная дата (г-м-д): %s') % value
                 )
             try:
                 datetime.datetime.strptime(value, "%Y-%m-%d")
@@ -336,7 +332,7 @@ class UnclearDateField(forms.DateField):
                 y, m, d = value.split('-')
                 raise forms.ValidationError(
                     _(u'Была введена неверная дата (дд-мм-гггг): %(day)s-%(month)s-%(year)s') % dict(
-                    day=d.rjust(2,'0'), month=m.rjust(2,'0'), year=y,
+                    day=d.rjust(2,'0'), month=m.rjust(2,'0'), year=y.rjust(4,'0'),
                 ))
         elif isinstance(value, UnclearDate) and not value.no_day and value.no_month:
             raise forms.ValidationError(_(u'Нет месяца в дате'))
