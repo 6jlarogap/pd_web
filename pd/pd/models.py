@@ -150,7 +150,7 @@ class UnclearDate:
         elif self.no_day and other.no_day:
             self_day = other_day = 0
 
-        fmt = "%d-%02d-%02d"
+        fmt = "%04d-%02d-%02d"
         self_date = fmt % (self.year, self_month, self_day)
         other_date = fmt % (other.year, other_month, other_day)
         return (self_date , other_date, )
