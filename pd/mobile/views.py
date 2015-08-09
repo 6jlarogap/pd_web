@@ -340,8 +340,22 @@ class ApiPlaceUpload(APIView):
                 prevPlace.save()
                 place = prevPlace                
             else :
-                place = Place(cemetery = area.cemetery, area = area, place = placeName, row = rowName, oldplace = oldPlaceName, place_length = placeLength, place_width = placeWidth, \
-                    dt_wrong_fio = dtWrongFio, dt_military = dtMilitary, dt_free = dtFree, dt_size_violated = dtSizeViolated, dt_unowned = dtUnowned, dt_unindentified = dtUnindentified)  
+                place = Place(
+                    cemetery = area.cemetery,
+                    area = area,
+                    place = placeName,
+                    row = rowName,
+                    oldplace = oldPlaceName,
+                    place_length = placeLength,
+                    place_width = placeWidth,
+                    dt_wrong_fio = dtWrongFio,
+                    dt_military = dtMilitary,
+                    dt_free = dtFree,
+                    dt_size_violated = dtSizeViolated,
+                    dt_unowned = dtUnowned,
+                    dt_unindentified = dtUnindentified,
+                    is_invent=True,
+                )
                 place.save()
             listPlaceForResponse.append(place)
             

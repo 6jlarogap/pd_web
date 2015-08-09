@@ -127,6 +127,17 @@ class DeadPersonSerializer(serializers.HyperlinkedModelSerializer):
         model = DeadPerson
         fields = ('id', 'first_name', 'last_name', 'middle_name', 'birth_date', 'death_date')
 
+class DeadPerson2Serializer(serializers.HyperlinkedModelSerializer):
+    birthDate = UnclearDateFieldSafeSerializer('birth_date')
+    deathDate = UnclearDateFieldSafeSerializer('death_date')
+    lastName = Field(source='last_name')
+    firstName = Field(source='first_name')
+    middleName = Field(source='middle_name')
+
+    class Meta:
+        model = DeadPerson
+        fields = ('id', 'firstName', 'lastName', 'middleName', 'birthDate', 'deathDate')
+
 class BaseCustomPersonSerializer(UnclearDateFieldMixin, serializers.HyperlinkedModelSerializer):
     birthDate = serializers.SerializerMethodField('birth_date')
     deathDate = serializers.SerializerMethodField('death_date')

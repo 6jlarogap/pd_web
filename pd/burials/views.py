@@ -1,6 +1,6 @@
 # coding=utf-8
 
-import re
+import re, datetime
 
 from django.conf import settings
 from django.contrib import messages
@@ -49,7 +49,7 @@ from django.db import transaction
 from serializers import CemeterySerializer, AreaSerializer, PlaceSerializer, AreaPurposeSerializer, \
     GraveSerializer, BurialSerializer, BurialListSerializer, BurialPutGraveSerializer, \
     AreaPhotoSerializer, ExhumationRequestSerializer, PlaceSizeSerializer, \
-    ApiOmsPlacesSerializer, ApiCatalogPlacesSerializer
+    ApiOmsPlacesSerializer, ApiCatalogPlacesSerializer, PlaceLockSerializer
 
 from persons.serializers import AlivePersonSerializer, PhoneSerializer
 from users.serializers import UserFioLoginSerializer
@@ -1200,3 +1200,35 @@ class PlaceCertificateView(UGHRequiredMixin, DetailView):
         )
 
 place_certificate = PlaceCertificateView.as_view()
+
+class ApiOmsPhotoPlaces(APIView):
+    permission_classes = (PermitIfUgh,)
+
+    def get(self, request):
+        data = {}
+        with transaction.commit_on_success():
+            # Сбросить предыдущее место, с которым этот пользователь работал.
+            Place.objects.select_for_update().filter(
+                        cemetery__ugh=request.user.profile.org,
+                        is_invent=True,
+                        dt_wrong_fio__isnull=True,
+                        user_processed=request.user,
+                        dt_processed__isnull=True,
+                ).order_by('-pk').update(dt_processed=datetime.datetime.now())
+            try:
+                place = Place.objects.select_for_update().filter(
+                            cemetery__ugh=request.user.profile.org,
+                            is_invent=False,
+                            dt_wrong_fio__isnull=True,
+                            dt_processed__isnull=True,
+                    ).order_by('pk')[0]
+                place.user_processed = request.user
+                # place.save()
+                serializer = PlaceLockSerializer(place, context=dict(request=request))
+                data=serializer.data
+            except IndexError:
+                pass
+
+        return Response(status=200, data=data)
+
+api_oms_photo_places = ApiOmsPhotoPlaces.as_view()

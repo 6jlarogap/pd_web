@@ -16,7 +16,9 @@ from geo.models import Location
 from geo.serializers import LocationSerializer
 from pd.serializers import ArchFilesSerializer
 
-from persons.serializers import AlivePersonSerializer, DeadPersonSerializer, PhoneSerializer, ArchPhoneSerializer
+from persons.serializers import AlivePersonSerializer, \
+        DeadPersonSerializer, DeadPerson2Serializer, \
+        PhoneSerializer, ArchPhoneSerializer
 
 from rest_api.fields import UnclearDateFieldSerializer, UnclearDateFieldSafeSerializer
 
@@ -114,7 +116,6 @@ class ApiPlacesSerializer(serializers.ModelSerializer):
         else:
             return None
 
- 
 
 class ApiOmsPlacesSerializer(ApiPlacesSerializer):
     cemeteryId = serializers.PrimaryKeyRelatedField(source='cemetery')
@@ -179,6 +180,28 @@ class PlaceSerializer(GetGalleryMixin, serializers.ModelSerializer):
                 valid = False
         return valid
         
+
+class PlaceLockSerializer(serializers.ModelSerializer):
+    cemeteryName = serializers.Field('cemetery.name')
+    areaName = serializers.Field('area.name')
+    placeName = serializers.Field('place')
+    gallery = serializers.SerializerMethodField('photos_func')
+    burials = serializers.SerializerMethodField('burials_func')
+
+    class Meta:
+        model = Place
+        fields = ('id', 'cemeteryName', 'areaName', 'row', 'placeName', 'gallery', 'burials', )
+
+    def photos_func(self, obj):
+        request = self.context.get('request')
+        return obj.get_photos(request) if request else []
+
+    def burials_func(self, obj):
+        result = []
+        for burial in obj.burial_set.all():
+            if burial.deadman:
+                result.append(DeadPerson2Serializer(burial.deadman).data)
+        return result
 
 class GraveSerializer(serializers.ModelSerializer):
     place = serializers.PrimaryKeyRelatedField()

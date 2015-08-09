@@ -61,4 +61,7 @@ urlpatterns = patterns('burials.views',
     # REST API
     #url(r'^$', TemplateView.as_view(template_name='base_angular.html'),), # v1.5
     url(r'^manage/cemetery$', direct_to_template, {'template': 'base_angular.html'}, name='manage_cemeteries'),
+
+    url(r'^api/oms/photo-places/?$', 'api_oms_photo_places', name='api_oms_photo_places'),
+
 )

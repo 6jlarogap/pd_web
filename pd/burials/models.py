@@ -234,6 +234,10 @@ class Place(SafeDeleteMixin, GeoPointModel):
     dt_unindentified = models.DateTimeField(_(u"Неопознанное /дата установки признака/"), null=True, editable=False)
     caretaker = models.ForeignKey('auth.User', verbose_name=_(u"Ответственный смотритель"), null=True, editable=False,
                                   related_name='caretaker_places', on_delete=models.PROTECT)
+    is_invent = models.BooleanField(_(u"Добавлено при инвентаризации мобильным клиентом"), default=False, editable=False)
+    dt_processed = models.DateTimeField(_(u"Обработано: добавлены захоронения по фото"), null=True, editable=False)
+    user_processed = models.ForeignKey('auth.User', verbose_name=_(u"Пользователь, обработавший фото места"), null=True,
+                                       editable=False, on_delete=models.PROTECT)
 
     objects = PlaceManager()
 
@@ -382,7 +386,7 @@ class Place(SafeDeleteMixin, GeoPointModel):
 
     def get_photo_gallery(self, request):
         """
-        Получить все фото, относящиеся к месту.
+        Получить все фото, относящиеся к месту, вместе с датами создания
         """
         gallery = []
         for pph in PlacePhoto.objects.filter(place=self).order_by('-date_of_creation'):
@@ -393,6 +397,16 @@ class Place(SafeDeleteMixin, GeoPointModel):
                         'createdAt': utcisoformat(pph.date_of_creation),
                     }
                 )
+        return gallery
+
+    def get_photos(self, request):
+        """
+        Получить все фото, относящиеся к месту.
+        """
+        gallery = []
+        for pph in PlacePhoto.objects.filter(place=self).order_by('-date_of_creation'):
+            if pph.bfile:
+                gallery.append(request.build_absolute_uri(pph.bfile.url))
         return gallery
         
     def status_list(self):
