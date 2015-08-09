@@ -49,7 +49,7 @@ from django.db import transaction
 from serializers import CemeterySerializer, AreaSerializer, PlaceSerializer, AreaPurposeSerializer, \
     GraveSerializer, BurialSerializer, BurialListSerializer, BurialPutGraveSerializer, \
     AreaPhotoSerializer, ExhumationRequestSerializer, PlaceSizeSerializer, \
-    ApiOmsPlacesSerializer, ApiCatalogPlacesSerializer
+    ApiOmsPlacesSerializer, ApiCatalogPlacesSerializer, PlaceLockSerializer
 
 from persons.serializers import AlivePersonSerializer, PhoneSerializer
 from users.serializers import UserFioLoginSerializer
@@ -1200,3 +1200,25 @@ class PlaceCertificateView(UGHRequiredMixin, DetailView):
         )
 
 place_certificate = PlaceCertificateView.as_view()
+
+class ApiOmsPhotoPlaces(APIView):
+    permission_classes = (PermitIfUgh,)
+
+    def get(self, request):
+        with transaction.commit_on_success():
+            try:
+                place = Place.objects.select_for_update().filter(
+                            cemetery__ugh=request.user.profile.org,
+                            # grave__grave_number__lt=0,
+                            placephoto__isnull=False,
+                            dt_wrong_fio__isnull=True,
+                    ).order_by('pk')[0]
+                Place.objects.filter(pk=place.pk).update(dt_wrong_fio=None)
+                serializer = PlaceLockSerializer(place, context=dict(request=request))
+                data=serializer.data
+            except IndexError:
+                data = []
+
+        return Response(status=200, data=[])
+
+api_oms_photo_places = ApiOmsPhotoPlaces.as_view()

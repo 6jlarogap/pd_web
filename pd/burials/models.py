@@ -382,7 +382,7 @@ class Place(SafeDeleteMixin, GeoPointModel):
 
     def get_photo_gallery(self, request):
         """
-        Получить все фото, относящиеся к месту.
+        Получить все фото, относящиеся к месту, вместе с датами создания
         """
         gallery = []
         for pph in PlacePhoto.objects.filter(place=self).order_by('-date_of_creation'):
@@ -393,6 +393,16 @@ class Place(SafeDeleteMixin, GeoPointModel):
                         'createdAt': utcisoformat(pph.date_of_creation),
                     }
                 )
+        return gallery
+
+    def get_photos(self, request):
+        """
+        Получить все фото, относящиеся к месту.
+        """
+        gallery = []
+        for pph in PlacePhoto.objects.filter(place=self).order_by('-date_of_creation'):
+            if pph.bfile:
+                gallery.append(request.build_absolute_uri(pph.bfile.url))
         return gallery
         
     def status_list(self):

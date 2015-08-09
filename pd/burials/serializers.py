@@ -180,6 +180,18 @@ class PlaceSerializer(GetGalleryMixin, serializers.ModelSerializer):
         return valid
         
 
+class PlaceLockSerializer(serializers.ModelSerializer):
+    cemeteryName = serializers.Field('cemetery.name')
+    gallery = serializers.SerializerMethodField('photos_func')
+
+    class Meta:
+        model = Place
+        fields = ('id', 'cemeteryName', 'gallery',)
+
+    def photos_func(self, obj):
+        request = self.context.get('request')
+        return obj.get_photos(request) if request else []
+
 class GraveSerializer(serializers.ModelSerializer):
     place = serializers.PrimaryKeyRelatedField()
 
