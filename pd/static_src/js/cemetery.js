@@ -75,12 +75,13 @@ function setup_address_autocompletes() {
         }
     });
 
-    $('input[id$=zags]').attr('autocomplete', 'off').typeahead({
+    $('input[id$=zags]').attr('autocomplete', 'off').css('width', '300px').typeahead({
         items: 100,
         source: function (typeahead, query) {
             if (query.length < 2) { return }
+            var type_ = $('input[name=deadman-dc-type]:checked').val() == 'medic' ? 'medic' : 'zags';
             $.ajax({
-                url: ORG_URL + "?query=" + query + "&type=zags",
+                url: ORG_URL + "?query=" + query + "&type=" + type_,
                 dataType: 'json',
                 success: function(data) {
                     typeahead.process(data);
@@ -108,6 +109,10 @@ function setup_address_autocompletes() {
 
     $('input[id=id_loru]').attr('autocomplete', 'off').typeahead(loru_typeahed);
     $('input[id=id_supplier]').attr('autocomplete', 'off').css('width', '400px').typeahead(loru_typeahed);
+
+    $('textarea[id$=comment]').css('width', '400px');
+
+    $('.date-year').css('width', '50px').css('color', '#555555').css('background', 'lightgray');
 
     $('input[id=id_loru_in_burials]').attr('autocomplete', 'off').typeahead({
         items: 100,
@@ -399,6 +404,27 @@ function updateTimes() {
     $('#id_plan_time').val(val);
 }
 
+function checkPersonalData() {
+    var cem = $('#id_cemetery').val();
+    if (!cem) {
+        cem = '';
+    }
+    $.getJSON('/cemetery_personal_data/?cem='+cem, function(data) {
+        var opf_id = '#id_opf_';
+        if (data.result) {
+            // можно показывать персональные данные
+            $('#opf_choice').show();
+            $('#show_deathcertificate').show();
+        } else {
+            $(opf_id+'0').removeAttr('checked');
+            $(opf_id+'1').attr('checked', 'checked');
+            $('input[name=opf]').change();
+            $('#opf_choice').hide();
+            $('#show_deathcertificate').hide();
+        }
+    });
+}
+
 $(function() {
     updateControls();
 
@@ -459,6 +485,9 @@ $(function() {
     $('#id_cemetery').change(updateTimes);
     updateTimes();
 
+    $('#id_cemetery').change(checkPersonalData);
+    checkPersonalData();
+
     $('#id_agent').change(updateDover);
     $('#id_agent').change(function() {
         if ($(this).val()) {
@@ -506,18 +535,50 @@ $(function() {
             // оба раза с одним неверным значением,
             // хотя ниже оно затирается
             old_zags_value = val;
+            var type_ = $('input[name=deadman-dc-type]:checked').val() == 'medic' ? 'medic' : 'zags';
             $.ajax({
-                url: ORG_URL + "?query=" + val + "&type=zags&exact=1",
+                url: ORG_URL + "?query=" + val + "&type=" + type_ + "&exact=1",
                 dataType: 'json',
                 success: function(data) {
                     if (data.length == 0) {
-                        alert("Нет такого ЗАГСа");
+                        alert(type_ == 'zags' ? "Нет такого ЗАГСа" : "Нет такого мед. учреждения");
                         zags_inp.val('');
                         old_zags_value = '';
                     }
                 }
             });
         }
+    });
+
+    $('select[name*=deadman-death_date_]').change(function() {
+        var hide_ = false;
+        $('select[name*=deadman-death_date_]').each(function() {
+            if ($(this).val() != '0') {
+                hide_ = true
+                return;
+            }
+        });
+        if (hide_) {
+            $('#deadman_btn_today').hide();
+        } else {
+            $('#deadman_btn_today').show();
+        }
+    });
+    $('select[name*=deadman-death_date_]').change();
+
+    $('#id_deadman-dc-release_date').change(function() {
+        if ($(this).val()) {
+            $('#dc_btn_today').hide();
+        } else {
+            $('#dc_btn_today').show();
+        }
+    });
+    $('#id_deadman-dc-release_date').change();
+
+    $('#dc_btn_today').click(function()  {
+        var today = new Date();
+        $("#id_deadman-dc-release_date").val(today.toLocaleDateString());
+        $(this).hide();
     });
 
     old_loru_value = '';
@@ -573,6 +634,22 @@ $(function() {
     });
     $('#callback_form input[name=callback]').change();
 
+
+    $('input[name=deadman-dc-type]').change(function() {
+        if ($('input[name=deadman-dc-type]:checked').val() == 'medic') {
+            $('.btn_add_zags').html('Добавить мед. учреждение');
+            $('.btn_add_zags').attr('href', '#add_medic');
+            $('label[for="id_deadman-dc-zags"]').text('Мед. учреждение');
+        } else {
+            $('.btn_add_zags').html('Добавить ЗАГС');
+            $('.btn_add_zags').attr('href', '#add_zags');
+            $('label[for="id_deadman-dc-zags"]').text('ЗАГС');
+        }
+    });
+    
+    $('input[name=deadman-dc-type]').change();
+    $('input[name=deadman-dc-type]').closest('ul').addClass('unstyled');
+    
     $('input[name=opf]').change(function() {
         var resp_id = '#id_responsible-take_from_';
         $(resp_id+'1').removeAttr('checked').closest('li').hide();
@@ -835,6 +912,23 @@ $(function() {
         })
     });
 
+    $('#add_medic').find('.btn-primary').click(function() {
+        var data = $('#add_medic form').serialize();
+        $.post('/burials/add_medic/', data, function(data){
+            if (data.pk) {
+                if (typeof ORGS_INACTIVE != "undefined") {
+                    ORGS_INACTIVE.push(data.pk.toString());
+                    var select = $('#id_applicant_organization');
+                    select.append('<option value="'+data.pk+'" selected="selected">'+data.label+'</option>');
+                }
+                $('#add_medic').modal('hide');
+                $('#id_deadman-dc-zags').val(data.label);
+            } else {
+                alert(data);
+            }
+        })
+    });
+
     $('#add_loru').find('.btn-primary').click(function() {
         var data = $('#add_loru form').serialize();
         $.post('/burials/add_loru/', data, function(data){
@@ -959,7 +1053,7 @@ $(function() {
     $('#id_country, #id_region').change();
     $('#id_lat, #id_lng').closest('p').hide();
 
-    $('#id_org-name, #id_zags-name, #id_org_name').change(function() {
+    $('#id_org-name, #id_zags-name, #id_medic-name, #id_org_name').change(function() {
         var val = $(this).val();
         var full_name = "";
         switch ($(this).attr('id')) {
@@ -969,12 +1063,22 @@ $(function() {
             case 'id_zags-name':
                 full_name = '#id_zags-full_name';
                 break;
+            case 'id_medic-name':
+                full_name = '#id_medic-full_name';
+                break;
             case 'id_org_name':
                 full_name = '#id_org_full_name';
                 break;
         }
         if (val && !$(full_name).val()) {
             $(full_name).val(val);
+        }
+    });
+
+    $('.ugh_search_burials #id_account_number_from').change(function() {
+        var val = $(this).val();
+        if (val && !$('#id_account_number_to').val()) {
+            $('#id_account_number_to').val(val);
         }
     });
 
@@ -993,6 +1097,22 @@ $(function() {
             $(other_price).val(val);
         }
     });
+
+    $('#id_no_last_name').change(function() {
+        if ($('#id_ident_number_search').length) {
+            if ($(this).is(':checked')) {
+                $('#id_ident_number_search').attr("disabled", "disabled");
+            } else {
+                $('#id_ident_number_search').removeAttr("disabled");
+            }
+        }
+        if ($(this).is(':checked')) {
+            $('#id_fio').attr("disabled", "disabled");
+        } else {
+            $('#id_fio').removeAttr("disabled");
+        }
+    });
+    $('#id_no_last_name').change();
 
     var ac_options = {
         bounds: USER_DEFAULT_BOUNDS,
@@ -1122,6 +1242,11 @@ function makeDatePicker(obj) {
             if (id == 'id_plan_date' && now.getMonth() == 11 && now.getDate() >= 20) {
                 end_year = now_year + 1;
             }
+            regex = /^.+date_expire$/;
+            if (regex.test(id)) {
+                start_year = now_year -10;
+                end_year = now_year + 100;
+            }
         }
 
         $(this).after('<span class="add-on move-left"><i class="icon-calendar"></i></span>').datepicker({
@@ -1163,6 +1288,7 @@ function updateControls() {
     makeDatePicker($('input[id$=date]'));
     makeDatePicker($('input[id$=date_from]'));
     makeDatePicker($('input[id$=date_to]'));
+    makeDatePicker($('input[id$=date_expire]'));
     $('input[id$=time]').each(function(){
         if ($(this).attr('id') != 'id_worktime') {
             makeTimePicker($(this));

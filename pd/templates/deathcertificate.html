@@ -2,6 +2,9 @@
 
 {{ form.dt_modified }}
 
+{{ form.type.errors }}
+<p>{{ form.type.label_tag }} {{ form.type }}<span class="helptext">{{ form.type.help_text }}</span></p>
+
 {{ form.s_number.errors }}
 <p>{{ form.s_number.label_tag }} {{ form.s_number }}<span class="helptext">{{ form.s_number.help_text }}</span></p>
 
@@ -9,14 +12,20 @@
 <p>{{ form.series.label_tag }} {{ form.series }}<span class="helptext">{{ form.series.help_text }}</span></p>
 
 {{ form.release_date.errors }}
-<p>{{ form.release_date.label_tag }} {{ form.release_date }}<span class="helptext">{{ form.release_date.help_text }}</span></p>
-
 <div class="inline">
+    <p>{{ form.release_date.label_tag }} {{ form.release_date }}<span class="helptext">{{ form.release_date.help_text }}</span>
+    <input type="button" class="btn inline" value="{% trans "сегодня" %}" id="dc_btn_today" />
+    </p>
+</div>
+
+<br />
+
 {{ form.zags.errors }}
+<div class="inline">
 {{ form.zags.label_tag }} {{ form.zags }}<span class="helptext">{{ form.zags.help_text }}</span>
 
     <p class="inline">
-        <a href="#add_zags" role="button" class="btn" data-toggle="modal">
+        <a href="#add_zags" role="button" class="btn btn_add_zags" data-toggle="modal">
             {% trans "добавить ЗАГС" %}
         </a>
     </p>

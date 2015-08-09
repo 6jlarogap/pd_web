@@ -1,6 +1,6 @@
 # coding=utf-8
 
-import re
+import re, datetime
 
 from django.conf import settings
 from django.contrib import messages
@@ -24,33 +24,35 @@ from geo.models import Country, Region, Street, City
 
 from pd.views import RequestToFormMixin, FormInvalidMixin, get_front_end_url
 from pd.models import validate_phone_as_number
+from pd.utils import utcisoformat
 
 from burials.forms import CemeteryForm, AreaFormset, PlaceEditForm, AddOrgForm, AreaMergeForm, BurialfileCommentEditForm
-from burials.models import Cemetery, Place, Area, BurialFiles, Grave, Burial, AreaPhoto, PlacePhoto, \
+from burials.models import Cemetery, Place, Area, BurialFiles, Grave, Burial, BurialComment, AreaPhoto, PlacePhoto, \
                            ExhumationRequest, AreaPurpose, PlaceSize
 from burials.burials_views import *
 from logs.models import write_log, log_object, prepare_m2m_log, compare_obj
+from django.contrib.auth.models import User
 from users.models import Profile, Org, CustomerProfile, PermitIfUgh
 from users.views import SupervisorRequiredMixin, UGHRequiredMixin, LoginRequiredMixin
-from persons.models import Phone, AlivePerson
+from persons.models import Phone, AlivePerson, CustomPlace
 from geo.models import Location
 
-# REST import
 from rest_framework import generics, viewsets
+from rest_framework.views import APIView
 from rest_framework.decorators import api_view, permission_classes, action
 from rest_framework.reverse import reverse
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-# EOF REST import
 
 from django.db import transaction
 
 from serializers import CemeterySerializer, AreaSerializer, PlaceSerializer, AreaPurposeSerializer, \
     GraveSerializer, BurialSerializer, BurialListSerializer, BurialPutGraveSerializer, \
     AreaPhotoSerializer, ExhumationRequestSerializer, PlaceSizeSerializer, \
-    ApiOmsPlacesSerializer, ApiCatalogPlacesSerializer
+    ApiOmsPlacesSerializer, ApiCatalogPlacesSerializer, PlaceLockSerializer
 
 from persons.serializers import AlivePersonSerializer, PhoneSerializer
+from users.serializers import UserFioLoginSerializer
 from geo.serializers import LocationSerializer, LocationStaticSerializer, LocationDataSerializer
 from logs.serializers import LogSerializer
 
@@ -89,7 +91,24 @@ def getPlace(request):
     else:
         return get_object_or_404(Place, id=place_id, cemetery__ugh=request.user.profile.org)
 
-class CemeteryViewSet(viewsets.ModelViewSet):
+class CaretakerMixin(object):
+
+    def get_caretakers(self, obj):
+        if isinstance(obj, Cemetery):
+            ugh = obj.ugh
+        else:
+        # Area. Place
+            ugh = obj.cemetery.ugh
+        return [
+            UserFioLoginSerializer(user).data \
+                for user in User.objects.filter(
+                                profile__org=ugh,
+                                is_active=True,
+                            )
+        ]
+
+
+class CemeteryViewSet(CaretakerMixin, viewsets.ModelViewSet):
     model = Cemetery
     form_class = CemeteryForm
     serializer_class = CemeterySerializer
@@ -190,7 +209,7 @@ class CemeteryViewSet(viewsets.ModelViewSet):
         data["cemetery"]["max_graves_count"] = request.user.profile.org.max_graves_count
         if cemetery.address:
             data["address"] = LocationStaticSerializer(cemetery.address).data
-
+        data['caretakers'] = self.get_caretakers(cemetery)
         return Response(status=200, data=data)
 
 
@@ -241,7 +260,7 @@ class CemeteryEdit(UGHRequiredMixin, RequestToFormMixin, FormInvalidMixin, Updat
         return redirect('manage_cemeteries')
 
 
-class AreaViewSet(viewsets.ModelViewSet):
+class AreaViewSet(CaretakerMixin, viewsets.ModelViewSet):
     model = Area
     serializer_class = AreaSerializer
     permission_classes = (IsAuthenticated,)
@@ -270,8 +289,8 @@ class AreaViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(self.object)
         data = serializer.data
         data["max_graves_count"] = request.user.profile.org.max_graves_count
+        data['caretakers'] = self.get_caretakers(self.object)
         return Response(data)
-
 
 
 class ApiOmsPlacesViewSet(viewsets.ReadOnlyModelViewSet):
@@ -313,7 +332,7 @@ class ApiCatalogPlacesViewSet(viewsets.ReadOnlyModelViewSet):
         return Place.objects.filter(q).distinct()
 
 
-class PlaceViewSet(viewsets.ModelViewSet):
+class PlaceViewSet(CaretakerMixin, viewsets.ModelViewSet):
     model = Place
     serializer_class = PlaceSerializer
     permission_classes = (IsAuthenticated,)
@@ -329,15 +348,12 @@ class PlaceViewSet(viewsets.ModelViewSet):
 
     def pre_save(self, object):
         
-        item = getArea(self.request) # TODO: check this
+        item = getArea(self.request)
         object.area = item
         self.new_msg = []
         self.old_responsible = object.responsible
         self.old_object = None
         
-        #if item.pk:
-        #    write_log(self.request, object, _(u'Место №%s изменено' % object.place))
-
         max_graves_count = self.request.user.profile.org.max_graves_count or 10
         try:
             self.places_count = int(self.request.DATA.get('places_count',1))
@@ -371,11 +387,12 @@ class PlaceViewSet(viewsets.ModelViewSet):
                (not self.old_responsible or not self.old_responsible.login_phone):
                 try:
                     customerprofile = CustomerProfile.objects.get(login_phone=object.responsible.login_phone)
+                    user = customerprofile.user
                     text=_(u'Место %s прикреплено. pohoronnoedelo.ru') % object.pk
                     email_error_text = _(u"Пользователь %s (телефон %s) не смог получить СМС после прикрепления места %s" % \
                                         (customerprofile.user.username, object.responsible.login_phone, object.pk,))
                 except CustomerProfile.DoesNotExist:
-                    password = CustomerProfile.create_cabinet(object.responsible)
+                    user, password = CustomerProfile.create_cabinet(object.responsible)
                     text=_(u'%s login: %s parol: %s') % (
                         get_front_end_url(self.request).rstrip('/'),
                         object.responsible.login_phone,
@@ -383,6 +400,11 @@ class PlaceViewSet(viewsets.ModelViewSet):
                     )
                     email_error_text = _(u"Пользователь %s не смог получить пароль после закрытия захоронения" % \
                                         (object.responsible.login_phone,))
+                customplace, created_ = CustomPlace.objects.get_or_create(user=user, place=object)
+                if not object.responsible.user:
+                    object.responsible.user = user
+                if created_:
+                    customplace.fill_custom_deadmen()
                 if not settings.DEBUG:
                     sent, message = send_sms(
                         phone_number=object.responsible.login_phone,
@@ -390,8 +412,6 @@ class PlaceViewSet(viewsets.ModelViewSet):
                         email_error_text=email_error_text,
                         user=self.request.user,
                     )
-
-            #object.responsible.address_id = responsible.address
 
         try:
             self.old_object = self.model.objects.get(pk=object.pk)
@@ -516,6 +536,7 @@ class PlaceViewSet(viewsets.ModelViewSet):
             data["responsible"] = AlivePersonSerializer(place.responsible).data 
             if place.responsible.address:
                 data["responsible_address"] = LocationStaticSerializer(place.responsible.address).data
+        data['caretakers'] = self.get_caretakers(cemetery)
         return Response(status=200, data=data)
 
 
@@ -991,10 +1012,16 @@ class CommentView(BurialsListGenericMixin, LoginRequiredMixin, DetailView):
         return redirect('view_burial', self.get_object().pk)
 
     def post(self, request, *args, **kwargs):
+        burial = self.get_object()
         comment = request.POST.get('comment').strip()
         if comment:
-            write_log(request, self.get_object(), _(u'Комментарий: %s') % comment)
-        return redirect('view_burial', self.get_object().pk)
+            write_log(request, burial, _(u'Комментарий: %s') % comment)
+            BurialComment.objects.create(
+                creator=request.user,
+                burial=burial,
+                comment=comment,
+            )
+        return redirect('view_burial', burial.pk)
 
 burial_comment = CommentView.as_view()
 
@@ -1129,14 +1156,10 @@ class PlaceCertificateView(UGHRequiredMixin, DetailView):
                 left.append(place.responsible.first_name)
             if place.responsible.middle_name:
                 left.append(place.responsible.middle_name)
-            if place.responsible.login_phone:
-                try:
-                    customerprofile = CustomerProfile.objects.get(login_phone=place.responsible.login_phone)
-                except CustomerProfile.DoesNotExist:
-                    customerprofile = None
+            if place.responsible.user:
                 left.append(_(u"Вход на сайт %s, логин: %s") % (
                     get_front_end_url(self.request),
-                    customerprofile.user.username if customerprofile else place.responsible.login_phone,
+                    place.responsible.user.username,
                 ))
         else:
             left.append(_(u"не указан"))
@@ -1177,3 +1200,35 @@ class PlaceCertificateView(UGHRequiredMixin, DetailView):
         )
 
 place_certificate = PlaceCertificateView.as_view()
+
+class ApiOmsPhotoPlaces(APIView):
+    permission_classes = (PermitIfUgh,)
+
+    def get(self, request):
+        data = {}
+        with transaction.commit_on_success():
+            # Сбросить предыдущее место, с которым этот пользователь работал.
+            Place.objects.select_for_update().filter(
+                        cemetery__ugh=request.user.profile.org,
+                        is_invent=True,
+                        dt_wrong_fio__isnull=True,
+                        user_processed=request.user,
+                        dt_processed__isnull=True,
+                ).order_by('-pk').update(dt_processed=datetime.datetime.now())
+            try:
+                place = Place.objects.select_for_update().filter(
+                            cemetery__ugh=request.user.profile.org,
+                            is_invent=False,
+                            dt_wrong_fio__isnull=True,
+                            dt_processed__isnull=True,
+                    ).order_by('pk')[0]
+                place.user_processed = request.user
+                # place.save()
+                serializer = PlaceLockSerializer(place, context=dict(request=request))
+                data=serializer.data
+            except IndexError:
+                pass
+
+        return Response(status=200, data=data)
+
+api_oms_photo_places = ApiOmsPhotoPlaces.as_view()

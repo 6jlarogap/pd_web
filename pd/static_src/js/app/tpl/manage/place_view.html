@@ -77,6 +77,10 @@
         <td>длина {{item.place_length || '-'}}м, ширина {{item.place_width || '-'}}м</td>
       </tr>
       <tr>
+        <th>Ответственный смотритель</th>
+        <td>{{ caretaker_show }}</td>
+      </tr>
+      <tr>
         <th><a href="/places/{{item.id}}/certificate" target="_blank">Паспорт места</a></th>
         <td></td>
       </tr>
@@ -116,7 +120,7 @@
         <th width="200px">Адрес:</th>
         <td>{{responsible.address_str || '-'}}</td>
       </tr>
-      <tr>
+      <tr ng-show="item.create_cabinet">
         <th>Мобильный телефон для входа в кабинет:</th>
         <td ng-hide="responsible.login_phone">
           <span class="label label-important">Не указан</span>
@@ -166,13 +170,13 @@
               <li ng-repeat="burial in burials | filter :{grave : grave.id}"
                   class="well burial {{burial.status}}">
                 <div ng-click="openEditForm('isBurialEditorOpen', burial)">
-                  <span>{{burial.status|list:STATUS_CHOICES}}</span>
                   <h4 style="text-align: left">{{burial.deadman.last_name}}</h4>
                   <h4 style="text-align: left">{{burial.deadman.first_name}}</h4>
                   <h4 style="text-align: left">{{burial.deadman.middle_name}}</h4>
 
-                  <div ng-show="burial.deadman.birth_date">д.р. {{burial.deadman.birth_date}}</div>
-                  <div>д.с. {{burial.deadman.death_date || burial.fact_date || burial.plan_date}}</div>
+                  <div ng-show="burial.deadman.death_date">дата смерти {{burial.deadman.death_date}}</div>
+                  <div ng-show="burial.fact_date||burial.plan_date">дата захоронения {{burial.fact_date||burial.plan_date}}</div>
+                  <div>{{burial.burial_container|list:BURIAL_CONTAINERS}}</div>
                 </div>
                 <div class="btn-group pull-right">
                   <a class="btn btn-mini" popover="Просмотр" popover-trigger="mouseenter"
@@ -255,6 +259,9 @@
 
 <!-- POPUP Place edit form -->
 <div modal="isPlaceEditorOpen" close="closeEditForm('isPlaceEditorOpen')">
+  <div class="modal-header">
+    <h3>Редактировать место "{{editor.item.place}}"</h3>
+  </div>
   <div ng-include src="'/static/js/app/tpl/manage/form_edit_place.html'+version_str"></div>
 </div>
 <!-- EOF POPUP form -->

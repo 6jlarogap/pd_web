@@ -11,6 +11,7 @@ class Currency(models.Model):
     name = models.CharField(_(u"Название"), max_length=255)
     short_name = models.CharField(_(u"Сокращенное название"), max_length=255)
     code = models.CharField(_(u"Код"), max_length=10)
+    rounding = models.SmallIntegerField(_(u"Округление"), default=2)
     icon = models.FileField(u"Иконка", upload_to='icons', blank=True, null=True)
 
     class Meta:

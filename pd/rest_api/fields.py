@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from django.conf import settings
 
+from pd.models import UnclearDate
 
 class HyperlinkedFileField(serializers.FileField):
     """
@@ -23,6 +24,14 @@ class UnclearDateFieldSerializer(serializers.Field):
             return obj
 
 
+class UnclearDateFieldSafeSerializer(serializers.Field):
+    def to_native(self, obj):
+        if obj is not None:
+            return obj.str_safe()
+        else:
+            return obj
+
+
 class ThumbnailFieldSerializer(serializers.Field):
     """
     Field to frontend conversion
@@ -34,3 +43,14 @@ class ThumbnailFieldSerializer(serializers.Field):
                                                      obj.url, width, height, method)
             except:
                 return None
+
+class UnclearDateFieldMixin(object):
+
+    def birth_date(self, instance):
+        return instance.birth_date and instance.birth_date.str_safe() or None
+
+    def death_date(self, instance):
+        return instance.death_date and instance.death_date.str_safe() or None
+
+    def set_unclear_date(self, s):
+        return UnclearDate.from_str_safe(s)

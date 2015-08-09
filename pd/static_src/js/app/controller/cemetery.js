@@ -28,9 +28,11 @@ function CemeteryCtrl($rootScope, $scope, $http, $location, $resource, naturalSe
     
     $scope.update = function() {
         $scope.editor.cemetery = new Cemetery({
-                time_begin: new Date('0 8:00'),
-                time_end: new Date('0 17:00'),
-                places_algo:'area',
+                // любые правильные даты с временами по умолчанию начала и окончания работы
+                time_begin: new Date(2000, 1, 1, 8, 0, 0),
+                time_end: new Date(2000, 1, 1, 17, 0, 0),
+                places_algo:'manual',
+                places_algo_archive:'manual',
                 time_slots:'',
 	            archive_burial_fact_date_required:false,
 	            archive_burial_account_number_required:false

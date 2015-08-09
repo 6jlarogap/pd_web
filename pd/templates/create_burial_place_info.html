@@ -32,6 +32,7 @@
                 <li>
                     {{ b.grave.grave_number }} &mdash;
                     {{ b.get_burial_type_display }} &mdash;
+                    {{ b.get_burial_container_display }} &mdash;
                     {% if user.profile.is_loru and b.is_full %}
                         <a href="{% url view_burial b.pk %}">{{ b.deadman_or_bio }}</a>
                     {% elif user.profile.is_ugh and b.cemetery.ugh == user.profile.org %}
