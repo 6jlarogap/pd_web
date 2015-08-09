@@ -1,6 +1,6 @@
 # coding=utf-8
 
-import re
+import re, datetime
 
 from django.conf import settings
 from django.contrib import messages
@@ -1205,20 +1205,30 @@ class ApiOmsPhotoPlaces(APIView):
     permission_classes = (PermitIfUgh,)
 
     def get(self, request):
+        data = {}
         with transaction.commit_on_success():
+            # Сбросить предыдущее место, с которым этот пользователь работал.
+            Place.objects.select_for_update().filter(
+                        cemetery__ugh=request.user.profile.org,
+                        is_invent=True,
+                        dt_wrong_fio__isnull=True,
+                        user_processed=request.user,
+                        dt_processed__isnull=True,
+                ).order_by('-pk').update(dt_processed=datetime.datetime.now())
             try:
                 place = Place.objects.select_for_update().filter(
                             cemetery__ugh=request.user.profile.org,
-                            # grave__grave_number__lt=0,
-                            placephoto__isnull=False,
+                            is_invent=False,
                             dt_wrong_fio__isnull=True,
+                            dt_processed__isnull=True,
                     ).order_by('pk')[0]
-                Place.objects.filter(pk=place.pk).update(dt_wrong_fio=None)
+                place.user_processed = request.user
+                # place.save()
                 serializer = PlaceLockSerializer(place, context=dict(request=request))
                 data=serializer.data
             except IndexError:
-                data = []
+                pass
 
-        return Response(status=200, data=[])
+        return Response(status=200, data=data)
 
 api_oms_photo_places = ApiOmsPhotoPlaces.as_view()

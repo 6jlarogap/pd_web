@@ -234,6 +234,10 @@ class Place(SafeDeleteMixin, GeoPointModel):
     dt_unindentified = models.DateTimeField(_(u"Неопознанное /дата установки признака/"), null=True, editable=False)
     caretaker = models.ForeignKey('auth.User', verbose_name=_(u"Ответственный смотритель"), null=True, editable=False,
                                   related_name='caretaker_places', on_delete=models.PROTECT)
+    is_invent = models.BooleanField(_(u"Добавлено при инвентаризации мобильным клиентом"), default=False, editable=False)
+    dt_processed = models.DateTimeField(_(u"Обработано: добавлены захоронения по фото"), null=True, editable=False)
+    user_processed = models.ForeignKey('auth.User', verbose_name=_(u"Пользователь, обработавший фото места"), null=True,
+                                       editable=False, on_delete=models.PROTECT)
 
     objects = PlaceManager()
 
