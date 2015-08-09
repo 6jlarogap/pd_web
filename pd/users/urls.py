@@ -8,9 +8,11 @@ urlpatterns = patterns('users.views',
     url(r'^logout/', 'ulogout', name='ulogout'),
 
     url(r'^api/auth/signin/?$', 'api_auth_signin', name='api_auth_signin'),
+    url(r'^api/auth/sessions/?$', 'api_auth_sessions', name='api_auth_sessions'),
     url(r'^api/auth/signup/?$', 'api_auth_signup', name='api_auth_signup'),
     url(r'^api/auth/signout/?$', 'api_auth_signout', name='api_auth_signout'),
 
+    url(r'^api/profile/?$', 'api_profile', name='api_profile'),
     url(r'^api/settings/?$', 'api_settings', name='api_settings'),
 
     url(r'^api/settings/oauth_providers/?$', 'api_settings_oauth_providers', name='api_settings_oauth_providers'),
@@ -32,7 +34,12 @@ urlpatterns = patterns('users.views',
     url(r'^api/catalog/suppliers/(?P<org_slug>[\w-]+)/?$', 'api_catalog_suppliers_detail', name='api_catalog_suppliers_detail'),
 
     url(r'^api/optplaces/suppliers/?$', 'api_optplaces_suppliers', name='api_optplaces_suppliers'),
-    url(r'^api/optplaces/suppliers/(?P<pk>[\w-]+)/?$', 'api_optplaces_suppliers_detail', name='api_optplaces_suppliers_detail'),
+    url(r'^api/optplaces/suppliers/(?P<pk>\d+)/?$', 'api_optplaces_suppliers_detail', name='api_optplaces_suppliers_detail'),
+
+    url(r'^api/shops/?$', 'api_shops', name='api_shops'),
+    url(r'^api/shops/(?P<pk>\d+)/gallery/?$', 'api_shops_gallery', name='api_shops_gallery'),
+    url(r'^api/shops/(?P<pk>[\w-]+)/?$', 'api_shops_detail', name='api_shops_detail'),
+    url(r'^api/shops/(?P<pk>\d+)/reviews/?$', 'api_shops_reviews', name='api_shops_reviews'),
 
     url(r'^api/org/signup/?$', 'api_org_signup', name='api_org_signup'),
 

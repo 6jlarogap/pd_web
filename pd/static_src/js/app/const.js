@@ -7,6 +7,7 @@
         area: 'По участку',
         row: 'По ряду',
         cem_year: 'Кладбище + год',
+        // cem_year: gettext('Кладбище + год'),
         burial_account_number: 'По рег. номеру захоронения',
         manual: 'Вручную'
    },

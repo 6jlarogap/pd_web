@@ -34,6 +34,23 @@
     </div>
 </div>
 
+<div id="add_medic" class="modal hide fade" tabindex="-1" role="dialog" aria-labelledby="{% trans "добавить мед. учреждение" %}" aria-hidden="true">
+    <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+        <h3 id="myModalLabel">{% trans "Добавить мед. учреждение" %}</h3>
+    </div>
+    <div class="modal-body">
+        <form>
+            {% csrf_token %}
+            {{ medic_form.as_p }}
+        </form>
+    </div>
+    <div class="modal-footer">
+        <button class="btn" data-dismiss="modal" aria-hidden="true">{% trans "закрыть" %}</button>
+        <button class="btn btn-primary">{% trans "добавить" %}</button>
+    </div>
+</div>
+
 <div id="add_loru" class="modal hide fade" tabindex="-1" role="dialog" aria-labelledby="{% trans "добавить ЛОРУ" %}" aria-hidden="true">
     <div class="modal-header">
         <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>

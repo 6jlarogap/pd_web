@@ -54,3 +54,16 @@ function date2time(val){
 	 }
 	return h+':'+m;
 };
+
+function caretakerShow(caretaker, caretakers) {
+	if (caretaker) {
+		for (i = 0; i < caretakers.length; i++) {
+			if (caretakers[i].id == caretaker) {
+				return caretakers[i].fio;
+			}
+		}
+	} else {
+		return "не назначен";
+	}
+	return "не задан"
+};

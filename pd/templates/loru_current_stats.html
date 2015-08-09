@@ -95,21 +95,21 @@
             {% endif %}
         </th>
         <th style="text-align:right;">
-            {% if sort == '-num_iorders_in' %}
-                {% if sort == '-num_iorders_in' %}<i class="icon icon-arrow-down"></i>{% endif %}
-                <a href="?{{ GET_PARAMS }}&sort=num_iorders_in">{% trans "Входящих интернет-заказов" %}</a>
+            {% if sort == '-num_opt_orders_in' %}
+                {% if sort == '-num_opt_orders_in' %}<i class="icon icon-arrow-down"></i>{% endif %}
+                <a href="?{{ GET_PARAMS }}&sort=num_opt_orders_in">{% trans "Входящих оптовых заказов" %}</a>
             {% else %}
-                {% if sort == 'num_iorders_in' %}<i class="icon icon-arrow-up"></i>{% endif %}
-                <a href="?{{ GET_PARAMS }}&sort=-num_iorders_in">{% trans "Входящих интернет-заказов" %}</a>
+                {% if sort == 'num_opt_orders_in' %}<i class="icon icon-arrow-up"></i>{% endif %}
+                <a href="?{{ GET_PARAMS }}&sort=-num_opt_orders_in">{% trans "Входящих оптовых заказов" %}</a>
             {% endif %}
         </th>
         <th style="text-align:right;">
-            {% if sort == '-num_iorders_out' %}
-                {% if sort == '-num_iorders_out' %}<i class="icon icon-arrow-down"></i>{% endif %}
-                <a href="?{{ GET_PARAMS }}&sort=num_iorders_out">{% trans "Исходящих интернет-заказов" %}</a>
+            {% if sort == '-num_opt_orders_out' %}
+                {% if sort == '-num_opt_orders_out' %}<i class="icon icon-arrow-down"></i>{% endif %}
+                <a href="?{{ GET_PARAMS }}&sort=num_opt_orders_out">{% trans "Исходящих оптовых заказов" %}</a>
             {% else %}
-                {% if sort == 'num_iorders_out' %}<i class="icon icon-arrow-up"></i>{% endif %}
-                <a href="?{{ GET_PARAMS }}&sort=-num_iorders_out">{% trans "Исходящих интернет-заказов" %}</a>
+                {% if sort == 'num_opt_orders_out' %}<i class="icon icon-arrow-up"></i>{% endif %}
+                <a href="?{{ GET_PARAMS }}&sort=-num_opt_orders_out">{% trans "Исходящих оптовых заказов" %}</a>
             {% endif %}
         </th>
         <th style="text-align:right;">
@@ -157,10 +157,10 @@
             <b>{{ total.num_orders }}</b>
         </td>
         <td style="text-align:right;">
-            <b>{{ total.num_iorders_in }}</b>
+            <b>{{ total.num_opt_orders_in }}</b>
         </td>
         <td style="text-align:right;">
-            <b>{{ total.num_iorders_out }}</b>
+            <b>{{ total.num_opt_orders_out }}</b>
         </td>
         <td style="text-align:right;">
             <b>{{ total.num_burials }}</b>
@@ -202,10 +202,10 @@
                 {{ org.num_orders }}
             </td>
             <td style="text-align:right;">
-                {{ org.num_iorders_in }}{% if org.sum_iorders_in %} ({{ org.sum_iorders_in }} {{ org.currency }}){% endif %}
+                {{ org.num_opt_orders_in }}{% if org.sum_opt_orders_in %} ({{ org.sum_opt_orders_in }} {{ org.currency }}){% endif %}
             </td>
             <td style="text-align:right;">
-                {{ org.num_iorders_out }}{% if org.sum_iorders_out %} ({{ org.sum_iorders_out }} {{ org.currency }}){% endif %}
+                {{ org.num_opt_orders_out }}{% if org.sum_opt_orders_out %} ({{ org.sum_opt_orders_out }} {{ org.currency }}){% endif %}
             </td>
             <td style="text-align:right;">
                 {{ org.num_burials }}

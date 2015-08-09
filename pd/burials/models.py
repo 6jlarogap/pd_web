@@ -5,17 +5,18 @@ from django.contrib import messages
 from django.contrib.contenttypes.models import ContentType
 from django.db import models, connection
 from django.db.models import Count, Avg
-from django.db.models.deletion import ProtectedError
+from django.db.models.deletion import ProtectedError, IntegrityError
 from django.utils.translation import ugettext_lazy as _
 from django.db.models.query_utils import Q
 from django.conf import settings
 from pd.models import UnclearDateModelField, BaseModel, Files, GetLogsMixin, validate_gt0, SafeDeleteMixin
 from pd.views import get_front_end_url
+from pd.utils import utcisoformat
 
-from persons.models import DeadPerson, DeathCertificate
+from persons.models import DeadPerson, DeathCertificate, CustomPlace
 from reports.models import Report
 from users.models import Org, Profile, Dover, ProfileLORU, CustomerProfile, PhonesMixin, \
-                         is_ugh_user, is_cabinet_user
+                         is_ugh_user, is_cabinet_user, is_loru_user
 from logs.models import Log
 from geo.models import GeoPointModel, CoordinatesModel
 
@@ -54,7 +55,7 @@ class Cemetery(GetLogsMixin, BaseModel, PhonesMixin):
     time_begin = models.TimeField(_(u"Начало работы"), null=True, blank=True)
     time_end = models.TimeField(_(u"Окончание работы"), null=True, blank=True)
     places_algo = models.CharField(_(u"Расстановка номеров мест новых ручных и электронных захоронений"),
-                                max_length=255, choices=PLACE_TYPES, default=PLACE_AREA)
+                                max_length=255, choices=PLACE_TYPES, default=PLACE_MANUAL)
     # - все архивные захоронения (новые, подзахоронения, захоронения в существующиую)
     # - ручные и электронные подзахоронения и захоронения в существующиую
     places_algo_archive = models.CharField(_(u"Расстановка номеров существующих, но неучтенных мест"),
@@ -70,6 +71,9 @@ class Cemetery(GetLogsMixin, BaseModel, PhonesMixin):
     archive_burial_fact_date_required = models.BooleanField(_(u"Дата архивного захоронения обязательна"), default=True)
     archive_burial_account_number_required = models.BooleanField(_(u"Номер архивного захоронения обязателен"), default=True)
     square = models.FloatField(_(u"Площадь"), null=True, editable=False)
+    # phones: могут быть разных типов, пользуемся моделью persons.Phone
+    caretaker = models.ForeignKey('auth.User', verbose_name=_(u"Ответственный смотритель"), null=True, editable=False,
+                                  related_name='caretaker_cemeteries', on_delete=models.PROTECT)
 
     class Meta:
         verbose_name = _(u"Кладбище")
@@ -117,9 +121,23 @@ class Cemetery(GetLogsMixin, BaseModel, PhonesMixin):
     def work_time(self):
         return "%s-%s" % (self.time_begin or u'00:00:00', self.time_end or u'00:00:00')
 
+    def delete(self):
+        self.phone_set.delete()
+        self.coordinates.all().delete()
+        try:
+            super(Cemetery, self).delete()
+        except IntegrityError:
+            pass
+        else:
+            try:
+                self.address.delete()
+            except (AttributeError, IntegrityError):
+                pass
 
 
 class CemeteryCoordinates(CoordinatesModel):
+    #TODO:
+    # Перевести эту модель к PointsModel
     cemetery = models.ForeignKey(Cemetery, verbose_name=_(u"Кладбище"), on_delete=models.PROTECT, related_name='coordinates')
 
     class Meta:
@@ -153,6 +171,8 @@ class Area(BaseModel):
     purpose = models.ForeignKey(AreaPurpose, verbose_name=_(u"Назначение"), null=True, on_delete=models.PROTECT)
     places_count = models.PositiveIntegerField(_(u"Макс. кол-во могил в месте"), default=1)
     square = models.FloatField(_(u"Площадь"), null=True, editable=False)
+    caretaker = models.ForeignKey('auth.User', verbose_name=_(u"Ответственный смотритель"), null=True, editable=False,
+                                  related_name='caretaker_areas', on_delete=models.PROTECT)
 
     class Meta:
         verbose_name = _(u"Участок")
@@ -187,7 +207,7 @@ class AreaCoordinates(CoordinatesModel):
         unique_together = ('area', 'angle_number',)
 
 class Place(SafeDeleteMixin, GeoPointModel):
-    STATUS_LIST = ('dt_wrong_fio', 'dt_military', 'dt_size_violated', 'dt_unowned', 'dt_unindentified', )
+    STATUS_LIST = ('dt_wrong_fio', 'dt_military', 'dt_size_violated', 'dt_unowned', 'dt_free', 'dt_unindentified', )
 
     cemetery = models.ForeignKey(Cemetery, verbose_name=_(u"Кладбище"), on_delete=models.PROTECT)
     area = models.ForeignKey(Area, verbose_name=_(u"Участок"), blank=True, null=True,
@@ -210,7 +230,14 @@ class Place(SafeDeleteMixin, GeoPointModel):
     dt_military = models.DateTimeField(_(u"Воинское /дата установки признака/"), null=True, editable=False)
     dt_size_violated = models.DateTimeField(_(u"Нарушение размеров /дата установки признака/"), null=True, editable=False)
     dt_unowned = models.DateTimeField(_(u"Заброшенное /дата установки признака/"), null=True, editable=False)
+    dt_free = models.DateTimeField(_(u"Свободное /дата установки признака/"), null=True, editable=False)
     dt_unindentified = models.DateTimeField(_(u"Неопознанное /дата установки признака/"), null=True, editable=False)
+    caretaker = models.ForeignKey('auth.User', verbose_name=_(u"Ответственный смотритель"), null=True, editable=False,
+                                  related_name='caretaker_places', on_delete=models.PROTECT)
+    is_invent = models.BooleanField(_(u"Добавлено при инвентаризации мобильным клиентом"), default=False, editable=False)
+    dt_processed = models.DateTimeField(_(u"Обработано: добавлены захоронения по фото"), null=True, editable=False)
+    user_processed = models.ForeignKey('auth.User', verbose_name=_(u"Пользователь, обработавший фото места"), null=True,
+                                       editable=False, on_delete=models.PROTECT)
 
     objects = PlaceManager()
 
@@ -249,6 +276,9 @@ class Place(SafeDeleteMixin, GeoPointModel):
     def burials_available(self):
         q_ex = Q(status=Burial.STATUS_EXHUMATED) | Q(annulated=True)
         return self.burial_set.exclude(q_ex)
+
+    def burials_available_closed(self):
+        return self.burial_set.filter(status=Burial.STATUS_CLOSED).exclude(annulated=True)
 
     def burial_count(self):
         return self.burials_available().distinct('grave').count()
@@ -351,9 +381,12 @@ class Place(SafeDeleteMixin, GeoPointModel):
                 break
         return result
 
+    def graves_qs(self):
+        return Grave.objects.filter(place=self).order_by('grave_number')
+
     def get_photo_gallery(self, request):
         """
-        Получить все фото, относящиеся к месту.
+        Получить все фото, относящиеся к месту, вместе с датами создания
         """
         gallery = []
         for pph in PlacePhoto.objects.filter(place=self).order_by('-date_of_creation'):
@@ -361,9 +394,19 @@ class Place(SafeDeleteMixin, GeoPointModel):
                 gallery.append(
                     {
                         'photo': request.build_absolute_uri(pph.bfile.url),
-                        'addedAt': pph.date_of_creation,
+                        'createdAt': utcisoformat(pph.date_of_creation),
                     }
                 )
+        return gallery
+
+    def get_photos(self, request):
+        """
+        Получить все фото, относящиеся к месту.
+        """
+        gallery = []
+        for pph in PlacePhoto.objects.filter(place=self).order_by('-date_of_creation'):
+            if pph.bfile:
+                gallery.append(request.build_absolute_uri(pph.bfile.url))
         return gallery
         
     def status_list(self):
@@ -376,6 +419,33 @@ class Place(SafeDeleteMixin, GeoPointModel):
             if value:
                 result.append(f)
         return result
+
+    @classmethod
+    def log_login_phone_change(cls, request, old_login_phone):
+        """
+        Записать в журнал по всем местам и захоронениям изменение login_phone
+        """
+        for place in cls.objects.filter(responsible__user=request.user):
+            message = _(u"Ответственный изменил телефон входа в систему c %s на %s") % (
+                old_login_phone,
+                place.responsible.login_phone,
+            )
+            write_log(request, place, message)
+            for burial in place.burial_set.all():
+                write_log(request, burial, message)
+
+    def address(self):
+        result = _(u'Кладбище %s, участок %s') % (self.cemetery.name, self.area.name, )
+        if self.row:
+            result += _(u', ряд %s') % self.row
+        result += _(u', место %s') % self.place
+        cemetery_address = self.cemetery.address and self.cemetery.address.__unicode__() or ''
+        if cemetery_address:
+            result += _(u', %s') % cemetery_address
+        return result
+
+    def get_caretaker(self):
+        return self.caretaker or self.area.caretaker or self.cemetery.caretaker or None
 
 class PlaceSize(models.Model):
     org = models.ForeignKey(Org, verbose_name=_(u"Организация"), editable=False, on_delete=models.PROTECT) 
@@ -463,6 +533,17 @@ class Grave(GeoPointModel):
 
 class PlacePhoto(Files, GeoPointModel):
     place = models.ForeignKey(Place)
+
+    def save(self, *args, **kwargs):
+        try:
+            customplace = CustomPlace.objects.get(place=self.place)
+        except CustomPlace.DoesNotExist:
+            customplace = None
+        result = super(PlacePhoto, self).save(*args, **kwargs)
+        if customplace and self.bfile:
+            customplace.update_title_photo(self.bfile)
+        return result
+
 
     def is_accessible_anonymous(self):
         """
@@ -608,6 +689,19 @@ class Burial(SafeDeleteMixin, GetLogsMixin, BaseModel):
     class Meta:
         verbose_name = _(u"Захоронение")
         verbose_name_plural = _(u"Захоронение")
+
+    def burial1_to_burial(self):
+        """
+        Возвращает сам себя. Заглушка из разряда fool-proof.
+
+        При поиске захоронений делаем таковой поиск по модели Burial1,
+        database view of Burial. Найденные при поиске объекты
+        Burial1 преобразуются в объекты Burial
+        функцией Burial1.burial1_to_burial(),
+        однако на тот случай, если что-то не учли и провели таки поиск
+        по Burial, оставляем эту функцию-заглушку.
+        """
+        return self
 
     def is_edit(self):
         return self.is_draft() or self.is_backed() or self.is_declined()
@@ -771,6 +865,28 @@ class Burial(SafeDeleteMixin, GetLogsMixin, BaseModel):
             return self.exhumationrequest
         except ExhumationRequest.DoesNotExist:
             return
+
+    def can_personal_data(self, request=None):
+        """
+        Можно ли вводить и показывать персональные данные
+        """
+        if request:
+            if is_ugh_user(request.user):
+                return request.user.profile.org.can_personal_data()
+            elif is_loru_user(request.user):
+                ugh = self.ugh or self.cemetery and self.cemetery.ugh
+                if ugh:
+                    return ugh.can_personal_data()
+                # Пока лору не заполнил, на каком кладбище, посмотрим, есть
+                # ли он в реестре какого-то ОМС с возможностью персональных
+                # данных, и если есть, то разрешим
+                else:
+                    return request.user.profile.org.can_personal_data()
+            else:
+                return False
+        else:
+            ugh = self.ugh or self.cemetery and self.cemetery.ugh
+            return bool(ugh and ugh.can_personal_data())
 
     @property
     def status_str(self):
@@ -967,11 +1083,14 @@ class Burial(SafeDeleteMixin, GetLogsMixin, BaseModel):
            old_status != self.STATUS_CLOSED:
             try:
                 customerprofile = CustomerProfile.objects.get(login_phone=place.responsible.login_phone)
+                user = customerprofile.user
                 text = _(u'Место %s прикреплено. pohoronnoedelo.ru') % place.pk
                 email_error_text = _(u"Пользователь %s (телефон %s) не смог получить СМС после прикрепления места %s" % \
                                     (customerprofile.user.username, place.responsible.login_phone, place.pk,))
             except CustomerProfile.DoesNotExist:
-                password = CustomerProfile.create_cabinet(place.responsible)
+                # create_cabinet() создаст user, customerprofile с login_phone,
+                # а также занесет в place.responsible нового user
+                user, password = CustomerProfile.create_cabinet(place.responsible)
                 text = _(u'%s login: %s parol: %s') % (
                     get_front_end_url(request).rstrip('/'),
                     place.responsible.login_phone,
@@ -984,6 +1103,14 @@ class Burial(SafeDeleteMixin, GetLogsMixin, BaseModel):
                         request,
                         _(u"Создан пользователь кабинета %s, пароль %s") % (place.responsible.login_phone, password, ),
                     )
+            if not place.responsible.user:
+                place.responsible.user = user
+                place.responsible.save()
+            customplace, created_ = CustomPlace.objects.get_or_create(user=user, place=place)
+            if created_:
+                customplace.fill_custom_deadmen()
+            else:
+                customplace.add_custom_deadman(self)
             if not settings.DEBUG:
                 sent, message = send_sms(
                     phone_number=place.responsible.login_phone,
@@ -995,13 +1122,12 @@ class Burial(SafeDeleteMixin, GetLogsMixin, BaseModel):
         # Очистим "пустышку" свидетельства о смерти, где
         # не все обязательные поля заполнены
         #
-        if self.is_full():
-            try:
-                dc = self.deadman.deathcertificate
-                if not (dc.s_number and dc.release_date and dc.zags):
-                    dc.delete()
-            except (AttributeError, DeathCertificate.DoesNotExist, ProtectedError):
-                pass
+        try:
+            dc = self.deadman.deathcertificate
+            if not (dc.s_number and dc.release_date and dc.zags):
+                dc.delete()
+        except (AttributeError, DeathCertificate.DoesNotExist, IntegrityError):
+            pass
 
         return self
 
@@ -1119,6 +1245,15 @@ class Burial(SafeDeleteMixin, GetLogsMixin, BaseModel):
             pass
         return result
         
+class BurialComment(BaseModel):
+
+    burial = models.ForeignKey(Burial, verbose_name=_(u"Захоронение"), )
+    creator = models.ForeignKey('auth.User', verbose_name=_(u"Создатель"), )
+    comment = models.TextField(_(u"Комментарий"), )
+
+    class Meta:
+        ordering = ['-pk']
+
 class BurialFiles(Files):
     """
     Файлы, связанные с захоронением
@@ -1223,3 +1358,83 @@ models.signals.post_save.connect(calculate_free_burial_count, sender=Grave)
 models.signals.post_save.connect(calculate_free_burial_count, sender=Burial)
 models.signals.post_delete.connect(calculate_free_burial_count, sender=Grave)
 models.signals.post_delete.connect(calculate_free_burial_count, sender=Burial)
+
+class Burial1(BaseModel):
+    """
+    Database View of Burial model, created or updated by ./manage.py create_burial_views yes
+
+    см. burial/management/commands/create_burial_views.py
+    Применяется при поиске и сортировке  захоронений.
+    В особенности для "числовой" сортировки по учетному номеру зх, по номеру места
+    (см. Burial1.account_number_s..., Burial1.place_number_s...).
+    Остальные поля в модели Burial1 дублируют соответствующие поля Burial.
+    """
+
+    burial_type = models.CharField(_(u"Вид захоронения"), max_length=255, null=True)
+    burial_container = models.CharField(_(u"Тип захоронения"), max_length=255, null=True)
+    source_type = models.CharField(_(u"Источник"), max_length=255, null=True)
+    account_number = models.CharField(_(u"№ в книге учета"), max_length=255, null=True)
+    account_number_s1 = models.TextField(null=True)
+    account_number_s2 = models.FloatField(null=True)
+    account_number_s3 = models.TextField(null=True)
+
+    place = models.ForeignKey(Place, verbose_name=_(u"Место"), null=True, related_name='place_1_burials')
+    cemetery = models.ForeignKey(Cemetery, verbose_name=_(u"Кладбище"), null=True, related_name='cemetery_1_burials')
+    area = models.ForeignKey(Area, verbose_name=_(u"Участок"), null=True, related_name='area_1_burials')
+    row = models.CharField(_(u"Ряд"), max_length=255, null=True)
+    place_number = models.CharField(_(u"Номер места"), max_length=255, null=True)
+    place_number_s1 = models.TextField(null=True)
+    place_number_s2 = models.FloatField(null=True)
+    place_number_s3 = models.TextField(null=True)
+
+    grave = models.ForeignKey(Grave, verbose_name=_(u"Могила"),
+                              null=True, related_name='grave_1_burials')
+    grave_number = models.PositiveSmallIntegerField(_(u"Могила"), default=1)
+    desired_graves_count = models.PositiveSmallIntegerField(_(u"Число могил в новом месте"), default=1)
+    place_length = models.DecimalField(_(u"Длина, м."), max_digits=5, decimal_places=2,
+                                        null=True)
+    place_width = models.DecimalField(_(u"Ширина, м."), max_digits=5, decimal_places=2,
+                                        null=True)
+    responsible = models.ForeignKey('persons.AlivePerson', verbose_name=_(u"Ответственный"), null=True,
+                                    related_name='responsible_1_burials')
+
+    plan_date = models.DateField(_(u"План. дата"), null=True)
+    plan_time = models.TimeField(_(u"План. время"), null=True)
+    fact_date = UnclearDateModelField(_(u"Факт. дата"), null=True)
+
+    deadman = models.ForeignKey(DeadPerson, verbose_name=_(u"Усопший"), null=True, related_name='deadman_1_burials')
+
+    applicant = models.ForeignKey('persons.AlivePerson', verbose_name=_(u"Заявитель"), null=True,
+                                  related_name='applied_1_burials')
+    ugh = models.ForeignKey(Org, verbose_name=_(u"УГХ"), null=True, related_name='ugh_1_created')
+    loru = models.ForeignKey(Org, verbose_name=_(u"Посредник"), null=True, related_name='loru_1_burials')
+    loru_agent_director = models.BooleanField(_(u"Директор-Агент"), default=False)
+    loru_agent = models.ForeignKey(Profile, verbose_name=_(u"Агент"), null=True,
+                              related_name='loru_agent_1_burials',)
+    loru_dover = models.ForeignKey(Dover, verbose_name=_(u"Доверенность"), null=True,
+                              related_name='loru_dover_1_burials')
+    applicant_organization = models.ForeignKey(Org, verbose_name=_(u"Заявитель-ЮЛ"), null=True,
+                                               related_name='applicant_organization_1_burials')
+    agent_director = models.BooleanField(_(u"Директор-Агент"), default=False)
+    agent = models.ForeignKey(Profile, verbose_name=_(u"Агент"), null=True, related_name='agent_1_burials',)
+    dover = models.ForeignKey(Dover, verbose_name=_(u"Доверенность"), null=True, related_name='dover_1_burials')
+
+    status = models.CharField(_(u"Статус"), max_length=255)
+    changed_by = models.ForeignKey('auth.User', null=True, related_name='changed_by_1_burials')
+    annulated = models.BooleanField(_(u"Аннулировано"), default=False)
+    flag_no_applicant_doc_required = models.BooleanField(_(u"Документ заявителя-ФЛ не требуется"), default=False)
+
+    class Meta:
+        verbose_name = _(u"Захоронение")
+        verbose_name_plural = _(u"Захоронение")
+        managed = False
+
+    def burial1_to_burial(self):
+        return Burial.objects.filter(pk=self.pk).select_related(
+            'ugh', 'cemetery', 'area', 'area__purpose',
+            'deadman', 'deadman__address',
+            'applicant_organization',
+            'applicant', 'applicant__address',
+            'changed_by', 'changed_by__profile', 
+            'responsible',  'responsible__address',
+        )[0]

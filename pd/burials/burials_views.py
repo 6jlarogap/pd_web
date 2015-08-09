@@ -3,6 +3,7 @@ import datetime
 import json
 from django import db
 
+from django.conf import settings
 from django.contrib import messages
 from django.core.urlresolvers import reverse
 from django.db import transaction
@@ -18,13 +19,13 @@ from django.views.generic.list import ListView
 
 from burials.forms import BurialSearchForm, BurialPublicListForm, BurialForm, BurialCommitForm, BurialApproveCloseForm, AddDocTypeForm
 from burials.forms import AddAgentForm, AddDoverForm, AddOrgForm, ExhumationForm
-from burials.models import Reason, Burial, Cemetery, Place, ExhumationRequest
+from burials.models import Reason, Burial, Burial1, Cemetery, Place, ExhumationRequest
 from persons.models import DeathCertificate
 from logs.models import write_log
 from orders.models import Order
-from users.models import Org
+from users.models import Org, Profile, is_cabinet_user
 from pd.forms import CommentForm
-from pd.views import PaginateListView, FormInvalidMixin
+from pd.views import PaginateListView, FormInvalidMixin, get_front_end_url
 from reports.models import make_report
 
 class BurialGetOrderMixin:
@@ -64,6 +65,17 @@ class BurialsListGenericMixin:
 class DashboardView(BurialsListGenericMixin, TemplateView):
     template_name = 'dashboard.html'
 
+    def get(self, request, *args, **kwargs):
+        if is_cabinet_user(request.user):
+            if settings.REDIRECT_LOGIN_TO_FRONT_END:
+                return redirect(get_front_end_url(request))
+            else:
+                return render_to_response(
+                    'simple_message.html',
+                    dict(message=_(u"Рабочее место пользователя кабинета организовано другими средствами"))
+                )
+        return super(DashboardView, self).get(request, *args, **kwargs)
+
     def get_qs_filter(self):
       if self.request.user.is_authenticated() and self.request.user.profile.is_loru():
           # лору в открытых может видеть только свои (а не других лору) захоронения
@@ -83,12 +95,12 @@ class DashboardView(BurialsListGenericMixin, TemplateView):
         SORT_FIELDS = {
             'pk': 'pk',
             '-pk': '-pk',
-            'account_number': 'account_number',
-            '-account_number': '-account_number',
+            'account_number':  ['account_number_s1', 'account_number_s2', 'account_number_s3'],
+            '-account_number':  ['-account_number_s1', '-account_number_s2', '-account_number_s3'],
             'cemetery': 'cemetery__name',
             '-cemetery': '-cemetery__name',
-            'place': 'place_number',
-            '-place': '-place_number',
+            'place': ['place_number_s1', 'place_number_s2', 'place_number_s3'],
+            '-place': ['-place_number_s1', '-place_number_s2', '-place_number_s3'],
             'fio': 'deadman__last_name',
             '-fio': '-deadman__last_name',
             'fact_date': 'fact_date',
@@ -106,12 +118,9 @@ class DashboardView(BurialsListGenericMixin, TemplateView):
         if not isinstance(s, list):
             s = [s]
 
-        burials_clean = Burial.objects.filter(qs).exclude(ex_qs).distinct()
+        burials_clean = Burial1.objects.filter(qs).exclude(ex_qs).distinct()
         burials_count = burials_clean.count()
-        burials = burials_clean.select_related(
-            'ugh', 'place', 'place__cemetery', 'place__area', 'deadman', 'deadman__address', 'cemetery', 'area',
-            'applicant_organization', 'applicant', 'changed_by', 'changed_by__profile', 'cemetery__ugh', 'area__purpose'
-        ).order_by(*s)
+        burials = burials_clean.order_by(*s)
         burials.count = lambda: burials_count
         return {
             'burials': burials,
@@ -452,12 +461,14 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
             'approve_close_form': self.get_approve_close_form(),
             'comment_form': CommentForm(),
             'zags_form': AddOrgForm(request=self.request, prefix='zags', instance=Org(type=Org.PROFILE_ZAGS)),
+            'medic_form': AddOrgForm(request=self.request, prefix='medic', instance=Org(type=Org.PROFILE_MEDIC)),
             'order': self.order,
             'orders': b.get_orders(loru=self.request.user.profile.org) if self.request.user.profile.is_loru() else [],
             # Кому можно смотреть в захоронении ответственного и заявителя:
             'show_private_data': self.request.user.profile.is_ugh() or \
                                  b.is_full() and not b.is_closed() and not b.is_exhumated() and \
                                  b.loru and b.loru == self.request.user.profile.org,
+            'can_personal_data': b.can_personal_data(self.request),
             'place': b.get_place(),
         }
 
@@ -476,7 +487,7 @@ class BurialsListView(PaginateListView):
             return Burial.objects.none()
 
         if self.request.user.is_authenticated():
-            burials = Burial.objects.filter(
+            burials = Burial1.objects.filter(
                 Q(applicant_organization=self.request.user.profile.org) | Q(ugh=self.request.user.profile.org),
             ).order_by('-pk')
         else:
@@ -485,7 +496,7 @@ class BurialsListView(PaginateListView):
         if form.data and form.is_valid():
             if form.cleaned_data['operation']:
                 burials = burials.filter(burial_type=form.cleaned_data['operation'])
-            if form.cleaned_data['fio']:
+            if form.cleaned_data['fio'] and not form.cleaned_data['no_last_name']:
                 fio = [f.strip('.') for f in form.cleaned_data['fio'].split(' ')]
                 q = Q()
                 if len(fio) > 2:
@@ -495,6 +506,10 @@ class BurialsListView(PaginateListView):
                 if len(fio) > 0:
                     q &= Q(deadman__last_name__istartswith=fio[0])
                 burials = burials.filter(q)
+            if settings.DEADMAN_IDENT_NUMBER_ALLOW and \
+               form.cleaned_data.get('ident_number_search', '').strip() and \
+               not form.cleaned_data['no_last_name']:
+                burials = burials.filter(deadman__ident_number__icontains=form.cleaned_data['ident_number_search'])
             if form.cleaned_data['birth_date_from']:
                 burials = burials.filter(deadman__birth_date__gte=form.cleaned_data['birth_date_from'])
             if form.cleaned_data['birth_date_to']:
@@ -508,9 +523,9 @@ class BurialsListView(PaginateListView):
             if form.cleaned_data['burial_date_to']:
                 burials = burials.filter(fact_date__lte=form.cleaned_data['burial_date_to'])
             if form.cleaned_data['account_number_from']:
-                burials = burials.filter(account_number__gte=form.cleaned_data['account_number_from'])
+                burials = burials.filter(account_number_s2__gte=form.cleaned_data['account_number_from'])
             if form.cleaned_data['account_number_to']:
-                burials = burials.filter(account_number__lte=form.cleaned_data['account_number_to'])
+                burials = burials.filter(account_number_s2__lte=form.cleaned_data['account_number_to'])
             if form.cleaned_data['responsible']:
                 fio = [f.strip('.') for f in form.cleaned_data['responsible'].split(' ')]
                 q1r = Q(responsible__isnull=False)
@@ -563,6 +578,9 @@ class BurialsListView(PaginateListView):
             else:
                 burials = burials.filter(annulated=False)
 
+            if form.cleaned_data.get('comment'):
+                burials = burials.filter(burialcomment__comment__icontains=form.cleaned_data['comment'])
+
             if form.cleaned_data.get('status') == Burial.STATUS_EXHUMATED:
                 burials = burials.filter(status=Burial.STATUS_EXHUMATED)
             else:
@@ -572,10 +590,8 @@ class BurialsListView(PaginateListView):
 
         sort = self.request.GET.get('sort', self.SORT_DEFAULT)
         SORT_FIELDS = {
-            'pk': 'pk',
-            '-pk': '-pk',
-            'account_number': 'account_number',
-            '-account_number': '-account_number',
+            'account_number': ['account_number_s1', 'account_number_s2', 'account_number_s3'],
+            '-account_number': ['-account_number_s1', '-account_number_s2', '-account_number_s3'],
             'cemetery': 'cemetery__name',
             '-cemetery': '-cemetery__name',
             'place': 'place_number',
@@ -591,16 +607,15 @@ class BurialsListView(PaginateListView):
             'status': 'status',
             '-status': '-status',
         }
-        s = SORT_FIELDS[sort]
+        try:
+            s = SORT_FIELDS[sort]
+        except KeyError:
+            s = self.SORT_DEFAULT
         if not isinstance(s, list):
             s = [s]
 
         burials_count = burials.count()
-        burials = burials.select_related(
-            'ugh', 'place', 'place__cemetery', 'place__area', 'deadman', 'deadman__address', 'cemetery', 'area',
-            'applicant_organization', 'applicant', 'changed_by', 'changed_by__profile', 'cemetery__ugh',
-            'area__purpose', 'responsible',
-        ).order_by(*s)
+        burials = burials.order_by(*s)
         burials.count = lambda: burials_count
         return burials
 
@@ -629,7 +644,7 @@ class BurialsPublicListView(PaginateListView):
             return Burial.objects.none()
 
         if self.request.user.is_authenticated() and self.request.user.profile.is_loru():
-            burials = Burial.objects.filter(
+            burials = Burial1.objects.filter(
                 #Q(
                   #(
                    #Q(ugh__loru_list__loru=self.request.user.profile.org) &
@@ -685,9 +700,9 @@ class BurialsPublicListView(PaginateListView):
             if form.cleaned_data['burial_date_to']:
                 burials = burials.filter(fact_date__lte=form.cleaned_data['burial_date_to'])
             if form.cleaned_data['account_number_from']:
-                burials = burials.filter(account_number__gte=form.cleaned_data['account_number_from'])
+                burials = burials.filter(account_number_s2__gte=form.cleaned_data['account_number_from'])
             if form.cleaned_data['account_number_to']:
-                burials = burials.filter(account_number__lte=form.cleaned_data['account_number_to'])
+                burials = burials.filter(account_number_s2__lte=form.cleaned_data['account_number_to'])
             if form.cleaned_data['cemetery']:
                 burials = burials.filter(cemetery__name=form.cleaned_data['cemetery'])
             if form.cleaned_data['area']:
@@ -705,12 +720,12 @@ class BurialsPublicListView(PaginateListView):
         SORT_FIELDS = {
             'pk': 'pk',
             '-pk': '-pk',
-            'account_number': 'account_number',
-            '-account_number': '-account_number',
+            'account_number':  ['account_number_s1', 'account_number_s2', 'account_number_s3'],
+            '-account_number':  ['-account_number_s1', '-account_number_s2', '-account_number_s3'],
             'cemetery': 'cemetery__name',
             '-cemetery': '-cemetery__name',
-            'place': 'place_number',
-            '-place': '-place_number',
+            'place': ['place_number_s1', 'place_number_s2', 'place_number_s3'],
+            '-place': ['-place_number_s1', '-place_number_s2', '-place_number_s3'],
             'fio': 'deadman__last_name',
             '-fio': '-deadman__last_name',
             'fact_date': 'fact_date',
@@ -721,9 +736,7 @@ class BurialsPublicListView(PaginateListView):
         s = SORT_FIELDS[sort]
         if not isinstance(s, list):
             s = [s]
-        burials = burials.select_related(
-            'ugh', 'place', 'place__cemetery', 'place__area', 'deadman', 'cemetery', 'area',
-        ).order_by(*s)
+        burials = burials.order_by(*s)
         return burials
 
     def get_form(self):
@@ -748,6 +761,7 @@ class CreateBurial(BurialGetOrderMixin, FormInvalidMixin, CreateView):
             'org_form': AddOrgForm(request=self.request, prefix='org'),
             'loru_form': AddOrgForm(request=self.request, prefix='loru', instance=Org(type=Org.PROFILE_LORU)),
             'zags_form': AddOrgForm(request=self.request, prefix='zags', instance=Org(type=Org.PROFILE_ZAGS)),
+            'medic_form': AddOrgForm(request=self.request, prefix='medic', instance=Org(type=Org.PROFILE_MEDIC)),
             'doc_type_form': AddDocTypeForm(prefix='doctype'),
             'order': self.get_order(),
         })
@@ -1094,6 +1108,27 @@ class GetCemeteryTimes(View):
         return HttpResponse(json.dumps({c.pk: data}), mimetype='application/json')
 
 cemetery_times = GetCemeteryTimes.as_view()
+
+class GetCemeteryPersonalData(View):
+    def get(self, request, *args, **kwargs):
+        pk=request.GET.get('cem')
+        if not request.user.is_authenticated() or pk is None:
+            return redirect('/')
+        result = False
+        if pk:
+            try:
+                c = Cemetery.objects.get(pk=pk)
+                result = c.ugh and c.ugh.can_personal_data()
+            except (ValueError, AttributeError, Cemetery.DoesNotExist,):
+                pass
+        else:
+            try:
+                result = request.user.profile.org.can_personal_data()
+            except (AttributeError, Profile.DoesNotExist,):
+                pass
+        return HttpResponse(json.dumps({'result': result}), mimetype='application/json')
+
+cemetery_personal_data = GetCemeteryPersonalData.as_view()
 
 class ExhumateView(ArchiveMixin, DetailView):
     context_object_name = 'burial'

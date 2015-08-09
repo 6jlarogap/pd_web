@@ -18,6 +18,7 @@ urlpatterns = patterns('burials.views',
     url(r'^burials/add_loru_dover/$', 'add_dover', dict(prefix='loru_'), name='add_dover'),
     url(r'^burials/add_org/$', 'add_org', name='add_org'),
     url(r'^burials/add_zags/$', 'add_org', dict(type=Org.PROFILE_ZAGS), name='add_org'),
+    url(r'^burials/add_medic/$', 'add_org', dict(type=Org.PROFILE_MEDIC), name='add_org'),
     url(r'^burials/add_loru/$', 'add_org', dict(type=Org.PROFILE_LORU), name='add_org'),
     url(r'^burials/add_doctype/$', 'add_doctype', name='add_doctype'),
 
@@ -51,12 +52,16 @@ urlpatterns = patterns('burials.views',
     #url(r'^manage/cemetery/(?P<pk>\d+)/edit/$', 'manage_cemeteries_edit', name='manage_cemeteries_edit'),
     url(r'^manage/cemetery/(?P<pk>\d+)/merge/$', 'manage_cemeteries_merge', name='manage_cemeteries_merge'),
 
+    url(r'^cemetery_personal_data/', 'cemetery_personal_data', name='cemetery_personal_data'),
+
     url(r'^cemetery_times/', 'cemetery_times', name='cemetery_times'),
     url(r'^autocomplete/cemeteries/', 'autocomplete_cemeteries', name='autocomplete_cemeteries'),
     url(r'^autocomplete/areas/', 'autocomplete_areas', name='autocomplete_areas'),
 
-
     # REST API
     #url(r'^$', TemplateView.as_view(template_name='base_angular.html'),), # v1.5
     url(r'^manage/cemetery$', direct_to_template, {'template': 'base_angular.html'}, name='manage_cemeteries'),
+
+    url(r'^api/oms/photo-places/?$', 'api_oms_photo_places', name='api_oms_photo_places'),
+
 )

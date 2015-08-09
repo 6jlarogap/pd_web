@@ -7,6 +7,7 @@ import datetime
 import gc
 import json
 import codecs
+import re
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.db import transaction, connection
@@ -16,7 +17,7 @@ from django.core.exceptions import ValidationError
 
 from django.utils.translation import ugettext as _
 
-from burials.models import Burial, ExhumationRequest, Cemetery, Area, Place, AreaPurpose, Grave, BurialFiles
+from burials.models import Burial, BurialComment, ExhumationRequest, Cemetery, Area, Place, AreaPurpose, Grave, BurialFiles
 from geo.models import Location, Country, Region, City, Street
 from logs.models import write_log
 from orders.models import Product, Order, OrderItem, CoffinData, CatafalqueData, AddInfoData
@@ -197,6 +198,8 @@ def do_import_burials_minsk(csv_fileobj, cemetery, user):
         post_index, building,
         op_type,
      ) = range(28)
+    today = datetime.date.today()
+    today_str = "{0:d}/{1:02d}/{2:02d}".format(today.year, today.month, today.day)
      
     def make_burial(row, burial_type):
         """
@@ -267,12 +270,15 @@ def do_import_burials_minsk(csv_fileobj, cemetery, user):
                     building=row[building].strip(),
                     flat=row[flat].strip(),
                 )
+            phones = row[phone].strip()
+            if phones:
+                phones = phones.replace("\n", "; ")
             applicant = AlivePerson.objects.create(
                 last_name=row[applicant_ln],
                 first_name=row[applicant_fn].strip(),
                 middle_name=row[applicant_mn].strip(),
                 address=location,
-                phones=row[phone]
+                phones=phones,
             )
 
         graves_count = place.get_graves_count()
@@ -297,6 +303,7 @@ def do_import_burials_minsk(csv_fileobj, cemetery, user):
                                                 else Burial.CONTAINER_COFFIN
 
         row[deadman_ln] = row[deadman_ln].strip()
+        deadman = None
         if row[deadman_ln] and row[deadman_ln] != u'*' and \
            row[deadman_ln].lower != u'неизвестен':
             deadman = DeadPerson.objects.create(
@@ -329,22 +336,29 @@ def do_import_burials_minsk(csv_fileobj, cemetery, user):
         request = HttpRequest()
         request.user = user
         if row[comment]:
-            write_log(request, burial, row[comment])
+            write_log(request, burial, u"Комментарий: %s" % row[comment])
+            BurialComment.objects.create(
+                burial=burial,
+                creator=user,
+                comment=row[comment],
+            )
         write_log(request, burial, _(u"Импорт"))
         
         if row[file_names]:
             files = row[file_names].split('\n')
             fcomments = row[file_comments].split('\t')
             for i, f in enumerate(files):
-                f = f.replace('ofiles/','bfiles/%s/' % burial.pk)
+                original_name = re.sub(r'^ofiles/(.+)', r'\1', f)
+                f = f.replace('ofiles/','bfiles/%s/%s/' % (today_str, burial.pk, ))
                 try:
-                    fcomment = fcomments[i] if fcomments[i] else _(u'Без комментария')
+                    fcomment = fcomments[i].strip() if fcomments[i] else original_name
                 except IndexError:
-                    fcomment = _(u'Без комментария')
+                    fcomment = original_name
                 BurialFiles.objects.create(
                     burial=burial,
                     bfile=f,
                     comment=fcomment,
+                    original_name=original_name,
                 )
         
     # Будут несколько проходов по считанному файлу импорта, надо бы сохранить

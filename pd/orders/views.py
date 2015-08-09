@@ -3,6 +3,10 @@
 import datetime
 import decimal
 import json
+import random
+import string
+import re
+import hashlib
 
 from django.conf import settings
 from django.contrib import messages
@@ -23,16 +27,22 @@ from django.utils.translation import ugettext_lazy as _
 from django.views.decorators.csrf import csrf_protect, csrf_exempt
 from django.shortcuts import get_object_or_404
 
+from LatLon import LatLon, Latitude, Longitude
+
 from logs.models import write_log
 from geo.models import Location
 from burials.forms import AddOrgForm, AddAgentForm, AddDoverForm, AddDocTypeForm
-from burials.models import Burial, Place, Grave, PlacePhoto
-from users.models import CustomerProfile, CustomerProfilePhoto, Org, ProfileLORU, Store, is_loru_user, is_supervisor, \
-                         PermitIfLoru
+from burials.models import Burial, Place
+from users.models import CustomerProfile, Org, ProfileLORU, Store, OrgWebPay, \
+                         is_trade_user, is_supervisor, is_cabinet_user, \
+                         PermitIfTrade, PermitIfCabinet, PermitIfTradeOrCabinet
 from billing.models import Rate
 from orders.forms import ProductForm, OrderForm, OrderItemFormset, CoffinForm, CatafalqueForm, \
                          AddInfoForm, OrderSearchForm, OrderBurialForm
-from orders.models import Product, Order, OrderItem, ProductCategory, Iorder, IorderItem
+from orders.models import Product, Order, OrderItem, ProductCategory, \
+                          Service, Measure, OrgService, OrgServicePrice, ServiceItem, OrderComment, \
+                          Route, ResultFile, OrderWebPay
+from persons.models import CustomPlace, AlivePerson
 from pd.forms import CommentForm
 from pd.views import PaginateListView, RequestToFormMixin, ServiceException, get_front_end_url, get_host_url
 from reports.models import make_report
@@ -41,12 +51,15 @@ from rest_framework import viewsets
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from rest_framework.parsers import MultiPartParser
+from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.renderers import StaticHTMLRenderer
 from orders.serializers import ProductCategorySerializer, ProductsSerializer, ProductsOptSerializer, \
-                               ProductInfoSerializer, IordersSerializer, IorderInfoSerializer, \
-                               ProductEditSerializer
+                               ProductInfoSerializer, OptOrdersSerializer, OptOrderInfoSerializer, \
+                               ProductEditSerializer, ServiceSerializer, OrgServiceSerializer, \
+                               ServiceOrderSerializer, OrderCommentsSerializer, ServiceOrderDetailSerializer, \
+                               OrderResultsSerializer
 
-from pd.utils import EmailMessage
+from pd.utils import EmailMessage, str_to_bool_or_None, get_image, is_video
 from pd.models import validate_phone_as_number
 
 from sms_service.utils import send_sms
@@ -148,7 +161,9 @@ class OrderList(LORURequiredMixin, PaginateListView):
         return self.filtered_orders()
 
     def filtered_orders(self):
-        orders = Order.objects.filter(loru=self.request.user.profile.org) 
+        q = Q(loru=self.request.user.profile.org) | \
+            Q(type=Order.TYPE_TRADE, applicant_organization=self.request.user.profile.org)
+        orders = Order.objects.filter(q).distinct()
                 # .annotate(item_count=Count('orderitem'))  # мы не показываем в таблице кол-во товаров,
                                                             # к тому же это резко замедляет поиск
 
@@ -318,6 +333,7 @@ class OrderCreate(LORURequiredMixin, RequestToFormMixin, CreateView):
         })
         return data
 
+    @transaction.commit_on_success
     def form_valid(self, form):
         self.object = form.save(commit=False)
         self.object.loru = self.request.user.profile.org
@@ -362,7 +378,7 @@ class OrderEdit(LORURequiredMixin, RequestToFormMixin, UpdateView):
         return super(OrderEdit, self).get(request, *args, **kwargs)
 
     def get_queryset(self):
-        return Order.objects.filter(loru=self.request.user.profile.org)
+        return Order.objects.filter(loru=self.request.user.profile.org, type=Order.TYPE_BURIAL)
 
     def form_valid(self, form):
         self.object = form.save()
@@ -399,7 +415,7 @@ class OrderEditProducts(LORURequiredMixin, View):
         return OrderItemFormset(request=self.request, data=self.request.POST or None, instance=self.get_object())
 
     def get_object(self):
-        return self.get_queryset().get(pk=self.kwargs['pk'])
+        return self.get_queryset().get(pk=self.kwargs['pk'], type=Order.TYPE_BURIAL)
 
     def get_context_data(self, **kwargs):
         return {
@@ -407,6 +423,7 @@ class OrderEditProducts(LORURequiredMixin, View):
             'formset': self.get_formset(),
         }
 
+    @transaction.commit_on_success
     def post(self, request, *args, **kwargs):
         self.request = request
             
@@ -417,7 +434,6 @@ class OrderEditProducts(LORURequiredMixin, View):
                 orderitem.delete()
             
             formset.save()
-
 
             write_log(self.request, self.object, _(u'Заказ сохранен'))
             msg = _(u"<a href='%(order_edit)s'>Заказ %(pk)s</a> сохранен") % dict(
@@ -432,7 +448,10 @@ class OrderEditProducts(LORURequiredMixin, View):
 
     def get(self, request, *args, **kwargs):
         self.request = request
-        return render(request, self.template_name, self.get_context_data())
+        try:
+            return render(request, self.template_name, self.get_context_data())
+        except Order.DoesNotExist:
+            raise Http404
 
 order_products = OrderEditProducts.as_view()
 
@@ -440,7 +459,7 @@ class OrderInfo(LORURequiredMixin, DetailView):
     template_name = 'order_info.html'
 
     def get_queryset(self):
-        return Order.objects.filter(loru=self.request.user.profile.org)
+        return Order.objects.filter(loru=self.request.user.profile.org, type=Order.TYPE_BURIAL)
 
     def get_context_data(self, **kwargs):
         data = super(OrderInfo, self).get_context_data(**kwargs)
@@ -590,7 +609,7 @@ class OrderBurialView(LORURequiredMixin, RequestToFormMixin, UpdateView):
     form_class = OrderBurialForm
 
     def get_queryset(self):
-        return Order.objects.filter(loru=self.request.user.profile.org)
+        return Order.objects.filter(loru=self.request.user.profile.org, type=Order.TYPE_BURIAL)
 
     def get(self, request, *args, **kwargs):
         order = self.get_object()
@@ -636,23 +655,6 @@ class ProductCategoryViewSet(viewsets.ModelViewSet):
             qs &= Q(product__is_wholesale=True)
         return ProductCategory.objects.filter(qs).order_by('name').distinct()
 
-class CustomerDataMixin:
-    def get_customer_data(self, request):
-        places = []
-        lorus = set()
-        is_customer = True
-        try:
-            request.user.customerprofile
-        except CustomerProfile.DoesNotExist:
-            is_customer = False
-        else:
-            login_phone = request.user.customerprofile.login_phone
-            if login_phone is not None:
-                for p in Place.objects.filter(responsible__login_phone=login_phone):
-                    places.append(p)
-                    lorus.update(p.cemetery.ugh.get_loru_list())
-        return is_customer, places, lorus
-
 class ProductsViewSet(ProductCategoryQsMixin, viewsets.ReadOnlyModelViewSet):
     """
     Показ продуктов в публичном каталоге только!!!
@@ -662,13 +664,13 @@ class ProductsViewSet(ProductCategoryQsMixin, viewsets.ReadOnlyModelViewSet):
     paginate_by = None
 
     def get_queryset(self):
+        qs = Q()
+
         store_ids = self.request.GET.getlist('filter[supplierStore]')
         while store_ids.count(u''):
             store_ids.remove(u'')
         if store_ids:
-            qs = Q(loru__store__pk__in=store_ids)
-        else:
-            return Product.objects.none()
+            qs &= Q(loru__store__pk__in=store_ids)
 
         loru_ids = self.request.GET.getlist('filter[supplier]')
         while loru_ids.count(u''):
@@ -687,6 +689,10 @@ class ProductsViewSet(ProductCategoryQsMixin, viewsets.ReadOnlyModelViewSet):
         if self.request.GET.get('filter[productType]', '').lower() == 'opt':
             q_public_whole = Q(is_wholesale=True)
         qs &= q_public_whole
+
+        is_for_visit = str_to_bool_or_None(self.request.GET.get('filter[isAvailableForVisitOrder]'))
+        if is_for_visit is not None:
+            qs &= Q(is_for_visit=is_for_visit)
 
         ordered = None
         orders = {'price': 'price', 'date': 'dt_created', }
@@ -749,7 +755,7 @@ class ProductInfoView(APIView):
 
     def get(self, request, product_slug):
         product = get_object_or_404(Product, slug=product_slug)
-        show_wholesale = is_loru_user(request.user) or is_supervisor(request.user)
+        show_wholesale = is_trade_user(request.user) or is_supervisor(request.user)
         return Response(
             status=200,
             data=ProductInfoSerializer(product, context=dict(
@@ -759,69 +765,6 @@ class ProductInfoView(APIView):
         )
 
 api_catalog_products_detail = ProductInfoView.as_view()
-
-class ApiProfileViewSet(CustomerDataMixin, viewsets.ViewSet):
-    queryset = CustomerProfile.objects.none()
-    permission_classes = (IsAuthenticated,)
-    
-    def list(self, request):
-        is_customer, places, lorus = self.get_customer_data(request)
-        if not is_customer:
-            return Response(status=400, data=[])
-        profile = request.user.customerprofile
-        data = {
-            'id': request.user.pk,
-        }
-        try:
-            photo = request.build_absolute_uri(profile.customerprofilephoto.bfile.url) \
-                if profile.customerprofilephoto.bfile else None
-        except CustomerProfilePhoto.DoesNotExist:
-            photo = None
-        data['photo'] = photo
-        data['lastName'] = profile.user_last_name
-        data['firstName'] = profile.user_first_name
-        data['middleName'] = profile.user_middle_name
-        data['loginPhone'] = request.user.customerprofile.login_phone
-        data['username'] = request.user.username
-        data['places'] = []
-        for p in places:
-            place={'id': p.pk}
-            place['address'] = _(u'Кладбище %s, участок %s') % (p.cemetery.name, p.area.name, )
-            if p.row:
-                place['address'] += _(u', ряд %s') % p.row
-            place['address'] += _(u', место %s') % p.place
-            cemetery_address = p.cemetery.address and p.cemetery.address.__unicode__() or ''
-            if cemetery_address:
-                place['address'] += _(u', %s') % cemetery_address
-            place['location'] = {
-                'latitude': p.lat,
-                'longitude': p.lng,
-            }
-            place['graves'] = []
-            gallery = p.get_photo_gallery(request)
-            for g in Grave.objects.filter(place=p).order_by('grave_number'):
-                grave = {'graveNumber': g.grave_number}
-                burials = []
-                for b in g.burial_set.exclude(burial_container=Burial.CONTAINER_BIO):
-                    burials.append(
-                        {
-                            'id': b.pk,
-                            'fio': b.deadman and b.deadman.full_name_complete() or _(u"Неизвестный"),
-                            'lastName': b.deadman and b.deadman.last_name,
-                            'firstName': b.deadman and b.deadman.first_name,
-                            'middleName': b.deadman and b.deadman.middle_name,
-                            'photo': None,
-                            'birthDate': b.deadman and b.deadman.birth_date and b.deadman.birth_date.str_safe() or None,
-                            'deathDate': b.deadman and b.deadman.death_date and b.deadman.death_date.str_safe() or None,
-                        }
-                    )
-                grave['burials'] = burials
-                place['graves'].append(grave)
-            place['gallery'] = sorted(gallery, key=lambda photo: photo['addedAt'], reverse=True)
-            place['photo'] = place['gallery'][0]['photo'] if place['gallery'] else None
-            data['places'].append(place)           
-            
-        return Response(status=200, data=data)
 
 class ApiLoruProductPlaces(APIView):
     """
@@ -854,7 +797,7 @@ class ApiLoruProductPlaces(APIView):
     ]
     """
     
-    permission_classes = (PermitIfLoru,)
+    permission_classes = (PermitIfTrade,)
 
     @transaction.commit_on_success
     def post(self, request, format=None):
@@ -895,7 +838,7 @@ api_loru_product_places = ApiLoruProductPlaces.as_view()
 
 class UghPublishedProductsViewSet(viewsets.ViewSet):
     queryset = Product.objects.none()
-    permission_classes = (PermitIfLoru,)
+    permission_classes = (PermitIfTrade,)
     
     def list(self, request):
         data=[]
@@ -915,88 +858,89 @@ class UghPublishedProductsViewSet(viewsets.ViewSet):
             data.append(data_p)
         return Response(status=200, data=data)
 
-class IorderMixin(APIView):
+class OptOrderMixin(APIView):
 
-    def put_item(self, iorder, product, count, comment):
+    def put_item(self, order, product, count, comment):
         """
-        Забить позицию интернет-заказа iorder продуктом product
+        Забить позицию интернет-заказа продуктом product
         """
-        return IorderItem.objects.create(
-            iorder=iorder,
+        return OrderItem.objects.create(
+            order=order,
             product=product,
             quantity=decimal.Decimal(count),
             comment=comment or '',
-            measure=product.measure,
-            price_wholesale=product.price_wholesale,
+            cost=product.price_wholesale,
             name=product.name,
+            measure=product.measure,
+            description=product.description,
             productcategory=product.productcategory,
             productcategory_name=product.productcategory.name,
             productgroup=product.productgroup,
             productgroup_name=product.productgroup.name if product.productgroup else '',
             productgroup_description=product.productgroup.description if product.productgroup else '',
-            is_wholesale_with_vat=iorder.supplier.is_wholesale_with_vat,
+            is_wholesale_with_vat=order.loru.is_wholesale_with_vat,
         )
 
-    def email_notifications(self, iorder, is_new_iorder):
+    def email_notifications(self, order, is_new_opt_order):
         """
         """
         email_from = settings.DEFAULT_FROM_EMAIL
-        number_verbose = iorder.number_verbose()
-        if iorder.customer and iorder.customer.email:
-            email_to = (iorder.customer.email, )
+        number_verbose = order.number_verbose()
+        if order.applicant_organization and order.applicant_organization.email:
+            email_to = (order.applicant_organization.email, )
             email_subject = u"%s: %s %s" % (
                 _(u"Похоронное Дело"),
-                _(u"создан заказ") if is_new_iorder else _(u"изменен заказ"),
+                _(u"создан заказ") if is_new_opt_order else _(u"изменен заказ"),
                 number_verbose,
             )
             email_text = render_to_string(
-                            'iorder_notification.txt',
+                            'opt_order_notification.txt',
                             {
-                                'preambule': _(u"Создан") if is_new_iorder else _(u"Изменен"),
+                                'preambule': _(u"Создан") if is_new_opt_order else _(u"Изменен"),
                                 'front_end_url': get_front_end_url(self.request),
-                                'iorder': iorder,
+                                'order': order,
                                 'to_customer': True,
                             }
             )
             EmailMessage(email_subject, email_text, email_from, email_to,).send()
-        if iorder.supplier.email:
-            email_to = (iorder.supplier.email, )
+        if order.loru.email:
+            email_to = (order.loru.email, )
             email_subject = u"%s: %s %s" % (
                 _(u"Похоронное Дело"),
-                _(u"поступил заказ") if is_new_iorder else _(u"изменен заказ"),
+                _(u"поступил заказ") if is_new_opt_order else _(u"изменен заказ"),
                 number_verbose,
             )
             email_text = render_to_string(
-                            'iorder_notification.txt',
+                            'opt_order_notification.txt',
                             {
-                                'preambule': _(u"Поступил") if is_new_iorder else _(u"Изменен"),
+                                'preambule': _(u"Поступил") if is_new_opt_order else _(u"Изменен"),
                                 'front_end_url': get_front_end_url(self.request),
-                                'iorder': iorder,
+                                'order': order,
                                 'to_customer': False,
                             }
             )
             EmailMessage(email_subject, email_text, email_from, email_to,).send()
         if not settings.DEBUG:
             # Отправка смс поставщику
-            if iorder.supplier.sms_phone:
-                supplier_email = u" (email: %s)" % iorder.supplier.email if iorder.supplier.email else ""
+            if order.loru.sms_phone:
+                supplier_email = u" (email: %s)" % order.loru.email if order.loru.email else ""
                 text =  _(u"%s zakaz N %s summa %s") % (
                     get_front_end_url(self.request).rstrip('/'),
                     number_verbose,
-                    iorder.total_float(),
+                    order.total_float(),
                 )
-                if is_new_iorder:
+                if is_new_opt_order:
                     email_error_text = u"Поставщик %s%s не получил СМС- уведомление о новом заказе" % \
-                                        (iorder.supplier.name, supplier_email,)
+                                        (order.loru.name, supplier_email,)
                 else:
                     email_error_text = _(u"Поставщик %s%s не получил СМС- уведомление об изменении заказа %s") % \
-                                        (iorder.supplier.name, supplier_email, number_verbose, )
+                                        (order.loru.name, supplier_email, number_verbose, )
                 send_sms(
-                    phone_number=iorder.supplier.sms_phone,
+                    phone_number=order.loru.sms_phone,
                     text=text,
                     email_error_text=email_error_text,
                 )
-            elif iorder.supplier.email:
+            elif order.loru.email:
                 EmailMessage(
                     subject=_(u'Похоронное Дело: телефон смс- уведомений'),
                     body=_(
@@ -1007,16 +951,16 @@ class IorderMixin(APIView):
                         u'\n'
                         u'Это можно исправить: %s\n'
                     ) % (
-                        _(u'о новом') if is_new_iorder else _(u'об измененном'),
+                        _(u'о новом') if is_new_opt_order else _(u'об измененном'),
                         number_verbose,
-                        iorder.supplier.name,
-                        get_host_url(self.request) + reverse('edit_org', args=(iorder.supplier.pk,)).lstrip('/'),
+                        order.loru.name,
+                        get_host_url(self.request) + reverse('edit_org', args=(order.loru.pk,)).lstrip('/'),
                     ),
                     from_email=email_from,
-                    to=(iorder.supplier.email,),
+                    to=(order.loru.email,),
                 ).send(fail_silently=True)
 
-class ApiOptPlacesOrders(IorderMixin, APIView):
+class ApiOptPlacesOrders(OptOrderMixin, APIView):
     """
     Интернет-заказ товаров
 
@@ -1049,7 +993,7 @@ class ApiOptPlacesOrders(IorderMixin, APIView):
     то возвращается status=400, message=”что произошло”. Если проверка успешна,
     то формируется новый заказ, статус код - 200 
     """
-    permission_classes = (PermitIfLoru,)
+    permission_classes = (PermitIfTrade,)
 
     @transaction.commit_on_success
     def post(self, request):
@@ -1085,20 +1029,13 @@ class ApiOptPlacesOrders(IorderMixin, APIView):
                     product = Product.objects.get(pk=p['id'])
                     if supplier is None:
                         supplier = product.loru
-                        try:
-                            number = Iorder.objects.filter(
-                                supplier=supplier,
-                                customer=customer,
-                                dt_created__year=year,
-                            ).order_by('-number')[0].number
-                        except IndexError:
-                            number = 0
-                        iorder = Iorder.objects.create(
-                            supplier=supplier,
-                            customer=customer,
-                            status=Iorder.STATUS_POSTED,
-                            number=number+1,
-                            comment=comment,
+                        order = Order.objects.create(
+                            type=Order.TYPE_TRADE,
+                            loru=supplier,
+                            applicant_organization=customer,
+                            status=Order.STATUS_POSTED,
+                            payment=Order.PAYMENT_WIRE,
+                            dt=datetime.date.today(),
                             title=title or '',
                             phones=phones,
                             address=address,
@@ -1106,8 +1043,13 @@ class ApiOptPlacesOrders(IorderMixin, APIView):
                     else:
                         if product.loru != supplier:
                             raise ServiceException(_(u'В списке товаров таковые от разных поставщиков'))
-                    self.put_item(iorder, product, p['count'], p.get('comment'))
-                    data['id'] = iorder.pk
+                    OrderComment.objects.create(
+                        order=order,
+                        user=request.user,
+                        comment=comment,
+                    )
+                    self.put_item(order, product, p['count'], p.get('comment'))
+                    data['id'] = order.pk
                 except Product.DoesNotExist:
                     raise ServiceException(_(u'Не найден товар/услуга Id=%s') % p['id'])
         except ServiceException as excpt:
@@ -1116,53 +1058,53 @@ class ApiOptPlacesOrders(IorderMixin, APIView):
             data['status'] = 'error'
             data['message'] = excpt.message
         else:
-            self.email_notifications(iorder, is_new_iorder=True)
+            self.email_notifications(order, is_new_opt_order=True)
         return Response(data=data, status=status_code)
 
     def get(self, request):
         org = request.user.profile.org
-        qs = Q(customer=org) | Q(supplier=org)
-        iorders = Iorder.objects.filter(qs).order_by('-dt_created').distinct()
+        qs = Q(loru=org) | Q(applicant_organization=org)
+        opt_orders = Order.objects.filter(qs & Q(type=Order.TYPE_TRADE)).order_by('-dt_created').distinct()
         return Response(
             status=200,
-            data=IordersSerializer(iorders, context=dict(
+            data=OptOrdersSerializer(opt_orders, context=dict(
                 request=request,
             )).data,
         )
 
 api_optplaces_orders = ApiOptPlacesOrders.as_view()
 
-class IorderInfoView(IorderMixin, APIView):
-    permission_classes = (PermitIfLoru,)
+class OptOrderderInfoView(OptOrderMixin, APIView):
+    permission_classes = (PermitIfTrade,)
 
     def instance_permitted(self, request, pk):
         """
         Просматривать и править заказ может лишь поставщик или покупатель, если имеется
         """
-        iorder = get_object_or_404(Iorder, pk=pk)
+        order = get_object_or_404(Order, pk=pk, type=Order.TYPE_TRADE)
         org = request.user.profile.org
-        if iorder.supplier == org or iorder.customer and iorder.customer == org:
-            return iorder, None
+        if order.loru == org or order.applicant_organization and order.applicant_organization == org:
+            return order, None
         else:
             return None, Response(
                 status=403,
-                data={"detail": "Not authorized: you are not customer nor supplier"},
+                data={"detail": "Either it is not a trade order, or not authorized: you are not customer nor supplier."},
             )
 
     def get(self, request, pk):
-        iorder, response = self.instance_permitted(request, pk)
+        order, response = self.instance_permitted(request, pk)
         if response:
             return response
         return Response(
             status=200,
-            data=IorderInfoSerializer(iorder, context=dict(
+            data=OptOrderInfoSerializer(order, context=dict(
                 request=request,
             )).data,
         )
 
     @transaction.commit_on_success
     def put(self, request, pk):
-        iorder, response = self.instance_permitted(request, pk)
+        order, response = self.instance_permitted(request, pk)
         if response:
             return response
         status_code=200
@@ -1171,33 +1113,43 @@ class IorderInfoView(IorderMixin, APIView):
         if products is None:
             raise ServiceException(_(u'Не задан список товаров, пусть даже пустой'))
         try:
-            IorderItem.objects.filter(iorder=iorder).delete()
+            OrderItem.objects.filter(order=order).delete()
             for p in products:
                 try:
                     product = Product.objects.get(pk=p['id'])
-                    if product.loru != iorder.supplier:
+                    if product.loru != order.loru:
                         raise ServiceException(_(u'Товара Id=%s нет среди товаров поставщика заказа') % p['id'])
                     if p.get('count'):
-                        self.put_item(iorder, product, p['count'], p.get('comment'))
+                        self.put_item(order, product, p['count'], p.get('comment'))
                 except Product.DoesNotExist:
                     raise ServiceException(_(u'Не найден товар/услуга Id=%s') % p['id'])
             comment = request.DATA.get("comment")
             if comment is not None:
-                iorder.comment = comment
-            iorder.save()
+                try:
+                    ordercomment = OrderComment.objects.filter(order=order)[0]
+                except IndexError:
+                    OrderComment.objects.create(
+                        order=order,
+                        user=request.user,
+                        comment=comment,
+                    )
+                else:
+                    order.comment = comment
+            # В любом случае сохранить, чтоб подправилась dt_modified
+            order.save()
         except ServiceException as excpt:
             transaction.rollback()
             status_code=400
             data['status'] = 'error'
             data['message'] = excpt.message
         else:
-            self.email_notifications(iorder, is_new_iorder=False)
+            self.email_notifications(order, is_new_opt_order=False)
         return Response(data=data, status=status_code)
 
-api_optplaces_orders_detail = IorderInfoView.as_view()
+api_optplaces_orders_detail = OptOrderderInfoView.as_view()
 
 class ApiLoruProductTypesView(APIView):
-    permission_classes = (PermitIfLoru,)
+    permission_classes = (PermitIfTrade,)
 
     def get(self, request):
         return Response(
@@ -1213,7 +1165,7 @@ class ApiLoruProductTypesView(APIView):
 api_loru_product_types = ApiLoruProductTypesView.as_view()
 
 class ApiProductList(ProductCategoryQsMixin, APIView):
-    permission_classes = (PermitIfLoru,)
+    permission_classes = (PermitIfTrade,)
     parser_classes = (MultiPartParser,)
 
     def get(self, request):
@@ -1251,7 +1203,7 @@ class ApiProductList(ProductCategoryQsMixin, APIView):
 api_product_list = ApiProductList.as_view()
 
 class ApiProductDetail(APIView):
-    permission_classes = (PermitIfLoru,)
+    permission_classes = (PermitIfTrade,)
     parser_classes = (MultiPartParser,)
 
     def get_object(self, request, pk):
@@ -1278,3 +1230,827 @@ class ApiProductDetail(APIView):
         return Response(serializer.errors, status=400)
 
 api_product_detail = ApiProductDetail.as_view()
+
+class ApiServicesView(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request):
+        serializer = ServiceSerializer(Service.objects.all(), many=True)
+        return Response(serializer.data, status=200)
+
+api_services = ApiServicesView.as_view()
+
+class ApiOrgServicesMixin(object):
+    
+    class Data(object):
+        service=None
+        measures = []
+        orgservice = None
+        measures_get = []
+
+    def check_org_id(self, request, org_id):
+        org, message = request.user.profile.org, ''
+        if str(org.pk) != str(org_id):
+            message = _(u"Org_id %s не соответствует организации, выполняющей запрос") % org_id
+        return org, message
+    
+    def check_input_message(self, request, org_id, service_name=None):
+        self.data = self.Data()
+        self.data.measures_get = request.DATA.get('measures', [])
+
+        org, message = self.check_org_id(request, org_id)
+        if message:
+            return message
+
+        if not service_name:
+            service_name = request.DATA.get('type')
+        try:
+            self.data.service = Service.objects.get(name=service_name)
+        except Service.DoesNotExist:
+            return _(u"Сервис %s неизвестен в системе") % service_name
+
+        try:
+            self.data.orgservice = OrgService.objects.get(org=org, service=self.data.service)
+        except OrgService.DoesNotExist:
+            if request.method == 'POST' and not self.data.measures_get:
+                return _(u"У организации нет цен по сервису %s. Нельзя его активировать, не указав цены") % service_name
+            # - put (задать цены):          сервис будет создан у организации
+            # - delete (де-активировать):   нет сервиса, не будет и после запроса,
+            #                               т.е. сервис останется неактивированным у организации
+
+        if request.method == 'PUT' and not self.data.measures_get:
+            return _(u"Изменение цен по сервису. Не указаны цены")
+
+        self.data.measures = Measure.objects.filter(service=self.data.service)
+        measure_names = [v['name'] for v in self.data.measures.values('name')]
+        for m in self.data.measures_get:
+            if m['name'] not in measure_names:
+                return _(u"Нет единицы измерения %s у услуги %s") % (m['name'], service_name)
+        return ''
+
+    def put_prices(self, request):
+        if self.data.orgservice:
+            orgservice = self.data.orgservice
+            if request.method == 'POST' and not orgservice.enabled:
+                orgservice.enabled = True
+                orgservice.save()
+        else:
+            orgservice = OrgService.objects.create(
+                org=request.user.profile.org,
+                service=self.data.service,
+                enabled=request.method == "POST",
+            )
+            self.data.orgservice = orgservice
+        for measure in self.data.measures:
+            price = None
+            for m in self.data.measures_get:
+                if m['name'] == measure.name:
+                    price = m['price']
+                    break
+            orgserviceprice, created_ = OrgServicePrice.objects.get_or_create(
+                orgservice=orgservice,
+                measure=measure,
+                defaults=dict(price=price or 0.00)
+            )
+            if not created_ and price is not None:
+                orgserviceprice.price = price
+                orgserviceprice.save()
+
+class ApiOrgServicesView(ApiOrgServicesMixin, APIView):
+    permission_classes = (PermitIfTrade,)
+
+    def get(self, request, org_id):
+        org, message = self.check_org_id(request, org_id)
+        if message:
+            return Response(data=dict(status='error', message=message), status=200)
+        return Response(
+            data=OrgServiceSerializer(OrgService.objects.filter(org=org), many=True).data,
+            status=200
+        )
+
+    @transaction.commit_on_success
+    def post(self, request, org_id):
+        """
+        Активизировать сервис у организации org_id
+        
+        Вх.данные, пример:
+        {
+        "type": "photo",
+        "measures": [
+          {
+          "name": "unit",
+          "value": 234
+          }
+         ]
+        }
+        """
+        message = self.check_input_message(request, org_id)
+        if message:
+            return Response(data=dict(status='error', message=message), status=400)
+        self.put_prices(request)
+        return Response(data=dict(status='success'), status=200)
+
+api_org_services = ApiOrgServicesView.as_view()
+
+class ApiOrgServicesEditView(ApiOrgServicesMixin, APIView):
+    permission_classes = (PermitIfTrade,)
+
+    @transaction.commit_on_success
+    def put(self, request, org_id, service_name):
+        """
+        Править сервис service_name у организации org_id
+        
+        Вх.данные, пример:
+        {
+        "measures": [
+          {
+          "name": "unit",
+          "value": 234
+          }
+         ]
+        }
+        """
+        message = self.check_input_message(request, org_id, service_name)
+        if message:
+            return Response(data=dict(status='error', message=message), status=400)
+        self.put_prices(request)
+        return Response(data=dict(status='success'), status=200)
+
+    def delete(self, request, org_id, service_name):
+        """
+        Де-активация сервиса service_name у организации org_id
+        """
+        message = self.check_input_message(request, org_id, service_name)
+        orgservice = self.data.orgservice
+        if orgservice and orgservice.enabled:
+            orgservice.enabled = False
+            orgservice.save()
+        return Response(data=dict(status='success'), status=200)
+
+api_org_services_edit = ApiOrgServicesEditView.as_view()
+
+class ApiServicePriceMixin(object):
+
+    class Data(object):
+        service = None
+        service_name = None
+        orgservice=None
+        orgservice_delivery = None
+        customplace = None
+        latitude = None
+        longitude = None
+        need_delivery = False
+        org = None
+
+    def check_input_message(self, request):
+        self.data = self.Data()
+        try:
+            if request.method == 'GET':
+                req_dict = request.GET
+            elif request.method == 'POST':
+                req_dict = request.DATA
+
+            self.data.service_name = req_dict.get('type')
+            try:
+                self.data.service = self.data.service_name and Service.objects.get(name=self.data.service_name)
+            except Service.DoesNotExist:
+                self.data.service = None
+            if not self.data.service:
+                raise ServiceException(_(u'Сервис не задан или неизвестен'))
+
+            if request.method == 'POST':
+                org = req_dict.get('performerId')
+                try:
+                    org = org and Org.objects.get(pk=org)
+                except Org.DoesNotExist:
+                    pass
+                if not org:
+                    raise ServiceException(_(u"Id исполнителя не задан или не найден среди организаций"))
+                if org.type not in (Org.PROFILE_LORU, ):
+                    raise ServiceException(_(u"performerId %s - не ЛОРУ (поставщик услуг)") % org.pk)
+                try:
+                    self.data.orgservice = OrgService.objects.get(
+                        org=org,
+                        service=self.data.service,
+                        enabled=True
+                    )
+                except OrgService.DoesNotExist:
+                    raise ServiceException(_(u"Сервис %s не активирован у организации Id=%s") % (
+                          self.data.service_name,
+                          org.pk,
+                    ))
+                self.data.org = org
+
+            customplace_id = req_dict.get('placeId')
+            try:
+                self.data.customplace = customplace_id and CustomPlace.objects.get(pk=customplace_id)
+            except CustomPlace.DoesNotExist:
+                self.data.customplace = None
+            if not self.data.customplace:
+                raise ServiceException(_(u'Не задан placeId или не найдено место'))
+            if self.data.customplace.user != request.user:
+                raise ServiceException(_(u'Пользователь %s не имеет прав на запрос по этому месту') % request.user.username)
+            
+            self.data.need_delivery = self.data.service_name in ('photo', Service.SERVICE_DELIVERY)
+            if self.data.need_delivery:
+                if request.method == 'GET':
+                    latitude = req_dict.get('location[latitude]')
+                    longitude = req_dict.get('location[longitude]')
+                elif request.method == 'POST':
+                    latitude = req_dict.get('location') and req_dict['location'].get('latitude')
+                    longitude = req_dict.get('location') and req_dict['location'].get('longitude')
+                if latitude is None or longitude is None:
+                    latitude = self.data.customplace.address and self.data.customplace.address.gps_y
+                    longitude = self.data.customplace.address and self.data.customplace.address.gps_x
+                if (latitude is None or longitude is None) and self.data.customplace.place:
+                    latitude = self.data.customplace.place.lat
+                    longitude = self.data.customplace.place.lng
+                if latitude is None or longitude is None:
+                    raise ServiceException(_(u'Не заданы и не удалось выяснить координаты места'))
+                self.data.latitude = float(latitude)
+                self.data.longitude = float(longitude)
+                if request.method == 'POST' and self.data.service_name != Service.SERVICE_DELIVERY:
+                    try:
+                        self.data.orgservice_delivery = OrgService.objects.get(
+                            org=org,
+                            service__name=Service.SERVICE_DELIVERY,
+                            enabled=True
+                        )
+                    except OrgService.DoesNotExist:
+                        raise ServiceException(_(u'Услуга %s требует еще активной услуги доставки у организации') % (
+                            self.data.service_name,
+                        ))
+                    
+
+        except ServiceException as excpt:
+            return excpt.message
+        return ''
+
+    def get_price_service(self, org):
+        """
+        Цена за услугу у огранизации
+        """
+        if self.data.service.name == Service.SERVICE_DELIVERY:
+            # цена за доставку считается не по организации, а по складам
+            price_service = 0
+        elif self.data.service.name in ('photo', ):
+            price_service = OrgServicePrice.objects.get(
+                orgservice__service=self.data.service,
+                orgservice__org=org,
+                measure__name='unit',
+            ).price
+        else:
+            price_service = 0
+        return decimal.Decimal(round(float(price_service), org.currency.rounding))
+
+    def get_price_delivery(self, org, km, kg=None, m3=None):
+        """
+        Цена за доставку XX kg и/или yy m3 груза на расстояние km в организации org
+        """
+        result = 0.00
+        for m in OrgServicePrice.objects.filter(
+            orgservice__org=org,
+            orgservice__service__name=Service.SERVICE_DELIVERY
+            ).values('measure__name', 'price'):
+            if m['measure__name'] == 'km':
+                result += float(m['price']) * km
+            elif kg and m['measure__name'] == 'kg':
+                result += float(m['price']) * kg * km
+            elif m3 and m['measure__name'] == 'm3':
+                result += float(m['price']) * m3 * km
+        return decimal.Decimal(round(result, org.currency.rounding))
+
+class ApiClientAvailablePerformersView(ApiServicePriceMixin, APIView):
+    permission_classes = (PermitIfCabinet,)
+
+    def get(self, request):
+        """
+        Получить список возможных исполнителей работы
+        
+        Выбираются исполнители, подписавшиеся на сервис.
+            - если сервис требует транспортных расходов, то еще и подписавшиеся
+              на сервис delivery.
+        Из них выбираются те, кто 
+            - имеют склады с коодинатами
+            - имеют account в платежной системе, пока только webpay
+        Из этих складов выбираются ближайший
+        """
+        message = self.check_input_message(request)
+        if message:
+            return Response(data=dict(status='error', message=message), status=400)
+
+        q = Q(
+            loru__orgservice__service=self.data.service,
+            loru__orgservice__enabled=True,
+        )
+        q_payable = Q(loru__orgwebpay__org__isnull=False)
+        q &= q_payable
+        if self.data.need_delivery:
+            q &= Q(
+                address__gps_x__isnull=False,
+                address__gps_y__isnull=False,
+            )
+            if self.data.service_name != Service.SERVICE_DELIVERY:
+                orgs = [orgservice.org for orgservice in OrgService.objects.filter(
+                    service=self.data.service,
+                    enabled=True,
+                )]
+                q &= Q(loru__in=orgs)
+            customer_loc = LatLon(Latitude(self.data.latitude), Longitude(self.data.longitude))
+
+        data = []
+        org = None
+        for store in Store.objects.filter(q).order_by('loru'):
+            # Идем по складам одного поставщика, потом по складам другого поставщика...
+            if org is None:
+                org = store.loru
+                # Цена за любую услугу, кроме delivery
+                price_org = self.get_price_service(org)
+                # Больше длины экватора
+                distance = 41000.0
+
+            if store.loru != org:
+                if self.data.need_delivery:
+                    kwargs = dict(km=distance)
+                    price_org += self.get_price_delivery(org, **kwargs)
+                data.append(dict(
+                    id=org.pk,
+                    name=org.name,
+                    price=round(price_org, org.currency.rounding),
+                    currency=org.currency.code,
+                ))
+                org = store.loru
+                price_org = self.get_price_service(org)
+                distance = 41000.0
+
+            if self.data.need_delivery:
+                store_loc = LatLon(Latitude(store.address.gps_y), Longitude(store.address.gps_x))
+                distance = min(distance, store_loc.distance(customer_loc))
+
+        if org:
+            if self.data.need_delivery:
+                kwargs = dict(km=distance)
+                price_org += self.get_price_delivery(org, **kwargs)
+            data.append(dict(
+                id=org.pk,
+                name=org.name,
+                price=float(price_org),
+                currency=org.currency.code,
+            ))
+
+        return Response(data=data, status=200)
+
+api_client_available_performers = ApiClientAvailablePerformersView.as_view()
+
+class ApiClientOrdersView(ApiServicePriceMixin, APIView):
+    permission_classes = (PermitIfCabinet,)
+
+    @transaction.commit_on_success
+    def post(self, request):
+        """
+        Принять предложение о создании заказа
+
+        Вх. данные, пример:
+        {
+            "type": "photo",
+            "performerId": 19,
+            "placeId": 43,
+            "location": {
+                "latitude": 52.70,
+                "longitude": 27.35
+            },
+            "comment": "Коментарий к заказу"
+        }
+        """
+        message = self.check_input_message(request)
+        if message:
+            return Response(data=dict(status='error', message=message), status=400)
+
+        distance = 41000.0
+        price_org = self.get_price_service(self.data.org)
+        closest_store = dict(lat=0, lng=0)
+        if self.data.need_delivery:
+            customer_loc = LatLon(Latitude(self.data.latitude), Longitude(self.data.longitude))
+            for store in self.data.org.store_set.filter(
+                address__gps_x__isnull=False,
+                address__gps_y__isnull=False,
+            ):
+                store_loc = LatLon(Latitude(store.address.gps_y), Longitude(store.address.gps_x))
+                distance_store = store_loc.distance(customer_loc)
+                if distance_store < distance:
+                    distance = distance_store
+                    closest_store=dict(lat=store.address.gps_y, lng=store.address.gps_x)
+
+            kwargs = dict(km=distance)
+            price_delivery = self.get_price_delivery(self.data.org, **kwargs)
+        else:
+            price_delivery = 0.00
+
+        login_phone = request.user.customerprofile.login_phone
+        applicant = AlivePerson.objects.create(
+            user=request.user,
+            phones=u"+%s" % login_phone if login_phone else None,
+            login_phone=login_phone,
+            last_name=request.user.customerprofile.user_last_name,
+            first_name=request.user.customerprofile.user_first_name,
+            middle_name=request.user.customerprofile.user_middle_name,
+        )
+        order = Order(
+            loru=self.data.org,
+            type=Order.TYPE_CUSTOMER,
+            applicant=applicant,
+            dt=datetime.date.today(),
+            customplace=self.data.customplace,
+        )
+        # будут назначены loru_number, number:
+        order.save()
+        if self.data.service_name != Service.SERVICE_DELIVERY:
+            item_service = ServiceItem.objects.create(
+                order=order,
+                orgservice=self.data.orgservice,
+                cost=price_org,
+            )
+        if self.data.need_delivery:
+            item_service = ServiceItem.objects.create(
+                order=order,
+                orgservice=self.data.orgservice_delivery,
+                cost=price_delivery,
+            )
+            Route.objects.create(order=order, index=0, **closest_store)
+            Route.objects.create(
+                order=order,
+                index=1,
+                lat=self.data.latitude,
+                lng=self.data.longitude,
+            )
+        comment = request.DATA.get('comment')
+        if comment:
+            OrderComment.objects.create(
+                order=order,
+                user=request.user,
+                comment=comment,
+            )
+        return Response(
+            data=dict(status='success', price=float(order.cost), currency=self.data.org.currency.code),
+            status=200,
+        )
+
+api_client_orders = ApiClientOrdersView.as_view()
+
+class ApiServiceOrdersView(APIView):
+    permission_classes = (PermitIfTradeOrCabinet,)
+
+    def get(self, request):
+        q = Q()
+        if is_trade_user(request.user):
+            q = Q(loru=request.user.profile.org, type=Order.TYPE_CUSTOMER)
+        elif is_cabinet_user(request.user):
+            q = Q(customplace__user=request.user, type=Order.TYPE_CUSTOMER)
+        qs = Order.objects.filter(q).order_by('-dt_created') if q else Order.objects.none()
+        return Response(data=ServiceOrderSerializer(qs, many=True,).data, status=200)
+
+api_orders = ApiServiceOrdersView.as_view()
+
+class ApiOrderMixin(object):
+
+    def get_order(self, pk):
+        try:
+            order = Order.objects.get(pk=pk)
+            if not order.is_accessible(self.request.user):
+                raise Http404
+        except Order.DoesNotExist:
+            raise Http404
+        return order
+
+class ApiOrderCommentsView(ApiOrderMixin, APIView):
+    permission_classes = (PermitIfTradeOrCabinet,)
+
+    def get(self, request, pk):
+        order = self.get_order(pk=pk)
+        data=[OrderCommentsSerializer(ordercomment, context=dict(
+                request=request,
+              )).data for ordercomment in OrderComment.objects.filter(order=order).order_by('dt_created')
+        ]
+        return Response(data=data, status=200)
+
+    @transaction.commit_on_success
+    def post(self, request, pk):
+        order = self.get_order(pk=pk)
+        comment = request.DATA.get('comment')
+        if comment is not None:
+            ordercomment = OrderComment.objects.create(
+                order=order,
+                user=request.user,
+                comment=comment,
+            )
+            return Response(OrderCommentsSerializer(ordercomment, context=dict(request=request)).data, status=200)
+        else:
+            return Response(data=dict(status='error', message='No comment at input'), status=400)
+
+api_orders_comments = ApiOrderCommentsView.as_view()
+
+class ApiOrderResultView(ApiOrderMixin, APIView):
+    permission_classes = (PermitIfTradeOrCabinet,)
+    parser_classes = (MultiPartParser,)
+
+    def get(self, request, pk):
+        order = self.get_order(pk=pk)
+        return Response(data=[OrderResultsSerializer(resultfile, context=dict(request=request)).data \
+                        for resultfile in ResultFile.objects.filter(order=order).order_by('date_of_creation')],
+                    status=200)
+
+    @transaction.commit_on_success
+    def post(self, request, pk):
+        try:
+            order = self.get_order(pk=pk)
+            if not is_trade_user(request.user):
+                return Response(data=dict(detail='You are not authorized to post to this order'), status=403)
+            type_ = request.DATA.get('type')
+            if not type_:
+                raise ServiceException(_(u"Не задан тип загружаемого файла"))
+            for tp in ResultFile.RESULT_TYPES:
+                if type_ == tp[0]:
+                    break
+            else:
+                raise ServiceException(_(u"Тип %s файла результата выполнения заказа не предусмотрен") % type_)
+            if 'file' not in request.FILES:
+                raise ServiceException(_(u"Не получен загружаемый файл 'file'"))
+            uploaded_file = request.FILES['file']
+            if type_ == ResultFile.TYPE_IMAGE:
+                if uploaded_file.size > ResultFile.MAX_IMAGE_SIZE * 1024 * 1024:
+                    raise ServiceException(_(u"Размер изображения превышает %d Мб") % ResultFile.MAX_IMAGE_SIZE)
+                if not get_image(uploaded_file):
+                    raise ServiceException(_(u"Загруженный файл не является изображением"))
+            elif type_ == ResultFile.TYPE_VIDEO:
+                if not is_video(uploaded_file):
+                    raise ServiceException(_(u"Загруженный файл не является видео"))
+            resultfile = ResultFile.objects.create(
+                bfile=uploaded_file,
+                order=order,
+                type=type_,
+                creator=request.user,
+            )
+            # отметим изменение в order.dt_modified:
+            order.save()
+        except ServiceException as excpt:
+            transaction.rollback()
+            return Response(data=dict(status='error', message=excpt.message), status=400)
+        return Response(data=OrderResultsSerializer(resultfile, context=dict(request=request)).data, status=200)
+
+
+api_orders_results = ApiOrderResultView.as_view()
+
+class ApiServiceOrderDetailView(ApiOrderMixin, APIView):
+    permission_classes = (PermitIfTradeOrCabinet,)
+
+    def get(self, request, pk):
+        order = self.get_order(pk=pk)
+        return Response(
+            data=ServiceOrderDetailSerializer(order, context=dict(request=request)).data,
+            status=200,
+        )
+
+api_orders_detail = ApiServiceOrderDetailView.as_view()
+
+class ApiServiceOrderPutView(ApiOrderMixin, APIView):
+    permission_classes = (PermitIfTradeOrCabinet,)
+
+    @transaction.commit_on_success
+    def put(self, request, pk):
+        try:
+            order = self.get_order(pk=pk)
+            kwargs = dict()
+
+            status = request.DATA.get('status')
+            if status:
+                for st in Order.STATUS_TYPES:
+                    if status == st[0]:
+                        break
+                else:
+                    raise ServiceException(_(u"Статус %s не предусмотрен") % status)
+                kwargs.update(dict(status=status))
+
+            if 'clientRating' in request.DATA:
+                kwargs.update(dict(applicant_approved=request.DATA['clientRating']))
+
+            archived = request.DATA.get('isArchived')
+            if archived is not None:
+                kwargs.update(dict(archived=archived))
+
+            product_items = request.DATA.get('products')
+            if product_items is not None:
+                if order.status != Order.STATUS_POSTED:
+                    raise ServiceException(_(u"Набор товаров/услуг можно изменять только в размещенном заказе"))
+                for orderitem in order.orderitem_set.all():
+                    orderitem.delete()
+                loru = order.loru
+                for item in product_items:
+                    try:
+                        product = Product.objects.get(pk=item['productId'])
+                    except Product.DoesNotExist:
+                        raise ServiceException(_(u"Не найден товар/услуга, productId = %s") % item['productId'])
+                    if product.loru != loru:
+                        raise ServiceException(_(u"Товар/услуга, productId = %s, - не от исполнителя заказа") % item['productId'])
+                    quantity = item.get('quantity', 1.00)
+                    OrderItem.objects.create(
+                        order=order,
+                        product=product,
+                        quantity=quantity,
+                        cost=product.price,
+                    )
+
+            if kwargs:
+                Order.objects.filter(pk=order.pk).update(**kwargs)
+            return Response(
+                data=ServiceOrderDetailSerializer(order, context=dict(request=request)).data,
+                status=200,
+            )
+
+        except ServiceException as excpt:
+            transaction.rollback()
+            return Response(data=dict(status='error', message=excpt.message), status=400)
+
+    def delete(self, request, pk):
+        order = self.get_order(pk=pk)
+        order.delete()
+        return Response(data=dict(status='success'), status=200)
+
+api_client_orders_put_status = ApiServiceOrderPutView.as_view()
+
+class ApiOrderPaymentsMixin(object):
+
+    PAY_SYSTEM_WEBPAY = 'webpay'
+    PAY_SYSTEM_TYPES = (PAY_SYSTEM_WEBPAY, )
+
+    def check_order_pay_system(self, order_pk, pay_system):
+        if not pay_system:
+            raise ServiceException(_(u"Не задан тип платежной системы"))
+        if pay_system not in self.PAY_SYSTEM_TYPES:
+            raise ServiceException(_(u"Платежная система %s не предусмотрена") % pay_system)
+        try:
+            order = Order.objects.get(pk=order_pk)
+        except Order.DoesNotExist:
+            raise Http404
+        if not order.is_accessible(self.request.user):
+            raise Http404
+        system_not_supported = _(u"Исполнитель заказа, %s, не поддерживает платежи в системе %s")
+        if pay_system == self.PAY_SYSTEM_WEBPAY:
+            try:
+                pay_data = OrgWebPay.objects.get(org=order.loru)
+            except OrgWebPay.DoesNotExist:
+                raise ServiceException(system_not_supported % (order.loru, pay_system,))
+        return order, pay_data
+
+class ApiOrderPaymentsView(ApiOrderPaymentsMixin, APIView):
+    permission_classes = (PermitIfCabinet,)
+
+    def get(self, request, pk, pay_system):
+        try:
+            order, pay_data = self.check_order_pay_system(order_pk=pk, pay_system=pay_system)
+            if pay_system == self.PAY_SYSTEM_WEBPAY:
+                orgwebpay = pay_data
+                items = []
+                for serviceitem in ServiceItem.objects.filter(order=order).order_by('pk'):
+                    items.append(dict(
+                        name=serviceitem.orgservice.service.title,
+                        quantity="1.00",
+                        price=str(serviceitem.cost)
+                    ))
+                for orderitem in OrderItem.objects.filter(order=order).order_by('name'):
+                    items.append(dict(
+                        name=orderitem.name,
+                        quantity=str(ordeitem.quantity),
+                        price=str(orderitem.cost),
+                    ))
+                for key in ('quantity', 'price',):
+                    for item in items:
+                        if not item[key].endswith('.00'):
+                            break
+                    else:
+                        for item in items:
+                            item[key] = re.sub(r'\.00','', item[key])
+                data = dict(
+                    wsb_storeid=orgwebpay.wsb_storeid,
+                    wsb_store=orgwebpay.wsb_store,
+                    wsb_order_num=order.number_webpay(),
+                    wsb_currency_id=orgwebpay.wsb_currency_id,
+                    wsb_version=orgwebpay.wsb_version,
+                    wsb_language_id=u'russian',
+                    wsb_seed=''.join(random.choice(string.ascii_uppercase + string.digits) for x in range(10)),
+                    wsb_notify_url=get_host_url(self.request) + \
+                                   reverse('api_orders_webpay_notify', args=(order.pk,)).strip('/'),
+                    wsb_test="1" if orgwebpay.wsb_test else "0",
+                    items=items,
+                    wsb_total=str(order.total),
+                )
+                signature = hashlib.sha1() if data['wsb_version'] == "2" else hashlib.md5()
+                signature.update(''.join((
+                    data['wsb_seed'],
+                    data['wsb_storeid'],
+                    data['wsb_order_num'],
+                    data['wsb_test'],
+                    data['wsb_currency_id'],
+                    data['wsb_total'],
+                    orgwebpay.secret,
+                )))
+                data['wsb_signature'] = signature.hexdigest()
+                OrderWebPay.objects.create(
+                    order=order,
+                    wsb_order_num=data['wsb_order_num'],
+                )
+        except ServiceException as excpt:
+            transaction.rollback()
+            return Response(data=dict(status='error', message=excpt.message), status=400)
+        return Response(data=data, status=200)
+
+api_orders_payments = ApiOrderPaymentsView.as_view()
+
+class ApiWebPayNotifyView(APIView):
+    parser_classes = (FormParser,)
+    renderer_classes = (StaticHTMLRenderer, )
+
+    @transaction.commit_on_success
+    def post(self, request, pk):
+        try:
+            order = Order.objects.get(pk=pk)
+        except Order.DoesNotExist:
+            raise Http404
+        try:
+            orderwebpay = OrderWebPay.objects.filter(order=order).order_by('-pk')[0]
+        except IndexError:
+            raise Http404
+
+        # номер заказа приходит в POST-параметре 'site_order_id',
+        # а не в GET параметре wsb_order_num, как описано в документации webpay
+        #
+        post_keys = (
+            'transaction_id',
+            'batch_timestamp',
+            'currency_id',
+            'amount',
+            'payment_method',
+            'payment_type',
+            'order_id',
+            'rrn',
+            'wsb_signature',
+        )
+
+        input_data = dict()
+        for post_key in post_keys:
+            model_key = 'order_ident' if post_key == 'order_id' else post_key
+            input_data[model_key] = request.DATA.get(post_key)
+
+        if input_data['payment_type'] in OrderWebPay.SUCCESS_PAY_TYPES:
+            order.status = Order.STATUS_PAID
+            order.save()
+
+        for key in input_data:
+            setattr(orderwebpay, key, input_data[key])
+            orderwebpay.save()
+        return Response('', status=200)
+
+api_orders_webpay_notify = ApiWebPayNotifyView.as_view()
+
+class ApiClientOrderPaymentsView(ApiOrderPaymentsMixin, APIView):
+    permission_classes = (PermitIfCabinet,)
+
+    @transaction.commit_on_success
+    def post(self, request, pk):
+        """
+        Отметка заказа как оплаченного
+
+        На входе:
+            type: тип платежносй системы
+            paymentToken - номер транзакции, который платежная система возвращает во front-end
+            в случае успешного платежа, и который front-end будет передавать в апи для валидации
+            и последующей смены статуса заказа на Оплаченый, в случае успешной валидации.
+
+            Для webpay - это атрибут wsb_tid. Не смотря на то, что сервер получает wsb_notify_url
+            front-end будет передавать в апи и этот запрос, на случай если wsb_notify_url
+            не достучался до сервера или по др. причине, даже если ранее апи уже выставило
+            статус для заказа paid, при получении этого запроса - должен будет вернуть 201,
+            либо если еще не выставило, то выставить и вернуть 201
+        """
+        pay_system = request.DATA.get('type')
+        try:
+            order, pay_data = self.check_order_pay_system(order_pk=pk, pay_system=pay_system)
+            if pay_system == self.PAY_SYSTEM_WEBPAY:
+                transaction_id = request.DATA.get('paymentToken')
+                if not transaction_id:
+                    raise ServiceException(_(u"Не задан параметр paymentToken (идентификатор транзакции webpay)"))
+            try:
+                orderwebpay = OrderWebPay.objects.filter(order=order).order_by('-pk')[0]
+            except IndexError:
+                raise ServiceException(_(u"Не была выставлена оплата за заказ"))
+            if not orderwebpay.transaction_id:
+                orderwebpay.transaction_id=transaction_id
+                orderwebpay.save()
+            if order.status != Order.STATUS_PAID:
+                order.status = Order.STATUS_PAID
+                order.save()
+        except ServiceException as excpt:
+            transaction.rollback()
+            return Response(data=dict(status='error', message=excpt.message), status=400)
+        return Response(data={}, status=201)
+
+api_client_orders_payments = ApiClientOrderPaymentsView.as_view()
