@@ -242,7 +242,7 @@ class ApiPlaceUpload(APIView):
             dtWrongFio = datetime.strptime(request.POST['dtWrongFio'], templateDateTime)
         if request.POST['dtMilitary'] :
             dtMilitary = datetime.strptime(request.POST['dtMilitary'], templateDateTime)
-        if request.POST['dtFree'] :
+        if request.POST.get('dtFree') :
             dtFree = datetime.strptime(request.POST['dtFree'], templateDateTime)
         if request.POST['dtSizeViolated'] :
             dtSizeViolated = datetime.strptime(request.POST['dtSizeViolated'], templateDateTime)
