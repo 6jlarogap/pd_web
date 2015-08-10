@@ -158,8 +158,7 @@ class DeadPerson2Serializer(UnclearDateFieldMixin, serializers.HyperlinkedModelS
             for k in fields:
                 setattr(instance, k, fields[k])
             return instance
-        instance = DeadPerson(**fields)
-        return instance
+        return DeadPerson(**fields)
 
 
 class BaseCustomPersonSerializer(UnclearDateFieldMixin, serializers.HyperlinkedModelSerializer):
