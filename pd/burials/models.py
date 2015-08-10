@@ -238,6 +238,10 @@ class Place(SafeDeleteMixin, GeoPointModel):
     dt_processed = models.DateTimeField(_(u"Обработано: добавлены захоронения по фото"), null=True, editable=False)
     user_processed = models.ForeignKey('auth.User', verbose_name=_(u"Пользователь, обработавший фото места"), null=True,
                                        editable=False, on_delete=models.PROTECT)
+    # К сожалению, не удается использовать признак user_processed__isnull=True в select_for_update() при захвате
+    # места в обработку. Поэтому вместе с установкой пользователя будем делать и этот признак
+    # !!! Если будет установлен user_processed, то is_inprocess будет True, даже при dt_processed not None !!!
+    is_inprocess = models.BooleanField(_(u"Взято в обработку при вводе по фотографиям"), default=False, editable=False)
 
     objects = PlaceManager()
 

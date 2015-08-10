@@ -22,7 +22,7 @@ from django.contrib.contenttypes.models import ContentType
 
 from geo.models import Country, Region, Street, City
 
-from pd.views import RequestToFormMixin, FormInvalidMixin, get_front_end_url
+from pd.views import RequestToFormMixin, FormInvalidMixin, get_front_end_url, ServiceException
 from pd.models import validate_phone_as_number
 from pd.utils import utcisoformat
 
@@ -1205,30 +1205,80 @@ class ApiOmsPhotoPlaces(APIView):
     permission_classes = (PermitIfUgh,)
 
     def get(self, request):
-        data = {}
-        with transaction.commit_on_success():
-            # Сбросить предыдущее место, с которым этот пользователь работал.
-            Place.objects.select_for_update().filter(
+        place = None
+        # Показать место, с которым работал ранее 
+        try:
+            place = Place.objects.filter(
                         cemetery__ugh=request.user.profile.org,
                         is_invent=True,
                         dt_wrong_fio__isnull=True,
                         user_processed=request.user,
+                        is_inprocess=True,
                         dt_processed__isnull=True,
-                ).order_by('-pk').update(dt_processed=datetime.datetime.now())
-            try:
-                place = Place.objects.select_for_update().filter(
-                            cemetery__ugh=request.user.profile.org,
-                            is_invent=False,
-                            dt_wrong_fio__isnull=True,
-                            dt_processed__isnull=True,
-                    ).order_by('pk')[0]
-                place.user_processed = request.user
-                # place.save()
-                serializer = PlaceLockSerializer(place, context=dict(request=request))
-                data=serializer.data
-            except IndexError:
-                pass
-
+                ).order_by('pk')[0]
+        except IndexError:
+            # Если такого места не было, ищем первое среди необработанных
+            with transaction.commit_on_success():
+                try:
+                    place = Place.objects.select_for_update().filter(
+                                cemetery__ugh=request.user.profile.org,
+                                is_invent=True,
+                                is_inprocess=False,
+                                dt_wrong_fio__isnull=True,
+                                dt_processed__isnull=True,
+                        ).order_by('pk')[0]
+                    place.user_processed = request.user
+                    place.is_inprocess = True
+                    place.save()
+                except IndexError:
+                    pass
+        if place:
+            serializer = PlaceLockSerializer(place, context=dict(request=request))
+            data=serializer.data
+        else:
+            data = {}
         return Response(status=200, data=data)
 
 api_oms_photo_places = ApiOmsPhotoPlaces.as_view()
+
+class ApiOmsPhotoPlacesDetail(APIView):
+    permission_classes = (PermitIfUgh,)
+
+    def put(self, request, pk):
+        status = 200
+        try:
+            try:
+                place = Place.objects.get(pk=pk)
+            except Place.DoesNotExist:
+                status = 404
+                raise ServiceException(_(u'Нет такого места'))
+            if not place.cemetery.ugh or place.cemetery.ugh != request.user.profile.org:
+                status = 403
+                raise ServiceException(_(u'Место не принадлежит организации пользователя'))
+            if not place.is_invent:
+                status = 400
+                raise ServiceException(_(u'Место не получено при инвентаризации'))
+
+            do_save = False
+            remakePhoto = request.DATA.get('remakePhoto')
+            if remakePhoto is not None:
+                do_save = True
+                place.dt_wrong_fio = datetime.datetime.now() if remakePhoto else None
+                if remakePhoto:
+                    place.user_processed = None
+                    place.is_inprocess = False
+            processed = request.DATA.get('unlocked')
+            if processed is not None:
+                do_save = True
+                place.dt_processed = datetime.datetime.now() if processed else None
+                if not processed:
+                    place.user_processed = None
+                    place.is_inprocess = False
+            if do_save:
+                place.save()
+
+        except ServiceException as excpt:
+            return Response(data=dict(status='error', message=excpt.message), status=status)
+        return Response(status=status, data={})
+
+api_oms_photo_places_detail = ApiOmsPhotoPlacesDetail.as_view()
