@@ -1207,18 +1207,18 @@ class ApiOmsPhotoPlaces(APIView):
     def get(self, request):
         place = None
         # Показать место, с которым работал ранее 
-        try:
-            place = Place.objects.filter(
-                        cemetery__ugh=request.user.profile.org,
-                        is_invent=True,
-                        dt_wrong_fio__isnull=True,
-                        user_processed=request.user,
-                        is_inprocess=True,
-                        dt_processed__isnull=True,
-                ).order_by('pk')[0]
-        except IndexError:
-            # Если такого места не было, ищем первое среди необработанных
-            with transaction.commit_on_success():
+        with transaction.commit_on_success():
+            try:
+                place = Place.objects.select_for_update().filter(
+                            cemetery__ugh=request.user.profile.org,
+                            is_invent=True,
+                            dt_wrong_fio__isnull=True,
+                            user_processed=request.user,
+                            is_inprocess=True,
+                            dt_processed__isnull=True,
+                    ).order_by('pk')[0]
+            except IndexError:
+                # Если такого места не было, ищем первое среди необработанных
                 try:
                     place = Place.objects.select_for_update().filter(
                                 cemetery__ugh=request.user.profile.org,
@@ -1245,40 +1245,27 @@ class ApiOmsPhotoPlacesDetail(APIView):
     permission_classes = (PermitIfUgh,)
 
     def put(self, request, pk):
-        status = 200
-        try:
-            try:
-                place = Place.objects.get(pk=pk)
-            except Place.DoesNotExist:
-                status = 404
-                raise ServiceException(_(u'Нет такого места'))
-            if not place.cemetery.ugh or place.cemetery.ugh != request.user.profile.org:
-                status = 403
-                raise ServiceException(_(u'Место не принадлежит организации пользователя'))
-            if not place.is_invent:
-                status = 400
-                raise ServiceException(_(u'Место не получено при инвентаризации'))
+        place, status, message = Place.check_invent_place(request, pk)
+        if message:
+            return Response(data=dict(status='error', message=message), status=status)
 
-            do_save = False
-            remakePhoto = request.DATA.get('remakePhoto')
-            if remakePhoto is not None:
-                do_save = True
-                place.dt_wrong_fio = datetime.datetime.now() if remakePhoto else None
-                if remakePhoto:
-                    place.user_processed = None
-                    place.is_inprocess = False
-            processed = request.DATA.get('unlocked')
-            if processed is not None:
-                do_save = True
-                place.dt_processed = datetime.datetime.now() if processed else None
-                if not processed:
-                    place.user_processed = None
-                    place.is_inprocess = False
-            if do_save:
-                place.save()
-
-        except ServiceException as excpt:
-            return Response(data=dict(status='error', message=excpt.message), status=status)
+        do_save = False
+        remakePhoto = request.DATA.get('remakePhoto')
+        if remakePhoto is not None:
+            do_save = True
+            place.dt_wrong_fio = datetime.datetime.now() if remakePhoto else None
+            if remakePhoto:
+                place.user_processed = None
+                place.is_inprocess = False
+        processed = request.DATA.get('unlocked')
+        if processed is not None:
+            do_save = True
+            place.dt_processed = datetime.datetime.now() if processed else None
+            if not processed:
+                place.user_processed = None
+                place.is_inprocess = False
+        if do_save:
+            place.save()
         return Response(status=status, data={})
 
 api_oms_photo_places_detail = ApiOmsPhotoPlacesDetail.as_view()
