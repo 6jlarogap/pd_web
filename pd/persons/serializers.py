@@ -138,6 +138,36 @@ class DeadPerson2Serializer(serializers.HyperlinkedModelSerializer):
         model = DeadPerson
         fields = ('id', 'firstName', 'lastName', 'middleName', 'birthDate', 'deathDate')
 
+    def restore_object(self, attrs, instance=None):
+        data = self.context['request'].DATA
+
+        fields_got = dict(
+            last_name=data.get('lastName'),
+            first_name=data.get('firstName'),
+            middle_name=data.get('middleName'),
+        )
+        fields = dict()
+        for k in fields_got:
+            if fields_got[k] is not None:
+                fields[k] = fields_got[k]
+        if 'birthDate' in data:
+            fields['birth_date'] = self.set_unclear_date(data['birthDate'])
+        if 'deathDate' in data:
+            fields['death_date'] = self.set_unclear_date(data['deathDate'])
+        if instance:
+            deadman = instance
+        else:
+            deadman = DeadPerson()
+        for k in fields:
+            setattr(deadman, k, fields[k])
+        if instance:
+            return deadman
+        # - post:   из view придет context['place']
+        place = self.context.get('place')
+        # Заполнить всё....
+        return deadman
+
+
 class BaseCustomPersonSerializer(UnclearDateFieldMixin, serializers.HyperlinkedModelSerializer):
     birthDate = serializers.SerializerMethodField('birth_date')
     deathDate = serializers.SerializerMethodField('death_date')

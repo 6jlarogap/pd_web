@@ -1207,31 +1207,31 @@ class ApiOmsPhotoPlaces(APIView):
     def get(self, request):
         place = None
         # Показать место, с которым работал ранее 
-        try:
-            place = Place.objects.filter(
-                        cemetery__ugh=request.user.profile.org,
-                        is_invent=True,
-                        dt_wrong_fio__isnull=True,
-                        user_processed=request.user,
-                        is_inprocess=True,
-                        dt_processed__isnull=True,
-                ).order_by('pk')[0]
-        except IndexError:
-            # Если такого места не было, ищем первое среди необработанных
-            with transaction.commit_on_success():
-                try:
-                    place = Place.objects.select_for_update().filter(
-                                cemetery__ugh=request.user.profile.org,
-                                is_invent=True,
-                                is_inprocess=False,
-                                dt_wrong_fio__isnull=True,
-                                dt_processed__isnull=True,
-                        ).order_by('pk')[0]
-                    place.user_processed = request.user
-                    place.is_inprocess = True
-                    place.save()
-                except IndexError:
-                    pass
+        with transaction.commit_on_success():
+            try:
+                place = Place.objects.select_for_update().filter(
+                            cemetery__ugh=request.user.profile.org,
+                            is_invent=True,
+                            dt_wrong_fio__isnull=True,
+                            user_processed=request.user,
+                            is_inprocess=True,
+                            dt_processed__isnull=True,
+                    ).order_by('pk')[0]
+            except IndexError:
+                # Если такого места не было, ищем первое среди необработанных
+                    try:
+                        place = Place.objects.select_for_update().filter(
+                                    cemetery__ugh=request.user.profile.org,
+                                    is_invent=True,
+                                    is_inprocess=False,
+                                    dt_wrong_fio__isnull=True,
+                                    dt_processed__isnull=True,
+                            ).order_by('pk')[0]
+                        place.user_processed = request.user
+                        place.is_inprocess = True
+                        place.save()
+                    except IndexError:
+                        pass
         if place:
             serializer = PlaceLockSerializer(place, context=dict(request=request))
             data=serializer.data

@@ -152,18 +152,15 @@ class PhoneViewSet(viewsets.ModelViewSet):
         else:
             write_log(self.request, object, _(u'Телефон создан'))
 
-class ApiClientPlacesMixin(object):
-
-    def get_customplace(self, pk):
-        try:
-            customplace = CustomPlace.objects.get(pk=pk)
-        except CustomPlace.DoesNotExist:
-            raise Http404
-        if customplace.user and customplace.user != self.request.user:
-            raise Http404
-        return customplace
+class CheckLifeDates(object):
 
     def check_life_dates(self, instance=None):
+        """
+        Проверка дат рождения/смерти
+
+        в self.request.DATA может быть в датах: 'гггг', 'гггг-мм', 'гггг-мм-дд',
+        None или 'null'
+        """
         birth_date = self.request.DATA.get('birthDate') or self.request.DATA.get('dob')
         if birth_date and birth_date.lower() == 'null':
             birth_date = None
@@ -185,6 +182,17 @@ class ApiClientPlacesMixin(object):
             if not birth_date and death_date and instance.birth_date and instance.birth_date.str_safe() > death_date:
                 return msg_dates
         return ""
+
+class ApiClientPlacesMixin(CheckLifeDates):
+
+    def get_customplace(self, pk):
+        try:
+            customplace = CustomPlace.objects.get(pk=pk)
+        except CustomPlace.DoesNotExist:
+            raise Http404
+        if customplace.user and customplace.user != self.request.user:
+            raise Http404
+        return customplace
 
 class ApiClientPlacesView(APIView):
     permission_classes = (PermitIfCabinet,)
