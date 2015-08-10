@@ -14,7 +14,7 @@ from persons.models import DeadPerson, AlivePerson, BasePerson, DocumentSource, 
                            CustomPlace, CustomPerson, MemoryGallery
 from persons.serializers import AlivePersonSerializer, DeadPersonSerializer, PhoneSerializer, \
                                 CustomPlaceDetailSerializer, CustomPlaceListSerializer, \
-                                CustomPlaceEditSerializer, \
+                                CustomPlaceEditSerializer, DeadPerson2Serializer, \
                                 CustomPersonSerializer, CustomPerson2Serializer, \
                                 CustomPerson3Serializer, CustomPerson4Serializer, \
                                 MemoryGallerySerializer, MemoryGallery2Serializer
@@ -27,7 +27,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.parsers import MultiPartParser, JSONParser
 
 from pd.models import UnclearDate, SafeDeleteMixin
-from burials.models import Place, PlacePhoto
+from burials.models import Place, PlacePhoto, Burial, Grave
 from logs.models import write_log
 from users.models import Org, PermitIfCabinet, user_dict, PermitIfUgh
 from orders.models import Order, ResultFile
@@ -611,6 +611,33 @@ class ApiOmsBurialsView(CheckLifeDatesMixin, APIView):
             message = self.check_life_dates()
         if message:
             return Response(data=dict(status='error', message=message), status=status)
-        return Response(data={}, status=200)
+        serializer = DeadPerson2Serializer(
+            data=request.DATA,
+            context=dict(request=request),
+        )
+        if serializer.is_valid():
+            with transaction.commit_on_success():
+                deadman = serializer.save()
+                grave, grave_created = Grave.objects.get_or_create(place=place, grave_number=1)
+                burial = Burial.objects.create(
+                    burial_type=Burial.BURIAL_NEW if grave_created else Burial.BURIAL_OVER,
+                    burial_container=Burial.CONTAINER_COFFIN,
+                    source_type=Burial.SOURCE_ARCHIVE,
+                    place=place,
+                    cemetery=place.cemetery,
+                    area=place.area,
+                    row=place.row,
+                    place_number=place.place,
+                    grave=grave,
+                    grave_number=1,
+                    deadman=deadman,
+                    ugh=place.cemetery.ugh,
+                    status=Burial.STATUS_CLOSED,
+                    changed_by=request.user,
+                    flag_no_applicant_doc_required = True,
+                )
+                write_log(request, burial, _(u'Захоронение внесено при обработке фото места'))
+                return Response(serializer.data, status=200)
+        return Response(serializer.errors, status=400)
 
 api_oms_burials = ApiOmsBurialsView.as_view()
