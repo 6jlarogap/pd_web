@@ -14,7 +14,7 @@ from persons.models import DeadPerson, AlivePerson, BasePerson, DocumentSource, 
                            CustomPlace, CustomPerson, MemoryGallery
 from persons.serializers import AlivePersonSerializer, DeadPersonSerializer, PhoneSerializer, \
                                 CustomPlaceDetailSerializer, CustomPlaceListSerializer, \
-                                CustomPlaceEditSerializer, \
+                                CustomPlaceEditSerializer, DeadPerson2Serializer, \
                                 CustomPersonSerializer, CustomPerson2Serializer, \
                                 CustomPerson3Serializer, CustomPerson4Serializer, \
                                 MemoryGallerySerializer, MemoryGallery2Serializer
@@ -27,9 +27,9 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.parsers import MultiPartParser, JSONParser
 
 from pd.models import UnclearDate, SafeDeleteMixin
-from burials.models import Place, PlacePhoto
+from burials.models import Place, PlacePhoto, Burial, Grave
 from logs.models import write_log
-from users.models import Org, PermitIfCabinet, user_dict
+from users.models import Org, PermitIfCabinet, user_dict, PermitIfUgh
 from orders.models import Order, ResultFile
 from geo.models import Location
 
@@ -152,18 +152,15 @@ class PhoneViewSet(viewsets.ModelViewSet):
         else:
             write_log(self.request, object, _(u'Телефон создан'))
 
-class ApiClientPlacesMixin(object):
-
-    def get_customplace(self, pk):
-        try:
-            customplace = CustomPlace.objects.get(pk=pk)
-        except CustomPlace.DoesNotExist:
-            raise Http404
-        if customplace.user and customplace.user != self.request.user:
-            raise Http404
-        return customplace
+class CheckLifeDatesMixin(object):
 
     def check_life_dates(self, instance=None):
+        """
+        Проверка дат рождения/смерти
+
+        в self.request.DATA может быть в датах: 'гггг', 'гггг-мм', 'гггг-мм-дд',
+        None или 'null'
+        """
         birth_date = self.request.DATA.get('birthDate') or self.request.DATA.get('dob')
         if birth_date and birth_date.lower() == 'null':
             birth_date = None
@@ -185,6 +182,17 @@ class ApiClientPlacesMixin(object):
             if not birth_date and death_date and instance.birth_date and instance.birth_date.str_safe() > death_date:
                 return msg_dates
         return ""
+
+class ApiClientPlacesMixin(CheckLifeDatesMixin):
+
+    def get_customplace(self, pk):
+        try:
+            customplace = CustomPlace.objects.get(pk=pk)
+        except CustomPlace.DoesNotExist:
+            raise Http404
+        if customplace.user and customplace.user != self.request.user:
+            raise Http404
+        return customplace
 
 class ApiClientPlacesView(APIView):
     permission_classes = (PermitIfCabinet,)
@@ -591,3 +599,85 @@ class ApiClientPlacesOrdersView(ApiClientPlacesMixin, APIView):
                         ], status=200)
 
 api_client_places_orders = ApiClientPlacesOrdersView.as_view()
+
+class ApiOmsBurialsView(CheckLifeDatesMixin, APIView):
+    permission_classes = (PermitIfUgh,)
+
+    def post(self, request):
+        place_pk = request.DATA.get('placeId')
+        place, status, message = Place.check_invent_place(request, place_pk)
+        if not message:
+            status = 400
+            message = self.check_life_dates()
+        if message:
+            return Response(data=dict(status='error', message=message), status=status)
+        serializer = DeadPerson2Serializer(
+            data=request.DATA,
+            context=dict(request=request),
+        )
+        if serializer.is_valid():
+            with transaction.commit_on_success():
+                deadman = serializer.save()
+                grave, grave_created = Grave.objects.get_or_create(place=place, grave_number=1)
+                burial = Burial.objects.create(
+                    burial_type=Burial.BURIAL_NEW if grave_created else Burial.BURIAL_OVER,
+                    burial_container=Burial.CONTAINER_COFFIN,
+                    source_type=Burial.SOURCE_ARCHIVE,
+                    place=place,
+                    cemetery=place.cemetery,
+                    area=place.area,
+                    row=place.row,
+                    place_number=place.place,
+                    grave=grave,
+                    grave_number=1,
+                    deadman=deadman,
+                    ugh=place.cemetery.ugh,
+                    status=Burial.STATUS_CLOSED,
+                    changed_by=request.user,
+                    flag_no_applicant_doc_required = True,
+                )
+                write_log(request, burial, _(u'Захоронение внесено при обработке фото места'))
+                return Response(serializer.data, status=200)
+        return Response(serializer.errors, status=400)
+
+api_oms_burials = ApiOmsBurialsView.as_view()
+
+class ApiOmsBurialsDetailView(CheckLifeDatesMixin, APIView):
+    permission_classes = (PermitIfUgh,)
+
+    def put(self, request, pk):
+        status = 404
+        message = ''
+        try:
+            deadman = DeadPerson.objects.get(pk=pk)
+        except DeadPerson.DoesNotExist:
+            message = _(u'Нет усопшего с id = %s') % pk
+        else:
+            message_noplace = _(u'Усопший с id = %s не имеет привязки к захоронению/месту') % pk
+            try:
+                burial = deadman.burial_set.all()[0]
+            except IndexError:
+                message = message_noplace
+            else:
+                place = burial.place
+                if not place:
+                    message = message_noplace
+                else:
+                    place, status, message = Place.check_invent_place(request, place.pk)
+        if not message:
+            status = 400
+            message = self.check_life_dates()
+        if message:
+            return Response(data=dict(status='error', message=message), status=status)
+        serializer = DeadPerson2Serializer(
+            deadman,
+            data=request.DATA,
+            context=dict(request=request),
+        )
+        if serializer.is_valid():
+            serializer.save()
+            write_log(request, burial, _(u'Захоронение изменено при обработке фото места'))
+            return Response(serializer.data, status=200)
+        return Response(serializer.errors, status=400)
+
+api_oms_burials_detail = ApiOmsBurialsDetailView.as_view()

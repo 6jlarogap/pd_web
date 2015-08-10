@@ -68,8 +68,8 @@ class Cemetery(GetLogsMixin, BaseModel, PhonesMixin):
     ugh = models.ForeignKey(Org, verbose_name=_(u"УГХ"), null=True, limit_choices_to={'type': Org.PROFILE_UGH},
                             on_delete=models.PROTECT)
     address = models.ForeignKey('geo.Location', editable=False, null=True)
-    archive_burial_fact_date_required = models.BooleanField(_(u"Дата архивного захоронения обязательна"), default=True)
-    archive_burial_account_number_required = models.BooleanField(_(u"Номер архивного захоронения обязателен"), default=True)
+    archive_burial_fact_date_required = models.BooleanField(_(u"Дата архивного захоронения обязательна"), default=False)
+    archive_burial_account_number_required = models.BooleanField(_(u"Номер архивного захоронения обязателен"), default=False)
     square = models.FloatField(_(u"Площадь"), null=True, editable=False)
     # phones: могут быть разных типов, пользуемся моделью persons.Phone
     caretaker = models.ForeignKey('auth.User', verbose_name=_(u"Ответственный смотритель"), null=True, editable=False,
@@ -450,6 +450,31 @@ class Place(SafeDeleteMixin, GeoPointModel):
 
     def get_caretaker(self):
         return self.caretaker or self.area.caretaker or self.cemetery.caretaker or None
+
+    @classmethod
+    def check_invent_place(cls, request, pk):
+
+        place = None
+        status = 200
+        message = ''
+        if not pk:
+            status = 404
+            message = _(u'Не указан номер места')
+        else:
+            try:
+                place = Place.objects.get(pk=pk)
+            except Place.DoesNotExist:
+                status = 404
+                message = _(u'Нет такого места')
+            else:
+                if not place.cemetery.ugh or place.cemetery.ugh != request.user.profile.org:
+                    status = 403
+                    message = _(u'Место не принадлежит организации пользователя')
+                elif not place.is_invent:
+                    status = 400
+                    message = _(u'Место не получено при инвентаризации')
+        return place, status, message
+
 
 class PlaceSize(models.Model):
     org = models.ForeignKey(Org, verbose_name=_(u"Организация"), editable=False, on_delete=models.PROTECT) 
