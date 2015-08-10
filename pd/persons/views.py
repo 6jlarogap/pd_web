@@ -641,3 +641,43 @@ class ApiOmsBurialsView(CheckLifeDatesMixin, APIView):
         return Response(serializer.errors, status=400)
 
 api_oms_burials = ApiOmsBurialsView.as_view()
+
+class ApiOmsBurialsDetailView(CheckLifeDatesMixin, APIView):
+    permission_classes = (PermitIfUgh,)
+
+    def put(self, request, pk):
+        status = 404
+        message = ''
+        try:
+            deadman = DeadPerson.objects.get(pk=pk)
+        except DeadPerson.DoesNotExist:
+            message = _(u'Нет усопшего с id = %s') % pk
+        else:
+            message_noplace = _(u'Усопший с id = %s не имеет привязки к захоронению/месту') % pk
+            try:
+                burial = deadman.burial_set.all()[0]
+            except IndexError:
+                message = message_noplace
+            else:
+                place = burial.place
+                if not place:
+                    message = message_noplace
+                else:
+                    place, status, message = Place.check_invent_place(request, place.pk)
+        if not message:
+            status = 400
+            message = self.check_life_dates()
+        if message:
+            return Response(data=dict(status='error', message=message), status=status)
+        serializer = DeadPerson2Serializer(
+            deadman,
+            data=request.DATA,
+            context=dict(request=request),
+        )
+        if serializer.is_valid():
+            serializer.save()
+            write_log(request, burial, _(u'Захоронение изменено при обработке фото места'))
+            return Response(serializer.data, status=200)
+        return Response(serializer.errors, status=400)
+
+api_oms_burials_detail = ApiOmsBurialsDetailView.as_view()
