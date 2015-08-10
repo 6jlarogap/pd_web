@@ -29,7 +29,7 @@ from rest_framework.parsers import MultiPartParser, JSONParser
 from pd.models import UnclearDate, SafeDeleteMixin
 from burials.models import Place, PlacePhoto
 from logs.models import write_log
-from users.models import Org, PermitIfCabinet, user_dict
+from users.models import Org, PermitIfCabinet, user_dict, PermitIfUgh
 from orders.models import Order, ResultFile
 from geo.models import Location
 
@@ -152,7 +152,7 @@ class PhoneViewSet(viewsets.ModelViewSet):
         else:
             write_log(self.request, object, _(u'Телефон создан'))
 
-class CheckLifeDates(object):
+class CheckLifeDatesMixin(object):
 
     def check_life_dates(self, instance=None):
         """
@@ -183,7 +183,7 @@ class CheckLifeDates(object):
                 return msg_dates
         return ""
 
-class ApiClientPlacesMixin(CheckLifeDates):
+class ApiClientPlacesMixin(CheckLifeDatesMixin):
 
     def get_customplace(self, pk):
         try:
@@ -599,3 +599,18 @@ class ApiClientPlacesOrdersView(ApiClientPlacesMixin, APIView):
                         ], status=200)
 
 api_client_places_orders = ApiClientPlacesOrdersView.as_view()
+
+class ApiOmsBurialsView(CheckLifeDatesMixin, APIView):
+    permission_classes = (PermitIfUgh,)
+
+    def post(self, request):
+        place_pk = request.DATA.get('placeId')
+        place, status, message = Place.check_invent_place(request, place_pk)
+        if not message:
+            status = 400
+            message = self.check_life_dates()
+        if message:
+            return Response(data=dict(status='error', message=message), status=status)
+        return Response(data={}, status=200)
+
+api_oms_burials = ApiOmsBurialsView.as_view()

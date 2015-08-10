@@ -9,6 +9,7 @@ from geo.models import Location
 from persons.models import AlivePerson, DeadPerson, Phone, CustomPlace, CustomPerson, \
                            MemoryGallery, IDDocumentType, DocumentSource, PersonID, \
                            DeathCertificate, DeathCertificateScan
+from burials.models import Burial, Grave
 from users.models import get_profile
 from rest_api.fields import UnclearDateFieldSerializer, UnclearDateFieldMixin, UnclearDateFieldSafeSerializer, \
                             HyperlinkedFileField
@@ -164,7 +165,24 @@ class DeadPerson2Serializer(serializers.HyperlinkedModelSerializer):
             return deadman
         # - post:   из view придет context['place']
         place = self.context.get('place')
-        # Заполнить всё....
+        grave, grave_created = Grave.objects.get_or_create(place=place, grave_number=1)
+        burial = Burial.objects.create(
+            burial_type=Burial.BURIAL_NEW if grave_created else Burial.BURIAL_OVER,
+            burial_container=Butrial.CONTAINER_COFFIN,
+            source_type=Burial.SOURCE_ARCHIVE,
+            place=place,
+            cemetery=place.cemetery,
+            area=place.area,
+            row=place.row,
+            place_number=place.place,
+            grave=grave,
+            grave_number=1,
+            deadman=deadman,
+            ugh=place.cemetery.ugh,
+            status=Burial.STATUS_CLOSED,
+            changed_by=self.context.request.user,
+            flag_no_applicant_doc_required = True,
+        )
         return deadman
 
 
