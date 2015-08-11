@@ -56,7 +56,7 @@ var YMAPS_URL = '//api-maps.yandex.ru/2.0/?load=package.standard,package.cluster
         preset: 'twirl#blueStretchyIcon',
         draggable: true
       },
-      fitMarkers: true
+      fitMarkers: false
     })
 
     .factory('ymapData', ['$rootScope', function ($rootScope) {
