@@ -19,7 +19,7 @@ class UnclearDateFieldSerializer(serializers.Field):
     """
     def to_native(self, obj):
         try:
-            return obj.strftime('%d.%m.%Y')
+            return obj.str_safe(format='d.m.y')
         except:
             return obj
 
@@ -52,5 +52,5 @@ class UnclearDateFieldMixin(object):
     def death_date(self, instance):
         return instance.death_date and instance.death_date.str_safe() or None
 
-    def set_unclear_date(self, s):
-        return UnclearDate.from_str_safe(s)
+    def set_unclear_date(self, s, format=''):
+        return UnclearDate.from_str_safe(s, format)
