@@ -80,15 +80,23 @@ class UnclearDate:
     def __unicode__(self):
         return self.strftime('%d.%m.%Y')
 
-    def str_safe(self):
+    def str_safe(self, format=''):
         """
         YYYY or YYYY-MM or YYYY-MM-DD
+
+        Возможен возврат ММ.ДД.ГГГГ, ММ.ГГГГ, ГГГГ при формате 'd.m'y'
         """
         result = "%04d" % self.d.year
-        if not self.no_month:
-            result += '-%02d' % self.d.month
-        if not self.no_day:
-            result += '-%02d' % self.d.day
+        if format == 'd.m.y':
+            if not self.no_month:
+                result = '%02d.%s' % (self.d.month, result)
+            if not self.no_day:
+                result = '%02d.%s' % (self.d.day, result)
+        else:
+            if not self.no_month:
+                result += '-%02d' % self.d.month
+            if not self.no_day:
+                result += '-%02d' % self.d.day
         return result
 
     @classmethod
