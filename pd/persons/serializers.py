@@ -128,8 +128,8 @@ class DeadPersonSerializer(serializers.HyperlinkedModelSerializer):
         fields = ('id', 'first_name', 'last_name', 'middle_name', 'birth_date', 'death_date')
 
 class DeadPerson2Serializer(UnclearDateFieldMixin, serializers.HyperlinkedModelSerializer):
-    birthDate = UnclearDateFieldSafeSerializer('birth_date')
-    deathDate = UnclearDateFieldSafeSerializer('death_date')
+    birthDate = UnclearDateFieldSerializer('birth_date')
+    deathDate = UnclearDateFieldSerializer('death_date')
     lastName = Field(source='last_name')
     firstName = Field(source='first_name')
     middleName = Field(source='middle_name')
@@ -151,9 +151,9 @@ class DeadPerson2Serializer(UnclearDateFieldMixin, serializers.HyperlinkedModelS
             if fields_got[k] is not None:
                 fields[k] = fields_got[k]
         if 'birthDate' in data:
-            fields['birth_date'] = self.set_unclear_date(data['birthDate'])
+            fields['birth_date'] = self.set_unclear_date(data['birthDate'], format='d.m.y')
         if 'deathDate' in data:
-            fields['death_date'] = self.set_unclear_date(data['deathDate'])
+            fields['death_date'] = self.set_unclear_date(data['deathDate'], format='d.m.y')
         if instance:
             for k in fields:
                 setattr(instance, k, fields[k])

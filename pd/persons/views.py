@@ -154,12 +154,13 @@ class PhoneViewSet(viewsets.ModelViewSet):
 
 class CheckLifeDatesMixin(object):
 
-    def check_life_dates(self, instance=None):
+    def check_life_dates(self, instance=None, format=''):
         """
         Проверка дат рождения/смерти
 
         в self.request.DATA может быть в датах: 'гггг', 'гггг-мм', 'гггг-мм-дд',
         None или 'null'
+        при format=='d.m.y' сначала преобразуем к y-m-d
         """
         birth_date = self.request.DATA.get('birthDate') or self.request.DATA.get('dob')
         if birth_date and birth_date.lower() == 'null':
@@ -167,10 +168,10 @@ class CheckLifeDatesMixin(object):
         death_date = self.request.DATA.get('deathDate') or self.request.DATA.get('dod')
         if death_date and death_date.lower() == 'null':
             death_date = None
-        message = UnclearDate.check_safe_str(birth_date, check_today=True)
+        message = UnclearDate.check_safe_str(birth_date, check_today=True, format=format)
         if message:
             return _(u"Дата рождения: %s") % message
-        message = UnclearDate.check_safe_str(death_date, check_today=True)
+        message = UnclearDate.check_safe_str(death_date, check_today=True, format=format)
         if message:
             return _(u"Дата смерти: %s") % message
         msg_dates = _(u"Дата смерти раньше даты рождения")
@@ -608,7 +609,7 @@ class ApiOmsBurialsView(CheckLifeDatesMixin, APIView):
         place, status, message = Place.check_invent_place(request, place_pk)
         if not message:
             status = 400
-            message = self.check_life_dates()
+            message = self.check_life_dates(format='d.m.y')
         if message:
             return Response(data=dict(status='error', message=message), status=status)
         serializer = DeadPerson2Serializer(
@@ -666,7 +667,7 @@ class ApiOmsBurialsDetailView(CheckLifeDatesMixin, APIView):
                     place, status, message = Place.check_invent_place(request, place.pk)
         if not message:
             status = 400
-            message = self.check_life_dates()
+            message = self.check_life_dates(format='d.m.y')
         if message:
             return Response(data=dict(status='error', message=message), status=status)
         serializer = DeadPerson2Serializer(
