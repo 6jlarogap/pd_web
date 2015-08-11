@@ -82,7 +82,7 @@ class UnclearDate:
         """
         YYYY or YYYY-MM or YYYY-MM-DD
         """
-        result = str(self.d.year)
+        result = "%04d" % self.d.year
         if not self.no_month:
             result += '-%02d' % self.d.month
         if not self.no_day:
