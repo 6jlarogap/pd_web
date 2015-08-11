@@ -42,6 +42,7 @@
           id: $scope.item.id
         }
       ];
+      $scope.placeMapZoom = 15;
       $scope.placeCoordinates = [
         {
           point: [
