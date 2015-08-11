@@ -180,9 +180,11 @@ class CheckLifeDatesMixin(object):
         if birth_date and death_date and birth_date > death_date:
             return msg_dates
         if instance:
-            if birth_date and not death_date and instance.death_date and birth_date > instance.death_date:
+            req_birth_date = 'birthDate' in self.request.DATA or 'dob' in self.request.DATA
+            req_death_date = 'deathDate' in self.request.DATA or 'dod' in self.request.DATA
+            if birth_date and not req_death_date and instance.death_date and birth_date > instance.death_date:
                 return msg_dates
-            if not birth_date and death_date and instance.birth_date and instance.birth_date > death_date:
+            if not req_birth_date and death_date and instance.birth_date and instance.birth_date > death_date:
                 return msg_dates
         return ""
 
@@ -669,7 +671,7 @@ class ApiOmsBurialsDetailView(CheckLifeDatesMixin, APIView):
                     place, status, message = Place.check_invent_place(request, place.pk)
         if not message:
             status = 400
-            message = self.check_life_dates(format='d.m.y')
+            message = self.check_life_dates(instance=deadman, format='d.m.y')
         if message:
             return Response(data=dict(status='error', message=message), status=status)
         serializer = DeadPerson2Serializer(
