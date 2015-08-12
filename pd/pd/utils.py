@@ -8,6 +8,7 @@ from django.utils.translation import ugettext_lazy as _
 import datetime
 from pytz import timezone, utc
 import re
+import string
 
 from PIL import Image
 import magic
@@ -149,3 +150,12 @@ def is_video(video):
                 # flv: ISO media
                 valid = True
     return valid
+
+def capitalize(s):
+    """
+    Капитализация строки имени, фамилии, отчества
+
+    Учесть двойные фамилии (Петров-Водкин) и много слов, например, Эрих Мария
+    """
+    dash_char = lambda m: u"-%s" % m.group(1).upper()
+    return s and re.sub(r'\-(\S)', dash_char, string.capwords(s)) or ''
