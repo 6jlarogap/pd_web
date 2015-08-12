@@ -144,6 +144,7 @@ class PlaceSerializer(GetGalleryMixin, serializers.ModelSerializer):
     #available_count = Field(source='available_count')
     responsible_txt = serializers.SerializerMethodField('responsible_str')
     gallery = serializers.SerializerMethodField('gallery_func')
+    dt_free = serializers.DateTimeField(required=False)
     dt_wrong_fio = serializers.DateTimeField(required=False)
     dt_military = serializers.DateTimeField(required=False)
     dt_size_violated = serializers.DateTimeField(required=False)
@@ -156,6 +157,7 @@ class PlaceSerializer(GetGalleryMixin, serializers.ModelSerializer):
         model = Place
         fields = ('id', 'cemetery', 'lat', 'lng', 'area', 'row', 'place', 'responsible', 'responsible_txt',
                   'place_length', 'place_width', 'gallery',
+                  'dt_free',
                   'dt_wrong_fio', 'dt_military', 'dt_size_violated', 'dt_unowned', 'dt_unindentified',
                   'caretaker', 'create_cabinet',
                  ) 
@@ -356,6 +358,7 @@ class ArchPlaceSerializer(serializers.ModelSerializer):
         model = Place
         fields = ('id', 'cemetery_id', 'area_id', 'row', 'oldplace', 'place',
                   'available_count', 'responsible_id', 'place_length', 'place_width',
+                  'dt_free',
                   'dt_wrong_fio', 'dt_military', 'dt_size_violated', 'dt_unowned', 'dt_unindentified',
                   'lat', 'lng',
         )
