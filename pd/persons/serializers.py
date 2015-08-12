@@ -13,7 +13,7 @@ from users.models import get_profile
 from rest_api.fields import UnclearDateFieldSerializer, UnclearDateFieldMixin, UnclearDateFieldSafeSerializer, \
                             HyperlinkedFileField
 
-from pd.utils import CreatedAtMixin, utcisoformat, str_to_bool_or_None
+from pd.utils import CreatedAtMixin, utcisoformat, str_to_bool_or_None, capitalize
 from pd.serializers import ArchFilesSerializer
 
 class PhoneSerializer(serializers.HyperlinkedModelSerializer):
@@ -149,7 +149,7 @@ class DeadPerson2Serializer(UnclearDateFieldMixin, serializers.HyperlinkedModelS
         fields = dict()
         for k in fields_got:
             if fields_got[k] is not None:
-                fields[k] = fields_got[k]
+                fields[k] = capitalize(fields_got[k])
         if 'birthDate' in data:
             fields['birth_date'] = self.set_unclear_date(data['birthDate'], format='d.m.y')
         if 'deathDate' in data:
