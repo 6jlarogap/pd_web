@@ -1244,12 +1244,26 @@ api_oms_photo_places = ApiOmsPhotoPlaces.as_view()
 class ApiOmsPhotoPlacesDetail(APIView):
     permission_classes = (PermitIfUgh,)
 
+    def get(self, request, pk):
+        place, status, message = Place.check_invent_place(request, pk)
+        if message:
+            return Response(data=dict(status='error', message=message), status=status)
+        return Response(
+            status=200,
+            data=PlaceLockSerializer(place, context=dict(request=request)).data
+        )
+
     def put(self, request, pk):
         place, status, message = Place.check_invent_place(request, pk)
         if message:
             return Response(data=dict(status='error', message=message), status=status)
 
         do_save = False
+
+        if 'remakePhotoComment' in request.DATA:
+            do_save = True
+            place.comment_remakephoto = request.DATA['remakePhotoComment']
+
         remakePhoto = request.DATA.get('remakePhoto')
         if remakePhoto is not None:
             do_save = True
@@ -1257,6 +1271,7 @@ class ApiOmsPhotoPlacesDetail(APIView):
             if remakePhoto:
                 place.user_processed = None
                 place.is_inprocess = False
+
         processed = request.DATA.get('unlocked')
         if processed is not None:
             do_save = True
@@ -1264,6 +1279,7 @@ class ApiOmsPhotoPlacesDetail(APIView):
             if not processed:
                 place.user_processed = None
                 place.is_inprocess = False
+
         if do_save:
             place.save()
         return Response(status=status, data={})
