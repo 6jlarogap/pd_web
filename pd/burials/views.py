@@ -1276,7 +1276,9 @@ class ApiOmsPhotoPlacesDetail(APIView):
                 place.user_processed = None
                 place.is_inprocess = False
 
-        processed = request.DATA.get('unlocked')
+        processed = request.DATA.get('processed')
+        if processed is None:
+            processed = request.DATA.get('unlocked')
         if processed is not None:
             do_save = True
             place.dt_processed = datetime.datetime.now() if processed else None
