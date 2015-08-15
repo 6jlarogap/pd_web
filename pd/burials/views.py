@@ -1213,6 +1213,8 @@ class ApiOmsPhotoPlaces(APIView):
                             cemetery__ugh=request.user.profile.org,
                             is_invent=True,
                             dt_wrong_fio__isnull=True,
+                            dt_unindentified__isnull=True,
+                            dt_free__isnull=True,
                             user_processed=request.user,
                             is_inprocess=True,
                             dt_processed__isnull=True,
@@ -1225,6 +1227,8 @@ class ApiOmsPhotoPlaces(APIView):
                                 is_invent=True,
                                 is_inprocess=False,
                                 dt_wrong_fio__isnull=True,
+                                dt_unindentified__isnull=True,
+                                dt_free__isnull=True,
                                 dt_processed__isnull=True,
                         ).order_by('pk')[0]
                     place.user_processed = request.user
@@ -1272,7 +1276,9 @@ class ApiOmsPhotoPlacesDetail(APIView):
                 place.user_processed = None
                 place.is_inprocess = False
 
-        processed = request.DATA.get('unlocked')
+        processed = request.DATA.get('processed')
+        if processed is None:
+            processed = request.DATA.get('unlocked')
         if processed is not None:
             do_save = True
             place.dt_processed = datetime.datetime.now() if processed else None
