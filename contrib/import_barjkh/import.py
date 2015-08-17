@@ -2,7 +2,11 @@
 
 # contrib/import_barjkh/import.py,
 
-UGH_NAME = u'БарЖКХ'
+# Искажаю перед сохранением в репозитарий, во избежание повторного
+# ошибочного запуска
+#
+UGH_NAME = u'----------- Барановичское ЖКХ ------------'
+
 CEMETERY_NAME = u'Русино'
 IMPORT_XLS = '../contrib/import_barjkh/import.xls'
 
@@ -35,7 +39,7 @@ IMPORT_XLS = '../contrib/import_barjkh/import.xls'
 #     4-го и т.д. -- в последнюю из имеющихся могил в месте
 # - длина и ширина места устанавливается в зависимости от числа могил в нем:
 #     1 могила: 1.50 x 2.30
-#     2 могилы: 3.60 x 2.30
+#     2 могилы: 2.60 x 2.30
 #     3 могилы: 4.50 x 2.30
 #   (получено с их снимка)
 # - фактическая дата захоронения не проставляется. Не будем гадать
@@ -75,7 +79,7 @@ def main():
     # Получим пользователя из этой организации, первого по списку
     ugh = Org.objects.get(name=UGH_NAME)
     user = Profile.objects.filter(org=ugh).order_by('pk')[0].user
-    print 'Creating cemetery'
+    print 'Get or creat cemetery'
     cemetery, _created = Cemetery.objects.get_or_create(
         ugh=ugh,
         name=CEMETERY_NAME,
@@ -84,11 +88,7 @@ def main():
             time_begin=datetime.time(9, 0),
             time_end=datetime.time(17, 0),
     ))
-    if not _created and Place.objects.filter(cemetery=cemetery).exists():
-        raise Exception("Cemetery exists and has already burial places!")
 
-    if not _created:
-        print 'Cemetery exists but has no burial places'
     book = xlrd.open_workbook(IMPORT_XLS)
     sheet = book.sheet_by_index(0)
     # 1-й проход:
@@ -98,10 +98,10 @@ def main():
     #
     print '1-st pass: creating areas, places, graves'
     area_purpose, _created = AreaPurpose.objects.get_or_create(name='общественный')
-    place_length_1 = 1.50
-    place_length_2 = 2.60
-    place_length_3 = 4.50
-    place_width = 2.30
+    place_width_1 = 1.50
+    place_width_2 = 2.60
+    place_width_3 = 4.50
+    place_length = 2.30
 
     for row in range(sheet.nrows)[1:]:
         s_area = cell_value(sheet.cell(row, C_SECTOR))
@@ -122,8 +122,8 @@ def main():
             row = cell_value(sheet.cell(row, C_ROW)) or '',
             place = cell_value(sheet.cell(row, C_PLACE)) or '-',
             defaults = dict(
-                place_length=place_length_1,
-                place_width=place_width,
+                place_width=place_width_1,
+                place_length=place_length,
         ))
         s_type = cell_value(sheet.cell(row, C_PLACE_TYPE)).lower()
         if s_type.startswith(u'двойн'):
@@ -131,14 +131,15 @@ def main():
         elif s_type.startswith(u'семейн'):
             s_type_n = 3
         else:
+#       
             s_type_n = 1
         place.get_or_create_graves(s_type_n)
         graves_count = place.get_graves_count()
-        if graves_count == 3 and place.place_length < place_length_3:
-            place.place_length = place_length_3
+        if graves_count == 3 and place.place_width < place_width_3:
+            place.place_width = place_width_3
             place.save()
-        if graves_count == 2 and place.place_length < place_length_2:
-            place.place_length = place_length_2
+        if graves_count == 2 and place.place_width < place_width_2:
+            place.place_width = place_width_2
             place.save()
         if row % 500 == 0:
             print ' %s records processed' % row
@@ -219,8 +220,8 @@ def main():
             place_number=place.place,
             grave=grave,
             grave_number=grave_number,
-            place_length=place.place_length,
             place_width=place.place_width,
+            place_length=place.place_length,
             deadman=deadman,
             ugh=ugh,
             status=Burial.STATUS_CLOSED,
@@ -244,6 +245,8 @@ def cell_value(cell):
         try:
             dt_tuple = xlrd.xldate_as_tuple(cell_value, 0)
         except xlrd.xldate.XLDateError:
+            # Эта ошибка будет и при дате <= 01.01.1900.
+            # OK, это неизвестная дата
             return None
         return datetime.datetime(
             dt_tuple[0], dt_tuple[1], dt_tuple[2], 
