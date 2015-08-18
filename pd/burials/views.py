@@ -49,7 +49,8 @@ from django.db import transaction
 from serializers import CemeterySerializer, AreaSerializer, PlaceSerializer, AreaPurposeSerializer, \
     GraveSerializer, BurialSerializer, BurialListSerializer, BurialPutGraveSerializer, \
     AreaPhotoSerializer, ExhumationRequestSerializer, PlaceSizeSerializer, \
-    ApiOmsPlacesSerializer, ApiCatalogPlacesSerializer, PlaceLockSerializer
+    ApiOmsPlacesSerializer, ApiCatalogPlacesSerializer, PlaceLockSerializer, \
+    CemeteryTitleSerializer, AreaTitleSerializer
 
 from persons.serializers import AlivePersonSerializer, PhoneSerializer
 from users.serializers import UserFioLoginSerializer
@@ -1289,3 +1290,35 @@ class ApiOmsPhotoPlacesDetail(APIView):
         return Response(status=status, data={})
 
 api_oms_photo_places_detail = ApiOmsPhotoPlacesDetail.as_view()
+
+class ApiOmsCemeteriesView(APIView):
+    permission_classes = (PermitIfUgh,)
+
+    def get(self, request):
+        return Response(
+            status=200,
+            data=[ CemeteryTitleSerializer(cemetery).data \
+                   for cemetery in Cemetery.objects.filter(ugh=request.user.profile.org)
+            ]
+        )
+
+api_oms_cemeteries = ApiOmsCemeteriesView.as_view()
+
+class ApiOmsCemeteriesAreasView(APIView):
+    permission_classes = (PermitIfUgh,)
+
+    def get(self, request, pk):
+        try:
+            cemetery = Cemetery.objects.get(pk=pk)
+        except Cemetery.DoesNotExist:
+            raise Http404
+        if not cemetery.ugh or cemetery.ugh != request.user.profile.org:
+            raise Http404
+        return Response(
+            status=200,
+            data=[ AreaTitleSerializer(area).data \
+                   for area in Area.objects.filter(cemetery=cemetery)
+            ]
+        )
+
+api_oms_cemeteries_areas = ApiOmsCemeteriesAreasView.as_view()
