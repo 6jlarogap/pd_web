@@ -10,7 +10,6 @@
 
 import sys
 
-from django.core.management.base import BaseCommand
 from django.db import transaction, IntegrityError
 from django.db.models.query_utils import Q
 from django.db.models.query_utils import Q
@@ -19,7 +18,8 @@ from django.contrib.auth.models import User
 from users.models import Org, ProfileLORU, Profile, Dover, OrgCertificate, CustomerProfile
 from burials.models import Cemetery, CemeteryCoordinates, Area, AreaCoordinates, \
                            Place, PlaceSize, PlacePhoto, Grave, \
-                           Burial, BurialFiles, BurilalComment, Reason, ExhumationRequest
+                           Burial, BurialFiles, BurilalComment, Reason, ExhumationRequest, \
+                           BurialComment
 from orders.models import Order, OrderItem, ServiceItem, OrgService, OrgServicePrice, \
                           OrderComment, ResultFile
 from persons.models import DeadPerson, AlivePerson, CustomPlace
@@ -129,6 +129,7 @@ def main():
         ExhumationRequest.objects.filter(burial__ugh=ugh).delete()
         BurialComment.objects.filter(burial__ugh=ugh).delete()
         BurialFiles.objects.filter(burial__ugh=ugh).delete()
+        BurialComment.objects.filter(burial__ugh=ugh).delete()
         Burial.objects.filter(ugh=ugh).delete()
         print 'removing graves'
         Grave.objects.filter(place__cemetery__ugh=ugh).delete()
