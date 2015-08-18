@@ -32,14 +32,25 @@ class GetGalleryMixin(object):
         return obj.get_photo_gallery(request) if request else []
 
 class SubCemeterySerializer(serializers.ModelSerializer):
-    """
-    area subelement
-    """
+
     class Meta:
         model = Cemetery
         fields = ('id', 'name')
 
+class CemeteryTitleSerializer(serializers.ModelSerializer):
+    title = serializers.Field('name')
 
+    class Meta:
+        model = Cemetery
+        fields = ('id', 'title')
+
+
+class AreaTitleSerializer(serializers.ModelSerializer):
+    title = serializers.Field('name')
+
+    class Meta:
+        model = Area
+        fields = ('id', 'title')
 
 class AreaPurposeSerializer(serializers.ModelSerializer):
     class Meta:
