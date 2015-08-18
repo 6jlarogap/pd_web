@@ -38,21 +38,27 @@ class Log(models.Model):
         obj_id = self.obj_id if self.obj_id else ''
         if model_name == 'Burial':
             ref = reverse('view_burial', args=[obj_id])
-            result = _(u"Захоронение <a href='%s'>%s</a>") % (ref, obj_id, )
+            result = _(u"Захоронение <a href='%(ref)s'>%(obj_id)s</a>") % dict(
+                ref=ref, obj_id=obj_id,
+            )
         elif model_name == 'Order':
             ref = reverse('order_edit', args=[obj_id])
             try:
                 loru_number = Model.objects.get(pk=obj_id).loru_number
             except Model.DoesNotExist:
                 loru_number = ''
-            result = _(u"Заказ <a href='%s'>%s</a>") % (ref, loru_number, )
+            result = _(u"Заказ <a href='%(ref)s'>%(loru_number)s</a>") % dict(
+                ref=ref, loru_number=loru_number,
+            )
         elif model_name == 'Cemetery':
             ref = reverse('manage_cemeteries_edit', args=[obj_id])
             try:
                 cemetery = Model.objects.get(pk=obj_id).name
             except Model.DoesNotExist:
                 cemetery = ''
-            result = _(u"Кладбище <a href='%s'>%s</a>") % (ref, cemetery, )
+            result = _(u"Кладбище <a href='%(ref)s'>%(cemetery)s</a>") % dict(
+                ref=ref, cemetery=cemetery,
+            )
         elif model_name == 'Org':
             result = _(u"Организация")
         elif model_name == 'Profile':
@@ -106,11 +112,17 @@ def compare_obj(verbose_name, old_val, new_val):
     old_val = old_val is None and u'<пусто>' or unicode(old_val) #.__unicode__()
     new_val = new_val is None and u'<пусто>' or unicode(new_val)
     if old_val=="None":
-        res = _(u"'%s': добавлено '%s'") % (verbose_name, new_val)
+        res = _(u"'%(verbose_name)s': добавлено '%(new_val)s'") % dict(
+            verbose_name=verbose_name, new_val=new_val
+        )
     elif new_val=="None":
-        res = _(u"'%s': удалено '%s'") % (verbose_name, old_val)
+        res = _(u"'%(verbose_name)s': удалено '%(old_val)s'") % dict(
+            verbose_name=verbose_name, old_val=old_val
+        )
     elif old_val != new_val:
-        res = _(u"'%s': '%s' -> '%s'") % (verbose_name, old_val, new_val)
+        res = _(u"'%(verbose_name)s': '%(old_val)s' -> '%(new_val)s'") % dict(
+            verbose_name=verbose_name, old_val=old_val, new_val=new_val
+        )
     else: 
         return
     return res

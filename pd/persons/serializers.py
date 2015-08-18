@@ -13,7 +13,7 @@ from users.models import get_profile
 from rest_api.fields import UnclearDateFieldSerializer, UnclearDateFieldMixin, UnclearDateFieldSafeSerializer, \
                             HyperlinkedFileField
 
-from pd.utils import CreatedAtMixin, utcisoformat, str_to_bool_or_None
+from pd.utils import CreatedAtMixin, utcisoformat, str_to_bool_or_None, capitalize
 from pd.serializers import ArchFilesSerializer
 
 class PhoneSerializer(serializers.HyperlinkedModelSerializer):
@@ -126,6 +126,40 @@ class DeadPersonSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = DeadPerson
         fields = ('id', 'first_name', 'last_name', 'middle_name', 'birth_date', 'death_date')
+
+class DeadPerson2Serializer(UnclearDateFieldMixin, serializers.HyperlinkedModelSerializer):
+    birthDate = UnclearDateFieldSerializer('birth_date')
+    deathDate = UnclearDateFieldSerializer('death_date')
+    lastName = Field(source='last_name')
+    firstName = Field(source='first_name')
+    middleName = Field(source='middle_name')
+
+    class Meta:
+        model = DeadPerson
+        fields = ('id', 'firstName', 'lastName', 'middleName', 'birthDate', 'deathDate')
+
+    def restore_object(self, attrs, instance=None):
+        data = self.context['request'].DATA
+
+        fields_got = dict(
+            last_name=data.get('lastName'),
+            first_name=data.get('firstName'),
+            middle_name=data.get('middleName'),
+        )
+        fields = dict()
+        for k in fields_got:
+            if fields_got[k] is not None:
+                fields[k] = capitalize(fields_got[k])
+        if 'birthDate' in data:
+            fields['birth_date'] = self.set_unclear_date(data['birthDate'], format='d.m.y')
+        if 'deathDate' in data:
+            fields['death_date'] = self.set_unclear_date(data['deathDate'], format='d.m.y')
+        if instance:
+            for k in fields:
+                setattr(instance, k, fields[k])
+            return instance
+        return DeadPerson(**fields)
+
 
 class BaseCustomPersonSerializer(UnclearDateFieldMixin, serializers.HyperlinkedModelSerializer):
     birthDate = serializers.SerializerMethodField('birth_date')

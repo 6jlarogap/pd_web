@@ -17,6 +17,11 @@
         </th>
         <th>
           <span class="badge"
+                ng-show="item.dt_free"
+                tooltip="Свободное ({{ item.dt_free|momentDate:'DD-MM-YYYY HH:mm' }})">
+            <i class="icon-inbox icon-white"></i>
+          </span>
+          <span class="badge"
                 ng-show="item.dt_size_violated"
                 tooltip="Нарушение размеров ({{ item.dt_size_violated|momentDate:'DD-MM-YYYY HH:mm' }})">
             <i class="icon-resize-full icon-white"></i>
@@ -148,7 +153,7 @@
     </table>
   </div>
 
-  <yandex-map id="yandex-map" class="span5" coordinates="placeCoordinates" points="placePoints">
+  <yandex-map id="yandex-map" class="span5" coordinates="placeCoordinates" points="placePoints" zoom="placeMapZoom">
   </yandex-map>
 </div>
 

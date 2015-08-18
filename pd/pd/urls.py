@@ -98,6 +98,19 @@ urlpatterns += patterns('rest_api.views',
     url(r'^manage/place/(?P<id>.*)$', 'base_page'),
 )
 
+# Заглушка
+js_locale_packages = ('django.conf', )
+if settings.SPECIFIC_RU_LOCALE_APP:
+    # 'locale_by' для Беларуси
+    js_locale_packages = (settings.SPECIFIC_RU_LOCALE_APP, )
+js_info_dict = {
+    'packages': js_locale_packages,
+}
+
+urlpatterns += patterns('',
+    url(r'^jsi18n/$', 'django.views.i18n.javascript_catalog', js_info_dict, name='jsi18n'),
+)
+
 # Для включения административных функций (http://.../admin)
 # добавить параметр ADMIN_ENABLED  в pd/local_settings.py (!)
 # и установить его в True

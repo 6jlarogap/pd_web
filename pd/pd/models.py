@@ -3,6 +3,7 @@
 import os, shutil
 import pytils
 import datetime
+from dateutil.relativedelta import relativedelta
 import re
 
 from django.conf import settings
@@ -41,6 +42,8 @@ class UnclearDate:
 
     SAFE_STR_REGEX = r'^(\d{4})(?:\-(\d{2}))?(?:\-(\d{2}))?$'
 
+    VALUE_ERROR_CREATE = 'Invalid data to make an UnclearDate object'
+
     def __init__(self, year, month=None, day=None):
         self.d = datetime.date(year, month or 1, day or 1)
         self.no_day = not day
@@ -48,13 +51,24 @@ class UnclearDate:
 
     def strftime(self, format):
         if self.no_day:
-            format = format.replace('%d.', '')
+            # Убираем день с возможными разделителями (.-/) слева или справа
+            format = re.sub(r'\.\%d|\%d\.|\-\%d|\%d\-|\/\%d|\%d\/', '', format)
+            # Убираем день, если формат был без разделителей
+            format = re.sub(r'\%d', '', format)
         if self.no_month:
-            format = format.replace('%m.', '')
+            # Убираем месяц с возможными разделителями (.-/) слева или справа
+            format = re.sub(r'\.\%m|\%m\.|\-\%m|\%m\-|\/\%m|\%m\/', '', format)
+            # Убираем месяц, если формат был без разделителей
+            format = re.sub(r'\%m', '', format)
 
         if self.d.year < 1900:
-            d1 = datetime.date(1900 + self.d.year % 100, self.d.month, self.d.day)
-            return d1.strftime(format).replace(str(d1.year), str(self.d.year))
+            # Есть проблема в datetime.strftime() с годами раньше 1900 (ValueError exception)
+            # кроме того:
+            #   1600, 1200, ...: в феврале 29 дней (как в 2000)
+            #   1800, 1700, 1500, ...: в феврале 28 дней (как в 1900)
+            d_base = 1900 if self.d.year % 400 else 2000
+            d1 = datetime.date(d_base + self.d.year % 100, self.d.month, self.d.day)
+            return d1.strftime(format).replace(str(d1.year), str(self.d.year).rjust(4, '0'))
         return self.d.strftime(format)
 
     def get_datetime(self):
@@ -66,30 +80,45 @@ class UnclearDate:
     def __unicode__(self):
         return self.strftime('%d.%m.%Y')
 
-    def str_safe(self):
+    def str_safe(self, format=''):
         """
         YYYY or YYYY-MM or YYYY-MM-DD
+
+        Возможен возврат ММ.ДД.ГГГГ, ММ.ГГГГ, ГГГГ при формате 'd.m'y'
         """
-        result = str(self.d.year)
-        if not self.no_month:
-            result += '-%02d' % self.d.month
-        if not self.no_day:
-            result += '-%02d' % self.d.day
+        result = "%04d" % self.d.year
+        if format == 'd.m.y':
+            if not self.no_month:
+                result = '%02d.%s' % (self.d.month, result)
+            if not self.no_day:
+                result = '%02d.%s' % (self.d.day, result)
+        else:
+            if not self.no_month:
+                result += '-%02d' % self.d.month
+            if not self.no_day:
+                result += '-%02d' % self.d.day
         return result
 
     @classmethod
-    def from_str_safe(cls, s):
+    def from_str_safe(cls, s, format=''):
         """
         Сделать UnclearDate из yyyy-mm-dd, yyyy-mm, yyyy, или из None ('null')
+
+        При параметре format='d.m.y.' делаем из нее UnclearDate
         """
+        if s:
+            s = s.strip()
         if not s or s.lower() == 'null':
             return None
-        m = re.search(cls.SAFE_STR_REGEX, s)
-        if not m:
-            raise ValueError('Invalid data to make an UnclearDate object')
-        day = m.group(3)
-        month = m.group(2)
-        year = m.group(1)
+        if format == 'd.m.y':
+            year, month, day = cls.from_str_dmy(s)
+        else:
+            m = re.search(cls.SAFE_STR_REGEX, s)
+            if not m:
+                raise ValueError(cls.VALUE_ERROR_CREATE)
+            day = m.group(3)
+            month = m.group(2)
+            year = m.group(1)
         return cls(
             int(year),
             month and int(month) or None,
@@ -138,7 +167,7 @@ class UnclearDate:
         elif self.no_day and other.no_day:
             self_day = other_day = 0
 
-        fmt = "%d-%02d-%02d"
+        fmt = "%04d-%02d-%02d"
         self_date = fmt % (self.year, self_month, self_day)
         other_date = fmt % (other.year, other_month, other_day)
         return (self_date , other_date, )
@@ -158,7 +187,30 @@ class UnclearDate:
         return self_date > other_date
 
     @classmethod
-    def check_safe_str(cls, s, check_today=False):
+    def from_str_dmy(cls, s):
+        m = re.search(r'^(\d{2})[\.\/\-](\d{2})[\.\/\-](\d{4})$', s)
+        if m:
+            year = int(m.group(3))
+            month = int(m.group(2))
+            day = int(m.group(1))
+        else:
+            m = re.search(r'^(\d{2})[\.\/\-](\d{4})$', s)
+            if m:
+                year = int(m.group(2))
+                month = int(m.group(1))
+                day = None
+            else:
+                m = re.search(r'^(\d{4})$', s)
+                if m:
+                    year = int(m.group(1))
+                    month = None
+                    day = None
+                else:
+                    raise ValueError(cls.VALUE_ERROR_CREATE)
+        return year, month, day
+
+    @classmethod
+    def check_safe_str(cls, s, check_today=False, format=''):
         """
         Проверка правильности строки "гггг-мм-дд", "гггг-мм", "гггг", или None ("null"), если дата не задана
 
@@ -172,22 +224,30 @@ class UnclearDate:
                 s = None
         if s:
             try:
-                m = re.search(cls.SAFE_STR_REGEX, s)
-                if not m:
-                    raise ServiceException(_(u"Неверный формат даты. Допускается ГГГГ-ММ-ДД, ГГГГ-ММ, ГГГГ"))
-                year = m.group(1)
-                month = m.group(2)
-                day = m.group(3)
 
-                year = int(year)
-                if month:
-                    month = int(month)
+                if format == 'd.m.y':
+                    try:
+                        year, month, day = cls.from_str_dmy(s)
+                    except ValueError:
+                        raise ServiceException(_(u"Неверный формат даты. Допускается ММ.ДД.ГГГГ, ММ.ГГГГ, ГГГГ. Вместо . можно - или /"))
+
                 else:
-                    month = None
-                if day:
-                    day = int(day)
-                else:
-                    day = None
+                    m = re.search(cls.SAFE_STR_REGEX, s)
+                    if not m:
+                        raise ServiceException(_(u"Неверный формат даты. Допускается ГГГГ-ММ-ДД, ГГГГ-ММ, ГГГГ"))
+                    year = m.group(1)
+                    month = m.group(2)
+                    day = m.group(3)
+
+                    year = int(year)
+                    if month:
+                        month = int(month)
+                    else:
+                        month = None
+                    if day:
+                        day = int(day)
+                    else:
+                        day = None
 
                 if not year:
                     raise ServiceException(_(u"Неверный год"))
@@ -198,7 +258,7 @@ class UnclearDate:
 
                 if month and day:
                     try:
-                        datetime.datetime.strptime("%d-%02d-%02d" % (year, month, day), "%Y-%m-%d")
+                        datetime.datetime.strptime("%04d-%02d-%02d" % (year, month, day), "%Y-%m-%d")
                     except ValueError:
                         raise ServiceException(_(u"Неверная дата"))
 
@@ -210,6 +270,44 @@ class UnclearDate:
             except ServiceException as excpt:
                 message = excpt.message
         return message
+
+    def diff(self, d):
+        """
+        Сравнить эту UnclearDate c d (UnlearDate or date or datetime)
+
+        Результат: relativedelta: словарь, включающий years, months, days
+        """
+        if not self or not d:
+            raise ValueError(_(u'Одна или обе даты для сравнения не заданы'))
+        last = self.d
+        if self.no_month:
+            try:
+                last = datetime.date(self.d.year, month=12, day=31)
+            # Мало ли что там было при переходе из одного календаря в другой?
+            except ValueError:
+                pass
+        elif self.no_day:
+            for last_day_of_month in range(31, 0, -1):
+                try:
+                    last = datetime.date(self.d.year, month=self.d.month, day=last_day_of_month)
+                except ValueError:
+                    pass
+                else:
+                    break
+        if isinstance(d, UnclearDate):
+            first = d.d
+            try:
+                if d.no_month:
+                    first = datetime.date(d.d.year, month=1, day=1)
+                elif d.no_day:
+                    first = datetime.date(d.d.year, month=d.d.month, day=1)
+            except ValueError:
+                pass
+        elif isinstance(d, datetime.datetime) or isinstance(d, datetime.date):
+            first = d
+        else:
+            raise ValueError(_(u'Неверный тип данного для даты для сравнения'))
+        return relativedelta(last, first)
 
 class UnclearDateCreator(object):
     # http://blog.elsdoerfer.name/2008/01/08/fuzzydates-or-one-django-model-field-multiple-database-columns/
@@ -449,7 +547,10 @@ def validate_phone_as_number(value):
     min_digits = 10
     max_digits = 12
     if not re.search(r'^\d{%d,%d}$' % (min_digits, max_digits, ), str(value)):
-        raise ValidationError(_(u'Неверный номер телефона, надо от %d до %d цифр') % (min_digits, max_digits, ))
+        raise ValidationError(
+            _(u'Неверный номер телефона, надо от %(min_digits)d до %(max_digits)d цифр') % dict(
+                min_digits=min_digits, max_digits=max_digits, 
+        ))
     # Могут приходить и из json rest запросов, просто строки, а не десятичные числа из формы
     if isinstance(value, basestring) and value.startswith('0'):
         raise ValidationError(_(u'Неверный первый знак в телефоне'))

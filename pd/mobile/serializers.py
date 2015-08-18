@@ -80,7 +80,8 @@ class PlaceWithNestedObjectSerializer(BaseSerializer):
     dt_military = serializers.DateTimeField(required=False)
     dt_size_violated = serializers.DateTimeField(required=False)
     dt_unowned = serializers.DateTimeField(required=False)
-    dt_unindentified = serializers.DateTimeField(required=False)    
+    dt_unindentified = serializers.DateTimeField(required=False)
+    dt_free = serializers.DateTimeField(required=False)
     responsible = AlivePersonSerializer(required=False)
     
 class GraveSerializer(BaseSerializer):    

@@ -16,7 +16,9 @@ from geo.models import Location
 from geo.serializers import LocationSerializer
 from pd.serializers import ArchFilesSerializer
 
-from persons.serializers import AlivePersonSerializer, DeadPersonSerializer, PhoneSerializer, ArchPhoneSerializer
+from persons.serializers import AlivePersonSerializer, \
+        DeadPersonSerializer, DeadPerson2Serializer, \
+        PhoneSerializer, ArchPhoneSerializer
 
 from rest_api.fields import UnclearDateFieldSerializer, UnclearDateFieldSafeSerializer
 
@@ -30,14 +32,25 @@ class GetGalleryMixin(object):
         return obj.get_photo_gallery(request) if request else []
 
 class SubCemeterySerializer(serializers.ModelSerializer):
-    """
-    area subelement
-    """
+
     class Meta:
         model = Cemetery
         fields = ('id', 'name')
 
+class CemeteryTitleSerializer(serializers.ModelSerializer):
+    title = serializers.Field('name')
 
+    class Meta:
+        model = Cemetery
+        fields = ('id', 'title')
+
+
+class AreaTitleSerializer(serializers.ModelSerializer):
+    title = serializers.Field('name')
+
+    class Meta:
+        model = Area
+        fields = ('id', 'title')
 
 class AreaPurposeSerializer(serializers.ModelSerializer):
     class Meta:
@@ -114,7 +127,6 @@ class ApiPlacesSerializer(serializers.ModelSerializer):
         else:
             return None
 
- 
 
 class ApiOmsPlacesSerializer(ApiPlacesSerializer):
     cemeteryId = serializers.PrimaryKeyRelatedField(source='cemetery')
@@ -143,6 +155,7 @@ class PlaceSerializer(GetGalleryMixin, serializers.ModelSerializer):
     #available_count = Field(source='available_count')
     responsible_txt = serializers.SerializerMethodField('responsible_str')
     gallery = serializers.SerializerMethodField('gallery_func')
+    dt_free = serializers.DateTimeField(required=False)
     dt_wrong_fio = serializers.DateTimeField(required=False)
     dt_military = serializers.DateTimeField(required=False)
     dt_size_violated = serializers.DateTimeField(required=False)
@@ -155,6 +168,7 @@ class PlaceSerializer(GetGalleryMixin, serializers.ModelSerializer):
         model = Place
         fields = ('id', 'cemetery', 'lat', 'lng', 'area', 'row', 'place', 'responsible', 'responsible_txt',
                   'place_length', 'place_width', 'gallery',
+                  'dt_free',
                   'dt_wrong_fio', 'dt_military', 'dt_size_violated', 'dt_unowned', 'dt_unindentified',
                   'caretaker', 'create_cabinet',
                  ) 
@@ -179,6 +193,28 @@ class PlaceSerializer(GetGalleryMixin, serializers.ModelSerializer):
                 valid = False
         return valid
         
+
+class PlaceLockSerializer(serializers.ModelSerializer):
+    cemeteryName = serializers.Field('cemetery.name')
+    areaName = serializers.Field('area.name')
+    placeName = serializers.Field('place')
+    gallery = serializers.SerializerMethodField('photos_func')
+    burials = serializers.SerializerMethodField('burials_func')
+
+    class Meta:
+        model = Place
+        fields = ('id', 'cemeteryName', 'areaName', 'row', 'placeName', 'gallery', 'burials', )
+
+    def photos_func(self, obj):
+        request = self.context.get('request')
+        return obj.get_photos(request) if request else []
+
+    def burials_func(self, obj):
+        result = []
+        for burial in obj.burial_set.all():
+            if burial.deadman:
+                result.append(DeadPerson2Serializer(burial.deadman).data)
+        return result
 
 class GraveSerializer(serializers.ModelSerializer):
     place = serializers.PrimaryKeyRelatedField()
@@ -333,6 +369,7 @@ class ArchPlaceSerializer(serializers.ModelSerializer):
         model = Place
         fields = ('id', 'cemetery_id', 'area_id', 'row', 'oldplace', 'place',
                   'available_count', 'responsible_id', 'place_length', 'place_width',
+                  'dt_free',
                   'dt_wrong_fio', 'dt_military', 'dt_size_violated', 'dt_unowned', 'dt_unindentified',
                   'lat', 'lng',
         )

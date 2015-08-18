@@ -266,21 +266,21 @@ def get_mail_footer(user):
         is_customer = is_cabinet_user(user)
         pr = user.customerprofile if is_customer else user.profile
         footer = _(     u'\n\n'
-                        u'Пользователь: %s %s %s\n'
-                        u'Email: %s\n'
-                  ) % (
-                        user.username,
-                        '/' if pr.full_name() else '',
-                        pr.full_name(),
-                        user.email or '',
+                        u'Пользователь: %(username)s %(slash)s %(full_name)s\n'
+                        u'Email: %(email)s\n'
+                  ) % dict(
+                        username=user.username,
+                        slash='/' if pr.full_name() else '',
+                        full_name=pr.full_name(),
+                        email=user.email or '',
                        )
         if not is_customer:
             footer += _(    u'\n\n'
-                            u'Организация: %s\n'
-                            u'Email организации: %s\n'
-                        ) % (
-                                pr.org,
-                                pr.org and pr.org.email or '',
+                            u'Организация: %(org)s\n'
+                            u'Email организации: %(email)s\n'
+                        ) % dict(
+                                org=pr.org and pr.org or '',
+                                email=pr.org and pr.org.email or '',
                             )
     return footer
 
@@ -449,12 +449,21 @@ class Oauth(models.Model):
                 r = urllib2.urlopen(url)
                 raw_data = r.read().decode(r.info().getparam('charset') or 'utf-8')
             except urllib2.HTTPError as excpt:
-                raise ServiceException(_(u'Ошибка в ответе от провайдера %s, код: %s, статус: %s%s') % \
-                                        (provider, excpt.getcode(), excpt.reason, msg_debug))
+                raise ServiceException(
+                    _(u'Ошибка в ответе от провайдера %(provider)s, '
+                      u'код: %(code)s, статус: %(reason)s%(msg_debug)s') % dict(
+                        provider=provider,
+                        code=excpt.getcode(),
+                        reason=excpt.reason,
+                        msg_debug=msg_debug
+                ))
             except urllib2.URLError as excpt:
                 reason = u": %s" % excpt.reason if excpt.reason else ''
-                raise ServiceException(_(u'Ошибка связи с провайдером%s%s') % \
-                                        (reason, msg_debug))
+                raise ServiceException(
+                    _(u'Ошибка связи с провайдером%(reason)s%(msg_debug)s') % dict(
+                        reason=reason,
+                        msg_debug=msg_debug,
+            ))
 
             try:
                 data = json.loads(raw_data)
@@ -469,8 +478,10 @@ class Oauth(models.Model):
             except (KeyError, ValueError, ):
                 msg_debug = u" DEBUG: Request: %s. Response: %s" % (url, raw_data, ) \
                             if settings.DEBUG else u""
-                raise ServiceException(_(u"Ошибка интерпретации ответа от провайдера %s.%s") % \
-                                        (provider, msg_debug, ))
+                raise ServiceException(
+                    _(u"Ошибка интерпретации ответа от провайдера %(provider)s.%(msg_debug)s") % dict(
+                        provider=provider, msg_debug=msg_debug,
+                ))
                 
             if not uid:
                 raise ServiceException(_(u'Получен пустой uid от провайдера'))
@@ -641,32 +652,39 @@ class Org(GetLogsMixin, BaseModel):
                              choices=BASIS_CHOICES, default=BASIS_CHARTER)
     email = models.EmailField(_(u"Email"), null=True, blank=True)
     phones = models.TextField(_(u"Телефоны"), blank=True, null=True)
+    fax = models.CharField(_(u"Факс"), max_length=20, default='', blank=True)
     sms_phone = models.DecimalField(_(u"Мобильный телефон для СМС- уведомлений"), max_digits=15, decimal_places=0,
                   blank=True, null=True,
                   help_text=_(u'В международном формате, начиная с кода страны, без "+", например 79101234567'),
                   validators = [validate_phone_as_number, ])
-    fax = models.CharField(_(u"Факс"), max_length=20, default='', blank=True)
+    worktime = models.CharField(_(u"Время работы (ЧЧ:ММ - ЧЧ:ММ)"), max_length=255, default='', blank=True)
+    site = models.URLField(_(u"Сайт"), default='', blank=True)
+    currency = models.ForeignKey('billing.Currency', verbose_name=_(u"Валюта"), default=get_default_currency,
+                                 help_text=_(u' При смене валюты она будет заменена у всех товаров (услуг) без корректировки цен'))
+    is_wholesale_with_vat = models.BooleanField(_(u"Оптовые цены продуктов с НДС"), default=False)
     off_address = models.ForeignKey('geo.Location', verbose_name=_(u"Юр. адрес"), null=True, blank=True)
+    subdomain = models.CharField(_(u"Поддомен"), max_length=255, null=True, editable=False)
+
+    # Блок настроек умолчаний по заказам у ЛОРУ -----------------------------
+    opf_order_customer_mandatory = models.BooleanField(_(u"Данные заказчика при оформлении заказа обязательны"),
+                                    default=True)
+    opf_order = models.CharField(_(u"Заказчик по умолчанию в заказе"), max_length=255,
+                                    choices=list(OPF_CHOICES)[1:], default=OPF_ORG)
+    # ----------------------------------------------------------------------
+
+    # Блок настроек умолчаний по захоронениям -------------------------------
     numbers_algo = models.CharField(_(u"Заполнение номера захоронения"), max_length=255, choices=NUM_TYPES,
                                     default=NUM_MANUAL)
     # название поля не заканчивается на date, чтоб не угодить под специфический datePicker widget для дат:
     opf_burial = models.CharField(_(u"Заявитель по умолчанию в захоронении"), max_length=255,
                                     choices=list(OPF_CHOICES)[1:], default=OPF_ORG)
     death_date_offer = models.BooleanField(_(u"Предлагать дату смерти в новом захоронении"), default=False)
-    opf_order = models.CharField(_(u"Заказчик по умолчанию в заказе"), max_length=255,
-                                    choices=list(OPF_CHOICES)[1:], default=OPF_ORG)
-    opf_order_customer_mandatory = models.BooleanField(_(u"Данные заказчика при оформлении заказа обязательны"),
-                                    default=True)
+    hide_deadman_address = models.BooleanField(_(u"Скрыть адрес усопшего"), default=False)
     # название поля не заканчивается на date, чтоб не угодить под специфический datePicker widget для дат:
     plan_date_days_before = models.PositiveIntegerField(_(u"Кол-во дней для ввода плановой даты захоронения в прошлом"), default=3)
     max_graves_count = models.PositiveIntegerField(_(u"Максимальное число могил в месте"), default=5,
                                 validators=[validate_gt0])
-    worktime = models.CharField(_(u"Время работы (ЧЧ:ММ - ЧЧ:ММ)"), max_length=255, default='', blank=True)
-    site = models.URLField(_(u"Сайт"), default='', blank=True)
-    currency = models.ForeignKey('billing.Currency', verbose_name=_(u"Валюта"), default=get_default_currency,
-                                 help_text=_(u' При смене валюты она будет заменена у всех товаров (услуг) без корректировки цен'))
-    is_wholesale_with_vat = models.BooleanField(_(u"Оптовые цены продуктов с НДС"), default=False)
-    subdomain = models.CharField(_(u"Поддомен"), max_length=255, null=True, editable=False)
+    # ----------------------------------------------------------------------
 
     class Meta:
         verbose_name = _(u'Организация')
@@ -768,6 +786,12 @@ class Org(GetLogsMixin, BaseModel):
             return self.ugh_list.filter(ugh__ability__name=OrgAbility.ABILITY_PERSONAL_DATA).exists()
         else:
             return False
+
+    def is_ugh(self):
+        return self.type == Org.PROFILE_UGH
+
+    def is_loru(self):
+        return self.type == Org.PROFILE_LORU
 
     def is_trade(self):
         return self.ability.filter(name=OrgAbility.ABILITY_TRADE).exists()
@@ -970,8 +994,13 @@ class RegisterProfile(SafeDeleteMixin, BaseModel):
         fio = u'%s %s.' % (self.user_last_name, self.user_first_name[0].upper(), )
         if self.user_middle_name:
             fio += u'%s.' % self.user_middle_name[0].upper()
-        return _(u'Заявка: %s/"%s"/%s/%s/%s') % (self.get_org_type_display(), self.org_name,
-                                                 fio, self.user_name, self.user_email, )
+        return _(u'Заявка: %(type)s/"%(org_name)s"/%(fio)s/%(user_name)s/%(user_email)s') % dict(
+            type=self.get_org_type_display(),
+            org_name=self.org_name,
+            fio=fio,
+            user_name=self.user_name,
+            user_email=self.user_email,
+        )
     
     @transaction.commit_on_success
     def delete(self):

@@ -1,6 +1,6 @@
 # coding=utf-8
 
-import re
+import re, datetime
 
 from django.conf import settings
 from django.contrib import messages
@@ -22,7 +22,7 @@ from django.contrib.contenttypes.models import ContentType
 
 from geo.models import Country, Region, Street, City
 
-from pd.views import RequestToFormMixin, FormInvalidMixin, get_front_end_url
+from pd.views import RequestToFormMixin, FormInvalidMixin, get_front_end_url, ServiceException
 from pd.models import validate_phone_as_number
 from pd.utils import utcisoformat
 
@@ -49,7 +49,8 @@ from django.db import transaction
 from serializers import CemeterySerializer, AreaSerializer, PlaceSerializer, AreaPurposeSerializer, \
     GraveSerializer, BurialSerializer, BurialListSerializer, BurialPutGraveSerializer, \
     AreaPhotoSerializer, ExhumationRequestSerializer, PlaceSizeSerializer, \
-    ApiOmsPlacesSerializer, ApiCatalogPlacesSerializer
+    ApiOmsPlacesSerializer, ApiCatalogPlacesSerializer, PlaceLockSerializer, \
+    CemeteryTitleSerializer, AreaTitleSerializer
 
 from persons.serializers import AlivePersonSerializer, PhoneSerializer
 from users.serializers import UserFioLoginSerializer
@@ -233,9 +234,9 @@ class CemeteryCreate(UGHRequiredMixin, RequestToFormMixin, FormInvalidMixin, Cre
         self.object.ugh = self.request.user.profile.org
         self.object.save()
         write_log(self.request, self.object, _(u'Кладбище создано'))
-        msg = _(u"<a href='%s'>Кладбище %s</a> создано") % (
-            reverse('manage_cemeteries_edit', args=[self.object.pk]),
-            self.object.name,
+        msg = _(u"<a href='%(manage_cemeteries_edit)s'>Кладбище %(cemetery)s</a> создано") % dict(
+            manage_cemeteries_edit=reverse('manage_cemeteries_edit', args=[self.object.pk]),
+            cemetery=self.object.name,
         )
         messages.success(self.request, msg)
         return redirect('manage_cemeteries')
@@ -252,9 +253,9 @@ class CemeteryEdit(UGHRequiredMixin, RequestToFormMixin, FormInvalidMixin, Updat
 
     def form_valid(self, form):
         self.object = form.save()
-        msg = _(u"<a href='%s'>Кладбище %s</a> изменено") % (
-            reverse('manage_cemeteries_edit', args=[self.object.pk]),
-            self.object.name,
+        msg = _(u"<a href='%(manage_cemeteries_edit)s'>Кладбище %(cemetery)s</a> изменено") % dict(
+            manage_cemeteries_edit=reverse('manage_cemeteries_edit', args=[self.object.pk]),
+            cemetery=self.object.name,
         )
         messages.success(self.request, msg)
         return redirect('manage_cemeteries')
@@ -814,9 +815,9 @@ class CemeteryMerge(UGHRequiredMixin, TemplateView):
         if form.is_valid():
             form.save()
             write_log(self.request, self.object, _(u'Участки объединены'))
-            msg = _(u"Участки <a href='%s'>кладбища %s</a> изменены") % (
-                reverse('manage_cemeteries_edit', args=[self.object.pk]),
-                self.object.name,
+            msg = _(u"Участки <a href='%(manage_cemeteries_edit)s'>кладбища %(cemetery)s</a> изменены") % dict(
+                manage_cemeteries_edit=reverse('manage_cemeteries_edit', args=[self.object.pk]),
+                cemetery=self.object.name,
             )
             messages.success(self.request, msg)
             return redirect('manage_cemeteries_edit', self.get_object().pk)
@@ -1139,7 +1140,12 @@ class PlaceCertificateView(UGHRequiredMixin, DetailView):
                 fact_date = _(u"похоронен %s") % burial.fact_date
             else:
                 fact_date = _(u"дата похорон неизвестна")
-            right.append(_(u"№: %s, %s, %s, %s") % (burial.pk, burial.deadman, lived, fact_date ))
+            right.append(_(u"№: %(pk)s, %(deadman)s, %(lived)s, %(fact_date)s") % dict(
+                            pk=burial.pk,
+                            deadman=burial.deadman,
+                            lived=lived,
+                            fact_date=fact_date
+            ))
         if not right:
             right.append(_(u"Нет захоронений"))
         table1 = make_table(left, right)
@@ -1171,9 +1177,9 @@ class PlaceCertificateView(UGHRequiredMixin, DetailView):
         yandex_api_key = None
         if place.cemetery.address and \
            place.cemetery.address.gps_x is not None and place.cemetery.address.gps_y is not None:
-            right.append(_(u"Координаты GPS/ГЛОНАСС: ш. %s, д. %s") % (
-                place.cemetery.address.gps_y,
-                place.cemetery.address.gps_x,
+            right.append(_(u"Координаты GPS/ГЛОНАСС: ш. %(lat)s, д. %(lng)s") % dict(
+                lat=place.cemetery.address.gps_y,
+                lng=place.cemetery.address.gps_x,
             ))
             host = self.request.get_host()
             for key in settings.YANDEX_API_KEYS:
@@ -1195,3 +1201,124 @@ class PlaceCertificateView(UGHRequiredMixin, DetailView):
         )
 
 place_certificate = PlaceCertificateView.as_view()
+
+class ApiOmsPhotoPlaces(APIView):
+    permission_classes = (PermitIfUgh,)
+
+    def get(self, request):
+        place = None
+        # Показать место, с которым работал ранее 
+        with transaction.commit_on_success():
+            try:
+                place = Place.objects.select_for_update().filter(
+                            cemetery__ugh=request.user.profile.org,
+                            is_invent=True,
+                            dt_wrong_fio__isnull=True,
+                            dt_unindentified__isnull=True,
+                            dt_free__isnull=True,
+                            user_processed=request.user,
+                            is_inprocess=True,
+                            dt_processed__isnull=True,
+                    ).order_by('pk')[0]
+            except IndexError:
+                # Если такого места не было, ищем первое среди необработанных
+                try:
+                    place = Place.objects.select_for_update().filter(
+                                cemetery__ugh=request.user.profile.org,
+                                is_invent=True,
+                                is_inprocess=False,
+                                dt_wrong_fio__isnull=True,
+                                dt_unindentified__isnull=True,
+                                dt_free__isnull=True,
+                                dt_processed__isnull=True,
+                        ).order_by('pk')[0]
+                    place.user_processed = request.user
+                    place.is_inprocess = True
+                    place.save()
+                except IndexError:
+                    pass
+        if place:
+            serializer = PlaceLockSerializer(place, context=dict(request=request))
+            data=serializer.data
+        else:
+            data = {}
+        return Response(status=200, data=data)
+
+api_oms_photo_places = ApiOmsPhotoPlaces.as_view()
+
+class ApiOmsPhotoPlacesDetail(APIView):
+    permission_classes = (PermitIfUgh,)
+
+    def get(self, request, pk):
+        place, status, message = Place.check_invent_place(request, pk)
+        if message:
+            return Response(data=dict(status='error', message=message), status=status)
+        return Response(
+            status=200,
+            data=PlaceLockSerializer(place, context=dict(request=request)).data
+        )
+
+    def put(self, request, pk):
+        place, status, message = Place.check_invent_place(request, pk)
+        if message:
+            return Response(data=dict(status='error', message=message), status=status)
+
+        do_save = False
+
+        if 'remakePhotoComment' in request.DATA:
+            do_save = True
+            place.comment_remakephoto = request.DATA['remakePhotoComment']
+
+        remakePhoto = request.DATA.get('remakePhoto')
+        if remakePhoto is not None:
+            do_save = True
+            place.dt_wrong_fio = datetime.datetime.now() if remakePhoto else None
+            if remakePhoto:
+                place.user_processed = None
+                place.is_inprocess = False
+
+        processed = request.DATA.get('processed')
+        if processed is not None:
+            do_save = True
+            place.dt_processed = datetime.datetime.now() if processed else None
+            if not processed:
+                place.user_processed = None
+                place.is_inprocess = False
+
+        if do_save:
+            place.save()
+        return Response(status=status, data={})
+
+api_oms_photo_places_detail = ApiOmsPhotoPlacesDetail.as_view()
+
+class ApiOmsCemeteriesView(APIView):
+    permission_classes = (PermitIfUgh,)
+
+    def get(self, request):
+        return Response(
+            status=200,
+            data=[ CemeteryTitleSerializer(cemetery).data \
+                   for cemetery in Cemetery.objects.filter(ugh=request.user.profile.org)
+            ]
+        )
+
+api_oms_cemeteries = ApiOmsCemeteriesView.as_view()
+
+class ApiOmsCemeteriesAreasView(APIView):
+    permission_classes = (PermitIfUgh,)
+
+    def get(self, request, pk):
+        try:
+            cemetery = Cemetery.objects.get(pk=pk)
+        except Cemetery.DoesNotExist:
+            raise Http404
+        if not cemetery.ugh or cemetery.ugh != request.user.profile.org:
+            raise Http404
+        return Response(
+            status=200,
+            data=[ AreaTitleSerializer(area).data \
+                   for area in Area.objects.filter(cemetery=cemetery)
+            ]
+        )
+
+api_oms_cemeteries_areas = ApiOmsCemeteriesAreasView.as_view()

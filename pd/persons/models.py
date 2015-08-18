@@ -12,7 +12,7 @@ from django.contrib.auth.models import User
 import datetime
 from geo.models import Location, LocationMixin
 from pd.models import UnclearDate, UnclearDateModelField, BaseModel, Files, PhotoModel, validate_phone_as_number
-from pd.utils import utcisoformat
+from pd.utils import utcisoformat, capitalize
 from users.models import Org, PhonesMixin
 
 class IDDocumentType(models.Model):
@@ -132,10 +132,9 @@ class BasePerson(PersonMixin, models.Model):
         return new_person
 
     def save(self, *args, **kwargs):
-        uname = lambda s: s and (s[:1].upper() + s[1:]).strip(' ').strip('*') or ''
-        self.first_name = uname(self.first_name)
-        self.last_name = uname(self.last_name)
-        self.middle_name = uname(self.middle_name)
+        self.first_name = capitalize(self.first_name).strip('*')
+        self.last_name = capitalize(self.last_name).strip('*')
+        self.middle_name = capitalize(self.middle_name).strip('*')
         super(BasePerson, self).save(*args, **kwargs)
 
     class Meta:
@@ -256,7 +255,7 @@ class PersonID(models.Model):
         verbose_name_plural = _(u"Удостоверения личности")
 
     def __unicode__(self):
-        return _(u"%s %s %s") % (self.id_type, self.series, self.number)
+        return u"%s %s %s" % (self.id_type, self.series, self.number)
 
     def save(self, *args, **kwargs):
         self.series = self.series.upper()
@@ -357,7 +356,7 @@ class Phone(BaseModel):
     def __unicode__(self):
          for k, v in self.PHONE_TYPE_CHOICES:  
              if k == self.phonetype:  
-                 return _(u"%s: %s") % (v, self.number)
+                 return u"%s: %s" % (v, self.number)
 
     @classmethod
     def create_default_phones(cls, instance, phones):
