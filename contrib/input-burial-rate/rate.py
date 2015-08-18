@@ -11,7 +11,7 @@ import datetime
 
 from burials.models import Burial
 
-TIME_FORMAT = "%Y-%m-%d %H:%M:%H"
+TIME_FORMAT = "%Y-%m-%d %H:%M:%S"
 
 def main():
     
@@ -24,10 +24,11 @@ def main():
             continue
         current = trunc_msec(b.dt_created)
 
-        print \
-            previous.strftime(TIME_FORMAT), \
-            current.strftime(TIME_FORMAT), \
-            "%10d" % int(round((current-previous).total_seconds()))
+        print "%s,%s,%10d" % (
+            previous.strftime(TIME_FORMAT),
+            current.strftime(TIME_FORMAT),
+            int(round((current-previous).total_seconds()))
+       )
         
         previous = current
 
