@@ -138,7 +138,14 @@
             <td>
                 {% with burial=b %}{% include "burial_place.html" %}{% endwith %}
             </td>
-            <td><b>{{ b.deadman_or_bio }}</b></td>
+            <td><b>{{ b.deadman_or_bio }}</b>
+                {% if b.deadman.birth_date or b.deadman.death_date %}
+                    <br/>
+                    {{ b.deadman.birth_date|default_if_none:"..."}}
+                    &mdash;
+                    {{ b.deadman.death_date|default_if_none:"..." }}
+                {% endif %}
+            </td>
             <td>{{ b.combined_date }}</td>
             <th>
                 {{ b.status_str|default:"" }}
