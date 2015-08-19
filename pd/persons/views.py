@@ -58,9 +58,7 @@ autocomplete_fio = AutocompleteFIO.as_view()
 class AutocompletePersonsMixin(object):
 
     def get_names(self, what, query, limit=None):
-        print 'here'
         valid = True
-        field_name = None
         if not query or not isinstance(query, basestring):
             valid = False
         if valid:
