@@ -188,13 +188,13 @@ class UnclearDate:
 
     @classmethod
     def from_str_dmy(cls, s):
-        m = re.search(r'^(\d{2})[\.\/\-](\d{2})[\.\/\-](\d{4})$', s)
+        m = re.search(r'^(\d{2})[\.\/\-]?(\d{2})[\.\/\-]?(\d{4})$', s)
         if m:
             year = int(m.group(3))
             month = int(m.group(2))
             day = int(m.group(1))
         else:
-            m = re.search(r'^(\d{2})[\.\/\-](\d{4})$', s)
+            m = re.search(r'^(\d{2})[\.\/\-]?(\d{4})$', s)
             if m:
                 year = int(m.group(2))
                 month = int(m.group(1))
@@ -229,7 +229,9 @@ class UnclearDate:
                     try:
                         year, month, day = cls.from_str_dmy(s)
                     except ValueError:
-                        raise ServiceException(_(u"Неверный формат даты. Допускается ММ.ДД.ГГГГ, ММ.ГГГГ, ГГГГ. Вместо . можно - или /"))
+                        raise ServiceException(_(
+                            u"Неверный формат даты. "
+                            u"Допускается ММ.ДД.ГГГГ, ММ.ГГГГ, ГГГГ. '.' можно опустить или вместо нее: - ,/"))
 
                 else:
                     m = re.search(cls.SAFE_STR_REGEX, s)
@@ -254,7 +256,7 @@ class UnclearDate:
                 if month is not None and not (1 <= month <= 12):
                     raise ServiceException(_(u"Неверный месяц"))
                 if day is not None and not (1 <= day <= 31):
-                    raise ServiceException(_(u"Неверный день месяца"))
+                    raise ServiceException(_(u"Неверный день"))
 
                 if month and day:
                     try:
