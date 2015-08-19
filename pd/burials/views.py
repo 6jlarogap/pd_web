@@ -1308,12 +1308,11 @@ class ApiOmsCemeteriesAreasView(APIView):
     permission_classes = (PermitIfUgh,)
 
     def get(self, request, pk):
-        try:
-            cemetery = Cemetery.objects.get(pk=pk)
-        except Cemetery.DoesNotExist:
-            raise Http404
-        if not cemetery.ugh or cemetery.ugh != request.user.profile.org:
-            raise Http404
+        cemetery = get_object_or_404(
+            Cemetery,
+            pk=pk,
+            ugh=request.user.profile.org
+        )
         return Response(
             status=200,
             data=[ AreaTitleSerializer(area).data \
@@ -1322,3 +1321,22 @@ class ApiOmsCemeteriesAreasView(APIView):
         )
 
 api_oms_cemeteries_areas = ApiOmsCemeteriesAreasView.as_view()
+
+class ApiOmsAreasPlacesView(APIView):
+    permission_classes = (PermitIfUgh,)
+
+    def get(self, request, cemetery_pk, area_pk):
+        area = get_object_or_404(
+            Area,
+            cemetery__pk=cemetery_pk,
+            pk=area_pk,
+            cemetery__ugh=request.user.profile.org
+        )
+        return Response(
+            status=200,
+            data=[ place.place \
+                   for place in Place.objects.filter(area=area)
+            ]
+        )
+
+api_oms_areas_places = ApiOmsAreasPlacesView.as_view()
