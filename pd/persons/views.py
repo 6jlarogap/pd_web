@@ -55,21 +55,51 @@ class AutocompleteFIO(View):
 
 autocomplete_fio = AutocompleteFIO.as_view()
 
-class AutocompleteFirstName(View):
-    def get(self, request, *args, **kwargs):
-        query = request.GET['query']
-        first_names = BasePerson.objects.filter(first_name__istartswith=query).order_by('first_name').distinct('first_name')
-        return HttpResponse(json.dumps([{'value': c.first_name} for c in first_names[:20]]), mimetype='text/javascript')
+class AutocompletePersonsMixin(object):
 
-autocomplete_first_name = AutocompleteFirstName.as_view()
+    def get_names(self, what, query, limit=None):
+        print 'here'
+        valid = True
+        field_name = None
+        if not query or not isinstance(query, basestring):
+            valid = False
+        if valid:
+            field_map = dict(firstname='first_name', middlename='middle_name')
+            try:
+                field_name = field_map[what.lower()]
+            except (AttributeError, KeyError):
+                # не строка (AttributeError при lower()); нет в словаре (KeyError)
+                valid = False
+        if valid:
+            q_kwargs = { '%s__istartswith' % field_name: query }
+            qs = BasePerson.objects.filter(**q_kwargs).order_by(field_name).distinct(field_name)
+            if limit:
+                qs = qs[:limit]
+            return  [ getattr(c, field_name) for c in qs ]
+        else:
+            return []
 
-class AutocompleteMiddleName(View):
-    def get(self, request, *args, **kwargs):
-        query = request.GET['query']
-        middle_names = BasePerson.objects.filter(middle_name__istartswith=query).order_by('middle_name').distinct('middle_name')
-        return HttpResponse(json.dumps([{'value': c.middle_name} for c in middle_names[:20]]), mimetype='text/javascript')
+class AutocompleteName(AutocompletePersonsMixin, View):
+    def get(self, request, what, *args, **kwargs):
+        query = request.GET.get('query')
+        names = [ {'value': name} for name in self.get_names(what, query, limit=20) ]
+        return HttpResponse(json.dumps(names), mimetype='text/javascript')
 
-autocomplete_middle_name = AutocompleteMiddleName.as_view()
+autocomplete_name = AutocompleteName.as_view()
+
+class ApiAutocompletePersons(AutocompletePersonsMixin, APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request):
+        return Response(
+            data=[ name for name in self.get_names(
+                request.GET.get('type'),
+                request.GET.get('query')
+            )],
+            status=200
+        )
+
+api_autocomplete_persons = ApiAutocompletePersons.as_view()
 
 class AutocompleteAlive(View):
     def get(self, request, *args, **kwargs):
