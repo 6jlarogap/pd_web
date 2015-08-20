@@ -417,7 +417,7 @@ class ApiGraveUpload(APIView):
             prevGrave = None            
             grave = Grave(place = place, grave_number = place.get_graves_count() + 1, is_military = isMilitary, is_wrong_fio = isWrongFIO)
             grave.save()
-            write_log(request, grave, _(u"Могила '%s' создана через мобильное приложение") % grave.grave_number )
+            write_log(request, place, _(u"Могила '%s' создана через мобильное приложение") % grave.grave_number )
             listInsertedGrave.append(grave)            
         serializer = GraveSerializer(listInsertedGrave)
         return Response(serializer.data)
