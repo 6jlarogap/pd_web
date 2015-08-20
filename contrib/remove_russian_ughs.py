@@ -15,6 +15,7 @@ from django.db.models.query_utils import Q
 
 from django.contrib.auth.models import User
 from users.models import Org, ProfileLORU, Profile, Dover, OrgCertificate, CustomerProfile
+from logs.models import Log
 from burials.models import Cemetery, CemeteryCoordinates, Area, AreaCoordinates, \
                            Place, PlaceSize, PlacePhoto, Grave, \
                            Burial, BurialFiles, Reason, ExhumationRequest, \
@@ -152,6 +153,7 @@ def main():
                 customerprofile = user.customerprofile
                 customerprofile.user = None
                 customerprofile.save()
+                Log.objects.filter(user=user).delete()
                 user.delete()
                 customerprofile.delete()
             if i % 100 == 0:
@@ -182,6 +184,7 @@ def remove_org(org):
         user = profile.user
         profile.user = None
         profile.save()
+        Log.objects.filter(user=user).delete()
         user.delete()
         profile.delete()
     if org.off_address:
