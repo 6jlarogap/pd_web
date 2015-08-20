@@ -12,7 +12,6 @@ import sys
 
 from django.db import transaction, IntegrityError
 from django.db.models.query_utils import Q
-from django.db.models.query_utils import Q
 
 from django.contrib.auth.models import User
 from users.models import Org, ProfileLORU, Profile, Dover, OrgCertificate, CustomerProfile
@@ -127,7 +126,6 @@ def main():
 
         print 'removing burials'
         ExhumationRequest.objects.filter(burial__ugh=ugh).delete()
-        BurialComment.objects.filter(burial__ugh=ugh).delete()
         BurialFiles.objects.filter(burial__ugh=ugh).delete()
         BurialComment.objects.filter(burial__ugh=ugh).delete()
         Burial.objects.filter(ugh=ugh).delete()
