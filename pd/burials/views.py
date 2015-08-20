@@ -1264,29 +1264,45 @@ class ApiOmsPhotoPlacesDetail(APIView):
             return Response(data=dict(status='error', message=message), status=status)
 
         do_save = False
-
-        if 'remakePhotoComment' in request.DATA:
-            do_save = True
-            place.comment_remakephoto = request.DATA['remakePhotoComment']
+        log_messages = []
 
         remakePhoto = request.DATA.get('remakePhoto')
-        if remakePhoto is not None:
+        remake_photo_comment = request.DATA.get('remakePhotoComment')
+
+        if 'remakePhoto' in request.DATA:
             do_save = True
             place.dt_wrong_fio = datetime.datetime.now() if remakePhoto else None
             if remakePhoto:
                 place.user_processed = None
                 place.is_inprocess = False
+                if not remake_photo_comment:
+                    log_messages.append(_(u'Заказано повторное фото места'))
+
+        if 'remakePhotoComment' in request.DATA:
+            do_save = True
+            place.comment_remakephoto = remake_photo_comment
+            if remake_photo_comment:
+                log_messages.append(_(u'Заказано повторное фото места: %s') % remake_photo_comment)
+            else:
+                log_messages.append(_(u'Удален комментарий о повторном фото места'))
 
         processed = request.DATA.get('processed')
-        if processed is not None:
+        if 'processed' in request.DATA:
             do_save = True
-            place.dt_processed = datetime.datetime.now() if processed else None
-            if not processed:
+            if processed:
+                place.dt_processed = datetime.datetime.now()
+                log_messages.append(_(u'Фотографии места обработаны'))
+            else:
+                place.dt_processed = None
                 place.user_processed = None
                 place.is_inprocess = False
+                log_messages.append(_(u'Фотографии места могут быть обработаны повторно'))
 
-        if do_save:
-            place.save()
+        with transaction.commit_on_success():
+            if do_save:
+                place.save()
+            for m in log_messages:
+                write_log(request, place, m)
         return Response(status=status, data={})
 
 api_oms_photo_places_detail = ApiOmsPhotoPlacesDetail.as_view()
@@ -1308,12 +1324,11 @@ class ApiOmsCemeteriesAreasView(APIView):
     permission_classes = (PermitIfUgh,)
 
     def get(self, request, pk):
-        try:
-            cemetery = Cemetery.objects.get(pk=pk)
-        except Cemetery.DoesNotExist:
-            raise Http404
-        if not cemetery.ugh or cemetery.ugh != request.user.profile.org:
-            raise Http404
+        cemetery = get_object_or_404(
+            Cemetery,
+            pk=pk,
+            ugh=request.user.profile.org
+        )
         return Response(
             status=200,
             data=[ AreaTitleSerializer(area).data \
@@ -1322,3 +1337,22 @@ class ApiOmsCemeteriesAreasView(APIView):
         )
 
 api_oms_cemeteries_areas = ApiOmsCemeteriesAreasView.as_view()
+
+class ApiOmsAreasPlacesView(APIView):
+    permission_classes = (PermitIfUgh,)
+
+    def get(self, request, cemetery_pk, area_pk):
+        area = get_object_or_404(
+            Area,
+            cemetery__pk=cemetery_pk,
+            pk=area_pk,
+            cemetery__ugh=request.user.profile.org
+        )
+        return Response(
+            status=200,
+            data=[ place.place \
+                   for place in Place.objects.filter(area=area)
+            ]
+        )
+
+api_oms_areas_places = ApiOmsAreasPlacesView.as_view()
