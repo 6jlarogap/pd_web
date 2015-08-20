@@ -282,7 +282,10 @@ class AreaViewSet(CaretakerMixin, viewsets.ModelViewSet):
             old = None
         except AttributeError:
             old = None
-        log_object(self.request, obj=object, old=old, new=object, reason=_(u'Участок изменен'))
+        if old:
+            log_object(self.request, obj=object, old=old, new=object, reason=_(u'Участок изменен'))
+        else:
+            write_log(self.request, object.cemetery, _(u'Создан участок: %s') % object)
 
 
     def retrieve(self, request, *args, **kwargs):
