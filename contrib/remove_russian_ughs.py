@@ -19,7 +19,7 @@ from logs.models import Log
 from burials.models import Cemetery, CemeteryCoordinates, Area, AreaCoordinates, \
                            Place, PlaceSize, PlacePhoto, Grave, \
                            Burial, BurialFiles, Reason, ExhumationRequest, \
-                           BurialComment
+                           BurialComment, PlaceStatus, AreaPhoto, PlaceStatusFiles
 from orders.models import Order, OrderItem, ServiceItem, OrgService, OrgServicePrice, \
                           OrderComment, ResultFile
 from persons.models import DeadPerson, AlivePerson, CustomPlace
@@ -162,9 +162,12 @@ def main():
         print 'removing places'
         PlaceSize.objects.filter(org=ugh).delete()
         PlacePhoto.objects.filter(place__cemetery__ugh=ugh).delete()
+        PlaceStatusFiles.objects.filter(placestatus__place__cemetery__ugh=ugh).delete()
+        PlaceStatus.objects.filter(place__cemetery__ugh=ugh).delete()
         Place.objects.filter(cemetery__ugh=ugh).delete()
 
         print 'removing areas'
+        AreaPhoto.objects.filter(area__cemetery__ugh=ugh).delete()
         AreaCoordinates.objects.filter(area__cemetery__ugh=ugh).delete()
         Area.objects.filter(cemetery__ugh=ugh).delete()
         print 'removing cemeteries'
