@@ -15,10 +15,11 @@ from django.db.models.query_utils import Q
 
 from django.contrib.auth.models import User
 from users.models import Org, ProfileLORU, Profile, Dover, OrgCertificate, CustomerProfile
+from logs.models import Log
 from burials.models import Cemetery, CemeteryCoordinates, Area, AreaCoordinates, \
                            Place, PlaceSize, PlacePhoto, Grave, \
                            Burial, BurialFiles, Reason, ExhumationRequest, \
-                           BurialComment
+                           BurialComment, PlaceStatus, AreaPhoto, PlaceStatusFiles
 from orders.models import Order, OrderItem, ServiceItem, OrgService, OrgServicePrice, \
                           OrderComment, ResultFile
 from persons.models import DeadPerson, AlivePerson, CustomPlace
@@ -152,6 +153,7 @@ def main():
                 customerprofile = user.customerprofile
                 customerprofile.user = None
                 customerprofile.save()
+                Log.objects.filter(user=user).delete()
                 user.delete()
                 customerprofile.delete()
             if i % 100 == 0:
@@ -160,9 +162,12 @@ def main():
         print 'removing places'
         PlaceSize.objects.filter(org=ugh).delete()
         PlacePhoto.objects.filter(place__cemetery__ugh=ugh).delete()
+        PlaceStatusFiles.objects.filter(placestatus__place__cemetery__ugh=ugh).delete()
+        PlaceStatus.objects.filter(place__cemetery__ugh=ugh).delete()
         Place.objects.filter(cemetery__ugh=ugh).delete()
 
         print 'removing areas'
+        AreaPhoto.objects.filter(area__cemetery__ugh=ugh).delete()
         AreaCoordinates.objects.filter(area__cemetery__ugh=ugh).delete()
         Area.objects.filter(cemetery__ugh=ugh).delete()
         print 'removing cemeteries'
@@ -182,6 +187,7 @@ def remove_org(org):
         user = profile.user
         profile.user = None
         profile.save()
+        Log.objects.filter(user=user).delete()
         user.delete()
         profile.delete()
     if org.off_address:
