@@ -52,6 +52,13 @@ class AreaTitleSerializer(serializers.ModelSerializer):
         model = Area
         fields = ('id', 'title')
 
+class PlaceTitleSerializer(serializers.ModelSerializer):
+    title = serializers.Field('place')
+
+    class Meta:
+        model = Place
+        fields = ('id', 'title')
+
 class AreaPurposeSerializer(serializers.ModelSerializer):
     class Meta:
         model = AreaPurpose
@@ -195,15 +202,18 @@ class PlaceSerializer(GetGalleryMixin, serializers.ModelSerializer):
         
 
 class PlaceLockSerializer(serializers.ModelSerializer):
-    cemeteryName = serializers.Field('cemetery.name')
-    areaName = serializers.Field('area.name')
-    placeName = serializers.Field('place')
+    cemetery = CemeteryTitleSerializer('cemetery')
+    area = AreaTitleSerializer('area')
+    place = serializers.SerializerMethodField('place_func')
     gallery = serializers.SerializerMethodField('photos_func')
     burials = serializers.SerializerMethodField('burials_func')
 
     class Meta:
         model = Place
-        fields = ('id', 'cemeteryName', 'areaName', 'row', 'placeName', 'gallery', 'burials', )
+        fields = ('id', 'cemetery', 'area', 'row', 'place', 'gallery', 'burials', )
+
+    def place_func(self, obj):
+        return PlaceTitleSerializer(obj).data
 
     def photos_func(self, obj):
         request = self.context.get('request')

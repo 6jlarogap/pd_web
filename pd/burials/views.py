@@ -50,7 +50,7 @@ from serializers import CemeterySerializer, AreaSerializer, PlaceSerializer, Are
     GraveSerializer, BurialSerializer, BurialListSerializer, BurialPutGraveSerializer, \
     AreaPhotoSerializer, ExhumationRequestSerializer, PlaceSizeSerializer, \
     ApiOmsPlacesSerializer, ApiCatalogPlacesSerializer, PlaceLockSerializer, \
-    CemeteryTitleSerializer, AreaTitleSerializer
+    CemeteryTitleSerializer, AreaTitleSerializer, PlaceTitleSerializer
 
 from persons.serializers import AlivePersonSerializer, PhoneSerializer
 from users.serializers import UserFioLoginSerializer
@@ -1353,9 +1353,8 @@ class ApiOmsAreasPlacesView(APIView):
         )
         return Response(
             status=200,
-            data=[ place.place \
+            data=[ PlaceTitleSerializer(place).data \
                    for place in Place.objects.filter(area=area)
-            ]
-        )
+            ])
 
 api_oms_areas_places = ApiOmsAreasPlacesView.as_view()

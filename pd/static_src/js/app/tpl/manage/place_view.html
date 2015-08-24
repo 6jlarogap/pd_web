@@ -93,7 +93,7 @@
       <tr ng-show="placeGalleryFirstPhoto">
         <td colspan="2">
           <img ng-click="openEditForm('isPlaceGalleryOpen', placeGallery)"
-               class="first-photo" ng-src="{{ placeGalleryFirstPhoto.photo | thumbnail:233:134:'scale' }} "/>
+               class="first-photo" ng-src="{{ placeGalleryFirstPhoto.photo | thumbnail:300:225:'scale' }} "/>
         </td>
       </tr>
 
@@ -302,7 +302,7 @@
   <div class="modal-body">
     <div class="row">
       <div class="span9">
-        <img ng-show="currentImage" ng-src="{{currentImage.photo|thumbnail:600:430:'scale'}}"/>
+        <img ng-show="currentImage" ng-src="{{currentImage.photo|thumbnail:300:225:'scale'}}"/>
         <img ng-hide="currentImage" alt="Нет фотографии"
              src="/static/no-image.png" width="265px" height="265px"/>
       </div>
