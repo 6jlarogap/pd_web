@@ -69,7 +69,7 @@ BURIAL_VIEWS_SQL = """
     END
     AS place_number_s3,
 
-    id AS burialpk_id
+    id AS burial_id
 
     FROM burials_burial;
 """

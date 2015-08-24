@@ -1459,7 +1459,7 @@ class Burial1(BaseModel):
     # Необходимо для поиска типа Burial1.objects.filter(burialpk__burial__burialcomment__...),
     # ибо поиск Burial1.objects.filter(burialcomment__...) даст ошибку
     #
-    burialpk = models.ForeignKey(Burial, verbose_name=_(u"Захоронение"))
+    burial = models.ForeignKey(Burial, verbose_name=_(u"Захоронение"))
 
     class Meta:
         verbose_name = _(u"Захоронение")
