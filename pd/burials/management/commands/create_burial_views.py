@@ -67,13 +67,18 @@ BURIAL_VIEWS_SQL = """
             THEN ''
         ELSE substring(place_number FROM '[^[:digit:]]*[[:digit:]]*(.*)')
     END
-    AS place_number_s3
+    AS place_number_s3,
+
+    id AS burialpk_id
 
     FROM burials_burial;
 """
 
+BURIAL_DROP_VIEWS_SQL = "DROP VIEW burials_burial1;"
+
 from django.db import connection
 from django.core.management.base import BaseCommand
+from django.db.utils import DatabaseError
 
 class Command(BaseCommand):
     args = 'yes, if you mean to execute this command'
@@ -85,4 +90,8 @@ class Command(BaseCommand):
             print "Give 'yes' as a single parameter if you mean to create/replace burial view(s)"
             quit()
         cursor = connection.cursor()
-        cursor.execute(BURIAL_VIEWS_SQL)
+        try:
+            cursor.execute(BURIAL_VIEWS_SQL)
+        except DatabaseError:
+            cursor.execute(BURIAL_DROP_VIEWS_SQL)
+            cursor.execute(BURIAL_VIEWS_SQL)
