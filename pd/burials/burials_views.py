@@ -579,7 +579,7 @@ class BurialsListView(PaginateListView):
                 burials = burials.filter(annulated=False)
 
             if form.cleaned_data.get('comment'):
-                burials = burials.filter(burialcomment__comment__icontains=form.cleaned_data['comment'])
+                burials = burials.filter(burial__burialcomment__comment__icontains=form.cleaned_data['comment'])
 
             if form.cleaned_data.get('status') == Burial.STATUS_EXHUMATED:
                 burials = burials.filter(status=Burial.STATUS_EXHUMATED)

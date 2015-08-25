@@ -84,7 +84,10 @@ class Command(BaseCommand):
                 ~Q(
                     burial_container=Burial.CONTAINER_BIO,
                 )
-
+            print "    %s: %s" % (
+                u"Cemetery" if len(cemeteries) == 1 else u"Cemeteries",
+                u", ".join([cemetery.name for cemetery in cemeteries]),
+            )
             burials = Burial.objects.filter(q).order_by(
                 "deadman__last_name",
                 "deadman__first_name",
