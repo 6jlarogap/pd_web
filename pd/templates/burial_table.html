@@ -2,87 +2,123 @@
 <tr>
     {% if user.profile.is_loru %}
         <th>
-            {% if sort == '-pk' %}
-                {% if sort == '-pk' %}<i class="icon icon-arrow-down"></i>{% endif %}
-                <a href="?{{ GET_PARAMS }}&sort=pk">{% trans "Номер" %}</a>
+            {% if request.GET.print %}
+                {% trans "Номер" %}
             {% else %}
-                {% if sort == 'pk' %}<i class="icon icon-arrow-up"></i>{% endif %}
-                <a href="?{{ GET_PARAMS }}&sort=-pk">{% trans "Номер" %}</a>
+                {% if sort == '-pk' %}
+                    {% if sort == '-pk' %}<i class="icon icon-arrow-down"></i>{% endif %}
+                    <a href="?{{ GET_PARAMS }}&sort=pk">{% trans "Номер" %}</a>
+                {% else %}
+                    {% if sort == 'pk' %}<i class="icon icon-arrow-up"></i>{% endif %}
+                    <a href="?{{ GET_PARAMS }}&sort=-pk">{% trans "Номер" %}</a>
+                {% endif %}
             {% endif %}
         </th>
     {% endif %}
     <th>
-        {% if sort == 'account_number' %}
-            {% if sort == 'account_number' %}<i class="icon icon-arrow-up"></i>{% endif %}
-            <a href="?{{ GET_PARAMS }}&sort=-account_number">{% trans "Номер в книге" %}</a>
+        {% if request.GET.print %}
+            {% trans "Номер в книге" %}
         {% else %}
-            {% if sort == '-account_number' %}<i class="icon icon-arrow-down"></i>{% endif %}
-            <a href="?{{ GET_PARAMS }}&sort=account_number">{% trans "Номер в книге" %}</a>
+            {% if sort == 'account_number' %}
+                {% if sort == 'account_number' %}<i class="icon icon-arrow-up"></i>{% endif %}
+                <a href="?{{ GET_PARAMS }}&sort=-account_number">{% trans "Номер в книге" %}</a>
+            {% else %}
+                {% if sort == '-account_number' %}<i class="icon icon-arrow-down"></i>{% endif %}
+                <a href="?{{ GET_PARAMS }}&sort=account_number">{% trans "Номер в книге" %}</a>
+            {% endif %}
         {% endif %}
     </th>
     {% if user.profile.is_ugh %}
         <th>
-            {% if sort == 'source' %}
-                {% if sort == 'source' %}<i class="icon icon-arrow-up"></i>{% endif %}
-                <a href="?{{ GET_PARAMS }}&sort=-source">{% trans "Источник" %}</a>
+            {% if request.GET.print %}
+                {% trans "Источник" %}
             {% else %}
-                {% if sort == '-source' %}<i class="icon icon-arrow-down"></i>{% endif %}
-                <a href="?{{ GET_PARAMS }}&sort=source">{% trans "Источник" %}</a>
+                {% if sort == 'source' %}
+                    {% if sort == 'source' %}<i class="icon icon-arrow-up"></i>{% endif %}
+                    <a href="?{{ GET_PARAMS }}&sort=-source">{% trans "Источник" %}</a>
+                {% else %}
+                    {% if sort == '-source' %}<i class="icon icon-arrow-down"></i>{% endif %}
+                    <a href="?{{ GET_PARAMS }}&sort=source">{% trans "Источник" %}</a>
+                {% endif %}
             {% endif %}
         </th>
     {% endif %}
     <th>
-        {% if sort == 'applicant' %}
-            {% if sort == 'applicant' %}<i class="icon icon-arrow-up"></i>{% endif %}
-            <a href="?{{ GET_PARAMS }}&sort=-applicant">{% trans "Заявитель" %}</a>
+        {% if request.GET.print %}
+            {% trans "Заявитель" %}
         {% else %}
-            {% if sort == '-applicant' %}<i class="icon icon-arrow-down"></i>{% endif %}
-            <a href="?{{ GET_PARAMS }}&sort=applicant">{% trans "Заявитель" %}</a>
+            {% if sort == 'applicant' %}
+                {% if sort == 'applicant' %}<i class="icon icon-arrow-up"></i>{% endif %}
+                <a href="?{{ GET_PARAMS }}&sort=-applicant">{% trans "Заявитель" %}</a>
+            {% else %}
+                {% if sort == '-applicant' %}<i class="icon icon-arrow-down"></i>{% endif %}
+                <a href="?{{ GET_PARAMS }}&sort=applicant">{% trans "Заявитель" %}</a>
+            {% endif %}
         {% endif %}
     </th>
     <th>
-        {% if sort == 'cemetery' %}
-            {% if sort == 'cemetery' %}<i class="icon icon-arrow-up"></i>{% endif %}
-            <a href="?{{ GET_PARAMS }}&sort=-cemetery">{% trans "Кладбище" %}</a>
+        {% if request.GET.print %}
+            {% trans "Кладбище" %}
         {% else %}
-            {% if sort == '-cemetery' %}<i class="icon icon-arrow-down"></i>{% endif %}
-            <a href="?{{ GET_PARAMS }}&sort=cemetery">{% trans "Кладбище" %}</a>
+            {% if sort == 'cemetery' %}
+                {% if sort == 'cemetery' %}<i class="icon icon-arrow-up"></i>{% endif %}
+                <a href="?{{ GET_PARAMS }}&sort=-cemetery">{% trans "Кладбище" %}</a>
+            {% else %}
+                {% if sort == '-cemetery' %}<i class="icon icon-arrow-down"></i>{% endif %}
+                <a href="?{{ GET_PARAMS }}&sort=cemetery">{% trans "Кладбище" %}</a>
+            {% endif %}
         {% endif %}
     </th>
     <th>
-        {% if sort == 'place' %}
-            {% if sort == 'place' %}<i class="icon icon-arrow-up"></i>{% endif %}
-            <a href="?{{ GET_PARAMS }}&sort=-place">{% trans "Место" %}</a>
+        {% if request.GET.print %}
+            {% trans "Место" %}
         {% else %}
-            {% if sort == '-place' %}<i class="icon icon-arrow-down"></i>{% endif %}
-            <a href="?{{ GET_PARAMS }}&sort=place">{% trans "Место" %}</a>
+            {% if sort == 'place' %}
+                {% if sort == 'place' %}<i class="icon icon-arrow-up"></i>{% endif %}
+                <a href="?{{ GET_PARAMS }}&sort=-place">{% trans "Место" %}</a>
+            {% else %}
+                {% if sort == '-place' %}<i class="icon icon-arrow-down"></i>{% endif %}
+                <a href="?{{ GET_PARAMS }}&sort=place">{% trans "Место" %}</a>
+            {% endif %}
         {% endif %}
     </th>
     <th>
-        {% if sort == 'fio' %}
-            {% if sort == 'fio' %}<i class="icon icon-arrow-up"></i>{% endif %}
-            <a href="?{{ GET_PARAMS }}&sort=-fio"><big>{% trans "Усопший" %}</big></a>
+        {% if request.GET.print %}
+            {% trans "Усопший" %}
         {% else %}
-            {% if sort == '-fio' %}<i class="icon icon-arrow-down"></i>{% endif %}
-            <a href="?{{ GET_PARAMS }}&sort=fio"><big>{% trans "Усопший" %}</big></a>
+            {% if sort == 'fio' %}
+                {% if sort == 'fio' %}<i class="icon icon-arrow-up"></i>{% endif %}
+                <a href="?{{ GET_PARAMS }}&sort=-fio"><big>{% trans "Усопший" %}</big></a>
+            {% else %}
+                {% if sort == '-fio' %}<i class="icon icon-arrow-down"></i>{% endif %}
+                <a href="?{{ GET_PARAMS }}&sort=fio"><big>{% trans "Усопший" %}</big></a>
+            {% endif %}
         {% endif %}
     </th>
     <th>
-        {% if sort == '-fact_date' %}
-            {% if sort == '-fact_date' %}<i class="icon icon-arrow-down"></i>{% endif %}
-            <a href="?{{ GET_PARAMS }}&sort=fact_date">{% trans "Дата" %}</a>
+        {% if request.GET.print %}
+            {% trans "Дата" %}
         {% else %}
-            {% if sort == 'fact_date' %}<i class="icon icon-arrow-up"></i>{% endif %}
-            <a href="?{{ GET_PARAMS }}&sort=-fact_date">{% trans "Дата" %}</a>
+            {% if sort == '-fact_date' %}
+                {% if sort == '-fact_date' %}<i class="icon icon-arrow-down"></i>{% endif %}
+                <a href="?{{ GET_PARAMS }}&sort=fact_date">{% trans "Дата" %}</a>
+            {% else %}
+                {% if sort == 'fact_date' %}<i class="icon icon-arrow-up"></i>{% endif %}
+                <a href="?{{ GET_PARAMS }}&sort=-fact_date">{% trans "Дата" %}</a>
+            {% endif %}
         {% endif %}
     </th>
     <th>
-        {% if sort == 'status' %}
-            {% if sort == 'status' %}<i class="icon icon-arrow-up"></i>{% endif %}
-            <a href="?{{ GET_PARAMS }}&sort=-status">{% trans "Статус" %}</a>
+        {% if request.GET.print %}
+            {% trans "Статус" %}
         {% else %}
-            {% if sort == '-status' %}<i class="icon icon-arrow-down"></i>{% endif %}
-            <a href="?{{ GET_PARAMS }}&sort=status">{% trans "Статус" %}</a>
+            {% if sort == 'status' %}
+                {% if sort == 'status' %}<i class="icon icon-arrow-up"></i>{% endif %}
+                <a href="?{{ GET_PARAMS }}&sort=-status">{% trans "Статус" %}</a>
+            {% else %}
+                {% if sort == '-status' %}<i class="icon icon-arrow-down"></i>{% endif %}
+                <a href="?{{ GET_PARAMS }}&sort=status">{% trans "Статус" %}</a>
+            {% endif %}
         {% endif %}
     </th>
     <th>
