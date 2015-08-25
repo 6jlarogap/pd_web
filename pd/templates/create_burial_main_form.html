@@ -222,8 +222,9 @@
 
 <div id="cont_responsible_all">
     <h2>
-        {% trans "Ответственный" %} {{ form.responsible_form.instance|default:"" }}
+        {% trans "Ответственный" %}
     </h2>
+    <p><big>{{ form.responsible_form.instance|default:"" }}</big></p>
 
 <a href="#" onclick="return contShowHide('#cont_responsible', '#a_cont_responsible', '{% trans 'развернуть' %}', '{% trans 'свернуть' %}');"
     class="slider" data-id="cont_responsible" id="a_cont_responsible">{% trans "развернуть" %}</a>

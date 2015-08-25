@@ -19,9 +19,8 @@ msgstr ""
 
 # Для получения po - словаря выполнить: msgfmt django.po -o django.mo
 
-msgid "Кладбище"
-msgstr ""
-# msgstr "Место погребения"
+msgid "Ответственный"
+msgstr "Ответственный за надмогильные сооружения"
 
 msgid "Кладбище + год"
 msgstr ""

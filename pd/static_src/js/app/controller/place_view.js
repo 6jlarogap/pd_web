@@ -14,6 +14,9 @@
   $scope.log_page = 1;
   $scope.loading = false;
   $scope.edit_resp = false;
+  $scope.localeText = {
+      responsible: gettext("Ответственный")
+  };
   $scope.editor = {
     isAddressEdited: false,
     isResponsibleEdited: false,
