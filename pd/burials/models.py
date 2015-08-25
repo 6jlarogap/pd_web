@@ -1455,6 +1455,12 @@ class Burial1(BaseModel):
     annulated = models.BooleanField(_(u"Аннулировано"), default=False)
     flag_no_applicant_doc_required = models.BooleanField(_(u"Документ заявителя-ФЛ не требуется"), default=False)
 
+    # Поле, существующее только во view, равное первичному ключу Burial (и Burial1)
+    # Необходимо для поиска типа Burial1.objects.filter(burialpk__burial__burialcomment__...),
+    # ибо поиск Burial1.objects.filter(burialcomment__...) даст ошибку
+    #
+    burial = models.ForeignKey(Burial, verbose_name=_(u"Захоронение"))
+
     class Meta:
         verbose_name = _(u"Захоронение")
         verbose_name_plural = _(u"Захоронение")
