@@ -9,7 +9,8 @@ from django.db.models.deletion import ProtectedError, IntegrityError
 from django.utils.translation import ugettext_lazy as _
 from django.db.models.query_utils import Q
 from django.conf import settings
-from pd.models import UnclearDateModelField, BaseModel, Files, GetLogsMixin, validate_gt0, SafeDeleteMixin
+from pd.models import UnclearDateModelField, BaseModel, BaseModelManualDtCreated, \
+                      Files, GetLogsMixin, validate_gt0, SafeDeleteMixin
 from pd.views import get_front_end_url
 from pd.utils import utcisoformat
 
@@ -154,7 +155,7 @@ class AreaPurpose(models.Model):
         return self.name
 
 
-class Area(BaseModel):
+class Area(BaseModelManualDtCreated):
     AVAILABILITY_OPEN = 'open'
     AVAILABILITY_OLD = 'old_only'
     AVAILABILITY_CLOSED = 'closed'
@@ -198,6 +199,7 @@ class Area(BaseModel):
     def save(self, *args, **kwargs):
         if not self.name.strip():
             self.name=''
+        self.fill_dt_created()
         return super(Area, self).save(*args, **kwargs)
 
 class AreaCoordinates(CoordinatesModel):
@@ -206,7 +208,7 @@ class AreaCoordinates(CoordinatesModel):
     class Meta:
         unique_together = ('area', 'angle_number',)
 
-class Place(SafeDeleteMixin, GeoPointModel):
+class Place(SafeDeleteMixin, GeoPointModel, BaseModelManualDtCreated):
     STATUS_LIST = ('dt_wrong_fio', 'dt_military', 'dt_size_violated', 'dt_unowned', 'dt_free', 'dt_unindentified', )
 
     cemetery = models.ForeignKey(Cemetery, verbose_name=_(u"Кладбище"), on_delete=models.PROTECT)
@@ -352,6 +354,7 @@ class Place(SafeDeleteMixin, GeoPointModel):
         return burials_available and all([ b.is_bio() for b in burials_available ])
 
     def save(self, new_place_for_archive=False, *args, **kwargs):
+        self.fill_dt_created()
         if self.cemetery and self.area and not self.place:
             # Новое место для архивного зх формируется по другим правилам,
             # нежели для остальных зх
@@ -516,7 +519,7 @@ class PlaceStatus(BaseModel):
                                 on_delete=models.PROTECT)
 
 
-class Grave(GeoPointModel):
+class Grave(GeoPointModel, BaseModelManualDtCreated):
     place = models.ForeignKey(Place, verbose_name=_(u"Место"))
     grave_number = models.PositiveSmallIntegerField(_(u"Номер"), default=1)
     is_wrong_fio = models.BooleanField(_(u"Неверное ФИО"), default=False)
@@ -562,7 +565,11 @@ class Grave(GeoPointModel):
             grave_number=self.grave_number
         )
 
-class PlacePhoto(Files, GeoPointModel):
+    def save(self, *args, **kwargs):
+        self.fill_dt_created()
+        return super(Grave, self).save(*args, **kwargs)
+
+class PlacePhoto(Files, GeoPointModel, BaseModelManualDtCreated):
     place = models.ForeignKey(Place)
 
     def save(self, *args, **kwargs):
@@ -570,6 +577,7 @@ class PlacePhoto(Files, GeoPointModel):
             customplace = CustomPlace.objects.get(place=self.place)
         except CustomPlace.DoesNotExist:
             customplace = None
+        self.fill_dt_created()
         result = super(PlacePhoto, self).save(*args, **kwargs)
         if customplace and self.bfile:
             customplace.update_title_photo(self.bfile)
@@ -602,8 +610,12 @@ class PlacePhoto(Files, GeoPointModel):
         return result
         
 
-class AreaPhoto(Files, GeoPointModel):
+class AreaPhoto(Files, GeoPointModel, BaseModelManualDtCreated):
     area = models.ForeignKey(Area)
+
+    def save(self, *args, **kwargs):
+        self.fill_dt_created()
+        return super(AreaPhoto, self).save(*args, **kwargs)
 
 class Burial(SafeDeleteMixin, GetLogsMixin, BaseModel):
     STATUS_BACKED = 'backed'
