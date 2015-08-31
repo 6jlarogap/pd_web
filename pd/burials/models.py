@@ -135,6 +135,8 @@ class Cemetery(GetLogsMixin, BaseModel, PhonesMixin):
             except (AttributeError, IntegrityError):
                 pass
 
+    def url(self):
+        return u"/manage/cemetery/%s" % self.pk
 
 class CemeteryCoordinates(CoordinatesModel):
     #TODO:
