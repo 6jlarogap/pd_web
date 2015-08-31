@@ -1162,9 +1162,7 @@ class ExhumateView(ArchiveMixin, DetailView):
             write_log(self.request, self.get_object(), _(u'Захоронение эксгумировано'))
             messages.success(request, _(u"Эксгумация успешна"))
             if ex.place:
-                return redirect('/manage/cemetery/%s/area/%s/place/%s' % \
-                                (ex.place.cemetery.pk, ex.place.area.pk, ex.place.pk, )
-                               )
+                return redirect(ex.place.url())
             else:
                 return redirect('view_burial', ex.burial.pk)
         else:
@@ -1183,8 +1181,7 @@ class CancelExhumationView(ArchiveMixin, DeleteView):
         write_log(self.request, self.burial, _(u'Эксгумация отменена'))
         messages.success(self.request, _(u"Эксгумация отменена"))
         if self.place and self.place.pk:
-            return '/manage/cemetery/%s/area/%s/place/%s' % \
-                   (self.place.cemetery.pk, self.place.area.pk, self.place.pk, )
+            return self.place.url()
         else:
             return reverse('dashboard')
 
