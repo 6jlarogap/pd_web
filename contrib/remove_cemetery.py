@@ -58,7 +58,7 @@ def main():
     i = 0
     for aliveperson in AlivePerson.objects.filter(responsible_burials__cemetery=cemetery):
         i += 1
-        Burial.objects.filter(responsible=aliveperson).update(applicant=None)
+        Burial.objects.filter(responsible=aliveperson).update(responsible=None)
         aliveperson.delete()
     print d_removed % i
 

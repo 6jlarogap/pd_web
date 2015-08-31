@@ -394,13 +394,31 @@ class UnclearDateModelField(models.DateField):
 
 class BaseModel(models.Model):
     """
-    Базовый класс для многих моделей
+    Базовый класс для многих моделей. Даты создания/модификации автоматически
     """
     class Meta:
         abstract = True
         
     dt_created = models.DateTimeField(_(u"Дата/время создания"), auto_now_add=True)
     dt_modified = models.DateTimeField(_(u"Дата/время модификации"), auto_now=True)
+
+class BaseModelManualDtCreated(models.Model):
+    """
+    Базовый класс для многих моделей. Дата создания заносится в коде
+
+    В производных классах должны быть переопределены методы save(),
+    чтобы дата создания устанавливались, если не была
+    установлена автоматически
+    """
+    class Meta:
+        abstract = True
+
+    dt_created = models.DateTimeField(_(u"Дата/время создания"))
+    dt_modified = models.DateTimeField(_(u"Дата/время модификации"), auto_now=True)
+
+    def fill_dt_created(self):
+        if not self.dt_created:
+            self.dt_created = datetime.datetime.now()
 
 def upload_slugified(instance, filename):
     """

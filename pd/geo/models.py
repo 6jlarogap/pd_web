@@ -9,7 +9,7 @@ from pd.models import BaseModel
 
 import re, urllib2, json
 
-class GeoPointModel(BaseModel):
+class GeoPointModel(models.Model):
     """
     Базовая GEO модель
     """
