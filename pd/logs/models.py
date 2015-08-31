@@ -41,6 +41,19 @@ class Log(models.Model):
             result = _(u"Захоронение <a href='%(ref)s'>%(obj_id)s</a>") % dict(
                 ref=ref, obj_id=obj_id,
             )
+        elif model_name in ('Place', 'Cemetery'):
+            try:
+                obj = Model.objects.get(pk=obj_id)
+                href = "<a href='%(url)s'>%(name)s</a>" % dict(
+                    url=obj.url(),
+                    name=obj.place if model_name == 'Place' else obj.name
+                )
+            except Model.DoesNotExist:
+                href = _(u"не найдено")
+            result = _(u"%s %s") % (
+                Model._meta.verbose_name.title(),
+                href,
+            )
         elif model_name == 'Order':
             ref = reverse('order_edit', args=[obj_id])
             try:
@@ -49,15 +62,6 @@ class Log(models.Model):
                 loru_number = ''
             result = _(u"Заказ <a href='%(ref)s'>%(loru_number)s</a>") % dict(
                 ref=ref, loru_number=loru_number,
-            )
-        elif model_name == 'Cemetery':
-            ref = reverse('manage_cemeteries_edit', args=[obj_id])
-            try:
-                cemetery = Model.objects.get(pk=obj_id).name
-            except Model.DoesNotExist:
-                cemetery = ''
-            result = _(u"Кладбище <a href='%(ref)s'>%(cemetery)s</a>") % dict(
-                ref=ref, cemetery=cemetery,
             )
         elif model_name == 'Org':
             result = _(u"Организация")

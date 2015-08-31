@@ -135,6 +135,8 @@ class Cemetery(GetLogsMixin, BaseModel, PhonesMixin):
             except (AttributeError, IntegrityError):
                 pass
 
+    def url(self):
+        return u"/manage/cemetery/%s" % self.pk
 
 class CemeteryCoordinates(CoordinatesModel):
     #TODO:
@@ -480,6 +482,12 @@ class Place(SafeDeleteMixin, GeoPointModel, BaseModelManualDtCreated):
                     message = _(u'Место не получено при инвентаризации')
         return place, status, message
 
+    def url(self):
+        return u"/manage/cemetery/%(cemetery_pk)s/area/%(area_pk)s/place/%(place_pk)s" % dict(
+            cemetery_pk=self.cemetery.pk,
+            area_pk=self.area and self.area.pk or '-',
+            place_pk=self.pk,
+        )
 
 class PlaceSize(models.Model):
     org = models.ForeignKey(Org, verbose_name=_(u"Организация"), editable=False, on_delete=models.PROTECT) 
