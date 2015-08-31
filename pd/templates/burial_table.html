@@ -229,7 +229,7 @@
                     {% endif %}
                     {% if b.get_place %}
                         {# Эксгумированое зх не имеет b.place, но его место можно найти как b.get_place #}
-                        <br /><a class="btn" href="/manage/cemetery/{{ b.cemetery.pk}}/area/{{ b.area.pk }}/place/{{ b.get_place.pk }}">{% trans "место" %}</a>
+                        <br /><a class="btn" href="{{ b.get_place.url }}">{% trans "место" %}</a>
                     {% endif %}
                 {% endif %}
                 {% if not b.is_bio and not b.dc_filled and b.can_personal_data %}

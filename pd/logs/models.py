@@ -41,6 +41,16 @@ class Log(models.Model):
             result = _(u"Захоронение <a href='%(ref)s'>%(obj_id)s</a>") % dict(
                 ref=ref, obj_id=obj_id,
             )
+        elif model_name == 'Place':
+            try:
+                place = Model.objects.get(pk=obj_id)
+                href = "<a href='%(place_url)s'>%(place_pk)s</a>" % dict(
+                    place_url=place.url(),
+                    place_pk=place.pk,
+                )
+            except Model.DoesNotExist:
+                href = _(u"не найдено")
+            result = _(u"Место %s") % href
         elif model_name == 'Order':
             ref = reverse('order_edit', args=[obj_id])
             try:
