@@ -107,9 +107,11 @@
                                 <li>
                                     <a href="{% url tutorial %}">{% trans "Курс обучения" %}</a>
                                 </li>
-                                <li>
-                                    <a href="{{ MEDIA_URL }}support/download/mobilekeeper.apk">{% trans "Скачать мобильный клиент" %}</a>
-                                </li>
+                                {% if user.profile.is_ugh %}
+                                    <li>
+                                        <a href="{{ MEDIA_URL }}support/download/mobilekeeper.apk">{% trans "Скачать мобильный клиент" %}</a>
+                                    </li>
+                                {% endif %}
                             {% endif %}
                         </ul>
                     </div>
