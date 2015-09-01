@@ -9,7 +9,8 @@ from django.db.models.deletion import ProtectedError, IntegrityError
 from django.utils.translation import ugettext_lazy as _
 from django.db.models.query_utils import Q
 from django.conf import settings
-from pd.models import UnclearDateModelField, BaseModel, Files, GetLogsMixin, validate_gt0, SafeDeleteMixin
+from pd.models import UnclearDateModelField, BaseModel, BaseModelManualDtCreated, \
+                      Files, GetLogsMixin, validate_gt0, SafeDeleteMixin
 from pd.views import get_front_end_url
 from pd.utils import utcisoformat
 
@@ -68,8 +69,8 @@ class Cemetery(GetLogsMixin, BaseModel, PhonesMixin):
     ugh = models.ForeignKey(Org, verbose_name=_(u"УГХ"), null=True, limit_choices_to={'type': Org.PROFILE_UGH},
                             on_delete=models.PROTECT)
     address = models.ForeignKey('geo.Location', editable=False, null=True)
-    archive_burial_fact_date_required = models.BooleanField(_(u"Дата архивного захоронения обязательна"), default=True)
-    archive_burial_account_number_required = models.BooleanField(_(u"Номер архивного захоронения обязателен"), default=True)
+    archive_burial_fact_date_required = models.BooleanField(_(u"Дата архивного захоронения обязательна"), default=False)
+    archive_burial_account_number_required = models.BooleanField(_(u"Номер архивного захоронения обязателен"), default=False)
     square = models.FloatField(_(u"Площадь"), null=True, editable=False)
     # phones: могут быть разных типов, пользуемся моделью persons.Phone
     caretaker = models.ForeignKey('auth.User', verbose_name=_(u"Ответственный смотритель"), null=True, editable=False,
@@ -134,6 +135,8 @@ class Cemetery(GetLogsMixin, BaseModel, PhonesMixin):
             except (AttributeError, IntegrityError):
                 pass
 
+    def url(self):
+        return u"/manage/cemetery/%s" % self.pk
 
 class CemeteryCoordinates(CoordinatesModel):
     #TODO:
@@ -154,7 +157,7 @@ class AreaPurpose(models.Model):
         return self.name
 
 
-class Area(BaseModel):
+class Area(BaseModelManualDtCreated):
     AVAILABILITY_OPEN = 'open'
     AVAILABILITY_OLD = 'old_only'
     AVAILABILITY_CLOSED = 'closed'
@@ -198,6 +201,7 @@ class Area(BaseModel):
     def save(self, *args, **kwargs):
         if not self.name.strip():
             self.name=''
+        self.fill_dt_created()
         return super(Area, self).save(*args, **kwargs)
 
 class AreaCoordinates(CoordinatesModel):
@@ -206,7 +210,7 @@ class AreaCoordinates(CoordinatesModel):
     class Meta:
         unique_together = ('area', 'angle_number',)
 
-class Place(SafeDeleteMixin, GeoPointModel):
+class Place(SafeDeleteMixin, GeoPointModel, BaseModelManualDtCreated):
     STATUS_LIST = ('dt_wrong_fio', 'dt_military', 'dt_size_violated', 'dt_unowned', 'dt_free', 'dt_unindentified', )
 
     cemetery = models.ForeignKey(Cemetery, verbose_name=_(u"Кладбище"), on_delete=models.PROTECT)
@@ -234,6 +238,16 @@ class Place(SafeDeleteMixin, GeoPointModel):
     dt_unindentified = models.DateTimeField(_(u"Неопознанное /дата установки признака/"), null=True, editable=False)
     caretaker = models.ForeignKey('auth.User', verbose_name=_(u"Ответственный смотритель"), null=True, editable=False,
                                   related_name='caretaker_places', on_delete=models.PROTECT)
+    is_invent = models.BooleanField(_(u"Добавлено при инвентаризации мобильным клиентом"), default=False, editable=False)
+    dt_processed = models.DateTimeField(_(u"Обработано: добавлены захоронения по фото"), null=True, editable=False)
+    user_processed = models.ForeignKey('auth.User', verbose_name=_(u"Пользователь, обработавший фото места"), null=True,
+                                       editable=False, on_delete=models.PROTECT)
+    # К сожалению, не удается использовать признак user_processed__isnull=True в select_for_update() при захвате
+    # места в обработку. Поэтому вместе с установкой пользователя будем делать и этот признак
+    # !!! Если будет установлен user_processed, то is_inprocess будет True, даже при dt_processed not None !!!
+    is_inprocess = models.BooleanField(_(u"Взято в обработку при вводе по фотографиям"), default=False, editable=False)
+    comment_remakephoto = models.TextField(verbose_name=_(u"Комментарий к перефотографированию места"),
+                                        null=True, editable=False)
 
     objects = PlaceManager()
 
@@ -342,6 +356,7 @@ class Place(SafeDeleteMixin, GeoPointModel):
         return burials_available and all([ b.is_bio() for b in burials_available ])
 
     def save(self, new_place_for_archive=False, *args, **kwargs):
+        self.fill_dt_created()
         if self.cemetery and self.area and not self.place:
             # Новое место для архивного зх формируется по другим правилам,
             # нежели для остальных зх
@@ -382,7 +397,7 @@ class Place(SafeDeleteMixin, GeoPointModel):
 
     def get_photo_gallery(self, request):
         """
-        Получить все фото, относящиеся к месту.
+        Получить все фото, относящиеся к месту, вместе с датами создания
         """
         gallery = []
         for pph in PlacePhoto.objects.filter(place=self).order_by('-date_of_creation'):
@@ -393,6 +408,16 @@ class Place(SafeDeleteMixin, GeoPointModel):
                         'createdAt': utcisoformat(pph.date_of_creation),
                     }
                 )
+        return gallery
+
+    def get_photos(self, request):
+        """
+        Получить все фото, относящиеся к месту.
+        """
+        gallery = []
+        for pph in PlacePhoto.objects.filter(place=self).order_by('-date_of_creation'):
+            if pph.bfile:
+                gallery.append(request.build_absolute_uri(pph.bfile.url))
         return gallery
         
     def status_list(self):
@@ -433,6 +458,37 @@ class Place(SafeDeleteMixin, GeoPointModel):
     def get_caretaker(self):
         return self.caretaker or self.area.caretaker or self.cemetery.caretaker or None
 
+    @classmethod
+    def check_invent_place(cls, request, pk):
+
+        place = None
+        status = 200
+        message = ''
+        if not pk:
+            status = 404
+            message = _(u'Не указан номер места')
+        else:
+            try:
+                place = Place.objects.get(pk=pk)
+            except Place.DoesNotExist:
+                status = 404
+                message = _(u'Нет такого места')
+            else:
+                if not place.cemetery.ugh or place.cemetery.ugh != request.user.profile.org:
+                    status = 403
+                    message = _(u'Место не принадлежит организации пользователя')
+                elif not place.is_invent:
+                    status = 400
+                    message = _(u'Место не получено при инвентаризации')
+        return place, status, message
+
+    def url(self):
+        return u"/manage/cemetery/%(cemetery_pk)s/area/%(area_pk)s/place/%(place_pk)s" % dict(
+            cemetery_pk=self.cemetery.pk,
+            area_pk=self.area and self.area.pk or '-',
+            place_pk=self.pk,
+        )
+
 class PlaceSize(models.Model):
     org = models.ForeignKey(Org, verbose_name=_(u"Организация"), editable=False, on_delete=models.PROTECT) 
     graves_count = models.PositiveSmallIntegerField(_(u"Число могил"), )
@@ -471,7 +527,7 @@ class PlaceStatus(BaseModel):
                                 on_delete=models.PROTECT)
 
 
-class Grave(GeoPointModel):
+class Grave(GeoPointModel, BaseModelManualDtCreated):
     place = models.ForeignKey(Place, verbose_name=_(u"Место"))
     grave_number = models.PositiveSmallIntegerField(_(u"Номер"), default=1)
     is_wrong_fio = models.BooleanField(_(u"Неверное ФИО"), default=False)
@@ -517,7 +573,11 @@ class Grave(GeoPointModel):
             grave_number=self.grave_number
         )
 
-class PlacePhoto(Files, GeoPointModel):
+    def save(self, *args, **kwargs):
+        self.fill_dt_created()
+        return super(Grave, self).save(*args, **kwargs)
+
+class PlacePhoto(Files, GeoPointModel, BaseModelManualDtCreated):
     place = models.ForeignKey(Place)
 
     def save(self, *args, **kwargs):
@@ -525,6 +585,7 @@ class PlacePhoto(Files, GeoPointModel):
             customplace = CustomPlace.objects.get(place=self.place)
         except CustomPlace.DoesNotExist:
             customplace = None
+        self.fill_dt_created()
         result = super(PlacePhoto, self).save(*args, **kwargs)
         if customplace and self.bfile:
             customplace.update_title_photo(self.bfile)
@@ -557,8 +618,12 @@ class PlacePhoto(Files, GeoPointModel):
         return result
         
 
-class AreaPhoto(Files, GeoPointModel):
+class AreaPhoto(Files, GeoPointModel, BaseModelManualDtCreated):
     area = models.ForeignKey(Area)
+
+    def save(self, *args, **kwargs):
+        self.fill_dt_created()
+        return super(AreaPhoto, self).save(*args, **kwargs)
 
 class Burial(SafeDeleteMixin, GetLogsMixin, BaseModel):
     STATUS_BACKED = 'backed'
@@ -1409,6 +1474,12 @@ class Burial1(BaseModel):
     changed_by = models.ForeignKey('auth.User', null=True, related_name='changed_by_1_burials')
     annulated = models.BooleanField(_(u"Аннулировано"), default=False)
     flag_no_applicant_doc_required = models.BooleanField(_(u"Документ заявителя-ФЛ не требуется"), default=False)
+
+    # Поле, существующее только во view, равное первичному ключу Burial (и Burial1)
+    # Необходимо для поиска типа Burial1.objects.filter(burialpk__burial__burialcomment__...),
+    # ибо поиск Burial1.objects.filter(burialcomment__...) даст ошибку
+    #
+    burial = models.ForeignKey(Burial, verbose_name=_(u"Захоронение"), on_delete=models.DO_NOTHING)
 
     class Meta:
         verbose_name = _(u"Захоронение")

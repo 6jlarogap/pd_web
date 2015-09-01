@@ -8,7 +8,7 @@
     <h3>{{ place }}</h3>
 
     {% if user.profile.is_ugh %}
-        <p><a href="/manage/cemetery/{{ place.cemetery.pk }}/area/{{ place.area.pk }}/place/{{ place.pk }}">{% trans "карточка" %}</a></p>
+        <p><a href="{{ place.url }}">{% trans "карточка" %}</a></p>
     {% endif %}
 
     <dl>

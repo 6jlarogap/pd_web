@@ -14,7 +14,7 @@ from persons.models import DeadPerson, AlivePerson, BasePerson, DocumentSource, 
                            CustomPlace, CustomPerson, MemoryGallery
 from persons.serializers import AlivePersonSerializer, DeadPersonSerializer, PhoneSerializer, \
                                 CustomPlaceDetailSerializer, CustomPlaceListSerializer, \
-                                CustomPlaceEditSerializer, \
+                                CustomPlaceEditSerializer, DeadPerson2Serializer, \
                                 CustomPersonSerializer, CustomPerson2Serializer, \
                                 CustomPerson3Serializer, CustomPerson4Serializer, \
                                 MemoryGallerySerializer, MemoryGallery2Serializer
@@ -27,9 +27,9 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.parsers import MultiPartParser, JSONParser
 
 from pd.models import UnclearDate, SafeDeleteMixin
-from burials.models import Place, PlacePhoto
+from burials.models import Place, PlacePhoto, Burial, Grave
 from logs.models import write_log
-from users.models import Org, PermitIfCabinet, user_dict
+from users.models import Org, PermitIfCabinet, user_dict, PermitIfUgh
 from orders.models import Order, ResultFile
 from geo.models import Location
 
@@ -55,21 +55,49 @@ class AutocompleteFIO(View):
 
 autocomplete_fio = AutocompleteFIO.as_view()
 
-class AutocompleteFirstName(View):
-    def get(self, request, *args, **kwargs):
-        query = request.GET['query']
-        first_names = BasePerson.objects.filter(first_name__istartswith=query).order_by('first_name').distinct('first_name')
-        return HttpResponse(json.dumps([{'value': c.first_name} for c in first_names[:20]]), mimetype='text/javascript')
+class AutocompletePersonsMixin(object):
 
-autocomplete_first_name = AutocompleteFirstName.as_view()
+    def get_names(self, what, query, limit=None):
+        valid = True
+        if not query or not isinstance(query, basestring):
+            valid = False
+        if valid:
+            field_map = dict(firstname='first_name', middlename='middle_name')
+            try:
+                field_name = field_map[what.lower()]
+            except (AttributeError, KeyError):
+                # не строка (AttributeError при lower()); нет в словаре (KeyError)
+                valid = False
+        if valid:
+            q_kwargs = { '%s__istartswith' % field_name: query }
+            qs = BasePerson.objects.filter(**q_kwargs).order_by(field_name).distinct(field_name)
+            if limit:
+                qs = qs[:limit]
+            return  [ getattr(c, field_name) for c in qs ]
+        else:
+            return []
 
-class AutocompleteMiddleName(View):
-    def get(self, request, *args, **kwargs):
-        query = request.GET['query']
-        middle_names = BasePerson.objects.filter(middle_name__istartswith=query).order_by('middle_name').distinct('middle_name')
-        return HttpResponse(json.dumps([{'value': c.middle_name} for c in middle_names[:20]]), mimetype='text/javascript')
+class AutocompleteName(AutocompletePersonsMixin, View):
+    def get(self, request, what, *args, **kwargs):
+        query = request.GET.get('query')
+        names = [ {'value': name} for name in self.get_names(what, query, limit=20) ]
+        return HttpResponse(json.dumps(names), mimetype='text/javascript')
 
-autocomplete_middle_name = AutocompleteMiddleName.as_view()
+autocomplete_name = AutocompleteName.as_view()
+
+class ApiAutocompletePersons(AutocompletePersonsMixin, APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request):
+        return Response(
+            data=[ name for name in self.get_names(
+                request.GET.get('type'),
+                request.GET.get('query')
+            )],
+            status=200
+        )
+
+api_autocomplete_persons = ApiAutocompletePersons.as_view()
 
 class AutocompleteAlive(View):
     def get(self, request, *args, **kwargs):
@@ -152,7 +180,43 @@ class PhoneViewSet(viewsets.ModelViewSet):
         else:
             write_log(self.request, object, _(u'Телефон создан'))
 
-class ApiClientPlacesMixin(object):
+class CheckLifeDatesMixin(object):
+
+    def check_life_dates(self, instance=None, format=''):
+        """
+        Проверка дат рождения/смерти
+
+        в self.request.DATA может быть в датах: 'гггг', 'гггг-мм', 'гггг-мм-дд',
+        None или 'null'
+        при format=='d.m.y' сначала преобразуем к y-m-d
+        """
+        birth_date = self.request.DATA.get('birthDate') or self.request.DATA.get('dob')
+        if birth_date and birth_date.lower() == 'null':
+            birth_date = None
+        death_date = self.request.DATA.get('deathDate') or self.request.DATA.get('dod')
+        if death_date and death_date.lower() == 'null':
+            death_date = None
+        message = UnclearDate.check_safe_str(birth_date, check_today=True, format=format)
+        if message:
+            return _(u"Дата рождения: %s") % message
+        message = UnclearDate.check_safe_str(death_date, check_today=True, format=format)
+        if message:
+            return _(u"Дата смерти: %s") % message
+        msg_dates = _(u"Дата смерти раньше даты рождения")
+        birth_date = UnclearDate.from_str_safe(birth_date, format=format)
+        death_date = UnclearDate.from_str_safe(death_date, format=format)
+        if birth_date and death_date and birth_date > death_date:
+            return msg_dates
+        if instance:
+            req_birth_date = 'birthDate' in self.request.DATA or 'dob' in self.request.DATA
+            req_death_date = 'deathDate' in self.request.DATA or 'dod' in self.request.DATA
+            if birth_date and not req_death_date and instance.death_date and birth_date > instance.death_date:
+                return msg_dates
+            if not req_birth_date and death_date and instance.birth_date and instance.birth_date > death_date:
+                return msg_dates
+        return ""
+
+class ApiClientPlacesMixin(CheckLifeDatesMixin):
 
     def get_customplace(self, pk):
         try:
@@ -162,29 +226,6 @@ class ApiClientPlacesMixin(object):
         if customplace.user and customplace.user != self.request.user:
             raise Http404
         return customplace
-
-    def check_life_dates(self, instance=None):
-        birth_date = self.request.DATA.get('birthDate') or self.request.DATA.get('dob')
-        if birth_date and birth_date.lower() == 'null':
-            birth_date = None
-        death_date = self.request.DATA.get('deathDate') or self.request.DATA.get('dod')
-        if death_date and death_date.lower() == 'null':
-            death_date = None
-        message = UnclearDate.check_safe_str(birth_date, check_today=True)
-        if message:
-            return _(u"Дата рождения: %s") % message
-        message = UnclearDate.check_safe_str(death_date, check_today=True)
-        if message:
-            return _(u"Дата смерти: %s") % message
-        msg_dates = _(u"Дата смерти раньше даты рождения")
-        if birth_date and death_date and birth_date > death_date:
-            return msg_dates
-        if instance:
-            if birth_date and not death_date and instance.death_date and birth_date > instance.death_date.str_safe():
-                return msg_dates
-            if not birth_date and death_date and instance.birth_date and instance.birth_date.str_safe() > death_date:
-                return msg_dates
-        return ""
 
 class ApiClientPlacesView(APIView):
     permission_classes = (PermitIfCabinet,)
@@ -591,3 +632,85 @@ class ApiClientPlacesOrdersView(ApiClientPlacesMixin, APIView):
                         ], status=200)
 
 api_client_places_orders = ApiClientPlacesOrdersView.as_view()
+
+class ApiOmsBurialsView(CheckLifeDatesMixin, APIView):
+    permission_classes = (PermitIfUgh,)
+
+    def post(self, request):
+        place_pk = request.DATA.get('placeId')
+        place, status, message = Place.check_invent_place(request, place_pk)
+        if not message:
+            status = 400
+            message = self.check_life_dates(format='d.m.y')
+        if message:
+            return Response(data=dict(status='error', message=message), status=status)
+        serializer = DeadPerson2Serializer(
+            data=request.DATA,
+            context=dict(request=request),
+        )
+        if serializer.is_valid():
+            with transaction.commit_on_success():
+                deadman = serializer.save()
+                grave, grave_created = Grave.objects.get_or_create(place=place, grave_number=1)
+                burial = Burial.objects.create(
+                    burial_type=Burial.BURIAL_NEW if grave_created else Burial.BURIAL_OVER,
+                    burial_container=Burial.CONTAINER_COFFIN,
+                    source_type=Burial.SOURCE_ARCHIVE,
+                    place=place,
+                    cemetery=place.cemetery,
+                    area=place.area,
+                    row=place.row,
+                    place_number=place.place,
+                    grave=grave,
+                    grave_number=1,
+                    deadman=deadman,
+                    ugh=place.cemetery.ugh,
+                    status=Burial.STATUS_CLOSED,
+                    changed_by=request.user,
+                    flag_no_applicant_doc_required = True,
+                )
+                write_log(request, burial, _(u'Захоронение внесено при обработке фото места'))
+                return Response(serializer.data, status=200)
+        return Response(serializer.errors, status=400)
+
+api_oms_burials = ApiOmsBurialsView.as_view()
+
+class ApiOmsBurialsDetailView(CheckLifeDatesMixin, APIView):
+    permission_classes = (PermitIfUgh,)
+
+    def put(self, request, pk):
+        status = 404
+        message = ''
+        try:
+            deadman = DeadPerson.objects.get(pk=pk)
+        except DeadPerson.DoesNotExist:
+            message = _(u'Нет усопшего с id = %s') % pk
+        else:
+            message_noplace = _(u'Усопший с id = %s не имеет привязки к захоронению/месту') % pk
+            try:
+                burial = deadman.burial_set.all()[0]
+            except IndexError:
+                message = message_noplace
+            else:
+                place = burial.place
+                if not place:
+                    message = message_noplace
+                else:
+                    place, status, message = Place.check_invent_place(request, place.pk)
+        if not message:
+            status = 400
+            message = self.check_life_dates(instance=deadman, format='d.m.y')
+        if message:
+            return Response(data=dict(status='error', message=message), status=status)
+        serializer = DeadPerson2Serializer(
+            deadman,
+            data=request.DATA,
+            context=dict(request=request),
+        )
+        if serializer.is_valid():
+            serializer.save()
+            write_log(request, burial, _(u'Захоронение изменено при обработке фото места'))
+            return Response(serializer.data, status=200)
+        return Response(serializer.errors, status=400)
+
+api_oms_burials_detail = ApiOmsBurialsDetailView.as_view()

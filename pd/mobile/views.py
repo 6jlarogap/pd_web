@@ -242,7 +242,7 @@ class ApiPlaceUpload(APIView):
             dtWrongFio = datetime.strptime(request.POST['dtWrongFio'], templateDateTime)
         if request.POST['dtMilitary'] :
             dtMilitary = datetime.strptime(request.POST['dtMilitary'], templateDateTime)
-        if request.POST['dtFree'] :
+        if request.POST.get('dtFree') :
             dtFree = datetime.strptime(request.POST['dtFree'], templateDateTime)
         if request.POST['dtSizeViolated'] :
             dtSizeViolated = datetime.strptime(request.POST['dtSizeViolated'], templateDateTime)
@@ -340,8 +340,22 @@ class ApiPlaceUpload(APIView):
                 prevPlace.save()
                 place = prevPlace                
             else :
-                place = Place(cemetery = area.cemetery, area = area, place = placeName, row = rowName, oldplace = oldPlaceName, place_length = placeLength, place_width = placeWidth, \
-                    dt_wrong_fio = dtWrongFio, dt_military = dtMilitary, dt_free = dtFree, dt_size_violated = dtSizeViolated, dt_unowned = dtUnowned, dt_unindentified = dtUnindentified)  
+                place = Place(
+                    cemetery = area.cemetery,
+                    area = area,
+                    place = placeName,
+                    row = rowName,
+                    oldplace = oldPlaceName,
+                    place_length = placeLength,
+                    place_width = placeWidth,
+                    dt_wrong_fio = dtWrongFio,
+                    dt_military = dtMilitary,
+                    dt_free = dtFree,
+                    dt_size_violated = dtSizeViolated,
+                    dt_unowned = dtUnowned,
+                    dt_unindentified = dtUnindentified,
+                    is_invent=True,
+                )
                 place.save()
             listPlaceForResponse.append(place)
             
@@ -403,7 +417,7 @@ class ApiGraveUpload(APIView):
             prevGrave = None            
             grave = Grave(place = place, grave_number = place.get_graves_count() + 1, is_military = isMilitary, is_wrong_fio = isWrongFIO)
             grave.save()
-            write_log(request, grave, _(u"Могила '%s' создана через мобильное приложение") % grave.grave_number )
+            write_log(request, place, _(u"Могила '%s' создана через мобильное приложение") % grave.grave_number )
             listInsertedGrave.append(grave)            
         serializer = GraveSerializer(listInsertedGrave)
         return Response(serializer.data)

@@ -14,6 +14,9 @@
   $scope.log_page = 1;
   $scope.loading = false;
   $scope.edit_resp = false;
+  $scope.localeText = {
+      responsible: gettext("Ответственный")
+  };
   $scope.editor = {
     isAddressEdited: false,
     isResponsibleEdited: false,
@@ -42,6 +45,7 @@
           id: $scope.item.id
         }
       ];
+      $scope.placeMapZoom = 16;
       $scope.placeCoordinates = [
         {
           point: [
@@ -549,15 +553,17 @@
 
   $scope.$on("mapPointChanged:place", function (event, data) {
     if ($scope.item.id == data.obj_id) {
-      $scope.item.lat = data.coords[0];
-      $scope.item.lng = data.coords[1];
-      $scope.$digest();
-      $scope.item.$update({
-        cemetery_id: $routeParams.cemetery_id,
-        area_id: $routeParams.area_id
-      }, function (data) {
-        $scope.update();
-      });
+        if (confirm("Изменить координаты места?")) {
+            $scope.item.lat = data.coords[0];
+            $scope.item.lng = data.coords[1];
+            $scope.$digest();
+            $scope.item.$update({
+                cemetery_id: $routeParams.cemetery_id,
+                area_id: $routeParams.area_id
+            }, function (data) {
+                    $scope.update();
+            });
+        }
     }
   });
   $scope.is_responsible_disabled = function (responsibleEditForm, responsibleEditFormAddr) {

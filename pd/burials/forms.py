@@ -1168,10 +1168,19 @@ class BurialCommitForm(BurialForm):
         if self.deadman_form.is_valid():
             deadman_birth_date = self.deadman_form.cleaned_data.get("birth_date")
             deadman_death_date = self.deadman_form.cleaned_data.get("death_date")
-            if deadman_birth_date and deadman_death_date and \
-               deadman_birth_date > deadman_death_date:
-                msg = _(u"Дата смерти не может быть раньше даты рождения")
-                raise forms.ValidationError(msg)
+            if deadman_birth_date and deadman_death_date:
+                if deadman_birth_date > deadman_death_date:
+                    msg = _(u"Дата смерти не может быть раньше даты рождения")
+                    raise forms.ValidationError(msg)
+                lifetime = deadman_death_date.diff(deadman_birth_date).years
+                if lifetime >= 260:
+                    msg = _(u"Нереальное время жизни усопшего: %(lifetime)s лет "
+                            u"(%(birth_date)s -- %(death_date)s)") % dict(
+                                lifetime=lifetime,
+                                birth_date=deadman_birth_date,
+                                death_date=deadman_death_date,
+                    )
+                    raise forms.ValidationError(msg)
 
             if deadman_death_date and deadman_death_date > today:
                 msg = _(u"Дата смерти не может быть позже сегодняшней")
@@ -1190,20 +1199,20 @@ class BurialCommitForm(BurialForm):
                 msg = _(u"Фактическая дата захоронения не может быть раньше даты смерти")
                 raise forms.ValidationError(msg)
 
-        #if settings.DEADMAN_IDENT_NUMBER_ALLOW and \
-           #not (self.instance.is_archive() or self.request.REQUEST.get('archive')) and \
-           #not self.instance.is_transferred() and \
-           #self.deadman_form.cleaned_data.get("last_name") and \
-           #not self.cleaned_data.get('burial_container') == Burial.CONTAINER_BIO and \
-           #not self.deadman_form.cleaned_data.get("ident_number"):
-            #msg = _(u"Нет идентификационного номера для усопшего")
-            #raise forms.ValidationError(msg)
+            #if settings.DEADMAN_IDENT_NUMBER_ALLOW and \
+                #not (self.instance.is_archive() or self.request.REQUEST.get('archive')) and \
+                #not self.instance.is_transferred() and \
+                #self.deadman_form.cleaned_data.get("last_name") and \
+                #not self.cleaned_data.get('burial_container') == Burial.CONTAINER_BIO and \
+                #not self.deadman_form.cleaned_data.get("ident_number"):
+                #msg = _(u"Нет идентификационного номера для усопшего")
+                 #raise forms.ValidationError(msg)
 
-        if settings.DEADMAN_IDENT_NUMBER_ALLOW and \
-           self.deadman_form.cleaned_data.get("ident_number"):
-           if not re.search(r'^[A-Za-z0-9]{10,}$', self.deadman_form.cleaned_data["ident_number"]):
-            msg = _(u"Идентификационный номер усопшего: не менее 10 цифр и латинских символов")
-            raise forms.ValidationError(msg)
+            if settings.DEADMAN_IDENT_NUMBER_ALLOW and \
+               self.deadman_form.cleaned_data.get("ident_number") and \
+               not re.search(r'^[A-Za-z0-9]{10,}$', self.deadman_form.cleaned_data["ident_number"]):
+                    msg = _(u"Идентификационный номер усопшего: не менее 10 цифр и латинских символов")
+                    raise forms.ValidationError(msg)
 
         if self.dc_form.is_valid():
             death_certificate_release_date = self.dc_form.cleaned_data.get('release_date')

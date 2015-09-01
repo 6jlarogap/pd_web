@@ -579,7 +579,7 @@ class BurialsListView(PaginateListView):
                 burials = burials.filter(annulated=False)
 
             if form.cleaned_data.get('comment'):
-                burials = burials.filter(burialcomment__comment__icontains=form.cleaned_data['comment'])
+                burials = burials.filter(burial__burialcomment__comment__icontains=form.cleaned_data['comment'])
 
             if form.cleaned_data.get('status') == Burial.STATUS_EXHUMATED:
                 burials = burials.filter(status=Burial.STATUS_EXHUMATED)
@@ -594,8 +594,8 @@ class BurialsListView(PaginateListView):
             '-account_number': ['-account_number_s1', '-account_number_s2', '-account_number_s3'],
             'cemetery': 'cemetery__name',
             '-cemetery': '-cemetery__name',
-            'place': 'place_number',
-            '-place': '-place_number',
+            'place': ['place_number_s1', 'place_number_s2', 'place_number_s3'],
+            '-place': ['-place_number_s1', '-place_number_s2', '-place_number_s3'],
             'fio': 'deadman__last_name',
             '-fio': '-deadman__last_name',
             'fact_date': 'fact_date',
@@ -1162,9 +1162,7 @@ class ExhumateView(ArchiveMixin, DetailView):
             write_log(self.request, self.get_object(), _(u'Захоронение эксгумировано'))
             messages.success(request, _(u"Эксгумация успешна"))
             if ex.place:
-                return redirect('/manage/cemetery/%s/area/%s/place/%s' % \
-                                (ex.place.cemetery.pk, ex.place.area.pk, ex.place.pk, )
-                               )
+                return redirect(ex.place.url())
             else:
                 return redirect('view_burial', ex.burial.pk)
         else:
@@ -1183,8 +1181,7 @@ class CancelExhumationView(ArchiveMixin, DeleteView):
         write_log(self.request, self.burial, _(u'Эксгумация отменена'))
         messages.success(self.request, _(u"Эксгумация отменена"))
         if self.place and self.place.pk:
-            return '/manage/cemetery/%s/area/%s/place/%s' % \
-                   (self.place.cemetery.pk, self.place.area.pk, self.place.pk, )
+            return self.place.url()
         else:
             return reverse('dashboard')
 

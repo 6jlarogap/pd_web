@@ -10,25 +10,29 @@
 
 import sys
 
-from django.core.management.base import BaseCommand
 from django.db import transaction, IntegrityError
-from django.db.models.query_utils import Q
 from django.db.models.query_utils import Q
 
 from django.contrib.auth.models import User
 from users.models import Org, ProfileLORU, Profile, Dover, OrgCertificate, CustomerProfile
+from logs.models import Log
 from burials.models import Cemetery, CemeteryCoordinates, Area, AreaCoordinates, \
                            Place, PlaceSize, PlacePhoto, Grave, \
-                           Burial, BurialFiles, BurilalComment, Reason, ExhumationRequest
+                           Burial, BurialFiles, Reason, ExhumationRequest, \
+                           BurialComment, PlaceStatus, AreaPhoto, PlaceStatusFiles
 from orders.models import Order, OrderItem, ServiceItem, OrgService, OrgServicePrice, \
                           OrderComment, ResultFile
 from persons.models import DeadPerson, AlivePerson, CustomPlace
 
+# Искажаю во избежание случайного запуска процедуры
+#
+CURRENCY_CODE = '---RUR---'
+
 # @transaction.commit_on_success
 def main():
     
-    ugh_qs = Q(type=Org.PROFILE_UGH, currency__code='RUR')
-    org_qs = Q(currency__code='RUR')
+    ugh_qs = Q(type=Org.PROFILE_UGH, currency__code=CURRENCE_CODE)
+    org_qs = Q(currency__code=CURRENCE_CODE)
 
     # Организации, ссылки на которые могут быть в захоронениях и в заказах на захоронения:
     #
@@ -37,7 +41,7 @@ def main():
                 #Q(exhumationrequest__burial__ugh=ugh) | \
                 #Q(ugh_list__ugh=ugh) | \
                 #Q(order__burial__ugh=ugh)
-    #org_qs &= Q(currency__code='RUR')
+    #org_qs &= Q(currency__code=CURRENCE_CODE)
     print 'Looking for russian orgs...'
     for org in Org.objects.filter(org_qs).distinct():
         print org
@@ -127,8 +131,8 @@ def main():
 
         print 'removing burials'
         ExhumationRequest.objects.filter(burial__ugh=ugh).delete()
-        BurialComment.objects.filter(burial__ugh=ugh).delete()
         BurialFiles.objects.filter(burial__ugh=ugh).delete()
+        BurialComment.objects.filter(burial__ugh=ugh).delete()
         Burial.objects.filter(ugh=ugh).delete()
         print 'removing graves'
         Grave.objects.filter(place__cemetery__ugh=ugh).delete()
@@ -149,6 +153,7 @@ def main():
                 customerprofile = user.customerprofile
                 customerprofile.user = None
                 customerprofile.save()
+                Log.objects.filter(user=user).delete()
                 user.delete()
                 customerprofile.delete()
             if i % 100 == 0:
@@ -157,9 +162,12 @@ def main():
         print 'removing places'
         PlaceSize.objects.filter(org=ugh).delete()
         PlacePhoto.objects.filter(place__cemetery__ugh=ugh).delete()
+        PlaceStatusFiles.objects.filter(placestatus__place__cemetery__ugh=ugh).delete()
+        PlaceStatus.objects.filter(place__cemetery__ugh=ugh).delete()
         Place.objects.filter(cemetery__ugh=ugh).delete()
 
         print 'removing areas'
+        AreaPhoto.objects.filter(area__cemetery__ugh=ugh).delete()
         AreaCoordinates.objects.filter(area__cemetery__ugh=ugh).delete()
         Area.objects.filter(cemetery__ugh=ugh).delete()
         print 'removing cemeteries'
@@ -179,6 +187,7 @@ def remove_org(org):
         user = profile.user
         profile.user = None
         profile.save()
+        Log.objects.filter(user=user).delete()
         user.delete()
         profile.delete()
     if org.off_address:

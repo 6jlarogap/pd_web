@@ -78,6 +78,7 @@
         {% else %}
             USER_DEFAULT_BOUNDS = null;
         {% endif %}
+        GOOGLE_GEOCODER_DOMAIN = '{{ global_context_HOST_COUNTRY_CODE }}';
     </script>
 
     <script type="text/javascript" src="{{ STATIC_URL }}js/cemetery.js" defer="true"></script>
@@ -106,9 +107,11 @@
                                 <li>
                                     <a href="{% url tutorial %}">{% trans "Курс обучения" %}</a>
                                 </li>
-                                <li>
-                                    <a href="{{ MEDIA_URL }}support/download/mobilekeeper.apk">{% trans "Скачать мобильный клиент" %}</a>
-                                </li>
+                                {% if user.profile.is_ugh %}
+                                    <li>
+                                        <a href="{{ MEDIA_URL }}support/download/mobilekeeper.apk">{% trans "Скачать мобильный клиент" %}</a>
+                                    </li>
+                                {% endif %}
                             {% endif %}
                         </ul>
                     </div>
@@ -125,6 +128,7 @@
                                         {% if user.profile.is_ugh %}
                                             {% if global_context_REDIRECT_LOGIN_TO_FRONT_END %}
                                                 <li><a href="{{ global_context_FRONT_END_URL }}oms/placesmap">{% trans "Карта захоронений" %}</a></li>
+                                                <li><a href="{{ global_context_FRONT_END_URL }}oms/places-photos">{% trans "Ввод архива по фото" %}</a></li>
                                             {% endif %}
                                             <li><a href="{% url loru_registry %}">{% trans "Реестр ЛОРУ" %}</a></li>
                                             <li class="divider"></li>

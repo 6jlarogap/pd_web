@@ -1,6 +1,6 @@
 # coding=utf-8
 
-import re
+import re, datetime
 
 from django.conf import settings
 from django.contrib import messages
@@ -22,7 +22,7 @@ from django.contrib.contenttypes.models import ContentType
 
 from geo.models import Country, Region, Street, City
 
-from pd.views import RequestToFormMixin, FormInvalidMixin, get_front_end_url
+from pd.views import RequestToFormMixin, FormInvalidMixin, get_front_end_url, ServiceException
 from pd.models import validate_phone_as_number
 from pd.utils import utcisoformat
 
@@ -49,7 +49,8 @@ from django.db import transaction
 from serializers import CemeterySerializer, AreaSerializer, PlaceSerializer, AreaPurposeSerializer, \
     GraveSerializer, BurialSerializer, BurialListSerializer, BurialPutGraveSerializer, \
     AreaPhotoSerializer, ExhumationRequestSerializer, PlaceSizeSerializer, \
-    ApiOmsPlacesSerializer, ApiCatalogPlacesSerializer
+    ApiOmsPlacesSerializer, ApiCatalogPlacesSerializer, PlaceLockSerializer, \
+    CemeteryTitleSerializer, AreaTitleSerializer, PlaceTitleSerializer
 
 from persons.serializers import AlivePersonSerializer, PhoneSerializer
 from users.serializers import UserFioLoginSerializer
@@ -281,7 +282,10 @@ class AreaViewSet(CaretakerMixin, viewsets.ModelViewSet):
             old = None
         except AttributeError:
             old = None
-        log_object(self.request, obj=object, old=old, new=object, reason=_(u'Участок изменен'))
+        if old:
+            log_object(self.request, obj=object, old=old, new=object, reason=_(u'Участок изменен'))
+        else:
+            write_log(self.request, object.cemetery, _(u'Создан участок: %s') % object)
 
 
     def retrieve(self, request, *args, **kwargs):
@@ -1200,3 +1204,157 @@ class PlaceCertificateView(UGHRequiredMixin, DetailView):
         )
 
 place_certificate = PlaceCertificateView.as_view()
+
+class ApiOmsPhotoPlaces(APIView):
+    permission_classes = (PermitIfUgh,)
+
+    def get(self, request):
+        place = None
+        # Показать место, с которым работал ранее 
+        with transaction.commit_on_success():
+            try:
+                place = Place.objects.select_for_update().filter(
+                            cemetery__ugh=request.user.profile.org,
+                            is_invent=True,
+                            dt_wrong_fio__isnull=True,
+                            dt_unindentified__isnull=True,
+                            dt_free__isnull=True,
+                            user_processed=request.user,
+                            is_inprocess=True,
+                            dt_processed__isnull=True,
+                    ).order_by('pk')[0]
+            except IndexError:
+                # Если такого места не было, ищем первое среди необработанных
+                try:
+                    place = Place.objects.select_for_update().filter(
+                                cemetery__ugh=request.user.profile.org,
+                                is_invent=True,
+                                is_inprocess=False,
+                                dt_wrong_fio__isnull=True,
+                                dt_unindentified__isnull=True,
+                                dt_free__isnull=True,
+                                dt_processed__isnull=True,
+                        ).order_by('pk')[0]
+                    place.user_processed = request.user
+                    place.is_inprocess = True
+                    place.save()
+                except IndexError:
+                    pass
+        if place:
+            serializer = PlaceLockSerializer(place, context=dict(request=request))
+            data=serializer.data
+        else:
+            data = {}
+        return Response(status=200, data=data)
+
+api_oms_photo_places = ApiOmsPhotoPlaces.as_view()
+
+class ApiOmsPhotoPlacesDetail(APIView):
+    permission_classes = (PermitIfUgh,)
+
+    def get(self, request, pk):
+        place, status, message = Place.check_invent_place(request, pk)
+        if message:
+            return Response(data=dict(status='error', message=message), status=status)
+        return Response(
+            status=200,
+            data=PlaceLockSerializer(place, context=dict(request=request)).data
+        )
+
+    def put(self, request, pk):
+        place, status, message = Place.check_invent_place(request, pk)
+        if message:
+            return Response(data=dict(status='error', message=message), status=status)
+
+        do_save = False
+        log_messages = []
+
+        remakePhoto = request.DATA.get('remakePhoto')
+        remake_photo_comment = request.DATA.get('remakePhotoComment')
+
+        if 'remakePhoto' in request.DATA:
+            do_save = True
+            place.dt_wrong_fio = datetime.datetime.now() if remakePhoto else None
+            if remakePhoto:
+                place.user_processed = None
+                place.is_inprocess = False
+                if not remake_photo_comment:
+                    log_messages.append(_(u'Заказано повторное фото места'))
+
+        if 'remakePhotoComment' in request.DATA:
+            do_save = True
+            place.comment_remakephoto = remake_photo_comment
+            if remake_photo_comment:
+                log_messages.append(_(u'Заказано повторное фото места: %s') % remake_photo_comment)
+            else:
+                log_messages.append(_(u'Удален комментарий о повторном фото места'))
+
+        processed = request.DATA.get('processed')
+        if 'processed' in request.DATA:
+            do_save = True
+            if processed:
+                place.dt_processed = datetime.datetime.now()
+                log_messages.append(_(u'Фотографии места обработаны'))
+            else:
+                place.dt_processed = None
+                place.user_processed = None
+                place.is_inprocess = False
+                log_messages.append(_(u'Фотографии места могут быть обработаны повторно'))
+
+        with transaction.commit_on_success():
+            if do_save:
+                place.save()
+            for m in log_messages:
+                write_log(request, place, m)
+        return Response(status=status, data={})
+
+api_oms_photo_places_detail = ApiOmsPhotoPlacesDetail.as_view()
+
+class ApiOmsCemeteriesView(APIView):
+    permission_classes = (PermitIfUgh,)
+
+    def get(self, request):
+        return Response(
+            status=200,
+            data=[ CemeteryTitleSerializer(cemetery).data \
+                   for cemetery in Cemetery.objects.filter(ugh=request.user.profile.org)
+            ]
+        )
+
+api_oms_cemeteries = ApiOmsCemeteriesView.as_view()
+
+class ApiOmsCemeteriesAreasView(APIView):
+    permission_classes = (PermitIfUgh,)
+
+    def get(self, request, pk):
+        cemetery = get_object_or_404(
+            Cemetery,
+            pk=pk,
+            ugh=request.user.profile.org
+        )
+        return Response(
+            status=200,
+            data=[ AreaTitleSerializer(area).data \
+                   for area in Area.objects.filter(cemetery=cemetery)
+            ]
+        )
+
+api_oms_cemeteries_areas = ApiOmsCemeteriesAreasView.as_view()
+
+class ApiOmsAreasPlacesView(APIView):
+    permission_classes = (PermitIfUgh,)
+
+    def get(self, request, cemetery_pk, area_pk):
+        area = get_object_or_404(
+            Area,
+            cemetery__pk=cemetery_pk,
+            pk=area_pk,
+            cemetery__ugh=request.user.profile.org
+        )
+        return Response(
+            status=200,
+            data=[ PlaceTitleSerializer(place).data \
+                   for place in Place.objects.filter(area=area)
+            ])
+
+api_oms_areas_places = ApiOmsAreasPlacesView.as_view()

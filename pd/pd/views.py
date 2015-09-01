@@ -90,8 +90,11 @@ class PaginateListView(ListView):
     SORT_DEFAULT = '-dt'
     
     def get_paginate_by(self, queryset):
-        if self.request.GET.get('print'):
-            return None
+        # Печать из списка у нас только захоронений. Нельзя разрешать
+        # печать всех, серверу будет плохо.
+        #
+        #if self.request.GET.get('print'):
+            #return None
         try:
             return int(self.request.GET.get('per_page'))
         except (TypeError, ValueError):
@@ -100,10 +103,16 @@ class PaginateListView(ListView):
     def get_context_data(self, **kwargs):
         data = super(PaginateListView, self).get_context_data(**kwargs)
         get_for_paginator = u'&'.join([u'%s=%s' %  (k, v) for k,v in self.request.GET.items() if k not in self.DISPLAY_OPTIONS])
+
         sort = self.request.GET.get('sort', self.SORT_DEFAULT)
         if get_for_paginator and sort and 'sort' not in self.request.GET.items():
             get_for_paginator += u'&sort=%s' % sort
-        data.update(form=self.get_form(), GET_PARAMS=get_for_paginator, sort=sort)
+
+        page = self.request.GET.get('page', 1)
+        if get_for_paginator and 'page' not in self.request.GET.items():
+            get_for_paginator += u'&page=%s' % page
+
+        data.update(form=self.get_form(), GET_PARAMS=get_for_paginator, sort=sort, page=page)
         return data
 
 class RequestToFormMixin(BaseFormView):

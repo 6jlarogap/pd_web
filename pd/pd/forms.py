@@ -1,6 +1,7 @@
 # coding=utf-8
 import json
 import datetime
+import re
 from django import forms
 from django.conf import settings
 from django.db.models.fields.files import FieldFile
@@ -222,8 +223,13 @@ class UnclearSelectDateWidget(SelectDateWidget):
                     if match:
                         year_val, month_val, day_val = [int(v) for v in match.groups()]
 
-        choices = [(i, i) for i in self.years]
-        year_html = self.create_select(name, self.year_field, value, year_val, choices, {'class': 'date-year'})
+        # choices = [(i, i) for i in self.years]
+        # year_html = self.create_select(name, self.year_field, value, year_val, choices, {'class': 'date-year'})
+        year_html = self.create_year_input(name, self.year_field, year_val, {
+                    'class': 'date-year',
+                    'type': 'text',
+                    'maxlength': '4',
+        })
         # choices = zip(MONTHS.keys(), MONTHS.keys())
         choices = MONTHS.items()
         month_html = self.create_select(name, self.month_field, value, month_val, choices, {'class': 'date-month'})
@@ -246,22 +252,25 @@ class UnclearSelectDateWidget(SelectDateWidget):
         y = data.get(self.year_field % name)
         m = data.get(self.month_field % name)
         d = data.get(self.day_field % name)
-        if y == m == d == "0" or y == m == d == "":
+        if not y and m == d == "0" or \
+           not y and m == d == "":
             return None
 
         self.no_day = self.no_month = False
 
         if y:
-            if settings.USE_L10N:
-                input_format = get_format('DATE_INPUT_FORMATS')[0]
-                try:
-                    ud = UnclearDate(int(y), int(m), int(d))
-                except ValueError, e:
-                    return '%s-%s-%s' % (y, m, d)
-                else:
-                    return ud
-            else:
+            y = y.strip()
+            if re.search(r'^0+$', y):
+                y = "0"
+        if (m or d) and not y:
+            y = "0"
+        if y:
+            try:
+                ud = UnclearDate(int(y), int(m), int(d))
+            except ValueError:
                 return '%s-%s-%s' % (y, m, d)
+            else:
+                return ud
         return data.get(name, None)
 
     def create_select(self, name, field, value, val, choices, attrs):
@@ -275,6 +284,17 @@ class UnclearSelectDateWidget(SelectDateWidget):
         s = Select(choices=choices)
         select_html = s.render(field % name, val, local_attrs)
         return select_html
+
+    def create_year_input(self, name, field, val, attrs):
+        from django.forms.widgets import Input
+        if 'id' in self.attrs:
+            id_ = self.attrs['id']
+        else:
+            id_ = 'id_%s' % name
+        local_attrs = self.build_attrs(id=field % id_, **attrs)
+        s = Input(attrs=attrs)
+        input_html = s.render(field % name, unicode(val).rjust(4, '0') if val else val, local_attrs)
+        return input_html
 
 class UnclearDateField(forms.DateField):
     widget = UnclearSelectDateWidget()
@@ -302,13 +322,17 @@ class UnclearDateField(forms.DateField):
         if not value and self.required:
             raise forms.ValidationError(self.error_messages['required'])
         if isinstance(value, basestring):
+            if not re.search(r'^\d{1,4}\-\d{1,2}-\d{1,2}$', value):
+                raise forms.ValidationError(
+                    _(u'Была введена неверная дата (г-м-д): %s') % value
+                )
             try:
                 datetime.datetime.strptime(value, "%Y-%m-%d")
             except ValueError:
                 y, m, d = value.split('-')
                 raise forms.ValidationError(
                     _(u'Была введена неверная дата (дд-мм-гггг): %(day)s-%(month)s-%(year)s') % dict(
-                    day=d.rjust(2,'0'), month=m.rjust(2,'0'), year=y,
+                    day=d.rjust(2,'0'), month=m.rjust(2,'0'), year=y.rjust(4,'0'),
                 ))
         elif isinstance(value, UnclearDate) and not value.no_day and value.no_month:
             raise forms.ValidationError(_(u'Нет месяца в дате'))

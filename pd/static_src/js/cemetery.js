@@ -112,6 +112,8 @@ function setup_address_autocompletes() {
 
     $('textarea[id$=comment]').css('width', '400px');
 
+    $('.date-year').css('width', '50px').css('color', '#555555').css('background', 'lightgray');
+
     $('input[id=id_loru_in_burials]').attr('autocomplete', 'off').typeahead({
         items: 100,
         onselect: function() {
@@ -1115,7 +1117,7 @@ $(function() {
     var ac_options = {
         bounds: USER_DEFAULT_BOUNDS,
         types: ['geocode'],
-        componentRestrictions: {country: 'by'}
+        componentRestrictions: {country: GOOGLE_GEOCODER_DOMAIN}
     };
     $('input[id$=addr_str]').css('width', '650px');
 

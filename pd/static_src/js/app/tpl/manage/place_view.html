@@ -17,6 +17,11 @@
         </th>
         <th>
           <span class="badge"
+                ng-show="item.dt_free"
+                tooltip="Свободное ({{ item.dt_free|momentDate:'DD-MM-YYYY HH:mm' }})">
+            <i class="icon-inbox icon-white"></i>
+          </span>
+          <span class="badge"
                 ng-show="item.dt_size_violated"
                 tooltip="Нарушение размеров ({{ item.dt_size_violated|momentDate:'DD-MM-YYYY HH:mm' }})">
             <i class="icon-resize-full icon-white"></i>
@@ -88,7 +93,7 @@
       <tr ng-show="placeGalleryFirstPhoto">
         <td colspan="2">
           <img ng-click="openEditForm('isPlaceGalleryOpen', placeGallery)"
-               class="first-photo" ng-src="{{ placeGalleryFirstPhoto.photo | thumbnail:233:134:'scale' }} "/>
+               class="first-photo" ng-src="{{ placeGalleryFirstPhoto.photo | thumbnail:300:225:'scale' }} "/>
         </td>
       </tr>
 
@@ -110,7 +115,7 @@
                   ng-click="removeResponsible()">
             <span class="icon-remove"></span>
           </button>
-          Ответственный:
+          {{localeText.responsible}}:
         </th>
         <td>
           {{ responsible.last_name + ' ' + responsible.first_name + ' ' + responsible.middle_name }}
@@ -148,7 +153,7 @@
     </table>
   </div>
 
-  <yandex-map id="yandex-map" class="span5" coordinates="placeCoordinates" points="placePoints">
+  <yandex-map id="yandex-map" class="span5" coordinates="placeCoordinates" points="placePoints" zoom="placeMapZoom">
   </yandex-map>
 </div>
 
@@ -297,7 +302,7 @@
   <div class="modal-body">
     <div class="row">
       <div class="span9">
-        <img ng-show="currentImage" ng-src="{{currentImage.photo|thumbnail:600:430:'scale'}}"/>
+        <img ng-show="currentImage" ng-src="{{currentImage.photo|thumbnail:300:225:'scale'}}"/>
         <img ng-hide="currentImage" alt="Нет фотографии"
              src="/static/no-image.png" width="265px" height="265px"/>
       </div>

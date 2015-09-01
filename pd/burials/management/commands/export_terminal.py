@@ -7,7 +7,8 @@
 
 # Формирование .csv файлов для имеющихся терминалов на кладбищах
 
-import sys, csv
+import sys, csv, os
+import pytils
 
 from django import db
 from django.core.management.base import BaseCommand
@@ -73,7 +74,9 @@ class Command(BaseCommand):
                 print "    !!! No cemeteries in system found for bundle %s" % cemetery_parms['export']
                 continue
             csv.register_dialect(cemetery_parms['export'], **cemetery_parms['csv_kwargs'])
-            f = open("%s/%s.csv" % (export_path, cemetery_parms['export'],), "w")
+            fname_export = os.path.join(export_path, "%s.csv" % cemetery_parms['export'])
+            fname_export_partial = "%s.partial" % fname_export
+            f = open(fname_export_partial, "w")
             writer = csv.writer(f, cemetery_parms['export'])
             q = Q(
                     annulated=False,
@@ -84,7 +87,11 @@ class Command(BaseCommand):
                 ~Q(
                     burial_container=Burial.CONTAINER_BIO,
                 )
-
+            print "    %s: %s" % (
+                u"Cemetery" if len(cemeteries) == 1 else u"Cemeteries",
+                # Запуск из cron'a не терпит non-ASCII stdout output
+                u", ".join([pytils.translit.slugify(cemetery.name) for cemetery in cemeteries]),
+            )
             burials = Burial.objects.filter(q).order_by(
                 "deadman__last_name",
                 "deadman__first_name",
@@ -116,3 +123,4 @@ class Command(BaseCommand):
                     writer.writerow(columns)
                     db.reset_queries()
             f.close()
+            os.rename(fname_export_partial, fname_export)
