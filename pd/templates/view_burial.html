@@ -185,11 +185,12 @@
                 {% endif %}
             {% endif %}
         </dd>
-        {% if not b.is_closed %}
+        {% if b.is_closed %}
+            <dt>{% trans "Факт. дата" %}:</dt><dd>{{ b.fact_date|default:"не указана" }}</dd>
+        {% else %}
             <dt>{% trans "План. дата и время" %}:</dt>
             <dd>{{ b.plan_date|date:"d.m.Y"|default:"не указаны" }}
                 {% if b.plan_date %}{{ b.plan_time|time:"H:i"|default:". Время не указано" }}{% endif %}</dd>
-            <dt>{% trans "Факт. дата" %}:</dt><dd>{{ b.fact_date|default:"не указана" }}</dd>
         {% endif %}
         <dt>{% trans "Файлы" %}:</dt>
         {% for f in b.burialfiles_set.all %}
