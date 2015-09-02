@@ -1222,6 +1222,7 @@ class ApiOmsPhotoPlaces(APIView):
                             user_processed=request.user,
                             is_inprocess=True,
                             dt_processed__isnull=True,
+                            placephoto__isnull=False,
                     ).order_by('pk')[0]
             except IndexError:
                 # Если такого места не было, ищем первое среди необработанных
@@ -1234,6 +1235,7 @@ class ApiOmsPhotoPlaces(APIView):
                                 dt_unindentified__isnull=True,
                                 dt_free__isnull=True,
                                 dt_processed__isnull=True,
+                                placephoto__isnull=False,
                         ).order_by('pk')[0]
                     place.user_processed = request.user
                     place.is_inprocess = True
