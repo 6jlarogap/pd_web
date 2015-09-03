@@ -49,6 +49,8 @@ from serializers import BaseSerializer, CoordinatesSerializer, CemeterySerialize
     AreaSerializer, AreaWithNestedObjectSerializer, RegionSerializer, CitySerializer, StreetSerializer, CountrySerializer, LocationSerializer, \
     BasePersonSerializer, AlivePersonSerializer, PlaceWithNestedObjectSerializer, GraveSerializer, BurialSerializer, \
     PlacePhotoSerializer
+
+templateDateTime = '%Y-%m-%dT%H:%M:%S.%f'
     
 class CustomException(APIException):
     status_code = 500
@@ -81,8 +83,11 @@ class ApiCemeteryUpload(APIView):
         cemeteryName = request.POST['cemeteryName']
         gpsJSON = request.POST['gps']
         square = None
-        if request.POST['square'] :
+        dtCreated = None
+        if request.POST.get('square') :
             square = request.POST['square']
+        if request.POST.get('dt_created') :
+            dtCreated = datetime.strptime(request.POST['dt_created'], templateDateTime)
         isGPSChange = False
         if gpsJSON :
             isGPSChange = True
@@ -102,7 +107,7 @@ class ApiCemeteryUpload(APIView):
             cem = prevCem
         except Cemetery.DoesNotExist:
             prevCem = None
-            cem = Cemetery(name = cemeteryName, square = square, creator = request.user, ugh = org)
+            cem = Cemetery(name = cemeteryName, square = square, creator = request.user, ugh = org, dt_created = dtCreated)
             cem.save()
             listInsertedCemetery.append(cem)
         if isGPSChange == True :
@@ -152,7 +157,10 @@ class ApiAreaUpload(APIView):
         cemeteryId = int(request.POST['cemeteryId'])
         gpsJSON = request.POST['gps']
         square = None
-        if request.POST['square'] :
+        dtCreated = None
+        if request.POST.get('dt_created') :
+            dtCreated = datetime.strptime(request.POST['dt_created'], templateDateTime)
+        if request.POST.get('square') :
             square = request.POST['square']
         isGPSChange = False
         if gpsJSON :
@@ -177,7 +185,7 @@ class ApiAreaUpload(APIView):
             raise Http404
         except Area.DoesNotExist:
             prevArea = None
-            area = Area(cemetery = cemetery, name = areaName, square = square)            
+            area = Area(cemetery = cemetery, name = areaName, square = square, dt_created = dtCreated)            
             area.save()
             listInsertedArea.append(area)
         if isGPSChange == True :
@@ -232,24 +240,27 @@ class ApiPlaceUpload(APIView):
         dtMilitary = None
         dtSizeViolated = None
         dtUnowned = None
-        dtUnindentified = None        
-        if request.POST['placeLength'] :
+        dtUnindentified = None
+        dtCreated = None
+        if request.POST.get('placeLength') :
             placeLength = Decimal(request.POST['placeLength'])
-        if request.POST['placeWidth'] :
-            placeWidth = Decimal(request.POST['placeWidth'])
-        templateDateTime = '%Y-%m-%dT%H:%M:%S.%f'
-        if request.POST['dtWrongFio'] :
+        if request.POST.get('placeWidth') :
+            placeWidth = Decimal(request.POST['placeWidth'])        
+        if request.POST.get('dtWrongFio') :
             dtWrongFio = datetime.strptime(request.POST['dtWrongFio'], templateDateTime)
-        if request.POST['dtMilitary'] :
+        if request.POST.get('dtMilitary') :
             dtMilitary = datetime.strptime(request.POST['dtMilitary'], templateDateTime)
         if request.POST.get('dtFree') :
             dtFree = datetime.strptime(request.POST['dtFree'], templateDateTime)
-        if request.POST['dtSizeViolated'] :
+        if request.POST.get('dtSizeViolated') :
             dtSizeViolated = datetime.strptime(request.POST['dtSizeViolated'], templateDateTime)
-        if request.POST['dtUnowned'] :
+        if request.POST.get('dtUnowned') :
             dtUnowned = datetime.strptime(request.POST['dtUnowned'], templateDateTime)
-        if request.POST['dtUnindentified'] :
+        if request.POST.get('dtUnindentified') :
             dtUnindentified = datetime.strptime(request.POST['dtUnindentified'], templateDateTime)
+        if request.POST.get('dt_created') :
+            dtCreated = datetime.strptime(request.POST['dt_created'], templateDateTime)        
+        
         user = request.user
         listPlaceForResponse = []
         try:
@@ -355,6 +366,7 @@ class ApiPlaceUpload(APIView):
                     dt_unowned = dtUnowned,
                     dt_unindentified = dtUnindentified,
                     is_invent=True,
+                    dt_created = dtCreated,
                 )
                 place.save()
             listPlaceForResponse.append(place)
@@ -397,10 +409,13 @@ class ApiGraveUpload(APIView):
         placeId = int(request.POST['placeId'])
         isWrongFIO = False
         isMilitary = False
+        dtCreated = None
         if int(request.POST['isWrongFIO']) == 1 :
             isWrongFIO = True
         if int(request.POST['isMilitary']) == 1 :
-            isMilitary = True		
+            isMilitary = True
+        if request.POST.get('dt_created') :
+            dtCreated = datetime.strptime(request.POST['dt_created'], templateDateTime)
         listInsertedGrave = []
         try:
             place = Place.objects.get(pk = placeId)
@@ -415,7 +430,7 @@ class ApiGraveUpload(APIView):
             raise Http404            
         except Grave.DoesNotExist:
             prevGrave = None            
-            grave = Grave(place = place, grave_number = place.get_graves_count() + 1, is_military = isMilitary, is_wrong_fio = isWrongFIO)
+            grave = Grave(place = place, grave_number = place.get_graves_count() + 1, is_military = isMilitary, is_wrong_fio = isWrongFIO, dt_created = dtCreated)
             grave.save()
             write_log(request, place, _(u"Могила '%s' создана через мобильное приложение") % grave.grave_number )
             listInsertedGrave.append(grave)            
@@ -456,9 +471,8 @@ class ApiBindBurialGrave(APIView):
         return render_to_response('mobile_bind_burial_grave.html', {'message': _(u"Загрузите захоронение:")})
     def post(self, request) :
         graveId = int(request.POST['graveId'])
-        burialId = int(request.POST['burialId'])        
-        templateDateTime = '%Y-%m-%dT%H:%M:%S.%f'
-        if request.POST['factDate'] :
+        burialId = int(request.POST['burialId'])
+        if request.POST.get('factDate') :
             factDate = datetime.strptime(request.POST['factDate'], templateDateTime)
             factUnclearDate = UnclearDate(year = factDate.year, month = factDate.month, day = factDate.day)       
         try:
@@ -516,13 +530,16 @@ class ApiPlacePhotoUpload(APIView):
     def post(self, request) :
         placeId = request.POST['place']
         lat = request.POST['lat']
-        lng = request.POST['lng'] 
+        lng = request.POST['lng']
+        dtCreated = None
+        if request.POST.get('dt_created') :
+            dtCreated = datetime.strptime(request.POST['dt_created'], templateDateTime)
         data = ""
         listPhoto = []
         try:
             place = Place.objects.get(id = placeId)            
             photo_content = ContentFile(request.FILES['photo'].read())
-            photo = PlacePhoto(place=place, lat = lat, lng = lng, comment = '', creator = request.user)
+            photo = PlacePhoto(place=place, lat = lat, lng = lng, comment = '', creator = request.user, dt_created = dtCreated)
             photo.save()
             photo.bfile.save(request.FILES['photo'].name, photo_content)            
             if lat and lat :
