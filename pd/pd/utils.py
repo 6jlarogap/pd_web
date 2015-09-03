@@ -48,6 +48,14 @@ def utcisoformat(dt, remove_mcsec=True):
         dt = dt.replace(microsecond=0)
     return TZ.localize(dt).astimezone(utc).replace(tzinfo=None).isoformat() + 'Z'
 
+def utc2local(dt):
+    """
+    Из даты/времени по Гринвичу сделать локальную дату
+    """
+    local_tz = timezone(settings.TIME_ZONE)
+    utc_tz = timezone('UTC')
+    return utc_tz.localize(dt).astimezone(local_tz)
+
 def host_country_code(request):
     """
     Получить строку 'ru' запроса типа http://org.pohoronnodelo.ru
