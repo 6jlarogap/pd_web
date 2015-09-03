@@ -29,7 +29,7 @@ from managers import PlaceManager
 
 from sms_service.utils import send_sms
 
-class Cemetery(GetLogsMixin, BaseModel, PhonesMixin):
+class Cemetery(GetLogsMixin, BaseModelManualDtCreated, PhonesMixin):
     PLACE_AREA = 'area'
     PLACE_ROW = 'row'
     PLACE_CEM_YEAR = 'cem_year'
@@ -137,6 +137,10 @@ class Cemetery(GetLogsMixin, BaseModel, PhonesMixin):
 
     def url(self):
         return u"/manage/cemetery/%s" % self.pk
+
+    def save(self, *args, **kwargs):
+        self.fill_dt_created()
+        return super(Cemetery, self).save(*args, **kwargs)
 
 class CemeteryCoordinates(CoordinatesModel):
     #TODO:
