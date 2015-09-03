@@ -180,6 +180,10 @@ def do_import_burials_minsk(csv_fileobj, cemetery, user):
     # Defaults:
     area_availability = Area.AVAILABILITY_OPEN
     area_purpose, _created = AreaPurpose.objects.get_or_create(name='общественный')
+    comment_child_burial = u"Захоронение детское"
+    comment_child_burial_2 = u"Детское захоронение"
+    re_comment_child_burial = re.escape(comment_child_burial)
+    re_comment_child_burial_2 = re.escape(comment_child_burial_2)
 
     (musor_str_id,
         account_number,
@@ -305,7 +309,7 @@ def do_import_burials_minsk(csv_fileobj, cemetery, user):
         row[deadman_ln] = row[deadman_ln].strip()
         deadman = None
         if row[deadman_ln] and row[deadman_ln] != u'*' and \
-           row[deadman_ln].lower != u'неизвестен':
+           row[deadman_ln].lower() != u'неизвестен':
             deadman = DeadPerson.objects.create(
                 last_name=row[deadman_ln],
                 first_name=row[deadman_fn].strip(),
@@ -335,6 +339,16 @@ def do_import_burials_minsk(csv_fileobj, cemetery, user):
         
         request = HttpRequest()
         request.user = user
+        if row[op_type].lower() == u"захоронение детское":
+            if not re.search(re_comment_child_burial, row[comment], flags=re.I) and \
+               not re.search(re_comment_child_burial_2, row[comment], flags=re.I):
+                BurialComment.objects.create(
+                    burial=burial,
+                    creator=user,
+                    comment=comment_child_burial,
+                )
+                write_log(request, burial, u"Комментарий: %s" % comment_child_burial)
+
         if row[comment]:
             write_log(request, burial, u"Комментарий: %s" % row[comment])
             BurialComment.objects.create(
