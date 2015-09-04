@@ -117,7 +117,7 @@
                 {% endwith %}
             {% endif %}
         {% endif %}
-        <dt>{% trans "Кладбище" %}:</dt><dd>{{ b.cemetery|default:"не указан" }}</dd>
+        <dt>{% trans "Кладбище" %}:</dt><dd>{{ b.cemetery|default:"не указано" }}</dd>
         <dt>{% trans "Место" %}:</dt><dd>
             {% if b.area %}
                 {% trans "Участок" %}: {{ b.area }}<br/>
@@ -357,6 +357,10 @@
             {{ comment_form.as_p }}
             <p>
                 <input type="submit" class="btn" value="{% trans "добавить" %}" />
+                {% if user.profile.is_ugh %}
+                    &nbsp; &nbsp; &nbsp;
+                    <a href="{% url burials_comments_edit b.pk %}">{% trans "Все комментарии" %}</a>
+                {% endif %}
             </p>
         </form>
     {% endif %}

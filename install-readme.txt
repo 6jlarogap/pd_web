@@ -16,6 +16,11 @@ install-readme.txt, utf8 code page
                     - (ubuntu 14.04) это автоматически установит c/c++, g++
                   * (ubuntu) python-virtualenv
                   * (ubuntu) python-pycurl
+                  * (ubuntu) python-tz
+                    - это временнЫе зоны, они меняются. Так что, если сервер
+                      регулярно обновляется, то можно брать python-tz из
+                      репозитариев дистрибутива Linux. Иначе периодически
+                      выполнять sudo pip install pytz --upgrade
 
          - postgresql,
             * в т.ч. для разработчика (ubuntu 14.04:
