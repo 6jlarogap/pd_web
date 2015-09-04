@@ -1745,3 +1745,29 @@ class AreaMergeForm(forms.Form):
             Place.objects.filter(area=self.cleaned_data['incorrect']).update(area=self.cleaned_data['correct'])
             Burial.objects.filter(area=self.cleaned_data['incorrect']).update(area=self.cleaned_data['correct'])
             self.cleaned_data['incorrect'].delete()
+
+class BurialCommentEditForm(forms.ModelForm):
+
+    class Meta:
+        model = BurialComment
+        fields = ('comment',)
+
+class BaseBurialCommentEditFormSet(BaseInlineFormSet):
+    def __init__(self, request, *args, **kwargs):
+        super(BaseBurialCommentEditFormSet, self).__init__(*args, **kwargs)
+        for f in self.forms:
+            f.formset = self
+            f.fields['comment'].required = False
+            f.own_ = True
+            if f.instance.pk and f.instance.creator != request.user:
+                f.own_ = False
+                f.fields['comment'].widget.attrs.update({'readonly':'True'})
+            f.fields['comment'].widget.attrs.update({'rows':'4'})
+
+BurialCommentEditFormSet = inlineformset_factory(
+    Burial,
+    BurialComment,
+    form=BurialCommentEditForm,
+    formset=BaseBurialCommentEditFormSet,
+    extra=1
+)
