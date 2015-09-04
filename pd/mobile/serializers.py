@@ -23,6 +23,7 @@ class CemeterySerializer(BaseSerializer):
     name = serializers.CharField(required=True)
     square = serializers.CharField(required=True)
     ugh = BaseSerializer(required=True)
+    dt_created = serializers.DateTimeField(required=False)
 
 class CemeteryWithNestedObjectSerializer(CemeterySerializer):	
     coordinates = CoordinatesSerializer(many=True)
@@ -31,6 +32,7 @@ class AreaSerializer(BaseSerializer):
     cemetery = BaseSerializer(required=True)
     name = serializers.CharField(required=True)
     square = serializers.CharField(required=True)
+    dt_created = serializers.DateTimeField(required=False)
     
 class AreaWithNestedObjectSerializer(AreaSerializer):    
     coordinates = CoordinatesSerializer(many=True)
@@ -82,6 +84,7 @@ class PlaceWithNestedObjectSerializer(BaseSerializer):
     dt_unowned = serializers.DateTimeField(required=False)
     dt_unindentified = serializers.DateTimeField(required=False)
     dt_free = serializers.DateTimeField(required=False)
+    dt_created = serializers.DateTimeField(required=False)
     responsible = AlivePersonSerializer(required=False)
     
 class GraveSerializer(BaseSerializer):    
@@ -89,6 +92,7 @@ class GraveSerializer(BaseSerializer):
     grave_number = serializers.CharField(required=True)
     is_military = serializers.CharField(required=False)
     is_wrong_fio = serializers.CharField(required=False)
+    dt_created = serializers.DateTimeField(required=False)
     
 class BurialSerializer(BaseSerializer):
     cemetery = BaseSerializer(required=True)
@@ -111,3 +115,4 @@ class PlacePhotoSerializer(BaseSerializer):
     original_name = serializers.CharField(required=False)
     bfile = serializers.FileField(max_length=None, allow_empty_file=False)
     date_of_creation = serializers.DateTimeField(required=False)
+    dt_created = serializers.DateTimeField(required=False)
