@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+
+{% load i18n %}
+
+{% block content %}
+    <h2>{% trans "Комментарии к захоронению" %}</h2>
+        <br />
+        <table width="40%">
+            {% if burial.deadman %}
+                <tr>
+                    <td>{% trans "Усопший" %}:</td>
+                    <td>{{ burial.deadman }}</td>
+                </tr>
+            {% endif %}
+            {% if burial.cemetery %}
+                <tr>
+                    <td>{% trans "Кладбище" %}:</td>
+                    <td>{{ burial.cemetery }}</td>
+                    {% if burial.area %}
+                        <tr>
+                            <td>{% trans "Участок" %}:</td>
+                            <td>{{ burial.area.name }}</td>
+                        </tr>
+                        <tr>
+                            <td>{% trans "Ряд" %}:</td>
+                            <td>{{ burial.row|default:"не указан" }}</td>
+                        </tr>
+                        <tr>
+                            <td>{% trans "Место" %}:</td>
+                            <td>{{ burial.place_number|default:"не указано" }}</td>
+                        </tr>
+                    {% endif %}
+                </tr>
+            {% endif %}
+            {% if burial.fact_date %}
+                <tr>
+                    <td>{% trans "Дата захоронения" %}:</td>
+                    <td>{{ burial.fact_date }}</td>
+                </tr>
+            {% endif %}
+        <table>
+
+    <form action="" method="POST" class="main-form">
+        {% csrf_token %}
+
+        {{ formset.management_form }}
+        <table class="table table-striped">
+        <thead>
+            <tr>
+              <th style="text-align: center"></th>
+              <th></th>
+              <th>{% trans "Дата создания" %}</th>
+              <th>{% trans "Создан" %}</th>
+              <th>{% trans "Дата изменения" %}</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for f in formset.forms %}
+                <tr>
+                    <td style="text-align: center">{{ f.comment.errors }}{{ f.comment }}</td>
+                    <td >
+                        {% if f.instance.pk %}
+                            {% if f.own_ %}
+                                {{ f.DELETE }}&nbsp; &nbsp;{% trans "Удалить" %}
+                            {% else %}
+                                {% trans "Не Ваш комментарий" %}
+                            {% endif %}
+                        {% else %}
+                            {% trans "Новый комментарий" %}
+                        {% endif %}
+                    </td>
+                    <td>{{ f.instance.dt_created|default_if_none:"" }}</td>
+                    <td>
+                        {% if f.instance.pk %}
+                            {% if f.instance.creator.profile.user_last_name %}
+                                {{ f.instance.creator.profile.last_name_initials }} ({{ f.instance.creator.username }})
+                            {% else %}
+                                ({{ f.instance.creator.username }})
+                            {% endif %}
+                        {% endif %}
+                    </td>
+                    <td>{{ f.instance.dt_modified|default_if_none:"" }}</td>
+                    {{ f.id }}
+                </tr>
+            {% endfor %}
+        </tbody>
+        </table>
+        <p>
+            <input type="submit" class="btn" value="{% trans "сохранить" %}" class="btn"/>
+            &nbsp; &nbsp; &nbsp; &nbsp;
+            <a href="{% url view_burial burial.pk %}">{% trans "назад к захоронению" %}</a>
+        </p>
+    </form>
+
+{% endblock %}
