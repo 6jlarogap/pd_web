@@ -38,6 +38,12 @@
             {% trans "Закрытых<br />захоронений" %}
         </th>
         <th style="text-align:right;">
+            {% trans "Мест<br />для обработки" %}
+        </th>
+        <th style="text-align:right;">
+            {% trans "Мест пере-<br />фотографировать" %}
+        </th>
+        <th style="text-align:right;">
             {% trans "Мест<br />с телефоном<br />кабинета" %}
         </th>
         <th style="text-align:right;">
@@ -70,6 +76,12 @@
         </td>
         <td style="text-align:right;">
             <b>{{ total.burials_count }}</b>
+        </td>
+        <td style="text-align:right;">
+            <b>{{ total.places_invent_accessible }}</b>
+        </td>
+        <td style="text-align:right;">
+            <b>{{ total.places_invent_remake_photo }}</b>
         </td>
         <td style="text-align:right;">
             <b>{{ total.places_cabinet_count }}</b>
@@ -108,6 +120,12 @@
             </td>
             <td style="text-align:right;">
                 {{ org.num_burials }}
+            </td>
+            <td style="text-align:right;">
+                {{ org.places_invent_accessible }}
+            </td>
+            <td style="text-align:right;">
+                {{ org.places_invent_remake_photo }}
             </td>
             <td style="text-align:right;">
                 {{ org.num_places_cabinet }}
