@@ -50,7 +50,7 @@ from logs.models import Log, write_log, LoginLog
 from users.forms import UserAddForm, RegisterForm, LoruFormset, ProfileForm, UserProfileForm, \
                         UserDataForm, ChangePasswordForm, BankAccountFormset, OrgForm, \
                         OrgLogForm, LoginLogForm, OrgBurialStatsForm, SupportForm, TestCaptchaForm, \
-                        LoruOrdersStatsForm
+                        LoruOrdersStatsForm, ProfileDataForm
 from users.models import Profile, Org, RegisterProfile, ProfileLORU, CustomerProfile, Store, \
                          get_mail_footer, is_cabinet_user, is_loru_user, is_ugh_user, \
                          PermitIfTrade, PermitIfTradeOrSupervisor, \
@@ -1071,6 +1071,47 @@ class UserEditView(LoginRequiredMixin, RequestToFormMixin, UpdateView):
         return redirect(self.get_success_url())
         
 edit_user = UserEditView.as_view()
+
+class ProfileEditView(LoginRequiredMixin, RequestToFormMixin, UpdateView):
+    template_name = 'edit_profile.html'
+    model = Profile
+    form_class = ProfileDataForm
+
+    def get_object(self):
+        if 'pk' in self.kwargs:
+            obj = Profile.objects.get(pk=self.kwargs['pk'])
+            self.new_ = False
+        else:
+            obj = Profile()
+            self.new_ = True
+        return obj
+
+    def get_success_url(self):
+        return reverse('edit_org', args=[self.object.org.pk])
+
+    def form_valid(self, form):
+        profile = form.save()
+        if profile is None:
+            # Ошибка при записи, даже после предварительной проверки на уникальность
+            # username & password
+            messages.error(self.request, _(u'Логин пользователя или email уже используются в системе'))
+            return self.get(self.request, *self.args, **self.kwargs)
+        if self.new_:
+            #msg = _(u"<a href='%(edit_profile)s'>Пользователь %(username)s</a> изменен") % dict(
+                #edit_profile=reverse('edit_profile', args=[self.object.pk]),
+                #username=self.object.user.username,
+            #)
+            pass
+        else:
+            msg = _(u"<a href='%(edit_profile)s'>Пользователь %(username)s</a>: %(created_modified)s") % dict(
+                edit_profile=reverse('edit_profile', args=[self.object.pk]),
+                username=self.object.user.username,
+                created_modified = _(u'создан') if self.new_ else _(u'изменения сохранены'),
+            )
+        messages.success(self.request, msg)
+        return redirect(self.get_success_url())
+
+edit_profile = ProfileEditView.as_view()
 
 class OrgEditView(LoginRequiredMixin, RequestToFormMixin, FormInvalidMixin, UpdateView):
     template_name = 'edit_org.html'

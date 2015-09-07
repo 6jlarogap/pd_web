@@ -7,7 +7,7 @@ from django.core.exceptions import ValidationError
 from django.contrib.auth.models import User
 from django.forms.models import inlineformset_factory, BaseInlineFormSet
 from django.utils.translation import ugettext_lazy as _
-from django.db import IntegrityError
+from django.db import IntegrityError, transaction
 from django.db.models.query_utils import Q
 from django.db.models.fields.files import FieldFile
 
@@ -182,6 +182,110 @@ class UserDataForm(LoggingFormMixin, forms.ModelForm):
             log_instance=user,
         )
         return user
+
+class ProfileDataForm(ChildrenJSONMixin, LoggingFormMixin, StrippedStringsMixin, forms.ModelForm):
+
+    username = forms.CharField(label=_(u"Логин"), required=True)
+    is_active = forms.BooleanField(required=False)
+    email = forms.EmailField(required=False)
+
+    user_first_name = forms.CharField(label=_(u"Имя"), required=True)
+    user_middle_name = forms.CharField(label=_(u"Отчество"), required=False)
+
+    password1 = forms.CharField(label=_(u"Пароль"), widget=forms.PasswordInput(), required=False)
+    password2 = forms.CharField(label=_(u"Пароль (повторите)"), widget=forms.PasswordInput(), required=False)
+
+    class Meta:
+        model = Profile
+        fields = (
+            'username',
+            'is_active',
+            'user_last_name', 'user_first_name', 'user_middle_name',
+            'email',
+            'is_agent',
+            'password1', 'password2',
+            'cemetery', 'area',
+        )
+
+    def __init__(self, request, *args, **kwargs):
+        super(ProfileDataForm, self).__init__(*args, **kwargs)
+        self.request = request
+        if not request.user.profile.org.is_loru():
+            del self.fields['is_agent']
+
+        self.fields['username'].help_text=Profile.USERNAME_HELPTEXT
+
+        self.fields['email'].label = User._meta.get_field('email').verbose_name.capitalize()
+        self.fields['email'].help_text=User._meta.get_field('email').help_text
+
+        self.fields['is_active'].label = User._meta.get_field('is_active').verbose_name.capitalize()
+        self.fields['is_active'].help_text=User._meta.get_field('is_active').help_text
+
+        self.fields['cemetery'].queryset = Cemetery.objects.filter(
+            Q(ugh__isnull=True) |
+            Q(ugh__loru_list__loru=self.request.user.profile.org) |
+            Q(ugh=self.request.user.profile.org)
+        ).distinct()
+
+        if self.instance.pk:
+            self.initial['username'] = self.instance.user.username
+            self.initial['email'] = self.instance.user.email
+            self.initial['is_active'] = self.instance.user.is_active
+        else:
+            self.initial['is_active'] = True
+            if 'is_agent' in self.fields:
+                self.initial['is_agent'] = True
+            self.fields['password1'].required = True
+            self.fields['password2'].required = True
+
+    def clean_username(self):
+        username = self.cleaned_data.get('username', '').strip()
+        if username:
+            validate_username(username)
+            if User.objects.filter(username__iexact=username).exclude(pk=self.instance.user.pk).exists():
+                raise forms.ValidationError(_(u"Этот логин уже используется"))
+        return username
+
+    def clean_email(self):
+        email = self.cleaned_data.get('email', '').strip() or None
+        if email and User.objects.filter(email=email).exclude(pk=self.instance.user.pk).exists():
+            raise forms.ValidationError(_(u"Этот email уже используется"))
+        return email
+
+    def clean(self):
+        if self.is_valid() and \
+             self.cleaned_data['password1'] != self.cleaned_data['password2']:
+            raise forms.ValidationError(_(u"Пароли не совпадают"))
+        return self.cleaned_data
+
+    @transaction.commit_on_success
+    def save(self):
+        self.collect_log_data()
+        if self.instance.pk:
+            profile = super(ProfileDataForm, self).save()
+            save_user = False
+            for f in self.changed_data:
+                if f in ('username', 'email', 'is_active',):
+                    setattr(profile.user, f, self.cleaned_data[f])
+                    save_user = True
+            if not profile.user.email:
+                profile.user.email = None
+            if self.cleaned_data.get('password1'):
+                profile.user.set_password(self.cleaned_data['password1'])
+                save_user = True
+            if save_user:
+                try:
+                    profile.user.save()
+                except IntegrityError:
+                    transaction.rollback()
+                    # метод form_valid из view покажет message.error
+                    return None
+
+        self.put_log_data(
+            msg=_(u'Изменены данные пользователя %s') % profile,
+            log_instance=profile,
+        )
+        return profile
 
 class ChangePasswordForm(forms.ModelForm):
     class Meta:

@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% load i18n %}
+
+{% block content %}
+    {% if form.instance.pk %}
+        <h2>{% trans "Данные пользователя" %}</h2>
+        <h4>
+            {{ form.instance.user.username }} {% if form.user_last_name %} ( {{ form.instance.full_name }} ){% endif %}
+        </h4>
+    {% else %}
+        <h2>{% trans "Новый пользователь" %}</h2>
+    {% endif %}
+    <br />
+    <form action="" method="POST">
+        {% csrf_token %}
+        {{ form.non_field_errors }}
+        {{ form.username.errors }}
+        <p>{{ form.username.label_tag }} {{ form.username }} <span class="helptext">{{ form.username.help_text }}</span></p>
+
+        {{ form.is_active.errors }}
+        <p>{{ form.is_active.label_tag }} {{ form.is_active }} <span class="helptext">{{ form.is_active.help_text }}</span></p>
+
+        <br />
+        {{ form.user_last_name.errors }}
+        <p>{{ form.user_last_name.label_tag }} {{ form.user_last_name }} <span class="helptext">{{ form.user_last_name.help_text }}</span></p>
+
+        {{ form.user_first_name.errors }}
+        <p>{{ form.user_first_name.label_tag }} {{ form.user_first_name }} <span class="helptext">{{ form.user_first_name.help_text }}</span></p>
+
+        {{ form.user_middle_name.errors }}
+        <p>{{ form.user_middle_name.label_tag }} {{ form.user_middle_name }} <span class="helptext">{{ form.user_middle_name.help_text }}</span></p>
+
+        {{ form.email.errors }}
+        <p>{{ form.email.label_tag }} {{ form.email }}<span class="helptext"> {{ form.email.help_text }}</span></p>
+
+        {% if form.is_agent %}
+            {{ form.is_agent.errors }}
+            <p>{{ form.is_agent.label_tag }} {{ form.is_agent }} <span class="helptext">{{ form.is_agent.help_text }}</span></p>
+        {% endif %}
+
+        <fieldset>
+            {{ form.password1.errors }}
+            <p>{{ form.password1.label_tag }} {{ form.password1 }}<span class="helptext"> {{ form.password1.help_text }}</span></p>
+
+            {{ form.password2.errors }}
+            <p>{{ form.password2.label_tag }} {{ form.password2 }}<span class="helptext"> {{ form.password2.help_text }}</span></p>
+        </fieldset>
+
+        <fieldset>
+            {{ form.cemetery.errors }}
+            <p>{{ form.cemetery.label_tag }} {{ form.cemetery }}<span class="helptext"> {{ form.cemetery.help_text }}</span></p>
+
+            {{ form.area.errors }}
+            <p>{{ form.area.label_tag }} {{ form.area }}<span class="helptext"> {{ form.area.help_text }}</span></p>
+        </fieldset>
+
+        <p>
+            <input type="submit" class="btn" value="{% trans "cохранить" %}"/>
+        </p>
+    </form>
+
+    <script type="text/javascript">
+        CEMETERY_AREAS = {{ form.cemetery_areas_json|default:"{}"  }};
+    </script>
+{% endblock %}

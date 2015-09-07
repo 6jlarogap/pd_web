@@ -65,10 +65,18 @@ class Log(models.Model):
             )
         elif model_name == 'Org':
             result = _(u"Организация")
-        elif model_name == 'Profile':
-            result = ""
         elif model_name == 'User':
             result = _(u"Пользователь")
+        elif model_name == 'Profile':
+            try:
+               obj = Model.objects.get(pk=obj_id)
+               href = "<a href='%(url)s'>%(name)s</a>" % dict(
+                    url=reverse('edit_profile', args=[obj_id]),
+                    name=obj.user.username,
+                )
+            except Model.DoesNotExist:
+                href = _(u"не найден")
+            result = _(u"Пользователь %s") % href
         elif model_name == 'Product':
             product = ref = ""
             try:

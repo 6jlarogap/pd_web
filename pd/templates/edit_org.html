@@ -93,7 +93,7 @@
                     <td>{{ p.user.is_active|yesno }}</td>
                     <td>
                         <a href="{% url change_password p.user.pk %}" class="btn">сменить пароль</a>
-                        <a href="{% url edit_user p.user.pk %}" class="btn">править данные</a>
+                        <a href="{% url edit_profile p.user.profile.pk %}" class="btn">править данные</a>
                     </td>
                 </tr>
             {% endfor %}
