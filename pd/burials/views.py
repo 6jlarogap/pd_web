@@ -14,6 +14,7 @@ from django.http import Http404
 from django.views.decorators.csrf import csrf_exempt
 from django.views.generic.base import View
 from django.utils.translation import ugettext as _
+from django.utils.formats import localize
 from django.views.generic.detail import DetailView
 from django.views.generic.edit import CreateView, UpdateView
 from django.views.generic.list import ListView
@@ -26,7 +27,8 @@ from pd.views import RequestToFormMixin, FormInvalidMixin, get_front_end_url, Se
 from pd.models import validate_phone_as_number
 from pd.utils import utcisoformat
 
-from burials.forms import CemeteryForm, AreaFormset, PlaceEditForm, AddOrgForm, AreaMergeForm, BurialfileCommentEditForm
+from burials.forms import CemeteryForm, AreaFormset, PlaceEditForm, AddOrgForm, \
+                          AreaMergeForm, BurialfileCommentEditForm, BurialCommentEditFormSet
 from burials.models import Cemetery, Place, Area, BurialFiles, Grave, Burial, BurialComment, AreaPhoto, PlacePhoto, \
                            ExhumationRequest, AreaPurpose, PlaceSize
 from burials.burials_views import *
@@ -1028,6 +1030,66 @@ class CommentView(BurialsListGenericMixin, LoginRequiredMixin, DetailView):
         return redirect('view_burial', burial.pk)
 
 burial_comment = CommentView.as_view()
+
+class BurialEditComments(UGHRequiredMixin, View):
+    template_name = 'burial_edit_comments.html'
+
+    def get_formset(self):
+        return BurialCommentEditFormSet(request=self.request, data=self.request.POST or None, instance=self.get_object())
+
+    def get_object(self):
+        return Burial.objects.get(pk=self.kwargs['pk'], ugh=self.request.user.profile.org)
+
+    def get_context_data(self, **kwargs):
+        return {
+            'burial': self.get_object(),
+            'formset': self.get_formset(),
+        }
+
+    @transaction.commit_on_success
+    def post(self, request, *args, **kwargs):
+        self.request = request
+
+        formset = self.get_formset()
+        burial = self.get_object()
+        if formset.is_valid():
+            for f in formset.forms:
+                f_data = f['comment'].data and f['comment'].data.strip() or ''
+                if f.instance.pk:
+                    str_dt_modified = localize(f.instance.dt_modified, use_l10n=settings.USE_L10N)
+                    if f['DELETE'].value() or not f_data:
+                        write_log(request, burial, _(u"Комментарий от %s удален") % str_dt_modified)
+                        f.instance.delete()
+                    elif 'comment' in f.changed_data:
+                        write_log(
+                            request,
+                            burial,
+                            _(u"Комментарий от %(dt_modified)s изменен:\n%(comment)s") % dict(
+                                dt_modified=str_dt_modified,
+                                comment=f_data,
+                        ))
+                        f.save()
+                elif f_data:
+                        write_log(request, burial, _(u"Комментарий: %s") % f_data)
+                        BurialComment.objects.create(
+                            burial=burial,
+                            comment=f_data,
+                            creator=request.user,
+                        )
+
+            return redirect(reverse('burials_comments_edit', args=[self.kwargs['pk']]))
+        else:
+            messages.error(self.request, _(u"Обнаружены ошибки"))
+            return self.get(request, *args, **kwargs)
+
+    def get(self, request, *args, **kwargs):
+        self.request = request
+        try:
+            return render(request, self.template_name, self.get_context_data())
+        except Burial.DoesNotExist:
+            raise Http404
+
+burials_comments_edit = BurialEditComments.as_view()
 
 class AutocompleteCemeteries(View):
     def get(self, request, *args, **kwargs):
