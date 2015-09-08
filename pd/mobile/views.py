@@ -26,6 +26,7 @@ from users.models import Profile
 from users.models import Org
 from logs.models import write_log
 from pd.models import UnclearDate
+from pd.utils import utc2local
 
 from django.utils.dateparse import parse_datetime
 from django.core.files.base import ContentFile
@@ -88,6 +89,7 @@ class ApiCemeteryUpload(APIView):
             square = request.POST['square']
         if request.POST.get('dt_created') :
             dtCreated = datetime.strptime(request.POST['dt_created'], templateDateTime)
+            dtCreated = utc2local(dtCreated)
         isGPSChange = False
         if gpsJSON :
             isGPSChange = True
@@ -109,6 +111,7 @@ class ApiCemeteryUpload(APIView):
             prevCem = None
             cem = Cemetery(name = cemeteryName, square = square, creator = request.user, ugh = org, dt_created = dtCreated)
             cem.save()
+            write_log(request, cem, _(u"Кладбище '%s' создано через мобильное приложение") % cem.name)                        
             listInsertedCemetery.append(cem)
         if isGPSChange == True :
             CemeteryCoordinates.objects.filter(cemetery__pk = cem.pk).delete()
@@ -160,6 +163,7 @@ class ApiAreaUpload(APIView):
         dtCreated = None
         if request.POST.get('dt_created') :
             dtCreated = datetime.strptime(request.POST['dt_created'], templateDateTime)
+            dtCreated = utc2local(dtCreated)
         if request.POST.get('square') :
             square = request.POST['square']
         isGPSChange = False
@@ -187,6 +191,7 @@ class ApiAreaUpload(APIView):
             prevArea = None
             area = Area(cemetery = cemetery, name = areaName, square = square, dt_created = dtCreated)            
             area.save()
+            write_log(request, area, _(u"Участок '%s' создан через мобильное приложение") % area.name)
             listInsertedArea.append(area)
         if isGPSChange == True :
             AreaCoordinates.objects.filter(area__pk = area.pk).delete()
@@ -259,7 +264,8 @@ class ApiPlaceUpload(APIView):
         if request.POST.get('dtUnindentified') :
             dtUnindentified = datetime.strptime(request.POST['dtUnindentified'], templateDateTime)
         if request.POST.get('dt_created') :
-            dtCreated = datetime.strptime(request.POST['dt_created'], templateDateTime)        
+            dtCreated = datetime.strptime(request.POST['dt_created'], templateDateTime)
+            dtCreated = utc2local(dtCreated)
         
         user = request.user
         listPlaceForResponse = []
@@ -369,6 +375,7 @@ class ApiPlaceUpload(APIView):
                     dt_created = dtCreated,
                 )
                 place.save()
+                write_log(request, place, _(u"Место '%s' создано через мобильное приложение") % place.place)
             listPlaceForResponse.append(place)
             
         serializer = PlaceWithNestedObjectSerializer(listPlaceForResponse)
@@ -416,6 +423,7 @@ class ApiGraveUpload(APIView):
             isMilitary = True
         if request.POST.get('dt_created') :
             dtCreated = datetime.strptime(request.POST['dt_created'], templateDateTime)
+            dtCreated = utc2local(dtCreated)
         listInsertedGrave = []
         try:
             place = Place.objects.get(pk = placeId)
@@ -534,6 +542,7 @@ class ApiPlacePhotoUpload(APIView):
         dtCreated = None
         if request.POST.get('dt_created') :
             dtCreated = datetime.strptime(request.POST['dt_created'], templateDateTime)
+            dtCreated = utc2local(dtCreated)
         data = ""
         listPhoto = []
         try:
@@ -541,7 +550,8 @@ class ApiPlacePhotoUpload(APIView):
             photo_content = ContentFile(request.FILES['photo'].read())
             photo = PlacePhoto(place=place, lat = lat, lng = lng, comment = '', creator = request.user, dt_created = dtCreated)
             photo.save()
-            photo.bfile.save(request.FILES['photo'].name, photo_content)            
+            photo.bfile.save(request.FILES['photo'].name, photo_content)
+            write_log(request, photo, _(u"Фото к месту '%s' создано через мобильное приложение") % place.place )
             if lat and lat :
                 place.lat = lat
                 place.lng = lng
