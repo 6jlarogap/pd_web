@@ -291,7 +291,7 @@ class ProfileDataForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelForm):
                     return None
             self.put_log_data(
                 msg=_(u'Изменены данные пользователя %s') % profile,
-                log_instance=profile,
+                log_instance=profile.org,
             )
         else:
             user_kwargs = dict(
@@ -310,7 +310,7 @@ class ProfileDataForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelForm):
             profile.user = user
             profile.org = self.request.user.profile.org
             profile.save(force_insert=True)
-            write_log(self.request, profile, (u'Добавлен пользователь %s') % user.username)
+            write_log(self.request, profile.org, _(u'Добавлен пользователь %s') % user.username)
 
         return profile
 
