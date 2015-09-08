@@ -100,12 +100,12 @@ class UGHRequiredMixin:
             return redirect('/')
         return View.dispatch(self, request, *args, **kwargs)
 
-class LoginRequiredMixin:
+class UghOrLoruRequiredMixin:
     def dispatch(self, request, *args, **kwargs):
         self.request = request
-        if not request.user.is_authenticated():
-            return redirect('/')
-        return View.dispatch(self, request, *args, **kwargs)
+        if is_ugh_user(request.user) or is_loru_user(request.user):
+            return View.dispatch(self, request, *args, **kwargs)
+        return redirect('/')
 
 class CheckRecaptchaMixin(object):
     
@@ -963,7 +963,7 @@ class LoruRegistryView(UGHRequiredMixin, View):
 
 loru_registry = LoruRegistryView.as_view()
 
-class ProfileView(LoginRequiredMixin, UpdateView):
+class ProfileView(UghOrLoruRequiredMixin, UpdateView):
     """
     Редактирование профиля, заодно организации,
     применяется только при вводе начальной организации
@@ -987,7 +987,7 @@ class ProfileView(LoginRequiredMixin, UpdateView):
 
 profile = ProfileView.as_view()
 
-class UserProfileView(LoginRequiredMixin, UpdateView):
+class UserProfileView(UghOrLoruRequiredMixin, UpdateView):
     """
     Редактирование профиля
     """
@@ -1010,7 +1010,7 @@ class UserProfileView(LoginRequiredMixin, UpdateView):
 
 user_profile = UserProfileView.as_view()
 
-class UserAddView(LoginRequiredMixin, CreateView):
+class UserAddView(UghOrLoruRequiredMixin, CreateView):
     template_name = 'add_user.html'
     model = User
     form_class = UserAddForm
@@ -1042,7 +1042,7 @@ class UserAddView(LoginRequiredMixin, CreateView):
 
 add_user = UserAddView.as_view()
 
-class UserEditView(LoginRequiredMixin, RequestToFormMixin, UpdateView):
+class UserEditView(UghOrLoruRequiredMixin, RequestToFormMixin, UpdateView):
     template_name = 'edit_user.html'
     model = User
     form_class = UserDataForm
@@ -1072,7 +1072,7 @@ class UserEditView(LoginRequiredMixin, RequestToFormMixin, UpdateView):
         
 edit_user = UserEditView.as_view()
 
-class ProfileEditView(LoginRequiredMixin, RequestToFormMixin, UpdateView):
+class ProfileEditView(UghOrLoruRequiredMixin, RequestToFormMixin, UpdateView):
     template_name = 'edit_profile.html'
     model = Profile
     form_class = ProfileDataForm
@@ -1106,7 +1106,7 @@ class ProfileEditView(LoginRequiredMixin, RequestToFormMixin, UpdateView):
 
 edit_profile = ProfileEditView.as_view()
 
-class OrgEditView(LoginRequiredMixin, RequestToFormMixin, FormInvalidMixin, UpdateView):
+class OrgEditView(UghOrLoruRequiredMixin, RequestToFormMixin, FormInvalidMixin, UpdateView):
     template_name = 'edit_org.html'
     model = Org
     form_class = OrgForm
@@ -1133,7 +1133,7 @@ class OrgEditView(LoginRequiredMixin, RequestToFormMixin, FormInvalidMixin, Upda
         
 edit_org = OrgEditView.as_view()
 
-class ChangePasswordView(LoginRequiredMixin, UpdateView):
+class ChangePasswordView(UghOrLoruRequiredMixin, UpdateView):
     template_name = 'change_password.html'
     model = User
     form_class = ChangePasswordForm
@@ -1215,7 +1215,7 @@ class AutocompleteLoruInBurials(View):
 
 autocomplete_loru_in_burials = AutocompleteLoruInBurials.as_view()
 
-class OrgLogView(LoginRequiredMixin, PaginateListView):
+class OrgLogView(UghOrLoruRequiredMixin, PaginateListView):
     template_name = 'org_log.html'
     context_object_name = 'logs'
 

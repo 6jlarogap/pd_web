@@ -35,7 +35,7 @@ from burials.burials_views import *
 from logs.models import write_log, log_object, prepare_m2m_log, compare_obj
 from django.contrib.auth.models import User
 from users.models import Profile, Org, CustomerProfile, PermitIfUgh
-from users.views import SupervisorRequiredMixin, UGHRequiredMixin, LoginRequiredMixin
+from users.views import SupervisorRequiredMixin, UGHRequiredMixin, UghOrLoruRequiredMixin
 from persons.models import Phone, AlivePerson, CustomPlace
 from geo.models import Location
 
@@ -847,7 +847,7 @@ class PlaceView(UGHRequiredMixin, RequestToFormMixin, UpdateView):
 
 view_place = PlaceView.as_view()
 
-class AddDoverView(LoginRequiredMixin, View):
+class AddDoverView(UghOrLoruRequiredMixin, View):
     def post(self, request, *args, **kwargs):
         prefix = kwargs.get('prefix') or ''
         f = AddDoverForm(data=request.POST, prefix='%sdover' % prefix)
@@ -872,7 +872,7 @@ class AddDoverView(LoginRequiredMixin, View):
 
 add_dover = AddDoverView.as_view()
 
-class AddAgentView(LoginRequiredMixin, View):
+class AddAgentView(UghOrLoruRequiredMixin, View):
     def post(self, request, *args, **kwargs):
         prefix = kwargs.get('prefix') or ''
         fa = AddAgentForm(data=request.POST, prefix='%sagent' % prefix)
@@ -911,7 +911,7 @@ class AddAgentView(LoginRequiredMixin, View):
 
 add_agent = AddAgentView.as_view()
 
-class AddOrgView(LoginRequiredMixin, View):
+class AddOrgView(UghOrLoruRequiredMixin, View):
     def post(self, request, *args, **kwargs):
         if kwargs.get('type'):
             prefix = kwargs['type']
@@ -1010,7 +1010,7 @@ class GetGravesNumberView(View):
 
 get_graves_number = GetGravesNumberView.as_view()
 
-class CommentView(BurialsListGenericMixin, LoginRequiredMixin, DetailView):
+class CommentView(BurialsListGenericMixin, UghOrLoruRequiredMixin, DetailView):
     def get_queryset(self):
         return Burial.objects.filter(self.get_qs_filter()).distinct()
 
@@ -1120,7 +1120,7 @@ class AutocompleteAreas(View):
 
 autocomplete_areas = AutocompleteAreas.as_view()
 
-class DeleteBurialfile(LoginRequiredMixin, View):
+class DeleteBurialfile(UghOrLoruRequiredMixin, View):
     def get(self, request, *args, **kwargs):
         burial_file = get_object_or_404(BurialFiles, pk=self.kwargs['pk'])
         if not burial_file.burial.is_editable(request.user):
@@ -1130,7 +1130,7 @@ class DeleteBurialfile(LoginRequiredMixin, View):
 
 delete_burialfile = DeleteBurialfile.as_view()
 
-class BurialfileCommentEdit(LoginRequiredMixin, UpdateView):
+class BurialfileCommentEdit(UghOrLoruRequiredMixin, UpdateView):
     template_name = 'edit_burialfile_comment.html'
     form_class = BurialfileCommentEditForm
 
