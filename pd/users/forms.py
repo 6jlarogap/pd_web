@@ -190,9 +190,6 @@ class ProfileDataForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelForm):
     is_active = forms.BooleanField(required=False)
     email = forms.EmailField(required=False)
 
-    user_first_name = forms.CharField(label=_(u"Имя"), required=True)
-    user_middle_name = forms.CharField(label=_(u"Отчество"), required=False)
-
     password1 = forms.CharField(label=_(u"Пароль"), widget=forms.PasswordInput(), required=False)
     password2 = forms.CharField(label=_(u"Пароль (повторите)"), widget=forms.PasswordInput(), required=False)
 
@@ -230,6 +227,10 @@ class ProfileDataForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelForm):
             Q(ugh__loru_list__loru=self.request.user.profile.org) |
             Q(ugh=self.request.user.profile.org)
         ).distinct()
+
+        self.fields['user_last_name'].required = True
+        self.fields['user_first_name'].required = True
+        self.fields['user_middle_name'].required = False
 
         if self.instance.pk:
             self.initial['username'] = self.instance.user.username
@@ -291,8 +292,15 @@ class ProfileDataForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelForm):
                     # метод form_valid из view покажет message.error
                     return None
             self.put_log_data(
-                msg=_(u'Изменены данные пользователя %s') % profile,
+                msg=_(u'Изменены данные пользователя %(fio)s (%(username)s)') % dict(
+                    fio=profile,
+                    username=profile.user.username,
+                ),
                 log_instance=profile.org,
+            )
+            self.put_log_data(
+                msg=_(u'Изменены данные'),
+                log_instance=profile,
             )
         else:
             user_kwargs = dict(
