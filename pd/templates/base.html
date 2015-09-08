@@ -155,7 +155,7 @@
                                             {% if user.profile.org.pk %}
                                                 <li><a href="{% url edit_org user.profile.org.pk %}">{% trans "Организация" %}</a></li>
                                             {% endif %}
-                                            <li><a href="{% url edit_profile user.profile.pk %}">{% trans "Пользователь" %}</a></li>
+                                            <li><a href="{% url user_profile %}">{% trans "Умолчательные настройки" %}</a></li>
                                             {% if user.profile.org.pk %}
                                                 <li><a href="{% url org_log %}">{% trans "Журнал" %}</a></li>
                                             {% endif %}

@@ -136,6 +136,7 @@ class UserProfileForm(ChildrenJSONMixin, StrippedStringsMixin, forms.ModelForm):
             Q(ugh=self.instance.org)
         ).distinct()
         self.fields['user_last_name'].required = True
+        self.fields['user_first_name'].required = True
 
 class UserDataForm(LoggingFormMixin, forms.ModelForm):
     is_agent = forms.BooleanField(label=_(u"Агент"), required=False)
