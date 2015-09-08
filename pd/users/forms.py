@@ -183,7 +183,7 @@ class UserDataForm(LoggingFormMixin, forms.ModelForm):
         )
         return user
 
-class ProfileDataForm(ChildrenJSONMixin, LoggingFormMixin, StrippedStringsMixin, forms.ModelForm):
+class ProfileDataForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelForm):
 
     username = forms.CharField(label=_(u"Логин"), required=True)
     is_active = forms.BooleanField(required=False)
@@ -218,8 +218,11 @@ class ProfileDataForm(ChildrenJSONMixin, LoggingFormMixin, StrippedStringsMixin,
         self.fields['email'].label = User._meta.get_field('email').verbose_name.capitalize()
         self.fields['email'].help_text=User._meta.get_field('email').help_text
 
-        self.fields['is_active'].label = User._meta.get_field('is_active').verbose_name.capitalize()
-        self.fields['is_active'].help_text=User._meta.get_field('is_active').help_text
+        if self.instance.pk and int(self.instance.pk) == int(request.user.profile.pk):
+            del self.fields['is_active']
+        else:
+            self.fields['is_active'].label = User._meta.get_field('is_active').verbose_name.capitalize()
+            self.fields['is_active'].help_text=User._meta.get_field('is_active').help_text
 
         self.fields['cemetery'].queryset = Cemetery.objects.filter(
             Q(ugh__isnull=True) |
@@ -240,16 +243,22 @@ class ProfileDataForm(ChildrenJSONMixin, LoggingFormMixin, StrippedStringsMixin,
 
     def clean_username(self):
         username = self.cleaned_data.get('username', '').strip()
-        if username:
-            validate_username(username)
-            if User.objects.filter(username__iexact=username).exclude(pk=self.instance.user.pk).exists():
-                raise forms.ValidationError(_(u"Этот логин уже используется"))
+        validate_username(username)
+        f_username = User.objects.filter(username__iexact=username)
+        if self.instance.pk:
+            f_username = f_username.exclude(pk=self.instance.user.pk)
+        if f_username.exists():
+            raise forms.ValidationError(_(u"Этот логин уже используется"))
         return username
 
     def clean_email(self):
         email = self.cleaned_data.get('email', '').strip() or None
-        if email and User.objects.filter(email=email).exclude(pk=self.instance.user.pk).exists():
-            raise forms.ValidationError(_(u"Этот email уже используется"))
+        if email:
+            f_email = User.objects.filter(email__iexact=email)
+            if self.instance.pk:
+                f_email = f_email.exclude(pk=self.instance.user.pk)
+            if f_email.exists():
+                raise forms.ValidationError(_(u"Этот email уже используется"))
         return email
 
     def clean(self):
@@ -260,8 +269,8 @@ class ProfileDataForm(ChildrenJSONMixin, LoggingFormMixin, StrippedStringsMixin,
 
     @transaction.commit_on_success
     def save(self):
-        self.collect_log_data()
         if self.instance.pk:
+            self.collect_log_data()
             profile = super(ProfileDataForm, self).save()
             save_user = False
             for f in self.changed_data:
@@ -280,11 +289,29 @@ class ProfileDataForm(ChildrenJSONMixin, LoggingFormMixin, StrippedStringsMixin,
                     transaction.rollback()
                     # метод form_valid из view покажет message.error
                     return None
+            self.put_log_data(
+                msg=_(u'Изменены данные пользователя %s') % profile,
+                log_instance=profile,
+            )
+        else:
+            user_kwargs = dict(
+                username=self.cleaned_data['username'],
+                email = self.cleaned_data['email'],
+            )
+            if 'is_active' in self.fields:
+                user_kwargs['is_active'] = self.cleaned_data['is_active']
+            try:
+                user = User.objects.create(**user_kwargs)
+            except IntegrityError:
+                transaction.rollback()
+                # метод form_valid из view покажет message.error
+                return None
+            profile = super(ProfileDataForm, self).save(commit=False)
+            profile.user = user
+            profile.org = self.request.user.profile.org
+            profile.save(force_insert=True)
+            write_log(self.request, profile, (u'Добавлен пользователь %s') % user.username)
 
-        self.put_log_data(
-            msg=_(u'Изменены данные пользователя %s') % profile,
-            log_instance=profile,
-        )
         return profile
 
 class ChangePasswordForm(forms.ModelForm):

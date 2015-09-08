@@ -72,7 +72,7 @@ urlpatterns = patterns('users.views',
     url(r'^userprofile/', 'user_profile', name='user_profile'),
 
     url(r'^profile/(?P<pk>\d+)/edit/', 'edit_profile', name='edit_profile'),
-    url(r'^profile/create/', 'edit_profile', name='edit_profile'),
+    url(r'^profile/create/', 'edit_profile', name='create_profile'),
     url(r'^user/(?P<pk>\d+)/edit/', 'edit_user', name='edit_user'),
     url(r'^user/(?P<pk>\d+)/password/', 'change_password', name='change_password'),
     url(r'^user/create/', 'add_user', name='add_user'),

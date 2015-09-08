@@ -1096,18 +1096,11 @@ class ProfileEditView(LoginRequiredMixin, RequestToFormMixin, UpdateView):
             # username & password
             messages.error(self.request, _(u'Логин пользователя или email уже используются в системе'))
             return self.get(self.request, *self.args, **self.kwargs)
-        if self.new_:
-            #msg = _(u"<a href='%(edit_profile)s'>Пользователь %(username)s</a> изменен") % dict(
-                #edit_profile=reverse('edit_profile', args=[self.object.pk]),
-                #username=self.object.user.username,
-            #)
-            pass
-        else:
-            msg = _(u"<a href='%(edit_profile)s'>Пользователь %(username)s</a>: %(created_modified)s") % dict(
-                edit_profile=reverse('edit_profile', args=[self.object.pk]),
-                username=self.object.user.username,
-                created_modified = _(u'создан') if self.new_ else _(u'изменения сохранены'),
-            )
+        msg = _(u"<a href='%(edit_profile)s'>Пользователь %(username)s</a>: %(created_modified)s") % dict(
+            edit_profile=reverse('edit_profile', args=[self.object.pk]),
+            username=self.object.user.username,
+            created_modified = _(u'создан') if self.new_ else _(u'изменения сохранены'),
+        )
         messages.success(self.request, msg)
         return redirect(self.get_success_url())
 
