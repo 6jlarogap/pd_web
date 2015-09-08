@@ -5,6 +5,7 @@ from django.conf import settings
 from django import forms
 from django.core.exceptions import ValidationError
 from django.contrib.auth.models import User
+from django.contrib.auth.hashers import make_password
 from django.forms.models import inlineformset_factory, BaseInlineFormSet
 from django.utils.translation import ugettext_lazy as _
 from django.db import IntegrityError, transaction
@@ -299,15 +300,23 @@ class ProfileDataForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelForm):
                 msg=_(u'Изменены данные'),
                 log_instance=profile,
             )
+            if self.cleaned_data['password1']:
+                write_log(self.request, profile, _(u'Установлен пароль'))
+                write_log(
+                    self.request,
+                    profile.org,
+                    _(u'Установлен пароль пользователя %(fio)s (%(username)s)') % dict(
+                        fio=profile,
+                        username=profile.user.username,
+                ))
         else:
-            user_kwargs = dict(
-                username=self.cleaned_data['username'],
-                email = self.cleaned_data['email'],
-            )
-            if 'is_active' in self.fields:
-                user_kwargs['is_active'] = self.cleaned_data['is_active']
             try:
-                user = User.objects.create(**user_kwargs)
+                user = User.objects.create(
+                    username=self.cleaned_data['username'],
+                    email=self.cleaned_data['email'],
+                    is_active=self.cleaned_data['is_active'],
+                    password=make_password(self.cleaned_data['password1'])
+                )
             except IntegrityError:
                 transaction.rollback()
                 # метод form_valid из view покажет message.error

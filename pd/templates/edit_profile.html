@@ -32,7 +32,7 @@
         <p>{{ form.user_middle_name.label_tag }} {{ form.user_middle_name }} <span class="helptext">{{ form.user_middle_name.help_text }}</span></p>
 
         {{ form.email.errors }}
-        <p>{{ form.email.label_tag }} {{ form.email }}<span class="helptext"> {{ form.email.help_text }}</span></p>
+        <p>{{ form.email.label_tag }} {{ form.email }} <span class="helptext"> {{ form.email.help_text }}</span></p>
 
         {% if form.is_agent %}
             {{ form.is_agent.errors }}
@@ -41,20 +41,20 @@
 
         <fieldset>
             {{ form.password1.errors }}
-            <p>{{ form.password1.label_tag }} {{ form.password1 }}<span class="helptext"> {{ form.password1.help_text }}</span></p>
+            <p>{{ form.password1.label_tag }} {{ form.password1 }} <span class="helptext"> {{ form.password1.help_text }}</span></p>
 
             {{ form.password2.errors }}
-            <p>{{ form.password2.label_tag }} {{ form.password2 }}<span class="helptext"> {{ form.password2.help_text }}</span></p>
+            <p>{{ form.password2.label_tag }} {{ form.password2 }} <span class="helptext"> {{ form.password2.help_text }}</span></p>
         </fieldset>
 
         <h4>Настройки по умолчанию</h4>
         <br />
         <fieldset>
             {{ form.cemetery.errors }}
-            <p>{{ form.cemetery.label_tag }} {{ form.cemetery }}<span class="helptext"> {{ form.cemetery.help_text }}</span></p>
+            <p>{{ form.cemetery.label_tag }} {{ form.cemetery }} <span class="helptext"> {{ form.cemetery.help_text }}</span></p>
 
             {{ form.area.errors }}
-            <p>{{ form.area.label_tag }} {{ form.area }}<span class="helptext"> {{ form.area.help_text }}</span></p>
+            <p>{{ form.area.label_tag }} {{ form.area }} <span class="helptext"> {{ form.area.help_text }}</span></p>
         </fieldset>
 
         <p>
