@@ -20,7 +20,7 @@ from burials.models import Cemetery, PlaceSize, Reason, Burial
 from logs.models import write_log
 
 from users.models import Profile, ProfileLORU, Org, BankAccount, RegisterProfile, OrgCertificate, \
-                         get_mail_footer, is_cabinet_user
+                         get_mail_footer, is_cabinet_user, is_trade_user
 
 User._meta.get_field_by_name('email')[0]._unique = True
 User._meta.get_field_by_name('email')[0].null=True
@@ -305,6 +305,8 @@ class OrgForm(StrippedStringsMixin, BaseOrgForm):
             del self.fields['death_date_offer']
             del self.fields['opf_burial']
             del self.fields['hide_deadman_address']
+        if not self.is_own_org or not is_trade_user(self.request.user):
+            del self.fields['sms_phone']
         if not self.is_own_org or not self.request.user.profile.is_ugh():
             del self.fields['numbers_algo']
             del self.fields['plan_date_days_before']
