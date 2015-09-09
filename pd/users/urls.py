@@ -72,13 +72,13 @@ urlpatterns = patterns('users.views',
     # TODO
     # Убрать эти URLs и сопутствующие templates, views, forms ----------
     url(r'^profile/old/$', 'profile_old', name='profile_old'),
-    url(r'^userprofile/$', 'user_profile', name='user_profile'),
+    url(r'^userprofile/old/$', 'user_profile_old', name='user_profile_old'),
     url(r'^user/(?P<pk>\d+)/edit/$', 'edit_user', name='edit_user'),
     url(r'^user/(?P<pk>\d+)/password/$', 'change_password', name='change_password'),
     url(r'^user/create/$', 'add_user', name='add_user'),
     # ------------------------------------------------------------------
 
-    url(r'^profile/$', 'edit_profile', {'my_profile': True}, name='profile'),
+    url(r'^userprofile/$', 'edit_profile', {'my_profile': True}, name='user_profile'),
     url(r'^profile/(?P<pk>\d+)/edit/$', 'edit_profile', name='edit_profile'),
     url(r'^profile/create/$', 'edit_profile', name='create_profile'),
 

@@ -974,7 +974,7 @@ class ProfileView(UghOrLoruRequiredMixin, UpdateView):
     form_class = ProfileForm
 
     def get_success_url(self):
-        return reverse('profile')
+        return reverse('profile_old')
 
     def get_object(self, queryset=None):
         return self.request.user.profile
@@ -997,7 +997,7 @@ class UserProfileView(UghOrLoruRequiredMixin, UpdateView):
     form_class = UserProfileForm
 
     def get_success_url(self):
-        return reverse('user_profile')
+        return reverse('user_profile_old')
 
     def get_object(self, queryset=None):
         return self.request.user.profile
@@ -1008,7 +1008,7 @@ class UserProfileView(UghOrLoruRequiredMixin, UpdateView):
         messages.success(self.request, _(u"Данные сохранены"))
         return redirect(self.get_success_url())
 
-user_profile = UserProfileView.as_view()
+user_profile_old = UserProfileView.as_view()
 
 class UserAddView(UghOrLoruRequiredMixin, CreateView):
     template_name = 'add_user.html'
@@ -1095,7 +1095,7 @@ class ProfileEditView(UghOrLoruRequiredMixin, RequestToFormMixin, UpdateView):
 
     def get_success_url(self):
         if self.kwargs.get('my_profile'):
-            return reverse('profile')
+            return reverse('user_profile')
         else:
             return reverse('edit_org', args=[self.request.user.profile.org.pk])
 
@@ -1107,7 +1107,7 @@ class ProfileEditView(UghOrLoruRequiredMixin, RequestToFormMixin, UpdateView):
             messages.error(self.request, _(u'Логин пользователя или email уже используются в системе'))
             return self.get(self.request, *self.args, **self.kwargs)
         msg = _(u"<a href='%(edit_profile)s'>Пользователь %(username)s</a>: %(created_modified)s") % dict(
-            edit_profile=reverse('profile') if self.kwargs.get('my_profile') \
+            edit_profile=reverse('user_profile') if self.kwargs.get('my_profile') \
                          else reverse('edit_profile', args=[self.object.pk]),
             username=self.object.user.username,
             created_modified = _(u'создан') if self.new_ else _(u'изменения сохранены'),
