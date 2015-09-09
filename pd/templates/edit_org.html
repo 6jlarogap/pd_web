@@ -77,7 +77,7 @@
         <h2>{% trans "Пользователи" %}</h2>
         <table class="table table-bordered">
             <tr>
-                <th>{% trans "Имя пользователя" %}</th>
+                <th>{% trans "Имя пользователя (логин)" %}</th>
                 <th>{% trans "Email" %}</th>
                 <th>{% trans "ФИО" %}</th>
                 {% if user.profile.is_loru %}<th>{% trans "Агент" %}</th>{% endif %}
@@ -91,16 +91,15 @@
                     <td>{% if p.user.profile.user_last_name %}{{ p.user.profile.full_name }}{% endif %}</td>
                     {% if user.profile.is_loru %}<td>{{ p.is_agent|yesno }}</td>{% endif %}
                     <td>{{ p.user.is_active|yesno }}</td>
-                    <td>
-                        <a href="{% url change_password p.user.pk %}" class="btn">сменить пароль</a>
-                        <a href="{% url edit_user p.user.pk %}" class="btn">править данные</a>
+                    <td style="text-align:center">
+                        <a href="{% url edit_profile p.user.profile.pk %}" class="btn">править данные</a>
                     </td>
                 </tr>
             {% endfor %}
         </table>
 
         <p>
-            <a href="{% url add_user %}" class="btn">{% trans "новый пользователь" %}</a>
+            <a href="{% url create_profile %}" class="btn">{% trans "новый пользователь" %}</a>
         </p>
     {% endif %}
 </form>

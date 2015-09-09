@@ -50,7 +50,7 @@ from logs.models import Log, write_log, LoginLog
 from users.forms import UserAddForm, RegisterForm, LoruFormset, ProfileForm, UserProfileForm, \
                         UserDataForm, ChangePasswordForm, BankAccountFormset, OrgForm, \
                         OrgLogForm, LoginLogForm, OrgBurialStatsForm, SupportForm, TestCaptchaForm, \
-                        LoruOrdersStatsForm
+                        LoruOrdersStatsForm, ProfileDataForm
 from users.models import Profile, Org, RegisterProfile, ProfileLORU, CustomerProfile, Store, \
                          get_mail_footer, is_cabinet_user, is_loru_user, is_ugh_user, \
                          PermitIfTrade, PermitIfTradeOrSupervisor, \
@@ -100,12 +100,12 @@ class UGHRequiredMixin:
             return redirect('/')
         return View.dispatch(self, request, *args, **kwargs)
 
-class LoginRequiredMixin:
+class UghOrLoruRequiredMixin:
     def dispatch(self, request, *args, **kwargs):
         self.request = request
-        if not request.user.is_authenticated():
-            return redirect('/')
-        return View.dispatch(self, request, *args, **kwargs)
+        if is_ugh_user(request.user) or is_loru_user(request.user):
+            return View.dispatch(self, request, *args, **kwargs)
+        return redirect('/')
 
 class CheckRecaptchaMixin(object):
     
@@ -963,7 +963,7 @@ class LoruRegistryView(UGHRequiredMixin, View):
 
 loru_registry = LoruRegistryView.as_view()
 
-class ProfileView(LoginRequiredMixin, UpdateView):
+class ProfileView(UghOrLoruRequiredMixin, UpdateView):
     """
     Редактирование профиля, заодно организации,
     применяется только при вводе начальной организации
@@ -985,9 +985,9 @@ class ProfileView(LoginRequiredMixin, UpdateView):
         messages.success(self.request, _(u"Данные сохранены"))
         return redirect(self.get_success_url())
 
-profile = ProfileView.as_view()
+profile_old = ProfileView.as_view()
 
-class UserProfileView(LoginRequiredMixin, UpdateView):
+class UserProfileView(UghOrLoruRequiredMixin, UpdateView):
     """
     Редактирование профиля
     """
@@ -1010,7 +1010,7 @@ class UserProfileView(LoginRequiredMixin, UpdateView):
 
 user_profile = UserProfileView.as_view()
 
-class UserAddView(LoginRequiredMixin, CreateView):
+class UserAddView(UghOrLoruRequiredMixin, CreateView):
     template_name = 'add_user.html'
     model = User
     form_class = UserAddForm
@@ -1042,7 +1042,7 @@ class UserAddView(LoginRequiredMixin, CreateView):
 
 add_user = UserAddView.as_view()
 
-class UserEditView(LoginRequiredMixin, RequestToFormMixin, UpdateView):
+class UserEditView(UghOrLoruRequiredMixin, RequestToFormMixin, UpdateView):
     template_name = 'edit_user.html'
     model = User
     form_class = UserDataForm
@@ -1072,7 +1072,52 @@ class UserEditView(LoginRequiredMixin, RequestToFormMixin, UpdateView):
         
 edit_user = UserEditView.as_view()
 
-class OrgEditView(LoginRequiredMixin, RequestToFormMixin, FormInvalidMixin, UpdateView):
+class ProfileEditView(UghOrLoruRequiredMixin, RequestToFormMixin, UpdateView):
+    template_name = 'edit_profile.html'
+    model = Profile
+    form_class = ProfileDataForm
+
+    def get_form_kwargs(self):
+        data = super(ProfileEditView, self).get_form_kwargs()
+        data['my_profile'] = self.kwargs.get('my_profile')
+        return data
+
+    def get_object(self):
+        self.new_ = False
+        if 'pk' in self.kwargs:
+            obj = Profile.objects.get(pk=self.kwargs['pk'])
+        elif 'my_profile' in self.kwargs:
+            obj = self.request.user.profile
+        else:
+            obj = Profile()
+            self.new_ = True
+        return obj
+
+    def get_success_url(self):
+        if self.kwargs.get('my_profile'):
+            return reverse('profile')
+        else:
+            return reverse('edit_org', args=[self.request.user.profile.org.pk])
+
+    def form_valid(self, form):
+        profile = form.save()
+        if profile is None:
+            # Ошибка при записи, даже после предварительной проверки на уникальность
+            # username & password
+            messages.error(self.request, _(u'Логин пользователя или email уже используются в системе'))
+            return self.get(self.request, *self.args, **self.kwargs)
+        msg = _(u"<a href='%(edit_profile)s'>Пользователь %(username)s</a>: %(created_modified)s") % dict(
+            edit_profile=reverse('profile') if self.kwargs.get('my_profile') \
+                         else reverse('edit_profile', args=[self.object.pk]),
+            username=self.object.user.username,
+            created_modified = _(u'создан') if self.new_ else _(u'изменения сохранены'),
+        )
+        messages.success(self.request, msg)
+        return redirect(self.get_success_url())
+
+edit_profile = ProfileEditView.as_view()
+
+class OrgEditView(UghOrLoruRequiredMixin, RequestToFormMixin, FormInvalidMixin, UpdateView):
     template_name = 'edit_org.html'
     model = Org
     form_class = OrgForm
@@ -1099,7 +1144,7 @@ class OrgEditView(LoginRequiredMixin, RequestToFormMixin, FormInvalidMixin, Upda
         
 edit_org = OrgEditView.as_view()
 
-class ChangePasswordView(LoginRequiredMixin, UpdateView):
+class ChangePasswordView(UghOrLoruRequiredMixin, UpdateView):
     template_name = 'change_password.html'
     model = User
     form_class = ChangePasswordForm
@@ -1181,7 +1226,7 @@ class AutocompleteLoruInBurials(View):
 
 autocomplete_loru_in_burials = AutocompleteLoruInBurials.as_view()
 
-class OrgLogView(LoginRequiredMixin, PaginateListView):
+class OrgLogView(UghOrLoruRequiredMixin, PaginateListView):
     template_name = 'org_log.html'
     context_object_name = 'logs'
 
