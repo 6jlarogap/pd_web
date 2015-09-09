@@ -24,7 +24,8 @@ from pd.models import BaseModel, Files, GetLogsMixin, validate_gt0, validate_use
                       validate_phone_as_number, SafeDeleteMixin
 from logs.models import Log
 
-from pd.utils import DigitsValidator, LengthValidator, NotEmptyValidator, phones_from_text
+from pd.utils import DigitsValidator, LengthValidator, NotEmptyValidator, \
+                     phones_from_text, capitalize
 from pd.views import ServiceException
 
 class PhonesMixin(object):
@@ -110,6 +111,13 @@ class CommonProfile(BaseModel):
             middleName=self.user_middle_name,
             organization=None,
         )
+
+    def save(self, *args, **kwargs):
+        self.user_first_name = capitalize(self.user_first_name)
+        self.user_last_name = capitalize(self.user_last_name)
+        self.user_middle_name = capitalize(self.user_middle_name)
+        super(CommonProfile, self).save(*args, **kwargs)
+
 
 class CustomerProfile(CommonProfile):
     # Дата/время согласия с пользовательским соглашением, служит еще как BooleanField:

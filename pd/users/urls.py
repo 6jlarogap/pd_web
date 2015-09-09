@@ -67,19 +67,26 @@ urlpatterns = patterns('users.views',
     url(r'^loru_currentstats/', 'loru_current_stats', name='loru_current_stats'),
     url(r'^loru_orderstats/', 'loru_order_stats', name='loru_order_stats'),
         
-    url(r'^profile/', 'profile', name='profile'),
-    url(r'^loruregistry/', 'loru_registry', name='loru_registry'),
-    url(r'^userprofile/', 'user_profile', name='user_profile'),
+    url(r'^loruregistry/$', 'loru_registry', name='loru_registry'),
 
-    url(r'^user/(?P<pk>\d+)/edit/', 'edit_user', name='edit_user'),
-    url(r'^user/(?P<pk>\d+)/password/', 'change_password', name='change_password'),
-    url(r'^user/create/', 'add_user', name='add_user'),
+    # TODO
+    # Убрать эти URLs и сопутствующие templates, views, forms ----------
+    url(r'^profile/old/$', 'profile_old', name='profile_old'),
+    url(r'^userprofile/$', 'user_profile', name='user_profile'),
+    url(r'^user/(?P<pk>\d+)/edit/$', 'edit_user', name='edit_user'),
+    url(r'^user/(?P<pk>\d+)/password/$', 'change_password', name='change_password'),
+    url(r'^user/create/$', 'add_user', name='add_user'),
+    # ------------------------------------------------------------------
 
-    url(r'^org/(?P<pk>\d+)/edit/', 'edit_org', name='edit_org'),
+    url(r'^profile/$', 'edit_profile', {'my_profile': True}, name='profile'),
+    url(r'^profile/(?P<pk>\d+)/edit/$', 'edit_profile', name='edit_profile'),
+    url(r'^profile/create/$', 'edit_profile', name='create_profile'),
+
+    url(r'^org/(?P<pk>\d+)/edit/$', 'edit_org', name='edit_org'),
     url(r'^org/log/$', 'org_log', name='org_log'),
 
     url(r'^loginlog/$', 'login_log', name='login_log'),
 
-    url(r'^autocomplete/org/', 'autocomplete_org', name='autocomplete_org'),
-    url(r'^autocomplete/loru_in_burials/', 'autocomplete_loru_in_burials', name='autocomplete_loru_in_burials'),
+    url(r'^autocomplete/org/$', 'autocomplete_org', name='autocomplete_org'),
+    url(r'^autocomplete/loru_in_burials/$', 'autocomplete_loru_in_burials', name='autocomplete_loru_in_burials'),
 )
