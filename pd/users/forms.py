@@ -206,19 +206,25 @@ class ProfileDataForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelForm):
             'cemetery', 'area',
         )
 
-    def __init__(self, request, *args, **kwargs):
+    def __init__(self, request, my_profile, *args, **kwargs):
         super(ProfileDataForm, self).__init__(*args, **kwargs)
         self.request = request
         if not request.user.profile.org.is_loru():
             del self.fields['is_agent']
 
-        self.fields['username'].help_text=Profile.USERNAME_HELPTEXT
+        if my_profile:
+            del self.fields['username']
+        else:
+            self.fields['username'].help_text=Profile.USERNAME_HELPTEXT
 
         self.fields['email'].label = User._meta.get_field('email').verbose_name.capitalize()
         self.fields['email'].help_text=User._meta.get_field('email').help_text
 
-        self.fields['is_active'].label = User._meta.get_field('is_active').verbose_name.capitalize()
-        self.fields['is_active'].help_text=User._meta.get_field('is_active').help_text
+        if self.instance.pk and int(self.instance.pk) == int(request.user.profile.pk):
+            del self.fields['is_active']
+        else:
+            self.fields['is_active'].label = User._meta.get_field('is_active').verbose_name.capitalize()
+            self.fields['is_active'].help_text=User._meta.get_field('is_active').help_text
 
         self.fields['cemetery'].queryset = Cemetery.objects.filter(
             Q(ugh__isnull=True) |
@@ -233,7 +239,8 @@ class ProfileDataForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelForm):
         if self.instance.pk:
             self.initial['username'] = self.instance.user.username
             self.initial['email'] = self.instance.user.email
-            self.initial['is_active'] = self.instance.user.is_active
+            if 'is_active' in self.fields:
+                self.initial['is_active'] = self.instance.user.is_active
         else:
             self.initial['is_active'] = True
             if 'is_agent' in self.fields:

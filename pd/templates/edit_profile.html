@@ -4,7 +4,7 @@
 
 {% block content %}
     {% if form.instance.pk %}
-        <h2>{% trans "Данные пользователя" %}</h2>
+        <h2>{% trans "Пользователь" %}</h2>
         <h4>
             {{ form.instance.user.username }} {% if form.user_last_name %} ( {{ form.instance.full_name }} ){% endif %}
         </h4>
@@ -15,11 +15,16 @@
     <form action="" method="POST">
         {% csrf_token %}
         {{ form.non_field_errors }}
-        {{ form.username.errors }}
-        <p>{{ form.username.label_tag }} {{ form.username }} <span class="helptext">{{ form.username.help_text }}</span></p>
 
-        {{ form.is_active.errors }}
-        <p>{{ form.is_active.label_tag }} {{ form.is_active }} <span class="helptext">{{ form.is_active.help_text }}</span></p>
+        {% if form.username %}
+            {{ form.username.errors }}
+            <p>{{ form.username.label_tag }} {{ form.username }} <span class="helptext">{{ form.username.help_text }}</span></p>
+        {% endif %}
+
+        {% if form.is_active %}
+            {{ form.is_active.errors }}
+            <p>{{ form.is_active.label_tag }} {{ form.is_active }} <span class="helptext">{{ form.is_active.help_text }}</span></p>
+        {% endif %}
 
         <br />
         {{ form.user_last_name.errors }}
