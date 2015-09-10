@@ -551,7 +551,7 @@ class ApiPlacePhotoUpload(APIView):
             photo = PlacePhoto(place=place, lat = lat, lng = lng, comment = '', creator = request.user, dt_created = dtCreated)
             photo.save()
             photo.bfile.save(request.FILES['photo'].name, photo_content)
-            write_log(request, photo, _(u"Фото к месту '%s' создано через мобильное приложение") % place.place )
+            write_log(request, place, _(u"Прикреплено фото: %s") % request.build_absolute_uri(photo.bfile.url))
             if lat and lat :
                 place.lat = lat
                 place.lng = lng
