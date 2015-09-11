@@ -250,8 +250,6 @@ class Place(SafeDeleteMixin, GeoPointModel, BaseModelManualDtCreated):
     # места в обработку. Поэтому вместе с установкой пользователя будем делать и этот признак
     # !!! Если будет установлен user_processed, то is_inprocess будет True, даже при dt_processed not None !!!
     is_inprocess = models.BooleanField(_(u"Взято в обработку при вводе по фотографиям"), default=False, editable=False)
-    comment_remakephoto = models.TextField(verbose_name=_(u"Комментарий к перефотографированию места"),
-                                        null=True, editable=False)
 
     objects = PlaceManager()
 
