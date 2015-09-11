@@ -93,6 +93,8 @@ class LoggingFormMixin:
             for form in [self] + forms:
                 prefix = self.get_prefix(form)
                 for f in form.changed_data:
+                    if f in ('password1', 'password2',):
+                        continue
                     old_value = obj and getattr(obj, f, None) or form.initial.get(f)
                     new_value = form.cleaned_data.get(f)
                     if not old_value and not isinstance(old_value, bool):
@@ -130,14 +132,12 @@ class LoggingFormMixin:
         """
         if not log_instance:
             log_instance = self.instance
-        if self.changed_list or not self.instance or not self.instance.pk:
+        if self.changed_list:
             changed_data_str = u'\n'.join([u'%s: %s -> %s' % cd for cd in self.changed_list])
             changed_data_str = changed_data_str. \
                                 replace(u'True -> False', _(u'выключ.')). \
                                 replace(u'False -> True', _(u'включ.'))
             write_log(self.request, log_instance, msg + u'\n' + changed_data_str)
-        else:
-            write_log(self.request, log_instance, msg)
 
 class PartialFormMixin:
     def _partial_html_output(self, fields=None, exclude=None, *args, **kwargs):
