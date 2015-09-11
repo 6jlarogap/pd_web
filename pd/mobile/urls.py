@@ -19,4 +19,5 @@ urlpatterns = patterns('mobile.views',
     url(r'^mobile/burial/bind_burial_grave/$', 'bind_burial_grave'),
     url(r'^mobile/placephoto/delete/$', 'placephoto_delete'),
 
+    url(r'^api/mobilekeeper/version/?$', 'api_mobilekeeper_version'),
 )

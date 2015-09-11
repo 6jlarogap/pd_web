@@ -1,4 +1,7 @@
 # coding=utf-8
+
+from django.conf import settings
+
 from django.shortcuts import render_to_response
 from django.views.generic.base import View
 from django.utils.translation import ugettext as _
@@ -34,6 +37,9 @@ from django.http import Http404
 from django.db.models import Q
 from datetime import datetime
 from decimal import Decimal
+
+import os
+from axmlparserpy import apk
 
 from StringIO import StringIO
 from rest_framework import serializers
@@ -579,3 +585,19 @@ class ApiPlacePhotoDelete(APIView):
             return Response("Ok")
     
 placephoto_delete = ApiPlacePhotoDelete.as_view()
+
+class ApiMobilekeeperVersion(APIView):
+
+    def get(self, request):
+        try:
+            ap = apk.APK(os.path.join(settings.MEDIA_ROOT, settings.MOBILEKEEPER_MEDIA_PATH))
+            return Response(status=200, data=dict(
+                versionName=ap.get_androidversion_name(),
+                versionCode=ap.get_androidversion_code(),
+                url=request.build_absolute_uri(os.path.join(settings.MEDIA_URL, settings.MOBILEKEEPER_MEDIA_PATH))
+            ))
+        except:
+            return Response(status=400, data={'status': 'error', 'message': None})
+
+api_mobilekeeper_version = ApiMobilekeeperVersion.as_view()
+
