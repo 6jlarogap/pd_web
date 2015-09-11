@@ -189,7 +189,7 @@ SUPPORT_URLS_REGEX = r'^/?support(?:/|$)'
 API_URLS_REGEX = r'^/?api(?:/|$)'
 # URLs, доступные анонимным пользователям, например в публичном каталоге, 
 # а также общедоступные, например, из front-end, скрипты:
-ANONYMOUS_URLS_REGEX = r'^/?(?:(?:thumb|media)/product\-photo)|jsi18n/'
+ANONYMOUS_URLS_REGEX = r'^/?(?:(?:thumb|media)/(?:product\-photo|support))|jsi18n/'
 # URLs, доступные анонимным пользователям, но при определенных условиях
 ANONYMOUS_LIMITED_URLS_REGEX = r'^/?(?:thumb|media)/place\-photos/'
 
@@ -424,6 +424,10 @@ SPECIFIC_RU_LOCALE = ''
 # это имя приложения, для РБ -- 'locale_by'
 #
 SPECIFIC_RU_LOCALE_APP = ''
+
+# Где находится мобильный смотритель, относительно MEDIA_ROOT
+#
+MOBILEKEEPER_MEDIA_PATH = "support/download/mobilekeeper.apk"
 
 try:
     from local_settings import *
