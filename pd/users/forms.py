@@ -26,46 +26,6 @@ from users.models import Profile, ProfileLORU, Org, BankAccount, RegisterProfile
 User._meta.get_field_by_name('email')[0]._unique = True
 User._meta.get_field_by_name('email')[0].null=True
 
-class UserAddForm(forms.ModelForm):
-    class Meta:
-        model = User
-        fields = ['username', 'email']
-
-    username = forms.CharField(label=_(u"Логин"), validators=[validate_username],
-                               help_text=Profile.USERNAME_HELPTEXT)
-    password1 = forms.CharField(label=_(u"Пароль"), widget=forms.PasswordInput())
-    password2 = forms.CharField(label=_(u"Пароль (повторите)"), widget=forms.PasswordInput())
-
-    def clean_username(self):
-        if User.objects.filter(username=self.cleaned_data['username']).exists():
-            raise forms.ValidationError(_(u"Это имя уже используется"))
-        return self.cleaned_data['username']
-
-    def clean(self):
-        if self.is_valid() and self.cleaned_data['password1'] != self.cleaned_data['password2']:
-            raise forms.ValidationError(_(u"Пароли не совпадают"))
-        return self.cleaned_data
-
-    def clean_email(self):
-        email = self.cleaned_data.get('email', '').strip() or None
-        if email and User.objects.filter(email=email).exists():
-            raise forms.ValidationError(_(u"Этот email уже используется"))
-        return email
-
-    def save(self, *args, **kwargs):
-        try:
-            user = User(
-                username=self.cleaned_data['username'],
-                email=self.cleaned_data['email'],
-            )
-            user.set_password(self.cleaned_data['password1'])
-            user.is_active = True
-            user.save()
-        except IntegrityError:
-            raise forms.ValidationError(_(u"Имя пользователя или email уже используются в системе"))
-        Profile.objects.create(user=user)
-        return user
-
 class BaseLoruFormset(BaseInlineFormSet):
     @property
     def changed_data(self):
@@ -76,114 +36,6 @@ class BaseLoruFormset(BaseInlineFormSet):
 LoruFormset = inlineformset_factory(Org, ProfileLORU, fk_name='ugh', formset=BaseLoruFormset)
 
 BankAccountFormset = inlineformset_factory(Org, BankAccount, formset=BaseLoruFormset, extra=2)
-
-class ProfileForm(ChildrenJSONMixin, forms.ModelForm):
-
-    org_type = forms.ChoiceField(label=_(u"Тип"), choices=Org.PROFILE_TYPES)
-    org_name = forms.CharField(label=_(u"Краткое название организации"))
-    org_full_name = forms.CharField(label=_(u"Полное название организации"), required=False)
-    org_inn = forms.CharField(label=_(u"ИНН организации"))
-    org_kpp = forms.CharField(label=_(u"КПП организации"), required=False)
-    org_ogrn = forms.CharField(label=_(u"ОГРН организации"), required=False)
-    org_director = forms.CharField(label=_(u"Директор"),
-                                   required=False)
-    org_email = forms.EmailField(label=_(u"Email"), required=False)
-    org_phones = forms.CharField(label=_(u"Телефоны"), required=False)
-
-    class Meta:
-        model = Profile
-        exclude = ['org', 'is_agent', 'user', 'cemetery', 'area', ]
-
-    def __init__(self, *args, **kwargs):
-        super(ProfileForm, self).__init__(*args, **kwargs)
-        if self.instance.org:
-            for f in self.fields:
-                if f.startswith('org_'):
-                    self.initial.update({f: getattr(self.instance.org, f[4:])})
-            del self.fields['org_type']
-
-    def clean_org_inn(self):
-        inn = self.cleaned_data['org_inn']
-        if inn:
-            orgs = Org.objects.filter(inn=inn)
-            if self.instance and self.instance.org:
-                orgs = orgs.exclude(pk=self.instance.org.pk)
-            if orgs.exists():
-                raise forms.ValidationError(_(u"ИНН уже зарегистрирован"))
-        return inn
-
-    def save(self, commit=True, *args, **kwargs):
-        obj = super(ProfileForm, self).save(commit=False, *args, **kwargs)
-        params = dict([(k[4:], v) for k,v in self.cleaned_data.items() if v and k.startswith('org_')])
-        if not obj.org:
-            obj.org, _created = Org.objects.get_or_create(**params)
-        else:
-            Org.objects.filter(pk=obj.org.pk).update(**params)
-        if commit:
-            obj.save()
-        return obj
-
-class UserProfileForm(ChildrenJSONMixin, StrippedStringsMixin, forms.ModelForm):
-
-    class Meta:
-        model = Profile
-        fields = ('user_last_name', 'user_first_name', 'user_middle_name', 'cemetery', 'area', )
-
-    def __init__(self, *args, **kwargs):
-        super(UserProfileForm, self).__init__(*args, **kwargs)
-        self.fields['cemetery'].queryset = Cemetery.objects.filter(
-            Q(ugh__isnull=True) |
-            Q(ugh__loru_list__loru=self.instance.org) |
-            Q(ugh=self.instance.org)
-        ).distinct()
-        self.fields['user_last_name'].required = True
-        self.fields['user_first_name'].required = True
-
-class UserDataForm(LoggingFormMixin, forms.ModelForm):
-    is_agent = forms.BooleanField(label=_(u"Агент"), required=False)
-
-    class Meta:
-        model = User
-        fields = ['username', 'email', 'is_active' ,]
-
-    def __init__(self, request, *args, **kwargs):
-        super(UserDataForm, self).__init__(*args, **kwargs)
-        self.request = request
-        if self.instance and self.instance.profile:
-            self.initial['is_agent'] = self.instance.profile.is_agent
-        if self.instance and self.instance.profile and self.instance.profile.is_ugh():
-            del self.fields['is_agent']
-        self.fields['username'].help_text=Profile.USERNAME_HELPTEXT
-
-    def clean_username(self):
-        username = self.cleaned_data.get('username')
-        if username:
-            validate_username(username)
-        return username
-        
-    def clean_email(self):
-        email = self.cleaned_data.get('email', '').strip() or None
-        if email and User.objects.filter(email=email).exclude(pk=self.instance.pk).exists():
-            raise forms.ValidationError(_(u"Этот email уже используется"))
-        return email
-
-    def save(self):
-        self.collect_log_data()
-        user = super(UserDataForm, self).save(commit=False)
-        user.email = self.cleaned_data['email']
-        try:
-            user.save()
-        except IntegrityError:
-            raise forms.ValidationError(_(u"Имя пользователя или email уже используются в системе"))
-        self.put_log_data(
-            msg=_(u'Изменены данные пользователя %s') % user.username,
-            log_instance=user.profile.org,
-        )
-        self.put_log_data(
-            msg=_(u'Изменены данные'),
-            log_instance=user,
-        )
-        return user
 
 class ProfileDataForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelForm):
 
@@ -335,25 +187,6 @@ class ProfileDataForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelForm):
             write_log(self.request, profile.org, _(u'Добавлен пользователь %s') % user.username)
 
         return profile
-
-class ChangePasswordForm(forms.ModelForm):
-    class Meta:
-        model = User
-        fields = ['id', ] # guaranteed to be invisible and non-editable
-
-    password1 = forms.CharField(label=_(u"Пароль"), widget=forms.PasswordInput())
-    password2 = forms.CharField(label=_(u"Пароль (повторите)"), widget=forms.PasswordInput())
-
-    def clean(self):
-        if self.is_valid() and self.cleaned_data['password1'] != self.cleaned_data['password2']:
-            raise forms.ValidationError(_(u"Пароли не совпадают"))
-        return self.cleaned_data
-
-    def save(self, commit=True, *args, **kwargs):
-        self.instance.set_password(self.cleaned_data['password1'])
-        if commit:
-            self.instance.save()
-        return self.instance
 
 class BaseOrgForm(LoggingFormMixin, forms.ModelForm):
 
