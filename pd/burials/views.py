@@ -1333,32 +1333,25 @@ class ApiOmsPhotoPlacesDetail(APIView):
         do_save = False
         log_messages = []
 
-        remakePhoto = request.DATA.get('remakePhoto')
-        remake_photo_comment = request.DATA.get('remakePhotoComment')
-
         if 'remakePhoto' in request.DATA:
             do_save = True
+            remakePhoto = request.DATA.get('remakePhoto')
             if remakePhoto:
                 place.dt_wrong_fio = datetime.datetime.now()
                 place.user_processed = None
                 place.is_inprocess = False
-                if not remake_photo_comment:
+                remake_photo_comment = request.DATA.get('remakePhotoComment')
+                if remake_photo_comment:
+                    log_messages.append(_(u'Заказано повторное фото места: %s') % remake_photo_comment)
+                else:
                     log_messages.append(_(u'Заказано повторное фото места'))
             else:
                 place.dt_wrong_fio = None
                 log_messages.append(_(u'Отменен признак повторного фото места'))
 
-        if 'remakePhotoComment' in request.DATA:
-            do_save = True
-            place.comment_remakephoto = remake_photo_comment
-            if remake_photo_comment:
-                log_messages.append(_(u'Заказано повторное фото места: %s') % remake_photo_comment)
-            else:
-                log_messages.append(_(u'Удален комментарий о повторном фото места'))
-
-        processed = request.DATA.get('processed')
         if 'processed' in request.DATA:
             do_save = True
+            processed = request.DATA.get('processed')
             if processed:
                 place.dt_processed = datetime.datetime.now()
                 log_messages.append(_(u'Фотографии места обработаны'))
