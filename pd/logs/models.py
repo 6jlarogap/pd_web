@@ -64,11 +64,36 @@ class Log(models.Model):
                 ref=ref, loru_number=loru_number,
             )
         elif model_name == 'Org':
-            result = _(u"Организация")
-        elif model_name == 'Profile':
-            result = ""
+            try:
+               obj = Model.objects.get(pk=obj_id)
+               result = "<a href='%s'>Организация</a>" % reverse('edit_org', args=[obj_id])
+            except Model.DoesNotExist:
+               result = _(u"Организация")
         elif model_name == 'User':
-            result = _(u"Пользователь")
+            try:
+                result = _(u"Пользователь")
+                user = Model.objects.get(pk=obj_id)
+                try:
+                    profile = user.profile
+                    href = "<a href='%(url)s'>%(name)s</a>" % dict(
+                                url=reverse('edit_profile', args=[profile.pk]),
+                                name=user.username,
+                    )
+                    result = _(u"Пользователь %s") % href
+                except (AttributeError, get_model('users', 'Profile').DoesNotExist):
+                    pass
+            except Model.DoesNotExist:
+                pass
+        elif model_name == 'Profile':
+            try:
+               obj = Model.objects.get(pk=obj_id)
+               href = "<a href='%(url)s'>%(name)s</a>" % dict(
+                    url=reverse('edit_profile', args=[obj_id]),
+                    name=obj.user.username,
+                )
+            except Model.DoesNotExist:
+                href = _(u"не найден")
+            result = _(u"Пользователь %s") % href
         elif model_name == 'Product':
             product = ref = ""
             try:
