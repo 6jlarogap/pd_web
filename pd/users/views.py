@@ -47,8 +47,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.parsers import MultiPartParser, JSONParser
 
 from logs.models import Log, write_log, LoginLog
-from users.forms import UserAddForm, RegisterForm, LoruFormset, ProfileForm, UserProfileForm, \
-                        UserDataForm, ChangePasswordForm, BankAccountFormset, OrgForm, \
+from users.forms import RegisterForm, LoruFormset, BankAccountFormset, OrgForm, \
                         OrgLogForm, LoginLogForm, OrgBurialStatsForm, SupportForm, TestCaptchaForm, \
                         LoruOrdersStatsForm, ProfileDataForm
 from users.models import Profile, Org, RegisterProfile, ProfileLORU, CustomerProfile, Store, \
@@ -887,29 +886,6 @@ class LogoutView(View):
 
 ulogout = LogoutView.as_view()
 
-class RegistrationOldView(SupervisorProductionRequiredMixin, View):
-    """
-    Регистрация
-    """
-    def post(self, request, *args, **kwargs):
-        form = UserAddForm(data=request.POST)
-        if form.is_valid():
-            form.save()
-            user = authenticate(username=form.cleaned_data['username'], password=form.cleaned_data['password1'])
-            login(request, user)
-            write_log(request, request.user, _(u'Вход в систему'))
-            LoginLog.write(request)
-            messages.success(self.request, _(u"Все хорошо, регистрация успешна"))
-            return redirect('dashboard')
-        return self.get(request, *args, **kwargs)
-
-    def get(self, request, *args, **kwargs):
-        form = UserAddForm()
-        request.session.set_test_cookie()
-        return render(request, 'registration_old.html', {'form':form})
-
-registration_old = RegistrationOldView.as_view()
-
 class LoruRegistryView(UGHRequiredMixin, View):
     """
     Редактирование реестра ЛОРУ у этого УГХ
@@ -962,115 +938,6 @@ class LoruRegistryView(UGHRequiredMixin, View):
         return render(request, self.template_name, self.get_context_data())
 
 loru_registry = LoruRegistryView.as_view()
-
-class ProfileView(UghOrLoruRequiredMixin, UpdateView):
-    """
-    Редактирование профиля, заодно организации,
-    применяется только при вводе начальной организации
-    """
-
-    template_name = 'profile.html'
-    model = Profile
-    form_class = ProfileForm
-
-    def get_success_url(self):
-        return reverse('profile_old')
-
-    def get_object(self, queryset=None):
-        return self.request.user.profile
-
-    def form_valid(self, form):
-        form.save()
-        write_log(self.request, form.instance, _(u'Изменены данные организации и пользователя'))
-        messages.success(self.request, _(u"Данные сохранены"))
-        return redirect(self.get_success_url())
-
-profile_old = ProfileView.as_view()
-
-class UserProfileView(UghOrLoruRequiredMixin, UpdateView):
-    """
-    Редактирование профиля
-    """
-
-    template_name = 'userprofile.html'
-    model = Profile
-    form_class = UserProfileForm
-
-    def get_success_url(self):
-        return reverse('user_profile_old')
-
-    def get_object(self, queryset=None):
-        return self.request.user.profile
-
-    def form_valid(self, form):
-        form.save()
-        write_log(self.request, form.instance, _(u'Изменены данные пользователя'))
-        messages.success(self.request, _(u"Данные сохранены"))
-        return redirect(self.get_success_url())
-
-user_profile_old = UserProfileView.as_view()
-
-class UserAddView(UghOrLoruRequiredMixin, CreateView):
-    template_name = 'add_user.html'
-    model = User
-    form_class = UserAddForm
-
-    def form_valid(self, form):
-        self.object = form.save()
-        self.object.profile.org = self.request.user.profile.org
-        self.object.profile.save()
-
-        msg = _(u"<a href='%(edit_user)s'>Пользователь %(username)s</a> создан") % dict(
-            edit_user=reverse('edit_user', args=[self.object.pk]),
-            username=self.object.username,
-        )
-        messages.success(self.request, msg)
-        log_msg = _(u'Создан пользователь %s') % self.object.username
-        if self.object.email:
-            log_msg = u"%s, email: %s" % (log_msg, self.object.email,)
-        write_log(self.request, self.object, log_msg)
-        write_log(self.request, self.object.profile.org, log_msg)
-        return redirect(self.get_success_url())
-
-    def get_success_url(self):
-        return reverse('edit_org', args=[self.object.profile.org.pk])
-
-    def get_form_kwargs(self, **kwargs):
-        data = super(UserAddView, self).get_form_kwargs(**kwargs)
-        del data['instance']
-        return data
-
-add_user = UserAddView.as_view()
-
-class UserEditView(UghOrLoruRequiredMixin, RequestToFormMixin, UpdateView):
-    template_name = 'edit_user.html'
-    model = User
-    form_class = UserDataForm
-
-    def get_success_url(self):
-        msg = _(u"<a href='%(edit_user)s'>Пользователь %(username)s</a> изменен") % dict(
-            edit_user=reverse('edit_user', args=[self.object.pk]),
-            username=self.object.username,
-        )
-        messages.success(self.request, msg)
-        return reverse('edit_org', args=[self.object.profile.org.pk])
-
-    def form_valid(self, form):
-        form.save()
-        if 'is_active' in form.changed_data:
-            msg = _(u'%(fio_changer)s (%(username_changer)s) изменил(а) '
-                    u'статус %(fio)s (%(username)s) на %(status)s') % dict(
-                fio_changer=self.request.user.profile.last_name_initials(),
-                username_changer=self.request.user.username,
-                fio=self.object.profile.last_name_initials(),
-                username=self.object.username,
-                status=_(u'активный') if self.object.is_active else _(u'неактивный'),
-            )
-            write_log(self.request, self.object.profile.org, msg)
-            write_log(self.request, self.object, msg)
-        return redirect(self.get_success_url())
-        
-edit_user = UserEditView.as_view()
 
 class ProfileEditView(UghOrLoruRequiredMixin, RequestToFormMixin, UpdateView):
     template_name = 'edit_profile.html'
@@ -1143,31 +1010,6 @@ class OrgEditView(UghOrLoruRequiredMixin, RequestToFormMixin, FormInvalidMixin, 
         return reverse('edit_org', args=[self.object.pk])
         
 edit_org = OrgEditView.as_view()
-
-class ChangePasswordView(UghOrLoruRequiredMixin, UpdateView):
-    template_name = 'change_password.html'
-    model = User
-    form_class = ChangePasswordForm
-
-    def get_success_url(self):
-        msg = _(u"Пароль <a href='%(edit_user)s'>пользователя %(username)s</a> изменен") % dict(
-            edit_user=reverse('edit_user', args=[self.object.pk]),
-            username=self.object.username,
-        )
-        messages.success(self.request, msg)
-        msg = _(u'%(fio_changer)s (%(username_changer)s) '
-                u'изменил(а) пароль %(fio)s (%(username)s)') % dict(
-            fio_changer=self.request.user.profile.last_name_initials(),
-            username_changer=self.request.user.username,
-            fio=self.object.profile.last_name_initials(),
-            username=self.object.username,
-        )
-        write_log(self.request, self.object, msg)
-        write_log(self.request, self.object.profile.org, msg)
-        return reverse('edit_org', args=[self.object.profile.org.pk])
-
-change_password = ChangePasswordView.as_view()
-
 
 class AutocompleteOrg(View):
     def get(self, request, *args, **kwargs):
