@@ -2639,3 +2639,82 @@ class ApiClientSiteDetailView(APIView):
 
 api_client_site_detail = ApiClientSiteDetailView.as_view()
 
+class ApiClientSiteMessagesView(CheckRecaptchaMixin, APIView):
+    """
+    Послать сообщение клиенту (на email организации) в форме обратной связи
+
+    Пример входных данных:
+    {
+        "fullName": "Иванов И.И",
+        "phoneNumber": "+375291234567",
+        "email": "email@email.ru",
+        "subject": "Тема",
+        "text": "Текст вопроса",
+        "recaptchaData": {
+            "response": "foo bar",
+            "challenge": "03AHJ_VuvQ5p0AdejIw4W6"
+        }
+    }
+
+    Status codes:
+        200 - если все нормально
+        400 - если произошла ошибка валидации входных данных
+
+    """
+    def post(self, request, pk):
+        org = get_object_or_404(Org, pk=pk)
+        recaptcha_data = request.DATA.get('recaptchaData')
+        try:
+            if not recaptcha_data:
+                raise ServiceException(_(u'Не данных по captcha'))
+            if not self.check_recaptcha(self.request, recaptcha_data['challenge'], recaptcha_data['response']):
+                raise ServiceException(_(u'Ошибка проверки captcha'))
+
+            email_to = org.email and org.email.strip()
+            try:
+                validate_email(email_to)
+            except ValidationError:
+                raise ServiceException(_(u"Неверный или не задан адрес электронной почты организации"))
+
+            email_reply_to = request.DATA.get('email', '').strip()
+            try:
+                validate_email(email_reply_to)
+            except ValidationError:
+                raise ServiceException(_(u"Неверный или не задан адрес электронной почты отправителя"))
+
+            subject = request.DATA.get('subject', '').strip()
+            email_subject = subject if subject else _(u'Сообщение на сайт')
+
+            email_text = request.DATA.get('text', '').strip()
+            if not email_text:
+                raise ServiceException(_(u"Нет текста сообщения"))
+
+            full_name = request.DATA.get('fullName', '').strip()
+            phone = request.DATA.get('phoneNumber', '').strip()
+            email_text += u"\n\n----------"
+            if full_name:
+                email_text += u"\n%s" % full_name
+            if phone:
+                email_text += _(u"\nТелефон: %s") % phone
+            email_text += _(u"\nEmail: %s") % email_reply_to
+
+            headers = { 'Reply-To': email_reply_to }
+            # Если в From: поставить задавшего вопрос, например, user@yandex.ru,
+            # то письмо придет в email_to (адреса гугловской почты) с "замечаниями"
+            # в заголовке, что письмо пришло не от yandex, так и в спам может попасть.
+            # Посему реальный отправитель будет в Reply-To:
+            #
+            email_from = _(u"Сообщение на сайт <%s>") % settings.DEFAULT_FROM_EMAIL
+            EmailMessage(email_subject, email_text, email_from, (email_to,), headers=headers, ).send()
+            data = { 'status': 'success',
+                     'message': '',
+                   }
+            status_code = 200
+        except ServiceException as excpt:
+            data = { 'status': 'error',
+                     'message': excpt.message,
+                   }
+            status_code = 400
+        return Response(data=data, status=status_code)
+
+api_client_site_messages = ApiClientSiteMessagesView.as_view()
