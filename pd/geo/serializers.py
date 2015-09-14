@@ -12,6 +12,28 @@ from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from rest_framework.compat import smart_text
 
 
+class AddressLatLonMixin(serializers.ModelSerializer):
+
+    def location_func(self, obj):
+        if obj.address and obj.address.gps_x and obj.address.gps_y:
+            return {
+                'latitude': obj.address.gps_y,
+                'longitude': obj.address.gps_x,
+            }
+        else:
+            return None
+
+class PointLatLonMixin(serializers.ModelSerializer):
+
+    def location_func(self, obj):
+        if obj.lat and obj.lng:
+            return {
+                'latitude': obj.lat,
+                'longitude': obj.lng,
+            }
+        else:
+            return None
+
 class CountrySerializer(serializers.ModelSerializer):
     text = serializers.Field(source='name')
     class Meta:
@@ -145,8 +167,6 @@ class LocationStaticSerializer(serializers.ModelSerializer):
         model = Location
         fields = ('id','country', 'region', 'city', 'street', \
                  'post_index', 'house', 'block', 'building', 'flat', 'gps_x', 'gps_y', 'info' ) 
-
-
 
 class LocationDataSerializer(serializers.ModelSerializer):
     class Meta:

@@ -76,6 +76,9 @@ urlpatterns = patterns('users.views',
 
     url(r'^loginlog/$', 'login_log', name='login_log'),
 
+    url(r'^api/clients/(?P<pk>\d+)/details/?$', 'api_client_site_detail', name='api_client_site_detail'),
+    url(r'^api/clients/(?P<pk>\d+)/messages/?$', 'api_client_site_messages', name='api_client_site_messages'),
+
     url(r'^autocomplete/org/$', 'autocomplete_org', name='autocomplete_org'),
     url(r'^autocomplete/loru_in_burials/$', 'autocomplete_loru_in_burials', name='autocomplete_loru_in_burials'),
 )

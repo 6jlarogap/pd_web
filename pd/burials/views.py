@@ -52,7 +52,8 @@ from serializers import CemeterySerializer, AreaSerializer, PlaceSerializer, Are
     GraveSerializer, BurialSerializer, BurialListSerializer, BurialPutGraveSerializer, \
     AreaPhotoSerializer, ExhumationRequestSerializer, PlaceSizeSerializer, \
     ApiOmsPlacesSerializer, ApiCatalogPlacesSerializer, PlaceLockSerializer, \
-    CemeteryTitleSerializer, AreaTitleSerializer, PlaceTitleSerializer
+    CemeteryTitleSerializer, AreaTitleSerializer, PlaceTitleSerializer, \
+    CemeteryClientSiteSerializer, ApiClientSitePlacesSerializer
 
 from persons.serializers import AlivePersonSerializer, PhoneSerializer
 from users.serializers import UserFioLoginSerializer
@@ -1418,3 +1419,52 @@ class ApiOmsAreasPlacesView(APIView):
             ])
 
 api_oms_areas_places = ApiOmsAreasPlacesView.as_view()
+
+class ApiClientSiteCemeteriesView(APIView):
+
+    def get(self, request, pk):
+        ugh = get_object_or_404(Org, pk=pk)
+        return Response(
+            status=200,
+            data=[ CemeteryClientSiteSerializer(cemetery).data \
+                   for cemetery in Cemetery.objects.filter(ugh=ugh)
+            ])
+
+api_client_site_cemeteries = ApiClientSiteCemeteriesView.as_view()
+
+class ApiClientSitePlacesView(APIView):
+
+    def get(self, request, pk):
+        ugh = get_object_or_404(Org, pk=pk)
+        query = request.GET.get('query', '').strip()
+        if query:
+            q = Q(cemetery__ugh=ugh)
+            fio = [f.strip('.') for f in query.split(' ')]
+            if len(fio) > 2:
+                q &= Q(burial__deadman__middle_name__istartswith=fio[2])
+            if len(fio) > 1:
+                q &= Q(burial__deadman__first_name__istartswith=fio[1])
+            q &= Q(burial__deadman__last_name__istartswith=fio[0])
+            places = Place.objects.filter(q).distinct()
+        else:
+            places = Place.objects.none()
+        return Response(
+            status=200,
+            data=[ ApiClientSitePlacesSerializer(place).data for place in places
+            ])
+
+api_client_site_places = ApiClientSitePlacesView.as_view()
+
+class ApiClientSitePlacePhotosView(APIView):
+
+    def get(self, request, ugh_pk, place_pk):
+        try:
+            place = Place.objects.filter(
+                cemetery__ugh__pk=ugh_pk,
+                pk=place_pk
+            )[0]
+        except IndexError:
+            raise Http404
+        return Response(status=200, data=place.get_photo_gallery(request))
+
+api_client_site_placephotos = ApiClientSitePlacePhotosView.as_view()

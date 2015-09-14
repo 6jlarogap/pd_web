@@ -190,6 +190,18 @@ class OrgShort5Serializer(OrgSerializerMixin, OrgShort4Serializer):
         model = Org
         fields = ('id', 'shortName', 'phones', 'isFavorite', )
 
+class OrgClientSiteSerializer(PhonesFromTextMixin, OrgSerializerMixin, serializers.ModelSerializer):
+    fullName = Field(source='full_name')
+    address = serializers.RelatedField('off_address')
+    phones = serializers.SerializerMethodField('phones_func')
+    location = serializers.SerializerMethodField('location_func')
+
+    class Meta:
+        model = Org
+        fields = ('id', 'name', 'fullName',  'description', 'address',
+                  'location', 'phones', 'fax', 'email', 'site', 
+        )
+
 class OrgOptSupplierSerializer(serializers.ModelSerializer):
     tin = Field(source='inn')
     dtLastOrder = serializers.SerializerMethodField('dt_last_order_func')
