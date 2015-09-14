@@ -70,7 +70,8 @@ from geo.models import Location, Country
 from users.serializers import StoreSerializer, OrgSerializer, OrgShort2Serializer, \
                               OrgShort3Serializer, OrgOptSupplierSerializer, OrgShort5Serializer, \
                               UserSettingsSerializer, ShopSerializer, OrgGallerySerializer, \
-                              ShopDetailSerializer, OrgReviewSerializer
+                              ShopDetailSerializer, OrgReviewSerializer, \
+                              OrgClientSiteSerializer
 
 from sms_service.utils import send_sms
 
@@ -2625,3 +2626,16 @@ class ApiShopsReviewsView(ApiShopsMixin, APIView):
             return Response(data=dict(status='error', message=excpt.message), status=400)
 
 api_shops_reviews = ApiShopsReviewsView.as_view()
+
+class ApiClientSiteDetailView(APIView):
+    """
+    Показ данных о ЛОРУ, поставщике интернет-заказа
+    
+    Общий доступ, чтобы можно было посмотреть price-list поставщика
+    """
+    def get(self, request, pk):
+        org = get_object_or_404(Org, pk=pk)
+        return Response(status=200, data=OrgClientSiteSerializer(org).data)
+
+api_client_site_detail = ApiClientSiteDetailView.as_view()
+
