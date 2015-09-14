@@ -52,7 +52,8 @@ from serializers import CemeterySerializer, AreaSerializer, PlaceSerializer, Are
     GraveSerializer, BurialSerializer, BurialListSerializer, BurialPutGraveSerializer, \
     AreaPhotoSerializer, ExhumationRequestSerializer, PlaceSizeSerializer, \
     ApiOmsPlacesSerializer, ApiCatalogPlacesSerializer, PlaceLockSerializer, \
-    CemeteryTitleSerializer, AreaTitleSerializer, PlaceTitleSerializer
+    CemeteryTitleSerializer, AreaTitleSerializer, PlaceTitleSerializer, \
+    CemeteryClientSiteSerializer
 
 from persons.serializers import AlivePersonSerializer, PhoneSerializer
 from users.serializers import UserFioLoginSerializer
@@ -1418,3 +1419,15 @@ class ApiOmsAreasPlacesView(APIView):
             ])
 
 api_oms_areas_places = ApiOmsAreasPlacesView.as_view()
+
+class ApiClientSiteCemeteriesView(APIView):
+
+    def get(self, request, pk):
+        ugh = get_object_or_404(Org, pk=pk)
+        return Response(
+            status=200,
+            data=[ CemeteryClientSiteSerializer(cemetery).data \
+                   for cemetery in Cemetery.objects.filter(ugh=ugh)
+            ])
+
+api_client_site_cemeteries = ApiClientSiteCemeteriesView.as_view()

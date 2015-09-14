@@ -13,6 +13,7 @@ from burials.models import Cemetery, Place, Area, Grave, Burial, AreaPhoto, Buri
 
 
 from geo.models import Location
+from geo.serializers import AddressLatLonMixin
 from geo.serializers import LocationSerializer
 from pd.serializers import ArchFilesSerializer
 
@@ -43,6 +44,27 @@ class CemeteryTitleSerializer(serializers.ModelSerializer):
     class Meta:
         model = Cemetery
         fields = ('id', 'title')
+
+
+class CemeteryClientSiteSerializer(AddressLatLonMixin, serializers.ModelSerializer):
+    title = serializers.Field('name')
+    phones = Field(source='phone_list')
+    address = serializers.RelatedField()
+    location = serializers.SerializerMethodField('location_func')
+    workTimes = Field(source='worktimes')
+    executive = serializers.SerializerMethodField('executive_func')
+
+    class Meta:
+        model = Cemetery
+        fields = ('id', 'name', 'address', 'location', 'phones',
+                  'workTimes', 'executive'
+        )
+
+    def executive_func(self, obj):
+        if obj.caretaker:
+            return dict(fullName=u"%s" % obj.caretaker.profile)
+        else:
+            return None
 
 
 class AreaTitleSerializer(serializers.ModelSerializer):

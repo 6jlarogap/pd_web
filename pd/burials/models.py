@@ -142,6 +142,18 @@ class Cemetery(GetLogsMixin, BaseModelManualDtCreated, PhonesMixin):
         self.fill_dt_created()
         return super(Cemetery, self).save(*args, **kwargs)
 
+    def worktimes(self):
+        result = []
+        if self.time_begin or self.time_end:
+            fmt = "%02d:%02d"
+            for dayindex in range(1,8):
+                result.append({
+                    'dayindex': dayindex,
+                    'from': fmt % (self.time_begin.hour, self.time_begin.minute) if self.time_begin else None,
+                    'to': fmt % (self.time_end.hour, self.time_end.minute) if self.time_end else None,
+                })
+        return result
+
 class CemeteryCoordinates(CoordinatesModel):
     #TODO:
     # Перевести эту модель к PointsModel
