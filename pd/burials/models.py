@@ -610,7 +610,12 @@ class PlacePhoto(Files, GeoPointModel, BaseModelManualDtCreated):
         """
         Доступно ли анонимному пользователю
         """
-        return bool(self.place.dt_unowned)
+
+        # Открываем, из-за клиентского сайта,
+        # /api/clients/:id/burials-places/:placeId/photos
+        #
+        # return bool(self.place.dt_unowned)
+        return True
 
     def is_accessible(self, user):
         """

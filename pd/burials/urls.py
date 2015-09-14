@@ -74,5 +74,8 @@ urlpatterns = patterns('burials.views',
 
     url(r'^api/clients/(?P<pk>\d+)/cemeteries/?$', 'api_client_site_cemeteries', name='api_client_site_cemeteries'),
     url(r'^api/clients/(?P<pk>\d+)/burials-places/?$', 'api_client_site_places', name='api_client_site_places'),
+    url(
+        r'^api/clients/(?P<ugh_pk>\d+)/burials-places/(?P<place_pk>\d+)/photos/?$',
+        'api_client_site_placephotos', name='api_client_site_placephotos'),
 
 )

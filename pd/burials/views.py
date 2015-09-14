@@ -1454,3 +1454,17 @@ class ApiClientSitePlacesView(APIView):
             ])
 
 api_client_site_places = ApiClientSitePlacesView.as_view()
+
+class ApiClientSitePlacePhotosView(APIView):
+
+    def get(self, request, ugh_pk, place_pk):
+        try:
+            place = Place.objects.filter(
+                cemetery__ugh__pk=ugh_pk,
+                pk=place_pk
+            )[0]
+        except IndexError:
+            raise Http404
+        return Response(status=200, data=place.get_photo_gallery(request))
+
+api_client_site_placephotos = ApiClientSitePlacePhotosView.as_view()
