@@ -13,7 +13,7 @@ from burials.models import Cemetery, Place, Area, Grave, Burial, AreaPhoto, Buri
 
 
 from geo.models import Location
-from geo.serializers import AddressLatLonMixin
+from geo.serializers import AddressLatLonMixin, PointLatLonMixin
 from geo.serializers import LocationSerializer
 from pd.serializers import ArchFilesSerializer
 
@@ -143,18 +143,9 @@ class AreaSerializer(serializers.ModelSerializer):
 
 
 
-class ApiPlacesSerializer(serializers.ModelSerializer):
+class ApiPlacesSerializer(PointLatLonMixin, serializers.ModelSerializer):
     location = serializers.SerializerMethodField('location_func')
     status = serializers.Field(source='status_list')
-
-    def location_func(self, obj):
-        if obj.lat and obj.lng:
-            return {
-                'latitude': obj.lat,
-                'longitude': obj.lng,
-            }
-        else:
-            return None
 
 
 class ApiOmsPlacesSerializer(ApiPlacesSerializer):
@@ -175,6 +166,14 @@ class ApiCatalogPlacesSerializer(GetGalleryMixin, ApiPlacesSerializer):
         model = Place
         fields = ('id', 'location', 'address', 'status',  'photos', 'cemetery' )
 
+
+
+class ApiClientSitePlacesSerializer(ApiPlacesSerializer):
+    address = serializers.Field(source='address')
+
+    class Meta:
+        model = Place
+        fields = ('id', 'address', 'location',)
 
 
 class PlaceSerializer(GetGalleryMixin, serializers.ModelSerializer):

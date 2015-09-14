@@ -53,7 +53,7 @@ from serializers import CemeterySerializer, AreaSerializer, PlaceSerializer, Are
     AreaPhotoSerializer, ExhumationRequestSerializer, PlaceSizeSerializer, \
     ApiOmsPlacesSerializer, ApiCatalogPlacesSerializer, PlaceLockSerializer, \
     CemeteryTitleSerializer, AreaTitleSerializer, PlaceTitleSerializer, \
-    CemeteryClientSiteSerializer
+    CemeteryClientSiteSerializer, ApiClientSitePlacesSerializer
 
 from persons.serializers import AlivePersonSerializer, PhoneSerializer
 from users.serializers import UserFioLoginSerializer
@@ -1431,3 +1431,26 @@ class ApiClientSiteCemeteriesView(APIView):
             ])
 
 api_client_site_cemeteries = ApiClientSiteCemeteriesView.as_view()
+
+class ApiClientSitePlacesView(APIView):
+
+    def get(self, request, pk):
+        ugh = get_object_or_404(Org, pk=pk)
+        query = request.GET.get('query', '').strip()
+        if query:
+            q = Q(cemetery__ugh=ugh)
+            fio = [f.strip('.') for f in query.split(' ')]
+            if len(fio) > 2:
+                q &= Q(burial__deadman__middle_name__istartswith=fio[2])
+            if len(fio) > 1:
+                q &= Q(burial__deadman__first_name__istartswith=fio[1])
+            q &= Q(burial__deadman__last_name__istartswith=fio[0])
+            places = Place.objects.filter(q).distinct()
+        else:
+            places = Place.objects.none()
+        return Response(
+            status=200,
+            data=[ ApiClientSitePlacesSerializer(place).data for place in places
+            ])
+
+api_client_site_places = ApiClientSitePlacesView.as_view()
