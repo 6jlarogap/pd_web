@@ -2628,11 +2628,7 @@ class ApiShopsReviewsView(ApiShopsMixin, APIView):
 api_shops_reviews = ApiShopsReviewsView.as_view()
 
 class ApiClientSiteDetailView(APIView):
-    """
-    Показ данных о ЛОРУ, поставщике интернет-заказа
-    
-    Общий доступ, чтобы можно было посмотреть price-list поставщика
-    """
+
     def get(self, request, pk):
         org = get_object_or_404(Org, pk=pk)
         return Response(status=200, data=OrgClientSiteSerializer(org).data)

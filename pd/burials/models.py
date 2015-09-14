@@ -465,7 +465,7 @@ class Place(SafeDeleteMixin, GeoPointModel, BaseModelManualDtCreated):
             result += _(u', участок %s') % self.area.name
         if self.row:
             result += _(u', ряд %s') % self.row
-        result += _(u', место %s') % self.place or ''
+        result += _(u', место %(place)s') % dict(place=self.place or '')
         return result
 
     def address(self):
