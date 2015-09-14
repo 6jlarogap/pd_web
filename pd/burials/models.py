@@ -459,12 +459,18 @@ class Place(SafeDeleteMixin, GeoPointModel, BaseModelManualDtCreated):
             for burial in place.burial_set.all():
                 write_log(request, burial, message)
 
-    def address(self):
-        result = _(u'Кладбище %s, участок %s') % (self.cemetery.name, self.area.name, )
+    def address_short(self):
+        result = _(u'Кладбище %s') % self.cemetery.name
+        if self.area:
+            result += _(u', участок %s') % self.area.name
         if self.row:
             result += _(u', ряд %s') % self.row
-        result += _(u', место %s') % self.place
-        cemetery_address = self.cemetery.address and self.cemetery.address.__unicode__() or ''
+        result += _(u', место %s') % self.place or ''
+        return result
+
+    def address(self):
+        result = self.address_short()
+        cemetery_address = self.cemetery.address and u"%s" % self.cemetery.address or ''
         if cemetery_address:
             result += _(u', %s') % cemetery_address
         return result

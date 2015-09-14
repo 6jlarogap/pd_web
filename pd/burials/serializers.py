@@ -47,7 +47,6 @@ class CemeteryTitleSerializer(serializers.ModelSerializer):
 
 
 class CemeteryClientSiteSerializer(AddressLatLonMixin, serializers.ModelSerializer):
-    title = serializers.Field('name')
     phones = Field(source='phone_list')
     address = serializers.RelatedField()
     location = serializers.SerializerMethodField('location_func')
@@ -167,9 +166,8 @@ class ApiCatalogPlacesSerializer(GetGalleryMixin, ApiPlacesSerializer):
         fields = ('id', 'location', 'address', 'status',  'photos', 'cemetery' )
 
 
-
 class ApiClientSitePlacesSerializer(ApiPlacesSerializer):
-    address = serializers.Field(source='address')
+    address = serializers.Field(source='address_short')
 
     class Meta:
         model = Place
