@@ -169,3 +169,30 @@ def capitalize(s):
         return ''
     dash_char = lambda m: u"-%s" % m.group(1).upper()
     return s and re.sub(r'\-(\S)', dash_char, string.capwords(s)) or ''
+
+def re_search(s):
+    """
+    Преобразовать строку в таковую для поиска __iregex = regex
+
+    Применяется в поиске по фио или по названию организации,
+    например поиск:
+        ?лейник     вернет  Олейник, Алейник, Алейников
+        *лейник             Олейник, Алейник, Калейник,
+                            НО! не Алейников
+                                (особое сочетание: * в начале)
+        д?р?шев             Дарашевич, Дорошевич
+
+    Полагаем, что на вход всегда идет строка, не содержащая пробелов
+    """
+    regex = s.strip()
+    if re.search(r'[\?\*]', regex):
+        regex = re.sub(r'\.', r'\.', regex)
+        regex = re.sub(r'\?', r'.',  regex)
+        regex = re.sub(r'\*', r'.*', regex)
+        if regex.startswith(".*"):
+            regex = u"%s$" % regex
+        else:
+            regex = u"^%s" % regex
+    else:
+        regex = u"^%s" % regex
+    return regex

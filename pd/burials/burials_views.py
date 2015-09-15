@@ -24,6 +24,7 @@ from persons.models import DeathCertificate
 from logs.models import write_log
 from orders.models import Order
 from users.models import Org, Profile, is_cabinet_user
+from pd.utils import re_search
 from pd.forms import CommentForm
 from pd.views import PaginateListView, FormInvalidMixin, get_front_end_url
 from reports.models import make_report
@@ -497,15 +498,15 @@ class BurialsListView(PaginateListView):
             if form.cleaned_data['operation']:
                 burials = burials.filter(burial_type=form.cleaned_data['operation'])
             if form.cleaned_data['fio'] and not form.cleaned_data['no_last_name']:
-                fio = [f.strip('.') for f in form.cleaned_data['fio'].split(' ')]
+                fio = [re_search(f) for f in form.cleaned_data['fio'].split()]
                 q = Q()
                 if len(fio) > 2:
-                    q &= Q(deadman__middle_name__istartswith=fio[2])
+                    q &= Q(deadman__middle_name__iregex=fio[2])
                 if len(fio) > 1:
-                    q &= Q(deadman__first_name__istartswith=fio[1])
+                    q &= Q(deadman__first_name__iregex=fio[1])
                 if len(fio) > 0:
-                    q &= Q(deadman__last_name__istartswith=fio[0])
-                burials = burials.filter(q)
+                    q &= Q(deadman__last_name__iregex=fio[0])
+                    burials = burials.filter(q)
             if settings.DEADMAN_IDENT_NUMBER_ALLOW and \
                form.cleaned_data.get('ident_number_search', '').strip() and \
                not form.cleaned_data['no_last_name']:
@@ -527,20 +528,20 @@ class BurialsListView(PaginateListView):
             if form.cleaned_data['account_number_to']:
                 burials = burials.filter(account_number_s2__lte=form.cleaned_data['account_number_to'])
             if form.cleaned_data['responsible']:
-                fio = [f.strip('.') for f in form.cleaned_data['responsible'].split(' ')]
+                fio = [re_search(f) for f in form.cleaned_data['responsible'].split()]
                 q1r = Q(responsible__isnull=False)
                 q2r = Q(place__isnull=False)
                 if len(fio) > 2:
-                    q1r &= Q(responsible__middle_name__istartswith=fio[2])
-                    q2r &= Q(place__responsible__middle_name__istartswith=fio[2])
+                    q1r &= Q(responsible__middle_name__iregex=fio[2])
+                    q2r &= Q(place__responsible__middle_name__iregex=fio[2])
                 if len(fio) > 1:
-                    q1r &= Q(responsible__first_name__istartswith=fio[1])
-                    q2r &= Q(place__responsible__first_name__istartswith=fio[1])
+                    q1r &= Q(responsible__first_name__iregex=fio[1])
+                    q2r &= Q(place__responsible__first_name__iregex=fio[1])
                 if len(fio) > 0:
-                    q1r &= Q(responsible__last_name__istartswith=fio[0])
-                    q2r &= Q(place__responsible__last_name__istartswith=fio[0])
-                qr = Q(q1r | q2r)
-                burials = burials.filter(qr)
+                    q1r &= Q(responsible__last_name__iregex=fio[0])
+                    q2r &= Q(place__responsible__last_name__iregex=fio[0])
+                    qr = Q(q1r | q2r)
+                    burials = burials.filter(qr)
             if form.cleaned_data['cemetery']:
                 burials = burials.filter(cemetery__name=form.cleaned_data['cemetery'])
             if form.cleaned_data['area']:
@@ -558,19 +559,21 @@ class BurialsListView(PaginateListView):
             if form.cleaned_data['status']:
                 burials = burials.filter(status=form.cleaned_data['status'])
             if form.cleaned_data['applicant_org']:
-                burials = burials.filter(applicant_organization__name__istartswith=form.cleaned_data['applicant_org'])
+                burials = burials.filter(
+                    applicant_organization__name__iregex=re_search(form.cleaned_data['applicant_org']))
             if form.cleaned_data['loru_in_burials']:
-                burials = burials.filter(loru__name__istartswith=form.cleaned_data['loru_in_burials'])
+                burials = burials.filter(
+                    loru__name__iregex=re_search(form.cleaned_data['loru_in_burials']))
             if form.cleaned_data['applicant_person']:
-                fio = [f.strip('.') for f in form.cleaned_data['applicant_person'].split(' ')]
+                fio = [f.strip('.') for f in form.cleaned_data['applicant_person'].split()]
                 qa = Q()
                 if len(fio) > 2:
-                    qa &= Q(applicant__middle_name__istartswith=fio[2])
+                    qa &= Q(applicant__middle_name__iregex=re_search(fio[2]))
                 if len(fio) > 1:
-                    qa &= Q(applicant__first_name__istartswith=fio[1])
+                    qa &= Q(applicant__first_name__iregex=re_search(fio[1]))
                 if len(fio) > 0:
-                    qa &= Q(applicant__last_name__istartswith=fio[0])
-                burials = burials.filter(qa)
+                    qa &= Q(applicant__last_name__iregex=re_search(fio[0]))
+                    burials = burials.filter(qa)
             if form.cleaned_data['burial_container']:
                 burials = burials.filter(burial_container=form.cleaned_data['burial_container'])
             if form.cleaned_data['annulated']:
@@ -678,15 +681,15 @@ class BurialsPublicListView(PaginateListView):
         form = self.get_form()
         if form.data and form.is_valid():
             if form.cleaned_data['fio']:
-                fio = [f.strip('.') for f in form.cleaned_data['fio'].split(' ')]
+                fio = [re_search(f) for f in form.cleaned_data['fio'].split()]
                 q = Q()
                 if len(fio) > 2:
-                    q &= Q(deadman__middle_name__istartswith=fio[2])
+                    q &= Q(deadman__middle_name__iregex=fio[2])
                 if len(fio) > 1:
-                    q &= Q(deadman__first_name__istartswith=fio[1])
+                    q &= Q(deadman__first_name__iregex=fio[1])
                 if len(fio) > 0:
-                    q &= Q(deadman__last_name__istartswith=fio[0])
-                burials = burials.filter(q)
+                    q &= Q(deadman__last_name__iregex=fio[0])
+                    burials = burials.filter(q)
             if form.cleaned_data['birth_date_from']:
                 burials = burials.filter(deadman__birth_date__gte=form.cleaned_data['birth_date_from'])
             if form.cleaned_data['birth_date_to']:

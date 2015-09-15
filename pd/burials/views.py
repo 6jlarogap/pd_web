@@ -25,7 +25,7 @@ from geo.models import Country, Region, Street, City
 
 from pd.views import RequestToFormMixin, FormInvalidMixin, get_front_end_url, ServiceException
 from pd.models import validate_phone_as_number
-from pd.utils import utcisoformat
+from pd.utils import utcisoformat, re_search
 
 from burials.forms import CemeteryForm, AreaFormset, PlaceEditForm, AddOrgForm, \
                           AreaMergeForm, BurialfileCommentEditForm, BurialCommentEditFormSet
@@ -1439,13 +1439,13 @@ class ApiClientSitePlacesView(APIView):
         query = request.GET.get('query', '').strip()
         if query:
             q = Q(cemetery__ugh=ugh)
-            fio = [f.strip('.') for f in query.split(' ')]
+            fio = [re_search(f) for f in query.split()]
             if len(fio) > 2:
-                q &= Q(burial__deadman__middle_name__istartswith=fio[2])
+                q &= Q(burial__deadman__middle_name__iregex=fio[2])
             if len(fio) > 1:
-                q &= Q(burial__deadman__first_name__istartswith=fio[1])
-            q &= Q(burial__deadman__last_name__istartswith=fio[0])
-            places = Place.objects.filter(q).distinct()
+                q &= Q(burial__deadman__first_name__iregex=fio[1])
+            q &= Q(burial__deadman__last_name__iregex=fio[0])
+            places = Place.objects.filter(q).distinct()[:5]
         else:
             places = Place.objects.none()
         return Response(
