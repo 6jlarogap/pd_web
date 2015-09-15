@@ -142,6 +142,18 @@ class Cemetery(GetLogsMixin, BaseModelManualDtCreated, PhonesMixin):
         self.fill_dt_created()
         return super(Cemetery, self).save(*args, **kwargs)
 
+    def worktimes(self):
+        result = []
+        if self.time_begin or self.time_end:
+            fmt = "%02d:%02d"
+            for dayindex in range(1,8):
+                result.append({
+                    'dayindex': dayindex,
+                    'from': fmt % (self.time_begin.hour, self.time_begin.minute) if self.time_begin else None,
+                    'to': fmt % (self.time_end.hour, self.time_end.minute) if self.time_end else None,
+                })
+        return result
+
 class CemeteryCoordinates(CoordinatesModel):
     #TODO:
     # Перевести эту модель к PointsModel
@@ -447,12 +459,18 @@ class Place(SafeDeleteMixin, GeoPointModel, BaseModelManualDtCreated):
             for burial in place.burial_set.all():
                 write_log(request, burial, message)
 
-    def address(self):
-        result = _(u'Кладбище %s, участок %s') % (self.cemetery.name, self.area.name, )
+    def address_short(self):
+        result = _(u'Кладбище %s') % self.cemetery.name
+        if self.area:
+            result += _(u', участок %s') % self.area.name
         if self.row:
             result += _(u', ряд %s') % self.row
-        result += _(u', место %s') % self.place
-        cemetery_address = self.cemetery.address and self.cemetery.address.__unicode__() or ''
+        result += _(u', место %(place)s') % dict(place=self.place or '')
+        return result
+
+    def address(self):
+        result = self.address_short()
+        cemetery_address = self.cemetery.address and u"%s" % self.cemetery.address or ''
         if cemetery_address:
             result += _(u', %s') % cemetery_address
         return result
@@ -598,7 +616,12 @@ class PlacePhoto(Files, GeoPointModel, BaseModelManualDtCreated):
         """
         Доступно ли анонимному пользователю
         """
-        return bool(self.place.dt_unowned)
+
+        # Открываем, из-за клиентского сайта,
+        # /api/clients/:id/burials-places/:placeId/photos
+        #
+        # return bool(self.place.dt_unowned)
+        return True
 
     def is_accessible(self, user):
         """

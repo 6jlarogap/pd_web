@@ -187,7 +187,7 @@ class Command(NoArgsCommand):
                             Q(applicant_organization_burials__ugh=ugh) | \
                             Q(exhumationrequest__burial__ugh=ugh)
             
-            profileloru_qs = Q(org=ugh)
+            profileloru_qs = Q(ugh=ugh)
 
             iddocumentsource_qs = Q(personid__person__aliveperson__applied_burials__ugh=ugh) | \
                                   Q(personid__person__aliveperson__place__cemetery__ugh=ugh) | \
