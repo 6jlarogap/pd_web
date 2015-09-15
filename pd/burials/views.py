@@ -1445,7 +1445,7 @@ class ApiClientSitePlacesView(APIView):
             if len(fio) > 1:
                 q &= Q(burial__deadman__first_name__iregex=fio[1])
             q &= Q(burial__deadman__last_name__iregex=fio[0])
-            places = Place.objects.filter(q).distinct()
+            places = Place.objects.filter(q).distinct()[:5]
         else:
             places = Place.objects.none()
         return Response(
