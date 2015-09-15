@@ -2661,10 +2661,10 @@ class ApiClientSiteMessagesView(CheckRecaptchaMixin, APIView):
         org = get_object_or_404(Org, pk=pk)
         recaptcha_data = request.DATA.get('recaptchaData')
         try:
-            if not recaptcha_data:
-                raise ServiceException(_(u'Не данных по captcha'))
-            if not self.check_recaptcha(self.request, recaptcha_data['challenge'], recaptcha_data['response']):
-                raise ServiceException(_(u'Ошибка проверки captcha'))
+            #if not recaptcha_data:
+                #raise ServiceException(_(u'Не данных по captcha'))
+            #if not self.check_recaptcha(self.request, recaptcha_data['challenge'], recaptcha_data['response']):
+                #raise ServiceException(_(u'Ошибка проверки captcha'))
 
             email_to = org.email and org.email.strip()
             try:
