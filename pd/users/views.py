@@ -2627,15 +2627,20 @@ class ApiShopsReviewsView(ApiShopsMixin, APIView):
 
 api_shops_reviews = ApiShopsReviewsView.as_view()
 
-class ApiClientSiteDetailView(APIView):
+class ApiClientSiteMixin(object):
 
-    def get(self, request, pk):
-        org = get_object_or_404(Org, pk=pk)
+    def get_org(self, token):
+        return get_object_or_404(Org, client_site_token=token)
+
+class ApiClientSiteDetailView(ApiClientSiteMixin, APIView):
+
+    def get(self, request, token):
+        org = self.get_org(token)
         return Response(status=200, data=OrgClientSiteSerializer(org).data)
 
 api_client_site_detail = ApiClientSiteDetailView.as_view()
 
-class ApiClientSiteMessagesView(CheckRecaptchaMixin, APIView):
+class ApiClientSiteMessagesView(CheckRecaptchaMixin, ApiClientSiteMixin, APIView):
     """
     Послать сообщение клиенту (на email организации) в форме обратной связи
 
@@ -2657,8 +2662,8 @@ class ApiClientSiteMessagesView(CheckRecaptchaMixin, APIView):
         400 - если произошла ошибка валидации входных данных
 
     """
-    def post(self, request, pk):
-        org = get_object_or_404(Org, pk=pk)
+    def post(self, request, token):
+        org = self.get_org(token)
         recaptcha_data = request.DATA.get('recaptchaData')
         try:
             #if not recaptcha_data:
