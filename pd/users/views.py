@@ -2630,7 +2630,7 @@ api_shops_reviews = ApiShopsReviewsView.as_view()
 class ApiClientSiteMixin(object):
 
     def get_org(self, token):
-        return get_object_or_404(Org, pk=token)
+        return get_object_or_404(Org, client_site_token=token)
 
 class ApiClientSiteDetailView(ApiClientSiteMixin, APIView):
 

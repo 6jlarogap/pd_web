@@ -649,6 +649,8 @@ class Org(GetLogsMixin, BaseModel):
     name = models.CharField(_(u"Название организации"), max_length=255, default='')
     slug = AutoSlugField(populate_from='name', max_length=255, editable=False,
                          unique=True, null=True, always_update=True)
+    client_site_token = models.CharField(_(u"Токен клиентского сайта"), max_length=255, 
+                        null=True, editable=False)
     full_name = models.CharField(_(u"Полное название"), max_length=255, default='', blank=True)
     description = models.TextField(_(u"Описание, направление деятельности"), blank=True, null=True)
     inn = models.CharField(_(u"ИНН"), max_length=255, default='', blank=True)
