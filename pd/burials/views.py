@@ -35,7 +35,7 @@ from burials.burials_views import *
 from logs.models import write_log, log_object, prepare_m2m_log, compare_obj
 from django.contrib.auth.models import User
 from users.models import Profile, Org, CustomerProfile, PermitIfUgh
-from users.views import SupervisorRequiredMixin, UGHRequiredMixin, UghOrLoruRequiredMixin
+from users.views import SupervisorRequiredMixin, UGHRequiredMixin, UghOrLoruRequiredMixin, ApiClientSiteMixin
 from persons.models import Phone, AlivePerson, CustomPlace
 from geo.models import Location
 
@@ -1420,22 +1420,22 @@ class ApiOmsAreasPlacesView(APIView):
 
 api_oms_areas_places = ApiOmsAreasPlacesView.as_view()
 
-class ApiClientSiteCemeteriesView(APIView):
+class ApiClientSiteCemeteriesView(ApiClientSiteMixin, APIView):
 
-    def get(self, request, pk):
-        ugh = get_object_or_404(Org, pk=pk)
+    def get(self, request, token):
+        ugh = self.get_org(token)
         return Response(
             status=200,
             data=[ CemeteryClientSiteSerializer(cemetery).data \
                    for cemetery in Cemetery.objects.filter(ugh=ugh)
-            ])
+        ])
 
 api_client_site_cemeteries = ApiClientSiteCemeteriesView.as_view()
 
-class ApiClientSitePlacesView(APIView):
+class ApiClientSitePlacesView(ApiClientSiteMixin, APIView):
 
-    def get(self, request, pk):
-        ugh = get_object_or_404(Org, pk=pk)
+    def get(self, request, token):
+        ugh = self.get_org(token)
         query = request.GET.get('query', '').strip()
         if query:
             q = Q(cemetery__ugh=ugh)
@@ -1455,12 +1455,13 @@ class ApiClientSitePlacesView(APIView):
 
 api_client_site_places = ApiClientSitePlacesView.as_view()
 
-class ApiClientSitePlacePhotosView(APIView):
+class ApiClientSitePlacePhotosView(ApiClientSiteMixin, APIView):
 
-    def get(self, request, ugh_pk, place_pk):
+    def get(self, request, ugh_token, place_pk):
+        ugh = self.get_org(ugh_token)
         try:
             place = Place.objects.filter(
-                cemetery__ugh__pk=ugh_pk,
+                cemetery__ugh=ugh,
                 pk=place_pk
             )[0]
         except IndexError:
