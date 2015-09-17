@@ -3,9 +3,9 @@
 # burial_input_rate.py
 # ------------------
 
-# Замер производительности при вводе захоронений
+# Замер производительности при вводе мест 
 
-# Запуск: : ./manage.py burial_input_rate username from_time to_time output_file
+# Запуск: : ./manage.py place_input_rate username from_time to_time
 #
 #       from_time, to_time  - с какого по какое время,
 #                             в формате YYYY-MM-DDTHH:MM,
@@ -17,8 +17,10 @@ import datetime
 
 from django.core.management.base import BaseCommand
 from django.contrib.auth.models import User
+from django.contrib.contenttypes.models import ContentType
 
-from burials.models import Burial
+from burials.models import Place
+from logs.models import Log
 
 TEMPLATE_DATE_TIME = '%Y-%m-%dT%H:%M'
 
@@ -29,7 +31,7 @@ class Command(BaseCommand):
         TEMPLATE_DATE_TIME,
         TEMPLATE_DATE_TIME
     )
-    help = "print user invent place input rate from from_time to to_time to output_file"
+    help = "print user burial input rate from from_time to to_time to output_file"
 
     def trunc_msec(self, d):
         """
@@ -67,22 +69,35 @@ class Command(BaseCommand):
         output_file = args[3].decode("utf-8")
         f = open(output_file, 'w')
 
+        ct = ContentType.objects.get(app_label="burials", model="place")
         previous = None
-        for b in Burial.objects.filter(
-                 changed_by=user,
+        for p in Place.objects.filter(
+                 is_invent=True,
                  dt_created__gte=from_time,
                  dt_created__lte=to_time,
                  ).distinct().order_by('dt_created'):
+            
+            try:
+                logrec = Log.objects.get(
+                    ct=ct,
+                    obj_id=int(p.pk),
+                    user=user,
+                    msg=u"Место '%s' создано через мобильное приложение" % p.place
+                )
+            except Log.DoesNotExist:
+                continue
 
             if previous is None:
-                previous = self.trunc_msec(b.dt_created)
+                previous = self.trunc_msec(p.dt_created)
                 continue
-            current = self.trunc_msec(b.dt_created)
+            current = self.trunc_msec(p.dt_created)
 
-            f.write("%s,%s,%10d\n" % (
+            f.write("%s,%s,%10d,pk_second=%s,url_second=%s\n" % (
                 previous.strftime(OUTPUT_TIME_FORMAT),
                 current.strftime(OUTPUT_TIME_FORMAT),
-                int(round((current-previous).total_seconds()))
+                int(round((current-previous).total_seconds())),
+                p.pk,
+                p.url(),
         ))
             
             previous = current
