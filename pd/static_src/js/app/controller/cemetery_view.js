@@ -91,7 +91,7 @@ function CemeteryViewCtrl($scope, $http, $resource, $location,  $routeParams,
 
       $scope.markers = [];
       if (result.address.gps_x && result.address.gps_y) {
-        $scope.markers.push([result.address.gps_x, result.address.gps_y]);
+        $scope.markers.push([result.address.gps_y, result.address.gps_x]);
       } else {
         var addressString = _.reduce($scope.cemetery_address, function (addrStr, addrComponent, key) {
           if ('id' === key || !addrComponent) {
