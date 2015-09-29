@@ -141,8 +141,19 @@ class AreaSerializer(serializers.ModelSerializer):
         return valid
 
 
+class PlacePointLatLonMixin(PointLatLonMixin):
 
-class ApiPlacesSerializer(PointLatLonMixin, serializers.ModelSerializer):
+    def location_func(self, obj):
+        result = super(PlacePointLatLonMixin, self).location_func(obj)
+        if not result and obj.cemetery.address and \
+           obj.cemetery.address.gps_x and obj.cemetery.address.gps_y:
+            result = {
+                'latitude': obj.cemetery.address.gps_y,
+                'longitude': obj.cemetery.address.gps_x,
+            }
+        return result
+
+class ApiPlacesSerializer(PlacePointLatLonMixin, serializers.ModelSerializer):
     location = serializers.SerializerMethodField('location_func')
     status = serializers.Field(source='status_list')
 
