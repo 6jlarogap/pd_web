@@ -113,6 +113,27 @@ class Country(models.Model):
                 pass
         return result
 
+    @classmethod
+    def get_address_by_coords(cls, latitude, longitude):
+        """
+        Получить адрес по координатам
+        """
+        result = None
+        data = cls.get_yandex_address_info(latitude, longitude)
+        if data:
+            try:
+                data = data['response']['GeoObjectCollection']['featureMember'][0]\
+                            ['GeoObject']
+                if 'name' in data and 'description' in data:
+                    result = u"%s, %s" % (data['name'], data['description'])
+                elif 'description' in data:
+                    result = data['description']
+                elif 'name' in data:
+                    result = data['name']
+            except (KeyError, IndexError):
+                pass
+        return result
+
     class Meta:
         db_table = "common_geocountry"
         ordering = ['name']
