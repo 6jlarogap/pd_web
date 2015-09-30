@@ -2232,7 +2232,7 @@ class ApiOrgSignupView(CheckRecaptchaMixin, RegisterMixin, APIView):
             coords = location.get('location')
             gps_x= coords and coords.get('longitude')
             gps_y= coords and coords.get('latitude')
-            country, country_currency = Country.get_country_currency_by_coords(gps_x, gps_y)
+            country, country_currency = Country.get_country_currency_by_coords(gps_y, gps_x)
             org_address = Location(
                 addr_str=location.get('address', '').strip(),
                 country=country,
