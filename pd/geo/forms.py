@@ -50,7 +50,7 @@ class LocationForm(PartialFormMixin, forms.ModelForm):
         return self.is_valid() and any(self.cleaned_data.values())
 
     def save(self, commit=True, *args, **kwargs):
-        if self.instance and self.is_addr_str:
+        if self.instance and self.is_addr_str and self.cleaned_data.get('addr_str', '').strip():
             return super(LocationForm, self).save(commit, *args, **kwargs)
         elif self.cleaned_data['country_name']:
             loc = super(LocationForm, self).save(commit=False, *args, **kwargs)
@@ -69,4 +69,5 @@ class LocationForm(PartialFormMixin, forms.ModelForm):
             if commit:
                 loc.save()
             return loc
+        #else возвращается None, что ведет к установке адреса в None
 

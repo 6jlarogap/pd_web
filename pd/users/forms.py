@@ -366,8 +366,8 @@ class OrgForm(StrippedStringsMixin, BaseOrgForm):
             self.placesize_formset.save()
         if self.reason_formset:
             self.reason_formset.save()
-        if any(self.address_form.cleaned_data.values()):
-            org.off_address = self.address_form.save()
+        old_addr = org.off_address
+        org.off_address = self.address_form.save()
 
         scan_uploaded = scan_clear = False
         if self.scan_form:
@@ -391,6 +391,11 @@ class OrgForm(StrippedStringsMixin, BaseOrgForm):
 
         if commit:
             org.save()
+            if old_addr and not org.off_address:
+                try:
+                    old_addr.delete()
+                except IntegrityError:
+                    pass
             self.put_log_data(msg=_(u'Изменены данные организации'))
         return org
 
