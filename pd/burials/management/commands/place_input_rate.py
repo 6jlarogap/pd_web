@@ -92,12 +92,10 @@ class Command(BaseCommand):
                 continue
             current = self.trunc_msec(p.dt_created)
 
-            f.write("%s,%s,%10d,pk_second=%s,url_second=%s\n" % (
+            f.write("%s,%s,%10d\n" % (
                 previous.strftime(OUTPUT_TIME_FORMAT),
                 current.strftime(OUTPUT_TIME_FORMAT),
                 int(round((current-previous).total_seconds())),
-                p.pk,
-                p.url(),
         ))
             
             previous = current
