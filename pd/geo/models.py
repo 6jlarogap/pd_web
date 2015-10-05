@@ -63,42 +63,76 @@ class Country(models.Model):
         return self.name[:16]
 
     @classmethod
-    def get_country_currency_by_coords(cls, gps_x, gps_y):
+    def get_yandex_address_info(cls, latitude, longitude):
+        """
+        Получить сырые данные для последующей выемки из них страны, адреса ...
+        """
+        YANDEX_GEOCODE_URL = "http://geocode-maps.yandex.ru/1.x/?geocode=%s,%s&format=json&results=1"
+
+        if latitude is None or longitude is None:
+            return None
+        try:
+            r = urllib2.urlopen(YANDEX_GEOCODE_URL % (
+                longitude,
+                latitude,
+            ))
+            raw_data = r.read().decode(r.info().getparam('charset') or 'utf-8')
+        except (urllib2.HTTPError, urllib2.URLError):
+            return None
+        try:
+            return json.loads(raw_data)
+        except ValueError:
+            return None
+
+    @classmethod
+    def get_country_currency_by_coords(cls, latitude, longitude):
         """
         Получить страну, валюту по координатам
         """
+        result = None, None
 
         DOMAINS = dict(
             ru=dict(name=u'Россия', currency='RUR',),
             by=dict(name=u'Беларусь', currency='BYR',),
         )
-        YANDEX_GEOCODE_URL = "http://geocode-maps.yandex.ru/1.x/?geocode=%s,%s&format=json&results=1"
 
-        result = None, None
-        if gps_x is None or gps_y is None:
-            return result
-        try:
-            r = urllib2.urlopen(YANDEX_GEOCODE_URL % (
-                gps_x,
-                gps_y,
-            ))
-            raw_data = r.read().decode(r.info().getparam('charset') or 'utf-8')
-        except (urllib2.HTTPError, urllib2.URLError):
-            return result
-        try:
-            data = json.loads(raw_data)
-            country = data['response']['GeoObjectCollection']['featureMember'][0]\
-                        ['GeoObject']['metaDataProperty']['GeocoderMetaData']\
-                        ['AddressDetails']['Country']
-            country_parms = DOMAINS[country['CountryNameCode'].lower()]
-            country_name = country_parms['name']
-            currency_code = country_parms['currency']
-            country, created_country = cls.objects.get_or_create(name=country_name)
-            Currency = models.get_model('billing', 'Currency')
-            currency, created_currency = Currency.objects.get_or_create(code=currency_code)
-        except (KeyError, ValueError):
-            return result
-        return country, currency
+        data = cls.get_yandex_address_info(latitude, longitude)
+        if data:
+            try:
+                country = data['response']['GeoObjectCollection']['featureMember'][0]\
+                            ['GeoObject']['metaDataProperty']['GeocoderMetaData']\
+                            ['AddressDetails']['Country']
+                country_parms = DOMAINS[country['CountryNameCode'].lower()]
+                country_name = country_parms['name']
+                currency_code = country_parms['currency']
+                country, created_country = cls.objects.get_or_create(name=country_name)
+                Currency = models.get_model('billing', 'Currency')
+                currency, created_currency = Currency.objects.get_or_create(code=currency_code)
+                result = country, currency
+            except (KeyError, IndexError):
+                pass
+        return result
+
+    @classmethod
+    def get_address_by_coords(cls, latitude, longitude):
+        """
+        Получить адрес по координатам
+        """
+        result = None
+        data = cls.get_yandex_address_info(latitude, longitude)
+        if data:
+            try:
+                data = data['response']['GeoObjectCollection']['featureMember'][0]\
+                            ['GeoObject']
+                if 'name' in data and 'description' in data:
+                    result = u"%s, %s" % (data['name'], data['description'])
+                elif 'description' in data:
+                    result = data['description']
+                elif 'name' in data:
+                    result = data['name']
+            except (KeyError, IndexError):
+                pass
+        return result
 
     class Meta:
         db_table = "common_geocountry"

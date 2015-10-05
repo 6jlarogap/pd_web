@@ -341,8 +341,14 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
     COFFIN = 'coffin'
     URN = 'urn'
 
+    BURIAL_TYPES = (
+        (Burial.BURIAL_NEW, _(u'Новое захоронение (новое место, новая могила)')),
+        (Burial.BURIAL_ADD, _(u'Подзахоронение (существующее место, новая могила)')),
+        (Burial.BURIAL_OVER, _(u'Захоронение в существующую (существующее место, существующая могила)')),
+    )
+
     burial_container = forms.ChoiceField(label=_(u"Тип захоронения"), choices=Burial.BURIAL_CONTAINERS, widget=forms.RadioSelect,  required=False)
-    burial_type = forms.ChoiceField(label=_(u"Вид захоронения"), choices=Burial.BURIAL_TYPES, widget=forms.RadioSelect,  required=False)
+    burial_type = forms.ChoiceField(label=_(u"Вид захоронения"), choices=BURIAL_TYPES, widget=forms.RadioSelect,  required=False)
     opf = forms.ChoiceField(label='', choices=OPF_CHOICES, widget=forms.RadioSelect)
     loru = forms.CharField(required=False, label=_(u'Посредник'))
 

@@ -109,7 +109,7 @@
                                 </li>
                                 {% if user.profile.is_ugh %}
                                     <li>
-                                        <a href="{{ MEDIA_URL }}support/download/mobilekeeper.apk">{% trans "Скачать мобильный клиент" %}</a>
+                                        <a href="{{ global_context_MOBILEKEEPER_URL }}">{% trans "Скачать мобильный клиент" %}</a>
                                     </li>
                                 {% endif %}
                             {% endif %}
@@ -155,7 +155,7 @@
                                             {% if user.profile.org.pk %}
                                                 <li><a href="{% url edit_org user.profile.org.pk %}">{% trans "Организация" %}</a></li>
                                             {% endif %}
-                                            <li><a href="{% url profile %}">{% trans "Пользователь" %}</a></li>
+                                            <li><a href="{% url user_profile %}">{% trans "Пользователь" %}</a></li>
                                             {% if user.profile.org.pk %}
                                                 <li><a href="{% url org_log %}">{% trans "Журнал" %}</a></li>
                                             {% endif %}

@@ -45,8 +45,6 @@ urlpatterns = patterns('users.views',
 
     url(r'^api/education/?$', 'api_education', name='api_education'),
 
-    url(r'^registration-old/$', 'registration_old', name='registration_old'),
-    
     url(r'^testcaptcha/$', 'testcaptcha', name='testcaptcha'),
 
     url(r'^register/$', 'register', name='register'),
@@ -69,16 +67,7 @@ urlpatterns = patterns('users.views',
         
     url(r'^loruregistry/$', 'loru_registry', name='loru_registry'),
 
-    # TODO
-    # Убрать эти URLs и сопутствующие templates, views, forms ----------
-    url(r'^profile/old/$', 'profile_old', name='profile_old'),
-    url(r'^userprofile/$', 'user_profile', name='user_profile'),
-    url(r'^user/(?P<pk>\d+)/edit/$', 'edit_user', name='edit_user'),
-    url(r'^user/(?P<pk>\d+)/password/$', 'change_password', name='change_password'),
-    url(r'^user/create/$', 'add_user', name='add_user'),
-    # ------------------------------------------------------------------
-
-    url(r'^profile/$', 'edit_profile', {'my_profile': True}, name='profile'),
+    url(r'^userprofile/$', 'edit_profile', {'my_profile': True}, name='user_profile'),
     url(r'^profile/(?P<pk>\d+)/edit/$', 'edit_profile', name='edit_profile'),
     url(r'^profile/create/$', 'edit_profile', name='create_profile'),
 
@@ -86,6 +75,9 @@ urlpatterns = patterns('users.views',
     url(r'^org/log/$', 'org_log', name='org_log'),
 
     url(r'^loginlog/$', 'login_log', name='login_log'),
+
+    url(r'^api/clients/(?P<token>[0-9a-f]+)/details/?$', 'api_client_site_detail', name='api_client_site_detail'),
+    url(r'^api/clients/(?P<token>[0-9a-f]+)/messages/?$', 'api_client_site_messages', name='api_client_site_messages'),
 
     url(r'^autocomplete/org/$', 'autocomplete_org', name='autocomplete_org'),
     url(r'^autocomplete/loru_in_burials/$', 'autocomplete_loru_in_burials', name='autocomplete_loru_in_burials'),

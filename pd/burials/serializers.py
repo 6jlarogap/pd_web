@@ -13,6 +13,7 @@ from burials.models import Cemetery, Place, Area, Grave, Burial, AreaPhoto, Buri
 
 
 from geo.models import Location
+from geo.serializers import AddressLatLonMixin, PointLatLonMixin
 from geo.serializers import LocationSerializer
 from pd.serializers import ArchFilesSerializer
 
@@ -43,6 +44,26 @@ class CemeteryTitleSerializer(serializers.ModelSerializer):
     class Meta:
         model = Cemetery
         fields = ('id', 'title')
+
+
+class CemeteryClientSiteSerializer(AddressLatLonMixin, serializers.ModelSerializer):
+    phones = Field(source='phone_list')
+    address = serializers.RelatedField()
+    location = serializers.SerializerMethodField('location_func')
+    workTimes = Field(source='worktimes')
+    executive = serializers.SerializerMethodField('executive_func')
+
+    class Meta:
+        model = Cemetery
+        fields = ('id', 'name', 'address', 'location', 'phones',
+                  'workTimes', 'executive'
+        )
+
+    def executive_func(self, obj):
+        if obj.caretaker:
+            return dict(fullName=u"%s" % obj.caretaker.profile)
+        else:
+            return None
 
 
 class AreaTitleSerializer(serializers.ModelSerializer):
@@ -120,19 +141,21 @@ class AreaSerializer(serializers.ModelSerializer):
         return valid
 
 
-
-class ApiPlacesSerializer(serializers.ModelSerializer):
-    location = serializers.SerializerMethodField('location_func')
-    status = serializers.Field(source='status_list')
+class PlacePointLatLonMixin(PointLatLonMixin):
 
     def location_func(self, obj):
-        if obj.lat and obj.lng:
-            return {
-                'latitude': obj.lat,
-                'longitude': obj.lng,
+        result = super(PlacePointLatLonMixin, self).location_func(obj)
+        if not result and obj.cemetery.address and \
+           obj.cemetery.address.gps_x and obj.cemetery.address.gps_y:
+            result = {
+                'latitude': obj.cemetery.address.gps_y,
+                'longitude': obj.cemetery.address.gps_x,
             }
-        else:
-            return None
+        return result
+
+class ApiPlacesSerializer(PlacePointLatLonMixin, serializers.ModelSerializer):
+    location = serializers.SerializerMethodField('location_func')
+    status = serializers.Field(source='status_list')
 
 
 class ApiOmsPlacesSerializer(ApiPlacesSerializer):
@@ -153,6 +176,13 @@ class ApiCatalogPlacesSerializer(GetGalleryMixin, ApiPlacesSerializer):
         model = Place
         fields = ('id', 'location', 'address', 'status',  'photos', 'cemetery' )
 
+
+class ApiClientSitePlacesSerializer(ApiPlacesSerializer):
+    address = serializers.Field(source='address_short')
+
+    class Meta:
+        model = Place
+        fields = ('id', 'address', 'location',)
 
 
 class PlaceSerializer(GetGalleryMixin, serializers.ModelSerializer):

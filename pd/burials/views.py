@@ -25,7 +25,7 @@ from geo.models import Country, Region, Street, City
 
 from pd.views import RequestToFormMixin, FormInvalidMixin, get_front_end_url, ServiceException
 from pd.models import validate_phone_as_number
-from pd.utils import utcisoformat
+from pd.utils import utcisoformat, re_search
 
 from burials.forms import CemeteryForm, AreaFormset, PlaceEditForm, AddOrgForm, \
                           AreaMergeForm, BurialfileCommentEditForm, BurialCommentEditFormSet
@@ -35,7 +35,7 @@ from burials.burials_views import *
 from logs.models import write_log, log_object, prepare_m2m_log, compare_obj
 from django.contrib.auth.models import User
 from users.models import Profile, Org, CustomerProfile, PermitIfUgh
-from users.views import SupervisorRequiredMixin, UGHRequiredMixin, UghOrLoruRequiredMixin
+from users.views import SupervisorRequiredMixin, UGHRequiredMixin, UghOrLoruRequiredMixin, ApiClientSiteMixin
 from persons.models import Phone, AlivePerson, CustomPlace
 from geo.models import Location
 
@@ -52,7 +52,8 @@ from serializers import CemeterySerializer, AreaSerializer, PlaceSerializer, Are
     GraveSerializer, BurialSerializer, BurialListSerializer, BurialPutGraveSerializer, \
     AreaPhotoSerializer, ExhumationRequestSerializer, PlaceSizeSerializer, \
     ApiOmsPlacesSerializer, ApiCatalogPlacesSerializer, PlaceLockSerializer, \
-    CemeteryTitleSerializer, AreaTitleSerializer, PlaceTitleSerializer
+    CemeteryTitleSerializer, AreaTitleSerializer, PlaceTitleSerializer, \
+    CemeteryClientSiteSerializer, ApiClientSitePlacesSerializer
 
 from persons.serializers import AlivePersonSerializer, PhoneSerializer
 from users.serializers import UserFioLoginSerializer
@@ -1333,29 +1334,25 @@ class ApiOmsPhotoPlacesDetail(APIView):
         do_save = False
         log_messages = []
 
-        remakePhoto = request.DATA.get('remakePhoto')
-        remake_photo_comment = request.DATA.get('remakePhotoComment')
-
         if 'remakePhoto' in request.DATA:
             do_save = True
-            place.dt_wrong_fio = datetime.datetime.now() if remakePhoto else None
+            remakePhoto = request.DATA.get('remakePhoto')
             if remakePhoto:
+                place.dt_wrong_fio = datetime.datetime.now()
                 place.user_processed = None
                 place.is_inprocess = False
-                if not remake_photo_comment:
+                remake_photo_comment = request.DATA.get('remakePhotoComment')
+                if remake_photo_comment:
+                    log_messages.append(_(u'Заказано повторное фото места: %s') % remake_photo_comment)
+                else:
                     log_messages.append(_(u'Заказано повторное фото места'))
-
-        if 'remakePhotoComment' in request.DATA:
-            do_save = True
-            place.comment_remakephoto = remake_photo_comment
-            if remake_photo_comment:
-                log_messages.append(_(u'Заказано повторное фото места: %s') % remake_photo_comment)
             else:
-                log_messages.append(_(u'Удален комментарий о повторном фото места'))
+                place.dt_wrong_fio = None
+                log_messages.append(_(u'Отменен признак повторного фото места'))
 
-        processed = request.DATA.get('processed')
         if 'processed' in request.DATA:
             do_save = True
+            processed = request.DATA.get('processed')
             if processed:
                 place.dt_processed = datetime.datetime.now()
                 log_messages.append(_(u'Фотографии места обработаны'))
@@ -1422,3 +1419,53 @@ class ApiOmsAreasPlacesView(APIView):
             ])
 
 api_oms_areas_places = ApiOmsAreasPlacesView.as_view()
+
+class ApiClientSiteCemeteriesView(ApiClientSiteMixin, APIView):
+
+    def get(self, request, token):
+        ugh = self.get_org(token)
+        return Response(
+            status=200,
+            data=[ CemeteryClientSiteSerializer(cemetery).data \
+                   for cemetery in Cemetery.objects.filter(ugh=ugh)
+        ])
+
+api_client_site_cemeteries = ApiClientSiteCemeteriesView.as_view()
+
+class ApiClientSitePlacesView(ApiClientSiteMixin, APIView):
+
+    def get(self, request, token):
+        ugh = self.get_org(token)
+        query = request.GET.get('query', '').strip()
+        if query:
+            q = Q(cemetery__ugh=ugh)
+            fio = [re_search(f) for f in query.split()]
+            if len(fio) > 2:
+                q &= Q(burial__deadman__middle_name__iregex=fio[2])
+            if len(fio) > 1:
+                q &= Q(burial__deadman__first_name__iregex=fio[1])
+            q &= Q(burial__deadman__last_name__iregex=fio[0])
+            places = Place.objects.filter(q).distinct()[:5]
+        else:
+            places = Place.objects.none()
+        return Response(
+            status=200,
+            data=[ ApiClientSitePlacesSerializer(place).data for place in places
+            ])
+
+api_client_site_places = ApiClientSitePlacesView.as_view()
+
+class ApiClientSitePlacePhotosView(ApiClientSiteMixin, APIView):
+
+    def get(self, request, ugh_token, place_pk):
+        ugh = self.get_org(ugh_token)
+        try:
+            place = Place.objects.filter(
+                cemetery__ugh=ugh,
+                pk=place_pk
+            )[0]
+        except IndexError:
+            raise Http404
+        return Response(status=200, data=place.get_photo_gallery(request))
+
+api_client_site_placephotos = ApiClientSitePlacePhotosView.as_view()

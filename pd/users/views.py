@@ -47,8 +47,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.parsers import MultiPartParser, JSONParser
 
 from logs.models import Log, write_log, LoginLog
-from users.forms import UserAddForm, RegisterForm, LoruFormset, ProfileForm, UserProfileForm, \
-                        UserDataForm, ChangePasswordForm, BankAccountFormset, OrgForm, \
+from users.forms import RegisterForm, LoruFormset, BankAccountFormset, OrgForm, \
                         OrgLogForm, LoginLogForm, OrgBurialStatsForm, SupportForm, TestCaptchaForm, \
                         LoruOrdersStatsForm, ProfileDataForm
 from users.models import Profile, Org, RegisterProfile, ProfileLORU, CustomerProfile, Store, \
@@ -71,7 +70,8 @@ from geo.models import Location, Country
 from users.serializers import StoreSerializer, OrgSerializer, OrgShort2Serializer, \
                               OrgShort3Serializer, OrgOptSupplierSerializer, OrgShort5Serializer, \
                               UserSettingsSerializer, ShopSerializer, OrgGallerySerializer, \
-                              ShopDetailSerializer, OrgReviewSerializer
+                              ShopDetailSerializer, OrgReviewSerializer, \
+                              OrgClientSiteSerializer
 
 from sms_service.utils import send_sms
 
@@ -887,29 +887,6 @@ class LogoutView(View):
 
 ulogout = LogoutView.as_view()
 
-class RegistrationOldView(SupervisorProductionRequiredMixin, View):
-    """
-    Регистрация
-    """
-    def post(self, request, *args, **kwargs):
-        form = UserAddForm(data=request.POST)
-        if form.is_valid():
-            form.save()
-            user = authenticate(username=form.cleaned_data['username'], password=form.cleaned_data['password1'])
-            login(request, user)
-            write_log(request, request.user, _(u'Вход в систему'))
-            LoginLog.write(request)
-            messages.success(self.request, _(u"Все хорошо, регистрация успешна"))
-            return redirect('dashboard')
-        return self.get(request, *args, **kwargs)
-
-    def get(self, request, *args, **kwargs):
-        form = UserAddForm()
-        request.session.set_test_cookie()
-        return render(request, 'registration_old.html', {'form':form})
-
-registration_old = RegistrationOldView.as_view()
-
 class LoruRegistryView(UGHRequiredMixin, View):
     """
     Редактирование реестра ЛОРУ у этого УГХ
@@ -963,115 +940,6 @@ class LoruRegistryView(UGHRequiredMixin, View):
 
 loru_registry = LoruRegistryView.as_view()
 
-class ProfileView(UghOrLoruRequiredMixin, UpdateView):
-    """
-    Редактирование профиля, заодно организации,
-    применяется только при вводе начальной организации
-    """
-
-    template_name = 'profile.html'
-    model = Profile
-    form_class = ProfileForm
-
-    def get_success_url(self):
-        return reverse('profile')
-
-    def get_object(self, queryset=None):
-        return self.request.user.profile
-
-    def form_valid(self, form):
-        form.save()
-        write_log(self.request, form.instance, _(u'Изменены данные организации и пользователя'))
-        messages.success(self.request, _(u"Данные сохранены"))
-        return redirect(self.get_success_url())
-
-profile_old = ProfileView.as_view()
-
-class UserProfileView(UghOrLoruRequiredMixin, UpdateView):
-    """
-    Редактирование профиля
-    """
-
-    template_name = 'userprofile.html'
-    model = Profile
-    form_class = UserProfileForm
-
-    def get_success_url(self):
-        return reverse('user_profile')
-
-    def get_object(self, queryset=None):
-        return self.request.user.profile
-
-    def form_valid(self, form):
-        form.save()
-        write_log(self.request, form.instance, _(u'Изменены данные пользователя'))
-        messages.success(self.request, _(u"Данные сохранены"))
-        return redirect(self.get_success_url())
-
-user_profile = UserProfileView.as_view()
-
-class UserAddView(UghOrLoruRequiredMixin, CreateView):
-    template_name = 'add_user.html'
-    model = User
-    form_class = UserAddForm
-
-    def form_valid(self, form):
-        self.object = form.save()
-        self.object.profile.org = self.request.user.profile.org
-        self.object.profile.save()
-
-        msg = _(u"<a href='%(edit_user)s'>Пользователь %(username)s</a> создан") % dict(
-            edit_user=reverse('edit_user', args=[self.object.pk]),
-            username=self.object.username,
-        )
-        messages.success(self.request, msg)
-        log_msg = _(u'Создан пользователь %s') % self.object.username
-        if self.object.email:
-            log_msg = u"%s, email: %s" % (log_msg, self.object.email,)
-        write_log(self.request, self.object, log_msg)
-        write_log(self.request, self.object.profile.org, log_msg)
-        return redirect(self.get_success_url())
-
-    def get_success_url(self):
-        return reverse('edit_org', args=[self.object.profile.org.pk])
-
-    def get_form_kwargs(self, **kwargs):
-        data = super(UserAddView, self).get_form_kwargs(**kwargs)
-        del data['instance']
-        return data
-
-add_user = UserAddView.as_view()
-
-class UserEditView(UghOrLoruRequiredMixin, RequestToFormMixin, UpdateView):
-    template_name = 'edit_user.html'
-    model = User
-    form_class = UserDataForm
-
-    def get_success_url(self):
-        msg = _(u"<a href='%(edit_user)s'>Пользователь %(username)s</a> изменен") % dict(
-            edit_user=reverse('edit_user', args=[self.object.pk]),
-            username=self.object.username,
-        )
-        messages.success(self.request, msg)
-        return reverse('edit_org', args=[self.object.profile.org.pk])
-
-    def form_valid(self, form):
-        form.save()
-        if 'is_active' in form.changed_data:
-            msg = _(u'%(fio_changer)s (%(username_changer)s) изменил(а) '
-                    u'статус %(fio)s (%(username)s) на %(status)s') % dict(
-                fio_changer=self.request.user.profile.last_name_initials(),
-                username_changer=self.request.user.username,
-                fio=self.object.profile.last_name_initials(),
-                username=self.object.username,
-                status=_(u'активный') if self.object.is_active else _(u'неактивный'),
-            )
-            write_log(self.request, self.object.profile.org, msg)
-            write_log(self.request, self.object, msg)
-        return redirect(self.get_success_url())
-        
-edit_user = UserEditView.as_view()
-
 class ProfileEditView(UghOrLoruRequiredMixin, RequestToFormMixin, UpdateView):
     template_name = 'edit_profile.html'
     model = Profile
@@ -1095,7 +963,7 @@ class ProfileEditView(UghOrLoruRequiredMixin, RequestToFormMixin, UpdateView):
 
     def get_success_url(self):
         if self.kwargs.get('my_profile'):
-            return reverse('profile')
+            return reverse('user_profile')
         else:
             return reverse('edit_org', args=[self.request.user.profile.org.pk])
 
@@ -1107,7 +975,7 @@ class ProfileEditView(UghOrLoruRequiredMixin, RequestToFormMixin, UpdateView):
             messages.error(self.request, _(u'Логин пользователя или email уже используются в системе'))
             return self.get(self.request, *self.args, **self.kwargs)
         msg = _(u"<a href='%(edit_profile)s'>Пользователь %(username)s</a>: %(created_modified)s") % dict(
-            edit_profile=reverse('profile') if self.kwargs.get('my_profile') \
+            edit_profile=reverse('user_profile') if self.kwargs.get('my_profile') \
                          else reverse('edit_profile', args=[self.object.pk]),
             username=self.object.user.username,
             created_modified = _(u'создан') if self.new_ else _(u'изменения сохранены'),
@@ -1143,31 +1011,6 @@ class OrgEditView(UghOrLoruRequiredMixin, RequestToFormMixin, FormInvalidMixin, 
         return reverse('edit_org', args=[self.object.pk])
         
 edit_org = OrgEditView.as_view()
-
-class ChangePasswordView(UghOrLoruRequiredMixin, UpdateView):
-    template_name = 'change_password.html'
-    model = User
-    form_class = ChangePasswordForm
-
-    def get_success_url(self):
-        msg = _(u"Пароль <a href='%(edit_user)s'>пользователя %(username)s</a> изменен") % dict(
-            edit_user=reverse('edit_user', args=[self.object.pk]),
-            username=self.object.username,
-        )
-        messages.success(self.request, msg)
-        msg = _(u'%(fio_changer)s (%(username_changer)s) '
-                u'изменил(а) пароль %(fio)s (%(username)s)') % dict(
-            fio_changer=self.request.user.profile.last_name_initials(),
-            username_changer=self.request.user.username,
-            fio=self.object.profile.last_name_initials(),
-            username=self.object.username,
-        )
-        write_log(self.request, self.object, msg)
-        write_log(self.request, self.object.profile.org, msg)
-        return reverse('edit_org', args=[self.object.profile.org.pk])
-
-change_password = ChangePasswordView.as_view()
-
 
 class AutocompleteOrg(View):
     def get(self, request, *args, **kwargs):
@@ -2389,7 +2232,7 @@ class ApiOrgSignupView(CheckRecaptchaMixin, RegisterMixin, APIView):
             coords = location.get('location')
             gps_x= coords and coords.get('longitude')
             gps_y= coords and coords.get('latitude')
-            country, country_currency = Country.get_country_currency_by_coords(gps_x, gps_y)
+            country, country_currency = Country.get_country_currency_by_coords(gps_y, gps_x)
             org_address = Location(
                 addr_str=location.get('address', '').strip(),
                 country=country,
@@ -2783,3 +2626,96 @@ class ApiShopsReviewsView(ApiShopsMixin, APIView):
             return Response(data=dict(status='error', message=excpt.message), status=400)
 
 api_shops_reviews = ApiShopsReviewsView.as_view()
+
+class ApiClientSiteMixin(object):
+
+    def get_org(self, token):
+        return get_object_or_404(Org, client_site_token=token)
+
+class ApiClientSiteDetailView(ApiClientSiteMixin, APIView):
+
+    def get(self, request, token):
+        org = self.get_org(token)
+        return Response(status=200, data=OrgClientSiteSerializer(org).data)
+
+api_client_site_detail = ApiClientSiteDetailView.as_view()
+
+class ApiClientSiteMessagesView(CheckRecaptchaMixin, ApiClientSiteMixin, APIView):
+    """
+    Послать сообщение клиенту (на email организации) в форме обратной связи
+
+    Пример входных данных:
+    {
+        "fullName": "Иванов И.И",
+        "phoneNumber": "+375291234567",
+        "email": "email@email.ru",
+        "subject": "Тема",
+        "text": "Текст вопроса",
+        "recaptchaData": {
+            "response": "foo bar",
+            "challenge": "03AHJ_VuvQ5p0AdejIw4W6"
+        }
+    }
+
+    Status codes:
+        200 - если все нормально
+        400 - если произошла ошибка валидации входных данных
+
+    """
+    def post(self, request, token):
+        org = self.get_org(token)
+        recaptcha_data = request.DATA.get('recaptchaData')
+        try:
+            #if not recaptcha_data:
+                #raise ServiceException(_(u'Не данных по captcha'))
+            #if not self.check_recaptcha(self.request, recaptcha_data['challenge'], recaptcha_data['response']):
+                #raise ServiceException(_(u'Ошибка проверки captcha'))
+
+            email_to = org.email and org.email.strip()
+            try:
+                validate_email(email_to)
+            except ValidationError:
+                raise ServiceException(_(u"Неверный или не задан адрес электронной почты организации"))
+
+            email_reply_to = request.DATA.get('email', '').strip()
+            try:
+                validate_email(email_reply_to)
+            except ValidationError:
+                raise ServiceException(_(u"Неверный или не задан адрес электронной почты отправителя"))
+
+            subject = request.DATA.get('subject', '').strip()
+            email_subject = subject if subject else _(u'Сообщение на сайт')
+
+            email_text = request.DATA.get('text', '').strip()
+            if not email_text:
+                raise ServiceException(_(u"Нет текста сообщения"))
+
+            full_name = request.DATA.get('fullName', '').strip()
+            phone = request.DATA.get('phoneNumber', '').strip()
+            email_text += u"\n\n----------"
+            if full_name:
+                email_text += u"\n%s" % full_name
+            if phone:
+                email_text += _(u"\nТелефон: %s") % phone
+            email_text += _(u"\nEmail: %s") % email_reply_to
+
+            headers = { 'Reply-To': email_reply_to }
+            # Если в From: поставить задавшего вопрос, например, user@yandex.ru,
+            # то письмо придет в email_to (адреса гугловской почты) с "замечаниями"
+            # в заголовке, что письмо пришло не от yandex, так и в спам может попасть.
+            # Посему реальный отправитель будет в Reply-To:
+            #
+            email_from = _(u"Сообщение на сайт <%s>") % settings.DEFAULT_FROM_EMAIL
+            EmailMessage(email_subject, email_text, email_from, (email_to,), headers=headers, ).send()
+            data = { 'status': 'success',
+                     'message': '',
+                   }
+            status_code = 200
+        except ServiceException as excpt:
+            data = { 'status': 'error',
+                     'message': excpt.message,
+                   }
+            status_code = 400
+        return Response(data=data, status=status_code)
+
+api_client_site_messages = ApiClientSiteMessagesView.as_view()
