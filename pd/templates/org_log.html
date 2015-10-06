@@ -49,7 +49,7 @@
                 <td>{{ log.dt }}</td>
                 <td>{{ log.user.username }} / {{ log.user.profile.last_name_initials }}</td>
                 <td>{% autoescape off %}{{ log.log_object_display }}{% endautoescape %}</td>
-                <td>{{ log.msg|linebreaksbr }}</td>
+                <td>{{ log.log_msg_display|linebreaksbr }}</td>
             </tr>
         {% endfor %}
         </table>
