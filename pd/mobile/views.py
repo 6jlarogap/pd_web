@@ -172,7 +172,7 @@ class ApiAreaUpload(APIView):
         areaId = int(request.POST['areaId'])
         cemeteryId = int(request.POST['cemeteryId'])
         gpsJSON = request.POST['gps']
-        square = request.POST.get('square')
+        square = request.POST.get('square') or None
         dtCreated = None
         if request.POST.get('dt_created') :
             dtCreated = datetime.strptime(request.POST['dt_created'], templateDateTime)
