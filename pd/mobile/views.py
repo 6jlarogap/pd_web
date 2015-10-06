@@ -34,6 +34,7 @@ from pd.utils import utc2local
 from django.utils.dateparse import parse_datetime
 from django.core.files.base import ContentFile
 from django.http import Http404
+from django.db import IntegrityError
 from django.db.models import Q
 from datetime import datetime
 from decimal import Decimal
@@ -162,16 +163,20 @@ class ApiAreaUpload(APIView):
         listInsertedArea = []
         listGPS = []
         areaName = request.POST['areaName']
+        # isOverwrite:
+        # если такой участок внутри кладбища существует, то
+        # ищем его среди существующих, а если нет такого, то создаём.
+        # Т.е. при опции от клиента: грузить в существующий участок,
+        # если такой существует
+        isOverwrite = int(request.POST.get('isOverwrite', '0'))
         areaId = int(request.POST['areaId'])
         cemeteryId = int(request.POST['cemeteryId'])
         gpsJSON = request.POST['gps']
-        square = None
+        square = request.POST.get('square')
         dtCreated = None
         if request.POST.get('dt_created') :
             dtCreated = datetime.strptime(request.POST['dt_created'], templateDateTime)
             dtCreated = utc2local(dtCreated)
-        if request.POST.get('square') :
-            square = request.POST['square']
         isGPSChange = False
         if gpsJSON :
             isGPSChange = True
@@ -195,9 +200,35 @@ class ApiAreaUpload(APIView):
             raise Http404
         except Area.DoesNotExist:
             prevArea = None
-            area = Area(cemetery = cemetery, name = areaName, square = square, dt_created = dtCreated)            
-            area.save()
-            write_log(request, area, _(u"Участок '%s' создан через мобильное приложение") % area.name)
+            msg_created = _(u"Участок '%s' создан через мобильное приложение") % areaName
+            if isOverwrite:
+                area, created_ = Area.objects.get_or_create(
+                    cemetery=cemetery,
+                    name=areaName,
+                    defaults=dict(
+                        square=square,
+                        dt_created=dtCreated
+                ))
+                if created_:
+                    write_log(request, area, msg_created)
+                else:
+                    if square:
+                        area.square = square
+                        area.save()
+            else:
+                try:
+                    area = Area.objects.create(
+                        cemetery=cemetery,
+                        name=areaName,
+                        square=square,
+                        dt_created=dtCreated,
+                    )
+                    write_log(request, area, msg_created)
+                except IntegrityError:
+                    return Response(
+                        status=400,
+                        data=dict(status='error', message=_(u"Такой участок уже существует")),
+                    )
             listInsertedArea.append(area)
         if isGPSChange == True :
             AreaCoordinates.objects.filter(area__pk = area.pk).delete()
