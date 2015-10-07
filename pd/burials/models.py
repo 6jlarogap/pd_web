@@ -552,6 +552,7 @@ class Grave(GeoPointModel, BaseModelManualDtCreated):
     grave_number = models.PositiveSmallIntegerField(_(u"Номер"), default=1)
     is_wrong_fio = models.BooleanField(_(u"Неверное ФИО"), default=False)
     is_military = models.BooleanField(_(u"Воинская могила"), default=False)
+    dt_free = models.DateTimeField(_(u"Свободная могила/дата установки признака/"), null=True, editable=False)
 
     class Meta:
         unique_together = ('place', 'grave_number',)

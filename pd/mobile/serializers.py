@@ -92,6 +92,7 @@ class GraveSerializer(BaseSerializer):
     grave_number = serializers.CharField(required=True)
     is_military = serializers.CharField(required=False)
     is_wrong_fio = serializers.CharField(required=False)
+    dt_free = serializers.DateTimeField(required=False)
     dt_created = serializers.DateTimeField(required=False)
     
 class BurialSerializer(BaseSerializer):

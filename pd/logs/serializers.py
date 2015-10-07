@@ -2,6 +2,7 @@
 
 from django.contrib.auth.models import Group, Permission
 from django.utils.translation import ugettext_lazy as _
+from django.db.models.loading import get_model
 
 from rest_framework import serializers
 from rest_framework.fields import Field
@@ -32,6 +33,25 @@ class LogSerializer(serializers.ModelSerializer):
     obj = ObjField()
     user = UserField()   
     dt = serializers.DateTimeField(format="%d.%m.%Y %H:%M")
+    msg = serializers.SerializerMethodField('msg_func')
+
     class Meta:
         model = Log
         fields = ('msg', 'dt', 'user', 'obj')
+
+    def msg_func(self, obj):
+        result = obj.log_msg_display()
+        if obj.obj_id:
+            model_name = obj.ct.model_class()._meta.object_name
+            app_name = obj.ct.model_class()._meta.app_label
+            Model = get_model(app_name, model_name)
+            if model_name == "Grave":
+                try:
+                    grave = Model.objects.get(pk=obj.obj_id)
+                    result = _(u"%(msg)s (могила № %(grave_number)s)") % dict(
+                        msg=result,
+                        grave_number=grave.grave_number,
+                    )
+                except Model.DoesNotExist:
+                    pass
+        return result

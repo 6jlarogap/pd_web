@@ -20,7 +20,7 @@ from django.contrib.auth.models import User
 from django.contrib.contenttypes.models import ContentType
 
 from burials.models import Place
-from logs.models import Log
+from logs.models import Log, LogOperation
 
 TEMPLATE_DATE_TIME = '%Y-%m-%dT%H:%M'
 
@@ -82,7 +82,7 @@ class Command(BaseCommand):
                     ct=ct,
                     obj_id=int(p.pk),
                     user=user,
-                    msg=u"Место '%s' создано через мобильное приложение" % p.place
+                    operation=LogOperation.PLACE_CREATED_MOBILE,
                 )
             except Log.DoesNotExist:
                 continue
