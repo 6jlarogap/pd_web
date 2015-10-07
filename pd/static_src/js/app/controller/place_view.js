@@ -492,7 +492,7 @@
   $scope.deleteGrave = function (grave) {
 
     var title = 'Подтверждение удаления',
-      msg = 'Все прикрепленные фотографии также будут удалены',
+      msg = 'Удалить могилу?',
       btns = [
         {result: 'ok', label: 'Удалить'},
         {result: 'cancel', label: 'Отмена', cssClass: 'btn-primary'}
