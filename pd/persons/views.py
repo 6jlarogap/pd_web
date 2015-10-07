@@ -28,7 +28,7 @@ from rest_framework.parsers import MultiPartParser, JSONParser
 
 from pd.models import UnclearDate, SafeDeleteMixin
 from burials.models import Place, PlacePhoto, Burial, Grave
-from logs.models import write_log
+from logs.models import write_log, LogOperation
 from users.models import Org, PermitIfCabinet, user_dict, PermitIfUgh
 from orders.models import Order, ResultFile
 from geo.models import Location
@@ -669,7 +669,7 @@ class ApiOmsBurialsView(CheckLifeDatesMixin, APIView):
                     changed_by=request.user,
                     flag_no_applicant_doc_required = True,
                 )
-                write_log(request, burial, _(u'Захоронение внесено при обработке фото места'))
+                write_log(request, burial, operation=LogOperation.BURIAL_PHOTO_PROCESSED)
                 return Response(serializer.data, status=200)
         return Response(serializer.errors, status=400)
 

@@ -412,7 +412,7 @@ class ApiPlaceUpload(APIView):
                     dt_created = dtCreated,
                 )
                 place.save()
-                write_log(request, place, _(u"Место '%s' создано через мобильное приложение") % place.place)
+                write_log(request, place, operation=LogOperation.PLACE_CREATED_MOBILE)
             listPlaceForResponse.append(place)
             
         serializer = PlaceWithNestedObjectSerializer(listPlaceForResponse)
