@@ -32,7 +32,7 @@ from burials.forms import CemeteryForm, AreaFormset, PlaceEditForm, AddOrgForm, 
 from burials.models import Cemetery, Place, Area, BurialFiles, Grave, Burial, BurialComment, AreaPhoto, PlacePhoto, \
                            ExhumationRequest, AreaPurpose, PlaceSize
 from burials.burials_views import *
-from logs.models import write_log, log_object, prepare_m2m_log, compare_obj
+from logs.models import write_log, log_object, prepare_m2m_log, compare_obj, LogOperation
 from django.contrib.auth.models import User
 from users.models import Profile, Org, CustomerProfile, PermitIfUgh
 from users.views import SupervisorRequiredMixin, UGHRequiredMixin, UghOrLoruRequiredMixin, ApiClientSiteMixin
@@ -1333,6 +1333,7 @@ class ApiOmsPhotoPlacesDetail(APIView):
 
         do_save = False
         log_messages = []
+        log_operations = []
 
         if 'remakePhoto' in request.DATA:
             do_save = True
@@ -1341,11 +1342,10 @@ class ApiOmsPhotoPlacesDetail(APIView):
                 place.dt_wrong_fio = datetime.datetime.now()
                 place.user_processed = None
                 place.is_inprocess = False
+                log_operations.append(LogOperation.PLACE_PHOTO_REJECT)
                 remake_photo_comment = request.DATA.get('remakePhotoComment')
                 if remake_photo_comment:
-                    log_messages.append(_(u'Заказано повторное фото места: %s') % remake_photo_comment)
-                else:
-                    log_messages.append(_(u'Заказано повторное фото места'))
+                    log_messages.append(_(u'Комментарий к повторному фото места: %s') % remake_photo_comment)
             else:
                 place.dt_wrong_fio = None
                 log_messages.append(_(u'Отменен признак повторного фото места'))
@@ -1355,7 +1355,7 @@ class ApiOmsPhotoPlacesDetail(APIView):
             processed = request.DATA.get('processed')
             if processed:
                 place.dt_processed = datetime.datetime.now()
-                log_messages.append(_(u'Фотографии места обработаны'))
+                log_operations.append(LogOperation.PLACE_PHOTO_PROCESSED)
             else:
                 place.dt_processed = None
                 place.user_processed = None
@@ -1365,6 +1365,8 @@ class ApiOmsPhotoPlacesDetail(APIView):
         with transaction.commit_on_success():
             if do_save:
                 place.save()
+            for o in log_operations:
+                write_log(request, place, operation=o)
             for m in log_messages:
                 write_log(request, place, m)
         return Response(status=status, data={})

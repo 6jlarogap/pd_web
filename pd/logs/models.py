@@ -6,6 +6,24 @@ from django.utils.translation import ugettext_lazy as _
 from django.core.urlresolvers import reverse
 from django.db.models.loading import get_model
 
+class LogOperation(object):
+
+    GRAVE_FREE_SET =              1
+    GRAVE_FREE_RESET =            2
+    PLACE_PHOTO_PROCESSED =       3
+    BURIAL_PHOTO_PROCESSED =      4
+    PLACE_PHOTO_REJECT =          5
+    PLACE_CREATED_MOBILE =        6
+
+    Operation = [
+        _(u'Установка признака "Занято"'),                      #  1
+        _(u'Снятие признака "Занято"'),                         #  2
+        _(u'Фотографии места обработаны'),                      #  3
+        _(u'Захоронение добавлено по фото'),                    #  4
+        _(u'Брак фото места'),                                  #  5
+        _(u'Место создано через мобильное приложение'),         #  6
+    ]
+
 class Log(models.Model):
     """
     Журнал различных событий
@@ -17,6 +35,7 @@ class Log(models.Model):
     dt = models.DateTimeField(auto_now_add=True, verbose_name=_(u"Время"))
     msg = models.TextField(editable=False, verbose_name=_(u"Описание"))
     code = models.CharField(max_length=255, default='', editable=False, verbose_name=_(u"Спец. код"))
+    operation = models.PositiveIntegerField(null=True, editable=False, verbose_name=_(u"Код операции"), db_index=True)
     
     class Meta:
         verbose_name = _(u"Событие")
@@ -53,6 +72,20 @@ class Log(models.Model):
             result = _(u"%s %s") % (
                 Model._meta.verbose_name.title(),
                 href,
+            )
+        elif model_name == 'Grave':
+            try:
+                grave = Model.objects.get(pk=obj_id)
+                place = grave.place
+                href = "<a href='%(url)s'>%(name)s</a>" % dict(
+                    url=place.url(),
+                    name=place.place,
+                )
+            except Model.DoesNotExist:
+                href = _(u"не найдена")
+            result = _(u"Могила  № %(grave_number)s, место %(place_url)s") % dict(
+                grave_number=grave.grave_number,
+                place_url=href,
             )
         elif model_name == 'Order':
             ref = reverse('order_edit', args=[obj_id])
@@ -110,7 +143,14 @@ class Log(models.Model):
             result = u"%s %s" % (model_name, obj_id,)
         return result
 
-def write_log(request, obj=None, msg='', reason=None, code=None):
+    def log_msg_display(self):
+        if self.operation is not None and not self.msg:
+            result = LogOperation.Operation[self.operation-1]
+        else:
+            result = self.msg
+        return result
+
+def write_log(request, obj=None, msg='', reason=None, code=None, operation=None):
     if reason:
         if msg:
             msg = u'%s: %s' % (msg, reason)
@@ -123,9 +163,8 @@ def write_log(request, obj=None, msg='', reason=None, code=None):
         obj_id=obj and obj.pk or None,
         msg=msg,
         code=code or '',
+        operation=operation,
     )
-
-
 
 
 def compare_obj(verbose_name, old_val, new_val):
