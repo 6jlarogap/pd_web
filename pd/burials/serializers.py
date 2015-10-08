@@ -258,10 +258,12 @@ class PlaceLockSerializer(serializers.ModelSerializer):
 
 class GraveSerializer(serializers.ModelSerializer):
     place = serializers.PrimaryKeyRelatedField()
+    dt_free = serializers.DateTimeField(required=False)
 
     class Meta:
         model = Grave
-        fields = ('id', 'place', 'grave_number', 'lat', 'lng', 'is_wrong_fio', 'is_military')
+        fields = ('id', 'place', 'grave_number', 'lat', 'lng',
+                  'is_wrong_fio', 'is_military', 'dt_free')
 
 
 class BurialListSerializer(serializers.ModelSerializer):

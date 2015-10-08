@@ -225,6 +225,10 @@
               </a>
             </div>
             <div class="btn-toolbar">
+              <p style="text-align: left; color:green"
+                 ng-show="grave.dt_free">
+              <big><b>Свободна</b></big>
+              </p>
               <button class="btn btn-mini btn-danger pull-right"
                       ng-show="!haveBurials(grave.id)"
                       ng-disabled="loading"

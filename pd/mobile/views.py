@@ -27,13 +27,14 @@ from persons.models import DeadPerson
 from persons.models import BasePerson
 from users.models import Profile
 from users.models import Org
-from logs.models import write_log
+from logs.models import write_log, LogOperation
 from pd.models import UnclearDate
 from pd.utils import utc2local
 
 from django.utils.dateparse import parse_datetime
 from django.core.files.base import ContentFile
 from django.http import Http404
+from django.db import IntegrityError, transaction
 from django.db.models import Q
 from datetime import datetime
 from decimal import Decimal
@@ -162,16 +163,20 @@ class ApiAreaUpload(APIView):
         listInsertedArea = []
         listGPS = []
         areaName = request.POST['areaName']
+        # isOverwrite:
+        # если такой участок внутри кладбища существует, то
+        # ищем его среди существующих, а если нет такого, то создаём.
+        # Т.е. при опции от клиента: грузить в существующий участок,
+        # если такой существует
+        isOverwrite = int(request.POST.get('isOverwrite', '0'))
         areaId = int(request.POST['areaId'])
         cemeteryId = int(request.POST['cemeteryId'])
         gpsJSON = request.POST['gps']
-        square = None
+        square = request.POST.get('square') or None
         dtCreated = None
         if request.POST.get('dt_created') :
             dtCreated = datetime.strptime(request.POST['dt_created'], templateDateTime)
             dtCreated = utc2local(dtCreated)
-        if request.POST.get('square') :
-            square = request.POST['square']
         isGPSChange = False
         if gpsJSON :
             isGPSChange = True
@@ -195,9 +200,35 @@ class ApiAreaUpload(APIView):
             raise Http404
         except Area.DoesNotExist:
             prevArea = None
-            area = Area(cemetery = cemetery, name = areaName, square = square, dt_created = dtCreated)            
-            area.save()
-            write_log(request, area, _(u"Участок '%s' создан через мобильное приложение") % area.name)
+            msg_created = _(u"Участок '%s' создан через мобильное приложение") % areaName
+            if isOverwrite:
+                area, created_ = Area.objects.get_or_create(
+                    cemetery=cemetery,
+                    name=areaName,
+                    defaults=dict(
+                        square=square,
+                        dt_created=dtCreated
+                ))
+                if created_:
+                    write_log(request, area, msg_created)
+                else:
+                    if square:
+                        area.square = square
+                        area.save()
+            else:
+                try:
+                    area = Area.objects.create(
+                        cemetery=cemetery,
+                        name=areaName,
+                        square=square,
+                        dt_created=dtCreated,
+                    )
+                    write_log(request, area, msg_created)
+                except IntegrityError:
+                    return Response(
+                        status=400,
+                        data=dict(status='error', message=_(u"Такой участок уже существует")),
+                    )
             listInsertedArea.append(area)
         if isGPSChange == True :
             AreaCoordinates.objects.filter(area__pk = area.pk).delete()
@@ -381,7 +412,7 @@ class ApiPlaceUpload(APIView):
                     dt_created = dtCreated,
                 )
                 place.save()
-                write_log(request, place, _(u"Место '%s' создано через мобильное приложение") % place.place)
+                write_log(request, place, operation=LogOperation.PLACE_CREATED_MOBILE)
             listPlaceForResponse.append(place)
             
         serializer = PlaceWithNestedObjectSerializer(listPlaceForResponse)
@@ -414,19 +445,26 @@ grave_list = ApiGraveList.as_view()
 
 class ApiGraveUpload(APIView):
     permission_classes = (IsAuthenticated,)
+
     def get(self, request) :
         return render_to_response('mobile_upload_grave.html', {'message': _(u"Загрузите название могилы:")})
+
+    @transaction.commit_on_success
     def post(self, request) :
         grave_number = request.POST['grave_number']
         graveId = int(request.POST['graveId'])
         placeId = int(request.POST['placeId'])
         isWrongFIO = False
         isMilitary = False
+        dtFree = None
         dtCreated = None
-        if int(request.POST['isWrongFIO']) == 1 :
+        if int(request.POST.get('isWrongFIO', 0)) == 1 :
             isWrongFIO = True
-        if int(request.POST['isMilitary']) == 1 :
+        if int(request.POST.get('isMilitary', 0)) == 1 :
             isMilitary = True
+        if request.POST.get('dtFree') :
+            dtFree = datetime.strptime(request.POST['dtFree'], templateDateTime)
+            dtFree = utc2local(dtFree)
         if request.POST.get('dt_created') :
             dtCreated = datetime.strptime(request.POST['dt_created'], templateDateTime)
             dtCreated = utc2local(dtCreated)
@@ -434,17 +472,36 @@ class ApiGraveUpload(APIView):
         try:
             place = Place.objects.get(pk = placeId)
             prevGrave = Grave.objects.get(pk = graveId)
-            if prevGrave.grave_number != grave_number or prevGrave.place != place or prevGrave.is_wrong_fio != isWrongFIO or prevGrave.is_military != isMilitary:
+            if prevGrave.grave_number != grave_number or \
+               prevGrave.place != place or \
+               prevGrave.is_wrong_fio != isWrongFIO or \
+               prevGrave.is_military != isMilitary or \
+               (prevPlace.dt_free is None) != (dtFree is None):
+                log_operation = None
+                if prevGrave.dt_free and not dtFree:
+                    log_operation = LogOperation.GRAVE_FREE_RESET
+                elif not prevGrave.dt_free and dtFree:
+                    log_operation = LogOperation.GRAVE_FREE_SET
                 prevGrave.grave_number = grave_number
                 prevGrave.place = place
                 prevGrave.is_military = isMilitary
                 prevGrave.is_wrong_fio = isWrongFIO
+                prevGrave.dt_free = dtFree
                 prevGrave.save()
+                if log_operation:
+                    write_log(request, prevGrave, operation=log_operation)
         except Place.DoesNotExist:
             raise Http404            
         except Grave.DoesNotExist:
             prevGrave = None            
-            grave = Grave(place = place, grave_number = place.get_graves_count() + 1, is_military = isMilitary, is_wrong_fio = isWrongFIO, dt_created = dtCreated)
+            grave = Grave(
+                place = place,
+                grave_number = place.get_graves_count() + 1,
+                is_military = isMilitary,
+                is_wrong_fio = isWrongFIO,
+                dt_created = dtCreated,
+                dt_free = dtFree,
+            )
             grave.save()
             write_log(request, place, _(u"Могила '%s' создана через мобильное приложение") % grave.grave_number )
             listInsertedGrave.append(grave)            
