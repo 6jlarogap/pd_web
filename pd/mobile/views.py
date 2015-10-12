@@ -2,7 +2,7 @@
 
 from django.conf import settings
 
-from django.shortcuts import render_to_response
+from django.shortcuts import render_to_response, get_object_or_404
 from django.views.generic.base import View
 from django.utils.translation import ugettext as _
 
@@ -25,8 +25,7 @@ from burials.models import PlacePhoto
 from burials.models import Burial
 from persons.models import DeadPerson
 from persons.models import BasePerson
-from users.models import Profile
-from users.models import Org
+from users.models import PermitIfUgh
 from logs.models import write_log, LogOperation
 from pd.models import UnclearDate
 from pd.utils import utc2local
@@ -57,6 +56,8 @@ from serializers import BaseSerializer, CoordinatesSerializer, CemeterySerialize
     AreaSerializer, AreaWithNestedObjectSerializer, RegionSerializer, CitySerializer, StreetSerializer, CountrySerializer, LocationSerializer, \
     BasePersonSerializer, AlivePersonSerializer, PlaceWithNestedObjectSerializer, GraveSerializer, BurialSerializer, \
     PlacePhotoSerializer
+
+from serializers import PlaceSerializer
 
 templateDateTime = '%Y-%m-%dT%H:%M:%S.%f'
     
@@ -259,11 +260,32 @@ class ApiPlaceList(APIView):
         if argSyncDateUnix :
             argSyncDate = datetime.fromtimestamp(int(argSyncDateUnix))
             queryPlace &= Q(dt_modified__gte = argSyncDate)        
-        listPlace = Place.objects.filter(queryPlace).order_by('cemetery', 'area', 'id')		
+        listPlace = Place.objects.filter(queryPlace).order_by('cemetery', 'area', 'id')
         serializer = PlaceWithNestedObjectSerializer(listPlace)
         return Response(serializer.data)
 
 place_list = ApiPlaceList.as_view()
+
+class ApiMobileAreaPlaces(APIView):
+    permission_classes = (PermitIfUgh,)
+
+    def get(self, request, area_id):
+        area = get_object_or_404(
+            Area,
+            pk=area_id,
+            cemetery__ugh = request.user.profile.org,
+        )
+        q = Q(area=area)
+        argSyncDateUnix = request.GET.get('syncDate')
+        if argSyncDateUnix :
+            argSyncDate = datetime.fromtimestamp(int(argSyncDateUnix))
+            q &= Q(dt_modified__gte = argSyncDate)
+        listPlace = Place.objects.filter(q).order_by('cemetery', 'area', 'id')
+        serializer = PlaceSerializer(listPlace)
+        return Response(data=serializer.data, status=200)
+
+
+api_mobile_area_places = ApiMobileAreaPlaces.as_view()
 
 class ApiPlaceUpload(APIView):
     permission_classes = (IsAuthenticated,)
