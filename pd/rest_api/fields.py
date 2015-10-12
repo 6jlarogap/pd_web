@@ -63,7 +63,7 @@ class UnclearDateFieldMixin(object):
 
 class DateTimeUtcField(DateTimeField):
     """
-    DateTime в моделях пишется в локальном времени, а выдается и преобразуется из Utc времени
+    DateTime в моделях в локальном времени, а выдается и преобразуется из Utc времени
     """
 
     UTC_FORMAT = '%Y-%m-%dT%H:%M:%S.%fZ'
