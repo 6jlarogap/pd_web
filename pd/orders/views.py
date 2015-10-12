@@ -889,7 +889,7 @@ class OptOrderMixin(APIView):
             is_wholesale_with_vat=order.loru.is_wholesale_with_vat,
         )
 
-    def email_notifications(self, order, is_new_opt_order):
+    def email_notifications(self, order, is_new_opt_order, new_status=False):
         """
         """
         email_from = settings.DEFAULT_FROM_EMAIL
@@ -908,6 +908,7 @@ class OptOrderMixin(APIView):
                                 'front_end_url': get_front_end_url(self.request),
                                 'order': order,
                                 'to_customer': True,
+                                'new_status': new_status,
                             }
             )
             EmailMessage(email_subject, email_text, email_from, email_to,).send()
@@ -925,6 +926,7 @@ class OptOrderMixin(APIView):
                                 'front_end_url': get_front_end_url(self.request),
                                 'order': order,
                                 'to_customer': False,
+                                'new_status': new_status,
                             }
             )
             EmailMessage(email_subject, email_text, email_from, email_to,).send()
@@ -1820,7 +1822,7 @@ class ApiServiceOrderDetailView(ApiOrderMixin, APIView):
 
 api_orders_detail = ApiServiceOrderDetailView.as_view()
 
-class ApiServiceOrderPutView(ApiOrderMixin, APIView):
+class ApiServiceOrderPutView(ApiOrderMixin, OptOrderMixin, APIView):
     permission_classes = (PermitIfTradeOrCabinet,)
 
     @transaction.commit_on_success
@@ -1836,7 +1838,8 @@ class ApiServiceOrderPutView(ApiOrderMixin, APIView):
                         break
                 else:
                     raise ServiceException(_(u"Статус %s не предусмотрен") % status)
-                kwargs.update(dict(status=status))
+                if order.status != status:
+                    kwargs.update(dict(status=status))
 
             if 'clientRating' in request.DATA:
                 kwargs.update(dict(applicant_approved=request.DATA['clientRating']))
@@ -1868,7 +1871,15 @@ class ApiServiceOrderPutView(ApiOrderMixin, APIView):
                     )
 
             if kwargs:
-                Order.objects.filter(pk=order.pk).update(**kwargs)
+                for f in kwargs:
+                    setattr(order, f, kwargs[f])
+                order.save()
+                if kwargs.get('status'):
+                    self.email_notifications(
+                        order=order,
+                        is_new_opt_order=False,
+                        new_status=True,
+                    )
             return Response(
                 data=ServiceOrderDetailSerializer(order, context=dict(request=request)).data,
                 status=200,
