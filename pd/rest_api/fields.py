@@ -88,4 +88,6 @@ class DateTimeUtcField(DateTimeField):
         # результат: Строка
         if isinstance(value, datetime.datetime):
             value = local2utc(value)
+        elif isinstance(value, basestring):
+            return value
         return super(DateTimeUtcField, self).to_native(value)
