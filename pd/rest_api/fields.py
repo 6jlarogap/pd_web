@@ -1,7 +1,13 @@
+# coding=utf-8
+
+import datetime
+
 from rest_framework import serializers
+from rest_framework.fields import DateTimeField
 from django.conf import settings
 
 from pd.models import UnclearDate
+from pd.utils import local2utc, utc2local
 
 class HyperlinkedFileField(serializers.FileField):
     """
@@ -54,3 +60,32 @@ class UnclearDateFieldMixin(object):
 
     def set_unclear_date(self, s, format=''):
         return UnclearDate.from_str_safe(s, format)
+
+class DateTimeUtcField(DateTimeField):
+    """
+    DateTime в моделях пишется в локальном времени, а выдается и преобразуется из Utc времени
+    """
+
+    UTC_FORMAT = '%Y-%m-%dT%H:%M:%S.%fZ'
+
+    def __init__(self, input_formats=None, format=None, *args, **kwargs):
+        if format is None:
+            format = DateTimeUtcField.UTC_FORMAT
+        if input_formats is None:
+            input_formats = (DateTimeUtcField.UTC_FORMAT, )
+        super(DateTimeUtcField, self).__init__(input_formats, format, *args, **kwargs)
+
+    def from_native(self, value):
+        # value: DateTime или строка в UTC
+        # результат: dt in localtime, например, для записи в базу
+        dt = super(DateTimeUtcField, self).from_native(value)
+        if dt is not None:
+            dt = utc2local(dt)
+        return dt
+
+    def to_native(self, value):
+        # value: DateTime
+        # результат: Строка
+        if isinstance(value, datetime.datetime):
+            value = local2utc(value)
+        return super(DateTimeUtcField, self).to_native(value)
