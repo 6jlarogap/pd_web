@@ -54,7 +54,7 @@ def utc2local(dt):
     """
     local_tz = timezone(settings.TIME_ZONE)
     utc_tz = timezone('UTC')
-    return utc_tz.localize(dt).astimezone(local_tz)
+    return utc_tz.localize(dt).astimezone(local_tz).replace(tzinfo=None)
 
 def local2utc(dt):
     """
@@ -62,7 +62,7 @@ def local2utc(dt):
     """
     local_tz = timezone(settings.TIME_ZONE)
     utc_tz = timezone('UTC')
-    return local_tz.localize(dt).astimezone(utc_tz)
+    return local_tz.localize(dt).astimezone(utc_tz).replace(tzinfo=None)
 
 def host_country_code(request):
     """
