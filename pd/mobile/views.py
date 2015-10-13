@@ -58,6 +58,7 @@ from serializers import BaseSerializer, CoordinatesSerializer, CemeterySerialize
     PlacePhotoSerializer
 
 from serializers import PlaceSerializer
+from rest_api.fields import DateTimeUtcField
 
 templateDateTime = '%Y-%m-%dT%H:%M:%S.%f'
     
@@ -158,8 +159,11 @@ area_list = ApiAreaList.as_view()
 
 class ApiAreaUpload(APIView):
     permission_classes = (IsAuthenticated,)
+
     def get(self, request) : 
         return render_to_response('mobile_upload_area.html', {'message': _(u"Загрузите название участка:")})
+
+    @transaction.commit_on_success
     def post(self, request) : 
         listInsertedArea = []
         listGPS = []
@@ -226,6 +230,7 @@ class ApiAreaUpload(APIView):
                     )
                     write_log(request, area, msg_created)
                 except IntegrityError:
+                    transaction.rollback()
                     return Response(
                         status=400,
                         data=dict(status='error', message=_(u"Такой участок уже существует")),
@@ -266,7 +271,7 @@ class ApiPlaceList(APIView):
 
 place_list = ApiPlaceList.as_view()
 
-class PlaceParmsMixin(object):
+class PlaceUploadMixin(object):
 
     def get_place_parms(self, request):
         parms = dict(
@@ -284,9 +289,22 @@ class PlaceParmsMixin(object):
         for k in parms:
             if k in request.DATA:
                 result[parms[k]] = request.DATA[k]
+        ps = PlaceSerializer(Place(**result))
+        for f in result:
+            if isinstance(ps.fields[f], DateTimeUtcField):
+                result[f] = ps.fields[f].from_native(ps.data[f])
         return result
 
-class ApiMobileAreaPlaces(PlaceParmsMixin, APIView):
+    def response_already_exists(self):
+        return Response(
+            status=400,
+            data=dict(
+                status='error',
+                message=_(u"Такое место уже существует"),
+                code='place_already_exists'
+        ))
+
+class ApiMobileAreaPlaces(PlaceUploadMixin, APIView):
     permission_classes = (PermitIfUgh,)
 
     def get(self, request, area_id):
@@ -311,37 +329,47 @@ class ApiMobileAreaPlaces(PlaceParmsMixin, APIView):
             pk=area_id,
             cemetery__ugh = request.user.profile.org,
         )
-        place_defaults = self.get_place_parms(request)
+        cemetery = area.cemetery
         place_key_parms = dict(
-            cemetery=area.cemetery,
+            cemetery=cemetery,
             area=area,
             row=request.DATA.get('rowName') or '',
             place=request.DATA.get('placeName'),
         )
+        place_defaults = self.get_place_parms(request)
+        place_defaults['is_invent'] = True
         if request.DATA.get('isOverwrite') and request.DATA.get('placeName'):
-            place, created_ = Place.objects.get_or_create(**place_key_parms)
-            do_save = False
-            ps = PlaceSerializer(place)
-            for f in place_defaults:
-                if place_defaults[f] != ps.data[f]:
-                    setattr(place, f, place_defaults[f])
-                    do_save = True
-            if do_save:
-                ps = PlaceSerializer(place)
-                ps.save()
+            place, created_ = Place.objects.get_or_create(
+                defaults=place_defaults,
+                **place_key_parms
+            )
+            if created_:
+                write_log(request, place, operation=LogOperation.PLACE_CREATED_MOBILE)
+            else:
+                del place_defaults['is_invent']
+                do_save = False
+                for f in place_defaults:
+                    if place_defaults[f] != getattr(place, f):
+                        setattr(place, f, place_defaults[f])
+                        do_save = True
+                if do_save:
+                    place.save()
+                    write_log(
+                        request,
+                        place,
+                        _(u"Место изменено через мобильное приложение при выгрузке места"),
+                    )
         else:
-            place = Place(**place_key_parms)
-            for f in place_defaults:
-                setattr(place, f, place_defaults[f])
-            ps = PlaceSerializer(place)
+            fields = place_key_parms
+            fields.update(place_defaults)
             try:
-                ps.save()
+                place = Place(**fields)
+                place.save()
+                write_log(request, place, operation=LogOperation.PLACE_CREATED_MOBILE)
             except IntegrityError:
-                return Response(
-                    status=400,
-                    data=dict(status='error', message=_(u"Такое место уже существует")),
-                )
-        return Response(data=ps.data)
+                transaction.rollback()
+                return self.response_already_exists()
+        return Response(data=PlaceSerializer(place).data)
 
 api_mobile_area_places = ApiMobileAreaPlaces.as_view()
 
