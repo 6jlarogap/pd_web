@@ -2,7 +2,7 @@
 
 from django.conf import settings
 
-from django.shortcuts import render_to_response
+from django.shortcuts import render_to_response, get_object_or_404
 from django.views.generic.base import View
 from django.utils.translation import ugettext as _
 
@@ -25,8 +25,7 @@ from burials.models import PlacePhoto
 from burials.models import Burial
 from persons.models import DeadPerson
 from persons.models import BasePerson
-from users.models import Profile
-from users.models import Org
+from users.models import PermitIfUgh
 from logs.models import write_log, LogOperation
 from pd.models import UnclearDate
 from pd.utils import utc2local
@@ -57,6 +56,8 @@ from serializers import BaseSerializer, CoordinatesSerializer, CemeterySerialize
     AreaSerializer, AreaWithNestedObjectSerializer, RegionSerializer, CitySerializer, StreetSerializer, CountrySerializer, LocationSerializer, \
     BasePersonSerializer, AlivePersonSerializer, PlaceWithNestedObjectSerializer, GraveSerializer, BurialSerializer, \
     PlacePhotoSerializer
+
+from serializers import PlaceSerializer
 
 templateDateTime = '%Y-%m-%dT%H:%M:%S.%f'
     
@@ -259,11 +260,90 @@ class ApiPlaceList(APIView):
         if argSyncDateUnix :
             argSyncDate = datetime.fromtimestamp(int(argSyncDateUnix))
             queryPlace &= Q(dt_modified__gte = argSyncDate)        
-        listPlace = Place.objects.filter(queryPlace).order_by('cemetery', 'area', 'id')		
+        listPlace = Place.objects.filter(queryPlace).order_by('cemetery', 'area', 'id')
         serializer = PlaceWithNestedObjectSerializer(listPlace)
         return Response(serializer.data)
 
 place_list = ApiPlaceList.as_view()
+
+class PlaceParmsMixin(object):
+
+    def get_place_parms(self, request):
+        parms = dict(
+            placeWidth='place_width',
+            placeLength='place_length',
+            dtWrongFio='dt_wrong_fio',
+            dtFree='dt_free',
+            dtMilitary='dt_military',
+            dtSizeViolated='dt_size_violated',
+            dtUnowned='dt_unowned',
+            dtUnindentified='dt_unindentified',
+            dtCreated='dt_created',
+        )
+        result = dict()
+        for k in parms:
+            if k in request.DATA:
+                result[parms[k]] = request.DATA[k]
+        return result
+
+class ApiMobileAreaPlaces(PlaceParmsMixin, APIView):
+    permission_classes = (PermitIfUgh,)
+
+    def get(self, request, area_id):
+        area = get_object_or_404(
+            Area,
+            pk=area_id,
+            cemetery__ugh = request.user.profile.org,
+        )
+        q = Q(area=area)
+        argSyncDateUnix = request.GET.get('syncDate')
+        if argSyncDateUnix :
+            argSyncDate = datetime.fromtimestamp(int(argSyncDateUnix))
+            q &= Q(dt_modified__gte = argSyncDate)
+        listPlace = Place.objects.filter(q).order_by('cemetery', 'area', 'id')
+        serializer = PlaceSerializer(listPlace)
+        return Response(data=serializer.data, status=200)
+
+    @transaction.commit_on_success
+    def post(self, request, area_id):
+        area = get_object_or_404(
+            Area,
+            pk=area_id,
+            cemetery__ugh = request.user.profile.org,
+        )
+        place_defaults = self.get_place_parms(request)
+        place_key_parms = dict(
+            cemetery=area.cemetery,
+            area=area,
+            row=request.DATA.get('rowName') or '',
+            place=request.DATA.get('placeName'),
+        )
+        if request.DATA.get('isOverwrite') and request.DATA.get('placeName'):
+            place, created_ = Place.objects.get_or_create(**place_key_parms)
+            do_save = False
+            ps = PlaceSerializer(place)
+            for f in place_defaults:
+                if place_defaults[f] != ps.data[f]:
+                    setattr(place, f, place_defaults[f])
+                    do_save = True
+            if do_save:
+                ps = PlaceSerializer(place)
+                ps.save()
+        else:
+            place = Place(**place_key_parms)
+            for f in place_defaults:
+                setattr(place, f, place_defaults[f])
+            ps = PlaceSerializer(place)
+            try:
+                ps.save()
+            except IntegrityError:
+                return Response(
+                    status=400,
+                    data=dict(status='error', message=_(u"Такое место уже существует")),
+                )
+        return Response(data=ps.data)
+
+api_mobile_area_places = ApiMobileAreaPlaces.as_view()
 
 class ApiPlaceUpload(APIView):
     permission_classes = (IsAuthenticated,)
