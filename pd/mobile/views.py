@@ -330,11 +330,23 @@ class ApiMobileAreaPlaces(PlaceUploadMixin, APIView):
             cemetery__ugh = request.user.profile.org,
         )
         cemetery = area.cemetery
+        placeName = request.DATA.get('placeName')
+        if not placeName and cemetery.places_algo in (
+            Cemetery.PLACE_BURIAL_ACCOUNT_NUMBER,
+            Cemetery.PLACE_MANUAL
+           ):
+            return Response(
+                status=400,
+                data = dict(
+                    status='error',
+                    message=_(u'Нет номера места. Автоматическая расстановка новых мест на этом кладбище не предусмотрена'),
+                    code='no_placeName_no_placeAlgo',
+            ))
         place_key_parms = dict(
             cemetery=cemetery,
             area=area,
             row=request.DATA.get('rowName') or '',
-            place=request.DATA.get('placeName'),
+            place=placeName, 
         )
         place_defaults = self.get_place_parms(request)
         place_defaults['is_invent'] = True
