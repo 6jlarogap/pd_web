@@ -25,11 +25,13 @@ from rest_framework.views import APIView
 from rest_framework import generics, viewsets
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.parsers import MultiPartParser, JSONParser
+from rest_framework.exceptions import PermissionDenied
 
 from pd.models import UnclearDate, SafeDeleteMixin
 from burials.models import Place, PlacePhoto, Burial, Grave
 from logs.models import write_log, LogOperation
-from users.models import Org, PermitIfCabinet, user_dict, PermitIfUgh
+from users.models import Org, PermitIfCabinet, user_dict, \
+                         PermitIfUgh, PermitIfTradeOrCabinet, is_trade_user, is_cabinet_user
 from orders.models import Order, ResultFile
 from geo.models import Location
 
@@ -223,7 +225,8 @@ class ApiClientPlacesMixin(CheckLifeDatesMixin):
             customplace = CustomPlace.objects.get(pk=pk)
         except CustomPlace.DoesNotExist:
             raise Http404
-        if customplace.user and customplace.user != self.request.user:
+        if not is_trade_user(self.request.user) and \
+           customplace.user and customplace.user != self.request.user:
             raise Http404
         return customplace
 
@@ -250,7 +253,7 @@ class ApiClientPlacesView(APIView):
 api_client_places = ApiClientPlacesView.as_view()
 
 class ApiClientPlacesDetailView(ApiClientPlacesMixin, APIView):
-    permission_classes = (PermitIfCabinet,)
+    permission_classes = (PermitIfTradeOrCabinet,)
 
     def get(self, request, pk):
         return Response(
@@ -259,6 +262,8 @@ class ApiClientPlacesDetailView(ApiClientPlacesMixin, APIView):
         )
 
     def put(self, request, pk):
+        if not is_cabinet_user(request.user):
+            raise PermissionDenied
         customplace = self.get_customplace(pk)
         context = dict(request=request)
         if 'performerId' in request.DATA:
@@ -287,6 +292,8 @@ class ApiClientPlacesDetailView(ApiClientPlacesMixin, APIView):
         return Response(serializer.errors, status=400)
 
     def delete(self, request, pk):
+        if not is_cabinet_user(request.user):
+            raise PermissionDenied
         customplace = self.get_customplace(pk)
         customplace.delete()
         return Response({}, status=200)
