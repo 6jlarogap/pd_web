@@ -174,7 +174,7 @@
             <td>
                 {% with burial=b %}{% include "burial_place.html" %}{% endwith %}
                 {% if b.get_place %}
-                    <br /><a href="{% url burial_list %}?cemetery={{ b.cemetery.name }}&area={{ b.area.name }}&row={{ b.row|default_if_none:"" }}&place={{ b.place_number }}">{% trans "Поиск по месту" %}</a>
+                    <br /><a class="no-print" href="{% url burial_list %}?cemetery={{ b.cemetery.name }}&area={{ b.area.name }}&row={{ b.row|default_if_none:"" }}&place={{ b.place_number }}">{% trans "Поиск по месту" %}</a>
                 {% endif %}
             </td>
             <td><b>{{ b.deadman_or_bio }}</b>
