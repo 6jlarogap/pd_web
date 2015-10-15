@@ -19,7 +19,7 @@ def skip_ioerror_post(record):
     """
     if record.exc_info:
         exc_type, exc_value = record.exc_info[:2]
-        if isinstance(exc_value, NameError):
+        if isinstance(exc_value, IOError):
             # WARNING Do not assign record.exc_info[2] (traceback) to a local variable!
             # https://docs.python.org/2/library/sys.html , refer to sys.exc_info()
             for filename, line_number, function_name, text in traceback.extract_tb(
