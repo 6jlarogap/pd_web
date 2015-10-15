@@ -136,17 +136,13 @@ INSTALLED_APPS = [
     'django.conf',
 ]
 
-from pd.logging import skip_unreadable_post, skip_ioerror_post
+from pd.logging import skip_ioerror_post
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
     'filters': {
         'require_debug_false': {
             '()': 'django.utils.log.RequireDebugFalse'
-        },
-        'skip_unreadable_posts': {
-            '()': 'django.utils.log.CallbackFilter',
-            'callback': skip_unreadable_post,
         },
         'skip_ioerror_posts': {
             '()': 'django.utils.log.CallbackFilter',
@@ -158,7 +154,6 @@ LOGGING = {
             'level': 'ERROR',
             'filters': [
                 'require_debug_false',
-                'skip_unreadable_posts',
                 'skip_ioerror_posts',
              ],
             'class': 'django.utils.log.AdminEmailHandler'
