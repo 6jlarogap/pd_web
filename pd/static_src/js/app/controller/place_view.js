@@ -312,7 +312,7 @@
         break;
       case 'isPlaceGalleryOpen':
         if (data) {
-          $scope.selectedPlacePhotos = data
+          $scope.selectedPlacePhotos = data;
           $scope.setCurrentImage(_.first(data));
           for (i=0; i<data.length; i++) {
               data[i].createdAt = moment(data[i].createdAt, moment.ISO_8601).toDate()
