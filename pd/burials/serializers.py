@@ -414,6 +414,7 @@ class ArchPlaceSerializer(serializers.ModelSerializer):
                   'dt_free',
                   'dt_wrong_fio', 'dt_military', 'dt_size_violated', 'dt_unowned', 'dt_unindentified',
                   'lat', 'lng',
+                  'is_invent', 'user_processed', 'dt_processed', 'is_inprocess',
         )
 
 class ArchReasonSerializer(serializers.ModelSerializer):
@@ -485,5 +486,5 @@ class ArchGraveSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Grave
-        fields = ('id', 'place_id', 'grave_number', 'is_wrong_fio', 'is_military', )
+        fields = ('id', 'place_id', 'grave_number', 'is_wrong_fio', 'is_military', 'dt_free', )
 

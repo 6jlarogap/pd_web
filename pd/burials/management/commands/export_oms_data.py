@@ -2,11 +2,12 @@
 #
 # export_oms_data.py
 #
-# Архивация информации по захоронениям у всех ОМС, так чтобы была возможность
-# создать их заново из этой информации. Архивы записываются в
+# Архивация информации по захоронениям у ОМС с первичными ключами, заданных
+# в параметрах, так чтобы была возможность создать ОМС, их пользователей,
+# захоронения и др. заново из этой информации. Архивы записываются в
 # MEDIA_ROOT/org-data/:омс_id/org-data.zip
 #
-# Запуск: ./manage.py export_oms_data
+# Запуск: ./manage.py export_oms_data <pk1> <pk2> ...
 #
 # NB: 
 #   - выводим данные во временные файлы, из которых делаем zip- архивы
@@ -18,7 +19,7 @@ import os, zipfile, tempfile
 from xml.dom import minidom
 from xml.etree import ElementTree as ET
 
-from django.core.management.base import NoArgsCommand
+from django.core.management.base import BaseCommand
 from django.db.models.query_utils import Q
 
 from rest_framework.renderers import XMLRenderer
@@ -58,8 +59,9 @@ MEDIA_STORAGE = 'org-data'
 #
 XML_NAME = ZIP_NAME = 'org-data'
 
-class Command(NoArgsCommand):
-    help = 'Collect OMS data and put it to media'
+class Command(BaseCommand):
+    args = 'OMS_pk'
+    help = "Collect OMS data and put it to media for OMS (OMSs) with the specified pk (pk's)"
     
     # Дескриптор временного файла:
     #
@@ -266,11 +268,19 @@ class Command(NoArgsCommand):
 
     # Главная функция
     #
-    def handle_noargs(self, **options):
-        
+    def handle(self, *args, **options):
+        if len(args) < 1:
+            print "ERROR! Not all the parms given. Type --help to get help"
+            quit()
+        ughs = []
+        for arg in args:
+            try:
+                ughs.append(Org.objects.get(pk=arg, type=Org.PROFILE_UGH))
+            except Org.DoesNotExist:
+                print "ERROR! Failed to find OMS, pk=%s" % arg
         try:
             os.mkdir(os.path.join(settings.MEDIA_ROOT, MEDIA_STORAGE))
         except OSError:
             pass
-        for ugh in Org.objects.filter(type=Org.PROFILE_UGH):
+        for ugh in ughs:
             self.handle_ugh(ugh)

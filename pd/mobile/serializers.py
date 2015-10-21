@@ -2,6 +2,8 @@
 from geo.models import CoordinatesModel 
 from rest_framework import serializers
 
+from rest_api.fields import DateTimeUtcField
+
 class BaseSerializer(serializers.Serializer):	
     pk = serializers.Field()    
 
@@ -87,6 +89,22 @@ class PlaceWithNestedObjectSerializer(BaseSerializer):
     dt_created = serializers.DateTimeField(required=False)
     responsible = AlivePersonSerializer(required=False)
     
+class PlaceSerializer(BaseSerializer):
+    cemetery = BaseSerializer(required=False)
+    area = BaseSerializer(required=True)
+    row = serializers.CharField(required=False)
+    place = serializers.CharField(required=True)
+    place_width = serializers.FloatField(required=False)
+    place_length = serializers.FloatField(required=False)
+    dt_wrong_fio = DateTimeUtcField(required=False)
+    dt_military = DateTimeUtcField(required=False)
+    dt_size_violated = DateTimeUtcField(required=False)
+    dt_unowned = DateTimeUtcField(required=False)
+    dt_unindentified = DateTimeUtcField(required=False)
+    dt_free = DateTimeUtcField(required=False)
+    dt_created = DateTimeUtcField(required=False)
+    responsible = AlivePersonSerializer(required=False)
+
 class GraveSerializer(BaseSerializer):    
     place = BaseSerializer(required=True)    
     grave_number = serializers.CharField(required=True)
