@@ -51,7 +51,10 @@ class PersonMixin(object):
         return initials
 
     def full_name(self):
-        fio = u"%s %s" % (self.last_name, self.get_initials())
+        if self.last_name:
+            fio = u"%s %s" % (self.last_name, self.get_initials())
+        else:
+            fio = _(u"Неизвестный")
         return fio.strip()
 
     def full_name_complete(self):

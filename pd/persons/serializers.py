@@ -398,7 +398,7 @@ class ArchDeathCertificateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = DeathCertificate
-        fields = ('id', 'deadperson_id', 's_number', 'release_date', 'zags_id')
+        fields = ('id', 'deadperson_id', 'type', 's_number', 'release_date', 'zags_id')
 
 class ArchDeathCertificateScanSerializer(ArchFilesSerializer):
     deathcertificate_id = serializers.Field('deathcertificate.id')

@@ -152,7 +152,7 @@
                 {% if b.exhumated and b.exhumationrequest.place %}
                     <a href="{{ b.exhumationrequest.place.url }}" class="btn">{% trans "карточка" %}</a>
                 {% elif place %}
-                    <a href="{{ b.place.url }}" class="btn">{% trans "карточка" %}</a>
+                    <a href="{{ place.url }}" class="btn">{% trans "карточка" %}</a>
                 {% endif %}
             {% endif %}
             {% if user.profile.is_loru and not b.is_closed and not b.exhumated %} 

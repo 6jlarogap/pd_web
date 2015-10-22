@@ -368,10 +368,15 @@ class ArchUserSerializer(serializers.ModelSerializer):
 class ArchProfileSerializer(serializers.ModelSerializer):
     user_id = serializers.Field('user.id')
     org_id = serializers.Field('org.id')
+    cemetery_id = serializers.Field('cemetery.id')
+    area_id = serializers.Field('area.id')
 
     class Meta:
         model = Profile
-        fields = ('id', 'user_id', 'org_id', 'user_last_name', 'user_first_name', 'user_middle_name', )
+        fields = ('id', 'user_id', 'org_id', 'user_last_name',
+                  'user_first_name', 'user_middle_name',
+                  'cemetery_id', 'area_id',
+        )
 
 class ArchOrgSerializer(serializers.ModelSerializer):
     off_address_id = serializers.Field('off_address.id')

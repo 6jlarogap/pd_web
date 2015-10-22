@@ -13,15 +13,16 @@ from rest_framework.permissions import IsAuthenticated
 # EOF REST import
 
 
-from serializers import LogSerializer
+from serializers import PlaceLogSerializer
 
-from burials.models import Place, Grave
+from burials.models import Place, Grave, Burial
 from logs.models import Log
 
 def getLogQuerySet(log_type=None, place=None):
     if log_type == "place" and place and place.id:
         ct_place = ContentType.objects.get(app_label="burials", model="place")
         ct_grave = ContentType.objects.get(app_label="burials", model="grave")
+        ct_burial = ContentType.objects.get(app_label="burials", model="burial")
         ct_fl = ContentType.objects.get(app_label="persons", model="aliveperson")
         
         responsible_ids = []
@@ -30,10 +31,19 @@ def getLogQuerySet(log_type=None, place=None):
     
         grave_ids = [i.pk for i in Grave.objects.filter(place__pk=place.id)]
     
+        burial_ids = [i.pk for i in Burial.objects.filter(
+            cemetery=place.cemetery,
+            area=place.area,
+            row=place.row,
+            place_number=place.place,
+        )]
+
         qs = Log.objects.select_related()
         qs = qs.filter( Q(Q(obj_id = place.id) & Q(ct=ct_place)) | \
                         Q(Q(obj_id__in = grave_ids) & Q(ct=ct_grave)) | \
-                        Q(Q(obj_id__in = responsible_ids) & Q(ct=ct_fl)) )
+                        Q(Q(obj_id__in = burial_ids) & Q(ct=ct_burial)) | \
+                        Q(Q(obj_id__in = responsible_ids) & Q(ct=ct_fl))
+        )
     else:
         raise Http404()
     return qs.all()
@@ -41,7 +51,7 @@ def getLogQuerySet(log_type=None, place=None):
 
 class LogViewSet(viewsets.ModelViewSet):
     model = Log
-    serializer_class = LogSerializer
+    serializer_class = PlaceLogSerializer
     permission_classes = (IsAuthenticated,)
     paginate_by = None
 
