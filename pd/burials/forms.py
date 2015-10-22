@@ -427,12 +427,13 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
         self.fields['dover'].queryset = self.fields['dover'].queryset.select_related('agent', 'agent__user')
 
         self.fields.keyOrder.insert(self.fields.keyOrder.index('applicant_organization'), self.fields.keyOrder.pop(-1))
-        if self.instance.pk and self.instance.applicant and self.instance.can_personal_data(self.request):
-            self.initial['opf'] = Org.OPF_PERSON
-        elif self.request.user.profile.org.opf_burial == Org.OPF_ORG:
-            self.initial['opf'] = Org.OPF_ORG
+        if self.instance.pk:
+            if self.instance.applicant and self.instance.can_personal_data(self.request):
+                self.initial['opf'] = Org.OPF_PERSON
+            else:
+                self.initial['opf'] = Org.OPF_ORG
         else:
-            self.initial['opf'] = Org.OPF_PERSON
+            self.initial['opf'] = self.request.user.profile.org.opf_burial
 
         if self.request.user.profile.is_ugh() and self.request.REQUEST.get('archive'):
             del self.fields['plan_date']

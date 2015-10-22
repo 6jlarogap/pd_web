@@ -3,6 +3,7 @@
 from django.contrib.auth.models import Group, Permission
 from django.utils.translation import ugettext_lazy as _
 from django.db.models.loading import get_model
+from django.core.urlresolvers import reverse
 
 from rest_framework import serializers
 from rest_framework.fields import Field
@@ -29,18 +30,19 @@ class UserField(serializers.Field):
         return s
 
 
-class LogSerializer(serializers.ModelSerializer):
+class PlaceLogSerializer(serializers.ModelSerializer):
     obj = ObjField()
     user = UserField()   
     dt = serializers.DateTimeField(format="%d.%m.%Y %H:%M")
-    msg = serializers.SerializerMethodField('msg_func')
+    msg = serializers.Field(source='log_msg_display')
+    obj_str = serializers.SerializerMethodField('obj_str_func')
 
     class Meta:
         model = Log
-        fields = ('msg', 'dt', 'user', 'obj')
+        fields = ('msg', 'dt', 'user', 'obj', 'obj_str',)
 
-    def msg_func(self, obj):
-        result = obj.log_msg_display()
+    def obj_str_func(self, obj):
+        result = _(u"Место")
         if obj.obj_id:
             model_name = obj.ct.model_class()._meta.object_name
             app_name = obj.ct.model_class()._meta.app_label
@@ -48,10 +50,22 @@ class LogSerializer(serializers.ModelSerializer):
             if model_name == "Grave":
                 try:
                     grave = Model.objects.get(pk=obj.obj_id)
-                    result = _(u"%(msg)s (могила № %(grave_number)s)") % dict(
-                        msg=result,
-                        grave_number=grave.grave_number,
-                    )
+                    result = _(u"Могила № %s") % grave.grave_number
                 except Model.DoesNotExist:
-                    pass
+                    result = _(u"Могила")
+            elif model_name == "Burial":
+                try:
+                    burial = Model.objects.get(pk=obj.obj_id)
+                    deadman_name = burial.deadman and burial.deadman.full_name() or _u("Неизвестный"),
+                    result = _(u'Захоронение</br /><a href="%(href)s" target="_blank">'
+                               u'%(deadman_name)s</a>') % dict(
+                                    href=reverse('view_burial', args=[burial.pk]),
+                                    deadman_name=burial.deadman and burial.deadman.full_name(),
+                    )
+                    if not burial.is_closed():
+                        result += u"%s %s" % ("<br />", _(u"Не закрыто"),)
+                except Model.DoesNotExist:
+                    result = _(u"Захоронение")
+            elif model_name == "AlivePerson":
+                result = _(u"Ответственный")
         return result
