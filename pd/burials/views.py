@@ -58,7 +58,7 @@ from serializers import CemeterySerializer, AreaSerializer, PlaceSerializer, Are
 from persons.serializers import AlivePersonSerializer, PhoneSerializer
 from users.serializers import UserFioLoginSerializer
 from geo.serializers import LocationSerializer, LocationStaticSerializer, LocationDataSerializer
-from logs.serializers import LogSerializer
+from logs.serializers import PlaceLogSerializer
 
 from logs.views import getLogQuerySet
 
@@ -510,7 +510,7 @@ class PlaceViewSet(CaretakerMixin, viewsets.ModelViewSet):
             page = paginator.page(page)
         except:
             page = paginator.page(1)
-        log_data = LogSerializer(page,many=True).data
+        log_data = PlaceLogSerializer(page,many=True).data
         
         paginator = Paginator(place.grave_set.all(), 10)
         grave_page = request.GET.get('grave_page')
