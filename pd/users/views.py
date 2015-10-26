@@ -780,6 +780,9 @@ class ApiAuthOneTimeTokens(ApiAuthSigninView, APIView):
         return Response(data=data, status=200)
 
     def post(self, request):
+        if request.user.is_authenticated():
+            data = self.session_data(request.user)
+            return Response(data=data, status=200)
         disposable_token = request.DATA.get('token')
         if not disposable_token:
             return Response(
