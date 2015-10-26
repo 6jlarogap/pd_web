@@ -57,7 +57,8 @@ from users.models import Profile, Org, RegisterProfile, ProfileLORU, CustomerPro
                          BankAccount, BankAccountRegister, OrgCertificate, OrgContract, \
                          RegisterProfileContract, RegisterProfileScan, FavoriteSupplier, \
                          UserPhoto, OrgGallery, OrgReview, \
-                         is_supervisor, get_default_currency, get_profile
+                         is_supervisor, get_default_currency, get_profile, \
+                         disposable_token_to_user
 from pd.models import validate_phone_as_number, validate_username
 from pd.utils import host_country_code, phones_from_text, EmailMessage, get_image
 from persons.models import AlivePerson, Phone, CustomPlace
@@ -194,10 +195,12 @@ class ApiAuthSigninView(SessionDataMixin, APIView):
         valid = False
         data = dict(status='error')
         status_code = 400
+        message = ''
          # Так надо для login() без предварительного authenticate()
         user_backend = 'django.contrib.auth.backends.ModelBackend'
         confirm_tc = request.DATA.get('confirmTC')
         oauth = request.DATA.get('oauth')
+        disposable_token = request.DATA.get('token')
         password = None
         if user:
             user.backend = user_backend
@@ -214,8 +217,10 @@ class ApiAuthSigninView(SessionDataMixin, APIView):
                 user, oauth_rec, message = Oauth.check_token(
                     oauth,
                 )
-                if user:
-                    user.backend = user_backend
+            elif disposable_token:
+                user, message = disposable_token_to_user(disposable_token)
+            if (oauth or disposable_token) and user:
+                user.backend = user_backend
         if user:
             if user.is_active:
                 if password:
@@ -246,8 +251,8 @@ class ApiAuthSigninView(SessionDataMixin, APIView):
                 LoginLog.write(request)
             else:
                 data['message'] = data['errorCode'] = 'unconfirmed_tc'
-        elif oauth and not user:
-            data.update(message)
+        elif (oauth or disposable_token) and not user:
+            data['message'] = message
         elif not data.get('message'):
             data['message'] = 'Unknown Error'
             data['errorCode'] = 'unknown_error'
@@ -764,6 +769,28 @@ class ApiFeedBack(CheckRecaptchaMixin, APIView):
         return Response(data=data, status=status_code)
 
 api_feedback = ApiFeedBack.as_view()
+
+class ApiAuthOneTimeTokens(ApiAuthSigninView, APIView):
+
+    def get(self, request):
+        profile = get_profile(request.user)
+        if not profile:
+            raise PermissionDenied
+        data = dict(token=profile.form_disposable_token())
+        return Response(data=data, status=200)
+
+    def post(self, request):
+        disposable_token = request.DATA.get('token')
+        if not disposable_token:
+            return Response(
+                status=400,
+                data=dict(
+                    status='error',
+                    message=_(u"Не указан одноразовый токен"),
+            ))
+        return self.do_post(request)
+
+api_auth_one_time_tokens = ApiAuthOneTimeTokens.as_view()
 
 class ApiLoruPlaces(APIView):
     permission_classes = (PermitIfTrade,)
