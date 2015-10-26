@@ -526,7 +526,7 @@ class OrderWebPay(BaseModel):
         (PAY_TYPE_REFUNDED, _(u"Refunded (Возвращенная)")),
         (PAY_TYPE_SYSTEM, _(u"System (Системная))")),
         (PAY_TYPE_VOIDED, _(u"Voided (Сброшенная после авторизации)")),
-        (PAY_TYPE_VOIDED, _(u"Failed (Ошибка в проведении транзакции)")),
+        (PAY_TYPE_FAILED, _(u"Failed (Ошибка в проведении транзакции)")),
     )
 
     # Успешной оплате соответствуют следующие типы PAY_TYPE
