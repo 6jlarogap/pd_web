@@ -307,6 +307,7 @@
     <div class="row">
       <div class="span9">
         <img ng-show="currentImage" ng-src="{{currentImage.photo|thumbnail:300:225:'scale'}}"/>
+        <span ng-show="currentImage" ><br />{{currentImage.createdAt | date:'dd.MM.yyyy HH:mm'}}
         <img ng-hide="currentImage" alt="Нет фотографии"
              src="/static/no-image.png" width="265px" height="265px"/>
       </div>
@@ -328,16 +329,20 @@
 
 <div class="row-fluid">
   <div class="span12" style="width:auto !important">
-    <h3>История изменений</h3>
+    <h3>Журнал</h3>
     <table class="table table-striped">
       <tr>
         <th>Дата</th>
         <th>Пользователь</th>
+        <th>Объект</th>
         <th>Действие</th>
       </tr>
       <tr ng-repeat="row in place_log">
         <td>{{row.dt}}</td>
         <td>{{row.user}}</td>
+        <td>
+          <div ng-bind-html-unsafe="row.obj_str"></div>
+        </td>
         <td>
           <div ng-bind-html-unsafe="row.msg"></div>
         </td>

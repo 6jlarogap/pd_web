@@ -173,6 +173,9 @@
             </td>
             <td>
                 {% with burial=b %}{% include "burial_place.html" %}{% endwith %}
+                {% if b.get_place %}
+                    <br /><a class="no-print" href="{% url burial_list %}?cemetery={{ b.cemetery.name }}&area={{ b.area.name }}&row={{ b.row|default_if_none:"" }}&place={{ b.place_number }}">{% trans "Поиск по месту" %}</a>
+                {% endif %}
             </td>
             <td><b>{{ b.deadman_or_bio }}</b>
                 {% if b.deadman.birth_date or b.deadman.death_date %}
@@ -233,7 +236,10 @@
                     {% endif %}
                 {% endif %}
                 {% if not b.is_bio and not b.dc_filled and b.can_personal_data %}
-                    <br/><span style="color:red"><b>{% trans "Нет ДоС!" %}</b></span>
+                    <br/><span style="color:red">{% trans "Нет ДоС!" %}</span>
+                {% endif %}
+                {% if b.burialfiles_set.all %}
+                    <br /><span style="color:blue">{% trans "Файл(ы)" %}</span>
                 {% endif %}
             </td>
         </tr>

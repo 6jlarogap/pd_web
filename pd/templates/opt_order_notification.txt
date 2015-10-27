@@ -1,5 +1,6 @@
 {% load i18n %}{% autoescape off %}
-{{ preambule }} {% trans "заказ" %} {% trans "№" %} {{ order.number_verbose }}, {{ front_end_url }}order/{{ order.pk }}{% if to_customer %}
+{{ preambule }} {% trans "заказ" %} {% trans "№" %} {{ order.number_verbose }}, {{ front_end_url }}order/{{ order.pk }}{% if new_status %}
+{% trans "Изменен статус заказа" %}: {{ order.get_status_display }}{% endif %}{% if to_customer %}
 {% trans "Поставщик" %}: {{ order.loru.name }}{% if order.loru.email %}
 {% trans "Email" %}: {{ order.loru.email }}{% endif %}{% if order.loru.phones %}
 {% trans "Телефон(ы)" %}: {% for phone in order.loru.phone_list %}{{ phone }}{% if not forloop.last %}, {% endif %}{% endfor %}{% endif %}{% if order.loru.off_address %}

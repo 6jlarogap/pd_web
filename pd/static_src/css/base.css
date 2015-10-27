@@ -34,7 +34,7 @@ select[id$=_year] { width: 70px; }
 #id_post_index { width: 110px; }
 #id_info { height: 3em; }
 
-#id_per_page { width: 50px; }
+#id_per_page { width: 78px; }
 #id_records_order_by { width: 150px; }
 
 .form-horizontal p { display: inline-block; }
