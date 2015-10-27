@@ -491,7 +491,7 @@ class CustomPerson(PersonMixin, PhotoModel, BaseModel):
     #
     user = models.ForeignKey('auth.User', verbose_name=_(u"Владелец или указавший захороненного"))
     customplace = models.ForeignKey(CustomPlace, verbose_name=_(u"Место захоронения"), blank=True, null=True)
-    person = models.OneToOneField(BasePerson, verbose_name=_(u"Лицо"), null=True)
+    person = models.ForeignKey(BasePerson, verbose_name=_(u"Лицо"), null=True)
     last_name = models.CharField(_(u"Фамилия"), max_length=255, blank=True)
     first_name = models.CharField(_(u"Имя"), max_length=255, blank=True)
     middle_name = models.CharField(_(u"Отчество"), max_length=255, blank=True)
