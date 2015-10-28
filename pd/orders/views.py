@@ -1496,16 +1496,16 @@ class ApiServicePriceMixin(object):
             return excpt.message
         return ''
 
-    def get_price_service(self, org):
+    def get_price_service(self, org, service):
         """
         Цена за услугу у огранизации
         """
-        if self.data.service.name == Service.SERVICE_DELIVERY:
+        if service.name == Service.SERVICE_DELIVERY:
             # цена за доставку считается не по организации, а по складам
             price_service = 0
-        elif self.data.service.name in ('photo', ):
+        elif service.name in ('photo', ):
             price_service = OrgServicePrice.objects.get(
-                orgservice__service=self.data.service,
+                orgservice__service=service,
                 orgservice__org=org,
                 measure__name='unit',
             ).price
@@ -1575,7 +1575,7 @@ class ApiClientAvailablePerformersView(ApiServicePriceMixin, APIView):
             if org is None:
                 org = store.loru
                 # Цена за любую услугу, кроме delivery
-                price_org = self.get_price_service(org)
+                price_org = self.get_price_service(org, self.data.service)
                 # Больше длины экватора
                 distance = 41000.0
 
@@ -1590,7 +1590,7 @@ class ApiClientAvailablePerformersView(ApiServicePriceMixin, APIView):
                     currency=org.currency.code,
                 ))
                 org = store.loru
-                price_org = self.get_price_service(org)
+                price_org = self.get_price_service(org, self.data.service)
                 distance = 41000.0
 
             if self.data.need_delivery:
@@ -1621,7 +1621,6 @@ class ApiShopPlacesView(ApiServicePriceMixin, APIView):
         Выполняется анонимным пользователем
         """
         response_data = dict()
-        self.data = self.Data()
         try:
             org = get_object_or_404(Org, pk=org_pk)
             place = get_object_or_404(Place, pk=place_pk)
@@ -1629,9 +1628,7 @@ class ApiShopPlacesView(ApiServicePriceMixin, APIView):
                 raise ServiceException(_(u"Место не имеет координат"))
 
             service_name = Service.SERVICE_PHOTO
-            # self.data.service используется в self.get_price_service(org):
-            #
-            self.data.service = service = Service.objects.get(name=service_name)
+            service = Service.objects.get(name=service_name)
             try:
                 orgservice = OrgService.objects.get(
                     org=org,
@@ -1664,7 +1661,7 @@ class ApiShopPlacesView(ApiServicePriceMixin, APIView):
                 raise ServiceException(_(u'У организации нет складов с координатами'))
             place_loc = LatLon(Latitude(place.lat), Longitude(place.lng))
 
-            price_org = self.get_price_service(org)
+            price_org = self.get_price_service(org, service)
 
             # Вычисляем расстояние от места до ближайшего склада
             # Больше длины экватора
@@ -1712,7 +1709,7 @@ class ApiClientOrdersView(ApiServicePriceMixin, APIView):
             return Response(data=dict(status='error', message=message), status=400)
 
         distance = 41000.0
-        price_org = self.get_price_service(self.data.org)
+        price_org = self.get_price_service(self.data.org, self.data.service)
         closest_store = dict(lat=0, lng=0)
         if self.data.need_delivery:
             customer_loc = LatLon(Latitude(self.data.latitude), Longitude(self.data.longitude))
