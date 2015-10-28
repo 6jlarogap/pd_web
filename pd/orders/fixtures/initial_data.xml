@@ -103,6 +103,18 @@
         <field type="CharField" name="name">Каркасы для венков</field>
         <field type="FileField" name="icon"></field>
     </object>
+    <object pk="27" model="orders.productcategory">
+        <field type="CharField" name="name">Букеты</field>
+        <field type="FileField" name="icon"></field>
+    </object>
+    <object pk="28" model="orders.productcategory">
+        <field type="CharField" name="name">Свечи</field>
+        <field type="FileField" name="icon"></field>
+    </object>
+    <object pk="29" model="orders.productcategory">
+        <field type="CharField" name="name">Лампады</field>
+        <field type="FileField" name="icon"></field>
+    </object>
     <!--- Service: возможные услуги -->
     <object pk="1" model="orders.service">
         <field type="CharField" name="name">photo</field>
