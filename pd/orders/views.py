@@ -1461,7 +1461,7 @@ class ApiServicePriceMixin(object):
             if self.data.customplace.user != request.user:
                 raise ServiceException(_(u'Пользователь %s не имеет прав на запрос по этому месту') % request.user.username)
             
-            self.data.need_delivery = self.data.service_name in ('photo', Service.SERVICE_DELIVERY)
+            self.data.need_delivery = self.data.service_name in (Service.SERVICE_PHOTO, Service.SERVICE_DELIVERY)
             if self.data.need_delivery:
                 if request.method == 'GET':
                     latitude = req_dict.get('location[latitude]')
@@ -1503,7 +1503,7 @@ class ApiServicePriceMixin(object):
         if service.name == Service.SERVICE_DELIVERY:
             # цена за доставку считается не по организации, а по складам
             price_service = 0
-        elif service.name in ('photo', ):
+        elif service.name in (Service.SERVICE_PHOTO, ):
             price_service = OrgServicePrice.objects.get(
                 orgservice__service=service,
                 orgservice__org=org,
