@@ -1183,7 +1183,7 @@ class Burial(SafeDeleteMixin, GetLogsMixin, BaseModel):
             if not place.responsible.user:
                 place.responsible.user = user
                 place.responsible.save()
-            customplace, created_ = CustomPlace.objects.get_or_create(user=user, place=place)
+            customplace, created_ = CustomPlace.get_or_create_from_place(user=user, place=place)
             if created_:
                 customplace.fill_custom_deadmen()
             else:

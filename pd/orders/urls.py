@@ -49,4 +49,6 @@ urlpatterns = patterns('orders.views',
     url(r'^order/product/ajax_get_product_price/$', 'ajax_product_price', name='ajax_product_price'),
 
     url(r'^api/orders/(?P<pk>\d+)/webpay/notify/?$', 'api_orders_webpay_notify', name='api_orders_webpay_notify'),
+
+    url(r'^api/shops/(?P<org_pk>\d+)/places/(?P<place_pk>\d+)/?$', 'api_shops_places', name='api_shops_places'),
 )
