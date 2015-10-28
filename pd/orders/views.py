@@ -1612,6 +1612,81 @@ class ApiClientAvailablePerformersView(ApiServicePriceMixin, APIView):
 
 api_client_available_performers = ApiClientAvailablePerformersView.as_view()
 
+class ApiShopPlacesView(ApiServicePriceMixin, APIView):
+
+    def get(self, request, org_pk, place_pk):
+        """
+        Получить сумму на выполнение заказа фото на место (Place!)
+
+        Выполняется анонимным пользователем
+        """
+        response_data = dict()
+        self.data = self.Data()
+        try:
+            org = get_object_or_404(Org, pk=org_pk)
+            place = get_object_or_404(Place, pk=place_pk)
+            if place.lat is None or place.lng is None:
+                raise ServiceException(_(u"Место не имеет координат"))
+
+            service_name = Service.SERVICE_PHOTO
+            # self.data.service используется в self.get_price_service(org):
+            #
+            self.data.service = service = Service.objects.get(name=service_name)
+            try:
+                orgservice = OrgService.objects.get(
+                    org=org,
+                    service=service,
+                    enabled=True
+                )
+            except OrgService.DoesNotExist:
+                raise ServiceException(_(u"Сервис %s не активирован у организации Id=%s") % (
+                        service_name,
+                        org.pk,
+                ))
+
+            try:
+                orgservice_delivery = OrgService.objects.get(
+                    org=org,
+                    service__name=Service.SERVICE_DELIVERY,
+                    enabled=True
+                )
+            except OrgService.DoesNotExist:
+                raise ServiceException(_(u'Услуга %s требует еще активной услуги доставки у организации') % (
+                    service_name,
+                ))
+
+            store_qs = Store.objects.filter(
+                loru=org,
+                address__gps_x__isnull=False,
+                address__gps_y__isnull=False,
+            )
+            if not store_qs.count():
+                raise ServiceException(_(u'У организации нет складов с координатами'))
+            place_loc = LatLon(Latitude(place.lat), Longitude(place.lng))
+
+            price_org = self.get_price_service(org)
+
+            # Вычисляем расстояние от места до ближайшего склада
+            # Больше длины экватора
+            distance = 41000.0
+            for store in store_qs:
+                store_loc = LatLon(Latitude(store.address.gps_y), Longitude(store.address.gps_x))
+                distance = min(distance, store_loc.distance(place_loc))
+
+            price_org += self.get_price_delivery(org=org, km=distance)
+            response_data['base_price'] = float(price_org)
+            response_data['services'] = [
+                dict(title=service.title),
+                dict(title=orgservice_delivery.service.title),
+            ]
+
+        except ServiceException as excpt:
+            response_data['status'] = 'error'
+            response_data['message'] = excpt.message
+        return Response(data=response_data, status=200)
+
+api_shops_places = ApiShopPlacesView.as_view()
+
 class ApiClientOrdersView(ApiServicePriceMixin, APIView):
     permission_classes = (PermitIfCabinet,)
 

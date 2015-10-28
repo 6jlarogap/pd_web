@@ -25,6 +25,7 @@ class Service(models.Model):
 
     Перечисляются в fixtures
     """
+    SERVICE_PHOTO = 'photo'
     SERVICE_DELIVERY = 'delivery'
 
     name = models.CharField(_(u"Название"), max_length=255, unique=True)
