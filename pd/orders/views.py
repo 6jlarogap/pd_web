@@ -698,9 +698,9 @@ class ProductsViewSet(ProductCategoryQsMixin, viewsets.ReadOnlyModelViewSet):
             q_public_whole = Q(is_wholesale=True)
         qs &= q_public_whole
 
-        is_for_visit = str_to_bool_or_None(self.request.GET.get('filter[isAvailableForVisitOrder]'))
-        if is_for_visit is not None:
-            qs &= Q(is_for_visit=is_for_visit)
+        available_for_visit = str_to_bool_or_None(self.request.GET.get('filter[isAvailableForVisitOrder]'))
+        if available_for_visit:
+            qs &= Q(productcategory__pk__in=ProductCategory.AVAILABLE_FOR_VISIT_PKS)
 
         ordered = None
         orders = {'price': 'price', 'date': 'dt_created', }

@@ -64,7 +64,7 @@ from pd.utils import host_country_code, phones_from_text, EmailMessage, get_imag
 from persons.models import AlivePerson, Phone, CustomPlace
 from burials.models import Cemetery, Area, Burial, Place, Grave
 from billing.models import Wallet, Rate, Currency
-from orders.models import Product, Order, Service
+from orders.models import Product, Order, Service, ProductCategory
 from pd.views import PaginateListView, RequestToFormMixin, FormInvalidMixin, get_front_end_url, ServiceException
 from geo.models import Location, Country
 
@@ -2511,13 +2511,15 @@ class ApiShopsView(APIView):
             except ValueError:
                 pass
         if category_ids:
-            q &= Q(product__productcategory__pk__in=category_ids) & Q(product__is_for_visit=True)
+            q &= Q(product__productcategory__pk__in=category_ids)
+        else:
+            q &= Q(product__productcategory__pk__in=ProductCategory.AVAILABLE_FOR_VISIT_PKS)
 
         s = request.GET.get('query')
         if s:
             q2 = Q(off_address__city__name__icontains=s) | \
                  Q(off_address__addr_str__icontains=s) | \
-                 Q(product__name__icontains=s) & Q(product__is_for_visit=True)
+                 Q(product__name__icontains=s)
             q &=q2
 
         return Response(

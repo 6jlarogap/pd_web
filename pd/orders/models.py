@@ -83,6 +83,18 @@ class OrgServicePrice(models.Model):
         return float(self.price)
 
 class ProductCategory(models.Model):
+
+    # Категории продуктов, которые доступны при заказе с визитом на место
+    #
+    AVAILABLE_FOR_VISIT_PKS = (
+         5,   # Венки
+         6,   # Цветы искусственные
+         7,   # Цветы живые
+        27,   # Букеты
+        28,   # Свечи
+        29,   # Лампады
+    )
+
     name = models.CharField(_(u"Название"), max_length=255)
     icon = models.ImageField(u"Иконка", upload_to=upload_slugified, blank=True, null=True)
 
