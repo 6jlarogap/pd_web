@@ -241,14 +241,32 @@ class ApiClientPlacesView(APIView):
         )
 
     def post(self, request):
-        serializer = CustomPlaceEditSerializer(
-            data=request.DATA,
-            context=dict(request=request),
-        )
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=200)
-        return Response(serializer.errors, status=400)
+        place_id = request.DATA.get('placeId')
+        if place_id:
+            try:
+                place = Place.objects.get(pk=place_id)
+                customplace, created_ = CustomPlace.get_or_create_from_place(
+                    user=request.user,
+                    place=place
+                )
+                if created_:
+                    customplace.fill_custom_deadmen()
+                serializer = CustomPlaceEditSerializer(
+                    customplace,
+                    context=dict(request=request),
+                )
+            except Place.DoesNotExist:
+                raise Http404
+        else:
+            serializer = CustomPlaceEditSerializer(
+                data=request.DATA,
+                context=dict(request=request),
+            )
+            if serializer.is_valid():
+                serializer.save()
+            else:
+                return Response(serializer.errors, status=400)
+        return Response(serializer.data, status=200)
 
 api_client_places = ApiClientPlacesView.as_view()
 
