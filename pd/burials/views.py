@@ -407,7 +407,7 @@ class PlaceViewSet(CaretakerMixin, viewsets.ModelViewSet):
                     )
                     email_error_text = _(u"Пользователь %s не смог получить пароль после закрытия захоронения" % \
                                         (object.responsible.login_phone,))
-                customplace, created_ = CustomPlace.objects.get_or_create(user=user, place=object)
+                customplace, created_ = CustomPlace.get_or_create_from_place(user=user, place=object)
                 if not object.responsible.user:
                     object.responsible.user = user
                 if created_:
@@ -433,6 +433,26 @@ class PlaceViewSet(CaretakerMixin, viewsets.ModelViewSet):
             item.lng = object.lng
             item.lat = object.lat
             item.save()
+
+        if object.lat is not None and object.lng is not None:
+            # Если у места есть CustomPlace, а координаты в CustomPlace
+            # не заданы, задаем
+            for customplace in CustomPlace.objects.filter(
+                place=object,
+                address__gps_x__isnull=True,
+                address__gps_y__isnull=True,
+               ):
+                if customplace.address:
+                    address = customplace.address
+                else:
+                    address = Location()
+                address.gps_x = customplace.place.lng
+                address.gps_y = customplace.place.lat
+                address.save()
+                if not customplace.address:
+                    customplace.address = address
+                    customplace.save()
+
         return object
 
     def post_save(self, object, created=False):
@@ -561,7 +581,7 @@ class PlaceViewSet(CaretakerMixin, viewsets.ModelViewSet):
         except:
             grave_list = paginator.page(1)
         
-        burial_list = Burial.objects.filter(grave__place=place, grave__in=grave_list).all()
+        burial_list = Burial.objects.filter(grave__place=place, grave__in=grave_list).order_by('-fact_date')
         return Response({
                          'count': place.grave_set.count(),
                          'page': grave_list.number,
