@@ -1773,8 +1773,19 @@ class ApiClientOrdersView(ApiServicePriceMixin, APIView):
                 user=request.user,
                 comment=comment,
             )
+        #return Response(
+            #data=dict(status='success', price=float(order.cost), currency=self.data.org.currency.code),
+            #status=200,
+        #)
         return Response(
-            data=dict(status='success', price=float(order.cost), currency=self.data.org.currency.code),
+            data=dict(
+                id=order.pk,
+                supplierId=self.data.org.pk,
+                number=order.number_verbose(),
+                type=self.data.service_name,
+                placeId=self.data.customplace.pk,
+                status=order.status,
+            ),
             status=200,
         )
 
