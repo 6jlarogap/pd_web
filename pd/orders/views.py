@@ -1744,6 +1744,7 @@ class ApiClientOrdersView(ApiServicePriceMixin, APIView):
             applicant=applicant,
             dt=datetime.date.today(),
             customplace=self.data.customplace,
+            status=Order.STATUS_ACCEPTED,
         )
         # будут назначены loru_number, number:
         order.save()
