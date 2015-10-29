@@ -1677,8 +1677,8 @@ class ApiShopPlacesView(ApiServicePriceMixin, APIView):
                 dict(title=orgservice_delivery.service.title),
             ]
 
-            status_code = 400
         except ServiceException as excpt:
+            status_code = 400
             response_data['status'] = 'error'
             response_data['message'] = excpt.message
         return Response(data=response_data, status=status_code)
