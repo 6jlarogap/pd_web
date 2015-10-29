@@ -186,10 +186,6 @@
         burial = new Burial(row);
         $scope.burials.push(burial);
       });
-      $scope.burials = _($scope.burials)
-        .sortBy('fact_date')
-        .reverse()
-        .value();
 
       $scope.updateMap();
       $scope.loading = false;

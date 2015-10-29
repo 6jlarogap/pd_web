@@ -581,7 +581,7 @@ class PlaceViewSet(CaretakerMixin, viewsets.ModelViewSet):
         except:
             grave_list = paginator.page(1)
         
-        burial_list = Burial.objects.filter(grave__place=place, grave__in=grave_list).all()
+        burial_list = Burial.objects.filter(grave__place=place, grave__in=grave_list).order_by('-fact_date')
         return Response({
                          'count': place.grave_set.count(),
                          'page': grave_list.number,

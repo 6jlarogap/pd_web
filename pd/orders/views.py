@@ -1620,6 +1620,7 @@ class ApiShopPlacesView(ApiServicePriceMixin, APIView):
         Выполняется анонимным пользователем
         """
         response_data = dict()
+        status_code = 200
         try:
             org = get_object_or_404(Org, pk=org_pk)
             place = get_object_or_404(Place, pk=place_pk)
@@ -1677,9 +1678,10 @@ class ApiShopPlacesView(ApiServicePriceMixin, APIView):
             ]
 
         except ServiceException as excpt:
+            status_code = 400
             response_data['status'] = 'error'
             response_data['message'] = excpt.message
-        return Response(data=response_data, status=200)
+        return Response(data=response_data, status=status_code)
 
 api_shops_places = ApiShopPlacesView.as_view()
 
@@ -1742,6 +1744,7 @@ class ApiClientOrdersView(ApiServicePriceMixin, APIView):
             applicant=applicant,
             dt=datetime.date.today(),
             customplace=self.data.customplace,
+            status=Order.STATUS_ACCEPTED,
         )
         # будут назначены loru_number, number:
         order.save()
@@ -1771,8 +1774,19 @@ class ApiClientOrdersView(ApiServicePriceMixin, APIView):
                 user=request.user,
                 comment=comment,
             )
+        #return Response(
+            #data=dict(status='success', price=float(order.cost), currency=self.data.org.currency.code),
+            #status=200,
+        #)
         return Response(
-            data=dict(status='success', price=float(order.cost), currency=self.data.org.currency.code),
+            data=dict(
+                id=order.pk,
+                supplierId=self.data.org.pk,
+                number=order.number_verbose(),
+                type=self.data.service_name,
+                placeId=self.data.customplace.pk,
+                status=order.status,
+            ),
             status=200,
         )
 
