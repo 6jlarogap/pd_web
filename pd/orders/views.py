@@ -1620,6 +1620,7 @@ class ApiShopPlacesView(ApiServicePriceMixin, APIView):
         Выполняется анонимным пользователем
         """
         response_data = dict()
+        status_code = 200
         try:
             org = get_object_or_404(Org, pk=org_pk)
             place = get_object_or_404(Place, pk=place_pk)
@@ -1676,10 +1677,11 @@ class ApiShopPlacesView(ApiServicePriceMixin, APIView):
                 dict(title=orgservice_delivery.service.title),
             ]
 
+            status_code = 400
         except ServiceException as excpt:
             response_data['status'] = 'error'
             response_data['message'] = excpt.message
-        return Response(data=response_data, status=200)
+        return Response(data=response_data, status=status_code)
 
 api_shops_places = ApiShopPlacesView.as_view()
 
