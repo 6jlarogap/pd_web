@@ -1935,7 +1935,7 @@ class ApiServiceOrderPutView(ApiOrderMixin, OptOrderMixin, APIView):
 
             product_items = request.DATA.get('products')
             if product_items is not None:
-                if order.status != Order.STATUS_POSTED:
+                if order.status not in (Order.STATUS_POSTED, Order.STATUS_ACCEPTED,):
                     raise ServiceException(_(u"Набор товаров/услуг можно изменять только в размещенном заказе"))
                 for orderitem in order.orderitem_set.all():
                     orderitem.delete()
