@@ -1944,7 +1944,7 @@ class ApiServiceOrderPutView(ApiOrderMixin, OptOrderMixin, APIView):
                     try:
                         product = Product.objects.get(pk=item['id'])
                     except Product.DoesNotExist:
-                        raise ServiceException(_(u"Не найден товар/услуга, productId = %s") % item['productId'])
+                        raise ServiceException(_(u"Не найден товар/услуга, id = %s") % item['id'])
                     if product.loru != loru:
                         raise ServiceException(_(u"Товар/услуга, id = %s, - не от исполнителя заказа") % item['id'])
                     quantity = item.get('qty', 1.00)
