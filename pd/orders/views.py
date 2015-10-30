@@ -1942,12 +1942,12 @@ class ApiServiceOrderPutView(ApiOrderMixin, OptOrderMixin, APIView):
                 loru = order.loru
                 for item in product_items:
                     try:
-                        product = Product.objects.get(pk=item['productId'])
+                        product = Product.objects.get(pk=item['id'])
                     except Product.DoesNotExist:
                         raise ServiceException(_(u"Не найден товар/услуга, productId = %s") % item['productId'])
                     if product.loru != loru:
-                        raise ServiceException(_(u"Товар/услуга, productId = %s, - не от исполнителя заказа") % item['productId'])
-                    quantity = item.get('quantity', 1.00)
+                        raise ServiceException(_(u"Товар/услуга, id = %s, - не от исполнителя заказа") % item['id'])
+                    quantity = item.get('qty', 1.00)
                     OrderItem.objects.create(
                         order=order,
                         product=product,
