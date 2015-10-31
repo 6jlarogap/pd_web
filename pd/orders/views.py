@@ -2023,7 +2023,7 @@ class ApiOrderPaymentsView(ApiOrderPaymentsMixin, APIView):
                 for orderitem in OrderItem.objects.filter(order=order).order_by('name'):
                     items.append(dict(
                         name=orderitem.name,
-                        quantity=str(ordeitem.quantity),
+                        quantity=str(orderitem.quantity),
                         price=str(orderitem.cost),
                     ))
                 for key in ('quantity', 'price',):
@@ -2032,7 +2032,7 @@ class ApiOrderPaymentsView(ApiOrderPaymentsMixin, APIView):
                             break
                     else:
                         for item in items:
-                            item[key] = re.sub(r'\.00','', item[key])
+                            item[key] = re.sub(r'\.00$','', item[key])
                 data = dict(
                     wsb_storeid=orgwebpay.wsb_storeid,
                     wsb_store=orgwebpay.wsb_store,
