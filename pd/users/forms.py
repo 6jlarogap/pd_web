@@ -21,6 +21,7 @@ from burials.models import Cemetery, PlaceSize, Reason, Burial
 from logs.models import write_log
 
 from users.models import Profile, ProfileLORU, Org, BankAccount, RegisterProfile, OrgCertificate, \
+                         Role, \
                          get_mail_footer, is_cabinet_user, is_trade_user
 
 User._meta.get_field_by_name('email')[0]._unique = True
@@ -110,6 +111,8 @@ class ProfileDataForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelForm):
             del self.fields['cemeteries']
         else:
             self.fields['cemeteries'].queryset = cemeteries_qs
+            self.fields['role'].widget.attrs.update({'size':"3"})
+            self.fields['cemeteries'].widget.attrs.update({'size':"10"})
 
     def clean_username(self):
         username = self.cleaned_data.get('username', '').strip()
@@ -130,11 +133,23 @@ class ProfileDataForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelForm):
             if f_email.exists():
                 raise forms.ValidationError(_(u"Этот email уже используется"))
         return email
+    
+    def clean_role(self):
+        role = self.cleaned_data.get('role')
+        if self.instance.pk and self.instance.is_admin():
+            role_admin = Role.objects.get(name=Role.ROLE_ADMIN)
+            if role_admin not in role and not Profile.objects.filter(
+                    org=self.instance.org,
+                    role=role_admin,
+                ).exclude(pk=self.instance.pk).exists():
+                raise forms.ValidationError(_(u"Нельзя удалять последнего администратора в организации"))
+        return role
 
     def clean(self):
-        if self.is_valid() and \
-             self.cleaned_data['password1'] != self.cleaned_data['password2']:
-            raise forms.ValidationError(_(u"Пароли не совпадают"))
+        if self.is_valid():
+            if self.cleaned_data['password1'] != self.cleaned_data['password2']:
+                raise forms.ValidationError(_(u"Пароли не совпадают"))
+            # Нельзя удалить последнего администратора 
         return self.cleaned_data
 
     @transaction.commit_on_success
