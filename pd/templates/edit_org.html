@@ -83,7 +83,7 @@
                 {% if user.profile.is_ugh %}<th>{% trans "Роли в организации" %}{% endif %}
                 {% if user.profile.is_loru %}<th>{% trans "Агент" %}</th>{% endif %}
                 <th>{% trans "Активен" %}</th>
-                {% if user.profile.is_ugh and user.profile.is_admin %}
+                {% if user.profile.is_loru or user.profile.is_ugh and user.profile.is_admin %}
                     <th></th>
                 {% endif %}
             </tr>
@@ -95,7 +95,7 @@
                     {% if user.profile.is_ugh %}<td>{% for r in p.role.all %}{{ r }}<br/>{% endfor %}{% endif %}
                     {% if user.profile.is_loru %}<td>{{ p.is_agent|yesno }}</td>{% endif %}
                     <td>{{ p.user.is_active|yesno }}</td>
-                    {% if user.profile.is_ugh and user.profile.is_admin %}
+                    {% if user.profile.is_loru or user.profile.is_ugh and user.profile.is_admin %}
                         <td style="text-align:center">
                             <a href="{% url edit_profile p.user.profile.pk %}" class="btn">править</a>
                         </td>

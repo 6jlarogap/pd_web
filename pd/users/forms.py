@@ -111,8 +111,8 @@ class ProfileDataForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelForm):
             del self.fields['cemeteries']
         else:
             self.fields['cemeteries'].queryset = cemeteries_qs
-            self.fields['role'].widget.attrs.update({'size':"3"})
-            self.fields['cemeteries'].widget.attrs.update({'size':"10"})
+            self.fields['role'].widget.attrs.update({'size': str(min(Role.objects.all().count()+1, 20))})
+            self.fields['cemeteries'].widget.attrs.update({'size': str(min(cemeteries_qs.count()+1, 20))})
 
     def clean_username(self):
         username = self.cleaned_data.get('username', '').strip()
@@ -135,6 +135,7 @@ class ProfileDataForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelForm):
         return email
     
     def clean_role(self):
+        # Нельзя удалить последнего администратора 
         role = self.cleaned_data.get('role')
         if self.instance.pk and self.instance.is_admin():
             role_admin = Role.objects.get(name=Role.ROLE_ADMIN)
@@ -149,7 +150,6 @@ class ProfileDataForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelForm):
         if self.is_valid():
             if self.cleaned_data['password1'] != self.cleaned_data['password2']:
                 raise forms.ValidationError(_(u"Пароли не совпадают"))
-            # Нельзя удалить последнего администратора 
         return self.cleaned_data
 
     @transaction.commit_on_success
