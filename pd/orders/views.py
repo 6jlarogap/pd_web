@@ -1942,12 +1942,12 @@ class ApiServiceOrderPutView(ApiOrderMixin, OptOrderMixin, APIView):
                 loru = order.loru
                 for item in product_items:
                     try:
-                        product = Product.objects.get(pk=item['productId'])
+                        product = Product.objects.get(pk=item['id'])
                     except Product.DoesNotExist:
-                        raise ServiceException(_(u"Не найден товар/услуга, productId = %s") % item['productId'])
+                        raise ServiceException(_(u"Не найден товар/услуга, id = %s") % item['id'])
                     if product.loru != loru:
-                        raise ServiceException(_(u"Товар/услуга, productId = %s, - не от исполнителя заказа") % item['productId'])
-                    quantity = item.get('quantity', 1.00)
+                        raise ServiceException(_(u"Товар/услуга, id = %s, - не от исполнителя заказа") % item['id'])
+                    quantity = item.get('qty', 1.00)
                     OrderItem.objects.create(
                         order=order,
                         product=product,
@@ -2023,7 +2023,7 @@ class ApiOrderPaymentsView(ApiOrderPaymentsMixin, APIView):
                 for orderitem in OrderItem.objects.filter(order=order).order_by('name'):
                     items.append(dict(
                         name=orderitem.name,
-                        quantity=str(ordeitem.quantity),
+                        quantity=str(orderitem.quantity),
                         price=str(orderitem.cost),
                     ))
                 for key in ('quantity', 'price',):
@@ -2032,7 +2032,7 @@ class ApiOrderPaymentsView(ApiOrderPaymentsMixin, APIView):
                             break
                     else:
                         for item in items:
-                            item[key] = re.sub(r'\.00','', item[key])
+                            item[key] = re.sub(r'\.00$','', item[key])
                 data = dict(
                     wsb_storeid=orgwebpay.wsb_storeid,
                     wsb_store=orgwebpay.wsb_store,
