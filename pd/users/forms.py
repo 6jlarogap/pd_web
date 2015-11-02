@@ -56,6 +56,7 @@ class ProfileDataForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelForm):
             'is_agent',
             'password1', 'password2',
             'cemetery', 'area',
+            'role', 'cemeteries',
         )
 
     def __init__(self, request, my_profile, *args, **kwargs):
@@ -78,11 +79,13 @@ class ProfileDataForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelForm):
             self.fields['is_active'].label = User._meta.get_field('is_active').verbose_name.capitalize()
             self.fields['is_active'].help_text=User._meta.get_field('is_active').help_text
 
-        self.fields['cemetery'].queryset = Cemetery.objects.filter(
+        cemeteries_qs  = Cemetery.objects.filter(
             Q(ugh__isnull=True) |
             Q(ugh__loru_list__loru=self.request.user.profile.org) |
             Q(ugh=self.request.user.profile.org)
         ).distinct()
+
+        self.fields['cemetery'].queryset = cemeteries_qs
 
         self.fields['user_last_name'].required = True
         self.fields['user_first_name'].required = True
@@ -99,6 +102,14 @@ class ProfileDataForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelForm):
                 self.initial['is_agent'] = True
             self.fields['password1'].required = True
             self.fields['password2'].required = True
+
+        if request.user.profile.is_loru() or \
+           my_profile or \
+           not request.user.profile.is_admin():
+            del self.fields['role']
+            del self.fields['cemeteries']
+        else:
+            self.fields['cemeteries'].queryset = cemeteries_qs
 
     def clean_username(self):
         username = self.cleaned_data.get('username', '').strip()

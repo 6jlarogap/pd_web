@@ -62,6 +62,20 @@
             <p>{{ form.area.label_tag }} {{ form.area }} <span class="helptext"> {{ form.area.help_text }}</span></p>
         </fieldset>
 
+        {% if form.role  or form.cemeteries %}
+        <br />
+        <h4>Права пользователя</h4>
+        <br />
+        {% endif %}
+
+        {% if form.role %}
+            {{ form.role.errors }}
+            <p>{{ form.role.label_tag }} {{ form.role }} <span class="helptext"> {{ form.role.help_text }}</span></p>
+        {% endif %}
+
+        {% if form.cemeteries %}
+            <p>{{ form.cemeteries.label_tag }} {{ form.cemeteries }} <span class="helptext"> {{ form.cemeteries.help_text }}</span></p>
+        {% endif %}
         <p>
             <input type="submit" class="btn" value="{% trans "cохранить" %}"/>
         </p>
