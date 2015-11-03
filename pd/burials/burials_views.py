@@ -543,8 +543,12 @@ class BurialsListView(PaginateListView):
                     q2r &= Q(place__responsible__last_name__iregex=fio[0])
                     qr = Q(q1r | q2r)
                     burials = burials.filter(qr)
-            if form.cleaned_data['cemetery']:
+
+            if form.cleaned_data.get('cemeteries_editable'):
+                burials = burials.filter(cemetery__in=self.request.user.profile.cemeteries.all())
+            elif form.cleaned_data.get('cemetery'):
                 burials = burials.filter(cemetery__name=form.cleaned_data['cemetery'])
+
             if form.cleaned_data['area']:
                 burials = burials.filter(area__name=form.cleaned_data['area'])
             if form.cleaned_data['row']:
@@ -634,7 +638,7 @@ class BurialsListView(PaginateListView):
         # набор своих кладбищ не совпадает с общим набором кладбищ ОМС
         profile = self.request.user.profile
         if profile.is_ugh() and profile.is_registrator() and \
-           profile.cemeteries.all().count() != Cemetery.objects.filter(ugh=profile.org):
+           profile.cemeteries.count() != Cemetery.objects.filter(ugh=profile.org).count():
             pass
         else:
             del form.fields['cemeteries_editable']

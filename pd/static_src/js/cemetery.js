@@ -550,6 +550,15 @@ $(function() {
         }
     });
 
+    $('#id_cemeteries_editable').change(function() {
+        if ($(this).is(':checked')) {
+            $('#id_cemetery').closest('p').hide();
+        } else {
+            $('#id_cemetery').closest('p').show();
+        }
+    });
+    $('#id_cemeteries_editable').change();
+
     $('select[name*=deadman-death_date_]').change(function() {
         var hide_ = false;
         $('select[name*=deadman-death_date_]').each(function() {
