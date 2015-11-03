@@ -154,6 +154,18 @@ class Cemetery(GetLogsMixin, BaseModelManualDtCreated, PhonesMixin):
                 })
         return result
 
+    @classmethod
+    def editable_ugh_cemeteries(cls, user):
+        """
+        Кладбища (queryset), которые пользователь ОМС может редактировать
+
+        Используется в таблице захоронений
+        """
+        result = cls.objects.none()
+        if is_ugh_user(user) and user.profile.is_registrator():
+            return user.profile.cemeteries.all()
+        return result
+
 class CemeteryCoordinates(CoordinatesModel):
     #TODO:
     # Перевести эту модель к PointsModel

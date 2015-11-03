@@ -630,6 +630,11 @@ class BurialsListView(PaginateListView):
     def get_form(self):
         return BurialSearchForm(data=self.request.GET or None)
 
+    def get_context_data(self, **kwargs):
+        context = super(BurialsListView, self).get_context_data(**kwargs)
+        context['editable_ugh_cemeteries'] = Cemetery.editable_ugh_cemeteries(self.request.user)
+        return context
+
 burial_list = BurialsListView.as_view()
 
 # Поиск захоронения для ЛОРУ
