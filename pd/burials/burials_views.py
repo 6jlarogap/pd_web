@@ -126,6 +126,7 @@ class DashboardView(BurialsListGenericMixin, TemplateView):
         return {
             'burials': burials,
             'sort': sort,
+            'editable_ugh_cemeteries': Cemetery.editable_ugh_cemeteries(self.request.user),
         }
 
 dashboard = DashboardView.as_view()
@@ -628,7 +629,16 @@ class BurialsListView(PaginateListView):
         return super(BurialsListView, self).get_template_names()
 
     def get_form(self):
-        return BurialSearchForm(data=self.request.GET or None)
+        form = BurialSearchForm(data=self.request.GET or None)
+        # Птичка "Свои кладбища" нужна только смотрителю, у кого
+        # набор своих кладбищ не совпадает с общим набором кладбищ ОМС
+        profile = self.request.user.profile
+        if profile.is_ugh() and profile.is_registrator() and \
+           profile.cemeteries.all().count() != Cemetery.objects.filter(ugh=profile.org):
+            pass
+        else:
+            del form.fields['cemeteries_editable']
+        return form
 
     def get_context_data(self, **kwargs):
         context = super(BurialsListView, self).get_context_data(**kwargs)
