@@ -201,14 +201,15 @@
                                 <li{% if request.path == '/burials/' %} class="active"{% endif %}>
                                     <a href="{% url burial_list %}">{% trans "Захоронения" %}</a>
                                 </li>
+                                {% if user.profile.is_registrator and user.profile.cemeteries.count %}
+                                    <li{% if request.path == '/burials/create/' and not request.GET.archive %} class="active"{% endif %}>
+                                        <a href="{% url create_burial %}">{% trans "Создать захоронение" %}</a>
+                                    </li>
 
-                                <li{% if request.path == '/burials/create/' and not request.GET.archive %} class="active"{% endif %}>
-                                    <a href="{% url create_burial %}">{% trans "Создать захоронение" %}</a>
-                                </li>
-
-                                <li{% if request.path == '/burials/create/' and request.GET.archive %} class="active"{% endif %}>
-                                    <a href="{% url create_burial %}?archive=1">{% trans "Внести архивное" %}</a>
-                                </li>
+                                    <li{% if request.path == '/burials/create/' and request.GET.archive %} class="active"{% endif %}>
+                                        <a href="{% url create_burial %}?archive=1">{% trans "Внести архивное" %}</a>
+                                    </li>
+                                {% endif %}
                             {% elif user.profile.is_loru %}
                                 <li{% if request.path == '/burials/search/' %} class="active"{% endif %}>
                                     <a href="{% url burial_public_list %}">{% trans "Захоронения" %}</a>

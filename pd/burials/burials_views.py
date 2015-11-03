@@ -815,14 +815,17 @@ class CreateBurial(BurialGetOrderMixin, FormInvalidMixin, CreateView):
         self.args = args
         self.kwargs = kwargs
 
-        if not request.user.is_authenticated() or (not request.user.profile.can_create_burials()):
-            messages.error(request, _(u"У Вас нет прав создавать захоронения вручную"))
-            return redirect('/')
-
         if self.request.user.profile.is_loru():
             order = self.get_order()
             if order and order.burial and order.burial != self.get_object():
                 return redirect(reverse('edit_burial', args=[order.burial.pk]) + '?order=%s' % order.pk)
+        elif self.request.user.profile.is_ugh() and \
+             self.request.user.profile.is_registrator() and \
+             self.request.user.profile.cemeteries.count():
+            pass
+        else:
+            messages.error(request, _(u"У Вас нет прав создавать захоронения"))
+            return redirect('/')
 
         return super(CreateBurial, self).dispatch(request, *args, **kwargs)
 
@@ -974,8 +977,8 @@ class EditBurialView(BurialsListGenericMixin, CreateBurial):
         self.request = request
         self.args = args
         self.kwargs = kwargs
+        b = self.get_object()
         if request.user.profile.is_loru():
-            b = self.get_object()
             if b and b.pk:
                 if b.is_full() and b.loru and b.loru != request.user.profile.org:
                     raise Http404
@@ -986,6 +989,14 @@ class EditBurialView(BurialsListGenericMixin, CreateBurial):
                 if b.is_full() and b.is_edit() and not b.annulated:
                     return super(EditBurialView, self).dispatch(request, *args, **kwargs)
                 return redirect(reverse('view_burial', args=[b.pk]) + order_parm)
+        elif request.user.profile.is_ugh():
+            print Cemetery.editable_ugh_cemeteries(request.user)
+            if not b.cemetery or b.cemetery in Cemetery.editable_ugh_cemeteries(request.user):
+                pass
+            else:
+                raise Http404
+        else:
+            raise Http404
         return super(EditBurialView, self).dispatch(request, *args, **kwargs)
 
     def get_queryset(self):
