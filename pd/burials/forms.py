@@ -1763,13 +1763,19 @@ class BurialCommentEditForm(forms.ModelForm):
 class BaseBurialCommentEditFormSet(BaseInlineFormSet):
     def __init__(self, request, *args, **kwargs):
         super(BaseBurialCommentEditFormSet, self).__init__(*args, **kwargs)
+        self.own_cemetery = not self.instance.cemetery or \
+                            self.instance.cemetery in Cemetery.editable_ugh_cemeteries(request.user)
         for f in self.forms:
             f.formset = self
             f.fields['comment'].required = False
             f.own_ = True
-            if f.instance.pk and f.instance.creator != request.user:
-                f.own_ = False
+            f.own_cemetery = self.own_cemetery
+            if not self.own_cemetery:
                 f.fields['comment'].widget.attrs.update({'readonly':'True'})
+            if f.instance.pk:
+                if  f.instance.creator != request.user:
+                    f.own_ = False
+                    f.fields['comment'].widget.attrs.update({'readonly':'True'})
             f.fields['comment'].widget.attrs.update({'rows':'4'})
 
 BurialCommentEditFormSet = inlineformset_factory(

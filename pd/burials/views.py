@@ -1059,7 +1059,7 @@ class BurialEditComments(UGHRequiredMixin, View):
         return BurialCommentEditFormSet(request=self.request, data=self.request.POST or None, instance=self.get_object())
 
     def get_object(self):
-        return Burial.objects.get(pk=self.kwargs['pk'], ugh=self.request.user.profile.org)
+        return get_object_or_404(Burial, pk=self.kwargs['pk'], ugh=self.request.user.profile.org)
 
     def get_context_data(self, **kwargs):
         return {

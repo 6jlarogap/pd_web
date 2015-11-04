@@ -472,6 +472,7 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
                                  b.loru and b.loru == self.request.user.profile.org,
             'can_personal_data': b.can_personal_data(self.request),
             'place': b.get_place(),
+            'editable_ugh_cemeteries': Cemetery.editable_ugh_cemeteries(self.request.user)
         }
 
 view_burial = BurialView.as_view()
