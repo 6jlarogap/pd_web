@@ -198,7 +198,7 @@ class Profile(CommonProfile):
     cemetery = models.ForeignKey('burials.Cemetery', verbose_name=_(u"Кладбище"), blank=True, null=True)
     area = models.ForeignKey('burials.Area', verbose_name=_(u"Участок"), blank=True, null=True)
 
-    role = models.ManyToManyField(Role, verbose_name=_(u"Роль в организации"), blank=True)
+    role = models.ManyToManyField(Role, verbose_name=_(u"Роли в организации"), blank=True)
     cemeteries = models.ManyToManyField('burials.Cemetery',
                  verbose_name=_(u"Доступные кладбища"), related_name='rw_profiles', blank=True)
 

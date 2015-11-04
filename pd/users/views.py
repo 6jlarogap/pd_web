@@ -987,8 +987,11 @@ class ProfileEditView(UghOrLoruRequiredMixin, RequestToFormMixin, UpdateView):
         elif 'my_profile' in self.kwargs:
             obj = self.request.user.profile
         else:
-            obj = Profile()
-            self.new_ = True
+            if self.request.user.profile.is_loru() or self.request.user.profile.is_admin():
+                obj = Profile()
+                self.new_ = True
+            else:
+                raise Http404
         return obj
 
     def get_success_url(self):

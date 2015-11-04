@@ -104,9 +104,11 @@
             {% endfor %}
         </table>
 
-        <p>
-            <a href="{% url create_profile %}" class="btn">{% trans "новый пользователь" %}</a>
-        </p>
+        {% if request.user.profile.is_loru or request.user.profile.is_admin %}
+            <p>
+                <a href="{% url create_profile %}" class="btn">{% trans "новый пользователь" %}</a>
+            </p>
+        {% endif %}
     {% endif %}
 </form>
 
