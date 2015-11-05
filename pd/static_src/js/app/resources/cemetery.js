@@ -6,13 +6,20 @@ app.factory('Cemetery', function($resource){
 	            format: 'json'
 	        }
 	    },
-		getForm: {
-			method: 'GET',
-			params: {
-				action: 'getform',
-			},
-			isArray: false
-		},
+        getForm: {
+            method: 'GET',
+            params: {
+                action: 'getform',
+            },
+            isArray: false
+        },
+        getAdmin: {
+            method: 'GET',
+            params: {
+                action: 'getadmin',
+            },
+            isArray: false
+        },
         save: {
             method:'POST',
             params:{

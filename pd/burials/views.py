@@ -116,13 +116,12 @@ class CemeteryViewSet(CaretakerMixin, viewsets.ModelViewSet):
     model = Cemetery
     form_class = CemeteryForm
     serializer_class = CemeterySerializer
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (PermitIfUgh,)
     paginate_by = None
 
     def get_queryset(self):
         return  Cemetery.objects.filter(ugh=self.request.user.profile.org).all()
 
-    
     def check_cemetery_name(self, request, pk=None):
         name = request.DATA.get('name')
         if not name:
@@ -216,6 +215,9 @@ class CemeteryViewSet(CaretakerMixin, viewsets.ModelViewSet):
         data['caretakers'] = self.get_caretakers(cemetery)
         return Response(status=200, data=data)
 
+    @action(methods=['GET',])
+    def getadmin(self, request, pk=None):
+        return Response(status=200, data=dict(is_admin=request.user.profile.is_admin()))
 
 class CemeteryList(UGHRequiredMixin, ListView):
     template_name = 'cemetery_list.html'
