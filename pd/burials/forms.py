@@ -1339,7 +1339,7 @@ class BurialApproveCloseForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelFor
         self.request = request
         self.dc_form = None
         self.forms =[]
-        cemetery_qs = Q(ugh=request.user.profile.org)
+        cemetery_qs = Q(pk__in=[c.pk for c in Cemetery.editable_ugh_cemeteries(request.user)])
         
         if self.data.get('cemetery'):
             cemetery = Cemetery.objects.get(pk=self.data.get('cemetery'))
