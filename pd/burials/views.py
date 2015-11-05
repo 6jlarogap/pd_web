@@ -213,6 +213,7 @@ class CemeteryViewSet(CaretakerMixin, viewsets.ModelViewSet):
         if cemetery.address:
             data["address"] = LocationStaticSerializer(cemetery.address).data
         data['caretakers'] = self.get_caretakers(cemetery)
+        data['is_editable'] = cemetery in Cemetery.editable_ugh_cemeteries(request.user)
         return Response(status=200, data=data)
 
     @action(methods=['GET',])
