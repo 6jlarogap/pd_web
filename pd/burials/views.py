@@ -564,6 +564,7 @@ class PlaceViewSet(CaretakerMixin, viewsets.ModelViewSet):
                 "log": log_data,
                 "log_page":page.number,
                 "log_pages":page.paginator._num_pages,
+                "is_editable": cemetery in Cemetery.editable_ugh_cemeteries(request.user),
                 }
         data["place"]["graves_count"] = place.get_graves_count()
         data["place"]["available_count"] = place.available_count
