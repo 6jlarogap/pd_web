@@ -63,6 +63,16 @@
         </fieldset>
 
         {% if form.role  or form.cemeteries %}
+        <script>
+            function select_clear_roles_cemeteries(what, action) {
+                var obj = "select[name=" + what + "]";
+                var selected = action == "select_all" ? "selected" : ""
+                $(obj).children().each(function () {
+                    this.selected = selected;
+                });
+                return false;
+            }
+        </script>
         <br />
         <h4>Права пользователя</h4>
         <br />
@@ -70,12 +80,27 @@
 
         {% if form.role %}
             {{ form.role.errors }}
-            <p>{{ form.role.label_tag }} {{ form.role }} <span class="helptext"> {{ form.role.help_text }}</span></p>
+            <p>{{ form.role.label_tag }} {{ form.role }} <span class="helptext"> {{ form.role.help_text }}</span>
+            <br />
+            <button onclick='return select_clear_roles_cemeteries("role", "select_all")'>Выделить все</button> 
+            &nbsp;&nbsp;
+            <button onclick='return select_clear_roles_cemeteries("role", "clear_all")'>Очистить</button>
+            </p>
+            <br />
         {% endif %}
 
         {% if form.cemeteries %}
-            <p>{{ form.cemeteries.label_tag }} {{ form.cemeteries }} <span class="helptext"> {{ form.cemeteries.help_text }}</span></p>
+            <br />
+            {{ form.cemeteries.errors }}
+            <p>{{ form.cemeteries.label_tag }} {{ form.cemeteries }} <span class="helptext"> {{ form.cemeteries.help_text }}</span>
+            <br />
+            <button onclick='return select_clear_roles_cemeteries("cemeteries", "select_all")'>Выделить все</button> 
+            &nbsp;&nbsp;
+            <button onclick='return select_clear_roles_cemeteries("cemeteries", "clear_all")'>Очистить</button>
+            </p>
+            <br />
         {% endif %}
+
         <p>
             <input type="submit" class="btn" value="{% trans "cохранить" %}"/>
         </p>
