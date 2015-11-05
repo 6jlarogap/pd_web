@@ -36,7 +36,7 @@ function CemeteryCtrl($rootScope, $scope, $http, $location, $resource, naturalSe
                 archive_burial_fact_date_required:false,
                 archive_burial_account_number_required:false
             });
-        Cemetery.getAdmin(
+        Cemetery.isAdmin(
                     {cemeteryID:0}, // fake cemetery id to find out if the user is admin
                     function(result) {
            $scope.is_admin = result.is_admin; 

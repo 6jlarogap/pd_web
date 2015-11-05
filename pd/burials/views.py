@@ -217,8 +217,15 @@ class CemeteryViewSet(CaretakerMixin, viewsets.ModelViewSet):
         return Response(status=200, data=data)
 
     @action(methods=['GET',])
-    def getadmin(self, request, pk=None):
+    def isadmin(self, request, pk=None):
         return Response(status=200, data=dict(is_admin=request.user.profile.is_admin()))
+
+    @action(methods=['GET',])
+    def iseditable(self, request, pk=None):
+        cemetery = get_object_or_404(self.get_queryset(), pk=pk)
+        return Response(status=200, data=dict(
+            is_editable=cemetery in Cemetery.editable_ugh_cemeteries(request.user)
+        ))
 
 class CemeteryList(UGHRequiredMixin, ListView):
     template_name = 'cemetery_list.html'

@@ -1,11 +1,11 @@
 app.factory('Cemetery', function($resource){
-	return $resource('/api/cemetery/:cemeteryID/:action', {cemeteryID:'@id'},{
-	    get: {
-	        method: 'GET',
-	        params: {
-	            format: 'json'
-	        }
-	    },
+    return $resource('/api/cemetery/:cemeteryID/:action', {cemeteryID:'@id'},{
+        get: {
+            method: 'GET',
+            params: {
+                format: 'json'
+            }
+        },
         getForm: {
             method: 'GET',
             params: {
@@ -13,10 +13,17 @@ app.factory('Cemetery', function($resource){
             },
             isArray: false
         },
-        getAdmin: {
+        isAdmin: {
             method: 'GET',
             params: {
-                action: 'getadmin',
+                action: 'isadmin',
+            },
+            isArray: false
+        },
+        isEditable: {
+            method: 'GET',
+            params: {
+                action: 'iseditable',
             },
             isArray: false
         },
@@ -32,6 +39,6 @@ app.factory('Cemetery', function($resource){
                 format:'json'
             }
         }
-	})
+    })
 });
 
