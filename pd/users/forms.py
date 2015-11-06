@@ -115,8 +115,7 @@ class ProfileDataForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelForm):
             self.fields['cemeteries'].widget.attrs.update({'size': str(min(cemeteries_qs.count()+1, 20))})
             # По умолчанию новому пользователю ОМС назначаем все роли и все кладбища
             if not self.instance or not self.instance.pk:
-                self.initial['role'] = [r for r in Role.objects.all()]
-                self.initial['cemeteries'] = [c for c in cemeteries_qs ]
+                self.initial['role'] = [Role.objects.get(name=Role.ROLE_REGISTRATOR)]
 
     def clean_username(self):
         username = self.cleaned_data.get('username', '').strip()
