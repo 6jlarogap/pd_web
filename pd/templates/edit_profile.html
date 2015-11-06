@@ -106,6 +106,30 @@
         </p>
     </form>
 
+    {% if form.my_profile and form.instance.org.is_ugh %}
+        <br />
+        <h4>{% trans "Роли в организации" %}:</h4>
+        {% for r in form.instance.role.all %}
+            &nbsp;- {{ r }}<br/>
+        {% endfor %}
+        {% if not form.instance.role.all %}
+            &nbsp;&nbsp; {% trans "не назначены" %}<br/>
+        {% endif %}
+        {% if form.instance.is_registrator %}
+            <br />
+            <h4>{% trans "Назначенные кладбища" %}:</h4>
+            {% if not form.instance.cemeteries.count %}
+                &nbsp;&nbsp; {% trans "не назначены" %}<br />
+            {% elif form.instance.has_all_cemeteries %}
+                &nbsp;&nbsp; {% trans "все кладбища организации" %}<br />
+            {% else %}
+                {% for c in form.instance.cemeteries.all %}
+                    &nbsp; - {{ c }}<br />
+                {% endfor %}
+            {% endif %}
+        {% endif %}
+    {% endif %}
+
     <script type="text/javascript">
         CEMETERY_AREAS = {{ form.cemetery_areas_json|default:"{}"  }};
     </script>

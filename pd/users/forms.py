@@ -68,6 +68,7 @@ class ProfileDataForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelForm):
 
         if request.user.profile.org.is_ugh() and not request.user.profile.is_admin():
             my_profile = True
+        self.my_profile = my_profile
         if my_profile:
             del self.fields['username']
         else:

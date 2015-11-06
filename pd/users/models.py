@@ -243,6 +243,10 @@ class Profile(CommonProfile):
     def is_registrator(self):
         return self.is_ugh() and self.role.filter(name=Role.ROLE_REGISTRATOR).exists()
 
+    def has_all_cemeteries(self):
+        Cemetery = get_model('burials', 'Cemetery')
+        return self.cemeteries.all().count() == Cemetery.objects.filter(ugh=self.org).count()
+
 def disposable_token_to_user(token):
     for model in (Profile, CustomerProfile):
         profile = model.disposable_token_to_user(token)
