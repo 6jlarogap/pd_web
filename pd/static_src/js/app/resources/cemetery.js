@@ -13,10 +13,10 @@ app.factory('Cemetery', function($resource){
             },
             isArray: false
         },
-        isAdmin: {
+        canAddCemetery: {
             method: 'GET',
             params: {
-                action: 'isadmin',
+                action: 'canaddcemetery',
             },
             isArray: false
         },

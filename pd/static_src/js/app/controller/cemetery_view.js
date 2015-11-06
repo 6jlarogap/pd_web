@@ -63,6 +63,7 @@ function CemeteryViewCtrl(
 
             $scope.cemetery = new Cemetery(result.cemetery);
             $scope.is_editable = result.is_editable;
+            $scope.can_add_area = result.can_add_area;
             $scope.editor.caretaker = result.cemetery.caretaker;
             $scope.editor.caretakers = result.caretakers;
             $scope.caretaker_show = caretakerShow(

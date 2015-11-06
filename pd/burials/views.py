@@ -213,12 +213,21 @@ class CemeteryViewSet(CaretakerMixin, viewsets.ModelViewSet):
         if cemetery.address:
             data["address"] = LocationStaticSerializer(cemetery.address).data
         data['caretakers'] = self.get_caretakers(cemetery)
-        data['is_editable'] = cemetery in Cemetery.editable_ugh_cemeteries(request.user)
+        data['can_add_area'] = cemetery in Cemetery.editable_ugh_cemeteries(request.user)
+        data['is_editable'] = request.user.profile.is_admin() or data['can_add_area']
         return Response(status=200, data=data)
 
     @action(methods=['GET',])
-    def isadmin(self, request, pk=None):
-        return Response(status=200, data=dict(is_admin=request.user.profile.is_admin()))
+    def canaddcemetery(self, request, pk=None):
+        """
+        Can Add Cemetery: admin or registrator
+        """
+        return Response(
+            status=200,
+            data=dict(
+                can_add_cemetery=request.user.profile.is_admin() or \
+                                 request.user.profile.is_registrator()
+        ))
 
     @action(methods=['GET',])
     def iseditable(self, request, pk=None):
