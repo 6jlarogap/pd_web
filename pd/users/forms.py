@@ -66,6 +66,8 @@ class ProfileDataForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelForm):
         if not request.user.profile.org.is_loru():
             del self.fields['is_agent']
 
+        if request.user.profile.org.is_ugh() and not request.user.profile.is_admin():
+            my_profile = True
         if my_profile:
             del self.fields['username']
         else:
@@ -80,13 +82,19 @@ class ProfileDataForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelForm):
             self.fields['is_active'].label = User._meta.get_field('is_active').verbose_name.capitalize()
             self.fields['is_active'].help_text=User._meta.get_field('is_active').help_text
 
-        cemeteries_qs  = Cemetery.objects.filter(
-            Q(ugh__isnull=True) |
-            Q(ugh__loru_list__loru=self.request.user.profile.org) |
-            Q(ugh=self.request.user.profile.org)
-        ).distinct()
+        if request.user.profile.is_loru():
+            cemetery_qs  = Cemetery.objects.filter(
+                ugh__loru_list__loru=self.request.user.profile.org
+            )
+        elif request.user.profile.is_ugh():
+            q = Q(ugh=request.user.profile.org)
+            if my_profile or not request.user.profile.is_admin():
+                q &= Q(pk__in=[c.pk for c in Cemetery.editable_ugh_cemeteries(request.user)])
+            cemetery_qs = Cemetery.objects.filter(q)
+        else:
+            cemetery_qs = Cemetery.objects.none()
 
-        self.fields['cemetery'].queryset = cemeteries_qs
+        self.fields['cemetery'].queryset = cemetery_qs.distinct()
 
         self.fields['user_last_name'].required = True
         self.fields['user_first_name'].required = True
@@ -110,6 +118,7 @@ class ProfileDataForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelForm):
             del self.fields['role']
             del self.fields['cemeteries']
         else:
+            cemeteries_qs = Cemetery.objects.filter(ugh=request.user.profile.org)
             self.fields['cemeteries'].queryset = cemeteries_qs
             self.fields['role'].widget.attrs.update({'size': str(min(Role.objects.all().count()+1, 20))})
             self.fields['cemeteries'].widget.attrs.update({'size': str(min(cemeteries_qs.count()+1, 20))})
@@ -153,6 +162,10 @@ class ProfileDataForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelForm):
         if self.is_valid():
             if self.cleaned_data['password1'] != self.cleaned_data['password2']:
                 raise forms.ValidationError(_(u"Пароли не совпадают"))
+            cemetery = self.cleaned_data.get('cemetery')
+            cemeteries = self.cleaned_data.get('cemeteries')
+            if cemeteries is not None and cemetery and cemetery not in cemeteries:
+                raise forms.ValidationError(_(u"Кладбище по умолчанию не из доступных для пользователя"))
         return self.cleaned_data
 
     @transaction.commit_on_success
