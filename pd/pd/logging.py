@@ -17,7 +17,7 @@ def skip_ioerror_post(record):
             for filename, line_number, function_name, text in traceback.extract_tb(
                 record.exc_info[2]
                 ):
-                if function_name == 'parse_file_upload':
+                if function_name in ('parse_file_upload', '_perform_form_overloading',):
                     return False
     return True
 
