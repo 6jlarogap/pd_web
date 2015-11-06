@@ -365,7 +365,8 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
         self.fields['cemetery'].queryset = Cemetery.objects.filter(
             Q(ugh__isnull=True) |
             Q(ugh__loru_list__loru=self.request.user.profile.org) |
-            Q(ugh=self.request.user.profile.org)
+                Q(ugh=self.request.user.profile.org) & \
+                Q(pk__in=[c.pk for c in Cemetery.editable_ugh_cemeteries(request.user)])
         ).distinct()
         if self.instance.cemetery and self.instance.cemetery.time_slots:
             choices = [('', '----------')] + self.instance.cemetery.get_time_choices(
