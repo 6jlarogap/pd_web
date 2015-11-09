@@ -263,16 +263,16 @@ def get_front_end_url(request):
         if not result.endswith('/'):
             result += '/'
     else:
-        back_end_prefix = settings.BACK_END_PREFIX if settings.BACK_END_PREFIX.endswith('.') \
-                                                else settings.BACK_END_PREFIX + '.'
         host = request.get_host()
         result = 'https://' if request.is_secure() else 'http://'
-        if host.lower().startswith(back_end_prefix.lower()):
-            # ВНИМАНИЕ: заканчиваем на '/'
-            result += host[len(back_end_prefix):] + '/'
+        m = re.search(r'^(%s)\.(\S+)$' % settings.BACK_END_PREFIX_REGEX, host)
+        if m:
+            result += m.group(2)
         else:
             # Затычка. Невозможная ситуация в реальной работе
-            result += host + '/'
+            result += host
+        # ВНИМАНИЕ: заканчиваем на '/'
+        result += '/'
     return result
 
 def get_host_url(request):
