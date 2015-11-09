@@ -237,7 +237,7 @@ def get_front_end_host(request):
         result = re.sub(r'^https?://', '', result, flags=re.I)
     else:
         host = request.get_host()
-        m = re.search(r'^(%s)\.(\S+)$' % settings.BACK_END_PREFIX_REGEX, host)
+        m = re.search(r'^(%s)\.(\S+)$' % settings.BACK_END_PREFIX_REGEX, host, flags=re.I)
         if m:
             result = m.group(2).lower()
         else:
