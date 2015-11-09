@@ -265,7 +265,7 @@ def get_front_end_url(request):
     else:
         host = request.get_host()
         result = 'https://' if request.is_secure() else 'http://'
-        m = re.search(r'(%s)\.(\S+)$' % settings.BACK_END_PREFIX_REGEX, host)
+        m = re.search(r'^(%s)\.(\S+)$' % settings.BACK_END_PREFIX_REGEX, host)
         if m:
             result += m.group(2)
         else:
