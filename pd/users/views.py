@@ -16,6 +16,7 @@ from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.models import User
 from django.contrib.auth.hashers import make_password
+from django.contrib.sessions.models import Session
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError, PermissionDenied
 from django.core.urlresolvers import reverse
@@ -34,7 +35,7 @@ from django.utils.formats import number_format
 from django.views.generic.base import View, TemplateView
 from django.views.generic.edit import UpdateView, CreateView, FormView
 from django.views.generic.detail import DetailView
-    
+
 from captcha.client import submit
 
 from wkhtmltopdf.views import PDFTemplateResponse
@@ -65,7 +66,8 @@ from persons.models import AlivePerson, Phone, CustomPlace
 from burials.models import Cemetery, Area, Burial, Place, Grave
 from billing.models import Wallet, Rate, Currency
 from orders.models import Product, Order, Service, ProductCategory
-from pd.views import PaginateListView, RequestToFormMixin, FormInvalidMixin, get_front_end_url, ServiceException
+from pd.views import PaginateListView, RequestToFormMixin, FormInvalidMixin, \
+                     get_front_end_host, get_front_end_url, ServiceException
 from geo.models import Location, Country
 
 from users.serializers import StoreSerializer, OrgSerializer, OrgShort2Serializer, \
@@ -282,6 +284,37 @@ class ApiAuthSignoutView(APIView):
         return Response(data={}, status=200)
 
 api_auth_signout = ApiAuthSignoutView.as_view()
+
+class ApiAuthCookiesView(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def do_it(self, request, token=None):
+        user_token, created = Token.objects.get_or_create(user=request.user)
+        if token is not None and (created or token != user_token.key):
+            return Response(
+                status=400,
+                data=dict(
+                    status='error',
+                    message=_(u"Несовпадение переданного токена и токена пользователя")
+            ))
+        response = Response(data={}, status=200)
+        response.set_cookie(
+            'client_auth_token',
+            user_token.key,
+            secure=settings.SESSION_COOKIE_SECURE or None,
+            max_age = settings.SESSION_COOKIE_AGE,
+            domain=u".%s" % get_front_end_host(request),
+        )
+        return response
+
+    def post(self, request):
+        return self.do_it(request)
+
+    def get(self, request):
+        token=request.GET.get('token') or ''
+        return self.do_it(request, token=token)
+
+api_auth_cookies = ApiAuthCookiesView.as_view()
 
 class ApiAuthSignupView(CheckRecaptchaMixin, ApiAuthSigninView):
     """
