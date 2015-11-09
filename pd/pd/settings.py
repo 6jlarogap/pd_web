@@ -320,14 +320,14 @@ REDIRECT_LOGIN_TO_FRONT_END = False
 # Если работаем с налаженным front-end:
 # ------------------------------------
 # Начальная страница. Пользователь попадает на pd.ru. Это front-end,
-# использующий ссылки на org.pd.ru, что является back-end.
+# использующий ссылки на org.pd.ru (api.pd.ru), что является back-end.
 # Иногда потребуется внутри back-end вычислять адрес front-end,
 # для чего:
-BACK_END_PREFIX = 'org.'
+BACK_END_PREFIX_REGEX = r'org|api'
 # В отладочных целях может использоваться (в local_settings.py):
 FRONT_END_URL = None
 # Если задан, например, FRONT_END_URL = 'http://localhost/api/',
-# то действие BACK_END_PREFIX отменяется
+# то действие BACK_END_PREFIX_REGEX отменяется
 
 # Учетные записи для SMS- службы рассылки СМС-сообщений,
 # на разные страны могут быть разные учетные записи
