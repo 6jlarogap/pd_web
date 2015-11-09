@@ -231,20 +231,28 @@ class FormInvalidMixin(BaseFormView):
         messages.error(self.request, _(u'Обнаружены ошибки, их необходимо исправить'))
         return super(FormInvalidMixin, self).form_invalid(form, *args, **kwargs)
 
+def get_front_end_host(request):
+    if settings.FRONT_END_URL:
+        result = settings.FRONT_END_URL
+        result = re.sub(r'^https?://', '', result, flags=re.I)
+    else:
+        host = request.get_host()
+        m = re.search(r'^(%s)\.(\S+)$' % settings.BACK_END_PREFIX_REGEX, host, flags=re.I)
+        if m:
+            result = m.group(2).lower()
+        else:
+            # Затычка. Невозможная ситуация в реальной работе
+            result = host
+    return result
+
 def get_front_end_url(request):
     if settings.FRONT_END_URL:
         result = settings.FRONT_END_URL
         if not result.endswith('/'):
             result += '/'
     else:
-        host = request.get_host()
         result = 'https://' if request.is_secure() else 'http://'
-        m = re.search(r'^(%s)\.(\S+)$' % settings.BACK_END_PREFIX_REGEX, host)
-        if m:
-            result += m.group(2)
-        else:
-            # Затычка. Невозможная ситуация в реальной работе
-            result += host
+        result += get_front_end_host(request)
         # ВНИМАНИЕ: заканчиваем на '/'
         result += '/'
     return result
