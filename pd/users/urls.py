@@ -12,6 +12,8 @@ urlpatterns = patterns('users.views',
     url(r'^api/auth/signup/?$', 'api_auth_signup', name='api_auth_signup'),
     url(r'^api/auth/signout/?$', 'api_auth_signout', name='api_auth_signout'),
 
+    url(r'^api/auth/cookies/?$', 'api_auth_cookies', name='api_auth_cookies'),
+
     url(r'^api/profile/?$', 'api_profile', name='api_profile'),
     url(r'^api/settings/?$', 'api_settings', name='api_settings'),
 
