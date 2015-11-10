@@ -42,3 +42,14 @@ app.factory('Cemetery', function($resource){
     })
 });
 
+app.factory('CemeteryEditors', function($resource){
+    return $resource('/api/cemetery-editors', {},{
+        update:{
+            method:'PUT',
+            params:{
+                format:'json'
+            }
+        }
+    })
+});
+

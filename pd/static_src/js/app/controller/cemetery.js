@@ -1,6 +1,6 @@
 ﻿'use strict';
 
-function CemeteryCtrl($rootScope, $scope, $http, $location, $resource, naturalService, Cemetery) {
+function CemeteryCtrl($rootScope, $scope, $http, $location, $resource, naturalService, Cemetery, CemeteryEditors) {
 
     "use strict";
     var object_url = '/api/cemetery';

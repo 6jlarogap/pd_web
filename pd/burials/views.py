@@ -56,7 +56,7 @@ from serializers import CemeterySerializer, AreaSerializer, PlaceSerializer, Are
     CemeteryClientSiteSerializer, ApiClientSitePlacesSerializer
 
 from persons.serializers import AlivePersonSerializer, PhoneSerializer
-from users.serializers import UserFioLoginSerializer
+from users.serializers import UserFioLoginSerializer, ProfileFioLoginSerializer
 from geo.serializers import LocationSerializer, LocationStaticSerializer, LocationDataSerializer
 from logs.serializers import PlaceLogSerializer
 
@@ -235,6 +235,35 @@ class CemeteryViewSet(CaretakerMixin, viewsets.ModelViewSet):
         return Response(status=200, data=dict(
             is_editable=cemetery in Cemetery.editable_ugh_cemeteries(request.user)
         ))
+
+class CemeteryEditorsView(APIView):
+    permission_classes = (PermitIfUgh,)
+
+    def get_cemetery_profiles(self, request, pk):
+        cemetery = get_object_or_404(
+            Cemetery,
+            pk=pk,
+            ugh=request.user.profile.org)
+        return cemetery, Profile.objects.filter(cemeteries=cemetery)
+        
+    def get(self, request):
+        cemetery, profiles = self.get_cemetery_profiles(
+            request,
+            request.GET.get('cemeteryID')
+        )
+        return Response([ProfileFioLoginSerializer(p).data for p in profiles], status=200)
+
+    def put(self, request):
+        cemetery, previous_profiles = self.get_cemetery_profiles(
+            request=request,
+            pk=request.DATA.get('cemeteryID')
+        )
+        cemetery_editors = request.DATA.get('cemetery_editors', [])
+        for profile in Profile.objects.filter(org=cemetery.ugh):
+            print profile.pk
+        return Response({}, status=200)
+
+api_cemeteries_editors = CemeteryEditorsView.as_view()
 
 class CemeteryList(UGHRequiredMixin, ListView):
     template_name = 'cemetery_list.html'

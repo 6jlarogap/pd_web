@@ -2,7 +2,7 @@
 app.controller('CemeteryViewCtrl',
 function CemeteryViewCtrl(
         $scope, $http, $resource, $location,  $routeParams, 
-        Cemetery, Area, AreaPurpose, Place, Phone, Address, ymapData, naturalService, pdYandex) {
+        Cemetery, Area, AreaPurpose, Place, Phone, Address, ymapData, naturalService, pdYandex, CemeteryEditors) {
 
     "use strict";
     $scope.version_str = version_str;
@@ -122,6 +122,9 @@ function CemeteryViewCtrl(
             $scope.area_list = result;
             $scope.area_list.sort(function(a,b){return naturalService.naturalSortField(a,b,'name')});
         });
+        CemeteryEditors.query({cemeteryID: $routeParams.cemetery_id}, function(result) {
+            $scope.cemetery_editors = result;
+        });
     }; // end of scope.update function
 
     // Dialog
@@ -153,6 +156,11 @@ function CemeteryViewCtrl(
         $scope.editor.cemetery.obj_address = $scope.editor.cemetery_address;
         $scope.editor.cemetery.caretaker = $scope.editor.caretaker;
         $scope.editor.cemetery.$update(function(){
+            CemeteryEditors.update({
+                cemeteryID: $scope.cemetery.id,
+                cemetery_editors:$scope.cemetery_editors
+            }, function(result) {
+            });
             $scope.closeEditForm();
             $scope.update();
             noty({text: 'Изменения сохранены', type:'success', layout:'topRight'});

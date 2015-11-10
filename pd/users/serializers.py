@@ -334,6 +334,18 @@ class UserFioLoginSerializer(UserProfileMixin, serializers.ModelSerializer):
         else:
             return u"(%s)" % user.username
 
+class ProfileFioLoginSerializer(serializers.ModelSerializer):
+    fio = serializers.SerializerMethodField('fio_func')
+
+    class Meta:
+        model = Profile
+        fields = ('id', 'fio')
+
+    def fio_func(self, profile):
+        result = u"(%s)" % profile.user.username
+        if profile.user_last_name:
+            result = u"%s %s" % (profile.last_name_initials(), result)
+        return result
 
 class OrgReviewSerializer(CreatedAtMixin, serializers.ModelSerializer):
     isPositive = Field(source='is_positive')
