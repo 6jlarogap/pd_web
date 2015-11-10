@@ -34,7 +34,7 @@ from burials.models import Cemetery, Place, Area, BurialFiles, Grave, Burial, Bu
 from burials.burials_views import *
 from logs.models import write_log, log_object, prepare_m2m_log, compare_obj, LogOperation
 from django.contrib.auth.models import User
-from users.models import Profile, Org, CustomerProfile, PermitIfUgh
+from users.models import Profile, Org, CustomerProfile, PermitIfUgh, Role
 from users.views import SupervisorRequiredMixin, UGHRequiredMixin, UghOrLoruRequiredMixin, ApiClientSiteMixin
 from persons.models import Phone, AlivePerson, CustomPlace
 from geo.models import Location
@@ -244,7 +244,10 @@ class CemeteryEditorsView(APIView):
             Cemetery,
             pk=pk,
             ugh=request.user.profile.org)
-        return cemetery, Profile.objects.filter(cemeteries=cemetery)
+        return cemetery, Profile.objects.filter(
+                cemeteries=cemetery,
+                role__name=Role.ROLE_REGISTRATOR,
+            ).distinct()
         
     def get(self, request):
         cemetery, profiles = self.get_cemetery_profiles(
@@ -258,9 +261,24 @@ class CemeteryEditorsView(APIView):
             request=request,
             pk=request.DATA.get('cemeteryID')
         )
-        cemetery_editors = request.DATA.get('cemetery_editors', [])
-        for profile in Profile.objects.filter(org=cemetery.ugh):
-            print profile.pk
+        new_cemetery_editor_ids = [item['id'] for item in request.DATA.get('cemetery_editors', [])]
+        new_profiles = [Profile.objects.get(pk=id_) for id_ in new_cemetery_editor_ids]
+
+        previous_profiles = set(previous_profiles)
+        new_profiles = set(new_profiles)
+
+        # set with elements in previous_profiles but not in new_profiles
+        #
+        to_delete = previous_profiles - new_profiles
+
+        # set with elements in new_profiles but not in previous_profiles
+        #
+        to_add = new_profiles - previous_profiles
+        
+        for profile in to_delete:
+            profile.cemeteries.remove(cemetery)
+        for profile in to_add:
+            profile.cemeteries.add(cemetery)
         return Response({}, status=200)
 
 api_cemeteries_editors = CemeteryEditorsView.as_view()
