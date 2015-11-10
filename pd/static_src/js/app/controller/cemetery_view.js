@@ -66,6 +66,13 @@ function CemeteryViewCtrl(
             $scope.can_add_area = result.can_add_area;
             $scope.editor.caretaker = result.cemetery.caretaker;
             $scope.editor.caretakers = result.caretakers;
+            
+            $scope.ugh_registrators = result.ugh_registrators;
+            // $scope.cemetery_editors = result.cemetery_editors; -> не работает
+            // $scope.cemetery_editors = [result.ugh_registrators[0]]; -> работает
+            // придется чудить :(
+
+            $scope.cemetery_editors = result.cemetery_editors;
             $scope.caretaker_show = caretakerShow(
                 result.cemetery.caretaker,
                 result.caretakers
@@ -122,9 +129,9 @@ function CemeteryViewCtrl(
             $scope.area_list = result;
             $scope.area_list.sort(function(a,b){return naturalService.naturalSortField(a,b,'name')});
         });
-        CemeteryEditors.query({cemeteryID: $routeParams.cemetery_id}, function(result) {
-            $scope.cemetery_editors = result;
-        });
+//         CemeteryEditors.query({cemeteryID: $routeParams.cemetery_id}, function(result) {
+//             $scope.cemetery_editors = result;
+//         });
     }; // end of scope.update function
 
     // Dialog

@@ -60,3 +60,13 @@
   <textarea ng-model="editor.cemetery.time_slots" id="id_time_slots" rows="10" cols="40" name="time_slots"></textarea>
   <span class="helptext">В формате ЧЧ:ММ, по одному на строку</span>
 </p>
+
+
+<p>
+    <label for="id_cemetery_editors">Доступно для правки пользователям:</label>
+    <select multiple ng-multiple="true" ng-model="cemetery_editors" ng-options="obj.fio for obj in ugh_registrators" id="id_cemetery_editors">
+    </select>
+    <br /><span class="helptext">  Удерживайте &quot;Control&quot; (или &quot;Command&quot; на Mac), чтобы выбрать несколько значений.</span>
+</p>
+
+{{ cemetery_editors }}

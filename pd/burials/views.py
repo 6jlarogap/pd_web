@@ -215,6 +215,8 @@ class CemeteryViewSet(CaretakerMixin, viewsets.ModelViewSet):
         data['caretakers'] = self.get_caretakers(cemetery)
         data['can_add_area'] = cemetery in Cemetery.editable_ugh_cemeteries(request.user)
         data['is_editable'] = request.user.profile.is_admin() or data['can_add_area']
+        data['ugh_registrators'] = self.get_ugh_registrators(cemetery)
+        data['cemetery_editors'] = self.get_cemetery_editors(cemetery)
         return Response(status=200, data=data)
 
     @action(methods=['GET',])
@@ -235,6 +237,27 @@ class CemeteryViewSet(CaretakerMixin, viewsets.ModelViewSet):
         return Response(status=200, data=dict(
             is_editable=cemetery in Cemetery.editable_ugh_cemeteries(request.user)
         ))
+
+    def get_ugh_registrators(self, cemetery):
+        return [
+                ProfileFioLoginSerializer(p).data for p in Profile.objects.filter(
+                    org=cemetery.ugh,
+                    role__name=Role.ROLE_REGISTRATOR,
+                ).distinct()
+        ]
+
+    def get_cemetery_editors(self, cemetery):
+        return [
+                ProfileFioLoginSerializer(p).data for p in Profile.objects.filter(
+                    cemeteries=cemetery,
+                    role__name=Role.ROLE_REGISTRATOR,
+                ).distinct()
+        ]
+
+    @action(methods=['GET',])
+    def getughregistrators(self, request, pk=None):
+        cemetery = get_object_or_404(self.get_queryset(), pk=pk)
+        return Response(status=200, data=self.get_ugh_registrators(cemetery))
 
 class CemeteryEditorsView(APIView):
     permission_classes = (PermitIfUgh,)

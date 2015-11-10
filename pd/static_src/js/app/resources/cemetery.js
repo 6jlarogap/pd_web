@@ -27,6 +27,12 @@ app.factory('Cemetery', function($resource){
             },
             isArray: false
         },
+        getUghRegistrators: {
+            method: 'GET',
+            params: {
+                action: 'getughregistrators',
+            },
+        },
         save: {
             method:'POST',
             params:{
