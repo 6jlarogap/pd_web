@@ -36,10 +36,20 @@ function CemeteryCtrl($rootScope, $scope, $http, $location, $resource, naturalSe
                 archive_burial_fact_date_required:false,
                 archive_burial_account_number_required:false
             });
-        Cemetery.canAddCemetery(
+        Cemetery.dataForCreate(
                     {cemeteryID:0}, // fake cemetery id to find out if the user may add cemetery
                     function(result) {
-           $scope.can_add_cemetery = result.can_add_cemetery; 
+            $scope.can_add_cemetery = result.can_add_cemetery; 
+            $scope.ugh_registrators = result.ugh_registrators; 
+            $scope.editor.cemetery_editors = [];
+            if (result.profile_pk) {
+                for (var i=0; i< $scope.ugh_registrators.length; i++) {
+                        if ($scope.ugh_registrators[i].id == result.profile_pk) {
+                            $scope.editor.cemetery_editors.push($scope.ugh_registrators[i]);
+                            break;
+                        }
+                    }
+            }
         });
         Cemetery.query(function(result) {
             $scope.cemetery_list = result;
@@ -70,6 +80,15 @@ function CemeteryCtrl($rootScope, $scope, $http, $location, $resource, naturalSe
         $scope.editor.cemetery.time_end = date2time($scope.editor.cemetery.time_end);
 
         $scope.editor.cemetery.$save(function(result){
+            $scope.cemetery_editors_pks = [];
+             for (var i=0; i < $scope.editor.cemetery_editors.length; i++) {
+                 $scope.cemetery_editors_pks.push($scope.editor.cemetery_editors[i].id);
+             }
+             CemeteryEditors.update({
+                 cemetery_id: result.id,
+                 cemetery_editors_pks:$scope.cemetery_editors_pks
+             }, function(result) {
+             });
             $scope.closeAddModal();
             $location.path('/manage/cemetery/'+result.id);
             $location.replace();

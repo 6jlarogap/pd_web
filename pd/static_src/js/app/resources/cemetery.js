@@ -13,10 +13,10 @@ app.factory('Cemetery', function($resource){
             },
             isArray: false
         },
-        canAddCemetery: {
+        dataForCreate: {
             method: 'GET',
             params: {
-                action: 'canaddcemetery',
+                action: 'dataforcreate',
             },
             isArray: false
         },

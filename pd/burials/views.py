@@ -142,6 +142,12 @@ class CemeteryViewSet(CaretakerMixin, viewsets.ModelViewSet):
             return Response(status=400, data=data)
         return super(CemeteryViewSet, self).create(request, *args, **kwargs)
 
+    def post_save(self, object, created=False):
+        if created:
+            write_log(self.request, object, _(u"Кладбище создано"))
+            write_log(self.request, self.request.user.profile.org,
+                      _(u"Создано кладбище '%s'") % object.name)
+
 
     def update(self, request, *args, **kwargs):
         try:
@@ -220,15 +226,27 @@ class CemeteryViewSet(CaretakerMixin, viewsets.ModelViewSet):
         return Response(status=200, data=data)
 
     @action(methods=['GET',])
-    def canaddcemetery(self, request, pk=None):
+    def dataforcreate(self, request, pk=None):
         """
-        Can Add Cemetery: admin or registrator
+        Данные для создания кладбища
+        
+        -   может ли создавать кладбище
+        -   id текущего пользователя, если это смотритель: он предлагается 
+            как единственный cemetery editor
+        -   список всех смотрителей
         """
+        profile = request.user.profile
+        if profile.is_registrator():
+            profile_pk = profile.pk
+        else:
+            profile_pk = None
         return Response(
             status=200,
             data=dict(
                 can_add_cemetery=request.user.profile.is_admin() or \
-                                 request.user.profile.is_registrator()
+                                 request.user.profile.is_registrator(),
+                profile_pk=profile_pk,
+                ugh_registrators=self.get_ugh_registrators(request.user.profile.org)
         ))
 
     @action(methods=['GET',])
@@ -263,7 +281,6 @@ class CemeteryEditorsView(APIView):
     permission_classes = (PermitIfUgh,)
 
     def put(self, request):
-        print request.DATA
         cemetery = get_object_or_404(
             Cemetery,
             pk=request.DATA.get('cemetery_id'),
