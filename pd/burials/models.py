@@ -379,7 +379,7 @@ class Place(SafeDeleteMixin, GeoPointModel, BaseModelManualDtCreated):
 
     def create_graves(self, graves_count, grave_number):
         """
-        Создать place_count могил для только что созданного place
+        Создать graves_count могил для только что созданного place
         
         Возвращаем указатель на могилу c номером grave_number
         """
@@ -395,6 +395,8 @@ class Place(SafeDeleteMixin, GeoPointModel, BaseModelManualDtCreated):
         Создать могилы, если надо
         
         Применяется для аннулированного зх при его де-аннулировании.
+        Создание могилы также применяется, если в месте не было могил,
+        а закрывается захоронение в 1-ю могилу (grave_number == 1)
         Возвращаем указатель на могилу
         """
         result = None
@@ -1137,7 +1139,10 @@ class Burial(SafeDeleteMixin, GetLogsMixin, BaseModel):
             graves_count = max(graves_count, self.grave_number)
             self.grave = place.create_graves(graves_count, self.grave_number)
         elif not self.is_annulated():
-            self.grave = Grave.objects.get(place=place, grave_number=self.grave_number)
+            # В подавляющем большинстве случаев могила у существующего места
+            # будет найдена. Одно исключение: в месте не было могил,
+            # а создается новая, с номером 1
+            self.grave = place.get_or_create_graves(grave_number=self.grave_number)
         if self.is_annulated():
             self.grave = None
             
