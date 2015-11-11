@@ -288,8 +288,10 @@ class CemeteryEditorsView(APIView):
         
         for profile in to_delete:
             profile.cemeteries.remove(cemetery)
+            write_log(request, profile, _(u"Отменен доступ к кладбищу '%s'") % cemetery)
         for profile in to_add:
             profile.cemeteries.add(cemetery)
+            write_log(request, profile, _(u"Добавлен доступ к кладбищу '%s'") % cemetery)
         return Response({}, status=200)
 
 api_cemeteries_editors = CemeteryEditorsView.as_view()

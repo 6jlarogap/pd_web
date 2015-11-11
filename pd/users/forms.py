@@ -66,7 +66,10 @@ class ProfileDataForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelForm):
         if not request.user.profile.org.is_loru():
             del self.fields['is_agent']
 
-        if request.user.profile.org.is_ugh() and not request.user.profile.is_admin():
+        if request.user.profile.org.is_ugh() and \
+           not request.user.profile.is_admin() and \
+           self.instance.pk and \
+           self.instance.pk == request.user.profile.pk:
             my_profile = True
         self.my_profile = my_profile
         if my_profile:

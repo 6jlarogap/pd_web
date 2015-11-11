@@ -3,6 +3,14 @@
          maxlength="255">
   <span class="error" ng-show="cemeteryEditForm.cemetery_name.$error.required">Не указано название кладбища</span>
 </p>
+
+<p>
+    <label for="id_cemetery_editors">Доступно для правки пользователям:</label>
+    <select multiple ng-multiple="true" ng-model="editor.cemetery_editors" ng-options="obj.fio for obj in ugh_registrators" id="id_cemetery_editors">
+    </select>
+    <br /><span class="helptext">  Удерживайте &quot;Control&quot; (или &quot;Command&quot; на Mac), чтобы выбрать несколько значений.</span>
+</p>
+
 <table>
   <tr>
     <td>
@@ -61,14 +69,3 @@
   <span class="helptext">В формате ЧЧ:ММ, по одному на строку</span>
 </p>
 
-
-<p>
-    <label for="id_cemetery_editors">Доступно для правки пользователям:</label>
-    <select multiple ng-multiple="true" ng-model="editor.cemetery_editors" ng-options="obj.fio for obj in ugh_registrators" id="id_cemetery_editors">
-    </select>
-    <br /><span class="helptext">  Удерживайте &quot;Control&quot; (или &quot;Command&quot; на Mac), чтобы выбрать несколько значений.</span>
-</p>
-<br />
-cemetery_editors:
-<br />
-{{ editor.cemetery_editors }}

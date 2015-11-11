@@ -3,6 +3,24 @@
 {% load i18n %}
 
 {% block content %}
+
+{% if request.user.profile.is_ugh and not request.user.profile.is_admin and not my_profile %}
+    <script type="text/javascript">
+        $(function() {
+            var form = document.forms[0];
+            [].slice.call( form.elements ).forEach(function(item){
+                switch (item.type) {
+                    case 'select-one':
+                    case 'checkbox':
+                        item.disabled = 'true';
+                    default:
+                        item.readOnly = 'true';
+                }
+            });
+        });
+    </script>
+{% endif %}
+
     {% if form.instance.pk %}
         <h2>{% trans "Пользователь" %}</h2>
         <h4>
@@ -101,9 +119,12 @@
             <br />
         {% endif %}
 
-        <p>
-            <input type="submit" class="btn" value="{% trans "cохранить" %}"/>
-        </p>
+        {% if request.user.profile.is_ugh and not request.user.profile.is_admin and not my_profile %}
+        {% else %}
+            <p>
+                <input type="submit" class="btn" value="{% trans "cохранить" %}"/>
+            </p>
+        {% endif %}
     </form>
 
     {% if form.my_profile and form.instance.org.is_ugh %}
