@@ -215,8 +215,8 @@ class CemeteryViewSet(CaretakerMixin, viewsets.ModelViewSet):
         data['caretakers'] = self.get_caretakers(cemetery)
         data['can_add_area'] = cemetery in Cemetery.editable_ugh_cemeteries(request.user)
         data['is_editable'] = request.user.profile.is_admin() or data['can_add_area']
-        data['ugh_registrators'] = self.get_ugh_registrators(cemetery)
-        data['cemetery_editors'] = self.get_cemetery_editors(cemetery)
+        data['ugh_registrators'] = self.get_ugh_registrators(request.user.profile.org)
+        data['cemetery_editors_pks'] = self.get_cemetery_editors_pks(cemetery)
         return Response(status=200, data=data)
 
     @action(methods=['GET',])
@@ -238,17 +238,17 @@ class CemeteryViewSet(CaretakerMixin, viewsets.ModelViewSet):
             is_editable=cemetery in Cemetery.editable_ugh_cemeteries(request.user)
         ))
 
-    def get_ugh_registrators(self, cemetery):
+    def get_ugh_registrators(self, org):
         return [
                 ProfileFioLoginSerializer(p).data for p in Profile.objects.filter(
-                    org=cemetery.ugh,
+                    org=org,
                     role__name=Role.ROLE_REGISTRATOR,
                 ).distinct()
         ]
 
-    def get_cemetery_editors(self, cemetery):
+    def get_cemetery_editors_pks(self, cemetery):
         return [
-                ProfileFioLoginSerializer(p).data for p in Profile.objects.filter(
+                p.pk for p in Profile.objects.filter(
                     cemeteries=cemetery,
                     role__name=Role.ROLE_REGISTRATOR,
                 ).distinct()
@@ -257,34 +257,22 @@ class CemeteryViewSet(CaretakerMixin, viewsets.ModelViewSet):
     @action(methods=['GET',])
     def getughregistrators(self, request, pk=None):
         cemetery = get_object_or_404(self.get_queryset(), pk=pk)
-        return Response(status=200, data=self.get_ugh_registrators(cemetery))
+        return Response(status=200, data=self.get_ugh_registrators(request.user.profile.org))
 
 class CemeteryEditorsView(APIView):
     permission_classes = (PermitIfUgh,)
 
-    def get_cemetery_profiles(self, request, pk):
+    def put(self, request):
+        print request.DATA
         cemetery = get_object_or_404(
             Cemetery,
-            pk=pk,
+            pk=request.DATA.get('cemetery_id'),
             ugh=request.user.profile.org)
-        return cemetery, Profile.objects.filter(
+        previous_profiles = Profile.objects.filter(
                 cemeteries=cemetery,
                 role__name=Role.ROLE_REGISTRATOR,
             ).distinct()
-        
-    def get(self, request):
-        cemetery, profiles = self.get_cemetery_profiles(
-            request,
-            request.GET.get('cemeteryID')
-        )
-        return Response([ProfileFioLoginSerializer(p).data for p in profiles], status=200)
-
-    def put(self, request):
-        cemetery, previous_profiles = self.get_cemetery_profiles(
-            request=request,
-            pk=request.DATA.get('cemeteryID')
-        )
-        new_cemetery_editor_ids = [item['id'] for item in request.DATA.get('cemetery_editors', [])]
+        new_cemetery_editor_ids = request.DATA.get('cemetery_editors_pks', [])
         new_profiles = [Profile.objects.get(pk=id_) for id_ in new_cemetery_editor_ids]
 
         previous_profiles = set(previous_profiles)

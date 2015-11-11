@@ -68,11 +68,13 @@ function CemeteryViewCtrl(
             $scope.editor.caretakers = result.caretakers;
             
             $scope.ugh_registrators = result.ugh_registrators;
-            // $scope.cemetery_editors = result.cemetery_editors; -> не работает
-            // $scope.cemetery_editors = [result.ugh_registrators[0]]; -> работает
-            // придется чудить :(
-
-            $scope.cemetery_editors = result.cemetery_editors;
+            $scope.cemetery_editors_pks = result.cemetery_editors_pks;
+            $scope.cemetery_editors = [];
+            for (var i=0; i< $scope.ugh_registrators.length; i++) {
+                if ($scope.cemetery_editors_pks.indexOf($scope.ugh_registrators[i].id) >= 0) {
+                    $scope.cemetery_editors.push($scope.ugh_registrators[i]);
+                }
+            }
             $scope.caretaker_show = caretakerShow(
                 result.cemetery.caretaker,
                 result.caretakers
@@ -129,9 +131,6 @@ function CemeteryViewCtrl(
             $scope.area_list = result;
             $scope.area_list.sort(function(a,b){return naturalService.naturalSortField(a,b,'name')});
         });
-//         CemeteryEditors.query({cemeteryID: $routeParams.cemetery_id}, function(result) {
-//             $scope.cemetery_editors = result;
-//         });
     }; // end of scope.update function
 
     // Dialog
@@ -157,15 +156,20 @@ function CemeteryViewCtrl(
     };
 
     $scope.saveEditForm = function() {
+        console.log($scope.cemetery_editors);
         $scope.editor.cemetery.time_begin = date2time($scope.editor.cemetery.time_begin);
         $scope.editor.cemetery.time_end = date2time($scope.editor.cemetery.time_end);
         $scope.editor.cemetery.obj_phones = $scope.editor.phones;
         $scope.editor.cemetery.obj_address = $scope.editor.cemetery_address;
         $scope.editor.cemetery.caretaker = $scope.editor.caretaker;
+        $scope.cemetery_editors_pks = [];
+        for (var i=0; i < $scope.cemetery_editors.length; i++) {
+            $scope.cemetery_editors_pks.push($scope.cemetery_editors[i].id);
+        }
         $scope.editor.cemetery.$update(function(){
             CemeteryEditors.update({
-                cemeteryID: $scope.cemetery.id,
-                cemetery_editors:$scope.cemetery_editors
+                cemetery_id: $scope.cemetery.id,
+                cemetery_editors_pks:$scope.cemetery_editors_pks
             }, function(result) {
             });
             $scope.closeEditForm();
