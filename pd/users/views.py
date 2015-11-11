@@ -298,12 +298,20 @@ class ApiAuthCookiesView(APIView):
                     message=_(u"Несовпадение переданного токена и токена пользователя")
             ))
         response = Response(data={}, status=200)
+        kwargs = dict(
+            secure=settings.SESSION_COOKIE_SECURE or None,
+            max_age = settings.SESSION_COOKIE_AGE,
+            domain=u".%s" % re.sub(r'\:\d+$','', get_front_end_host(request)),
+        )
         response.set_cookie(
             'client_auth_token',
             user_token.key,
-            secure=settings.SESSION_COOKIE_SECURE or None,
-            max_age = settings.SESSION_COOKIE_AGE,
-            domain=u".%s" % get_front_end_host(request),
+            **kwargs
+        )
+        response.set_cookie(
+            settings.SESSION_COOKIE_NAME,
+            request.session._get_or_create_session_key(),
+            **kwargs
         )
         return response
 
