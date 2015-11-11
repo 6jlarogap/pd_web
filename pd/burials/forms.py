@@ -1105,9 +1105,15 @@ class BurialCommitForm(BurialForm):
             except Place.DoesNotExist:
                 pass
         if place:
-            if place.get_graves_count() < grave_number:
-                msg = _(u"Номер могилы превышает максимальное количество в существующем месте")
-                raise forms.ValidationError(msg)
+            place_graves_count = place.get_graves_count()
+            if place_graves_count < grave_number:
+                if place_graves_count == 0 and grave_number == 1:
+                    # учитываем случай, когда место создано без могил,
+                    # и вводится захоронение в новую могилу, с номером 1
+                    pass
+                else:
+                    msg = _(u"Номер могилы превышает количество могил в существующем месте")
+                    raise forms.ValidationError(msg)
         else:
             #if area and area.places_count  < grave_number:
                 #msg = _(u"Номер могилы превышает количество могил в месте для участка")
