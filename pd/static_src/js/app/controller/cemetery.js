@@ -39,7 +39,6 @@ function CemeteryCtrl($rootScope, $scope, $http, $location, $resource, naturalSe
         Cemetery.dataForCreate(
                     {cemeteryID:0}, // fake cemetery id to find out if the user may add cemetery
                     function(result) {
-            $scope.can_add_cemetery = result.can_add_cemetery; 
             $scope.ugh_registrators = result.ugh_registrators; 
             $scope.editor.cemetery_editors = [];
             if (result.profile_pk) {

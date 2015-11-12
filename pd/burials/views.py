@@ -243,8 +243,6 @@ class CemeteryViewSet(CaretakerMixin, viewsets.ModelViewSet):
         return Response(
             status=200,
             data=dict(
-                can_add_cemetery=request.user.profile.is_admin() or \
-                                 request.user.profile.is_registrator(),
                 profile_pk=profile_pk,
                 ugh_registrators=self.get_ugh_registrators(request.user.profile.org)
         ))
