@@ -297,6 +297,16 @@ class ApiAuthCookiesView(APIView):
                     status='error',
                     message=_(u"Несовпадение переданного токена и токена пользователя")
             ))
+        # Пользователь может быть is_authenticated, но если зашел через Token,
+        # то его сессия не будет аутентифицированной
+        session_key = request.session._get_or_create_session_key()
+        try:
+            session = Session.objects.get(session_key=session_key)
+        except Session.DoesNotExist:
+            session = None
+        if not session or not session.get_decoded().get('_auth_user_id'):
+            request.user.backend = 'django.contrib.auth.backends.ModelBackend'
+            login(request, request.user)
         response = Response(data={}, status=200)
         kwargs = dict(
             secure=settings.SESSION_COOKIE_SECURE or None,
@@ -310,7 +320,7 @@ class ApiAuthCookiesView(APIView):
         )
         response.set_cookie(
             settings.SESSION_COOKIE_NAME,
-            request.session._get_or_create_session_key(),
+            session_key,
             **kwargs
         )
         return response
