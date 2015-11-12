@@ -65,6 +65,7 @@ function CemeteryCtrl($rootScope, $scope, $http, $location, $resource, naturalSe
                         }
                     }
             }
+            $scope.select_users_size = Math.min($scope.ugh_registrators.length + 1, 10);
         });
 
         $('body').css('overflow-y','hidden');

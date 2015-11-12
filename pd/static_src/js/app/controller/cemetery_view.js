@@ -150,6 +150,7 @@ function CemeteryViewCtrl(
                     $scope.editor.cemetery_editors.push($scope.ugh_registrators[i]);
                 }
             }
+            $scope.select_users_size = Math.min($scope.ugh_registrators.length + 1, 10);
         });
 
         $('body').css('overflow-y','hidden');

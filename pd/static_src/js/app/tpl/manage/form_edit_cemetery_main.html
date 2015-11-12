@@ -4,12 +4,23 @@
   <span class="error" ng-show="cemeteryEditForm.cemetery_name.$error.required">Не указано название кладбища</span>
 </p>
 
-<p>
+<table>
+  <tr>
+    <td>
     <label for="id_cemetery_editors">Доступно для правки пользователям:</label>
-    <select multiple ng-multiple="true" ng-model="editor.cemetery_editors" ng-options="obj.fio for obj in ugh_registrators" id="id_cemetery_editors">
+    <select
+        multiple ng-multiple="true"
+        ng-model="editor.cemetery_editors"
+        ng-options="obj.fio for obj in ugh_registrators"
+        id="id_cemetery_editors"
+        size="{{select_users_size}}">
     </select>
-    <br /><span class="helptext">  Удерживайте &quot;Control&quot; (или &quot;Command&quot; на Mac), чтобы выбрать несколько значений.</span>
-</p>
+    </td>
+    <td>&nbsp;</td>
+    <td>
+    <span class="helptext">  Удерживайте &quot;Control&quot; (или &quot;Command&quot; на Mac), чтобы выбрать несколько значений.</span>
+    </td>
+</table>
 
 <table>
   <tr>
@@ -29,6 +40,7 @@
     </td>
   </tr>
 </table>
+<br />
 <p><label for="id_places_algo">Расстановка номеров мест новых ручных и электронных захоронений:</label>
   <select ng-model="editor.cemetery.places_algo" id="id_places_algo">
     <option value="area">По участку</option>

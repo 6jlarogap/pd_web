@@ -345,7 +345,7 @@ class ProfileFioLoginSerializer(serializers.ModelSerializer):
         if profile.user_last_name:
             return profile.full_name()
         else:
-            return u"(%s)" % user.username
+            return u"(%s)" % profile.user.username
 
 class OrgReviewSerializer(CreatedAtMixin, serializers.ModelSerializer):
     isPositive = Field(source='is_positive')
