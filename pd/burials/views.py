@@ -221,19 +221,17 @@ class CemeteryViewSet(CaretakerMixin, viewsets.ModelViewSet):
         data['caretakers'] = self.get_caretakers(cemetery)
         data['can_add_area'] = cemetery in Cemetery.editable_ugh_cemeteries(request.user)
         data['is_editable'] = request.user.profile.is_admin() or data['can_add_area']
-        data['ugh_registrators'] = self.get_ugh_registrators(request.user.profile.org)
-        data['cemetery_editors_pks'] = self.get_cemetery_editors_pks(cemetery)
         return Response(status=200, data=data)
 
     @action(methods=['GET',])
-    def dataforcreate(self, request, pk=None):
+    def authdata(self, request, pk=None):
         """
-        Данные для создания кладбища
+        Данные для создания/редактирования кладбища
         
-        -   может ли создавать кладбище
         -   id текущего пользователя, если это смотритель: он предлагается 
             как единственный cemetery editor
-        -   список всех смотрителей
+        -   список всех регистраторов организации
+        -   список pk всех текущих регистраторов кладбища
         """
         profile = request.user.profile
         if profile.is_registrator():
@@ -244,7 +242,8 @@ class CemeteryViewSet(CaretakerMixin, viewsets.ModelViewSet):
             status=200,
             data=dict(
                 profile_pk=profile_pk,
-                ugh_registrators=self.get_ugh_registrators(request.user.profile.org)
+                ugh_registrators=self.get_ugh_registrators(request.user.profile.org),
+                cemetery_editors_pks=self.get_cemetery_editors_pks(pk),
         ))
 
     @action(methods=['GET',])
@@ -262,18 +261,19 @@ class CemeteryViewSet(CaretakerMixin, viewsets.ModelViewSet):
                 ).distinct()
         ]
 
-    def get_cemetery_editors_pks(self, cemetery):
-        return [
-                p.pk for p in Profile.objects.filter(
-                    cemeteries=cemetery,
-                    role__name=Role.ROLE_REGISTRATOR,
-                ).distinct()
-        ]
-
-    @action(methods=['GET',])
-    def getughregistrators(self, request, pk=None):
-        cemetery = get_object_or_404(self.get_queryset(), pk=pk)
-        return Response(status=200, data=self.get_ugh_registrators(request.user.profile.org))
+    def get_cemetery_editors_pks(self, pk):
+        if pk == "0":
+            pk = None
+        if pk:
+            cemetery = get_object_or_404(Cemetery, pk=pk)
+            return [
+                    p.pk for p in Profile.objects.filter(
+                        cemeteries=cemetery,
+                        role__name=Role.ROLE_REGISTRATOR,
+                    ).distinct()
+            ]
+        else:
+            return []
 
 class CemeteryEditorsView(APIView):
     permission_classes = (PermitIfUgh,)

@@ -13,10 +13,10 @@ app.factory('Cemetery', function($resource){
             },
             isArray: false
         },
-        dataForCreate: {
+        authData: {
             method: 'GET',
             params: {
-                action: 'dataforcreate',
+                action: 'authdata',
             },
             isArray: false
         },
@@ -26,12 +26,6 @@ app.factory('Cemetery', function($resource){
                 action: 'iseditable',
             },
             isArray: false
-        },
-        getUghRegistrators: {
-            method: 'GET',
-            params: {
-                action: 'getughregistrators',
-            },
         },
         save: {
             method:'POST',

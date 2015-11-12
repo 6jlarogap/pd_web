@@ -67,14 +67,6 @@ function CemeteryViewCtrl(
             $scope.editor.caretaker = result.cemetery.caretaker;
             $scope.editor.caretakers = result.caretakers;
             
-            $scope.ugh_registrators = result.ugh_registrators;
-            $scope.cemetery_editors_pks = result.cemetery_editors_pks;
-            $scope.editor.cemetery_editors = [];
-            for (var i=0; i< $scope.ugh_registrators.length; i++) {
-                if ($scope.cemetery_editors_pks.indexOf($scope.ugh_registrators[i].id) >= 0) {
-                    $scope.editor.cemetery_editors.push($scope.ugh_registrators[i]);
-                }
-            }
             $scope.caretaker_show = caretakerShow(
                 result.cemetery.caretaker,
                 result.caretakers
@@ -146,6 +138,20 @@ function CemeteryViewCtrl(
         $scope.editor.cemetery = angular.copy($scope.cemetery);
         $scope.editor.phones = angular.copy($scope.phones);
         $scope.editor.cemetery_address = angular.copy($scope.cemetery_address); 
+
+        Cemetery.authData(
+                    {cemeteryID: $scope.cemetery.id},
+                    function(result) {
+            $scope.ugh_registrators = result.ugh_registrators; 
+            $scope.editor.cemetery_editors = [];
+            $scope.cemetery_editors_pks = result.cemetery_editors_pks;
+            for (var i=0; i< $scope.ugh_registrators.length; i++) {
+                if ($scope.cemetery_editors_pks.indexOf($scope.ugh_registrators[i].id) >= 0) {
+                    $scope.editor.cemetery_editors.push($scope.ugh_registrators[i]);
+                }
+            }
+        });
+
         $('body').css('overflow-y','hidden');
     };
 
