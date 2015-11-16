@@ -4,7 +4,7 @@
 
 {% block content %}
 
-{% if request.user.profile.is_ugh and not request.user.profile.is_admin and not my_profile %}
+{% if request.user.profile.is_ugh and not request.user.profile.is_admin and not form.my_profile %}
     <script type="text/javascript">
         $(function() {
             var form = document.forms[0];
@@ -118,8 +118,7 @@
             </p>
             <br />
         {% endif %}
-
-        {% if request.user.profile.is_ugh and not request.user.profile.is_admin and not my_profile %}
+        {% if request.user.profile.is_ugh and not request.user.profile.is_admin and not form.my_profile %}
         {% else %}
             <p>
                 <input type="submit" class="btn" value="{% trans "cохранить" %}"/>
