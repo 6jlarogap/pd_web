@@ -95,7 +95,13 @@
                         <span class="icon-bar"></span>
                         <span class="icon-bar"></span>
                     </a>
-                    <a class="brand" href="/">Похоронное Дело</a>
+                    <script>
+                     $(function() {
+                         var name_org = $('#ellypsed_name_org').html();
+                         $('#ellypsed_name_org').html(strTruncate_(name_org, 35, true));
+                     });
+                    </script>
+                    <a class="brand" id="ellypsed_name_org" href="/">{% if user.profile.is_ugh or user.profile.is_loru %}{{ user.profile.org.name }}{% else %}Похоронное Дело{% endif %}</a>
                     <div class="btn-group pull-right dropdown" id="support_menu">
                         <a data-toggle="dropdown" href="#support_menu" title="{% trans "Служба поддержки" %}"><img src="/static/help-question.png">
                         </a>
