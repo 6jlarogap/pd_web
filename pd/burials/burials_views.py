@@ -991,7 +991,6 @@ class EditBurialView(BurialsListGenericMixin, CreateBurial):
                     return super(EditBurialView, self).dispatch(request, *args, **kwargs)
                 return redirect(reverse('view_burial', args=[b.pk]) + order_parm)
         elif request.user.profile.is_ugh():
-            print Cemetery.editable_ugh_cemeteries(request.user)
             if not b.cemetery or b.cemetery in Cemetery.editable_ugh_cemeteries(request.user):
                 pass
             else:
