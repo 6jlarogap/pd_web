@@ -53,6 +53,20 @@ class UserPhoto(Files):
 
     user = models.OneToOneField(User, related_name='user_photo_list')
 
+class Role(models.Model):
+
+    ROLE_ADMIN = 'admin'
+    ROLE_REGISTRATOR = 'registrator'
+
+    name = models.CharField(_(u"Код"), max_length=255, editable=False)
+    title = models.CharField(_(u"Название"), max_length=255, editable=False)
+
+    class Meta:
+        verbose_name = _(u'Роль пользователя')
+
+    def __unicode__(self):
+        return self.title
+
 class CommonProfile(BaseModel):
     USERNAME_HELPTEXT = _(u'До 30 символов: латинские буквы, цифры, дефисы, знаки подчеркивания, @')
 
@@ -184,6 +198,10 @@ class Profile(CommonProfile):
     cemetery = models.ForeignKey('burials.Cemetery', verbose_name=_(u"Кладбище"), blank=True, null=True)
     area = models.ForeignKey('burials.Area', verbose_name=_(u"Участок"), blank=True, null=True)
 
+    role = models.ManyToManyField(Role, verbose_name=_(u"Роли в организации"), blank=True)
+    cemeteries = models.ManyToManyField('burials.Cemetery',
+                 verbose_name=_(u"Доступные кладбища"), related_name='rw_profiles', blank=True)
+
     lat = models.DecimalField(max_digits=30, decimal_places=27, blank=True, null=True)
     lng = models.DecimalField(max_digits=30, decimal_places=27, blank=True, null=True)
 
@@ -218,6 +236,16 @@ class Profile(CommonProfile):
             ) if self.org else None
         ))
         return result
+
+    def is_admin(self):
+        return self.role.filter(name=Role.ROLE_ADMIN).exists()
+
+    def is_registrator(self):
+        return self.is_ugh() and self.role.filter(name=Role.ROLE_REGISTRATOR).exists()
+
+    def has_all_cemeteries(self):
+        Cemetery = get_model('burials', 'Cemetery')
+        return self.cemeteries.all().count() == Cemetery.objects.filter(ugh=self.org).count()
 
 def disposable_token_to_user(token):
     for model in (Profile, CustomerProfile):

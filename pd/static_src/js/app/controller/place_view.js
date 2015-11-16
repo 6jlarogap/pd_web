@@ -104,6 +104,7 @@
       $scope.cemetery = new Cemetery(result.cemetery);
       $scope.area = new Area(result.area);
       $scope.item = new Place(result.place);
+      $scope.is_editable = result.is_editable;
       $scope.item.place_length = parseFloat($scope.item.place_length); // html5 input[type=number]
       $scope.item.place_width = parseFloat($scope.item.place_width);
 
@@ -551,7 +552,7 @@
   });
 
   $scope.$on("mapPointChanged:place", function (event, data) {
-    if ($scope.item.id == data.obj_id) {
+    if ($scope.item.id == data.obj_id && $scope.is_editable) {
         if (confirm("Изменить координаты места?")) {
             $scope.item.lat = data.coords[0];
             $scope.item.lng = data.coords[1];

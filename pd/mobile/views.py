@@ -72,26 +72,33 @@ class CustomException(APIException):
             self.detail = self.default_detail
         
 class ApiCemeteryList(APIView):
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (PermitIfUgh,)
+
     def get(self, request) :
-        queryCemetery = Q(ugh = request.user.profile.org)
-        listCemetery = Cemetery.objects.filter(queryCemetery).order_by('id')                      
+        queryCemetery = Q(
+            ugh=request.user.profile.org,
+            pk__in=[c.pk for c in Cemetery.editable_ugh_cemeteries(request.user)],
+        )
+        listCemetery = Cemetery.objects.filter(queryCemetery).distinct().order_by('id')
         serializer = CemeteryWithNestedObjectSerializer(listCemetery)
         return Response(serializer.data)
         
 cemetery_list = ApiCemeteryList.as_view()
 
 class ApiCemeteryUpload(APIView):
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (PermitIfUgh,)
+
     def get(self, request) :
         return render_to_response('mobile_upload_cemetery.html', {'message': _(u"Загрузите название кладбища:")})
+
+    @transaction.commit_on_success
     def post(self, request) :
         org = request.user.profile.org
         listInsertedCemetery = []
         listGPS = [] 
         cemeteryId = int(request.POST['cemeteryId'])
         cemeteryName = request.POST['cemeteryName']
-        gpsJSON = request.POST['gps']
+        gpsJSON = request.POST.get('gps')
         square = None
         dtCreated = None
         if request.POST.get('square') :
@@ -120,7 +127,19 @@ class ApiCemeteryUpload(APIView):
             prevCem = None
             cem = Cemetery(name = cemeteryName, square = square, creator = request.user, ugh = org, dt_created = dtCreated)
             cem.save()
-            write_log(request, cem, _(u"Кладбище '%s' создано через мобильное приложение") % cem.name)                        
+            write_log(request, cem, _(u"Кладбище '%s' создано через мобильное приложение") % cem.name)
+            if request.user.profile.is_registrator():
+                request.user.profile.cemeteries.add(cem)
+                log_mes = _(u"Добавлен доступ к кладбищу: '%s'") % cem.name
+                user_mes=_(u'Изменены данные пользователя %(fio)s (%(username)s)') % dict(
+                    fio=request.user.profile,
+                    username=request.user.username,
+                )
+                write_log(request, request.user.profile.org, u"%s\n%s" % (
+                    user_mes,
+                    log_mes,
+                ))
+                write_log(request, request.user.profile, log_mes)
             listInsertedCemetery.append(cem)
         if isGPSChange == True :
             CemeteryCoordinates.objects.filter(cemetery__pk = cem.pk).delete()

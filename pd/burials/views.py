@@ -34,7 +34,7 @@ from burials.models import Cemetery, Place, Area, BurialFiles, Grave, Burial, Bu
 from burials.burials_views import *
 from logs.models import write_log, log_object, prepare_m2m_log, compare_obj, LogOperation
 from django.contrib.auth.models import User
-from users.models import Profile, Org, CustomerProfile, PermitIfUgh
+from users.models import Profile, Org, CustomerProfile, PermitIfUgh, Role
 from users.views import SupervisorRequiredMixin, UGHRequiredMixin, UghOrLoruRequiredMixin, ApiClientSiteMixin
 from persons.models import Phone, AlivePerson, CustomPlace
 from geo.models import Location
@@ -56,7 +56,7 @@ from serializers import CemeterySerializer, AreaSerializer, PlaceSerializer, Are
     CemeteryClientSiteSerializer, ApiClientSitePlacesSerializer
 
 from persons.serializers import AlivePersonSerializer, PhoneSerializer
-from users.serializers import UserFioLoginSerializer
+from users.serializers import UserFioLoginSerializer, ProfileFioLoginSerializer
 from geo.serializers import LocationSerializer, LocationStaticSerializer, LocationDataSerializer
 from logs.serializers import PlaceLogSerializer
 
@@ -116,13 +116,12 @@ class CemeteryViewSet(CaretakerMixin, viewsets.ModelViewSet):
     model = Cemetery
     form_class = CemeteryForm
     serializer_class = CemeterySerializer
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (PermitIfUgh,)
     paginate_by = None
 
     def get_queryset(self):
         return  Cemetery.objects.filter(ugh=self.request.user.profile.org).all()
 
-    
     def check_cemetery_name(self, request, pk=None):
         name = request.DATA.get('name')
         if not name:
@@ -142,6 +141,12 @@ class CemeteryViewSet(CaretakerMixin, viewsets.ModelViewSet):
         if data:
             return Response(status=400, data=data)
         return super(CemeteryViewSet, self).create(request, *args, **kwargs)
+
+    def post_save(self, object, created=False):
+        if created:
+            write_log(self.request, object, _(u"Кладбище создано"))
+            write_log(self.request, self.request.user.profile.org,
+                      _(u"Создано кладбище '%s'") % object.name)
 
 
     def update(self, request, *args, **kwargs):
@@ -214,8 +219,97 @@ class CemeteryViewSet(CaretakerMixin, viewsets.ModelViewSet):
         if cemetery.address:
             data["address"] = LocationStaticSerializer(cemetery.address).data
         data['caretakers'] = self.get_caretakers(cemetery)
+        data['can_add_area'] = cemetery in Cemetery.editable_ugh_cemeteries(request.user)
+        data['is_editable'] = request.user.profile.is_admin() or data['can_add_area']
         return Response(status=200, data=data)
 
+    @action(methods=['GET',])
+    def authdata(self, request, pk=None):
+        """
+        Данные для создания/редактирования кладбища
+        
+        -   id текущего пользователя, если это смотритель: он предлагается 
+            как единственный cemetery editor
+        -   список всех регистраторов организации
+        -   список pk всех текущих регистраторов кладбища
+        """
+        profile = request.user.profile
+        if profile.is_registrator():
+            profile_pk = profile.pk
+        else:
+            profile_pk = None
+        return Response(
+            status=200,
+            data=dict(
+                profile_pk=profile_pk,
+                ugh_registrators=self.get_ugh_registrators(request.user.profile.org),
+                cemetery_editors_pks=self.get_cemetery_editors_pks(pk),
+        ))
+
+    @action(methods=['GET',])
+    def iseditable(self, request, pk=None):
+        cemetery = get_object_or_404(self.get_queryset(), pk=pk)
+        return Response(status=200, data=dict(
+            is_editable=cemetery in Cemetery.editable_ugh_cemeteries(request.user)
+        ))
+
+    def get_ugh_registrators(self, org):
+        return [
+                ProfileFioLoginSerializer(p).data for p in Profile.objects.filter(
+                    org=org,
+                    role__name=Role.ROLE_REGISTRATOR,
+                ).distinct()
+        ]
+
+    def get_cemetery_editors_pks(self, pk):
+        if pk == "0":
+            pk = None
+        if pk:
+            cemetery = get_object_or_404(Cemetery, pk=pk)
+            return [
+                    p.pk for p in Profile.objects.filter(
+                        cemeteries=cemetery,
+                        role__name=Role.ROLE_REGISTRATOR,
+                    ).distinct()
+            ]
+        else:
+            return []
+
+class CemeteryEditorsView(APIView):
+    permission_classes = (PermitIfUgh,)
+
+    def put(self, request):
+        cemetery = get_object_or_404(
+            Cemetery,
+            pk=request.DATA.get('cemetery_id'),
+            ugh=request.user.profile.org)
+        previous_profiles = Profile.objects.filter(
+                cemeteries=cemetery,
+                role__name=Role.ROLE_REGISTRATOR,
+            ).distinct()
+        new_cemetery_editor_ids = request.DATA.get('cemetery_editors_pks', [])
+        new_profiles = [Profile.objects.get(pk=id_) for id_ in new_cemetery_editor_ids]
+
+        previous_profiles = set(previous_profiles)
+        new_profiles = set(new_profiles)
+
+        # set with elements in previous_profiles but not in new_profiles
+        #
+        to_delete = previous_profiles - new_profiles
+
+        # set with elements in new_profiles but not in previous_profiles
+        #
+        to_add = new_profiles - previous_profiles
+        
+        for profile in to_delete:
+            profile.cemeteries.remove(cemetery)
+            write_log(request, profile, _(u"Отменен доступ к кладбищу '%s'") % cemetery)
+        for profile in to_add:
+            profile.cemeteries.add(cemetery)
+            write_log(request, profile, _(u"Добавлен доступ к кладбищу '%s'") % cemetery)
+        return Response({}, status=200)
+
+api_cemeteries_editors = CemeteryEditorsView.as_view()
 
 class CemeteryList(UGHRequiredMixin, ListView):
     template_name = 'cemetery_list.html'
@@ -554,6 +648,7 @@ class PlaceViewSet(CaretakerMixin, viewsets.ModelViewSet):
                 "log": log_data,
                 "log_page":page.number,
                 "log_pages":page.paginator._num_pages,
+                "is_editable": cemetery in Cemetery.editable_ugh_cemeteries(request.user),
                 }
         data["place"]["graves_count"] = place.get_graves_count()
         data["place"]["available_count"] = place.available_count
@@ -1059,7 +1154,7 @@ class BurialEditComments(UGHRequiredMixin, View):
         return BurialCommentEditFormSet(request=self.request, data=self.request.POST or None, instance=self.get_object())
 
     def get_object(self):
-        return Burial.objects.get(pk=self.kwargs['pk'], ugh=self.request.user.profile.org)
+        return get_object_or_404(Burial, pk=self.kwargs['pk'], ugh=self.request.user.profile.org)
 
     def get_context_data(self, **kwargs):
         return {

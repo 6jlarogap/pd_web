@@ -80,6 +80,11 @@ function AreaViewCtrl($scope, $rootScope, $http, $routeParams, $resource, $locat
 		Cemetery.get({cemeteryID:$routeParams.cemetery_id}, function(result) {
 		    $scope.cemetery = result;
 		});
+        Cemetery.isEditable(
+                    {cemeteryID:$routeParams.cemetery_id},
+                    function(result) {
+           $scope.is_editable = result.is_editable;
+        });
 		Place.query({
 			 	cemetery_id: $routeParams.cemetery_id, 
 				area_id: $routeParams.area_id

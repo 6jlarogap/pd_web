@@ -165,7 +165,7 @@
                 {% endif %}
             </td>
             <td>{% if b.cemetery %}
-                    {{ b.cemetery }}
+                    <b>{{ b.cemetery }}</b>
                     {% if user.profile.is_loru %}
                         / {{ b.ugh_name }}
                     {% endif %}
@@ -228,7 +228,9 @@
                     <a class="btn" href="{% url view_burial b.pk %}" target="_blank">{% trans "просмотр" %}</a>
                     {# (Ручные, архивные), перенесенные, закрытые: #}
                     {% if b.is_ugh or b.is_transferred or b.is_closed %}
-                        <br /><a class="btn" href="{% url edit_burial b.pk %}" target="_blank">{% trans "правка" %}</a>
+                        {% if not b.cemetery or b.cemetery in editable_ugh_cemeteries %}
+                            <br /><a class="btn" href="{% url edit_burial b.pk %}" target="_blank">{% trans "правка" %}</a>
+                        {% endif %}
                     {% endif %}
                     {% if b.get_place %}
                         {# Эксгумированое зх не имеет b.place, но его место можно найти как b.get_place #}

@@ -2,6 +2,8 @@
 import json
 import datetime
 import re
+
+import django
 from django import forms
 from django.conf import settings
 from django.db.models.fields.files import FieldFile
@@ -110,6 +112,17 @@ class LoggingFormMixin:
                         old_value = old_value.strftime('%H:%M')
                     if isinstance(new_value, datetime.time):
                         new_value = new_value.strftime('%H:%M')
+
+                    if isinstance(form.fields[f], django.forms.models.ModelMultipleChoiceField):
+                        if not old_value:
+                            old_value = u"[]"
+                        else:
+                            old_value = u", ".join([unicode(form.fields[f]._queryset.model.objects.get(pk=u)) for u in old_value])
+                            old_value = u"[" + old_value + u"]"
+                        if not new_value:
+                            new_value = u"[]"
+                        else:
+                            new_value = u"[" + u", ".join([unicode(u) for u in new_value]) + u"]"
 
                     if getattr(form.fields[f], 'queryset', None):
                         pass

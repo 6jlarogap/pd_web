@@ -2,8 +2,8 @@
     <li><a href="/manage/cemetery/">Кладбища</a></li>
     <li><span class="divider">|</span></li>
     <li>{{cemetery.name}}</li>
-    <li><span class="divider">|</span></li>
-    <li><a href="#" ng-click="openEditForm()">Редактировать</a></li>
-    <li><span class="divider">|</span></li>
-    <li><a href="#" ng-click="openAddModal()">Добавить участок</a></li>
+    <li ng-show="is_editable"><span class="divider">|</span></li>
+    <li ng-show="is_editable"><a href="#" ng-click="openEditForm()">Редактировать</a></li>
+    <li ng-show="can_add_area"><span class="divider">|</span></li>
+    <li ng-show="can_add_area"><a href="#" ng-click="openAddModal()">Добавить участок</a></li>
 </ul>

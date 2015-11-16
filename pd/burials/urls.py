@@ -63,6 +63,8 @@ urlpatterns = patterns('burials.views',
     #url(r'^$', TemplateView.as_view(template_name='base_angular.html'),), # v1.5
     url(r'^manage/cemetery$', direct_to_template, {'template': 'base_angular.html'}, name='manage_cemeteries'),
 
+    url(r'^api/cemetery-editors/?$', 'api_cemeteries_editors', name='api_cemeteries_editors'),
+
     url(r'^api/oms/photo-places/?$', 'api_oms_photo_places', name='api_oms_photo_places'),
     url(r'^api/oms/photo-places/(?P<pk>\d+)/?$', 'api_oms_photo_places_detail', name='api_oms_photo_places_detail'),
 

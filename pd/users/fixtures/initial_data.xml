@@ -9,4 +9,12 @@
         <field type="CharField" name="name">personal-data</field>
         <field type="FileField" name="title">Перcональные данные в захоронениях</field>
     </object>
+    <object pk="1" model="users.role">
+        <field type="CharField" name="name">admin</field>
+        <field type="FileField" name="title">Администратор</field>
+    </object>
+    <object pk="2" model="users.role">
+        <field type="CharField" name="name">registrator</field>
+        <field type="FileField" name="title">Регистратор или смотритель</field>
+    </object>
 </django-objects>

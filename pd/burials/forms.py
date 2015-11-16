@@ -226,6 +226,7 @@ class BurialSearchForm(forms.Form):
     responsible = forms.CharField(required=False, max_length=40, label=_(u"Ответственный"))
     operation = forms.ChoiceField(required=False, choices=EMPTY + Burial.BURIAL_TYPES, label=_(u"Вид захоронения"))
     burial_container = forms.TypedChoiceField(required=False, label=_(u"Тип захоронения"), choices=EMPTY + Burial.BURIAL_CONTAINERS)
+    cemeteries_editable = forms.BooleanField(label=_(u"Свои кладбища"), required=False, initial=True)
     cemetery = forms.CharField(required=False, label=_(u"Кладбище"))
     area = forms.CharField(required=False, label=_(u"Участок"))
     row = forms.CharField(required=False, label=_(u"Ряд"))
@@ -364,7 +365,8 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
         self.fields['cemetery'].queryset = Cemetery.objects.filter(
             Q(ugh__isnull=True) |
             Q(ugh__loru_list__loru=self.request.user.profile.org) |
-            Q(ugh=self.request.user.profile.org)
+                Q(ugh=self.request.user.profile.org) & \
+                Q(pk__in=[c.pk for c in Cemetery.editable_ugh_cemeteries(request.user)])
         ).distinct()
         if self.instance.cemetery and self.instance.cemetery.time_slots:
             choices = [('', '----------')] + self.instance.cemetery.get_time_choices(
@@ -1344,7 +1346,7 @@ class BurialApproveCloseForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelFor
         self.request = request
         self.dc_form = None
         self.forms =[]
-        cemetery_qs = Q(ugh=request.user.profile.org)
+        cemetery_qs = Q(pk__in=[c.pk for c in Cemetery.editable_ugh_cemeteries(request.user)])
         
         if self.data.get('cemetery'):
             cemetery = Cemetery.objects.get(pk=self.data.get('cemetery'))
@@ -1768,13 +1770,19 @@ class BurialCommentEditForm(forms.ModelForm):
 class BaseBurialCommentEditFormSet(BaseInlineFormSet):
     def __init__(self, request, *args, **kwargs):
         super(BaseBurialCommentEditFormSet, self).__init__(*args, **kwargs)
+        self.own_cemetery = not self.instance.cemetery or \
+                            self.instance.cemetery in Cemetery.editable_ugh_cemeteries(request.user)
         for f in self.forms:
             f.formset = self
             f.fields['comment'].required = False
             f.own_ = True
-            if f.instance.pk and f.instance.creator != request.user:
-                f.own_ = False
+            f.own_cemetery = self.own_cemetery
+            if not self.own_cemetery:
                 f.fields['comment'].widget.attrs.update({'readonly':'True'})
+            if f.instance.pk:
+                if  f.instance.creator != request.user:
+                    f.own_ = False
+                    f.fields['comment'].widget.attrs.update({'readonly':'True'})
             f.fields['comment'].widget.attrs.update({'rows':'4'})
 
 BurialCommentEditFormSet = inlineformset_factory(
