@@ -3,6 +3,24 @@
 {% load i18n %}
 
 {% block content %}
+
+{% if request.user.profile.is_ugh and not request.user.profile.is_admin and not my_profile %}
+    <script type="text/javascript">
+        $(function() {
+            var form = document.forms[0];
+            [].slice.call( form.elements ).forEach(function(item){
+                switch (item.type) {
+                    case 'select-one':
+                    case 'checkbox':
+                        item.disabled = 'true';
+                    default:
+                        item.readOnly = 'true';
+                }
+            });
+        });
+    </script>
+{% endif %}
+
     {% if form.instance.pk %}
         <h2>{% trans "Пользователь" %}</h2>
         <h4>
@@ -62,10 +80,76 @@
             <p>{{ form.area.label_tag }} {{ form.area }} <span class="helptext"> {{ form.area.help_text }}</span></p>
         </fieldset>
 
-        <p>
-            <input type="submit" class="btn" value="{% trans "cохранить" %}"/>
-        </p>
+        {% if form.role  or form.cemeteries %}
+        <script>
+            function select_clear_roles_cemeteries(what, action) {
+                var obj = "select[name=" + what + "]";
+                var selected = action == "select_all" ? "selected" : ""
+                $(obj).children().each(function () {
+                    this.selected = selected;
+                });
+                return false;
+            }
+        </script>
+        <br />
+        <h4>Права пользователя</h4>
+        <br />
+        {% endif %}
+
+        {% if form.role %}
+            {{ form.role.errors }}
+            <p>{{ form.role.label_tag }} {{ form.role }} <span class="helptext"> {{ form.role.help_text }}</span>
+            <br />
+            <button onclick='return select_clear_roles_cemeteries("role", "select_all")'>Выделить все</button> 
+            &nbsp;&nbsp;
+            <button onclick='return select_clear_roles_cemeteries("role", "clear_all")'>Очистить</button>
+            </p>
+            <br />
+        {% endif %}
+
+        {% if form.cemeteries %}
+            <br />
+            {{ form.cemeteries.errors }}
+            <p>{{ form.cemeteries.label_tag }} {{ form.cemeteries }} <span class="helptext"> {{ form.cemeteries.help_text }}</span>
+            <br />
+            <button onclick='return select_clear_roles_cemeteries("cemeteries", "select_all")'>Выделить все</button> 
+            &nbsp;&nbsp;
+            <button onclick='return select_clear_roles_cemeteries("cemeteries", "clear_all")'>Очистить</button>
+            </p>
+            <br />
+        {% endif %}
+
+        {% if request.user.profile.is_ugh and not request.user.profile.is_admin and not my_profile %}
+        {% else %}
+            <p>
+                <input type="submit" class="btn" value="{% trans "cохранить" %}"/>
+            </p>
+        {% endif %}
     </form>
+
+    {% if form.my_profile and form.instance.org.is_ugh %}
+        <br />
+        <h4>{% trans "Роли в организации" %}:</h4>
+        {% for r in form.instance.role.all %}
+            &nbsp;- {{ r }}<br/>
+        {% endfor %}
+        {% if not form.instance.role.all %}
+            &nbsp;&nbsp; {% trans "не назначены" %}<br/>
+        {% endif %}
+        {% if form.instance.is_registrator %}
+            <br />
+            <h4>{% trans "Назначенные кладбища" %}:</h4>
+            {% if not form.instance.cemeteries.count %}
+                &nbsp;&nbsp; {% trans "не назначены" %}<br />
+            {% elif form.instance.has_all_cemeteries %}
+                &nbsp;&nbsp; {% trans "все кладбища организации" %}<br />
+            {% else %}
+                {% for c in form.instance.cemeteries.all %}
+                    &nbsp; - {{ c }}<br />
+                {% endfor %}
+            {% endif %}
+        {% endif %}
+    {% endif %}
 
     <script type="text/javascript">
         CEMETERY_AREAS = {{ form.cemetery_areas_json|default:"{}"  }};

@@ -21,6 +21,7 @@ from burials.models import Cemetery, PlaceSize, Reason, Burial
 from logs.models import write_log
 
 from users.models import Profile, ProfileLORU, Org, BankAccount, RegisterProfile, OrgCertificate, \
+                         Role, \
                          get_mail_footer, is_cabinet_user, is_trade_user
 
 User._meta.get_field_by_name('email')[0]._unique = True
@@ -56,6 +57,7 @@ class ProfileDataForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelForm):
             'is_agent',
             'password1', 'password2',
             'cemetery', 'area',
+            'role', 'cemeteries',
         )
 
     def __init__(self, request, my_profile, *args, **kwargs):
@@ -64,6 +66,12 @@ class ProfileDataForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelForm):
         if not request.user.profile.org.is_loru():
             del self.fields['is_agent']
 
+        if request.user.profile.org.is_ugh() and \
+           not request.user.profile.is_admin() and \
+           self.instance.pk and \
+           self.instance.pk == request.user.profile.pk:
+            my_profile = True
+        self.my_profile = my_profile
         if my_profile:
             del self.fields['username']
         else:
@@ -78,11 +86,19 @@ class ProfileDataForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelForm):
             self.fields['is_active'].label = User._meta.get_field('is_active').verbose_name.capitalize()
             self.fields['is_active'].help_text=User._meta.get_field('is_active').help_text
 
-        self.fields['cemetery'].queryset = Cemetery.objects.filter(
-            Q(ugh__isnull=True) |
-            Q(ugh__loru_list__loru=self.request.user.profile.org) |
-            Q(ugh=self.request.user.profile.org)
-        ).distinct()
+        if request.user.profile.is_loru():
+            cemetery_qs  = Cemetery.objects.filter(
+                ugh__loru_list__loru=self.request.user.profile.org
+            )
+        elif request.user.profile.is_ugh():
+            q = Q(ugh=request.user.profile.org)
+            if my_profile or not request.user.profile.is_admin():
+                q &= Q(pk__in=[c.pk for c in Cemetery.editable_ugh_cemeteries(request.user)])
+            cemetery_qs = Cemetery.objects.filter(q)
+        else:
+            cemetery_qs = Cemetery.objects.none()
+
+        self.fields['cemetery'].queryset = cemetery_qs.distinct()
 
         self.fields['user_last_name'].required = True
         self.fields['user_first_name'].required = True
@@ -99,6 +115,20 @@ class ProfileDataForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelForm):
                 self.initial['is_agent'] = True
             self.fields['password1'].required = True
             self.fields['password2'].required = True
+
+        if request.user.profile.is_loru() or \
+           my_profile or \
+           not request.user.profile.is_admin():
+            del self.fields['role']
+            del self.fields['cemeteries']
+        else:
+            cemeteries_qs = Cemetery.objects.filter(ugh=request.user.profile.org)
+            self.fields['cemeteries'].queryset = cemeteries_qs
+            self.fields['role'].widget.attrs.update({'size': str(min(Role.objects.all().count()+1, 20))})
+            self.fields['cemeteries'].widget.attrs.update({'size': str(min(cemeteries_qs.count()+1, 20))})
+            # По умолчанию новому пользователю ОМС назначаем все роли и все кладбища
+            if not self.instance or not self.instance.pk:
+                self.initial['role'] = [Role.objects.get(name=Role.ROLE_REGISTRATOR)]
 
     def clean_username(self):
         username = self.cleaned_data.get('username', '').strip()
@@ -119,11 +149,27 @@ class ProfileDataForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelForm):
             if f_email.exists():
                 raise forms.ValidationError(_(u"Этот email уже используется"))
         return email
+    
+    def clean_role(self):
+        # Нельзя удалить последнего администратора 
+        role = self.cleaned_data.get('role')
+        if self.instance.pk and self.instance.is_admin():
+            role_admin = Role.objects.get(name=Role.ROLE_ADMIN)
+            if role_admin not in role and not Profile.objects.filter(
+                    org=self.instance.org,
+                    role=role_admin,
+                ).exclude(pk=self.instance.pk).exists():
+                raise forms.ValidationError(_(u"Нельзя удалять последнего администратора в организации"))
+        return role
 
     def clean(self):
-        if self.is_valid() and \
-             self.cleaned_data['password1'] != self.cleaned_data['password2']:
-            raise forms.ValidationError(_(u"Пароли не совпадают"))
+        if self.is_valid():
+            if self.cleaned_data['password1'] != self.cleaned_data['password2']:
+                raise forms.ValidationError(_(u"Пароли не совпадают"))
+            cemetery = self.cleaned_data.get('cemetery')
+            cemeteries = self.cleaned_data.get('cemeteries')
+            if cemeteries is not None and cemetery and cemetery not in cemeteries:
+                raise forms.ValidationError(_(u"Кладбище по умолчанию не из доступных для пользователя"))
         return self.cleaned_data
 
     @transaction.commit_on_success

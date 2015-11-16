@@ -56,38 +56,44 @@
         </thead>
         <tbody>
             {% for f in formset.forms %}
-                <tr>
-                    <td style="text-align: center">{{ f.comment.errors }}{{ f.comment }}</td>
-                    <td >
-                        {% if f.instance.pk %}
-                            {% if f.own_ %}
-                                {{ f.DELETE }}&nbsp; &nbsp;{% trans "Удалить" %}
+                {% if f.instance.pk or f.own_cemetery %}
+                    <tr>
+                        <td style="text-align: center">{{ f.comment.errors }}{{ f.comment }}</td>
+                        <td >
+                            {% if f.instance.pk %}
+                                {% if f.own_ and f.own_cemetery %}
+                                    {{ f.DELETE }}&nbsp; &nbsp;{% trans "Удалить" %}
+                                {% elif f.own_ %}
+                                    {% trans "Не Ваш комментарий" %}
+                                {% elif not f.own_cemetery %}
+                                    {% trans "Захоронение не Вашего кладбища" %}
+                                {% endif %}
                             {% else %}
-                                {% trans "Не Ваш комментарий" %}
+                                {% trans "Новый комментарий" %}
                             {% endif %}
-                        {% else %}
-                            {% trans "Новый комментарий" %}
-                        {% endif %}
-                    </td>
-                    <td>{{ f.instance.dt_created|default_if_none:"" }}</td>
-                    <td>
-                        {% if f.instance.pk %}
-                            {% if f.instance.creator.profile.user_last_name %}
-                                {{ f.instance.creator.profile.last_name_initials }} ({{ f.instance.creator.username }})
-                            {% else %}
-                                ({{ f.instance.creator.username }})
+                        </td>
+                        <td>{{ f.instance.dt_created|default_if_none:"" }}</td>
+                        <td>
+                            {% if f.instance.pk %}
+                                {% if f.instance.creator.profile.user_last_name %}
+                                    {{ f.instance.creator.profile.last_name_initials }} ({{ f.instance.creator.username }})
+                                {% else %}
+                                    ({{ f.instance.creator.username }})
+                                {% endif %}
                             {% endif %}
-                        {% endif %}
-                    </td>
-                    <td>{{ f.instance.dt_modified|default_if_none:"" }}</td>
-                    {{ f.id }}
-                </tr>
+                        </td>
+                        <td>{{ f.instance.dt_modified|default_if_none:"" }}</td>
+                        {{ f.id }}
+                    </tr>
+                {% endif %}
             {% endfor %}
         </tbody>
         </table>
         <p>
-            <input type="submit" class="btn" value="{% trans "сохранить" %}" class="btn"/>
-            &nbsp; &nbsp; &nbsp; &nbsp;
+            {% if formset.own_cemetery %}
+                <input type="submit" class="btn" value="{% trans "сохранить" %}" class="btn"/>
+                &nbsp; &nbsp; &nbsp; &nbsp;
+            {% endif %}
             <a href="{% url view_burial burial.pk %}">{% trans "назад к захоронению" %}</a>
         </p>
     </form>
