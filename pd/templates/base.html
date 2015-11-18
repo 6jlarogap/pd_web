@@ -198,7 +198,7 @@
                     {% endif %}
                     <div class="nav-collapse">
                         <ul class="nav">
-                            {% if user.profile.is_loru or user.profile.is_ugh %}
+                            {% if user.profile.is_loru or user.profile.is_ugh and user.profile.is_registrator and user.profile.cemeteries.count %}
                                 <li{% if request.path == '/' %} class="active"{% endif %}>
                                     <a href="{% url dashboard %}">{% trans "Открытые" %}</a>
                                 </li>
