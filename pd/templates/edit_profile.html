@@ -70,16 +70,6 @@
             <p>{{ form.password2.label_tag }} {{ form.password2 }} <span class="helptext"> {{ form.password2.help_text }}</span></p>
         </fieldset>
 
-        <h4>Настройки по умолчанию</h4>
-        <br />
-        <fieldset>
-            {{ form.cemetery.errors }}
-            <p>{{ form.cemetery.label_tag }} {{ form.cemetery }} <span class="helptext"> {{ form.cemetery.help_text }}</span></p>
-
-            {{ form.area.errors }}
-            <p>{{ form.area.label_tag }} {{ form.area }} <span class="helptext"> {{ form.area.help_text }}</span></p>
-        </fieldset>
-
         {% if form.role  or form.cemeteries %}
         <script>
             function select_clear_roles_cemeteries(what, action) {
@@ -108,7 +98,6 @@
         {% endif %}
 
         {% if form.cemeteries %}
-            <br />
             {{ form.cemeteries.errors }}
             <p>{{ form.cemeteries.label_tag }} {{ form.cemeteries }} <span class="helptext"> {{ form.cemeteries.help_text }}</span>
             <br />
@@ -118,6 +107,17 @@
             </p>
             <br />
         {% endif %}
+
+        <h4>Настройки по умолчанию</h4>
+        <br />
+        <fieldset>
+            {{ form.cemetery.errors }}
+            <p>{{ form.cemetery.label_tag }} {{ form.cemetery }} <span class="helptext"> {{ form.cemetery.help_text }}</span></p>
+
+            {{ form.area.errors }}
+            <p>{{ form.area.label_tag }} {{ form.area }} <span class="helptext"> {{ form.area.help_text }}</span></p>
+        </fieldset>
+
         {% if request.user.profile.is_ugh and not request.user.profile.is_admin and not form.my_profile %}
         {% else %}
             <p>
