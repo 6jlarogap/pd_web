@@ -228,7 +228,7 @@
               <big><b>Свободна</b></big>
               </p>
               <button class="btn btn-mini btn-danger pull-right"
-                      ng-show="!haveBurials(grave.id)"
+                      ng-show="is_editable && !haveBurials(grave.id)"
                       ng-disabled="loading"
                       ng-click="deleteGrave(grave)">
                 Удалить могилу
