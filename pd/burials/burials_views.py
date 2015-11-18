@@ -75,10 +75,15 @@ class DashboardView(TemplateView):
                     'simple_message.html',
                     dict(message=_(u"Рабочее место пользователя кабинета организовано другими средствами"))
                 )
-        elif request.user.profile.is_ugh() and \
-             not (request.user.profile.is_registrator() and request.user.profile.cemeteries.count()):
-            return redirect(reverse('burial_list'))
-        return super(DashboardView, self).get(request, *args, **kwargs)
+        elif request.user.profile.is_ugh():
+             if request.user.profile.is_registrator() and request.user.profile.cemeteries.count():
+                 return super(DashboardView, self).get(request, *args, **kwargs)
+             else:
+                return redirect(reverse('burial_list'))
+        elif request.user.profile.is_loru():
+            return super(DashboardView, self).get(request, *args, **kwargs)
+        else:
+            raise Http404
 
     def get_qs_filter(self):
         if self.request.user.profile.is_loru():
