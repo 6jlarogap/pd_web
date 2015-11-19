@@ -36,6 +36,11 @@ function CemeteryCtrl($rootScope, $scope, $http, $location, $resource, naturalSe
                 archive_burial_fact_date_required:false,
                 archive_burial_account_number_required:false
             });
+        Cemetery.authData0(
+                    {cemeteryID:0}, // fake cemetery id to find out if the user may add cemetery
+                    function(result) {
+            $scope.can_add_cemetery = result.can_add_cemetery;
+        });
         Cemetery.query(function(result) {
             $scope.cemetery_list = result;
             $scope.cemetery_list.sort(function(a,b){return naturalService.naturalSortField(a,b,'name')});
@@ -53,7 +58,7 @@ function CemeteryCtrl($rootScope, $scope, $http, $location, $resource, naturalSe
     $scope.openAddModal = function () {
 
         Cemetery.authData(
-                    {cemeteryID:0}, // fake cemetery id to find out if the user may add cemetery
+                    {cemeteryID:0}, // fake cemetery id to find out necessary auth data
                     function(result) {
             $scope.ugh_registrators = result.ugh_registrators; 
             $scope.editor.cemetery_editors = [];

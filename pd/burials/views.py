@@ -224,6 +224,15 @@ class CemeteryViewSet(CaretakerMixin, viewsets.ModelViewSet):
         return Response(status=200, data=data)
 
     @action(methods=['GET',])
+    def authdata0(self, request, pk=None):
+        return Response(
+            status=200,
+            data =dict(
+                can_add_cemetery=request.user.profile.is_admin() or \
+                                 request.user.profile.is_registrator(),
+            ))
+
+    @action(methods=['GET',])
     def authdata(self, request, pk=None):
         """
         Данные для создания/редактирования кладбища

@@ -13,6 +13,13 @@ app.factory('Cemetery', function($resource){
             },
             isArray: false
         },
+        authData0: {
+            method: 'GET',
+            params: {
+                action: 'authdata0',
+            },
+            isArray: false
+        },
         authData: {
             method: 'GET',
             params: {
