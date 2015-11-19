@@ -5,20 +5,7 @@
 {% block content %}
 
 {% if is_my_org and user.profile.is_ugh and not user.profile.is_admin %}
-    <script type="text/javascript">
-        $(function() {
-            var form = document.forms[0];
-            [].slice.call( form.elements ).forEach(function(item){
-                switch (item.type) {
-                    case 'select-one':
-                    case 'checkbox':
-                        item.disabled = 'true';
-                    default:
-                        item.readOnly = 'true';
-                }
-            });
-        });
-    </script>
+    {% include "form_read_only.html" %}
 {% endif %}
 
 <h1>{% trans "Данные организации" %} {{ object }}</h1>

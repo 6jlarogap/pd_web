@@ -5,20 +5,7 @@
 {% block content %}
 
 {% if request.user.profile.is_ugh and not request.user.profile.is_admin and not form.my_profile %}
-    <script type="text/javascript">
-        $(function() {
-            var form = document.forms[0];
-            [].slice.call( form.elements ).forEach(function(item){
-                switch (item.type) {
-                    case 'select-one':
-                    case 'checkbox':
-                        item.disabled = 'true';
-                    default:
-                        item.readOnly = 'true';
-                }
-            });
-        });
-    </script>
+    {% include "form_read_only.html" %}
 {% endif %}
 
     {% if form.instance.pk %}
