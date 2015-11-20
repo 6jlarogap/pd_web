@@ -1396,6 +1396,15 @@ class ApiOmsPhotoPlaces(APIView):
     permission_classes = (PermitIfUgh,)
 
     def get(self, request):
+        # TODO решить вопрос об этих ошибочных сообщениях с front-end
+        #message = None
+        #if not request.user.profile.is_registrator():
+            #message = _(u"У вас нет прав вносить захоронения. Обратитесь к администратору")
+        #elif not request.user.profile.cemeteries.count():
+            #message = _(u"Вам не назначены кладбища для ввода захоронений. Обратитесь к администратору")
+        #if message:
+            #return Response(status=400, data=dict(message=message))
+
         place = None
         # Показать место, с которым работал ранее 
         with transaction.commit_on_success():
