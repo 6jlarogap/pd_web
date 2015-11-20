@@ -1720,16 +1720,7 @@ class OmsCurrentStatsView(SupervisorProductionRequiredMixin, TemplateView):
             ).count()
             total['burials_count'] += org['num_burials']
 
-            org['places_invent_accessible'] = Place.objects.filter(
-                cemetery__ugh=o,
-                is_invent=True,
-                user_processed__isnull=True,
-                dt_wrong_fio__isnull=True,
-                dt_unindentified__isnull=True,
-                dt_free__isnull=True,
-                placephoto__isnull=False,
-                dt_processed__isnull=True,
-            ).distinct().count()
+            org['places_invent_accessible'] = Place.unprocessed_count(org=o)
             total['places_invent_accessible'] += org['places_invent_accessible']
 
             org['places_invent_remake_photo'] = Place.objects.filter(
