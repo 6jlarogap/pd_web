@@ -1497,6 +1497,18 @@ class ApiOmsPhotoPlacesDetail(APIView):
 
 api_oms_photo_places_detail = ApiOmsPhotoPlacesDetail.as_view()
 
+class ApiOmsPhotoPlacesCounts(APIView):
+    permission_classes = (PermitIfUgh,)
+
+    def get(self, request):
+        return Response(
+            status=200,
+            data=dict(
+                unprocessed=Place.unprocessed_count(org=request.user.profile.org)
+        ))
+
+api_oms_photo_places_counts = ApiOmsPhotoPlacesCounts.as_view()
+
 class ApiOmsCemeteriesView(APIView):
     permission_classes = (PermitIfUgh,)
 
