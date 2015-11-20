@@ -49,9 +49,12 @@ function date2time(val){
     }
 	var h = val.getHours().toString(),
 		m = val.getMinutes().toString();
-	 if(m.length==1){
-	 	m = '0'+m;
-	 }
+     if(h.length==1){
+        h = '0'+h;
+     }
+     if(m.length==1){
+        m = '0'+m;
+     }
 	return h+':'+m;
 };
 
