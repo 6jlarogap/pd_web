@@ -5,6 +5,8 @@ from django.conf import settings
 from pd.views import get_front_end_url
 from pd.utils import host_country_code
 
+from users.models import Org
+
 def context_processor(request):
     return {
             'global_context_PRODUCTION_SITE': settings.PRODUCTION_SITE,
@@ -18,4 +20,5 @@ def context_processor(request):
                     settings.MEDIA_URL,
                     settings.MOBILEKEEPER_MEDIA_PATH,
              )),
+            'global_context_ARE_LORUS_IN_SYSTEM': Org.objects.filter(type=Org.PROFILE_LORU).exists(),
            }
