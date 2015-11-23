@@ -49,6 +49,9 @@
                         {% if not b.is_full and not b.is_closed %}
                             <input type="submit" class="btn btn-commit-burial" name="complete" value="{% trans "cохранить и закрыть" %}"/>
                         {% endif %}
+                        {% if b.can_ugh_annulate %}
+                            <input type="submit" class="btn btn-commit-burial" name="annulate" onclick="return confirm('{% trans "Вы уверены?" %}');" value="{% trans "аннулировать" %}"/>
+                        {% endif %}
                     {% endif %}
                     {% if user.profile.is_loru %}
                         {% if not b.pk %}
@@ -63,7 +66,7 @@
                             <input type="submit" class="btn btn-commit-burial" name="back" value="{% trans "отозвать" %}"/>
                         {% endif %}
                         {% if b.can_loru_annulate %}
-                            <input type="submit" class="btn btn-commit-burial" name="annulate" value="{% trans "аннулировать" %}"/>
+                            <input type="submit" class="btn btn-commit-burial" name="annulate" onclick="return confirm('{% trans "Вы уверены?" %}');" value="{% trans "аннулировать" %}"/>
                         {% endif %}
                         {% if b.order %}
                             <a href="{% url order_services b.order.pk %}" class="btn btn-next">{% trans "далее" %}</a>
