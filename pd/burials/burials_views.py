@@ -834,7 +834,7 @@ class CreateBurial(BurialGetOrderMixin, FormInvalidMixin, CreateView):
              self.request.user.profile.cemeteries.count():
             pass
         else:
-            messages.error(request, _(u"У Вас нет прав создавать захоронения"))
+            messages.error(request, _(u"У Вас нет прав создавать захоронения. Обратитесь к администратору"))
             return redirect('/')
 
         return super(CreateBurial, self).dispatch(request, *args, **kwargs)
