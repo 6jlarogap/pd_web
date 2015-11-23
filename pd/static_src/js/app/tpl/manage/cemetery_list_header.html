@@ -1,5 +1,5 @@
 <ul class="breadcrumb">
     <li>Кладбища</li>
-    <li><span class="divider">|</span></li>
-    <li><a ng-click="openAddModal()">Добавить Кладбище</a></li>
+    <li ng-show="can_add_cemetery"><span class="divider">|</span></li>
+    <li ng-show="can_add_cemetery"><a ng-click="openAddModal()">Добавить Кладбище</a></li>
 </ul>

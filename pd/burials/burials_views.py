@@ -63,7 +63,7 @@ class BurialsListGenericMixin:
                 qs |= Q(ugh=self.request.user.profile.org)
         return qs
 
-class DashboardView(BurialsListGenericMixin, TemplateView):
+class DashboardView(TemplateView):
     template_name = 'dashboard.html'
 
     def get(self, request, *args, **kwargs):
@@ -75,15 +75,24 @@ class DashboardView(BurialsListGenericMixin, TemplateView):
                     'simple_message.html',
                     dict(message=_(u"Рабочее место пользователя кабинета организовано другими средствами"))
                 )
-        return super(DashboardView, self).get(request, *args, **kwargs)
+        elif request.user.profile.is_ugh():
+             if request.user.profile.is_registrator() and request.user.profile.cemeteries.count():
+                 return super(DashboardView, self).get(request, *args, **kwargs)
+             else:
+                return redirect(reverse('burial_list'))
+        elif request.user.profile.is_loru():
+            return super(DashboardView, self).get(request, *args, **kwargs)
+        else:
+            raise Http404
 
     def get_qs_filter(self):
-      if self.request.user.is_authenticated() and self.request.user.profile.is_loru():
+        if self.request.user.profile.is_loru():
           # лору в открытых может видеть только свои (а не других лору) захоронения
-          qs = Q(loru=self.request.user.profile.org)
-      else:
-        qs = super(DashboardView, self).get_qs_filter()
-      return qs
+            qs = Q(loru=self.request.user.profile.org)
+        elif self.request.user.profile.is_ugh():
+            qs = Q(cemetery__in=Cemetery.editable_ugh_cemeteries(self.request.user)) or \
+                 Q(cemetery__isnull=True)
+        return qs
 
     def get_context_data(self, **kwargs):
         qs = self.get_qs_filter()

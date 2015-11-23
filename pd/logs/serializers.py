@@ -56,11 +56,14 @@ class PlaceLogSerializer(serializers.ModelSerializer):
             elif model_name == "Burial":
                 try:
                     burial = Model.objects.get(pk=obj.obj_id)
-                    deadman_name = burial.deadman and burial.deadman.full_name() or _u("Неизвестный"),
+                    if burial.is_bio():
+                        deadman_name=_(U"Биоотходы")
+                    else:
+                        deadman_name = burial.deadman and burial.deadman.full_name() or _(u"Неизвестный")
                     result = _(u'Захоронение</br /><a href="%(href)s" target="_blank">'
                                u'%(deadman_name)s</a>') % dict(
                                     href=reverse('view_burial', args=[burial.pk]),
-                                    deadman_name=burial.deadman and burial.deadman.full_name(),
+                                    deadman_name=deadman_name,
                     )
                     if not burial.is_closed():
                         result += u"%s %s" % ("<br />", _(u"Не закрыто"),)

@@ -224,6 +224,15 @@ class CemeteryViewSet(CaretakerMixin, viewsets.ModelViewSet):
         return Response(status=200, data=data)
 
     @action(methods=['GET',])
+    def authdata0(self, request, pk=None):
+        return Response(
+            status=200,
+            data =dict(
+                can_add_cemetery=request.user.profile.is_admin() or \
+                                 request.user.profile.is_registrator(),
+            ))
+
+    @action(methods=['GET',])
     def authdata(self, request, pk=None):
         """
         Данные для создания/редактирования кладбища
@@ -1387,6 +1396,15 @@ class ApiOmsPhotoPlaces(APIView):
     permission_classes = (PermitIfUgh,)
 
     def get(self, request):
+        # TODO решить вопрос об этих ошибочных сообщениях с front-end
+        #message = None
+        #if not request.user.profile.is_registrator():
+            #message = _(u"У вас нет прав вносить захоронения. Обратитесь к администратору")
+        #elif not request.user.profile.cemeteries.count():
+            #message = _(u"Вам не назначены кладбища для ввода захоронений. Обратитесь к администратору")
+        #if message:
+            #return Response(status=400, data=dict(message=message))
+
         place = None
         # Показать место, с которым работал ранее 
         with transaction.commit_on_success():
@@ -1487,6 +1505,18 @@ class ApiOmsPhotoPlacesDetail(APIView):
         return Response(status=status, data={})
 
 api_oms_photo_places_detail = ApiOmsPhotoPlacesDetail.as_view()
+
+class ApiOmsPhotoPlacesCounts(APIView):
+    permission_classes = (PermitIfUgh,)
+
+    def get(self, request):
+        return Response(
+            status=200,
+            data=dict(
+                unprocessed=Place.unprocessed_count(org=request.user.profile.org)
+        ))
+
+api_oms_photo_places_counts = ApiOmsPhotoPlacesCounts.as_view()
 
 class ApiOmsCemeteriesView(APIView):
     permission_classes = (PermitIfUgh,)

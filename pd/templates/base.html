@@ -134,7 +134,9 @@
                                         {% if user.profile.is_ugh %}
                                             {% if global_context_REDIRECT_LOGIN_TO_FRONT_END %}
                                                 <li><a href="{{ global_context_FRONT_END_URL }}oms/placesmap">{% trans "Карта захоронений" %}</a></li>
-                                                <li><a href="{{ global_context_FRONT_END_URL }}oms/places-photos">{% trans "Ввод архива по фото" %}</a></li>
+                                                {% if user.profile.is_registrator and user.profile.cemeteries.count %}
+                                                    <li><a href="{{ global_context_FRONT_END_URL }}oms/places-photos">{% trans "Ввод архива по фото" %}</a></li>
+                                                {% endif %}
                                             {% endif %}
                                             <li><a href="{% url loru_registry %}">{% trans "Реестр ЛОРУ" %}</a></li>
                                             <li class="divider"></li>
@@ -198,7 +200,7 @@
                     {% endif %}
                     <div class="nav-collapse">
                         <ul class="nav">
-                            {% if user.profile.is_loru or user.profile.is_ugh %}
+                            {% if user.profile.is_loru or user.profile.is_ugh and user.profile.is_registrator and user.profile.cemeteries.count %}
                                 <li{% if request.path == '/' %} class="active"{% endif %}>
                                     <a href="{% url dashboard %}">{% trans "Открытые" %}</a>
                                 </li>
