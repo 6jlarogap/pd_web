@@ -235,7 +235,7 @@
                 <input type="submit" class="btn" name="deannulate" value="{% trans "де-аннулировать" %}">
             {% endif %}
             {% if b.can_loru_annulate %}
-                <input type="submit" class="btn" name="annulate" value="{% trans "аннулировать" %}">
+                <input type="submit" class="btn" name="annulate" onclick="return confirm('{% trans "Вы уверены?" %}');" value="{% trans "аннулировать" %}">
             {% endif %}
             {% if b.can_loru_print_notification %}
                 <a class="btn" href="{% url make_notification b.pk %}" target="_blank">{% trans "уведомление" %}</a>
@@ -263,7 +263,7 @@
                 <textarea name="reason" rows="5" cols="30"></textarea>
                 <br/>
                 {% if b.can_ugh_annulate %}
-                    <input type="submit" class="btn" name="annulate" value="{% trans "аннулировать" %}">
+                    <input type="submit" class="btn" name="annulate" onclick="return confirm('{% trans "Вы уверены?" %}');" value="{% trans "аннулировать" %}">
                 {% endif %}
                 {% if b.can_disapprove_ugh %}
                     <input type="submit" class="btn" name="disapprove" value="{% trans "отменить согласование" %}">

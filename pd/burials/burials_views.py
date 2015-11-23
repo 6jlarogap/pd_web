@@ -841,13 +841,17 @@ class CreateBurial(BurialGetOrderMixin, FormInvalidMixin, CreateView):
                 )
                 messages.success(self.request, msg)
 
-            if action == 'annulate' and self.request.user.profile.is_loru() and b.can_loru_annulate():
+            if action == 'annulate' and \
+                 (self.request.user.profile.is_loru() and b.can_loru_annulate() or \
+                  self.request.user.profile.is_ugh() and b.can_ugh_annulate()
+                 )  :
                 b.annulated = True
                 write_log(self.request, b, _(u'Захоронение аннулировано'))
                 msg = _(u"<a href='%(view_burial)s'>Захоронение %(pk)s</a> аннулировано") % dict(
                     view_burial=reverse('view_burial', args=[b.pk]) + order_parm, pk=b.pk,
                 )
                 messages.success(self.request, msg)
+                redirect_to_view = True
 
             if action == 'approve' and self.request.user.profile.is_ugh() and b.can_approve_ugh():
                 b.status = Burial.STATUS_APPROVED
