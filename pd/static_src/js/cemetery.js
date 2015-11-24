@@ -182,10 +182,14 @@ function setup_address_autocompletes() {
         source: function (typeahead, query) {
             if (query.length < 2) { return }
             var query_s = "?query=" + query;
-            if ($('#id_cemetery').length) {
-                var cemetery_name = $('#id_cemetery').val();
-                if (cemetery_name) {
-                    query_s += "&cemetery=" + cemetery_name;
+            if ($('#id_cemeteries_editable').length && $('#id_cemeteries_editable').is(':checked')) {
+                query_s += "&cemeteries_editable=1";
+            } else {
+                if ($('#id_cemetery').length) {
+                    var cemetery_name = $('#id_cemetery').val();
+                    if (cemetery_name) {
+                        query_s += "&cemetery=" + cemetery_name;
+                    }
                 }
             }
             $.ajax({
