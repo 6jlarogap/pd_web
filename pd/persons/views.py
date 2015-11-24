@@ -31,7 +31,8 @@ from pd.models import UnclearDate, SafeDeleteMixin
 from burials.models import Place, PlacePhoto, Burial, Grave
 from logs.models import write_log, LogOperation
 from users.models import Org, PermitIfCabinet, user_dict, \
-                         PermitIfUgh, PermitIfTradeOrCabinet, is_trade_user, is_cabinet_user
+                         PermitIfUgh, PermitIfTradeOrCabinet, is_trade_user, is_cabinet_user, \
+                         is_ugh_user, is_loru_user
 from orders.models import Order, ResultFile
 from geo.models import Location
 
@@ -51,6 +52,19 @@ class AutocompleteFIO(View):
             q &= Q(first_name__istartswith=fio[1])
         if len(fio) > 0:
             q &= Q(last_name__istartswith=fio[0])
+
+        if is_ugh_user(request.user):
+            ugh_q = Q(burial__ugh=request.user.profile.org)
+        elif is_loru_user(request.user):
+            loru = request.user.profile.org
+            ugh_q = Q(burial__applicant_organization=loru) | Q(burial__loru=loru) | Q(burial__ugh__loru_list__loru=loru)
+        else:
+            ugh_q = Q()
+        q &= ugh_q
+
+        cemetery = request.GET.get('cemetery')
+        if cemetery:
+            q &= Q(burial__cemetery__name__istartswith=cemetery)
 
         persons = DeadPerson.objects.filter(q).distinct('last_name', 'first_name', 'middle_name')
         return HttpResponse(json.dumps([{'value': unicode(c)} for c in persons[:20]]), mimetype='text/javascript')

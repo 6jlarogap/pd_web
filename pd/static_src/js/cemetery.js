@@ -181,8 +181,15 @@ function setup_address_autocompletes() {
         items: 100,
         source: function (typeahead, query) {
             if (query.length < 2) { return }
+            var query_s = "?query=" + query;
+            if ($('#id_cemetery').length) {
+                var cemetery_name = $('#id_cemetery').val();
+                if (cemetery_name) {
+                    query_s += "&cemetery=" + cemetery_name;
+                }
+            }
             $.ajax({
-                url: FIO_URL + "?query=" + query,
+                url: FIO_URL + query_s,
                 dataType: 'json',
                 success: function(data) {
                     typeahead.process(data);
