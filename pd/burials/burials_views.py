@@ -647,8 +647,10 @@ class BurialsListView(PaginateListView):
         # Птичка "Свои кладбища" нужна только смотрителю, у кого
         # набор своих кладбищ не совпадает с общим набором кладбищ ОМС
         profile = self.request.user.profile
+        cemeteries_count = profile.cemeteries.count()
         if profile.is_ugh() and profile.is_registrator() and \
-           profile.cemeteries.count() != Cemetery.objects.filter(ugh=profile.org).count():
+           cemeteries_count != Cemetery.objects.filter(ugh=profile.org).count() and \
+           cemeteries_count > 0:
             pass
         else:
             del form.fields['cemeteries_editable']

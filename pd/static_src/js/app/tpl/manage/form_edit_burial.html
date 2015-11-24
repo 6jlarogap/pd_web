@@ -42,7 +42,7 @@
             <dd>{{ selectedBurial.place_number }}</dd>
             <dt>Могила:</dt>
             <dd>
-                <select name="graveNumber" ng-model="selectedBurial.grave_number"
+                <select name="graveNumber" ng-model="selectedBurial.grave_number" ng-disabled="!is_editable"
                     ng-options="g.grave_number as g.grave_number for g in graves" required>
                     <option value="" selected>Выберите № могилы:</option>
                 </select>
@@ -64,8 +64,9 @@
         </dl>
     </div>
     <div class="modal-footer">
-        <a  href="/burials/{{selectedBurial.id}}/edit/" class="btn">Редактировать</a>
+        <a href="/burials/{{selectedBurial.id}}/edit/" class="btn" ng-show="is_editable">Редактировать</a>
         <button class="btn btn-primary"
+                ng-show="is_editable"
                 ng-disabled="burialEditForm.graveNumber.$pristine || !burialEditForm.$valid"
                 ng-click="saveBurialEditForm(burialEditForm)">
             Сохранить
