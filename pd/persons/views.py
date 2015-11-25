@@ -71,9 +71,19 @@ class AutocompleteFIO(View):
 
 autocomplete_fio = AutocompleteFIO.as_view()
 
-class AutocompletePersonsMixin(object):
+class AutocompleteNamesMixin(object):
 
-    def get_names(self, what, query, limit=None):
+    def get_names(self, what, query, user, limit=None, within_dead=False):
+        """
+        Поиск для autocomplete имен, отчеств
+
+        what:           firstname или last_name
+        query:          набираемая строка
+        user:
+        limit:          ограничение вывода
+        within_dead:    искать среди усопших, внутри своей организации,
+                        иначе имена/отчества ищутся среди всех, живых и мертвых
+        """
         valid = True
         if not query or not isinstance(query, basestring):
             valid = False
@@ -85,30 +95,41 @@ class AutocompletePersonsMixin(object):
                 # не строка (AttributeError при lower()); нет в словаре (KeyError)
                 valid = False
         if valid:
-            q_kwargs = { '%s__istartswith' % field_name: query }
-            qs = BasePerson.objects.filter(**q_kwargs).order_by(field_name).distinct(field_name)
+            q = Q(**{ '%s__istartswith' % field_name: query })
+            if within_dead:
+                model = DeadPerson
+                if is_ugh_user(user):
+                    q &= Q(burial__ugh=user.profile.org)
+                elif is_loru_user(user):
+                    loru = user.profile.org
+                    q &= Q(burial__applicant_organization=loru) | Q(burial__loru=loru) | Q(burial__ugh__loru_list__loru=loru)
+            else:
+                model = BasePerson
+            qs = model.objects.filter(q).order_by(field_name).distinct(field_name)
             if limit:
                 qs = qs[:limit]
             return  [ getattr(c, field_name) for c in qs ]
         else:
             return []
 
-class AutocompleteName(AutocompletePersonsMixin, View):
+class AutocompleteName(AutocompleteNamesMixin, View):
     def get(self, request, what, *args, **kwargs):
         query = request.GET.get('query')
-        names = [ {'value': name} for name in self.get_names(what, query, limit=20) ]
+        names = [ {'value': name} for name in self.get_names(what, query, request.user, limit=20) ]
         return HttpResponse(json.dumps(names), mimetype='text/javascript')
 
 autocomplete_name = AutocompleteName.as_view()
 
-class ApiAutocompletePersons(AutocompletePersonsMixin, APIView):
+class ApiAutocompletePersons(AutocompleteNamesMixin, APIView):
     permission_classes = (IsAuthenticated,)
 
     def get(self, request):
         return Response(
             data=[ name for name in self.get_names(
                 request.GET.get('type'),
-                request.GET.get('query')
+                request.GET.get('query'),
+                request.user,
+                within_dead=True,
             )],
             status=200
         )
