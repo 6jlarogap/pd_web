@@ -12,6 +12,7 @@
         {% if user.profile.is_ugh %}
             <h2>{% trans "ЛОРУ" %}</h2>
             {{ formset.management_form }}
+            {{ formset.non_form_errors }}
             {% for f in formset.forms %}
                 <fieldset>
                     {{ f.as_p }}

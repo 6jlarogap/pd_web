@@ -27,14 +27,44 @@ from users.models import Profile, ProfileLORU, Org, BankAccount, RegisterProfile
 User._meta.get_field_by_name('email')[0]._unique = True
 User._meta.get_field_by_name('email')[0].null=True
 
+class LoruItemForm(forms.ModelForm):
+
+    class Meta:
+        model = ProfileLORU
+        fields = ('loru',)
+
+    def __init__(self, *args, **kwargs):
+        super(LoruItemForm, self).__init__(*args, **kwargs)
+        self.fields['loru'].queryset = self.fields['loru'].queryset.order_by('name')
+
+    def clean(self):
+        passed_forms = []
+        for f in self.formset:
+            if f['DELETE'].value():
+                continue
+            if f is not self and \
+            f['loru'].value() == self['loru'].value() and \
+            self not in passed_forms:
+                raise forms.ValidationError(_(u'Уже есть выше это ЛОРУ:'))
+            else:
+                passed_forms.append(f)
+        return self.cleaned_data
+
+
 class BaseLoruFormset(BaseInlineFormSet):
+
+    def __init__(self, *args, **kwargs):
+        super(BaseLoruFormset, self).__init__(*args, **kwargs)
+        for f in self.forms:
+            f.formset = self
+
     @property
     def changed_data(self):
         for f in self.forms:
             if f.is_valid() and any(f.cleaned_data.values()):
                 yield f.cleaned_data
 
-LoruFormset = inlineformset_factory(Org, ProfileLORU, fk_name='ugh', formset=BaseLoruFormset)
+LoruFormset = inlineformset_factory(Org, ProfileLORU, form=LoruItemForm, fk_name='ugh', formset=BaseLoruFormset)
 
 BankAccountFormset = inlineformset_factory(Org, BankAccount, formset=BaseLoruFormset, extra=2)
 
