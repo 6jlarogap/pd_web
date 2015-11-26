@@ -1396,14 +1396,6 @@ class ApiOmsPhotoPlaces(APIView):
     permission_classes = (PermitIfUgh,)
 
     def get(self, request):
-        message = None
-        if not request.user.profile.is_registrator():
-            message = _(u"У вас нет прав вносить захоронения. Обратитесь к администратору")
-        elif not request.user.profile.cemeteries.count():
-            message = _(u"Вам не назначены кладбища для ввода захоронений. Обратитесь к администратору")
-        if message:
-            return Response(status=400, data=dict(message=message))
-
         place = None
         cemeteries = Cemetery.editable_ugh_cemeteries(user=request.user)
         # Показать место, с которым работал ранее
@@ -1428,6 +1420,14 @@ class ApiOmsPhotoPlaces(APIView):
                                   u"к кладбищу %s") % place.cemetery.name
                 ))
             except IndexError:
+                message = None
+                if not request.user.profile.is_registrator():
+                    message = _(u"У вас нет прав вносить захоронения. Обратитесь к администратору")
+                elif not request.user.profile.cemeteries.count():
+                    message = _(u"Вам не назначены кладбища для ввода захоронений. Обратитесь к администратору")
+                if message:
+                    return Response(status=400, data=dict(message=message))
+
                 # Если такого места не было, ищем первое среди необработанных
                 try:
                     place = Place.objects.select_for_update().filter(
