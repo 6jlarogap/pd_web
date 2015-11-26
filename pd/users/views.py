@@ -980,8 +980,12 @@ class LoruRegistryView(UGHRequiredMixin, View):
 
     def get_formset(self):
         self.my_ugh = self.request.user.profile.org
-        return LoruFormset(data=self.request.POST or None, instance=self.my_ugh,
+        formset = LoruFormset(data=self.request.POST or None, instance=self.my_ugh,
                 queryset=ProfileLORU.objects.filter(ugh=self.my_ugh).order_by('loru__name'))
+        for form in formset:
+            qs = form.fields['loru'].queryset
+            form.fields['loru'].queryset = qs.order_by('name')
+        return formset
 
     def get_context_data(self, **kwargs):
         return {
@@ -1013,6 +1017,7 @@ class LoruRegistryView(UGHRequiredMixin, View):
             write_log(self.request, self.request.user.profile.org, _(u'Изменены данные реестра ЛОРУ'))
             return redirect(self.get_success_url())
         else:
+            print formset.non_form_errors()
             messages.error(self.request, _(u"Обнаружены ошибки"))
             return self.get(request, *args, **kwargs)
             
