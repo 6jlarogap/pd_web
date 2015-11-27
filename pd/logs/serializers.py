@@ -56,7 +56,7 @@ class PlaceLogSerializer(serializers.ModelSerializer):
             elif model_name == "Burial":
                 try:
                     burial = Model.objects.get(pk=obj.obj_id)
-                    deadman_name = burial.deadman and burial.deadman.full_name() or _u("Неизвестный"),
+                    deadman_name = burial.deadman and burial.deadman.full_name() or _(u"Неизвестный"),
                     result = _(u'Захоронение</br /><a href="%(href)s" target="_blank">'
                                u'%(deadman_name)s</a>') % dict(
                                     href=reverse('view_burial', args=[burial.pk]),
