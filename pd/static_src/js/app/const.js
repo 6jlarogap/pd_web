@@ -32,6 +32,7 @@
         declined:    'Отклонено',
         draft:    'Черновик',
         ready:    'На согласовании',
+        inspecting: 'На обследовании',
         approved:    'Согласовано',
         closed:    'Закрыто',
         exhumated:    'Эксгумировано'
@@ -55,17 +56,6 @@
         container_urn:    'Урна',
         container_ash:    'Прах',
         container_bio:    'Биоотходы'
-    },
-
-    STATUS_CHOICES = {
-            backed: "Отозвано",
-            declined: "Отклонено",
-            draft: "Черновик",
-            ready: "На согласовании",
-            inspecting: "На обследовании",
-            approved: "Согласовано",
-            closed: "",
-            exhumated: "Эксгумировано"
     };
 
 	// EOF Burial model
