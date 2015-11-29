@@ -1,29 +1,28 @@
 ﻿'use strict';
 
-function CemeteryCtrl($rootScope, $scope, $http, $location, $resource, naturalService, Cemetery) {
+function CemeteryCtrl($rootScope, $scope, $http, $location, $resource, naturalService, Cemetery, CemeteryEditors) {
 
     "use strict";
-	var object_url = '/api/cemetery';
+    var object_url = '/api/cemetery';
     $scope.cemetery_list = [];
-	$scope.version_str = version_str;
-	$scope.editor = {};
+    $scope.version_str = version_str;
+    $scope.editor = {};
 
-	var tplButtonEdit = '<a class="btn btn-small" ng-href="/manage/cemetery/{{row.getProperty(\'id\')}}">Открыть</a>';
-	var tplLinkOpen = '<a ng-class="col.colIndex()" ng-href="/manage/cemetery/{{row.getProperty(\'id\')}}">{{row.getProperty(\'name\')}}</a>';
-	$scope.search = {name:''};
-	$scope.gridOptions = { 
-    data: 'cemetery_list',
-    enableRowSelection:false,
-    columnDefs: [
-      {field: 'name', cellTemplate:tplLinkOpen, displayName:'Наименование'},
-      {field: 'work_time', displayName: 'Часы работы'},
-      {field: 'area_cnt', displayName: 'Участков'},
-        {displayName:'Действие',cellTemplate:tplButtonEdit}
-    ],
-    showFilter: true
-  };
-	
-	
+    var tplButtonEdit = '<a class="btn btn-small" ng-href="/manage/cemetery/{{row.getProperty(\'id\')}}">Открыть</a>';
+    var tplLinkOpen = '<a ng-class="col.colIndex()" ng-href="/manage/cemetery/{{row.getProperty(\'id\')}}">{{row.getProperty(\'name\')}}</a>';
+    $scope.search = {name:''};
+    $scope.gridOptions = { 
+        data: 'cemetery_list',
+        enableRowSelection:false,
+        columnDefs: [
+            {field: 'name', cellTemplate:tplLinkOpen, displayName:'Наименование'},
+            {field: 'work_time', displayName: 'Часы работы'},
+            {field: 'area_cnt', displayName: 'Участков'},
+            {displayName:'Действие',cellTemplate:tplButtonEdit}
+        ],
+        showFilter: true
+    };
+
     $scope.alerts = [];$scope.closeAlert = function(index){$scope.alerts.splice(index,1);};
     
     $scope.update = function() {
@@ -34,17 +33,22 @@ function CemeteryCtrl($rootScope, $scope, $http, $location, $resource, naturalSe
                 places_algo:'manual',
                 places_algo_archive:'manual',
                 time_slots:'',
-	            archive_burial_fact_date_required:false,
-	            archive_burial_account_number_required:false
+                archive_burial_fact_date_required:false,
+                archive_burial_account_number_required:false
             });
+        Cemetery.authData0(
+                    {cemeteryID:0}, // fake cemetery id to find out if the user may add cemetery
+                    function(result) {
+            $scope.can_add_cemetery = result.can_add_cemetery;
+        });
         Cemetery.query(function(result) {
-			$scope.cemetery_list = result;
-			$scope.cemetery_list.sort(function(a,b){return naturalService.naturalSortField(a,b,'name')});
-		});
+            $scope.cemetery_list = result;
+            $scope.cemetery_list.sort(function(a,b){return naturalService.naturalSortField(a,b,'name')});
+        });
     };
 
-	// ADD form
-	$scope.addModalOpened = false;
+    // ADD form
+    $scope.addModalOpened = false;
     $scope.optsModal = {
         backdrop: true,
         keyboard: true,
@@ -52,37 +56,63 @@ function CemeteryCtrl($rootScope, $scope, $http, $location, $resource, naturalSe
     };
   
     $scope.openAddModal = function () {
-		$('body').css('overflow-y','hidden');
+
+        Cemetery.authData(
+                    {cemeteryID:0}, // fake cemetery id to find out necessary auth data
+                    function(result) {
+            $scope.ugh_registrators = result.ugh_registrators; 
+            $scope.editor.cemetery_editors = [];
+            if (result.profile_pk) {
+                for (var i=0; i< $scope.ugh_registrators.length; i++) {
+                        if ($scope.ugh_registrators[i].id == result.profile_pk) {
+                            $scope.editor.cemetery_editors.push($scope.ugh_registrators[i]);
+                            break;
+                        }
+                    }
+            }
+            $scope.select_users_size = Math.min($scope.ugh_registrators.length + 1, 10);
+        });
+
+        $('body').css('overflow-y','hidden');
         $scope.addModalOpened = true;
     };
 
     $scope.closeAddModal = function () {
         $scope.addModalOpened = false;
-		$('body').css('overflow-y','auto');
-		$scope.update();
+        $('body').css('overflow-y','auto');
+        $scope.update();
     };
-	$scope.addElement = function(){
-		$scope.editor.cemetery.time_begin = date2time($scope.editor.cemetery.time_begin);
-		$scope.editor.cemetery.time_end = date2time($scope.editor.cemetery.time_end);
-		
-		$scope.editor.cemetery.$save(function(result){
-			$scope.closeAddModal();
-   			$location.path('/manage/cemetery/'+result.id);
-   			$location.replace();
-        }, default_display_response_error);
-	};
-	// EOF ADD form
-	
+    $scope.addElement = function(){
+        $scope.editor.cemetery.time_begin = date2time($scope.editor.cemetery.time_begin);
+        $scope.editor.cemetery.time_end = date2time($scope.editor.cemetery.time_end);
 
-	// RUN
-	$scope.$on("$routeChangeSuccess",function(event){
-		$scope.update();
-	});
-  $scope.$watch(function () {
-    return $scope.editor.cemetery ? $scope.editor.cemetery.places_algo_archive : null;
-  }, function (placesAlgoArchive, oldPlacesAlgoArchive) {
-    if (placesAlgoArchive !== oldPlacesAlgoArchive && 'burial_account_number' === placesAlgoArchive) {
-      $scope.editor.cemetery.archive_burial_account_number_required = true;
-    }
-  });
+        $scope.editor.cemetery.$save(function(result){
+            $scope.cemetery_editors_pks = [];
+             for (var i=0; i < $scope.editor.cemetery_editors.length; i++) {
+                 $scope.cemetery_editors_pks.push($scope.editor.cemetery_editors[i].id);
+             }
+             CemeteryEditors.update({
+                 cemetery_id: result.id,
+                 cemetery_editors_pks:$scope.cemetery_editors_pks
+             }, function(result) {
+             });
+            $scope.closeAddModal();
+            $location.path('/manage/cemetery/'+result.id);
+            $location.replace();
+        }, default_display_response_error);
+    };
+    // EOF ADD form
+
+
+    // RUN
+    $scope.$on("$routeChangeSuccess",function(event){
+        $scope.update();
+    });
+    $scope.$watch(function () {
+        return $scope.editor.cemetery ? $scope.editor.cemetery.places_algo_archive : null;
+    }, function (placesAlgoArchive, oldPlacesAlgoArchive) {
+        if (placesAlgoArchive !== oldPlacesAlgoArchive && 'burial_account_number' === placesAlgoArchive) {
+            $scope.editor.cemetery.archive_burial_account_number_required = true;
+        }
+    });
 }

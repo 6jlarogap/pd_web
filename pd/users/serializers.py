@@ -195,11 +195,12 @@ class OrgClientSiteSerializer(PhonesFromTextMixin, OrgSerializerMixin, serialize
     address = serializers.RelatedField('off_address')
     phones = serializers.SerializerMethodField('phones_func')
     location = serializers.SerializerMethodField('location_func')
+    shopSite = Field(source='shop_site')
 
     class Meta:
         model = Org
         fields = ('id', 'name', 'fullName',  'description', 'address',
-                  'location', 'phones', 'fax', 'email', 'site', 
+                  'location', 'phones', 'fax', 'email', 'site', 'shopSite', 
         )
 
 class OrgOptSupplierSerializer(serializers.ModelSerializer):
@@ -333,6 +334,18 @@ class UserFioLoginSerializer(UserProfileMixin, serializers.ModelSerializer):
         else:
             return u"(%s)" % user.username
 
+class ProfileFioLoginSerializer(serializers.ModelSerializer):
+    fio = serializers.SerializerMethodField('fio_func')
+
+    class Meta:
+        model = Profile
+        fields = ('id', 'fio')
+
+    def fio_func(self, profile):
+        if profile.user_last_name:
+            return profile.full_name()
+        else:
+            return u"(%s)" % profile.user.username
 
 class OrgReviewSerializer(CreatedAtMixin, serializers.ModelSerializer):
     isPositive = Field(source='is_positive')

@@ -393,6 +393,15 @@ class CustomPlace(LocationMixin, BaseModel):
     class Meta:
         unique_together = ('user', 'place', )
 
+    @classmethod
+    def get_or_create_from_place(cls, user, place):
+        customplace, created_ = CustomPlace.objects.get_or_create(user=user, place=place)
+        if created_ and place.lat is not None and place.lng is not None:
+            address = Location.objects.create(gps_x=place.lng, gps_y=place.lat)
+            customplace.address = address
+            customplace.save()
+        return customplace, created_
+
     def add_custom_deadman(self, burial):
         """
         Добавить копию усопшего (CustomPerson) из Burial

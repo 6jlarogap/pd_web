@@ -3,19 +3,26 @@
 {% load i18n %}
 
 {% block content %}
+    {% if not user.profile.is_admin %}
+        {% include "form_read_only.html" %}
+    {% endif %}
+
     <form action="" method="POST">
         {% csrf_token %}
         {% if user.profile.is_ugh %}
             <h2>{% trans "ЛОРУ" %}</h2>
             {{ formset.management_form }}
+            {{ formset.non_form_errors }}
             {% for f in formset.forms %}
                 <fieldset>
                     {{ f.as_p }}
                 </fieldset>
             {% endfor %}
         {% endif %}
+    {% if user.profile.is_admin %}
         <p>
             <input type="submit" class="btn btn-primary" value="{% trans "cохранить" %}"/>
         </p>
+    {% endif %}
     </form>
 {% endblock %}

@@ -3,6 +3,11 @@
 {% load i18n %}
 
 {% block content %}
+
+{% if is_my_org and user.profile.is_ugh and not user.profile.is_admin %}
+    {% include "form_read_only.html" %}
+{% endif %}
+
 <h1>{% trans "Данные организации" %} {{ object }}</h1>
 <form action="" method="POST"  enctype="multipart/form-data">
     {% csrf_token %}
@@ -69,38 +74,65 @@
     {#     </fieldset>                           #}
     {# {% endfor %}                              #}
 
-    <p>
-        <input type="submit" class="btn btn-primary" value="{% trans "cохранить" %}"/>
-    </p>
+    {% if request.user.profile.is_loru or request.user.profile.is_admin %}
+        <p>
+            <input type="submit" class="btn btn-primary" value="{% trans "cохранить" %}"/>
+        </p>
+    {% endif %}
     
     {% if is_my_org %}
         <h2>{% trans "Пользователи" %}</h2>
         <table class="table table-bordered">
             <tr>
-                <th>{% trans "Имя пользователя (логин)" %}</th>
+                <th>{% trans "Имя пользователя" %}<br/>({% trans "логин" %})</th>
                 <th>{% trans "Email" %}</th>
                 <th>{% trans "ФИО" %}</th>
+                {% if user.profile.is_ugh %}<th>{% trans "Роли в организации" %}{% endif %}
                 {% if user.profile.is_loru %}<th>{% trans "Агент" %}</th>{% endif %}
                 <th>{% trans "Активен" %}</th>
-                <th></th>
+                {% if user.profile.is_loru or user.profile.is_ugh and user.profile.is_admin %}
+                    <th></th>
+                {% endif %}
             </tr>
             {% for p in form.user_qs %}
                 <tr>
                     <td>{{ p.user.username }}</td>
                     <td>{{ p.user.email|default_if_none:"" }}</td>
                     <td>{% if p.user.profile.user_last_name %}{{ p.user.profile.full_name }}{% endif %}</td>
+                    {% if user.profile.is_ugh %}
+                        <td>{% for r in p.role.all %}
+                                {{ r }}<br/>
+                            {% endfor %}
+                            {% if p.is_registrator %}
+                                <br />{% trans "Назначенные кладбища" %}:
+                                {% if not p.cemeteries.count %}
+                                    <br />&nbsp;&nbsp; {% trans "не назначены" %}
+                                {% elif p.has_all_cemeteries %}
+                                    <br />&nbsp;&nbsp; {% trans "все кладбища организации" %}
+                                {% else %}
+                                    {% for c in p.cemeteries.all %}
+                                        <br />&nbsp; - {{ c }}
+                                    {% endfor %}
+                                {% endif %}
+                            {% endif %}
+                        </td>
+                    {% endif %}
                     {% if user.profile.is_loru %}<td>{{ p.is_agent|yesno }}</td>{% endif %}
                     <td>{{ p.user.is_active|yesno }}</td>
-                    <td style="text-align:center">
-                        <a href="{% url edit_profile p.user.profile.pk %}" class="btn">править данные</a>
-                    </td>
+                    {% if user.profile.is_loru or user.profile.is_ugh and user.profile.is_admin %}
+                        <td style="text-align:center;">
+                            <a href="{% url edit_profile p.user.profile.pk %}" class="btn">править</a>
+                        </td>
+                    {% endif %}
                 </tr>
             {% endfor %}
         </table>
 
-        <p>
-            <a href="{% url create_profile %}" class="btn">{% trans "новый пользователь" %}</a>
-        </p>
+        {% if request.user.profile.is_loru or request.user.profile.is_admin %}
+            <p>
+                <a href="{% url create_profile %}" class="btn">{% trans "новый пользователь" %}</a>
+            </p>
+        {% endif %}
     {% endif %}
 </form>
 

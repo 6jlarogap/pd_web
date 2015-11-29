@@ -15,23 +15,6 @@ from django.conf import settings
 
 from restthumbnails.views import ThumbnailView
 
-def is_user_accessible(request, user):
-    """
-    Имеет ли доступ request.user к данным user, например, к его фото
-    """
-    result = False
-    if user == request.user:
-        result = True
-    else:
-        Profile = get_model('users', 'Profile')
-        try:
-            user.profile
-            if user.profile.org == request.user.profile.org:
-                result = True
-        except (AttributeError, Profile.DoesNotExist,):
-                pass
-    return result
-
 class OurThumbnailView(ThumbnailView):
 
     def get(self, request, *args, **kwargs):
@@ -49,13 +32,8 @@ class OurThumbnailView(ThumbnailView):
                 except IndexError:
                     raise Http404
             elif what == 'user-photos':
-                # Фото пользователя может смотреть либо он сам, либо любой из его организации
-                try:
-                    user = get_model('auth', 'User').objects.filter(pk=pk)[0]
-                    if not is_user_accessible(request, user):
-                        raise Http404
-                except IndexError:
-                    raise Http404
+                # Фото пользователя может смотреть любой авторизованный пользователь
+                pass
             elif what == 'order-results':
                 # Результат выполнения заказа может быть доступен исполнителю и заказчику
                 try:
@@ -212,12 +190,8 @@ def media_xsendfile(request, path, document_root):
                 except IndexError:
                     raise Http404
             elif what == 'user-photos':
-                try:
-                    user = get_model('auth', 'User').objects.filter(pk=pk)[0]
-                    if not is_user_accessible(request, user):
-                        raise Http404
-                except IndexError:
-                    raise Http404
+               # Фото пользователя может смотреть любой авторизованный пользователь
+                pass
             elif what == 'org-data':
                 try:
                     Profile = get_model('users', 'Profile')
@@ -257,20 +231,28 @@ class FormInvalidMixin(BaseFormView):
         messages.error(self.request, _(u'Обнаружены ошибки, их необходимо исправить'))
         return super(FormInvalidMixin, self).form_invalid(form, *args, **kwargs)
 
+def get_front_end_host(request):
+    if settings.FRONT_END_URL:
+        result = settings.FRONT_END_URL
+        result = re.sub(r'^https?://', '', result, flags=re.I)
+    else:
+        host = request.get_host()
+        m = re.search(r'^(%s)\.(\S+)$' % settings.BACK_END_PREFIX_REGEX, host, flags=re.I)
+        if m:
+            result = m.group(2).lower()
+        else:
+            # Затычка. Невозможная ситуация в реальной работе
+            result = host
+    return result
+
 def get_front_end_url(request):
     if settings.FRONT_END_URL:
         result = settings.FRONT_END_URL
         if not result.endswith('/'):
             result += '/'
     else:
-        host = request.get_host()
         result = 'https://' if request.is_secure() else 'http://'
-        m = re.search(r'^(%s)\.(\S+)$' % settings.BACK_END_PREFIX_REGEX, host)
-        if m:
-            result += m.group(2)
-        else:
-            # Затычка. Невозможная ситуация в реальной работе
-            result += host
+        result += get_front_end_host(request)
         # ВНИМАНИЕ: заканчиваем на '/'
         result += '/'
     return result

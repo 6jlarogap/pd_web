@@ -154,6 +154,18 @@ class Cemetery(GetLogsMixin, BaseModelManualDtCreated, PhonesMixin):
                 })
         return result
 
+    @classmethod
+    def editable_ugh_cemeteries(cls, user):
+        """
+        Кладбища (queryset), которые пользователь ОМС может редактировать
+
+        Используется в таблице захоронений
+        """
+        result = cls.objects.none()
+        if is_ugh_user(user) and user.profile.is_registrator():
+            return user.profile.cemeteries.all()
+        return result
+
 class CemeteryCoordinates(CoordinatesModel):
     #TODO:
     # Перевести эту модель к PointsModel
@@ -512,12 +524,15 @@ class Place(SafeDeleteMixin, GeoPointModel, BaseModelManualDtCreated):
         )
 
     @classmethod
-    def unprocessed_count(cls, org):
+    def unprocessed_count(cls, org=None, user=None):
         """
-        Количество необработанных мест по фотографии в организации
+        Количество необработанных мест по фотографии в организации или пользователю
         """
+        if org is not None:
+            kwargs = dict(cemetery__ugh=org)
+        elif user is not None:
+            kwargs = dict(cemetery__in=Cemetery.editable_ugh_cemeteries(user))
         return cls.objects.filter(
-                cemetery__ugh=org,
                 is_invent=True,
                 user_processed__isnull=True,
                 dt_wrong_fio__isnull=True,
@@ -525,6 +540,7 @@ class Place(SafeDeleteMixin, GeoPointModel, BaseModelManualDtCreated):
                 dt_free__isnull=True,
                 placephoto__isnull=False,
                 dt_processed__isnull=True,
+                **kwargs
             ).distinct().count()
 
 class PlaceSize(models.Model):
@@ -1204,7 +1220,7 @@ class Burial(SafeDeleteMixin, GetLogsMixin, BaseModel):
             if not place.responsible.user:
                 place.responsible.user = user
                 place.responsible.save()
-            customplace, created_ = CustomPlace.objects.get_or_create(user=user, place=place)
+            customplace, created_ = CustomPlace.get_or_create_from_place(user=user, place=place)
             if created_:
                 customplace.fill_custom_deadmen()
             else:

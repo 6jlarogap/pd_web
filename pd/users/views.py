@@ -16,6 +16,7 @@ from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.models import User
 from django.contrib.auth.hashers import make_password
+from django.contrib.sessions.models import Session
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError, PermissionDenied
 from django.core.urlresolvers import reverse
@@ -34,7 +35,7 @@ from django.utils.formats import number_format
 from django.views.generic.base import View, TemplateView
 from django.views.generic.edit import UpdateView, CreateView, FormView
 from django.views.generic.detail import DetailView
-    
+
 from captcha.client import submit
 
 from wkhtmltopdf.views import PDFTemplateResponse
@@ -57,14 +58,16 @@ from users.models import Profile, Org, RegisterProfile, ProfileLORU, CustomerPro
                          BankAccount, BankAccountRegister, OrgCertificate, OrgContract, \
                          RegisterProfileContract, RegisterProfileScan, FavoriteSupplier, \
                          UserPhoto, OrgGallery, OrgReview, \
-                         is_supervisor, get_default_currency, get_profile
+                         is_supervisor, get_default_currency, get_profile, \
+                         disposable_token_to_user
 from pd.models import validate_phone_as_number, validate_username
 from pd.utils import host_country_code, phones_from_text, EmailMessage, get_image
 from persons.models import AlivePerson, Phone, CustomPlace
 from burials.models import Cemetery, Area, Burial, Place, Grave
 from billing.models import Wallet, Rate, Currency
-from orders.models import Product, Order, Service
-from pd.views import PaginateListView, RequestToFormMixin, FormInvalidMixin, get_front_end_url, ServiceException
+from orders.models import Product, Order, Service, ProductCategory
+from pd.views import PaginateListView, RequestToFormMixin, FormInvalidMixin, \
+                     get_front_end_host, get_front_end_url, ServiceException
 from geo.models import Location, Country
 
 from users.serializers import StoreSerializer, OrgSerializer, OrgShort2Serializer, \
@@ -194,10 +197,12 @@ class ApiAuthSigninView(SessionDataMixin, APIView):
         valid = False
         data = dict(status='error')
         status_code = 400
+        message = ''
          # Так надо для login() без предварительного authenticate()
         user_backend = 'django.contrib.auth.backends.ModelBackend'
         confirm_tc = request.DATA.get('confirmTC')
         oauth = request.DATA.get('oauth')
+        disposable_token = request.DATA.get('token')
         password = None
         if user:
             user.backend = user_backend
@@ -214,8 +219,10 @@ class ApiAuthSigninView(SessionDataMixin, APIView):
                 user, oauth_rec, message = Oauth.check_token(
                     oauth,
                 )
-                if user:
-                    user.backend = user_backend
+            elif disposable_token:
+                user, message = disposable_token_to_user(disposable_token)
+            if (oauth or disposable_token) and user:
+                user.backend = user_backend
         if user:
             if user.is_active:
                 if password:
@@ -246,8 +253,8 @@ class ApiAuthSigninView(SessionDataMixin, APIView):
                 LoginLog.write(request)
             else:
                 data['message'] = data['errorCode'] = 'unconfirmed_tc'
-        elif oauth and not user:
-            data.update(message)
+        elif (oauth or disposable_token) and not user:
+            data['message'] = message
         elif not data.get('message'):
             data['message'] = 'Unknown Error'
             data['errorCode'] = 'unknown_error'
@@ -277,6 +284,55 @@ class ApiAuthSignoutView(APIView):
         return Response(data={}, status=200)
 
 api_auth_signout = ApiAuthSignoutView.as_view()
+
+class ApiAuthCookiesView(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def do_it(self, request, token=None):
+        user_token, created = Token.objects.get_or_create(user=request.user)
+        if token is not None and (created or token != user_token.key):
+            return Response(
+                status=400,
+                data=dict(
+                    status='error',
+                    message=_(u"Несовпадение переданного токена и токена пользователя")
+            ))
+        # Пользователь может быть is_authenticated, но если зашел через Token,
+        # то его сессия не будет аутентифицированной
+        session_key = request.session._get_or_create_session_key()
+        try:
+            session = Session.objects.get(session_key=session_key)
+        except Session.DoesNotExist:
+            session = None
+        if not session or not session.get_decoded().get('_auth_user_id'):
+            request.user.backend = 'django.contrib.auth.backends.ModelBackend'
+            login(request, request.user)
+        response = Response(data={}, status=200)
+        kwargs = dict(
+            secure=settings.SESSION_COOKIE_SECURE or None,
+            max_age = settings.SESSION_COOKIE_AGE,
+            domain=u".%s" % re.sub(r'\:\d+$','', get_front_end_host(request)),
+        )
+        response.set_cookie(
+            'client_auth_token',
+            user_token.key,
+            **kwargs
+        )
+        response.set_cookie(
+            settings.SESSION_COOKIE_NAME,
+            session_key,
+            **kwargs
+        )
+        return response
+
+    def post(self, request):
+        return self.do_it(request)
+
+    def get(self, request):
+        token=request.GET.get('token') or ''
+        return self.do_it(request, token=token)
+
+api_auth_cookies = ApiAuthCookiesView.as_view()
 
 class ApiAuthSignupView(CheckRecaptchaMixin, ApiAuthSigninView):
     """
@@ -765,6 +821,31 @@ class ApiFeedBack(CheckRecaptchaMixin, APIView):
 
 api_feedback = ApiFeedBack.as_view()
 
+class ApiAuthOneTimeTokens(ApiAuthSigninView, APIView):
+
+    def get(self, request):
+        profile = get_profile(request.user)
+        if not profile:
+            raise PermissionDenied
+        data = dict(token=profile.form_disposable_token())
+        return Response(data=data, status=200)
+
+    def post(self, request):
+        if request.user.is_authenticated():
+            data = self.session_data(request.user)
+            return Response(data=data, status=200)
+        disposable_token = request.DATA.get('token')
+        if not disposable_token:
+            return Response(
+                status=400,
+                data=dict(
+                    status='error',
+                    message=_(u"Не указан одноразовый токен"),
+            ))
+        return self.do_post(request)
+
+api_auth_one_time_tokens = ApiAuthOneTimeTokens.as_view()
+
 class ApiLoruPlaces(APIView):
     permission_classes = (PermitIfTrade,)
 
@@ -957,8 +1038,11 @@ class ProfileEditView(UghOrLoruRequiredMixin, RequestToFormMixin, UpdateView):
         elif 'my_profile' in self.kwargs:
             obj = self.request.user.profile
         else:
-            obj = Profile()
-            self.new_ = True
+            if self.request.user.profile.is_loru() or self.request.user.profile.is_admin():
+                obj = Profile()
+                self.new_ = True
+            else:
+                raise Http404
         return obj
 
     def get_success_url(self):
@@ -2472,13 +2556,15 @@ class ApiShopsView(APIView):
             except ValueError:
                 pass
         if category_ids:
-            q &= Q(product__productcategory__pk__in=category_ids) & Q(product__is_for_visit=True)
+            q &= Q(product__productcategory__pk__in=category_ids)
+        else:
+            q &= Q(product__productcategory__pk__in=ProductCategory.AVAILABLE_FOR_VISIT_PKS)
 
         s = request.GET.get('query')
         if s:
             q2 = Q(off_address__city__name__icontains=s) | \
                  Q(off_address__addr_str__icontains=s) | \
-                 Q(product__name__icontains=s) & Q(product__is_for_visit=True)
+                 Q(product__name__icontains=s)
             q &=q2
 
         return Response(

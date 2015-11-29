@@ -53,6 +53,20 @@ class UserPhoto(Files):
 
     user = models.OneToOneField(User, related_name='user_photo_list')
 
+class Role(models.Model):
+
+    ROLE_ADMIN = 'admin'
+    ROLE_REGISTRATOR = 'registrator'
+
+    name = models.CharField(_(u"Код"), max_length=255, editable=False)
+    title = models.CharField(_(u"Название"), max_length=255, editable=False)
+
+    class Meta:
+        verbose_name = _(u'Роль пользователя')
+
+    def __unicode__(self):
+        return self.title
+
 class CommonProfile(BaseModel):
     USERNAME_HELPTEXT = _(u'До 30 символов: латинские буквы, цифры, дефисы, знаки подчеркивания, @')
 
@@ -60,6 +74,8 @@ class CommonProfile(BaseModel):
     user_last_name = models.CharField(_(u"Фамилия"), max_length=255, null=True, blank=True)
     user_first_name = models.CharField(_(u"Имя"), max_length=255, null=True, blank=True)
     user_middle_name = models.CharField(_(u"Отчество"), max_length=255, null=True, blank=True)
+    disposable_token = models.CharField(_(u"Одноразовый токен для аутентификации"),
+                       max_length=255, null=True, editable=False, unique=True)
 
     class Meta:
         abstract = True
@@ -112,6 +128,26 @@ class CommonProfile(BaseModel):
             organization=None,
         )
 
+    def form_disposable_token(self):
+        chars = string.ascii_uppercase + string.ascii_lowercase + string.digits
+        pk_str = unicode(self.pk)
+        token_len = int(len(pk_str) / 32) * 32 + 32
+        token = u"%s%s" % (
+            ''.join(random.choice(chars) for x in range(token_len-len(pk_str))),
+            # Это обеспечит уникальность:
+            pk_str,
+        )
+        self.disposable_token = token
+        self.save()
+        return token
+
+    @classmethod
+    def disposable_token_to_user(cls, token):
+        try:
+            return cls.objects.get(disposable_token=token)
+        except cls.DoesNotExist:
+            return None
+
     def save(self, *args, **kwargs):
         self.user_first_name = capitalize(self.user_first_name)
         self.user_last_name = capitalize(self.user_last_name)
@@ -162,6 +198,10 @@ class Profile(CommonProfile):
     cemetery = models.ForeignKey('burials.Cemetery', verbose_name=_(u"Кладбище"), blank=True, null=True)
     area = models.ForeignKey('burials.Area', verbose_name=_(u"Участок"), blank=True, null=True)
 
+    role = models.ManyToManyField(Role, verbose_name=_(u"Роли в организации"), blank=True)
+    cemeteries = models.ManyToManyField('burials.Cemetery',
+                 verbose_name=_(u"Доступные кладбища"), related_name='rw_profiles', blank=True)
+
     lat = models.DecimalField(max_digits=30, decimal_places=27, blank=True, null=True)
     lng = models.DecimalField(max_digits=30, decimal_places=27, blank=True, null=True)
 
@@ -196,6 +236,28 @@ class Profile(CommonProfile):
             ) if self.org else None
         ))
         return result
+
+    def is_admin(self):
+        return self.role.filter(name=Role.ROLE_ADMIN).exists()
+
+    def is_registrator(self):
+        return self.is_ugh() and self.role.filter(name=Role.ROLE_REGISTRATOR).exists()
+
+    def has_all_cemeteries(self):
+        Cemetery = get_model('burials', 'Cemetery')
+        return self.cemeteries.all().count() == Cemetery.objects.filter(ugh=self.org).count()
+
+def disposable_token_to_user(token):
+    for model in (Profile, CustomerProfile):
+        profile = model.disposable_token_to_user(token)
+        if profile:
+            profile.disposable_token = None
+            profile.save()
+            break
+    if profile:
+        return profile.user, ''
+    else:
+        return None, _(u"Пользователь не найден по одноразовому токену")
 
 def is_cabinet_user(user):
     try:
@@ -669,6 +731,7 @@ class Org(GetLogsMixin, BaseModel):
                   validators = [validate_phone_as_number, ])
     worktime = models.CharField(_(u"Время работы (ЧЧ:ММ - ЧЧ:ММ)"), max_length=255, default='', blank=True)
     site = models.URLField(_(u"Сайт"), default='', blank=True)
+    shop_site = models.URLField(_(u"Сайт магазина"), default='', blank=True)
     currency = models.ForeignKey('billing.Currency', verbose_name=_(u"Валюта"), default=get_default_currency,
                                  help_text=_(u' При смене валюты она будет заменена у всех товаров (услуг) без корректировки цен'))
     is_wholesale_with_vat = models.BooleanField(_(u"Оптовые цены продуктов с НДС"), default=False)
@@ -921,6 +984,11 @@ class BankAccount(BankAccountCommon):
 class ProfileLORU(models.Model):
     ugh = models.ForeignKey(Org, related_name='loru_list', limit_choices_to={'type': Org.PROFILE_UGH}, verbose_name=_(u"ОМС"))
     loru = models.ForeignKey(Org, related_name='ugh_list', limit_choices_to={'type': Org.PROFILE_LORU}, verbose_name=_(u"ЛОРУ"))
+
+    class Meta:
+        verbose_name = _(u'ЛОРУ у ОМС')
+        unique_together = ('ugh', 'loru')
+
 
 def add_loru_to_public_catalog(sender, instance, created, **kwargs):
     if created and instance.type == Org.PROFILE_LORU:
