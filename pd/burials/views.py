@@ -1396,17 +1396,9 @@ class ApiOmsPhotoPlaces(APIView):
     permission_classes = (PermitIfUgh,)
 
     def get(self, request):
-        # TODO решить вопрос об этих ошибочных сообщениях с front-end
-        #message = None
-        #if not request.user.profile.is_registrator():
-            #message = _(u"У вас нет прав вносить захоронения. Обратитесь к администратору")
-        #elif not request.user.profile.cemeteries.count():
-            #message = _(u"Вам не назначены кладбища для ввода захоронений. Обратитесь к администратору")
-        #if message:
-            #return Response(status=400, data=dict(message=message))
-
         place = None
-        # Показать место, с которым работал ранее 
+        cemeteries = Cemetery.editable_ugh_cemeteries(user=request.user)
+        # Показать место, с которым работал ранее
         with transaction.commit_on_success():
             try:
                 place = Place.objects.select_for_update().filter(
@@ -1420,11 +1412,26 @@ class ApiOmsPhotoPlaces(APIView):
                             dt_processed__isnull=True,
                             placephoto__isnull=False,
                     ).order_by('pk')[0]
+                if place.cemetery not in cemeteries:
+                    return Response(status=400, data=dict(
+                        message=_(u"Вы не закончили обрабатывать место на кладбище, "
+                                  u"доступ к которому после этого был Вам отменен. "
+                                  u"Обратитесь к администратору, чтобы возобновил Вам доступ "
+                                  u"к кладбищу %s") % place.cemetery.name
+                ))
             except IndexError:
+                message = None
+                if not request.user.profile.is_registrator():
+                    message = _(u"У вас нет прав вносить захоронения. Обратитесь к администратору")
+                elif not request.user.profile.cemeteries.count():
+                    message = _(u"Вам не назначены кладбища для ввода захоронений. Обратитесь к администратору")
+                if message:
+                    return Response(status=400, data=dict(message=message))
+
                 # Если такого места не было, ищем первое среди необработанных
                 try:
                     place = Place.objects.select_for_update().filter(
-                                cemetery__ugh=request.user.profile.org,
+                                cemetery__in=cemeteries,
                                 is_invent=True,
                                 is_inprocess=False,
                                 dt_wrong_fio__isnull=True,
@@ -1513,7 +1520,7 @@ class ApiOmsPhotoPlacesCounts(APIView):
         return Response(
             status=200,
             data=dict(
-                unprocessed=Place.unprocessed_count(org=request.user.profile.org)
+                unprocessed=Place.unprocessed_count(user=request.user)
         ))
 
 api_oms_photo_places_counts = ApiOmsPhotoPlacesCounts.as_view()
@@ -1525,7 +1532,7 @@ class ApiOmsCemeteriesView(APIView):
         return Response(
             status=200,
             data=[ CemeteryTitleSerializer(cemetery).data \
-                   for cemetery in Cemetery.objects.filter(ugh=request.user.profile.org)
+                   for cemetery in Cemetery.editable_ugh_cemeteries(user=request.user)
             ]
         )
 

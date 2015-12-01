@@ -524,12 +524,15 @@ class Place(SafeDeleteMixin, GeoPointModel, BaseModelManualDtCreated):
         )
 
     @classmethod
-    def unprocessed_count(cls, org):
+    def unprocessed_count(cls, org=None, user=None):
         """
-        Количество необработанных мест по фотографии в организации
+        Количество необработанных мест по фотографии в организации или пользователю
         """
+        if org is not None:
+            kwargs = dict(cemetery__ugh=org)
+        elif user is not None:
+            kwargs = dict(cemetery__in=Cemetery.editable_ugh_cemeteries(user))
         return cls.objects.filter(
-                cemetery__ugh=org,
                 is_invent=True,
                 user_processed__isnull=True,
                 dt_wrong_fio__isnull=True,
@@ -537,6 +540,7 @@ class Place(SafeDeleteMixin, GeoPointModel, BaseModelManualDtCreated):
                 dt_free__isnull=True,
                 placephoto__isnull=False,
                 dt_processed__isnull=True,
+                **kwargs
             ).distinct().count()
 
 class PlaceSize(models.Model):

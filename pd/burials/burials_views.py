@@ -647,8 +647,10 @@ class BurialsListView(PaginateListView):
         # Птичка "Свои кладбища" нужна только смотрителю, у кого
         # набор своих кладбищ не совпадает с общим набором кладбищ ОМС
         profile = self.request.user.profile
+        cemeteries_count = profile.cemeteries.count()
         if profile.is_ugh() and profile.is_registrator() and \
-           profile.cemeteries.count() != Cemetery.objects.filter(ugh=profile.org).count():
+           cemeteries_count != Cemetery.objects.filter(ugh=profile.org).count() and \
+           cemeteries_count > 0:
             pass
         else:
             del form.fields['cemeteries_editable']
@@ -834,7 +836,7 @@ class CreateBurial(BurialGetOrderMixin, FormInvalidMixin, CreateView):
              self.request.user.profile.cemeteries.count():
             pass
         else:
-            messages.error(request, _(u"У Вас нет прав создавать захоронения"))
+            messages.error(request, _(u"У Вас нет прав создавать захоронения. Обратитесь к администратору"))
             return redirect('/')
 
         return super(CreateBurial, self).dispatch(request, *args, **kwargs)
@@ -873,13 +875,17 @@ class CreateBurial(BurialGetOrderMixin, FormInvalidMixin, CreateView):
                 )
                 messages.success(self.request, msg)
 
-            if action == 'annulate' and self.request.user.profile.is_loru() and b.can_loru_annulate():
+            if action == 'annulate' and \
+                 (self.request.user.profile.is_loru() and b.can_loru_annulate() or \
+                  self.request.user.profile.is_ugh() and b.can_ugh_annulate()
+                 )  :
                 b.annulated = True
                 write_log(self.request, b, _(u'Захоронение аннулировано'))
                 msg = _(u"<a href='%(view_burial)s'>Захоронение %(pk)s</a> аннулировано") % dict(
                     view_burial=reverse('view_burial', args=[b.pk]) + order_parm, pk=b.pk,
                 )
                 messages.success(self.request, msg)
+                redirect_to_view = True
 
             if action == 'approve' and self.request.user.profile.is_ugh() and b.can_approve_ugh():
                 b.status = Burial.STATUS_APPROVED

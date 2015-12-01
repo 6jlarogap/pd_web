@@ -283,6 +283,13 @@
           }, function (result) {
             result.plan_time = result.plan_time || '';
             $scope.selectedBurial = result;
+            if (!result.deadman) {
+                $scope.selectedBurial.deadman = {
+                    last_name: '',
+                    first_name: '',
+                    middle_name: ''
+                };
+            }
             $scope.editor.item = $scope.selectedBurial;
           });
         }
