@@ -74,8 +74,6 @@ class CommonProfile(BaseModel):
     user_last_name = models.CharField(_(u"Фамилия"), max_length=255, null=True, blank=True)
     user_first_name = models.CharField(_(u"Имя"), max_length=255, null=True, blank=True)
     user_middle_name = models.CharField(_(u"Отчество"), max_length=255, null=True, blank=True)
-    disposable_token = models.CharField(_(u"Одноразовый токен для аутентификации"),
-                       max_length=255, null=True, editable=False, unique=True)
 
     class Meta:
         abstract = True
@@ -127,26 +125,6 @@ class CommonProfile(BaseModel):
             middleName=self.user_middle_name,
             organization=None,
         )
-
-    def form_disposable_token(self):
-        chars = string.ascii_uppercase + string.ascii_lowercase + string.digits
-        pk_str = unicode(self.pk)
-        token_len = int(len(pk_str) / 32) * 32 + 32
-        token = u"%s%s" % (
-            ''.join(random.choice(chars) for x in range(token_len-len(pk_str))),
-            # Это обеспечит уникальность:
-            pk_str,
-        )
-        self.disposable_token = token
-        self.save()
-        return token
-
-    @classmethod
-    def disposable_token_to_user(cls, token):
-        try:
-            return cls.objects.get(disposable_token=token)
-        except cls.DoesNotExist:
-            return None
 
     def save(self, *args, **kwargs):
         self.user_first_name = capitalize(self.user_first_name)
@@ -246,18 +224,6 @@ class Profile(CommonProfile):
     def has_all_cemeteries(self):
         Cemetery = get_model('burials', 'Cemetery')
         return self.cemeteries.all().count() == Cemetery.objects.filter(ugh=self.org).count()
-
-def disposable_token_to_user(token):
-    for model in (Profile, CustomerProfile):
-        profile = model.disposable_token_to_user(token)
-        if profile:
-            profile.disposable_token = None
-            profile.save()
-            break
-    if profile:
-        return profile.user, ''
-    else:
-        return None, _(u"Пользователь не найден по одноразовому токену")
 
 def is_cabinet_user(user):
     try:
