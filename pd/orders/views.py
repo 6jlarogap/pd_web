@@ -1473,8 +1473,10 @@ class ApiServicePriceMixin(object):
                     latitude = self.data.customplace.address and self.data.customplace.address.gps_y
                     longitude = self.data.customplace.address and self.data.customplace.address.gps_x
                 if (latitude is None or longitude is None) and self.data.customplace.place:
-                    latitude = self.data.customplace.place.lat
-                    longitude = self.data.customplace.place.lng
+                    place_location = self.data.customplace.place.location()
+                    if place_location:
+                        latitude = place_location['latitude']
+                        longitude = place_location['longitude']
                 if latitude is None or longitude is None:
                     raise ServiceException(_(u'Не заданы и не удалось выяснить координаты места'))
                 self.data.latitude = float(latitude)
@@ -1624,7 +1626,8 @@ class ApiShopPlacesView(ApiServicePriceMixin, APIView):
         try:
             org = get_object_or_404(Org, pk=org_pk)
             place = get_object_or_404(Place, pk=place_pk)
-            if place.lat is None or place.lng is None:
+            place_location = place.location()
+            if not place_location:
                 raise ServiceException(_(u"Место не имеет координат"))
 
             service_name = Service.SERVICE_PHOTO
@@ -1659,7 +1662,7 @@ class ApiShopPlacesView(ApiServicePriceMixin, APIView):
             )
             if not store_qs.count():
                 raise ServiceException(_(u'У организации нет складов с координатами'))
-            place_loc = LatLon(Latitude(place.lat), Longitude(place.lng))
+            place_latlon = LatLon(Latitude(place_location['latitude']), Longitude(place_location['longitude']))
 
             price_org = self.get_price_service(org, service)
 
@@ -1668,7 +1671,7 @@ class ApiShopPlacesView(ApiServicePriceMixin, APIView):
             distance = 41000.0
             for store in store_qs:
                 store_loc = LatLon(Latitude(store.address.gps_y), Longitude(store.address.gps_x))
-                distance = min(distance, store_loc.distance(place_loc))
+                distance = min(distance, store_loc.distance(place_latlon))
 
             price_org += self.get_price_delivery(org=org, km=distance)
             response_data['base_price'] = float(price_org)

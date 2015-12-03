@@ -543,6 +543,24 @@ class Place(SafeDeleteMixin, GeoPointModel, BaseModelManualDtCreated):
                 **kwargs
             ).distinct().count()
 
+    def location(self):
+        """
+        Координаты места, с учетом координат кладбища
+        """
+        latitude = self.lat
+        longitude = self.lng
+        if latitude is None or longitude is None:
+            if self.cemetery.address:
+                latitude = self.cemetery.address.gps_y
+                longitude = self.cemetery.address.gps_x
+        if latitude is None or longitude is None:
+            return None
+        else:
+            return dict(
+                latitude=latitude,
+                longitude=longitude,
+            )
+
 class PlaceSize(models.Model):
     org = models.ForeignKey(Org, verbose_name=_(u"Организация"), editable=False, on_delete=models.PROTECT) 
     graves_count = models.PositiveSmallIntegerField(_(u"Число могил"), )

@@ -58,8 +58,7 @@ from users.models import Profile, Org, RegisterProfile, ProfileLORU, CustomerPro
                          BankAccount, BankAccountRegister, OrgCertificate, OrgContract, \
                          RegisterProfileContract, RegisterProfileScan, FavoriteSupplier, \
                          UserPhoto, OrgGallery, OrgReview, \
-                         is_supervisor, get_default_currency, get_profile, \
-                         disposable_token_to_user
+                         is_supervisor, get_default_currency, get_profile
 from pd.models import validate_phone_as_number, validate_username
 from pd.utils import host_country_code, phones_from_text, EmailMessage, get_image
 from persons.models import AlivePerson, Phone, CustomPlace
@@ -202,7 +201,6 @@ class ApiAuthSigninView(SessionDataMixin, APIView):
         user_backend = 'django.contrib.auth.backends.ModelBackend'
         confirm_tc = request.DATA.get('confirmTC')
         oauth = request.DATA.get('oauth')
-        disposable_token = request.DATA.get('token')
         password = None
         if user:
             user.backend = user_backend
@@ -219,9 +217,7 @@ class ApiAuthSigninView(SessionDataMixin, APIView):
                 user, oauth_rec, message = Oauth.check_token(
                     oauth,
                 )
-            elif disposable_token:
-                user, message = disposable_token_to_user(disposable_token)
-            if (oauth or disposable_token) and user:
+            if oauth and user:
                 user.backend = user_backend
         if user:
             if user.is_active:
@@ -253,7 +249,7 @@ class ApiAuthSigninView(SessionDataMixin, APIView):
                 LoginLog.write(request)
             else:
                 data['message'] = data['errorCode'] = 'unconfirmed_tc'
-        elif (oauth or disposable_token) and not user:
+        elif oauth and not user:
             data['message'] = message
         elif not data.get('message'):
             data['message'] = 'Unknown Error'
@@ -308,21 +304,21 @@ class ApiAuthCookiesView(APIView):
             request.user.backend = 'django.contrib.auth.backends.ModelBackend'
             login(request, request.user)
         response = Response(data={}, status=200)
-        kwargs = dict(
+        response.set_cookie(
+            'client_auth_token',
+            user_token.key,
             secure=settings.SESSION_COOKIE_SECURE or None,
             max_age = settings.SESSION_COOKIE_AGE,
             domain=u".%s" % re.sub(r'\:\d+$','', get_front_end_host(request)),
         )
-        response.set_cookie(
-            'client_auth_token',
-            user_token.key,
-            **kwargs
-        )
-        response.set_cookie(
-            settings.SESSION_COOKIE_NAME,
-            session_key,
-            **kwargs
-        )
+        # Такую куку отдает back-end ?
+        #response.set_cookie(
+            #settings.SESSION_COOKIE_NAME,
+            #session_key,
+            #secure=settings.SESSION_COOKIE_SECURE or None,
+            #max_age=settings.SESSION_COOKIE_AGE,
+            #domain=re.sub(r'\:\d+$','', request.get_host()),
+        #)
         return response
 
     def post(self, request):
@@ -820,31 +816,6 @@ class ApiFeedBack(CheckRecaptchaMixin, APIView):
         return Response(data=data, status=status_code)
 
 api_feedback = ApiFeedBack.as_view()
-
-class ApiAuthOneTimeTokens(ApiAuthSigninView, APIView):
-
-    def get(self, request):
-        profile = get_profile(request.user)
-        if not profile:
-            raise PermissionDenied
-        data = dict(token=profile.form_disposable_token())
-        return Response(data=data, status=200)
-
-    def post(self, request):
-        if request.user.is_authenticated():
-            data = self.session_data(request.user)
-            return Response(data=data, status=200)
-        disposable_token = request.DATA.get('token')
-        if not disposable_token:
-            return Response(
-                status=400,
-                data=dict(
-                    status='error',
-                    message=_(u"Не указан одноразовый токен"),
-            ))
-        return self.do_post(request)
-
-api_auth_one_time_tokens = ApiAuthOneTimeTokens.as_view()
 
 class ApiLoruPlaces(APIView):
     permission_classes = (PermitIfTrade,)
