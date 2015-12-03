@@ -304,21 +304,21 @@ class ApiAuthCookiesView(APIView):
             request.user.backend = 'django.contrib.auth.backends.ModelBackend'
             login(request, request.user)
         response = Response(data={}, status=200)
-        kwargs = dict(
+        response.set_cookie(
+            'client_auth_token',
+            user_token.key,
             secure=settings.SESSION_COOKIE_SECURE or None,
             max_age = settings.SESSION_COOKIE_AGE,
             domain=u".%s" % re.sub(r'\:\d+$','', get_front_end_host(request)),
         )
-        response.set_cookie(
-            'client_auth_token',
-            user_token.key,
-            **kwargs
-        )
-        response.set_cookie(
-            settings.SESSION_COOKIE_NAME,
-            session_key,
-            **kwargs
-        )
+        # Такую куку отдает back-end ?
+        #response.set_cookie(
+            #settings.SESSION_COOKIE_NAME,
+            #session_key,
+            #secure=settings.SESSION_COOKIE_SECURE or None,
+            #max_age=settings.SESSION_COOKIE_AGE,
+            #domain=re.sub(r'\:\d+$','', request.get_host()),
+        #)
         return response
 
     def post(self, request):
