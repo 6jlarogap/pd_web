@@ -23,17 +23,6 @@ class AddressLatLonMixin(serializers.ModelSerializer):
         else:
             return None
 
-class PointLatLonMixin(serializers.ModelSerializer):
-
-    def location_func(self, obj):
-        if obj.lat and obj.lng:
-            return {
-                'latitude': obj.lat,
-                'longitude': obj.lng,
-            }
-        else:
-            return None
-
 class CountrySerializer(serializers.ModelSerializer):
     text = serializers.Field(source='name')
     class Meta:
