@@ -13,7 +13,7 @@ from burials.models import Cemetery, Place, Area, Grave, Burial, AreaPhoto, Buri
 
 
 from geo.models import Location
-from geo.serializers import AddressLatLonMixin, PointLatLonMixin
+from geo.serializers import AddressLatLonMixin
 from geo.serializers import LocationSerializer
 from pd.serializers import ArchFilesSerializer
 
@@ -141,20 +141,8 @@ class AreaSerializer(serializers.ModelSerializer):
         return valid
 
 
-class PlacePointLatLonMixin(PointLatLonMixin):
-
-    def location_func(self, obj):
-        result = super(PlacePointLatLonMixin, self).location_func(obj)
-        if not result and obj.cemetery.address and \
-           obj.cemetery.address.gps_x and obj.cemetery.address.gps_y:
-            result = {
-                'latitude': obj.cemetery.address.gps_y,
-                'longitude': obj.cemetery.address.gps_x,
-            }
-        return result
-
-class ApiPlacesSerializer(PlacePointLatLonMixin, serializers.ModelSerializer):
-    location = serializers.SerializerMethodField('location_func')
+class ApiPlacesSerializer(serializers.ModelSerializer):
+    location = serializers.Field(source='location')
     status = serializers.Field(source='status_list')
 
 
