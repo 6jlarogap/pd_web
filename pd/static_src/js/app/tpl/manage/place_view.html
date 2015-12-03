@@ -55,6 +55,10 @@
         </th>
         <td>{{ item.name }}</td>
       </tr>
+      <tr ng-show="!item.lat && item.location">
+        <th>Координаты кладбища</th>
+        <td>широта: {{item.location.latitude}}, долгота: {{item.location.latitude}}</td>
+      </tr>
       <tr>
         <th>Участок:</th>
           <td>{{ area.name }}</td>
@@ -71,7 +75,7 @@
         <th>Могил всего</th>
         <td>{{item.graves_count}}</td>
       </tr>
-      <tr>
+      <tr ng-show="item.lat">
         <!-- dt>Свободно</dt>
         <dd>{{item.available_count}}</dd -->
 

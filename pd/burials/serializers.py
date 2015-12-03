@@ -188,6 +188,7 @@ class PlaceSerializer(GetGalleryMixin, serializers.ModelSerializer):
     dt_unindentified = serializers.DateTimeField(required=False)
     caretaker = serializers.PrimaryKeyRelatedField(required=False)
     create_cabinet = serializers.SerializerMethodField('create_cabinet_func')
+    location = serializers.Field('location')
 
     class Meta:
         model = Place
@@ -196,6 +197,7 @@ class PlaceSerializer(GetGalleryMixin, serializers.ModelSerializer):
                   'dt_free',
                   'dt_wrong_fio', 'dt_military', 'dt_size_violated', 'dt_unowned', 'dt_unindentified',
                   'caretaker', 'create_cabinet',
+                  'location',
                  ) 
 
     def create_cabinet_func(self, obj):
