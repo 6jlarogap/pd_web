@@ -276,7 +276,9 @@ class ApiAuthSignoutView(APIView):
 
     def post(self, request):
         # print u'DEBUG: %s:%s /API/AUTH/SIGNOUT' % (request.get_host(), request.user.username, )
+        user=request.user
         logout(request)
+        Token.objects.filter(user=user).delete()
         return Response(data={}, status=200)
 
 api_auth_signout = ApiAuthSignoutView.as_view()
@@ -925,9 +927,11 @@ class LogoutView(View):
     def dispatch(self, request, *args, **kwargs):
         if not request.user.is_authenticated():
             return redirect('/')
+        user = request.user
         write_log(request, request.user, _(u'Выход из системы'))
         # print u'DEBUG: %s:%s /LOGOUT' % (request.get_host(), request.user.username, )
         logout(request)
+        Token.objects.filter(user=user).delete()
         if request.GET.get("redirectUrl"):
             response = redirect(request.GET.get("redirectUrl"))
         elif settings.REDIRECT_LOGIN_TO_FRONT_END:
