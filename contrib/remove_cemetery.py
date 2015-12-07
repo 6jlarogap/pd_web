@@ -21,7 +21,7 @@ from burials.models import Cemetery, Burial, ExhumationRequest, BurialFiles, \
 from orders.models import Order
 from persons.models import AlivePerson, DeadPerson
 
-CEMETERY_NAME = u'Восточное'
+CEMETERY_NAME = u'Михановичи'
 #
 # Искажение во избежание случайного запуска процедуры
 #
@@ -42,6 +42,7 @@ def main():
         deadperson.delete()
         if i % 1000 == 0:
             print d_removed % i
+            transaction.commit()
     print d_removed % i
 
     print '\nremove burial applicants- alivepersons'
@@ -52,6 +53,7 @@ def main():
         aliveperson.delete()
         if i % 1000 == 0:
             print d_removed % i
+            transaction.commit()
     print d_removed % i
 
     print '\nremove non-closed burial responsibles- alivepersons'
@@ -61,6 +63,7 @@ def main():
         Burial.objects.filter(responsible=aliveperson).update(responsible=None)
         aliveperson.delete()
     print d_removed % i
+    transaction.commit()
 
     print '\nremove exhumationrequest applicants- alivepersons'
     i = 0
@@ -69,12 +72,14 @@ def main():
         ExhumationRequest.objects.filter(applicant=aliveperson).update(applicant=None)
         aliveperson.delete()
     print d_removed % i
+    transaction.commit()
 
     print '\nremove exhumations'
     q = ExhumationRequest.objects.filter(burial__cemetery=cemetery)
     i = q.count()
     q.delete()
     print d_removed % i
+    transaction.commit()
 
     print '\nremove burial files'
     # По одному. Иначе не вызывается функция delete(), убирающая файлы
@@ -85,6 +90,7 @@ def main():
         burialfile.delete()
         if i % 1000 == 0:
             print d_removed % i
+            transaction.commit()
     print d_removed % i
 
     print '\nremove burial comments'
@@ -92,6 +98,7 @@ def main():
     i = q.count()
     q.delete()
     print d_removed % i
+    transaction.commit()
 
     i = 0
     print '\nremove burials'
@@ -103,6 +110,7 @@ def main():
         burial.delete()
         if i % 1000 == 0:
             print d_removed % i
+            transaction.commit()
     print d_removed % i
 
     print '\nremove graves'
@@ -110,6 +118,7 @@ def main():
     i = q.count()
     q.delete()
     print d_removed % i
+    transaction.commit()
 
     print '\nremove place responsibles - alivepersons'
     i = 0
@@ -120,6 +129,7 @@ def main():
             aliveperson.delete()
             if i % 1000 == 0:
                 print d_removed % i
+                transaction.commit()
     print d_removed % i
 
     print '\nremove places'
@@ -134,6 +144,7 @@ def main():
         place.delete()
         if i % 1000 == 0:
             print d_removed % i
+            transaction.commit()
     print d_removed % i
 
     print '\nremove areas'
@@ -143,6 +154,7 @@ def main():
     i = q.count()
     q.delete()
     print d_removed % i
+    transaction.commit()
 
     print '\nremove cemetery log recs'
     ct = ContentType.objects.get(app_label="burials", model="cemetery")
@@ -150,5 +162,6 @@ def main():
     i = q.count()
     q.delete()
     print d_removed % i
+    transaction.commit()
 
 main()
