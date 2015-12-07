@@ -1384,7 +1384,7 @@ class BurialComment(BaseModel):
     comment = models.TextField(_(u"Комментарий"), )
 
     class Meta:
-        ordering = ['-pk']
+        ordering = ['-dt_created']
 
 class BurialFiles(Files):
     """
