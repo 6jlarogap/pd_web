@@ -186,21 +186,21 @@
                 {% endif %}
             </td>
             <td>{{ b.combined_date }}</td>
-            <th>
-                {{ b.status_str|default:"" }}
+            <td>
+                <b>{{ b.status_str|default:"" }}</b>
                 {% if b.is_declined %}
                     <br />
                     Причина: {{ b.get_last_decline_reason|default_if_none:"не указана" }}
                 {% endif %}
                 {% if b.annulated %}
                     <br />
-                    <span style="color:red">{% trans "АННУЛИРОВАНО" %}</span>
+                    <b><span style="color:red">{% trans "АННУЛИРОВАНО" %}</span></b>
                 {% endif %}
                 <br/>
                 {{ b.status_dt|default:"" }}
                 <br/>
                 {{ b.changed_by.profile|default:"" }}
-            </th>
+            </td>
             <td>
                 {% for comment in b.burialcomment_set.all %}
                     <i>{{ comment.dt_created.date }}</i><br>
