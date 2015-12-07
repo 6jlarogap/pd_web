@@ -245,104 +245,106 @@
             {% endif %}
         {% endif %}
         {% if user.profile.is_ugh %}
-            {% if b.can_ugh_deannulate %}
-                <input type="submit" class="btn" name="deannulate" value="{% trans "де-аннулировать" %}">
-            {% endif %}
-            {% if b.can_ugh_annulate or b.can_disapprove_ugh %}
-                <br/><br/>
-                <label>{% if b.can_ugh_annulate and b.can_disapprove_ugh %}{% if b.is_archive %}{% trans "Причина аннулирования" %}{% else %}{% trans "Причина аннулирования или отказа от согласования" %}{% endif %}{% elif b.can_ugh_annulate %}{% trans "Причина аннулирования" %}{% elif b.can_disapprove_ugh and not b.is_archive %}{% trans "Причина отказа от согласования" %}{% endif %}:</label>
-                <select name="reason_typical">
-                    <option value="">-------</option>
+            {% if not b.cemetery or b.cemetery in editable_ugh_cemeteries %}
+                {% if b.can_ugh_deannulate %}
+                    <input type="submit" class="btn" name="deannulate" value="{% trans "де-аннулировать" %}">
+                {% endif %}
+                {% if b.can_ugh_annulate or b.can_disapprove_ugh %}
+                    <br/><br/>
+                    <label>{% if b.can_ugh_annulate and b.can_disapprove_ugh %}{% if b.is_archive %}{% trans "Причина аннулирования" %}{% else %}{% trans "Причина аннулирования или отказа от согласования" %}{% endif %}{% elif b.can_ugh_annulate %}{% trans "Причина аннулирования" %}{% elif b.can_disapprove_ugh and not b.is_archive %}{% trans "Причина отказа от согласования" %}{% endif %}:</label>
+                    <select name="reason_typical">
+                        <option value="">-------</option>
+                        {% if b.can_ugh_annulate %}
+                            {% for r in reason_typical_annulate %}<option value="{{ r.text }}">{{ r.name }}</option>{% endfor %}
+                        {% endif %}
+                        {% if b.can_disapprove_ugh and not b.is_archive %}
+                            {% for r in reason_typical_disapprove %}<option value="{{ r.text }}">{{ r.name }}</option>{% endfor %}
+                        {% endif %}
+                    </select>
+                    <textarea name="reason" rows="5" cols="30"></textarea>
+                    <br/>
                     {% if b.can_ugh_annulate %}
-                        {% for r in reason_typical_annulate %}<option value="{{ r.text }}">{{ r.name }}</option>{% endfor %}
+                        <input type="submit" class="btn" name="annulate"  onclick="return confirm('{% trans "Вы уверены?" %}');" value="{% trans "аннулировать" %}">
                     {% endif %}
-                    {% if b.can_disapprove_ugh and not b.is_archive %}
-                        {% for r in reason_typical_disapprove %}<option value="{{ r.text }}">{{ r.name }}</option>{% endfor %}
+                    {% if b.can_disapprove_ugh %}
+                        <input type="submit" class="btn" name="disapprove" value="{% trans "отменить согласование" %}">
                     {% endif %}
-                </select>
-                <textarea name="reason" rows="5" cols="30"></textarea>
-                <br/>
-                {% if b.can_ugh_annulate %}
-                    <input type="submit" class="btn" name="annulate" onclick="return confirm('{% trans "Вы уверены?" %}');" value="{% trans "аннулировать" %}">
                 {% endif %}
-                {% if b.can_disapprove_ugh %}
-                    <input type="submit" class="btn" name="disapprove" value="{% trans "отменить согласование" %}">
+                {% if b.can_approve %}
+                    <script type="text/javascript">
+                        PLACE_SIZE = {{ approve_close_form.place_size_json|default:"{}" }};
+                    </script>
+                    {% if not b.area %}
+                        <h2>{% trans "Кладбище и участок" %}</h2>
+                        {{ approve_close_form.as_p }}
+                        <script type="text/javascript">
+                            CEMETERY_AREAS = {{ approve_close_form.cemetery_areas_json|default:"{}" }};
+                        </script>
+                    {% elif not place %}
+                        {# Здесь в форме остается только желаемое число могил на новое (!) место #}
+                        {{ approve_close_form.as_p }}
+                    {% endif %}
+                    {% if not b.is_bio and b.can_personal_data %}
+                        <h2>{% trans "Документ о смерти" %}</h2>
+                        {% with approve_close_form.dc_form as form %}
+                            {% include "deathcertificate.html" %}
+                        {% endwith %}
+                        <br />
+                    {% endif %}
                 {% endif %}
-            {% endif %}
-            {% if b.can_approve %}
-                <script type="text/javascript">
-                    PLACE_SIZE = {{ approve_close_form.place_size_json|default:"{}" }};
-                </script>
-                {% if not b.area %}
-                    <h2>{% trans "Кладбище и участок" %}</h2>
+                {% if b.can_inspect %}
+                    <input type="submit" class="btn" name="inspect" value="{% trans "отправить на обследование" %}">
+                {% endif %}
+                {% if b.is_inspecting %}
+                    <input type="submit" class="btn" name="approve-inspect" value="{% trans "одобрить обследование" %}">
+                {% endif %}
+                {% if b.can_approve %}
+                    <input type="submit" class="btn btn-primary" name="approve" value="{% trans "согласовать захоронение" %}">
+                {% endif %}
+                {% if b.can_finish and not b.is_archive %}
                     {{ approve_close_form.as_p }}
                     <script type="text/javascript">
                         CEMETERY_AREAS = {{ approve_close_form.cemetery_areas_json|default:"{}" }};
+                        PLACE_SIZE = {{ approve_close_form.place_size_json|default:"{}" }};
                     </script>
-                {% elif not place %}
-                    {# Здесь в форме остается только желаемое число могил на новое (!) место #}
-                    {{ approve_close_form.as_p }}
+                    <input type="submit" class="btn btn-primary" name="complete" value="{% trans "закрыть" %}">
+                    {% if b.can_approve_ugh %}
+                        <input type="submit" class="btn btn-primary" name="approve" value="{% trans "cогласовать" %}">
+                    {% endif %}
                 {% endif %}
-                {% if not b.is_bio and b.can_personal_data %}
-                    <h2>{% trans "Документ о смерти" %}</h2>
-                    {% with approve_close_form.dc_form as form %}
-                        {% include "deathcertificate.html" %}
-                    {% endwith %}
-                    <br />
+                {% if b.is_closed %}
+                    <a href="{% url burial_exhumate b.pk %}" class="btn">{% trans "эксгумировать" %}</a>
                 {% endif %}
-            {% endif %}
-            {% if b.can_inspect %}
-                <input type="submit" class="btn" name="inspect" value="{% trans "отправить на обследование" %}">
-            {% endif %}
-            {% if b.is_inspecting %}
-                <input type="submit" class="btn" name="approve-inspect" value="{% trans "одобрить обследование" %}">
-            {% endif %}
-            {% if b.can_approve %}
-                <input type="submit" class="btn btn-primary" name="approve" value="{% trans "согласовать захоронение" %}">
-            {% endif %}
-            {% if b.can_finish and not b.is_archive %}
-                {{ approve_close_form.as_p }}
-                <script type="text/javascript">
-                    CEMETERY_AREAS = {{ approve_close_form.cemetery_areas_json|default:"{}" }};
-                    PLACE_SIZE = {{ approve_close_form.place_size_json|default:"{}" }};
-                </script>
-                <input type="submit" class="btn btn-primary" name="complete" value="{% trans "закрыть" %}">
-                {% if b.can_approve_ugh %}
-                    <input type="submit" class="btn btn-primary" name="approve" value="{% trans "cогласовать" %}">
+                {% if b.can_decline %}
+                    <br/><br/>
+                    <label>{% trans "Причина отказа" %}:</label>
+                    <select name="reason_typical">
+                        <option value="">-------</option>
+                        {% for r in reason_typical_decline %}<option value="{{ r.text }}">{{ r.name }}</option>{% endfor %}
+                    </select>
+                    <textarea name="reason" rows="5" cols="30"></textarea>
+                    <br/>
+                    <input type="submit" class="btn btn-danger" name="decline" value="{% trans "отказать" %}">
                 {% endif %}
-            {% endif %}
-            {% if b.is_closed %}
-                <a href="{% url burial_exhumate b.pk %}" class="btn">{% trans "эксгумировать" %}</a>
-            {% endif %}
-            {% if b.can_decline %}
-                <br/><br/>
-                <label>{% trans "Причина отказа" %}:</label>
-                <select name="reason_typical">
-                    <option value="">-------</option>
-                    {% for r in reason_typical_decline %}<option value="{{ r.text }}">{{ r.name }}</option>{% endfor %}
-                </select>
-                <textarea name="reason" rows="5" cols="30"></textarea>
-                <br/>
-                <input type="submit" class="btn btn-danger" name="decline" value="{% trans "отказать" %}">
-            {% endif %}
-            {% if b.is_ugh or b.is_transferred or b.is_closed %}
-                {# (Ручные, архивные), перенесенные, закрытые: #}
-                <a class="btn" href="{% url edit_burial b.pk %}">{% trans "правка" %}</a>
-            {% endif %}
-            {% if b.can_ugh_print_notification %}
-                <a class="btn" href="{% url make_notification b.pk %}" target="_blank">{% trans "уведомление" %}</a>
-            {% endif %}
-            {% if b.can_ugh_print_reference %}
-                <a class="btn" href="{% url make_spravka b.pk %}" target="_blank">{% trans "справка" %}</a>
-            {% elif b.exhumated %}
-                <a class="btn" href="{% url make_exhumate_report b.pk %}" target="_blank">{% trans "справка" %}</a>
-                <a class="btn" href="{% url make_exhumate_notification b.pk %}" target="_blank">{% trans "уведомление" %}</a>
+                {% if b.is_ugh or b.is_transferred or b.is_closed %}
+                    {# (Ручные, архивные), перенесенные, закрытые: #}
+                    <a class="btn" href="{% url edit_burial b.pk %}">{% trans "правка" %}</a>
+                {% endif %}
+                {% if b.can_ugh_print_notification %}
+                    <a class="btn" href="{% url make_notification b.pk %}" target="_blank">{% trans "уведомление" %}</a>
+                {% endif %}
+                {% if b.can_ugh_print_reference %}
+                    <a class="btn" href="{% url make_spravka b.pk %}" target="_blank">{% trans "справка" %}</a>
+                {% elif b.exhumated %}
+                    <a class="btn" href="{% url make_exhumate_report b.pk %}" target="_blank">{% trans "справка" %}</a>
+                    <a class="btn" href="{% url make_exhumate_notification b.pk %}" target="_blank">{% trans "уведомление" %}</a>
+                {% endif %}
             {% endif %}
         {% endif %}
 
     </form>
 
-    {% if user.profile.is_ugh and b.is_exhumated %}
+    {% if user.profile.is_ugh and b.is_exhumated and b.cemetery in editable_ugh_cemeteries %}
         <form action="{% url burial_cancel_exhumation b.exhumationrequest.pk %}" method="POST" class="inline" style="display: inline;">
             {% csrf_token %}
             <input type="submit" class="btn" value="{% trans "Отменить эксгумацию" %}" />
@@ -351,18 +353,22 @@
     {% endif %}
 
     {% if show_private_data %}
-        <h2>{% trans "Комментарий" %}</h2>
-        <form action="{% url burial_comment b.pk %}" method="POST">
-            {% csrf_token %}
-            {{ comment_form.as_p }}
-            <p>
-                <input type="submit" class="btn" value="{% trans "добавить" %}" />
-                {% if user.profile.is_ugh %}
-                    &nbsp; &nbsp; &nbsp;
-                    <a href="{% url burials_comments_edit b.pk %}">{% trans "Все комментарии" %}</a>
-                {% endif %}
-            </p>
-        </form>
+        {% if user.profile.is_loru or not b.cemetery or b.cemetery in editable_ugh_cemeteries %}
+            <h2>{% trans "Комментарий" %}</h2>
+            <form action="{% url burial_comment b.pk %}" method="POST">
+                {% csrf_token %}
+                {{ comment_form.as_p }}
+                <p>
+                    <input type="submit" class="btn" value="{% trans "добавить" %}" />
+                    {% if user.profile.is_ugh %}
+                        &nbsp; &nbsp; &nbsp;
+                        <a href="{% url burials_comments_edit b.pk %}">{% trans "Все комментарии" %}</a>
+                    {% endif %}
+                </p>
+            </form>
+        {% elif user.profile.is_ugh and b.burialcomment_set.count %}
+            <p><a href="{% url burials_comments_edit b.pk %}">{% trans "Комментарии" %}</a></p>
+        {% endif %}
     {% endif %}
 
     {% if user.profile.is_ugh and b.get_documents %}

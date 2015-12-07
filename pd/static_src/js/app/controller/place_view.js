@@ -28,11 +28,18 @@
   //setup
   $scope.updateMap = function () {
     if ($scope.item) {
+      if ($scope.item.location) {
+          $scope.item.latitude = $scope.item.location.latitude;
+          $scope.item.longitude = $scope.item.location.longitude;
+      } else {
+          $scope.item.latitude = null;
+          $scope.item.longitude = null;
+      }
       ymapData.markers = [
         {
           point: [
-            geo.getLat($scope.item.lat),
-            geo.getLng($scope.item.lng)
+            geo.getLat($scope.item.latitude),
+            geo.getLng($scope.item.longitude)
           ],
           caption: 'Место: "{0}"'.format($scope.item.place),
           content: "Кл. {0}, уч. {1}, ряд {2}, место {3}".format(
@@ -49,8 +56,8 @@
       $scope.placeCoordinates = [
         {
           point: [
-            geo.getLat($scope.item.lat),
-            geo.getLng($scope.item.lng)
+            geo.getLat($scope.item.latitude),
+            geo.getLng($scope.item.longitude)
           ],
           title: $scope.item.name,
           obj_type: 'place',
@@ -66,8 +73,8 @@
       if (grave.lat && grave.lng) {
         ymapData.points.push({
           point: [
-            geo.getLat(grave.lat || $scope.item.lat),
-            geo.getLng(grave.lng || $scope.item.lng)
+            geo.getLat(grave.lat || $scope.item.latitude),
+            geo.getLng(grave.lng || $scope.item.longitude)
           ],
           caption: 'Могила {0}'.format(grave.grave_number),
           content: '',
@@ -104,6 +111,9 @@
       $scope.cemetery = new Cemetery(result.cemetery);
       $scope.area = new Area(result.area);
       $scope.item = new Place(result.place);
+      $scope.is_editable = result.is_editable;
+       // координаты места, а если их нет, то кладбища {latitude: xxx, longitude: ...}
+      $scope.location = result.location;
       $scope.item.place_length = parseFloat($scope.item.place_length); // html5 input[type=number]
       $scope.item.place_width = parseFloat($scope.item.place_width);
 
@@ -152,8 +162,8 @@
         is_wrong_fio: false,
         is_military: false,
         grave_number: $scope.grave_count + 1 //todo add way to count next grave_number or add validation of grave_number
-        //lat :geo.getLat(lat || $scope.item.lat),
-        //lng :geo.getLng(lng || $scope.item.lng )
+        //lat :geo.getLat(lat || $scope.item.latitude),
+        //lng :geo.getLng(lng || $scope.item.longitude )
       });
       $scope.updateGraves();
     }, function (data) {
@@ -186,10 +196,6 @@
         burial = new Burial(row);
         $scope.burials.push(burial);
       });
-      $scope.burials = _($scope.burials)
-        .sortBy('fact_date')
-        .reverse()
-        .value();
 
       $scope.updateMap();
       $scope.loading = false;
@@ -204,8 +210,8 @@
         is_military: false,
         place: $scope.item.id,
         grave_number: $scope.graves.length + 1 //todo add way to count next grave_number or add validation of grave_number
-        //lat :geo.getLat(lat || $scope.item.lat),
-        //lng :geo.getLng(lng || $scope.item.lng )
+        //lat :geo.getLat(lat || $scope.item.latitude),
+        //lng :geo.getLng(lng || $scope.item.longitude)
       });
     }, function (data) {
       $scope.loading = false;
@@ -562,8 +568,12 @@
   });
 
   $scope.$on("mapPointChanged:place", function (event, data) {
-    if ($scope.item.id == data.obj_id) {
-        if (confirm("Изменить координаты места?")) {
+    if ($scope.item.id == data.obj_id && $scope.is_editable) {
+        var message = !$scope.item.lat && typeof($scope.item.lat) === "object" ?
+                        // is null
+                        "Задать координаты места?" :
+                        "Изменить координаты места?";
+        if (confirm(message)) {
             $scope.item.lat = data.coords[0];
             $scope.item.lng = data.coords[1];
             $scope.$digest();

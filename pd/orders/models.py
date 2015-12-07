@@ -25,6 +25,7 @@ class Service(models.Model):
 
     Перечисляются в fixtures
     """
+    SERVICE_PHOTO = 'photo'
     SERVICE_DELIVERY = 'delivery'
 
     name = models.CharField(_(u"Название"), max_length=255, unique=True)
@@ -82,6 +83,18 @@ class OrgServicePrice(models.Model):
         return float(self.price)
 
 class ProductCategory(models.Model):
+
+    # Категории продуктов, которые доступны при заказе с визитом на место
+    #
+    AVAILABLE_FOR_VISIT_PKS = (
+         5,   # Венки
+         6,   # Цветы искусственные
+         7,   # Цветы живые
+        27,   # Букеты
+        28,   # Свечи
+        29,   # Лампады
+    )
+
     name = models.CharField(_(u"Название"), max_length=255)
     icon = models.ImageField(u"Иконка", upload_to=upload_slugified, blank=True, null=True)
 
@@ -517,6 +530,7 @@ class OrderWebPay(BaseModel):
     PAY_TYPE_REFUNDED = '5'
     PAY_TYPE_SYSTEM = '6'
     PAY_TYPE_VOIDED = '7'
+    PAY_TYPE_FAILED = '8'
     TRANSACTION_TYPES = (
         (PAY_TYPE_COMPLETED, _(u"Completed (Завершенная)")),
         (PAY_TYPE_DECLINED, _(u"Declined (Отклоненная)")),
@@ -525,6 +539,7 @@ class OrderWebPay(BaseModel):
         (PAY_TYPE_REFUNDED, _(u"Refunded (Возвращенная)")),
         (PAY_TYPE_SYSTEM, _(u"System (Системная))")),
         (PAY_TYPE_VOIDED, _(u"Voided (Сброшенная после авторизации)")),
+        (PAY_TYPE_FAILED, _(u"Failed (Ошибка в проведении транзакции)")),
     )
 
     # Успешной оплате соответствуют следующие типы PAY_TYPE

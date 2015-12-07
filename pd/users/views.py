@@ -16,6 +16,7 @@ from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.models import User
 from django.contrib.auth.hashers import make_password
+from django.contrib.sessions.models import Session
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError, PermissionDenied
 from django.core.urlresolvers import reverse
@@ -34,7 +35,7 @@ from django.utils.formats import number_format
 from django.views.generic.base import View, TemplateView
 from django.views.generic.edit import UpdateView, CreateView, FormView
 from django.views.generic.detail import DetailView
-    
+
 from captcha.client import submit
 
 from wkhtmltopdf.views import PDFTemplateResponse
@@ -63,8 +64,9 @@ from pd.utils import host_country_code, phones_from_text, EmailMessage, get_imag
 from persons.models import AlivePerson, Phone, CustomPlace
 from burials.models import Cemetery, Area, Burial, Place, Grave
 from billing.models import Wallet, Rate, Currency
-from orders.models import Product, Order, Service
-from pd.views import PaginateListView, RequestToFormMixin, FormInvalidMixin, get_front_end_url, ServiceException
+from orders.models import Product, Order, Service, ProductCategory
+from pd.views import PaginateListView, RequestToFormMixin, FormInvalidMixin, \
+                     get_front_end_host, get_front_end_url, ServiceException
 from geo.models import Location, Country
 
 from users.serializers import StoreSerializer, OrgSerializer, OrgShort2Serializer, \
@@ -194,6 +196,7 @@ class ApiAuthSigninView(SessionDataMixin, APIView):
         valid = False
         data = dict(status='error')
         status_code = 400
+        message = ''
          # Так надо для login() без предварительного authenticate()
         user_backend = 'django.contrib.auth.backends.ModelBackend'
         confirm_tc = request.DATA.get('confirmTC')
@@ -214,8 +217,8 @@ class ApiAuthSigninView(SessionDataMixin, APIView):
                 user, oauth_rec, message = Oauth.check_token(
                     oauth,
                 )
-                if user:
-                    user.backend = user_backend
+            if oauth and user:
+                user.backend = user_backend
         if user:
             if user.is_active:
                 if password:
@@ -247,7 +250,7 @@ class ApiAuthSigninView(SessionDataMixin, APIView):
             else:
                 data['message'] = data['errorCode'] = 'unconfirmed_tc'
         elif oauth and not user:
-            data.update(message)
+            data['message'] = message
         elif not data.get('message'):
             data['message'] = 'Unknown Error'
             data['errorCode'] = 'unknown_error'
@@ -273,10 +276,61 @@ class ApiAuthSignoutView(APIView):
 
     def post(self, request):
         # print u'DEBUG: %s:%s /API/AUTH/SIGNOUT' % (request.get_host(), request.user.username, )
+        user=request.user
         logout(request)
+        Token.objects.filter(user=user).delete()
         return Response(data={}, status=200)
 
 api_auth_signout = ApiAuthSignoutView.as_view()
+
+class ApiAuthCookiesView(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def do_it(self, request, token=None):
+        user_token, created = Token.objects.get_or_create(user=request.user)
+        if token is not None and (created or token != user_token.key):
+            return Response(
+                status=400,
+                data=dict(
+                    status='error',
+                    message=_(u"Несовпадение переданного токена и токена пользователя")
+            ))
+        # Пользователь может быть is_authenticated, но если зашел через Token,
+        # то его сессия не будет аутентифицированной
+        session_key = request.session._get_or_create_session_key()
+        try:
+            session = Session.objects.get(session_key=session_key)
+        except Session.DoesNotExist:
+            session = None
+        if not session or not session.get_decoded().get('_auth_user_id'):
+            request.user.backend = 'django.contrib.auth.backends.ModelBackend'
+            login(request, request.user)
+        response = Response(data={}, status=200)
+        response.set_cookie(
+            'client_auth_token',
+            user_token.key,
+            secure=settings.SESSION_COOKIE_SECURE or None,
+            max_age = settings.SESSION_COOKIE_AGE,
+            domain=u".%s" % re.sub(r'\:\d+$','', get_front_end_host(request)),
+        )
+        # Такую куку отдает back-end ?
+        #response.set_cookie(
+            #settings.SESSION_COOKIE_NAME,
+            #session_key,
+            #secure=settings.SESSION_COOKIE_SECURE or None,
+            #max_age=settings.SESSION_COOKIE_AGE,
+            #domain=re.sub(r'\:\d+$','', request.get_host()),
+        #)
+        return response
+
+    def post(self, request):
+        return self.do_it(request)
+
+    def get(self, request):
+        token=request.GET.get('token') or ''
+        return self.do_it(request, token=token)
+
+api_auth_cookies = ApiAuthCookiesView.as_view()
 
 class ApiAuthSignupView(CheckRecaptchaMixin, ApiAuthSigninView):
     """
@@ -873,9 +927,11 @@ class LogoutView(View):
     def dispatch(self, request, *args, **kwargs):
         if not request.user.is_authenticated():
             return redirect('/')
+        user = request.user
         write_log(request, request.user, _(u'Выход из системы'))
         # print u'DEBUG: %s:%s /LOGOUT' % (request.get_host(), request.user.username, )
         logout(request)
+        Token.objects.filter(user=user).delete()
         if request.GET.get("redirectUrl"):
             response = redirect(request.GET.get("redirectUrl"))
         elif settings.REDIRECT_LOGIN_TO_FRONT_END:
@@ -957,8 +1013,11 @@ class ProfileEditView(UghOrLoruRequiredMixin, RequestToFormMixin, UpdateView):
         elif 'my_profile' in self.kwargs:
             obj = self.request.user.profile
         else:
-            obj = Profile()
-            self.new_ = True
+            if self.request.user.profile.is_loru() or self.request.user.profile.is_admin():
+                obj = Profile()
+                self.new_ = True
+            else:
+                raise Http404
         return obj
 
     def get_success_url(self):
@@ -2472,13 +2531,15 @@ class ApiShopsView(APIView):
             except ValueError:
                 pass
         if category_ids:
-            q &= Q(product__productcategory__pk__in=category_ids) & Q(product__is_for_visit=True)
+            q &= Q(product__productcategory__pk__in=category_ids)
+        else:
+            q &= Q(product__productcategory__pk__in=ProductCategory.AVAILABLE_FOR_VISIT_PKS)
 
         s = request.GET.get('query')
         if s:
             q2 = Q(off_address__city__name__icontains=s) | \
                  Q(off_address__addr_str__icontains=s) | \
-                 Q(product__name__icontains=s) & Q(product__is_for_visit=True)
+                 Q(product__name__icontains=s)
             q &=q2
 
         return Response(

@@ -8,12 +8,13 @@
       <tr>
         <th colspan="1">
           <a href="#" class="btn btn-success btn-mini"
+             ng-show="is_editable" 
              ng-disabled="loading"
              alt="Редактировать"
              ng-click="openEditForm('isPlaceEditorOpen')">
             <span class="icon-edit"></span>
           </a>
-          Место:
+          <span ng-show="is_editable" >Место:</span>
         </th>
         <th>
           <span class="badge"
@@ -54,6 +55,10 @@
         </th>
         <td>{{ item.name }}</td>
       </tr>
+      <tr ng-show="!item.lat && item.location">
+        <th>Координаты кладбища</th>
+        <td>широта: {{item.location.latitude}}, долгота: {{item.location.latitude}}</td>
+      </tr>
       <tr>
         <th>Участок:</th>
           <td>{{ area.name }}</td>
@@ -70,7 +75,7 @@
         <th>Могил всего</th>
         <td>{{item.graves_count}}</td>
       </tr>
-      <tr>
+      <tr ng-show="item.lat">
         <!-- dt>Свободно</dt>
         <dd>{{item.available_count}}</dd -->
 
@@ -106,12 +111,13 @@
         <th>
           <button class="btn btn-success btn-mini"
                   ng-disabled="loading"
+                  ng-show="is_editable"
                   ng-click="openEditForm('isResponsibleEditorOpen')">
             <span class="icon-edit"></span>
           </button>
           <button class="btn btn-danger btn-mini"
                   ng-disabled="loading"
-                  ng-show="responsible.last_name || responsible.first_name || responsible.middle_name"
+                  ng-show="(responsible.last_name || responsible.first_name || responsible.middle_name) && is_editable"
                   ng-click="removeResponsible()">
             <span class="icon-remove"></span>
           </button>
@@ -189,11 +195,12 @@
                     <i class="icon-search"></i>
                   </a>
                   <a class="btn btn-mini" popover="Правка" popover-trigger="mouseenter"
+                     ng-show="is_editable"
                      href="/burials/{{burial.id}}/edit/" target="_new">
                     <i class="icon-edit"></i>
                   </a>
                   <a class="btn btn-mini" popover="Эксгумировать" popover-trigger="mouseenter"
-                     ng-hide="burial.status==BURIAL_STATUS_EXHUMATED"
+                     ng-hide="burial.status==BURIAL_STATUS_EXHUMATED || !is_editable"
                      href="/burials/{{burial.id}}/exhumate/" target="_new">
                     <i class="icon-arrow-up"></i>
                   </a>
@@ -201,24 +208,19 @@
                   <div class="btn btn-mini" popover="Отмена эксгумации" popover-trigger="mouseenter"
                        off-href="/places/{{item.id}}/" target="_new"
                        ng-click="cancelExhumation(burial)"
-                       ng-show="burial.status==BURIAL_STATUS_EXHUMATED">
+                       ng-show="burial.status==BURIAL_STATUS_EXHUMATED && is_editable">
                     <i class="icon-arrow-down"></i>
                   </div>
                   <a class="btn btn-mini" popover="Печать справки" popover-trigger="mouseenter"
                      href="/burials/{{burial.id}}/spravka/" target="_new"
-                     ng-hide="burial.status==BURIAL_STATUS_EXHUMATED">
-                    <i class="icon-print"></i>
-                  </a>
-                  <a class="btn btn-mini" popover="Печать справки" popover-trigger="mouseenter"
-                     href="/burials/{{burial.id}}/exhumate/report/" target="_new"
-                     ng-show="burial.status==BURIAL_STATUS_EXHUMATED">
+                     ng-hide="burial.status==BURIAL_STATUS_EXHUMATED || !is_editable">
                     <i class="icon-print"></i>
                   </a>
                 </div>
               </li>
             </ul>
 
-            <div class="unstyled well burial" style="padding:10px;">
+            <div class="unstyled well burial" style="padding:10px;" ng-show="is_editable">
               <a class="span12" target="_current"
                  href="/burials/create/?place_id={{item.id}}&grave_id={{grave.id}}&grave_number={{grave.grave_number}}">
                 <h4>+ Добавить</h4>
@@ -230,7 +232,7 @@
               <big><b>Свободна</b></big>
               </p>
               <button class="btn btn-mini btn-danger pull-right"
-                      ng-show="!haveBurials(grave.id)"
+                      ng-show="is_editable && !haveBurials(grave.id)"
                       ng-disabled="loading"
                       ng-click="deleteGrave(grave)">
                 Удалить могилу
