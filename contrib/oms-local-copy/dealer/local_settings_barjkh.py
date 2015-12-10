@@ -47,7 +47,7 @@ DEFAULT_FROM_EMAIL = 'test@bsuir.by'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql_psycopg2',
-        'NAME': 'pd_barjkh',                      # Or path to database file if using sqlite3.
+        'NAME': 'pd_ughone',                      # Or path to database file if using sqlite3.
         'USER': 'postgres',                      # Not used with sqlite3.
         'PASSWORD': '',                  # Not used with sqlite3.
         'HOST': 'localhost',                      # Set to empty string for localhost. Not used with sqlite3.

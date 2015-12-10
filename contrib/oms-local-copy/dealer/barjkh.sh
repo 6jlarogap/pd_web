@@ -12,7 +12,6 @@ HOST_CHROOT="/home/chrooted"
 PROJECTS="/home/sev/projects/ughone"
 PROJECT="pd_web"
 MEDIA_ALL_HERE="/home/sev/projects/backup/register.ritual-mink.by/MEDIA/pd_web"
-MEDIA_MYORG_HERE="$PROJECTS/MEDIA/$PROJECT"
 
 # Если не используем специфичный ключ, то просто SSH_KEY=""
 SSH_KEY="-i /home/suprune20/.ssh/id_rsa_pub_ritual"
@@ -25,12 +24,12 @@ rsync --rsh="$RSSH" \
     -rtupvz --delete \
     --exclude=**/support \
     --exclude=**/thumbnails \
-    $HOST_USER@$HOST:$MEDIA_ALL_HOST/ $MEDIA_ALL_HERE/
+    $HOST_USER@$HOST:$MEDIA_ALL_HOST/ $PROJECTS/MEDIA/pd_$MYORG/
 
 # Забрасываем эту медию в здешний калог проекта
 #
 rsync -rtupvz --delete \
-    "$MEDIA_ALL_HERE/" "$MEDIA_MYORG_HERE/"
+    "$MEDIA_ALL_HERE/" "$PROJECTS/MEDIA/pd_$MYORG/"
 
 # Выполняю команду на сервере, получаю свежий дамп, забираю его,
 # разворачиваю базу
@@ -38,9 +37,9 @@ rsync -rtupvz --delete \
 $RSSH $HOST_USER@$HOST "pg_dump -U postgres $HOST_DB | gzip > /home/$HOST_USER/$HOST_DB.psql.gz"
 $RSCP $HOST_USER@$HOST:/home/$HOST_USER/$HOST_DB.psql.gz /tmp/$HOST_DB.psql.gz
 $RSSH $HOST_USER@$HOST "rm /home/$HOST_USER/$HOST_DB.psql.gz"
-dropdb -U postgres "pd_$MYORG"
-createdb -U postgres "pd_$MYORG"
-zcat /tmp/$HOST_DB.psql.gz | psql -U postgres "pd_$MYORG"
+dropdb -U postgres "pd_ughone"
+createdb -U postgres "pd_ughone"
+zcat /tmp/$HOST_DB.psql.gz | psql -U postgres "pd_ughone"
 rm /tmp/$HOST_DB.psql.gz
 
 cd "$PROJECTS/$PROJECT"
@@ -57,7 +56,7 @@ cd "$PROJECTS/$PROJECT/pd"
 
 # Забрасываю дамп данных на сервер
 #
-pg_dump -U postgres "pd_$MYORG" | gzip > /tmp/dump.psql.gz
+pg_dump -U postgres "pd_ughone" | gzip > /tmp/dump.psql.gz
 $RSCP /tmp/dump.psql.gz $HOST_USER@$HOST:/home/$HOST_USER
 $RSSH $HOST_USER@$HOST "mv /home/$HOST_USER/dump.psql.gz $HOST_CHROOT/home/$MYORG"
 $RSSH $HOST_USER@$HOST "sudo chown $MYORG:$HOST_USER $HOST_CHROOT/home/$MYORG/dump.psql.gz"
