@@ -29,7 +29,7 @@ rm /tmp/$HOST_DB.psql.gz
 
 cd "$PROJECTS/$PROJECT"
 git pull
-cp -p "$PROJECTS/local_settings_$MYORG.py" "$PROJECTS/$PROJECT/pd/pd/local_settings.py"
+cp "$PROJECTS/local_settings_.py" "$PROJECTS/$PROJECT/pd/pd/local_settings.py"
 
 cd "$PROJECTS/$PROJECT/pd"
 ./manage.py migrate --noinput
