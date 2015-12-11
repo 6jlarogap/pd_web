@@ -509,11 +509,21 @@ class DeleteFileMixin(object):
             file_ = self.photo
         else:
             return
-        if file_ and os.path.exists(file_.path):
-            os.remove(file_.path)
-            thmb = os.path.join(settings.THUMBNAILS_STORAGE_ROOT, file_.name)
-            if os.path.exists(thmb):
-                shutil.rmtree(thmb)
+        if file_ and file_.path and os.path.exists(file_.path):
+            try:
+                dir_ = os.path.dirname(file_.path)
+                os.remove(file_.path)
+                os.removedirs(dir_)
+            except OSError:
+                pass
+            try:
+                thmb = os.path.join(settings.THUMBNAILS_STORAGE_ROOT, file_.name)
+                if os.path.exists(thmb):
+                    dir_ = os.path.dirname(thmb)
+                    shutil.rmtree(thmb)
+                    os.removedirs(dir_)
+            except OSError:
+                pass
 
     def delete(self):
         self.delete_from_media()
