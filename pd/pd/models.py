@@ -516,14 +516,14 @@ class DeleteFileMixin(object):
                 os.removedirs(dir_)
             except OSError:
                 pass
-            try:
-                thmb = os.path.join(settings.THUMBNAILS_STORAGE_ROOT, file_.name)
-                if os.path.exists(thmb):
+            thmb = os.path.join(settings.THUMBNAILS_STORAGE_ROOT, file_.name)
+            if os.path.exists(thmb):
+                try:
                     dir_ = os.path.dirname(thmb)
                     shutil.rmtree(thmb)
                     os.removedirs(dir_)
-            except OSError:
-                pass
+                except OSError:
+                    pass
 
     def delete(self):
         self.delete_from_media()
