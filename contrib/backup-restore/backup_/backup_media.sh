@@ -28,7 +28,7 @@ rc=0
 while [ $loopcount -lt 100 ]; do
     loopcount=`expr $loopcount + 1`
     rm -f $BACKUP_PATH/current.tgz
-    tar cfz $BACKUP_PATH/current.tgz $MEDIA_PATH >/dev/null 2>&1
+    tar cfz $BACKUP_PATH/current.tgz $MEDIA_PATH --exclude=**/thumbnails/* >/dev/null 2>&1
     rc=$?
     if [ $rc -eq 0 ]; then break; fi
 done
