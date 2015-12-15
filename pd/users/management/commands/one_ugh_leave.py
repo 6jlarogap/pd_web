@@ -2,7 +2,8 @@
 #
 # one_ugh_leave.py
 # 
-# Оставить в базе только один ОМС
+# - оставить в базе только один ОМС
+# - сформировать список медийных файлов, принадлежащих этому ОМС
 #
 # Запуск: ./manage.py one_ugh_leave <pk>
 #
@@ -12,7 +13,8 @@ from django.db import transaction, IntegrityError
 from django.db.models.query_utils import Q
 
 from django.contrib.auth.models import User
-from users.models import Org, ProfileLORU, Profile, Dover, OrgCertificate, CustomerProfile
+from users.models import Org, ProfileLORU, Profile, Dover, OrgCertificate, CustomerProfile, \
+                         OrgGallery, OrgContract, UserPhoto
 from logs.models import Log
 from burials.models import Cemetery, CemeteryCoordinates, Area, AreaCoordinates, \
                            Place, PlaceSize, PlacePhoto, Grave, \
@@ -20,12 +22,16 @@ from burials.models import Cemetery, CemeteryCoordinates, Area, AreaCoordinates,
                            BurialComment, PlaceStatus, AreaPhoto, PlaceStatusFiles
 from orders.models import Order, OrderItem, ServiceItem, OrgService, OrgServicePrice, \
                           OrderComment, ResultFile
-from persons.models import DeadPerson, AlivePerson, CustomPlace
+from persons.models import DeadPerson, AlivePerson, CustomPlace, \
+                           DeathCertificateScan
 
 class Command(BaseCommand):
-    args = 'OMS_pk'
-    help = "Leave only one OMS in the database"
+    args = 'OMS_pk OMS_media_list'
+    help = "Leave only one OMS in the database, form the list of its media file"
     
+    media_file = None
+    count_media = 0
+
     # Главная функция
     #
     @transaction.commit_on_success
@@ -33,16 +39,41 @@ class Command(BaseCommand):
         if len(args) < 2:
             print "ERROR! PLease give me a parm. Type --help to get help"
             quit()
-        # Обман + fool-proof, нужен еще параметр: yes
-        if args[1].lower() != 'yes':
-            quit()
         ugh_pk = args[0]
         try:
             ugh_one = Org.objects.get(type=Org.PROFILE_UGH, pk=ugh_pk)
         except Org.DoesNotExist:
             print "ERROR! Failed to gind OMS with pk=%s" % ugh_pk
             quit()
-            
+        media_list = args[1]
+        print 'Forming the list of media of the OMS, %s' % media_list
+
+        try:
+            self.media_file = open(media_list, 'w')
+        except IOError:
+            print "ERROR! Failed to open '%s' for write" % media_list
+            quit()
+
+        for model in (OrgCertificate, OrgGallery, OrgContract,):
+            self.collect_media(model, Q(org=ugh_one))
+        self.collect_media(UserPhoto, Q(user__profile__org=ugh_one))
+        self.collect_media(
+            DeathCertificateScan,
+            Q(deathcertificate__person__burial__ugh=ugh_one)
+        )
+        self.collect_media(AreaPhoto, Q(area__cemetery__ugh=ugh_one))
+        self.collect_media(PlacePhoto, Q(place__cemetery__ugh=ugh_one))
+        self.collect_media(
+            PlaceStatusFiles,
+            Q(placestatus__place__cemetery__ugh=ugh_one)
+        )
+        self.collect_media(BurialFiles, Q(burial__ugh=ugh_one))
+        
+        self.media_file.close()
+        print '\n%s total media recs written\n' % self.count_media
+        ###
+        quit()
+        
         ugh_qs = Q(type=Org.PROFILE_UGH) & ~Q(pk=ugh_pk)
 
         print 'Looking for UGHs to be removed'
@@ -155,6 +186,8 @@ class Command(BaseCommand):
         org.favorite_loru.all().delete()
         org.bankaccount_set.all().delete()
         OrgCertificate.objects.filter(org=org).delete()
+        OrgContract.objects.filter(org=org).delete()
+        OrgGallery.objects.filter(org=org).delete()
         for profile in Profile.objects.filter(org=org):
             user = profile.user
             profile.user = None
@@ -171,4 +204,12 @@ class Command(BaseCommand):
             except IntegrityError:
                 pass
         org.delete()
-        
+
+    def collect_media(self, model, filter_, field='bfile'):
+        print ' - %s' % model._meta.object_name
+        count_model = 0
+        for rec in model.objects.filter(filter_):
+            self.count_media += 1
+            count_model +=1
+            self.media_file.write(u"%s\n" % getattr(rec, field).name)
+        print '     %s media recs written' % count_model
