@@ -37,7 +37,7 @@ cd "$PROJECTS/$PROJECT/pd"
 
 # Выделяю данные только этой организации
 #
-# ./manage.py one_ugh_leave.py $MYORG_PK /tmp/ughone.rsync.included.txt
+./manage.py one_ugh_leave.py $MYORG_PK /tmp/ughone.rsync.included.txt
 
 # Забрасываю дамп данных на сервер
 #
@@ -47,3 +47,9 @@ $RSSH $HOST_USER@$HOST "mv /home/$HOST_USER/dump.psql.gz $HOST_CHROOT/home/$MYOR
 $RSSH $HOST_USER@$HOST "sudo chown $MYORG:$HOST_USER $HOST_CHROOT/home/$MYORG/dump.psql.gz"
 $RSSH $HOST_USER@$HOST "sudo chmod o-rw,g+rw $HOST_CHROOT/home/$MYORG/dump.psql.gz"
 rm /tmp/dump.psql.gz
+
+# Забрасываю список медиа файлов на сервер
+#
+gzip /tmp/ughone.rsync.included.txt
+$RSCP /tmp/ughone.rsync.included.txt.gz $HOST_USER@$HOST:/home/$HOST_USER
+$RSSH $HOST_USER@$HOST "gunzip /home/$HOST_USER/ughone.rsync.included.txt.gz"
