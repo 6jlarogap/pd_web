@@ -23,6 +23,11 @@ dropdb -U postgres pd
 createdb -U postgres pd
 zcat ~/dump.psql.gz | psql -U postgres pd
 
+sudo -u www-data rsync -rtupvz --delete \
+     $MYORG@$HOST:/home/$MYORG/media/ \
+     /home/www-data/django/MEDIA/pd_web/
+sudo chmod u+rwx /home/www-data/django/MEDIA/pd_web/
+
 cd /home/www-data/django/pd_web/pd
 sudo -u www-data ./manage.py migrate --noinput
 sudo -u www-data ./manage.py create_burial_views yes

@@ -97,9 +97,11 @@
               service ssh restart
 
             - mkdir /home/chrooted/barjkh
+            - mkdir /home/chrooted/barjkh/media
             - cp -p -r /home/barjkh/.ssh /home/chrooted/home/barjkh
             - chown -R barjkh:suprune20 /home/chrooted/home/barjkh
-            - chmod g+rwx /home/chrooted/home/barjkh
+            - chmod -g+rwx /home/chrooted/home/barjkh
+            - chmod -g+rwx /home/chrooted/home/barjkh/media
             - chmod -R u-r /home/chrooted/home/barjkh
               NB:
                   suprune20 - для доступа к этому каталогу посредника
@@ -113,3 +115,9 @@
         и если он пустой, удаляет его. Смотрит выше, если и этот
         пустой, то и его удаляет, и т.д.
 
+    * Виртуальная машина на ПК заказчика:
+      - настроить ее доступ в Интернет
+      - настроить, чтоб она сама была видна хотя бы из ПК,
+        на котором она является гостевой
+      - положить в каталог пользователя сценарий sync.sh,
+        обеспечить его регулярный запуск

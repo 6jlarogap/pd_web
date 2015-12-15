@@ -71,8 +71,6 @@ class Command(BaseCommand):
         
         self.media_file.close()
         print '\n%s total media recs written\n' % self.count_media
-        ###
-        quit()
         
         ugh_qs = Q(type=Org.PROFILE_UGH) & ~Q(pk=ugh_pk)
 
@@ -180,6 +178,15 @@ class Command(BaseCommand):
             self.remove_org(ugh)
             print 'UGH deleted'
             transaction.commit()
+
+        print 'Current Stats'
+        print 'Burials total: %s' % Burial.objects.all().count()
+        print 'DeadPerson total: %s' % DeadPerson.objects.all().count()
+        print 'Places total: %s' % Place.objects.all().count()
+
+        print 'DeathCertificateScans total: %s' % DeathCertificateScan.objects.all().count()
+        print 'PlacePhoto total: %s' % PlacePhoto.objects.all().count()
+        print 'Burial Files total: %s' % BurialFiles.objects.all().count()
 
     def remove_org(self, org):
         org.store_set.all().delete()
