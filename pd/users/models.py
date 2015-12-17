@@ -719,6 +719,7 @@ class Org(GetLogsMixin, BaseModel):
                                     choices=list(OPF_CHOICES)[1:], default=OPF_ORG)
     death_date_offer = models.BooleanField(_(u"Предлагать дату смерти в новом захоронении"), default=False)
     hide_deadman_address = models.BooleanField(_(u"Скрыть адрес усопшего"), default=False)
+    plan_time_required = models.BooleanField(_(u"Плановое время захоронения обязательно"), default=True)
     # название поля не заканчивается на date, чтоб не угодить под специфический datePicker widget для дат:
     plan_date_days_before = models.PositiveIntegerField(_(u"Кол-во дней для ввода плановой даты захоронения в прошлом"), default=3)
     max_graves_count = models.PositiveIntegerField(_(u"Максимальное число могил в месте"), default=5,
