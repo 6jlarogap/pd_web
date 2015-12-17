@@ -22,6 +22,9 @@ class Currency(models.Model):
     def __unicode__(self):
         return self.code
 
+    def one_char_name(self):
+        return self.short_name[:1] or u'р'
+
 class Wallet(models.Model):
     org = models.ForeignKey(Org, verbose_name=_(u"Организация"))
     currency = models.ForeignKey(Currency, verbose_name=_(u"Валюта"))

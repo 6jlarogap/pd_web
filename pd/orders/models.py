@@ -163,7 +163,8 @@ class Product(BaseModel):
         ordering = ['name']
 
     def __unicode__(self):
-        return u'%s (%s р.)' % (self.name, self.price)
+        currency_one_char = self.loru and self.loru.currency.one_char_name() or u'р'
+        return u'%s (%s %s.)' % (self.name, self.price, currency_one_char)
 
     def is_burial(self):
         return self.ptype == self.PRODUCT_BURIAL
@@ -484,7 +485,26 @@ class Order(GetLogsMixin, BaseModel):
             result = self.applicant and self.applicant.user and \
                      self.applicant.user == user
         return bool(result)
-        
+
+    def price_photo(self):
+        """
+        Стоимость услуги фотографирования или None, если исполнитель не подписан на эту услугу
+        """
+        result = None
+        if self.loru:
+            try:
+                result = OrgServicePrice.objects.filter(
+                    orgservice__org=self.loru,
+                    orgservice__service__name=Service.SERVICE_PHOTO,
+                    orgservice__enabled=True,
+                ).distinct()[0].price
+            except IndexError:
+                pass
+        return result
+
+    def has_photo(self):
+        return self.serviceitem_set.filter(orgservice__service__name=Service.SERVICE_PHOTO).exists()
+
 class OrderItemMixin(object):
 
     def cost_float(self):
