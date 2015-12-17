@@ -155,6 +155,12 @@ function updateTotalForm() {
         if ($(this).val())
             total += parseFloat($(this).val());
     });
+    if ($('#id_do_photo').length) {
+        var price_photo = parseFloat($('#id_price_photo').val());
+        if ($('#id_do_photo').is(':checked')) {
+            total += price_photo;
+        }
+    }
     $('#id_total').val(total.toFixed(2));
 }
 

@@ -38,7 +38,8 @@ from users.models import CustomerProfile, Org, ProfileLORU, Store, OrgWebPay, \
                          PermitIfTrade, PermitIfCabinet, PermitIfTradeOrCabinet
 from billing.models import Rate
 from orders.forms import ProductForm, OrderForm, OrderItemFormset, CoffinForm, CatafalqueForm, \
-                         AddInfoForm, OrderSearchForm, OrderBurialForm
+                         AddInfoForm, OrderSearchForm, OrderBurialForm, \
+                         OrderServicesForm
 from orders.models import Product, Order, OrderItem, ProductCategory, \
                           Service, Measure, OrgService, OrgServicePrice, ServiceItem, OrderComment, \
                           Route, ResultFile, OrderWebPay
@@ -422,18 +423,36 @@ class OrderEditProducts(LORURequiredMixin, View):
     def get_formset(self):
         return OrderItemFormset(request=self.request, data=self.request.POST or None, instance=self.get_object())
 
+    def get_form(self):
+        instance = self.get_object()
+        price_photo = instance.price_photo()
+        form = OrderServicesForm(data=self.request.POST or None)
+        if price_photo is None:
+            del form.fields['do_photo']
+            del form.fields['price_photo']
+        else:
+            form.initial.update(dict(
+                do_photo=instance.has_photo(),
+                price_photo=str(price_photo),
+            ))
+        form.fields['do_photo'].label += u", %s%s. " % (
+            price_photo,
+            instance.loru.currency.one_char_name(),
+        )
+        return form
+
     def get_object(self):
         return self.get_queryset().get(pk=self.kwargs['pk'], type=Order.TYPE_BURIAL)
 
     def get_context_data(self, **kwargs):
         return {
             'order': self.get_object(),
+            'form': self.get_form(),
             'formset': self.get_formset(),
         }
 
     @transaction.commit_on_success
     def post(self, request, *args, **kwargs):
-        self.request = request
             
         formset = self.get_formset()
         if formset.is_valid():
@@ -442,6 +461,24 @@ class OrderEditProducts(LORURequiredMixin, View):
                 orderitem.delete()
             
             formset.save()
+            form = self.get_form()
+            if form.fields and form.is_valid():
+                if form.cleaned_data.get('do_photo'):
+                    orgservice_photo = OrgService.objects.get(
+                        org=self.object.loru,
+                        service__name=Service.SERVICE_PHOTO,
+                    )
+                    price_photo = decimal.Decimal(
+                        form.cleaned_data.get('price_photo', '0')
+                    )
+                    ServiceItem.objects.get_or_create(
+                        order=self.object,
+                        orgservice=orgservice_photo,
+                        cost=price_photo,
+                    )
+                else:
+                    self.object.serviceitem_set. \
+                        filter(orgservice__service__name=Service.SERVICE_PHOTO).delete()
 
             write_log(self.request, self.object, _(u'Заказ сохранен'))
             msg = _(u"<a href='%(order_edit)s'>Заказ %(pk)s</a> сохранен") % dict(
