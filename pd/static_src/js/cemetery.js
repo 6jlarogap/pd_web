@@ -1289,6 +1289,7 @@ function makeTimePicker(obj) {
         hourText: 'Ч',
         minuteText: 'М',
         showPeriodLabels: false,
+        defaultTime: '08:00',
         minutes: {
             starts: 0,
             ends: 45,
