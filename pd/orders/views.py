@@ -1428,6 +1428,8 @@ class ApiOrgServicesEditView(ApiOrgServicesMixin, APIView):
         Де-активация сервиса service_name у организации org_id
         """
         message = self.check_input_message(request, org_id, service_name)
+        if message:
+            return Response(data=dict(status='error', message=message), status=400)
         orgservice = self.data.orgservice
         if orgservice and orgservice.enabled:
             orgservice.enabled = False
