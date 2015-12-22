@@ -416,24 +416,24 @@ function updateTimes() {
 }
 
 function checkPersonalData() {
-    var cem = $('#id_cemetery').val();
-    if (!cem) {
-        cem = '';
+    var cem = $('#id_cemetery');
+    if (cem.length) {
+        cem = cem.val() || '';
+        $.getJSON('/cemetery_personal_data/?cem='+cem, function(data) {
+            var opf_id = '#id_opf_';
+            if (data.result) {
+                // можно показывать персональные данные
+                $('#opf_choice').show();
+                $('#show_deathcertificate').show();
+            } else {
+                $(opf_id+'1').removeAttr('checked');
+                $(opf_id+'0').attr('checked', 'checked');
+                $('input[name=opf]').change();
+                $('#opf_choice').hide();
+                $('#show_deathcertificate').hide();
+            }
+        });
     }
-    $.getJSON('/cemetery_personal_data/?cem='+cem, function(data) {
-        var opf_id = '#id_opf_';
-        if (data.result) {
-            // можно показывать персональные данные
-            $('#opf_choice').show();
-            $('#show_deathcertificate').show();
-        } else {
-            $(opf_id+'1').removeAttr('checked');
-            $(opf_id+'0').attr('checked', 'checked');
-            $('input[name=opf]').change();
-            $('#opf_choice').hide();
-            $('#show_deathcertificate').hide();
-        }
-    });
 }
 
 $(function() {
@@ -454,12 +454,14 @@ $(function() {
         }
     });
 
-    $('.burial-form, .order_form').find(':input').live('keypress', function(e) {
-        if (e.keyCode == 13) {
-            e.preventDefault();
-            $(this).change();
-            return false;
-        }
+    $('.burial-form, .order_form').find(':input').each(function() {
+        $(this).live('keypress', function(e) {
+            if (e.keyCode == 13 && $(this).context.type != 'textarea') {
+                e.preventDefault();
+                $(this).change();
+                return false;
+            }
+        });
     });
 
     $('input[name$=last_name], input[name$=first_name], input[name$=middle_name]').parents('p').addClass('inline');
