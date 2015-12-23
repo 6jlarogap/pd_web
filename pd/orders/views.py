@@ -1610,14 +1610,16 @@ class ApiClientAvailablePerformersView(ApiServicePriceMixin, APIView):
 
         data = []
         org = None
+        # Больше длины экватора
+        max_distance = 41000.0
         for store in Store.objects.filter(q).order_by('loru'):
             # Идем по складам одного поставщика, потом по складам другого поставщика...
             if org is None:
                 org = store.loru
                 # Цена за любую услугу, кроме delivery
                 price_org = self.get_price_service(org, self.data.service)
-                # Больше длины экватора
-                distance = 41000.0
+                distance = max_distance
+                location = None
 
             if store.loru != org:
                 if self.data.need_delivery:
@@ -1626,16 +1628,21 @@ class ApiClientAvailablePerformersView(ApiServicePriceMixin, APIView):
                 data.append(dict(
                     id=org.pk,
                     name=org.name,
+                    location=location,
                     price=round(price_org, org.currency.rounding),
                     currency=org.currency.code,
                 ))
                 org = store.loru
                 price_org = self.get_price_service(org, self.data.service)
-                distance = 41000.0
+                distance = max_distance
+                location = None
 
             if self.data.need_delivery:
                 store_loc = LatLon(Latitude(store.address.gps_y), Longitude(store.address.gps_x))
-                distance = min(distance, store_loc.distance(customer_loc))
+                cur_distance = store_loc.distance(customer_loc)
+                if distance > cur_distance:
+                    distance = cur_distance
+                    location = store.address.location_dict()
 
         if org:
             if self.data.need_delivery:
@@ -1644,6 +1651,7 @@ class ApiClientAvailablePerformersView(ApiServicePriceMixin, APIView):
             data.append(dict(
                 id=org.pk,
                 name=org.name,
+                location=location,
                 price=float(price_org),
                 currency=org.currency.code,
             ))
