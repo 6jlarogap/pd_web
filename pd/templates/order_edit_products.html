@@ -46,8 +46,15 @@
         </tbody>
         </table>
         <p><a href="javascript:void(0)" class="add-row">{% trans "Добавить" %}</a></p>
+
+        {% if form.fields %}
+        <hr />
+        <p><b>{% trans "Дополнительные сервис(ы)" %}</b></p>
+        {{ form }}
+        <hr />
+        {% endif %}
         <p>
-            <label for="id_total">{% trans "Итог" %}</label>
+            <label for="id_total"><b>{% trans "Итог" %}</b></label>
             <input id="id_total" type="text" value="{{ order.total }}" readonly/>
         </p>
 
@@ -63,6 +70,10 @@
             $('#id_orderitem_set-INITIAL_FORMS').attr('value', 0);
             updateProductId();
             
+            $("#id_do_photo").change( function() {
+                updateTotalForm();
+            });
+
             $('.dynamic-form').each(function() {
                 updateAmountForm($(this));
             });
