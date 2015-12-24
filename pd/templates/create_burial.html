@@ -79,9 +79,11 @@
         {% endblock buttons %}
     </form>
 
-    {% with object=b %}
-        {% include "object_logs.html" %}
-    {% endwith %}
+    {% if b.pk %}
+        {% with object=b %}
+            {% include "object_logs.html" %}
+        {% endwith %}
+    {% endif %}
 
     {% include "create_burial_popups.html" %}
 

@@ -211,6 +211,13 @@ class OrderForm(ChildrenJSONMixin, SafeDeleteMixin, AppOrgFormMixin, forms.Model
 
         return self.instance
 
+class OrderServicesForm(forms.Form):
+    do_photo = forms.BooleanField(
+        required=False,
+        label=_(u"Фотографирование"),
+    )
+    price_photo = forms.CharField(required=False, widget=forms.HiddenInput)
+
 class OrderItemForm(forms.ModelForm):
 
     class Meta:
