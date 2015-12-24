@@ -90,8 +90,8 @@ class DashboardView(TemplateView):
           # лору в открытых может видеть только свои (а не других лору) захоронения
             qs = Q(loru=self.request.user.profile.org)
         elif self.request.user.profile.is_ugh():
-            qs = Q(cemetery__in=Cemetery.editable_ugh_cemeteries(self.request.user)) or \
-                 Q(cemetery__isnull=True)
+            qs = Q(cemetery__in=Cemetery.editable_ugh_cemeteries(self.request.user)) | \
+                 Q(cemetery__isnull=True, ugh=self.request.user.profile.org)
         return qs
 
     def get_context_data(self, **kwargs):
@@ -113,8 +113,8 @@ class DashboardView(TemplateView):
             '-place': ['-place_number_s1', '-place_number_s2', '-place_number_s3'],
             'fio': 'deadman__last_name',
             '-fio': '-deadman__last_name',
-            'fact_date': 'fact_date',
-            '-fact_date': '-fact_date',
+            'fact_date': 'plan_date',
+            '-fact_date': '-plan_date',
             'plan_date': 'plan_date',
             '-plan_date': '-plan_date',
             'source': 'source_type',
@@ -616,8 +616,8 @@ class BurialsListView(PaginateListView):
             '-place': ['-place_number_s1', '-place_number_s2', '-place_number_s3'],
             'fio': 'deadman__last_name',
             '-fio': '-deadman__last_name',
-            'fact_date': 'fact_date',
-            '-fact_date': '-fact_date',
+            'fact_date': 'fact_date_s',
+            '-fact_date': '-fact_date_s',
             'source': 'source_type',
             '-source': '-source_type',
             'applicant': ['applicant__last_name', 'applicant_organization__name'],
@@ -762,8 +762,8 @@ class BurialsPublicListView(PaginateListView):
             '-place': ['-place_number_s1', '-place_number_s2', '-place_number_s3'],
             'fio': 'deadman__last_name',
             '-fio': '-deadman__last_name',
-            'fact_date': 'fact_date',
-            '-fact_date': '-fact_date',
+            'fact_date': 'fact_date_s',
+            '-fact_date': '-fact_date_s',
             'status': 'status',
             '-status': '-status',
         }
