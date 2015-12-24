@@ -14,6 +14,7 @@ def context_processor(request):
             'global_context_DEADMAN_IDENT_NUMBER_ALLOW': settings.DEADMAN_IDENT_NUMBER_ALLOW,
             'global_context_CREATE_CABINET_ALLOW': settings.CREATE_CABINET_ALLOW,
             'global_context_REDIRECT_LOGIN_TO_FRONT_END': settings.REDIRECT_LOGIN_TO_FRONT_END,
+            'global_context_DEATH_CERTIFICATE_REQUIRED': settings.DEATH_CERTIFICATE_REQUIRED,
             'global_context_HOST_COUNTRY_CODE': host_country_code(request) or 'ru',
             'global_context_MOBILEKEEPER_URL': request.build_absolute_uri(
                 os.path.join(
