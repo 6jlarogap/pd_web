@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import copy
-from django.db import models, transaction, IntegrityError
+from django.db import models, IntegrityError
 from django.utils.translation import ugettext as _
 from django.db.models.deletion import ProtectedError
 from django.db.models.loading import get_model
@@ -78,7 +78,6 @@ class BasePerson(PersonMixin, models.Model):
         finish = (self.death_date or datetime.date.today())
         return int((finish - start).days / 365.25)
 
-    @transaction.commit_on_success
     def delete(self):
         try:
             self.personid.delete()
@@ -195,7 +194,6 @@ class DeadPerson(BasePerson):
 
     unclear_death_date = property(get_death_date, set_death_date)
 
-    @transaction.commit_on_success
     def delete(self):
         try:
             self.deathcertificate.delete()
@@ -226,7 +224,6 @@ class AlivePerson(BasePerson, PhonesMixin):
                   editable=False)
     # phones: могут быть разных типов, пользуемся моделью persons.Phone
 
-    @transaction.commit_on_success
     def delete(self):
         self.phone_set.delete()
         try:
@@ -294,7 +291,6 @@ class DeathCertificate(BaseModel):
         self.series = self.series.upper()
         super(DeathCertificate, self).save(*args, **kwargs)
 
-    @transaction.commit_on_success
     def delete(self):
         try:
             self.deathcertificatescan.delete()
@@ -455,7 +451,6 @@ class CustomPlace(LocationMixin, BaseModel):
         else:
             return None
 
-    @transaction.commit_on_success
     def delete(self):
         for customperson in CustomPerson.objects.filter(customplace=self):
             customperson.delete()
@@ -509,7 +504,6 @@ class CustomPerson(PersonMixin, PhotoModel, BaseModel):
     is_dead = models.BooleanField(_(u"Уcопший"), default=True)
     memory_text = models.TextField(_(u"Памятный текст"), null=True)
 
-    @transaction.commit_on_success
     def delete(self):
         for memorygallery in MemoryGallery.objects.filter(customperson=self):
             memorygallery.delete()

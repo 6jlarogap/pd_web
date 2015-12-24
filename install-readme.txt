@@ -78,10 +78,10 @@ install-readme.txt, utf8 code page
     * cd ~/projects/pd_web
     * bower install
     * source ~/venv/pdweb/bin/activate
-    * export VIRTUALENV_DISTRIBUTE=true
-    * curl http://python-distribute.org/distribute_setup.py | python
-    * rm distribute-<VERSION>.tar.gz
-    * pip install -r pip.txt
+    * pip install --no-cache-dir -r pip.txt
+        ! --no-cache-dir :  избегает проблему с локалью, когда стандартные
+                            сообщения django (например, "пароль")
+                            вдруг печатаются по английски (password)
  
     * cd ~/projects/pd_web/pd/pd
     * cp local_settings.py.example local_settings.py

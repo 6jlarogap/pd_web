@@ -16,6 +16,7 @@ from django.http import HttpRequest
 from django.core.exceptions import ValidationError
 
 from django.utils.translation import ugettext as _
+from django.utils.formats import localize
 
 from burials.models import Burial, BurialComment, ExhumationRequest, Cemetery, Area, Place, AreaPurpose, Grave, BurialFiles
 from geo.models import Location, Country, Region, City, Street
@@ -26,6 +27,8 @@ from persons.models import AlivePerson, DeadPerson, PersonID, IDDocumentType, Do
 from users.models import Org, Profile, Dover, BankAccount
 
 csv.register_dialect("4minsk", escapechar="\\", quoting=csv.QUOTE_ALL, doublequote=False)
+
+DT_TEMPLATE = '%Y-%m-%dT%H:%M:%S.%f'
 
 class UTF8Recoder:
     def __init__(self, f, encoding):
@@ -194,7 +197,7 @@ def do_import_burials_minsk(csv_fileobj, cemetery, user):
         applicant_ln, applicant_fn, applicant_mn,
         musor_cust_initials,
         city_name, street_name, house, block, flat,
-        comment,
+        comments,
         country_name,
         region_name,
         phone,
@@ -205,6 +208,12 @@ def do_import_burials_minsk(csv_fileobj, cemetery, user):
     today = datetime.date.today()
     today_str = "{0:d}/{1:02d}/{2:02d}".format(today.year, today.month, today.day)
      
+    def make_name(name):
+        name = name.strip()
+        if not name or name.lower() in (u'*', u'ъ', u'неизвестен',):
+            name = ''
+        return name
+
     def make_burial(row, burial_type):
         """
         Создать захоронение
@@ -234,9 +243,8 @@ def do_import_burials_minsk(csv_fileobj, cemetery, user):
         )
 
         applicant = None
-        row[applicant_ln] = row[applicant_ln].strip()
-        if row[applicant_ln] and row[applicant_ln].lower() != u'неизвестен':
-
+        last_name = make_name(row[applicant_ln])
+        if last_name:
             # Адрес заявителя. Формируем, когда хотя бы есть город
             country = region = city = street = location = None
             row[country_name] = row[country_name].strip()
@@ -278,9 +286,9 @@ def do_import_burials_minsk(csv_fileobj, cemetery, user):
             if phones:
                 phones = phones.replace("\n", "; ")
             applicant = AlivePerson.objects.create(
-                last_name=row[applicant_ln],
-                first_name=row[applicant_fn].strip(),
-                middle_name=row[applicant_mn].strip(),
+                last_name=last_name,
+                first_name=make_name(row[applicant_fn]),
+                middle_name=make_name(row[applicant_mn]),
                 address=location,
                 phones=phones,
             )
@@ -308,12 +316,12 @@ def do_import_burials_minsk(csv_fileobj, cemetery, user):
 
         row[deadman_ln] = row[deadman_ln].strip()
         deadman = None
-        if row[deadman_ln] and row[deadman_ln] != u'*' and \
-           row[deadman_ln].lower() != u'неизвестен':
+        last_name = make_name(row[deadman_ln])
+        if last_name:
             deadman = DeadPerson.objects.create(
-                last_name=row[deadman_ln],
-                first_name=row[deadman_fn].strip(),
-                middle_name=row[deadman_mn].strip(),
+                last_name=last_name,
+                first_name=make_name(row[deadman_fn]),
+                middle_name=make_name(row[deadman_mn]),
             )
 
         burial = Burial.objects.create(
@@ -340,8 +348,8 @@ def do_import_burials_minsk(csv_fileobj, cemetery, user):
         request = HttpRequest()
         request.user = user
         if row[op_type].lower() == u"захоронение детское":
-            if not re.search(re_comment_child_burial, row[comment], flags=re.I) and \
-               not re.search(re_comment_child_burial_2, row[comment], flags=re.I):
+            if not re.search(re_comment_child_burial, row[comments], flags=re.I) and \
+               not re.search(re_comment_child_burial_2, row[comments], flags=re.I):
                 BurialComment.objects.create(
                     burial=burial,
                     creator=user,
@@ -349,13 +357,31 @@ def do_import_burials_minsk(csv_fileobj, cemetery, user):
                 )
                 write_log(request, burial, u"Комментарий: %s" % comment_child_burial)
 
-        if row[comment]:
-            write_log(request, burial, u"Комментарий: %s" % row[comment])
-            BurialComment.objects.create(
-                burial=burial,
-                creator=user,
-                comment=row[comment],
-            )
+        if row[comments]:
+            for c in row[comments].split('\t'):
+                try:
+                    i_sep = c.index(u'~')
+                    date_of_comment = datetime.datetime.strptime(c[:i_sep], DT_TEMPLATE)
+                    comment = BurialComment.objects.create(
+                        burial=burial,
+                        creator=user,
+                        comment=c[i_sep+1:],
+                    )
+                    BurialComment.objects.filter(pk=comment.pk).update(
+                        dt_created=date_of_comment,
+                        dt_modified=date_of_comment,
+                    )
+                    write_log(request, burial, u"Комментарий (%s):\n%s" % (
+                            localize(date_of_comment, use_l10n=True),
+                            c[i_sep+1:],
+                    ))
+                except ValueError:
+                    BurialComment.objects.create(
+                        burial=burial,
+                        creator=user,
+                        comment=row[comments],
+                    )
+                    write_log(request, burial, u"Комментарий: %s" % row[comments])
         write_log(request, burial, _(u"Импорт"))
         
         if row[file_names]:

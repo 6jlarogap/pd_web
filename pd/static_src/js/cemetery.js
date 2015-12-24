@@ -416,24 +416,24 @@ function updateTimes() {
 }
 
 function checkPersonalData() {
-    var cem = $('#id_cemetery').val();
-    if (!cem) {
-        cem = '';
+    var cem = $('#id_cemetery');
+    if (cem.length) {
+        cem = cem.val() || '';
+        $.getJSON('/cemetery_personal_data/?cem='+cem, function(data) {
+            var opf_id = '#id_opf_';
+            if (data.result) {
+                // можно показывать персональные данные
+                $('#opf_choice').show();
+                $('#show_deathcertificate').show();
+            } else {
+                $(opf_id+'1').removeAttr('checked');
+                $(opf_id+'0').attr('checked', 'checked');
+                $('input[name=opf]').change();
+                $('#opf_choice').hide();
+                $('#show_deathcertificate').hide();
+            }
+        });
     }
-    $.getJSON('/cemetery_personal_data/?cem='+cem, function(data) {
-        var opf_id = '#id_opf_';
-        if (data.result) {
-            // можно показывать персональные данные
-            $('#opf_choice').show();
-            $('#show_deathcertificate').show();
-        } else {
-            $(opf_id+'1').removeAttr('checked');
-            $(opf_id+'0').attr('checked', 'checked');
-            $('input[name=opf]').change();
-            $('#opf_choice').hide();
-            $('#show_deathcertificate').hide();
-        }
-    });
 }
 
 $(function() {
@@ -454,12 +454,14 @@ $(function() {
         }
     });
 
-    $('.burial-form, .order_form').find(':input').live('keypress', function(e) {
-        if (e.keyCode == 13) {
-            e.preventDefault();
-            $(this).change();
-            return false;
-        }
+    $('.burial-form, .order_form').find(':input').each(function() {
+        $(this).live('keypress', function(e) {
+            if (e.keyCode == 13 && $(this).context.type != 'textarea') {
+                e.preventDefault();
+                $(this).change();
+                return false;
+            }
+        });
     });
 
     $('input[name$=last_name], input[name$=first_name], input[name$=middle_name]').parents('p').addClass('inline');
@@ -1145,73 +1147,36 @@ $(function() {
         var autocomplete = new google.maps.places.Autocomplete(this, ac_options );
         var $input = $(this);
         google.maps.event.addListener(autocomplete, 'place_changed', function () {
-            $input.change();
+            var form_block = $input.closest('.form_block');
+            var place = autocomplete.getPlace();
+            form_block.find('[id$=country_name], [id$=region_name], [id$=city_name]').val('');
+            form_block.find('[id$=street_name], [id$=post_index]').val('');
+            var country='', region='', city='', street='';
+            if (place && place.address_components) {
+                var address = place.address_components;
+                $(address).each(function() {
+                    if (this.types.indexOf("country") > -1) {
+                        country = this.long_name;
+                    }
+                    if (this.types.indexOf("administrative_area_level_1") > -1) {
+                        region = this.long_name;
+                    }
+                    if (this.types.indexOf("locality") > -1) {
+                        city = this.long_name;
+                    }
+                    if (this.types.indexOf("route") > -1) {
+                        street = this.long_name;
+                    }
+                });
+                form_block.find('input[id$=country_name]').val(country);
+                form_block.find('input[id$=region_name]').val(region);
+                form_block.find('input[id$=city_name]').val(city);
+                form_block.find('input[id$=street_name]').val(street);
+            }
         });
     });
     $('.modal-body input[id$=fias_address]').css('width', '300px');
 
-    $('input[id$=fias_address]').change(function() {
-        var street_input = $('input[id$=fias_street]');
-        street_input.val('');
-        var addr_input = $(this);
-        var form_block = addr_input.closest('.form_block');
-        form_block.find('#fias_street_info').hide();
-        var addr = $(this).val();
-        if (!addr) { return }
-
-        var geocoder = new google.maps.Geocoder();
-        geocoder.geocode( { 'address': addr, 'language': 'ru' }, function(results, status) {
-            if (status == google.maps.GeocoderStatus.OK) {
-                var country = '', region = '', city = '', street = '';
-                var house = '', building = '', block = '', flat = '';
-                form_block.find('[id$=post_index], [id$=country_name], [id$=region_name], [id$=city_name]').val('');
-                form_block.find('[id$=street_name]').val('');
-
-                var address = results[0].address_components;
-                $(address).each(function() {
-//                     if (this.types.indexOf("postal_code") > -1) { form_block.find('input[id$=post_index]').val(this.long_name); }
-                    if (this.types.indexOf("country") > -1) { country = this.long_name; form_block.find('input[id$=country_name]').val(country); }
-                    if (this.types.indexOf("administrative_area_level_1") > -1) { region = this.long_name; form_block.find('input[id$=region_name]').val(''); }
-                    if (this.types.indexOf("locality") > -1) { city = this.long_name; form_block.find('input[id$=city_name]').val(''); }
-                    if (this.types.indexOf("route") > -1) { street = this.long_name; form_block.find('input[id$=street_name]').val(''); }
-//                     if (this.types.indexOf("street_number") > -1) {
-//                         form_block.find('input[id$=house]').val(this.long_name);
-//                         house = this.long_name;
-//                         if (this.long_name.indexOf("корпус") > -1) {
-//                             var bits = this.long_name.split(" корпус ");
-//                             form_block.find('input[id$=house]').val(bits[0]);
-//                             form_block.find('input[id$=block]').val(bits[1]);
-//                             house = bits[0];
-//                             block = bits[1];
-//                         }
-//                         if (this.long_name.indexOf("строение") > -1) {
-//                             var bits = this.long_name.split(" строение ");
-//                             form_block.find('input[id$=house]').val(bits[0]);
-//                             form_block.find('input[id$=building]').val(bits[1]);
-//                             house = bits[0];
-//                             building = bits[1];
-//                         }
-//                     }
-//                     if (this.types.indexOf("subpremise") > -1) {
-//                         flat = this.long_name;
-//                         form_block.find('input[id$=flat]').val(this.long_name);
-//                     }
-                });
-
-                if (country) {
-                    form_block.find('input[id$=region_name]').val(region);
-                    form_block.find('input[id$=city_name]').val(city);
-                    form_block.find('input[id$=street_name]').val(street);
-                }
-            } else {
-                alert("Ошибка адреса, status="+status)
-            }
-        })
-    });
-    // Начальная загрузка страницы. Не делаем change, иначе загонит в страну, ..., улицу
-    // то, что найдет по содержимому строки поиска по адресу. А заодно затираем.
-    // Нужен будет новый поиск, начнет с "чистого листа".
-    // $('input[id$=fias_address]').change();
     $('input[id$=fias_address]').val('');
 
     $('#paginator_select').live('change', function() {
@@ -1289,6 +1254,7 @@ function makeTimePicker(obj) {
         hourText: 'Ч',
         minuteText: 'М',
         showPeriodLabels: false,
+        defaultTime: '08:00',
         minutes: {
             starts: 0,
             ends: 45,

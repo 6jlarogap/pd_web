@@ -367,6 +367,7 @@ class OrgForm(StrippedStringsMixin, BaseOrgForm):
             del self.fields['death_date_offer']
             del self.fields['opf_burial']
             del self.fields['hide_deadman_address']
+            del self.fields['plan_time_required']
         if not self.is_own_org or not is_trade_user(self.request.user):
             del self.fields['sms_phone']
         if not self.is_own_org or not self.request.user.profile.is_ugh():

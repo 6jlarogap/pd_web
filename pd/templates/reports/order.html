@@ -1,6 +1,7 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
         "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="ru" lang="ru">
+{% load counter %}
 {% load pytils_numeral %}
 {% load pytils_dt %}
 <HTML>
@@ -179,11 +180,12 @@
         <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000"
             ALIGN=CENTER VALIGN=MIDDLE><FONT COLOR="#000000">Сумма</FONT></TD>
     </TR>
+    {% counter reset %}
     {% for p in order.orderitem_set.all %}
         <TR>
             <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000"
                 HEIGHT=19 ALIGN=CENTER VALIGN=TOP SDVAL="1" SDNUM="1033;"><FONT
-                    COLOR="#000000">{{ forloop.counter }}</FONT></TD>
+                    COLOR="#000000">{% counter %}</FONT></TD>
             <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000"
                 COLSPAN=3 ALIGN=LEFT VALIGN=MIDDLE SDNUM="1033;0;@"><FONT COLOR="#000000">{{ p.product.name }}</FONT></TD>
             <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000"
@@ -196,6 +198,25 @@
                 ALIGN=right VALIGN=BOTTOM><FONT COLOR="#000000">{{ p.cost|floatformat:"2" }}</FONT></TD>
             <TD STYLE="padding-right:0.5em; border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000"
                 ALIGN=right VALIGN=BOTTOM><FONT COLOR="#000000">{{ p.total|floatformat:"2" }}</FONT></TD>
+        </TR>
+    {% endfor %}
+    {% for s in order.serviceitem_set.all %}
+        <TR>
+            <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000"
+                HEIGHT=19 ALIGN=CENTER VALIGN=TOP SDVAL="1" SDNUM="1033;"><FONT
+                    COLOR="#000000">{% counter %}</FONT></TD>
+            <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000"
+                COLSPAN=3 ALIGN=LEFT VALIGN=MIDDLE SDNUM="1033;0;@"><FONT COLOR="#000000">{{ s.orgservice.service.title }}</FONT></TD>
+            <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000"
+                ALIGN=CENTER VALIGN=BOTTOM><FONT SIZE=1 COLOR="#000000">Сервис</FONT></TD>
+            <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000"
+                ALIGN=CENTER VALIGN=BOTTOM><FONT COLOR="#000000"></FONT></TD>
+            <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000"
+                ALIGN=center VALIGN=BOTTOM><FONT COLOR="#000000"></FONT></TD>
+            <TD STYLE="padding-right:0.5em; border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000"
+                ALIGN=right VALIGN=BOTTOM><FONT COLOR="#000000"></FONT></TD>
+            <TD STYLE="padding-right:0.5em; border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000"
+                ALIGN=right VALIGN=BOTTOM><FONT COLOR="#000000">{{ s.cost|floatformat:"2" }}</FONT></TD>
         </TR>
     {% endfor %}
     <TR>
@@ -469,11 +490,12 @@
         <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000"
             ALIGN=CENTER VALIGN=MIDDLE><FONT COLOR="#000000">Сумма</FONT></TD>
     </TR>
+    {% counter reset %}
     {% for p in order.orderitem_set.all %}
         <TR>
             <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000"
                 HEIGHT=19 ALIGN=CENTER VALIGN=TOP SDVAL="1" SDNUM="1033;"><FONT
-                    COLOR="#000000">{{ forloop.counter }}</FONT></TD>
+                    COLOR="#000000">{% counter %}</FONT></TD>
             <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000"
                 COLSPAN=3 ALIGN=LEFT VALIGN=MIDDLE SDNUM="1033;0;@"><FONT COLOR="#000000">{{ p.product.name }}</FONT></TD>
             <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000"
@@ -486,6 +508,25 @@
                 ALIGN=right VALIGN=BOTTOM><FONT COLOR="#000000">{{ p.cost|floatformat:"2" }}</FONT></TD>
             <TD STYLE="padding-right:0.5em; border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000"
                 ALIGN=right VALIGN=BOTTOM><FONT COLOR="#000000">{{ p.total|floatformat:"2" }}</FONT></TD>
+        </TR>
+    {% endfor %}
+    {% for s in order.serviceitem_set.all %}
+        <TR>
+            <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000"
+                HEIGHT=19 ALIGN=CENTER VALIGN=TOP SDVAL="1" SDNUM="1033;"><FONT
+                    COLOR="#000000">{% counter %}</FONT></TD>
+            <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000"
+                COLSPAN=3 ALIGN=LEFT VALIGN=MIDDLE SDNUM="1033;0;@"><FONT COLOR="#000000">{{ s.orgservice.service.title }}</FONT></TD>
+            <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000"
+                ALIGN=CENTER VALIGN=BOTTOM><FONT SIZE=1 COLOR="#000000">Сервис</FONT></TD>
+            <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000"
+                ALIGN=CENTER VALIGN=BOTTOM><FONT COLOR="#000000"></FONT></TD>
+            <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000"
+                ALIGN=center VALIGN=BOTTOM><FONT COLOR="#000000"></FONT></TD>
+            <TD STYLE="padding-right:0.5em; border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000"
+                ALIGN=right VALIGN=BOTTOM><FONT COLOR="#000000"></FONT></TD>
+            <TD STYLE="padding-right:0.5em; border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000"
+                ALIGN=right VALIGN=BOTTOM><FONT COLOR="#000000">{{ s.cost|floatformat:"2" }}</FONT></TD>
         </TR>
     {% endfor %}
     <TR>
@@ -653,17 +694,31 @@
         <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000"
             ALIGN=CENTER VALIGN=MIDDLE><FONT COLOR="#000000">Количество</FONT></TD>
     </TR>
+    {% counter reset %}
     {% for p in order.orderitem_set.all %}
         <TR>
             <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000"
                 HEIGHT=19 ALIGN=CENTER VALIGN=TOP SDVAL="1" SDNUM="1033;"><FONT
-                    COLOR="#000000">{{ forloop.counter }}</FONT></TD>
+                    COLOR="#000000">{% counter %}</FONT></TD>
             <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000"
                 COLSPAN=6 ALIGN=LEFT VALIGN=MIDDLE SDNUM="1033;0;@"><FONT COLOR="#000000">{{ p.product }}</FONT></TD>
             <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000"
                 ALIGN=CENTER VALIGN=BOTTOM><FONT SIZE=1 COLOR="#000000">{{ p.product.measure }}</FONT></TD>
             <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000"
                 ALIGN=center VALIGN=BOTTOM><FONT COLOR="#000000">{{ p.quantity|floatformat:"2" }}</FONT></TD>
+        </TR>
+    {% endfor %}
+    {% for s in order.serviceitem_set.all %}
+        <TR>
+            <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000"
+                HEIGHT=19 ALIGN=CENTER VALIGN=TOP SDVAL="1" SDNUM="1033;"><FONT
+                    COLOR="#000000">{% counter %}</FONT></TD>
+            <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000"
+                COLSPAN=6 ALIGN=LEFT VALIGN=MIDDLE SDNUM="1033;0;@"><FONT COLOR="#000000">{{ s.orgservice.service.title }} ({{ s.cost|floatformat:"2" }} {{ s.order.loru.currency.one_char_name }}.)</FONT></TD>
+            <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000"
+                ALIGN=CENTER VALIGN=BOTTOM><FONT SIZE=1 COLOR="#000000">Сервис</FONT></TD>
+            <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000"
+                ALIGN=center VALIGN=BOTTOM><FONT COLOR="#000000"></FONT></TD>
         </TR>
     {% endfor %}
     <TR>
@@ -804,17 +859,31 @@
         <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000"
             ALIGN=CENTER VALIGN=MIDDLE><FONT COLOR="#000000">Количество</FONT></TD>
     </TR>
+    {% counter reset %}
     {% for p in order.orderitem_set.all %}
         <TR>
             <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000"
                 HEIGHT=19 ALIGN=CENTER VALIGN=TOP SDVAL="1" SDNUM="1033;"><FONT
-                    COLOR="#000000">{{ forloop.counter }}</FONT></TD>
+                    COLOR="#000000">{% counter %}</FONT></TD>
             <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000"
                 COLSPAN=6 ALIGN=LEFT VALIGN=MIDDLE SDNUM="1033;0;@"><FONT COLOR="#000000">{{ p.product }}</FONT></TD>
             <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000"
                 ALIGN=CENTER VALIGN=BOTTOM><FONT SIZE=1 COLOR="#000000">{{ p.product.measure }}</FONT></TD>
             <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000"
                 ALIGN=center VALIGN=BOTTOM><FONT COLOR="#000000">{{ p.quantity|floatformat:"2" }}</FONT></TD>
+        </TR>
+    {% endfor %}
+    {% for s in order.serviceitem_set.all %}
+        <TR>
+            <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000"
+                HEIGHT=19 ALIGN=CENTER VALIGN=TOP SDVAL="1" SDNUM="1033;"><FONT
+                    COLOR="#000000">{% counter %}</FONT></TD>
+            <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000"
+                COLSPAN=6 ALIGN=LEFT VALIGN=MIDDLE SDNUM="1033;0;@"><FONT COLOR="#000000">{{ s.orgservice.service.title }} ({{ s.cost|floatformat:"2" }} {{ s.order.loru.currency.one_char_name }}.)</FONT></TD>
+            <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000"
+                ALIGN=CENTER VALIGN=BOTTOM><FONT SIZE=1 COLOR="#000000">Сервис</FONT></TD>
+            <TD STYLE="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000"
+                ALIGN=center VALIGN=BOTTOM><FONT COLOR="#000000"></FONT></TD>
         </TR>
     {% endfor %}
     <TR>
