@@ -260,6 +260,12 @@ class ProfileDataForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelForm):
             profile.user = user
             profile.org = self.request.user.profile.org
             profile.save(force_insert=True)
+            roles = self.cleaned_data.get('role', [])
+            for role in roles:
+                profile.role.add(role)
+            cemeteries = self.cleaned_data.get('cemeteries', [])
+            for cemetery in cemeteries:
+                profile.cemeteries.add(cemetery)
             write_log(self.request, profile.org, _(u'Добавлен пользователь %s') % user.username)
 
         return profile

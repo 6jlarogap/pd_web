@@ -1533,6 +1533,8 @@ class Burial1(BaseModel):
     plan_date = models.DateField(_(u"План. дата"), null=True)
     plan_time = models.TimeField(_(u"План. время"), null=True)
     fact_date = UnclearDateModelField(_(u"Факт. дата"), null=True)
+    # Null даты при сортировке по убыванию показывается первыми, а это неудобно
+    fact_date_s = models.CharField(_(u"Факт. дата"), max_length=255)
 
     deadman = models.ForeignKey(DeadPerson, verbose_name=_(u"Усопший"), null=True, related_name='deadman_1_burials')
 
