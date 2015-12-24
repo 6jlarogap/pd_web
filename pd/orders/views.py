@@ -435,10 +435,10 @@ class OrderEditProducts(LORURequiredMixin, View):
                 do_photo=instance.has_photo(),
                 price_photo=str(price_photo),
             ))
-        form.fields['do_photo'].label += u", %s%s. " % (
-            price_photo,
-            instance.loru.currency.one_char_name(),
-        )
+            form.fields['do_photo'].label += u", %s%s. " % (
+                price_photo,
+                instance.loru.currency.one_char_name(),
+            )
         return form
 
     def get_object(self):
