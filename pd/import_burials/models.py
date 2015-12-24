@@ -175,6 +175,43 @@ def import_dead_person(data):
 
         return dp
 
+NO_NAMES = (
+    u'?',
+    u'*',
+    u'ъ',
+    u'ь',
+    u'неизвест',
+    u'без хоз',
+    u'без фамил',
+    )
+NO_NAMES_RE = re.compile(ur'^(?:%s)' % ur'|'.join([re.escape(n) for n in NO_NAMES]))
+
+def make_name(name):
+    name = name.strip()
+    if re.search(NO_NAMES_RE, name.lower()):
+        name=''
+    return name
+
+def make_date(s):
+    """
+    Сделать UnclearDate из строки с датой
+    """
+    d = None
+    try:
+        d = datetime.datetime.strptime(s[:10], '%Y-%m-%d')
+        d = UnclearDate(year=d.year, month=d.month, day=d.day)
+        if d.month == 1 and d.day == 1:
+           if d.year == 1900 or d.year <= 1800:
+               d = None
+           elif d.year < 1900:
+               d.no_day = True
+               d.no_month = True
+    except ValueError:
+        pass
+    return d
+
+COMMENT_URN_RE = re.compile(ur'kombinat\:\d+.*\s+(?:урна|урнов)')
+
 @transaction.commit_on_success
 def do_import_burials_minsk(csv_fileobj, cemetery, user):
     
@@ -208,13 +245,11 @@ def do_import_burials_minsk(csv_fileobj, cemetery, user):
     today = datetime.date.today()
     today_str = "{0:d}/{1:02d}/{2:02d}".format(today.year, today.month, today.day)
      
-    def make_name(name):
-        name = name.strip()
-        if not name or name.lower() in (u'*', u'ъ', u'неизвестен',):
-            name = ''
-        return name
+    def urn_by_comment(row):
+        comment = row[comments].lower()
+        return bool(re.search(COMMENT_URN_RE, comment))
 
-    def make_burial(row, burial_type):
+    def make_burial(row, burial_type, is_urn=False):
         """
         Создать захоронение
         
@@ -311,7 +346,7 @@ def do_import_burials_minsk(csv_fileobj, cemetery, user):
                 grave_number=grave_number,
             )
 
-        burial_container = Burial.CONTAINER_URN if row[op_type].lower() == u'урна' \
+        burial_container = Burial.CONTAINER_URN if is_urn or row[op_type].lower() == u'урна' \
                                                 else Burial.CONTAINER_COFFIN
 
         row[deadman_ln] = row[deadman_ln].strip()
@@ -336,7 +371,7 @@ def do_import_burials_minsk(csv_fileobj, cemetery, user):
             place_number=row[place_number],
             grave=grave,
             grave_number=grave_number,
-            fact_date=row[fact_date][:10] or None,
+            fact_date=make_date(row[fact_date][:10]),
             deadman=deadman,
             applicant=applicant,
             ugh=ugh,
@@ -415,6 +450,8 @@ def do_import_burials_minsk(csv_fileobj, cemetery, user):
     for i, row in enumerate(csvreader):
         row[op_type] = row[op_type].lower()
         if row[op_type] in (u'', u'захоронение', u'захоронение детское', u'почетное захоронение', ):
+            if urn_by_comment(row):
+                continue
             n += 1
             total += 1
             make_burial(row, Burial.BURIAL_NEW)
@@ -432,6 +469,8 @@ def do_import_burials_minsk(csv_fileobj, cemetery, user):
     for i, row in enumerate(csvreader):
         row[op_type] = row[op_type].lower()
         if row[op_type].startswith(u'подзахоронен'):
+            if urn_by_comment(row):
+                continue
             n += 1
             total += 1
             make_burial(row, Burial.BURIAL_ADD)
@@ -448,11 +487,13 @@ def do_import_burials_minsk(csv_fileobj, cemetery, user):
     n = 0
     for i, row in enumerate(csvreader):
         row[op_type] = row[op_type].lower()
+        is_urn = urn_by_comment(row)
         if row[op_type].startswith(u'захоронение в существ') or \
-           row[op_type] == u'урна':
+           row[op_type] == u'урна' or \
+           is_urn:
             n += 1
             total += 1
-            make_burial(row, Burial.BURIAL_OVER)
+            make_burial(row, Burial.BURIAL_OVER, is_urn=is_urn)
             if n % 1000 == 0:
                 transaction.commit()
                 print 'Processed', n
