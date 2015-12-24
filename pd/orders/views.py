@@ -1628,6 +1628,7 @@ class ApiClientAvailablePerformersView(ApiServicePriceMixin, APIView):
                 data.append(dict(
                     id=org.pk,
                     name=org.name,
+                    domainName=org.subdomain,
                     location=location,
                     price=round(price_org, org.currency.rounding),
                     currency=org.currency.code,
@@ -1651,6 +1652,7 @@ class ApiClientAvailablePerformersView(ApiServicePriceMixin, APIView):
             data.append(dict(
                 id=org.pk,
                 name=org.name,
+                domainName=org.subdomain,
                 location=location,
                 price=float(price_org),
                 currency=org.currency.code,
