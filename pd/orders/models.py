@@ -507,7 +507,7 @@ class Order(GetLogsMixin, BaseModel):
 
     def title_photo(self):
         try:
-            return ResultFile.objects.filter(order=self, is_title=True)[0]
+            return ResultFile.objects.filter(order=self, is_title=True)[0].bfile
         except IndexError:
             return None
 
