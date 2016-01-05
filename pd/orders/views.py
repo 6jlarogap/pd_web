@@ -1628,6 +1628,7 @@ class ApiClientAvailablePerformersView(ApiServicePriceMixin, APIView):
                 data.append(dict(
                     id=org.pk,
                     name=org.name,
+                    domainName=org.subdomain,
                     location=location,
                     price=round(price_org, org.currency.rounding),
                     currency=org.currency.code,
@@ -1651,6 +1652,7 @@ class ApiClientAvailablePerformersView(ApiServicePriceMixin, APIView):
             data.append(dict(
                 id=org.pk,
                 name=org.name,
+                domainName=org.subdomain,
                 location=location,
                 price=float(price_org),
                 currency=org.currency.code,
@@ -1852,7 +1854,14 @@ class ApiServiceOrdersView(APIView):
         elif is_cabinet_user(request.user):
             q = Q(customplace__user=request.user, type=Order.TYPE_CUSTOMER)
         qs = Order.objects.filter(q).order_by('-dt_created') if q else Order.objects.none()
-        return Response(data=ServiceOrderSerializer(qs, many=True,).data, status=200)
+        return Response(
+            data=ServiceOrderSerializer(
+                qs,
+                many=True,
+                context=dict(request=request),
+                ).data,
+            status=200
+        )
 
 api_orders = ApiServiceOrdersView.as_view()
 
