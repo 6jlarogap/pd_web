@@ -1854,7 +1854,14 @@ class ApiServiceOrdersView(APIView):
         elif is_cabinet_user(request.user):
             q = Q(customplace__user=request.user, type=Order.TYPE_CUSTOMER)
         qs = Order.objects.filter(q).order_by('-dt_created') if q else Order.objects.none()
-        return Response(data=ServiceOrderSerializer(qs, many=True,).data, status=200)
+        return Response(
+            data=ServiceOrderSerializer(
+                qs,
+                many=True,
+                context=dict(request=request),
+                ).data,
+            status=200
+        )
 
 api_orders = ApiServiceOrdersView.as_view()
 

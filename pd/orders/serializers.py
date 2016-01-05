@@ -284,11 +284,21 @@ class ServiceOrderSerializer(CreatedAtMixin, serializers.ModelSerializer):
     createdAt = serializers.SerializerMethodField('createdAt_func')
     modifiedAt = serializers.SerializerMethodField('modifiedAt_func')
     isArchived = serializers.Field(source='archived')
+    lastVisit = serializers.SerializerMethodField('lastVisit_func')
 
     class Meta:
         model = Order
         fields = ('id', 'type', 'performer', 'owner', 'number', 'status', 'isArchived',
-                  'totalPrice', 'currency', 'createdAt', 'modifiedAt', )
+                  'totalPrice', 'currency', 'createdAt', 'modifiedAt',
+                  'lastVisit',
+        )
+
+    def lastVisit_func(self, instance):
+        title_photo = instance.title_photo()
+        return dict(
+            photoUrl=self.context['request'].build_absolute_uri(title_photo.bfile.url) \
+                     if title_photo else None
+        )
 
 class OrderSerializer(CreatedAtMixin, serializers.ModelSerializer):
     type = serializers.Field(source='service_name')
