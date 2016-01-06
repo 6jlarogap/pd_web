@@ -369,6 +369,11 @@ class ApiCustompersonMixin(object):
             raise Http404
         return customperson
 
+    def delete_customperson(self, pk):
+        customperson = self.get_customperson(pk)
+        customperson.delete()
+        return Response({}, status=200)
+
 class ApiCustompersonDetailView(ApiCustompersonMixin, ApiClientPlacesMixin, APIView):
     permission_classes = (PermitIfCabinet,)
     parser_classes = (MultiPartParser, JSONParser, )
@@ -419,6 +424,9 @@ class ApiCustompersonDetailView(ApiCustompersonMixin, ApiClientPlacesMixin, APIV
             return Response(serializer.errors, status=400)
         except ServiceException as excpt:
             return Response(data=dict(status='error', message=excpt.message), status=400)
+
+    def delete(self, request, pk):
+        return self.delete_customperson(pk)
 
 api_customperson_detail = ApiCustompersonDetailView.as_view()
 
@@ -645,6 +653,9 @@ class ApiClientPersonsDetailView(ApiClientPlacesMixin, ApiCustompersonMixin, API
             return Response(serializer.errors, status=400)
         except ServiceException as excpt:
             return Response(data=dict(status='error', message=excpt.message), status=400)
+
+    def delete(self, request, pk):
+        return self.delete_customperson(pk)
 
 api_client_persons_detail = ApiClientPersonsDetailView.as_view()
 
