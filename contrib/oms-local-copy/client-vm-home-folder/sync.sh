@@ -5,6 +5,8 @@
 MYORG=barjkh
 HOST="register.ritual-minsk.by"
 
+ping -c 4 $HOST || { echo "No Internet connection"; exit; }
+
 sudo -u www-data rsync -rtlupvz --delete \
      --exclude=ENV \
      --exclude=pd/pd/local_settings.py \
