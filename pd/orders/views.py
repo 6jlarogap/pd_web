@@ -1664,9 +1664,9 @@ api_client_available_performers = ApiClientAvailablePerformersView.as_view()
 
 class ApiShopPlacesView(ApiServicePriceMixin, APIView):
 
-    def get(self, request, org_pk, place_pk):
+    def get(self, request, org_pk, customplace_pk):
         """
-        Получить сумму на выполнение заказа фото на место (Place!)
+        Получить сумму на выполнение заказа фото на место (CustomPlace!)
 
         Выполняется анонимным пользователем
         """
@@ -1674,8 +1674,8 @@ class ApiShopPlacesView(ApiServicePriceMixin, APIView):
         status_code = 200
         try:
             org = get_object_or_404(Org, pk=org_pk)
-            place = get_object_or_404(Place, pk=place_pk)
-            place_location = place.location()
+            customplace = get_object_or_404(CustomPlace, pk=customplace_pk)
+            place_location = customplace.location()
             if not place_location:
                 raise ServiceException(_(u"Место не имеет координат"))
 
