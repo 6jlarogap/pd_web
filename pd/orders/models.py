@@ -505,6 +505,12 @@ class Order(GetLogsMixin, BaseModel):
     def has_photo(self):
         return self.serviceitem_set.filter(orgservice__service__name=Service.SERVICE_PHOTO).exists()
 
+    def title_photo(self):
+        try:
+            return ResultFile.objects.filter(order=self, is_title=True)[0].bfile
+        except IndexError:
+            return None
+
 class OrderItemMixin(object):
 
     def cost_float(self):
@@ -612,14 +618,33 @@ class ResultFile(Files):
 
     order = models.ForeignKey(Order, verbose_name=_(u"Заказ"), )
     type = models.CharField(_(u"Тип"), max_length=255, choices=RESULT_TYPES, default=TYPE_IMAGE)
+    is_title = models.BooleanField(_(u"Титульное фото"), default=False, editable=False)
 
     def save(self, *args, **kwargs):
         customplace = None
         if not self.type or self.type == self.TYPE_IMAGE:
             customplace = self.order.customplace
+            # Каждое новое фото пока (!) делаем титульным
+            if not self.pk:
+                self.is_title = True
+        if self.is_title:
+            ResultFile.objects.filter(order=self.order, is_title=True).update(is_title=False)
         result = super(ResultFile, self).save(*args, **kwargs)
         if customplace and self.bfile:
             customplace.update_title_photo(self.bfile)
+        return result
+
+    def delete(self):
+        is_title = self.is_title
+        order = self.order
+        result = super(ResultFile, self).delete()
+        if is_title:
+            try:
+                last_photo_result = ResultFile.objects.filter(order=order, type=self.TYPE_IMAGE). \
+                                    order_by('-date_of_creation')[0]
+                ResultFile.objects.filter(pk=last_photo_result.pk).update(is_title=True)
+            except IndexError:
+                pass
         return result
 
 class OrderItem(OrderItemMixin, models.Model):

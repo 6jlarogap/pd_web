@@ -507,7 +507,7 @@ class CustomPerson(PersonMixin, PhotoModel, BaseModel):
     def delete(self):
         for memorygallery in MemoryGallery.objects.filter(customperson=self):
             memorygallery.delete()
-        super(CustomPerson, self).delete()
+        return super(CustomPerson, self).delete()
 
     def oms_data(self):
         try:

@@ -97,8 +97,10 @@
                 {% if b.dc_filled %}
                     {% trans "Документ о смерти" %}:
                 {% else %}
-                    <span style="color:red"><b><big>{% trans "Документ о смерти" %}:
-                                                    {% trans "не заполнен!" %}</big></b></span>
+                    {% if global_context_DEATH_CERTIFICATE_REQUIRED %}
+                        <span style="color:red"><b><big>{% trans "Документ о смерти" %}:
+                                                        {% trans "не заполнен!" %}</big></b></span>
+                    {% endif %}
                 {% endif %}
             <dt>
             {% if b.deadman.deathcertificate %}

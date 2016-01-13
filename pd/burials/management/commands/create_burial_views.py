@@ -77,6 +77,13 @@ VIEWS = (
             END
             AS place_number_s3,
 
+            CASE
+                WHEN fact_date IS NULL
+                    THEN ''
+                ELSE to_char(fact_date, 'YYYY-MM-DD')
+            END
+            AS fact_date_s,
+
             id AS burial_id
 
             FROM burials_burial;
