@@ -242,6 +242,8 @@ class BurialSearchForm(forms.Form):
         super(BurialSearchForm, self).__init__(*args, **kwargs)
         if not settings.DEADMAN_IDENT_NUMBER_ALLOW:
             del self.fields['ident_number_search']
+        if not Org.objects.filter(type=Org.PROFILE_LORU).exists():
+            del self.fields['loru_in_burials']
 
 class ResponsibleForm(AlivePersonForm):
     WHERE_FROM_PLACE = u'place'

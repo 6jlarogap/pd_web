@@ -576,7 +576,7 @@ class BurialsListView(PaginateListView):
             if form.cleaned_data['applicant_org']:
                 burials = burials.filter(
                     applicant_organization__name__iregex=re_search(form.cleaned_data['applicant_org']))
-            if form.cleaned_data['loru_in_burials']:
+            if form.cleaned_data.get('loru_in_burials'):
                 burials = burials.filter(
                     loru__name__iregex=re_search(form.cleaned_data['loru_in_burials']))
             if form.cleaned_data['applicant_person']:
