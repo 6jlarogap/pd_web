@@ -42,7 +42,7 @@
     {% endif %}
     });
 </script>
-{% if request.user.profile.is_ugh and not request.REQUEST.archive and not form.instance.is_archive %}
+{% if global_context_ARE_LORUS_IN_SYSTEM and request.user.profile.is_ugh and not request.REQUEST.archive and not form.instance.is_archive %}
     {% if form.instance.is_full or form.instance.is_transferred %}
         <h2>{% trans "Посредник" %}</h2>
         <p><big>
