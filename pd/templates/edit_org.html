@@ -4,7 +4,7 @@
 
 {% block content %}
 
-{% if is_my_org and user.profile.is_ugh and not user.profile.is_admin %}
+{% if is_readonly %}
     {% include "form_read_only.html" %}
 {% endif %}
 
@@ -74,7 +74,7 @@
     {#     </fieldset>                           #}
     {# {% endfor %}                              #}
 
-    {% if request.user.profile.is_loru or request.user.profile.is_admin %}
+    {% if not is_readonly %}
         <p>
             <input type="submit" class="btn btn-primary" value="{% trans "cохранить" %}"/>
         </p>
