@@ -586,7 +586,7 @@ $(function() {
             $('#deadman_btn_today').show();
         }
     });
-    $('select[name*=deadman-death_date_]').change();
+    $('input[name*=deadman-death_date_]').change();
 
     $('#id_deadman-dc-release_date').change(function() {
         if ($(this).val()) {
