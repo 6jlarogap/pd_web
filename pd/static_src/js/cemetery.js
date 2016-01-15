@@ -572,10 +572,10 @@ $(function() {
     });
     $('#id_cemeteries_editable').change();
 
-    $('select[name*=deadman-death_date_]').change(function() {
+    $('input[name*=deadman-death_date_]').change(function() {
         var hide_ = false;
-        $('select[name*=deadman-death_date_]').each(function() {
-            if ($(this).val() != '0') {
+        $('input[name*=deadman-death_date_]').each(function() {
+            if ($(this).val()) {
                 hide_ = true
                 return;
             }
