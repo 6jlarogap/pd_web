@@ -1059,6 +1059,15 @@ class OrgEditView(UghOrLoruRequiredMixin, RequestToFormMixin, FormInvalidMixin, 
     def get_context_data(self, **kwargs):
         data = super(OrgEditView, self).get_context_data(**kwargs)
         data['is_my_org'] = self.request.user.profile.org.pk == self.object.pk
+        data['is_readonly'] = True
+        if data['is_my_org']:
+            data['is_readonly'] = not (is_loru_user(self.request.user) or \
+                                        self.request.user.profile.is_admin())
+        else:
+            data['is_readonly'] = Profile.objects.filter(
+                org=self.object,
+                user__is_active=True,
+                ).exists()
         return data
 
     def get_success_url(self):
