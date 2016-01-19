@@ -563,7 +563,10 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
                         # что из модели, на которой форма основана:
                         pass
         applicant_id_form_initial['flag_no_applicant_doc_required'] = self.instance.flag_no_applicant_doc_required \
-            if self.instance.pk and self.instance.can_personal_data(self.request) else True
+            if self.instance.pk and \
+               self.instance.applicant and \
+               self.instance.can_personal_data(self.request) \
+            else True
 
         self.applicant_form = AlivePersonForm(data=data, prefix='applicant',
                                               instance=applicant,
