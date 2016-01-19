@@ -502,7 +502,7 @@ class PlaceViewSet(CaretakerMixin, viewsets.ModelViewSet):
                     email_error_text = _(u"Пользователь %s (телефон %s) не смог получить СМС после прикрепления места %s" % \
                                         (customerprofile.user.username, object.responsible.login_phone, object.pk,))
                 except CustomerProfile.DoesNotExist:
-                    user, password = CustomerProfile.create_cabinet(object.responsible)
+                    user, password = CustomerProfile.create_cabinet(object.responsible, self.request)
                     text=_(u'%s login: %s parol: %s') % (
                         get_front_end_url(self.request).rstrip('/'),
                         object.responsible.login_phone,
