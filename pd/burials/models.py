@@ -1222,7 +1222,7 @@ class Burial(SafeDeleteMixin, GetLogsMixin, BaseModel):
             except CustomerProfile.DoesNotExist:
                 # create_cabinet() создаст user, customerprofile с login_phone,
                 # а также занесет в place.responsible нового user
-                user, password = CustomerProfile.create_cabinet(place.responsible)
+                user, password = CustomerProfile.create_cabinet(place.responsible, request)
                 text = _(u'%s login: %s parol: %s') % (
                     get_front_end_url(request).rstrip('/'),
                     place.responsible.login_phone,
