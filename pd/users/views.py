@@ -601,6 +601,8 @@ class ApiAuthUser(APIView):
     
     def delete(self, request):
         request.user.is_active = False
+        old_username = request.user.username
+        old_fullname = request.user.customerprofile.full_name()
         request.user.customerprofile.user_last_name = ''
         request.user.customerprofile.user_first_name = ''
         request.user.customerprofile.user_middle_name = ''
@@ -619,6 +621,20 @@ class ApiAuthUser(APIView):
                 request.user.username = new_username
                 break
         request.user.save()
+        write_log(
+            request,
+            request.user,
+            _(
+                u"Пользователь кабинета, \n"
+                u"логин: %(username)s\n"
+                u"ФИО: %(full_name)s\n"
+                u'"удален" из системы, т.е. переименован в %(new_username)s\n'
+                u"с потерей права входа в систему"
+            ) % dict(
+                username=old_username,
+                full_name=old_fullname,
+                new_username=new_username,
+        ))
         return Response(data={}, status=200)
 
 api_auth_user = ApiAuthUser.as_view()
