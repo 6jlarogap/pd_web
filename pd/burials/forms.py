@@ -433,8 +433,13 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
         self.fields.keyOrder.insert(self.fields.keyOrder.index('applicant_organization'), self.fields.keyOrder.pop(-1))
 
         if self.instance.can_personal_data(self.request):
-            if self.instance.pk and self.instance.applicant:
-                self.initial['opf'] = Org.OPF_PERSON
+            if self.instance.pk:
+                if self.instance.applicant:
+                    self.initial['opf'] = Org.OPF_PERSON
+                elif self.instance.applicant_organization:
+                    self.initial['opf'] = Org.OPF_ORG
+                else:
+                    self.initial['opf'] = self.request.user.profile.org.opf_burial
             else:
                 self.initial['opf'] = self.request.user.profile.org.opf_burial
         else:
