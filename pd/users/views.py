@@ -611,7 +611,7 @@ class ApiAuthUser(APIView):
             request.user.customerprofile.user_first_name = ''
             request.user.customerprofile.user_middle_name = ''
             request.user.customerprofile.save()
-            request.user.email = ''
+            request.user.email = None
             chars = string.ascii_uppercase + string.ascii_lowercase + string.digits
             while True:
                 new_username  = 'deleted-' + ''.join(random.choice(chars) for x in range(10))
