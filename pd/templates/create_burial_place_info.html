@@ -27,21 +27,25 @@
 
     <h3>{% trans "Усопшие" %}</h3>
     <ul>
-        {% for b in place.burial_set.all %}
-            {% if not b.annulated %}
-                <li>
-                    {{ b.grave.grave_number }} &mdash;
-                    {{ b.get_burial_type_display }} &mdash;
-                    {{ b.get_burial_container_display }} &mdash;
-                    {% if user.profile.is_loru and b.is_full %}
-                        <a href="{% url view_burial b.pk %}">{{ b.deadman_or_bio }}</a>
-                    {% elif user.profile.is_ugh and b.cemetery.ugh == user.profile.org %}
-                        <a href="{% url view_burial b.pk %}">{{ b.deadman_or_bio }}</a>
-                    {% else %}
-                        {{ b.deadman_or_bio }}
-                    {% endif %}
-                </li>
-            {% endif %}
+        {% for b in burials %}
+            <li>
+                {{ b.grave.grave_number }} &mdash;
+                {{ b.get_burial_type_display }} &mdash;
+                {{ b.get_burial_container_display }} &mdash;
+                {% if user.profile.is_loru and b.is_full %}
+                    <a href="{% url view_burial b.pk %}">{{ b.deadman_or_bio }}</a>
+                {% elif user.profile.is_ugh and b.cemetery.ugh == user.profile.org %}
+                    <a href="{% url view_burial b.pk %}">{{ b.deadman_or_bio }}</a>
+                {% else %}
+                    {{ b.deadman_or_bio }}
+                {% endif %}
+            </li>
         {% endfor %}
     </ul>
+    {% if count_burials_all > count_burials_showed %}
+        <span style="color:blue">
+            {% trans "Показано" %} {{ count_burials_showed }}
+            {% trans "из всего" %} {{ count_burials_all }} {% trans "захороненных в месте" %}
+        </span>
+    {% endif %}
 </div>
