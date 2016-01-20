@@ -502,7 +502,7 @@ class PlaceViewSet(CaretakerMixin, viewsets.ModelViewSet):
                     email_error_text = _(u"Пользователь %s (телефон %s) не смог получить СМС после прикрепления места %s" % \
                                         (customerprofile.user.username, object.responsible.login_phone, object.pk,))
                 except CustomerProfile.DoesNotExist:
-                    user, password = CustomerProfile.create_cabinet(object.responsible)
+                    user, password = CustomerProfile.create_cabinet(object.responsible, self.request)
                     text=_(u'%s login: %s parol: %s') % (
                         get_front_end_url(self.request).rstrip('/'),
                         object.responsible.login_phone,
@@ -1083,23 +1083,32 @@ class GetPlaceView(View):
         return View.dispatch(self, request, *args, **kwargs)
 
     def get(self, request, *args, **kwargs):
-        places = Place.objects.all()
-        data = dict(
-            cemetery__pk=request.GET.get('cemetery') or None,
-            area__pk=request.GET.get('area') or None,
-            row=request.GET.get('row') or '',
-            place=request.GET.get('place_number') or '',
-        )
-
         if request.GET.get('place_number'):
             try:
-                p = places.get(**data)
+                place = Place.objects.get(
+                    cemetery__pk=request.GET.get('cemetery') or None,
+                    area__pk=request.GET.get('area') or None,
+                    row=request.GET.get('row') or '',
+                    place=request.GET.get('place_number') or '',
+                )
+                burials = place.burial_set.filter(annulated=False)
+                count_burials_all = burials.count()
+                burials = burials.order_by('grave_number')[:20]
+                count_burials_showed = burials.count()
             except Place.DoesNotExist:
                 return HttpResponse('')
             except Place.MultipleObjectsReturned:
                 return HttpResponse('')
             else:
-                return render(request, 'create_burial_place_info.html', {'place': p})
+                return render(
+                    request,
+                    'create_burial_place_info.html',
+                    dict(
+                        place=place,
+                        burials=burials,
+                        count_burials_all=count_burials_all,
+                        count_burials_showed=count_burials_showed,
+                ))
         else:
             return HttpResponse('')
 

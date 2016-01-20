@@ -431,13 +431,19 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
         self.fields['dover'].queryset = self.fields['dover'].queryset.select_related('agent', 'agent__user')
 
         self.fields.keyOrder.insert(self.fields.keyOrder.index('applicant_organization'), self.fields.keyOrder.pop(-1))
-        if self.instance.pk:
-            if self.instance.applicant and self.instance.can_personal_data(self.request):
-                self.initial['opf'] = Org.OPF_PERSON
+
+        if self.instance.can_personal_data(self.request):
+            if self.instance.pk:
+                if self.instance.applicant:
+                    self.initial['opf'] = Org.OPF_PERSON
+                elif self.instance.applicant_organization:
+                    self.initial['opf'] = Org.OPF_ORG
+                else:
+                    self.initial['opf'] = self.request.user.profile.org.opf_burial
             else:
-                self.initial['opf'] = Org.OPF_ORG
+                self.initial['opf'] = self.request.user.profile.org.opf_burial
         else:
-            self.initial['opf'] = self.request.user.profile.org.opf_burial
+            self.initial['opf'] = Org.OPF_ORG
 
         if self.request.user.profile.is_ugh() and self.request.REQUEST.get('archive'):
             del self.fields['plan_date']
@@ -563,7 +569,10 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
                         # что из модели, на которой форма основана:
                         pass
         applicant_id_form_initial['flag_no_applicant_doc_required'] = self.instance.flag_no_applicant_doc_required \
-            if self.instance.pk and self.instance.can_personal_data(self.request) else True
+            if self.instance.pk and \
+               self.instance.applicant and \
+               self.instance.can_personal_data(self.request) \
+            else True
 
         self.applicant_form = AlivePersonForm(data=data, prefix='applicant',
                                               instance=applicant,

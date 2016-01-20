@@ -597,28 +597,44 @@ class ApiSettings(APIView):
 api_settings = ApiSettings.as_view()
 
 class ApiAuthUser(APIView):
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (PermitIfCabinet,)
     
     def delete(self, request):
         request.user.is_active = False
-        try:
-            request.user.customerprofile
-        except CustomerProfile.DoesNotExist:
-            pass
-        else:
-            # Пользователь кабинета
-            request.user.customerprofile.user_last_name = ''
-            request.user.customerprofile.user_first_name = ''
-            request.user.customerprofile.user_middle_name = ''
-            request.user.customerprofile.save()
-            request.user.email = ''
-            chars = string.ascii_uppercase + string.ascii_lowercase + string.digits
-            while True:
-                new_username  = 'deleted-' + ''.join(random.choice(chars) for x in range(10))
-                if not User.objects.filter(username=new_username).count():
-                    request.user.username = new_username
-                    break
+        old_username = request.user.username
+        old_fullname = request.user.customerprofile.full_name()
+        request.user.customerprofile.user_last_name = ''
+        request.user.customerprofile.user_first_name = ''
+        request.user.customerprofile.user_middle_name = ''
+        request.user.customerprofile.save()
+        request.user.email = None
+        chars = string.ascii_uppercase + string.ascii_lowercase + string.digits
+        username_max_length = User._meta.get_field('username').max_length
+        while True:
+            new_username  = u"%s-%s-%s" % (
+                'deleted',
+                request.user.username,
+                ''.join(random.choice(chars) for x in range(10)),
+            )
+            new_username = new_username[:username_max_length]
+            if not User.objects.filter(username=new_username).count():
+                request.user.username = new_username
+                break
         request.user.save()
+        write_log(
+            request,
+            request.user,
+            _(
+                u"Пользователь кабинета, \n"
+                u"логин: %(username)s\n"
+                u"ФИО: %(full_name)s\n"
+                u'"удален" из системы, т.е. переименован в %(new_username)s\n'
+                u"с потерей права входа в систему"
+            ) % dict(
+                username=old_username,
+                full_name=old_fullname,
+                new_username=new_username,
+        ))
         return Response(data={}, status=200)
 
 api_auth_user = ApiAuthUser.as_view()
