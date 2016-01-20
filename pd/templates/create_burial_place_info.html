@@ -27,7 +27,7 @@
 
     <h3>{% trans "Усопшие" %}</h3>
     <ul>
-        {% for b in place.burial_set.all %}
+        {% for b in burials %}
             {% if not b.annulated %}
                 <li>
                     {{ b.grave.grave_number }} &mdash;
@@ -44,4 +44,10 @@
             {% endif %}
         {% endfor %}
     </ul>
+    {% if count_burials_all > count_burials_showed %}
+        <span style="color:blue">
+            {% trans "Показано" %} {{ count_burials_showed }}
+            {% trans "из всего" %} {{ count_burials_all }} {% trans "захороненных в месте" %}
+        </span>
+    {% endif %}
 </div>
