@@ -284,11 +284,14 @@ class ServiceOrderSerializer(CreatedAtMixin, serializers.ModelSerializer):
     createdAt = serializers.SerializerMethodField('createdAt_func')
     modifiedAt = serializers.SerializerMethodField('modifiedAt_func')
     isArchived = serializers.Field(source='archived')
+    titlePhoto = HyperlinkedFileField(source='title_photo', required=False)
 
     class Meta:
         model = Order
         fields = ('id', 'type', 'performer', 'owner', 'number', 'status', 'isArchived',
-                  'totalPrice', 'currency', 'createdAt', 'modifiedAt', )
+                  'totalPrice', 'currency', 'createdAt', 'modifiedAt',
+                  'titlePhoto',
+        )
 
 class OrderSerializer(CreatedAtMixin, serializers.ModelSerializer):
     type = serializers.Field(source='service_name')

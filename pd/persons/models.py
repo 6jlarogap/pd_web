@@ -482,6 +482,22 @@ class CustomPlace(LocationMixin, BaseModel):
         except (AttributeError, IntegrityError):
             pass
 
+    def location(self):
+        """
+        Координаты, а если не заданы, то ОМС-места, если есть привязка
+        """
+        if self.address and \
+           self.address.gps_y is not None and \
+           self.address.gps_x is not None:
+            return dict(
+                latitude=self.address.gps_y,
+                longitude=self.address.gps_x,
+            )
+        elif self.place:
+            return self.place.location()
+        else:
+            return None
+
 class CustomPerson(PersonMixin, PhotoModel, BaseModel):
     """
     Человек, чаще усопший, но возможно живой
@@ -507,7 +523,7 @@ class CustomPerson(PersonMixin, PhotoModel, BaseModel):
     def delete(self):
         for memorygallery in MemoryGallery.objects.filter(customperson=self):
             memorygallery.delete()
-        super(CustomPerson, self).delete()
+        return super(CustomPerson, self).delete()
 
     def oms_data(self):
         try:

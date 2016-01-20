@@ -22,7 +22,7 @@ from rest_framework import permissions
 from geo.models import Location
 from pd.models import BaseModel, Files, GetLogsMixin, validate_gt0, validate_username, \
                       validate_phone_as_number, SafeDeleteMixin
-from logs.models import Log
+from logs.models import Log, write_log
 
 from pd.utils import DigitsValidator, LengthValidator, NotEmptyValidator, \
                      phones_from_text, capitalize
@@ -145,7 +145,7 @@ class CustomerProfile(CommonProfile):
         unique_together = ('login_phone', )
 
     @classmethod
-    def create_cabinet(cls, responsible):
+    def create_cabinet(cls, responsible, request):
         assert responsible and \
                hasattr(responsible, 'login_phone') and \
                responsible.login_phone, \
@@ -166,6 +166,17 @@ class CustomerProfile(CommonProfile):
                                 )
         responsible.user = user
         responsible.save()
+        write_log(
+            request,
+            user,
+            _(
+                u"Создан пользователь кабинета\n"
+                u"логин: %(username)s\n"
+                u"ФИО: %(full_name)s"
+            ) % dict(
+                username=user.username,
+                full_name=customprofile.full_name(),
+        ))
         return user, password
 
 class Profile(CommonProfile):

@@ -1664,9 +1664,9 @@ api_client_available_performers = ApiClientAvailablePerformersView.as_view()
 
 class ApiShopPlacesView(ApiServicePriceMixin, APIView):
 
-    def get(self, request, org_pk, place_pk):
+    def get(self, request, org_pk, customplace_pk):
         """
-        Получить сумму на выполнение заказа фото на место (Place!)
+        Получить сумму на выполнение заказа фото на место (CustomPlace!)
 
         Выполняется анонимным пользователем
         """
@@ -1674,8 +1674,8 @@ class ApiShopPlacesView(ApiServicePriceMixin, APIView):
         status_code = 200
         try:
             org = get_object_or_404(Org, pk=org_pk)
-            place = get_object_or_404(Place, pk=place_pk)
-            place_location = place.location()
+            customplace = get_object_or_404(CustomPlace, pk=customplace_pk)
+            place_location = customplace.location()
             if not place_location:
                 raise ServiceException(_(u"Место не имеет координат"))
 
@@ -1854,7 +1854,14 @@ class ApiServiceOrdersView(APIView):
         elif is_cabinet_user(request.user):
             q = Q(customplace__user=request.user, type=Order.TYPE_CUSTOMER)
         qs = Order.objects.filter(q).order_by('-dt_created') if q else Order.objects.none()
-        return Response(data=ServiceOrderSerializer(qs, many=True,).data, status=200)
+        return Response(
+            data=ServiceOrderSerializer(
+                qs,
+                many=True,
+                context=dict(request=request),
+                ).data,
+            status=200
+        )
 
 api_orders = ApiServiceOrdersView.as_view()
 
