@@ -1091,7 +1091,7 @@ class GetPlaceView(View):
                     row=request.GET.get('row') or '',
                     place=request.GET.get('place_number') or '',
                 )
-                burials = place.burial_set.all()
+                burials = place.burial_set.filter(annulated=False)
                 count_burials_all = burials.count()
                 burials = burials.order_by('grave_number')[:20]
                 count_burials_showed = burials.count()
