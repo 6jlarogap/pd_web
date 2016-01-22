@@ -1502,12 +1502,10 @@ class ApiServicePriceMixin(object):
             
             self.data.need_delivery = self.data.service_name in (Service.SERVICE_PHOTO, Service.SERVICE_DELIVERY, )
             if self.data.need_delivery:
+                latitude = longitude = None
                 if request.method == 'GET':
                     latitude = req_dict.get('location[latitude]')
                     longitude = req_dict.get('location[longitude]')
-                elif request.method == 'POST':
-                    latitude = req_dict.get('location') and req_dict['location'].get('latitude')
-                    longitude = req_dict.get('location') and req_dict['location'].get('longitude')
                 if latitude is None or longitude is None:
                     latitude = self.data.customplace.address and self.data.customplace.address.gps_y
                     longitude = self.data.customplace.address and self.data.customplace.address.gps_x
@@ -1517,7 +1515,7 @@ class ApiServicePriceMixin(object):
                         latitude = place_location['latitude']
                         longitude = place_location['longitude']
                 if latitude is None or longitude is None:
-                    raise ServiceException(_(u'Не заданы и не удалось выяснить координаты места'))
+                    raise ServiceException(_(u'Не заданы или не удалось выяснить координаты места'))
                 self.data.latitude = float(latitude)
                 self.data.longitude = float(longitude)
                 if request.method == 'POST' and self.data.service_name != Service.SERVICE_DELIVERY:
@@ -1749,11 +1747,7 @@ class ApiClientOrdersView(ApiServicePriceMixin, APIView):
         {
             "type": "photo",
             "performerId": 19,
-            "placeId": 43,
-            "location": {
-                "latitude": 52.70,
-                "longitude": 27.35
-            },
+            "placeId": 43, # CustomPlace, обязательно с координатами
             "comment": "Коментарий к заказу"
         }
         """
