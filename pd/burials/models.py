@@ -1239,9 +1239,7 @@ class Burial(SafeDeleteMixin, GetLogsMixin, BaseModel):
                 place.responsible.user = user
                 place.responsible.save()
             # Проверка, не создал ли лору customPlace c тем же deadman
-            print 'here1'
             if not (self.deadman and CustomPerson.objects.filter(person=self.deadman.baseperson_ptr)):
-                print 'here2'
                 customplace, created_ = CustomPlace.get_or_create_from_place(user=user, place=place)
                 if created_:
                     customplace.fill_custom_deadmen()
