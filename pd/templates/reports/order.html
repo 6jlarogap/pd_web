@@ -24,6 +24,51 @@
 
 <BODY TEXT="#000000">
 
+{% if customerprofile %}
+    <p><font size="4" style="font-size: 14pt"><b>Приглашение в Храм</b>
+    </font></p>
+
+    <p><font size="3" style="font-size: 12pt">
+    Дорогой Почитатель Предков!
+    </font></p>
+
+    <p><font size="3" style="font-size: 12pt">
+    Приветствуем Вас на информационном ресурсе &quot;Храм Предков&quot;!
+    </font></p>
+
+    <p><font size="3" style="font-size: 12pt">
+    Для Вас у нас создана запись ({{ deadman }},
+    <a href="{{ global_context_HRAM_PREDKOV_URL }}" target="_blank">{{ global_context_HRAM_PREDKOV_URL }}</a>)
+    на которой Вы можете оставлять все приходящие про него (нее) воспоминания, и с
+    которой Вы сможете проводить время для перечитывания и пополнения воспоминаний
+    с целью сохранения их для Ваших будущих наследников.
+    </font></p>
+
+    <p><font size="3" style="font-size: 12pt">
+    Вы также сможете воспользоваться дистанционным сервисом по уходу за
+    местами погребения <a href="{{ global_context_UHOD_MOGIL_URL }}" target="_blank">{{ global_context_UHOD_MOGIL_URL }}</a>.
+    </font></p>
+
+    <p><font size="3" style="font-size: 12pt">
+    Ваш логин: {{ customerprofile.user.username }}
+    <br/>
+    Ваш пароль: 
+    {% if password %}
+        {{ password }}
+    {% else %}
+        <i>был передан Вам ранее</i>
+    {% endif %}
+    </font></p>
+
+    <p><font size="3" style="font-size: 12pt">
+    С соболезнованиями и уважением,
+    <br/>
+    команда ООО &quot;Интеграция возможностей&quot; 
+    </font></p>
+
+    <div style="page-break-after: always;">&nbsp;</div>
+{% endif %}
+
 <!-- СЧЕТ -->
 
 <TABLE FRAME=VOID ALIGN=LEFT CELLSPACING=0 COLS=9 RULES=NONE BORDER=0>
@@ -53,7 +98,7 @@
             ALIGN=CENTER VALIGN=TOP><B><FONT COLOR="#000000">{{ user.profile.org.off_address|default_if_none:"" }}</FONT></B></TD>
     </TR>
     <TR>
-        <TD ALIGN=CENTER VALIGN=BOTTOM colspan=9><B><I><FONT SIZE=5 COLOR="#000000">
+        <TD STYLE="border-left: 1px solid #000000" ALIGN=CENTER VALIGN=BOTTOM colspan=9><B><I><FONT SIZE=5 COLOR="#000000">
             Счёт-заказ № {{ order.loru_number|default_if_none:"" }}
         </FONT></I></B></TD>
     </TR>

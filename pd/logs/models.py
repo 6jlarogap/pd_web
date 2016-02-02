@@ -8,20 +8,24 @@ from django.db.models.loading import get_model
 
 class LogOperation(object):
 
-    GRAVE_FREE_SET =              1
-    GRAVE_FREE_RESET =            2
-    PLACE_PHOTO_PROCESSED =       3
-    BURIAL_PHOTO_PROCESSED =      4
-    PLACE_PHOTO_REJECT =          5
-    PLACE_CREATED_MOBILE =        6
+    GRAVE_FREE_SET =                1
+    GRAVE_FREE_RESET =              2
+    PLACE_PHOTO_PROCESSED =         3
+    BURIAL_PHOTO_PROCESSED =        4
+    PLACE_PHOTO_REJECT =            5
+    PLACE_CREATED_MOBILE =          6
+    INVITE_CUSTOMER_TO_TEMPLE =     7
+    LORU_MAKES_PLACE_PHOTO =        8
 
     Operation = [
-        _(u'Установка признака "Занято"'),                      #  1
-        _(u'Снятие признака "Занято"'),                         #  2
+        _(u'Установка признака "Занято" для могилы'),           #  1
+        _(u'Снятие признака "Занято" для могилы'),              #  2
         _(u'Фотографии места обработаны'),                      #  3
         _(u'Захоронение добавлено по фото'),                    #  4
         _(u'Брак фото места'),                                  #  5
         _(u'Место создано через мобильное приложение'),         #  6
+        _(u'Приглашение в ХРАМ, от ЛОРУ'),                      #  7
+        _(u'Фотографирование пользовательского места, ЛОРУ'),   #  8
     ]
 
 class Log(models.Model):

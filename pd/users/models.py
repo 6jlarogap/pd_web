@@ -22,7 +22,7 @@ from rest_framework import permissions
 from geo.models import Location
 from pd.models import BaseModel, Files, GetLogsMixin, validate_gt0, validate_username, \
                       validate_phone_as_number, SafeDeleteMixin
-from logs.models import Log, write_log
+from logs.models import Log, write_log, LogOperation
 
 from pd.utils import DigitsValidator, LengthValidator, NotEmptyValidator, \
                      phones_from_text, capitalize
@@ -177,6 +177,8 @@ class CustomerProfile(CommonProfile):
                 username=user.username,
                 full_name=customprofile.full_name(),
         ))
+        if is_trade_user(request.user):
+            write_log(request, user, operation=LogOperation.INVITE_CUSTOMER_TO_TEMPLE)
         return user, password
 
 class Profile(CommonProfile):

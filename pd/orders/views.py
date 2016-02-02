@@ -43,7 +43,7 @@ from orders.forms import ProductForm, OrderForm, OrderItemFormset, CoffinForm, C
 from orders.models import Product, Order, OrderItem, ProductCategory, \
                           Service, Measure, OrgService, OrgServicePrice, ServiceItem, OrderComment, \
                           Route, ResultFile, OrderWebPay
-from persons.models import CustomPlace, AlivePerson
+from persons.models import CustomPlace, AlivePerson, CustomPerson
 from pd.forms import CommentForm
 from pd.views import PaginateListView, RequestToFormMixin, ServiceException, get_front_end_url, get_host_url
 from reports.models import make_report
@@ -582,12 +582,69 @@ class PrintOrderView(LORURequiredMixin, DetailView):
     def get_queryset(self):
         return Order.objects.filter(loru=self.request.user.profile.org).distinct()
 
+    @transaction.commit_on_success
     def render_to_response(self, context, **response_kwargs):
-        context['now'] = datetime.datetime.now()
+        order = self.get_object()
+        customerprofile = password = responsible = None
+        # Приглашение в ХРАМ, если необходимо:
+        #   - есть сервис в созданном заказе
+        #   - есть захоронение, в котором ответственный с телефоном
+        burial = order.burial
+        if order.serviceitem_set.exists() and \
+          burial and \
+          burial.deadman and \
+          burial.deadman.last_name and \
+          burial.cemetery:
+            responsible = burial.responsible or \
+                          burial.place and burial.place.responsible or \
+                          None
+        if responsible and responsible.login_phone:
+            try:
+                customerprofile = CustomerProfile.objects.get(
+                    login_phone=responsible.login_phone
+                )
+            except CustomerProfile.DoesNotExist:
+                user, password = CustomerProfile.create_cabinet(responsible, self.request)
+                customerprofile = user.customerprofile
+            deadman = order.burial.deadman
+            person = deadman.baseperson_ptr
+            if not CustomPerson.objects.filter(person=person):
+                addr = _(u'Кладбище: %s') % burial.cemetery.name
+                if burial.area:
+                    addr = _(u"%(addr)s, участок: %(area)s") % dict(addr=addr, area=burial.area.name)
+                if burial.row:
+                    addr = _(u"%(addr)s, ряд: %(row)s") % dict(addr=addr, row=burial.row)
+                if burial.place_number:
+                    addr = _(u"%(addr)s, место: %(addr)s") % dict(addr=addr, place=burial.place_number)
+                location = Location.objects.create(addr_str=addr)
+                customplace = CustomPlace.objects.create(
+                    user=user,
+                    place=None,
+                    name=addr,
+                    address=location,
+                    favorite_performer=self.request.user.profile.org,
+                )
+                customperson = CustomPerson.objects.create(
+                    customplace=customplace,
+                    person=person,
+                    user=customerprofile.user,
+                    last_name=deadman.last_name,
+                    first_name=deadman.first_name,
+                    middle_name=deadman.middle_name,
+                    is_dead=True,
+                    birth_date=deadman.birth_date,
+                    death_date=deadman.death_date,
+                )
+        context.update(dict(
+            now=datetime.datetime.now(),
+            customerprofile=customerprofile,
+            deadman=deadman,
+            password=password,
+        ))
         report = make_report(
             user=self.request.user,
             msg=_(u"Счет-заказ"),
-            obj=self.get_object(),
+            obj=order,
             template='reports/order.html',
             context=RequestContext(self.request, context),
         )
