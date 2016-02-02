@@ -585,7 +585,7 @@ class PrintOrderView(LORURequiredMixin, DetailView):
     @transaction.commit_on_success
     def render_to_response(self, context, **response_kwargs):
         order = self.get_object()
-        customerprofile = password = responsible = None
+        customerprofile = password = responsible = deadman = None
         # Приглашение в ХРАМ, если необходимо:
         #   - есть сервис в созданном заказе
         #   - есть захоронение, в котором ответственный с телефоном
