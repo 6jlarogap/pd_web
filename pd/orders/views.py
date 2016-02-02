@@ -615,7 +615,7 @@ class PrintOrderView(LORURequiredMixin, DetailView):
                 if burial.row:
                     addr = _(u"%(addr)s, ряд: %(row)s") % dict(addr=addr, row=burial.row)
                 if burial.place_number:
-                    addr = _(u"%(addr)s, место: %(addr)s") % dict(addr=addr, place=burial.place_number)
+                    addr = _(u"%(addr)s, место: %(place)s") % dict(addr=addr, place=burial.place_number)
                 location = Location.objects.create(addr_str=addr)
                 customplace = CustomPlace.objects.create(
                     user=customerprofile.user,
