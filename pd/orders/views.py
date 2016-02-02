@@ -618,7 +618,7 @@ class PrintOrderView(LORURequiredMixin, DetailView):
                     addr = _(u"%(addr)s, место: %(addr)s") % dict(addr=addr, place=burial.place_number)
                 location = Location.objects.create(addr_str=addr)
                 customplace = CustomPlace.objects.create(
-                    user=user,
+                    user=customerprofile.user,
                     place=None,
                     name=addr,
                     address=location,
