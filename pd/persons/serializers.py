@@ -116,13 +116,13 @@ class CustomPlaceEditSerializer(serializers.HyperlinkedModelSerializer):
 class CustomPlaceDetailSerializer(CustomPlaceEditSerializer):
     titlePhoto = HyperlinkedFileField(source='title_photo')
     omsData = Field(source='oms_data')
-    favoritePerformer = OrgShort6Serializer(source='favorite_performer')
+    performer = OrgShort6Serializer(source='favorite_performer')
 
     class Meta:
         model = CustomPlace
         fields = (
             'id', 'name', 'omsData', 'titlePhoto', 'address', 'location',
-            'favoritePerformer',
+            'performer',
         )
 
 class DeadPersonSerializer(serializers.HyperlinkedModelSerializer):
