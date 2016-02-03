@@ -624,6 +624,8 @@ class PrintOrderView(LORURequiredMixin, DetailView):
                     address=location,
                     favorite_performer=self.request.user.profile.org,
                 )
+                order.customplace = customplace
+                order.save()
                 customperson = CustomPerson.objects.create(
                     customplace=customplace,
                     person=person,
