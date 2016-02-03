@@ -1853,6 +1853,11 @@ class ApiClientOrdersView(ApiServicePriceMixin, APIView):
         )
         # будут назначены loru_number, number:
         order.save()
+
+        if not self.data.customplace.favorite_performer:
+            self.data.customplace.favorite_performer = self.data.org
+            self.data.customplace.save()
+
         if self.data.service_name != Service.SERVICE_DELIVERY:
             item_service = ServiceItem.objects.create(
                 order=order,
