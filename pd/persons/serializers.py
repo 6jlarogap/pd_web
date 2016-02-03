@@ -122,7 +122,7 @@ class CustomPlaceDetailSerializer(CustomPlaceEditSerializer):
         model = CustomPlace
         fields = (
             'id', 'name', 'omsData', 'titlePhoto', 'address', 'location',
-            'performerId', 'favoritePerformer',
+            'favoritePerformer',
         )
 
 class DeadPersonSerializer(serializers.HyperlinkedModelSerializer):
