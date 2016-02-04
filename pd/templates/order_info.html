@@ -1,11 +1,31 @@
 {% extends "base.html" %}
 
-{% load i18n %}
+{% load thumbnail i18n %}
 
 {% block content %}
     {% with order=order tab="info" %}
         {% include "order_nav.html" %}
     {% endwith %}
+
+    {% if results %}
+        <h2>{% trans "Результаты выполнения" %}</h2>
+        {% for r in results %}
+            <br />
+            <p>
+            {% if r.type == r.TYPE_IMAGE %}
+                {% thumbnail r.bfile "480x300" "crop" "jpg" as thumb %}
+                <img src="{{ thumb.url }}">
+            {% elif r.type == r.TYPE_VIDEO %}
+                <video width="480" height="300" controls="controls" preload="none" >
+                    <source src="{{ r.bfile.url }}"  type="video/{{ r.ext }}" />
+                </video>
+            {% endif %}
+            <br />
+            <br />
+            {{ r.date_of_creation }}
+            </p>
+        {% endfor %}
+    {% endif %}
 
     <h2>{% trans "Комментарий" %}</h2>
     <form action="{% url order_comment order.pk %}" method="POST">
