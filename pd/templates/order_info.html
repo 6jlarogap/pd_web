@@ -7,6 +7,15 @@
         {% include "order_nav.html" %}
     {% endwith %}
 
+    <h2>{% trans "Комментарий" %}</h2>
+    <form action="{% url order_comment order.pk %}" method="POST">
+        {% csrf_token %}
+        {{ comment_form.as_p }}
+        <p>
+            <input type="submit" class="btn btn-primary" value="{% trans "добавить" %}" />
+        </p>
+    </form>
+
     {% if results %}
         <h2>{% trans "Результаты выполнения" %}</h2>
         {% for r in results %}
@@ -17,24 +26,17 @@
                 <img src="{{ thumb.url }}">
             {% elif r.type == r.TYPE_VIDEO %}
                 <video width="480" height="300" controls="controls" preload="none" >
-                    <source src="{{ r.bfile.url }}"  type="video/{{ r.ext }}" />
+                    <source src="{{ r.bfile.url }}"{% if r.ext %} type="video/{{ r.ext }}{% endif %}" />
                 </video>
+            {% else %}
+                <a href="{{ r.bfile.url }}">{% trans "Файл" %}</a>
             {% endif %}
             <br />
             <br />
-            {{ r.date_of_creation }}
+            {% trans "Добавлен" %} {{ r.date_of_creation }}
             </p>
         {% endfor %}
     {% endif %}
-
-    <h2>{% trans "Комментарий" %}</h2>
-    <form action="{% url order_comment order.pk %}" method="POST">
-        {% csrf_token %}
-        {{ comment_form.as_p }}
-        <p>
-            <input type="submit" class="btn btn-primary" value="{% trans "добавить" %}" />
-        </p>
-    </form>
 
     {% with object=order %}
         {% include "object_logs.html" %}
