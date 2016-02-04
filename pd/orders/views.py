@@ -508,8 +508,11 @@ class OrderInfo(LORURequiredMixin, DetailView):
 
     def get_context_data(self, **kwargs):
         data = super(OrderInfo, self).get_context_data(**kwargs)
+        results = ResultFile.objects.filter(order=self.object). \
+                  order_by('-is_title', '-date_of_creation')
         data.update({
             'comment_form': CommentForm(),
+            'results': results,
         })
         return data
 
