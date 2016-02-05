@@ -16,17 +16,28 @@ class Migration(DataMigration):
         #
         print '*** Change messages in Log by their operation counterparts'
         Log = orm['logs.Log']
+        ContentType = orm['contenttypes.contenttype']
+        burial_ct = ContentType.objects.get(app_label='burials', model='burial')
 
         print '     - BURIAL_TO_GRAVE_MOBILE'
+        count = 0
         for l in Log.objects. \
                 filter(msg__icontains=u'Захоронение сохранено').\
                 filter(msg__icontains=u'Могила'). \
-                filter(msg__icontains=u'Факт. дата'):
+                filter(msg__iregex=ur'Факт\. дата: \d{2}\.\d{2}\.\d{4}$'):
             msg = l.msg[len(u'Захоронение сохранено\n'):]
             Log.objects.filter(pk=l.pk).update(
                 operation=LogOperation.BURIAL_TO_GRAVE_MOBILE,
                 msg=msg,
             )
+            print '*** processing burial id=%s' % l.obj_id
+            Log.objects.filter(
+                ct=burial_ct,
+                obj_id=l.obj_id,
+                msg=u'Захоронение закрыто',
+            ).delete()
+            count += 1
+        print '*** %d log records updated' % count
 
     def backwards(self, orm):
         "Write your backwards methods here."
