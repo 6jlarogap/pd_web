@@ -190,6 +190,13 @@ class OrgShort5Serializer(OrgSerializerMixin, OrgShort4Serializer):
         model = Org
         fields = ('id', 'shortName', 'phones', 'isFavorite', )
 
+class OrgShort6Serializer(serializers.ModelSerializer):
+    domainName = serializers.Field(source='subdomain')
+
+    class Meta:
+        model = Org
+        fields = ('id', 'domainName')
+
 class OrgClientSiteSerializer(PhonesFromTextMixin, OrgSerializerMixin, serializers.ModelSerializer):
     fullName = Field(source='full_name')
     address = serializers.RelatedField('off_address')

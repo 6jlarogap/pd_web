@@ -484,6 +484,14 @@ class Order(GetLogsMixin, BaseModel):
         elif is_cabinet_user(user):
             result = self.applicant and self.applicant.user and \
                      self.applicant.user == user
+            # КОСТЫЛЬ!
+            # Это для формируемых лориком заказов, в которых включены сервисы
+            # В таких заказах applicant может отличаться от ответственного
+            # с мобильным телефоном для входа, из которого (ответственного)
+            # и формируется кабинетчик.
+            if not result:
+                result = self.customplace and \
+                         self.customplace.user == user
         return bool(result)
 
     def price_photo(self):

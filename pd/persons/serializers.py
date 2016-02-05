@@ -10,6 +10,7 @@ from persons.models import AlivePerson, DeadPerson, Phone, CustomPlace, CustomPe
                            MemoryGallery, IDDocumentType, DocumentSource, PersonID, \
                            DeathCertificate, DeathCertificateScan
 from users.models import get_profile
+from users.serializers import OrgShort6Serializer
 from rest_api.fields import UnclearDateFieldSerializer, UnclearDateFieldMixin, UnclearDateFieldSafeSerializer, \
                             HyperlinkedFileField
 
@@ -115,10 +116,14 @@ class CustomPlaceEditSerializer(serializers.HyperlinkedModelSerializer):
 class CustomPlaceDetailSerializer(CustomPlaceEditSerializer):
     titlePhoto = HyperlinkedFileField(source='title_photo')
     omsData = Field(source='oms_data')
+    performer = OrgShort6Serializer(source='favorite_performer')
 
     class Meta:
         model = CustomPlace
-        fields = ('id', 'name', 'omsData', 'titlePhoto', 'address', 'location', 'performerId',)
+        fields = (
+            'id', 'name', 'omsData', 'titlePhoto', 'address', 'location',
+            'performer',
+        )
 
 class DeadPersonSerializer(serializers.HyperlinkedModelSerializer):
     birth_date = UnclearDateFieldSerializer()
