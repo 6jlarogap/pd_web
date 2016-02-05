@@ -491,7 +491,7 @@ class Order(GetLogsMixin, BaseModel):
             # и формируется кабинетчик.
             if not result:
                 result = self.customplace and \
-                         self.сustomplace.user == user
+                         self.customplace.user == user
         return bool(result)
 
     def price_photo(self):
