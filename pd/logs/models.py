@@ -16,16 +16,18 @@ class LogOperation(object):
     PLACE_CREATED_MOBILE =          6
     INVITE_CUSTOMER_TO_TEMPLE =     7
     LORU_MAKES_PLACE_PHOTO =        8
+    BURIAL_TO_GRAVE_MOBILE =        9
 
     Operation = [
-        _(u'Установка признака "Занято" для могилы'),           #  1
-        _(u'Снятие признака "Занято" для могилы'),              #  2
-        _(u'Фотографии места обработаны'),                      #  3
-        _(u'Захоронение добавлено по фото'),                    #  4
-        _(u'Брак фото места'),                                  #  5
-        _(u'Место создано через мобильное приложение'),         #  6
-        _(u'Приглашение в ХРАМ, от ЛОРУ'),                      #  7
-        _(u'Фотографирование пользовательского места, ЛОРУ'),   #  8
+        _(u'Установка признака "Занято" для могилы'),                                       #  1
+        _(u'Снятие признака "Занято" для могилы'),                                          #  2
+        _(u'Фотографии места обработаны'),                                                  #  3
+        _(u'Захоронение добавлено по фото'),                                                #  4
+        _(u'Брак фото места'),                                                              #  5
+        _(u'Место создано через мобильное приложение'),                                     #  6
+        _(u'Приглашение в ХРАМ, от ЛОРУ'),                                                  #  7
+        _(u'Фотографирование пользовательского места, ЛОРУ'),                               #  8
+        _(u'Захоронение прикреплено к могиле в мобильном приложении'),                      #  9
     ]
 
 class Log(models.Model):
@@ -148,8 +150,12 @@ class Log(models.Model):
         return result
 
     def log_msg_display(self):
-        if self.operation is not None and not self.msg:
-            result = LogOperation.Operation[self.operation-1]
+        if self.operation is not None:
+            operation_title = LogOperation.Operation[self.operation-1]
+            if self.msg:
+                result = u"%s.\n%s" % (operation_title, self.msg,)
+            else:
+                result = operation_title
         else:
             result = self.msg
         return result
