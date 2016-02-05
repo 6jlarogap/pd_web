@@ -610,6 +610,6 @@ class  GetLogsMixin(object):
 
     def get_logs(self):
         ct = ContentType.objects.get_for_model(self)
-        return Log.objects.filter(ct=ct, obj_id=self.pk).order_by('-pk')
+        return Log.objects.filter(ct=ct, obj_id=self.pk).order_by('-dt')
 
 add_introspection_rules([], ['^pd\.models\.UnclearDateModelField'])
