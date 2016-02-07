@@ -1178,8 +1178,8 @@ class OrgLogView(UghOrLoruRequiredMixin, PaginateListView):
 
         sort = self.request.GET.get('sort', self.SORT_DEFAULT)
         SORT_FIELDS = {
-            'dt': 'pk',
-            '-dt': '-pk',
+            'dt': 'dt',
+            '-dt': '-dt',
             'user': 'user__username',
             '-user': '-user__username',
         }
