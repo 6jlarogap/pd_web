@@ -199,6 +199,9 @@ ANONYMOUS_LIMITED_URLS_REGEX = r'^/?(?:thumb|media)/place\-photos/'
 LOGOUT_URL = "/logout/"
 LOGIN_REDIRECT_URL = "/"
 
+UHOD_MOGIL_URL = "http://dev.uhodmogil.ru/places"
+HRAM_PREDKOV_URL = "http://dev.hrampredkov.ru/persons"
+
 SESSION_COOKIE_NAME = 'pdsession'
 
 PAGINATION_USER_PER_PAGE_ALLOWED = True

@@ -500,15 +500,19 @@ def files_upload_to(instance, filename):
     else:
         return os.path.join('files', fname)
 
-class DeleteFileMixin(object):
+class FilesMixin(object):
 
-    def delete_from_media(self):
+    def file_field(self):
         if hasattr(self, 'bfile'):
             file_ = self.bfile
         elif hasattr(self, 'photo'):
             file_ = self.photo
         else:
-            return
+            file_ = None
+        return file_
+
+    def delete_from_media(self):
+        file_ = self.file_field()
         if file_ and file_.path and os.path.exists(file_.path):
             try:
                 dir_ = os.path.dirname(file_.path)
@@ -527,9 +531,23 @@ class DeleteFileMixin(object):
 
     def delete(self):
         self.delete_from_media()
-        super(DeleteFileMixin, self).delete()
+        super(FilesMixin, self).delete()
 
-class Files(DeleteFileMixin, models.Model):
+    def ext(self):
+        """
+        Получить расширение файла
+
+        Для тэга video в шаблоне
+        """
+        result = None
+        file_ = self.file_field()
+        if file_ and file_.path:
+            m = re.search(r'^.+\.([^\.\/]+)$', file_.path)
+            if m:
+                return m.group(1)
+        return result
+
+class Files(FilesMixin, models.Model):
     """
     Базовый класс для файлов
     """
@@ -547,7 +565,7 @@ class Files(DeleteFileMixin, models.Model):
                                 on_delete=models.PROTECT)
     date_of_creation = models.DateTimeField(auto_now_add=True)
 
-class PhotoModel(DeleteFileMixin, models.Model):
+class PhotoModel(FilesMixin, models.Model):
     """
     Базовый (дополнительный) класс для моделей, у которых есть фото объекта
     """
@@ -592,6 +610,6 @@ class  GetLogsMixin(object):
 
     def get_logs(self):
         ct = ContentType.objects.get_for_model(self)
-        return Log.objects.filter(ct=ct, obj_id=self.pk).order_by('-pk')
+        return Log.objects.filter(ct=ct, obj_id=self.pk).order_by('-dt')
 
 add_introspection_rules([], ['^pd\.models\.UnclearDateModelField'])

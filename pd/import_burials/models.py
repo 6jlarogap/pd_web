@@ -20,7 +20,7 @@ from django.utils.formats import localize
 
 from burials.models import Burial, BurialComment, ExhumationRequest, Cemetery, Area, Place, AreaPurpose, Grave, BurialFiles
 from geo.models import Location, Country, Region, City, Street
-from logs.models import write_log
+from logs.models import write_log, LogOperation
 from orders.models import Product, Order, OrderItem, CoffinData, CatafalqueData, AddInfoData
 from pd.models import UnclearDate
 from persons.models import AlivePerson, DeadPerson, PersonID, IDDocumentType, DocumentSource, DeathCertificate
@@ -417,7 +417,7 @@ def do_import_burials_minsk(csv_fileobj, cemetery, user):
                         comment=row[comments],
                     )
                     write_log(request, burial, u"Комментарий: %s" % row[comments])
-        write_log(request, burial, _(u"Импорт"))
+        write_log(request, burial, operation=LogOperation.CLOSED_BURIAL_TRANSFERRED)
         
         if row[file_names]:
             files = row[file_names].split('\n')

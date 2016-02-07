@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% load i18n %}
+{% load thumbnail i18n %}
 
 {% block content %}
     {% with order=order tab="info" %}
@@ -15,6 +15,28 @@
             <input type="submit" class="btn btn-primary" value="{% trans "добавить" %}" />
         </p>
     </form>
+
+    {% if results %}
+        <h2>{% trans "Результаты выполнения" %}</h2>
+        {% for r in results %}
+            <br />
+            <p>
+            {% if r.type == r.TYPE_IMAGE %}
+                {% thumbnail r.bfile "480x300" "crop" "jpg" as thumb %}
+                <img src="{{ thumb.url }}">
+            {% elif r.type == r.TYPE_VIDEO %}
+                <video width="480" height="300" controls="controls" preload="none" >
+                    <source src="{{ r.bfile.url }}"{% if r.ext %} type="video/{{ r.ext }}{% endif %}" />
+                </video>
+            {% else %}
+                <a href="{{ r.bfile.url }}">{% trans "Файл" %}</a>
+            {% endif %}
+            <br />
+            <br />
+            {% trans "Добавлен" %} {{ r.date_of_creation }}
+            </p>
+        {% endfor %}
+    {% endif %}
 
     {% with object=order %}
         {% include "object_logs.html" %}
