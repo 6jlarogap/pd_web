@@ -32,9 +32,8 @@ class Migration(DataMigration):
             transferred=LogOperation.CLOSED_BURIAL_TRANSFERRED,
         )
 
-        print '    - closed burials'
         count = 0
-        for b in Burial.objects.filter(status='closed').iterator():
+        for b in Burial.objects.filter(status__in=('closed', 'exhumated',)).iterator():
             if b.source_type in ('full', 'ugh', 'archive',):
                 Log.objects.filter(
                     ct=burial_ct,
@@ -85,24 +84,7 @@ class Migration(DataMigration):
             if count % 1000 == 0:
                 transaction.commit()
                 print '    - %d burials processed' % count
-        print '    - %d total closed burials processed' % count
-
-        print '    - exhumated burials'
-        count = 0
-        for b in Burial.objects.filter(status='exhumated').iterator():
-            Log.objects.filter(
-                ct=burial_ct,
-                obj_id=b.pk,
-                msg=u'Захоронение закрыто'
-            ).update(
-                operation=operations[b.source_type],
-                msg='',
-            )
-            count += 1
-            if count % 1000 == 0:
-                transaction.commit()
-                print '    - %d burials processed' % count
-        print '    - %d total exhumated burials processed' % count
+        print '    - %d total closed and exhumated burials processed' % count
             
 
     def backwards(self, orm):
