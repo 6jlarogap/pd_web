@@ -14,16 +14,14 @@ from pd.models import UnclearDateModelField, BaseModel, BaseModelManualDtCreated
 from pd.views import get_front_end_url
 from pd.utils import utcisoformat
 
-from persons.models import DeadPerson, DeathCertificate, CustomPlace
+from persons.models import DeadPerson, DeathCertificate, CustomPlace, CustomPerson
 from reports.models import Report
 from users.models import Org, Profile, Dover, ProfileLORU, CustomerProfile, PhonesMixin, \
                          is_ugh_user, is_cabinet_user, is_loru_user
-from logs.models import Log
+from logs.models import LogOperation, Log, write_log
 from geo.models import GeoPointModel, CoordinatesModel
 
 from geo.models import GeoPointModel
-
-from logs.models import write_log
 
 from managers import PlaceManager
 
@@ -1207,7 +1205,13 @@ class Burial(SafeDeleteMixin, GetLogsMixin, BaseModel):
         self.save()
 
         if old_status != self.STATUS_CLOSED:
-            write_log(request, self, _(u'Захоронение закрыто'))
+            operations = {
+                Burial.SOURCE_FULL: LogOperation.CLOSED_BURIAL_FULL,
+                Burial.SOURCE_UGH: LogOperation.CLOSED_BURIAL_UGH,
+                Burial.SOURCE_ARCHIVE: LogOperation.CLOSED_BURIAL_ARCHIVE,
+                Burial.SOURCE_TRANSFERRED: LogOperation.CLOSED_BURIAL_TRANSFERRED,
+            }
+            write_log(request, self, operation=operations[self.source_type])
         
         if place.responsible and \
            place.responsible.login_phone and \
@@ -1238,18 +1242,20 @@ class Burial(SafeDeleteMixin, GetLogsMixin, BaseModel):
             if not place.responsible.user:
                 place.responsible.user = user
                 place.responsible.save()
-            customplace, created_ = CustomPlace.get_or_create_from_place(user=user, place=place)
-            if created_:
-                customplace.fill_custom_deadmen()
-            else:
-                customplace.add_custom_deadman(self)
-            if not settings.DEBUG:
-                sent, message = send_sms(
-                    phone_number=place.responsible.login_phone,
-                    text=text,
-                    email_error_text=email_error_text,
-                    user=request.user,
-                )
+            # Проверка, не создал ли лору customPlace c тем же deadman
+            if not (self.deadman and CustomPerson.objects.filter(person=self.deadman.baseperson_ptr)):
+                customplace, created_ = CustomPlace.get_or_create_from_place(user=user, place=place)
+                if created_:
+                    customplace.fill_custom_deadmen()
+                else:
+                    customplace.add_custom_deadman(self)
+                if not settings.DEBUG:
+                    sent, message = send_sms(
+                        phone_number=place.responsible.login_phone,
+                        text=text,
+                        email_error_text=email_error_text,
+                        user=request.user,
+                    )
 
         # Очистим "пустышку" свидетельства о смерти, где
         # не все обязательные поля заполнены

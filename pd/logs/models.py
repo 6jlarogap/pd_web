@@ -8,20 +8,34 @@ from django.db.models.loading import get_model
 
 class LogOperation(object):
 
-    GRAVE_FREE_SET =              1
-    GRAVE_FREE_RESET =            2
-    PLACE_PHOTO_PROCESSED =       3
-    BURIAL_PHOTO_PROCESSED =      4
-    PLACE_PHOTO_REJECT =          5
-    PLACE_CREATED_MOBILE =        6
+    GRAVE_FREE_SET =                1
+    GRAVE_FREE_RESET =              2
+    PLACE_PHOTO_PROCESSED =         3
+    BURIAL_PHOTO_PROCESSED =        4
+    PLACE_PHOTO_REJECT =            5
+    PLACE_CREATED_MOBILE =          6
+    INVITE_CUSTOMER_TO_TEMPLE =     7
+    LORU_MAKES_PLACE_PHOTO =        8
+    BURIAL_TO_GRAVE_MOBILE =        9
+    CLOSED_BURIAL_TRANSFERRED =    10
+    CLOSED_BURIAL_ARCHIVE =        11
+    CLOSED_BURIAL_FULL =           12
+    CLOSED_BURIAL_UGH =            13
 
     Operation = [
-        _(u'Установка признака "Занято"'),                      #  1
-        _(u'Снятие признака "Занято"'),                         #  2
-        _(u'Фотографии места обработаны'),                      #  3
-        _(u'Захоронение добавлено по фото'),                    #  4
-        _(u'Брак фото места'),                                  #  5
-        _(u'Место создано через мобильное приложение'),         #  6
+        _(u'Установка признака "Занято" для могилы'),                                       #  1
+        _(u'Снятие признака "Занято" для могилы'),                                          #  2
+        _(u'Фотографии места обработаны'),                                                  #  3
+        _(u'Захоронение добавлено по фото'),                                                #  4
+        _(u'Брак фото места'),                                                              #  5
+        _(u'Место создано через мобильное приложение'),                                     #  6
+        _(u'Приглашение в ХРАМ, от ЛОРУ'),                                                  #  7
+        _(u'Фотографирование пользовательского места, ЛОРУ'),                               #  8
+        _(u'Захоронение закрыто и прикреплено к могиле в мобильном приложении'),            #  9
+        _(u'Импорт захоронения'),                                                           # 10
+        _(u'Архивное захоронение закрыто'),                                                 # 11
+        _(u'Электронное захоронение закрыто'),                                              # 12
+        _(u'Ручное захоронение закрыто'),                                                   # 13
     ]
 
 class Log(models.Model):
@@ -32,7 +46,7 @@ class Log(models.Model):
     ct = models.ForeignKey('contenttypes.ContentType', null=True, editable=False, verbose_name=_(u"Тип"))
     obj_id = models.PositiveIntegerField(null=True, editable=False, verbose_name=_(u"ID объекта"), db_index=True)
     obj = generic.GenericForeignKey(ct_field='ct', fk_field='obj_id')
-    dt = models.DateTimeField(auto_now_add=True, verbose_name=_(u"Время"))
+    dt = models.DateTimeField(auto_now_add=True, verbose_name=_(u"Время"), db_index=True)
     msg = models.TextField(editable=False, verbose_name=_(u"Описание"))
     code = models.CharField(max_length=255, default='', editable=False, verbose_name=_(u"Спец. код"))
     operation = models.PositiveIntegerField(null=True, editable=False, verbose_name=_(u"Код операции"), db_index=True)
@@ -144,8 +158,12 @@ class Log(models.Model):
         return result
 
     def log_msg_display(self):
-        if self.operation is not None and not self.msg:
-            result = LogOperation.Operation[self.operation-1]
+        if self.operation is not None:
+            operation_title = LogOperation.Operation[self.operation-1]
+            if self.msg:
+                result = u"%s.\n%s" % (operation_title, self.msg,)
+            else:
+                result = operation_title
         else:
             result = self.msg
         return result

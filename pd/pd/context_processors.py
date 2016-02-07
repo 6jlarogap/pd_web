@@ -22,4 +22,6 @@ def context_processor(request):
                     settings.MOBILEKEEPER_MEDIA_PATH,
              )),
             'global_context_ARE_LORUS_IN_SYSTEM': Org.objects.filter(type=Org.PROFILE_LORU).exists(),
+            'global_context_UHOD_MOGIL_URL': settings.UHOD_MOGIL_URL,
+            'global_context_HRAM_PREDKOV_URL': settings.HRAM_PREDKOV_URL,
            }
