@@ -18,12 +18,10 @@ from persons.models import DeadPerson, DeathCertificate, CustomPlace, CustomPers
 from reports.models import Report
 from users.models import Org, Profile, Dover, ProfileLORU, CustomerProfile, PhonesMixin, \
                          is_ugh_user, is_cabinet_user, is_loru_user
-from logs.models import Log
+from logs.models import LogOperation, Log, write_log
 from geo.models import GeoPointModel, CoordinatesModel
 
 from geo.models import GeoPointModel
-
-from logs.models import write_log
 
 from managers import PlaceManager
 
@@ -1207,7 +1205,13 @@ class Burial(SafeDeleteMixin, GetLogsMixin, BaseModel):
         self.save()
 
         if old_status != self.STATUS_CLOSED:
-            write_log(request, self, _(u'Захоронение закрыто'))
+            operations = {
+                Burial.SOURCE_FULL: LogOperation.CLOSED_BURIAL_FULL,
+                Burial.SOURCE_UGH: LogOperation.CLOSED_BURIAL_UGH,
+                Burial.SOURCE_ARCHIVE: LogOperation.CLOSED_BURIAL_ARCHIVE,
+                Burial.SOURCE_TRANSFERRED: LogOperation.CLOSED_BURIAL_TRANSFERRED,
+            }
+            write_log(request, self, operation=operations[self.source_type])
         
         if place.responsible and \
            place.responsible.login_phone and \
