@@ -81,7 +81,7 @@ class Migration(DataMigration):
                             operation=operations[b.source_type],
                         )
                         Log.objects.filter(pk=l.pk).update(dt=b.dt_created)
-                count += 1
+            count += 1
             if count % 1000 == 0:
                 transaction.commit()
                 print '    - %d burials processed' % count
