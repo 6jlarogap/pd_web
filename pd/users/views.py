@@ -1298,8 +1298,6 @@ class OmsOperStatsView(UGHRequiredMixin, PaginateListView):
         inventoried_places_qs = Place.objects.filter(
             is_invent=True,
             cemetery__ugh=self.request.user.profile.org,
-            dt_created__gte=d_start,
-            dt_created__lt=d_end + datetime.timedelta(days=1)
         )
         inventoried_places_total = inventoried_places_qs.filter(q_dt_created).count()
 
