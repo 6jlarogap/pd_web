@@ -498,6 +498,9 @@ class OrgLogForm(forms.Form):
 # Никакой разницы в этих формах пока нет.
 LoginLogForm = OrgLogForm
 
+# В этой форме во view заменяем required для дат
+OmsOperStats = OrgLogForm
+
 class RegisterForm(forms.ModelForm):
 
     class Meta:

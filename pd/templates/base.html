@@ -167,6 +167,9 @@
                                             {% if user.profile.org.pk %}
                                                 <li><a href="{% url org_log %}">{% trans "Журнал" %}</a></li>
                                             {% endif %}
+                                        {% if user.profile.is_ugh %}
+                                            <li><a href="{% url oms_oper_stats %}">{% trans "Статистика операций" %}</a></li>
+                                        {% endif %}
                                             <li class="divider"></li>
                                         {% endif %}
                                         {% if user.profile.is_supervisor %}
