@@ -9,6 +9,7 @@ import os
 import csv
 import copy
 import re
+from qsstats import QuerySetStats
 
 from django.conf import settings
 from django.contrib import messages
@@ -47,10 +48,10 @@ from rest_framework.authtoken.models import Token
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.parsers import MultiPartParser, JSONParser
 
-from logs.models import Log, write_log, LoginLog
+from logs.models import LogOperation, Log, write_log, LoginLog
 from users.forms import RegisterForm, LoruFormset, BankAccountFormset, OrgForm, \
                         OrgLogForm, LoginLogForm, OrgBurialStatsForm, SupportForm, TestCaptchaForm, \
-                        LoruOrdersStatsForm, ProfileDataForm
+                        LoruOrdersStatsForm, ProfileDataForm, OmsOperStats
 from users.models import Profile, Org, RegisterProfile, ProfileLORU, CustomerProfile, Store, \
                          get_mail_footer, is_cabinet_user, is_loru_user, is_ugh_user, \
                          PermitIfTrade, PermitIfTradeOrSupervisor, \
@@ -1238,6 +1239,124 @@ class LoginLogView(SupervisorRequiredMixin, PaginateListView):
         return LoginLogForm(data=self.request.GET or None)
 
 login_log = LoginLogView.as_view()
+
+class OmsOperStatsView(UGHRequiredMixin, PaginateListView):
+    template_name = 'oper_stats.html'
+    context_object_name = 'dates'
+
+    def get_queryset(self):
+        dates = []
+        self.form = None
+        if not self.request.GET:
+            return dates
+
+        form = self.get_form()
+        if form.data and form.is_valid():
+            d_start = form.cleaned_data['date_from']
+            d_end = form.cleaned_data['date_to']
+            dates = range((d_end - d_start).days + 1)
+            self.form = form
+        return dates
+
+    def get_context_data(self, **kwargs):
+        context = super(OmsOperStatsView, self).get_context_data(**kwargs)
+        form = self.form
+        if not form:
+            return context
+
+        users = []
+        for profile in Profile.objects.filter(org=self.request.user.profile.org):
+            if profile.user:
+                users.append(profile.user)
+        qs = Q(user__in=users)
+        d_start = form.cleaned_data['date_from']
+        d_end = form.cleaned_data['date_to']
+        q_dt = Q(
+            dt__gte=d_start,
+            dt__lt=d_end + datetime.timedelta(days=1)
+        )
+        q_dt_created = Q(
+            dt_created__gte=d_start,
+            dt_created__lt=d_end + datetime.timedelta(days=1)
+        )
+
+        values = lambda qs: \
+            QuerySetStats(qs, date_field='dt', aggregate=Count('id')). \
+            time_series(d_start, d_end, interval='days')
+
+        current_burials_qs = Log.objects.filter(qs & Q(
+            operation__in=(
+                LogOperation.CLOSED_BURIAL_FULL,
+                LogOperation.CLOSED_BURIAL_UGH,
+        )))
+        current_burials_total = current_burials_qs.filter(q_dt).count()
+        current_burials = values(current_burials_qs)
+
+        # По инвентаризованным местам дату берем из места,
+        # там dt_created: дата создания в мобильном приложении
+        # в оффлайне
+        inventoried_places_qs = Place.objects.filter(
+            is_invent=True,
+            cemetery__ugh=self.request.user.profile.org,
+        )
+        inventoried_places_total = inventoried_places_qs.filter(q_dt_created).count()
+
+        qsstats_ = QuerySetStats(
+            inventoried_places_qs,
+            date_field='dt_created',
+            aggregate=Count('id')
+        )
+        inventoried_places = qsstats_.time_series(d_start, d_end, interval='days')
+
+        processed_places_qs = Log.objects.filter(qs & Q(
+            operation=LogOperation.PLACE_PHOTO_PROCESSED,
+        ))
+        processed_places_total = processed_places_qs.filter(q_dt).count()
+        processed_places = values(processed_places_qs)
+
+        inventoried_burials_qs = Log.objects.filter(qs & Q(
+            operation__in=(
+                LogOperation.BURIAL_PHOTO_PROCESSED,
+                LogOperation.BURIAL_TO_GRAVE_MOBILE,
+        )))
+        inventoried_burials_total = inventoried_burials_qs.filter(q_dt).count()
+        inventoried_burials = values(inventoried_burials_qs)
+
+        context.update(dict(
+            current_burials=current_burials,
+            current_burials_total=current_burials_total,
+            inventoried_places=inventoried_places,
+            inventoried_places_total=inventoried_places_total,
+            processed_places=processed_places,
+            processed_places_total=processed_places_total,
+            inventoried_burials=inventoried_burials,
+            inventoried_burials_total=inventoried_burials_total,
+        ))
+        return context
+
+    def get_form(self):
+        data = self.request.GET
+        form = OmsOperStats(data=data or None)
+        if data:
+            form.fields['date_from'].required = True
+            form.fields['date_to'].required = True
+        else:
+            date_from = datetime.date.today()
+            if date_from.day < 15:
+                if date_from.month > 1:
+                    month = date_from.month - 1
+                    year = date_from.year
+                else:
+                    month = 12
+                    year = date_from.year - 1
+                date_from = datetime.date(year, month, 1)
+            else:
+                date_from = datetime.date(date_from.year, date_from.month, 1)
+            form.initial['date_from'] = date_from
+            form.initial['date_to'] = datetime.date.today()
+        return form
+
+oms_oper_stats = OmsOperStatsView.as_view()
 
 class RegisterMixin(object):
     
