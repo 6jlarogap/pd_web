@@ -90,10 +90,21 @@
                 }
             {% endoptions %}
 
-            {% graph "current_burials" "current_burials" %}
-            {% graph "inventoried_places" "inventoried_places" %}
-            {% graph "processed_places" "processed_places" %}
-            {% graph "inventoried_burials" "inventoried_burials" %}
+            {% if current_burials_total %}
+                {% graph "current_burials" "current_burials" %}
+            {% endif %}
+
+            {% if inventoried_places_total %}
+                {% graph "inventoried_places" "inventoried_places" %}
+            {% endif %}
+
+            {% if processed_places_total %}
+                {% graph "processed_places" "processed_places" %}
+            {% endif %}
+
+            {% if inventoried_burials_total %}
+                {% graph "inventoried_burials" "inventoried_burials" %}
+            {% endif %}
         {% endgooglecharts %}
 
         {% comment %}
