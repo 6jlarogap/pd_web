@@ -41,7 +41,7 @@
         </div>
         <br />
 
-        {% if not global_context_REDIRECT_LOGIN_TO_FRONT_END %}
+        {% if global_context_REDIRECT_LOGIN_TO_FRONT_END %}
             <div id="processed_places_grid">
                 <h3>{% trans "Места, обработанные по фото" %}, {% trans "всего за период" %}: {{ processed_places_total }}</h3>
                 <div id="processed_places"></div>
