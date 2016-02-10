@@ -49,7 +49,7 @@
             <br />
 
             <div id="inventoried_burials_grid">
-                <h3>{% trans "Инвентаризованные захоронения" %}, {% trans "всего за период" %}: {{ inventoried_burials_total }}</h3>
+                <h3>{% trans "Захоронения, обработанные по фото" %}, {% trans "всего за период" %}: {{ inventoried_burials_total }}</h3>
                 <div id="inventoried_burials"></div>
             </div>
             <br />
@@ -98,12 +98,14 @@
                 {% graph "inventoried_places" "inventoried_places" %}
             {% endif %}
 
-            {% if processed_places_total %}
-                {% graph "processed_places" "processed_places" %}
-            {% endif %}
+            {% if global_context_REDIRECT_LOGIN_TO_FRONT_END %}
+                {% if processed_places_total %}
+                    {% graph "processed_places" "processed_places" %}
+                {% endif %}
 
-            {% if inventoried_burials_total %}
-                {% graph "inventoried_burials" "inventoried_burials" %}
+                {% if inventoried_burials_total %}
+                    {% graph "inventoried_burials" "inventoried_burials" %}
+                {% endif %}
             {% endif %}
         {% endgooglecharts %}
 
