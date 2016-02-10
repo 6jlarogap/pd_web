@@ -472,8 +472,8 @@ class ApiPlaceUpload(APIView):
             dtUnowned = datetime.strptime(request.POST['dtUnowned'], templateDateTime)
         if request.POST.get('dtUnindentified') :
             dtUnindentified = datetime.strptime(request.POST['dtUnindentified'], templateDateTime)
-        if request.POST.get('dt_created') :
-            dtCreated = datetime.strptime(request.POST['dt_created'], templateDateTime)
+        if request.POST.get('dtCreated') :
+            dtCreated = datetime.strptime(request.POST['dtCreated'], templateDateTime)
             dtCreated = utc2local(dtCreated)
         
         user = request.user
