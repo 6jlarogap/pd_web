@@ -1315,10 +1315,8 @@ class OmsOperStatsView(UGHRequiredMixin, PaginateListView):
         processed_places = values(processed_places_qs)
 
         inventoried_burials_qs = Log.objects.filter(qs & Q(
-            operation__in=(
-                LogOperation.BURIAL_PHOTO_PROCESSED,
-                LogOperation.BURIAL_TO_GRAVE_MOBILE,
-        )))
+            operation=LogOperation.BURIAL_PHOTO_PROCESSED
+        ))
         inventoried_burials_total = inventoried_burials_qs.filter(q_dt).count()
         inventoried_burials = values(inventoried_burials_qs)
 
