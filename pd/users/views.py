@@ -61,7 +61,7 @@ from users.models import Profile, Org, RegisterProfile, ProfileLORU, CustomerPro
                          UserPhoto, OrgGallery, OrgReview, \
                          is_supervisor, get_default_currency, get_profile
 from pd.models import validate_phone_as_number, validate_username
-from pd.utils import host_country_code, phones_from_text, EmailMessage, get_image
+from pd.utils import host_country_code, phones_from_text, EmailMessage, get_image, SeriesTable
 from persons.models import AlivePerson, Phone, CustomPlace
 from burials.models import Cemetery, Area, Burial, Place, Grave
 from billing.models import Wallet, Rate, Currency
@@ -1245,32 +1245,21 @@ class OmsOperStatsView(UGHRequiredMixin, PaginateListView):
     context_object_name = 'dates'
 
     def get_queryset(self):
-        dates = []
-        self.form = None
-        if not self.request.GET:
-            return dates
-
+        self.context_extra = None
         form = self.get_form()
         if form.data and form.is_valid():
             d_start = form.cleaned_data['date_from']
             d_end = form.cleaned_data['date_to']
-            dates = range((d_end - d_start).days + 1)
-            self.form = form
-        return dates
+        else:
+            return []
 
-    def get_context_data(self, **kwargs):
-        context = super(OmsOperStatsView, self).get_context_data(**kwargs)
-        form = self.form
-        if not form:
-            return context
-
+        d_start = form.cleaned_data['date_from']
+        d_end = form.cleaned_data['date_to']
         users = []
         for profile in Profile.objects.filter(org=self.request.user.profile.org):
             if profile.user:
                 users.append(profile.user)
         qs = Q(user__in=users)
-        d_start = form.cleaned_data['date_from']
-        d_end = form.cleaned_data['date_to']
         q_dt = Q(
             dt__gte=d_start,
             dt__lt=d_end + datetime.timedelta(days=1)
@@ -1320,7 +1309,13 @@ class OmsOperStatsView(UGHRequiredMixin, PaginateListView):
         inventoried_burials_total = inventoried_burials_qs.filter(q_dt).count()
         inventoried_burials = values(inventoried_burials_qs)
 
-        context.update(dict(
+        dates = SeriesTable(
+            current_burials,
+            inventoried_places,
+            processed_places,
+            inventoried_burials,
+        )
+        self.context_extra = dict(
             current_burials=current_burials,
             current_burials_total=current_burials_total,
             inventoried_places=inventoried_places,
@@ -1329,13 +1324,18 @@ class OmsOperStatsView(UGHRequiredMixin, PaginateListView):
             processed_places_total=processed_places_total,
             inventoried_burials=inventoried_burials,
             inventoried_burials_total=inventoried_burials_total,
-        ))
+        )
+        return dates
+
+    def get_context_data(self, **kwargs):
+        context = super(OmsOperStatsView, self).get_context_data(**kwargs)
+        if self.context_extra:
+            context.update(self.context_extra)
         return context
 
     def get_form(self):
         data = self.request.GET
         form = OmsOperStats(data=data or None)
-        del form.fields['per_page']
         if data:
             form.fields['date_from'].required = True
             form.fields['date_to'].required = True

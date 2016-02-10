@@ -109,11 +109,48 @@
             {% endif %}
         {% endgooglecharts %}
 
-        {% comment %}
-            <p>{% trans "Всего дней:" %} {{ paginator.count|default:object_list.count }}</p>
+        <p>{% trans "Всего дней:" %}  {{ paginator.count|default:object_list.count }}</p>
 
-            {% include "paginator.html" %}
-        {% endcomment %}
+        <table class="table table-bordered table-striped">
+        <tr>
+            <th>
+                {% trans "Дата" %}
+            </th>
+            <th style="text-align:right;">
+                {% trans "Закрытые" %}
+                {% if global_context_ARE_LORUS_IN_SYSTEM %}
+                    {% trans "текущие" %}
+                {% else %}
+                    {% trans "ручные" %}
+                {% endif %}
+                {% trans "захоронения" %}
+            </th>
+            <th style="text-align:right;">
+                {% trans "Места с мобильного приложения" %}
+            </th>
+            {% if global_context_REDIRECT_LOGIN_TO_FRONT_END %}
+                <th style="text-align:right;">
+                    {% trans "Места, обработанные по фото" %}
+                </th>
+                <th style="text-align:right;">
+                    {% trans "Захоронения, обработанные по фото" %}
+                </th>
+            {% endif %}
+        </tr>
+        {{ obect_list }}
+        {% for dt in dates %}
+            <tr>
+                <td>{{ dt.0|date:"SHORT_DATE_FORMAT" }}</td>
+                <td style="text-align:right;">{{ dt.1|default:"" }}</td>
+                <td style="text-align:right;">{{ dt.2|default:"" }}</td>
+                {% if global_context_REDIRECT_LOGIN_TO_FRONT_END %}
+                    <td style="text-align:right;">{{ dt.3|default:"" }}</td>
+                    <td style="text-align:right;">{{ dt.4|default:"" }}</td>
+                {% endif %}
+            </tr>
+        {% endfor %}
+        </table>
+        {% include "paginator.html" %}
     {% endif %}
 
 {% endblock %}
