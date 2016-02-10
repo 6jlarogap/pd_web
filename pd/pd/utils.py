@@ -233,14 +233,26 @@ class SeriesTable(Sequence):
     логической. Инициализируется этот класс списками показателей,
     точнее ссылками на них, а отдает на выходе двухмерный
     массив типа таблицы (*).
+    Кроме того, не надо показывать в таблице (*) даты с пустыми
+    показателями.
     """
 
     def __init__(self, *series):
         super(SeriesTable, self).__init__()
-        self.collection = list()
+        self._collection = list()
+        # индексы списков-показателей с непустыми показателями
+        self._indexes = list()
         for ser in series:
-            self.collection.append(ser)
-        self._total = len(self.collection[0])
+            self._collection.append(ser)
+        for i in xrange(len(self._collection[0])):
+            do_append = False
+            for k in range(len(self._collection)):
+                if self._collection[k][i][1]:
+                    do_append = True
+                    break
+            if do_append:
+                self._indexes.append(i)
+        self._total = len(self._indexes)
 
     def __len__(self):
         return self._total
@@ -251,13 +263,14 @@ class SeriesTable(Sequence):
             stop = key.stop
             if stop is None:
                 stop = self._total
-            for i in range(key.start or 0, stop, key.step or 1):
+            for i in xrange(key.start or 0, stop, key.step or 1):
                 try:
                     result.append(self.__getitem__(i))
                 except IndexError:
                     pass
         elif isinstance(key, int):
-            result = [ self.collection[0][key][0] ]
-            for ser in self.collection:
+            key = self._indexes[key]
+            result = [ self._collection[0][key][0] ]
+            for ser in self._collection:
                 result.append(ser[key][1])
         return result

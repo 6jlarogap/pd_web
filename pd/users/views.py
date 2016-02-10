@@ -1297,24 +1297,37 @@ class OmsOperStatsView(UGHRequiredMixin, PaginateListView):
         )
         inventoried_places = qsstats_.time_series(d_start, d_end, interval='days')
 
-        processed_places_qs = Log.objects.filter(qs & Q(
-            operation=LogOperation.PLACE_PHOTO_PROCESSED,
-        ))
-        processed_places_total = processed_places_qs.filter(q_dt).count()
-        processed_places = values(processed_places_qs)
+        if settings.REDIRECT_LOGIN_TO_FRONT_END:
+            processed_places_qs = Log.objects.filter(qs & Q(
+                operation=LogOperation.PLACE_PHOTO_PROCESSED,
+            ))
+            processed_places_total = processed_places_qs.filter(q_dt).count()
+            processed_places = values(processed_places_qs)
 
-        inventoried_burials_qs = Log.objects.filter(qs & Q(
-            operation=LogOperation.BURIAL_PHOTO_PROCESSED
-        ))
-        inventoried_burials_total = inventoried_burials_qs.filter(q_dt).count()
-        inventoried_burials = values(inventoried_burials_qs)
+            inventoried_burials_qs = Log.objects.filter(qs & Q(
+                operation=LogOperation.BURIAL_PHOTO_PROCESSED
+            ))
+            inventoried_burials_total = inventoried_burials_qs.filter(q_dt).count()
+            inventoried_burials = values(inventoried_burials_qs)
 
-        dates = SeriesTable(
-            current_burials,
-            inventoried_places,
-            processed_places,
-            inventoried_burials,
-        )
+            dates = SeriesTable(
+                current_burials,
+                inventoried_places,
+                processed_places,
+                inventoried_burials,
+            )
+        else:
+            processed_places_total = 0
+            processed_places = []
+
+            inventoried_burials_total = 0
+            inventoried_burials = []
+
+            dates = SeriesTable(
+                current_burials,
+                inventoried_places,
+            )
+
         self.context_extra = dict(
             current_burials=current_burials,
             current_burials_total=current_burials_total,
