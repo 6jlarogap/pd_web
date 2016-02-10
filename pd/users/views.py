@@ -1337,6 +1337,7 @@ class OmsOperStatsView(UGHRequiredMixin, PaginateListView):
     def get_form(self):
         data = self.request.GET
         form = OmsOperStats(data=data or None)
+        del form.fields['per_page']
         if data:
             form.fields['date_from'].required = True
             form.fields['date_to'].required = True
