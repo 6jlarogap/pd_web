@@ -64,6 +64,7 @@ urlpatterns = patterns('users.views',
     
     url(r'^oms_burialstats/', 'oms_burial_stats', name='oms_burial_stats'),
     url(r'^oms_currentstats/', 'oms_current_stats', name='oms_current_stats'),
+    url(r'^oms_operstats/', 'oms_oper_stats', name='oms_oper_stats'),
     url(r'^loru_currentstats/', 'loru_current_stats', name='loru_current_stats'),
     url(r'^loru_orderstats/', 'loru_order_stats', name='loru_order_stats'),
         

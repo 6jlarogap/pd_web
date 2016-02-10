@@ -127,6 +127,7 @@ INSTALLED_APPS = [
     'rest_api',
     'restthumbnails',
     'django_assets',
+    'googlecharts',
 
     # Заглушка для javascript locales.
     # Если не подключаем специфичную локаль, то js функция gettext()
