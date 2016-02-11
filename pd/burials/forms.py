@@ -301,6 +301,17 @@ class ResponsibleForm(AlivePersonForm):
         else:
             return False
 
+    def is_filled(self):
+        # что-то заполнено в форме, когда предлагается заполнение
+        # (новый ответственный или существующий)
+        if self.is_valid():
+            if self.fields.get('take_from') and self.cleaned_data.get('take_from') != self.WHERE_NEW:
+                return False
+            for f in ('last_name', 'first_name', 'middle_name', 'login_phone_'):
+                if self.cleaned_data.get(f):
+                    return True
+        return False
+
 class BurialPublicListForm(forms.Form):
     """
     Форма поиска захоронений для ЛОРУ, не только среди своих заказов
@@ -744,11 +755,14 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
             self.instance.responsible = self.instance.applicant.deep_copy()
             self.instance.applicant.login_phone = applicant_login_phone
         elif self.responsible_form.is_valid():
+            responsible_address_valid = self.responsible_address_form.is_valid_data()
             if self.responsible_form.cleaned_data.get('last_name').strip() or \
                self.responsible_form.cleaned_data.get('first_name').strip() or \
-               self.responsible_form.cleaned_data.get('middle_name').strip():
+               self.responsible_form.cleaned_data.get('middle_name').strip() or \
+               self.responsible_form.cleaned_data.get('login_phone_') or \
+               responsible_address_valid:
                 responsible = self.responsible_form.save(commit=False)
-                if self.responsible_address_form.is_valid_data():
+                if responsible_address_valid:
                     responsible.address = self.responsible_address_form.save()
                 responsible.save()
                 self.instance.responsible = responsible
@@ -1285,6 +1299,8 @@ class BurialCommitForm(BurialForm):
             r_last_name = self.responsible_form.cleaned_data.get('last_name').strip()
             r_first_name = self.responsible_form.cleaned_data.get('first_name').strip()
             r_middle_name = self.responsible_form.cleaned_data.get('middle_name').strip()
+            r_login_phone = self.responsible_form.cleaned_data.get('login_phone_')
+            r_address = self.responsible_address_form.is_valid_data()
             msg = ''
             if r_last_name:
                 # Ф (+) И (-) О (-) : OK
@@ -1304,6 +1320,10 @@ class BurialCommitForm(BurialForm):
                 # Ф (-) И (+) О (+) : Bad
                 elif r_first_name and r_middle_name:
                     msg = _(u"Ответственный: не указана фамилия при указанных имени и отчестве")
+                elif r_login_phone:
+                    msg = _(u"Ответственный: не указана фамилия при указанном мобильном телефоне для входа в кабинет")
+                elif r_address:
+                    msg = _(u"Ответственный: не указана фамилия при указанном адресе (полностью или частично)")
             if msg:
                 raise forms.ValidationError(msg)
 
