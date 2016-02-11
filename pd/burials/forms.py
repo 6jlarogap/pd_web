@@ -307,7 +307,7 @@ class ResponsibleForm(AlivePersonForm):
         if self.is_valid():
             if self.fields.get('take_from') and self.cleaned_data.get('take_from') != self.WHERE_NEW:
                 return False
-            for f in ('last_name', 'first_name', 'middle_name', 'login_phone_'):
+            for f in ('last_name', 'first_name', 'middle_name', 'login_phone_', 'phones'):
                 if self.cleaned_data.get(f):
                     return True
         return False
@@ -759,6 +759,7 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
             if self.responsible_form.cleaned_data.get('last_name').strip() or \
                self.responsible_form.cleaned_data.get('first_name').strip() or \
                self.responsible_form.cleaned_data.get('middle_name').strip() or \
+               self.responsible_form.cleaned_data.get('phones', '').strip() or \
                self.responsible_form.cleaned_data.get('login_phone_') or \
                responsible_address_valid:
                 responsible = self.responsible_form.save(commit=False)
@@ -1299,6 +1300,7 @@ class BurialCommitForm(BurialForm):
             r_last_name = self.responsible_form.cleaned_data.get('last_name').strip()
             r_first_name = self.responsible_form.cleaned_data.get('first_name').strip()
             r_middle_name = self.responsible_form.cleaned_data.get('middle_name').strip()
+            r_phones = self.responsible_form.cleaned_data.get('phones', '').strip()
             r_login_phone = self.responsible_form.cleaned_data.get('login_phone_')
             r_address = self.responsible_address_form.is_valid_data()
             msg = ''
@@ -1324,6 +1326,8 @@ class BurialCommitForm(BurialForm):
                     msg = _(u"Ответственный: не указана фамилия при указанном мобильном телефоне для входа в кабинет")
                 elif r_address:
                     msg = _(u"Ответственный: не указана фамилия при указанном адресе (полностью или частично)")
+                elif r_phones:
+                    msg = _(u"Ответственный: не указана фамилия при указанных телефоне (телефонах)")
             if msg:
                 raise forms.ValidationError(msg)
 
