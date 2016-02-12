@@ -9,6 +9,7 @@ import datetime
 from pytz import timezone, utc
 import re
 import string
+from collections import Sequence
 
 from PIL import Image
 import magic
@@ -204,3 +205,72 @@ def re_search(s):
     else:
         regex = u"^%s" % regex
     return regex
+
+class SeriesTable(Sequence):
+    """
+    Отдать статистические серии в шаблон
+
+    Проблема: Считаем статистику, получаем несколько результатов,
+    списков типа
+        показатель1 = [(дата1, значение1), (дата2, значение1)...],
+        показатель2 = [(дата1, значение3), (дата2, значение4)...],
+        ...
+    А в шаблон надо отдать таблицу (*):
+
+            показатель1  показатель2
+    --------------------------------
+    [дата1, значение1,   значение3 ...]
+    [дата2, значение2,   значение4 ...]
+
+    Всё было бы хорошо, если б существовала шаблонная конструкция
+    типа for i in показатель1.length:
+             показатель1[i][1], показатель2[i][1]
+    Но даже если и была такая удобная шаблонная конструкция,
+    при пажинации надо отдать именно таблицу (*),
+    т.е. ее надо сделать в коде. Можно из массивов показателей
+    собрать таблицу из списков показателей, но это расход
+    памяти. Посему таблицу (*) делаем здесь, в этом классе,
+    логической. Инициализируется этот класс списками показателей,
+    точнее ссылками на них, а отдает на выходе двухмерный
+    массив типа таблицы (*).
+    Кроме того, не надо показывать в таблице (*) даты с пустыми
+    показателями.
+    """
+
+    def __init__(self, *series):
+        super(SeriesTable, self).__init__()
+        self._collection = list()
+        # индексы списков-показателей с непустыми показателями
+        self._indexes = list()
+        for ser in series:
+            self._collection.append(ser)
+        for i in xrange(len(self._collection[0])):
+            do_append = False
+            for k in range(len(self._collection)):
+                if self._collection[k][i][1]:
+                    do_append = True
+                    break
+            if do_append:
+                self._indexes.append(i)
+        self._total = len(self._indexes)
+
+    def __len__(self):
+        return self._total
+
+    def __getitem__(self, key):
+        if isinstance(key, slice) :
+            result = []
+            stop = key.stop
+            if stop is None:
+                stop = self._total
+            for i in xrange(key.start or 0, stop, key.step or 1):
+                try:
+                    result.append(self.__getitem__(i))
+                except IndexError:
+                    pass
+        elif isinstance(key, int):
+            key = self._indexes[key]
+            result = [ self._collection[0][key][0] ]
+            for ser in self._collection:
+                result.append(ser[key][1])
+        return result
