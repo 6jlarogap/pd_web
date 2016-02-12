@@ -45,6 +45,13 @@ class ProductsSerializer(serializers.HyperlinkedModelSerializer):
             pass
         return price
 
+class ProductShortSerializer(serializers.ModelSerializer):
+    imageUrl = HyperlinkedFileField('photo')
+
+    class Meta:
+        model = Product
+        fields = ('id', 'name', 'imageUrl',)
+
 class ProductsOptSerializer(serializers.HyperlinkedModelSerializer):
     photo = HyperlinkedFileField()
     currency = serializers.Field(source='loru.currency.code')
@@ -354,10 +361,18 @@ class OrderItemSerializer(serializers.ModelSerializer):
     price = serializers.Field(source='cost_float')
     quantity = serializers.Field(source='quantity_float')
     currency = serializers.Field(source='order.loru.currency.code')
+    product = serializers.SerializerMethodField('product_func')
 
     class Meta:
         model = OrderItem
-        fields = ('id', 'productId', 'price', 'quantity', 'currency', )
+        fields = ('id', 'product', 'price', 'quantity', 'currency', )
+
+    def product_func(self, orderitem):
+        product = orderitem.product
+        request = self.context['request']
+        return ProductShortSerializer(
+            product,
+            context=dict(request=request)).data
 
 class ServiceItemSerializer(serializers.ModelSerializer):
     type = serializers.Field(source='orgservice.service.name')
@@ -377,7 +392,7 @@ class ServiceOrderDetailSerializer(serializers.ModelSerializer):
     isArchived = serializers.Field(source='archived')
     clientRating = serializers.Field(source='applicant_approved')
     services = ServiceItemSerializer(many=True, source='serviceitem_set')
-    products = OrderItemSerializer(many=True, source='orderitem_set')
+    products = serializers.SerializerMethodField('products_func')
 
     class Meta:
         model = Order
@@ -385,3 +400,10 @@ class ServiceOrderDetailSerializer(serializers.ModelSerializer):
             'id', 'supplierId', 'number', 'type', 'placeId', 'status', 'isArchived',
             'clientRating', 'services', 'products',
         )
+
+    def products_func(self, order):
+        return [ OrderItemSerializer(
+            item,
+            context=dict(request=self.context['request']),
+        ).data for item in order.orderitem_set.all()
+        ]

@@ -4,7 +4,7 @@
 {% load googlecharts %}
 
 {% block content %}
-    <h1>{% trans "Статистика операций организации" %}</h1>
+    <h1>{% trans "Статистика операций по организации" %}</h1>
     <br />
     <div class="row-fluid no-print">
         <div class="span12">
@@ -20,7 +20,7 @@
         </div>
     </div>
 
-    {% if not form.errors and dates %}
+    {% if not form.errors and current_burials|length %}
 
         <div id="current_burials_grid">
             <h3>{% trans "Закрытые" %}
@@ -49,7 +49,7 @@
             <br />
 
             <div id="inventoried_burials_grid">
-                <h3>{% trans "Инвентаризованные захоронения" %}, {% trans "всего за период" %}: {{ inventoried_burials_total }}</h3>
+                <h3>{% trans "Захоронения, обработанные по фото" %}, {% trans "всего за период" %}: {{ inventoried_burials_total }}</h3>
                 <div id="inventoried_burials"></div>
             </div>
             <br />
@@ -98,20 +98,61 @@
                 {% graph "inventoried_places" "inventoried_places" %}
             {% endif %}
 
-            {% if processed_places_total %}
-                {% graph "processed_places" "processed_places" %}
-            {% endif %}
+            {% if global_context_REDIRECT_LOGIN_TO_FRONT_END %}
+                {% if processed_places_total %}
+                    {% graph "processed_places" "processed_places" %}
+                {% endif %}
 
-            {% if inventoried_burials_total %}
-                {% graph "inventoried_burials" "inventoried_burials" %}
+                {% if inventoried_burials_total %}
+                    {% graph "inventoried_burials" "inventoried_burials" %}
+                {% endif %}
             {% endif %}
         {% endgooglecharts %}
 
-        {% comment %}
-            <p>{% trans "Всего дней:" %} {{ paginator.count|default:object_list.count }}</p>
+        {% if dates|length %}
+            <p>{% trans "Всего дней в периоде c непустыми показателями:" %}  {{ paginator.count|default:object_list.count }}</p>
 
+            <table class="table table-bordered table-striped">
+            <tr>
+                <th>
+                    {% trans "Дата" %}
+                </th>
+                <th style="text-align:right;">
+                    {% trans "Закрытые" %}
+                    {% if global_context_ARE_LORUS_IN_SYSTEM %}
+                        {% trans "текущие" %}
+                    {% else %}
+                        {% trans "ручные" %}
+                    {% endif %}
+                    {% trans "захоронения" %}
+                </th>
+                <th style="text-align:right;">
+                    {% trans "Места с мобильного приложения" %}
+                </th>
+                {% if global_context_REDIRECT_LOGIN_TO_FRONT_END %}
+                    <th style="text-align:right;">
+                        {% trans "Места, обработанные по фото" %}
+                    </th>
+                    <th style="text-align:right;">
+                        {% trans "Захоронения, обработанные по фото" %}
+                    </th>
+                {% endif %}
+            </tr>
+            {{ obect_list }}
+            {% for dt in dates %}
+                <tr>
+                    <td>{{ dt.0|date:"SHORT_DATE_FORMAT" }}</td>
+                    <td style="text-align:right;">{{ dt.1|default:"" }}</td>
+                    <td style="text-align:right;">{{ dt.2|default:"" }}</td>
+                    {% if global_context_REDIRECT_LOGIN_TO_FRONT_END %}
+                        <td style="text-align:right;">{{ dt.3|default:"" }}</td>
+                        <td style="text-align:right;">{{ dt.4|default:"" }}</td>
+                    {% endif %}
+                </tr>
+            {% endfor %}
+            </table>
             {% include "paginator.html" %}
-        {% endcomment %}
+        {% endif %}
     {% endif %}
 
 {% endblock %}
