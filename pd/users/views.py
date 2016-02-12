@@ -200,7 +200,7 @@ class ApiAuthSigninView(SessionDataMixin, APIView):
         message = ''
          # Так надо для login() без предварительного authenticate()
         user_backend = 'django.contrib.auth.backends.ModelBackend'
-        confirm_tc = request.DATA.get('confirmTC')
+        confirm_tc = True # пока нет во front-end пользовательского соглашения: request.DATA.get('confirmTC')
         oauth = request.DATA.get('oauth')
         password = None
         if user:
