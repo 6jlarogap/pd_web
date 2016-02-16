@@ -4,7 +4,7 @@ import re
 from django.contrib import messages
 from django.contrib.contenttypes.models import ContentType
 from django.db import models, connection
-from django.db.models import Count, Avg
+from django.db.models import Count, Avg, Max
 from django.db.models.deletion import ProtectedError, IntegrityError
 from django.utils.translation import ugettext_lazy as _
 from django.db.models.query_utils import Q
@@ -319,6 +319,13 @@ class Place(SafeDeleteMixin, GeoPointModel, BaseModelManualDtCreated):
 
     def get_graves_count(self):
         return self.grave_set.count()
+
+    def last_occupied_grave_number(self):
+        return self.grave_set.filter(
+            burial__status__in=(Burial.STATUS_CLOSED, Burial.STATUS_EXHUMATED),
+            burial__annulated=False
+        ).aggregate(Max('grave_number'))['grave_number__max'] or 0
+        return None
 
     def get_available_count(self):
         """

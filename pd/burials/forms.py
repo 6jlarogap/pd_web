@@ -1830,3 +1830,6 @@ BurialCommentEditFormSet = inlineformset_factory(
     formset=BaseBurialCommentEditFormSet,
     extra=1
 )
+
+class AddGravesForm(forms.Form):
+    place_grave_choice = forms.ChoiceField(required=True, choices=(("1","1"),), label=_(u"Номер могилы"))

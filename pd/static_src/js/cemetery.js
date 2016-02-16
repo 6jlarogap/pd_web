@@ -849,6 +849,15 @@ $(function() {
         })
     });
 
+    $('#add_graves').find('.btn-primary').click(function() {
+        var place_pk = $('#this_place_id_').val()
+        var data = $('#add_graves form').serialize();
+        $.post('/burials/place/' + place_pk + '/add_graves/', data, function(data){
+            console.log(data);
+        })
+        $('#add_graves').modal('hide');
+    });
+
     $('#add_dover').find('.btn-primary').click(function() {
         var agent_pk = $('#id_agent').val();
         if (!agent_pk) {

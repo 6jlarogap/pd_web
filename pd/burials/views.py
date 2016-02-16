@@ -28,7 +28,8 @@ from pd.models import validate_phone_as_number
 from pd.utils import utcisoformat, re_search
 
 from burials.forms import CemeteryForm, AreaFormset, PlaceEditForm, AddOrgForm, \
-                          AreaMergeForm, BurialfileCommentEditForm, BurialCommentEditFormSet
+                          AreaMergeForm, BurialfileCommentEditForm, BurialCommentEditFormSet, \
+                          AddGravesForm
 from burials.models import Cemetery, Place, Area, BurialFiles, Grave, Burial, BurialComment, AreaPhoto, PlacePhoto, \
                            ExhumationRequest, AreaPurpose, PlaceSize
 from burials.burials_views import *
@@ -1074,6 +1075,21 @@ class AddDocTypeView(SupervisorRequiredMixin, View):
             return HttpResponse(err_str % errors, mimetype='text/plain')
 
 add_doctype = AddDocTypeView.as_view()
+
+class AddGravesView(UGHRequiredMixin, View):
+    def post(self, request, pk, *args, **kwargs):
+        f = AddGravesForm(data=request.POST, prefix='add_graves')
+        if f.is_valid():
+            print f.cleaned_data['place_grave_choice']
+            return HttpResponse(json.dumps({'place_grave_choice': f.cleaned_data['place_grave_choice']}), mimetype='application/json')
+        else:
+            err_str = _(u'Ошибка:\n%s')
+            errors = '\n'.join([u'%s' % v[0] for k,v in f.errors.items()])
+            if "\n" in errors:
+                err_str = _(u'Ошибки:\n%s')
+            return HttpResponse(err_str % errors, mimetype='text/plain')
+
+add_graves = AddGravesView.as_view()
 
 class GetPlaceView(View):
     def dispatch(self, request, *args, **kwargs):
