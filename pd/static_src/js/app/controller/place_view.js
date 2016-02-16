@@ -127,6 +127,7 @@
 
       $scope.place_log = [];
       angular.forEach(result.log, function (item) {
+        item.msg = item.msg.replace(/(?:\n|\r\n|\r)/g, '<br/>');
         $scope.place_log.push(new Log(item));
       });
 
