@@ -3,8 +3,8 @@ import datetime
 import re
 from django.contrib import messages
 from django.contrib.contenttypes.models import ContentType
-from django.db import models, connection
-from django.db.models import Count, Avg, Max
+from django.db import models, connection, transaction
+from django.db.models import Count, Avg
 from django.db.models.deletion import ProtectedError, IntegrityError
 from django.utils.translation import ugettext_lazy as _
 from django.db.models.query_utils import Q
@@ -620,6 +620,7 @@ class Grave(GeoPointModel, BaseModelManualDtCreated):
             place=self.place, grave_number=self.grave_number
         )
 
+    @transaction.commit_on_success
     def delete(self, using=None, request=None):
         super(Grave, self).delete(using=using)
         if request:
@@ -633,6 +634,15 @@ class Grave(GeoPointModel, BaseModelManualDtCreated):
                         relocated = i
                     row.grave_number = i
                     row.save()
+                    for b in Burial.objects.filter(Q(grave=row) & ~Q(grave_number=i)):
+                        write_log(request,
+                            b,
+                            _(u"Номер могилы %(old_grave_number)s -> %(new_grave_number)s") % dict(
+                                old_grave_number=b.grave_number,
+                                new_grave_number=i,
+                        ))
+                        b.grave_number = i
+                        b.save()
                 i += 1
             if relocated > 0:
                 if relocated < i-1:
@@ -641,7 +651,7 @@ class Grave(GeoPointModel, BaseModelManualDtCreated):
                     ))
                 else:
                     arr.append( _(u'Могила %d перенумерована') % (relocated+1))
-            write_log(request, self.place, u"<br/>".join(arr))
+            write_log(request, self.place, u"\n".join(arr))
         else:
             raise Exception('Warning: Grave::delete - "request" param is undefined')
 
