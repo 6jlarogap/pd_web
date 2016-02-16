@@ -453,7 +453,8 @@ class CustomPlace(LocationMixin, BaseModel):
 
     def delete(self):
         for customperson in CustomPerson.objects.filter(customplace=self):
-            customperson.delete()
+            customperson.customplace = None
+            customperson.save()
 
         Order = get_model('orders', 'Order')
         OrderComment = get_model('orders', 'OrderComment')

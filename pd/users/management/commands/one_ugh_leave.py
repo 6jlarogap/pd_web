@@ -13,7 +13,7 @@ from django.db import transaction, IntegrityError
 from django.db.models.query_utils import Q
 
 from django.contrib.auth.models import User
-from users.models import Org, ProfileLORU, Profile, Dover, OrgCertificate, CustomerProfile, \
+from users.models import Org, ProfileLORU, Profile, Dover, OrgCertificate, \
                          OrgGallery, OrgContract, UserPhoto
 from logs.models import Log
 from burials.models import Cemetery, CemeteryCoordinates, Area, AreaCoordinates, \
@@ -22,8 +22,7 @@ from burials.models import Cemetery, CemeteryCoordinates, Area, AreaCoordinates,
                            BurialComment, PlaceStatus, AreaPhoto, PlaceStatusFiles
 from orders.models import Order, OrderItem, ServiceItem, OrgService, OrgServicePrice, \
                           OrderComment, ResultFile
-from persons.models import DeadPerson, AlivePerson, CustomPlace, \
-                           DeathCertificateScan
+from persons.models import DeadPerson, AlivePerson, DeathCertificateScan
 
 class Command(BaseCommand):
     args = 'OMS_pk OMS_media_list'
