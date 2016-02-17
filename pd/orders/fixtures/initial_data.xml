@@ -147,6 +147,9 @@
         <field type="CharField" name="name">km</field>
         <field type="CharField" name="title">Стоимость за километр</field>
     </object>
+    <!---
+    Удаляем килограммы и метры кубические в параметрах доставки. Вернем,
+    когда будет необходимость
     <object pk="3" model="orders.measure">
         <field to="orders.service" name="service" rel="ManyToOneRel">2</field>
         <field type="CharField" name="name">kg</field>
@@ -157,6 +160,7 @@
         <field type="CharField" name="name">m3</field>
         <field type="CharField" name="title">Стоимость за метр кубический</field>
     </object>
+     -->
     <object pk="5" model="orders.measure">
         <field to="orders.service" name="service" rel="ManyToOneRel">3</field>
         <field type="CharField" name="name">unit</field>
