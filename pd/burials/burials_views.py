@@ -699,14 +699,16 @@ class BurialsPublicListView(PaginateListView):
                   Q(source_type__in=(Burial.SOURCE_FULL, Burial.SOURCE_TRANSFERRED,)) & 
                   Q(loru = self.request.user.profile.org) &
                   (
-                   Q(annulated=False) &
-                   Q(status__in=[Burial.STATUS_EXHUMATED, Burial.STATUS_CLOSED, ])
-                   )
-                   |
-                   (
-                    Q(annulated=True) &
-                    Q(status__in=[Burial.STATUS_BACKED, Burial.STATUS_DRAFT, Burial.STATUS_DECLINED, ])
-                   )
+                    (
+                        Q(annulated=False) &
+                        Q(status__in=[Burial.STATUS_EXHUMATED, Burial.STATUS_CLOSED, ])
+                    )
+                    |
+                    (
+                        Q(annulated=True) &
+                        Q(status__in=[Burial.STATUS_BACKED, Burial.STATUS_DRAFT, Burial.STATUS_DECLINED, ])
+                    )
+                 )
                  ).order_by('-pk').distinct()
         else:
             burials = Burial.objects.none()
@@ -890,6 +892,22 @@ class CreateBurial(BurialGetOrderMixin, FormInvalidMixin, CreateView):
                 messages.success(self.request, msg)
                 redirect_to_view = True
 
+            if action == 'deannulate' and \
+                (self.request.user.profile.is_ugh() and b.can_ugh_deannulate() or \
+                self.request.user.profile.is_loru() and b.can_loru_deannulate()
+                ):
+                if b.place:
+                    b.grave = b.place.get_or_create_graves(b.grave_number)
+                b.annulated = False
+                write_log(self.request, b, _(u'Захоронение восстановлено после аннулирования'))
+                messages.success(
+                    self.request,
+                    _(u"<a href='%(view_burial)s'>Захоронение %(pk)s</a> восстановлено после аннулирования") % dict(
+                        view_burial=reverse('view_burial', args=[b.pk]) + order_parm, pk=b.pk,
+                ))
+                redirect_to_view = self.request.user.profile.is_ugh()
+                redirect_to_edit = self.request.user.profile.is_loru()
+
             if action == 'approve' and self.request.user.profile.is_ugh() and b.can_approve_ugh():
                 b.status = Burial.STATUS_APPROVED
                 b.approve(self.request.user)
@@ -965,6 +983,8 @@ class CreateBurial(BurialGetOrderMixin, FormInvalidMixin, CreateView):
             action = 'complete'
         if self.request.REQUEST.get('annulate'):
             action = 'annulate'
+        if self.request.REQUEST.get('deannulate'):
+            action = 'deannulate'
         if self.request.REQUEST.get('unbind'):
             action = 'unbind'
         return action
