@@ -4,7 +4,7 @@ import re
 from django.contrib import messages
 from django.contrib.contenttypes.models import ContentType
 from django.db import models, connection, transaction
-from django.db.models import Count, Avg
+from django.db.models import Count, Avg, Max
 from django.db.models.deletion import ProtectedError, IntegrityError
 from django.utils.translation import ugettext_lazy as _
 from django.db.models.query_utils import Q

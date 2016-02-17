@@ -850,10 +850,11 @@ $(function() {
     });
 
     $('#add_graves').find('.btn-primary').click(function() {
-        var place_pk = $('#this_place_id_').val()
+        var place_pk = $('#place_info_id').val();
         var data = $('#add_graves form').serialize();
         $.post('/burials/place/' + place_pk + '/add_graves/', data, function(data){
             console.log(data);
+            $('#id_place_number').change();
         })
         $('#add_graves').modal('hide');
     });
@@ -994,6 +995,28 @@ $(function() {
                         $('#id_place_length').closest('p').hide();
                         $('#id_place_width').closest('p').hide();
                     }
+                    var graves_count = parseInt($('#place_info_graves_count').val());
+                    var last_occupied_grave_number = parseInt($('#place_info_last_occupied_grave_number').val());
+                    var max_graves_count = parseInt($('#place_info_max_graves_count').val());
+                    if (max_graves_count <= 0) {
+                        max_graves_count = 10;
+                    }
+                    if (last_occupied_grave_number > max_graves_count) {
+                        max_graves_count = last_occupied_grave_number;
+                    }
+                    $('#add_graves_last_occupied_grave_number').html(
+                        last_occupied_grave_number ? last_occupied_grave_number : "-"
+                    );
+                    $('#add_graves_graves_count').html(graves_count);
+
+                    var grave_selected = graves_count == max_graves_count ? 
+                                            max_graves_count : graves_count + 1;
+                    var options = '';
+                    for (var i=last_occupied_grave_number; i<=max_graves_count; i++) {
+                        var selected = i == grave_selected ? ' selected="selected"' : '';
+                        options += '<option value="'+i+'"'+selected+'>'+i+'</option>';
+                    }
+                    $('#id_add_graves-place_grave_choice').html(options);
                 }
                 else {
                     $('#id_desired_graves_count').closest('p').show();

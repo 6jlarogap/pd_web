@@ -165,11 +165,32 @@
     <div class="modal-body">
         <form>
             {% csrf_token %}
-            {{ add_graves_form.as_p }}
+            <table cellpadding="5" cellspacing="5">
+                <tr>
+                    <td>{% trans "Последняя занятая могила в месте" %}:</td>
+                    <td>
+                        &nbsp;&nbsp;<span id="add_graves_last_occupied_grave_number"></span>
+                    </td>
+                </tr>
+                <tr>
+                    <td><b>{% trans "Могил в месте" %}:</b></td>
+                    <td>
+                        &nbsp;&nbsp;<b><span id="add_graves_graves_count"></span></b>
+                    </td>
+                </tr>
+                <tr>
+                    <td>&nbsp;</td>
+                </tr>
+                <tr>
+                    <td>{{ add_graves_form.place_grave_choice.errors }}{{ add_graves_form.place_grave_choice.label_tag }}</td>
+                    <td>{{ add_graves_form.place_grave_choice }}</td>
+                    <td><span class="helptext">{{ add_graves_form.place_grave_choice.help_text }}</span></td>
+                </tr>
+            </table>
         </form>
     </div>
     <div class="modal-footer">
-        <button class="btn" data-dismiss="modal" aria-hidden="true">{% trans "закрыть" %}</button>
+        <button class="btn" data-dismiss="modal" aria-hidden="true">{% trans "отменить" %}</button>
         <button class="btn btn-primary">{% trans "сохранить" %}</button>
     </div>
 </div>

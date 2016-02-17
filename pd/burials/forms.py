@@ -1832,4 +1832,8 @@ BurialCommentEditFormSet = inlineformset_factory(
 )
 
 class AddGravesForm(forms.Form):
-    place_grave_choice = forms.ChoiceField(required=True, choices=(("1","1"),), label=_(u"Номер могилы"))
+    place_grave_choice = forms.ChoiceField(
+        required=True,
+        choices=[(str(i),str(i)) for i in range(100)],
+        label=_(u"Установите число могил в месте:"),
+    )

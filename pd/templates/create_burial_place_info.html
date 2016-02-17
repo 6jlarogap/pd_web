@@ -21,9 +21,10 @@
                 <a href="#add_graves" role="button" class="btn" data-toggle="modal">
                     {% trans "добавить/удалить могилы" %}
                 </a>
-                <input type="hidden" id="this_place_id_"  value="{{ place.pk }}" />
-                <input type="hidden" id="this_place_graves_count_"  value="{{ place.get_graves_count }}" />
-                <input type="hidden" id="max_graves_count_"  value="{{ place.cemetery.ugh.max_graves_count }}" />
+                <input type="hidden" id="place_info_id" value="{{ place.pk }}" />
+                <input type="hidden" id="place_info_last_occupied_grave_number" value="{{ place.last_occupied_grave_number }}" />
+                <input type="hidden" id="place_info_graves_count" value="{{ place.get_graves_count }}" /> 
+                <input type="hidden" id="place_info_max_graves_count" value="{{ place.cemetery.ugh.max_graves_count }}" /> 
             {% endif %}
         </dd>
         {% if place.responsible %}
