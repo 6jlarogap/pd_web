@@ -234,7 +234,7 @@
                 <input type="submit" class="btn btn-danger" name="unbind" value="{% trans "открепить от заказа" %}">
             {% endif %}
             {% if b.can_loru_deannulate %}
-                <input type="submit" class="btn" name="deannulate" value="{% trans "де-аннулировать" %}">
+                <input type="submit" class="btn" name="deannulate" onclick="return confirm('{% trans "Вы уверены?" %}');" value="{% trans "де-аннулировать" %}">
             {% endif %}
             {% if b.can_loru_annulate %}
                 <input type="submit" class="btn" name="annulate" onclick="return confirm('{% trans "Вы уверены?" %}');" value="{% trans "аннулировать" %}">
@@ -249,7 +249,7 @@
         {% if user.profile.is_ugh %}
             {% if not b.cemetery or b.cemetery in editable_ugh_cemeteries %}
                 {% if b.can_ugh_deannulate %}
-                    <input type="submit" class="btn" name="deannulate" value="{% trans "де-аннулировать" %}">
+                    <input type="submit" class="btn" name="deannulate" onclick="return confirm('{% trans "Вы уверены?" %}');" value="{% trans "де-аннулировать" %}">
                 {% endif %}
                 {% if b.can_ugh_annulate or b.can_disapprove_ugh %}
                     <br/><br/>
