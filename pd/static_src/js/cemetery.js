@@ -853,9 +853,12 @@ $(function() {
         var place_pk = $('#place_info_id').val();
         var data = $('#add_graves form').serialize();
         $.post('/burials/place/' + place_pk + '/add_graves/', data, function(data){
-            console.log(data);
-            $('#id_place_number').change();
-        })
+            if (data.place_grave_choice) {
+                $('#id_place_number').change();
+            } else {
+                alert(data);
+            }
+        });
         $('#add_graves').modal('hide');
     });
 

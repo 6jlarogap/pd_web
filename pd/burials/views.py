@@ -7,6 +7,7 @@ from django.contrib import messages
 from django.core.urlresolvers import reverse
 from django.core.paginator import Paginator
 from django.core.exceptions import ValidationError
+from django.db import IntegrityError
 from django.db.models.query_utils import Q
 from django.db.models import Count, Avg
 from django.shortcuts import redirect, render, get_object_or_404
@@ -1027,7 +1028,6 @@ class AddAgentView(UghOrLoruRequiredMixin, View):
                 'dover_pk': dover.pk, 'dover_label': u'%s' % dover
             }), mimetype='application/json')
         else:
-            print fa.non_field_errors()
             err_str = _(u'Ошибка:\n%s')
             errors = '\n'.join([u'%s' % v for v in fa.non_field_errors()] + \
                                [u'%s' % v for v in fd.non_field_errors()])
@@ -1078,12 +1078,43 @@ add_doctype = AddDocTypeView.as_view()
 
 class AddGravesView(UGHRequiredMixin, View):
     def post(self, request, pk, *args, **kwargs):
+        try:
+            place = Place.objects.get(pk=pk, cemetery__ugh=request.user.profile.org)
+        except Place.DoesNotExist:
+            raise Http404
         f = AddGravesForm(data=request.POST, prefix='add_graves')
+        err_str = _(u'Ошибка:\n%s')
         if f.is_valid():
-            print f.cleaned_data['place_grave_choice']
-            return HttpResponse(json.dumps({'place_grave_choice': f.cleaned_data['place_grave_choice']}), mimetype='application/json')
+            error_mes = ''
+            invalid_graves_number = _(
+                u"Указано неверное число могил.\n"
+                u"Здесь можно создать не больше 20 новых.\n"
+                u"Если надо больше, это в карточке места.\n"
+            )
+            graves_count = place.get_graves_count()
+            try:
+                graves_number = int(f.cleaned_data['place_grave_choice'])
+                # fool-proof
+                if graves_number < 0 or graves_number - graves_count > 20:
+                    error_mes = invalid_graves_number
+            except ValueError:
+                error_mes = invalid_graves_number
+            if error_mes:
+                return HttpResponse(err_str % error_mes, mimetype='text/plain')
+            if graves_number < graves_count:
+                for i in range(graves_count, graves_number-1, -1):
+                    try:
+                        Grave.objects.filter(place=place, grave_number=i).delete()
+                        write_log(request, place, _(u"Удалена могила %s") % i)
+                    except IntegrityError:
+                        pass
+            elif graves_number > graves_count:
+                for i in range(graves_count+1, graves_number+1):
+                    grave, created_ = Grave.objects.get_or_create(place=place, grave_number=i)
+                    if created_:
+                        write_log(request, place, _(u"Создана могила %s") % i)
+            return HttpResponse(json.dumps({'place_grave_choice': graves_number}), mimetype='application/json')
         else:
-            err_str = _(u'Ошибка:\n%s')
             errors = '\n'.join([u'%s' % v[0] for k,v in f.errors.items()])
             if "\n" in errors:
                 err_str = _(u'Ошибки:\n%s')
