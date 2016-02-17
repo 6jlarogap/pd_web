@@ -853,7 +853,7 @@ $(function() {
         var place_pk = $('#place_info_id').val();
         var data = $('#add_graves form').serialize();
         $.post('/burials/place/' + place_pk + '/add_graves/', data, function(data){
-            if (data.place_grave_choice) {
+            if (typeof(data.place_grave_choice) != "undefined") {
                 $('#id_place_number').change();
             } else {
                 alert(data);

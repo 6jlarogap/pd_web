@@ -325,7 +325,6 @@ class Place(SafeDeleteMixin, GeoPointModel, BaseModelManualDtCreated):
             burial__status__in=(Burial.STATUS_CLOSED, Burial.STATUS_EXHUMATED),
             burial__annulated=False
         ).aggregate(Max('grave_number'))['grave_number__max'] or 0
-        return None
 
     def get_available_count(self):
         """

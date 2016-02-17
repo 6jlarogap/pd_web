@@ -1088,14 +1088,17 @@ class AddGravesView(UGHRequiredMixin, View):
             error_mes = ''
             invalid_graves_number = _(
                 u"Указано неверное число могил.\n"
-                u"Здесь можно создать не больше 20 новых.\n"
+                u"Здесь можно создать не больше 20 новых могил\n"
+                u"и суммарное число могил не больше 100.\n"
                 u"Если надо больше, это в карточке места.\n"
             )
             graves_count = place.get_graves_count()
             try:
                 graves_number = int(f.cleaned_data['place_grave_choice'])
                 # fool-proof
-                if graves_number < 0 or graves_number - graves_count > 20:
+                if graves_number < 0 or \
+                   graves_number > 100 or \
+                   graves_number - graves_count > 20:
                     error_mes = invalid_graves_number
             except ValueError:
                 error_mes = invalid_graves_number
