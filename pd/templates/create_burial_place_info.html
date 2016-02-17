@@ -8,7 +8,7 @@
     <h3>{{ place }}</h3>
 
     {% if user.profile.is_ugh %}
-        <p><a href="{{ place.url }}">{% trans "карточка" %}</a></p>
+        <p><a href="{{ place.url }}" target="_blank">{% trans "карточка" %}</a></p>
     {% endif %}
 
     <dl>
@@ -16,6 +16,16 @@
         <dd>
             {{ place.get_graves_count }}
             ({% trans "свободно" %} {{ place.get_available_count }})
+            {% if user.profile.is_ugh %}
+                &nbsp;&nbsp;&nbsp;
+                <a href="#add_graves" role="button" class="btn" data-toggle="modal">
+                    {% trans "добавить/удалить могилы" %}
+                </a>
+                <input type="hidden" id="place_info_id" value="{{ place.pk }}" />
+                <input type="hidden" id="place_info_last_occupied_grave_number" value="{{ place.last_occupied_grave_number }}" />
+                <input type="hidden" id="place_info_graves_count" value="{{ place.get_graves_count }}" /> 
+                <input type="hidden" id="place_info_max_graves_count" value="{{ place.cemetery.ugh.max_graves_count }}" /> 
+            {% endif %}
         </dd>
         {% if place.responsible %}
             <div id="place_has_responsible">
