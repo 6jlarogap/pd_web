@@ -129,12 +129,12 @@
     <object pk="3" model="orders.service">
         <field type="CharField" name="name">cleanup</field>
         <field type="CharField" name="title">Уборка</field>
-        <field type="TextField" name="description">Уборка></field>
+        <field type="TextField" name="description">Уборка</field>
     </object>
     <object pk="4" model="orders.service">
         <field type="CharField" name="name">signature</field>
         <field type="CharField" name="title">Подводка надписей</field>
-        <field type="TextField" name="description">Подводка надписей></field>
+        <field type="TextField" name="description">Подводка надписей</field>
     </object>
     <!--- Measure: Возможные единицы оказываемых услуг (сервисов) -->
     <object pk="1" model="orders.measure">
