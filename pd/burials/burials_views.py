@@ -699,8 +699,8 @@ class BurialsPublicListView(PaginateListView):
                   Q(loru = self.request.user.profile.org) &
                   (
                     (
-                    Q(annulated=False) &
-                    Q(status__in=[Burial.STATUS_EXHUMATED, Burial.STATUS_CLOSED, ])
+                        Q(annulated=False) &
+                        Q(status__in=[Burial.STATUS_EXHUMATED, Burial.STATUS_CLOSED, ])
                     )
                     |
                     (
