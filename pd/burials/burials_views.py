@@ -879,6 +879,7 @@ class CreateBurial(BurialGetOrderMixin, FormInvalidMixin, CreateView):
                  (self.request.user.profile.is_loru() and b.can_loru_annulate() or \
                   self.request.user.profile.is_ugh() and b.can_ugh_annulate()
                  )  :
+                b.grave = None
                 b.annulated = True
                 write_log(self.request, b, _(u'Захоронение аннулировано'))
                 msg = _(u"<a href='%(view_burial)s'>Захоронение %(pk)s</a> аннулировано") % dict(
