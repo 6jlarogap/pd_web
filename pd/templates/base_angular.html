@@ -32,7 +32,7 @@
 	
 	<!-- js_app -->
 	{% assets "js_app" %}
-	<script type="text/javascript" src="{{ ASSET_URL }}"></script>{% endassets %}
+	<script type="text/javascript" src="{{ ASSET_URL }}?updated_={{ global_context_STATIC_UPDATED_TIME }}"></script>{% endassets %}
 
 	{% assets "css_app" %}
 	<link rel="stylesheet" type="text/css" href="{{ ASSET_URL }}" />{% endassets %}

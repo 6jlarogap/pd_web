@@ -81,7 +81,8 @@
         GOOGLE_GEOCODER_DOMAIN = '{{ global_context_HOST_COUNTRY_CODE }}';
     </script>
 
-    <script type="text/javascript" src="{{ STATIC_URL }}js/cemetery.js" defer="true"></script>
+    <script type="text/javascript" src="{{ STATIC_URL }}js/cemetery.js?updated_={{ global_context_STATIC_UPDATED_TIME }}" defer="true">
+    </script>
 
     {% block scripts %}{% endblock %}
 </head>
