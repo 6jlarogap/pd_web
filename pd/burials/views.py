@@ -1105,7 +1105,7 @@ class AddGravesView(UGHRequiredMixin, View):
             if error_mes:
                 return HttpResponse(err_str % error_mes, mimetype='text/plain')
             if graves_number < graves_count:
-                for i in range(graves_count, graves_number-1, -1):
+                for i in range(graves_count, graves_number, -1):
                     try:
                         Grave.objects.filter(place=place, grave_number=i).delete()
                         write_log(request, place, _(u"Удалена могила %s") % i)
