@@ -74,6 +74,17 @@
                             <a href="{% url order_services self.request.REQUEST.order %}" class="btn btn-next">{% trans "далее" %}</a>
                         {% endif %}
                     {% endif %}
+                {% else %}
+                    {% if user.profile.is_ugh %}
+                        {% if b.can_ugh_deannulate %}
+                            <input type="submit" class="btn btn-commit-burial" name="deannulate" onclick="return confirm('{% trans "Вы уверены?" %}');" value="{% trans "де-аннулировать" %}"/>
+                        {% endif %}
+                    {% endif %}
+                    {% if user.profile.is_loru %}
+                        {% if b.can_loru_deannulate %}
+                            <input type="submit" class="btn btn-commit-burial" name="deannulate" onclick="return confirm('{% trans "Вы уверены?" %}');" value="{% trans "де-аннулировать" %}"/>
+                        {% endif %}
+                    {% endif %}
                 {% endif %}
             </p>
         {% endblock buttons %}
