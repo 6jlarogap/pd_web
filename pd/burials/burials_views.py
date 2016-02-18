@@ -17,7 +17,8 @@ from django.views.generic.detail import DetailView
 from django.views.generic.edit import CreateView, DeleteView
 from django.views.generic.list import ListView
 
-from burials.forms import BurialSearchForm, BurialPublicListForm, BurialForm, BurialCommitForm, BurialApproveCloseForm, AddDocTypeForm
+from burials.forms import BurialSearchForm, BurialPublicListForm, BurialForm, BurialCommitForm, \
+                          BurialApproveCloseForm, AddDocTypeForm, AddGravesForm
 from burials.forms import AddAgentForm, AddDoverForm, AddOrgForm, ExhumationForm
 from burials.models import Reason, Burial, Burial1, Cemetery, Place, ExhumationRequest
 from persons.models import DeathCertificate
@@ -799,6 +800,7 @@ class CreateBurial(BurialGetOrderMixin, FormInvalidMixin, CreateView):
             'zags_form': AddOrgForm(request=self.request, prefix='zags', instance=Org(type=Org.PROFILE_ZAGS)),
             'medic_form': AddOrgForm(request=self.request, prefix='medic', instance=Org(type=Org.PROFILE_MEDIC)),
             'doc_type_form': AddDocTypeForm(prefix='doctype'),
+            'add_graves_form': AddGravesForm(prefix='add_graves'),
             'order': self.get_order(),
         })
         return data

@@ -21,6 +21,7 @@ urlpatterns = patterns('burials.views',
     url(r'^burials/add_medic/$', 'add_org', dict(type=Org.PROFILE_MEDIC), name='add_org'),
     url(r'^burials/add_loru/$', 'add_org', dict(type=Org.PROFILE_LORU), name='add_org'),
     url(r'^burials/add_doctype/$', 'add_doctype', name='add_doctype'),
+    url(r'^burials/place/(?P<pk>\d+)/add_graves/$', 'add_graves', name='add_graves'),
 
     url(r'^burials/archive/$', 'archive', name='archive'),
     url(r'^burials/create/$', 'create_burial', name='create_burial'),
