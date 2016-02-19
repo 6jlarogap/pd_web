@@ -1083,27 +1083,9 @@ class AddGravesView(UGHRequiredMixin, View):
         except Place.DoesNotExist:
             raise Http404
         f = AddGravesForm(data=request.POST, prefix='add_graves')
-        err_str = _(u'Ошибка:\n%s')
         if f.is_valid():
-            error_mes = ''
-            invalid_graves_number = _(
-                u"Указано неверное число могил.\n"
-                u"Здесь можно создать не больше 20 новых могил\n"
-                u"и суммарное число могил не больше 100.\n"
-                u"Если надо больше, это в карточке места.\n"
-            )
             graves_count = place.get_graves_count()
-            try:
-                graves_number = int(f.cleaned_data['place_grave_choice'])
-                # fool-proof
-                if graves_number < 0 or \
-                   graves_number > 100 or \
-                   graves_number - graves_count > 20:
-                    error_mes = invalid_graves_number
-            except ValueError:
-                error_mes = invalid_graves_number
-            if error_mes:
-                return HttpResponse(err_str % error_mes, mimetype='text/plain')
+            graves_number = int(f.cleaned_data['place_grave_choice'])
             if graves_number < graves_count:
                 for i in range(graves_count, graves_number, -1):
                     try:
@@ -1118,6 +1100,7 @@ class AddGravesView(UGHRequiredMixin, View):
                         write_log(request, place, _(u"Создана могила %s") % i)
             return HttpResponse(json.dumps({'place_grave_choice': graves_number}), mimetype='application/json')
         else:
+            err_str = _(u'Ошибка:\n%s')
             errors = '\n'.join([u'%s' % v[0] for k,v in f.errors.items()])
             if "\n" in errors:
                 err_str = _(u'Ошибки:\n%s')
