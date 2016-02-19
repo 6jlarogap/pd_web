@@ -1007,6 +1007,9 @@ $(function() {
                     if (last_occupied_grave_number > max_graves_count) {
                         max_graves_count = last_occupied_grave_number;
                     }
+                    if (graves_count > max_graves_count) {
+                        max_graves_count = graves_count;
+                    }
                     $('#add_graves_last_occupied_grave_number').html(
                         last_occupied_grave_number ? last_occupied_grave_number : "-"
                     );
