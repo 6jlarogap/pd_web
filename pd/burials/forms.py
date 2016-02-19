@@ -412,22 +412,15 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
             places_count = self.instance.get_place().get_graves_count()
         elif self.instance.area:
             places_count = self.instance.area.places_count
-        # - Вдруг уменьшат параметры участка так, что номер могилы в захоронении
+        # - Вдруг уменьшат параметры участка или места так, что номер могилы в захоронении
         #   окажется больше числа могил в участке для нового места
         # - Вдруг вообще не укажут кладбище или участок, но в записи захоронения
         #   уже не 1-е место. Нельзя его заменять на 1-е.
-        places_count = max(places_count, self.instance.grave_number or 1)
+        post_places_count = request.POST and request.POST.get('grave_number') or 1
+        post_places_count = int(post_places_count)
+        places_count = max(places_count, self.instance.grave_number or 1, post_places_count)
         grave_choices = [(i,i) for i in range(1, places_count+1)]
         self.fields['grave_number'].widget = forms.Select(choices=grave_choices)
-
-        max_grave_number = \
-            Area.objects.filter((Q(cemetery__ugh__isnull=True) |
-                                 Q(cemetery__ugh__loru_list__loru=self.request.user.profile.org) |
-                                 Q(cemetery__ugh=request.user.profile.org)
-                                )
-                                & 
-                                Q(availability=Area.AVAILABILITY_OPEN)
-                               ).aggregate(m=Max('places_count'))['m'] or 1
 
         max_grave_number = self.fields['cemetery'].queryset.aggregate(m=Max('area__places_count'))['m'] or 1
         max_grave_choices = [(i,i) for i in range(1, max_grave_number+1)]

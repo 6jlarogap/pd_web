@@ -196,7 +196,9 @@ class Area(BaseModelManualDtCreated):
 
     cemetery = models.ForeignKey(Cemetery, verbose_name=_(u"Кладбище"), on_delete=models.PROTECT)
     name = models.CharField(_(u"Название"), max_length=255)
-    availability = models.CharField(_(u"Открытость"), max_length=32, choices=AVAILABILITY_CHOICES, null=True)
+    availability = models.CharField(_(u"Открытость"), max_length=32,
+                                    choices=AVAILABILITY_CHOICES,
+                                    default=AVAILABILITY_OPEN)
     purpose = models.ForeignKey(AreaPurpose, verbose_name=_(u"Назначение"), null=True, on_delete=models.PROTECT)
     places_count = models.PositiveIntegerField(_(u"Макс. кол-во могил в месте"), default=1)
     square = models.FloatField(_(u"Площадь"), null=True, editable=False)
@@ -212,7 +214,7 @@ class Area(BaseModelManualDtCreated):
     def __unicode__(self):
         return _(u'%(name)s (%(availability)s, %(purpose)s, %(places_count)s могил)') % dict(
             name=self.name,
-            availability=self.get_availability_display() or _(u"откр.неизв"),
+            availability=self.get_availability_display(),
             purpose=self.purpose or _(u"назн. неизв"),
             places_count=self.places_count
         )
