@@ -74,6 +74,7 @@ class CommonProfile(BaseModel):
     user_last_name = models.CharField(_(u"Фамилия"), max_length=255, null=True, blank=True)
     user_first_name = models.CharField(_(u"Имя"), max_length=255, null=True, blank=True)
     user_middle_name = models.CharField(_(u"Отчество"), max_length=255, null=True, blank=True)
+    phones = models.TextField(_(u"Телефоны (если несколько, то через ; или ,)"), blank=True, null=True)
 
     class Meta:
         abstract = True
@@ -106,6 +107,9 @@ class CommonProfile(BaseModel):
                 if self.user_middle_name:
                     name = u"{0}{1}.".format(name, self.user_middle_name[0])
         return self.user and (name or self.user.username) or u'%s' % self.pk
+
+    def phone_list(self):
+        return phones_from_text(self.phones)
 
     @classmethod
     def generate_password(cls):
@@ -185,6 +189,7 @@ class Profile(CommonProfile):
     org = models.ForeignKey('users.Org', null=True)
 
     is_agent = models.BooleanField(_(u"Агент"), default=False, blank=True)
+    title = models.CharField(_(u"Должность"), max_length=255, blank=True)
 
     cemetery = models.ForeignKey('burials.Cemetery', verbose_name=_(u"Кладбище"), blank=True, null=True)
     area = models.ForeignKey('burials.Area', verbose_name=_(u"Участок"), blank=True, null=True)

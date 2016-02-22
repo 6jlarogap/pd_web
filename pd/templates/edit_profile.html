@@ -8,6 +8,13 @@
     {% include "form_read_only.html" %}
 {% endif %}
 
+<script type="text/javascript">
+    $(function() {
+        $('input[id$=title]').css('width', '435px');
+        $('input[id$=phones]').css('width', '660px');
+    });
+</script>
+
     {% if form.instance.pk %}
         <h2>{% trans "Пользователь" %}</h2>
         <h4>
@@ -41,8 +48,17 @@
         {{ form.user_middle_name.errors }}
         <p>{{ form.user_middle_name.label_tag }} {{ form.user_middle_name }} <span class="helptext">{{ form.user_middle_name.help_text }}</span></p>
 
-        {{ form.email.errors }}
-        <p>{{ form.email.label_tag }} {{ form.email }} <span class="helptext"> {{ form.email.help_text }}</span></p>
+        <br>
+        <fieldset>
+            {{ form.email.errors }}
+            <p>{{ form.email.label_tag }} {{ form.email }} <span class="helptext"> {{ form.email.help_text }}</span></p>
+
+            {{ form.title.errors }}
+            <p class="inline">{{ form.title.label_tag }} {{ form.title }} <span class="helptext"> {{ form.title.help_text }}</span></p>
+        </fieldset>
+
+        {{ form.phones.errors }}
+        <p>{{ form.phones.label_tag }} {{ form.phones }} <span class="helptext">{{ form.phones.help_text }}</span></p>
 
         {% if form.is_agent %}
             {{ form.is_agent.errors }}

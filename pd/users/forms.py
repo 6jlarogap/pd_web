@@ -84,6 +84,8 @@ class ProfileDataForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelForm):
             'is_active',
             'user_last_name', 'user_first_name', 'user_middle_name',
             'email',
+            'title',
+            'phones',
             'is_agent',
             'password1', 'password2',
             'cemetery', 'area',
@@ -93,6 +95,7 @@ class ProfileDataForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelForm):
     def __init__(self, request, my_profile, *args, **kwargs):
         super(ProfileDataForm, self).__init__(*args, **kwargs)
         self.request = request
+        self.fields['phones'].widget = forms.TextInput()
         if not request.user.profile.org.is_loru():
             del self.fields['is_agent']
 
