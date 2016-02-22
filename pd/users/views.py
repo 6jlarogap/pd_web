@@ -74,7 +74,7 @@ from users.serializers import StoreSerializer, OrgSerializer, OrgShort2Serialize
                               OrgShort3Serializer, OrgOptSupplierSerializer, OrgShort5Serializer, \
                               UserSettingsSerializer, ShopSerializer, OrgGallerySerializer, \
                               ShopDetailSerializer, OrgReviewSerializer, \
-                              OrgClientSiteSerializer
+                              OrgClientSiteSerializer, ProfileClientSiteSerializer
 
 from sms_service.utils import send_sms
 
@@ -2852,6 +2852,22 @@ class ApiClientSiteDetailView(ApiClientSiteMixin, APIView):
         return Response(status=200, data=OrgClientSiteSerializer(org).data)
 
 api_client_site_detail = ApiClientSiteDetailView.as_view()
+
+class ApiClientEmployeesView(ApiClientSiteMixin, APIView):
+
+    def get(self, request, token):
+        org = self.get_org(token)
+        qs = Profile.objects.filter(org=org)
+        return Response(
+            status=200,
+            data=ProfileClientSiteSerializer(
+                qs,
+                context=dict(request=request),
+                many=True,
+            ).data
+        )
+
+api_client_site_employees = ApiClientEmployeesView.as_view()
 
 class ApiClientSiteMessagesView(CheckRecaptchaMixin, ApiClientSiteMixin, APIView):
     """
