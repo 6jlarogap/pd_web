@@ -21,7 +21,7 @@ from burials.models import Cemetery, PlaceSize, Reason, Burial
 from logs.models import write_log
 
 from users.models import Profile, ProfileLORU, Org, BankAccount, RegisterProfile, OrgCertificate, \
-                         Role, \
+                         Role, UserPhoto, \
                          get_mail_footer, is_cabinet_user, is_trade_user
 
 User._meta.get_field_by_name('email')[0]._unique = True
@@ -67,6 +67,20 @@ class BaseLoruFormset(BaseInlineFormSet):
 LoruFormset = inlineformset_factory(Org, ProfileLORU, form=LoruItemForm, fk_name='ugh', formset=BaseLoruFormset)
 
 BankAccountFormset = inlineformset_factory(Org, BankAccount, formset=BaseLoruFormset, extra=2)
+
+class UserPhotoForm(CustomUploadModelForm):
+    class Meta:
+        model = UserPhoto
+        fields = ('bfile', )
+        widgets = {
+            'bfile': CustomClearableFileInput(show_clear_checkbox_=True),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super(UserPhotoForm, self).__init__(*args, **kwargs)
+        self.init_bfile()
+        self.fields['bfile'].label = _(u'Фото пользователя')
+        self.MAX_UPLOAD_SIZE_MB = 5
 
 class ProfileDataForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelForm):
 
@@ -162,6 +176,14 @@ class ProfileDataForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelForm):
             # По умолчанию новому пользователю ОМС назначаем все роли и все кладбища
             if not self.instance or not self.instance.pk:
                 self.initial['role'] = [Role.objects.get(name=Role.ROLE_REGISTRATOR)]
+
+        photo = None
+        if self.instance.pk:
+            try:
+                photo = UserPhoto.objects.get(user=self.instance.user)
+            except UserPhoto.DoesNotExist:
+                pass
+        self.photo_form = UserPhotoForm(request, prefix='user-photo', instance = photo, files=request.FILES)
 
     def clean_username(self):
         username = self.cleaned_data.get('username', '').strip()
@@ -270,6 +292,27 @@ class ProfileDataForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelForm):
             for cemetery in cemeteries:
                 profile.cemeteries.add(cemetery)
             write_log(self.request, profile.org, _(u'Добавлен пользователь %s') % user.username)
+
+        photo_uploaded = photo_clear = False
+        if self.photo_form.is_valid():
+            self.photo_form.clean()
+            bfile = self.photo_form.cleaned_data.get('bfile')
+            # FieldFile -- это еще не UploadedFile
+            photo_uploaded = bfile and not isinstance(bfile, FieldFile)
+            photo_clear = self.request.POST.get(self.photo_form.prefix+'-bfile-clear')
+
+            if self.photo_form.instance.pk:
+                if photo_clear and not photo_uploaded:
+                    self.photo_form.instance.delete()
+                    write_log(self.request, self.instance.user, _(u'Фото удалено'))
+                    return profile
+                if photo_clear or photo_uploaded:
+                    UserPhoto.objects.get(pk=self.photo_form.instance.pk).delete_from_media()
+            if photo_uploaded:
+                photo = self.photo_form.save(commit=False)
+                photo.user = self.instance.user
+                photo.save()
+                write_log(self.request, self.instance.user, _(u'Прикреплено фото: %s') % photo.original_name)
 
         return profile
 
