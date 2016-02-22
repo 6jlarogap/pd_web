@@ -81,6 +81,7 @@ class UserPhotoForm(CustomUploadModelForm):
         self.init_bfile()
         self.fields['bfile'].label = _(u'Фото пользователя')
         self.MAX_UPLOAD_SIZE_MB = 5
+        self.CHECK_IF_IMAGE = True
 
 class ProfileDataForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelForm):
 
@@ -216,6 +217,9 @@ class ProfileDataForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelForm):
                 ).exclude(pk=self.instance.pk).exists():
                 raise forms.ValidationError(_(u"Нельзя удалять последнего администратора в организации"))
         return role
+
+    def is_valid(self):
+        return super(ProfileDataForm, self).is_valid() and self.photo_form.is_valid()
 
     def clean(self):
         if self.is_valid():

@@ -1017,7 +1017,7 @@ class LoruRegistryView(UGHRequiredMixin, View):
 
 loru_registry = LoruRegistryView.as_view()
 
-class ProfileEditView(UghOrLoruRequiredMixin, RequestToFormMixin, UpdateView):
+class ProfileEditView(UghOrLoruRequiredMixin, RequestToFormMixin, FormInvalidMixin, UpdateView):
     template_name = 'edit_profile.html'
     model = Profile
     form_class = ProfileDataForm
