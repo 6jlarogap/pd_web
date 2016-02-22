@@ -786,9 +786,13 @@ class ApiFeedBack(CheckRecaptchaMixin, APIView):
                     profile = request.user.customerprofile
                 else:
                     profile = request.user.profile
-                    if callback and not request.user.profile.org.phones:
-                        request.user.profile.org.phones = phone
-                        request.user.profile.org.save()
+                    if callback:
+                        if not request.user.profile.org.phones:
+                            request.user.profile.org.phones = phone
+                            request.user.profile.org.save()
+                        if not request.user.profile.phones:
+                            request.user.profile.phones = phone
+                            request.user.profile.save()
 
                 if profile.user_last_name != user_last_name or \
                    profile.user_first_name != user_first_name or \
@@ -1013,7 +1017,7 @@ class LoruRegistryView(UGHRequiredMixin, View):
 
 loru_registry = LoruRegistryView.as_view()
 
-class ProfileEditView(UghOrLoruRequiredMixin, RequestToFormMixin, UpdateView):
+class ProfileEditView(UghOrLoruRequiredMixin, RequestToFormMixin, FormInvalidMixin, UpdateView):
     template_name = 'edit_profile.html'
     model = Profile
     form_class = ProfileDataForm
@@ -1673,6 +1677,7 @@ class RegistrantApprove(SupervisorRequiredMixin, View):
                             is_agent=True,
                             user=user,
                             org=org,
+                            phones=registrant.org_phones,
                 )
                 transaction.commit()
             except ServiceException as excpt:
