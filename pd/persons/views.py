@@ -1,17 +1,21 @@
 # coding=utf-8
 
 import json
-import re
+import re, decimal
 
 from django.core.files.base import ContentFile
+from django.core.validators import validate_email
+from django.core.exceptions import ValidationError
 from django.db import transaction, IntegrityError
 from django.db.models.query_utils import Q
 from django.http import Http404, HttpResponse
 from django.views.generic.base import View
 from django.utils.translation import ugettext as _
+from django.shortcuts import get_object_or_404
 
 from persons.models import DeadPerson, AlivePerson, BasePerson, DocumentSource, Phone, \
-                           CustomPlace, CustomPerson, MemoryGallery
+                           CustomPlace, CustomPerson, MemoryGallery, \
+                           MemoryGalleryPermission
 from persons.serializers import AlivePersonSerializer, DeadPersonSerializer, PhoneSerializer, \
                                 CustomPlaceDetailSerializer, CustomPlaceListSerializer, \
                                 CustomPlaceEditSerializer, DeadPerson2Serializer, \
@@ -27,7 +31,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.parsers import MultiPartParser, JSONParser
 from rest_framework.exceptions import PermissionDenied
 
-from pd.models import UnclearDate, SafeDeleteMixin
+from pd.models import UnclearDate, SafeDeleteMixin, validate_phone_as_number
 from burials.models import Cemetery, Place, PlacePhoto, Burial, Grave
 from logs.models import write_log, LogOperation
 from users.models import Org, PermitIfCabinet, user_dict, \
@@ -430,37 +434,19 @@ class ApiCustompersonDetailView(ApiCustompersonMixin, ApiClientPlacesMixin, APIV
 
 api_customperson_detail = ApiCustompersonDetailView.as_view()
 
-class ApiCustompersonMemoryGalleryView(ApiCustompersonMixin, APIView):
-    permission_classes = (PermitIfCabinet,)
-    parser_classes = (MultiPartParser, JSONParser, )
-    
-    def get(self, request, pk):
-        customperson = self.get_customperson(pk)
+class ApiMemoryGalleryMixin(object):
 
-        offset = self.request.GET.get('offset') and int(self.request.GET.get('offset'))
-        limit = self.request.GET.get('limit') and int(self.request.GET.get('limit'))
-        filter = MemoryGallery.objects.filter(customperson=customperson)
-        if offset and limit:
-            filter = filter[offset:offset+limit]
-        elif offset:
-            filter = filter[offset:]
-        elif limit:
-            filter = filter[:limit]
-
-        return Response(
-            [ MemoryGallery2Serializer(gallery_item, context=dict(request=request)).data \
-              for gallery_item in filter ],
-            status=200,
-        )
-
-    @transaction.commit_on_success
-    def post(self, request, pk):
+    def make_object(self, request, customperson_pk, memory_pk=None):
         try:
-            customperson = self.get_customperson(pk)
+            customperson = self.get_customperson(customperson_pk)
+            if memory_pk:
+                gallery_item = get_object_or_404(MemoryGallery, pk=memory_pk)
+                
             fields = {
                 'customperson': customperson,
                 'type': request.DATA.get('type'),
                 'text': request.DATA.get('text'),
+                'permission': request.DATA.get('permissions'),
                 'event_date': UnclearDate.from_str_safe(request.DATA.get('eventDate')),
                 'creator': request.user,
             }
@@ -488,19 +474,120 @@ class ApiCustompersonMemoryGalleryView(ApiCustompersonMixin, APIView):
                 file_content = ContentFile(file_.read())
                 if not is_video(file_content):
                     raise ServiceException(_(u"Загруженный файл не является видео"))
-            gallery_item = MemoryGallery.objects.create(**fields)
+            if fields['permission']:
+                known_permissions = [unicode(p[0]) for p in MemoryGallery.PERMISSION_CHOICES]
+                if fields['permission'] not in known_permissions:
+                    raise ServiceException(
+                        _(u"Неизвестное разрешение (permissions): %s") % fields['permission']
+                    )
+            else:
+                # Будет по умолчанию: private
+                del fields['permission']
+            selected = request.DATA.get('selected')
+            selected_perms = []
+            if selected:
+                try:
+                    selected = json.loads(selected)
+                except (ValueError, TypeError,):
+                    pass
+                if type(selected) != type(list()):
+                    raise ServiceException(_(u"Разрешения (selected: '%s') - не список") % selected)
+                msg_invalid_item = _(u"%s в списке selected не является ни email, ни телефоном")
+                for item in selected:
+                    field = None
+                    try:
+                        item = decimal.Decimal(item)
+                        try:
+                            validate_phone_as_number(str(item))
+                            field = 'login_phone'
+                        except ValidationError:
+                            raise ServiceException(msg_invalid_item % item)
+                    except (decimal.InvalidOperation, TypeError):
+                        try:
+                            item = unicode(item)
+                            validate_email(item)
+                            field = 'email'
+                        except ValidationError:
+                            raise ServiceException(msg_invalid_item % item)
+                    selected_perms.append({field: item})
+            if memory_pk:
+                for f in fields:
+                    setattr(gallery_item, f, fields[f])
+                    gallery_item.save()
+            else:
+                gallery_item = MemoryGallery.objects.create(**fields)
             # Можно было: if file_: fields['bfile'] = file_, без промежуточного буфера file_content,
             # после чего ... create(**fields), однако (!)
             # в gallery_item.bfile.path фигурирует gallery_item.pk, что еще неизвестно при .create(),
             # посему gallery_item.bfile сохраняем отдельно в уже созданный gallery_item
             if file_:
+                if memory_pk:
+                    gallery_item.delete_from_media()
                 gallery_item.bfile.save(file_.name, file_content)
+            if selected_perms:
+                if memory_pk:
+                    MemoryGalleryPermission.objects.filter(memorygallery=gallery_item).delete()
+                for perm in selected_perms:
+                    MemoryGalleryPermission.objects.create(memorygallery=gallery_item, **perm)
             return Response(
                 data=MemoryGallery2Serializer(gallery_item, context=dict(request=request)).data,
                 status=200,
             )
         except ServiceException as excpt:
             return Response(data=dict(status='error', message=excpt.message), status=400)
+
+
+class ApiCustompersonMemoryGalleryView(ApiCustompersonMixin, ApiMemoryGalleryMixin, APIView):
+    parser_classes = (MultiPartParser, JSONParser, )
+    
+    def get(self, request, pk):
+        customperson = get_object_or_404(CustomPerson, pk=pk)
+        is_cabinet_user_ = is_cabinet_user(request.user)
+        is_owner = is_cabinet_user_ and request.user == customperson.user
+        qs_public  = Q(permission=MemoryGallery.PERMISSION_PUBLIC)
+        qs_owner = Q(customperson=customperson)
+        if is_owner:
+            qs = qs_owner
+        elif is_cabinet_user_:
+            qs_email = qs_phone = qs_selected = None
+            if request.user.email:
+                qs_email = Q(memorygallerypermission__email__iexact=request.user.email)
+            if request.user.customerprofile.login_phone:
+                qs_phone = Q(memorygallerypermission__login_phone=request.user.customerprofile.login_phone)
+
+            if qs_email and qs_phone:
+                qs_selected = qs_email | qs_phone
+            elif qs_email:
+                qs_selected = qs_email
+            elif qs_phone:
+                qs_selected = qs_phone
+            qs = qs_public
+            if qs_selected:
+                qs_selected &= Q(permission=MemoryGallery.PERMISSION_SELECTED)
+                qs = qs | qs_selected
+            qs &= qs_owner
+        else:
+            qs = qs_public & qs_owner
+
+        offset = self.request.GET.get('offset') and int(self.request.GET.get('offset'))
+        limit = self.request.GET.get('limit') and int(self.request.GET.get('limit'))
+        filter = MemoryGallery.objects.filter(qs).distinct()
+        if offset and limit:
+            filter = filter[offset:offset+limit]
+        elif offset:
+            filter = filter[offset:]
+        elif limit:
+            filter = filter[:limit]
+
+        return Response(
+            [ MemoryGallery2Serializer(gallery_item, context=dict(request=request)).data \
+              for gallery_item in filter ],
+            status=200,
+        )
+
+    @transaction.commit_on_success
+    def post(self, request, pk):
+        return self.make_object(request, pk)
 
 api_customperson_memory_gallery = ApiCustompersonMemoryGalleryView.as_view()
 

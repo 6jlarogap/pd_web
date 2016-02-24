@@ -554,6 +554,15 @@ class MemoryGallery(Files):
         (TYPE_TEXT, _(u"Текст"))
     )
 
+    PERMISSION_PRIVATE = 'private'
+    PERMISSION_PUBLIC = 'public'
+    PERMISSION_SELECTED = 'selected'
+    PERMISSION_CHOICES = (
+        (PERMISSION_PRIVATE, _(u"Личное")),
+        (PERMISSION_PUBLIC, _(u"В публичном доступе")),
+        (PERMISSION_SELECTED, _(u"Выборочно"))
+    )
+
     # Мегабайт:
     MAX_IMAGE_SIZE = 10
 
@@ -561,3 +570,23 @@ class MemoryGallery(Files):
     type = models.CharField(_(u"Тип"), max_length=255, choices=TYPE_CHOICES)
     text = models.TextField(_(u"Текст"), null=True)
     event_date = UnclearDateModelField(_(u"Дата события"), null=True)
+    permission = models.CharField(_(u"Разрешение"), max_length=255,
+                                  choices=TYPE_CHOICES, default=PERMISSION_PRIVATE)
+
+    def delete(self):
+        MemoryGalleryPermission.objects.filter(memorygallery=self).delete()
+        return super(MemoryGallery, self).delete()
+
+class MemoryGalleryPermission(models.Model):
+    """
+    Разрешения на страницу памяти (MemoryGallery)
+
+    Применяется, если разрешение в записи MemoryGallery прописано как selected.
+    Тогда доступ предоставляется или по email или по login_phone,
+    если один из таковых прописан в разрешениях в этой модели
+    """
+
+    memorygallery = models.ForeignKey(MemoryGallery)
+    email = models.EmailField(_(u"Email"), null=True)
+    login_phone = models.DecimalField(_(u"Мобильный телефон для входа в кабинет"),
+                                      max_digits=15, decimal_places=0, null=True)
