@@ -613,7 +613,10 @@ class ApiCustompersonMemoryGalleryDetail(ApiCustompersonMixin, ApiMemoryGalleryM
     
     def get(self, request, pk, memory_pk):
         qs = self.get_qs(request, pk, memory_pk)
-        gallery_item = get_object_or_404(MemoryGallery, qs)
+        try:
+            gallery_item = MemoryGallery.objects.filter(qs).distinct()[0]
+        except IndexError:
+            raise Http404
         return Response(
             MemoryGallery2Serializer(gallery_item, context=dict(request=request)).data,
             status=200,
