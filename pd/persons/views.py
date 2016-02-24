@@ -440,8 +440,14 @@ class ApiMemoryGalleryMixin(object):
         try:
             customperson = self.get_customperson(customperson_pk)
             if memory_pk:
-                gallery_item = get_object_or_404(MemoryGallery, pk=memory_pk)
-                
+                try:
+                    gallery_item = MemoryGallery.objects.filter(
+                        customperson=customperson,
+                        pk=memory_pk,
+                    ).distinct()[0]
+                except IndexError:
+                    raise Http404
+
             fields = {
                 'customperson': customperson,
                 'type': request.DATA.get('type'),
@@ -628,7 +634,13 @@ class ApiCustompersonMemoryGalleryDetail(ApiCustompersonMixin, ApiMemoryGalleryM
 
     def delete(self, request, pk, memory_pk):
         customperson = self.get_customperson(pk)
-        gallery_item = get_object_or_404(MemoryGallery, pk=memory_pk)
+        try:
+            gallery_item = MemoryGallery.objects.filter(
+                customperson=customperson,
+                pk=memory_pk,
+            ).distinct()[0]
+        except IndexError:
+            raise Http404
         gallery_item.delete()
         return Response({}, status=200,)
 
