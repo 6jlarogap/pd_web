@@ -21,7 +21,7 @@ from burials.models import Cemetery, PlaceSize, Reason, Burial
 from logs.models import write_log
 
 from users.models import Profile, ProfileLORU, Org, BankAccount, RegisterProfile, OrgCertificate, \
-                         Role, \
+                         Role, UserPhoto, \
                          get_mail_footer, is_cabinet_user, is_trade_user
 
 User._meta.get_field_by_name('email')[0]._unique = True
@@ -68,6 +68,21 @@ LoruFormset = inlineformset_factory(Org, ProfileLORU, form=LoruItemForm, fk_name
 
 BankAccountFormset = inlineformset_factory(Org, BankAccount, formset=BaseLoruFormset, extra=2)
 
+class UserPhotoForm(CustomUploadModelForm):
+    class Meta:
+        model = UserPhoto
+        fields = ('bfile', )
+        widgets = {
+            'bfile': CustomClearableFileInput(show_clear_checkbox_=True),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super(UserPhotoForm, self).__init__(*args, **kwargs)
+        self.init_bfile()
+        self.fields['bfile'].label = _(u'Фото пользователя')
+        self.MAX_UPLOAD_SIZE_MB = 5
+        self.CHECK_IF_IMAGE = True
+
 class ProfileDataForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelForm):
 
     username = forms.CharField(label=_(u"Логин"), required=True)
@@ -84,6 +99,8 @@ class ProfileDataForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelForm):
             'is_active',
             'user_last_name', 'user_first_name', 'user_middle_name',
             'email',
+            'title',
+            'phones',
             'is_agent',
             'password1', 'password2',
             'cemetery', 'area',
@@ -93,6 +110,7 @@ class ProfileDataForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelForm):
     def __init__(self, request, my_profile, *args, **kwargs):
         super(ProfileDataForm, self).__init__(*args, **kwargs)
         self.request = request
+        self.fields['phones'].widget = forms.TextInput()
         if not request.user.profile.org.is_loru():
             del self.fields['is_agent']
 
@@ -160,6 +178,14 @@ class ProfileDataForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelForm):
             if not self.instance or not self.instance.pk:
                 self.initial['role'] = [Role.objects.get(name=Role.ROLE_REGISTRATOR)]
 
+        photo = None
+        if self.instance.pk:
+            try:
+                photo = UserPhoto.objects.get(user=self.instance.user)
+            except UserPhoto.DoesNotExist:
+                pass
+        self.photo_form = UserPhotoForm(request, prefix='user-photo', instance = photo, files=request.FILES)
+
     def clean_username(self):
         username = self.cleaned_data.get('username', '').strip()
         validate_username(username)
@@ -191,6 +217,9 @@ class ProfileDataForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelForm):
                 ).exclude(pk=self.instance.pk).exists():
                 raise forms.ValidationError(_(u"Нельзя удалять последнего администратора в организации"))
         return role
+
+    def is_valid(self):
+        return super(ProfileDataForm, self).is_valid() and self.photo_form.is_valid()
 
     def clean(self):
         if self.is_valid():
@@ -267,6 +296,27 @@ class ProfileDataForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelForm):
             for cemetery in cemeteries:
                 profile.cemeteries.add(cemetery)
             write_log(self.request, profile.org, _(u'Добавлен пользователь %s') % user.username)
+
+        photo_uploaded = photo_clear = False
+        if self.photo_form.is_valid():
+            self.photo_form.clean()
+            bfile = self.photo_form.cleaned_data.get('bfile')
+            # FieldFile -- это еще не UploadedFile
+            photo_uploaded = bfile and not isinstance(bfile, FieldFile)
+            photo_clear = self.request.POST.get(self.photo_form.prefix+'-bfile-clear')
+
+            if self.photo_form.instance.pk:
+                if photo_clear and not photo_uploaded:
+                    self.photo_form.instance.delete()
+                    write_log(self.request, self.instance.user, _(u'Фото удалено'))
+                    return profile
+                if photo_clear or photo_uploaded:
+                    UserPhoto.objects.get(pk=self.photo_form.instance.pk).delete_from_media()
+            if photo_uploaded:
+                photo = self.photo_form.save(commit=False)
+                photo.user = self.instance.user
+                photo.save()
+                write_log(self.request, self.instance.user, _(u'Прикреплено фото: %s') % photo.original_name)
 
         return profile
 

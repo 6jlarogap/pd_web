@@ -354,6 +354,25 @@ class ProfileFioLoginSerializer(serializers.ModelSerializer):
         else:
             return u"(%s)" % profile.user.username
 
+class ProfileClientSiteSerializer(PhonesFromTextMixin, serializers.ModelSerializer):
+    phones = serializers.SerializerMethodField('phones_func')
+    fullName = Field(source='full_name')
+    role = Field(source='title')
+    photoUrl = serializers.SerializerMethodField('userPhotoUrl_func')
+
+    class Meta:
+        model = Profile
+        fields = ('id', 'fullName', 'role', 'photoUrl', 'phones', )
+
+    def userPhotoUrl_func(self, profile):
+        try:
+            userphoto = UserPhoto.objects.get(user=profile.user)
+            request = self.context['request']
+            return request.build_absolute_uri(userphoto.bfile.url)
+        except UserPhoto.DoesNotExist:
+            return None
+
+
 class OrgReviewSerializer(CreatedAtMixin, serializers.ModelSerializer):
     isPositive = Field(source='is_positive')
     author = UserFioSerializer(source='creator')

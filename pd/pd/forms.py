@@ -23,7 +23,7 @@ from captcha.fields import ReCaptchaField
 from burials.models import Burial, Area, PlaceSize
 from logs.models import write_log
 from pd.models import UnclearDate
-from pd.utils import host_country_code
+from pd.utils import host_country_code, get_image
 from users.models import Profile, Dover
 
 
@@ -413,11 +413,19 @@ class CustomUploadModelForm(forms.ModelForm):
         # - типа FieldFile, если уже есть файл в form.instance, а новый на замену его не ввели
         # - типа ...UploadFile (много разных таких типов),
         #        когда выполнен POST с прикрепленным файлом
-        if bfile and not isinstance(bfile, FieldFile) and bfile.size > self.MAX_UPLOAD_SIZE_MB * 2**20:
-            raise forms.ValidationError(
-                _(u'Попытка загрузки файла %(filename)s, превышен максимальный размер: %(max_size)s Мб.') % \
-                dict(filename=bfile._name, max_size=self.MAX_UPLOAD_SIZE_MB)
-            )
+        if bfile and not isinstance(bfile, FieldFile):
+            if bfile.size > self.MAX_UPLOAD_SIZE_MB * 2**20:
+                raise forms.ValidationError(
+                    _(u'Попытка загрузки файла %(filename)s, превышен максимальный размер: %(max_size)s Мб.') % \
+                    dict(filename=bfile._name, max_size=self.MAX_UPLOAD_SIZE_MB)
+                )
+            # К сожалению, разработчик поздно заметил, что есть тип поля в модели:
+            # ImageFile, где есть проверка, что прикрепляемый к форме файл является
+            # изображением, а модели с файловыми полями-изображениями были уже созданы.
+            # Посему проверка здесь, если необходимо.
+            if hasattr(self, 'CHECK_IF_IMAGE') and self.CHECK_IF_IMAGE:
+                if not get_image(bfile):
+                    raise forms.ValidationError(_(u"Прикрепленный файл не являлся изображением"))
         return bfile
 
 class CustomClearableFileInput(ClearableFileInput):
