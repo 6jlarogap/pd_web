@@ -536,16 +536,16 @@ class ApiMemoryGalleryMixin(object):
         except ServiceException as excpt:
             return Response(data=dict(status='error', message=excpt.message), status=400)
 
-
-class ApiCustompersonMemoryGalleryView(ApiCustompersonMixin, ApiMemoryGalleryMixin, APIView):
-    parser_classes = (MultiPartParser, JSONParser, )
-    
-    def get(self, request, pk):
+    def get_qs(self, request, pk, memory_pk=None):
         customperson = get_object_or_404(CustomPerson, pk=pk)
         is_cabinet_user_ = is_cabinet_user(request.user)
         is_owner = is_cabinet_user_ and request.user == customperson.user
         qs_public  = Q(permission=MemoryGallery.PERMISSION_PUBLIC)
-        qs_owner = Q(customperson=customperson)
+        if memory_pk:
+            qs_owner = Q(pk=memory_pk)
+        else:
+            qs_owner = Q(customperson=customperson)
+
         if is_owner:
             qs = qs_owner
         elif is_cabinet_user_:
@@ -568,6 +568,13 @@ class ApiCustompersonMemoryGalleryView(ApiCustompersonMixin, ApiMemoryGalleryMix
             qs &= qs_owner
         else:
             qs = qs_public & qs_owner
+        return qs
+
+class ApiCustompersonMemoryGalleryView(ApiCustompersonMixin, ApiMemoryGalleryMixin, APIView):
+    parser_classes = (MultiPartParser, JSONParser, )
+    
+    def get(self, request, pk):
+        qs = self.get_qs(request, pk)
 
         offset = self.request.GET.get('offset') and int(self.request.GET.get('offset'))
         limit = self.request.GET.get('limit') and int(self.request.GET.get('limit'))
@@ -590,6 +597,15 @@ class ApiCustompersonMemoryGalleryView(ApiCustompersonMixin, ApiMemoryGalleryMix
         return self.make_object(request, pk)
 
 api_customperson_memory_gallery = ApiCustompersonMemoryGalleryView.as_view()
+
+class ApiCustompersonMemoryGalleryDetail(ApiCustompersonMixin, ApiMemoryGalleryMixin, APIView):
+    parser_classes = (MultiPartParser, JSONParser, )
+    
+    @transaction.commit_on_success
+    def put(self, request, pk, memory_pk):
+        return self.make_object(request, pk, memory_pk)
+
+api_customperson_memory_gallery_detail = ApiCustompersonMemoryGalleryDetail.as_view()
 
 class ApiClientPlacesDeadmansView(ApiClientPlacesMixin, APIView):
     permission_classes = (PermitIfCabinet,)
