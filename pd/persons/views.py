@@ -450,6 +450,16 @@ class ApiMemoryGalleryMixin(object):
                 'event_date': UnclearDate.from_str_safe(request.DATA.get('eventDate')),
                 'creator': request.user,
             }
+
+            if memory_pk:
+                # уберем необязательные поля, чтоб не заносились при put
+                # и не путались с None. например,
+                # зарос {"text": Null} и отсутствие 'text' в запросе,
+                # это не одно и то же при редактировании
+                for f in ('event_date', 'text'):
+                    if f not in request.DATA:
+                        del fields[f]
+
             file_ = request.FILES.get('mediaContent')
             if not fields['type']:
                 raise ServiceException(_(u'Не задан тип (type)'))
@@ -601,9 +611,23 @@ api_customperson_memory_gallery = ApiCustompersonMemoryGalleryView.as_view()
 class ApiCustompersonMemoryGalleryDetail(ApiCustompersonMixin, ApiMemoryGalleryMixin, APIView):
     parser_classes = (MultiPartParser, JSONParser, )
     
+    def get(self, request, pk, memory_pk):
+        qs = self.get_qs(request, pk, memory_pk)
+        gallery_item = get_object_or_404(MemoryGallery, qs)
+        return Response(
+            MemoryGallery2Serializer(gallery_item, context=dict(request=request)).data,
+            status=200,
+        )
+
     @transaction.commit_on_success
     def put(self, request, pk, memory_pk):
         return self.make_object(request, pk, memory_pk)
+
+    def delete(self, request, pk, memory_pk):
+        customperson = self.get_customperson(pk)
+        gallery_item = get_object_or_404(MemoryGallery, pk=memory_pk)
+        gallery_item.delete()
+        return Response({}, status=200,)
 
 api_customperson_memory_gallery_detail = ApiCustompersonMemoryGalleryDetail.as_view()
 
