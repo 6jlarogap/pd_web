@@ -193,7 +193,7 @@ SUPPORT_URLS_REGEX = r'^/?support(?:/|$)'
 API_URLS_REGEX = r'^/?api(?:/|$)'
 # URLs, доступные анонимным пользователям, например в публичном каталоге, 
 # а также общедоступные, например, из front-end, скрипты:
-ANONYMOUS_URLS_REGEX = r'^/?(?:(?:thumb|media)/(?:product\-photo|support))|jsi18n/'
+ANONYMOUS_URLS_REGEX = r'^/?(?:(?:thumb|media)/(?:product\-photo|support|user\-photos))|jsi18n/'
 # URLs, доступные анонимным пользователям, но при определенных условиях
 ANONYMOUS_LIMITED_URLS_REGEX = r'^/?(?:thumb|media)/place\-photos/'
 

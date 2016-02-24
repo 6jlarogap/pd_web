@@ -31,9 +31,6 @@ class OurThumbnailView(ThumbnailView):
                         raise Http404
                 except IndexError:
                     raise Http404
-            elif what == 'user-photos':
-                # Фото пользователя может смотреть любой авторизованный пользователь
-                pass
             elif what == 'order-results':
                 # Результат выполнения заказа может быть доступен исполнителю и заказчику
                 try:
@@ -189,9 +186,6 @@ def media_xsendfile(request, path, document_root):
                         raise Http404
                 except IndexError:
                     raise Http404
-            elif what == 'user-photos':
-               # Фото пользователя может смотреть любой авторизованный пользователь
-                pass
             elif what == 'org-data':
                 try:
                     Profile = get_model('users', 'Profile')
