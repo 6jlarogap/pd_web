@@ -510,7 +510,6 @@ class ApiMemoryGalleryMixin(object):
                     raise ServiceException(_(u"Разрешения (selected: '%s') - не список") % selected)
                 msg_invalid_item = _(u"%s в списке selected не является ни email, ни телефоном")
                 for item in selected:
-                    field = None
                     try:
                         item = decimal.Decimal(item)
                         try:
