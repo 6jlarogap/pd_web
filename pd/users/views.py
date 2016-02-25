@@ -2857,7 +2857,7 @@ class ApiClientEmployeesView(ApiClientSiteMixin, APIView):
 
     def get(self, request, token):
         org = self.get_org(token)
-        qs = Profile.objects.filter(org=org)
+        qs = Profile.objects.filter(org=org, user__is_active=True)
         return Response(
             status=200,
             data=ProfileClientSiteSerializer(
