@@ -854,6 +854,10 @@ class Org(GetLogsMixin, BaseModel):
     def is_trade(self):
         return self.ability.filter(name=OrgAbility.ABILITY_TRADE).exists()
 
+    def phones_str(self):
+        phones = self.phones or ''
+        return u"; ".join(phones_from_text(phones))
+
 class OrgWebPay(BaseModel):
     """
     Данные, в том числе секретные, поставщика в платежной системе WebPay
