@@ -665,6 +665,7 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
         self.collect_log_data()
 
         self.instance = super(BurialForm, self).save(commit=False)
+        is_new_burial = not bool(self.instance.pk)
 
         if self.cleaned_data.get('agent_director'):
             self.instance.agent = None
@@ -689,7 +690,7 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
         if not self.instance.loru and request.user.profile.is_loru():
             self.instance.loru = request.user.profile.org
 
-        if not self.instance.pk:
+        if is_new_burial:
             if self.request.user.profile.is_loru():
                 self.instance.source_type = Burial.SOURCE_FULL
             elif self.request.user.profile.is_ugh():
@@ -808,9 +809,10 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
 
         if self.bfiles_form.is_valid() and self.request.FILES.get('bfiles-bfile'):
             saved_file = self.bfiles_form.save(burial=self.instance, user=self.request.user)
-            write_log(request, self.instance,
-                     _(u'Добавлен файл'), "%s, %s" % (saved_file.comment, saved_file.original_name,)
-            )
+            if is_new_burial:
+                write_log(request, self.instance,
+                        _(u'Добавлен файл'), "%s, %s" % (saved_file.comment, saved_file.original_name,)
+                )
 
         if self.instance.is_closed():
             self.instance.close(request=self.request, old_place=self.old_place)

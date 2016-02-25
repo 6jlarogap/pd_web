@@ -1,0 +1,16 @@
+{% load i18n %}{% autoescape off %}{% trans "Комментарий" %}:
+
+{{ comment.comment }}
+
+{% if order_url %}{% trans "Заказ" %}: {{ order_url }}
+
+{% endif %}{% trans "От" %}:
+    {% trans "ФИО" %}       : {{ profile.full_name }}
+    {% trans "Телефон(ы)" %}: {{ profile.phones|default_if_none:"" }}
+    {% trans "Email" %}     : {{ profile.user.email|default_if_none:"" }}
+{% if org %}
+{% trans "Организация" %}   : {{ org.name }}
+    {% trans "Телефон(ы)" %}: {{ org.phones_str|default_if_none:"" }}
+    {% trans "Email" %}     : {{ org.email|default_if_none:"" }}
+{% endif %}
+{% endautoescape %}
