@@ -8,7 +8,7 @@ from rest_framework.fields import Field, TimeField, DecimalField
 from geo.models import Location
 from persons.models import AlivePerson, DeadPerson, Phone, CustomPlace, CustomPerson, \
                            MemoryGallery, IDDocumentType, DocumentSource, PersonID, \
-                           DeathCertificate, DeathCertificateScan
+                           DeathCertificate, DeathCertificateScan, MemoryGalleryPermission
 from users.models import get_profile
 from users.serializers import OrgShort6Serializer
 from rest_api.fields import UnclearDateFieldSerializer, UnclearDateFieldMixin, UnclearDateFieldSafeSerializer, \
@@ -243,12 +243,14 @@ class MemoryGallerySerializer(CreatedAtMixin, serializers.ModelSerializer):
 
 class MemoryGallery2Serializer(MemoryGallerySerializer):
     createdBy = serializers.SerializerMethodField('createdBy_func')
+    permissions = Field(source='permission')
+    selected = serializers.SerializerMethodField('selected_func')
 
     class Meta:
         model = MemoryGallery
         fields = (
             'id', 'type', 'text', 'mediaContent', 'addedAt', 'eventDate',
-            'createdBy',
+            'createdBy', 'permissions', 'selected',
         )
 
     def createdBy_func(self, instance):
@@ -263,6 +265,15 @@ class MemoryGallery2Serializer(MemoryGallerySerializer):
            )
         else:
             return None
+
+    def selected_func(self, instance):
+        result = []
+        for permitted in MemoryGalleryPermission.objects.filter(memorygallery=instance):
+            if permitted.email:
+                result.append(permitted.email)
+            if permitted.login_phone:
+                result.append(unicode(permitted.login_phone))
+        return result
 
 class CustomPerson3Serializer(UnclearDateFieldMixin, serializers.ModelSerializer):
     lastname = Field(source='last_name')

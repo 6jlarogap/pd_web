@@ -35,7 +35,8 @@ from burials.forms import AddOrgForm, AddAgentForm, AddDoverForm, AddDocTypeForm
 from burials.models import Burial, Place
 from users.models import CustomerProfile, Org, ProfileLORU, Store, OrgWebPay, \
                          is_trade_user, is_supervisor, is_cabinet_user, \
-                         PermitIfTrade, PermitIfCabinet, PermitIfTradeOrCabinet
+                         PermitIfTrade, PermitIfCabinet, PermitIfTradeOrCabinet, \
+                         get_profile
 from billing.models import Rate
 from orders.forms import ProductForm, OrderForm, OrderItemFormset, CoffinForm, CatafalqueForm, \
                          AddInfoForm, OrderSearchForm, OrderBurialForm, \
@@ -1149,14 +1150,15 @@ class ApiOptPlacesOrders(OptOrderMixin, APIView):
                             phones=phones,
                             address=address,
                         )
+                        if comment:
+                            OrderComment.objects.create(
+                                order=order,
+                                user=request.user,
+                                comment=comment,
+                            )
                     else:
                         if product.loru != supplier:
                             raise ServiceException(_(u'В списке товаров таковые от разных поставщиков'))
-                    OrderComment.objects.create(
-                        order=order,
-                        user=request.user,
-                        comment=comment,
-                    )
                     self.put_item(order, product, p['count'], p.get('comment'))
                     data['id'] = order.pk
                 except Product.DoesNotExist:
@@ -1958,6 +1960,42 @@ class ApiOrderCommentsView(ApiOrderMixin, APIView):
                 user=request.user,
                 comment=comment,
             )
+
+            if is_cabinet_user(request.user):
+                email_to = order.loru.email
+                if email_to:
+                    order_url = u"%s/%s" % (
+                        get_host_url(request).rstrip('/'),
+                        reverse('order_edit', args=[order.pk]).lstrip('/'),
+                    )
+                    profile = request.user.customerprofile
+                    org = None
+            else:
+                # trade_user
+                email_to = order.applicant and order.applicant.user and order.applicant.user.email
+                if email_to:
+                    order_url = order.loru.shop_site
+                    if order_url:
+                        order_url = u"%s/%s" % (order_url.rstrip('/'), order.pk)
+                    profile = request.user.profile
+                    org = profile.org
+            if email_to:
+                email_text = render_to_string(
+                                'order_notification.txt',
+                                dict(
+                                    comment=ordercomment,
+                                    order_url=order_url,
+                                    profile=profile,
+                                    org=org,
+                ))
+                email_subject = _(u"Комментарий к заказу № %s") % order.number_verbose()
+                email_from = settings.DEFAULT_FROM_EMAIL
+                headers = dict()
+                if request.user.email:
+                    headers['Reply-To'] = request.user.email
+                EmailMessage(email_subject, email_text, email_from, (email_to, ),
+                             headers=headers).send(fail_silently=True)
+
             return Response(OrderCommentsSerializer(ordercomment, context=dict(request=request)).data, status=200)
         else:
             return Response(data=dict(status='error', message='No comment at input'), status=400)
@@ -1999,11 +2037,15 @@ class ApiOrderResultView(ApiOrderMixin, APIView):
             elif type_ == ResultFile.TYPE_VIDEO:
                 if not is_video(uploaded_file):
                     raise ServiceException(_(u"Загруженный файл не является видео"))
+            is_title = str_to_bool_or_None(request.DATA.get('isTitle'))
+            if is_title is None:
+                is_title = True
             resultfile = ResultFile.objects.create(
                 bfile=uploaded_file,
                 order=order,
                 type=type_,
                 creator=request.user,
+                is_title=is_title,
             )
             # отметим изменение в order.dt_modified:
             order.save()
