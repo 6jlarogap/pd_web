@@ -348,10 +348,11 @@ class OrderCommentsSerializer(CreatedAtMixin, serializers.ModelSerializer):
 class OrderResultsSerializer(serializers.ModelSerializer):
     fileUrl = HyperlinkedFileField(source='bfile', required=False)
     createdAt = serializers.SerializerMethodField('createdAt_func')
+    isTitle = serializers.Field(source='is_title')
 
     class Meta:
         model = ResultFile
-        fields = ('id', 'fileUrl', 'type', 'createdAt', )
+        fields = ('id', 'fileUrl', 'type', 'createdAt', 'isTitle',)
 
     def createdAt_func(self, instance):
         return utcisoformat(instance.date_of_creation)

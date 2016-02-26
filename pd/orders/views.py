@@ -2037,11 +2037,15 @@ class ApiOrderResultView(ApiOrderMixin, APIView):
             elif type_ == ResultFile.TYPE_VIDEO:
                 if not is_video(uploaded_file):
                     raise ServiceException(_(u"Загруженный файл не является видео"))
+            is_title = str_to_bool_or_None(request.DATA.get('isTitle'))
+            if is_title is None:
+                is_title = True
             resultfile = ResultFile.objects.create(
                 bfile=uploaded_file,
                 order=order,
                 type=type_,
                 creator=request.user,
+                is_title=is_title,
             )
             # отметим изменение в order.dt_modified:
             order.save()
