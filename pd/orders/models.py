@@ -635,10 +635,13 @@ class ResultFile(Files):
             if self.is_title:
                 ResultFile.objects.filter(order=self.order, is_title=True).update(is_title=False)
             else:
-                if not ResultFile.objects.filter(
+                qs = ResultFile.objects.filter(
                         order=self.order,
                         type=self.TYPE_IMAGE,
-                        is_title=True).exists():
+                        is_title=True)
+                if self.pk:
+                    qs = qs.exclude(pk=self.pk)
+                if not qs.exists():
                     self.is_title = True
         result = super(ResultFile, self).save(*args, **kwargs)
         if customplace and self.is_title and self.bfile:
