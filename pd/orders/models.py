@@ -632,13 +632,16 @@ class ResultFile(Files):
         customplace = None
         if not self.type or self.type == self.TYPE_IMAGE:
             customplace = self.order.customplace
-            # Каждое новое фото пока (!) делаем титульным
-            if not self.pk:
-                self.is_title = True
-        if self.is_title:
-            ResultFile.objects.filter(order=self.order, is_title=True).update(is_title=False)
+            if self.is_title:
+                ResultFile.objects.filter(order=self.order, is_title=True).update(is_title=False)
+            else:
+                if not ResultFile.objects.filter(
+                        order=self.order,
+                        type=self.TYPE_IMAGE,
+                        is_title=True).exists():
+                    self.is_title = True
         result = super(ResultFile, self).save(*args, **kwargs)
-        if customplace and self.bfile:
+        if customplace and self.is_title and self.bfile:
             customplace.update_title_photo(self.bfile)
         return result
 
