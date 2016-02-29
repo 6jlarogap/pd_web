@@ -204,6 +204,7 @@
     <p id="place_info"></p>
 
     {% if form.plan_date %}
+        <input type="hidden" name="year_over_days"  value="{{ global_context_YEAR_OVER_DAYS }}" />
         {{ form.plan_date.errors }}
         <p class="inline">{{ form.plan_date.label_tag }} {{ form.plan_date }}<span class="helptext">{{ form.plan_date.help_text }}</span></p>
     {% endif %}
