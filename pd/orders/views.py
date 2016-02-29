@@ -11,7 +11,7 @@ import hashlib
 from django.conf import settings
 from django.contrib import messages
 from django.core.urlresolvers import reverse
-from django.core.exceptions import ValidationError
+from django.core.exceptions import ValidationError, PermissionDenied
 from django.db import transaction
 from django.db.models.aggregates import Count, Sum
 from django.db.models.query_utils import Q
@@ -2017,7 +2017,7 @@ class ApiOrderResultView(ApiOrderMixin, APIView):
         try:
             order = self.get_order(pk=pk)
             if not is_trade_user(request.user):
-                return Response(data=dict(detail='You are not authorized to post to this order'), status=403)
+                raise PermissionDenied
             type_ = request.DATA.get('type')
             if not type_:
                 raise ServiceException(_(u"Не задан тип загружаемого файла"))
@@ -2054,8 +2054,40 @@ class ApiOrderResultView(ApiOrderMixin, APIView):
             return Response(data=dict(status='error', message=excpt.message), status=400)
         return Response(data=OrderResultsSerializer(resultfile, context=dict(request=request)).data, status=200)
 
-
 api_orders_results = ApiOrderResultView.as_view()
+
+class ApiOrderResultDetailView(ApiOrderMixin, APIView):
+    permission_classes = (PermitIfTradeOrCabinet,)
+
+    def get_object(self, pk, result_pk, check_trade_user=True):
+        if check_trade_user and not is_trade_user(self.request.user):
+            raise PermissionDenied
+        order = self.get_order(pk=pk)
+        return get_object_or_404(ResultFile, order=order, pk=result_pk)
+
+    def get(self, request, pk, result_pk):
+        resultfile = self.get_object(pk, result_pk, check_trade_user=False)
+        return Response(
+            data=OrderResultsSerializer(resultfile, context=dict(request=request)).data,
+            status=200,
+        )
+
+    def put(self, request, pk, result_pk):
+        resultfile = self.get_object(pk, result_pk)
+        is_title = request.DATA.get('isTitle')
+        if is_title is not None and resultfile.type == ResultFile.TYPE_IMAGE:
+            resultfile.is_title = is_title
+            resultfile.save()
+        return Response(
+            data=OrderResultsSerializer(resultfile, context=dict(request=request)).data,
+            status=200,
+        )
+
+    def delete(self, request, pk, result_pk):
+        self.get_object(pk, result_pk).delete()
+        return Response(data={}, status=200)
+
+api_orders_results_detail = ApiOrderResultDetailView.as_view()
 
 class ApiServiceOrderDetailView(ApiOrderMixin, APIView):
     permission_classes = (PermitIfTradeOrCabinet,)
