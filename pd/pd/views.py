@@ -13,8 +13,6 @@ from django.contrib import messages
 
 from django.conf import settings
 
-from rest_framework.response import Response
-
 from restthumbnails.views import ThumbnailView
 
 class OurThumbnailView(ThumbnailView):
