@@ -21,7 +21,7 @@ from burials.models import Cemetery, PlaceSize, Reason, Burial
 from logs.models import write_log
 
 from users.models import Profile, ProfileLORU, Org, BankAccount, RegisterProfile, OrgCertificate, \
-                         Role, UserPhoto, \
+                         Role, UserPhoto, Store, \
                          get_mail_footer, is_cabinet_user, is_trade_user
 
 User._meta.get_field_by_name('email')[0]._unique = True
@@ -105,6 +105,7 @@ class ProfileDataForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelForm):
             'password1', 'password2',
             'cemetery', 'area',
             'role', 'cemeteries',
+            'store',
         )
 
     def __init__(self, request, my_profile, *args, **kwargs):
@@ -147,6 +148,12 @@ class ProfileDataForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelForm):
             cemetery_qs = Cemetery.objects.none()
 
         self.fields['cemetery'].queryset = cemetery_qs.distinct()
+
+        store_qs = Store.objects.filter(loru=request.user.profile.org)
+        if store_qs:
+            self.fields['store'].queryset = store_qs
+        else:
+            del self.fields['store']
 
         self.fields['user_last_name'].required = True
         self.fields['user_first_name'].required = True

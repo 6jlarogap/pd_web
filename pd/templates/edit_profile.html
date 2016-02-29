@@ -60,6 +60,11 @@
         {{ form.phones.errors }}
         <p>{{ form.phones.label_tag }} {{ form.phones }} <span class="helptext">{{ form.phones.help_text }}</span></p>
 
+        {% if form.store %}
+            {{ form.store.errors }}
+            <p>{{ form.store.label_tag }} {{ form.store }} <span class="helptext"> {{ form.store.help_text }}</span></p>
+        {% endif %}
+
         {{ form.photo_form.as_p }}
 
         {% if form.is_agent %}
@@ -129,6 +134,7 @@
                 <input type="submit" class="btn btn-primary" value="{% trans "cохранить" %}"/>
             </p>
         {% endif %}
+
     </form>
 
     {% if form.my_profile and form.instance.org.is_ugh %}

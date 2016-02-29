@@ -43,6 +43,9 @@ urlpatterns = patterns('orders.views',
     url(r'^api/orders/?$', 'api_orders', name='api_orders'),
     url(r'^api/orders/(?P<pk>\d+)/comments/?$', 'api_orders_comments', name='api_orders_comments'),
     url(r'^api/orders/(?P<pk>\d+)/results/?$', 'api_orders_results', name='api_orders_results'),
+    url(r'^api/orders/(?P<pk>\d+)/results/(?P<result_pk>\d+)/?$',
+        'api_orders_results_detail', name='api_orders_results_detail'),
+
     url(r'^api/orders/(?P<pk>\d+)/?$', 'api_orders_detail', name='api_orders_detail'),
     url(r'^api/orders/(?P<pk>\d+)/payment_methods/(?P<pay_system>[\w-]+)/?$', 'api_orders_payments', name='api_orders_payments'),
 

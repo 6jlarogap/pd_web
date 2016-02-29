@@ -1054,13 +1054,16 @@ class BurialCommitForm(BurialForm):
             if acc_number and fact_date:
                 if self.request.user.profile.org.numbers_algo in (Org.NUM_YEAR_UGH, Org.NUM_YEAR_CEMETERY, ):
                     msg = _(u"Номер в книге учета должен быть ГГГГнннн (год факт. даты, номер). "
-                            u"ГГГГ может быть прошлым годом, если факт. дата до 15 января")
+                            u"ГГГГ может быть прошлым годом, если факт. дата до %s января"
+                           )  % settings.YEAR_OVER_DAYS
                     if len(acc_number) < 4:
                         raise forms.ValidationError(msg)
                     try:
                         acc_year = int(acc_number[:4])
                         if acc_year != fact_date.year and \
-                           not (fact_date.year - acc_year == 1 and fact_date.diff(datetime.date(acc_year, 1, 1)).days < 15):
+                           not (fact_date.year - acc_year == 1 and \
+                                fact_date.diff(datetime.date(acc_year, 1, 1)).days < settings.YEAR_OVER_DAYS
+                                ):
                             raise forms.ValidationError(msg)
                     except ValueError:
                         raise forms.ValidationError(msg)
