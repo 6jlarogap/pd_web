@@ -54,7 +54,7 @@ from users.forms import RegisterForm, LoruFormset, BankAccountFormset, OrgForm, 
                         LoruOrdersStatsForm, ProfileDataForm, OmsOperStats
 from users.models import Profile, Org, RegisterProfile, ProfileLORU, CustomerProfile, Store, \
                          get_mail_footer, is_cabinet_user, is_loru_user, is_ugh_user, \
-                         PermitIfTrade, PermitIfTradeOrSupervisor, \
+                         PermitIfTrade, PermitIfTradeOrSupervisor, PermitIfLoruOrUgh, \
                          PermitIfCabinet, PermitIfTradeOrCabinet, Oauth, OrgAbility, \
                          BankAccount, BankAccountRegister, OrgCertificate, OrgContract, \
                          RegisterProfileContract, RegisterProfileScan, FavoriteSupplier, \
@@ -67,7 +67,8 @@ from burials.models import Cemetery, Area, Burial, Place, Grave
 from billing.models import Wallet, Rate, Currency
 from orders.models import Product, Order, Service, ProductCategory
 from pd.views import PaginateListView, RequestToFormMixin, FormInvalidMixin, \
-                     get_front_end_host, get_front_end_url, ServiceException
+                     get_front_end_host, get_front_end_url, ServiceException, \
+                     Rest403Response
 from geo.models import Location, Country
 
 from users.serializers import StoreSerializer, OrgSerializer, OrgShort2Serializer, \
@@ -2320,7 +2321,7 @@ class StoreList(APIView):
     """
     List all stores, or create a new store.
     """
-    permission_classes = (PermitIfTrade,)
+    permission_classes = (PermitIfLoruOrUgh,)
 
     def get(self, request, format=None):
         stores = Store.objects.filter(loru=request.user.profile.org)
@@ -2328,6 +2329,8 @@ class StoreList(APIView):
         return Response(serializer.data)
 
     def post(self, request, format=None):
+        if is_ugh_user(request.user) and not request.user.profile.is_admin():
+            return Rest403Response()
         serializer = StoreSerializer(data=request.DATA, context={ 'request': request, })
         if serializer.is_valid():
             serializer.save()
@@ -2343,7 +2346,7 @@ class StoreDetail(APIView):
     """
     Retrieve, update or delete a store instance.
     """
-    permission_classes = (PermitIfTrade,)
+    permission_classes = (PermitIfLoruOrUgh,)
 
     def get_object(self, request, pk):
         try:
@@ -2358,6 +2361,8 @@ class StoreDetail(APIView):
 
     def put(self, request, pk, format=None):
         store = self.get_object(request, pk)
+        if is_ugh_user(request.user) and not request.user.profile.is_admin():
+            return Rest403Response()
         serializer = StoreSerializer(store, data=request.DATA, context={ 'request': request, })
         if serializer.is_valid():
             serializer.save()
@@ -2369,6 +2374,8 @@ class StoreDetail(APIView):
 
     def delete(self, request, pk, format=None):
         store = self.get_object(request, pk)
+        if is_ugh_user(request.user) and not request.user.profile.is_admin():
+            return Rest403Response()
         store.delete()
         return Response(status=200, data={})
 
