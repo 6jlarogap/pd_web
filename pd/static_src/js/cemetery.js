@@ -1262,8 +1262,13 @@ function makeDatePicker(obj) {
                 start_year = now_year - 10;
                 end_year = now_year + 10;
             }
-            if (id == 'id_plan_date' && now.getMonth() == 11 && now.getDate() >= 20) {
-                end_year = now_year + 1;
+            if (id == 'id_plan_date' && now.getMonth() == 11) {
+                var year_over_days = $('input[name=year_over_days]').length ?
+                                     31 - parseInt($('input[name=year_over_days]').val()) :
+                                     16;
+                if (now.getDate() >= year_over_days) {
+                    end_year = now_year + 1;
+                }
             }
             regex = /^.+date_expire$/;
             if (regex.test(id)) {

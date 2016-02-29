@@ -64,7 +64,7 @@
 	{% assets "js_bootstrap_static" %}
 	<script type="text/javascript" src="{{ ASSET_URL }}"></script>{% endassets %}
 
-    <script type="text/javascript" src="{{ STATIC_URL }}js/utils.js"></script>
+    <script type="text/javascript" src="{{ STATIC_URL }}js/utils.js?updated_={{ global_context_STATIC_UPDATED_TIME }}"></script>
     <script type="text/javascript"
             src="//maps.googleapis.com/maps/api/js?libraries=places&key=AIzaSyCcchcuXcQrjleft0xEnRDL4sp0UVYvrBQ&language=ru">
     </script>

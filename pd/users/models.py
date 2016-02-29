@@ -198,6 +198,8 @@ class Profile(CommonProfile):
     cemeteries = models.ManyToManyField('burials.Cemetery',
                  verbose_name=_(u"Доступные кладбища"), related_name='rw_profiles', blank=True)
 
+    store = models.ForeignKey('users.Store', verbose_name=_(u"Склад/Офис"), blank=True, null=True)
+
     lat = models.DecimalField(max_digits=30, decimal_places=27, blank=True, null=True)
     lng = models.DecimalField(max_digits=30, decimal_places=27, blank=True, null=True)
 
@@ -309,6 +311,11 @@ class PermitIfTradeOrCabinet(permissions.BasePermission):
 class PermitIfUgh(permissions.BasePermission):
     def has_permission(self, request, view):
         return is_ugh_user(request.user)
+
+class PermitIfLoruOrUgh(permissions.BasePermission):
+    def has_permission(self, request, view):
+        return is_loru_user(request.user) or \
+               is_ugh_user(request.user)
 
 class PermitIfCabinet(permissions.BasePermission):
     def has_permission(self, request, view):
@@ -929,6 +936,9 @@ class Store(models.Model, PhonesMixin):
     loru = models.ForeignKey(Org, verbose_name=_(u"ЛОРУ"), on_delete=models.PROTECT)
     address = models.ForeignKey('geo.Location', verbose_name=_(u"Адрес"))
     # phones: могут быть разных типов, пользуемся моделью persons.Phone
+
+    def __unicode__(self):
+        return self.name
 
     def delete(self):
         self.phone_set.delete()
