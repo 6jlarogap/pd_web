@@ -278,10 +278,3 @@ class ServiceException(Exception):
         # all good
     """
     pass
-
-def Rest403Response(detail=None):
-    return Response(dict(
-        detail= detail or _(u"You do not have permission to perform this action."),
-        ),
-        status=403
-    )

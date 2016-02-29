@@ -67,8 +67,7 @@ from burials.models import Cemetery, Area, Burial, Place, Grave
 from billing.models import Wallet, Rate, Currency
 from orders.models import Product, Order, Service, ProductCategory
 from pd.views import PaginateListView, RequestToFormMixin, FormInvalidMixin, \
-                     get_front_end_host, get_front_end_url, ServiceException, \
-                     Rest403Response
+                     get_front_end_host, get_front_end_url, ServiceException
 from geo.models import Location, Country
 
 from users.serializers import StoreSerializer, OrgSerializer, OrgShort2Serializer, \
@@ -2330,7 +2329,7 @@ class StoreList(APIView):
 
     def post(self, request, format=None):
         if is_ugh_user(request.user) and not request.user.profile.is_admin():
-            return Rest403Response()
+            raise PermissionDenied
         serializer = StoreSerializer(data=request.DATA, context={ 'request': request, })
         if serializer.is_valid():
             serializer.save()
@@ -2362,7 +2361,7 @@ class StoreDetail(APIView):
     def put(self, request, pk, format=None):
         store = self.get_object(request, pk)
         if is_ugh_user(request.user) and not request.user.profile.is_admin():
-            return Rest403Response()
+            return PermissionDenied
         serializer = StoreSerializer(store, data=request.DATA, context={ 'request': request, })
         if serializer.is_valid():
             serializer.save()
@@ -2375,7 +2374,7 @@ class StoreDetail(APIView):
     def delete(self, request, pk, format=None):
         store = self.get_object(request, pk)
         if is_ugh_user(request.user) and not request.user.profile.is_admin():
-            return Rest403Response()
+            return PermissionDenied
         store.delete()
         return Response(status=200, data={})
 
