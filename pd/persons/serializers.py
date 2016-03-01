@@ -8,7 +8,8 @@ from rest_framework.fields import Field, TimeField, DecimalField
 from geo.models import Location
 from persons.models import AlivePerson, DeadPerson, Phone, CustomPlace, CustomPerson, \
                            MemoryGallery, IDDocumentType, DocumentSource, PersonID, \
-                           DeathCertificate, DeathCertificateScan, MemoryGalleryPermission
+                           DeathCertificate, DeathCertificateScan, \
+                           CustomPersonPermission, MemoryGalleryPermission
 from users.models import get_profile
 from users.serializers import OrgShort6Serializer
 from rest_api.fields import UnclearDateFieldSerializer, UnclearDateFieldMixin, UnclearDateFieldSafeSerializer, \
@@ -165,14 +166,29 @@ class DeadPerson2Serializer(UnclearDateFieldMixin, serializers.HyperlinkedModelS
             return instance
         return DeadPerson(**fields)
 
+class CustomPersonPermissionsMixin(object):
 
-class BaseCustomPersonSerializer(UnclearDateFieldMixin, serializers.HyperlinkedModelSerializer):
+    def selected_func(self, instance):
+        result = []
+        for permitted in CustomPersonPermission.objects.filter(customperson=instance):
+            if permitted.email:
+                result.append(permitted.email)
+            if permitted.login_phone:
+                result.append(unicode(permitted.login_phone))
+        return result
+
+class BaseCustomPersonSerializer(
+        UnclearDateFieldMixin,
+        CustomPersonPermissionsMixin,
+        serializers.HyperlinkedModelSerializer
+    ):
     birthDate = serializers.SerializerMethodField('birth_date')
     deathDate = serializers.SerializerMethodField('death_date')
     lastName = Field(source='last_name')
     firstName = Field(source='first_name')
     middleName = Field(source='middle_name')
     permissions = Field(source='permission')
+    selected = serializers.SerializerMethodField('selected_func')
 
     def restore_object(self, attrs, instance=None):
         data = self.context['request'].DATA
@@ -277,7 +293,11 @@ class MemoryGallery2Serializer(MemoryGallerySerializer):
                 result.append(unicode(permitted.login_phone))
         return result
 
-class CustomPerson3Serializer(UnclearDateFieldMixin, serializers.ModelSerializer):
+class CustomPerson3Serializer(
+        UnclearDateFieldMixin,
+        CustomPersonPermissionsMixin,
+        serializers.ModelSerializer
+    ):
     lastname = Field(source='last_name')
     firstname = Field(source='first_name')
     middlename = Field(source='middle_name')
@@ -289,13 +309,14 @@ class CustomPerson3Serializer(UnclearDateFieldMixin, serializers.ModelSerializer
     isDead = Field(source='is_dead')
     placeId = Field(source='customplace.id')
     permissions = Field(source='permission')
+    selected = serializers.SerializerMethodField('selected_func')
 
     class Meta:
         model = CustomPerson
         fields = (
             'id', 'lastname', 'firstname', 'middlename',
             'commonText', 'dob', 'dod', 'photo', 'gallery',
-            'isDead', 'placeId', 'permissions',
+            'isDead', 'placeId', 'permissions', 'selected',
         )
 
     def gallery_func(self, instance):
@@ -355,7 +376,7 @@ class CustomPerson4Serializer(BaseCustomPersonSerializer):
         model = CustomPerson
         fields = ('id', 'firstName', 'lastName', 'middleName',
                   'birthDate', 'deathDate', 'titlePhoto', 'placeId',
-                  'permissions',
+                  'permissions', 'selected',
         )
 
 class ArchIDDocumentTypeSerializer(serializers.ModelSerializer):

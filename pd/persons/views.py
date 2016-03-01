@@ -362,101 +362,6 @@ class ApiClientPlacesDetailView(ApiClientPlacesMixin, APIView):
 
 api_client_places_detail = ApiClientPlacesDetailView.as_view()
 
-class ApiCustompersonMixin(object):
-
-    def get_customperson(self, pk, owner_only=False):
-        customperson = get_object_or_404(CustomPerson, pk=pk)
-        permitted = False
-        request = self.request
-        if owner_only:
-            permitted = is_cabinet_user(request.user) and customperson.user == request.user
-        elif customperson.permission == CustomPerson.PERMISSION_PUBLIC:
-            permitted = True
-        elif is_cabinet_user(request.user):
-            if customperson.user == request.user:
-                permitted = True
-            elif customperson.permission == CustomPerson.PERMISSION_SELECTED:
-                qs = Q(customperson=customperson)
-                qs_email = qs_phone = qs_selected = None
-                if request.user.email:
-                    qs_email = Q(custompersonpermission__email__iexact=request.user.email)
-                if request.user.customerprofile.login_phone:
-                    qs_phone = Q(custompersonpermission__login_phone=request.user.customerprofile.login_phone)
-                if qs_email and qs_phone:
-                    qs_selected = qs_email | qs_phone
-                elif qs_email:
-                    qs_selected = qs_email
-                elif qs_phone:
-                    qs_selected = qs_phone
-                if qs_selected and CustomPersonPermission.objects.filter(
-                    qs & qs_selected
-                    ).exists():
-                    permitted = True
-        if permitted:
-            return customperson
-        else:
-            raise Http404
-
-    def delete_customperson(self, pk):
-        customperson = self.get_customperson(pk, owner_only=True)
-        customperson.delete()
-        return Response({}, status=200)
-
-class ApiCustompersonDetailView(ApiCustompersonMixin, ApiClientPlacesMixin, APIView):
-    parser_classes = (MultiPartParser, JSONParser, )
-
-    def get(self, request, pk):
-        customperson = self.get_customperson(pk)
-        return Response(
-            data=CustomPerson3Serializer(customperson, context=dict(request=request)).data,
-            status=200
-        )
-        
-    def put(self, request, pk):
-        try:
-            customperson = self.get_customperson(pk, owner_only=True)
-            context = dict(request=request)
-            if 'placeId' in request.DATA:
-                customplace_id = request.DATA['placeId']
-                if isinstance(customplace_id, basestring) and customplace_id == 'null':
-                    customplace_id = None
-                if customplace_id:
-                    customplace = self.get_customplace(customplace_id)
-                else:
-                    customplace = None
-                context['customplace'] = customplace
-            message = self.check_life_dates(instance=customperson)
-            if message:
-                raise ServiceException(message)
-            is_dead = str_to_bool_or_None(request.DATA.get('isDead'))
-            if is_dead == False:
-                if UnclearDate.from_str_safe(request.DATA.get('dod')):
-                    raise ServiceException(u'Нельзя задавать дату смерти для живого человека')
-                if request.DATA.get('placeId'):
-                    raise ServiceException(u'Живой человек не может иметь место захоронения')
-            photo = request.FILES.get('photo')
-            if photo:
-                if photo.size > CustomPerson.MAX_PHOTO_SIZE * 1024 * 1024:
-                    raise ServiceException(_(u"Размер фото превышает %d Мб") % CustomPerson.MAX_PHOTO_SIZE)
-                if not get_image(photo):
-                    raise ServiceException(_(u"Загруженное фото не является изображением"))
-            serializer = CustomPerson3Serializer(
-                customperson,
-                data=request.DATA,
-                context=context,
-            )
-            if serializer.is_valid():
-                serializer.save()
-                return Response(serializer.data, status=200)
-            return Response(serializer.errors, status=400)
-        except ServiceException as excpt:
-            return Response(data=dict(status='error', message=excpt.message), status=400)
-
-    def delete(self, request, pk):
-        return self.delete_customperson(pk)
-
-api_customperson_detail = ApiCustompersonDetailView.as_view()
-
 class ApiSelectedPermissionsMixin(object):
 
     def get_permissions_(self, request):
@@ -513,6 +418,111 @@ class ApiSelectedPermissionsMixin(object):
             for perm in permissions:
                 perm.update(filter_kwargs)
                 model.objects.create(**perm)
+
+class ApiCustompersonMixin(object):
+
+    def get_customperson(self, pk, owner_only=False):
+        customperson = get_object_or_404(CustomPerson, pk=pk)
+        permitted = False
+        request = self.request
+        if owner_only:
+            permitted = is_cabinet_user(request.user) and customperson.user == request.user
+        elif customperson.permission == CustomPerson.PERMISSION_PUBLIC:
+            permitted = True
+        elif is_cabinet_user(request.user):
+            if customperson.user == request.user:
+                permitted = True
+            elif customperson.permission == CustomPerson.PERMISSION_SELECTED:
+                qs = Q(customperson=customperson)
+                qs_email = qs_phone = qs_selected = None
+                if request.user.email:
+                    qs_email = Q(custompersonpermission__email__iexact=request.user.email)
+                if request.user.customerprofile.login_phone:
+                    qs_phone = Q(custompersonpermission__login_phone=request.user.customerprofile.login_phone)
+                if qs_email and qs_phone:
+                    qs_selected = qs_email | qs_phone
+                elif qs_email:
+                    qs_selected = qs_email
+                elif qs_phone:
+                    qs_selected = qs_phone
+                if qs_selected and CustomPersonPermission.objects.filter(
+                    qs & qs_selected
+                    ).exists():
+                    permitted = True
+        if permitted:
+            return customperson
+        else:
+            raise Http404
+
+    def delete_customperson(self, pk):
+        customperson = self.get_customperson(pk, owner_only=True)
+        customperson.delete()
+        return Response({}, status=200)
+
+class ApiCustompersonDetailView(
+        ApiCustompersonMixin,
+        ApiClientPlacesMixin,
+        ApiSelectedPermissionsMixin,
+        APIView
+      ):
+    parser_classes = (MultiPartParser, JSONParser, )
+
+    def get(self, request, pk):
+        customperson = self.get_customperson(pk)
+        return Response(
+            data=CustomPerson3Serializer(customperson, context=dict(request=request)).data,
+            status=200
+        )
+        
+    def put(self, request, pk):
+        try:
+            customperson = self.get_customperson(pk, owner_only=True)
+            context = dict(request=request)
+            if 'placeId' in request.DATA:
+                customplace_id = request.DATA['placeId']
+                if isinstance(customplace_id, basestring) and customplace_id == 'null':
+                    customplace_id = None
+                if customplace_id:
+                    customplace = self.get_customplace(customplace_id)
+                else:
+                    customplace = None
+                context['customplace'] = customplace
+            message = self.check_life_dates(instance=customperson)
+            if message:
+                raise ServiceException(message)
+            is_dead = str_to_bool_or_None(request.DATA.get('isDead'))
+            if is_dead == False:
+                if UnclearDate.from_str_safe(request.DATA.get('dod')):
+                    raise ServiceException(u'Нельзя задавать дату смерти для живого человека')
+                if request.DATA.get('placeId'):
+                    raise ServiceException(u'Живой человек не может иметь место захоронения')
+            photo = request.FILES.get('photo')
+            if photo:
+                if photo.size > CustomPerson.MAX_PHOTO_SIZE * 1024 * 1024:
+                    raise ServiceException(_(u"Размер фото превышает %d Мб") % CustomPerson.MAX_PHOTO_SIZE)
+                if not get_image(photo):
+                    raise ServiceException(_(u"Загруженное фото не является изображением"))
+            serializer = CustomPerson3Serializer(
+                customperson,
+                data=request.DATA,
+                context=context,
+            )
+            if serializer.is_valid():
+                serializer.save()
+                self.put_permissions_(
+                    serializer.object,
+                    self.get_permissions_(request),
+                    instance_existed=True
+                )
+                return Response(serializer.data, status=200)
+            return Response(serializer.errors, status=400)
+        except ServiceException as excpt:
+            return Response(data=dict(status='error', message=excpt.message), status=400)
+
+    def delete(self, request, pk):
+        return self.delete_customperson(pk)
+
+api_customperson_detail = ApiCustompersonDetailView.as_view()
 
 class ApiMemoryGalleryMixin(ApiSelectedPermissionsMixin):
 
@@ -777,7 +787,7 @@ class ApiClientDeadmansView(APIView):
 
 api_client_deadmans = ApiClientDeadmansView.as_view()
 
-class ApiClientPersonsView(ApiClientPlacesMixin, APIView):
+class ApiClientPersonsView(ApiClientPlacesMixin, ApiSelectedPermissionsMixin, APIView):
     permission_classes = (PermitIfCabinet,)
 
     def get(self, request):
@@ -804,6 +814,11 @@ class ApiClientPersonsView(ApiClientPlacesMixin, APIView):
             )
             if serializer.is_valid():
                 serializer.save()
+                self.put_permissions_(
+                    serializer.object,
+                    self.get_permissions_(request),
+                    instance_existed=False,
+                )
                 return Response(serializer.data, status=200)
             return Response(serializer.errors, status=400)
         except ServiceException as excpt:
@@ -811,7 +826,12 @@ class ApiClientPersonsView(ApiClientPlacesMixin, APIView):
 
 api_client_persons = ApiClientPersonsView.as_view()
 
-class ApiClientPersonsDetailView(ApiClientPlacesMixin, ApiCustompersonMixin, APIView):
+class ApiClientPersonsDetailView(
+        ApiClientPlacesMixin,
+        ApiCustompersonMixin,
+        ApiSelectedPermissionsMixin,
+        APIView
+      ):
     permission_classes = (PermitIfCabinet,)
 
     def get(self, request, pk):
@@ -842,6 +862,11 @@ class ApiClientPersonsDetailView(ApiClientPlacesMixin, ApiCustompersonMixin, API
             )
             if serializer.is_valid():
                 serializer.save()
+                self.put_permissions_(
+                    serializer.object,
+                    self.get_permissions_(request),
+                    instance_existed=True,
+                )
                 return Response(serializer.data, status=200)
             return Response(serializer.errors, status=400)
         except ServiceException as excpt:
