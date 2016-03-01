@@ -503,6 +503,16 @@ class CustomPerson(PersonMixin, PhotoModel, BaseModel):
     """
     Человек, чаще усопший, но возможно живой
     """
+
+    PERMISSION_PRIVATE = 'private'
+    PERMISSION_PUBLIC = 'public'
+    PERMISSION_SELECTED = 'selected'
+    PERMISSION_CHOICES = (
+        (PERMISSION_PRIVATE, _(u"Личное")),
+        (PERMISSION_PUBLIC, _(u"В публичном доступе")),
+        (PERMISSION_SELECTED, _(u"Выборочно"))
+    )
+
     class Meta:
         ordering = ('last_name', 'first_name', 'middle_name', )
 
@@ -520,10 +530,14 @@ class CustomPerson(PersonMixin, PhotoModel, BaseModel):
     death_date = UnclearDateModelField(_(u"Дата смерти"), blank=True, null=True)
     is_dead = models.BooleanField(_(u"Уcопший"), default=True)
     memory_text = models.TextField(_(u"Памятный текст"), null=True)
+    permission = models.CharField(_(u"Разрешение"), max_length=255,
+                                  choices=PERMISSION_CHOICES, default=PERMISSION_PRIVATE)
 
     def delete(self):
         for memorygallery in MemoryGallery.objects.filter(customperson=self):
             memorygallery.delete()
+        for permission in CustomPersonPermission.objects.filter(customperson=self):
+            permission.delete()
         return super(CustomPerson, self).delete()
 
     def oms_data(self):
@@ -571,11 +585,25 @@ class MemoryGallery(Files):
     text = models.TextField(_(u"Текст"), null=True)
     event_date = UnclearDateModelField(_(u"Дата события"), null=True)
     permission = models.CharField(_(u"Разрешение"), max_length=255,
-                                  choices=TYPE_CHOICES, default=PERMISSION_PRIVATE)
+                                  choices=PERMISSION_CHOICES, default=PERMISSION_PRIVATE)
 
     def delete(self):
         MemoryGalleryPermission.objects.filter(memorygallery=self).delete()
         return super(MemoryGallery, self).delete()
+
+class CustomPersonPermission(models.Model):
+    """
+    Разрешения на страницу CustomPerson
+
+    Применяется, если разрешение в записи CustomPerson прописано как selected.
+    Тогда доступ предоставляется или по email или по login_phone,
+    если один из таковых прописан в разрешениях в этой модели
+    """
+
+    customperson = models.ForeignKey(CustomPerson)
+    email = models.EmailField(_(u"Email"), null=True)
+    login_phone = models.DecimalField(_(u"Мобильный телефон для входа в кабинет"),
+                                      max_digits=15, decimal_places=0, null=True)
 
 class MemoryGalleryPermission(models.Model):
     """

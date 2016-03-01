@@ -188,6 +188,7 @@ class BaseCustomPersonSerializer(UnclearDateFieldMixin, serializers.HyperlinkedM
             last_name=data.get('lastName'),
             first_name=data.get('firstName'),
             middle_name=data.get('middleName'),
+            permission=data.get('permissions'),
         )
         fields = dict()
         for k in fields_got:

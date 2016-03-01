@@ -15,7 +15,7 @@ from django.shortcuts import get_object_or_404
 
 from persons.models import DeadPerson, AlivePerson, BasePerson, DocumentSource, Phone, \
                            CustomPlace, CustomPerson, MemoryGallery, \
-                           MemoryGalleryPermission
+                           CustomPersonPermission, MemoryGalleryPermission
 from persons.serializers import AlivePersonSerializer, DeadPersonSerializer, PhoneSerializer, \
                                 CustomPlaceDetailSerializer, CustomPlaceListSerializer, \
                                 CustomPlaceEditSerializer, DeadPerson2Serializer, \
@@ -364,22 +364,45 @@ api_client_places_detail = ApiClientPlacesDetailView.as_view()
 
 class ApiCustompersonMixin(object):
 
-    def get_customperson(self, pk):
-        try:
-            customperson = CustomPerson.objects.get(pk=pk)
-            if customperson.user != self.request.user:
-                raise Http404
-        except CustomPerson.DoesNotExist:
+    def get_customperson(self, pk, owner_only=False):
+        customperson = get_object_or_404(CustomPerson, pk=pk)
+        permitted = False
+        request = self.request
+        if owner_only:
+            permitted = is_cabinet_user(request.user) and customperson.user == request.user
+        elif customperson.permission == CustomPerson.PERMISSION_PUBLIC:
+            permitted = True
+        elif is_cabinet_user(request.user):
+            if customperson.user == request.user:
+                permitted = True
+            elif customperson.permission == CustomPerson.PERMISSION_SELECTED:
+                qs = Q(customperson=customperson)
+                qs_email = qs_phone = qs_selected = None
+                if request.user.email:
+                    qs_email = Q(custompersonpermission__email__iexact=request.user.email)
+                if request.user.customerprofile.login_phone:
+                    qs_phone = Q(custompersonpermission__login_phone=request.user.customerprofile.login_phone)
+                if qs_email and qs_phone:
+                    qs_selected = qs_email | qs_phone
+                elif qs_email:
+                    qs_selected = qs_email
+                elif qs_phone:
+                    qs_selected = qs_phone
+                if qs_selected and CustomPersonPermission.objects.filter(
+                    qs & qs_selected
+                    ).exists():
+                    permitted = True
+        if permitted:
+            return customperson
+        else:
             raise Http404
-        return customperson
 
     def delete_customperson(self, pk):
-        customperson = self.get_customperson(pk)
+        customperson = self.get_customperson(pk, owner_only=True)
         customperson.delete()
         return Response({}, status=200)
 
 class ApiCustompersonDetailView(ApiCustompersonMixin, ApiClientPlacesMixin, APIView):
-    permission_classes = (PermitIfCabinet,)
     parser_classes = (MultiPartParser, JSONParser, )
 
     def get(self, request, pk):
@@ -391,7 +414,7 @@ class ApiCustompersonDetailView(ApiCustompersonMixin, ApiClientPlacesMixin, APIV
         
     def put(self, request, pk):
         try:
-            customperson = self.get_customperson(pk)
+            customperson = self.get_customperson(pk, owner_only=True)
             context = dict(request=request)
             if 'placeId' in request.DATA:
                 customplace_id = request.DATA['placeId']
@@ -434,11 +457,44 @@ class ApiCustompersonDetailView(ApiCustompersonMixin, ApiClientPlacesMixin, APIV
 
 api_customperson_detail = ApiCustompersonDetailView.as_view()
 
-class ApiMemoryGalleryMixin(object):
+class ApiSelectedPermissionsMixin(object):
 
-    def make_object(self, request, customperson_pk, memory_pk=None):
+    def get_permissions_(self, request):
+        selected = request.DATA.get('selected')
+        selected_perms = []
+        if selected:
+            if isinstance(selected, basestring):
+                try:
+                    selected = json.loads(selected)
+                except (ValueError, TypeError,):
+                    pass
+            if type(selected) != type(list()):
+                raise ServiceException(_(u"Разрешения (selected: '%s') - не список") % selected)
+            msg_invalid_item = _(u"%s в списке selected не является ни email, ни телефоном")
+            for item in selected:
+                try:
+                    item = decimal.Decimal(item)
+                    try:
+                        validate_phone_as_number(str(item))
+                        field = 'login_phone'
+                    except ValidationError:
+                        raise ServiceException(msg_invalid_item % item)
+                except (decimal.InvalidOperation, TypeError):
+                    try:
+                        item = unicode(item)
+                        validate_email(item)
+                        field = 'email'
+                    except ValidationError:
+                        raise ServiceException(msg_invalid_item % item)
+                selected_perms.append({field: item})
+        return selected_perms
+
+class ApiMemoryGalleryMixin(ApiSelectedPermissionsMixin):
+
+    def make_object(self, customperson_pk, memory_pk=None):
+        request = self.request
         try:
-            customperson = self.get_customperson(customperson_pk)
+            customperson = self.get_customperson(customperson_pk, owner_only=True)
             if memory_pk:
                 try:
                     gallery_item = MemoryGallery.objects.filter(
@@ -499,32 +555,7 @@ class ApiMemoryGalleryMixin(object):
             else:
                 # Будет по умолчанию: private
                 del fields['permission']
-            selected = request.DATA.get('selected')
-            selected_perms = []
-            if selected:
-                try:
-                    selected = json.loads(selected)
-                except (ValueError, TypeError,):
-                    pass
-                if type(selected) != type(list()):
-                    raise ServiceException(_(u"Разрешения (selected: '%s') - не список") % selected)
-                msg_invalid_item = _(u"%s в списке selected не является ни email, ни телефоном")
-                for item in selected:
-                    try:
-                        item = decimal.Decimal(item)
-                        try:
-                            validate_phone_as_number(str(item))
-                            field = 'login_phone'
-                        except ValidationError:
-                            raise ServiceException(msg_invalid_item % item)
-                    except (decimal.InvalidOperation, TypeError):
-                        try:
-                            item = unicode(item)
-                            validate_email(item)
-                            field = 'email'
-                        except ValidationError:
-                            raise ServiceException(msg_invalid_item % item)
-                    selected_perms.append({field: item})
+            selected_perms = self.get_permissions_(request)
             if memory_pk:
                 for f in fields:
                     setattr(gallery_item, f, fields[f])
@@ -609,7 +640,7 @@ class ApiCustompersonMemoryGalleryView(ApiCustompersonMixin, ApiMemoryGalleryMix
 
     @transaction.commit_on_success
     def post(self, request, pk):
-        return self.make_object(request, pk)
+        return self.make_object(pk)
 
 api_customperson_memory_gallery = ApiCustompersonMemoryGalleryView.as_view()
 
@@ -629,10 +660,10 @@ class ApiCustompersonMemoryGalleryDetail(ApiCustompersonMixin, ApiMemoryGalleryM
 
     @transaction.commit_on_success
     def put(self, request, pk, memory_pk):
-        return self.make_object(request, pk, memory_pk)
+        return self.make_object(pk, memory_pk)
 
     def delete(self, request, pk, memory_pk):
-        customperson = self.get_customperson(pk)
+        customperson = self.get_customperson(pk, owner_only=True)
         try:
             gallery_item = MemoryGallery.objects.filter(
                 customperson=customperson,
@@ -679,7 +710,7 @@ class ApiClientPlacesDeadmansDetailView(ApiClientPlacesMixin, ApiCustompersonMix
 
     def put(self, request, pk, deadman_pk):
         customplace = self.get_customplace(pk)
-        customperson = self.get_customperson(deadman_pk)
+        customperson = self.get_customperson(deadman_pk, owner_only=True)
         if not customperson.customplace or customperson.customplace != customplace:
             raise Http404
         message = self.check_life_dates()
@@ -697,7 +728,7 @@ class ApiClientPlacesDeadmansDetailView(ApiClientPlacesMixin, ApiCustompersonMix
 
     def delete(self, request, pk, deadman_pk):
         customplace = self.get_customplace(pk)
-        customperson = self.get_customperson(deadman_pk)
+        customperson = self.get_customperson(deadman_pk, owner_only=True)
         if not customperson.customplace or customperson.customplace != customplace:
             raise Http404
         customperson.delete()
@@ -771,7 +802,7 @@ class ApiClientPersonsDetailView(ApiClientPlacesMixin, ApiCustompersonMixin, API
 
     def put(self, request, pk):
         try:
-            customperson = self.get_customperson(pk)
+            customperson = self.get_customperson(pk, owner_only=True)
             context = dict(request=request)
             if 'placeId' in request.DATA:
                 customplace_id = request.DATA['placeId']
