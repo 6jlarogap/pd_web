@@ -489,6 +489,31 @@ class ApiSelectedPermissionsMixin(object):
                 selected_perms.append({field: item})
         return selected_perms
 
+    def put_permissions_(self, instance, permissions, instance_existed=True):
+        """
+        Назначить instance of (MemoryGallery или CustomPerson) permissions
+
+        permissions         - массив словарей dict(email=...) или dict(permission=...)
+        instance_existed    - новый ли это instance (удалять или нет старые permissions)
+        """
+        if permissions:
+            model = type(instance)
+            if model == CustomPerson:
+                # модель, куда кладутся разрешения:
+                model = CustomPersonPermission
+                field = 'customperson'
+            elif model == MemoryGallery:
+                model = MemoryGalleryPermission
+                field = 'memorygallery'
+            else:
+                return
+            filter_kwargs = { field : instance }
+            if instance_existed:
+                model.objects.filter(**filter_kwargs).delete()
+            for perm in permissions:
+                perm.update(filter_kwargs)
+                model.objects.create(**perm)
+
 class ApiMemoryGalleryMixin(ApiSelectedPermissionsMixin):
 
     def make_object(self, customperson_pk, memory_pk=None):
@@ -570,11 +595,7 @@ class ApiMemoryGalleryMixin(ApiSelectedPermissionsMixin):
                 if memory_pk:
                     gallery_item.delete_from_media()
                 gallery_item.bfile.save(file_.name, file_content)
-            if selected_perms:
-                if memory_pk:
-                    MemoryGalleryPermission.objects.filter(memorygallery=gallery_item).delete()
-                for perm in selected_perms:
-                    MemoryGalleryPermission.objects.create(memorygallery=gallery_item, **perm)
+            self.put_permissions_(gallery_item, selected_perms, instance_existed=bool(memory_pk))
             return Response(
                 data=MemoryGallery2Serializer(gallery_item, context=dict(request=request)).data,
                 status=200,

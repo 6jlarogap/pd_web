@@ -172,6 +172,7 @@ class BaseCustomPersonSerializer(UnclearDateFieldMixin, serializers.HyperlinkedM
     lastName = Field(source='last_name')
     firstName = Field(source='first_name')
     middleName = Field(source='middle_name')
+    permissions = Field(source='permission')
 
     def restore_object(self, attrs, instance=None):
         data = self.context['request'].DATA
@@ -287,13 +288,14 @@ class CustomPerson3Serializer(UnclearDateFieldMixin, serializers.ModelSerializer
     gallery = serializers.SerializerMethodField('gallery_func')
     isDead = Field(source='is_dead')
     placeId = Field(source='customplace.id')
+    permissions = Field(source='permission')
 
     class Meta:
         model = CustomPerson
         fields = (
             'id', 'lastname', 'firstname', 'middlename',
             'commonText', 'dob', 'dod', 'photo', 'gallery',
-            'isDead', 'placeId',
+            'isDead', 'placeId', 'permissions',
         )
 
     def gallery_func(self, instance):
@@ -320,6 +322,7 @@ class CustomPerson3Serializer(UnclearDateFieldMixin, serializers.ModelSerializer
             middle_name=data.get('middlename'),
             memory_text=data.get('commonText'),
             is_dead=str_to_bool_or_None(data.get('isDead')),
+            permission=data.get('permissions'),
         )
         fields = dict()
         for k in fields_got:
@@ -352,6 +355,7 @@ class CustomPerson4Serializer(BaseCustomPersonSerializer):
         model = CustomPerson
         fields = ('id', 'firstName', 'lastName', 'middleName',
                   'birthDate', 'deathDate', 'titlePhoto', 'placeId',
+                  'permissions',
         )
 
 class ArchIDDocumentTypeSerializer(serializers.ModelSerializer):
