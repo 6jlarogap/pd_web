@@ -22,8 +22,8 @@ urlpatterns = patterns('users.views',
          name='api_settings_oauth_providers_delete'),
 
     url(r'^api/loru/places/?$', 'api_loru_places', name='api_loru_places'),
-    url(r'^api/loru/stores/?$', 'api_loru_stores', name='api_loru_stores'),
-    url(r'^api/loru/stores/(?P<pk>\d+)/?$', 'api_loru_store_detail', name='api_loru_store_detail'),
+    url(r'^api/(?:org|loru)/stores/?$', 'api_loru_stores', name='api_loru_stores'),
+    url(r'^api/(?:org|loru)/stores/(?P<pk>\d+)/?$', 'api_loru_store_detail', name='api_loru_store_detail'),
 
     url(r'^api/loru/favorite_suppliers/?$', 'api_loru_favorite_suppliers', name='api_loru_favorite_suppliers'),
     url(
