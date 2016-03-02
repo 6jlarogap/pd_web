@@ -233,7 +233,7 @@ class BurialSearchForm(forms.Form):
     place = forms.CharField(required=False, label=_(u"Место"))
     no_responsible = forms.BooleanField(required=False, initial=False, label=_(u"Без отв."))
     source = forms.TypedChoiceField(required=False, label=_(u"Источник"), choices=EMPTY + Burial.SOURCE_TYPES)
-    status = forms.TypedChoiceField(required=False, label=_(u"Статус"), choices=EMPTY + Burial.STATUS_CHOICES)
+    status = forms.TypedChoiceField(required=False, label=_(u"Статус"))
     comment = forms.CharField(required=False, label=_(u"Комментарий"))
     annulated = forms.BooleanField(required=False, initial=False, label=_(u"Аннулировано"))
     per_page = forms.ChoiceField(label=_(u"На странице"), choices=PAGE_CHOICES, initial=25, required=False)
@@ -242,8 +242,14 @@ class BurialSearchForm(forms.Form):
         super(BurialSearchForm, self).__init__(*args, **kwargs)
         if not settings.DEADMAN_IDENT_NUMBER_ALLOW:
             del self.fields['ident_number_search']
+
+        self.fields['source'].choices = EMPTY + Burial.SOURCE_TYPES
         if not Org.objects.filter(type=Org.PROFILE_LORU).exists():
             del self.fields['loru_in_burials']
+            for choice in self.fields['source'].choices:
+                if choice[0] == Burial.SOURCE_FULL:
+                    self.fields['source'].choices.remove(choice)
+                    break
 
 class ResponsibleForm(AlivePersonForm):
     WHERE_FROM_PLACE = u'place'
