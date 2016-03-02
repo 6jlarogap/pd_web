@@ -198,7 +198,7 @@ class Profile(CommonProfile):
     cemeteries = models.ManyToManyField('burials.Cemetery',
                  verbose_name=_(u"Доступные кладбища"), related_name='rw_profiles', blank=True)
 
-    store = models.ForeignKey('users.Store', verbose_name=_(u"Склад/Офис"), blank=True, null=True)
+    store = models.ForeignKey('users.Store', verbose_name=_(u"Подразделение"), blank=True, null=True)
 
     lat = models.DecimalField(max_digits=30, decimal_places=27, blank=True, null=True)
     lng = models.DecimalField(max_digits=30, decimal_places=27, blank=True, null=True)

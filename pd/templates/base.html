@@ -145,7 +145,6 @@
                                         {% if user.profile.is_trade %}
                                             <li><a href="{{ global_context_FRONT_END_URL }}loru/products">{% trans "Товары и услуги" %}</a></li>
                                             <li><a href="{{ global_context_FRONT_END_URL }}">{% trans "Каталог" %}</a></li>
-                                            <li><a href="{{ global_context_FRONT_END_URL }}loru/orgplaces">{% trans "Склады" %}</a></li>
                                             <li><a href="{{ global_context_FRONT_END_URL }}price/{{ user.profile.org.pk }}">{% trans "Интернет-магазин" %}{% if user.profile.org.favorites_for_template %}&nbsp;&nbsp;<span class="caret-right"></span>{% endif %}</a>
                                             {% for favorite in user.profile.org.favorites_for_template %}
                                                 {% if forloop.first %}
@@ -163,6 +162,13 @@
                                         {% if user.profile.pk %}
                                             {% if user.profile.org.pk %}
                                                 <li><a href="{% url edit_org user.profile.org.pk %}">{% trans "Организация" %}</a></li>
+                                                {% if global_context_REDIRECT_LOGIN_TO_FRONT_END %}
+                                                    {% if user.profile.is_ugh %}
+                                                        <li><a href="{{ global_context_FRONT_END_URL }}oms/orgplaces">{% trans "Подразделения" %}</a></li>
+                                                    {% elif user.profile.is_loru %}
+                                                        <li><a href="{{ global_context_FRONT_END_URL }}loru/orgplaces">{% trans "Подразделения" %}</a></li>
+                                                    {% endif %}
+                                                {% endif %}
                                             {% endif %}
                                             <li><a href="{% url user_profile %}">{% trans "Пользователь" %}</a></li>
                                             {% if user.profile.org.pk %}
