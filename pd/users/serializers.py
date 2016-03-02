@@ -118,6 +118,13 @@ class StoreSerializer(serializers.ModelSerializer):
         else:
             return None
 
+class StoreShortSerializer(serializers.ModelSerializer):
+    title = serializers.Field(source='name')
+
+    class Meta:
+        model = Store
+        fields = ('id', 'title', )
+
 class OrgSerializer(PhonesFromTextMixin, OrgSerializerMixin, serializers.ModelSerializer):
     fullname = Field(source='full_name')
     address = serializers.RelatedField('off_address')
@@ -359,10 +366,11 @@ class ProfileClientSiteSerializer(PhonesFromTextMixin, serializers.ModelSerializ
     fullName = Field(source='full_name')
     role = Field(source='title')
     photoUrl = serializers.SerializerMethodField('userPhotoUrl_func')
+    department = StoreShortSerializer(source='store')
 
     class Meta:
         model = Profile
-        fields = ('id', 'fullName', 'role', 'photoUrl', 'phones', )
+        fields = ('id', 'fullName', 'role', 'photoUrl', 'phones', 'department',)
 
     def userPhotoUrl_func(self, profile):
         try:
