@@ -398,7 +398,7 @@ class ApiSelectedPermissionsMixin(object):
         """
         Назначить instance of (MemoryGallery или CustomPerson) permissions
 
-        permissions         - массив словарей dict(email=...) или dict(permission=...)
+        permissions         - массив словарей dict(email=...) или dict(login_phone=...)
         instance_existed    - новый ли это instance (удалять или нет старые permissions)
         """
         if permissions:
