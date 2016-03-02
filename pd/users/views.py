@@ -2863,11 +2863,19 @@ class ApiClientEmployeesView(ApiClientSiteMixin, APIView):
 
     def get(self, request, token):
         org = self.get_org(token)
-        qs = Profile.objects.filter(org=org, user__is_active=True)
+        qs = Q(org=org, user__is_active=True)
+
+        store_ids = self.request.GET.getlist('departmentId[]')
+        print store_ids
+        while store_ids.count(u''):
+            store_ids.remove(u'')
+        if store_ids:
+            qs &= Q(store__pk__in=store_ids)
+
         return Response(
             status=200,
             data=ProfileClientSiteSerializer(
-                qs,
+                Profile.objects.filter(qs),
                 context=dict(request=request),
                 many=True,
             ).data
