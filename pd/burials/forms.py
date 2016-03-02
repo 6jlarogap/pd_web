@@ -233,7 +233,7 @@ class BurialSearchForm(forms.Form):
     place = forms.CharField(required=False, label=_(u"Место"))
     no_responsible = forms.BooleanField(required=False, initial=False, label=_(u"Без отв."))
     source = forms.TypedChoiceField(required=False, label=_(u"Источник"))
-    status = forms.TypedChoiceField(required=False, label=_(u"Статус"), choices=EMPTY + Burial.STATUS_CHOICES)
+    status = forms.TypedChoiceField(required=False, label=_(u"Статус"))
     comment = forms.CharField(required=False, label=_(u"Комментарий"))
     annulated = forms.BooleanField(required=False, initial=False, label=_(u"Аннулировано"))
     per_page = forms.ChoiceField(label=_(u"На странице"), choices=PAGE_CHOICES, initial=25, required=False)
@@ -244,12 +244,28 @@ class BurialSearchForm(forms.Form):
             del self.fields['ident_number_search']
 
         self.fields['source'].choices = EMPTY + Burial.SOURCE_TYPES
+        self.fields['status'].choices = EMPTY + Burial.STATUS_CHOICES
         if not Org.objects.filter(type=Org.PROFILE_LORU).exists():
             del self.fields['loru_in_burials']
+
             for choice in self.fields['source'].choices:
                 if choice[0] == Burial.SOURCE_FULL:
                     self.fields['source'].choices.remove(choice)
                     break
+
+            extra_stata = []
+            for status in self.fields['status'].choices:
+                if status[0] not in (
+                      '',
+                      Burial.STATUS_DRAFT,
+                      Burial.STATUS_APPROVED,
+                      Burial.STATUS_CLOSED,
+                      Burial.STATUS_EXHUMATED,
+                   ):
+                    extra_stata.append(status)
+            for status in extra_stata:
+                self.fields['status'].choices.remove(status)
+
 
 class ResponsibleForm(AlivePersonForm):
     WHERE_FROM_PLACE = u'place'
