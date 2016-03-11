@@ -70,7 +70,8 @@ from pd.views import PaginateListView, RequestToFormMixin, FormInvalidMixin, \
                      get_front_end_host, get_front_end_url, ServiceException
 from geo.models import Location, Country
 
-from users.serializers import StoreSerializer, OrgSerializer, OrgShort2Serializer, \
+from users.serializers import StoreSerializer, Store2Serializer, \
+                              OrgSerializer, OrgShort2Serializer, \
                               OrgShort3Serializer, OrgOptSupplierSerializer, OrgShort5Serializer, \
                               UserSettingsSerializer, ShopSerializer, OrgGallerySerializer, \
                               ShopDetailSerializer, OrgReviewSerializer, \
@@ -2866,7 +2867,6 @@ class ApiClientEmployeesView(ApiClientSiteMixin, APIView):
         qs = Q(org=org, user__is_active=True)
 
         store_ids = self.request.GET.getlist('departmentId[]')
-        print store_ids
         while store_ids.count(u''):
             store_ids.remove(u'')
         if store_ids:
@@ -2882,6 +2882,21 @@ class ApiClientEmployeesView(ApiClientSiteMixin, APIView):
         )
 
 api_client_site_employees = ApiClientEmployeesView.as_view()
+
+class ApiClientDepartmentsView(ApiClientSiteMixin, APIView):
+
+    def get(self, request, token):
+        org = self.get_org(token)
+        return Response(
+            status=200,
+            data=Store2Serializer(
+                Store.objects.filter(loru=org),
+                context=dict(request=request),
+                many=True,
+            ).data
+        )
+
+api_client_site_departments = ApiClientDepartmentsView.as_view()
 
 class ApiClientSiteMessagesView(CheckRecaptchaMixin, ApiClientSiteMixin, APIView):
     """
