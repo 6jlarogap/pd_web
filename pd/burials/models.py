@@ -454,6 +454,16 @@ class Place(SafeDeleteMixin, GeoPointModel, BaseModelManualDtCreated):
                 gallery.append(request.build_absolute_uri(pph.bfile.url))
         return gallery
         
+    def first_photo(self, request):
+        """
+        Первое фото места, задает общий план
+        """
+        try:
+            photo = PlacePhoto.objects.filter(place=self).order_by('date_of_creation')[0]
+            return photo.bfile and request.build_absolute_uri(photo.bfile.url) or ''
+        except IndexError:
+            return ''
+
     def status_list(self):
         """
         Вернуть список статусов, например ['dt_wrong_fio', 'dt_unindentified', ]
