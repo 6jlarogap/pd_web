@@ -167,11 +167,14 @@ class ApiCatalogPlacesSerializer(GetGalleryMixin, ApiPlacesSerializer):
 
 class ApiClientSitePlacesSerializer(ApiPlacesSerializer):
     address = serializers.Field(source='address_short')
+    photo = serializers.SerializerMethodField('photo_func')
 
     class Meta:
         model = Place
-        fields = ('id', 'address', 'location',)
+        fields = ('id', 'address', 'location', 'photo')
 
+    def photo_func(self, place):
+        return place.first_photo(self.context['request'])
 
 class PlaceSerializer(GetGalleryMixin, serializers.ModelSerializer):
     cemetery = serializers.PrimaryKeyRelatedField()
