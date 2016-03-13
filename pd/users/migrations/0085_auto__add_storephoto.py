@@ -11,10 +11,11 @@ class Migration(SchemaMigration):
         # Adding model 'StorePhoto'
         db.create_table('users_storephoto', (
             ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
+            ('dt_created', self.gf('django.db.models.fields.DateTimeField')(auto_now_add=True, blank=True)),
+            ('dt_modified', self.gf('django.db.models.fields.DateTimeField')(auto_now=True, blank=True)),
             ('photo', self.gf('django.db.models.fields.files.ImageField')(max_length=255, null=True, blank=True)),
             ('original_filename', self.gf('django.db.models.fields.CharField')(max_length=255, null=True)),
             ('creator', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['auth.User'], null=True, on_delete=models.PROTECT)),
-            ('date_of_creation', self.gf('django.db.models.fields.DateTimeField')(auto_now_add=True, blank=True)),
             ('store', self.gf('django.db.models.fields.related.OneToOneField')(to=orm['users.Store'], unique=True)),
         ))
         db.send_create_signal('users', ['StorePhoto'])
@@ -398,7 +399,8 @@ class Migration(SchemaMigration):
         'users.storephoto': {
             'Meta': {'object_name': 'StorePhoto'},
             'creator': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['auth.User']", 'null': 'True', 'on_delete': 'models.PROTECT'}),
-            'date_of_creation': ('django.db.models.fields.DateTimeField', [], {'auto_now_add': 'True', 'blank': 'True'}),
+            'dt_created': ('django.db.models.fields.DateTimeField', [], {'auto_now_add': 'True', 'blank': 'True'}),
+            'dt_modified': ('django.db.models.fields.DateTimeField', [], {'auto_now': 'True', 'blank': 'True'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'original_filename': ('django.db.models.fields.CharField', [], {'max_length': '255', 'null': 'True'}),
             'photo': ('django.db.models.fields.files.ImageField', [], {'max_length': '255', 'null': 'True', 'blank': 'True'}),

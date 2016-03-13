@@ -166,7 +166,7 @@ class Cemetery(GetLogsMixin, BaseModelManualDtCreated, PhonesMixin):
             return user.profile.cemeteries.all()
         return result
 
-class CemeteryPhoto(PhotoFiles):
+class CemeteryPhoto(PhotoFiles, GeoPointModel):
     cemetery = models.OneToOneField(Cemetery)
 
 class CemeteryCoordinates(CoordinatesModel):

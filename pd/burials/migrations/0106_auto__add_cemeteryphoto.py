@@ -11,10 +11,13 @@ class Migration(SchemaMigration):
         # Adding model 'CemeteryPhoto'
         db.create_table('burials_cemeteryphoto', (
             ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
+            ('dt_created', self.gf('django.db.models.fields.DateTimeField')(auto_now_add=True, blank=True)),
+            ('dt_modified', self.gf('django.db.models.fields.DateTimeField')(auto_now=True, blank=True)),
             ('photo', self.gf('django.db.models.fields.files.ImageField')(max_length=255, null=True, blank=True)),
             ('original_filename', self.gf('django.db.models.fields.CharField')(max_length=255, null=True)),
             ('creator', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['auth.User'], null=True, on_delete=models.PROTECT)),
-            ('date_of_creation', self.gf('django.db.models.fields.DateTimeField')(auto_now_add=True, blank=True)),
+            ('lat', self.gf('django.db.models.fields.FloatField')(null=True, blank=True)),
+            ('lng', self.gf('django.db.models.fields.FloatField')(null=True, blank=True)),
             ('cemetery', self.gf('django.db.models.fields.related.OneToOneField')(to=orm['burials.Cemetery'], unique=True)),
         ))
         db.send_create_signal('burials', ['CemeteryPhoto'])
@@ -244,8 +247,11 @@ class Migration(SchemaMigration):
             'Meta': {'object_name': 'CemeteryPhoto'},
             'cemetery': ('django.db.models.fields.related.OneToOneField', [], {'to': "orm['burials.Cemetery']", 'unique': 'True'}),
             'creator': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['auth.User']", 'null': 'True', 'on_delete': 'models.PROTECT'}),
-            'date_of_creation': ('django.db.models.fields.DateTimeField', [], {'auto_now_add': 'True', 'blank': 'True'}),
+            'dt_created': ('django.db.models.fields.DateTimeField', [], {'auto_now_add': 'True', 'blank': 'True'}),
+            'dt_modified': ('django.db.models.fields.DateTimeField', [], {'auto_now': 'True', 'blank': 'True'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'lat': ('django.db.models.fields.FloatField', [], {'null': 'True', 'blank': 'True'}),
+            'lng': ('django.db.models.fields.FloatField', [], {'null': 'True', 'blank': 'True'}),
             'original_filename': ('django.db.models.fields.CharField', [], {'max_length': '255', 'null': 'True'}),
             'photo': ('django.db.models.fields.files.ImageField', [], {'max_length': '255', 'null': 'True', 'blank': 'True'})
         },
