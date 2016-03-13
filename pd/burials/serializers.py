@@ -9,8 +9,7 @@ from rest_framework.fields import Field, TimeField
 
 from burials.models import Cemetery, Place, Area, Grave, Burial, AreaPhoto, BurialFiles, ExhumationRequest, \
     AreaPurpose, PlaceSize, PlaceStatus, CemeteryCoordinates, AreaCoordinates, PlaceSize, PlacePhoto, \
-    Reason
-
+    Reason, CemeteryPhoto
 
 from geo.models import Location
 from geo.serializers import AddressLatLonMixin
@@ -52,11 +51,12 @@ class CemeteryClientSiteSerializer(AddressLatLonMixin, serializers.ModelSerializ
     location = serializers.SerializerMethodField('location_func')
     workTimes = Field(source='worktimes')
     executive = serializers.SerializerMethodField('executive_func')
+    photoUrl = serializers.SerializerMethodField('photoUrl_func')
 
     class Meta:
         model = Cemetery
         fields = ('id', 'name', 'address', 'location', 'phones',
-                  'workTimes', 'executive'
+                  'workTimes', 'executive', 'photoUrl',
         )
 
     def executive_func(self, obj):
@@ -65,6 +65,12 @@ class CemeteryClientSiteSerializer(AddressLatLonMixin, serializers.ModelSerializ
         else:
             return None
 
+    def photoUrl_func(self, instance):
+        try:
+            photo = CemeteryPhoto.objects.get(cemetery=instance).photo
+        except CemeteryPhoto.DoesNotExist:
+            photo = None
+        return self.context['request'].build_absolute_uri(photo.url) if photo else ''
 
 class AreaTitleSerializer(serializers.ModelSerializer):
     title = serializers.Field('name')

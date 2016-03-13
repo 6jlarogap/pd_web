@@ -497,9 +497,9 @@ def files_upload_to(instance, filename):
     elif isinstance(instance, get_model('users', 'OrgGallery')):
         return os.path.join('org-gallery',
                 today_pk_dir % instance.org.pk, fname)
-    elif isinstance(instance, get_model('users', 'StorePhoto')):
-        return os.path.join('store-photos',
-                today_pk_dir % instance.store.pk, fname)
+    elif isinstance(instance, get_model('burials', 'CemeteryPhoto')):
+        return os.path.join('cemetery-photos',
+                today_pk_dir % instance.cemetery.pk, fname)
     else:
         return os.path.join('files', fname)
 

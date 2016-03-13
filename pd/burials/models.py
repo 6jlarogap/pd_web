@@ -10,7 +10,7 @@ from django.utils.translation import ugettext_lazy as _
 from django.db.models.query_utils import Q
 from django.conf import settings
 from pd.models import UnclearDateModelField, BaseModel, BaseModelManualDtCreated, \
-                      Files, GetLogsMixin, validate_gt0, SafeDeleteMixin
+                      Files, PhotoFiles, GetLogsMixin, validate_gt0, SafeDeleteMixin
 from pd.views import get_front_end_url
 from pd.utils import utcisoformat
 
@@ -123,6 +123,8 @@ class Cemetery(GetLogsMixin, BaseModelManualDtCreated, PhonesMixin):
     def delete(self):
         self.phone_set.delete()
         self.coordinates.all().delete()
+        for photo in CemeteryPhoto.objects.filter(cemetery=self):
+            photo.delete()
         try:
             super(Cemetery, self).delete()
         except IntegrityError:
@@ -163,6 +165,9 @@ class Cemetery(GetLogsMixin, BaseModelManualDtCreated, PhonesMixin):
         if is_ugh_user(user) and user.profile.is_registrator():
             return user.profile.cemeteries.all()
         return result
+
+class CemeteryPhoto(PhotoFiles):
+    cemetery = models.OneToOneField(Cemetery)
 
 class CemeteryCoordinates(CoordinatesModel):
     #TODO:
