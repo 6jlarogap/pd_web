@@ -948,6 +948,13 @@ class Store(models.Model, PhonesMixin):
         except (AttributeError, IntegrityError):
             pass
 
+    def worktimes(self):
+        return [{
+                'dayindex': dayindex,
+                'from': '09:00',
+                'to': '18:00',
+            } for dayindex in range(1,6)]
+
 class FavoriteSupplier(models.Model):
     """
     Избранные поставщики у ЛОРУ

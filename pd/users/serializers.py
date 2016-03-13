@@ -120,24 +120,13 @@ class StoreSerializer(serializers.ModelSerializer):
 
 class Store2Serializer(StoreSerializer):
     title = Field(source='name')
-    worktimes = serializers.SerializerMethodField('worktimes_func')
+    workTimes = Field(source='worktimes')
     photoUrl = serializers.SerializerMethodField('photoUrl_func')
 
     class Meta:
         model = Store
-        fields = ('id', 'title', 'address', 'location', 'phones', 'worktimes', 'photoUrl')
+        fields = ('id', 'title', 'address', 'location', 'phones', 'workTimes', 'photoUrl')
 
-    def worktimes_func(self, instance):
-        worktime = u"9:00 - 18:00"
-        return [
-            "",                 # воскресенье
-            worktime,
-            worktime,
-            worktime,
-            worktime,
-            worktime,
-            "",                 # суббота
-        ]
 
     def photoUrl_func(self, instance):
         return ''
