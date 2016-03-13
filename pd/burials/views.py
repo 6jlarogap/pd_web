@@ -211,7 +211,7 @@ class CemeteryViewSet(CaretakerMixin, viewsets.ModelViewSet):
     def getform(self, request, pk=None):
         cemetery = get_object_or_404(self.get_queryset(), pk=pk)
         data = {
-                "cemetery" : CemeterySerializer(cemetery).data,
+                "cemetery" : CemeterySerializer(cemetery, context=dict(request=request)).data,
                 "responsible_phones" : [],
                 "responsible_address" : {}
                 }
@@ -1622,9 +1622,12 @@ class ApiClientSiteCemeteriesView(ApiClientSiteMixin, APIView):
         ugh = self.get_org(token)
         return Response(
             status=200,
-            data=[ CemeteryClientSiteSerializer(cemetery).data \
-                   for cemetery in Cemetery.objects.filter(ugh=ugh)
-        ])
+            data=CemeteryClientSiteSerializer(
+                    Cemetery.objects.filter(ugh=ugh),
+                    context=dict(request=request),
+                    many=True,
+                ).data
+        )
 
 api_client_site_cemeteries = ApiClientSiteCemeteriesView.as_view()
 

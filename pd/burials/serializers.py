@@ -9,8 +9,7 @@ from rest_framework.fields import Field, TimeField
 
 from burials.models import Cemetery, Place, Area, Grave, Burial, AreaPhoto, BurialFiles, ExhumationRequest, \
     AreaPurpose, PlaceSize, PlaceStatus, CemeteryCoordinates, AreaCoordinates, PlaceSize, PlacePhoto, \
-    Reason
-
+    Reason, CemeteryPhoto
 
 from geo.models import Location
 from geo.serializers import AddressLatLonMixin
@@ -45,18 +44,31 @@ class CemeteryTitleSerializer(serializers.ModelSerializer):
         model = Cemetery
         fields = ('id', 'title')
 
+class CemeteryPhotoMixin(object):
 
-class CemeteryClientSiteSerializer(AddressLatLonMixin, serializers.ModelSerializer):
+    def photoUrl_func(self, instance):
+        photo = ''
+        if hasattr(self, 'context') and 'request' in self.context:
+            try:
+                photo = CemeteryPhoto.objects.get(cemetery=instance).photo
+            except CemeteryPhoto.DoesNotExist:
+                pass
+            if photo:
+                photo = self.context['request'].build_absolute_uri(photo.url)
+        return photo
+
+class CemeteryClientSiteSerializer(AddressLatLonMixin, CemeteryPhotoMixin, serializers.ModelSerializer):
     phones = Field(source='phone_list')
     address = serializers.RelatedField()
     location = serializers.SerializerMethodField('location_func')
     workTimes = Field(source='worktimes')
     executive = serializers.SerializerMethodField('executive_func')
+    photoUrl = serializers.SerializerMethodField('photoUrl_func')
 
     class Meta:
         model = Cemetery
         fields = ('id', 'name', 'address', 'location', 'phones',
-                  'workTimes', 'executive'
+                  'workTimes', 'executive', 'photoUrl',
         )
 
     def executive_func(self, obj):
@@ -64,7 +76,6 @@ class CemeteryClientSiteSerializer(AddressLatLonMixin, serializers.ModelSerializ
             return dict(fullName=u"%s" % obj.caretaker.profile)
         else:
             return None
-
 
 class AreaTitleSerializer(serializers.ModelSerializer):
     title = serializers.Field('name')
@@ -92,7 +103,7 @@ class SubPlaceItemSerializer(serializers.ModelSerializer):
         fields = ('id', 'row', 'place', 'responsible')
 
 
-class CemeterySerializer(serializers.ModelSerializer):
+class CemeterySerializer(CemeteryPhotoMixin, serializers.ModelSerializer):
     area_cnt = Field(source='area_cnt')
     work_time = Field(source='work_time')
     address = Field(source='address_id')
@@ -100,13 +111,14 @@ class CemeterySerializer(serializers.ModelSerializer):
     time_end = TimeField()
     caretaker = serializers.PrimaryKeyRelatedField(required=False)
     #phones = serializers.SerializerMethodField('get_phones')
+    photoUrl = serializers.SerializerMethodField('photoUrl_func')
 
     class Meta:
         model = Cemetery
         fields = ('id', 'name', 'work_time', 'area_cnt', 'time_begin', 'time_end', \
                   'places_algo', 'places_algo_archive', \
                   'archive_burial_fact_date_required', 'archive_burial_account_number_required', \
-                  'address', 'time_slots', 'caretaker')
+                  'address', 'time_slots', 'caretaker', 'photoUrl')
     
     def get_phones(self, obj):
         return PhoneSerializer(obj.phone_set.all()).data
@@ -165,13 +177,23 @@ class ApiCatalogPlacesSerializer(GetGalleryMixin, ApiPlacesSerializer):
         fields = ('id', 'location', 'address', 'status',  'photos', 'cemetery' )
 
 
-class ApiClientSitePlacesSerializer(ApiPlacesSerializer):
+class PlaceDeadmenMixin(object):
+
+    def deadmen_func(self, place):
+        result = []
+        for burial in place.burial_set.all():
+            if burial.deadman:
+                result.append(DeadPerson2Serializer(burial.deadman).data)
+        return result
+
+class ApiClientSitePlacesSerializer(PlaceDeadmenMixin, ApiPlacesSerializer):
     address = serializers.Field(source='address_short')
     photo = serializers.SerializerMethodField('photo_func')
+    deadmen = serializers.SerializerMethodField('deadmen_func')
 
     class Meta:
         model = Place
-        fields = ('id', 'address', 'location', 'photo')
+        fields = ('id', 'address', 'location', 'photo', 'deadmen',)
 
     def photo_func(self, place):
         return place.first_photo(self.context['request'])
@@ -223,13 +245,12 @@ class PlaceSerializer(GetGalleryMixin, serializers.ModelSerializer):
                 valid = False
         return valid
         
-
-class PlaceLockSerializer(serializers.ModelSerializer):
+class PlaceLockSerializer(PlaceDeadmenMixin, serializers.ModelSerializer):
     cemetery = CemeteryTitleSerializer('cemetery')
     area = AreaTitleSerializer('area')
     place = serializers.SerializerMethodField('place_func')
     gallery = serializers.SerializerMethodField('photos_func')
-    burials = serializers.SerializerMethodField('burials_func')
+    burials = serializers.SerializerMethodField('deadmen_func')
 
     class Meta:
         model = Place
@@ -241,13 +262,6 @@ class PlaceLockSerializer(serializers.ModelSerializer):
     def photos_func(self, obj):
         request = self.context.get('request')
         return obj.get_photos(request) if request else []
-
-    def burials_func(self, obj):
-        result = []
-        for burial in obj.burial_set.all():
-            if burial.deadman:
-                result.append(DeadPerson2Serializer(burial.deadman).data)
-        return result
 
 class GraveSerializer(serializers.ModelSerializer):
     place = serializers.PrimaryKeyRelatedField()

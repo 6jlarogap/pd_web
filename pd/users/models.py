@@ -21,7 +21,7 @@ from rest_framework import permissions
 
 from geo.models import Location
 from pd.models import BaseModel, Files, GetLogsMixin, validate_gt0, validate_username, \
-                      validate_phone_as_number, SafeDeleteMixin
+                      validate_phone_as_number, SafeDeleteMixin, PhotoFiles
 from logs.models import Log, write_log, LogOperation
 
 from pd.utils import DigitsValidator, LengthValidator, NotEmptyValidator, \
@@ -942,11 +942,23 @@ class Store(models.Model, PhonesMixin):
 
     def delete(self):
         self.phone_set.delete()
+        for photo in StorePhoto.objects.filter(store=self):
+            photo.delete()
         super(Store, self).delete()
         try:
             self.address.delete()
         except (AttributeError, IntegrityError):
             pass
+
+    def worktimes(self):
+        return [{
+                'dayindex': dayindex,
+                'from': '09:00',
+                'to': '18:00',
+            } for dayindex in range(1,6)]
+
+class StorePhoto(PhotoFiles):
+    store = models.OneToOneField(Store)
 
 class FavoriteSupplier(models.Model):
     """

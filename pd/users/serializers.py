@@ -12,7 +12,7 @@ from django.contrib.auth.models import User
 
 from geo.models import Location
 from users.models import Org, Store, FavoriteSupplier, UserPhoto, is_cabinet_user, is_trade_user, \
-                         Profile, Dover, ProfileLORU, get_profile, OrgGallery, OrgReview
+                         Profile, Dover, ProfileLORU, get_profile, OrgGallery, OrgReview, StorePhoto
 from persons.models import Phone
 from orders.models import Order, Product, Service, OrgServicePrice
 
@@ -120,27 +120,19 @@ class StoreSerializer(serializers.ModelSerializer):
 
 class Store2Serializer(StoreSerializer):
     title = Field(source='name')
-    worktimes = serializers.SerializerMethodField('worktimes_func')
+    workTimes = Field(source='worktimes')
     photoUrl = serializers.SerializerMethodField('photoUrl_func')
 
     class Meta:
         model = Store
-        fields = ('id', 'title', 'address', 'location', 'phones', 'worktimes', 'photoUrl')
-
-    def worktimes_func(self, instance):
-        worktime = u"9:00 - 18:00"
-        return [
-            "",                 # воскресенье
-            worktime,
-            worktime,
-            worktime,
-            worktime,
-            worktime,
-            "",                 # суббота
-        ]
+        fields = ('id', 'title', 'address', 'location', 'phones', 'workTimes', 'photoUrl')
 
     def photoUrl_func(self, instance):
-        return ''
+        try:
+            photo = StorePhoto.objects.get(store=instance).photo
+        except StorePhoto.DoesNotExist:
+            photo = None
+        return self.context['request'].build_absolute_uri(photo.url) if photo else ''
 
 class StoreShortSerializer(serializers.ModelSerializer):
     title = serializers.Field(source='name')

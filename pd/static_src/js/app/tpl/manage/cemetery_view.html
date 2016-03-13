@@ -18,7 +18,7 @@
     <!-- address address_class="address_class" address="cemetery.address" save_action="saveEditForm"></address -->
    <p><b>Ответственный смотритель:</b> {{ caretaker_show }}</p>
 
-    <div class="row-fluid">
+    <div class="row-fluid" ng-show="cemetery_address.country.name">
       <div class="span6">
         <div class="full_address">
           <dl class="dl-horizontal">
@@ -56,6 +56,14 @@
         </dl>
       </div>
     </div>
+
+    <div ng-show="cemetery.photoUrl">
+        <br />
+        <img ng-show="cemetery.photoUrl"
+            class="first-photo" ng-src="{{ cemetery.photoUrl | thumbnail:225:300:'scale' }} "/>
+        <br /><br />
+    </div>
+
 
 
   </div>
