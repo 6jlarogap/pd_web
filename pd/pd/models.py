@@ -578,6 +578,14 @@ class PhotoModel(FilesMixin, models.Model):
     photo = models.ImageField(u"Фото", max_length=255, upload_to=files_upload_to, blank=True, null=True)
     original_filename = models.CharField(max_length=255, editable=False, null=True)
 
+class PhotoFiles(PhotoModel):
+    creator = models.ForeignKey('auth.User', verbose_name=_(u"Создатель"), editable=False, null=True,
+                                on_delete=models.PROTECT)
+    date_of_creation = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        abstract = True
+
 def validate_gt0(value):
     if value <= 0:
         raise ValidationError(_(u'Должно быть больше нуля'))
