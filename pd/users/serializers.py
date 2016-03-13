@@ -12,7 +12,7 @@ from django.contrib.auth.models import User
 
 from geo.models import Location
 from users.models import Org, Store, FavoriteSupplier, UserPhoto, is_cabinet_user, is_trade_user, \
-                         Profile, Dover, ProfileLORU, get_profile, OrgGallery, OrgReview
+                         Profile, Dover, ProfileLORU, get_profile, OrgGallery, OrgReview, StorePhoto
 from persons.models import Phone
 from orders.models import Order, Product, Service, OrgServicePrice
 
@@ -127,9 +127,12 @@ class Store2Serializer(StoreSerializer):
         model = Store
         fields = ('id', 'title', 'address', 'location', 'phones', 'workTimes', 'photoUrl')
 
-
     def photoUrl_func(self, instance):
-        return ''
+        try:
+            photo = StorePhoto.objects.get(store=instance).photo
+        except StorePhoto.DoesNotExist:
+            photo = None
+        return self.context['request'].build_absolute_uri(photo.url) if photo else ''
 
 class StoreShortSerializer(serializers.ModelSerializer):
     title = serializers.Field(source='name')
