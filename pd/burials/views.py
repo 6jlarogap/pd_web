@@ -211,7 +211,7 @@ class CemeteryViewSet(CaretakerMixin, viewsets.ModelViewSet):
     def getform(self, request, pk=None):
         cemetery = get_object_or_404(self.get_queryset(), pk=pk)
         data = {
-                "cemetery" : CemeterySerializer(cemetery).data,
+                "cemetery" : CemeterySerializer(cemetery, context=dict(request=request)).data,
                 "responsible_phones" : [],
                 "responsible_address" : {}
                 }
