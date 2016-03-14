@@ -38,11 +38,6 @@
             <p>{{ form.is_active.label_tag }} {{ form.is_active }} <span class="helptext">{{ form.is_active.help_text }}</span></p>
         {% endif %}
 
-        {% if form.out_of_staff %}
-            {{ form.out_of_staff.errors }}
-            <p>{{ form.out_of_staff.label_tag }} {{ form.out_of_staff }} <span class="helptext">{{ form.out_of_staff.help_text }}</span></p>
-        {% endif %}
-
         {{ form.user_last_name.errors }}
         <p>{{ form.user_last_name.label_tag }} {{ form.user_last_name }} <span class="helptext">{{ form.user_last_name.help_text }}</span></p>
 
@@ -60,6 +55,9 @@
             {{ form.title.errors }}
             <p class="inline">{{ form.title.label_tag }} {{ form.title }} <span class="helptext"> {{ form.title.help_text }}</span></p>
         </fieldset>
+
+        {{ form.out_of_staff.errors }}
+        <p>{{ form.out_of_staff.label_tag }} {{ form.out_of_staff }} <span class="helptext">{{ form.out_of_staff.help_text }}</span></p>
 
         {{ form.phones.errors }}
         <p>{{ form.phones.label_tag }} {{ form.phones }} <span class="helptext">{{ form.phones.help_text }}</span></p>
