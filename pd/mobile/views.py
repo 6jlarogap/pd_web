@@ -14,8 +14,7 @@ from django.http import HttpResponse
 
 from django.utils import simplejson
 from geo.models import CoordinatesModel
-from burials.models import Cemetery
-from burials.models import CemeteryCoordinates
+from burials.models import Cemetery, CemeteryCoordinates, CemeteryPhoto
 from burials.models import Area
 from burials.models import AreaCoordinates
 from burials.models import Place
@@ -28,7 +27,7 @@ from persons.models import BasePerson
 from users.models import PermitIfUgh
 from logs.models import write_log, LogOperation
 from pd.models import UnclearDate
-from pd.utils import utc2local
+from pd.utils import utc2local, get_image
 
 from django.utils.dateparse import parse_datetime
 from django.core.files.base import ContentFile
@@ -44,7 +43,7 @@ from axmlparserpy import apk
 from StringIO import StringIO
 from rest_framework import serializers
 from rest_framework.renderers import JSONRenderer
-from rest_framework.parsers import JSONParser
+from rest_framework.parsers import JSONParser, MultiPartParser
 from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
@@ -52,10 +51,10 @@ from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.exceptions import APIException
 
-from serializers import BaseSerializer, CoordinatesSerializer, CemeterySerializer, CemeteryWithNestedObjectSerializer, \
+from serializers import BaseSerializer, CoordinatesSerializer, CemeteryWithNestedObjectSerializer, \
     AreaSerializer, AreaWithNestedObjectSerializer, RegionSerializer, CitySerializer, StreetSerializer, CountrySerializer, LocationSerializer, \
     BasePersonSerializer, AlivePersonSerializer, PlaceWithNestedObjectSerializer, GraveSerializer, BurialSerializer, \
-    PlacePhotoSerializer
+    PlacePhotoSerializer, CemeteryPhotoSerializer
 
 from serializers import PlaceSerializer
 from rest_api.fields import DateTimeUtcField
@@ -65,7 +64,8 @@ templateDateTime = '%Y-%m-%dT%H:%M:%S.%f'
 class CustomException(APIException):
     status_code = 500
     default_detail = 'Custom Exception'
-    def __init__(self, detail = None):
+    def __init__(self, detail = None, status=status_code):
+        self.status_code = status
         if detail :
             self.detail = detail    
         else :
@@ -156,6 +156,64 @@ class ApiCemeteryUpload(APIView):
         
 cemetery_upload = ApiCemeteryUpload.as_view()
         
+class ApiMobileCemeteryPhoto(APIView):
+    permission_classes = (PermitIfUgh,)
+    parser_classes = (MultiPartParser, JSONParser, )
+
+    def get_cemetery(self, pk):
+        return get_object_or_404(Cemetery, pk=pk, ugh=self.request.user.profile.org)
+
+    def response(self, cemetery):
+        return Response(
+            status=200,
+            data=[ CemeteryPhotoSerializer(photo).data \
+                   for photo in CemeteryPhoto.objects.filter(cemetery=cemetery)
+        ])
+
+    def remove_photos(self, cemetery):
+        for old_photo in CemeteryPhoto.objects.filter(cemetery=cemetery):
+            old_photo.delete()
+
+    def get(self, request, pk):
+        cemetery = self.get_cemetery(pk)
+        return self.response(cemetery)
+
+    def post(self, request, pk):
+        cemetery = self.get_cemetery(pk)
+        photo = request.FILES.get('photo')
+        if photo:
+            if photo.size > CemeteryPhoto.MAX_PHOTO_SIZE * 1024 * 1024:
+                raise CustomException(
+                    detail=_(u"Размер фото превышает %d Мб") % CemeteryPhoto.MAX_PHOTO_SIZE,
+                    status=400,
+               )
+            if not get_image(photo):
+                raise CustomException(
+                    detail=_(u"Загруженное фото не является изображением"),
+                    status=400,
+                )
+        else:
+            raise CustomException(
+                detail=_(u"Нет загружаемого фото (photo)"),
+                status=400,
+                )
+        self.remove_photos(cemetery)
+        CemeteryPhoto.objects.create(
+            cemetery=cemetery,
+            photo=photo,
+            creator=request.user,
+            lat=request.DATA.get('lat'),
+            lng=request.DATA.get('lng'),
+        )
+        return self.response(cemetery)
+
+    def delete(self, request, pk):
+        cemetery = self.get_cemetery(pk)
+        self.remove_photos(cemetery)
+        return self.response(cemetery)
+
+cemetery_photo = ApiMobileCemeteryPhoto.as_view()
+
 class ApiAreaList(APIView):
     permission_classes = (IsAuthenticated,)
     def get(self, request) : 

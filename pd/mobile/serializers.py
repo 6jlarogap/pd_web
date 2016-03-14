@@ -4,6 +4,8 @@ from rest_framework import serializers
 
 from rest_api.fields import DateTimeUtcField
 
+from burials.models import CemeteryPhoto
+
 class BaseSerializer(serializers.Serializer):	
     pk = serializers.Field()    
 
@@ -21,7 +23,13 @@ class CoordinatesSerializer(BaseSerializer):
             return instance
         return CoordinatesModel(**attrs)
         
-class CemeterySerializer(BaseSerializer):	
+class CemeteryPhotoSerializer(BaseSerializer):
+    lat = serializers.CharField(required=False)
+    lng = serializers.CharField(required=False)
+    photo = serializers.FileField(max_length=None, allow_empty_file=False)
+    dt_modified = serializers.DateTimeField(required=False)
+
+class CemeterySerializer(BaseSerializer):
     name = serializers.CharField(required=True)
     square = serializers.CharField(required=True)
     ugh = BaseSerializer(required=True)
@@ -29,6 +37,12 @@ class CemeterySerializer(BaseSerializer):
 
 class CemeteryWithNestedObjectSerializer(CemeterySerializer):	
     coordinates = CoordinatesSerializer(many=True)
+    # photo = serializers.SerializerMethodField('photo_func')
+
+    def photo_func(self, instance):
+        return [CemeteryPhotoSerializer(photo).data \
+                for photo in CemeteryPhoto.objects.filter(cemetery=instance)
+        ]
 
 class AreaSerializer(BaseSerializer):
     cemetery = BaseSerializer(required=True)
