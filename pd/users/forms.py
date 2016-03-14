@@ -102,6 +102,7 @@ class ProfileDataForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelForm):
             'title',
             'phones',
             'is_agent',
+            'out_of_staff',
             'password1', 'password2',
             'cemetery', 'area',
             'role', 'cemeteries',
@@ -131,6 +132,7 @@ class ProfileDataForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelForm):
 
         if self.instance.pk and int(self.instance.pk) == int(request.user.profile.pk):
             del self.fields['is_active']
+            del self.fields['out_of_staff']
         else:
             self.fields['is_active'].label = User._meta.get_field('is_active').verbose_name.capitalize()
             self.fields['is_active'].help_text=User._meta.get_field('is_active').help_text

@@ -38,7 +38,11 @@
             <p>{{ form.is_active.label_tag }} {{ form.is_active }} <span class="helptext">{{ form.is_active.help_text }}</span></p>
         {% endif %}
 
-        <br />
+        {% if form.out_of_staff %}
+            {{ form.out_of_staff.errors }}
+            <p>{{ form.out_of_staff.label_tag }} {{ form.out_of_staff }} <span class="helptext">{{ form.out_of_staff.help_text }}</span></p>
+        {% endif %}
+
         {{ form.user_last_name.errors }}
         <p>{{ form.user_last_name.label_tag }} {{ form.user_last_name }} <span class="helptext">{{ form.user_last_name.help_text }}</span></p>
 

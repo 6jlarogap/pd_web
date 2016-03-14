@@ -189,6 +189,7 @@ class Profile(CommonProfile):
     org = models.ForeignKey('users.Org', null=True)
 
     is_agent = models.BooleanField(_(u"Агент"), default=False, blank=True)
+    out_of_staff = models.BooleanField(_(u"Внештатный сотрудник"), default=False, blank=True)
     title = models.CharField(_(u"Должность"), max_length=255, blank=True)
 
     cemetery = models.ForeignKey('burials.Cemetery', verbose_name=_(u"Кладбище"), blank=True, null=True)

@@ -2864,7 +2864,7 @@ class ApiClientEmployeesView(ApiClientSiteMixin, APIView):
 
     def get(self, request, token):
         org = self.get_org(token)
-        qs = Q(org=org, user__is_active=True)
+        qs = Q(org=org, user__is_active=True, out_of_staff=False)
 
         store_ids = self.request.GET.getlist('departmentId[]')
         while store_ids.count(u''):
