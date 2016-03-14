@@ -37,7 +37,7 @@ class CemeterySerializer(BaseSerializer):
 
 class CemeteryWithNestedObjectSerializer(CemeterySerializer):	
     coordinates = CoordinatesSerializer(many=True)
-    # photo = serializers.SerializerMethodField('photo_func')
+    photo = serializers.SerializerMethodField('photo_func')
 
     def photo_func(self, instance):
         return [CemeteryPhotoSerializer(photo).data \
