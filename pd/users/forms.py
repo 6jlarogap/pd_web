@@ -316,6 +316,13 @@ class ProfileDataForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelForm):
                 if photo_clear and not photo_uploaded:
                     self.photo_form.instance.delete()
                     write_log(self.request, self.instance.user, _(u'Фото удалено'))
+                    write_log(
+                        self.request,
+                        self.instance.user.profile.org,
+                        _(u'Изменены данные пользователя %(fio)s (%(username)s)\nФото удалено') % dict(
+                            fio=profile,
+                            username=profile.user.username,
+                    ))
                     return profile
                 if photo_clear or photo_uploaded:
                     UserPhoto.objects.get(pk=self.photo_form.instance.pk).delete_from_media()
@@ -324,6 +331,14 @@ class ProfileDataForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelForm):
                 photo.user = self.instance.user
                 photo.save()
                 write_log(self.request, self.instance.user, _(u'Прикреплено фото: %s') % photo.original_name)
+                write_log(
+                    self.request,
+                    self.instance.user.profile.org,
+                    _(u'Изменены данные пользователя %(fio)s (%(username)s)\nПрикреплено фото: %(photo)s') % dict(
+                        fio=profile,
+                        username=profile.user.username,
+                        photo=photo.original_name,
+                ))
 
         return profile
 
