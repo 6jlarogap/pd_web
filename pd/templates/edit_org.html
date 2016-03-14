@@ -101,6 +101,7 @@
                         {% if p.title %}{{ p.title }}<br />{% endif %}
                         {% for phone in p.phone_list %}{{ phone }}<br>{% endfor %}
                         {% if p.user.email %}{{ p.user.email }}<br />{% endif %}
+                        {% if p.out_of_staff %}{% trans "Внештатный сотрудник" %}<br />{% endif %}
                     </td>
                     <td>{% if p.user.profile.user_last_name %}{{ p.user.profile.full_name }}{% endif %}</td>
                     {% if user.profile.is_ugh %}
