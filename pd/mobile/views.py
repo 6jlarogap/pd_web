@@ -779,8 +779,15 @@ class ApiPlacePhotoUpload(APIView):
         return render_to_response('mobile_upload_placephoto.html', {'message': _(u"Загрузите фотографию к месту:")})
     def post(self, request) :
         placeId = request.POST['place']
-        lat = request.POST['lat']
-        lng = request.POST['lng']
+        try:
+            lat = float(request.POST.get('lat', ''))
+            lng = float(request.POST.get('lng', ''))
+        except ValueError:
+            lat = lng = None
+        # TODO: remove after changes in mobile app
+        if not (lat and lng):
+            lat = lng = None
+        #       ----------------------------------
         dtCreated = None
         if request.POST.get('dt_created') :
             dtCreated = datetime.strptime(request.POST['dt_created'], templateDateTime)
@@ -794,7 +801,7 @@ class ApiPlacePhotoUpload(APIView):
             photo.save()
             photo.bfile.save(request.FILES['photo'].name, photo_content)
             write_log(request, place, _(u"Прикреплено фото: %s") % request.build_absolute_uri(photo.bfile.url))
-            if lat and lat :
+            if lat and lng:
                 place.lat = lat
                 place.lng = lng
                 place.save()
