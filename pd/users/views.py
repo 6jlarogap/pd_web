@@ -58,7 +58,7 @@ from users.models import Profile, Org, RegisterProfile, ProfileLORU, CustomerPro
                          PermitIfCabinet, PermitIfTradeOrCabinet, Oauth, OrgAbility, \
                          BankAccount, BankAccountRegister, OrgCertificate, OrgContract, \
                          RegisterProfileContract, RegisterProfileScan, FavoriteSupplier, \
-                         UserPhoto, OrgGallery, OrgReview, \
+                         UserPhoto, OrgGallery, OrgReview, Role, \
                          is_supervisor, get_default_currency, get_profile
 from pd.models import validate_phone_as_number, validate_username
 from pd.utils import host_country_code, phones_from_text, EmailMessage, get_image, SeriesTable
@@ -2866,11 +2866,13 @@ class ApiClientEmployeesView(ApiClientSiteMixin, APIView):
         org = self.get_org(token)
         qs = Q(org=org, user__is_active=True, out_of_staff=False)
 
-        store_ids = self.request.GET.getlist('departmentId[]')
-        while store_ids.count(u''):
-            store_ids.remove(u'')
-        if store_ids:
-            qs &= Q(store__pk__in=store_ids)
+        store_id = request.GET.get('departmentId')
+        if store_id:
+            qs &= Q(store__pk=store_id)
+
+        cemetery_id = request.GET.get('cemeteryId')
+        if cemetery_id:
+            qs &= Q(cemeteries__pk=cemetery_id, role__name=Role.ROLE_REGISTRATOR)
 
         return Response(
             status=200,
