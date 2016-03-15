@@ -13,7 +13,7 @@ from django.views.decorators.csrf import csrf_exempt, csrf_protect
 from django.http import HttpResponse
 
 from django.utils import simplejson
-from geo.models import CoordinatesModel
+from geo.models import Location, CoordinatesModel
 from burials.models import Cemetery, CemeteryCoordinates, CemeteryPhoto
 from burials.models import Area
 from burials.models import AreaCoordinates
@@ -171,8 +171,11 @@ class ApiMobileCemeteryPhoto(APIView):
         ])
 
     def remove_photos(self, cemetery):
+        count = 0
         for old_photo in CemeteryPhoto.objects.filter(cemetery=cemetery):
+            count += 1
             old_photo.delete()
+        return count
 
     def get(self, request, pk):
         cemetery = self.get_cemetery(pk)
@@ -197,19 +200,42 @@ class ApiMobileCemeteryPhoto(APIView):
                 detail=_(u"Нет загружаемого фото (photo)"),
                 status=400,
                 )
+        try:
+            lat = float(request.POST.get('lat', ''))
+            lng = float(request.POST.get('lng', ''))
+        except ValueError:
+            lat = lng = None
         self.remove_photos(cemetery)
-        CemeteryPhoto.objects.create(
+        photo = CemeteryPhoto.objects.create(
             cemetery=cemetery,
             photo=photo,
             creator=request.user,
-            lat=request.DATA.get('lat'),
-            lng=request.DATA.get('lng'),
+            lat=lat,
+            lng=lng,
+        )
+        if lat is not None and lng is not None:
+            if not cemetery.address:
+                cemetery.address = Location.objects.create(gps_x=lng, gps_y=lat)
+                cemetery.save()
+            else:
+                Location.objects.filter(
+                    pk=cemetery.address.pk).update(gps_x=lng, gps_y=lat)
+        write_log(
+            request,
+            cemetery,
+            _(u"Фото кладбища: %s") % request.build_absolute_uri(photo.photo.url),
         )
         return self.response(cemetery)
 
     def delete(self, request, pk):
         cemetery = self.get_cemetery(pk)
-        self.remove_photos(cemetery)
+        count = self.remove_photos(cemetery)
+        if count:
+            write_log(
+                request,
+                cemetery,
+                _(u"Фото кладбища удалено"),
+            )
         return self.response(cemetery)
 
 cemetery_photo = ApiMobileCemeteryPhoto.as_view()
@@ -859,7 +885,7 @@ class ApiPlacePhotoUpload(APIView):
             photo.save()
             photo.bfile.save(request.FILES['photo'].name, photo_content)
             write_log(request, place, _(u"Прикреплено фото: %s") % request.build_absolute_uri(photo.bfile.url))
-            if lat and lng:
+            if lat is not None and lng is not None:
                 place.lat = lat
                 place.lng = lng
                 place.save()
