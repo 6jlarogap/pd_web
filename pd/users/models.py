@@ -21,7 +21,7 @@ from rest_framework import permissions
 
 from geo.models import Location
 from pd.models import BaseModel, Files, GetLogsMixin, validate_gt0, validate_username, \
-                      validate_phone_as_number, SafeDeleteMixin
+                      validate_phone_as_number, SafeDeleteMixin, PhotoFiles
 from logs.models import Log, write_log, LogOperation
 
 from pd.utils import DigitsValidator, LengthValidator, NotEmptyValidator, \
@@ -189,6 +189,7 @@ class Profile(CommonProfile):
     org = models.ForeignKey('users.Org', null=True)
 
     is_agent = models.BooleanField(_(u"Агент"), default=False, blank=True)
+    out_of_staff = models.BooleanField(_(u"Внештатный сотрудник"), default=False, blank=True)
     title = models.CharField(_(u"Должность"), max_length=255, blank=True)
 
     cemetery = models.ForeignKey('burials.Cemetery', verbose_name=_(u"Кладбище"), blank=True, null=True)
@@ -197,6 +198,8 @@ class Profile(CommonProfile):
     role = models.ManyToManyField(Role, verbose_name=_(u"Роли в организации"), blank=True)
     cemeteries = models.ManyToManyField('burials.Cemetery',
                  verbose_name=_(u"Доступные кладбища"), related_name='rw_profiles', blank=True)
+
+    store = models.ForeignKey('users.Store', verbose_name=_(u"Подразделение"), blank=True, null=True)
 
     lat = models.DecimalField(max_digits=30, decimal_places=27, blank=True, null=True)
     lng = models.DecimalField(max_digits=30, decimal_places=27, blank=True, null=True)
@@ -309,6 +312,11 @@ class PermitIfTradeOrCabinet(permissions.BasePermission):
 class PermitIfUgh(permissions.BasePermission):
     def has_permission(self, request, view):
         return is_ugh_user(request.user)
+
+class PermitIfLoruOrUgh(permissions.BasePermission):
+    def has_permission(self, request, view):
+        return is_loru_user(request.user) or \
+               is_ugh_user(request.user)
 
 class PermitIfCabinet(permissions.BasePermission):
     def has_permission(self, request, view):
@@ -930,13 +938,28 @@ class Store(models.Model, PhonesMixin):
     address = models.ForeignKey('geo.Location', verbose_name=_(u"Адрес"))
     # phones: могут быть разных типов, пользуемся моделью persons.Phone
 
+    def __unicode__(self):
+        return self.name
+
     def delete(self):
         self.phone_set.delete()
+        for photo in StorePhoto.objects.filter(store=self):
+            photo.delete()
         super(Store, self).delete()
         try:
             self.address.delete()
         except (AttributeError, IntegrityError):
             pass
+
+    def worktimes(self):
+        return [{
+                'dayindex': dayindex,
+                'from': '09:00',
+                'to': '18:00',
+            } for dayindex in range(1,6)]
+
+class StorePhoto(PhotoFiles):
+    store = models.OneToOneField(Store)
 
 class FavoriteSupplier(models.Model):
     """

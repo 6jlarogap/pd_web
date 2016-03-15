@@ -232,8 +232,8 @@ class BurialSearchForm(forms.Form):
     row = forms.CharField(required=False, label=_(u"Ряд"))
     place = forms.CharField(required=False, label=_(u"Место"))
     no_responsible = forms.BooleanField(required=False, initial=False, label=_(u"Без отв."))
-    source = forms.TypedChoiceField(required=False, label=_(u"Источник"), choices=EMPTY + Burial.SOURCE_TYPES)
-    status = forms.TypedChoiceField(required=False, label=_(u"Статус"), choices=EMPTY + Burial.STATUS_CHOICES)
+    source = forms.TypedChoiceField(required=False, label=_(u"Источник"))
+    status = forms.TypedChoiceField(required=False, label=_(u"Статус"))
     comment = forms.CharField(required=False, label=_(u"Комментарий"))
     annulated = forms.BooleanField(required=False, initial=False, label=_(u"Аннулировано"))
     per_page = forms.ChoiceField(label=_(u"На странице"), choices=PAGE_CHOICES, initial=25, required=False)
@@ -242,8 +242,30 @@ class BurialSearchForm(forms.Form):
         super(BurialSearchForm, self).__init__(*args, **kwargs)
         if not settings.DEADMAN_IDENT_NUMBER_ALLOW:
             del self.fields['ident_number_search']
+
+        self.fields['source'].choices = EMPTY + Burial.SOURCE_TYPES
+        self.fields['status'].choices = EMPTY + Burial.STATUS_CHOICES
         if not Org.objects.filter(type=Org.PROFILE_LORU).exists():
             del self.fields['loru_in_burials']
+
+            for choice in self.fields['source'].choices:
+                if choice[0] == Burial.SOURCE_FULL:
+                    self.fields['source'].choices.remove(choice)
+                    break
+
+            extra_stata = []
+            for status in self.fields['status'].choices:
+                if status[0] not in (
+                      '',
+                      Burial.STATUS_DRAFT,
+                      Burial.STATUS_APPROVED,
+                      Burial.STATUS_CLOSED,
+                      Burial.STATUS_EXHUMATED,
+                   ):
+                    extra_stata.append(status)
+            for status in extra_stata:
+                self.fields['status'].choices.remove(status)
+
 
 class ResponsibleForm(AlivePersonForm):
     WHERE_FROM_PLACE = u'place'
@@ -1054,13 +1076,16 @@ class BurialCommitForm(BurialForm):
             if acc_number and fact_date:
                 if self.request.user.profile.org.numbers_algo in (Org.NUM_YEAR_UGH, Org.NUM_YEAR_CEMETERY, ):
                     msg = _(u"Номер в книге учета должен быть ГГГГнннн (год факт. даты, номер). "
-                            u"ГГГГ может быть прошлым годом, если факт. дата до 15 января")
+                            u"ГГГГ может быть прошлым годом, если факт. дата до %s января"
+                           )  % settings.YEAR_OVER_DAYS
                     if len(acc_number) < 4:
                         raise forms.ValidationError(msg)
                     try:
                         acc_year = int(acc_number[:4])
                         if acc_year != fact_date.year and \
-                           not (fact_date.year - acc_year == 1 and fact_date.diff(datetime.date(acc_year, 1, 1)).days < 15):
+                           not (fact_date.year - acc_year == 1 and \
+                                fact_date.diff(datetime.date(acc_year, 1, 1)).days < settings.YEAR_OVER_DAYS
+                                ):
                             raise forms.ValidationError(msg)
                     except ValueError:
                         raise forms.ValidationError(msg)

@@ -12,7 +12,7 @@ from django.contrib.auth.models import User
 
 from geo.models import Location
 from users.models import Org, Store, FavoriteSupplier, UserPhoto, is_cabinet_user, is_trade_user, \
-                         Profile, Dover, ProfileLORU, get_profile, OrgGallery, OrgReview
+                         Profile, Dover, ProfileLORU, get_profile, OrgGallery, OrgReview, StorePhoto
 from persons.models import Phone
 from orders.models import Order, Product, Service, OrgServicePrice
 
@@ -117,6 +117,29 @@ class StoreSerializer(serializers.ModelSerializer):
             }
         else:
             return None
+
+class Store2Serializer(StoreSerializer):
+    title = Field(source='name')
+    workTimes = Field(source='worktimes')
+    photoUrl = serializers.SerializerMethodField('photoUrl_func')
+
+    class Meta:
+        model = Store
+        fields = ('id', 'title', 'address', 'location', 'phones', 'workTimes', 'photoUrl')
+
+    def photoUrl_func(self, instance):
+        try:
+            photo = StorePhoto.objects.get(store=instance).photo
+        except StorePhoto.DoesNotExist:
+            photo = None
+        return self.context['request'].build_absolute_uri(photo.url) if photo else ''
+
+class StoreShortSerializer(serializers.ModelSerializer):
+    title = serializers.Field(source='name')
+
+    class Meta:
+        model = Store
+        fields = ('id', 'title', )
 
 class OrgSerializer(PhonesFromTextMixin, OrgSerializerMixin, serializers.ModelSerializer):
     fullname = Field(source='full_name')
@@ -359,10 +382,11 @@ class ProfileClientSiteSerializer(PhonesFromTextMixin, serializers.ModelSerializ
     fullName = Field(source='full_name')
     role = Field(source='title')
     photoUrl = serializers.SerializerMethodField('userPhotoUrl_func')
+    department = StoreShortSerializer(source='store')
 
     class Meta:
         model = Profile
-        fields = ('id', 'fullName', 'role', 'photoUrl', 'phones', )
+        fields = ('id', 'fullName', 'role', 'photoUrl', 'phones', 'department',)
 
     def userPhotoUrl_func(self, profile):
         try:

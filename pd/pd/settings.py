@@ -193,7 +193,7 @@ SUPPORT_URLS_REGEX = r'^/?support(?:/|$)'
 API_URLS_REGEX = r'^/?api(?:/|$)'
 # URLs, доступные анонимным пользователям, например в публичном каталоге, 
 # а также общедоступные, например, из front-end, скрипты:
-ANONYMOUS_URLS_REGEX = r'^/?(?:(?:thumb|media)/(?:product\-photo|support|user\-photos))|jsi18n/'
+ANONYMOUS_URLS_REGEX = r'^/?(?:(?:thumb|media)/(?:product\-photo|support|user\-photos|store\-photos|cemetery\-photos))|jsi18n/'
 # URLs, доступные анонимным пользователям, но при определенных условиях
 ANONYMOUS_LIMITED_URLS_REGEX = r'^/?(?:thumb|media)/place\-photos/'
 
@@ -417,6 +417,13 @@ DEATH_CERTIFICATE_REQUIRED = True
 
 # Когда предлагать плановую дату захронения, сколько дней от сегодняшней даты
 BURIAL_PLAN_DATE_DAYS_FROM_TODAY = 1
+
+# Переход из года в год:
+#   - за сколько дней до нового года показывать даты на следующий год
+#   - до какого числа января следующего года учетный номер захоронения
+#     может быть за предыдущий год
+#
+YEAR_OVER_DAYS = 15
 
 # В Беларуси говорят по русски, но терминология там согласно закона
 # несколько иная. Например, то что в РФ именуем кладбищем,

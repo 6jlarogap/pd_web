@@ -22,8 +22,8 @@ urlpatterns = patterns('users.views',
          name='api_settings_oauth_providers_delete'),
 
     url(r'^api/loru/places/?$', 'api_loru_places', name='api_loru_places'),
-    url(r'^api/loru/stores/?$', 'api_loru_stores', name='api_loru_stores'),
-    url(r'^api/loru/stores/(?P<pk>\d+)/?$', 'api_loru_store_detail', name='api_loru_store_detail'),
+    url(r'^api/(?:org|loru)/stores/?$', 'api_loru_stores', name='api_loru_stores'),
+    url(r'^api/(?:org|loru)/stores/(?P<pk>\d+)/?$', 'api_loru_store_detail', name='api_loru_store_detail'),
 
     url(r'^api/loru/favorite_suppliers/?$', 'api_loru_favorite_suppliers', name='api_loru_favorite_suppliers'),
     url(
@@ -82,6 +82,8 @@ urlpatterns = patterns('users.views',
     url(r'^api/clients/(?P<token>[0-9a-f]+)/details/?$', 'api_client_site_detail', name='api_client_site_detail'),
     url(r'^api/clients/(?P<token>[0-9a-f]+)/messages/?$', 'api_client_site_messages', name='api_client_site_messages'),
     url(r'^api/clients/(?P<token>[0-9a-f]+)/employees/?$', 'api_client_site_employees', name='api_client_site_employees'),
+
+    url(r'^api/clients/(?P<token>[0-9a-f]+)/departments/?$', 'api_client_site_departments', name='api_client_site_departments'),
 
     url(r'^autocomplete/org/$', 'autocomplete_org', name='autocomplete_org'),
     url(r'^autocomplete/loru_in_burials/$', 'autocomplete_loru_in_burials', name='autocomplete_loru_in_burials'),

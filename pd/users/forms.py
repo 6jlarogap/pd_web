@@ -21,7 +21,7 @@ from burials.models import Cemetery, PlaceSize, Reason, Burial
 from logs.models import write_log
 
 from users.models import Profile, ProfileLORU, Org, BankAccount, RegisterProfile, OrgCertificate, \
-                         Role, UserPhoto, \
+                         Role, UserPhoto, Store, \
                          get_mail_footer, is_cabinet_user, is_trade_user
 
 User._meta.get_field_by_name('email')[0]._unique = True
@@ -102,9 +102,11 @@ class ProfileDataForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelForm):
             'title',
             'phones',
             'is_agent',
+            'out_of_staff',
             'password1', 'password2',
             'cemetery', 'area',
             'role', 'cemeteries',
+            'store',
         )
 
     def __init__(self, request, my_profile, *args, **kwargs):
@@ -147,6 +149,12 @@ class ProfileDataForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelForm):
             cemetery_qs = Cemetery.objects.none()
 
         self.fields['cemetery'].queryset = cemetery_qs.distinct()
+
+        store_qs = Store.objects.filter(loru=request.user.profile.org)
+        if store_qs:
+            self.fields['store'].queryset = store_qs
+        else:
+            del self.fields['store']
 
         self.fields['user_last_name'].required = True
         self.fields['user_first_name'].required = True
@@ -309,6 +317,13 @@ class ProfileDataForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelForm):
                 if photo_clear and not photo_uploaded:
                     self.photo_form.instance.delete()
                     write_log(self.request, self.instance.user, _(u'Фото удалено'))
+                    write_log(
+                        self.request,
+                        self.instance.user.profile.org,
+                        _(u'Изменены данные пользователя %(fio)s (%(username)s)\nФото удалено') % dict(
+                            fio=profile,
+                            username=profile.user.username,
+                    ))
                     return profile
                 if photo_clear or photo_uploaded:
                     UserPhoto.objects.get(pk=self.photo_form.instance.pk).delete_from_media()
@@ -317,6 +332,14 @@ class ProfileDataForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelForm):
                 photo.user = self.instance.user
                 photo.save()
                 write_log(self.request, self.instance.user, _(u'Прикреплено фото: %s') % photo.original_name)
+                write_log(
+                    self.request,
+                    self.instance.user.profile.org,
+                    _(u'Изменены данные пользователя %(fio)s (%(username)s)\nПрикреплено фото: %(photo)s') % dict(
+                        fio=profile,
+                        username=profile.user.username,
+                        photo=photo.original_name,
+                ))
 
         return profile
 

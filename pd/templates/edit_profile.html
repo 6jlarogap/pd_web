@@ -38,7 +38,6 @@
             <p>{{ form.is_active.label_tag }} {{ form.is_active }} <span class="helptext">{{ form.is_active.help_text }}</span></p>
         {% endif %}
 
-        <br />
         {{ form.user_last_name.errors }}
         <p>{{ form.user_last_name.label_tag }} {{ form.user_last_name }} <span class="helptext">{{ form.user_last_name.help_text }}</span></p>
 
@@ -57,8 +56,16 @@
             <p class="inline">{{ form.title.label_tag }} {{ form.title }} <span class="helptext"> {{ form.title.help_text }}</span></p>
         </fieldset>
 
+        {{ form.out_of_staff.errors }}
+        <p>{{ form.out_of_staff.label_tag }} {{ form.out_of_staff }} <span class="helptext">{{ form.out_of_staff.help_text }}</span></p>
+
         {{ form.phones.errors }}
         <p>{{ form.phones.label_tag }} {{ form.phones }} <span class="helptext">{{ form.phones.help_text }}</span></p>
+
+        {% if form.store %}
+            {{ form.store.errors }}
+            <p>{{ form.store.label_tag }} {{ form.store }} <span class="helptext"> {{ form.store.help_text }}</span></p>
+        {% endif %}
 
         {{ form.photo_form.as_p }}
 
@@ -129,6 +136,7 @@
                 <input type="submit" class="btn btn-primary" value="{% trans "cохранить" %}"/>
             </p>
         {% endif %}
+
     </form>
 
     {% if form.my_profile and form.instance.org.is_ugh %}

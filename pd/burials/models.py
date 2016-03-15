@@ -10,7 +10,7 @@ from django.utils.translation import ugettext_lazy as _
 from django.db.models.query_utils import Q
 from django.conf import settings
 from pd.models import UnclearDateModelField, BaseModel, BaseModelManualDtCreated, \
-                      Files, GetLogsMixin, validate_gt0, SafeDeleteMixin
+                      Files, PhotoFiles, GetLogsMixin, validate_gt0, SafeDeleteMixin
 from pd.views import get_front_end_url
 from pd.utils import utcisoformat
 
@@ -123,6 +123,8 @@ class Cemetery(GetLogsMixin, BaseModelManualDtCreated, PhonesMixin):
     def delete(self):
         self.phone_set.delete()
         self.coordinates.all().delete()
+        for photo in CemeteryPhoto.objects.filter(cemetery=self):
+            photo.delete()
         try:
             super(Cemetery, self).delete()
         except IntegrityError:
@@ -163,6 +165,9 @@ class Cemetery(GetLogsMixin, BaseModelManualDtCreated, PhonesMixin):
         if is_ugh_user(user) and user.profile.is_registrator():
             return user.profile.cemeteries.all()
         return result
+
+class CemeteryPhoto(PhotoFiles, GeoPointModel):
+    cemetery = models.OneToOneField(Cemetery)
 
 class CemeteryCoordinates(CoordinatesModel):
     #TODO:
@@ -454,6 +459,16 @@ class Place(SafeDeleteMixin, GeoPointModel, BaseModelManualDtCreated):
                 gallery.append(request.build_absolute_uri(pph.bfile.url))
         return gallery
         
+    def first_photo(self, request):
+        """
+        Первое фото места, задает общий план
+        """
+        try:
+            photo = PlacePhoto.objects.filter(place=self).order_by('date_of_creation')[0]
+            return photo.bfile and request.build_absolute_uri(photo.bfile.url) or ''
+        except IndexError:
+            return ''
+
     def status_list(self):
         """
         Вернуть список статусов, например ['dt_wrong_fio', 'dt_unindentified', ]

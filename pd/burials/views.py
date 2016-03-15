@@ -211,7 +211,7 @@ class CemeteryViewSet(CaretakerMixin, viewsets.ModelViewSet):
     def getform(self, request, pk=None):
         cemetery = get_object_or_404(self.get_queryset(), pk=pk)
         data = {
-                "cemetery" : CemeterySerializer(cemetery).data,
+                "cemetery" : CemeterySerializer(cemetery, context=dict(request=request)).data,
                 "responsible_phones" : [],
                 "responsible_address" : {}
                 }
@@ -1622,9 +1622,12 @@ class ApiClientSiteCemeteriesView(ApiClientSiteMixin, APIView):
         ugh = self.get_org(token)
         return Response(
             status=200,
-            data=[ CemeteryClientSiteSerializer(cemetery).data \
-                   for cemetery in Cemetery.objects.filter(ugh=ugh)
-        ])
+            data=CemeteryClientSiteSerializer(
+                    Cemetery.objects.filter(ugh=ugh),
+                    context=dict(request=request),
+                    many=True,
+                ).data
+        )
 
 api_client_site_cemeteries = ApiClientSiteCemeteriesView.as_view()
 
@@ -1633,21 +1636,34 @@ class ApiClientSitePlacesView(ApiClientSiteMixin, APIView):
     def get(self, request, token):
         ugh = self.get_org(token)
         query = request.GET.get('query', '').strip()
+        places = Place.objects.none()
         if query:
-            q = Q(cemetery__ugh=ugh)
-            fio = [re_search(f) for f in query.split()]
-            if len(fio) > 2:
-                q &= Q(burial__deadman__middle_name__iregex=fio[2])
-            if len(fio) > 1:
-                q &= Q(burial__deadman__first_name__iregex=fio[1])
-            q &= Q(burial__deadman__last_name__iregex=fio[0])
-            places = Place.objects.filter(q).distinct()[:5]
-        else:
-            places = Place.objects.none()
+            try:
+                offset = request.GET.get('offset') and int(request.GET.get('offset'))
+                limit = request.GET.get('limit') and int(request.GET.get('limit'))
+            except ValueError:
+                pass
+            else:
+                q = Q(cemetery__ugh=ugh)
+                fio = [re_search(f) for f in query.split()]
+                if len(fio) > 2:
+                    q &= Q(burial__deadman__middle_name__iregex=fio[2])
+                if len(fio) > 1:
+                    q &= Q(burial__deadman__first_name__iregex=fio[1])
+                q &= Q(burial__deadman__last_name__iregex=fio[0])
+                places = Place.objects.filter(q).distinct()
+                if offset and limit:
+                    places = places[offset:offset+limit]
+                elif offset:
+                    places = places[offset:]
+                elif limit:
+                    places = places[:limit]
         return Response(
             status=200,
-            data=[ ApiClientSitePlacesSerializer(place).data for place in places
-            ])
+            data=ApiClientSitePlacesSerializer(
+                places,
+                context=dict(request=request), many=True).data
+            )
 
 api_client_site_places = ApiClientSitePlacesView.as_view()
 

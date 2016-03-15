@@ -54,7 +54,7 @@ from users.forms import RegisterForm, LoruFormset, BankAccountFormset, OrgForm, 
                         LoruOrdersStatsForm, ProfileDataForm, OmsOperStats
 from users.models import Profile, Org, RegisterProfile, ProfileLORU, CustomerProfile, Store, \
                          get_mail_footer, is_cabinet_user, is_loru_user, is_ugh_user, \
-                         PermitIfTrade, PermitIfTradeOrSupervisor, \
+                         PermitIfTrade, PermitIfTradeOrSupervisor, PermitIfLoruOrUgh, \
                          PermitIfCabinet, PermitIfTradeOrCabinet, Oauth, OrgAbility, \
                          BankAccount, BankAccountRegister, OrgCertificate, OrgContract, \
                          RegisterProfileContract, RegisterProfileScan, FavoriteSupplier, \
@@ -70,7 +70,8 @@ from pd.views import PaginateListView, RequestToFormMixin, FormInvalidMixin, \
                      get_front_end_host, get_front_end_url, ServiceException
 from geo.models import Location, Country
 
-from users.serializers import StoreSerializer, OrgSerializer, OrgShort2Serializer, \
+from users.serializers import StoreSerializer, Store2Serializer, \
+                              OrgSerializer, OrgShort2Serializer, \
                               OrgShort3Serializer, OrgOptSupplierSerializer, OrgShort5Serializer, \
                               UserSettingsSerializer, ShopSerializer, OrgGallerySerializer, \
                               ShopDetailSerializer, OrgReviewSerializer, \
@@ -2320,7 +2321,7 @@ class StoreList(APIView):
     """
     List all stores, or create a new store.
     """
-    permission_classes = (PermitIfTrade,)
+    permission_classes = (PermitIfLoruOrUgh,)
 
     def get(self, request, format=None):
         stores = Store.objects.filter(loru=request.user.profile.org)
@@ -2328,6 +2329,8 @@ class StoreList(APIView):
         return Response(serializer.data)
 
     def post(self, request, format=None):
+        if is_ugh_user(request.user) and not request.user.profile.is_admin():
+            raise PermissionDenied
         serializer = StoreSerializer(data=request.DATA, context={ 'request': request, })
         if serializer.is_valid():
             serializer.save()
@@ -2343,7 +2346,7 @@ class StoreDetail(APIView):
     """
     Retrieve, update or delete a store instance.
     """
-    permission_classes = (PermitIfTrade,)
+    permission_classes = (PermitIfLoruOrUgh,)
 
     def get_object(self, request, pk):
         try:
@@ -2358,6 +2361,8 @@ class StoreDetail(APIView):
 
     def put(self, request, pk, format=None):
         store = self.get_object(request, pk)
+        if is_ugh_user(request.user) and not request.user.profile.is_admin():
+            return PermissionDenied
         serializer = StoreSerializer(store, data=request.DATA, context={ 'request': request, })
         if serializer.is_valid():
             serializer.save()
@@ -2369,6 +2374,8 @@ class StoreDetail(APIView):
 
     def delete(self, request, pk, format=None):
         store = self.get_object(request, pk)
+        if is_ugh_user(request.user) and not request.user.profile.is_admin():
+            return PermissionDenied
         store.delete()
         return Response(status=200, data={})
 
@@ -2857,17 +2864,39 @@ class ApiClientEmployeesView(ApiClientSiteMixin, APIView):
 
     def get(self, request, token):
         org = self.get_org(token)
-        qs = Profile.objects.filter(org=org, user__is_active=True)
+        qs = Q(org=org, user__is_active=True, out_of_staff=False)
+
+        store_ids = self.request.GET.getlist('departmentId[]')
+        while store_ids.count(u''):
+            store_ids.remove(u'')
+        if store_ids:
+            qs &= Q(store__pk__in=store_ids)
+
         return Response(
             status=200,
             data=ProfileClientSiteSerializer(
-                qs,
+                Profile.objects.filter(qs),
                 context=dict(request=request),
                 many=True,
             ).data
         )
 
 api_client_site_employees = ApiClientEmployeesView.as_view()
+
+class ApiClientDepartmentsView(ApiClientSiteMixin, APIView):
+
+    def get(self, request, token):
+        org = self.get_org(token)
+        return Response(
+            status=200,
+            data=Store2Serializer(
+                Store.objects.filter(loru=org),
+                context=dict(request=request),
+                many=True,
+            ).data
+        )
+
+api_client_site_departments = ApiClientDepartmentsView.as_view()
 
 class ApiClientSiteMessagesView(CheckRecaptchaMixin, ApiClientSiteMixin, APIView):
     """

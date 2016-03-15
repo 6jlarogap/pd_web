@@ -57,8 +57,8 @@ for partition in CDS_PARTITIONS:
     splitted = outp.split()
     usage = int(splitted[4].rstrip('%'))
     size = splitted[1]
-    avail = splitted[2]
-    used = splitted[3]
+    used = splitted[2]
+    avail = splitted[3]
     if usage >= CDS_THRESHOLD:
         print " - reached the threshold! Sending mail"
         email_(partition, usage, size, used, avail)
