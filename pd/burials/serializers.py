@@ -190,13 +190,17 @@ class ApiClientSitePlacesSerializer(PlaceDeadmenMixin, ApiPlacesSerializer):
     address = serializers.Field(source='address_short')
     photo = serializers.SerializerMethodField('photo_func')
     deadmen = serializers.SerializerMethodField('deadmen_func')
+    responsible = serializers.SerializerMethodField('responsible_func')
 
     class Meta:
         model = Place
-        fields = ('id', 'address', 'location', 'photo', 'deadmen',)
+        fields = ('id', 'address', 'location', 'photo', 'deadmen', 'responsible')
 
     def photo_func(self, place):
         return place.first_photo(self.context['request'])
+
+    def responsible_func(self, place):
+        return dict(fullname=u"%s" % place.responsible) if place.responsible else None
 
 class PlaceSerializer(GetGalleryMixin, serializers.ModelSerializer):
     cemetery = serializers.PrimaryKeyRelatedField()
