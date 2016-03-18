@@ -9,6 +9,8 @@ from pd.models import BaseModel
 
 import re, urllib2, json
 
+YANDEX_GEOCODE_URL = "http://geocode-maps.yandex.ru/1.x/?geocode=%s&format=json&results=1"
+
 class GeoPointModel(models.Model):
     """
     Базовая GEO модель
@@ -67,15 +69,11 @@ class Country(models.Model):
         """
         Получить сырые данные для последующей выемки из них страны, адреса ...
         """
-        YANDEX_GEOCODE_URL = "http://geocode-maps.yandex.ru/1.x/?geocode=%s,%s&format=json&results=1"
-
         if latitude is None or longitude is None:
             return None
+        query = u"%s,%s" % (longitude, latitude, )
         try:
-            r = urllib2.urlopen(YANDEX_GEOCODE_URL % (
-                longitude,
-                latitude,
-            ))
+            r = urllib2.urlopen(YANDEX_GEOCODE_URL % query)
             raw_data = r.read().decode(r.info().getparam('charset') or 'utf-8')
         except (urllib2.HTTPError, urllib2.URLError):
             return None
@@ -293,6 +291,41 @@ class Location(models.Model):
             return dict(latitude=self.gps_y, longitude=self.gps_x)
         else:
             return None
+
+    def get_yandex_coords(self):
+        """
+        Получить координаты места от yandex
+        """
+        location = None
+        if self.addr_str:
+            query = self.addr_str.strip()
+        elif self.country and self.country.name:
+            query = self.__unicode__()
+        else:
+            query = ''
+        if len(query) > 3:
+            try:
+                query = urllib2.quote(query.encode('utf-8'))
+                r = urllib2.urlopen(YANDEX_GEOCODE_URL % query, timeout=10)
+                raw_data = r.read().decode(r.info().getparam('charset') or 'utf-8')
+                data = json.loads(raw_data)
+                pos  = data['response']['GeoObjectCollection']['featureMember'][0] \
+                                ['GeoObject']['Point']['pos']
+                longitude, latitude = pos.split()
+                location = dict(
+                    latitude=float(latitude),
+                    longitude=float(longitude),
+                )
+            except (
+                    urllib2.HTTPError,
+                    urllib2.URLError,
+                    IndexError,
+                    KeyError,
+                    ValueError,
+                    AttributeError,
+                   ):
+                pass
+        return location
 
 class LocationMixin(object):
 

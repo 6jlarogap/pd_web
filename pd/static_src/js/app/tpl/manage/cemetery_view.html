@@ -17,6 +17,7 @@
     <p ng-show="cemetery.archive_burial_account_number_required">Номер архивного захоронения обязателен</p>
     <!-- address address_class="address_class" address="cemetery.address" save_action="saveEditForm"></address -->
    <p><b>Ответственный смотритель:</b> {{ caretaker_show }}</p>
+   <p ng-show="cemetery_address.gps_x"><b>Координаты</b>: широта: {{cemetery_address.gps_y}}, долгота: {{cemetery_address.gps_x}}</p>
 
     <div class="row-fluid" ng-show="cemetery_address.country.name">
       <div class="span6">
@@ -25,21 +26,29 @@
             <dt>Страна</dt>
             <dd>{{cemetery_address.country.name || '-'}}</dd>
 
-            <dt>Регион</dt>
-            <dd>{{cemetery_address.region.name || '-'}}</dd>
+            <div ng-show="cemetery_address.region.name" >
+                <dt>Регион</dt>
+                <dd>{{cemetery_address.region.name || '-'}}</dd>
+            </div>
 
-            <dt>Город</dt>
-            <dd>{{cemetery_address.city.name || '-'}}</dd>
+            <div ng-show="cemetery_address.city.name" >
+                <dt>Город</dt>
+                <dd>{{cemetery_address.city.name || '-'}}</dd>
+            </div>
 
-            <dt>Улица</dt>
-            <dd>{{cemetery_address.street.name || '-'}}</dd>
+            <div ng-show="cemetery_address.street.name" >
+                <dt>Улица</dt>
+                <dd>{{cemetery_address.street.name || '-'}}</dd>
+            </div>
 
-            <dt>Почтовый индекс</dt>
-            <dd>{{cemetery_address.post_index || '-'}}</dd>
+            <div ng-show="cemetery_address.post_index" >
+                <dt>Почтовый индекс</dt>
+                <dd>{{cemetery_address.post_index || '-'}}</dd>
+            </div>
           </dl>
         </div>
       </div>
-      <div class="span6">
+      <div class="span6" ng-show="cemetery_address.street.name">
         <dl class="dl-horizontal">
           <dt>Дом</dt>
           <dd>{{cemetery_address.house || '-'}}</dd>
@@ -67,9 +76,9 @@
 
 
   </div>
-  <yandex-map id="yandex-map" class="span5" markers="markers"></yandex-map>
+  <yandex-map id="yandex-map" class="span5" coordinates="cemeteryCoordinates" zoom="cemeteryMapZoom">
+  </yandex-map>
 
-  <!--ymap-marker coordinates="marker" icon="$index+1" balloon="'qqq'" ng-repeat="marker in markers"></ymap-marker-->
 </div>
 
 <h3>Участки</h3>
