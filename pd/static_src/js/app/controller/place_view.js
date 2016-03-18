@@ -586,6 +586,7 @@
             });
         }
     }
+    ymapData.map.setCenter(data.coords);
   });
   $scope.is_responsible_disabled = function (responsibleEditForm, responsibleEditFormAddr) {
     var o = $scope.editor;

@@ -174,6 +174,12 @@ class CemeteryViewSet(CaretakerMixin, viewsets.ModelViewSet):
         
         obj.address = address_serializer.save()
         obj.address.set_related_addr(data=address)
+        if obj.address and \
+           (obj.address.gps_y is None or obj.address.gps_x is None):
+            location = obj.address.get_yandex_coords()
+            if location:
+                obj.address.gps_y = location['latitude']
+                obj.address.gps_x = location['longitude']
         obj.address.save()
         
         try:
