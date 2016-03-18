@@ -45,6 +45,72 @@ function CemeteryViewCtrl(
 
     $scope.coordinates = false;
 
+    $scope.updateMap = function () {
+        if ($scope.cemetery) {
+            var latitude = null;
+            var longitude = null;
+            var caption = 'Кладбище: "{0}"'.format($scope.cemetery.name);
+            if ($scope.cemetery &&
+                $scope.cemetery_address &&
+                $scope.cemetery_address.gps_y &&
+                $scope.cemetery_address.gps_x) {
+                    latitude = $scope.cemetery_address.gps_y;
+                    longitude = $scope.cemetery_address.gps_x;
+                }
+            ymapData.markers = [
+                {
+                    point: [
+                        geo.getLat(latitude),
+                        geo.getLng(longitude)
+                    ],
+                    caption: caption,
+                    content: caption,
+                    obj_type: 'cemetery',
+                    id: $scope.cemetery.id
+                }
+            ];
+            $scope.cemeteryMapZoom = 14;
+            $scope.cemeteryCoordinates = [
+                {
+                    point: [
+                        geo.getLat(latitude),
+                        geo.getLng(longitude)
+                    ],
+                    title: caption,
+                    obj_type: 'cemetery',
+                    id: $scope.cemetery.id
+                }
+            ];
+        } else {
+            ymapData.markers = [];
+        }
+        ymapData.points = [];
+        $scope.$broadcast('handleMapChanged');
+    };
+
+  $scope.$on("mapPointChanged:cemetery", function (event, data) {
+    if ($scope.cemetery.id == data.obj_id) {
+        var message = !$scope.cemetery_address.gps_x &&
+                      typeof($scope.cemetery_address.gps_x) === "object" ?
+                        // is null
+                        "Задать координаты кладбища?" :
+                        "Изменить координаты кладбища?";
+         if (confirm(message)) {
+                $scope.cemetery.obj_address = $scope.cemetery_address;
+                $scope.cemetery.obj_address.gps_x = data.coords[1];
+                $scope.cemetery.obj_address.gps_y = data.coords[0];
+                $scope.cemetery.time_begin = date2time($scope.cemetery.time_begin);
+                $scope.cemetery.time_end = date2time($scope.cemetery.time_end);
+                $scope.$digest();
+                $scope.cemetery.$update(function() {
+                    $scope.update();
+                    noty({text: 'Изменения сохранены', type:'success', layout:'topRight'});
+                });
+         }
+        ymapData.map.setCenter(data.coords);
+    }
+  });
+
     $scope.update = function() {
         $scope.area = {
             availability: 'open',
@@ -93,31 +159,8 @@ function CemeteryViewCtrl(
                 $scope.cemetery_address.street = {};
             }
 
-            if (!result.address) {
-                return;
-            }
-
-            $scope.markers = [];
-            if (result.address.gps_x && result.address.gps_y) {
-                $scope.markers.push([result.address.gps_y, result.address.gps_x]);
-            } else {
-                var addressString = _.reduce($scope.cemetery_address, function (addrStr, addrComponent, key) {
-                    if ('id' === key || !addrComponent) {
-                        return addrStr;
-                    }
-
-                    if (_.has(addrComponent, 'name')) {
-                        addrComponent = addrComponent.name;
-                    }
-
-                    return addrStr + (addrStr ? ', ' : '') + addrComponent;
-                }, '');
-
-                pdYandex.geocode(addressString).then(function (point) {
-                    $scope.markers = [point];
-                });
-            }
-        });
+            $scope.updateMap();
+         });
 
         Area.list({cemetery_id: $routeParams.cemetery_id}, function(result) {
             $scope.area_list = result;
@@ -163,7 +206,6 @@ function CemeteryViewCtrl(
     };
 
     $scope.saveEditForm = function() {
-        console.log($scope.editor.cemetery_editors);
         $scope.editor.cemetery.time_begin = date2time($scope.editor.cemetery.time_begin);
         $scope.editor.cemetery.time_end = date2time($scope.editor.cemetery.time_end);
         $scope.editor.cemetery.obj_phones = $scope.editor.phones;

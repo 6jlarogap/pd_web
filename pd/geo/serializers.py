@@ -158,6 +158,9 @@ class LocationStaticSerializer(serializers.ModelSerializer):
                  'post_index', 'house', 'block', 'building', 'flat', 'gps_x', 'gps_y', 'info' ) 
 
 class LocationDataSerializer(serializers.ModelSerializer):
+    gps_x = serializers.FloatField(required=False)
+    gps_y = serializers.FloatField(required=False)
+
     class Meta:
         model = Location
         fields = ('id', 'post_index', 'house', 'block', 'building', 'flat', 'gps_x', 'gps_y', 'info' ) 
