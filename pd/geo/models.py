@@ -306,7 +306,7 @@ class Location(models.Model):
         if len(query) > 3:
             try:
                 query = urllib2.quote(query.encode('utf-8'))
-                r = urllib2.urlopen(YANDEX_GEOCODE_URL % query)
+                r = urllib2.urlopen(YANDEX_GEOCODE_URL % query, timeout=10)
                 raw_data = r.read().decode(r.info().getparam('charset') or 'utf-8')
                 data = json.loads(raw_data)
                 pos  = data['response']['GeoObjectCollection']['featureMember'][0] \
