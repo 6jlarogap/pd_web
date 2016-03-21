@@ -261,7 +261,7 @@ function draw_map_items($scope, data) {
       point = data.points[i].point;
       props = angular.extend({
         clusterCaption: data.points[i].caption,
-        balloonContentBody: data.points[i].content,
+        balloonContentBody: data.points[i].content
       }, $scope.properties);
       marker = $scope.addCircle(point, props, i);
       marker.properties.set('obj_id', data.points[i].id);
