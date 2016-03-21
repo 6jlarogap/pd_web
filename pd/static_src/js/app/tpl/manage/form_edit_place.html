@@ -48,22 +48,18 @@
             <div class="control-group" ng-class="{error: placeEditForm.placeLen.$dirty && placeEditForm.placeLen.$invalid}">
             <label class="control-label" for="placeLen">Длина</label>
             <div class="controls">
-                <input name="placeLen" id="placeLen" type="number" step="0.01" min="0.1" max="10"
-                    ng-model="editor.item.place_length" maxlength="14"/>
-                <span class="help-block" ng-show="placeEditForm.placeLen.$error.required">Не указано</span>
-                <span class="help-block " ng-show="placeEditForm.placeLen.$error.min">Число должно быть больше 0</span>
-                <span class="help-block" ng-show="placeEditForm.placeLen.$error.max">Число должно быть меньше либо равным 10</span>
+                <input name="placeLen" id="placeLen" type="text" ng-pattern="/^\d?\d?(\.\d?\d?)?$/"
+                    ng-model="editor.item.place_length"/>
+                <span class="help-block " ng-show="placeEditForm.placeLen.$error.pattern">Неверное число для длины места</span>
             </div>
             </div>
 
             <div class="control-group" ng-class="{error: placeEditForm.placeW.$dirty && placeEditForm.placeW.$invalid}">
             <label class="control-label" for="placeW">Ширина</label>
             <div class="controls">
-                <input name="placeW" id="placeW" step="0.01" min="0.1" max="10" type="number"
-                    ng-model="editor.item.place_width" maxlength="14"/>
-                <span class="help-block" ng-show="placeEditForm.placeW.$error.required">Не указано</span>
-                <span class="help-block" ng-show="placeEditForm.placeW.$error.min">Число должно быть больше 0</span>
-                <span class="help-block" ng-show="placeEditForm.placeW.$error.max">Число должно быть меньше либо равным 10</span>
+                <input name="placeW" id="placeW" type="text" ng-pattern="/^\d?\d?(\.\d?\d?)?$/"
+                    ng-model="editor.item.place_width"/>
+                <span class="help-block " ng-show="placeEditForm.placeW.$error.pattern">Неверное число для ширины места</span>
             </div>
             </div>
 
