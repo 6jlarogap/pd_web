@@ -49,7 +49,8 @@
             $scope.item.place),
 
           obj_type: 'place',
-          id: $scope.item.id
+          id: $scope.item.id,
+          draggable: $scope.is_editable
         }
       ];
       $scope.placeMapZoom = 16;

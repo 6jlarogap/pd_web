@@ -36,6 +36,13 @@
     margin-bottom:20px;
 }
 
+.a-la-yandex-map{
+    height:290px;
+    background:#eee;
+    padding-top:120px;
+    text-align:center;
+}
+
 form .error{
     color: #b94a48;
     margin: -5px 0 0 69px;
