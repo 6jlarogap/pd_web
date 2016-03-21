@@ -76,8 +76,18 @@
 
 
   </div>
-  <yandex-map id="yandex-map" class="span5" coordinates="cemeteryCoordinates" zoom="cemeteryMapZoom">
-  </yandex-map>
+  <div ng-show="cemetery_address.gps_x || cemetery_address.country.name">
+    <yandex-map id="yandex-map" class="span5" coordinates="cemeteryCoordinates" zoom="cemeteryMapZoom">
+    </yandex-map>
+  </div>
+
+  <div ng-show="!cemetery_address.gps_x && !cemetery_address.country.name" class="a-la-yandex-map span5">
+    <big><big>
+        Кладбище может быть указано на карте
+        <br /><br />
+        Но не заданы адрес/координаты кладбища
+    </big></big>
+  </div>
 
 </div>
 
