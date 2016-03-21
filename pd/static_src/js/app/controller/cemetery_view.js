@@ -66,7 +66,8 @@ function CemeteryViewCtrl(
                     caption: caption,
                     content: caption,
                     obj_type: 'cemetery',
-                    id: $scope.cemetery.id
+                    id: $scope.cemetery.id,
+                    draggable: $scope.is_editable
                 }
             ];
             $scope.cemeteryMapZoom = 14;
@@ -89,7 +90,7 @@ function CemeteryViewCtrl(
     };
 
   $scope.$on("mapPointChanged:cemetery", function (event, data) {
-    if ($scope.cemetery.id == data.obj_id) {
+    if ($scope.is_editable && $scope.cemetery.id == data.obj_id) {
         var message = !$scope.cemetery_address.gps_x &&
                       typeof($scope.cemetery_address.gps_x) === "object" ?
                         // is null

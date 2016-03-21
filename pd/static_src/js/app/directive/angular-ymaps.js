@@ -83,8 +83,9 @@ var YMAPS_URL = '//api-maps.yandex.ru/2.0/?load=package.standard,package.cluster
         });
       }
 
-      $scope.addMarker = function (coordinates, properties, i) {
-        var placeMark = new ymaps.Placemark(coordinates, properties, {draggable: true, geodesic: true});
+      $scope.addMarker = function (coordinates, properties, draggable, i) {
+        var draggable_ = draggable === undefined ? true : draggable;
+        var placeMark = new ymaps.Placemark(coordinates, properties, {draggable: draggable_, geodesic: true});
         //ymapData.markers[i].marker =  placeMark;
         ymapData.collection.add(placeMark);
         $scope.bindActions(placeMark);
@@ -249,7 +250,8 @@ function draw_map_items($scope, data) {
         clusterCaption: data.markers[i].caption,
         balloonContentBody: data.markers[i].content
       }, $scope.properties);
-      marker = $scope.addMarker(point, props, i);
+      var draggable = data.markers[i].draggable === undefined ? true : data.markers[i].draggable;
+      marker = $scope.addMarker(point, props, draggable, i);
       marker.properties.set('obj_id', data.markers[i].id);
       marker.properties.set('obj_type', data.markers[i].obj_type);
     }
@@ -259,7 +261,7 @@ function draw_map_items($scope, data) {
       point = data.points[i].point;
       props = angular.extend({
         clusterCaption: data.points[i].caption,
-        balloonContentBody: data.points[i].content
+        balloonContentBody: data.points[i].content,
       }, $scope.properties);
       marker = $scope.addCircle(point, props, i);
       marker.properties.set('obj_id', data.points[i].id);
