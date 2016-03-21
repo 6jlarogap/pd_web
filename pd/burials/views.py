@@ -163,6 +163,8 @@ class CemeteryViewSet(CaretakerMixin, viewsets.ModelViewSet):
     
 
     def pre_save(self, obj):
+        old_lat = obj.address and obj.address.gps_y
+        old_lng = obj.address and obj.address.gps_x
         address = self.request.DATA.get('obj_address')
         address_serializer = LocationDataSerializer(obj.address, data=address, partial=True)
         
@@ -174,12 +176,14 @@ class CemeteryViewSet(CaretakerMixin, viewsets.ModelViewSet):
         
         obj.address = address_serializer.save()
         obj.address.set_related_addr(data=address)
+        coords_by_address = False
         if obj.address and \
            (obj.address.gps_y is None or obj.address.gps_x is None):
             location = obj.address.get_yandex_coords()
             if location:
                 obj.address.gps_y = location['latitude']
                 obj.address.gps_x = location['longitude']
+                coords_by_address = True
         obj.address.save()
         
         try:
@@ -189,7 +193,22 @@ class CemeteryViewSet(CaretakerMixin, viewsets.ModelViewSet):
         except AttributeError:
             old = None
         log_object(self.request, obj=obj, old=old, new=obj, reason=_(u'Кладбище изменено'))
-        #write_log(self.request, obj, _(u'Кладбище изменено'))
+        if coords_by_address:
+            write_log(
+                self.request,
+                obj,
+                _(u"Назначены координаты по адресу\n широта: %(lat)s, долгота: %(lng)s") % dict(
+                    lat=obj.address.gps_y,
+                    lng=obj.address.gps_x,
+            ))
+        elif obj.address.gps_y != old_lat or obj.address.gps_x != old_lng:
+            write_log(
+                self.request,
+                obj,
+                _(u"Изменены координаты\n широта: %(lat)s, долгота: %(lng)s") % dict(
+                    lat=obj.address.gps_y,
+                    lng=obj.address.gps_x,
+            ))
 
         # TODO: send signal
         phone = self.request.DATA.get('obj_phones', [])
