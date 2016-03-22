@@ -95,15 +95,27 @@
     {% endif %}
 {% endif %}
 {{ form.burial_container.errors }}
-<div id="burial_container">
-    <h2>{{ form.burial_container.label}}</h2>
-    {{ form.burial_container }}<span class="helptext">{{ form.burial_container.help_text }}</span></p>
-</div>
-{{ form.burial_type.errors }}
-<div id="burial_type">
-    <h2>{{ form.burial_type.label}}</h2>
-    <p>{{ form.burial_type }}<span class="helptext">{{ form.burial_type.help_text }}</span></p>
-</div>
+<h2>{{ form.burial_container.label}}</h2>
+<table cellpadding="2">
+    <tr>
+        <td style="background:#eeeeee;">
+            <div id="burial_container">
+                <p>{{ form.burial_container }}<span class="helptext">{{ form.burial_container.help_text }}</span></p>
+            </div>
+            {{ form.burial_type.errors }}
+        </td>
+    </tr>
+</table>
+<h2>{{ form.burial_type.label}}</h2>
+<table cellpadding="2">
+    <tr>
+        <td style="background:#eeeeee;">
+            <div id="burial_type">
+                <p>{{ form.burial_type }}<span class="helptext">{{ form.burial_type.help_text }}</span></p>
+            </div>
+        </td>
+    </tr>
+</table>
 <!-- <div id="cont_dead" style="{% if form.instance.pk %}display: none{% endif %}"> -->
 <div id="cont_dead">
     <h2>{% trans "Усопший" %} {{ form.deadman_form.instance|default:"" }}</h2>
