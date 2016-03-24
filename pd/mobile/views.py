@@ -465,6 +465,7 @@ class ApiMobileAreaPlaces(PlaceUploadMixin, APIView):
             write_log(request, place, operation=LogOperation.PLACE_CREATED_MOBILE)
         elif int(request.GET.get('isOverwrite', '0')) and request.DATA.get('placeName'):
             del place_defaults['is_invent']
+            del place_defaults['dt_created']
             do_save = False
             for f in place_defaults:
                 if place_defaults[f] != getattr(place, f):
