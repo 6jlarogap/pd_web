@@ -25,7 +25,7 @@ from burials.models import Burial
 from persons.models import DeadPerson
 from persons.models import BasePerson
 from users.models import PermitIfUgh
-from logs.models import write_log, LogOperation
+from logs.models import write_log, Log, LogOperation
 from pd.models import UnclearDate
 from pd.utils import utc2local, get_image
 
@@ -462,7 +462,9 @@ class ApiMobileAreaPlaces(PlaceUploadMixin, APIView):
             **place_key_parms
         )
         if created_:
-            write_log(request, place, operation=LogOperation.PLACE_CREATED_MOBILE)
+            logrec = write_log(request, place, operation=LogOperation.PLACE_CREATED_MOBILE)
+            if 'dt_created' in place_defaults:
+                Log.objects.filter(pk=logrec.pk).update(dt=place.dt_created)
         elif int(request.GET.get('isOverwrite', '0')) and request.DATA.get('placeName'):
             del place_defaults['is_invent']
             if 'dt_created' in place_defaults:
