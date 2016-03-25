@@ -25,7 +25,7 @@ from burials.models import Burial
 from persons.models import DeadPerson
 from persons.models import BasePerson
 from users.models import PermitIfUgh
-from logs.models import write_log, LogOperation
+from logs.models import write_log, Log, LogOperation
 from pd.models import UnclearDate
 from pd.utils import utc2local, get_image
 
@@ -386,13 +386,17 @@ class PlaceUploadMixin(object):
             dtSizeViolated='dt_size_violated',
             dtUnowned='dt_unowned',
             dtUnindentified='dt_unindentified',
-            dtCreated='dt_created',
         )
         if do_put:
             # При правке места могут исправляться:
             parms.update(dict(
                 placeName='place',
                 rowName='row',
+            ))
+        else:
+            # При отправке нового места (и только!) приходит dtCreated
+            parms.update(dict(
+                dtCreated='dt_created',
             ))
         result = dict()
         for k in parms:
@@ -462,7 +466,13 @@ class ApiMobileAreaPlaces(PlaceUploadMixin, APIView):
             **place_key_parms
         )
         if created_:
-            write_log(request, place, operation=LogOperation.PLACE_CREATED_MOBILE)
+            print "Place created by MobileKeeper, id = %s" % place.pk
+            logrec = write_log(request, place, operation=LogOperation.PLACE_CREATED_MOBILE)
+            if 'dt_created' in place_defaults:
+                Log.objects.filter(pk=logrec.pk).update(dt=place.dt_created)
+                print " - got dt_created, %s" % place.dt_created
+            else:
+                print " - !!! no dt_created in input data"
         elif int(request.GET.get('isOverwrite', '0')) and request.DATA.get('placeName'):
             del place_defaults['is_invent']
             if 'dt_created' in place_defaults:
