@@ -20,7 +20,7 @@
         </div>
     </div>
 
-    {% if not form.errors and mark.current_burials.total %}
+    {% if not form.errors and mark %}
 
         <div id="current_burials_grid">
             <h3>{{ mark.current_burials.caption }}, {% trans "всего за период" %}: {{ mark.current_burials.total }}

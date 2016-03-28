@@ -1283,8 +1283,8 @@ class OmsOperStatsView(UGHRequiredMixin, PaginateListView):
                             LogOperation.CLOSED_BURIAL_FULL,
                             LogOperation.CLOSED_BURIAL_UGH,
                 )),
-                caption=_(u"Закрытые текущие захоронения" if are_lorus_in_system \
-                          else u"Закрытые текущие захоронения")
+                caption=_(u"Закрытые текущие захоронения") if are_lorus_in_system \
+                          else _(u"Закрытые ручные захоронения")
             ),
             dict(
                 name='inventoried_places',
