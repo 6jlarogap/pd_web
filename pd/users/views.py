@@ -1264,85 +1264,122 @@ class OmsOperStatsView(UGHRequiredMixin, PaginateListView):
         for profile in Profile.objects.filter(org=self.request.user.profile.org):
             if profile.user:
                 users.append(profile.user)
-        qs = Q(user__in=users)
+        q_users = Q(user__in=users)
         q_dt = Q(
             dt__gte=d_start,
             dt__lt=d_end + datetime.timedelta(days=1)
         )
-        q_dt_created = Q(
-            dt_created__gte=d_start,
-            dt_created__lt=d_end + datetime.timedelta(days=1)
-        )
-
         values = lambda qs: \
             QuerySetStats(qs, date_field='dt', aggregate=Count('id')). \
             time_series(d_start, d_end, interval='days')
 
-        current_burials_qs = Log.objects.filter(qs & Q(
-            operation__in=(
-                LogOperation.CLOSED_BURIAL_FULL,
-                LogOperation.CLOSED_BURIAL_UGH,
-        )))
-        current_burials_total = current_burials_qs.filter(q_dt).count()
-        current_burials = values(current_burials_qs)
+        are_lorus_in_system = Org.objects.filter(type=Org.PROFILE_LORU).exists()
 
-        # По инвентаризованным местам дату берем из места,
-        # там dt_created: дата создания в мобильном приложении
-        # в оффлайне
-        inventoried_places_qs = Place.objects.filter(
-            is_invent=True,
-            cemetery__ugh=self.request.user.profile.org,
-        )
-        inventoried_places_total = inventoried_places_qs.filter(q_dt_created).count()
-
-        qsstats_ = QuerySetStats(
-            inventoried_places_qs,
-            date_field='dt_created',
-            aggregate=Count('id')
-        )
-        inventoried_places = qsstats_.time_series(d_start, d_end, interval='days')
-
+        # Раскидаем по таблицам для пользователей
+        parms = [
+            dict(
+                name='current_burials',
+                qs=Q(operation__in=(
+                            LogOperation.CLOSED_BURIAL_FULL,
+                            LogOperation.CLOSED_BURIAL_UGH,
+                )),
+                caption=_(u"Закрытые текущие захоронения") if are_lorus_in_system \
+                          else _(u"Закрытые ручные захоронения")
+            ),
+            dict(
+                name='inventoried_places',
+                qs=Q(operation=LogOperation.PLACE_CREATED_MOBILE),
+                caption=_(u"Места с мобильного приложения"),
+            ),
+        ]
         if settings.REDIRECT_LOGIN_TO_FRONT_END:
-            processed_places_qs = Log.objects.filter(qs & Q(
-                operation=LogOperation.PLACE_PHOTO_PROCESSED,
-            ))
-            processed_places_total = processed_places_qs.filter(q_dt).count()
-            processed_places = values(processed_places_qs)
+            parms += [
+                dict(
+                    name='processed_places',
+                    qs=Q(operation=LogOperation.PLACE_PHOTO_PROCESSED),
+                    caption=_(u"Места, обработанные по фото"),
+                ),
+                dict(
+                    name='inventoried_burials',
+                    qs=Q(operation=LogOperation.BURIAL_PHOTO_PROCESSED),
+                    caption=_(u"Захоронения, обработанные по фото"),
+                ),
+            ]
+        mark = {}
+        #   parm:
+        #       {
+        #           total:
+        #           days:  [ .... ]
+        #           totals:  [ .... ]
+        #           users: [
+        #               {
+        #                   user: user
+        #                   total: total
+        #                   days: [ num1, num2 ... ]
+        #               }
+        #       ]
+        #       }
+        #
+        for parm in parms:
+            mark[parm['name']] = {}
+            qs_org = Log.objects.filter(parm['qs'] & q_users)
+            mark[parm['name']]['total'] = qs_org.filter(q_dt).count()
+            mark[parm['name']]['values'] = []
+            mark[parm['name']]['caption'] = parm['caption']
+            if not mark[parm['name']]['total']:
+                continue
+            mark[parm['name']]['values'] = values(qs_org)
 
-            inventoried_burials_qs = Log.objects.filter(qs & Q(
-                operation=LogOperation.BURIAL_PHOTO_PROCESSED
-            ))
-            inventoried_burials_total = inventoried_burials_qs.filter(q_dt).count()
-            inventoried_burials = values(inventoried_burials_qs)
-
-            dates = SeriesTable(
-                current_burials,
-                inventoried_places,
-                processed_places,
-                inventoried_burials,
-            )
-        else:
-            processed_places_total = 0
-            processed_places = []
-
-            inventoried_burials_total = 0
-            inventoried_burials = []
-
-            dates = SeriesTable(
-                current_burials,
-                inventoried_places,
-            )
+            mark[parm['name']]['users'] = []
+            # Только дни, в которых были результаты
+            days = []
+            day_totals = []
+            dt = d_start
+            while dt <= d_end:
+                qs_day = Q(
+                    dt__gte=dt,
+                    dt__lt=dt + datetime.timedelta(days=1)
+                )
+                total = Log.objects. \
+                        filter(parm['qs'] & qs_day & q_users).count()
+                if total:
+                    days.append(dt)
+                    day_totals.append(total)
+                dt = dt + datetime.timedelta(days=1)
+            mark[parm['name']]['days'] = days
+            mark[parm['name']]['day_totals'] = day_totals
+            mark_users = []
+            for user in users:
+                qs_dt = q_dt
+                qs_user = Q(user=user)
+                total = Log.objects. \
+                            filter(parm['qs'] & qs_dt & qs_user).count()
+                if not total:
+                    continue
+                mark_user = dict(
+                    user=user,
+                    total=total,
+                    )
+                mark_user['days'] = []
+                mark_user['days_users'] = []
+                for dt in days:
+                    qs_dt = Q(
+                        dt__gte=dt,
+                        dt__lt=dt + datetime.timedelta(days=1)
+                    )
+                    count = Log.objects. \
+                                filter(parm['qs'] & qs_dt & qs_user).count()
+                    mark_user['days'].append(count)
+                mark_users.append(mark_user)
+            mark_users.sort(key=lambda x: x['total'], reverse=True)
+            mark[parm['name']]['users'] = mark_users
 
         self.context_extra = dict(
-            current_burials=current_burials,
-            current_burials_total=current_burials_total,
-            inventoried_places=inventoried_places,
-            inventoried_places_total=inventoried_places_total,
-            processed_places=processed_places,
-            processed_places_total=processed_places_total,
-            inventoried_burials=inventoried_burials,
-            inventoried_burials_total=inventoried_burials_total,
+            mark=mark,
+            parms=parms,
         )
+
+        dates = SeriesTable(*[ mark[parm['name']]['values'] for parm in parms ])
         return dates
 
     def get_context_data(self, **kwargs):
