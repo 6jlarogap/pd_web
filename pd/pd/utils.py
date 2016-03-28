@@ -217,10 +217,10 @@ class SeriesTable(Sequence):
         ...
     А в шаблон надо отдать таблицу (*):
 
-            показатель1  показатель2
-    --------------------------------
-    [дата1, значение1,   значение3 ...]
-    [дата2, значение2,   значение4 ...]
+                          показатель1  показатель2
+    --------------------------------------------------
+    {date:дата1, values: [значение1,   значение3 ...]}
+    {date:дата2, values: [значение2,   значение4 ...]}
 
     Всё было бы хорошо, если б существовала шаблонная конструкция
     типа for i in показатель1.length:
@@ -270,7 +270,10 @@ class SeriesTable(Sequence):
                     pass
         elif isinstance(key, int):
             key = self._indexes[key]
-            result = [ self._collection[0][key][0] ]
+            result = dict(
+                date=self._collection[0][key][0],
+                values=[]
+            )
             for ser in self._collection:
-                result.append(ser[key][1])
+                result['values'].append(ser[key][1])
         return result
