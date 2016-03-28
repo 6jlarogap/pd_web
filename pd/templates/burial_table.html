@@ -240,8 +240,14 @@
                 {% if not b.is_bio and not b.dc_filled and b.can_personal_data and global_context_DEATH_CERTIFICATE_REQUIRED %}
                     <br/><span style="color:red">{% trans "Нет ДоС!" %}</span>
                 {% endif %}
+                {% if b.burialfiles_set.all or b.get_place.placephoto_set.all %}
+                    <br /><br />
+                {% endif %}
                 {% if b.burialfiles_set.all %}
-                    <br /><span style="color:blue">{% trans "Файл(ы)" %}</span>
+                    <span class="badge" title="{% trans "Есть прикрепленные файлы" %}"><i class="icon-book icon-white"></i></span>
+                {% endif %}
+                {% if b.get_place.placephoto_set.all %}
+                    <span class="badge" title="{% trans "Место имеет фото" %}"><i class="icon-camera icon-white"></i></span>
                 {% endif %}
             </td>
         </tr>
