@@ -1,0 +1,50 @@
+{% load i18n %}
+{% load googlecharts %}
+
+{% if mark_mark.total %}
+    <table class="table table-bordered table-striped">
+    <tr>
+        <th>
+        </th>
+        <th>
+            {% trans "Итого" %}
+        </th>
+        {% for day in mark_mark.days %}
+            <td style="text-align:center;">
+                {{ day|date:"M" }}<br />{{ day|date:"d" }}
+            </td>
+        {% endfor %}
+    </tr>
+    {% for user in mark_mark.users %}
+        </tr>
+            <td>
+                {{ user.user.profile.last_name_initials }}
+            </td>
+            <td style="text-align:right;">
+                <b>{{ user.total }}</b>
+            </td>
+            {% for day_count in user.days %}
+                <td style="text-align:right;">
+                    {{ day_count|default:"" }}
+                </td>
+            {% endfor %}
+        </tr>
+    {% endfor %}
+    {% if mark_mark.users.1 %} {# list length > 1 #}
+        </tr>
+            <th>
+                Итого
+            </th>
+            <th style="text-align:right;">
+                {{ mark_mark.total }}
+            </th>
+            {% for day_count in mark_mark.day_totals %}
+                <th style="text-align:right;">
+                    {{ day_count|default:"" }}
+                </th>
+            {% endfor %}
+        </tr>
+    {% endif %}
+    </table>
+{% endif %}
+
