@@ -443,6 +443,9 @@ SPECIFIC_RU_LOCALE_APP = ''
 #
 MOBILEKEEPER_MEDIA_PATH = "support/download/mobilekeeper.apk"
 
+# Покажем статистику операций как козырь, когда придет время
+SHOW_OPER_STATS = True
+
 try:
     from local_settings import *
 except ImportError:

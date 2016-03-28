@@ -725,10 +725,6 @@ class ApiPlacePhotoUpload(APIView):
             lng = float(request.POST.get('lng', ''))
         except ValueError:
             lat = lng = None
-        # TODO: remove after changes in mobile app
-        if not (lat and lng):
-            lat = lng = None
-        #       ----------------------------------
         dtCreated = None
         if request.POST.get('dt_created') :
             dtCreated = datetime.strptime(request.POST['dt_created'], templateDateTime)

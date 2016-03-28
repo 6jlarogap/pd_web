@@ -1249,6 +1249,11 @@ class OmsOperStatsView(UGHRequiredMixin, PaginateListView):
     template_name = 'oper_stats.html'
     context_object_name = 'dates'
 
+    def dispatch(self, request, *args, **kwargs):
+        if not settings.SHOW_OPER_STATS:
+            raise Http404
+        return super(OmsOperStatsView, self).dispatch(request, *args, **kwargs)
+
     def get_queryset(self):
         self.context_extra = None
         form = self.get_form()
