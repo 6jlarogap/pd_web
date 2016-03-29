@@ -139,6 +139,7 @@ class BurialSerializer(BaseSerializer):
     plan_date = serializers.DateField(required=False)
     plan_time = serializers.TimeField(required=False)
     status = serializers.CharField(required=False)
+    annulated = serializers.BooleanField(required=False)
     responsible = AlivePersonSerializer(required=False)
     
 class PlacePhotoSerializer(BaseSerializer):  
