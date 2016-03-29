@@ -643,7 +643,7 @@ class ApiBurialList(APIView):
         if argSyncDateUnix :
             argSyncDate = datetime.fromtimestamp(int(argSyncDateUnix))
             queryBurial &= Q(dt_modified__gte = argSyncDate)        
-        listBurial = Burial.objects.filter(queryBurial).order_by('id')
+        listBurial = Burial.objects.filter(queryBurial & Q(annulated=False)).order_by('id')
         serializer = BurialSerializer(listBurial)
         return Response(serializer.data)
 
