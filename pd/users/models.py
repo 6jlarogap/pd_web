@@ -956,7 +956,10 @@ class Store(models.Model, PhonesMixin):
                 'dayindex': dayindex,
                 'from': '09:00',
                 'to': '18:00',
-            } for dayindex in range(1,6)]
+                'dinner': {
+                    'from': '13:00',
+                    'to': '14:00',
+            }} for dayindex in range(1,6)]
 
 class StorePhoto(PhotoFiles):
     store = models.OneToOneField(Store)
