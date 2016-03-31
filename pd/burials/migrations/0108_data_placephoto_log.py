@@ -64,7 +64,7 @@ class Migration(DataMigration):
             count_prikrepleno_error,
         )
 
-        print "    - PlacePhoto creation log recs to Place log recs'"
+        print "    - PlacePhoto creation log recs to Place log recs"
         count = count_not_found = 0
         for l in Log.objects.filter(
                     ct=placephoto_ct,
@@ -89,24 +89,26 @@ class Migration(DataMigration):
 
         print "    - PlacePhoto without log recs to Place log recs"
         count = 0
-        for ph in PlacePhoto.objects.all().iterator():
-            if ph.creator and \
-               not Log.objects.filter(
+        for pph in PlacePhoto.objects.all().iterator():
+            place = pph.place
+            if not Log.objects.filter(
                     ct=place_ct,
-                    obj_id=ph.place.pk,
+                    obj_id=place.pk,
                     operation=LogOperation.PHOTO_TO_PLACE_MOBILE,
-                   ).exists():
-                count +=1
-                logrec = Log.objects.create(
-                    user=ph.creator,
-                    ct=place_ct,
-                    obj_id=ph.place.pk,
-                    msg=u"/media/%s" % ph.bfile.name,
-                    operation=LogOperation.PHOTO_TO_PLACE_MOBILE
-                )
-                Log.objects.filter(pk=logrec.pk).update(
-                    dt=ph.date_of_creation,
-                )
+                ).exists():
+                for ph in PlacePhoto.objects.filter(place=place):
+                    if ph.creator:
+                        count +=1
+                        logrec = Log.objects.create(
+                            user=ph.creator,
+                            ct=place_ct,
+                            obj_id=place.pk,
+                            msg=u"/media/%s" % ph.bfile.name,
+                            operation=LogOperation.PHOTO_TO_PLACE_MOBILE
+                        )
+                        Log.objects.filter(pk=logrec.pk).update(
+                            dt=ph.date_of_creation,
+                        )
         print "      %s log recs created" % count
 
         print "    - Places without creation log recs to Place log recs"
@@ -133,6 +135,7 @@ class Migration(DataMigration):
                     Log.objects.filter(pk=logrec.pk).update(
                         dt=dt,
                     )
+                    count += 1
                 except IndexError:
                     continue
         print "      %s log recs created" % count
