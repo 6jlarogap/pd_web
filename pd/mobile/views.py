@@ -737,7 +737,14 @@ class ApiPlacePhotoUpload(APIView):
             photo = PlacePhoto(place=place, lat = lat, lng = lng, comment = '', creator = request.user, dt_created = dtCreated)
             photo.save()
             photo.bfile.save(request.FILES['photo'].name, photo_content)
-            write_log(request, place, _(u"Прикреплено фото: %s") % request.build_absolute_uri(photo.bfile.url))
+            logrec = write_log(
+                request,
+                place,
+                operation=LogOperation.PHOTO_TO_PLACE_MOBILE,
+                msg=request.build_absolute_uri(photo.bfile.url),
+            )
+            if dtCreated:
+                Log.objects.filter(pk=logrec.pk).update(dt=dtCreated)
             if lat is not None and lng is not None:
                 place.lat = lat
                 place.lng = lng
