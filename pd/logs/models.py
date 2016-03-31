@@ -21,6 +21,7 @@ class LogOperation(object):
     CLOSED_BURIAL_ARCHIVE =        11
     CLOSED_BURIAL_FULL =           12
     CLOSED_BURIAL_UGH =            13
+    PHOTO_TO_PLACE_MOBILE =        14
 
     Operation = [
         _(u'Установка признака "Занято" для могилы'),                                       #  1
@@ -36,6 +37,7 @@ class LogOperation(object):
         _(u'Архивное захоронение закрыто'),                                                 # 11
         _(u'Электронное захоронение закрыто'),                                              # 12
         _(u'Ручное захоронение закрыто'),                                                   # 13
+        _(u'Прикреплено фото к месту из мобильного приложения'),                            # 14
     ]
 
 class Log(models.Model):
