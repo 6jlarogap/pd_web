@@ -439,12 +439,12 @@ class Place(SafeDeleteMixin, GeoPointModel, BaseModelManualDtCreated):
         Получить все фото, относящиеся к месту, вместе с датами создания
         """
         gallery = []
-        for pph in PlacePhoto.objects.filter(place=self).order_by('-date_of_creation'):
+        for pph in PlacePhoto.objects.filter(place=self).order_by('-dt_created'):
             if pph.bfile:
                 gallery.append(
                     {
                         'photo': request.build_absolute_uri(pph.bfile.url),
-                        'createdAt': utcisoformat(pph.date_of_creation),
+                        'createdAt': utcisoformat(pph.dt_created),
                     }
                 )
         return gallery
