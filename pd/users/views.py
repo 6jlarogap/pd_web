@@ -1289,12 +1289,22 @@ class OmsOperStatsView(UGHRequiredMixin, PaginateListView):
                             LogOperation.CLOSED_BURIAL_UGH,
                 )),
                 caption=_(u"Закрытые текущие захоронения") if are_lorus_in_system \
-                          else _(u"Закрытые ручные захоронения")
+                          else _(u"Закрытые ручные захоронения"),
+            ),
+            dict(
+                name='archive_burials',
+                qs=Q(operation=LogOperation.CLOSED_BURIAL_ARCHIVE),
+                caption=_(u"Закрытые архивные захоронения"),
             ),
             dict(
                 name='inventoried_places',
                 qs=Q(operation=LogOperation.PLACE_CREATED_MOBILE),
                 caption=_(u"Места с мобильного приложения"),
+            ),
+            dict(
+                name='inventoried_photos',
+                qs=Q(operation=LogOperation.PHOTO_TO_PLACE_MOBILE),
+                caption=_(u"Фото мест с мобильного приложения"),
             ),
         ]
         if settings.REDIRECT_LOGIN_TO_FRONT_END:
@@ -1329,11 +1339,10 @@ class OmsOperStatsView(UGHRequiredMixin, PaginateListView):
             mark[parm['name']] = {}
             qs_org = Log.objects.filter(parm['qs'] & q_users)
             mark[parm['name']]['total'] = qs_org.filter(q_dt).count()
-            mark[parm['name']]['values'] = []
+            mark[parm['name']]['values'] = values(qs_org)
             mark[parm['name']]['caption'] = parm['caption']
             if not mark[parm['name']]['total']:
                 continue
-            mark[parm['name']]['values'] = values(qs_org)
 
             mark[parm['name']]['users'] = []
             # Только дни, в которых были результаты
