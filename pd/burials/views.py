@@ -592,6 +592,12 @@ class PlaceViewSet(CaretakerMixin, viewsets.ModelViewSet):
                 item = Grave(place=object, grave_number=i)
                 item.save()
 
+        if not created:
+            Burial.objects.filter(place=object).update(
+                row=object.row,
+                place_number=object.place,
+            )
+
         if object.responsible:
             address = self.request.DATA.get('obj_responsible_address')
             address_serializer = LocationDataSerializer(object.responsible.address, data=address, partial=True)
