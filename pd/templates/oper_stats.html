@@ -33,6 +33,17 @@
             {% include "oper_stats_users.html" %}
         {% endwith  %}
 
+        <div id="archive_burials_grid">
+            <h3>{{ mark.archive_burials.caption }}, {% trans "всего за период" %}: {{ mark.archive_burials.total }}
+            </h3>
+            <div id="archive_burials"></div>
+        </div>
+        <br />
+
+        {% with mark_mark=mark.archive_burials %}
+            {% include "oper_stats_users.html" %}
+        {% endwith  %}
+
         <div id="inventoried_places_grid">
             <h3>{{ mark.inventoried_places.caption }}, {% trans "всего за период" %}: {{ mark.inventoried_places.total }}</h3>
             <div id="inventoried_places"></div>
@@ -40,6 +51,16 @@
         <br />
 
         {% with mark_mark=mark.inventoried_places %}
+            {% include "oper_stats_users.html" %}
+        {% endwith  %}
+
+        <div id="inventoried_photos_grid">
+            <h3>{{ mark.inventoried_photos.caption }}, {% trans "всего за период" %}: {{ mark.inventoried_photos.total }}</h3>
+            <div id="inventoried_photos"></div>
+        </div>
+        <br />
+
+        {% with mark_mark=mark.inventoried_photos %}
             {% include "oper_stats_users.html" %}
         {% endwith  %}
 
@@ -71,9 +92,19 @@
                 {% col "number" "Число захоронений" %}{{ val }}{% endcol %}
             {% enddata %}
 
+            {% data mark.archive_burials.values "archive_burials" %}
+                {% col "string" "Date" %}"{{ val|date:"M j" }}"{% endcol %}
+                {% col "number" "Число захоронений" %}{{ val }}{% endcol %}
+            {% enddata %}
+
             {% data mark.inventoried_places.values "inventoried_places" %}
                 {% col "string" "Date" %}"{{ val|date:"M j" }}"{% endcol %}
                 {% col "number" "Число мест" %}{{ val }}{% endcol %}
+            {% enddata %}
+
+            {% data mark.inventoried_photos.values "inventoried_photos" %}
+                {% col "string" "Date" %}"{{ val|date:"M j" }}"{% endcol %}
+                {% col "number" "Число фото" %}{{ val }}{% endcol %}
             {% enddata %}
 
             {% if global_context_REDIRECT_LOGIN_TO_FRONT_END %}
@@ -108,8 +139,16 @@
                 {% graph "current_burials" "current_burials" %}
             {% endif %}
 
+            {% if mark.archive_burials.total %}
+                {% graph "archive_burials" "archive_burials" %}
+            {% endif %}
+
             {% if mark.inventoried_places.total %}
                 {% graph "inventoried_places" "inventoried_places" %}
+            {% endif %}
+
+            {% if mark.inventoried_photos.total %}
+                {% graph "inventoried_photos" "inventoried_photos" %}
             {% endif %}
 
             {% if global_context_REDIRECT_LOGIN_TO_FRONT_END %}
