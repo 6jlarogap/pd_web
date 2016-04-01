@@ -1301,6 +1301,11 @@ class OmsOperStatsView(UGHRequiredMixin, PaginateListView):
                 qs=Q(operation=LogOperation.PLACE_CREATED_MOBILE),
                 caption=_(u"Места с мобильного приложения"),
             ),
+            dict(
+                name='inventoried_photos',
+                qs=Q(operation=LogOperation.PHOTO_TO_PLACE_MOBILE),
+                caption=_(u"Фото мест с мобильного приложения"),
+            ),
         ]
         if settings.REDIRECT_LOGIN_TO_FRONT_END:
             parms += [

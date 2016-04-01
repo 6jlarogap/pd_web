@@ -54,6 +54,16 @@
             {% include "oper_stats_users.html" %}
         {% endwith  %}
 
+        <div id="inventoried_photos_grid">
+            <h3>{{ mark.inventoried_photos.caption }}, {% trans "всего за период" %}: {{ mark.inventoried_photos.total }}</h3>
+            <div id="inventoried_photos"></div>
+        </div>
+        <br />
+
+        {% with mark_mark=mark.inventoried_photos %}
+            {% include "oper_stats_users.html" %}
+        {% endwith  %}
+
         {% if global_context_REDIRECT_LOGIN_TO_FRONT_END %}
             <div id="processed_places_grid">
                 <h3>{{ mark.processed_places.caption }}, {% trans "всего за период" %}: {{ mark.processed_places.total }}</h3>
@@ -90,6 +100,11 @@
             {% data mark.inventoried_places.values "inventoried_places" %}
                 {% col "string" "Date" %}"{{ val|date:"M j" }}"{% endcol %}
                 {% col "number" "Число мест" %}{{ val }}{% endcol %}
+            {% enddata %}
+
+            {% data mark.inventoried_photos.values "inventoried_photos" %}
+                {% col "string" "Date" %}"{{ val|date:"M j" }}"{% endcol %}
+                {% col "number" "Число фото" %}{{ val }}{% endcol %}
             {% enddata %}
 
             {% if global_context_REDIRECT_LOGIN_TO_FRONT_END %}
@@ -130,6 +145,10 @@
 
             {% if mark.inventoried_places.total %}
                 {% graph "inventoried_places" "inventoried_places" %}
+            {% endif %}
+
+            {% if mark.inventoried_photos.total %}
+                {% graph "inventoried_photos" "inventoried_photos" %}
             {% endif %}
 
             {% if global_context_REDIRECT_LOGIN_TO_FRONT_END %}
