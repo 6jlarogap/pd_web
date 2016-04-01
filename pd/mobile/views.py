@@ -520,6 +520,10 @@ class ApiMobilePlace(PlaceUploadMixin, APIView):
         if do_save:
             try:
                 place.save()
+                Burial.objects.filter(place=place).update(
+                    row=place.row,
+                    place_number=place.place,
+                )
                 write_log(
                     request,
                     place,
