@@ -593,7 +593,6 @@ class PlaceViewSet(CaretakerMixin, viewsets.ModelViewSet):
                 item.save()
 
         if not created:
-            print 'here'
             Burial.objects.filter(place=object).update(
                 row=object.row,
                 place_number=object.place,
