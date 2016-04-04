@@ -593,10 +593,24 @@ class PlaceViewSet(CaretakerMixin, viewsets.ModelViewSet):
                 item.save()
 
         if not created:
-            Burial.objects.filter(place=object).update(
-                row=object.row,
-                place_number=object.place,
-            )
+            for b in Burial.objects.filter(place=object). \
+                        filter(~Q(row=object.row) | ~Q(place_number=object.place)):
+                write_log(
+                    self.request,
+                    b,
+                    _(
+                        u"Изменение ряда и/или номера места при правке места\n"
+                        u"Ряд: '%(old_row)s' -> '%(new_row)s'\n"
+                        u"Номер места: '%(old_place)s' -> '%(new_place)s'\n"
+                        ) % dict(
+                            old_row=b.row,
+                            new_row=object.row,
+                            old_place=b.place_number,
+                            new_place=object.place,
+                ))
+                b.row = object.row
+                b.place_number = object.place
+                b.save()
 
         if object.responsible:
             address = self.request.DATA.get('obj_responsible_address')
