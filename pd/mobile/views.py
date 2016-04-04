@@ -402,6 +402,8 @@ class PlaceUploadMixin(object):
         for k in parms:
             if k in request.DATA:
                 result[parms[k]] = request.DATA[k]
+                if parms[k] in ('row', 'place') and result[parms[k]] is None:
+                    result[parms[k]] = ''
         ps = PlaceSerializer(Place(**result))
         for f in result:
             if isinstance(ps.fields[f], DateTimeUtcField):
@@ -466,7 +468,6 @@ class ApiMobileAreaPlaces(PlaceUploadMixin, APIView):
             **place_key_parms
         )
         if created_:
-            print "Place created by MobileKeeper, id = %s" % place.pk
             logrec = write_log(request, place, operation=LogOperation.PLACE_CREATED_MOBILE)
             if 'dt_created' in place_defaults:
                 Log.objects.filter(pk=logrec.pk).update(dt=place.dt_created)
@@ -520,10 +521,24 @@ class ApiMobilePlace(PlaceUploadMixin, APIView):
         if do_save:
             try:
                 place.save()
-                Burial.objects.filter(place=place).update(
-                    row=place.row,
-                    place_number=place.place,
-                )
+                for b in Burial.objects.filter(place=place). \
+                        filter(~Q(row=place.row) | ~Q(place_number=place.place)):
+                    write_log(
+                        self.request,
+                        b,
+                        _(
+                            u"Изменение ряда и/или номера места при правке места\n"
+                            u"Ряд: '%(old_row)s' -> '%(new_row)s'\n"
+                            u"Номер места: '%(old_place)s' -> '%(new_place)s'\n"
+                        ) % dict(
+                            old_row=b.row,
+                            new_row=place.row,
+                            old_place=b.place_number,
+                            new_place=place.place,
+                    ))
+                    b.row = place.row
+                    b.place_number = place.place
+                    b.save()
                 write_log(
                     request,
                     place,
