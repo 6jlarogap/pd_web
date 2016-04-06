@@ -287,7 +287,48 @@ class ApiAuthSignoutView(APIView):
 
 api_auth_signout = ApiAuthSignoutView.as_view()
 
-class ApiCabinetGetcodeView(APIView):
+class ApiThankMixin(object):
+
+    def get_thanked(self, request, must_thank=True):
+        thank_got = request.DATA.get('thank') or request.GET.get('thank')
+        if not thank_got:
+            if must_thank:
+                raise ServiceException(_(u"Не задана персона, которой выражается благодарность"))
+            else:
+                return None
+        try:
+            thanked = CustomPerson.objects.get(token=thank_got)
+        except CustomPerson.DoesNotExist:
+            raise ServiceException(_(u"Не найдена персона, которой выражается благодарность"))
+        return thanked
+
+    def get_from_qs(self, request):
+        """
+        Получить queryset для поиска в таблице Thank
+
+        Пагинация:
+        -   Если передается и from и limit одновременно,
+            то отдавать пользоватей от этой даты к более ранним пользователям
+        -   Если передается только limit - то отдавать последних {limit} пользователей
+        -   Если предается только from - то отдавать пользователей от даты {from}
+            по текущий момент всех пользователей
+        """
+        from_ = request.GET.get('from')
+        limit = request.GET.get('limit')
+        qs = Q()
+        if from_:
+            from_dt = utcstr2local(from_)
+            if not from_dt:
+                raise ServiceException(_(u"Неверное время from"))
+            if limit:
+                # from_ & limit: отдавать пользоватей от этой даты к более ранним пользователям
+                qs =Q(dt_created__lte=from_dt)
+            else:
+                # from_ & !limit: от from по текущий момент всех пользователей
+                qs =Q(dt_created__gte=from_dt)
+        return qs
+
+class ApiCabinetGetcodeView(ApiThankMixin, APIView):
 
     @transaction.commit_on_success
     def post(self, request):
@@ -295,9 +336,8 @@ class ApiCabinetGetcodeView(APIView):
         data = {}
         try:
             login_phone = request.DATA.get('phone', '').strip().lstrip('+')
-            site = get_front_end_url(request).lower()
-            site = site.rstrip('/')
-            site = re.sub(r'^https?\://', '', site)
+            thanked = self.get_thanked(request, must_thank=False)
+            site = thanked.thank_site if thanked and thanked.thank_site else 'Gora tsvetov'
             data['site'] = site
             try:
                 validate_phone_as_number(login_phone)
@@ -731,47 +771,6 @@ class ApiSettings(APIView):
         return Response(data=data, status=status_code)
 
 api_settings = ApiSettings.as_view()
-
-class ApiThankMixin(object):
-
-    def get_thanked(self, request, must_thank=True):
-        thank_got = request.DATA.get('thank') or request.GET.get('thank')
-        if not thank_got:
-            if must_thank:
-                raise ServiceException(_(u"Не задана персона, которой выражается благодарность"))
-            else:
-                return None
-        try:
-            thanked = CustomPerson.objects.get(token=thank_got)
-        except CustomPerson.DoesNotExist:
-            raise ServiceException(_(u"Не найдена персона, которой выражается благодарность"))
-        return thanked
-
-    def get_from_qs(self, request):
-        """
-        Получить queryset для поиска в таблице Thank
-
-        Пагинация:
-        -   Если передается и from и limit одновременно,
-            то отдавать пользоватей от этой даты к более ранним пользователям
-        -   Если передается только limit - то отдавать последних {limit} пользователей
-        -   Если предается только from - то отдавать пользователей от даты {from}
-            по текущий момент всех пользователей
-        """
-        from_ = request.GET.get('from')
-        limit = request.GET.get('limit')
-        qs = Q()
-        if from_:
-            from_dt = utcstr2local(from_)
-            if not from_dt:
-                raise ServiceException(_(u"Неверное время from"))
-            if limit:
-                # from_ & limit: отдавать пользоватей от этой даты к более ранним пользователям
-                qs =Q(dt_created__lte=from_dt)
-            else:
-                # from_ & !limit: от from по текущий момент всех пользователей
-                qs =Q(dt_created__gte=from_dt)
-        return qs
 
 class ApiCabinetUsersView(ApiThankMixin, APIView):
     permission_classes = (IsAuthenticated,)

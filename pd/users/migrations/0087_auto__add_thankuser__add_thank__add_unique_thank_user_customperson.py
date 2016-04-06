@@ -232,6 +232,7 @@ class Migration(SchemaMigration):
             'permission': ('django.db.models.fields.CharField', [], {'default': "'private'", 'max_length': '255'}),
             'person': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['persons.BasePerson']", 'null': 'True'}),
             'photo': ('django.db.models.fields.files.ImageField', [], {'max_length': '255', 'null': 'True', 'blank': 'True'}),
+            'thank_site': ('django.db.models.fields.URLField', [], {'max_length': '200', 'null': 'True'}),
             'token': ('django.db.models.fields.CharField', [], {'max_length': '255', 'unique': 'True', 'null': 'True'}),
             'user': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['auth.User']"})
         },

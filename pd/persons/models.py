@@ -534,6 +534,7 @@ class CustomPerson(PersonMixin, PhotoModel, BaseModel):
                                   choices=PERMISSION_CHOICES, default=PERMISSION_PRIVATE)
     # Для сайта с благодарностями от пользователей:
     token = models.CharField(_(u"Токен"), max_length=255, null=True, editable=False, unique=True)
+    thank_site = models.URLField(_(u"Сайт для благодарностей"), null=True, editable=False)
 
     def delete(self):
         for memorygallery in MemoryGallery.objects.filter(customperson=self):
