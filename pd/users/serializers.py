@@ -422,6 +422,13 @@ class UserSettingsSerializer(UserProfileMixin, serializers.ModelSerializer):
         model = User
         fields = ('firstName', 'lastName', 'middleName', 'avatarUrl', 'loginPhone', )
 
+class UserSettings2Serializer(UserSettingsSerializer):
+    photoUrl = serializers.SerializerMethodField('userPhotoUrl_func')
+
+    class Meta:
+        model = User
+        fields = ('id', 'firstName', 'lastName', 'middleName', 'photoUrl', )
+
 class ArchUserSerializer(serializers.ModelSerializer):
 
     class Meta:

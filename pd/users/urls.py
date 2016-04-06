@@ -85,6 +85,13 @@ urlpatterns = patterns('users.views',
 
     url(r'^api/clients/(?P<token>[0-9a-f]+)/departments/?$', 'api_client_site_departments', name='api_client_site_departments'),
 
+    url(r'^api/cabinet/getcode?$', 'api_cabinet_getcode', name='api_cabinet_getcode'),
+    url(r'^api/cabinet/tokens?$', 'api_cabinet_tokens', name='api_cabinet_tokens'),
+    url(r'^api/cabinet/users/(?P<pk>\d+)/?$', 'api_cabinet_users', name='api_cabinet_users'),
+
+    url(r'^api/thank/users_count/?$', 'api_thank_users_count', name='api_thank_users_count'),
+    url(r'^api/thank/users/?$', 'api_thank_users', name='api_thank_users'),
+
     url(r'^autocomplete/org/$', 'autocomplete_org', name='autocomplete_org'),
     url(r'^autocomplete/loru_in_burials/$', 'autocomplete_loru_in_burials', name='autocomplete_loru_in_burials'),
 )
