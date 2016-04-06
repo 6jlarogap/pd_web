@@ -16,7 +16,7 @@ from django.contrib import messages
 from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.models import User
-from django.contrib.auth.hashers import make_password
+from django.contrib.auth.hashers import make_password, check_password
 from django.contrib.sessions.models import Session
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError, PermissionDenied
@@ -58,11 +58,12 @@ from users.models import Profile, Org, RegisterProfile, ProfileLORU, CustomerPro
                          PermitIfCabinet, PermitIfTradeOrCabinet, Oauth, OrgAbility, \
                          BankAccount, BankAccountRegister, OrgCertificate, OrgContract, \
                          RegisterProfileContract, RegisterProfileScan, FavoriteSupplier, \
-                         UserPhoto, OrgGallery, OrgReview, Role, \
+                         UserPhoto, OrgGallery, OrgReview, Role, ThankUser, Thank, \
                          is_supervisor, get_default_currency, get_profile
 from pd.models import validate_phone_as_number, validate_username
-from pd.utils import host_country_code, phones_from_text, EmailMessage, get_image, SeriesTable
-from persons.models import AlivePerson, Phone, CustomPlace
+from pd.utils import host_country_code, phones_from_text, EmailMessage, get_image, SeriesTable, \
+                     utcstr2local, utcisoformat
+from persons.models import AlivePerson, Phone, CustomPlace, CustomPerson
 from burials.models import Cemetery, Area, Burial, Place, Grave
 from billing.models import Wallet, Rate, Currency
 from orders.models import Product, Order, Service, ProductCategory
@@ -75,7 +76,8 @@ from users.serializers import StoreSerializer, Store2Serializer, \
                               OrgShort3Serializer, OrgOptSupplierSerializer, OrgShort5Serializer, \
                               UserSettingsSerializer, ShopSerializer, OrgGallerySerializer, \
                               ShopDetailSerializer, OrgReviewSerializer, \
-                              OrgClientSiteSerializer, ProfileClientSiteSerializer
+                              OrgClientSiteSerializer, ProfileClientSiteSerializer, \
+                              UserSettings2Serializer
 
 from sms_service.utils import send_sms
 
@@ -247,7 +249,7 @@ class ApiAuthSigninView(SessionDataMixin, APIView):
                 data.update(self.session_data(user))
                 data['status'] = 'success'
                 status_code = 200
-                write_log(request, request.user, _(u'Вход в систему'))
+                write_log(request, user, _(u'Вход в систему'))
                 LoginLog.write(request)
             else:
                 data['message'] = data['errorCode'] = 'unconfirmed_tc'
@@ -284,6 +286,138 @@ class ApiAuthSignoutView(APIView):
         return Response(data={}, status=200)
 
 api_auth_signout = ApiAuthSignoutView.as_view()
+
+class ApiCabinetGetcodeView(APIView):
+
+    @transaction.commit_on_success
+    def post(self, request):
+        status_code = 200
+        data = {}
+        try:
+            login_phone = request.DATA.get('phone', '').strip().lstrip('+')
+            site = get_front_end_url(request).lower()
+            site = site.rstrip('/')
+            site = re.sub(r'^https?\://', '', site)
+            data['site'] = site
+            try:
+                validate_phone_as_number(login_phone)
+            except (TypeError, decimal.InvalidOperation, ValidationError, ):
+                raise ServiceException(_(u'Неверный формат телефона'))
+            data['phone'] = login_phone
+            code = CustomerProfile.generate_password()
+            if settings.DEBUG:
+                data['code'] = code
+            else:
+                sent, message = send_sms(
+                    phone_number=login_phone,
+                    text=u"%s code: %s" % (site, code,),
+                    email_error_text=site,
+                )
+                if message:
+                    raise ServiceException(message)
+            password = make_password(code)
+            thankuser, created_ = ThankUser.objects.get_or_create(
+                login_phone=login_phone,
+                defaults=dict(
+                    password=password
+            ))
+            if not created_:
+                thankuser.password = password
+                thankuser.save()
+        except ServiceException as excpt:
+            transaction.rollback()
+            data = dict(message=excpt.message)
+            status_code = 400
+        return Response(data=data, status=status_code)
+
+api_cabinet_getcode = ApiCabinetGetcodeView.as_view()
+
+class ApiCabinetTokensView(APIView):
+
+    @transaction.commit_on_success
+    def post(self, request):
+        """
+        Авторизация пользователя с кодом, полученным на телефон
+
+        -   Если пользователь авторизован, успех.
+        -   Ищем phone, code в таблице ThankUser, 
+            строка в которой могла появиться из /api/cabinet/getcode.
+        -   Если есть телефон в той таблице, то сверяем код. Код неверный: отказ.
+        -   Если есть телефон и верный код, то пускаем в систему,
+            создаем нового кабинетчика, если нет такого кабинетчика в базе,
+            с паролем == коду. Если такой кабинетчик есть, то пароль его не меняем.
+        -   Если телефона нет в той таблице, то телефон и код есть login_phone и пароль.
+        """
+        try:
+            if request.user.is_authenticated():
+                user = request.user
+            else:
+                login_phone = request.DATA.get('phone', '').strip().lstrip('+')
+                password = request.DATA.get('code')
+                if not login_phone or not password:
+                    raise ServiceException(_(u'Не заданы phone или code'))
+                try:
+                    validate_phone_as_number(login_phone)
+                except (TypeError, decimal.InvalidOperation, ValidationError, ):
+                    raise ServiceException(_(u'Неверный формат телефона'))
+                try:
+                    thankuser = ThankUser.objects.get(login_phone=login_phone)
+                    if check_password(password, thankuser.password):
+                        try:
+                            customerprofile = CustomerProfile.objects.get(
+                                login_phone=login_phone
+                            )
+                            user = customerprofile.user
+                        except CustomerProfile.DoesNotExist:
+                            try:
+                                user = User.objects.create(
+                                    username=login_phone,
+                                    password=thankuser.password,
+                                )
+                                CustomerProfile.objects.create(
+                                    user=user,
+                                    login_phone=login_phone,
+                                    tc_confirmed=datetime.datetime.now(), 
+                                )
+                            except IntegrityError:
+                                # Такое возможно, но маловероятно.
+                                # Если был username = login_phone1,
+                                # сменил телефон на login_phone2, имя пользователя
+                                # осталось прежним, а сейчас идет с login_phone1
+                                raise ServiceException(
+                                    'Пользователь с таким телефоном как именем входа уже имеется'
+                                )
+                    else:
+                        raise ServiceException(_(u"Неверный код"))
+                except ThankUser.DoesNotExist:
+                    try:
+                        customerprofile = CustomerProfile.objects.get(
+                            login_phone=login_phone
+                        )
+                        user = authenticate(
+                            username=customerprofile.user.username,
+                            password=password,
+                        )
+                        if not user:
+                            raise ServiceException(_(u"Неверный код (пароль)"))
+                    except CustomerProfile.DoesNotExist:
+                        raise ServiceException(_(u"Не найден телефон среди пользователей"))
+            user.backend = 'django.contrib.auth.backends.ModelBackend'
+            login(request, user)
+            write_log(request, user, _(u'Вход в систему'))
+            LoginLog.write(request)
+            data=dict(
+                userId=user.pk,
+                authToken=Token.objects.get_or_create(user=user)[0].key,
+            )
+            status_code = 200
+        except ServiceException as excpt:
+            transaction.rollback()
+            data = dict(message=excpt.message)
+            status_code = 400
+        return Response(data=data, status=status_code)
+
+api_cabinet_tokens = ApiCabinetTokensView.as_view()
 
 class ApiAuthCookiesView(APIView):
     permission_classes = (IsAuthenticated,)
@@ -597,6 +731,188 @@ class ApiSettings(APIView):
         return Response(data=data, status=status_code)
 
 api_settings = ApiSettings.as_view()
+
+class ApiThankMixin(object):
+
+    def get_thanked(self, request, must_thank=True):
+        thank_got = request.DATA.get('thank') or request.GET.get('thank')
+        if not thank_got:
+            if must_thank:
+                raise ServiceException(_(u"Не задана персона, которой выражается благодарность"))
+            else:
+                return None
+        try:
+            thanked = CustomPerson.objects.get(token=thank_got)
+        except CustomPerson.DoesNotExist:
+            raise ServiceException(_(u"Не найдена персона, которой выражается благодарность"))
+        return thanked
+
+    def get_from_qs(self, request):
+        """
+        Получить queryset для поиска в таблице Thank
+
+        Пагинация:
+        -   Если передается и from и limit одновременно,
+            то отдавать пользоватей от этой даты к более ранним пользователям
+        -   Если передается только limit - то отдавать последних {limit} пользователей
+        -   Если предается только from - то отдавать пользователей от даты {from}
+            по текущий момент всех пользователей
+        """
+        from_ = request.GET.get('from')
+        limit = request.GET.get('limit')
+        qs = Q()
+        if from_:
+            from_dt = utcstr2local(from_)
+            if not from_dt:
+                raise ServiceException(_(u"Неверное время from"))
+            if limit:
+                # from_ & limit: отдавать пользоватей от этой даты к более ранним пользователям
+                qs =Q(dt_created__lte=from_dt)
+            else:
+                # from_ & !limit: от from по текущий момент всех пользователей
+                qs =Q(dt_created__gte=from_dt)
+        return qs
+
+class ApiCabinetUsersView(ApiThankMixin, APIView):
+    permission_classes = (IsAuthenticated,)
+    parser_classes = (MultiPartParser, JSONParser, )
+    
+    @transaction.commit_on_success
+    def put(self, request, pk):
+        """
+        Поменять данные пользователя и поблагодарить
+        
+        Input data
+        {
+           "photo",
+                - None в json-input, тогда удаляем картинку
+                - request.FILES['photo'], в multipart-input,
+                  тогда устанавляваем фото
+           "lastName": "Моя-новая-фамилия",
+           "firstName": "Мое-новое-имя",
+           "middleName": "Мое-новое-отчество"
+           "thank": токен благодаримого
+         }
+        """
+        try:
+            user = request.user
+            if unicode(user.pk) != unicode(pk):
+                raise Http404
+            profile = get_profile(user)
+            profile_fields = dict()
+            profile_map = dict(
+                lastName='user_last_name',
+                firstName='user_first_name',
+                middleName='user_middle_name',
+            )
+            for f in profile_map:
+                if f in request.DATA:
+                    profile_fields[profile_map[f]] = request.DATA[f] or ''
+            photo_changed = True
+            photo = request.FILES.get('photo')
+            if photo:
+                if photo.size > UserPhoto.MAX_SIZE * 1024 * 1024:
+                    raise ServiceException(_(u"Размер изображения не должен превышать %sМб") % UserPhoto.MAX_SIZE)
+                image = get_image(photo)
+                if not image:
+                    raise ServiceException(_(u"Прикрепленный файл не является изображением"))
+                userphoto, created_ = UserPhoto.objects.get_or_create(
+                    user=user,
+                    defaults=dict(
+                        creator=user,
+                        bfile=photo,
+                ))
+                if not created_:
+                    userphoto.delete_from_media()
+                    userphoto.bfile.save(photo.name, photo)
+            elif 'photo' in request.DATA and request.DATA['photo'] is None:
+                UserPhoto.objects.filter(user=user).delete()
+            else:
+                photo_changed = False
+
+            if profile_fields:
+                profile = get_profile(user)
+                for f in profile_fields:
+                    setattr(profile, f, profile_fields[f])
+            if profile_fields or photo_changed:
+                # При изменении фото пусть меняется тоже профиль, установится profile.dt_modified
+                profile.save()
+
+            thanked = self.get_thanked(request, must_thank=False)
+            if thanked:
+                thank, created_  = Thank.objects.get_or_create(
+                    user=user,
+                    customperson=thanked,
+                )
+                if not created_:
+                    # update thank.dt_modifiled
+                    thank.save()
+
+            data = UserSettings2Serializer(user,context=dict(request=request)).data
+            status_code = 200
+        except ServiceException as excpt:
+            transaction.rollback()
+            data = dict(message=excpt.message)
+            status_code = 400
+        return Response(data=data, status=status_code)
+
+api_cabinet_users = ApiCabinetUsersView.as_view()
+
+class ApiThankUsersCount(ApiThankMixin, APIView):
+
+    def get(self, request):
+        """
+        Число пользователей, выразивших благодарность
+        """
+        data = {}
+        from_ = request.GET.get('from')
+        try:
+            thanked = self.get_thanked(request)
+            from_qs = self.get_from_qs(request)
+            qs = from_qs & Q(customperson=thanked)
+            data = {
+                'count': Thank.objects.filter(qs).count(),
+                'from': request.GET.get('from'),
+            }
+            status_code = 200
+        except ServiceException as excpt:
+            data = dict(message=excpt.message)
+            status_code = 400
+        return Response(data=data, status=status_code)
+
+api_thank_users_count = ApiThankUsersCount.as_view()
+
+class ApiThankUsers(ApiThankMixin, APIView):
+
+    def get(self, request):
+        """
+        Пользователи, выразившие благодарность
+
+        По умолчанию сортировать по дате создания от последней к первой
+        """
+        data = []
+        from_ = request.GET.get('from')
+        try:
+            thanked = self.get_thanked(request)
+            limit = int(request.GET.get('limit', '0'))
+            from_qs = self.get_from_qs(request)
+            qs = from_qs & Q(customperson=thanked)
+            thanks = Thank.objects.filter(qs).order_by('-dt_created')
+            if limit > 0:
+                thanks = thanks[:limit]
+            for thank in thanks:
+                item = UserSettings2Serializer(thank.user,context=dict(request=request)).data
+                item.update(dict(
+                    createdAt=utcisoformat(thank.dt_created, remove_mcsec=False)
+                ))
+                data.append(item)
+            status_code = 200
+        except ServiceException as excpt:
+            data = dict(message=excpt.message)
+            status_code = 400
+        return Response(data=data, status=status_code)
+
+api_thank_users = ApiThankUsers.as_view()
 
 class ApiAuthUser(APIView):
     permission_classes = (PermitIfCabinet,)

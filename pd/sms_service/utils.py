@@ -42,6 +42,7 @@ def send_sms(phone_number, text, email_error_text='', user=None):
             message = _(u"Оператора телефона нет в настройках PohoronnoeDeloRu")
     if not message:
         have_code = True
+        print your_serv
         try:
             smsapi = sms24x7.smsapi(your_serv['user'], your_serv['password'])
             smsapi.push_msg(

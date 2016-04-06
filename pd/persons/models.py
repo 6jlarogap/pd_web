@@ -532,6 +532,8 @@ class CustomPerson(PersonMixin, PhotoModel, BaseModel):
     memory_text = models.TextField(_(u"Памятный текст"), null=True)
     permission = models.CharField(_(u"Разрешение"), max_length=255,
                                   choices=PERMISSION_CHOICES, default=PERMISSION_PRIVATE)
+    # Для сайта с благодарностями от пользователей:
+    token = models.CharField(_(u"Токен"), max_length=255, null=True, editable=False, unique=True)
 
     def delete(self):
         for memorygallery in MemoryGallery.objects.filter(customperson=self):
