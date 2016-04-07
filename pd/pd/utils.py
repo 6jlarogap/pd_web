@@ -6,6 +6,7 @@ from django.core.mail import EmailMessage
 from django.utils.translation import ugettext_lazy as _
 
 import datetime
+import dateutil.parser
 from pytz import timezone, utc
 import re
 import string
@@ -48,6 +49,12 @@ def utcisoformat(dt, remove_mcsec=True):
     if remove_mcsec:
         dt = dt.replace(microsecond=0)
     return TZ.localize(dt).astimezone(utc).replace(tzinfo=None).isoformat() + 'Z'
+
+def utcstr2local(str_dt):
+    try:
+        return utc2local(dateutil.parser.parse(str_dt, ignoretz=True))
+    except (ValueError, AttributeError,):
+        return None
 
 def utc2local(dt):
     """

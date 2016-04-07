@@ -636,6 +636,27 @@ class Oauth(models.Model):
             message['message'] = excpt.message
         return user, oauth, message
 
+class ThankUser(models.Model):
+    """
+    Пользователь- кандидат на выражение благодарности
+    """
+    login_phone = models.DecimalField(_(u"Мобильный телефон для входа в кабинет"),
+                                      max_digits=15, decimal_places=0, editable=False,
+                                      unique=True)
+    password = models.CharField(_(u"Пароль"), max_length=255, editable=False)
+
+class Thank(BaseModel):
+    """
+    Благодарности
+
+    Благодарности выносят пользователи (auth.User) по отношению к persons.CustomPerson
+    """
+    user = models.ForeignKey('auth.User', verbose_name=_(u"Пользователь"),)
+    customperson = models.ForeignKey('persons.CustomPerson', verbose_name=_(u"Персона"),)
+
+    class Meta:
+        unique_together = ('user', 'customperson')
+
 class OrgAbility(models.Model):
     ABILITY_TRADE = 'trade'
     ABILITY_PERSONAL_DATA = 'personal-data'
