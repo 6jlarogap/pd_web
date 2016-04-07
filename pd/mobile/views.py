@@ -246,7 +246,10 @@ class ApiAreaList(APIView):
         argSyncDateUnix = request.GET.get('syncDate', None) 
         argCemeteryId = request.GET.get('cemeteryId', None)
         argAreaId = request.GET.get('areaId', None)        
-        queryArea = Q(cemetery__ugh = request.user.profile.org)
+        queryArea = Q(
+            cemetery__ugh = request.user.profile.org,
+            cemetery__pk__in=[c.pk for c in Cemetery.editable_ugh_cemeteries(request.user)]
+        )
         if argCemeteryId :
             queryArea &= Q(cemetery__pk = argCemeteryId)            
         if argSyncDateUnix :
