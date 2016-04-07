@@ -27,7 +27,7 @@ from persons.models import BasePerson
 from users.models import PermitIfUgh
 from logs.models import write_log, Log, LogOperation
 from pd.models import UnclearDate
-from pd.utils import utc2local, get_image
+from pd.utils import utc2local, get_image, utcisoformat
 
 from django.utils.dateparse import parse_datetime
 from django.core.files.base import ContentFile
@@ -800,7 +800,8 @@ class ApiMobilekeeperVersion(APIView):
             return Response(status=200, data=dict(
                 versionName=ap.get_androidversion_name(),
                 versionCode=ap.get_androidversion_code(),
-                url=request.build_absolute_uri(os.path.join(settings.MEDIA_URL, settings.MOBILEKEEPER_MEDIA_PATH))
+                url=request.build_absolute_uri(os.path.join(settings.MEDIA_URL, settings.MOBILEKEEPER_MEDIA_PATH)),
+                utctime=utcisoformat(datetime.now(), remove_mcsec=False),
             ))
         except:
             return Response(status=400, data={'status': 'error', 'message': None})
