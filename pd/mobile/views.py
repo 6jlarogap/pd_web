@@ -695,7 +695,9 @@ class ApiMobileBurialsView(CheckLifeDatesMixin, APIView):
             deadman = serializer.data
             if not deadman['lastName'].strip() and \
                not deadman['firstName'].strip() and \
-               not deadman['middleName'].strip():
+               not deadman['middleName'].strip() and \
+               not deadman['birthDate'] and \
+               not deadman['deathDate']:
                 deadman = None
             else:
                 deadman = serializer.save()
