@@ -475,9 +475,6 @@ class ApiMobileAreaPlaces(PlaceUploadMixin, APIView):
             logrec = write_log(request, place, operation=LogOperation.PLACE_CREATED_MOBILE)
             if 'dt_created' in place_defaults:
                 Log.objects.filter(pk=logrec.pk).update(dt=place.dt_created)
-                print " - got dt_created, %s" % place.dt_created
-            else:
-                print " - !!! no dt_created in input data"
         elif int(request.GET.get('isOverwrite', '0')) and request.DATA.get('placeName'):
             del place_defaults['is_invent']
             if 'dt_created' in place_defaults:
