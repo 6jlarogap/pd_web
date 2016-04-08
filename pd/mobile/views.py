@@ -79,7 +79,6 @@ class ApiCemeteryList(APIView):
 
     def get(self, request) :
         queryCemetery = Q(
-            ugh=request.user.profile.org,
             pk__in=[c.pk for c in Cemetery.editable_ugh_cemeteries(request.user)],
         )
         listCemetery = Cemetery.objects.filter(queryCemetery).distinct().order_by('id')
@@ -244,13 +243,12 @@ class ApiMobileCemeteryPhoto(APIView):
 cemetery_photo = ApiMobileCemeteryPhoto.as_view()
 
 class ApiAreaList(APIView):
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (PermitIfUgh,)
     def get(self, request) : 
         argSyncDateUnix = request.GET.get('syncDate', None) 
         argCemeteryId = request.GET.get('cemeteryId', None)
         argAreaId = request.GET.get('areaId', None)        
         queryArea = Q(
-            cemetery__ugh = request.user.profile.org,
             cemetery__pk__in=[c.pk for c in Cemetery.editable_ugh_cemeteries(request.user)]
         )
         if argCemeteryId :
