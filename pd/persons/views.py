@@ -228,6 +228,21 @@ class PhoneViewSet(viewsets.ModelViewSet):
 
 class CheckLifeDatesMixin(object):
 
+    def get_parm_(self, *args):
+        """
+        Значение из request.DATA и есть ли в request.DATA
+        """
+        value = None
+        in_request = False
+        for parm in args:
+            in_request = parm in self.request.DATA
+            if in_request:
+                value = self.request.DATA[parm]
+                if value and value.lower() == 'null':
+                    value = None
+                break
+        return value, in_request
+
     def check_life_dates(self, instance=None, format=''):
         """
         Проверка дат рождения/смерти
@@ -236,30 +251,41 @@ class CheckLifeDatesMixin(object):
         None или 'null'
         при format=='d.m.y' сначала преобразуем к y-m-d
         """
-        birth_date = self.request.DATA.get('birthDate') or self.request.DATA.get('dob')
-        if birth_date and birth_date.lower() == 'null':
-            birth_date = None
-        death_date = self.request.DATA.get('deathDate') or self.request.DATA.get('dod')
-        if death_date and death_date.lower() == 'null':
-            death_date = None
+        birth_date, req_birth_date = self.get_parm_('birthDate', 'dob', 'birth_date')
+        death_date, req_death_date = self.get_parm_('deathDate', 'dod', 'death_date')
+        fact_date,  req_fact_date  = self.get_parm_('factDate', 'fact_date')
         message = UnclearDate.check_safe_str(birth_date, check_today=True, format=format)
         if message:
             return _(u"Дата рождения: %s") % message
         message = UnclearDate.check_safe_str(death_date, check_today=True, format=format)
         if message:
             return _(u"Дата смерти: %s") % message
+        message = UnclearDate.check_safe_str(fact_date, check_today=True, format=format)
+        if message:
+            return _(u"Дата захоронения: %s") % message
         msg_dates = _(u"Дата смерти раньше даты рождения")
         birth_date = UnclearDate.from_str_safe(birth_date, format=format)
         death_date = UnclearDate.from_str_safe(death_date, format=format)
+        fact_date  = UnclearDate.from_str_safe(fact_date, format=format)
         if birth_date and death_date and birth_date > death_date:
             return msg_dates
+        msg_fact_lt_birth = _(u"Дата захоронения меньше даты рождения")
+        if fact_date and birth_date and birth_date > fact_date:
+            return msg_fact_lt_birth
+        msg_fact_lt_death = _(u"Дата захоронения меньше даты смерти")
+        if fact_date and death_date and death_date > fact_date:
+            return msg_fact_lt_death
         if instance:
-            req_birth_date = 'birthDate' in self.request.DATA or 'dob' in self.request.DATA
-            req_death_date = 'deathDate' in self.request.DATA or 'dod' in self.request.DATA
-            if birth_date and not req_death_date and instance.death_date and birth_date > instance.death_date:
+            if not req_death_date and birth_date and instance.death_date and birth_date > instance.death_date:
                 return msg_dates
             if not req_birth_date and death_date and instance.birth_date and instance.birth_date > death_date:
                 return msg_dates
+            if hasattr(instance, 'fact_date') and not req_fact_date and \
+               birth_date and instance.fact_date  and instance.fact_date < birth_date:
+                return msg_fact_lt_birth
+            if hasattr(instance, 'fact_date') and not req_fact_date and \
+               death_date and instance.fact_date  and instance.fact_date < death_date:
+                return msg_fact_lt_death
         return ""
 
 class ApiClientPlacesMixin(CheckLifeDatesMixin):
