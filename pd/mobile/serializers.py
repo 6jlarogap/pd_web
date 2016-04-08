@@ -2,7 +2,7 @@
 from geo.models import CoordinatesModel 
 from rest_framework import serializers
 
-from rest_api.fields import DateTimeUtcField
+from rest_api.fields import DateTimeUtcField, UnclearDateFieldSerializer
 
 from burials.models import CemeteryPhoto
 
@@ -81,6 +81,10 @@ class BasePersonSerializer(serializers.Serializer):
     first_name = serializers.CharField(required=False)
     middle_name = serializers.CharField(required=False)    
     
+class DeadPersonSerializer(BasePersonSerializer):
+    birth_date = UnclearDateFieldSerializer()
+    death_date = UnclearDateFieldSerializer()
+
 class AlivePersonSerializer(BasePersonSerializer):    
     phones = serializers.CharField(required=False)
     login_phone = serializers.CharField(required=False)
@@ -134,8 +138,8 @@ class BurialSerializer(BaseSerializer):
     place = BaseSerializer(required=True)
     grave = BaseSerializer(required=True)
     burial_container = serializers.CharField(required=False)
-    deadman = BasePersonSerializer(required=False)
-    fact_date = serializers.CharField(required=False)
+    deadman = DeadPersonSerializer(required=False)
+    fact_date = UnclearDateFieldSerializer()
     plan_date = serializers.DateField(required=False)
     plan_time = serializers.TimeField(required=False)
     status = serializers.CharField(required=False)
