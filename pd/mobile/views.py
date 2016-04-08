@@ -49,14 +49,17 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.exceptions import APIException
+from rest_framework.exceptions import APIException, PermissionDenied
 
 from serializers import BaseSerializer, CoordinatesSerializer, CemeteryWithNestedObjectSerializer, \
-    AreaSerializer, AreaWithNestedObjectSerializer, RegionSerializer, CitySerializer, StreetSerializer, CountrySerializer, LocationSerializer, \
-    BasePersonSerializer, AlivePersonSerializer, PlaceWithNestedObjectSerializer, GraveSerializer, BurialSerializer, \
-    PlacePhotoSerializer, CemeteryPhotoSerializer
+                        AreaSerializer, AreaWithNestedObjectSerializer, \
+                        RegionSerializer, CitySerializer, StreetSerializer, CountrySerializer, LocationSerializer, \
+                        PlaceWithNestedObjectSerializer, GraveSerializer, BurialSerializer, \
+                        PlaceSerializer, PlacePhotoSerializer, CemeteryPhotoSerializer
 
-from serializers import PlaceSerializer
+from persons.serializers import DeadPerson2Serializer
+from persons.views import CheckLifeDatesMixin
+
 from rest_api.fields import DateTimeUtcField
 
 templateDateTime = '%Y-%m-%dT%H:%M:%S.%f'
@@ -76,7 +79,6 @@ class ApiCemeteryList(APIView):
 
     def get(self, request) :
         queryCemetery = Q(
-            ugh=request.user.profile.org,
             pk__in=[c.pk for c in Cemetery.editable_ugh_cemeteries(request.user)],
         )
         listCemetery = Cemetery.objects.filter(queryCemetery).distinct().order_by('id')
@@ -241,12 +243,14 @@ class ApiMobileCemeteryPhoto(APIView):
 cemetery_photo = ApiMobileCemeteryPhoto.as_view()
 
 class ApiAreaList(APIView):
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (PermitIfUgh,)
     def get(self, request) : 
         argSyncDateUnix = request.GET.get('syncDate', None) 
         argCemeteryId = request.GET.get('cemeteryId', None)
         argAreaId = request.GET.get('areaId', None)        
-        queryArea = Q(cemetery__ugh = request.user.profile.org)
+        queryArea = Q(
+            cemetery__pk__in=[c.pk for c in Cemetery.editable_ugh_cemeteries(request.user)]
+        )
         if argCemeteryId :
             queryArea &= Q(cemetery__pk = argCemeteryId)            
         if argSyncDateUnix :
@@ -667,6 +671,58 @@ class ApiBurialList(APIView):
         return Response(serializer.data)
 
 burial_list = ApiBurialList.as_view()
+
+class ApiMobileBurialsView(CheckLifeDatesMixin, APIView):
+    permission_classes = (PermitIfUgh,)
+
+    @transaction.commit_on_success
+    def post(self, request):
+        grave_pk = request.DATA.get('graveId')
+        grave = get_object_or_404(Grave, pk=grave_pk)
+        place = grave.place
+        if place.cemetery not in Cemetery.editable_ugh_cemeteries(request.user):
+            raise PermissionDenied
+        message = self.check_life_dates(format='d.m.y')
+        if message:
+            raise CustomException(detail=message, status=400)
+        serializer = DeadPerson2Serializer(
+            data=request.DATA,
+            context=dict(request=request),
+        )
+        if serializer.is_valid():
+            deadman = serializer.data
+            if not deadman['lastName'].strip() and \
+               not deadman['firstName'].strip() and \
+               not deadman['middleName'].strip() and \
+               not deadman['birthDate'] and \
+               not deadman['deathDate']:
+                deadman = None
+            else:
+                deadman = serializer.save()
+            fact_date = request.DATA.get('factDate')
+            fact_date  = UnclearDate.from_str_safe(fact_date, format='d.m.y')
+            burial = Burial.objects.create(
+                burial_type=Burial.BURIAL_NEW if grave.grave_number == 1 else Burial.BURIAL_ADD,
+                burial_container=Burial.CONTAINER_COFFIN,
+                source_type=Burial.SOURCE_ARCHIVE,
+                place=place,
+                cemetery=place.cemetery,
+                area=place.area,
+                row=place.row,
+                place_number=place.place,
+                grave=grave,
+                grave_number=grave.grave_number,
+                deadman=deadman,
+                ugh=place.cemetery.ugh,
+                status=Burial.STATUS_CLOSED,
+                changed_by=request.user,
+                fact_date=fact_date,
+                flag_no_applicant_doc_required = True,
+            )
+            write_log(request, burial, operation=LogOperation.BURIAL_CREATE_IN_MOBILE)
+        return Response(BurialSerializer(burial).data, status=200)
+
+api_mobile_burials = ApiMobileBurialsView.as_view()
 
 class ApiBindBurialGrave(APIView):
     permission_classes = (IsAuthenticated,)
