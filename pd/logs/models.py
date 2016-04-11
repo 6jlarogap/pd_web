@@ -314,3 +314,43 @@ class LoginLog(models.Model):
                 org = None
             rec = cls(user=user, org = org, ip=request.META.get('REMOTE_ADDR'))
             rec.save()
+
+class DeleteLog(models.Model):
+    """
+    Журнал удаления объектов. Для синхронизации, например, с мобильным клиентом.
+    """
+    ct = models.ForeignKey('contenttypes.ContentType', editable=False, verbose_name=_(u"Тип"))
+    obj_id = models.PositiveIntegerField(editable=False, verbose_name=_(u"ID объекта"))
+    obj = generic.GenericForeignKey(ct_field='ct', fk_field='obj_id')
+    dt = models.DateTimeField(auto_now_add=True, verbose_name=_(u"Время"), db_index=True)
+    # ID родителя. Для разных моделей, если удаление из них сюда записывается,
+    # может быть разным. Чтобы ограничить список удаленных объектов, передаваемых
+    # по синхронизации. Для Grave, Place  и др. объектов, синхронизируемых с
+    # мобильным клиентом, это будет Cemetery. Записывать непосредственного родителя,
+    # например, Place для PlacePhoto, нецелесообразно, т.к. Place Может быть тоже удален
+    # Сами же кладбища всегда в мобильном клиенте синхронизируются полным их чтением.
+    parent_id = models.PositiveIntegerField(null=True, editable=False, verbose_name=_(u"ID родителя"), db_index=True)
+
+    @classmethod
+    def append(cls, instance, parent_id):
+        cls.objects.create(
+            ct=ContentType.objects.get_for_model(instance),
+            obj_id=instance.pk,
+            parent_id=parent_id,
+        )
+
+    @classmethod
+    def get_deleted(cls, sync_date, model, parent_ids=None):
+        search_fields = dict(
+            ct=ContentType.objects.get_for_model(model),
+            dt__gte=sync_date,
+        )
+        if parent_ids:
+            search_fields['parent_id__in'] = parent_ids
+        return [
+            {
+                'pk': rec.obj_id,
+                '_deleted': True,
+            }
+            for rec in cls.objects.filter(**search_fields)
+        ]

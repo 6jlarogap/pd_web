@@ -258,6 +258,8 @@ class ApiAuthSigninView(SessionDataMixin, APIView):
         elif not data.get('message'):
             data['message'] = 'Unknown Error'
             data['errorCode'] = 'unknown_error'
+        if not data.get('message'):
+            data['utctime'] = utcisoformat(datetime.datetime.now(), remove_mcsec=False)
         return Response(data=data, status=status_code)
 
     def post(self, request):
