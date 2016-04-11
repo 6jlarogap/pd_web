@@ -25,7 +25,7 @@ from burials.models import Burial
 from persons.models import DeadPerson
 from persons.models import BasePerson
 from users.models import PermitIfUgh
-from logs.models import write_log, Log, LogOperation
+from logs.models import write_log, Log, LogOperation, DeleteLog
 from pd.models import UnclearDate
 from pd.utils import utc2local, get_image, utcisoformat
 
@@ -553,28 +553,52 @@ class ApiMobilePlace(PlaceUploadMixin, APIView):
 
 api_mobile_place = ApiMobilePlace.as_view()
 
-class ApiGraveList(APIView):
-    permission_classes = (IsAuthenticated,)
+class ApiMobileGrave(APIView):
+    permission_classes = (PermitIfUgh,)
+
     def get(self, request) : 
         argSyncDateUnix = request.GET.get('syncDate', None) 
         argPlaceId = request.GET.get('placeId', None)
         argCemeteryId = request.GET.get('cemeteryId', None)
-        argAreaId = request.GET.get('areaId', None)        
-        queryGrave = Q(place__cemetery__ugh = request.user.profile.org)
-        if argCemeteryId :
-            queryGrave &= Q(place__cemetery__pk = argCemeteryId)
-        if argAreaId :
-            queryGrave &= Q(place__area__pk = argAreaId)
+        argAreaId = request.GET.get('areaId', None)
+        cemetery_ids = None
+
+        cemetery_ids = [c.pk for c in Cemetery.editable_ugh_cemeteries(request.user)]
+        queryGrave = Q(place__cemetery__pk__in=cemetery_ids)
+
         if argPlaceId :
             queryGrave &= Q(place__pk = argPlaceId)
+        elif argAreaId :
+            queryGrave &= Q(place__area__pk = argAreaId)
+        elif argCemeteryId :
+            queryGrave &= Q(place__cemetery__pk = argCemeteryId)
+
         if argSyncDateUnix :
             argSyncDate = datetime.fromtimestamp(int(argSyncDateUnix))
-            queryGrave &= Q(dt_modified__gte = argSyncDate)        
+            queryGrave &= Q(dt_modified__gte = argSyncDate)
+            if argPlaceId:
+                try:
+                    place = Place.objects.get(pk=argPlaceId)
+                    cemetery_ids = [ place.area.cemetery.pk ]
+                except Place.DoesNotExist:
+                    pass
+            elif argAreaId:
+                try:
+                    area = Area.objects.get(pk=argAreaId)
+                    cemetery_ids = [ area.cemetery.pk ]
+                except Area.DoesNotExist:
+                    pass
+            elif argCemeteryId:
+                cemetery_ids = [ argCemeteryId ]
+            #else:
+                # cemetery_ids уже рассчитаны
         listGrave = Grave.objects.filter(queryGrave).order_by('id')
-        serializer = GraveSerializer(listGrave)
-        return Response(serializer.data)
+        data = GraveSerializer(listGrave).data
+        if argSyncDateUnix:
+            data += DeleteLog.get_deleted(argSyncDate, Grave, cemetery_ids)
+        return Response(data)
     
-grave_list = ApiGraveList.as_view()
+api_mobile_grave = ApiMobileGrave.as_view()
 
 class ApiGraveUpload(APIView):
     permission_classes = (IsAuthenticated,)
@@ -651,7 +675,9 @@ class ApiBurialList(APIView):
         argCemeteryId = request.GET.get('cemeteryId', None)
         argAreaId = request.GET.get('areaId', None)
         argStatus = request.GET.get('status', None)        
-        queryBurial = Q(cemetery__ugh = request.user.profile.org)
+        queryBurial = Q(
+            cemetery__pk__in=[c.pk for c in Cemetery.editable_ugh_cemeteries(request.user)],
+        )
         if argCemeteryId :
             queryBurial &= Q(cemetery__pk = argCemeteryId)
         if argAreaId :
