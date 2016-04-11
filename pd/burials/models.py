@@ -638,38 +638,38 @@ class Grave(GeoPointModel, BaseModelManualDtCreated):
 
     @transaction.commit_on_success
     def delete(self, using=None, request=None):
-        super(Grave, self).delete(using=using)
-        if request:
-            arr = [_(u'Могила №%d удалена') % self.grave_number,]
-            # Reorder grave numbers
-            i = 1
-            relocated = False
-            for row in self.place.grave_set.order_by('grave_number').all():
-                if row.grave_number != i: 
-                    if not relocated:
-                        relocated = i
-                    row.grave_number = i
-                    row.save()
-                    for b in Burial.objects.filter(Q(grave=row) & ~Q(grave_number=i)):
+        result = super(Grave, self).delete(using=using)
+        arr = [_(u'Могила №%d удалена') % self.grave_number,]
+        # Reorder grave numbers
+        i = 1
+        relocated = False
+        for row in self.place.grave_set.order_by('grave_number').all():
+            if row.grave_number != i:
+                if not relocated:
+                    relocated = i
+                row.grave_number = i
+                row.save()
+                for b in Burial.objects.filter(Q(grave=row) & ~Q(grave_number=i)):
+                    if request:
                         write_log(request,
                             b,
                             _(u"Номер могилы %(old_grave_number)s -> %(new_grave_number)s") % dict(
                                 old_grave_number=b.grave_number,
                                 new_grave_number=i,
                         ))
-                        b.grave_number = i
-                        b.save()
-                i += 1
-            if relocated > 0:
-                if relocated < i-1:
-                    arr.append( _(u'Могилы %(relocated)d-%(i)d перенумерованы') % dict(
-                        relocated=relocated+1, i=i
-                    ))
-                else:
-                    arr.append( _(u'Могила %d перенумерована') % (relocated+1))
+                    b.grave_number = i
+                    b.save()
+            i += 1
+        if relocated > 0:
+            if relocated < i-1:
+                arr.append( _(u'Могилы %(relocated)d-%(i)d перенумерованы') % dict(
+                    relocated=relocated+1, i=i
+                ))
+            else:
+                arr.append( _(u'Могила %d перенумерована') % (relocated+1))
+        if request:
             write_log(request, self.place, u"\n".join(arr))
-        else:
-            raise Exception('Warning: Grave::delete - "request" param is undefined')
+        return result
 
     def full_name(self):
         return _(u"%(place)s, могила %(grave_number)s") % dict(
