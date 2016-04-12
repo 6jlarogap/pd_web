@@ -2,7 +2,8 @@
 from geo.models import CoordinatesModel 
 from rest_framework import serializers
 
-from rest_api.fields import DateTimeUtcField, UnclearDateFieldSerializer
+from rest_api.fields import DateTimeUtcField, UnclearDateFieldSerializer, \
+                            HyperlinkedFileField, DateTimeUtcField
 
 from burials.models import CemeteryPhoto
 
@@ -26,8 +27,11 @@ class CoordinatesSerializer(BaseSerializer):
 class CemeteryPhotoSerializer(BaseSerializer):
     lat = serializers.CharField(required=False)
     lng = serializers.CharField(required=False)
+    # TODO: obsolete after 12.04.16
     photo = serializers.FileField(max_length=None, allow_empty_file=False)
-    dt_modified = serializers.DateTimeField(required=False)
+    # ----
+    photoUrl=HyperlinkedFileField(source='photo', required=False)
+    dt_modified = DateTimeUtcField(required=False)
 
 class CemeterySerializer(BaseSerializer):
     name = serializers.CharField(required=True)

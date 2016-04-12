@@ -14,7 +14,9 @@ urlpatterns = patterns('mobile.views',
         'api_mobile_place', name='api_mobile_place'),
     url(r'^api/mobile/area/(?P<area_id>\d+)/places/?$',
         'api_mobile_area_places', name='api_mobile_area_places'),
+    # TODO: obsolete after 11.04.16
     url(r'^mobile/grave/$', 'api_mobile_grave'),
+    # ----
     url(r'^api/mobile/grave/?$', 'api_mobile_grave'),
     url(r'^mobile/burial/$', 'burial_list'),
     url(r'^api/mobile/burials/?$', 'api_mobile_burials'),

@@ -168,7 +168,10 @@ class ApiMobileCemeteryPhoto(APIView):
     def response(self, cemetery):
         return Response(
             status=200,
-            data=[ CemeteryPhotoSerializer(photo).data \
+            data=[ CemeteryPhotoSerializer(
+                    photo,
+                    context=dict(request=self.request)
+                    ).data \
                    for photo in CemeteryPhoto.objects.filter(cemetery=cemetery)
         ])
 
