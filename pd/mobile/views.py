@@ -153,7 +153,10 @@ class ApiCemeteryUpload(APIView):
                 cemeteryCoordinates.lng = gps.lng
                 cemeteryCoordinates.angle_number = gps.angle_number
                 cemeteryCoordinates.save()                 
-        serializer = CemeteryWithNestedObjectSerializer(listInsertedCemetery)        
+        serializer = CemeteryWithNestedObjectSerializer(
+            listInsertedCemetery,
+            context=dict(request=request)
+        )
         return Response(serializer.data)
         
 cemetery_upload = ApiCemeteryUpload.as_view()

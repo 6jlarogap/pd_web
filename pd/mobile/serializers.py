@@ -31,7 +31,7 @@ class CemeteryPhotoSerializer(BaseSerializer):
     photo = serializers.FileField(max_length=None, allow_empty_file=False)
     # ----
     photoUrl = HyperlinkedFileField(source='photo', required=False)
-    dt_modified = DateTimeUtcField(required=False)
+    dt_modified = serializers.DateField(required=False)
 
 class CemeterySerializer(BaseSerializer):
     name = serializers.CharField(required=True)
