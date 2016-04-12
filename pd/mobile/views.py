@@ -811,31 +811,55 @@ class ApiBindBurialGrave(APIView):
 bind_burial_grave = ApiBindBurialGrave.as_view()
 
 class ApiPlacePhotoList(APIView):
-    permission_classes = (IsAuthenticated,)
-    def get(self, request) :
+    permission_classes = (PermitIfUgh,)
+
+    def get(self, request):
         argSyncDateUnix = request.GET.get('syncDate', None)
         argPlaceId = request.GET.get('placeId', None)
         argCemeteryId = request.GET.get('cemeteryId', None)
-        argAreaId = request.GET.get('areaId', None)        
-        queryPlacePhoto = Q(place__cemetery__ugh = request.user.profile.org)
-        if argCemeteryId :
-            queryPlacePhoto &= Q(place__cemetery__pk = argCemeteryId)
-        if argAreaId :
-            queryPlacePhoto &= Q(place__area__pk = argAreaId)
+        argAreaId = request.GET.get('areaId', None)
+        cemetery_ids = None
+
+        cemetery_ids = [c.pk for c in Cemetery.editable_ugh_cemeteries(request.user)]
+        queryPlacePhoto = Q(place__cemetery__pk__in=cemetery_ids)
+
         if argPlaceId :
             queryPlacePhoto &= Q(place__pk = argPlaceId)
+        elif argAreaId :
+            queryPlacePhoto &= Q(place__area__pk = argAreaId)
+        elif argCemeteryId :
+            queryPlacePhoto &= Q(place__cemetery__pk = argCemeteryId)
+
         if argSyncDateUnix :
             argSyncDate = datetime.fromtimestamp(int(argSyncDateUnix))
-            queryPlacePhoto &= Q(dt_modified__gte = argSyncDate)        
+            queryPlacePhoto &= Q(dt_modified__gte = argSyncDate)
+            if argPlaceId:
+                try:
+                    place = Place.objects.get(pk=argPlaceId)
+                    cemetery_ids = [ place.area.cemetery.pk ]
+                except Place.DoesNotExist:
+                    pass
+            elif argAreaId:
+                try:
+                    area = Area.objects.get(pk=argAreaId)
+                    cemetery_ids = [ area.cemetery.pk ]
+                except Area.DoesNotExist:
+                    pass
+            elif argCemeteryId:
+                cemetery_ids = [ argCemeteryId ]
+            #else:
+                # cemetery_ids уже рассчитаны
         listPlacePhoto = PlacePhoto.objects.filter(queryPlacePhoto).order_by('id')
-        serializer = PlacePhotoSerializer(listPlacePhoto, context=dict(request=request))
-        return Response(serializer.data)
+        data = PlacePhotoSerializer(listPlacePhoto, context=dict(request=request)).data
+        if argSyncDateUnix:
+            data += DeleteLog.get_deleted(argSyncDate, PlacePhoto, cemetery_ids)
+        return Response(data)
 
 placephoto_list = ApiPlacePhotoList.as_view()
 
 
 class ApiPlacePhotoUpload(APIView):
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (PermitIfUgh,)
     def get(self, request) :
         return render_to_response('mobile_upload_placephoto.html', {'message': _(u"Загрузите фотографию к месту:")})
     def post(self, request) :
@@ -852,7 +876,9 @@ class ApiPlacePhotoUpload(APIView):
         data = ""
         listPhoto = []
         try:
-            place = Place.objects.get(id = placeId)            
+            place = get_object_or_404(Place, pk=placeId)
+            if place.cemetery not in Cemetery.editable_ugh_cemeteries(request.user):
+                raise PermissionDenied
             photo_content = ContentFile(request.FILES['photo'].read())
             photo = PlacePhoto(place=place, lat = lat, lng = lng, comment = '', creator = request.user, dt_created = dtCreated)
             photo.save()
@@ -870,7 +896,7 @@ class ApiPlacePhotoUpload(APIView):
                 place.lng = lng
                 place.save()
             listPhoto.append(photo)
-            serializer = PlacePhotoSerializer(listPhoto)
+            serializer = PlacePhotoSerializer(listPhoto, context=dict(request=request))
             return Response(serializer.data)
         except Place.DoesNotExist:
             place = None
@@ -879,13 +905,15 @@ class ApiPlacePhotoUpload(APIView):
 placephoto_upload = ApiPlacePhotoUpload.as_view()
 
 class ApiPlacePhotoDelete(APIView):
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (PermitIfUgh,)
     def get(self, request) :
         return render_to_response('mobile_remove_placephoto.html', {'message': _(u"Удалить фотографию к месту:")})
     def post(self, request) :
         placePhotoId = request.POST['placePhotoId']
         try :
-            placePhoto = PlacePhoto.objects.get(id = placePhotoId)
+            placePhoto = get_object_or_404(PlacePhoto, pk=placePhotoId)
+            if placePhoto.place.cemetery not in Cemetery.editable_ugh_cemeteries(request.user):
+                raise PermissionDenied
             placePhoto.delete()
             return Response("Ok")
         except PlacePhoto.DoesNotExist:
