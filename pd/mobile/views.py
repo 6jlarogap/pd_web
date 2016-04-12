@@ -250,23 +250,38 @@ cemetery_photo = ApiMobileCemeteryPhoto.as_view()
 
 class ApiAreaList(APIView):
     permission_classes = (PermitIfUgh,)
+
     def get(self, request) : 
         argSyncDateUnix = request.GET.get('syncDate', None) 
         argCemeteryId = request.GET.get('cemeteryId', None)
-        argAreaId = request.GET.get('areaId', None)        
-        queryArea = Q(
-            cemetery__pk__in=[c.pk for c in Cemetery.editable_ugh_cemeteries(request.user)]
-        )
-        if argCemeteryId :
-            queryArea &= Q(cemetery__pk = argCemeteryId)            
+        argAreaId = request.GET.get('areaId', None)
+        cemetery_ids = None
+
+        cemetery_ids = [c.pk for c in Cemetery.editable_ugh_cemeteries(request.user)]
+        queryArea = Q(cemetery__pk__in=cemetery_ids)
+
+        if argAreaId :
+            queryArea &= Q(pk = argAreaId)
+        elif argCemeteryId :
+            queryArea &= Q(cemetery__pk = argCemeteryId)
+
         if argSyncDateUnix :
             argSyncDate = datetime.fromtimestamp(int(argSyncDateUnix))
-            queryArea &= Q(dt_modified__gte = argSyncDate)            
-        if argAreaId :
-            queryArea &= Q(pk = argAreaId)            
+            queryArea &= Q(dt_modified__gte = argSyncDate)
+            if argAreaId:
+                try:
+                    area = Area.objects.get(pk=argAreaId)
+                    cemetery_ids = [ area.cemetery.pk ]
+                except Area.DoesNotExist:
+                    pass
+            elif argCemeteryId:
+                cemetery_ids = [ argCemeteryId ]
+
         listArea = Area.objects.filter(queryArea).order_by('cemetery', 'id')
-        serializer = AreaWithNestedObjectSerializer(listArea)
-        return Response(serializer.data)
+        data = AreaWithNestedObjectSerializer(listArea).data
+        if argSyncDateUnix:
+            data += DeleteLog.get_deleted(argSyncDate, Area, cemetery_ids)
+        return Response(data)
         
 area_list = ApiAreaList.as_view()
 
@@ -693,30 +708,55 @@ class ApiGraveUpload(APIView):
 grave_upload = ApiGraveUpload.as_view()
 
 class ApiBurialList(APIView):
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (PermitIfUgh,)
+
     def get(self, request) :
-        argSyncDateUnix = request.GET.get('syncDate', None) 
-        argGraveId = request.GET.get('graveId', None)
-        argCemeteryId = request.GET.get('cemeteryId', None)
-        argAreaId = request.GET.get('areaId', None)
-        argStatus = request.GET.get('status', None)        
-        queryBurial = Q(
-            cemetery__pk__in=[c.pk for c in Cemetery.editable_ugh_cemeteries(request.user)],
-        )
-        if argCemeteryId :
-            queryBurial &= Q(cemetery__pk = argCemeteryId)
-        if argAreaId :
-            queryBurial &= Q(area__pk = argAreaId)
-        if argGraveId :
+        argSyncDateUnix = request.GET.get('syncDate')
+
+        argGraveId = request.GET.get('graveId')
+        argAreaId = request.GET.get('areaId')
+        argCemeteryId = request.GET.get('cemeteryId')
+
+        argStatus = request.GET.get('status')
+
+        cemetery_ids = [c.pk for c in Cemetery.editable_ugh_cemeteries(request.user)]
+        queryBurial = Q(cemetery__pk__in=cemetery_ids)
+
+        if argGraveId:
             queryBurial &= Q(grave__pk = argGraveId)
-        if argStatus :
-            queryBurial &= Q(status = argStatus)
+        elif argAreaId :
+            queryBurial &= Q(area__pk = argAreaId)
+        elif argCemeteryId :
+            queryBurial &= Q(cemetery__pk = argCemeteryId)
+
         if argSyncDateUnix :
             argSyncDate = datetime.fromtimestamp(int(argSyncDateUnix))
-            queryBurial &= Q(dt_modified__gte = argSyncDate)        
+            queryBurial &= Q(dt_modified__gte = argSyncDate)
+            if argGraveId:
+                try:
+                    grave = Grave.objects.get(pk=argGraveId)
+                    cemetery_ids = [ grave.place.area.cemetery.pk ]
+                except Grave.DoesNotExist:
+                    pass
+            elif argAreaId:
+                try:
+                    area = Area.objects.get(pk=argAreaId)
+                    cemetery_ids = [ area.cemetery.pk ]
+                except Area.DoesNotExist:
+                    pass
+            elif argCemeteryId:
+                cemetery_ids = [ argCemeteryId ]
+            #else:
+                # cemetery_ids уже рассчитаны
+
+        if argStatus :
+            queryBurial &= Q(status = argStatus)
+
         listBurial = Burial.objects.filter(queryBurial).order_by('id')
-        serializer = BurialSerializer(listBurial)
-        return Response(serializer.data)
+        data = BurialSerializer(listBurial).data
+        if argSyncDateUnix:
+            data += DeleteLog.get_deleted(argSyncDate, Burial, cemetery_ids)
+        return Response(data)
 
 burial_list = ApiBurialList.as_view()
 

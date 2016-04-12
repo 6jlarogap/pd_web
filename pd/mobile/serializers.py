@@ -27,7 +27,7 @@ class CoordinatesSerializer(BaseSerializer):
 class CemeteryPhotoSerializer(BaseSerializer):
     lat = serializers.CharField(required=False)
     lng = serializers.CharField(required=False)
-    # TODO: obsolete after 12.04.16
+    # TODO: obsolete
     photo = serializers.FileField(max_length=None, allow_empty_file=False)
     # ----
     photoUrl = HyperlinkedFileField(source='photo', required=False)
@@ -159,9 +159,9 @@ class PlacePhotoSerializer(BaseSerializer):
     lng = serializers.CharField(required=False)
     photoUrl = HyperlinkedFileField(source='bfile', required=False)
     dt_modified = DateTimeUtcField(required=False)
-    # TODO: obsolete after 12.04.2016
     original_name = serializers.CharField(required=False)
+    # TODO: obsolete
     bfile = serializers.FileField(max_length=None, allow_empty_file=False)
+    # ---
     date_of_creation = serializers.DateTimeField(required=False)
     dt_created = serializers.DateTimeField(required=False)
-    # ---

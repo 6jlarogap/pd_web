@@ -1544,9 +1544,8 @@ def log_delete(sender, instance, **kwargs):
 models.signals.post_delete.connect(log_delete, sender=Grave)
 models.signals.post_delete.connect(log_delete, sender=Place)
 models.signals.post_delete.connect(log_delete, sender=PlacePhoto)
-# TODO: добавить, когда будут удаляться эти объекты
-# models.signals.post_delete.connect(log_delete, sender=Burial)
-# models.signals.post_delete.connect(log_delete, sender=Area)
+models.signals.post_delete.connect(log_delete, sender=Area)
+models.signals.post_delete.connect(log_delete, sender=Burial)
 
 class Burial1(BaseModel):
     """
