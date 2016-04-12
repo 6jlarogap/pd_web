@@ -82,7 +82,7 @@ class ApiCemeteryList(APIView):
             pk__in=[c.pk for c in Cemetery.editable_ugh_cemeteries(request.user)],
         )
         listCemetery = Cemetery.objects.filter(queryCemetery).distinct().order_by('id')
-        serializer = CemeteryWithNestedObjectSerializer(listCemetery)
+        serializer = CemeteryWithNestedObjectSerializer(listCemetery, context=dict(request=request))
         return Response(serializer.data)
         
 cemetery_list = ApiCemeteryList.as_view()

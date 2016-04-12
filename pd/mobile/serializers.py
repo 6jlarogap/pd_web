@@ -44,7 +44,10 @@ class CemeteryWithNestedObjectSerializer(CemeterySerializer):
     photo = serializers.SerializerMethodField('photo_func')
 
     def photo_func(self, instance):
-        return [CemeteryPhotoSerializer(photo).data \
+        return [CemeteryPhotoSerializer(
+                    photo,
+                    context=dict(request=self.context['request']),
+                ).data \
                 for photo in CemeteryPhoto.objects.filter(cemetery=instance)
         ]
 
