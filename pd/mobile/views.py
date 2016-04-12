@@ -362,22 +362,39 @@ class ApiAreaUpload(APIView):
 area_upload = ApiAreaUpload.as_view()
 
 class ApiPlaceList(APIView):
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (PermitIfUgh,)
+
     def get(self, request) : 
         argSyncDateUnix = request.GET.get('syncDate', None) 
+        argCemeteryId = request.GET.get('cemeteryId', None)
         argAreaId = request.GET.get('areaId', None)
-        argCemeteryId = request.GET.get('cemeteryId', None)        
-        queryPlace = Q(cemetery__ugh = request.user.profile.org)
-        if argCemeteryId :
-            queryPlace &= Q(cemetery__pk = argCemeteryId)
+        cemetery_ids = None
+
+        cemetery_ids = [c.pk for c in Cemetery.editable_ugh_cemeteries(request.user)]
+        queryPlace = Q(cemetery__pk__in=cemetery_ids)
+
         if argAreaId :
             queryPlace &= Q(area__pk = argAreaId)
+        elif argCemeteryId :
+            queryPlace &= Q(cemetery__pk = argCemeteryId)
+
         if argSyncDateUnix :
             argSyncDate = datetime.fromtimestamp(int(argSyncDateUnix))
-            queryPlace &= Q(dt_modified__gte = argSyncDate)        
+            queryPlace &= Q(dt_modified__gte = argSyncDate)
+            if argAreaId:
+                try:
+                    area = Area.objects.get(pk=argAreaId)
+                    cemetery_ids = [ area.cemetery.pk ]
+                except Area.DoesNotExist:
+                    pass
+            elif argCemeteryId:
+                cemetery_ids = [ argCemeteryId ]
+
         listPlace = Place.objects.filter(queryPlace).order_by('cemetery', 'area', 'id')
-        serializer = PlaceWithNestedObjectSerializer(listPlace)
-        return Response(serializer.data)
+        data = PlaceWithNestedObjectSerializer(listPlace).data
+        if argSyncDateUnix:
+            data += DeleteLog.get_deleted(argSyncDate, Place, cemetery_ids)
+        return Response(data)
 
 place_list = ApiPlaceList.as_view()
 
