@@ -432,7 +432,7 @@ class ApiMobileAreaPlaces(PlaceUploadMixin, APIView):
         area = get_object_or_404(
             Area,
             pk=area_id,
-            cemetery__ugh = request.user.profile.org,
+            cemetery__pk__in = [c.pk for c in Cemetery.editable_ugh_cemeteries(request.user)],
         )
         q = Q(area=area)
         argSyncDateUnix = request.GET.get('syncDate')
@@ -440,15 +440,17 @@ class ApiMobileAreaPlaces(PlaceUploadMixin, APIView):
             argSyncDate = datetime.fromtimestamp(int(argSyncDateUnix))
             q &= Q(dt_modified__gte = argSyncDate)
         listPlace = Place.objects.filter(q).order_by('cemetery', 'area', 'id')
-        serializer = PlaceSerializer(listPlace)
-        return Response(data=serializer.data, status=200)
+        data = PlaceSerializer(listPlace).data
+        if argSyncDateUnix:
+            data += DeleteLog.get_deleted(argSyncDate, Place, [ area.cemetery.pk ])
+        return Response(data=data, status=200)
 
     @transaction.commit_on_success
     def post(self, request, area_id):
         area = get_object_or_404(
             Area,
             pk=area_id,
-            cemetery__ugh = request.user.profile.org,
+            cemetery__pk__in = [c.pk for c in Cemetery.editable_ugh_cemeteries(request.user)],
         )
         cemetery = area.cemetery
         placeName = request.DATA.get('placeName')
@@ -809,7 +811,7 @@ class ApiPlacePhotoList(APIView):
             argSyncDate = datetime.fromtimestamp(int(argSyncDateUnix))
             queryPlacePhoto &= Q(dt_modified__gte = argSyncDate)        
         listPlacePhoto = PlacePhoto.objects.filter(queryPlacePhoto).order_by('id')
-        serializer = PlacePhotoSerializer(listPlacePhoto)
+        serializer = PlacePhotoSerializer(listPlacePhoto, context=dict(request=request))
         return Response(serializer.data)
 
 placephoto_list = ApiPlacePhotoList.as_view()
