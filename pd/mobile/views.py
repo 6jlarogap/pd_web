@@ -255,7 +255,6 @@ class ApiAreaList(APIView):
         argSyncDateUnix = request.GET.get('syncDate', None) 
         argCemeteryId = request.GET.get('cemeteryId', None)
         argAreaId = request.GET.get('areaId', None)
-        cemetery_ids = None
 
         cemetery_ids = [c.pk for c in Cemetery.editable_ugh_cemeteries(request.user)]
         queryArea = Q(cemetery__pk__in=cemetery_ids)
@@ -386,7 +385,6 @@ class ApiPlaceList(APIView):
         argSyncDateUnix = request.GET.get('syncDate', None) 
         argCemeteryId = request.GET.get('cemeteryId', None)
         argAreaId = request.GET.get('areaId', None)
-        cemetery_ids = None
 
         cemetery_ids = [c.pk for c in Cemetery.editable_ugh_cemeteries(request.user)]
         queryPlace = Q(cemetery__pk__in=cemetery_ids)
@@ -601,7 +599,6 @@ class ApiMobileGrave(APIView):
         argPlaceId = request.GET.get('placeId', None)
         argCemeteryId = request.GET.get('cemeteryId', None)
         argAreaId = request.GET.get('areaId', None)
-        cemetery_ids = None
 
         cemetery_ids = [c.pk for c in Cemetery.editable_ugh_cemeteries(request.user)]
         queryGrave = Q(place__cemetery__pk__in=cemetery_ids)
@@ -861,7 +858,6 @@ class ApiPlacePhotoList(APIView):
         argPlaceId = request.GET.get('placeId', None)
         argCemeteryId = request.GET.get('cemeteryId', None)
         argAreaId = request.GET.get('areaId', None)
-        cemetery_ids = None
 
         cemetery_ids = [c.pk for c in Cemetery.editable_ugh_cemeteries(request.user)]
         queryPlacePhoto = Q(place__cemetery__pk__in=cemetery_ids)
