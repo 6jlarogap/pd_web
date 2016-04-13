@@ -596,7 +596,7 @@ class Oauth(models.Model):
                         try:
                             user = User.objects.create(
                                 username=username,
-                                email=profile and profile.get('email') or '',
+                                email=profile and profile.get('email') or None,
                             )
                         except IntegrityError:
                             pass
