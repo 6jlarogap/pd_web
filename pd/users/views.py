@@ -393,6 +393,14 @@ class ApiCabinetTokensView(APIView):
         try:
             if request.user.is_authenticated():
                 user = request.user
+            elif request.DATA.get('oauth'):
+                user, oauth, message = Oauth.check_token(
+                    oauth_dict=request.DATA['oauth'],
+                    signup_dict=dict(
+                        signup_if_absent=True,
+                ))
+                if message:
+                    raise ServiceException(message)
             else:
                 login_phone = request.DATA.get('phone', '').strip().lstrip('+')
                 password = request.DATA.get('code')
