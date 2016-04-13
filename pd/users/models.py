@@ -439,7 +439,9 @@ class Oauth(models.Model):
             "provider": "yandex",
             "accessToken": "....."
         }
-        Кроме того:
+        Проверяем у provider'a accessToken. Если успешно, то имеем uid
+        пользователя у этого provider'a.
+        После этого:
         *   Если задан signup_dict:
                 {
                     'username': <username>, если нет, то генерируем имя
@@ -449,9 +451,19 @@ class Oauth(models.Model):
                         'firstname':
                         'middlename':
                         'email':
-                    }
+                    },
+                    signup_if_absent: true или нет такого пользователя
                 }
-            то создать пользователя username c паролем password и атрибутами профиля profile
+            то:
+                - при bool(signup_if_absent) = False:
+                    создать пользователя username c паролем password и атрибутами профиля profile.
+                    Если profile не передан, то заполняем фио из данных социальной сети.
+                    Если уже есть provider, uid в таблице Oauth, то ошибка.
+                - при bool(signup_if_absent) = True:
+                    Если есть provider, uid в таблице Oauth, то берем оттуда user'a и 
+                    нормально завершаем функцию.
+                    Если комбинация provider, uid в таблице Oauth не существует, то создаем
+                    пользователя, как если бы bool(signup_if_absent) = False.
          *   Если задан bind_dict:
                 {
                     'user': <объект user>,
@@ -550,9 +562,17 @@ class Oauth(models.Model):
             uid = unicode(uid)
 
             if signup_dict:
-                # Регистрация нового пользователя
-                if cls.objects.filter(provider=provider, uid=uid):
-                    raise ServiceException(msg_intergrity_error)
+                try:
+                    oauth = cls.objects.filter(provider=provider, uid=uid)[0]
+                    user = oauth.user
+                    if signup_dict.get('signup_if_absent'):
+                        return user, oauth, message
+                    else:
+                        raise ServiceException(msg_intergrity_error)
+                except IndexError:
+                    pass
+
+            if signup_dict:
                 username = signup_dict.get('username')
                 password = signup_dict.get('password')
                 profile = signup_dict.get('profile')
@@ -576,7 +596,7 @@ class Oauth(models.Model):
                         try:
                             user = User.objects.create(
                                 username=username,
-                                email=profile and profile.get('email') or '',
+                                email=profile and profile.get('email') or None,
                             )
                         except IntegrityError:
                             pass
@@ -602,6 +622,13 @@ class Oauth(models.Model):
                         'user_first_name': profile.get('firstname', ''),
                         'user_middle_name': profile.get('middlename', ''),
                     })
+                else:
+                    kwargs.update({
+                        'user_last_name': user_details.get('last_name', ''),
+                        'user_first_name': user_details.get('first_name', ''),
+                        'user_middle_name': user_details.get('middle_name', ''),
+                    })
+
                 CustomerProfile.objects.create(
                     user=user,
                     tc_confirmed = datetime.datetime.now(),
@@ -627,7 +654,8 @@ class Oauth(models.Model):
             else:
                 # Проверка, есть ли такой пользователь
                 try:
-                    user = cls.objects.filter(provider=provider, uid=uid)[0].user
+                    oauth = cls.objects.filter(provider=provider, uid=uid)[0]
+                    user = oauth.user
                 except IndexError:
                     message['errorCode'] = u"oauth_provider_not_attached"
                     raise ServiceException(_(u'Пользователь не найден среди зарегистрированных у провайдера %s') % provider)
