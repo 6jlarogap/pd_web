@@ -786,6 +786,14 @@ class ApiCabinetUsersView(ApiThankMixin, APIView):
     permission_classes = (IsAuthenticated,)
     parser_classes = (MultiPartParser, JSONParser, )
     
+    def get(self, request, pk):
+        user = request.user
+        if unicode(user.pk) != unicode(pk):
+            raise PermissionDenied
+        data = UserSettings2Serializer(user,context=dict(request=request)).data
+        status_code = 200
+        return Response(data=data, status=status_code)
+
     @transaction.commit_on_success
     def put(self, request, pk):
         """
@@ -806,7 +814,7 @@ class ApiCabinetUsersView(ApiThankMixin, APIView):
         try:
             user = request.user
             if unicode(user.pk) != unicode(pk):
-                raise Http404
+                raise PermissionDenied
             profile = get_profile(user)
             profile_fields = dict()
             profile_map = dict(
