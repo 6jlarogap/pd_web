@@ -1541,12 +1541,11 @@ def log_delete(sender, instance, **kwargs):
         parent_id = cemetery and cemetery.pk
     )
 
-# TODO : убрать Комментарии при запуске пригодного мобильного смотрителя
-# models.signals.post_delete.connect(log_delete, sender=Grave)
-# models.signals.post_delete.connect(log_delete, sender=Place)
-# models.signals.post_delete.connect(log_delete, sender=PlacePhoto)
-# models.signals.post_delete.connect(log_delete, sender=Area)
-# models.signals.post_delete.connect(log_delete, sender=Burial)
+models.signals.post_delete.connect(log_delete, sender=Grave)
+models.signals.post_delete.connect(log_delete, sender=Place)
+models.signals.post_delete.connect(log_delete, sender=PlacePhoto)
+models.signals.post_delete.connect(log_delete, sender=Area)
+models.signals.post_delete.connect(log_delete, sender=Burial)
 
 class Burial1(BaseModel):
     """
