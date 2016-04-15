@@ -292,7 +292,10 @@ api_auth_signout = ApiAuthSignoutView.as_view()
 class ApiThankMixin(object):
 
     def get_thanked(self, request, must_thank=True):
-        thank_got = request.DATA.get('thank') or request.GET.get('thank')
+        thank_got = request.DATA.get('thank') or \
+                    request.GET.get('thank') or \
+                    request.DATA.get('thankToken') or \
+                    request.GET.get('thankToken')
         if not thank_got:
             if must_thank:
                 raise ServiceException(_(u"Не задана персона, которой выражается благодарность"))
@@ -339,7 +342,11 @@ class ApiCabinetGetcodeView(ApiThankMixin, APIView):
         try:
             login_phone = request.DATA.get('phone', '').strip().lstrip('+')
             thanked = self.get_thanked(request, must_thank=False)
-            site = thanked.thank_site if thanked and thanked.thank_site else 'Gora tsvetov'
+            site = thanked.thank_site if thanked and thanked.thank_site else 'GoraTsvetov'
+            # отправитель в смс, до 11 символов. Если больше обрежетсся при отправке
+            # http://gorastalina.ru -> gorastalina
+            sender_name = re.sub(r'^https?\://', '', site, flags=re.I)
+            sender_name = re.sub(r'\.\S+$', '', sender_name)
             data['site'] = site
             try:
                 validate_phone_as_number(login_phone)
@@ -354,6 +361,7 @@ class ApiCabinetGetcodeView(ApiThankMixin, APIView):
                     phone_number=login_phone,
                     text=u"%s code: %s" % (site, code,),
                     email_error_text=site,
+                    sender_name=sender_name,
                 )
                 if message:
                     raise ServiceException(message)
