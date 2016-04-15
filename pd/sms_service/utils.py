@@ -9,7 +9,14 @@ from sms_service import sms24x7
 
 from pd.utils import EmailMessage
 
-def send_sms(phone_number, text, email_error_text='', user=None, sender_name=None):
+def send_sms(
+        phone_number,
+        text,
+        email_error_text='',
+        user=None,
+        sender_name=None,
+        error_email=True,
+    ):
     """
     Отправить СМС с текстом text на номер phone_number (Decimal or string!)
     
@@ -21,9 +28,11 @@ def send_sms(phone_number, text, email_error_text='', user=None, sender_name=Non
         сообщения
     *   sender_name: заголовок смс, от кого. Обрезается до 11 символов.
         По умолчанию PohoronnoeD
-    *   функцию вызывать, если not settings.DEBUG!
+    *   error_email: отправлять ли письмо при ошибке смс сервиса
+
+    -   функцию вызывать, если not settings.DEBUG!
     
-    *   Возвращает кортеж:
+    -   Возвращает кортеж:
             sent,   True, если успешно
             message, сообщение: пустое, если успешно, иначе причину отказа в отправке
     """
@@ -70,7 +79,7 @@ def send_sms(phone_number, text, email_error_text='', user=None, sender_name=Non
         # Все остальные идут с нормальной тестовой расшифрровкой
         except sms24x7.smsapi_exception as excpt:
             message = _(u"Ошибка СМС-сервиса, %s") % excpt
-    if message:
+    if message and error_email:
         if no_gate and user:
             try:
                 email_error_text += u"\n\n%s: %s / %s / %s\n" % (

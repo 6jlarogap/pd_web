@@ -362,6 +362,12 @@ class ApiCabinetGetcodeView(ApiThankMixin, APIView):
                     text=u"%s code: %s" % (site, code,),
                     email_error_text=site,
                     sender_name=sender_name,
+                    # Возможно много регистраций, из разных стран,
+                    # но не все у нас подключены к смс сервису.
+                    # Тогда будет много сообщений об ошибках.
+                    # Посему не отправлять письма об ошибках
+                    # ссмс сервиса на администраторов
+                    error_email=False,
                 )
                 if message:
                     raise ServiceException(message)
