@@ -292,7 +292,10 @@ api_auth_signout = ApiAuthSignoutView.as_view()
 class ApiThankMixin(object):
 
     def get_thanked(self, request, must_thank=True):
-        thank_got = request.DATA.get('thank') or request.GET.get('thank')
+        thank_got = request.DATA.get('thank') or \
+                    request.GET.get('thank') or \
+                    request.DATA.get('thankToken') or \
+                    request.GET.get('thankToken')
         if not thank_got:
             if must_thank:
                 raise ServiceException(_(u"Не задана персона, которой выражается благодарность"))
@@ -339,7 +342,11 @@ class ApiCabinetGetcodeView(ApiThankMixin, APIView):
         try:
             login_phone = request.DATA.get('phone', '').strip().lstrip('+')
             thanked = self.get_thanked(request, must_thank=False)
-            site = thanked.thank_site if thanked and thanked.thank_site else 'Gora tsvetov'
+            site = thanked.thank_site if thanked and thanked.thank_site else 'GoraTsvetov'
+            # отправитель в смс, до 11 символов. Если больше обрежетсся при отправке
+            # http://gorastalina.ru -> gorastalina
+            sender_name = re.sub(r'^https?\://', '', site, flags=re.I)
+            sender_name = re.sub(r'\.\S+$', '', sender_name)
             data['site'] = site
             try:
                 validate_phone_as_number(login_phone)
@@ -354,6 +361,13 @@ class ApiCabinetGetcodeView(ApiThankMixin, APIView):
                     phone_number=login_phone,
                     text=u"%s code: %s" % (site, code,),
                     email_error_text=site,
+                    sender_name=sender_name,
+                    # Возможно много регистраций, из разных стран,
+                    # но не все у нас подключены к смс сервису.
+                    # Тогда будет много сообщений об ошибках.
+                    # Посему не отправлять письма об ошибках
+                    # ссмс сервиса на администраторов
+                    error_email=False,
                 )
                 if message:
                     raise ServiceException(message)
@@ -374,7 +388,7 @@ class ApiCabinetGetcodeView(ApiThankMixin, APIView):
 
 api_cabinet_getcode = ApiCabinetGetcodeView.as_view()
 
-class ApiCabinetTokensView(APIView):
+class ApiCabinetTokensView(ApiThankMixin, APIView):
 
     @transaction.commit_on_success
     def post(self, request):
@@ -452,10 +466,23 @@ class ApiCabinetTokensView(APIView):
                             raise ServiceException(_(u"Неверный код (пароль)"))
                     except CustomerProfile.DoesNotExist:
                         raise ServiceException(_(u"Не найден телефон среди пользователей"))
+
+            # Успешная авторизация, благодарим, если пришел thankToken!
+            thanked = self.get_thanked(request, must_thank=False)
+            if thanked:
+                thank, created_  = Thank.objects.get_or_create(
+                    user=user,
+                    customperson=thanked,
+                )
+                if not created_:
+                    # update thank.dt_modifiled
+                    thank.save()
+
             user.backend = 'django.contrib.auth.backends.ModelBackend'
             login(request, user)
             write_log(request, user, _(u'Вход в систему'))
             LoginLog.write(request)
+
             data=dict(
                 userId=user.pk,
                 authToken=Token.objects.get_or_create(user=user)[0].key,
