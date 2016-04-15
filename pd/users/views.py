@@ -353,7 +353,9 @@ class ApiCabinetGetcodeView(ApiThankMixin, APIView):
             except (TypeError, decimal.InvalidOperation, ValidationError, ):
                 raise ServiceException(_(u'Неверный формат телефона'))
             data['phone'] = login_phone
-            code = CustomerProfile.generate_password()
+            chars = string.digits
+            code = ''.join(random.choice(chars) for x in range(6))
+
             if settings.DEBUG:
                 data['code'] = code
             else:
