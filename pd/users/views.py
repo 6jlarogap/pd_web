@@ -388,7 +388,7 @@ class ApiCabinetGetcodeView(ApiThankMixin, APIView):
 
 api_cabinet_getcode = ApiCabinetGetcodeView.as_view()
 
-class ApiCabinetTokensView(APIView):
+class ApiCabinetTokensView(ApiThankMixin, APIView):
 
     @transaction.commit_on_success
     def post(self, request):
@@ -466,10 +466,23 @@ class ApiCabinetTokensView(APIView):
                             raise ServiceException(_(u"Неверный код (пароль)"))
                     except CustomerProfile.DoesNotExist:
                         raise ServiceException(_(u"Не найден телефон среди пользователей"))
+
+            # Успешная авторизация, благодарим, если пришел thankToken!
+            thanked = self.get_thanked(request, must_thank=False)
+            if thanked:
+                thank, created_  = Thank.objects.get_or_create(
+                    user=user,
+                    customperson=thanked,
+                )
+                if not created_:
+                    # update thank.dt_modifiled
+                    thank.save()
+
             user.backend = 'django.contrib.auth.backends.ModelBackend'
             login(request, user)
             write_log(request, user, _(u'Вход в систему'))
             LoginLog.write(request)
+
             data=dict(
                 userId=user.pk,
                 authToken=Token.objects.get_or_create(user=user)[0].key,
