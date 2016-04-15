@@ -14,14 +14,19 @@ urlpatterns = patterns('mobile.views',
         'api_mobile_place', name='api_mobile_place'),
     url(r'^api/mobile/area/(?P<area_id>\d+)/places/?$',
         'api_mobile_area_places', name='api_mobile_area_places'),
-    url(r'^mobile/grave/$', 'grave_list'),
+    # TODO: obsolete after 11.04.16
+    url(r'^mobile/grave/$', 'api_mobile_grave'),
+    # ----
+    url(r'^api/mobile/grave/?$', 'api_mobile_grave'),
     url(r'^mobile/burial/$', 'burial_list'),
-    url(r'^mobile/placephoto/$', 'placephoto_list'),
-    url(r'^mobile/placephoto/upload/$', 'placephoto_upload'),
+    url(r'^api/mobile/burials/?$', 'api_mobile_burials'),
     url(r'^mobile/cemetery/upload/$', 'cemetery_upload'),
     url(r'^mobile/area/upload/$', 'area_upload'),
     url(r'^mobile/grave/upload/$', 'grave_upload'),
     url(r'^mobile/burial/bind_burial_grave/$', 'bind_burial_grave'),
+
+    url(r'^mobile/placephoto/$', 'placephoto_list'),
+    url(r'^mobile/placephoto/upload/$', 'placephoto_upload'),
     url(r'^mobile/placephoto/delete/$', 'placephoto_delete'),
 
     url(r'^api/mobilekeeper/version/?$', 'api_mobilekeeper_version'),

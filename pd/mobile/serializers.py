@@ -2,7 +2,8 @@
 from geo.models import CoordinatesModel 
 from rest_framework import serializers
 
-from rest_api.fields import DateTimeUtcField
+from rest_api.fields import DateTimeUtcField, UnclearDateFieldSerializer, \
+                            HyperlinkedFileField, DateTimeUtcField
 
 from burials.models import CemeteryPhoto
 
@@ -26,7 +27,10 @@ class CoordinatesSerializer(BaseSerializer):
 class CemeteryPhotoSerializer(BaseSerializer):
     lat = serializers.CharField(required=False)
     lng = serializers.CharField(required=False)
+    # TODO: obsolete
     photo = serializers.FileField(max_length=None, allow_empty_file=False)
+    # ----
+    photoUrl = HyperlinkedFileField(source='photo', required=False)
     dt_modified = serializers.DateTimeField(required=False)
 
 class CemeterySerializer(BaseSerializer):
@@ -40,7 +44,10 @@ class CemeteryWithNestedObjectSerializer(CemeterySerializer):
     photo = serializers.SerializerMethodField('photo_func')
 
     def photo_func(self, instance):
-        return [CemeteryPhotoSerializer(photo).data \
+        return [CemeteryPhotoSerializer(
+                    photo,
+                    context=dict(request=self.context['request']),
+                ).data \
                 for photo in CemeteryPhoto.objects.filter(cemetery=instance)
         ]
 
@@ -81,6 +88,10 @@ class BasePersonSerializer(serializers.Serializer):
     first_name = serializers.CharField(required=False)
     middle_name = serializers.CharField(required=False)    
     
+class DeadPersonSerializer(BasePersonSerializer):
+    birth_date = UnclearDateFieldSerializer()
+    death_date = UnclearDateFieldSerializer()
+
 class AlivePersonSerializer(BasePersonSerializer):    
     phones = serializers.CharField(required=False)
     login_phone = serializers.CharField(required=False)
@@ -134,8 +145,8 @@ class BurialSerializer(BaseSerializer):
     place = BaseSerializer(required=True)
     grave = BaseSerializer(required=True)
     burial_container = serializers.CharField(required=False)
-    deadman = BasePersonSerializer(required=False)
-    fact_date = serializers.CharField(required=False)
+    deadman = DeadPersonSerializer(required=False)
+    fact_date = UnclearDateFieldSerializer()
     plan_date = serializers.DateField(required=False)
     plan_time = serializers.TimeField(required=False)
     status = serializers.CharField(required=False)
@@ -146,7 +157,11 @@ class PlacePhotoSerializer(BaseSerializer):
     place = BaseSerializer(required=False)    
     lat = serializers.CharField(required=False)
     lng = serializers.CharField(required=False)
+    photoUrl = HyperlinkedFileField(source='bfile', required=False)
+    dt_modified = DateTimeUtcField(required=False)
     original_name = serializers.CharField(required=False)
+    # TODO: obsolete
     bfile = serializers.FileField(max_length=None, allow_empty_file=False)
+    # ---
     date_of_creation = serializers.DateTimeField(required=False)
     dt_created = serializers.DateTimeField(required=False)
