@@ -547,7 +547,7 @@ class Oauth(models.Model):
                 for key in ('first_name', 'last_name', 'display_name'):
                     real_key = provider_details[key]
                     if real_key:
-                        user_details[key] = data[real_key]
+                        user_details[key] = data.get(real_key, '')
                 uid = data[provider_details['uid']]
             except (KeyError, ValueError, ):
                 msg_debug = u" DEBUG: Request: %s. Response: %s" % (url, raw_data, ) \
