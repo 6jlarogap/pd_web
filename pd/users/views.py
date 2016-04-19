@@ -398,19 +398,30 @@ class ApiCabinetTokensView(ApiThankMixin, APIView):
         Авторизация пользователя с кодом, полученным на телефон
 
         -   Если пользователь авторизован, успех.
-        -   Ищем phone, code в таблице ThankUser, 
-            строка в которой могла появиться из /api/cabinet/getcode.
-        -   Если есть телефон в той таблице, то сверяем код. Код неверный: отказ.
-        -   Если есть телефон и верный код, то пускаем в систему,
-            создаем нового кабинетчика, если нет такого кабинетчика в базе,
-            с паролем == коду. Если такой кабинетчик есть, то пароль его не меняем.
-        -   Если телефона нет в той таблице, то телефон и код есть login_phone и пароль.
+            * если при этом о передал oauth параметры, то прикрепляем
+              его oauth данные
+        -   Если переданы oauth данные, то авторизуем его по oauth или,
+            если такого нет в системе, создаем пользователя
+        -   Если переданы phone & token:
+            *   Ищем phone, code в таблице ThankUser, 
+                строка в которой могла появиться из /api/cabinet/getcode.
+            *   Если есть телефон в той таблице, то сверяем код. Код неверный: отказ.
+            *   Если есть телефон и верный код, то пускаем в систему,
+                создаем нового кабинетчика, если нет такого кабинетчика в базе,
+                с паролем == коду. Если такой кабинетчик есть, то пароль его не меняем.
+            *   Если телефона нет в той таблице, то телефон и код есть login_phone и пароль.
         """
         try:
             if request.user.is_authenticated():
                 user = request.user
+                if request.DATA.get('oauth'):
+                    user, oauth_rec, message = Oauth.check_token(
+                        oauth_dict=request.DATA['oauth'],
+                        bind_dict=dict(
+                            user=user,
+                    ))
             elif request.DATA.get('oauth'):
-                user, oauth, message = Oauth.check_token(
+                user, oauth_rec, message = Oauth.check_token(
                     oauth_dict=request.DATA['oauth'],
                     signup_dict=dict(
                         signup_if_absent=True,
