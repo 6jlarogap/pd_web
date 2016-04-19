@@ -376,6 +376,7 @@ class Oauth(models.Model):
             'uid': 'id',
             'first_name': "first_name",
             'last_name': "last_name",
+            'middle_name': None,
             'display_name': "real_name",
         },
         PROVIDER_FACEBOOK: {
@@ -383,6 +384,7 @@ class Oauth(models.Model):
             'uid': 'id',
             'first_name': "first_name",
             'last_name': "last_name",
+            'middle_name': "middle_name",
             'display_name': "name",
         },
         PROVIDER_GOOGLE: {
@@ -390,6 +392,7 @@ class Oauth(models.Model):
             'uid': 'id',
             'first_name': "given_name",
             'last_name': "family_name",
+            'middle_name': None,
             'display_name': "name",
         },
         PROVIDER_VKONTAKTE: {
@@ -397,6 +400,7 @@ class Oauth(models.Model):
             'uid': 'uid',
             'first_name': "first_name",
             'last_name': "last_name",
+            'middle_name': None,
             'display_name': None,
         },
         PROVIDER_ODNOKLASSNIKI: {
@@ -409,6 +413,7 @@ class Oauth(models.Model):
             'uid': 'uid',
             'first_name': "first_name",
             'last_name': "last_name",
+            'middle_name': None,
             'display_name': "name",
         },
     }
@@ -418,6 +423,7 @@ class Oauth(models.Model):
     uid = models.CharField(_(u"Ид пользователя у провайдера"), max_length=255,)
     last_name = models.CharField(_(u"Фамилия у провайдера"), max_length=255, default='')
     first_name = models.CharField(_(u"Имя у провайдера"), max_length=255, default='')
+    middle_name = models.CharField(_(u"Отчество у провайдера"), max_length=255, default='')
     display_name = models.CharField(_(u"Отображаемое имя у провайдера"), max_length=255, default='')
     
     class Meta:
@@ -544,8 +550,8 @@ class Oauth(models.Model):
                 if provider == Oauth.PROVIDER_VKONTAKTE and data.get('response'):
                     data = data['response'][0]
                 user_details = {}
-                for key in ('first_name', 'last_name', 'display_name'):
-                    real_key = provider_details[key]
+                for key in ('first_name', 'last_name', 'middle_name', 'display_name'):
+                    real_key = provider_details.get(key)
                     if real_key:
                         user_details[key] = data.get(real_key, '')
                 uid = data[provider_details['uid']]
