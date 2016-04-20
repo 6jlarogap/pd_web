@@ -557,6 +557,7 @@ class Oauth(BaseModel):
                 data = json.loads(raw_data)
                 if provider == Oauth.PROVIDER_VKONTAKTE and data.get('response'):
                     data = data['response'][0]
+                uid = data[provider_details['uid']]
             except (KeyError, ValueError, IndexError):
                 msg_debug = u" DEBUG: Request: %s. Response: %s" % (url, raw_data, ) \
                             if settings.DEBUG else u""
@@ -564,9 +565,9 @@ class Oauth(BaseModel):
                     _(u"Ошибка интерпретации ответа от провайдера %(provider)s.%(msg_debug)s") % dict(
                         provider=provider, msg_debug=msg_debug,
                 ))
-            uid = data.get(provider_details['uid'])
             if not uid:
-                raise ServiceException(_(u'Не получен или получен пустой %s от провайдера') % provider_details['uid'])
+                raise ServiceException(_(u'Получен пустой %s от провайдера') % provider_details['uid'])
+
             uid = unicode(uid)
             user_details = {}
             for key in (
