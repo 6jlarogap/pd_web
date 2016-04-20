@@ -641,15 +641,21 @@ class Oauth(BaseModel):
                     # Проверить, не было бы ошибки, а если бы была, то
                     # ингорировать. Но бд при такой ошибке говорит, что
                     # игнорирует всё до конца транзакции
-                    if email and not User.objects.filter(email=email).exists():
-                        if profile.get('email'):
-                            # задана была почта пользователем
-                            raise ServiceException(_(u'Есть уже пользователь с таким email: %s') % email)
-                        try:
-                            user.email = email
-                            user.save()
-                        except IntegrityError:
-                            raise ServiceException(_(u'Есть уже пользователь с таким email: %s') % email)
+                    if email:
+                        if User.objects.filter(email=email).exists():
+                            if profile.get('email'):
+                                # задана была почта пользователем
+                                raise ServiceException(_(u'Есть уже пользователь с таким email: %s') % email)
+                            #else:
+                                # Не устанавливаю user.email: Человек авторизовался из соц сети,
+                                # была подхвачена его почта, но записывать эту почту в User нельзя,
+                                # так как там такая почта уже есть
+                        else:
+                            try:
+                                user.email = email
+                                user.save()
+                            except IntegrityError:
+                                raise ServiceException(_(u'Есть уже пользователь с таким email: %s') % email)
                     password = CommonProfile.generate_password()
                 try:
                     oauth = cls.objects.create(
