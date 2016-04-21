@@ -12,7 +12,8 @@ from django.contrib.auth.models import User
 
 from geo.models import Location
 from users.models import Org, Store, FavoriteSupplier, UserPhoto, is_cabinet_user, is_trade_user, \
-                         Profile, Dover, ProfileLORU, get_profile, OrgGallery, OrgReview, StorePhoto
+                         Profile, Dover, ProfileLORU, get_profile, OrgGallery, OrgReview, StorePhoto, \
+                         Oauth
 from persons.models import Phone
 from orders.models import Order, Product, Service, OrgServicePrice
 
@@ -333,7 +334,11 @@ class UserProfileMixin(object):
             request = self.context['request']
             return request.build_absolute_uri(userphoto.bfile.url)
         except UserPhoto.DoesNotExist:
-            return None
+            try:
+                oauth = Oauth.objects.filter(user=user)[0]
+                return oauth.photo or None
+            except IndexError:
+                return None
 
     def loginPhone_func(self, user):
         if is_cabinet_user(user):
