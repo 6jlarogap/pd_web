@@ -4,7 +4,7 @@ import decimal
 import random
 import string
 import urllib2
-import json
+import json, re
 import hashlib
 
 from django.conf import settings
@@ -401,12 +401,18 @@ class Oauth(BaseModel):
             'display_name': "name",
         },
         PROVIDER_VKONTAKTE: {
-            'url': "https://api.vk.com/method/getProfiles?access_token=%(accessToken)s",
+            'url': "https://api.vk.com/method/users.get?access_token=%(accessToken)s"
+                   "&fields=uid,first_name,last_name,bdate,photo_200,contacts",
             'uid': 'uid',
             'first_name': "first_name",
             'last_name': "last_name",
             'middle_name': None,
             'display_name': None,
+            'birthday': 'bdate',
+            'birthday_format': '%d.%m,%Y',
+            'photo': 'photo_200',
+            # Если такое приходит в фото, то это заглушка под отсутствие фото
+            'no_photo_re': r'/images/camera_\S?\.\S{3}$',
         },
         PROVIDER_ODNOKLASSNIKI: {
             # Внимание! Именно http://
@@ -433,7 +439,8 @@ class Oauth(BaseModel):
     email = models.EmailField(_(u"Email у провайдера"), max_length=255, default='')
     photo = models.URLField(_(u"Фото у провайдера"), max_length=255, default='')
     birthday = models.DateField(_(u"Дата рождения у провайдера"), null=True)
-    
+    phones = models.TextField(_(u"Телефоны (если несколько, то через ; или ,)"), null=True)
+
     class Meta:
         # Не может быть двух пользователей с одним uid у того же провайдера!
         unique_together = ('provider', 'uid')
@@ -596,6 +603,17 @@ class Oauth(BaseModel):
                             if provider == Oauth.PROVIDER_YANDEX:
                                 user_details[key] = provider_details['photo_template'] % \
                                                     dict(photo_id=user_details[key])
+                            elif provider == Oauth.PROVIDER_VKONTAKTE:
+                                if re.search(provider_details['no_photo_re'], user_details[key]):
+                                    del user_details[key]
+            if provider == Oauth.PROVIDER_VKONTAKTE:
+                user_details['phones'] = u';'.join(
+                                [ data.get(key, '') for key in ('mobile_phone', 'home_phone')]
+                )
+                user_details['phones'] = re.sub(r'^;', '',user_details['phones'])
+                user_details['phones'] = re.sub(r';$', '',user_details['phones'])
+                if not user_details['phones']:
+                    del user_details['phones']
             if signup_dict:
                 try:
                     oauth = cls.objects.filter(provider=provider, uid=uid)[0]
@@ -678,6 +696,7 @@ class Oauth(BaseModel):
 
                     'user_middle_name': profile.get('middlename', '') or \
                                         user_details.get('middle_name', ''),
+                    'phones': user_details.get('phones'),
                 }
 
                 CustomerProfile.objects.create(

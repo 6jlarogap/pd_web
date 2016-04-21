@@ -10,12 +10,12 @@ class Migration(SchemaMigration):
     def forwards(self, orm):
         # Adding field 'Oauth.dt_created'
         db.add_column('users_oauth', 'dt_created',
-                      self.gf('django.db.models.fields.DateTimeField')(auto_now_add=True, default=datetime.datetime(2016, 4, 20, 0, 0), blank=True),
+                      self.gf('django.db.models.fields.DateTimeField')(auto_now_add=True, default=datetime.datetime(2016, 4, 21, 0, 0), blank=True),
                       keep_default=False)
 
         # Adding field 'Oauth.dt_modified'
         db.add_column('users_oauth', 'dt_modified',
-                      self.gf('django.db.models.fields.DateTimeField')(auto_now=True, default=datetime.datetime(2016, 4, 20, 0, 0), blank=True),
+                      self.gf('django.db.models.fields.DateTimeField')(auto_now=True, default=datetime.datetime(2016, 4, 21, 0, 0), blank=True),
                       keep_default=False)
 
         # Adding field 'Oauth.email'
@@ -31,6 +31,11 @@ class Migration(SchemaMigration):
         # Adding field 'Oauth.birthday'
         db.add_column('users_oauth', 'birthday',
                       self.gf('django.db.models.fields.DateField')(null=True),
+                      keep_default=False)
+
+        # Adding field 'Oauth.phones'
+        db.add_column('users_oauth', 'phones',
+                      self.gf('django.db.models.fields.TextField')(null=True),
                       keep_default=False)
 
 
@@ -49,6 +54,9 @@ class Migration(SchemaMigration):
 
         # Deleting field 'Oauth.birthday'
         db.delete_column('users_oauth', 'birthday')
+
+        # Deleting field 'Oauth.phones'
+        db.delete_column('users_oauth', 'phones')
 
 
     models = {
@@ -320,6 +328,7 @@ class Migration(SchemaMigration):
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'last_name': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '255'}),
             'middle_name': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '255'}),
+            'phones': ('django.db.models.fields.TextField', [], {'null': 'True'}),
             'photo': ('django.db.models.fields.URLField', [], {'default': "''", 'max_length': '255'}),
             'provider': ('django.db.models.fields.CharField', [], {'max_length': '100'}),
             'uid': ('django.db.models.fields.CharField', [], {'max_length': '255'}),
