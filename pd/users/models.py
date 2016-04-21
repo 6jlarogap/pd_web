@@ -610,9 +610,7 @@ class Oauth(BaseModel):
             if provider == Oauth.PROVIDER_VKONTAKTE:
                 user_details['phones'] = u';'.join(
                                 [ data.get(key, '') for key in ('mobile_phone', 'home_phone')]
-                )
-                user_details['phones'] = re.sub(r'^;', '',user_details['phones'])
-                user_details['phones'] = re.sub(r';$', '',user_details['phones'])
+                ).strip(u';').strip()
                 if not user_details['phones']:
                     del user_details['phones']
             if signup_dict:
