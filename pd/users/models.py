@@ -409,10 +409,11 @@ class Oauth(BaseModel):
             'middle_name': None,
             'display_name': None,
             'birthday': 'bdate',
-            'birthday_format': '%d.%m,%Y',
+            'birthday_format': '%d.%m.%Y',
             'photo': 'photo_200',
-            # Если такое приходит в фото, то это заглушка под отсутствие фото
-            'no_photo_re': r'/images/camera_\S?\.\S{3}$',
+            # Если такое приходит в фото, то это заглушка под отсутствие фото,
+            # например, http://vk.com/images/camera_200.png
+            'no_photo_re': r'/images/camera_\S*\.\S{3}$',
         },
         PROVIDER_ODNOKLASSNIKI: {
             # Внимание! Именно http://
