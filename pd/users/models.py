@@ -569,6 +569,7 @@ class Oauth(BaseModel):
 
             try:
                 data = json.loads(raw_data)
+                print data
                 if provider == Oauth.PROVIDER_VKONTAKTE and data.get('response'):
                     data = data['response'][0]
                 uid = data[provider_details['uid']]
