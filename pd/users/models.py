@@ -9,6 +9,8 @@ import hashlib
 
 from django.conf import settings
 from django.contrib.auth.models import User
+from django.core.validators import URLValidator
+from django.core.exceptions import ValidationError
 from django.db import models, transaction, IntegrityError
 from django.db.models.loading import get_model
 from django.db.models.deletion import ProtectedError
@@ -75,6 +77,8 @@ class CommonProfile(BaseModel):
     user_first_name = models.CharField(_(u"Имя"), max_length=255, null=True, blank=True)
     user_middle_name = models.CharField(_(u"Отчество"), max_length=255, null=True, blank=True)
     phones = models.TextField(_(u"Телефоны (если несколько, то через ; или ,)"), blank=True, null=True)
+    birthday = models.DateField(_(u"Дата рождения у провайдера"), null=True, editable=False)
+    site = models.URLField(_(u"Сайт пользователя"), max_length=255, default='', editable=False)
 
     class Meta:
         abstract = True
@@ -402,7 +406,7 @@ class Oauth(BaseModel):
         },
         PROVIDER_VKONTAKTE: {
             'url': "https://api.vk.com/method/users.get?access_token=%(accessToken)s"
-                   "&fields=uid,first_name,last_name,bdate,photo_200,contacts",
+                   "&fields=uid,first_name,last_name,bdate,photo_200,contacts,site",
             'uid': 'uid',
             'first_name': "first_name",
             'last_name': "last_name",
@@ -414,6 +418,7 @@ class Oauth(BaseModel):
             # Если такое приходит в фото, то это заглушка под отсутствие фото,
             # например, http://vk.com/images/camera_200.png
             'no_photo_re': r'/images/camera_\S*\.\S{3}$',
+            'site': 'site',
         },
         PROVIDER_ODNOKLASSNIKI: {
             # Внимание! Именно http://
@@ -441,6 +446,7 @@ class Oauth(BaseModel):
     photo = models.URLField(_(u"Фото у провайдера"), max_length=255, default='')
     birthday = models.DateField(_(u"Дата рождения у провайдера"), null=True)
     phones = models.TextField(_(u"Телефоны (если несколько, то через ; или ,)"), null=True)
+    site = models.URLField(_(u"Сайт пользователя"), max_length=255, default='')
 
     class Meta:
         # Не может быть двух пользователей с одним uid у того же провайдера!
@@ -586,6 +592,7 @@ class Oauth(BaseModel):
                     'email',
                     'birthday',
                     'photo',
+                    'site',
                     ):
                 real_key = provider_details.get(key)
                 if real_key:
@@ -607,6 +614,14 @@ class Oauth(BaseModel):
                             elif provider == Oauth.PROVIDER_VKONTAKTE:
                                 if re.search(provider_details['no_photo_re'], user_details[key]):
                                     del user_details[key]
+                        elif key == 'site':
+                            if not re.search(r'^\w+\://', user_details[key]):
+                                user_details[key] = u"http://%s" % user_details[key]
+                            validate = URLValidator(verify_exists=False)
+                            try:
+                                validate(user_details[key])
+                            except ValidationError:
+                                del user_details[key]
                     else:
                         del user_details[key]
             if provider == Oauth.PROVIDER_VKONTAKTE:
@@ -698,6 +713,8 @@ class Oauth(BaseModel):
                     'user_middle_name': profile.get('middlename', '') or \
                                         user_details.get('middle_name', ''),
                     'phones': user_details.get('phones'),
+                    'birthday': user_details.get('birthday'),
+                    'site': user_details.get('site', ''),
                 }
 
                 CustomerProfile.objects.create(
