@@ -415,7 +415,7 @@ class ApiCabinetTokensView(ApiThankMixin, APIView):
             if request.user.is_authenticated():
                 user = request.user
                 if request.DATA.get('oauth'):
-                    user, oauth_rec, message = Oauth.check_token(
+                    user_rec, oauth_rec, message = Oauth.check_token(
                         oauth_dict=request.DATA['oauth'],
                         bind_dict=dict(
                             user=user,
