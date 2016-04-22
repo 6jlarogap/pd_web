@@ -425,6 +425,7 @@ class Oauth(BaseModel):
             'url': "http://api.odnoklassniki.ru/fb.do?method=users.getCurrentUser&"
                    "access_token=%(accessToken)s&"
                    "application_key=%(public_key)s&"
+                   "fields=user.*&"
                    "format=json&"
                    "sig=%(signature)s",
             'uid': 'uid',
@@ -432,6 +433,10 @@ class Oauth(BaseModel):
             'last_name': "last_name",
             'middle_name': None,
             'display_name': "name",
+            'email': 'email',
+            'birthday': 'birthday',
+            'birthday_format': '%Y-%m-%d',
+            'photo': 'pic190x190',
         },
     }
 
@@ -532,7 +537,7 @@ class Oauth(BaseModel):
                 m2 = m.hexdigest()
                 m = hashlib.md5()
                 m.update(
-                    "application_key=%sformat=jsonmethod=users.getCurrentUser%s" % (
+                    "application_key=%sfields=user.*format=jsonmethod=users.getCurrentUser%s" % (
                         settings.OAUTH_PROVIDERS_KEYS[provider]['public_key'],
                         m2,
                     )
@@ -569,7 +574,6 @@ class Oauth(BaseModel):
 
             try:
                 data = json.loads(raw_data)
-                print data
                 if provider == Oauth.PROVIDER_VKONTAKTE and data.get('response'):
                     data = data['response'][0]
                 uid = data[provider_details['uid']]
