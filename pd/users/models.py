@@ -607,6 +607,8 @@ class Oauth(BaseModel):
                             elif provider == Oauth.PROVIDER_VKONTAKTE:
                                 if re.search(provider_details['no_photo_re'], user_details[key]):
                                     del user_details[key]
+                    else:
+                        del user_details[key]
             if provider == Oauth.PROVIDER_VKONTAKTE:
                 user_details['phones'] = u';'.join(
                                 [ data.get(key, '') for key in ('mobile_phone', 'home_phone')]
