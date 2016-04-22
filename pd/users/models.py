@@ -596,7 +596,7 @@ class Oauth(BaseModel):
                     ):
                 real_key = provider_details.get(key)
                 if real_key:
-                    user_details[key] = data.get(real_key, '')
+                    user_details[key] = data.get(real_key, '').strip()
                     if user_details[key]:
                         if key == 'birthday':
                             date_format = provider_details.get('birthday_format', '%Y-%m-%d')
