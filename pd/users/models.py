@@ -621,6 +621,8 @@ class Oauth(BaseModel):
                             elif provider == Oauth.PROVIDER_VKONTAKTE:
                                 if re.search(provider_details['no_photo_re'], user_details[key]):
                                     del user_details[key]
+                            elif provider == Oauth.PROVIDER_GOOGLE:
+                                user_details[key] = u"%s?sz=200" % user_details[key]
                         elif key == 'site':
                             if not re.search(r'^\w+\://', user_details[key]):
                                 user_details[key] = u"http://%s" % user_details[key]
