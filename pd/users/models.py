@@ -389,12 +389,17 @@ class Oauth(BaseModel):
             'photo_template': u'https://avatars.yandex.net/get-yapic/%(photo_id)s/islands-200'
         },
         PROVIDER_FACEBOOK: {
-            'url': "https://graph.facebook.com/me?access_token=%(accessToken)s",
+            'url': "https://graph.facebook.com/me?"
+                   "fields=id,name,first_name,last_name,middle_name,"
+                   "picture.width(200).height(200),email&"
+                   "access_token=%(accessToken)s",
             'uid': 'id',
             'first_name': "first_name",
             'last_name': "last_name",
             'middle_name': "middle_name",
             'display_name': "name",
+            'email': 'email',
+            'photo': 'picture',
         },
         PROVIDER_GOOGLE: {
             'url': "https://www.googleapis.com/oauth2/v1/userinfo?alt=json&access_token=%(accessToken)s",
@@ -603,7 +608,9 @@ class Oauth(BaseModel):
                     ):
                 real_key = provider_details.get(key)
                 if real_key:
-                    user_details[key] = data.get(real_key, '').strip()
+                    user_details[key] = data.get(real_key, '')
+                    if isinstance(user_details[key], basestring):
+                        user_details[key] = user_details[key].strip()
                     if user_details[key]:
                         if key == 'birthday':
                             date_format = provider_details.get('birthday_format', '%Y-%m-%d')
@@ -623,6 +630,11 @@ class Oauth(BaseModel):
                                     del user_details[key]
                             elif provider == Oauth.PROVIDER_GOOGLE:
                                 user_details[key] = u"%s?sz=200" % user_details[key]
+                            elif provider == Oauth.PROVIDER_FACEBOOK:
+                                try:
+                                    user_details[key] = user_details[key]['data']['url']
+                                except (TypeError, KeyError):
+                                    del user_details[key]
                         elif key == 'site':
                             if not re.search(r'^\w+\://', user_details[key]):
                                 user_details[key] = u"http://%s" % user_details[key]
