@@ -403,6 +403,8 @@ class Oauth(BaseModel):
             'last_name': "family_name",
             'middle_name': None,
             'display_name': "name",
+            'email': 'email',
+            'photo': 'picture',
         },
         PROVIDER_VKONTAKTE: {
             'url': "https://api.vk.com/method/users.get?access_token=%(accessToken)s"
