@@ -327,10 +327,10 @@ class ApiThankMixin(object):
                 raise ServiceException(_(u"Неверное время from"))
             if limit:
                 # from_ & limit: отдавать пользоватей от этой даты к более ранним пользователям
-                qs =Q(dt_created__lte=from_dt)
+                qs =Q(dt_created__lt=from_dt)
             else:
                 # from_ & !limit: от from по текущий момент всех пользователей
-                qs =Q(dt_created__gte=from_dt)
+                qs =Q(dt_created__gt=from_dt)
         return qs
 
 class ApiCabinetGetcodeView(ApiThankMixin, APIView):
