@@ -699,7 +699,7 @@ class ApiCabinetOauth(ApiCabinetUsersMixin, APIView):
     permission_classes = (IsAuthenticated,)
 
     def get(self, request, pk):
-        user = get_object_or_404(User, pk=pk)
+        user = self.get_user(pk)
         return Response(OauthSerializer(
             Oauth.objects.filter(user=user).order_by('provider'),
             many=True).data
@@ -728,7 +728,7 @@ class ApiCabinetOauthDetail(ApiCabinetUsersMixin, APIView):
     permission_classes = (IsAuthenticated,)
 
     def delete(self, request, user_id, oauth_id):
-        user = get_object_or_404(User, pk=user_id)
+        user = self.get_user(user_id)
         oauth_rec = get_object_or_404(Oauth, pk=oauth_id, user=user)
         oauth_rec.delete()
         return Response({})
