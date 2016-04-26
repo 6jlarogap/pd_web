@@ -89,6 +89,10 @@ urlpatterns = patterns('users.views',
     url(r'^api/cabinet/tokens?$', 'api_cabinet_tokens', name='api_cabinet_tokens'),
     url(r'^api/cabinet/users/(?P<pk>\d+)/?$', 'api_cabinet_users', name='api_cabinet_users'),
 
+    url(r'^api/cabinet/users/(?P<pk>\d+)/oauth-providers/?$', 'api_cabinet_oauth', name='api_cabinet_oauth'),
+    url(r'^api/cabinet/users/(?P<user_id>\d+)/oauth-providers/(?P<oauth_id>\d+)/?$',
+        'api_cabinet_oauth_detail', name='api_cabinet_oauth_detail'),
+
     url(r'^api/thank/users_count/?$', 'api_thank_users_count', name='api_thank_users_count'),
     url(r'^api/thank/users/?$', 'api_thank_users', name='api_thank_users'),
 

@@ -77,7 +77,7 @@ from users.serializers import StoreSerializer, Store2Serializer, \
                               UserSettingsSerializer, ShopSerializer, OrgGallerySerializer, \
                               ShopDetailSerializer, OrgReviewSerializer, \
                               OrgClientSiteSerializer, ProfileClientSiteSerializer, \
-                              UserSettings2Serializer
+                              UserSettings2Serializer, OauthSerializer
 
 from sms_service.utils import send_sms
 
@@ -686,6 +686,54 @@ class ApiSettingsOauthProvidersDeleteView(APIView):
             )
 
 api_settings_oauth_providers_delete = ApiSettingsOauthProvidersDeleteView.as_view()
+
+class ApiCabinetUsersMixin(object):
+
+    def get_user(self, pk):
+        user = get_object_or_404(User, pk=pk)
+        if user != self.request.user:
+            raise PermissionDenied
+        return user
+
+class ApiCabinetOauth(ApiCabinetUsersMixin, APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request, pk):
+        user = get_object_or_404(User, pk=pk)
+        return Response(OauthSerializer(
+            Oauth.objects.filter(user=user).order_by('provider'),
+            many=True).data
+        )
+
+    def post(self, request, pk):
+        user = self.get_user(pk)
+        data = dict()
+        user, oauth_rec, message = Oauth.check_token(
+            request.DATA,
+            bind_dict=dict(
+                user=user,
+            ),
+        )
+        if message:
+            data = message
+            status_code = 400
+        else:
+            status_code = 200
+            data = OauthSerializer(oauth_rec).data
+        return Response(data=data, status=status_code)
+
+api_cabinet_oauth = ApiCabinetOauth.as_view()
+
+class ApiCabinetOauthDetail(ApiCabinetUsersMixin, APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def delete(self, request, user_id, oauth_id):
+        user = get_object_or_404(User, pk=user_id)
+        oauth_rec = get_object_or_404(Oauth, pk=oauth_id, user=user)
+        oauth_rec.delete()
+        return Response({})
+
+api_cabinet_oauth_detail = ApiCabinetOauthDetail.as_view()
 
 class ApiSettings(APIView):
     permission_classes = (IsAuthenticated,)

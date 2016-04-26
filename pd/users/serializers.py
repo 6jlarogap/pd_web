@@ -434,6 +434,13 @@ class UserSettings2Serializer(UserSettingsSerializer):
         model = User
         fields = ('id', 'firstName', 'lastName', 'middleName', 'photoUrl', )
 
+class OauthSerializer(serializers.ModelSerializer):
+    name = serializers.Field(source='get_display_name')
+
+    class Meta:
+        model = Oauth
+        fields = ('id', 'provider', 'name', )
+
 class ArchUserSerializer(serializers.ModelSerializer):
 
     class Meta:
