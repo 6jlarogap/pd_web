@@ -518,7 +518,7 @@ class Oauth(BaseModel):
                         'errorCode': 'символический_код_ошибки' }
         """
         
-        user = oauth = None
+        user = oauth = error_code = None
         message = {}
         provider = oauth_dict['provider']
         msg_intergrity_error = _(u'Есть уже пользователь, прикрепленный к этой учетной записи %s') % provider
@@ -766,11 +766,13 @@ class Oauth(BaseModel):
                     oauth = cls.objects.filter(provider=provider, uid=uid)[0]
                     user = oauth.user
                 except IndexError:
-                    message['errorCode'] = u"oauth_provider_not_attached"
+                    error_code = u"oauth_provider_not_attached"
                     raise ServiceException(_(u'Пользователь не найден среди зарегистрированных у провайдера %s') % provider)
         except ServiceException as excpt:
             transaction.rollback()
             message['message'] = excpt.message
+            if error_code:
+                message['errorCode'] = error_code
         return user, oauth, message
 
 class ThankUser(models.Model):
