@@ -486,7 +486,7 @@ class ApiMobileAreaPlaces(PlaceUploadMixin, APIView):
             cemetery__pk__in = [c.pk for c in Cemetery.editable_ugh_cemeteries(request.user)],
         )
         cemetery = area.cemetery
-        placeName = request.DATA.get('placeName')
+        placeName = request.DATA.get('placeName') or ''
         if not placeName and cemetery.places_algo in (
             Cemetery.PLACE_BURIAL_ACCOUNT_NUMBER,
             Cemetery.PLACE_MANUAL
@@ -513,7 +513,7 @@ class ApiMobileAreaPlaces(PlaceUploadMixin, APIView):
             logrec = write_log(request, place, operation=LogOperation.PLACE_CREATED_MOBILE)
             if 'dt_created' in place_defaults:
                 Log.objects.filter(pk=logrec.pk).update(dt=place.dt_created)
-        elif int(request.GET.get('isOverwrite', '0')) and request.DATA.get('placeName'):
+        elif int(request.GET.get('isOverwrite', '0')) and placeName:
             del place_defaults['is_invent']
             if 'dt_created' in place_defaults:
                 del place_defaults['dt_created']
