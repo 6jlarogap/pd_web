@@ -331,14 +331,19 @@ class UserProfileMixin(object):
     def userPhotoUrl_func(self, user):
         try:
             userphoto = UserPhoto.objects.get(user=user)
-            request = self.context['request']
-            return request.build_absolute_uri(userphoto.bfile.url)
+            if userphoto.bfile:
+                request = self.context['request']
+                return request.build_absolute_uri(userphoto.bfile.url)
         except UserPhoto.DoesNotExist:
-            try:
-                oauth = Oauth.objects.filter(user=user)[0]
-                return oauth.photo or None
-            except IndexError:
-                return None
+            pass
+        try:
+            oauth = Oauth.objects.filter(
+                        user=user,
+                        photo__gt='',
+                    ).order_by('-dt_modified')[0]
+            return oauth.photo or None
+        except IndexError:
+            return None
 
     def loginPhone_func(self, user):
         if is_cabinet_user(user):
