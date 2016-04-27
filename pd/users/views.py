@@ -480,6 +480,17 @@ class ApiCabinetTokensView(ApiThankMixin, APIView):
                     except CustomerProfile.DoesNotExist:
                         raise ServiceException(_(u"Не найден телефон среди пользователей"))
 
+            if not user.is_active:
+                raise ServiceException(dict(
+                    message=_(u"Пользователю закрыт вход в систему"),
+                    errorCode=u'user_not_active'
+                ))
+
+            user.backend = 'django.contrib.auth.backends.ModelBackend'
+            login(request, user)
+            write_log(request, user, _(u'Вход в систему'))
+            LoginLog.write(request)
+
             # Успешная авторизация, благодарим, если пришел thankToken!
             thanked = self.get_thanked(request, must_thank=False)
             if thanked:
@@ -491,11 +502,6 @@ class ApiCabinetTokensView(ApiThankMixin, APIView):
                     # update thank.dt_modifiled
                     thank.save()
 
-            user.backend = 'django.contrib.auth.backends.ModelBackend'
-            login(request, user)
-            write_log(request, user, _(u'Вход в систему'))
-            LoginLog.write(request)
-
             data=dict(
                 userId=user.pk,
                 authToken=Token.objects.get_or_create(user=user)[0].key,
@@ -503,7 +509,9 @@ class ApiCabinetTokensView(ApiThankMixin, APIView):
             status_code = 200
         except ServiceException as excpt:
             transaction.rollback()
-            data = dict(message=excpt.message)
+            data = excpt.message
+            if isinstance(data, basestring):
+                data = dict(message=data)
             status_code = 400
         return Response(data=data, status=status_code)
 
@@ -974,9 +982,9 @@ class ApiThankUsersCount(ApiThankMixin, APIView):
         try:
             thanked = self.get_thanked(request)
             from_qs = self.get_from_qs(request)
-            qs = from_qs & Q(customperson=thanked)
+            qs = from_qs & Q(customperson=thanked, user__is_active=True)
             data = {
-                'count': Thank.objects.filter(qs).count(),
+                'count': Thank.objects.filter(qs).distinct().count(),
                 'from': request.GET.get('from'),
             }
             status_code = 200
@@ -1001,8 +1009,8 @@ class ApiThankUsers(ApiThankMixin, APIView):
             thanked = self.get_thanked(request)
             limit = int(request.GET.get('limit', '0'))
             from_qs = self.get_from_qs(request)
-            qs = from_qs & Q(customperson=thanked)
-            thanks = Thank.objects.filter(qs).order_by('-dt_created')
+            qs = from_qs & Q(customperson=thanked, user__is_active=True)
+            thanks = Thank.objects.filter(qs).order_by('-dt_created').distinct()
             if limit > 0:
                 thanks = thanks[:limit]
             for thank in thanks:
