@@ -4,11 +4,13 @@ import decimal
 import random
 import string
 import urllib2
-import json
+import json, re
 import hashlib
 
 from django.conf import settings
 from django.contrib.auth.models import User
+from django.core.validators import URLValidator
+from django.core.exceptions import ValidationError
 from django.db import models, transaction, IntegrityError
 from django.db.models.loading import get_model
 from django.db.models.deletion import ProtectedError
@@ -75,6 +77,8 @@ class CommonProfile(BaseModel):
     user_first_name = models.CharField(_(u"Имя"), max_length=255, null=True, blank=True)
     user_middle_name = models.CharField(_(u"Отчество"), max_length=255, null=True, blank=True)
     phones = models.TextField(_(u"Телефоны (если несколько, то через ; или ,)"), blank=True, null=True)
+    birthday = models.DateField(_(u"Дата рождения у провайдера"), null=True, editable=False)
+    site = models.URLField(_(u"Сайт пользователя"), max_length=255, default='', editable=False)
 
     class Meta:
         abstract = True
@@ -350,7 +354,7 @@ def get_default_currency():
     Currency = models.get_model('billing', 'Currency')
     return Currency.objects.only('pk').get(code=settings.CURRENCY_DEFAULT_CODE)
 
-class Oauth(models.Model):
+class Oauth(BaseModel):
     PROVIDER_YANDEX = 'yandex'
     PROVIDER_FACEBOOK = 'facebook'
     PROVIDER_GOOGLE = 'google'
@@ -376,40 +380,70 @@ class Oauth(models.Model):
             'uid': 'id',
             'first_name': "first_name",
             'last_name': "last_name",
+            'middle_name': None,
             'display_name': "real_name",
+            'email': 'default_email',
+            'birthday': 'birthday',
+            'birthday_format': '%Y-%m-%d',
+            'photo': 'default_avatar_id',
+            'photo_template': u'https://avatars.yandex.net/get-yapic/%(photo_id)s/islands-200'
         },
         PROVIDER_FACEBOOK: {
-            'url': "https://graph.facebook.com/me?access_token=%(accessToken)s",
+            'url': "https://graph.facebook.com/me?"
+                   "fields=id,name,first_name,last_name,middle_name,"
+                   "picture.width(200).height(200),email&"
+                   "access_token=%(accessToken)s",
             'uid': 'id',
             'first_name': "first_name",
             'last_name': "last_name",
+            'middle_name': "middle_name",
             'display_name': "name",
+            'email': 'email',
+            'photo': 'picture',
         },
         PROVIDER_GOOGLE: {
             'url': "https://www.googleapis.com/oauth2/v1/userinfo?alt=json&access_token=%(accessToken)s",
             'uid': 'id',
             'first_name': "given_name",
             'last_name': "family_name",
+            'middle_name': None,
             'display_name': "name",
+            'email': 'email',
+            'photo': 'picture',
         },
         PROVIDER_VKONTAKTE: {
-            'url': "https://api.vk.com/method/getProfiles?access_token=%(accessToken)s",
+            'url': "https://api.vk.com/method/users.get?access_token=%(accessToken)s"
+                   "&fields=uid,first_name,last_name,bdate,photo_200,contacts,site",
             'uid': 'uid',
             'first_name': "first_name",
             'last_name': "last_name",
+            'middle_name': None,
             'display_name': None,
+            'birthday': 'bdate',
+            'birthday_format': '%d.%m.%Y',
+            'photo': 'photo_200',
+            # Если такое приходит в фото, то это заглушка под отсутствие фото,
+            # например, http://vk.com/images/camera_200.png
+            'no_photo_re': r'/images/camera_\S*\.\S{3}$',
+            'site': 'site',
         },
         PROVIDER_ODNOKLASSNIKI: {
             # Внимание! Именно http://
             'url': "http://api.odnoklassniki.ru/fb.do?method=users.getCurrentUser&"
                    "access_token=%(accessToken)s&"
                    "application_key=%(public_key)s&"
+                   "fields=user.*&"
                    "format=json&"
                    "sig=%(signature)s",
             'uid': 'uid',
             'first_name': "first_name",
             'last_name': "last_name",
+            'middle_name': None,
             'display_name': "name",
+            'email': 'email',
+            'birthday': 'birthday',
+            'birthday_format': '%Y-%m-%d',
+            'photo': 'pic190x190',
         },
     }
 
@@ -418,8 +452,14 @@ class Oauth(models.Model):
     uid = models.CharField(_(u"Ид пользователя у провайдера"), max_length=255,)
     last_name = models.CharField(_(u"Фамилия у провайдера"), max_length=255, default='')
     first_name = models.CharField(_(u"Имя у провайдера"), max_length=255, default='')
+    middle_name = models.CharField(_(u"Отчество у провайдера"), max_length=255, default='')
     display_name = models.CharField(_(u"Отображаемое имя у провайдера"), max_length=255, default='')
-    
+    email = models.EmailField(_(u"Email у провайдера"), max_length=255, default='')
+    photo = models.URLField(_(u"Фото у провайдера"), max_length=255, default='')
+    birthday = models.DateField(_(u"Дата рождения у провайдера"), null=True)
+    phones = models.TextField(_(u"Телефоны (если несколько, то через ; или ,)"), null=True)
+    site = models.URLField(_(u"Сайт пользователя"), max_length=255, default='')
+
     class Meta:
         # Не может быть двух пользователей с одним uid у того же провайдера!
         unique_together = ('provider', 'uid')
@@ -504,7 +544,7 @@ class Oauth(models.Model):
                 m2 = m.hexdigest()
                 m = hashlib.md5()
                 m.update(
-                    "application_key=%sformat=jsonmethod=users.getCurrentUser%s" % (
+                    "application_key=%sfields=user.*format=jsonmethod=users.getCurrentUser%s" % (
                         settings.OAUTH_PROVIDERS_KEYS[provider]['public_key'],
                         m2,
                     )
@@ -543,24 +583,74 @@ class Oauth(models.Model):
                 data = json.loads(raw_data)
                 if provider == Oauth.PROVIDER_VKONTAKTE and data.get('response'):
                     data = data['response'][0]
-                user_details = {}
-                for key in ('first_name', 'last_name', 'display_name'):
-                    real_key = provider_details[key]
-                    if real_key:
-                        user_details[key] = data[real_key]
                 uid = data[provider_details['uid']]
-            except (KeyError, ValueError, ):
+            except (KeyError, ValueError, IndexError):
                 msg_debug = u" DEBUG: Request: %s. Response: %s" % (url, raw_data, ) \
                             if settings.DEBUG else u""
                 raise ServiceException(
                     _(u"Ошибка интерпретации ответа от провайдера %(provider)s.%(msg_debug)s") % dict(
                         provider=provider, msg_debug=msg_debug,
                 ))
-                
             if not uid:
-                raise ServiceException(_(u'Получен пустой uid от провайдера'))
-            uid = unicode(uid)
+                raise ServiceException(_(u'Получен пустой %s от провайдера') % provider_details['uid'])
 
+            uid = unicode(uid)
+            user_details = {}
+            for key in (
+                    'first_name',
+                    'last_name',
+                    'middle_name',
+                    'display_name',
+                    'email',
+                    'birthday',
+                    'photo',
+                    'site',
+                    ):
+                real_key = provider_details.get(key)
+                if real_key:
+                    user_details[key] = data.get(real_key, '')
+                    if isinstance(user_details[key], basestring):
+                        user_details[key] = user_details[key].strip()
+                    if user_details[key]:
+                        if key == 'birthday':
+                            date_format = provider_details.get('birthday_format', '%Y-%m-%d')
+                            try:
+                                user_details[key] = datetime.datetime.strptime(
+                                    user_details[key],
+                                    date_format,
+                                )
+                            except ValueError:
+                                del user_details[key]
+                        elif key == 'photo':
+                            if provider == Oauth.PROVIDER_YANDEX:
+                                user_details[key] = provider_details['photo_template'] % \
+                                                    dict(photo_id=user_details[key])
+                            elif provider == Oauth.PROVIDER_VKONTAKTE:
+                                if re.search(provider_details['no_photo_re'], user_details[key]):
+                                    del user_details[key]
+                            elif provider == Oauth.PROVIDER_GOOGLE:
+                                user_details[key] = u"%s?sz=200" % user_details[key]
+                            elif provider == Oauth.PROVIDER_FACEBOOK:
+                                try:
+                                    user_details[key] = user_details[key]['data']['url']
+                                except (TypeError, KeyError):
+                                    del user_details[key]
+                        elif key == 'site':
+                            if not re.search(r'^\w+\://', user_details[key]):
+                                user_details[key] = u"http://%s" % user_details[key]
+                            validate = URLValidator(verify_exists=False)
+                            try:
+                                validate(user_details[key])
+                            except ValidationError:
+                                del user_details[key]
+                    else:
+                        del user_details[key]
+            if provider == Oauth.PROVIDER_VKONTAKTE:
+                user_details['phones'] = u';'.join(
+                                [ data.get(key, '') for key in ('mobile_phone', 'home_phone')]
+                ).strip(u';').strip()
+                if not user_details['phones']:
+                    del user_details['phones']
             if signup_dict:
                 try:
                     oauth = cls.objects.filter(provider=provider, uid=uid)[0]
@@ -575,10 +665,10 @@ class Oauth(models.Model):
             if signup_dict:
                 username = signup_dict.get('username')
                 password = signup_dict.get('password')
-                profile = signup_dict.get('profile')
+                profile = signup_dict.get('profile') or {}
+                email = profile.get('email') or user_details.get('email') or None
                 if username:
                     try:
-                        email = profile and profile.get('email') or None
                         user, created = User.objects.get_or_create(
                             username=username,
                             defaults = {
@@ -596,12 +686,31 @@ class Oauth(models.Model):
                         try:
                             user = User.objects.create(
                                 username=username,
-                                email=profile and profile.get('email') or None,
+                                email=None,
                             )
                         except IntegrityError:
                             pass
                         else:
                             break
+                    # Хорошо было бы дать здесь user.email = email; user.save(),
+                    # Проверить, не было бы ошибки, а если бы была, то
+                    # ингорировать. Но бд при такой ошибке говорит, что
+                    # игнорирует всё до конца транзакции
+                    if email:
+                        if User.objects.filter(email=email).exists():
+                            if profile.get('email'):
+                                # задана была почта пользователем
+                                raise ServiceException(_(u'Есть уже пользователь с таким email: %s') % email)
+                            #else:
+                                # Не устанавливаю user.email: Человек авторизовался из соц сети,
+                                # была подхвачена его почта, но записывать эту почту в User нельзя,
+                                # так как там такая почта уже есть
+                        else:
+                            try:
+                                user.email = email
+                                user.save()
+                            except IntegrityError:
+                                raise ServiceException(_(u'Есть уже пользователь с таким email: %s') % email)
                     password = CommonProfile.generate_password()
                 try:
                     oauth = cls.objects.create(
@@ -615,19 +724,19 @@ class Oauth(models.Model):
                 if password:
                     user.set_password(password)
                     user.save()
-                kwargs = {}
-                if profile:
-                    kwargs.update({
-                        'user_last_name': profile.get('lastname', ''),
-                        'user_first_name': profile.get('firstname', ''),
-                        'user_middle_name': profile.get('middlename', ''),
-                    })
-                else:
-                    kwargs.update({
-                        'user_last_name': user_details.get('last_name', ''),
-                        'user_first_name': user_details.get('first_name', ''),
-                        'user_middle_name': user_details.get('middle_name', ''),
-                    })
+                kwargs = {
+                    'user_last_name': profile.get('lastname', '') or \
+                                      user_details.get('last_name', ''),
+
+                    'user_first_name': profile.get('firstname', '') or \
+                                       user_details.get('first_name', ''),
+
+                    'user_middle_name': profile.get('middlename', '') or \
+                                        user_details.get('middle_name', ''),
+                    'phones': user_details.get('phones'),
+                    'birthday': user_details.get('birthday'),
+                    'site': user_details.get('site', ''),
+                }
 
                 CustomerProfile.objects.create(
                     user=user,

@@ -77,7 +77,7 @@ from users.serializers import StoreSerializer, Store2Serializer, \
                               UserSettingsSerializer, ShopSerializer, OrgGallerySerializer, \
                               ShopDetailSerializer, OrgReviewSerializer, \
                               OrgClientSiteSerializer, ProfileClientSiteSerializer, \
-                              UserSettings2Serializer
+                              UserSettings2Serializer, OauthSerializer
 
 from sms_service.utils import send_sms
 
@@ -327,10 +327,10 @@ class ApiThankMixin(object):
                 raise ServiceException(_(u"Неверное время from"))
             if limit:
                 # from_ & limit: отдавать пользоватей от этой даты к более ранним пользователям
-                qs =Q(dt_created__lte=from_dt)
+                qs =Q(dt_created__lt=from_dt)
             else:
                 # from_ & !limit: от from по текущий момент всех пользователей
-                qs =Q(dt_created__gte=from_dt)
+                qs =Q(dt_created__gt=from_dt)
         return qs
 
 class ApiCabinetGetcodeView(ApiThankMixin, APIView):
@@ -353,7 +353,9 @@ class ApiCabinetGetcodeView(ApiThankMixin, APIView):
             except (TypeError, decimal.InvalidOperation, ValidationError, ):
                 raise ServiceException(_(u'Неверный формат телефона'))
             data['phone'] = login_phone
-            code = CustomerProfile.generate_password()
+            chars = string.digits
+            code = ''.join(random.choice(chars) for x in range(6))
+
             if settings.DEBUG:
                 data['code'] = code
             else:
@@ -396,19 +398,30 @@ class ApiCabinetTokensView(ApiThankMixin, APIView):
         Авторизация пользователя с кодом, полученным на телефон
 
         -   Если пользователь авторизован, успех.
-        -   Ищем phone, code в таблице ThankUser, 
-            строка в которой могла появиться из /api/cabinet/getcode.
-        -   Если есть телефон в той таблице, то сверяем код. Код неверный: отказ.
-        -   Если есть телефон и верный код, то пускаем в систему,
-            создаем нового кабинетчика, если нет такого кабинетчика в базе,
-            с паролем == коду. Если такой кабинетчик есть, то пароль его не меняем.
-        -   Если телефона нет в той таблице, то телефон и код есть login_phone и пароль.
+            * если при этом о передал oauth параметры, то прикрепляем
+              его oauth данные
+        -   Если переданы oauth данные, то авторизуем его по oauth или,
+            если такого нет в системе, создаем пользователя
+        -   Если переданы phone & token:
+            *   Ищем phone, code в таблице ThankUser, 
+                строка в которой могла появиться из /api/cabinet/getcode.
+            *   Если есть телефон в той таблице, то сверяем код. Код неверный: отказ.
+            *   Если есть телефон и верный код, то пускаем в систему,
+                создаем нового кабинетчика, если нет такого кабинетчика в базе,
+                с паролем == коду. Если такой кабинетчик есть, то пароль его не меняем.
+            *   Если телефона нет в той таблице, то телефон и код есть login_phone и пароль.
         """
         try:
             if request.user.is_authenticated():
                 user = request.user
+                if request.DATA.get('oauth'):
+                    user_rec, oauth_rec, message = Oauth.check_token(
+                        oauth_dict=request.DATA['oauth'],
+                        bind_dict=dict(
+                            user=user,
+                    ))
             elif request.DATA.get('oauth'):
-                user, oauth, message = Oauth.check_token(
+                user, oauth_rec, message = Oauth.check_token(
                     oauth_dict=request.DATA['oauth'],
                     signup_dict=dict(
                         signup_if_absent=True,
@@ -673,6 +686,54 @@ class ApiSettingsOauthProvidersDeleteView(APIView):
             )
 
 api_settings_oauth_providers_delete = ApiSettingsOauthProvidersDeleteView.as_view()
+
+class ApiCabinetUsersMixin(object):
+
+    def get_user(self, pk):
+        user = get_object_or_404(User, pk=pk)
+        if user != self.request.user:
+            raise PermissionDenied
+        return user
+
+class ApiCabinetOauth(ApiCabinetUsersMixin, APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request, pk):
+        user = self.get_user(pk)
+        return Response(OauthSerializer(
+            Oauth.objects.filter(user=user).order_by('provider'),
+            many=True).data
+        )
+
+    def post(self, request, pk):
+        user = self.get_user(pk)
+        data = dict()
+        user, oauth_rec, message = Oauth.check_token(
+            request.DATA,
+            bind_dict=dict(
+                user=user,
+            ),
+        )
+        if message:
+            data = message
+            status_code = 400
+        else:
+            status_code = 200
+            data = OauthSerializer(oauth_rec).data
+        return Response(data=data, status=status_code)
+
+api_cabinet_oauth = ApiCabinetOauth.as_view()
+
+class ApiCabinetOauthDetail(ApiCabinetUsersMixin, APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def delete(self, request, user_id, oauth_id):
+        user = self.get_user(user_id)
+        oauth_rec = get_object_or_404(Oauth, pk=oauth_id, user=user)
+        oauth_rec.delete()
+        return Response({})
+
+api_cabinet_oauth_detail = ApiCabinetOauthDetail.as_view()
 
 class ApiSettings(APIView):
     permission_classes = (IsAuthenticated,)
