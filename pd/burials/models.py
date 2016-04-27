@@ -249,9 +249,9 @@ class Place(SafeDeleteMixin, GeoPointModel, BaseModelManualDtCreated):
     cemetery = models.ForeignKey(Cemetery, verbose_name=_(u"Кладбище"), on_delete=models.PROTECT)
     area = models.ForeignKey(Area, verbose_name=_(u"Участок"), blank=True, null=True,
                              on_delete=models.PROTECT)
-    row = models.CharField(_(u"Ряд"), max_length=255, blank=True, null=True)
+    row = models.CharField(_(u"Ряд"), max_length=255, blank=True, default='')
     oldplace = models.CharField(_(u"Старое место"), max_length=255, blank=True, null=True)
-    place = models.CharField(_(u"Место"), max_length=255, blank=True, null=True)
+    place = models.CharField(_(u"Место"), max_length=255, blank=True, default='')
     available_count = models.PositiveSmallIntegerField(_(u"Число свободных мест"), default=0)
     responsible = models.ForeignKey('persons.AlivePerson', verbose_name=_(u"Ответственный"), blank=True, null=True,
                                     on_delete=models.PROTECT)
@@ -797,8 +797,8 @@ class Burial(SafeDeleteMixin, GetLogsMixin, BaseModel):
     cemetery = models.ForeignKey(Cemetery, verbose_name=_(u"Кладбище"), null=True, blank=True, on_delete=models.PROTECT)
     area = models.ForeignKey(Area, verbose_name=_(u"Участок"), blank=True, null=True,
                                                   on_delete=models.PROTECT)
-    row = models.CharField(_(u"Ряд"), max_length=255, blank=True, null=True)
-    place_number = models.CharField(_(u"Номер места"), max_length=255, null=True, blank=True,
+    row = models.CharField(_(u"Ряд"), max_length=255, blank=True, default='')
+    place_number = models.CharField(_(u"Номер места"), max_length=255, default='', blank=True,
                                     help_text=_(u"Если пусто - номер будет сгенерирован автоматически"))
     grave = models.ForeignKey(Grave, verbose_name=_(u"Могила"),
                               null=True, blank=True, editable=False, on_delete=models.PROTECT)
@@ -1569,8 +1569,8 @@ class Burial1(BaseModel):
     place = models.ForeignKey(Place, verbose_name=_(u"Место"), null=True, related_name='place_1_burials')
     cemetery = models.ForeignKey(Cemetery, verbose_name=_(u"Кладбище"), null=True, related_name='cemetery_1_burials')
     area = models.ForeignKey(Area, verbose_name=_(u"Участок"), null=True, related_name='area_1_burials')
-    row = models.CharField(_(u"Ряд"), max_length=255, null=True)
-    place_number = models.CharField(_(u"Номер места"), max_length=255, null=True)
+    row = models.CharField(_(u"Ряд"), max_length=255)
+    place_number = models.CharField(_(u"Номер места"), max_length=255)
     place_number_s1 = models.TextField(null=True)
     place_number_s2 = models.FloatField(null=True)
     place_number_s3 = models.TextField(null=True)
