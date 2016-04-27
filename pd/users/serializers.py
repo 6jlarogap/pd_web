@@ -335,7 +335,10 @@ class UserProfileMixin(object):
             return request.build_absolute_uri(userphoto.bfile.url)
         except UserPhoto.DoesNotExist:
             try:
-                oauth = Oauth.objects.filter(user=user)[0]
+                oauth = Oauth.objects.filter(
+                            user=user,
+                            photo__gt='',
+                        ).order_by('-dt_modified')[0]
                 return oauth.photo or None
             except IndexError:
                 return None
