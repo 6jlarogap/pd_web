@@ -982,9 +982,9 @@ class ApiThankUsersCount(ApiThankMixin, APIView):
         try:
             thanked = self.get_thanked(request)
             from_qs = self.get_from_qs(request)
-            qs = from_qs & Q(customperson=thanked)
+            qs = from_qs & Q(customperson=thanked, user__is_active=True)
             data = {
-                'count': Thank.objects.filter(qs).count(),
+                'count': Thank.objects.filter(qs).distinct().count(),
                 'from': request.GET.get('from'),
             }
             status_code = 200
@@ -1009,8 +1009,8 @@ class ApiThankUsers(ApiThankMixin, APIView):
             thanked = self.get_thanked(request)
             limit = int(request.GET.get('limit', '0'))
             from_qs = self.get_from_qs(request)
-            qs = from_qs & Q(customperson=thanked)
-            thanks = Thank.objects.filter(qs).order_by('-dt_created')
+            qs = from_qs & Q(customperson=thanked, user__is_active=True)
+            thanks = Thank.objects.filter(qs).order_by('-dt_created').distinct()
             if limit > 0:
                 thanks = thanks[:limit]
             for thank in thanks:
