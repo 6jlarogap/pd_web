@@ -522,6 +522,7 @@ class Oauth(BaseModel):
         message = {}
         provider = oauth_dict['provider']
         msg_intergrity_error = _(u'Есть уже пользователь, прикрепленный к этой учетной записи %s') % provider
+        err_intergrity_error = 'another_user_bound_to_oauth'
         try:
             try:
                 provider_details = Oauth.PROVIDER_DETAILS[provider]
@@ -658,6 +659,7 @@ class Oauth(BaseModel):
                     if signup_dict.get('signup_if_absent'):
                         return user, oauth, message
                     else:
+                        error_code = err_intergrity_error
                         raise ServiceException(msg_intergrity_error)
                 except IndexError:
                     pass
@@ -720,6 +722,7 @@ class Oauth(BaseModel):
                         **user_details
                     )
                 except IntegrityError:
+                    error_code = err_intergrity_error
                     raise ServiceException(msg_intergrity_error)
                 if password:
                     user.set_password(password)
@@ -754,6 +757,7 @@ class Oauth(BaseModel):
                         defaults=user_details
                     )
                 except IntegrityError:
+                    error_code = err_intergrity_error
                     raise ServiceException(msg_intergrity_error)
 
                 if not created:
