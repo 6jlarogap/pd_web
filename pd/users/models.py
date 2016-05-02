@@ -517,7 +517,16 @@ class Oauth(BaseModel):
             message:    словарь, который может состоять из { 'message': 'Сообщение об ошибке',
                         'errorCode': 'символический_код_ошибки' }
         """
-        
+
+        def refresh_oauth_data(oauth, user_details):
+            oauth_save = False
+            for key in user_details:
+                if getattr(oauth, key) != user_details[key]:
+                    oauth_save = True
+                    setattr(oauth, key, user_details[key])
+            if oauth_save:
+                oauth.save()
+
         user = oauth = error_code = None
         message = {}
         provider = oauth_dict['provider']
@@ -624,8 +633,12 @@ class Oauth(BaseModel):
                                 del user_details[key]
                         elif key == 'photo':
                             if provider == Oauth.PROVIDER_YANDEX:
-                                user_details[key] = provider_details['photo_template'] % \
-                                                    dict(photo_id=user_details[key])
+                                if data.get('is_avatar_empty') or \
+                                   re.search(r'^[0\-\/]+$', user_details[key]):
+                                    del user_details[key]
+                                else:
+                                    user_details[key] = provider_details['photo_template'] % \
+                                                        dict(photo_id=user_details[key])
                             elif provider == Oauth.PROVIDER_VKONTAKTE:
                                 if re.search(provider_details['no_photo_re'], user_details[key]):
                                     del user_details[key]
@@ -657,6 +670,7 @@ class Oauth(BaseModel):
                     oauth = cls.objects.filter(provider=provider, uid=uid)[0]
                     user = oauth.user
                     if signup_dict.get('signup_if_absent'):
+                        refresh_oauth_data(oauth, user_details)
                         return user, oauth, message
                     else:
                         error_code = err_intergrity_error
@@ -750,20 +764,28 @@ class Oauth(BaseModel):
                 # Привязка существующего пользователя к провайдеру
                 user = bind_dict['user']
                 try:
-                    oauth, created = cls.objects.get_or_create(
-                        user=user,
+                    oauth = cls.objects.get(
                         provider=provider,
                         uid=uid,
-                        defaults=user_details
                     )
-                except IntegrityError:
-                    error_code = err_intergrity_error
-                    raise ServiceException(msg_intergrity_error)
-
-                if not created:
-                    for key in user_details:
-                        setattr(oauth, key, user_details[key])
-                    oauth.save()
+                    refresh_oauth_data(oauth, user_details)
+                    transaction.commit()
+                    if oauth.user != user:
+                        # TODO Здесь попытка merge обоих пользователей
+                        error_code = err_intergrity_error
+                        raise ServiceException(msg_intergrity_error)
+                except cls.DoesNotExist:
+                    try:
+                        cls.objects.create(
+                            user=user,
+                            provider=provider,
+                            uid=uid,
+                            **user_details
+                        )
+                    except IntegrityError:
+                        # Почти невозможная ситуация
+                        error_code = err_intergrity_error
+                        raise ServiceException(msg_intergrity_error)
             else:
                 # Проверка, есть ли такой пользователь
                 try:
