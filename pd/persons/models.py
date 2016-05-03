@@ -565,10 +565,12 @@ class MemoryGallery(Files):
     TYPE_IMAGE = 'image'
     TYPE_VIDEO = 'video'
     TYPE_TEXT = 'text'
+    TYPE_LINK = 'link'
     TYPE_CHOICES = (
         (TYPE_IMAGE, _(u"Фото")),
         (TYPE_VIDEO, _(u"Видео")),
-        (TYPE_TEXT, _(u"Текст"))
+        (TYPE_TEXT, _(u"Текст")),
+        (TYPE_LINK, _(u"Ссылка")),
     )
 
     PERMISSION_PRIVATE = 'private'

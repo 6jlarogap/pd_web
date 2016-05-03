@@ -4,7 +4,7 @@ import json
 import re, decimal
 
 from django.core.files.base import ContentFile
-from django.core.validators import validate_email
+from django.core.validators import validate_email, URLValidator
 from django.core.exceptions import ValidationError
 from django.db import transaction, IntegrityError
 from django.db.models.query_utils import Q
@@ -588,13 +588,23 @@ class ApiMemoryGalleryMixin(ApiSelectedPermissionsMixin):
                 raise ServiceException(_(u'Не задан тип (type)'))
             if fields['type'] not in [type_[0] for type_ in MemoryGallery.TYPE_CHOICES]:
                 raise ServiceException(_(u'Неверный тип (type)'))
-            if fields['type'] != MemoryGallery.TYPE_TEXT and not file_:
+            need_media = fields['type'] in (MemoryGallery.TYPE_IMAGE, MemoryGallery.TYPE_VIDEO)
+            need_text = fields['type'] in (MemoryGallery.TYPE_TEXT, MemoryGallery.TYPE_LINK)
+            if need_media and not file_:
                 raise ServiceException(_(u'Тип (type) %s требует загружаемого файла (mediaContent)') % fields['type'])
-            if fields['type'] == MemoryGallery.TYPE_TEXT and file_:
+            if not need_media and file_:
                 raise ServiceException(_(u'Тип (type) %s исключает загружаемый файл (mediaContent)') % fields['type'])
-            if fields['type'] == MemoryGallery.TYPE_TEXT and \
+            if need_text and \
                (not fields['text'] or not fields['text'].strip()):
                 raise ServiceException(_(u'Тип (type) %s требует непустой текст') % fields['type'])
+            if fields['type'] == MemoryGallery.TYPE_LINK:
+                validate = URLValidator(verify_exists=False)
+                if not re.search(r'^\w+\://', fields['text'], flags=re.I):
+                    fields['text'] = u"http://%s" % fields['text']
+                try:
+                    validate(fields['text'])
+                except ValidationError:
+                    raise ServiceException(_(u'Тип (type) %s требует правильную ссылку') % fields['type'])
             if fields['type'] == MemoryGallery.TYPE_IMAGE:
                 if file_.size > MemoryGallery.MAX_IMAGE_SIZE * 1024 * 1024:
                     raise ServiceException(

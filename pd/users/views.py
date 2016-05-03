@@ -493,6 +493,7 @@ class ApiCabinetTokensView(ApiThankMixin, APIView):
 
             # Успешная авторизация, благодарим, если пришел thankToken!
             thanked = self.get_thanked(request, must_thank=False)
+            is_already_counted = False
             if thanked:
                 thank, created_  = Thank.objects.get_or_create(
                     user=user,
@@ -500,11 +501,13 @@ class ApiCabinetTokensView(ApiThankMixin, APIView):
                 )
                 if not created_:
                     # update thank.dt_modifiled
+                    is_already_counted = True
                     thank.save()
 
             data=dict(
                 userId=user.pk,
                 authToken=Token.objects.get_or_create(user=user)[0].key,
+                isCounted=is_already_counted,
             )
             status_code = 200
         except ServiceException as excpt:
