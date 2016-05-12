@@ -1742,6 +1742,11 @@ class OmsOperStatsView(UGHRequiredMixin, PaginateListView):
         if settings.REDIRECT_LOGIN_TO_FRONT_END:
             parms += [
                 dict(
+                    name='rejected_photos',
+                    qs=Q(operation=LogOperation.PLACE_PHOTO_REJECT),
+                    caption=_(u"Брак фото, выявленный регистратором"),
+                ),
+                dict(
                     name='processed_places',
                     qs=Q(operation=LogOperation.PLACE_PHOTO_PROCESSED),
                     caption=_(u"Места, обработанные по фото"),
