@@ -279,7 +279,9 @@ def do_import_burials_minsk(csv_fileobj, cemetery, user):
 
         applicant = None
         last_name = make_name(row[applicant_ln])
-        if last_name:
+        phones = row[phone].strip()
+        row[city_name] = row[city_name].strip()
+        if last_name or row[city_name] or phones:
             # Адрес заявителя. Формируем, когда хотя бы есть город
             country = region = city = street = location = None
             row[country_name] = row[country_name].strip()
@@ -293,7 +295,6 @@ def do_import_burials_minsk(csv_fileobj, cemetery, user):
                     country=country,
                     name=row[region_name],
                 )
-            row[city_name] = row[city_name].strip()
             if row[city_name] and region:
                 city, _created = City.objects.get_or_create(
                     region=region,
@@ -317,7 +318,6 @@ def do_import_burials_minsk(csv_fileobj, cemetery, user):
                     building=row[building].strip(),
                     flat=row[flat].strip(),
                 )
-            phones = row[phone].strip()
             if phones:
                 phones = phones.replace("\n", "; ")
             applicant = AlivePerson.objects.create(
