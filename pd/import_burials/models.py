@@ -285,16 +285,22 @@ def do_import_burials_minsk(csv_fileobj, cemetery, user):
             # Адрес заявителя. Формируем, когда хотя бы есть город
             country = region = city = street = location = None
             row[country_name] = row[country_name].strip()
+            if row[country_name].lower() == u'неизвестен':
+                row[country_name] = u'Беларусь'
             if row[country_name]:
                 country, _created = Country.objects.get_or_create(
                     name=row[country_name],
                 )
             row[region_name] = row[region_name].strip()
+            if row[region_name].lower() == u'неизвестен':
+                row[region_name] = u'Минская обл.'
             if row[region_name] and country:
                 region, _created = Region.objects.get_or_create(
                     country=country,
                     name=row[region_name],
                 )
+            if row[city_name].lower() == u'неизвестен':
+                row[city_name] = u'Минск'
             if row[city_name] and region:
                 city, _created = City.objects.get_or_create(
                     region=region,
