@@ -231,7 +231,7 @@ class Location(models.Model):
             addr += u', %s' % self.info
         return addr
 
-    def __unicode__(self):
+    def address_(self, is_short=False):
         if self.addr_str and self.addr_str.strip():
             return self.addr_str.strip()
         elif self.street or self.region or self.country:
@@ -245,6 +245,9 @@ class Location(models.Model):
             else:
                 addr += u'%s' % (self.city or self.street and self.street.city or '')
             
+            if is_short:
+                return addr.replace(', ,', ', ')
+
             if addr:
                 addr += u', %s' % (self.region or self.street and self.street.city.region or '')
             else:
@@ -261,6 +264,12 @@ class Location(models.Model):
             return addr.replace(', ,', ', ')
         else:
             return _(u"незаполненный адрес")
+
+    def __unicode__(self):
+        return self.address_(is_short=False)
+
+    def short(self):
+        return self.address_(is_short=True)
 
     def set_related_addr(self, data):
             self.country = None
