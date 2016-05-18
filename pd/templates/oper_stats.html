@@ -65,6 +65,16 @@
         {% endwith  %}
 
         {% if global_context_REDIRECT_LOGIN_TO_FRONT_END %}
+            <div id="rejected_photos_grid">
+                <h3>{{ mark.rejected_photos.caption }}, {% trans "всего за период" %}: {{ mark.rejected_photos.total }}</h3>
+                <div id="rejected_photos"></div>
+            </div>
+            <br />
+
+            {% with mark_mark=mark.rejected_photos %}
+                {% include "oper_stats_users.html" %}
+            {% endwith  %}
+
             <div id="processed_places_grid">
                 <h3>{{ mark.processed_places.caption }}, {% trans "всего за период" %}: {{ mark.processed_places.total }}</h3>
                 <div id="processed_places"></div>
@@ -109,6 +119,11 @@
 
             {% if global_context_REDIRECT_LOGIN_TO_FRONT_END %}
 
+                {% data mark.rejected_photos.values "rejected_photos" %}
+                    {% col "string" "Date" %}"{{ val|date:"M j" }}"{% endcol %}
+                    {% col "number" "Число фото" %}{{ val }}{% endcol %}
+                {% enddata %}
+
                 {% data mark.processed_places.values "processed_places" %}
                     {% col "string" "Date" %}"{{ val|date:"M j" }}"{% endcol %}
                     {% col "number" "Число мест" %}{{ val }}{% endcol %}
@@ -152,6 +167,10 @@
             {% endif %}
 
             {% if global_context_REDIRECT_LOGIN_TO_FRONT_END %}
+                {% if mark.rejected_photos.total %}
+                    {% graph "rejected_photos" "rejected_photos" %}
+                {% endif %}
+
                 {% if mark.processed_places.total %}
                     {% graph "processed_places" "processed_places" %}
                 {% endif %}
