@@ -12,7 +12,7 @@
 #
 # Заполнить здесь название кладбища и путь к csv-экспорту кладбищ
 
-CEMETERY_NAME = u'Кальварийское'
+CEMETERY_NAME = u'Чижовское'
 
 CSV_PATH = '/home/suprune20/musor/export-nabivalka'
 #
@@ -26,13 +26,22 @@ from django.db import transaction
 from django.db.models.query_utils import Q
 
 from import_burials.models import UnicodeReader, make_name, make_date
-
 from burials.models import Cemetery, Burial
+from geo.models import Location
 
 csv.register_dialect("4minsk", escapechar="\\", quoting=csv.QUOTE_ALL, doublequote=False)
 
 @transaction.commit_on_success
 def main():
+
+    def check_if_put(burial):
+        """
+        Вдруг смотритель уже ввел какие-то данные
+        """
+        return burial.applicant and \
+                ( burial.applicant.address and burial.applicant.address.city or \
+                    burial.applicant.phones \
+                )
     
     cemetery = Cemetery.objects.get(ugh__pk=UGH_PK, name=CEMETERY_NAME)
     csvfile = open(u'%s/%s.csv' % (CSV_PATH, CEMETERY_NAME), 'rb')
@@ -110,9 +119,9 @@ def main():
 
                 if deadman_last_name:
                     q_deadman = Q(
-                        deadman__last_name=deadman_last_name,
-                        deadman__first_name=deadman_first_name,
-                        deadman__middle_name=deadman_middle_name,
+                        deadman__last_name__iexact=deadman_last_name,
+                        deadman__first_name__iexact=deadman_first_name,
+                        deadman__middle_name__iexact=deadman_middle_name,
                     )
                 else:
                     q_deadman = Q(deadman__isnull=True) | Q(deadman__last_name='')
@@ -129,10 +138,7 @@ def main():
                     )
                     if burial.applicant and burial.applicant.last_name.strip():
                         continue
-                    if burial.applicant and \
-                        ( burial.applicant.address and burial.applicant.address.city or \
-                          burial.applicant.phones \
-                        ):
+                    if check_if_put(burial):
                         count_put += 1
                         continue
                 except Burial.MultipleObjectsReturned:
@@ -145,16 +151,13 @@ def main():
                         ).order_by('pk'):
                         if b.applicant and b.applicant.last_name.strip():
                             continue
-                        if b.applicant and \
-                           ( b.applicant.address and b.applicant.address.city or \
-                             b.applicant.phones \
-                           ):
-                            count_put += 1
+                        if check_if_put(b):
                             continue
                         burial = b
                         break
                 except Burial.DoesNotExist:
-                    # Переместили в другое место? Изменили или ввели фамилию?
+                    # Переместили в другое место?
+                    # Раньше при импорте не отсеивались неизвестные?
                     try:
                         burial = Burial.objects.get(
                             q_base & \
@@ -163,10 +166,7 @@ def main():
                         )
                         if burial.applicant and burial.applicant.last_name.strip():
                             continue
-                        if burial.applicant and \
-                           ( burial.applicant.address and burial.applicant.address.city or \
-                             burial.applicant.phones \
-                           ):
+                        if check_if_put(burial):
                             count_put += 1
                             continue
                         count_replaced +=1
