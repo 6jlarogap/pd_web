@@ -27,7 +27,8 @@ from django.db.models.query_utils import Q
 
 from import_burials.models import UnicodeReader, make_name, make_date
 from burials.models import Cemetery, Burial
-from geo.models import Location
+from persons.models import AlivePerson
+from geo.models import Location, Country, Region, City, Street
 
 csv.register_dialect("4minsk", escapechar="\\", quoting=csv.QUOTE_ALL, doublequote=False)
 
@@ -179,16 +180,70 @@ def main():
                         )
                         count_not_found += 1
                 if burial:
-                    row[country_name] = row[country_name].strip()
-                    if not row[country_name] or row[country_name].lower() == u'неизвестен':
-                        row[country_name] = u'Беларусь'
+                    applicant = burial.applicant
+                    if applicant is None:
+                        applicant = AlivePerson.objects.create(
+                            last_name=u'',
+                            first_name=u'',
+                            middle_name=u'',
+                            phones=phones,
+                            address=None,
+                        )
+                        Burial.objects.filter(pk=burial.pk).update(applicant=applicant)
+                    elif phones:
+                        applicant.phones = phones
+                        applicant.save()
 
-                    row[region_name] = row[region_name].strip()
-                    if not row[region_name] or row[region_name].lower() == u'неизвестен':
-                        row[region_name] = u'Минская обл.'
+                    if row[city_name]:
+                        row[country_name] = row[country_name].strip()
+                        if not row[country_name] or row[country_name].lower() == u'неизвестен':
+                            row[country_name] = u'Беларусь'
+                        country, _created = Country.objects.get_or_create(
+                            name=row[country_name],
+                        )
 
-                    if not row[city_name] or row[city_name].lower() == u'неизвестен':
-                        row[city_name] = u'Минск'
+                        row[region_name] = row[region_name].strip()
+                        if not row[region_name] or row[region_name].lower() == u'неизвестен':
+                            row[region_name] = u'Минская обл.'
+                        region, _created = Region.objects.get_or_create(
+                            country=country,
+                            name=row[region_name],
+                        )
+
+                        if row[city_name].lower() == u'неизвестен':
+                            row[city_name] = u'Минск'
+                        city, _created = City.objects.get_or_create(
+                            region=region,
+                            name=row[city_name],
+                        )
+
+                        row[street_name] = row[street_name].strip()
+                        if row[street_name]:
+                            street, _created = Street.objects.get_or_create(
+                                city=city,
+                                name=row[street_name],
+                            )
+                        else:
+                            street = None
+                        
+                        address_fields = dict(
+                            country=country,
+                            region=region,
+                            city=city,
+                            street=street,
+                            post_index=row[post_index].strip(),
+                            house=row[house].strip(),
+                            block=row[block].strip(),
+                            building=row[building].strip(),
+                            flat=row[flat].strip(),
+                        )
+                        if applicant.address:
+                            for field in address_fields:
+                                setattr(applicant.address, key, address_fields[field])
+                            applicant.address.save()
+                        else:
+                            applicant.address = Location.objects.create(**address_fields)
+                            applicant.save()
 
                     count_fixed += 1
 
