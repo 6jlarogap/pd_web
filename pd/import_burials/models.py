@@ -328,8 +328,8 @@ def do_import_burials_minsk(csv_fileobj, cemetery, user):
                 phones = phones.replace("\n", "; ")
             applicant = AlivePerson.objects.create(
                 last_name=last_name,
-                first_name=make_name(row[applicant_fn]),
-                middle_name=make_name(row[applicant_mn]),
+                first_name=last_name and make_name(row[applicant_fn]) or '',
+                middle_name=last_name and make_name(row[applicant_mn]) or '',
                 address=location,
                 phones=phones,
             )
