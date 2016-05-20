@@ -18,7 +18,7 @@ CSV_PATH = '/home/suprune20/musor/export-nabivalka'
 #
 # Искажение во избежание случайного запуска процедуры
 #
-UGH_PK = 2
+UGH_PK = -2
 
 import csv
 
