@@ -18,7 +18,7 @@ CSV_PATH = '/home/suprune20/musor/export-nabivalka'
 #
 # Искажение во избежание случайного запуска процедуры
 #
-UGH_PK = -2
+UGH_PK = 2
 
 import csv
 
@@ -63,15 +63,16 @@ def main():
         applicant_organization__isnull=True,
     )
 
-    count = count_fixed = count_replaced = count_not_found = 0
+    count = count_fixed = count_replaced = count_put = count_not_found = 0
     for i, row in enumerate(csvreader):
         count += 1
         if count % 1000 == 0:
             transaction.commit()
-            print u"Csv recs: %s, fixed: %s, replaced: %s, not found: %s" % (
+            print u"Csv recs: %s, fixed: %s, replaced: %s, put data: %s, not found: %s" % (
                 count,
                 count_fixed,
                 count_replaced,
+                count_put,
                 count_not_found,
             )
         if not make_name(row[applicant_ln]):
@@ -128,6 +129,12 @@ def main():
                     )
                     if burial.applicant and burial.applicant.last_name.strip():
                         continue
+                    if burial.applicant and \
+                        ( burial.applicant.address and burial.applicant.address.city or \
+                          burial.applicant.phones \
+                        ):
+                        count_put += 1
+                        continue
                 except Burial.MultipleObjectsReturned:
                     for b in Burial.objects.filter(
                             q_base & \
@@ -137,6 +144,12 @@ def main():
                             q_place
                         ).order_by('pk'):
                         if b.applicant and b.applicant.last_name.strip():
+                            continue
+                        if b.applicant and \
+                           ( b.applicant.address and b.applicant.address.city or \
+                             b.applicant.phones \
+                           ):
+                            count_put += 1
                             continue
                         burial = b
                         break
@@ -149,6 +162,12 @@ def main():
                             q_fact_date
                         )
                         if burial.applicant and burial.applicant.last_name.strip():
+                            continue
+                        if burial.applicant and \
+                           ( burial.applicant.address and burial.applicant.address.city or \
+                             burial.applicant.phones \
+                           ):
+                            count_put += 1
                             continue
                         count_replaced +=1
                     except (Burial.DoesNotExist, Burial.MultipleObjectsReturned):
@@ -176,10 +195,11 @@ def main():
 
     if count % 1000 != 0:
         transaction.commit()
-        print u"Csv recs: %s, fixed: %s, replaced: %s, not found: %s" % (
+        print u"Csv recs: %s, fixed: %s, replaced: %s, put data: %s, not found: %s" % (
             count,
             count_fixed,
             count_replaced,
+            count_put,
             count_not_found,
         )
     csvfile.close()
