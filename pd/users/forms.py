@@ -567,6 +567,7 @@ class OrgLogForm(forms.Form):
     date_from = forms.DateField(required=False, label=_(u"С"))
     date_to = forms.DateField(required=False, label=_(u"по"))
     per_page = forms.ChoiceField(label=_(u"На странице"), choices=PAGE_CHOICES, initial=25, required=False)
+    users = forms.MultipleChoiceField(label=_(u"Пользователи"),choices=())
 
 # Никакой разницы в этих формах пока нет.
 LoginLogForm = OrgLogForm

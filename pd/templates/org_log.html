@@ -4,22 +4,46 @@
 
 {% block content %}
     <h1>{% trans "Журнал" %}</h1>
-    <div class="row-fluid no-print">
-        <div class="span12">
-            <div class="row-fluid">
-                <form id="mainform" class="form-horizontal" method="get" action="">
-                    {{ form.as_p }}
+    <div class="no-print">
+        <form id="mainform" method="get" action="">
+            <table>
+                <tr valign="top">
+                    <td>
+                        {{ form.date_from.errors }}
+                        <p>
+                            {{ form.date_from.label_tag }}
+                            {{ form.date_from }}
+                            <span class="helptext">{{ form.date_from.help_text }}</span>
+                        </p>
+                    </td>
+                    <td>
+                        {{ form.date_to.errors }}
+                        <p>
+                            {{ form.date_to.label_tag }}
+                            {{ form.date_to }}
+                            <span class="helptext">{{ form.date_to.help_text }}</span>
+                        </p>
+                    </td>
+                    <td>
+                        {{ form.users.errors }}
+                        <p>
+                            {{ form.users.label_tag }}
+                            {{ form.users }}
+                            <span class="helptext">{{ form.users.help_text }}</span>
+                        </p>
+                    </td>
+                </tr>
+            </table>
 
-                    <p class="buttons">
-                        <input type="submit" value="искать" class="btn btn-primary" />
-                    </p>
-                </form>
-            </div>
-        </div>
+            <p class="buttons">
+                <input type="submit" value="искать" class="btn btn-primary" />
+            </p>
+        </form>
     </div>
 
     {% if not form.errors %}
         <p>{% trans "Найдено:" %} {{ paginator.count|default:object_list.count }}</p>
+        {% include "paginator.html" %}
 
         <table class="table table-bordered table-striped">
         <tr>
@@ -54,7 +78,6 @@
         {% endfor %}
         </table>
 
-        {% include "paginator.html" %}
     {% endif %}
 
 {% endblock %}
