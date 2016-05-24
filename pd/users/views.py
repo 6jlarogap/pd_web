@@ -1591,7 +1591,30 @@ class AutocompleteLoruInBurials(View):
 
 autocomplete_loru_in_burials = AutocompleteLoruInBurials.as_view()
 
-class OrgLogView(UghOrLoruRequiredMixin, PaginateListView):
+class ReportDatesMixin(object):
+
+    def get_dates(self):
+        """
+        Получить начальные даты для отчета по умолчанию
+
+        После 15-го числа: за текущий месяц
+        До 15-го числа; начиная с предыдущего месяца
+        """
+        date_from = datetime.date.today()
+        if date_from.day < 15:
+            if date_from.month > 1:
+                month = date_from.month - 1
+                year = date_from.year
+            else:
+                month = 12
+                year = date_from.year - 1
+            date_from = datetime.date(year, month, 1)
+        else:
+            date_from = datetime.date(date_from.year, date_from.month, 1)
+        date_to = datetime.date.today()
+        return date_from, date_to
+
+class OrgLogView(UghOrLoruRequiredMixin, ReportDatesMixin, PaginateListView):
     template_name = 'org_log.html'
     context_object_name = 'logs'
 
@@ -1649,21 +1672,6 @@ class OrgLogView(UghOrLoruRequiredMixin, PaginateListView):
         ).order_by(*s)
         return logs
 
-    def get_dates(self):
-        date_from = datetime.date.today()
-        if date_from.day < 15:
-            if date_from.month > 1:
-                month = date_from.month - 1
-                year = date_from.year
-            else:
-                month = 12
-                year = date_from.year - 1
-            date_from = datetime.date(year, month, 1)
-        else:
-            date_from = datetime.date(date_from.year, date_from.month, 1)
-        date_to = datetime.date.today()
-        return date_from, date_to
-
     def get_form(self):
         data = self.request.GET
         form = OrgLogForm(data=data or None)
@@ -1718,7 +1726,7 @@ class LoginLogView(SupervisorRequiredMixin, PaginateListView):
 
 login_log = LoginLogView.as_view()
 
-class OmsOperStatsView(UGHRequiredMixin, PaginateListView):
+class OmsOperStatsView(UGHRequiredMixin, ReportDatesMixin, PaginateListView):
     template_name = 'oper_stats.html'
     context_object_name = 'dates'
 
@@ -1887,19 +1895,9 @@ class OmsOperStatsView(UGHRequiredMixin, PaginateListView):
             form.fields['date_from'].required = True
             form.fields['date_to'].required = True
         else:
-            date_from = datetime.date.today()
-            if date_from.day < 15:
-                if date_from.month > 1:
-                    month = date_from.month - 1
-                    year = date_from.year
-                else:
-                    month = 12
-                    year = date_from.year - 1
-                date_from = datetime.date(year, month, 1)
-            else:
-                date_from = datetime.date(date_from.year, date_from.month, 1)
+            date_from, date_to = self.get_dates()
             form.initial['date_from'] = date_from
-            form.initial['date_to'] = datetime.date.today()
+            form.initial['date_to'] = date_to
         return form
 
 oms_oper_stats = OmsOperStatsView.as_view()
