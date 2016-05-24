@@ -76,8 +76,16 @@ class PaginateListView(ListView):
             return 25
 
     def get_context_data(self, **kwargs):
+        # Учтем запросы типа ?choice=choice1&choice=choice2
+        # request.GET.items возвращает лишь последний такой choice
+        items = []
+        for k in self.request.GET.keys():
+            values = self.request.GET.getlist(k)
+            for v in values:
+                items.append((k,v))
+
         data = super(PaginateListView, self).get_context_data(**kwargs)
-        get_for_paginator = u'&'.join([u'%s=%s' %  (k, v) for k,v in self.request.GET.items() if k not in self.DISPLAY_OPTIONS])
+        get_for_paginator = u'&'.join([u'%s=%s' %  (k, v) for k,v in items if k not in self.DISPLAY_OPTIONS])
 
         sort = self.request.GET.get('sort', self.SORT_DEFAULT)
         if get_for_paginator and sort and 'sort' not in self.request.GET.items():

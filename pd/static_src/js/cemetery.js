@@ -568,6 +568,7 @@ $(function() {
             $('#id_cemetery').closest('p').hide();
         } else {
             $('#id_cemetery').closest('p').show();
+            $('#id_cemetery').focus();
         }
     });
     $('#id_cemeteries_editable').change();

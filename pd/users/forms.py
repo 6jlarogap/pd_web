@@ -555,7 +555,7 @@ class OrgForm(StrippedStringsMixin, BaseOrgForm):
             self.put_log_data(msg=_(u'Изменены данные организации'))
         return org
 
-class OrgLogForm(forms.Form):
+class FromToPageForm(forms.Form):
 
     PAGE_CHOICES = (
         (10, 10),
@@ -568,11 +568,17 @@ class OrgLogForm(forms.Form):
     date_to = forms.DateField(required=False, label=_(u"по"))
     per_page = forms.ChoiceField(label=_(u"На странице"), choices=PAGE_CHOICES, initial=25, required=False)
 
+OrgLogForm = FromToPageForm
+
+class OrgLogForm(FromToPageForm):
+
+    users = forms.MultipleChoiceField(label=_(u"Пользователи"),choices=())
+
 # Никакой разницы в этих формах пока нет.
-LoginLogForm = OrgLogForm
+LoginLogForm = FromToPageForm
 
 # В этой форме во view заменяем required для дат
-OmsOperStats = OrgLogForm
+OmsOperStats = FromToPageForm
 
 class RegisterForm(forms.ModelForm):
 
