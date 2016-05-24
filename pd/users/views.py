@@ -1654,7 +1654,7 @@ class OrgLogView(UghOrLoruRequiredMixin, ReportDatesMixin, PaginateListView):
         if self.date_from:
             logs = logs.filter(dt__gte=self.date_from)
         if self.date_to:
-            logs = logs.filter(dt__lt=self.date_to)
+            logs = logs.filter(dt__lt=self.date_to + datetime.timedelta(days=1))
 
         sort = self.request.GET.get('sort', self.SORT_DEFAULT)
         SORT_FIELDS = {
