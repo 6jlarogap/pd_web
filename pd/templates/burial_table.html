@@ -162,6 +162,9 @@
                     {% for phone in b.applicant.phone_str_list %}
                         <br />{{ phone }}
                     {% endfor %}
+                    {% if b.applicant.address %}
+                        <br/><br/>{{ b.applicant.address.short }}
+                    {% endif %}
                 {% endif %}
             </td>
             <td>{% if b.cemetery %}

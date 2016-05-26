@@ -3,23 +3,68 @@
 {% load i18n %}
 
 {% block content %}
-    <h1>{% trans "Журнал" %}</h1>
-    <div class="row-fluid no-print">
-        <div class="span12">
-            <div class="row-fluid">
-                <form id="mainform" class="form-horizontal" method="get" action="">
-                    {{ form.as_p }}
 
-                    <p class="buttons">
-                        <input type="submit" value="искать" class="btn btn-primary" />
-                    </p>
-                </form>
-            </div>
-        </div>
+    <script>
+        function select_clear_users(action) {
+            var obj = "select[name=users]";
+            var selected = action == "select_all" ? "selected" : ""
+            $(obj).children().each(function () {
+                this.selected = selected;
+            });
+            return false;
+        }
+    </script>
+
+    <h1>{% trans "Журнал" %}</h1>
+    <div class="no-print">
+        <form id="mainform" method="get" action="">
+            <table>
+                <tr valign="top">
+                    <td>
+                        {{ form.date_from.errors }}
+                        <p>
+                            {{ form.date_from.label_tag }}
+                            {{ form.date_from }}
+                            <span class="helptext">{{ form.date_from.help_text }}</span>
+                        </p>
+                    </td>
+                    <td>
+                        {{ form.date_to.errors }}
+                        <p>
+                            {{ form.date_to.label_tag }}
+                            {{ form.date_to }}
+                            <span class="helptext">{{ form.date_to.help_text }}</span>
+                        </p>
+                    </td>
+                    <td>
+                        {{ form.users.errors }}
+                        <p>
+                            {{ form.users.label_tag }}
+                            {{ form.users }}
+                            <span class="helptext">{{ form.users.help_text }}</span>
+                        </p>
+                    </td>
+                    <td>
+                        <p>
+                            <br />
+                            &nbsp;<span class="helptext">{% trans "Сtrl-Enter для выборки нескольких пользователей" %}</span>
+                            <br /><br />
+                            &nbsp;<button onclick='return select_clear_users("select_all")'>{% trans "Выделить всех" %}</button>
+                            &nbsp;&nbsp;&nbsp;<button onclick='return select_clear_users("clear_all")'>{% trans "Очистить" %}</button>
+                        </p>
+                    </td>
+                </tr>
+            </table>
+
+            <p class="buttons">
+                <input type="submit" value="искать" class="btn btn-primary" />
+            </p>
+        </form>
     </div>
 
     {% if not form.errors %}
         <p>{% trans "Найдено:" %} {{ paginator.count|default:object_list.count }}</p>
+        {% include "paginator.html" %}
 
         <table class="table table-bordered table-striped">
         <tr>
@@ -54,7 +99,6 @@
         {% endfor %}
         </table>
 
-        {% include "paginator.html" %}
     {% endif %}
 
 {% endblock %}

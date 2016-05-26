@@ -1591,28 +1591,70 @@ class AutocompleteLoruInBurials(View):
 
 autocomplete_loru_in_burials = AutocompleteLoruInBurials.as_view()
 
-class OrgLogView(UghOrLoruRequiredMixin, PaginateListView):
+class ReportDatesMixin(object):
+
+    def get_dates(self):
+        """
+        Получить начальные даты для отчета по умолчанию
+
+        После 15-го числа: за текущий месяц
+        До 15-го числа; начиная с предыдущего месяца
+        """
+        date_from = datetime.date.today()
+        if date_from.day < 15:
+            if date_from.month > 1:
+                month = date_from.month - 1
+                year = date_from.year
+            else:
+                month = 12
+                year = date_from.year - 1
+            date_from = datetime.date(year, month, 1)
+        else:
+            date_from = datetime.date(date_from.year, date_from.month, 1)
+        date_to = datetime.date.today()
+        return date_from, date_to
+
+class OrgLogView(UghOrLoruRequiredMixin, ReportDatesMixin, PaginateListView):
     template_name = 'org_log.html'
     context_object_name = 'logs'
 
     def get_queryset(self):
+        org=self.request.user.profile.org
+
+        self.collaborators = [ (self.request.user.pk, self.request.user.profile.last_name_initials()) ]
+        cemeteries = Cemetery.editable_ugh_cemeteries(self.request.user)
+        for profile in Profile.objects.filter(
+                            org=org,
+                            cemeteries__in=Cemetery.editable_ugh_cemeteries(self.request.user),
+                            user__is_active=True,
+                        ).exclude(
+                            user__pk=self.request.user.pk
+                        ).distinct():
+            self.collaborators.append((profile.user.pk, profile.last_name_initials()))
+        collaborators_pks = [ c[0] for c in self.collaborators ]
+        q = Q(org=org, user__is_active=True) & ~Q(user__pk__in=collaborators_pks)
+        other_users = [(profile.user.pk, profile.last_name_initials()) for profile in Profile.objects.filter(q)]
+        self.choice_users = self.collaborators + other_users
+
+        self.date_from, self.date_to = self.get_dates()
+
+        form = self.get_form()
         if not self.request.GET:
             return Log.objects.none()
 
-        org=self.request.user.profile.org
-        users = []
-        for profile in Profile.objects.filter(org=org):
-            if profile.user:
-                users.append(profile.user)
-        # Такой поиск будет гораздо быстрее, чем по user__profile__org=org
-        logs = Log.objects.filter(user__in=users)
-        form = self.get_form()
+        users = [ c[0] for c in self.choice_users]
 
+        q_users = Q(user__pk__in=users)
         if form.data and form.is_valid():
-            if form.cleaned_data['date_from']:
-                logs = logs.filter(dt__gte=form.cleaned_data['date_from'])
-            if form.cleaned_data['date_to']:
-                logs = logs.filter(dt__lt=form.cleaned_data['date_to']+datetime.timedelta(days=1))
+            self.date_from = form.cleaned_data.get('date_from')
+            self.date_to = form.cleaned_data.get('date_to')
+            q_users = Q(user__pk__in=form.cleaned_data.get('users') or [])
+
+        logs = Log.objects.filter(q_users)
+        if self.date_from:
+            logs = logs.filter(dt__gte=self.date_from)
+        if self.date_to:
+            logs = logs.filter(dt__lt=self.date_to + datetime.timedelta(days=1))
 
         sort = self.request.GET.get('sort', self.SORT_DEFAULT)
         SORT_FIELDS = {
@@ -1631,7 +1673,14 @@ class OrgLogView(UghOrLoruRequiredMixin, PaginateListView):
         return logs
 
     def get_form(self):
-        return OrgLogForm(data=self.request.GET or None)
+        data = self.request.GET
+        form = OrgLogForm(data=data or None)
+        form.fields['users'].choices = self.choice_users
+        if not data:
+            form.initial['date_from'] = self.date_from
+            form.initial['date_to'] = self.date_to
+            form.initial['users'] = [ c[0] for c in self.collaborators ]
+        return form
 
 org_log = OrgLogView.as_view()
 
@@ -1677,7 +1726,7 @@ class LoginLogView(SupervisorRequiredMixin, PaginateListView):
 
 login_log = LoginLogView.as_view()
 
-class OmsOperStatsView(UGHRequiredMixin, PaginateListView):
+class OmsOperStatsView(UGHRequiredMixin, ReportDatesMixin, PaginateListView):
     template_name = 'oper_stats.html'
     context_object_name = 'dates'
 
@@ -1846,19 +1895,9 @@ class OmsOperStatsView(UGHRequiredMixin, PaginateListView):
             form.fields['date_from'].required = True
             form.fields['date_to'].required = True
         else:
-            date_from = datetime.date.today()
-            if date_from.day < 15:
-                if date_from.month > 1:
-                    month = date_from.month - 1
-                    year = date_from.year
-                else:
-                    month = 12
-                    year = date_from.year - 1
-                date_from = datetime.date(year, month, 1)
-            else:
-                date_from = datetime.date(date_from.year, date_from.month, 1)
+            date_from, date_to = self.get_dates()
             form.initial['date_from'] = date_from
-            form.initial['date_to'] = datetime.date.today()
+            form.initial['date_to'] = date_to
         return form
 
 oms_oper_stats = OmsOperStatsView.as_view()
