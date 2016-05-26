@@ -41,6 +41,7 @@ def send_sms(
     message = ''
     no_gate = False
     email_copy = None
+    have_code = False
     for serv in settings.SMS_SERVICE:
         if serv['country_code'] == 'default':
             default_serv = serv
@@ -50,11 +51,15 @@ def send_sms(
         if default_serv:
             your_serv = default_serv
         else:
-            message = _(u"Оператора телефона нет в настройках PohoronnoeDeloRu")
+            message = _(u"Оператора телефона нет в настройках системы")
     if not message:
         have_code = True
         try:
             smsapi = sms24x7.smsapi(your_serv['user'], your_serv['password'])
+            print 'DEBUG: send_sms, country_code=%s, user=%s' % (
+                your_serv['country_code'],
+                your_serv['user'],
+            )
             smsapi.push_msg(
                 text,
                 phone_number,
