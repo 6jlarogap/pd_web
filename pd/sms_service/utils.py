@@ -56,6 +56,10 @@ def send_sms(
         have_code = True
         try:
             smsapi = sms24x7.smsapi(your_serv['user'], your_serv['password'])
+            print 'DEBUG: send_sms, country_code=%s, user=%s' % (
+                your_serv['country_code'],
+                your_serv['user'],
+            )
             smsapi.push_msg(
                 text,
                 phone_number,
