@@ -922,18 +922,31 @@ class ApiPlacePhotoUpload(APIView):
             photo = PlacePhoto(place=place, lat = lat, lng = lng, comment = '', creator = request.user, dt_created = dtCreated)
             photo.save()
             photo.bfile.save(request.FILES['photo'].name, photo_content)
+            msg = request.build_absolute_uri(photo.bfile.url)
+            if lat is not None and lng is not None:
+                msg = _(
+                    u"%(msg)s\n"
+                    u"Изменены координаты места\n"
+                    u"Широта:  '%(old_lat)s' -> '%(lat)s'\n"
+                    u"Долгота: '%(old_lng)s' -> '%(lng)s'"
+                ) % dict(
+                    msg=msg,
+                    old_lat=_(u"пусто") if place.lat is None else place.lat,
+                    lat=lat,
+                    old_lng=_(u"пусто") if place.lng is None else place.lng,
+                    lng=lng,
+                )
+                place.lat = lat
+                place.lng = lng
+                place.save()
             logrec = write_log(
                 request,
                 place,
                 operation=LogOperation.PHOTO_TO_PLACE_MOBILE,
-                msg=request.build_absolute_uri(photo.bfile.url),
+                msg=msg,
             )
             if dtCreated:
                 Log.objects.filter(pk=logrec.pk).update(dt=dtCreated)
-            if lat is not None and lng is not None:
-                place.lat = lat
-                place.lng = lng
-                place.save()
             listPhoto.append(photo)
             serializer = PlacePhotoSerializer(listPhoto, context=dict(request=request))
             return Response(serializer.data)
