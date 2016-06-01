@@ -59,7 +59,8 @@ from users.models import Profile, Org, RegisterProfile, ProfileLORU, CustomerPro
                          BankAccount, BankAccountRegister, OrgCertificate, OrgContract, \
                          RegisterProfileContract, RegisterProfileScan, FavoriteSupplier, \
                          UserPhoto, OrgGallery, OrgReview, Role, ThankUser, Thank, \
-                         is_supervisor, get_default_currency, get_profile
+                         is_supervisor, get_default_currency, get_profile, \
+                         YoutubeVote
 from pd.models import validate_phone_as_number, validate_username
 from pd.utils import host_country_code, phones_from_text, EmailMessage, get_image, SeriesTable, \
                      utcstr2local, utcisoformat
@@ -77,7 +78,7 @@ from users.serializers import StoreSerializer, Store2Serializer, \
                               UserSettingsSerializer, ShopSerializer, OrgGallerySerializer, \
                               ShopDetailSerializer, OrgReviewSerializer, \
                               OrgClientSiteSerializer, ProfileClientSiteSerializer, \
-                              UserSettings2Serializer, OauthSerializer
+                              UserSettings2Serializer, OauthSerializer, YoutubeVoteSerializer
 
 from sms_service.utils import send_sms
 
@@ -3506,3 +3507,27 @@ class ApiClientSiteMessagesView(CheckRecaptchaMixin, ApiClientSiteMixin, APIView
         return Response(data=data, status=status_code)
 
 api_client_site_messages = ApiClientSiteMessagesView.as_view()
+
+class ApiVideoVotesView(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request, yid):
+        votes = YoutubeVote.objects.filter(yid=yid).order_by('dt_created')
+        serializer = YoutubeVoteSerializer(votes, many=True)
+        return Response(serializer.data)
+
+    def post(self, request, yid):
+        type_ = (request.DATA.get('type') or YoutubeVote.LIKE_UP).lower()
+        if type_ not in (YoutubeVote.LIKE_UP, YoutubeVote.LIKE_DOWN,):
+            type_ = YoutubeVote.LIKE_UP
+        timestamp = max(request.DATA.get('timestamp') or 0, 0)
+        vote = YoutubeVote.objects.create(
+            user=request.user,
+            yid=yid,
+            time=timestamp,
+            like=type_,
+        )
+        serializer = YoutubeVoteSerializer(vote)
+        return Response(serializer.data, status=200)
+
+api_video_votes = ApiVideoVotesView.as_view()
