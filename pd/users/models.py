@@ -354,6 +354,22 @@ def get_default_currency():
     Currency = models.get_model('billing', 'Currency')
     return Currency.objects.only('pk').get(code=settings.CURRENCY_DEFAULT_CODE)
 
+class YoutubeVote(BaseModel):
+    """
+    Голосование за youtube видео
+    """
+    LIKE_UP = 'up'
+    LIKE_DOWN = 'down'
+    LIKES = (
+        (LIKE_UP, _(u"Нравится")),
+        (LIKE_UP, _(u"Не нравится")),
+    )
+
+    user = models.ForeignKey('auth.User')
+    yid = models.CharField(_(u"ID видео"), max_length=255, default='')
+    time = models.PositiveIntegerField(_(u"Время реакции"), default=0)
+    like = models.CharField(_(u"Реакция"), max_length=100, choices=LIKES, default=LIKE_UP)
+
 class Oauth(BaseModel):
     PROVIDER_YANDEX = 'yandex'
     PROVIDER_FACEBOOK = 'facebook'
