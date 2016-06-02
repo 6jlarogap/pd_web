@@ -165,7 +165,7 @@ function CemeteryViewCtrl(
 
         Area.list({cemetery_id: $routeParams.cemetery_id}, function(result) {
             $scope.area_list = result;
-            $scope.area_list.sort(function(a,b){return naturalService.naturalSortField(a,b,'name')});
+            // $scope.area_list.sort(function(a,b){return naturalService.naturalSortField(a,b,'name')});
         });
     }; // end of scope.update function
 
