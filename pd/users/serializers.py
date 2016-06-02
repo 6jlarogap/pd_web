@@ -5,7 +5,7 @@ from rest_framework.fields import Field
 
 from django.db.models.query_utils import Q
 
-from rest_api.fields import HyperlinkedFileField
+from rest_api.fields import HyperlinkedFileField, DateTimeUtcField
 from pd.utils import PhonesFromTextMixin, utcisoformat, CreatedAtMixin
 
 from django.contrib.auth.models import User
@@ -13,7 +13,7 @@ from django.contrib.auth.models import User
 from geo.models import Location
 from users.models import Org, Store, FavoriteSupplier, UserPhoto, is_cabinet_user, is_trade_user, \
                          Profile, Dover, ProfileLORU, get_profile, OrgGallery, OrgReview, StorePhoto, \
-                         Oauth
+                         Oauth, YoutubeVote
 from persons.models import Phone
 from orders.models import Order, Product, Service, OrgServicePrice
 
@@ -446,8 +446,17 @@ class OauthSerializer(serializers.ModelSerializer):
         model = Oauth
         fields = ('id', 'provider', 'name', )
 
-class ArchUserSerializer(serializers.ModelSerializer):
+class YoutubeVoteSerializer(serializers.ModelSerializer):
+    id = Field(source='yid')
+    datetime = DateTimeUtcField(source='dt_created', required=False)
+    type = Field(source='like')
+    timestamp = Field(source='time')
 
+    class Meta:
+        model = YoutubeVote
+        fields = ('id', 'datetime', 'type', 'timestamp', )
+
+class ArchUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ('id', 'username', 'email', 'is_active', )
