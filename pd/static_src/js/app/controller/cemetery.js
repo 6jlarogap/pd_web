@@ -43,7 +43,7 @@ function CemeteryCtrl($rootScope, $scope, $http, $location, $resource, naturalSe
         });
         Cemetery.query(function(result) {
             $scope.cemetery_list = result;
-            $scope.cemetery_list.sort(function(a,b){return naturalService.naturalSortField(a,b,'name')});
+            // $scope.cemetery_list.sort(function(a,b){return naturalService.naturalSortField(a,b,'name')});
         });
     };
 
