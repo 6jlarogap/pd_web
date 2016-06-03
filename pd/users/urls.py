@@ -97,6 +97,7 @@ urlpatterns = patterns('users.views',
     url(r'^api/thank/users/?$', 'api_thank_users', name='api_thank_users'),
 
     url(r'^api/videos/(?P<yid>\S+)/votes?$', 'api_video_votes', name='api_video_votes'),
+    url(r'^api/videos/(?P<yid>\S+)/aggregated-votes?$', 'api_video_aggregated_votes', name='api_video_aggregated_votes'),
 
     url(r'^autocomplete/org/$', 'autocomplete_org', name='autocomplete_org'),
     url(r'^autocomplete/loru_in_burials/$', 'autocomplete_loru_in_burials', name='autocomplete_loru_in_burials'),

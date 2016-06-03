@@ -3531,3 +3531,18 @@ class ApiVideoVotesView(APIView):
         return Response(serializer.data, status=200)
 
 api_video_votes = ApiVideoVotesView.as_view()
+
+class ApiVideoAggregatedVotesView(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request, yid):
+        data = dict()
+        for like in (YoutubeVote.LIKE_UP, YoutubeVote.LIKE_DOWN,):
+            data[like] = YoutubeVote.objects.\
+                            extra(select={'timestamp': 'time'}). \
+                            values('timestamp'). \
+                            filter(like=like, yid=yid).order_by('time').\
+                            annotate(total=Count('time'))
+        return Response(data, status=200)
+
+api_video_aggregated_votes = ApiVideoAggregatedVotesView.as_view()
