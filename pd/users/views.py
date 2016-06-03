@@ -3513,6 +3513,16 @@ class ApiVideoVotesView(APIView):
 
     def get(self, request, yid):
         votes = YoutubeVote.objects.filter(yid=yid).order_by('dt_created')
+
+        offset = request.GET.get('offset') and int(request.GET['offset'])
+        count = request.GET.get('count') and int(request.GET['count'])
+        if offset and count:
+            votes = votes[offset:offset+count]
+        elif offset:
+            votes = votes[offset:]
+        elif count:
+            votes = votes[:count]
+
         serializer = YoutubeVoteSerializer(votes, many=True)
         return Response(serializer.data)
 
@@ -3531,3 +3541,18 @@ class ApiVideoVotesView(APIView):
         return Response(serializer.data, status=200)
 
 api_video_votes = ApiVideoVotesView.as_view()
+
+class ApiVideoAggregatedVotesView(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request, yid):
+        data = dict()
+        for like in (YoutubeVote.LIKE_UP, YoutubeVote.LIKE_DOWN,):
+            data[like] = YoutubeVote.objects.\
+                            extra(select={'timestamp': 'time'}). \
+                            values('timestamp'). \
+                            filter(like=like, yid=yid).order_by('time').\
+                            annotate(total=Count('time'))
+        return Response(data, status=200)
+
+api_video_aggregated_votes = ApiVideoAggregatedVotesView.as_view()

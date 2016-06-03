@@ -966,7 +966,9 @@ class ApiPlacePhotoDelete(APIView):
             placePhoto = get_object_or_404(PlacePhoto, pk=placePhotoId)
             if placePhoto.place.cemetery not in Cemetery.editable_ugh_cemeteries(request.user):
                 raise PermissionDenied
+            msg = _(u"Удалено фото места:\n%s" % request.build_absolute_uri(placePhoto.bfile.url))
             placePhoto.delete()
+            write_log(request, placePhoto.place, msg)
             return Response("Ok")
         except PlacePhoto.DoesNotExist:
             return Response("Ok")
