@@ -3513,6 +3513,16 @@ class ApiVideoVotesView(APIView):
 
     def get(self, request, yid):
         votes = YoutubeVote.objects.filter(yid=yid).order_by('dt_created')
+
+        offset = request.GET.get('offset') and int(request.GET['offset'])
+        limit = request.GET.get('limit') and int(request.GET['limit'])
+        if offset and limit:
+            votes = votes[offset:offset+limit]
+        elif offset:
+            votes = votes[offset:]
+        elif limit:
+            votes = votes[:limit]
+
         serializer = YoutubeVoteSerializer(votes, many=True)
         return Response(serializer.data)
 
