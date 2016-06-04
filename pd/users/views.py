@@ -3543,7 +3543,6 @@ class ApiVideoVotesView(APIView):
 api_video_votes = ApiVideoVotesView.as_view()
 
 class ApiVideoAggregatedVotesView(APIView):
-    permission_classes = (IsAuthenticated,)
 
     def get(self, request, yid):
         data = dict()
