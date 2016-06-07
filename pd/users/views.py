@@ -3555,3 +3555,25 @@ class ApiVideoAggregatedVotesView(APIView):
         return Response(data, status=200)
 
 api_video_aggregated_votes = ApiVideoAggregatedVotesView.as_view()
+
+class ApiVideosView(APIView):
+
+    def get(self, request):
+        query = '''
+            SELECT
+                (yid) AS "video_id",
+                to_char(MIN("users_youtubevote"."dt_created")
+                    at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS "added_at"
+                FROM "users_youtubevote" GROUP BY (yid) ORDER BY added_at
+        '''
+        cursor = connection.cursor()
+        cursor.execute(query)
+        data = [ dict(
+                    video_id=r[0],
+                    added_at=r[1],
+                 ) \
+                    for r in cursor.fetchall()
+               ]
+        return Response(data, status=200)
+
+api_videos = ApiVideosView.as_view()
