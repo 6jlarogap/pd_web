@@ -3509,13 +3509,12 @@ class ApiClientSiteMessagesView(CheckRecaptchaMixin, ApiClientSiteMixin, APIView
 api_client_site_messages = ApiClientSiteMessagesView.as_view()
 
 class ApiVideoVotesView(APIView):
-    permission_classes = (IsAuthenticated,)
 
     def get(self, request, yid):
-        votes = YoutubeVote.objects.filter(yid=yid).order_by('dt_created')
+        votes = YoutubeVote.objects.filter(yid=yid).order_by('-dt_created')
 
         offset = request.GET.get('offset') and int(request.GET['offset'])
-        count = request.GET.get('count') and int(request.GET['count'])
+        count = int(request.GET.get('count', '20'))
         if offset and count:
             votes = votes[offset:offset+count]
         elif offset:
@@ -3527,6 +3526,8 @@ class ApiVideoVotesView(APIView):
         return Response(serializer.data)
 
     def post(self, request, yid):
+        if not request.user.is_authenticated():
+            raise PermissionDenied
         type_ = (request.DATA.get('type') or YoutubeVote.LIKE_UP).lower()
         if type_ not in (YoutubeVote.LIKE_UP, YoutubeVote.LIKE_DOWN,):
             type_ = YoutubeVote.LIKE_UP
@@ -3564,7 +3565,7 @@ class ApiVideosView(APIView):
                 (yid) AS "video_id",
                 to_char(MIN("users_youtubevote"."dt_created")
                     at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS "added_at"
-                FROM "users_youtubevote" GROUP BY (yid) ORDER BY added_at
+                FROM "users_youtubevote" GROUP BY (yid) ORDER BY added_at DESC
         '''
         cursor = connection.cursor()
         cursor.execute(query)
