@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import re, urllib2, json
+from decimal import Decimal
 
 from django.conf import settings
 
@@ -9,8 +10,8 @@ class Youtube(object):
     Функции с youtube api
     """
     RE_YOUTUBE_URL = r'^.*(?:youtu.be\/|v\/|e\/|u\/\w+\/|embed\/|v=)([^#\&\? ]{11,})[\?\/\&]*.*?$'
-    
     GET_PARMS_TEMPLATE = 'https://www.googleapis.com/youtube/v3/videos?id=%(id)s&key=%(key)s&part=snippet'
+    GET_CAPTIONS_TEMPLATE = 'http://video.google.com/timedtext?lang=%(lang)s&v=%(id)s'
     
     _id = None
     _audio_lang = None
@@ -46,7 +47,6 @@ class Youtube(object):
             if not m:
                 raise self.ExcptId
             self._id = m.group(1)
-            print self._id, len(self._id)
             if len(self._id) != 11:
                 raise self.ExcptId
         elif not re.search(r'^[^#\&\? ]{11,11}$', youtube_id):
@@ -92,4 +92,57 @@ class Youtube(object):
             except KeyError:
                 pass
         self._audio_lang = result['audio_lang']
+        return result
+
+    def get_captions(self):
+        """
+        Получить субтитры видео
+        """
+        # inspired by
+        # http://code.activestate.com/recipes/577459-convert-a-youtube-transcript-in-srt-subtitle/
+
+        pattern = re.compile(r'<?text start="(\d+(?:\.\d+)?)" dur="(\d+(?:\.\d+)?)">(.*)</text>?')
+
+        def parseLine(text):
+            """Parse a subtitle."""
+            m = re.match(pattern, text)
+            result = None
+            if m:
+                try:
+                    start = Decimal(m.group(1))
+                    stop = start + Decimal(m.group(2))
+                    result = dict(
+                        start=float(start),
+                        stop=float(stop),
+                        text=m.group(3),
+                    )
+                except ValueError:
+                    pass
+            return result
+
+        result = []
+        if not self._audio_lang:
+            try:
+                parms = self.get_parms()
+                lang = self._audio_lang = parms['audio_lang']
+            except self.Excpt:
+                lang = 'ru'
+        else:
+            lang = self._audio_lang
+
+        url = self.GET_CAPTIONS_TEMPLATE % dict(
+            id=self._id,
+            lang=lang,
+        )
+        try:
+            r = urllib2.urlopen(url)
+        except (urllib2.HTTPError, urllib2.URLError,):
+            return result
+        buf = r.read().decode(r.info().getparam('charset') or 'utf-8')
+        buf = buf.replace('\n', '')
+        buf = "".join(buf).split('><')
+        for text in buf:
+            parsed = parseLine(text)
+            if parsed:
+                result.append(parsed)
         return result
