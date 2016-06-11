@@ -140,7 +140,7 @@ class Youtube(object):
             return result
         buf = r.read().decode(r.info().getparam('charset') or 'utf-8')
         buf = buf.replace('\n', '')
-        buf = "".join(buf).split('><')
+        buf = buf.split('><')
         for text in buf:
             parsed = parseLine(text)
             if parsed:
