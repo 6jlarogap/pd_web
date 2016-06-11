@@ -131,7 +131,7 @@ class Youtube(object):
         if not self._audio_lang:
             try:
                 parms = self.get_parms()
-                lang = self._audio_lang = parms['audio_lang']
+                lang = parms['audio_lang']
             except self.Excpt:
                 lang = 'ru'
         else:
@@ -146,8 +146,7 @@ class Youtube(object):
         except (urllib2.HTTPError, urllib2.URLError,):
             return result
         buf = r.read().decode(r.info().getparam('charset') or 'utf-8')
-        buf = buf.replace('\n', '').split('><')
-        for text in buf:
+        for text in buf.replace('\n', '').split('><'):
             parsed = parseLine(text)
             if parsed:
                 result.append(parsed)
