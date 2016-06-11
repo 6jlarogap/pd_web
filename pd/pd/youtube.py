@@ -12,8 +12,10 @@ class Youtube(object):
     RE_YOUTUBE_URL = r'^.*(?:youtu.be\/|v\/|e\/|u\/\w+\/|embed\/|v=)([^#\&\? ]{11,})[\?\/\&]*.*?$'
     GET_PARMS_TEMPLATE = 'https://www.googleapis.com/youtube/v3/videos?id=%(id)s&key=%(key)s&part=snippet'
     GET_CAPTIONS_TEMPLATE = 'http://video.google.com/timedtext?lang=%(lang)s&v=%(id)s'
+    YOUTUBE_URL_TEMPLATE = 'https://www.youtube.com/watch?v=%(id)s'
     
     _id = None
+    _url = None
     _audio_lang = None
 
     class Excpt(Exception):
@@ -47,15 +49,20 @@ class Youtube(object):
             if not m:
                 raise self.ExcptId
             self._id = m.group(1)
+            self._url = youtube_id
             if len(self._id) != 11:
                 raise self.ExcptId
         elif not re.search(r'^[^#\&\? ]{11,11}$', youtube_id):
             raise self.ExcptId
         else:
             self._id = youtube_id
+            self._url = self.YOUTUBE_URL_TEMPLATE % dict(id=youtube_id)
 
     def get_id(self):
         return self._id
+
+    def get_url(self):
+        return self._url
 
     def get_parms(self):
         """
@@ -139,8 +146,7 @@ class Youtube(object):
         except (urllib2.HTTPError, urllib2.URLError,):
             return result
         buf = r.read().decode(r.info().getparam('charset') or 'utf-8')
-        buf = buf.replace('\n', '')
-        buf = buf.split('><')
+        buf = buf.replace('\n', '').split('><')
         for text in buf:
             parsed = parseLine(text)
             if parsed:
