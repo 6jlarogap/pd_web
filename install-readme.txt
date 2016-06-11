@@ -232,3 +232,8 @@ install-readme.txt, utf8 code page
          чтоб проверить, ушло ли сообщение и в каком виде ушло. Для этого
          параметр BCC_OUR_MAIL в local_settings.py. Если не задан, то скрытые
          копии не формируются.
+
+    * службы GOOGLE:
+        параметр local_settings.GOOGLE_SERVER_API_KEY, серверный ключ приложения Google.
+        Применяется при доступе к видео youtube.
+        Среди API пользователя должно быть включено Youtube API.
