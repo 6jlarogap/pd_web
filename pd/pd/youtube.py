@@ -80,7 +80,13 @@ class Youtube(object):
             data = json.loads(raw_data)
         except (urllib2.HTTPError, urllib2.URLError, ValueError):
             raise ExcptHttp
-        result = dict(title='', title_photo_url='', audio_lang='ru')
+        result = dict(
+            yid=self._id,
+            url=self._url,
+            title='',
+            title_photo_url='',
+            audio_lang='ru',
+        )
         try:
             snippet = data['items'][0]['snippet']
         except (KeyError, IndexError):

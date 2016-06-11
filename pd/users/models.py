@@ -354,6 +354,22 @@ def get_default_currency():
     Currency = models.get_model('billing', 'Currency')
     return Currency.objects.only('pk').get(code=settings.CURRENCY_DEFAULT_CODE)
 
+class YoutubeVideo(BaseModel):
+    yid = models.CharField(_(u"Youtube ID"), max_length=255, unique=True)
+    url = models.URLField(_(u"URL"), max_length=255, default='')
+    title = models.CharField(_(u"Заголовок"), max_length=255, default='')
+    title_photo_url = models.URLField(_(u"Preview URL"), max_length=255, default='')
+
+class YoutubeCaption(models.Model):
+    """
+    Субтритры
+    """
+    youtubevideo = models.ForeignKey('users.YoutubeVideo')
+    num = models.PositiveIntegerField(_(u"Порядковый номер субтитра"))
+    start = models.FloatField(_(u"Старт субтитра"))
+    stop = models.FloatField(_(u"Стоп субтитра"))
+    text = models.TextField(_(u"Текст"))
+
 class YoutubeVote(BaseModel):
     """
     Голосование за youtube видео
@@ -365,6 +381,7 @@ class YoutubeVote(BaseModel):
         (LIKE_UP, _(u"Не нравится")),
     )
 
+    youtubevideo = models.ForeignKey('users.YoutubeVideo', null=True)
     user = models.ForeignKey('auth.User')
     yid = models.CharField(_(u"ID видео"), max_length=255, default='')
     time = models.PositiveIntegerField(_(u"Время реакции"), default=0)
