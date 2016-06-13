@@ -80,7 +80,7 @@ from users.serializers import StoreSerializer, Store2Serializer, \
                               ShopDetailSerializer, OrgReviewSerializer, \
                               OrgClientSiteSerializer, ProfileClientSiteSerializer, \
                               UserSettings2Serializer, OauthSerializer, \
-                              YoutubeVoteSerializer, YoutubeVideoSerializer
+                              YoutubeVoteSerializer, YoutubeVideoSerializer, YoutubeCaptionSerializer
 
 from sms_service.utils import send_sms
 
@@ -3644,3 +3644,13 @@ class ApiVideoStaitsticsView(APIView):
         return Response(data, status=200)
 
 api_video_statistics = ApiVideoStaitsticsView.as_view()
+
+class ApiVideoCaptionsView(APIView):
+
+    def get(self, request, yid):
+        youtubevideo = get_object_or_404(YoutubeVideo, yid=yid)
+        qs = YoutubeCaption.objects.filter(youtubevideo=youtubevideo).order_by('num')
+        data = YoutubeCaptionSerializer(qs, many=True).data
+        return Response(data, status=200)
+
+api_video_subtitles = ApiVideoCaptionsView.as_view()
