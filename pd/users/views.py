@@ -3603,11 +3603,29 @@ class ApiVideoAggregatedVotesView(APIView):
 
 api_video_aggregated_votes = ApiVideoAggregatedVotesView.as_view()
 
-class ApiVideosView(APIView):
+class ApiVideosView(ApiVideoMixin, APIView):
 
     def get(self, request):
         qs = YoutubeVideo.objects.all().order_by('-dt_created')
         data = YoutubeVideoSerializer(qs, many=True).data
         return Response(data, status=200)
+
+    def post(self, request):
+        try:
+            if not request.user.is_authenticated():
+                raise PermissionDenied
+            yid = request.DATA.get('youtube_url_or_id')
+            if not yid:
+                raise ServiceException(_(u"Не задан идентификатор или URL Youtube видео"))
+            status_code = 400
+            youtubevideo, created = self.get_or_add_video(yid)
+            if not youtubevideo:
+                raise ServiceException(_(u"Ошибка идентификатора или URL Youtube видео"))
+            data = YoutubeVideoSerializer(youtubevideo).data
+        except ServiceException as excpt:
+            data = dict(message=excpt.message)
+            status_code = 400
+        return Response(data=data, status=status_code)
+
 
 api_videos = ApiVideosView.as_view()
