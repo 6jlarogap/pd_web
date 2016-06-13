@@ -60,7 +60,7 @@ from users.models import Profile, Org, RegisterProfile, ProfileLORU, CustomerPro
                          RegisterProfileContract, RegisterProfileScan, FavoriteSupplier, \
                          UserPhoto, OrgGallery, OrgReview, Role, ThankUser, Thank, \
                          is_supervisor, get_default_currency, get_profile, \
-                         YoutubeVideo, YoutubeVote, YoutubeCaption
+                         YoutubeVideo, YoutubeVote, YoutubeCaption, YoutubeCaptionVote
 from pd.models import validate_phone_as_number, validate_username
 from pd.utils import host_country_code, phones_from_text, EmailMessage, get_image, SeriesTable, \
                      utcstr2local, utcisoformat
@@ -80,7 +80,8 @@ from users.serializers import StoreSerializer, Store2Serializer, \
                               ShopDetailSerializer, OrgReviewSerializer, \
                               OrgClientSiteSerializer, ProfileClientSiteSerializer, \
                               UserSettings2Serializer, OauthSerializer, \
-                              YoutubeVoteSerializer, YoutubeVideoSerializer, YoutubeCaptionSerializer
+                              YoutubeVoteSerializer, YoutubeVideoSerializer, \
+                              YoutubeCaptionSerializer, YoutubeCaptionVoteSerializer
 
 from sms_service.utils import send_sms
 
@@ -3654,3 +3655,35 @@ class ApiVideoCaptionsView(APIView):
         return Response(data, status=200)
 
 api_video_subtitles = ApiVideoCaptionsView.as_view()
+
+class ApiVideoCaptionsVotesView(APIView):
+
+    def get(self, request, yid):
+        youtubevideo = get_object_or_404(YoutubeVideo, yid=yid)
+        qs = YoutubeCaption.objects.filter(youtubevideo=youtubevideo).order_by('num')
+        data = YoutubeCaptionVoteSerializer(qs, many=True).data
+        return Response(data, status=200)
+
+    def post(self, request, yid):
+        if not request.user.is_authenticated():
+            raise PermissionDenied
+        caption_id = request.DATA.get('subtitle_id')
+        if not caption_id:
+            raise Http404
+        youtubecaption = get_object_or_404(
+            YoutubeCaption,
+            youtubevideo__yid=yid,
+            pk=caption_id
+        )
+        type_ = (request.DATA.get('type') or YoutubeVote.LIKE_UP).lower()
+        if type_ not in (YoutubeVote.LIKE_UP, YoutubeVote.LIKE_DOWN,):
+            type_ = YoutubeVote.LIKE_UP
+        vote = YoutubeCaptionVote.objects.create(
+            youtubecaption=youtubecaption,
+            user=request.user,
+            like=type_,
+        )
+        serializer = YoutubeCaptionVoteSerializer(youtubecaption)
+        return Response(serializer.data, status=200)
+
+api_video_subtitles_votes = ApiVideoCaptionsVotesView.as_view()

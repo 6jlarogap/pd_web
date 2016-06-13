@@ -386,6 +386,13 @@ class YoutubeVote(BaseModel):
     time = models.PositiveIntegerField(_(u"Время реакции"), default=0)
     like = models.CharField(_(u"Реакция"), max_length=100, choices=LIKES, default=LIKE_UP)
 
+class YoutubeCaptionVote(BaseModel):
+
+    youtubecaption = models.ForeignKey('users.YoutubeCaption')
+    user = models.ForeignKey('auth.User')
+    like = models.CharField(_(u"Реакция"),
+                max_length=100, choices=YoutubeVote.LIKES, default=YoutubeVote.LIKE_UP)
+
 class Oauth(BaseModel):
     PROVIDER_YANDEX = 'yandex'
     PROVIDER_FACEBOOK = 'facebook'

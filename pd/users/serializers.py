@@ -13,7 +13,7 @@ from django.contrib.auth.models import User
 from geo.models import Location
 from users.models import Org, Store, FavoriteSupplier, UserPhoto, is_cabinet_user, is_trade_user, \
                          Profile, Dover, ProfileLORU, get_profile, OrgGallery, OrgReview, StorePhoto, \
-                         Oauth, YoutubeVote, YoutubeVideo, YoutubeCaption
+                         Oauth, YoutubeVote, YoutubeVideo, YoutubeCaption, YoutubeCaptionVote
 from persons.models import Phone
 from orders.models import Order, Product, Service, OrgServicePrice
 
@@ -475,6 +475,25 @@ class YoutubeCaptionSerializer(serializers.ModelSerializer):
         return dict(
             start = obj.start,
             stop=obj.stop,
+        )
+
+class YoutubeCaptionVoteSerializer(serializers.ModelSerializer):
+    totals = serializers.SerializerMethodField('totals_func')
+
+    class Meta:
+        model = YoutubeCaption
+        fields = ('id', 'totals', )
+
+    def totals_func(self, obj):
+        return dict(
+            up = YoutubeCaptionVote.objects.filter(
+                    youtubecaption=obj,
+                    like=YoutubeVote.LIKE_UP,
+                  ).count(),
+            down = YoutubeCaptionVote.objects.filter(
+                    youtubecaption=obj,
+                    like=YoutubeVote.LIKE_DOWN,
+                  ).count(),
         )
 
 class ArchUserSerializer(serializers.ModelSerializer):
