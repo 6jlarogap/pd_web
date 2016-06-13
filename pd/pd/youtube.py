@@ -114,7 +114,7 @@ class Youtube(object):
         # inspired by
         # http://code.activestate.com/recipes/577459-convert-a-youtube-transcript-in-srt-subtitle/
 
-        pattern = re.compile(r'<?text start="(\d+(?:\.\d+)?)" dur="(\d+(?:\.\d+)?)">(.*)</text>?')
+        pattern = re.compile(r'<?text start="(\d+\.?\d*)" dur="(\d+\.?\d*)">(.*)</text>?')
 
         def parseLine(text):
             """Parse a subtitle."""

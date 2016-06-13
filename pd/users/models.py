@@ -381,9 +381,8 @@ class YoutubeVote(BaseModel):
         (LIKE_UP, _(u"Не нравится")),
     )
 
-    youtubevideo = models.ForeignKey('users.YoutubeVideo', null=True)
+    youtubevideo = models.ForeignKey('users.YoutubeVideo')
     user = models.ForeignKey('auth.User')
-    yid = models.CharField(_(u"ID видео"), max_length=255, default='')
     time = models.PositiveIntegerField(_(u"Время реакции"), default=0)
     like = models.CharField(_(u"Реакция"), max_length=100, choices=LIKES, default=LIKE_UP)
 

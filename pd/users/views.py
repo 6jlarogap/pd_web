@@ -60,7 +60,7 @@ from users.models import Profile, Org, RegisterProfile, ProfileLORU, CustomerPro
                          RegisterProfileContract, RegisterProfileScan, FavoriteSupplier, \
                          UserPhoto, OrgGallery, OrgReview, Role, ThankUser, Thank, \
                          is_supervisor, get_default_currency, get_profile, \
-                         YoutubeVote
+                         YoutubeVideo, YoutubeVote, YoutubeCaption
 from pd.models import validate_phone_as_number, validate_username
 from pd.utils import host_country_code, phones_from_text, EmailMessage, get_image, SeriesTable, \
                      utcstr2local, utcisoformat
@@ -70,6 +70,7 @@ from billing.models import Wallet, Rate, Currency
 from orders.models import Product, Order, Service, ProductCategory
 from pd.views import PaginateListView, RequestToFormMixin, FormInvalidMixin, \
                      get_front_end_host, get_front_end_url, ServiceException
+from pd.youtube import Youtube
 from geo.models import Location, Country
 
 from users.serializers import StoreSerializer, Store2Serializer, \
@@ -3508,10 +3509,47 @@ class ApiClientSiteMessagesView(CheckRecaptchaMixin, ApiClientSiteMixin, APIView
 
 api_client_site_messages = ApiClientSiteMessagesView.as_view()
 
-class ApiVideoVotesView(APIView):
+class ApiVideoMixin(object):
+
+    def get_or_add_video(self, yid):
+        youtubevideo, created = None, None
+        try:
+            youtube = Youtube(yid)
+            yid = youtube.get_id()
+        except Youtube.ExcptId:
+            return youtubevideo, created
+        youtubevideo, created = YoutubeVideo.objects.get_or_create(
+            yid=yid,
+        )
+        if created:
+            try:
+                parms = youtube.get_parms()
+                youtubevideo.url = parms['url']
+                youtubevideo.title = parms['title']
+                youtubevideo.title_photo_url = parms['title_photo_url']
+                youtubevideo.save()
+            except Youtube.Excpt:
+                pass
+            try:
+                captions = youtube.get_captions()
+                for num, caption in enumerate(captions):
+                    YoutubeCaption.objects.create(
+                        youtubevideo=youtubevideo,
+                        num=num,
+                        start=caption['start'],
+                        stop=caption['stop'],
+                        text=caption['text'],
+                    )
+            except Youtube.Excpt:
+                pass
+        return youtubevideo, created
+
+class ApiVideoVotesView(ApiVideoMixin, APIView):
 
     def get(self, request, yid):
-        votes = YoutubeVote.objects.filter(yid=yid).order_by('-dt_created')
+        youtubevideo = get_object_or_404(YoutubeVideo, yid=yid)
+        votes = YoutubeVote.objects.filter(youtubevideo=youtubevideo).\
+                    order_by('-dt_created')
 
         offset = request.GET.get('offset') and int(request.GET['offset'])
         count = int(request.GET.get('count', '20'))
@@ -3528,13 +3566,19 @@ class ApiVideoVotesView(APIView):
     def post(self, request, yid):
         if not request.user.is_authenticated():
             raise PermissionDenied
+        youtubevideo, created = self.get_or_add_video(yid)
+        if not youtubevideo:
+            return Response(
+                data=dict(message=_(u"Ошибка идентификатора Youtube видео")),
+                status=400,
+            )
         type_ = (request.DATA.get('type') or YoutubeVote.LIKE_UP).lower()
         if type_ not in (YoutubeVote.LIKE_UP, YoutubeVote.LIKE_DOWN,):
             type_ = YoutubeVote.LIKE_UP
         timestamp = max(request.DATA.get('timestamp') or 0, 0)
         vote = YoutubeVote.objects.create(
+            youtubevideo=youtubevideo,
             user=request.user,
-            yid=yid,
             time=timestamp,
             like=type_,
         )
@@ -3546,12 +3590,13 @@ api_video_votes = ApiVideoVotesView.as_view()
 class ApiVideoAggregatedVotesView(APIView):
 
     def get(self, request, yid):
+        youtubevideo = get_object_or_404(YoutubeVideo, yid=yid)
         data = dict()
         for like in (YoutubeVote.LIKE_UP, YoutubeVote.LIKE_DOWN,):
             data[like] = YoutubeVote.objects.\
                             extra(select={'timestamp': 'time'}). \
                             values('timestamp'). \
-                            filter(like=like, yid=yid).order_by('time').\
+                            filter(like=like, youtubevideo=youtubevideo).order_by('time').\
                             annotate(total=Count('time'))
         return Response(data, status=200)
 

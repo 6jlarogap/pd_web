@@ -1,74 +1,29 @@
 # -*- coding: utf-8 -*-
 import datetime
 from south.db import db
-from south.v2 import DataMigration
+from south.v2 import SchemaMigration
 from django.db import models
 
-from pd.youtube import Youtube
 
-class Migration(DataMigration):
+class Migration(SchemaMigration):
 
     def forwards(self, orm):
-        "Write your forwards methods here."
-        # Note: Remember to use orm['appname.ModelName'] rather than "from appname.models..."
-        
-        # Была создана лишь таблица голосов (YoutubeVote), без таблицы заголовков видео (YoutubeVideo).
-        # Формируем YoutubeVideo на основании YoutubeVote, заодно заполняем субтитры YoutubeCaption
-        
-        YoutubeVideo = orm['users.YoutubeVideo']
-        YoutubeVote = orm['users.YoutubeVote']
-        YoutubeCaption = orm['users.YoutubeCaption']
-        
-        print "*** Filling YoutubeVideo, YoutubeCaption with data"
-        count_videos = 0
-        for youtubevote in YoutubeVote.objects.all().distinct('yid'):
-            count_videos += 1
-            youtubevideo = YoutubeVideo.objects.create(yid=youtubevote.yid)
-        print "     - formed YoutubeVideo table with yid's, %d videos" % count_videos
+        # Deleting field 'YoutubeVote.yid'
+        db.delete_column('users_youtubevote', 'yid')
 
-        print "*** Filling other Youtube data, including that from Youtube"
-        count_failed = 0
-        i_current = 0
-        for youtubevideo in YoutubeVideo.objects.all():
-            i_current += 1
-            print "     - %d of %d, youtube_id: %s" % (
-                i_current,
-                count_videos,
-                youtubevideo.yid,
-            )
-            YoutubeVote.objects.filter(yid=youtubevideo.yid).update(youtubevideo=youtubevideo)
-            added_at = YoutubeVote.objects.filter(yid=youtubevideo.yid).\
-                                           order_by('dt_created')[0].dt_created
-            YoutubeVideo.objects.filter(pk=youtubevideo.pk).update(
-                dt_created=added_at,
-                dt_modified=added_at,
-            )
-            try:
-                youtube = Youtube(youtubevideo.yid)
-                parms = youtube.get_parms()
-                captions = youtube.get_captions()
-                YoutubeVideo.objects.filter(pk=youtubevideo.pk).update(
-                    url=parms['url'],
-                    title=parms['title'],
-                    title_photo_url=parms['title_photo_url'],
-                )
-                for num, caption in enumerate(captions):
-                    YoutubeCaption.objects.create(
-                        youtubevideo=youtubevideo,
-                        num=num,
-                        start=caption['start'],
-                        stop=caption['stop'],
-                        text=caption['text'],
-                    )
-            except Youtube.Excpt:
-                print "     - (!) failed to get data from Youtube"
-                count_failed += 1
-                continue
 
-        print "     - formed other Youtube data, %d videos failed to get data from YouTube" % count_failed
+        # Changing field 'YoutubeVote.youtubevideo'
+        db.alter_column('users_youtubevote', 'youtubevideo_id', self.gf('django.db.models.fields.related.ForeignKey')(default=1, to=orm['users.YoutubeVideo']))
 
     def backwards(self, orm):
-        "Write your backwards methods here."
+        # Adding field 'YoutubeVote.yid'
+        db.add_column('users_youtubevote', 'yid',
+                      self.gf('django.db.models.fields.CharField')(default='', max_length=255),
+                      keep_default=False)
+
+
+        # Changing field 'YoutubeVote.youtubevideo'
+        db.alter_column('users_youtubevote', 'youtubevideo_id', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['users.YoutubeVideo'], null=True))
 
     models = {
         'auth.group': {
@@ -598,10 +553,8 @@ class Migration(DataMigration):
             'like': ('django.db.models.fields.CharField', [], {'default': "'up'", 'max_length': '100'}),
             'time': ('django.db.models.fields.PositiveIntegerField', [], {'default': '0'}),
             'user': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['auth.User']"}),
-            'yid': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '255'}),
-            'youtubevideo': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['users.YoutubeVideo']", 'null': 'True'})
+            'youtubevideo': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['users.YoutubeVideo']"})
         }
     }
 
     complete_apps = ['users']
-    symmetrical = True

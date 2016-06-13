@@ -447,7 +447,7 @@ class OauthSerializer(serializers.ModelSerializer):
         fields = ('id', 'provider', 'name', )
 
 class YoutubeVoteSerializer(serializers.ModelSerializer):
-    id = Field(source='yid')
+    id = Field(source='youtubevideo.yid')
     datetime = DateTimeUtcField(source='dt_created', required=False)
     type = Field(source='like')
     timestamp = Field(source='time')
