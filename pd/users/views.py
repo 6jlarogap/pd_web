@@ -3629,3 +3629,18 @@ class ApiVideosView(ApiVideoMixin, APIView):
 
 
 api_videos = ApiVideosView.as_view()
+
+class ApiVideoStaitsticsView(APIView):
+
+    def get(self, request, yid):
+        youtubevideo = get_object_or_404(YoutubeVideo, yid=yid)
+        data = dict(
+            total_users=User.objects.filter(is_active=True).count(),
+            total_video_users=YoutubeVote.objects.filter(
+                                youtubevideo=youtubevideo, like=YoutubeVote.LIKE_UP,
+                                ).distinct('user').count(),
+            total_votes=YoutubeVote.objects.filter(youtubevideo=youtubevideo).count(),
+        )
+        return Response(data, status=200)
+
+api_video_statistics = ApiVideoStaitsticsView.as_view()
