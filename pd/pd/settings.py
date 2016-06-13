@@ -409,7 +409,12 @@ YANDEX_API_KEYS = [
         'api_key': r'AFFSqFMBAAAAeVx-MwIAmJKPwA0dteKD-K4LTJ1nfnN2MTQAAAAAAAAAAABHBnSvshh-SZ_2hyIdqI0NU_lvCA==',
     },
 ]
-    
+
+# Серверный ключ приложения пользователя. У пользователя должно быть
+# активизировано Youtube API v3
+#
+GOOGLE_SERVER_API_KEY = None
+
 WKHTMLTOPDF_CMD = '/usr/local/bin/wkhtmltopdf'
 
 # Обязательность свидетельства о смерти
