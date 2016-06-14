@@ -49,7 +49,7 @@ class CustomPlaceListSerializer(CreatedAtMixin, serializers.HyperlinkedModelSeri
 
     class Meta:
         model = CustomPlace
-        fields = ('id', 'name', 'titlePhoto', 'deadmans', 'address', 'location', 'createdAt', )
+        fields = ('id', 'name', 'titlePhoto', 'deadmans', 'address', 'location', 'createdAt', 'comment',)
 
     def address_func(self, customplace):
         if customplace.address:
@@ -81,7 +81,7 @@ class CustomPlaceEditSerializer(serializers.HyperlinkedModelSerializer):
 
     class Meta:
         model = CustomPlace
-        fields = ('id', 'name', 'address', 'location', 'performerId',)
+        fields = ('id', 'name', 'address', 'location', 'performerId', 'comment')
 
     def restore_object(self, attrs, instance=None):
         data = self.context['request'].DATA
@@ -89,6 +89,7 @@ class CustomPlaceEditSerializer(serializers.HyperlinkedModelSerializer):
         name = data.get('name')
         address = data.get('address')
         location = data.get('location')
+        comment = data.get('comment')
         l = None
         if address or location:
             if instance and instance.address:
@@ -104,6 +105,8 @@ class CustomPlaceEditSerializer(serializers.HyperlinkedModelSerializer):
         if instance:
             if name is not None:
                 instance.name = name
+            if comment is not None:
+                instance.comment = comment
             if 'favorite_performer' in self.context:
                 instance.favorite_performer = self.context['favorite_performer']
             return instance
@@ -112,6 +115,7 @@ class CustomPlaceEditSerializer(serializers.HyperlinkedModelSerializer):
                 name = name or '',
                 user=self.context['request'].user,
                 address=l,
+                comment=comment,
             )
 
 class CustomPlaceDetailSerializer(CustomPlaceEditSerializer):
@@ -123,7 +127,7 @@ class CustomPlaceDetailSerializer(CustomPlaceEditSerializer):
         model = CustomPlace
         fields = (
             'id', 'name', 'omsData', 'titlePhoto', 'address', 'location',
-            'performer',
+            'performer', 'comment',
         )
 
 class DeadPersonSerializer(serializers.HyperlinkedModelSerializer):
