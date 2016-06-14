@@ -360,12 +360,15 @@ class ApiCabinetGetcodeView(ApiThankMixin, APIView):
             chars = string.digits
             code = ''.join(random.choice(chars) for x in range(6))
 
+            sms_text=u"%s code: %s" % (site, code,)
             if settings.DEBUG:
                 data['code'] = code
+                data['sms_sender_name'] = sender_name
+                data['sms_text'] = sms_text
             else:
                 sent, message = send_sms(
                     phone_number=login_phone,
-                    text=u"%s code: %s" % (site, code,),
+                    text=sms_text,
                     email_error_text=site,
                     sender_name=sender_name,
                     # Возможно много регистраций, из разных стран,
@@ -436,7 +439,7 @@ class ApiCabinetTokensView(ApiThankMixin, APIView):
                 login_phone = request.DATA.get('phone', '').strip().lstrip('+')
                 password = request.DATA.get('code')
                 if not login_phone or not password:
-                    raise ServiceException(_(u'Не заданы phone или code'))
+                    raise ServiceException(_(u'Не заданы phone и code'))
                 try:
                     validate_phone_as_number(login_phone)
                 except (TypeError, decimal.InvalidOperation, ValidationError, ):
