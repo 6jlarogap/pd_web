@@ -118,11 +118,22 @@ class ApiCemeteryUpload(APIView):
             for obj in serializer.object:
                 listGPS.append(obj)
         cem = None
+        log_recs = []
         try:
             prevCem = Cemetery.objects.get(pk = cemeteryId)
-            if prevCem.name != cemeteryName or prevCem.square != square :
+            do_save = False
+            if prevCem.name != cemeteryName:
+                log_recs.append(_(u"Изменено название кладбища, %(previous)s -> %(new)s") % dict(
+                    previous=prevCem.name,
+                    new=cemeteryName
+                ))
+                do_save = True
                 prevCem.name = cemeteryName
+            if prevCem.square != square:
+                do_save = True
+                log_recs.append(_(u"Пересчитана площадь кладбища, %s м2") % square)
                 prevCem.square = square
+            if do_save:
                 prevCem.save()
             cem = prevCem
         except Cemetery.DoesNotExist:
@@ -144,6 +155,7 @@ class ApiCemeteryUpload(APIView):
                 write_log(request, request.user.profile, log_mes)
             listInsertedCemetery.append(cem)
         if isGPSChange == True :
+            log_recs.append(_(u"Заданы координаты углов кладбища"))
             CemeteryCoordinates.objects.filter(cemetery__pk = cem.pk).delete()
             for gps in listGPS:
                 cemeteryCoordinates = CemeteryCoordinates(gps)
@@ -157,6 +169,8 @@ class ApiCemeteryUpload(APIView):
             listInsertedCemetery,
             context=dict(request=request)
         )
+        if log_recs:
+            write_log(request, cem, "\n".join(log_recs))
         return Response(serializer.data)
         
 cemetery_upload = ApiCemeteryUpload.as_view()
@@ -221,18 +235,32 @@ class ApiMobileCemeteryPhoto(APIView):
             lat=lat,
             lng=lng,
         )
-        if lat is not None and lng is not None:
-            if not cemetery.address:
-                cemetery.address = Location.objects.create(gps_x=lng, gps_y=lat)
-                cemetery.save()
-            else:
-                Location.objects.filter(
-                    pk=cemetery.address.pk).update(gps_x=lng, gps_y=lat)
         write_log(
             request,
             cemetery,
             _(u"Фото кладбища: %s") % request.build_absolute_uri(photo.photo.url),
         )
+        if lat is not None and lng is not None:
+            old_lat = old_lng = None
+            if not cemetery.address:
+                cemetery.address = Location.objects.create(gps_x=lng, gps_y=lat)
+                cemetery.save()
+            else:
+                old_lat = cemetery.address.gps_y
+                old_lng = cemetery.address.gps_x
+                Location.objects.filter(
+                    pk=cemetery.address.pk).update(gps_x=lng, gps_y=lat)
+            msg = _(
+                u"Изменены координаты кладбища\n"
+                u"Широта:  '%(old_lat)s' -> '%(lat)s'\n"
+                u"Долгота: '%(old_lng)s' -> '%(lng)s'"
+            ) % dict(
+                old_lat=_(u"пусто") if old_lat is None else old_lat,
+                lat=lat,
+                old_lng=_(u"пусто") if old_lng is None else old_lng,
+                lng=lng,
+            )
+            write_log(request, cemetery, msg)
         return self.response(cemetery)
 
     def delete(self, request, pk):
