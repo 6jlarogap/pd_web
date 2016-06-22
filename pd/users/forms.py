@@ -593,8 +593,8 @@ class RegisterForm(forms.ModelForm):
                  #)
         fields = ('user_name', 'password1', 'password2',
                   'user_last_name', 'user_first_name', 'user_middle_name', 'user_email',
-                               'org_name', 'org_full_name',
-                  'org_director', 'org_phones', 'org_fax', 
+                  'org_type', 'org_name', 'org_full_name',
+                  'org_director',               'org_phones', 'org_fax', 
                   'captcha',
                  )
 
