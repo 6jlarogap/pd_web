@@ -384,6 +384,7 @@ class CustomPlace(LocationMixin, BaseModel):
     title_photo = models.ImageField(_(u"Основное Фото"), upload_to='.', null=True)
     favorite_performer = models.ForeignKey(Org, verbose_name=_(u"Предпочтительный исполнитель"),
                                            null=True, blank=True)
+    comment = models.TextField(_(u"Комментарий"), null=True)
 
 
     class Meta:
