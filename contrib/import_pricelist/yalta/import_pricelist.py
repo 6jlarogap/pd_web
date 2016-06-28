@@ -63,6 +63,7 @@ def main():
                 name=name,
                 description=description,
                 productcategory=productcategory,
+                measure=measure,
                 price=price,
                 price_wholesale=price_wholesale,
                 sku=sku,
