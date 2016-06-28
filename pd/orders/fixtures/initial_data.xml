@@ -115,6 +115,42 @@
         <field type="CharField" name="name">Лампады</field>
         <field type="FileField" name="icon"></field>
     </object>
+    <object pk="30" model="orders.productcategory">
+        <field type="CharField" name="name">Корзины</field>
+        <field type="FileField" name="icon"></field>
+    </object>
+    <object pk="31" model="orders.productcategory">
+        <field type="CharField" name="name">Ритуальная одежда</field>
+        <field type="FileField" name="icon"></field>
+    </object>
+    <object pk="32" model="orders.productcategory">
+        <field type="CharField" name="name">Комплекты погребальные</field>
+        <field type="FileField" name="icon"></field>
+    </object>
+    <object pk="33" model="orders.productcategory">
+        <field type="CharField" name="name">Покрывала</field>
+        <field type="FileField" name="icon"></field>
+    </object>
+    <object pk="34" model="orders.productcategory">
+        <field type="CharField" name="name">Подушки и наволочки</field>
+        <field type="FileField" name="icon"></field>
+    </object>
+    <object pk="35" model="orders.productcategory">
+        <field type="CharField" name="name">Постели</field>
+        <field type="FileField" name="icon"></field>
+    </object>
+    <object pk="36" model="orders.productcategory">
+        <field type="CharField" name="name">Демонтаж</field>
+        <field type="FileField" name="icon"></field>
+    </object>
+    <object pk="37" model="orders.productcategory">
+        <field type="CharField" name="name">Копка</field>
+        <field type="FileField" name="icon"></field>
+    </object>
+    <object pk="38" model="orders.productcategory">
+        <field type="CharField" name="name">Оформление документов</field>
+        <field type="FileField" name="icon"></field>
+    </object>
     <!--- Service: возможные услуги -->
     <object pk="1" model="orders.service">
         <field type="CharField" name="name">photo</field>
