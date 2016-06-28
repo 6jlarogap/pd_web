@@ -17,6 +17,10 @@ LORU_NAME = u'ООО "ЯЛТИНСКАЯ ПОХОРОННАЯ КОМПАНИЯ" 
 # -----------
 # * python-odfpy
 
+# Внимание!
+# ods file получать через copy/paste из google диска. Экспорт в ods
+# может рушить символьные поля, похожие на числа
+
 import os
 
 from odf.opendocument import load
