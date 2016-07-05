@@ -1321,7 +1321,8 @@ class BurialCommitForm(BurialForm):
                         msg = _(u"Дата выдачи документа о смерти не может быть раньше даты смерти")
                         raise forms.ValidationError(msg)
 
-        if self.responsible_form.is_valid():
+        if self.responsible_form.is_valid() and \
+           self.responsible_form.cleaned_data.get('take_from') == ResponsibleForm.WHERE_NEW:
             r_last_name = self.responsible_form.cleaned_data.get('last_name').strip()
             r_first_name = self.responsible_form.cleaned_data.get('first_name').strip()
             r_middle_name = self.responsible_form.cleaned_data.get('middle_name').strip()
