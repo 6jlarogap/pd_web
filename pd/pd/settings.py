@@ -394,19 +394,24 @@ OAUTH_PROVIDERS_KEYS = {
 }
 
 YANDEX_API_KEYS = [
-    # Ключи получены на пользователя pohoronnoedelo@yandex.ru.
-    # В зависимости от доменв, откуда идет вызов к yandex api,
+    # Ключи получены на пользователя invozm@yandex.ru.
+    # В зависимости от домена, откуда идет вызов к yandex api,
     # применяется тот или иной ключ
+    # Список ключей: https://tech.yandex.ru/maps/keys/
     #
     # NB:   скрывать их в local_settings нет смысла, они доступны
     #       в исходных кодах страниц
-    { 
+    {
         're_host': r'pohoronnoedelo\.ru(?:\:\d+)?$',
-        'api_key': r'AObGplMBAAAAuFr-WQIADlv2OrFxt6jLCsvlWYiJgtv7YDMAAAAAAAAAAABOAIr3zG31LfU7pllJzun2eZhJmg==',
+        'api_key': r'AEfPfFcBAAAACEfKJQIARwumbXjjFpZ_egGO3IDEnrmUexgAAAAAAAAAAAD940aylrCTc5s1dpgnIt8PuP7TNQ==',
     },
-    { 
-        're_host': r'pohoronnoedelo\.by(?:\:\d+)?$',
-        'api_key': r'AFFSqFMBAAAAeVx-MwIAmJKPwA0dteKD-K4LTJ1nfnN2MTQAAAAAAAAAAABHBnSvshh-SZ_2hyIdqI0NU_lvCA==',
+    {
+        're_host': r'register\.ritual-minsk\.by(?:\:\d+)?$',
+        'api_key': r'ABbQfFcBAAAAHpk_PQMAaRj6lhhOXXH_kdCtu-FYNSCf56QAAAAAAAAAAABN50Vtg6pAgH0zG7J-hConv75h9Q==',
+    },
+    {
+        're_host': r'nasledievnukov\.ru(?:\:\d+)?$',
+        'api_key': r'AHTQfFcBAAAAiwhqVQIAF5pKrcRARkWFQz4O7Bmk2a96PfEAAAAAAAAAAADmLypkR_nHQYl48js0gkDR0fWVQg==',
     },
 ]
 
