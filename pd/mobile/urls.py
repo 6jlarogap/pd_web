@@ -7,6 +7,7 @@ urlpatterns = patterns('mobile.views',
 
     url(r'^mobile/cemetery/$', 'cemetery_list'),    
     url(r'^api/mobile/cemetery/(?P<pk>\d+)/photo/?$', 'cemetery_photo'),
+    url(r'^api/mobile/cemetery/(?P<pk>\d+)/schema/?$', 'cemetery_schema'),
 
     url(r'^mobile/area/$', 'area_list'),
     url(r'^mobile/place/$', 'place_list'),

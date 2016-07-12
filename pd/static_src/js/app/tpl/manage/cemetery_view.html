@@ -67,12 +67,22 @@
     </div>
 
     <div ng-show="cemetery.photoUrl">
+        <b>Фото</b>
         <br />
-        <img ng-show="cemetery.photoUrl"
-            class="first-photo" ng-src="{{ cemetery.photoUrl | thumbnail:225:300:'scale' }} "/>
+        <img class="first-photo" ng-src="{{ cemetery.photoUrl | thumbnail:225:300:'scale' }} "/>
+        <br />
+        <a href="{{ cemetery.photoUrl }}" target="_blank">Оригинал</a>
         <br /><br />
     </div>
 
+    <div ng-show="cemetery.schemaUrl">
+        <b>Схема</b>
+        <br />
+        <img class="first-photo" ng-src="{{ cemetery.schemaUrl | thumbnail:225:300:'scale' }} "/>
+        <br />
+        <a href="{{ cemetery.schemaUrl }}" target="_blank">Оригинал</a>
+        <br /><br />
+    </div>
 
 
   </div>

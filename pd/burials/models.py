@@ -169,6 +169,12 @@ class Cemetery(GetLogsMixin, BaseModelManualDtCreated, PhonesMixin):
 class CemeteryPhoto(PhotoFiles, GeoPointModel):
     cemetery = models.OneToOneField(Cemetery)
 
+class CemeterySchema(PhotoFiles):
+    # В 2 раза больше, чем вообще для фоток
+    MAX_PHOTO_SIZE = 20
+
+    cemetery = models.OneToOneField(Cemetery)
+
 class CemeteryCoordinates(CoordinatesModel):
     #TODO:
     # Перевести эту модель к PointsModel

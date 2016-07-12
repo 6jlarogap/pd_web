@@ -3615,13 +3615,13 @@ class ApiVideosView(ApiVideoMixin, APIView):
         return Response(data, status=200)
 
     def post(self, request):
+        status_code = 200
         try:
             if not request.user.is_authenticated():
                 raise PermissionDenied
             yid = request.DATA.get('youtube_url_or_id')
             if not yid:
                 raise ServiceException(_(u"Не задан идентификатор или URL Youtube видео"))
-            status_code = 400
             youtubevideo, created = self.get_or_add_video(yid)
             if not youtubevideo:
                 raise ServiceException(_(u"Ошибка идентификатора или URL Youtube видео"))
@@ -3630,7 +3630,6 @@ class ApiVideosView(ApiVideoMixin, APIView):
             data = dict(message=excpt.message)
             status_code = 400
         return Response(data=data, status=status_code)
-
 
 api_videos = ApiVideosView.as_view()
 
