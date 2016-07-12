@@ -9,7 +9,7 @@ from rest_framework.fields import Field, TimeField
 
 from burials.models import Cemetery, Place, Area, Grave, Burial, AreaPhoto, BurialFiles, ExhumationRequest, \
     AreaPurpose, PlaceSize, PlaceStatus, CemeteryCoordinates, AreaCoordinates, PlaceSize, PlacePhoto, \
-    Reason, CemeteryPhoto
+    Reason, CemeteryPhoto, CemeterySchema
 
 from geo.models import Location
 from geo.serializers import AddressLatLonMixin
@@ -57,6 +57,17 @@ class CemeteryPhotoMixin(object):
                 photo = self.context['request'].build_absolute_uri(photo.url)
         return photo
 
+    def schemaUrl_func(self, instance):
+        photo = ''
+        if hasattr(self, 'context') and 'request' in self.context:
+            try:
+                photo = CemeterySchema.objects.get(cemetery=instance).photo
+            except CemeterySchema.DoesNotExist:
+                pass
+            if photo:
+                photo = self.context['request'].build_absolute_uri(photo.url)
+        return photo
+
 class CemeteryClientSiteSerializer(AddressLatLonMixin, CemeteryPhotoMixin, serializers.ModelSerializer):
     phones = Field(source='phone_list')
     address = serializers.RelatedField()
@@ -64,11 +75,12 @@ class CemeteryClientSiteSerializer(AddressLatLonMixin, CemeteryPhotoMixin, seria
     workTimes = Field(source='worktimes')
     executive = serializers.SerializerMethodField('executive_func')
     photoUrl = serializers.SerializerMethodField('photoUrl_func')
+    schemaUrl = serializers.SerializerMethodField('schemaUrl_func')
 
     class Meta:
         model = Cemetery
         fields = ('id', 'name', 'address', 'location', 'phones',
-                  'workTimes', 'executive', 'photoUrl',
+                  'workTimes', 'executive', 'photoUrl', 'schemaUrl',
         )
 
     def executive_func(self, obj):
@@ -112,13 +124,14 @@ class CemeterySerializer(CemeteryPhotoMixin, serializers.ModelSerializer):
     caretaker = serializers.PrimaryKeyRelatedField(required=False)
     #phones = serializers.SerializerMethodField('get_phones')
     photoUrl = serializers.SerializerMethodField('photoUrl_func')
+    schemaUrl = serializers.SerializerMethodField('schemaUrl_func')
 
     class Meta:
         model = Cemetery
         fields = ('id', 'name', 'work_time', 'area_cnt', 'time_begin', 'time_end', \
                   'places_algo', 'places_algo_archive', \
                   'archive_burial_fact_date_required', 'archive_burial_account_number_required', \
-                  'address', 'time_slots', 'caretaker', 'photoUrl')
+                  'address', 'time_slots', 'caretaker', 'photoUrl', 'schemaUrl', )
     
     def get_phones(self, obj):
         return PhoneSerializer(obj.phone_set.all()).data
