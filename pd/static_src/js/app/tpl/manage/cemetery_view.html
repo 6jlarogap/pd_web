@@ -75,6 +75,14 @@
         <br /><br />
     </div>
 
+    <div ng-show="cemetery.schemaUrl">
+        <b>Схема</b>
+        <br />
+        <img class="first-photo" ng-src="{{ cemetery.schemaUrl | thumbnail:225:300:'scale' }} "/>
+        <br />
+        <a href="{{ cemetery.schemaUrl }}" target="_blank">Оригинал</a>
+        <br /><br />
+    </div>
 
 
   </div>

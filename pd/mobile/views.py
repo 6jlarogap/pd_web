@@ -14,7 +14,7 @@ from django.http import HttpResponse
 
 from django.utils import simplejson
 from geo.models import Location, CoordinatesModel
-from burials.models import Cemetery, CemeteryCoordinates, CemeteryPhoto
+from burials.models import Cemetery, CemeteryCoordinates, CemeteryPhoto, CemeterySchema
 from burials.models import Area
 from burials.models import AreaCoordinates
 from burials.models import Place
@@ -55,7 +55,7 @@ from serializers import BaseSerializer, CoordinatesSerializer, CemeteryWithNeste
                         AreaSerializer, AreaWithNestedObjectSerializer, \
                         RegionSerializer, CitySerializer, StreetSerializer, CountrySerializer, LocationSerializer, \
                         PlaceWithNestedObjectSerializer, GraveSerializer, BurialSerializer, \
-                        PlaceSerializer, PlacePhotoSerializer, CemeteryPhotoSerializer
+                        PlaceSerializer, PlacePhotoSerializer, CemeteryPhotoSerializer, CemeterySchemaSerializer
 
 from persons.serializers import DeadPerson2Serializer
 from persons.views import CheckLifeDatesMixin
@@ -175,12 +175,96 @@ class ApiCemeteryUpload(APIView):
         
 cemetery_upload = ApiCemeteryUpload.as_view()
         
-class ApiMobileCemeteryPhoto(APIView):
-    permission_classes = (PermitIfUgh,)
-    parser_classes = (MultiPartParser, JSONParser, )
+class CemeteryPhotoSchemaMixin(object):
 
     def get_cemetery(self, pk):
         return get_object_or_404(Cemetery, pk=pk, ugh=self.request.user.profile.org)
+
+    def get(self, request, pk):
+        cemetery = self.get_cemetery(pk)
+        return self.response(cemetery)
+
+    def remove_attachments(self, cemetery, attachment_model):
+        """
+        Удалить фото кладбища или схему, в зависимости от attachment_model
+        """
+        count = 0
+        for old_photo in attachment_model.objects.filter(cemetery=cemetery):
+            count += 1
+            old_photo.delete()
+        return count
+
+    def check_post(self, request, pk, attachment_model):
+        if attachment_model == CemeteryPhoto:
+            filefield = 'photo'
+        else:
+            filefield = 'schema'
+
+        cemetery = self.get_cemetery(pk)
+        photo = request.FILES.get(filefield)
+        if photo:
+            if photo.size > CemeteryPhoto.MAX_PHOTO_SIZE * 1024 * 1024:
+                raise CustomException(
+                    detail=_(u"Размер загружаемого файла превышает %d Мб") % attachment_model.MAX_PHOTO_SIZE,
+                    status=400,
+               )
+            if not get_image(photo):
+                raise CustomException(
+                    detail=_(u"загружаемый файла не является изображением"),
+                    status=400,
+                )
+        else:
+            raise CustomException(
+                detail=_(u"Нет загружаемого файла (%s)") % filefield,
+                status=400,
+                )
+        return cemetery, photo
+
+class ApiMobileCemeterySchema(CemeteryPhotoSchemaMixin, APIView):
+    permission_classes = (PermitIfUgh,)
+    parser_classes = (MultiPartParser, JSONParser, )
+
+    def response(self, cemetery):
+        return Response(
+            status=200,
+            data=[ CemeterySchemaSerializer(
+                    schema,
+                    context=dict(request=self.request)
+                    ).data \
+                   for schema in CemeterySchema.objects.filter(cemetery=cemetery)
+        ])
+
+    def post(self, request, pk):
+        cemetery, schema = self.check_post(request, pk, CemeterySchema)
+        self.remove_attachments(cemetery, CemeterySchema)
+        schema = CemeterySchema.objects.create(
+            cemetery=cemetery,
+            photo=schema,
+            creator=request.user,
+        )
+        write_log(
+            request,
+            cemetery,
+            _(u"Схема кладбища: %s") % request.build_absolute_uri(schema.photo.url),
+        )
+        return self.response(cemetery)
+
+    def delete(self, request, pk):
+        cemetery = self.get_cemetery(pk)
+        count = self.remove_attachments(cemetery, CemeterySchema)
+        if count:
+            write_log(
+                request,
+                cemetery,
+                _(u"Схема кладбища удалена"),
+            )
+        return self.response(cemetery)
+
+cemetery_schema = ApiMobileCemeterySchema.as_view()
+
+class ApiMobileCemeteryPhoto(CemeteryPhotoSchemaMixin, APIView):
+    permission_classes = (PermitIfUgh,)
+    parser_classes = (MultiPartParser, JSONParser, )
 
     def response(self, cemetery):
         return Response(
@@ -192,42 +276,14 @@ class ApiMobileCemeteryPhoto(APIView):
                    for photo in CemeteryPhoto.objects.filter(cemetery=cemetery)
         ])
 
-    def remove_photos(self, cemetery):
-        count = 0
-        for old_photo in CemeteryPhoto.objects.filter(cemetery=cemetery):
-            count += 1
-            old_photo.delete()
-        return count
-
-    def get(self, request, pk):
-        cemetery = self.get_cemetery(pk)
-        return self.response(cemetery)
-
     def post(self, request, pk):
-        cemetery = self.get_cemetery(pk)
-        photo = request.FILES.get('photo')
-        if photo:
-            if photo.size > CemeteryPhoto.MAX_PHOTO_SIZE * 1024 * 1024:
-                raise CustomException(
-                    detail=_(u"Размер фото превышает %d Мб") % CemeteryPhoto.MAX_PHOTO_SIZE,
-                    status=400,
-               )
-            if not get_image(photo):
-                raise CustomException(
-                    detail=_(u"Загруженное фото не является изображением"),
-                    status=400,
-                )
-        else:
-            raise CustomException(
-                detail=_(u"Нет загружаемого фото (photo)"),
-                status=400,
-                )
+        cemetery, photo = self.check_post(request, pk, CemeteryPhoto)
         try:
             lat = float(request.POST.get('lat', ''))
             lng = float(request.POST.get('lng', ''))
         except ValueError:
             lat = lng = None
-        self.remove_photos(cemetery)
+        self.remove_attachments(cemetery, CemeteryPhoto)
         photo = CemeteryPhoto.objects.create(
             cemetery=cemetery,
             photo=photo,
@@ -265,7 +321,7 @@ class ApiMobileCemeteryPhoto(APIView):
 
     def delete(self, request, pk):
         cemetery = self.get_cemetery(pk)
-        count = self.remove_photos(cemetery)
+        count = self.remove_attachments(cemetery, CemeteryPhoto)
         if count:
             write_log(
                 request,
