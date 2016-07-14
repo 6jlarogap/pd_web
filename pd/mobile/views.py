@@ -210,7 +210,7 @@ class CemeteryPhotoSchemaMixin(object):
                )
             if not get_image(photo):
                 raise CustomException(
-                    detail=_(u"загружаемый файла не является изображением"),
+                    detail=_(u"Загружаемый файл не является изображением"),
                     status=400,
                 )
         else:
