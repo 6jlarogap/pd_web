@@ -2471,7 +2471,8 @@ class OmsCurrentStatsView(SupervisorProductionRequiredMixin, TemplateView):
 
             org['num_burials'] = Burial.objects.filter(
                 ugh=o,
-                status=Burial.STATUS_CLOSED
+                status=Burial.STATUS_CLOSED,
+                annulated=False,
             ).count()
             total['burials_count'] += org['num_burials']
 
