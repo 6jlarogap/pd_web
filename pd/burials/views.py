@@ -1091,18 +1091,24 @@ class AddOrgView(UghOrLoruRequiredMixin, View):
             prefix='org'
             instance = None
         f = AddOrgForm(request=self.request, data=request.POST, prefix=prefix, instance=instance)
+        f_errors = dict()
         if f.is_valid():
             new_org = f.save()
-            f.put_log_data(msg=_(u'Данные сохранены'))
-            if request.user.profile.is_ugh() and new_org.type == Org.PROFILE_LORU:
-                new_org.ugh_list.create(ugh=request.user.profile.org)
-            return HttpResponse(json.dumps({'pk': new_org.pk, 'label': u'%s' % new_org}), mimetype='application/json')
+            if new_org:
+                f.put_log_data(msg=_(u'Данные сохранены'))
+                if request.user.profile.is_ugh() and new_org.type == Org.PROFILE_LORU:
+                    new_org.ugh_list.create(ugh=request.user.profile.org)
+                return HttpResponse(json.dumps({'pk': new_org.pk, 'label': u'%s' % new_org}), mimetype='application/json')
+            else:
+                # Случай, который не удалось воспроизвести: duplicate auto-slug field
+                f_errors = dict(error=_(u"Есть такая организация"))
         else:
-            err_str = _(u'Ошибка:\n%s')
-            errors = '\n'.join([u'%s' % v[0] for k,v in f.errors.items()])
-            if "\n" in errors:
-                err_str = _(u'Ошибки:\n%s')
-            return HttpResponse(err_str % errors, mimetype='text/plain')
+            f_errors = f.errors
+        err_str = _(u'Ошибка:\n%s')
+        errors = '\n'.join([u'%s' % v[0] for k,v in f_errors.items()])
+        if "\n" in errors:
+            err_str = _(u'Ошибки:\n%s')
+        return HttpResponse(err_str % errors, mimetype='text/plain')
 
 add_org = AddOrgView.as_view()
 
