@@ -35,16 +35,22 @@
             {% trans "Мест" %}
         </th>
         <th style="text-align:right;">
-            {% trans "Закрытых<br />захоронений" %}
-        </th>
-        <th style="text-align:right;">
             {% trans "Мест<br />для обработки" %}
         </th>
         <th style="text-align:right;">
             {% trans "Мест пере-<br />фотографировать" %}
         </th>
         <th style="text-align:right;">
+            {% trans "Мест<br />свободных" %}
+        </th>
+        <th style="text-align:right;">
+            {% trans "Мест<br />неопознанных" %}
+        </th>
+        <th style="text-align:right;">
             {% trans "Мест<br />с телефоном<br />кабинета" %}
+        </th>
+        <th style="text-align:right;">
+            {% trans "Закрытых<br />захоронений" %}
         </th>
         <th style="text-align:right;">
             {% trans "Кабинетов" %}
@@ -75,16 +81,22 @@
             <b>{{ total.places_count }}</b>
         </td>
         <td style="text-align:right;">
-            <b>{{ total.burials_count }}</b>
-        </td>
-        <td style="text-align:right;">
             <b>{{ total.places_invent_accessible }}</b>
         </td>
         <td style="text-align:right;">
             <b>{{ total.places_invent_remake_photo }}</b>
         </td>
         <td style="text-align:right;">
+            <b>{{ total.places_free }}</b>
+        </td>
+        <td style="text-align:right;">
+            <b>{{ total.places_unidentified }}</b>
+        </td>
+        <td style="text-align:right;">
             <b>{{ total.places_cabinet_count }}</b>
+        </td>
+        <td style="text-align:right;">
+            <b>{{ total.burials_count }}</b>
         </td>
         <td>
             <b>{% trans "Всего кабинетов" %}: {{ total.cabinets_count }}</b>
@@ -119,16 +131,22 @@
                 {{ org.num_places }}
             </td>
             <td style="text-align:right;">
-                {{ org.num_burials }}
-            </td>
-            <td style="text-align:right;">
                 {{ org.places_invent_accessible }}
             </td>
             <td style="text-align:right;">
                 {{ org.places_invent_remake_photo }}
             </td>
             <td style="text-align:right;">
+                {{ org.places_free }}
+            </td>
+            <td style="text-align:right;">
+                {{ org.places_unidentified }}
+            </td>
+            <td style="text-align:right;">
                 {{ org.num_places_cabinet }}
+            </td>
+            <td style="text-align:right;">
+                {{ org.num_burials }}
             </td>
             <td style="text-align:right;">
                 {{ org.num_cabinets }}
