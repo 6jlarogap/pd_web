@@ -2453,7 +2453,8 @@ class OmsCurrentStatsView(SupervisorProductionRequiredMixin, TemplateView):
         total['oms_count'] = total['cemeteries_count'] = \
         total['areas_count'] = total['places_count'] = \
         total['burials_count'] = total['places_cabinet_count'] = \
-        total['places_invent_accessible'] = total['places_invent_remake_photo'] = 0
+        total['places_invent_accessible'] = total['places_invent_remake_photo'] = \
+        total['places_unidentified'] = total['places_free'] = 0
         q_published = Q(is_public_catalog=True)
         for o in Org.objects.filter(type=Org.PROFILE_UGH).order_by(*s):
             total['oms_count'] += 1
@@ -2486,6 +2487,18 @@ class OmsCurrentStatsView(SupervisorProductionRequiredMixin, TemplateView):
                 dt_wrong_fio__isnull=False,
             ).distinct().count()
             total['places_invent_remake_photo'] += org['places_invent_remake_photo']
+
+            org['places_free'] = Place.objects.filter(
+                cemetery__ugh=o,
+                dt_free__isnull=False,
+            ).distinct().count()
+            total['places_free'] += org['places_free']
+
+            org['places_unidentified'] = Place.objects.filter(
+                cemetery__ugh=o,
+                dt_unindentified__isnull=False,
+            ).distinct().count()
+            total['places_unidentified'] += org['places_unidentified']
 
             cabinets = Place.objects.filter(
                 cemetery__ugh=o,
