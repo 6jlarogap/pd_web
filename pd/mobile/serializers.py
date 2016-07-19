@@ -5,7 +5,7 @@ from rest_framework import serializers
 from rest_api.fields import DateTimeUtcField, UnclearDateFieldSerializer, \
                             HyperlinkedFileField, DateTimeUtcField
 
-from burials.models import CemeteryPhoto
+from burials.models import CemeteryPhoto, CemeterySchema
 
 class BaseSerializer(serializers.Serializer):	
     pk = serializers.Field()    
@@ -33,6 +33,10 @@ class CemeteryPhotoSerializer(BaseSerializer):
     photoUrl = HyperlinkedFileField(source='photo', required=False)
     dt_modified = serializers.DateTimeField(required=False)
 
+class CemeterySchemaSerializer(BaseSerializer):
+    schemaUrl = HyperlinkedFileField(source='photo', required=False)
+    dt_modified = serializers.DateTimeField(required=False)
+
 class CemeterySerializer(BaseSerializer):
     name = serializers.CharField(required=True)
     square = serializers.CharField(required=True)
@@ -42,6 +46,7 @@ class CemeterySerializer(BaseSerializer):
 class CemeteryWithNestedObjectSerializer(CemeterySerializer):	
     coordinates = CoordinatesSerializer(many=True)
     photo = serializers.SerializerMethodField('photo_func')
+    schema = serializers.SerializerMethodField('schema_func')
 
     def photo_func(self, instance):
         return [CemeteryPhotoSerializer(
@@ -49,6 +54,14 @@ class CemeteryWithNestedObjectSerializer(CemeterySerializer):
                     context=dict(request=self.context['request']),
                 ).data \
                 for photo in CemeteryPhoto.objects.filter(cemetery=instance)
+        ]
+
+    def schema_func(self, instance):
+        return [CemeterySchemaSerializer(
+                    schema,
+                    context=dict(request=self.context['request']),
+                ).data \
+                for schema in CemeterySchema.objects.filter(cemetery=instance)
         ]
 
 class AreaSerializer(BaseSerializer):

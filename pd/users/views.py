@@ -2453,7 +2453,8 @@ class OmsCurrentStatsView(SupervisorProductionRequiredMixin, TemplateView):
         total['oms_count'] = total['cemeteries_count'] = \
         total['areas_count'] = total['places_count'] = \
         total['burials_count'] = total['places_cabinet_count'] = \
-        total['places_invent_accessible'] = total['places_invent_remake_photo'] = 0
+        total['places_invent_accessible'] = total['places_invent_remake_photo'] = \
+        total['places_unidentified'] = total['places_free'] = 0
         q_published = Q(is_public_catalog=True)
         for o in Org.objects.filter(type=Org.PROFILE_UGH).order_by(*s):
             total['oms_count'] += 1
@@ -2471,7 +2472,8 @@ class OmsCurrentStatsView(SupervisorProductionRequiredMixin, TemplateView):
 
             org['num_burials'] = Burial.objects.filter(
                 ugh=o,
-                status=Burial.STATUS_CLOSED
+                status=Burial.STATUS_CLOSED,
+                annulated=False,
             ).count()
             total['burials_count'] += org['num_burials']
 
@@ -2485,6 +2487,18 @@ class OmsCurrentStatsView(SupervisorProductionRequiredMixin, TemplateView):
                 dt_wrong_fio__isnull=False,
             ).distinct().count()
             total['places_invent_remake_photo'] += org['places_invent_remake_photo']
+
+            org['places_free'] = Place.objects.filter(
+                cemetery__ugh=o,
+                dt_free__isnull=False,
+            ).distinct().count()
+            total['places_free'] += org['places_free']
+
+            org['places_unidentified'] = Place.objects.filter(
+                cemetery__ugh=o,
+                dt_unindentified__isnull=False,
+            ).distinct().count()
+            total['places_unidentified'] += org['places_unidentified']
 
             cabinets = Place.objects.filter(
                 cemetery__ugh=o,
@@ -3615,13 +3629,13 @@ class ApiVideosView(ApiVideoMixin, APIView):
         return Response(data, status=200)
 
     def post(self, request):
+        status_code = 200
         try:
             if not request.user.is_authenticated():
                 raise PermissionDenied
             yid = request.DATA.get('youtube_url_or_id')
             if not yid:
                 raise ServiceException(_(u"Не задан идентификатор или URL Youtube видео"))
-            status_code = 400
             youtubevideo, created = self.get_or_add_video(yid)
             if not youtubevideo:
                 raise ServiceException(_(u"Ошибка идентификатора или URL Youtube видео"))
@@ -3630,7 +3644,6 @@ class ApiVideosView(ApiVideoMixin, APIView):
             data = dict(message=excpt.message)
             status_code = 400
         return Response(data=data, status=status_code)
-
 
 api_videos = ApiVideosView.as_view()
 

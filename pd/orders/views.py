@@ -1913,10 +1913,12 @@ class ApiServiceOrdersView(APIView):
     def get(self, request):
         q = Q()
         if is_trade_user(request.user):
-            q = Q(loru=request.user.profile.org, type=Order.TYPE_CUSTOMER)
+            q_type = Q(type=Order.TYPE_CUSTOMER) | \
+                     Q(serviceitem__orgservice__service__name=Service.SERVICE_PHOTO)
+            q = Q(loru=request.user.profile.org) & q_type
         elif is_cabinet_user(request.user):
             q = Q(customplace__user=request.user, type=Order.TYPE_CUSTOMER)
-        qs = Order.objects.filter(q).order_by('-dt_created') if q else Order.objects.none()
+        qs = Order.objects.filter(q).order_by('-dt_created').distinct() if q else Order.objects.none()
         return Response(
             data=ServiceOrderSerializer(
                 qs,

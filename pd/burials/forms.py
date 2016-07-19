@@ -10,7 +10,7 @@ from django.contrib import messages
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
-from django.db import models, transaction
+from django.db import models, transaction, IntegrityError
 from django.db.models.aggregates import Max
 from django.db.models.deletion import ProtectedError
 from django.forms.models import inlineformset_factory, BaseInlineFormSet
@@ -1321,7 +1321,8 @@ class BurialCommitForm(BurialForm):
                         msg = _(u"Дата выдачи документа о смерти не может быть раньше даты смерти")
                         raise forms.ValidationError(msg)
 
-        if self.responsible_form.is_valid():
+        if self.responsible_form.is_valid() and \
+           self.responsible_form.cleaned_data.get('take_from') == ResponsibleForm.WHERE_NEW:
             r_last_name = self.responsible_form.cleaned_data.get('last_name').strip()
             r_first_name = self.responsible_form.cleaned_data.get('first_name').strip()
             r_middle_name = self.responsible_form.cleaned_data.get('middle_name').strip()
@@ -1698,10 +1699,14 @@ class AddOrgForm(StrippedStringsMixin, BaseOrgForm):
         self.collect_log_data()
         org = super(AddOrgForm, self).save(commit=False)
         if commit:
-            org.save()
-            if org.type == Org.PROFILE_LORU:
-                org.create_wallet_rate()
-            self.put_log_data(msg=_(u'Добавлена организация'))
+            try:
+                org.save()
+                if org.type == Org.PROFILE_LORU:
+                    org.create_wallet_rate()
+                self.put_log_data(msg=_(u'Добавлена организация'))
+            except IntegrityError:
+                # Случай, который не удалось воспроизвести: duplicate auto-slug field
+                org = None
         return org
 
 class AddDocTypeForm(forms.ModelForm):

@@ -503,6 +503,9 @@ def files_upload_to(instance, filename):
     elif isinstance(instance, get_model('burials', 'CemeteryPhoto')):
         return os.path.join('cemetery-photos',
                 today_pk_dir % instance.cemetery.pk, fname)
+    elif isinstance(instance, get_model('burials', 'CemeterySchema')):
+        return os.path.join('cemetery-schemas',
+                today_pk_dir % instance.cemetery.pk, fname)
     else:
         return os.path.join('files', fname)
 
