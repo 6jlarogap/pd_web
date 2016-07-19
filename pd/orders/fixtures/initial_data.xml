@@ -151,6 +151,10 @@
         <field type="CharField" name="name">Оформление документов</field>
         <field type="FileField" name="icon"></field>
     </object>
+    <object pk="39" model="orders.productcategory">
+        <field type="CharField" name="name">Услуги кладбища</field>
+        <field type="FileField" name="icon"></field>
+    </object>
     <!--- Service: возможные услуги -->
     <object pk="1" model="orders.service">
         <field type="CharField" name="name">photo</field>
