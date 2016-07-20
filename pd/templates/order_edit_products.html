@@ -13,8 +13,8 @@
         <table class="table table-striped">
         <thead>
             <tr>
-              <th>#</th>
-              <th>{% trans "Товар" %}</th>
+              <th style="text-align:right">#</th>
+              <th style="text-align:center">{% trans "Товар" %}</th>
               <th>{% trans "Цена" %}</th>
               <th>{% trans "Количество" %}</th>
               <th>{% trans "Сумма" %}</th>
@@ -24,14 +24,14 @@
         <tbody>
             {% for f in formset.forms %}
             <tr id="{{ f.prefix }}-row" class="dynamic-form">
-              <td>{{ forloop.counter }}
+              <td style="text-align:right">{{ forloop.counter }}
                 {% if f.errors %}
                     {% for field, error in f.errors.items %}
                         {{ error }}                        
                     {% endfor %}
                 {% endif %}
               </td>
-              <td class="product_type">{{ f.product }}</td>
+              <td class="product_type" style="text-align:center">{{ f.product }}</td>
               <td class="product_cost">{{ f.cost }}</td>
               <td class="product_quantity">{{ f.quantity }}</td>
               <td class="amount"><input type="text" name="" value=""></td>
@@ -67,7 +67,7 @@
 
     <script type="text/javascript">
         $(function () {
-            $('.product_type select').css('width', '550px');
+            $('.product_type select').css('width', '670px');
             $('.product_cost input').css('width', '100px');
             $('.product_quantity input').css('width', '80px');
             $('.amount input').css('width', '100px');
