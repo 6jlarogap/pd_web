@@ -7,6 +7,8 @@ install-readme.txt, utf8 code page
         - ~/venv/pdweb:         virtual environment проекта
         - ~/projects/pd_web:    проект, в соответствии с именем на bitbucket.org
         - USERNAME:             имя пользователя на bitbucket.org
+
+        - ubuntu:               ubuntu 14.04, 16.04, если не уточняется
  
     * Д.б. установлено на Linux:
         - средства разработки:
@@ -14,6 +16,7 @@ install-readme.txt, utf8 code page
               - пакеты python, которые могут не быть в его "стандартной поставке":
                   * (ubuntu) python-all-dev
                     - (ubuntu 14.04) это автоматически установит c/c++, g++
+                  * ubuntu 16.04: sudo apt install g++
                   * (ubuntu) python-virtualenv
                   * (ubuntu) python-pycurl
                   * (ubuntu) python-tz
@@ -23,11 +26,13 @@ install-readme.txt, utf8 code page
                       выполнять sudo pip install pytz --upgrade
 
          - postgresql,
-            * в т.ч. для разработчика (ubuntu 14.04:
+            * в т.ч. для разработчика (ubuntu:
               sudo apt-get install postgresql postgresql-server-dev-all)
             полагаем, что используется база postgresql на localhost,
             в которой пользователю postgres всё дозволено. Это достигается
-            правкой pg_hba.conf (на ubuntu 14.04 в /etc/postgresql/9.3/main/)
+            правкой pg_hba.conf (на ubuntu 14.04 в /etc/postgresql/9.3/main/,
+            ubuntu 16.04 в /etc/postgresql/9.5/main/)
+
             заменой строки:
                 local all postgres peer
             на:
@@ -46,16 +51,18 @@ install-readme.txt, utf8 code page
                 (хорошая программа, но тянет за собой Qt & X Server)
                  Однако разработчик поддерживает static- compiled
                  - для саммых популярных и поддерживаемых дистрибутивов
-                   (включая debian wheezy и ubuntu 12.04, 14.04)
+                   (включая debian wheezy и ubuntu 14.04)
                     * http://wkhtmltopdf.org/downloads.html,
                       скачать соответствующий deb- файл, например для ubuntu 14.04
                       wkhtmltox-0.12.1_linux-trusty-amd64.deb
                     * sudo apt-get install fontconfig
                     * sudo apt-get install libxrender1
                     * sudo dpkg -i wkhtmltox-0.12.1_linux-trusty-amd64.deb
-                - для других дистрибутивов придется довольствоваться архивной
-                  версией 0.12.0, в которой распространяется архив, который
+                - для других дистрибутивов, включая ubuntu 16.04, придется довольствоваться
+                  архивной версией 0.12.0, в которой распространяется архив, который
                   распаковываешь куда-то и программа готова к запуску.
+                    * (ubuntu 16.04) sudo apt-get install fontconfig
+                    * (ubuntu 16.04) sudo apt-get install libxrender1
                     * скачать wkhtmltopdf-архив для 32 или 64 bit,
                       http://sourceforge.net/projects/wkhtmltopdf/files/archive/0.12.0/
                     * tar xf wkhtmltox-linux-<i386|amd64>_<версия>.tar.xz
@@ -148,27 +155,15 @@ install-readme.txt, utf8 code page
                 # Каталог static должен быть доступен пользователю,
                 # исполняющему Apache, не только, разумеется,
                 # по чтению, но и по записи (AngularJS)
-                <IfVersion < 2.3 >
-                    Order allow,deny
-                    Allow from all
-                </IfVersion>
-                <IfVersion >= 2.3>
-                    Require all granted
-                </IfVersion>
+                Require all granted
             </Directory>
             <FilesMatch "wsgi\.py$">
-                <IfVersion < 2.3 >
-                    Order allow,deny
-                    Allow from all
-                </IfVersion>
-                <IfVersion >= 2.3>
-                    Require all granted
-                </IfVersion>
+                Require all granted
             </FilesMatch>
         </VirtualHost>
 
-    * Добавить в конфигурацию (/etc/apache2/conf-enabled, Ubuntu 14.04) файл, например,
-      с именем reqtimeout следующего содержания:
+    * Добавить в конфигурацию (/etc/apache2/conf-enabled, Ubuntu 14.04) .conf-файл, например,
+      с именем reqtimeout.conf следующего содержания:
     
         # Minimize IOError request data read exeptions when posting data
         #
@@ -176,6 +171,8 @@ install-readme.txt, utf8 code page
         # http://httpd.apache.org/docs/2.2/mod/mod_reqtimeout.html
         #
         RequestReadTimeout header=90,MinRate=500 body=90,MinRate=500
+
+        - выполнить sudo a2enmod reqtimeout
 
     * При такой конфигурации (Debian/Ubuntu):
         sudo chown -R www-data:www-data /home/www-data/media /home/www-data/pw_web
