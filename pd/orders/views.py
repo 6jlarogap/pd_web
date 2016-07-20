@@ -392,14 +392,18 @@ class OrderEdit(LORURequiredMixin, RequestToFormMixin, UpdateView):
 
     def form_valid(self, form):
         self.object = form.save()
+        go_next = '_save_next' in self.request.POST
 
         write_log(self.request, self.object, _(u'Заказ сохранен'))
-        msg = _(u"<a href='%(order_edit)s'>Заказ %(pk)s</a> сохранен") % dict(
-            order_edit=reverse('order_edit', args=[self.object.pk]),
-            pk=self.object.pk,
-        )
-        messages.success(self.request, msg)
-        return redirect('.')
+        if go_next:
+            return redirect('order_products', self.object.pk)
+        else:
+            msg = _(u"<a href='%(order_edit)s'>Заказ %(pk)s</a> сохранен") % dict(
+                order_edit=reverse('order_edit', args=[self.object.pk]),
+                pk=self.object.pk,
+            )
+            messages.success(self.request, msg)
+            return redirect('.')
 
 order_edit = OrderEdit.as_view()
 
@@ -458,6 +462,7 @@ class OrderEditProducts(LORURequiredMixin, View):
         formset = self.get_formset()
         if formset.is_valid():
             self.object = self.get_object()
+            go_next = '_save_next' in request.POST
             for orderitem in self.object.orderitem_set.all():
                 orderitem.delete()
             
@@ -482,12 +487,15 @@ class OrderEditProducts(LORURequiredMixin, View):
                         filter(orgservice__service__name=Service.SERVICE_PHOTO).delete()
 
             write_log(self.request, self.object, _(u'Заказ сохранен'))
-            msg = _(u"<a href='%(order_edit)s'>Заказ %(pk)s</a> сохранен") % dict(
-                order_edit=reverse('order_edit', args=[self.object.pk]),
-                pk=self.object.pk,
-            )
-            messages.success(self.request, msg)
-            return redirect('.')
+            if go_next:
+                return redirect('order_burial', self.object.pk)
+            else:
+                msg = _(u"<a href='%(order_edit)s'>Заказ %(pk)s</a> сохранен") % dict(
+                    order_edit=reverse('order_edit', args=[self.object.pk]),
+                    pk=self.object.pk,
+                )
+                messages.success(self.request, msg)
+                return redirect('.')
         else:
             messages.error(self.request, _(u"Обнаружены ошибки"))
             return self.get(request, *args, **kwargs)
