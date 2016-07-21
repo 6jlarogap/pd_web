@@ -1011,6 +1011,7 @@
 
 <!-- наряд на написание надмогильной таблички -->
 
+<p>&nbsp;</p>
 <TABLE FRAME=VOID ALIGN=LEFT CELLSPACING=0 COLS=12 RULES=NONE BORDER=0>
     <COLGROUP>
         <COL WIDTH=38>
@@ -1181,6 +1182,7 @@
 {% if order.has_catafalque %}
     <!-- наряд на автокатафалк -->
 
+    <p>&nbsp;</p>
     <TABLE FRAME=VOID ALIGN=LEFT CELLSPACING=0 COLS=12 RULES=NONE BORDER=0>
         <COLGROUP>
             <COL WIDTH=38>
@@ -1393,7 +1395,11 @@
 
 {% if order.has_loaders %}
     <!-- наряд на грузчиков -->
+    {% if order.has_sign and order.has_catafalque %}
+        <div style="page-break-after: always;">&nbsp;</div>
+    {% endif %}
 
+    <p>&nbsp;</p>
     <TABLE FRAME=VOID ALIGN=LEFT CELLSPACING=0 COLS=12 RULES=NONE BORDER=0>
         <COLGROUP>
             <COL WIDTH=38>
@@ -1589,14 +1595,18 @@
     </TABLE>
 {% endif %}
 
-{% if order.has_sign and order.has_catafalque and order.has_loaders and order.has_diggers %}
-    <p>&nbsp;</p>
-    <div style="page-break-after: always;">&nbsp;</div>
-{% endif %}
-
 {% if order.has_diggers %}
     <!-- наряд на рытье могилы -->
 
+    {% if order.has_sign and order.has_catafalque and not order.has_loaders %}
+        <div style="page-break-after: always;">&nbsp;</div>
+    {% elif order.has_sign and not order.has_catafalque and order.has_loaders %}
+        <div style="page-break-after: always;">&nbsp;</div>
+    {% elif not order.has_sign and order.has_catafalque and order.has_loaders %}
+        <div style="page-break-after: always;">&nbsp;</div>
+    {% endif %}
+
+    <p>&nbsp;</p>
     <TABLE FRAME=VOID ALIGN=LEFT CELLSPACING=0 COLS=12 RULES=NONE BORDER=0>
         <COLGROUP>
             <COL WIDTH=38>
@@ -1804,7 +1814,9 @@
 {% endif %}
 
 {% ifnotequal user.profile.org.inn '4028046796' %}
-    <div style="page-break-after: always;">&nbsp;</div>
+    {% if order.has_sign or order.has_catafalque or order.has_loaders or order.has_diggers %}
+        <div style="page-break-after: always;">&nbsp;</div>
+    {% endif %}
     {% include "reports/personal_data.html" %}
 {% endifnotequal %}
 
