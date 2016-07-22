@@ -14,6 +14,7 @@
         <thead>
             <tr>
               <th style="text-align:right">#</th>
+              <th><i>{% trans "Фильтр" %}</i></th>
               <th style="text-align:center">{% trans "Товар" %}</th>
               <th>{% trans "Цена" %}</th>
               <th>{% trans "Количество" %}</th>
@@ -30,6 +31,14 @@
                         {{ error }}                        
                     {% endfor %}
                 {% endif %}
+              </td>
+              <td class="product_search">
+                <input
+                    type="text"
+                    name="product_search_{{ forloop.counter0 }}"
+                    class="product_search"
+                    id="product_search_{{ forloop.counter0 }}"
+                >
               </td>
               <td class="product_type" style="text-align:center">{{ f.product }}</td>
               <td class="product_cost">{{ f.cost }}</td>
@@ -67,10 +76,41 @@
 
     <script type="text/javascript">
         $(function () {
+            $('.product_search').css('width', '50px');
             $('.product_type select').css('width', '670px');
             $('.product_cost input').css('width', '100px');
             $('.product_quantity input').css('width', '80px');
             $('.amount input').css('width', '100px');
+
+            {# https://habrahabr.ru/post/134139/ #}
+            {# Кроссбраузерный поиск в select list #}
+            $('.product_search').bind('keyup', function() {
+                var name = $(this).attr('name');
+                var q_name = new RegExp('^product_search_(\\d+)$', 'i');
+                if (name.match(q_name)) {
+                    var list = $('#id_orderitem_set-' + RegExp.$1 + '-product');
+                    var q = new RegExp($(this).val(), 'ig');
+                    var field = list.find('option');
+                    var list_value = list.val();
+                    for (var i = 0, l = field.length; i < l; i += 1) {
+                        var option = $(field[i]),
+                            parent = option.parent(),
+                            option_value = option.val();
+
+                        if (list_value == option_value || $(field[i]).text().match(q)) {
+                            if (parent.is('span')) {
+                                option.show();
+                                parent.replaceWith(option);
+                            }
+                        } else {
+                            if (option.is('option') && (!parent.is('span'))) {
+                                option.wrap('<span>').hide();
+                            }
+                        }
+                    }
+                }
+            });
+
             hideShowDelete()
             $('#id_orderitem_set-INITIAL_FORMS').attr('value', 0);
             updateProductId();
@@ -98,7 +138,6 @@
 
                 var toggleButton = function() {
                 }
-
                 $.ajax({
                     type: "GET",
                     url: "/order/product/ajax_get_product_price/", 
