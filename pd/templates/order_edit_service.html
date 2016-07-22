@@ -25,8 +25,8 @@
         {% endif %}
 
         <p>
-            <input type="submit" class="btn" value="{% trans "сохранить" %}" class="btn"/>
-            <a href="{% url order_info order.pk %}" class="btn btn-next">{% trans "далее" %}</a>
+            <input type="submit" class="btn" value="{% trans "сохранить" %}"  name="_save_stay"/>
+            <input type="submit" class="btn" value="{% trans "далее" %}" name="_save_next"/>
         </p>
     </form>
 
