@@ -85,17 +85,12 @@
     <TBODY>
     <TR HEIGHT=20>
         <TD STYLE="border-top: 1px solid; border-left: 1px solid" COLSPAN=9 ALIGN=CENTER>
-            <B>{{ user.profile.org.full_name|default_if_none:"" }}</B>
+            <B><FONT SIZE=2 >{{ user.profile.org.full_name|default_if_none:"" }}</FONT></B>
          </TD>
-    </TR>
-    <TR HEIGHT=25>
-        <TD STYLE="border-left: 1px solid" COLSPAN=9 ALIGN=CENTER><B>
-            <FONT SIZE=2 >{{ user.profile.org.name|default_if_none:"" }}</FONT>
-        </B></TD>
     </TR>
     <TR HEIGHT=20>
         <TD STYLE="border-left: 1px solid" COLSPAN=9 ALIGN=CENTER>
-            <B>{{ user.profile.org.off_address|default_if_none:"" }}</B>
+            {{ user.profile.org.off_address|default_if_none:"" }}
         </TD>
     </TR>
     <TR>
@@ -434,16 +429,11 @@
     <TBODY>
     <TR HEIGHT=20>
         <TD STYLE="border-top: 1px solid; border-left: 1px solid" COLSPAN=9
-            ALIGN=CENTER VALIGN=TOP><B><FONT >{{ user.profile.org.full_name|default_if_none:"" }}</FONT></B></TD>
-    </TR>
-    <TR HEIGHT=25>
-        <TD STYLE="border-left: 1px solid" COLSPAN=9 ALIGN=CENTER VALIGN=TOP><B>
-            <FONT SIZE=2 >{{ user.profile.org.name|default_if_none:"" }}</FONT>
-        </B></TD>
+            ALIGN=CENTER VALIGN=TOP><B><FONT SIZE=2>{{ user.profile.org.full_name|default_if_none:"" }}</FONT></B></TD>
     </TR>
     <TR HEIGHT=20>
         <TD STYLE="border-left: 1px solid" COLSPAN=9
-            ALIGN=CENTER VALIGN=TOP><B><FONT >{{ user.profile.org.off_address|default_if_none:"" }}</FONT></B></TD>
+            ALIGN=CENTER VALIGN=TOP>{{ user.profile.org.off_address|default_if_none:"" }}</TD>
     </TR>
     <TR>
         <TD STYLE="border-left: 1px solid" COLSPAN=9 HEIGHT=35 ALIGN=CENTER VALIGN=BOTTOM>
