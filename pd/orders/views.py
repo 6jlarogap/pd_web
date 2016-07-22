@@ -576,12 +576,15 @@ class OrderEditServices(OrderEditProducts):
                 coffin.save()
 
             write_log(self.request, self.object, _(u'Заказ сохранен'))
-            msg = _(u"<a href='%(order_edit)s'>Заказ %(pk)s</a> сохранен") % dict(
-                order_edit=reverse('order_edit', args=[self.object.pk]),
-                pk=self.object.pk,
-            )
-            messages.success(self.request, msg)
-            return redirect('.')
+            if '_save_next' in request.POST:
+                return redirect('order_info', self.object.pk)
+            else:
+                msg = _(u"<a href='%(order_edit)s'>Заказ %(pk)s</a> сохранен") % dict(
+                    order_edit=reverse('order_edit', args=[self.object.pk]),
+                    pk=self.object.pk,
+                )
+                messages.success(self.request, msg)
+                return redirect('.')
         else:
             messages.error(self.request, _(u"Обнаружены ошибки"))
             return self.get(request, *args, **kwargs)
