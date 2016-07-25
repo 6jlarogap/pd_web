@@ -1,0 +1,282 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="ru" lang="ru">
+{% load counter %}
+{% load pytils_numeral %}
+{% load pytils_dt %}
+<HTML>
+<HEAD>
+
+    <META HTTP-EQUIV="CONTENT-TYPE" CONTENT="text/html; charset=utf-8">
+    <TITLE>Счет и акт</TITLE>
+
+    <STYLE>
+        <!--
+        BODY, DIV, TABLE, THEAD, TBODY, TFOOT, TR, TH, TD, P {
+            font-family: "Arial";
+            font-size: x-small
+        }
+        -->
+    </STYLE>
+
+</HEAD>
+
+<BODY TEXT="#000000">
+
+<!-- Квитанция-договор -->
+
+<TABLE FRAME=VOID CELLSPACING=0 COLS=5 RULES=NONE BORDER=0>
+    <COLGROUP>
+        <COL style="width:13mm">
+        <COL style="width:94mm">
+        <COL style="width:11mm">
+        <COL style="width:25mm">
+        <COL style="width:27mm">
+    </COLGROUP>
+    <TBODY>
+    <TR>
+        <TD COLSPAN=3>
+            <B>{{ user.profile.org.full_name|default:"Полное название организации" }}</B>
+         </TD>
+    <TR>
+        <TD COLSPAN=3>
+            ИНН {{ user.profile.org.inn|default:"_________" }}&nbsp;
+            КПП {{ user.profile.org.kpp|default:"_________" }}&nbsp;
+            ОГРН {{ user.profile.org.ogrn|default:"_________" }}&nbsp;
+         </TD>
+    </TR>
+    <TR>
+        <TD COLSPAN=3>
+            <B><FONT SIZE=4>КВИТАНЦИЯ-ДОГОВОР</FONT></B> от {{ now|ru_strftime:"&laquo;%d&raquo; %B %Y"|safe }}г.
+         </TD>
+    <TR>
+    <TR>
+        <TD COLSPAN=3 STYLE="border-bottom: 1px solid">
+            <B>Заказчик (ФИО)
+            {% if order.applicant %}
+                {{ order.applicant.full_name_complete }}г.
+            {% endif %}
+            </B>
+         </TD>
+    <TR>
+    <TR>
+        <TD COLSPAN=3 STYLE="border-bottom: 1px solid">
+            Тел:
+            {% if order.applicant and order.applicant.phones %}
+                {{ order.applicant.phones }}&nbsp;
+            {% else %}
+            _____________
+            {% endif %}
+            Адрес:
+            {% if order.applicant and order.applicant.address %}
+                {{ order.applicant.address }}
+            {% else %}
+            _________________________________
+            {% endif %}
+         </TD>
+    <TR>
+    <TR>
+        <TD COLSPAN=3 STYLE="border-bottom: 1px solid">
+            <B>Умерший (ФИО)
+            {% if order.burial and order.burial.deadman %}
+                {{ order.burial.deadman }}&nbsp;
+            {% else %}
+            _________________________________
+            {% endif %}
+            </B>
+         </TD>
+    <TR>
+    <TR>
+        <TD COLSPAN=3 STYLE="border-bottom: 1px solid">
+            Дата рождения
+            {% if order.burial and order.burial.deadman %}
+                {{ order.burial.deadman.birth_date|default_if_none:"_____________" }}&nbsp;
+            {% else %}
+            _____________
+            {% endif %}
+            &nbsp;&nbsp;&nbsp;
+            Дата смерти
+            {% if order.burial and order.burial.deadman %}
+                {{ order.burial.deadman.death_date|default_if_none:"_____________" }}&nbsp;
+            {% else %}
+            _____________
+            {% endif %}
+         </TD>
+    <TR>
+    <TR>
+        <TD COLSPAN=3 STYLE="border-bottom: 1px solid">
+            <B><FONT SIZE=4>Кладбище
+            {% if order.burial %}
+                {{ order.burial.cemetery|default_if_none:"_________________________________" }}&nbsp;
+            {% else %}
+            _________________________________
+            {% endif %}
+            </FONT></B>
+         </TD>
+    <TR>
+    <TR>
+        <TD COLSPAN=4>
+            Дата похорон
+            {% if order.burial and order.burial.plan_date %}
+                {{ order.burial.plan_date|date:"d.m.Y"|safe|default_if_none:"_____________" }}&nbsp;
+            {% endif %}
+            Время подачи транспорта к моргу ___________
+         </TD>
+    <TR>
+    <TR>
+        <TD COLSPAN=4>
+            Время отпевания _____________
+            &nbsp;
+            Время захоронения
+            {% if order.burial and order.burial.plan_time %}
+                {{ order.burial.plan_time|time:"H" }}:{{ order.burial.plan_time|time:"i" }}
+            {% else %}
+            _____________
+            {% endif %}
+         </TD>
+    <TR>
+    <TR>
+        <TD STYLE="border-top: 1px solid; border-left: 1px solid; border-bottom: 1px solid" ALIGN=CENTER>
+            Артикул
+        </TD>
+        <TD STYLE="border-top: 1px solid; border-left: 1px solid; border-bottom: 1px solid" ALIGN=CENTER>
+            Наименование
+        </TD>
+        <TD STYLE="border-top: 1px solid; border-left: 1px solid; border-bottom: 1px solid" ALIGN=CENTER>
+            Кол-во
+        </TD>
+        <TD STYLE="border-top: 1px solid; border-left: 1px solid; border-bottom: 1px solid" ALIGN=CENTER>
+            Цена
+        </TD>
+        <TD STYLE="border-top: 1px solid; border-left: 1px solid; border-right: 1px solid; border-bottom: 1px solid" ALIGN=CENTER>
+            Сумма
+        </TD>
+    </TR>
+    {% for p in order.orderitem_set.all %}
+        <TR>
+            <TD STYLE="border-left: 1px solid; border-bottom: 1px solid">
+                {{ p.product.sku }}
+            </TD>
+            <TD STYLE="border-left: 1px solid; border-bottom: 1px solid">
+                {{ p.product.name }}
+            </TD>
+            <TD STYLE="border-left: 1px solid; border-bottom: 1px solid" ALIGN=CENTER>
+                {{ p.quantity_round }}
+            </TD>
+            <TD STYLE="border-left: 1px solid; border-bottom: 1px solid; padding-right:0.5em;" ALIGN=right>
+                {{ p.cost|floatformat:"2" }}
+            </TD>
+            <TD STYLE="border-left: 1px solid; border-bottom: 1px solid; border-right: 1px solid; padding-right:0.5em;" ALIGN=right>
+                {{ p.total|floatformat:"2" }}
+            </TD>
+        </TR>
+    {% endfor %}
+    {% for s in order.serviceitem_set.all %}
+        <TR>
+            <TD STYLE="border-left: 1px solid; border-bottom: 1px solid">
+                <br />
+            </TD>
+            <TD STYLE="border-left: 1px solid; border-bottom: 1px solid">
+                {{ s.orgservice.service.title }}
+            </TD>
+            <TD STYLE="border-left: 1px solid; border-bottom: 1px solid" ALIGN=CENTER>
+                <br />
+            </TD>
+            <TD STYLE="border-left: 1px solid; border-bottom: 1px solid; padding-right:0.5em;" ALIGN=right>
+                Сервис
+            </TD>
+            <TD STYLE="border-left: 1px solid; border-bottom: 1px solid; border-right: 1px solid; padding-right:0.5em;" ALIGN=right>
+                {{ s.cost|floatformat:"2" }}
+            </TD>
+        </TR>
+    {% endfor %}
+    <TR>
+        <TD COLSPAN=5>
+            <B>Итого
+            {% if order.total %}
+                {{ order.total_float|floatformat:"2" }}
+            {% else %}
+            _____________
+            {% endif %}
+            {% if order.total_float %}
+                ({{ order.total_int|rubles|capfirst }} {{ order.total_copecks }} коп.)
+            {% endif %}
+            </B>
+         </TD>
+    </TR>
+    <TR HEIGHT=15>
+        <TD COLSPAN=5>
+            <BR />
+         </TD>
+    </TR>
+    <TR>
+        <TD COLSPAN=5>
+            <B>Ответственный за исполнение заказа</B> ______________________________ (должность, ФИО, подпись)
+         </TD>
+    </TR>
+    <TR>
+        <TD COLSPAN=3>
+            С объемом работ согласен ______________________________
+         </TD>
+        <TD COLSPAN=2>
+            Подпись заказчика
+         </TD>
+    </TR>
+    <TR>
+        <TD COLSPAN=5>
+            <B>Оплачено</B>: наличными денежными средствами _____________ руб. _____ коп. 
+         </TD>
+    </TR>
+    <TR>
+        <TD COLSPAN=5>
+            <B>Получено</B>: ____________________________ &nbsp; Дата осуществления расчета _____________
+         </TD>
+    </TR>
+    <TR>
+        <TD COLSPAN=5>
+            &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <I>должность, ФИО, подпись</I>
+         </TD>
+    </TR>
+    <TR>
+        <TD COLSPAN=5>
+            <B>Заказ выполнен полностью, полученную с меня сумму подтверждаю</B>
+         </TD>
+    </TR>
+    <TR>
+        <TD COLSPAN=5>
+            _____________________________________________________________ (подпись заказчика, дата)
+         </TD>
+    </TR>
+    <TR>
+        <TD COLSPAN=5>
+            <B>Даю согласие на обработку указанных в настоящем документе персональных данных моих,</B>
+         </TD>
+    </TR>
+    <TR>
+        <TD COLSPAN=5>
+            <B>а также данных умершего, ____________ (подпись) / _____________________ (расшифровка)</B>
+         </TD>
+    </TR>
+    <TR HEIGHT=15>
+        <TD COLSPAN=5>
+            <BR />
+         </TD>
+    </TR>
+    <TR>
+        <TD COLSPAN=5>
+            <B>В день захоронения  в 8:30 передать вещи санитарам морга</B>
+         </TD>
+    </TR>
+    </TBODY>
+</TABLE>
+
+{% if print_now %}
+    <script type="text/javascript">
+        window.onload = function () {
+            window.print();
+        }
+    </script>
+{% endif %}
+</BODY>
+
+</HTML>

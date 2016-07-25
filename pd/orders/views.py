@@ -662,7 +662,9 @@ class PrintOrderView(LORURequiredMixin, DetailView):
             user=self.request.user,
             msg=_(u"Счет-заказ"),
             obj=order,
-            template='reports/order.html',
+            template='reports/order_yalta.html' \
+                if self.request.user.profile.org.inn == '9103078189' \
+                else 'reports/order.html',
             context=RequestContext(self.request, context),
         )
         return redirect('report_view', report.pk)
