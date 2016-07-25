@@ -349,6 +349,12 @@ class Order(GetLogsMixin, BaseModel):
     def total_float(self):
         return float(self.total)
 
+    def total_int(self):
+        return int(self.total)
+
+    def total_copecks(self):
+        return int((self.total - int(self.total)) * 100)
+
     def has_burial(self):
         return self.orderitem_set.filter(product__ptype=Product.PRODUCT_BURIAL).exists()
 
@@ -718,6 +724,12 @@ class OrderItem(OrderItemMixin, models.Model):
 
     def quantity_float(self):
         return float(self.quantity)
+
+    def quantity_round(self):
+        if self.quantity - int(self.quantity) > 0:
+            return self.quantity
+        else:
+            return int(self.quantity)
 
 class CatafalqueData(models.Model):
     order = models.OneToOneField('orders.Order', editable=False)
