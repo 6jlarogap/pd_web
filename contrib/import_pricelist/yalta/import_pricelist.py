@@ -3,7 +3,6 @@
 # import_pricelist.py,
 
 TO_IMPORT_ODS = '/home/suprune20/musor/pricelist.ods'
-PHOTOS_FOLDER = '/home/suprune20/musor/product-photo'
 # Название организации изменено, чтоб еще раз сдуру не запустить процесс
 LORU_NAME = u'ООО "ЯЛТИНСКАЯ ПОХОРОННАЯ КОМПАНИЯ" ---'
 
@@ -52,6 +51,10 @@ def main():
             measure = ods_cell(cells[2])
             price_str = ods_cell(cells[3]).replace(' ', '')
             try:
+                stockable = not bool(ods_cell(cells[5]))
+            except IndexError:
+                stockable = True
+            try:
                 price = price_wholesale = float(price_str)
             except ValueError:
                 # цена не указана, значит конец списка
@@ -71,19 +74,12 @@ def main():
                 price=price,
                 price_wholesale=price_wholesale,
                 sku=sku,
+                stockable=stockable,
             )
             if not p.sku:
                 p.sku = str(p.pk)
                 p.save()
             count += 1
-            # print no, sku, name, measure, price
-            fname = ods_cell(cells[5])
-            if fname:
-                fname = u"%s.png" % fname
-                f = open(os.path.join(PHOTOS_FOLDER, fname), 'r')
-                s = f.read()
-                f.close()
-                p.photo.save(fname, ContentFile(s))
         except IndexError:
             # тоже конец списка
             print u'Ok. End of List (IndexError). %s products imported' % count
