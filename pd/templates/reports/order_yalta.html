@@ -39,12 +39,15 @@
         <TD COLSPAN=4>
             <B>{{ user.profile.org.full_name|default:"Полное название организации" }}</B>
          </TD>
-    <TR>
+    </TR>
         <TD COLSPAN=4>
-            ИНН {{ user.profile.org.inn|default:"_________" }}&nbsp;
-            КПП {{ user.profile.org.kpp|default:"_________" }}&nbsp;
-            ОГРН {{ user.profile.org.ogrn|default:"_________" }}&nbsp;
-         </TD>
+            {{ user.profile.org.off_address|default_if_none:"Адрес организации" }}
+        </TD>
+    </TR>
+    </TR>
+        <TD COLSPAN=4>
+            Тел: {{ user.profile.org.phones|default_if_none:"" }}
+        </TD>
     </TR>
     <TR>
         <TD COLSPAN=4>
@@ -53,7 +56,7 @@
             <B><FONT SIZE=3>{{ order.loru_number|default_if_none:"" }}</FONT></B>
             от {{ now|ru_strftime:"&laquo;%d&raquo; %B %Y"|safe }}г.
          </TD>
-    <TR>
+    </TR>
     <TR>
         <TD COLSPAN=4 STYLE="border-bottom: 1px solid">
             <B>Заказчик (ФИО)
@@ -62,7 +65,7 @@
             {% endif %}
             </B>
          </TD>
-    <TR>
+    </TR>
     <TR>
         <TD COLSPAN=4 STYLE="border-bottom: 1px solid">
             Тел:
@@ -78,7 +81,7 @@
             _________________________________
             {% endif %}
          </TD>
-    <TR>
+    </TR>
     <TR>
         <TD COLSPAN=4 STYLE="border-bottom: 1px solid">
             <B>Умерший (ФИО)
@@ -89,7 +92,7 @@
             {% endif %}
             </B>
          </TD>
-    <TR>
+    </TR>
     <TR>
         <TD COLSPAN=4 STYLE="border-bottom: 1px solid">
             Дата рождения
@@ -106,7 +109,7 @@
             _____________
             {% endif %}
          </TD>
-    <TR>
+    </TR>
     <TR>
         <TD COLSPAN=4 STYLE="border-bottom: 1px solid">
             <B>Кладбище
@@ -117,7 +120,7 @@
             {% endif %}
             </B>
          </TD>
-    <TR>
+    </TR>
     <TR>
         <TD COLSPAN=5>
             Дата похорон
@@ -126,7 +129,7 @@
             {% endif %}
             Время подачи транспорта к моргу ___________
          </TD>
-    <TR>
+    </TR>
     <TR>
         <TD COLSPAN=5>
             Время отпевания _____________
@@ -138,7 +141,7 @@
             _____________
             {% endif %}
          </TD>
-    <TR>
+    </TR>
     <TR>
         <TD STYLE="border-top: 1px solid; border-left: 1px solid; border-bottom: 1px solid" ALIGN=CENTER>
             № п/п
@@ -162,13 +165,13 @@
     {% counter reset %}
     {% for p in order.orderitem_set.all %}
         <TR>
-            <TD STYLE="border-left: 1px solid; border-bottom: 1px solid">
+            <TD STYLE="border-left: 1px solid; border-bottom: 1px solid" ALIGN=CENTER>
                 {% counter %}
             </TD>
-            <TD STYLE="border-left: 1px solid; border-bottom: 1px solid">
+            <TD STYLE="border-left: 1px solid; border-bottom: 1px solid" ALIGN=CENTER>
                 {{ p.product.sku }}
             </TD>
-            <TD STYLE="border-left: 1px solid; border-bottom: 1px solid">
+            <TD STYLE="border-left: 1px solid; border-bottom: 1px solid; padding-left:0.5em;">
                 {{ p.product.name }}
             </TD>
             <TD STYLE="border-left: 1px solid; border-bottom: 1px solid" ALIGN=CENTER>
@@ -184,20 +187,20 @@
     {% endfor %}
     {% for s in order.serviceitem_set.all %}
         <TR>
-            <TD STYLE="border-left: 1px solid; border-bottom: 1px solid">
+            <TD STYLE="border-left: 1px solid; border-bottom: 1px solid" ALIGN=CENTER>
                 {% counter %}
             </TD>
-            <TD STYLE="border-left: 1px solid; border-bottom: 1px solid">
+            <TD STYLE="border-left: 1px solid; border-bottom: 1px solid" ALIGN=CENTER>
                 <br />
             </TD>
-            <TD STYLE="border-left: 1px solid; border-bottom: 1px solid">
+            <TD STYLE="border-left: 1px solid; border-bottom: 1px solid; padding-left:0.5em;">
                 {{ s.orgservice.service.title }}
             </TD>
             <TD STYLE="border-left: 1px solid; border-bottom: 1px solid" ALIGN=CENTER>
                 <br />
             </TD>
             <TD STYLE="border-left: 1px solid; border-bottom: 1px solid; padding-right:0.5em;" ALIGN=right>
-                Сервис
+                <br />
             </TD>
             <TD STYLE="border-left: 1px solid; border-bottom: 1px solid; border-right: 1px solid; padding-right:0.5em;" ALIGN=right>
                 {{ s.cost|floatformat:"2" }}

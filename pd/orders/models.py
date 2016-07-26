@@ -148,6 +148,8 @@ class Product(BaseModel):
     price_wholesale = models.DecimalField(_(u"Цена оптовая"), max_digits=20, decimal_places=2)
     ptype = models.CharField(_(u"Тип"), max_length=255, choices=PRODUCT_TYPES, null=True, blank=True)
     default = models.BooleanField(_(u"По умолчанию"), default=False, blank=True)
+    # True: товар, False: услуга
+    stockable = models.BooleanField(_(u"Товар"), default=True, blank=True)
     photo = models.ImageField(u"Фото", max_length=255, upload_to=upload_slugified, blank=True, null=True)
     productcategory = models.ForeignKey(ProductCategory, verbose_name=_(u"Категория"), on_delete=models.PROTECT)
     productgroup = models.ForeignKey(ProductGroup, verbose_name=_(u"Подкатегория"), null=True, editable=False,
