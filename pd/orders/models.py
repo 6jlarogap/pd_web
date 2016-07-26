@@ -527,6 +527,9 @@ class Order(GetLogsMixin, BaseModel):
         except IndexError:
             return None
 
+    def stockable_products(self):
+        return self.orderitem_set.filter(product__stockable=True)
+
 class OrderItemMixin(object):
 
     def cost_float(self):
