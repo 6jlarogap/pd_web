@@ -129,6 +129,7 @@ class ProductEditSerializer(serializers.HyperlinkedModelSerializer):
     categoryName = serializers.RelatedField(source='productcategory')
     measurementUnit = Field(source='measure')
     isDefault = Field(source='default')
+    stockable = Field(source='stockable')
     retailPrice = Field(source='price')
     currency = serializers.Field(source='loru.currency.code')
     tradePrice = Field(source='price_wholesale')
@@ -142,7 +143,7 @@ class ProductEditSerializer(serializers.HyperlinkedModelSerializer):
             'id', 'name', 'description', 'sku',
             'typeId', 'typeName',
             'categoryId', 'categoryName',
-            'measurementUnit', 'isDefault',
+            'measurementUnit', 'isDefault', 'stockable',
             'retailPrice', 'tradePrice', 'currency',
             'isShownInRetailCatalog', 'isShownInTradeCatalog',
             'imageUrl',
@@ -182,6 +183,12 @@ class ProductEditSerializer(serializers.HyperlinkedModelSerializer):
         # При правке продукта правим только то, что в полях kwargs
         # окажется None
 
+        stockable = str_to_bool_or_None(data.get('stockable'))
+        if stockable is None:
+            if instance:
+                stockable = instance.stockable
+            else:
+                stockable = True
         fields_got = dict(
             loru=self.context['request'].user.profile.org if not instance else None,
             name=data.get('name'),
@@ -191,6 +198,7 @@ class ProductEditSerializer(serializers.HyperlinkedModelSerializer):
             price_wholesale=price_wholesale,
             ptype=data.get('typeId'),
             default=str_to_bool_or_None(data.get('isDefault')),
+            stockable=stockable,
             productcategory=ProductCategory.objects.get(pk=data.get('categoryId')) if data.get('categoryId') else None,
             sku=data.get('sku'),
             is_public_catalog=is_public_catalog,
