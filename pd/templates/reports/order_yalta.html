@@ -41,10 +41,13 @@
          </TD>
     </TR>
         <TD COLSPAN=4>
-            ИНН {{ user.profile.org.inn|default:"_________" }}&nbsp;
-            КПП {{ user.profile.org.kpp|default:"_________" }}&nbsp;
-            ОГРН {{ user.profile.org.ogrn|default:"_________" }}&nbsp;
-         </TD>
+            {{ user.profile.org.off_address|default_if_none:"Адрес организации" }}
+        </TD>
+    </TR>
+    </TR>
+        <TD COLSPAN=4>
+            Тел: {{ user.profile.org.phones|default_if_none:"" }}
+        </TD>
     </TR>
     <TR>
         <TD COLSPAN=4>
