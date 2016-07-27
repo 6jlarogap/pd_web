@@ -671,6 +671,28 @@ class PrintOrderView(LORURequiredMixin, DetailView):
 
 order_print = PrintOrderView.as_view()
 
+class PrintOrderReceiptView(LORURequiredMixin, DetailView):
+    context_object_name = 'order'
+
+    def get_queryset(self):
+        return Order.objects.filter(loru=self.request.user.profile.org).distinct()
+
+    def render_to_response(self, context, **response_kwargs):
+        order = self.get_object()
+        context.update(dict(
+            now=datetime.datetime.now(),
+        ))
+        report = make_report(
+            user=self.request.user,
+            msg=_(u"Квитанция покупателя"),
+            obj=order,
+            template='reports/order_receipt.html',
+            context=RequestContext(self.request, context),
+        )
+        return redirect('report_view', report.pk)
+
+order_receipt_print = PrintOrderReceiptView.as_view()
+
 class PrintContractView(LORURequiredMixin, DetailView):
     context_object_name = 'order'
 
