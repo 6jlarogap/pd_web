@@ -36,6 +36,8 @@ def send_sms(
             sent,   True, если успешно
             message, сообщение: пустое, если успешно, иначе причину отказа в отправке
     """
+    if settings.DO_NOT_SEND_SMS:
+        return True, ''
     phone_number = str(phone_number)
     default_serv = your_serv = None
     message = ''
