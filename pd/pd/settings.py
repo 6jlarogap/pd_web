@@ -348,6 +348,10 @@ SMS_SERVICE = [
     # { 'country_code': 'default', 'user': 'default@email.org', 'password': 'default-secret', },
 ]
 
+# Устанавливать в True в local_settings.py, если SMS служба отключена
+#
+DO_NOT_SEND_SMS = False
+
 # Получатели доходов от рекламы.
 #
 # NB    Подобраны ИНН для этих организаций, чтоб уменьшить риск совпадения
