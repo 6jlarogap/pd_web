@@ -200,9 +200,20 @@ def re_search(s):
 
     Полагаем, что на вход всегда идет строка, не содержащая пробелов
     """
-    regex = s.strip()
+    regex = s.strip(). \
+            replace(u'\\', u'\\\\'). \
+            replace(u'|', u'\\|'). \
+            replace(u'(', u'\\('). \
+            replace(u')', u'\\)'). \
+            replace(u'{', u'\\{'). \
+            replace(u'}', u'\\}'). \
+            replace(u'^', u'\\^'). \
+            replace(u'$', u'\\$'). \
+            replace(u'.', u'\\.'). \
+            replace(u'+', u'\\+')
+    # Всего в регулярных выражениях 12 метасимволов. Кроме перечисленных выше 10,
+    # еще те 2, по которым анализируем:
     if re.search(r'[\?\*]', regex):
-        regex = re.sub(r'\.', r'\.', regex)
         regex = re.sub(r'\?', r'.',  regex)
         regex = re.sub(r'\*', r'.*', regex)
         if regex.startswith(".*"):
