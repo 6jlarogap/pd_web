@@ -12,6 +12,6 @@
         <field type="CharField" name="short_name">руб</field>
         <field type="CharField" name="code">BYR</field>
         <field type="FileField" name="icon"></field>
-        <field type="FileField" name="rounding">-2</field>
+        <field type="FileField" name="rounding">2</field>
     </object>
 </django-objects>
