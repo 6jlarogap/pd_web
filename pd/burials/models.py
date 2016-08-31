@@ -600,6 +600,22 @@ class PlaceSize(models.Model):
         unique_together = ('org', 'graves_count', )
         ordering = ('graves_count', )
 
+class OrderPlace(models.Model):
+    """
+    Место, указываемый при заказе, для которого еще не сделано захоронение
+    """
+    order = models.OneToOneField('orders.Order', verbose_name=_(u"Заказ"))
+    cemetery = models.ForeignKey(Cemetery, verbose_name=_(u"Кладбище"), null=True)
+    # Если кладбище не выбирается из имеющихся, а задается вручную
+    cemetery_text = models.CharField(_(u"Кладбище"), max_length=255, default='')
+    area = models.ForeignKey(Area, verbose_name=_(u"Участок"), null=True)
+    row = models.CharField(_(u"Ряд"), max_length=255, default='')
+    place = models.CharField(_(u"Место"), max_length=255, default='')
+    place_length = models.DecimalField(_(u"Длина, м."), max_digits=4, decimal_places=2,
+                                       null=True, validators=[validate_gt0])
+    place_width = models.DecimalField(_(u"Ширина, м."), max_digits=4, decimal_places=2,
+                                        null=True, validators=[validate_gt0])
+
 class PlaceStatus(BaseModel):
     PS_ACTUAL = 'actual'
     PS_FOUND_UNOWNED = 'found-unowned'

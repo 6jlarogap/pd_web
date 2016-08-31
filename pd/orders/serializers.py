@@ -11,6 +11,8 @@ from rest_framework.fields import Field
 from rest_api.fields import HyperlinkedFileField
 from orders.models import Order, ProductCategory, Product, Service, Measure, OrgService, OrgServicePrice, \
                           OrderItem, ServiceItem, OrderComment, ResultFile
+from persons.models import OrderDeadPerson
+from persons.serializers import AlivePerson2Serializer, DeadPerson2Serializer
 from users.models import Org, is_cabinet_user, is_trade_user, UserPhoto
 from users.serializers import OrgSerializer, OrgShortSerializer, OrgShort3Serializer, OrgShort4Serializer, \
                               OrgShort6Serializer, UserFioSerializer
@@ -293,6 +295,8 @@ class ServiceOrderSerializer(CreatedAtMixin, serializers.ModelSerializer):
     location = serializers.Field(source='customer_location')
     performer = OrgShort3Serializer(source='loru')
     owner = UserFioSerializer(source='customplace.user')
+    customer = AlivePerson2Serializer(source='applicant')
+    dueDate = serializers.Field(source='dt_due')
     number = serializers.Field(source='number_verbose')
     totalPrice = serializers.Field(source='total_float')
     currency = serializers.Field(source='loru.currency.code')
@@ -300,14 +304,23 @@ class ServiceOrderSerializer(CreatedAtMixin, serializers.ModelSerializer):
     modifiedAt = serializers.SerializerMethodField('modifiedAt_func')
     isArchived = serializers.Field(source='archived')
     titlePhoto = HyperlinkedFileField(source='title_photo', required=False)
+    deadman = serializers.SerializerMethodField('deadman_func')
 
     class Meta:
         model = Order
         fields = ('id', 'type', 'performer', 'owner', 'number', 'status', 'isArchived',
                   'totalPrice', 'currency', 'createdAt', 'modifiedAt',
-                  'titlePhoto',
+                  'titlePhoto', 'customer', 'dueDate', 'deadman',
         )
 
+    def deadman_func(self, instance):
+        deadman = None
+        try:
+            deadman = instance.orderdeadperson
+        except OrderDeadPerson.DoesNotExist:
+             deadman = instance.burial and instance.burial.deadman
+        return deadman and DeadPerson2Serializer(deadman).data
+        
 class OrderSerializer(CreatedAtMixin, serializers.ModelSerializer):
     type = serializers.Field(source='service_name')
     createdAt = serializers.SerializerMethodField('createdAt_func')

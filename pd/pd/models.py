@@ -628,3 +628,68 @@ class  GetLogsMixin(object):
         return Log.objects.filter(ct=ct, obj_id=self.pk).order_by('-dt')
 
 add_introspection_rules([], ['^pd\.models\.UnclearDateModelField'])
+
+class CheckLifeDatesMixin(object):
+
+    def get_parm_(self, person, *args):
+        """
+        Значение из person и есть ли в person
+        """
+        value = None
+        in_request = False
+        for parm in args:
+            in_request = parm in person
+            if in_request:
+                value = person[parm]
+                if value and value.lower() == 'null':
+                    value = None
+                break
+        return value, in_request
+
+    def check_life_dates(self, instance=None, person=None, format=''):
+        """
+        Проверка дат рождения/смерти у person
+
+        - параметры person могут быть в self.request.DATA или в словаре person
+        в person могут быть даты в форматах: 'гггг', 'гггг-мм', 'гггг-мм-дд',
+        None или 'null'
+        при format=='d.m.y' сначала преобразуем к y-m-d
+        """
+        if not person:
+            person = self.request.DATA
+        birth_date, req_birth_date = self.get_parm_(person, 'birthDate', 'dob', 'birth_date')
+        death_date, req_death_date = self.get_parm_(person, 'deathDate', 'dod', 'death_date')
+        fact_date,  req_fact_date  = self.get_parm_(person, 'factDate', 'fact_date')
+        message = UnclearDate.check_safe_str(birth_date, check_today=True, format=format)
+        if message:
+            return _(u"Дата рождения: %s") % message
+        message = UnclearDate.check_safe_str(death_date, check_today=True, format=format)
+        if message:
+            return _(u"Дата смерти: %s") % message
+        message = UnclearDate.check_safe_str(fact_date, check_today=True, format=format)
+        if message:
+            return _(u"Дата захоронения: %s") % message
+        msg_dates = _(u"Дата смерти раньше даты рождения")
+        birth_date = UnclearDate.from_str_safe(birth_date, format=format)
+        death_date = UnclearDate.from_str_safe(death_date, format=format)
+        fact_date  = UnclearDate.from_str_safe(fact_date, format=format)
+        if birth_date and death_date and birth_date > death_date:
+            return msg_dates
+        msg_fact_lt_birth = _(u"Дата захоронения меньше даты рождения")
+        if fact_date and birth_date and birth_date > fact_date:
+            return msg_fact_lt_birth
+        msg_fact_lt_death = _(u"Дата захоронения меньше даты смерти")
+        if fact_date and death_date and death_date > fact_date:
+            return msg_fact_lt_death
+        if instance:
+            if not req_death_date and birth_date and instance.death_date and birth_date > instance.death_date:
+                return msg_dates
+            if not req_birth_date and death_date and instance.birth_date and instance.birth_date > death_date:
+                return msg_dates
+            if hasattr(instance, 'fact_date') and not req_fact_date and \
+               birth_date and instance.fact_date  and instance.fact_date < birth_date:
+                return msg_fact_lt_birth
+            if hasattr(instance, 'fact_date') and not req_fact_date and \
+               death_date and instance.fact_date  and instance.fact_date < death_date:
+                return msg_fact_lt_death
+        return ""

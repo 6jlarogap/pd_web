@@ -32,7 +32,8 @@ from LatLon import LatLon, Latitude, Longitude
 from logs.models import write_log
 from geo.models import Location
 from burials.forms import AddOrgForm, AddAgentForm, AddDoverForm, AddDocTypeForm
-from burials.models import Burial, Place
+from burials.models import Burial, Place, Area, Cemetery, OrderPlace
+from burials.views import TradeCemeteriesMixin
 from users.models import CustomerProfile, Org, ProfileLORU, Store, OrgWebPay, \
                          is_trade_user, is_supervisor, is_cabinet_user, \
                          PermitIfTrade, PermitIfCabinet, PermitIfTradeOrCabinet, \
@@ -44,7 +45,7 @@ from orders.forms import ProductForm, OrderForm, OrderItemFormset, CoffinForm, C
 from orders.models import Product, Order, OrderItem, ProductCategory, \
                           Service, Measure, OrgService, OrgServicePrice, ServiceItem, OrderComment, \
                           Route, ResultFile, OrderWebPay
-from persons.models import CustomPlace, AlivePerson, CustomPerson
+from persons.models import CustomPlace, AlivePerson, CustomPerson, OrderDeadPerson
 from pd.forms import CommentForm
 from pd.views import PaginateListView, RequestToFormMixin, ServiceException, get_front_end_url, get_host_url
 from reports.models import make_report
@@ -61,8 +62,9 @@ from orders.serializers import ProductCategorySerializer, ProductsSerializer, Pr
                                ServiceOrderSerializer, OrderCommentsSerializer, ServiceOrderDetailSerializer, \
                                OrderResultsSerializer
 
+from rest_api.fields import UnclearDateFieldSerializer, UnclearDateFieldMixin
 from pd.utils import EmailMessage, str_to_bool_or_None, get_image, is_video, re_search
-from pd.models import validate_phone_as_number
+from pd.models import validate_phone_as_number, CheckLifeDatesMixin
 
 from sms_service.utils import send_sms
 
@@ -2389,3 +2391,117 @@ class ApiClientOrderPaymentsView(ApiOrderPaymentsMixin, APIView):
         return Response(data={}, status=201)
 
 api_client_orders_payments = ApiClientOrderPaymentsView.as_view()
+
+class ApiLoruOrdersView(CheckLifeDatesMixin, UnclearDateFieldMixin, TradeCemeteriesMixin, APIView):
+    permission_classes = (PermitIfTrade,)
+
+    @transaction.commit_on_success
+    def post(self, request):
+        try:
+            customer = request.DATA.get('customer')
+            if not customer or not customer.get('lastName'):
+                raise ServiceException(_(u"Не указан заказчик"))
+            applicant = AlivePerson.objects.create(
+                last_name=customer['lastName'],
+                first_name=customer.get('firstName', ''),
+                middle_name=customer.get('middleName', ''),
+                phones=customer.get('phoneNumber', ''),
+            )
+            dt_due = request.DATA.get('dueDate') or None
+            if dt_due:
+                try:
+                    dt_due = datetime.datetime.strptime(dt_due, "%Y-%m-%d").date()
+                except ValueError:
+                    raise ServiceException(_(u"Неверная дата исполнения заказа"))
+            order = Order.objects.create(
+                loru=request.user.profile.org,
+                applicant=applicant,
+                dt=datetime.date.today(),
+                dt_due=dt_due,
+            )
+            deadman = request.DATA.get('deadman')
+            if deadman:
+                message = self.check_life_dates(person=deadman, format='d.m.y')
+                if message:
+                    raise ServiceException(message)
+                if deadman.get('address'):
+                    address = Location.objects.create(addr_str=deadman['address'])
+                else:
+                    address = None
+                deadman = OrderDeadPerson.objects.create(
+                    order=order,
+                    last_name=deadman.get('lastName',''),
+                    first_name=deadman.get('firstName',''),
+                    middle_name=deadman.get('middleName',''),
+                    birth_date=self.set_unclear_date(deadman.get('dob'), format='d.m.y'),
+                    death_date=self.set_unclear_date(deadman.get('dod'), format='d.m.y'),
+                    address=address,
+                )
+            place = request.DATA.get('place')
+            if place:
+                cemetery = None
+                if place.get('cemeteryId') or place.get('areaId'):
+                    cemeteries = self.available_cemeteries(request.user)
+                if place.get('cemeteryId'):
+                    cemetery_msg = _(u"Нет такого кладбища среди доступных")
+                    try:
+                        cemetery = Cemetery.objects.get(pk=place['cemeteryId'])
+                    except Cemetery.DoesNotExist:
+                        raise ServiceException(cemetery_msg)
+                    if cemetery not in cemeteries:
+                        raise ServiceException(cemetery_msg)
+                area = None
+                if place.get('areaId'):
+                    area_msg = _(u"Нет такого участка кладбищ среди доступных")
+                    try:
+                        area = Area.objects.get(pk=place['areaId'])
+                    except Area.DoesNotExist:
+                        raise ServiceException(area_msg)
+                    cemetery = area.cemetery
+                    if cemetery not in cemeteries:
+                        raise ServiceException(area_msg)
+                cemetery_text = place.get('cemeteryText', '')
+                row = place.get('row', '')
+                place_number = place.get('placeNumber', '')
+                if place.get('size'):
+                    place_length = place['size'].get('length')
+                    place_width = place['size'].get('width')
+                else:
+                    place_length = place_width = None
+                place = OrderPlace.objects.create(
+                    order=order,
+                    cemetery=cemetery,
+                    area=area,
+                    cemetery_text=cemetery_text,
+                    row=row,
+                    place=place_number,
+                    place_length=place_length,
+                    place_width=place_width,
+                )
+            products = request.DATA.get('products', [])
+            for item in products:
+                product_id = item.get('id')
+                if not product_id:
+                    raise ServiceException(_(u'Нет productId'))
+                try:
+                    product = Product.objects.get(loru=request.user.profile.org, pk=product_id)
+                except Product.DoesNotExist:
+                    raise ServiceException(
+                        _(u'Не найден productId=%s вообще или у этого поставщика') % product_id)
+                orderitem = OrderItem.objects.create(
+                    order=order,
+                    product=product,
+                    quantity=item.get('quantity', 0),
+                    discount=item.get('discount', 0),
+                )
+        except ServiceException as excpt:
+            transaction.rollback()
+            return Response(data=dict(status='error', message=excpt.message), status=400)
+        return Response(
+            data=ServiceOrderSerializer(order,
+                context=dict(request=request),
+                ).data,
+            status=200,
+        )
+
+api_loru_orders = ApiLoruOrdersView.as_view()

@@ -58,7 +58,7 @@ from serializers import BaseSerializer, CoordinatesSerializer, CemeteryWithNeste
                         PlaceSerializer, PlacePhotoSerializer, CemeteryPhotoSerializer, CemeterySchemaSerializer
 
 from persons.serializers import DeadPerson2Serializer
-from persons.views import CheckLifeDatesMixin
+from pd.models import CheckLifeDatesMixin
 
 from rest_api.fields import DateTimeUtcField
 
