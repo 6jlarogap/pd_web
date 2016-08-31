@@ -40,6 +40,16 @@ class AlivePersonSerializer(serializers.HyperlinkedModelSerializer):
         fields = ('id', 'first_name', 'last_name', 'middle_name', 'address', 'phones', 'login_phone', 'address_str')
 
 
+class AlivePerson2Serializer(serializers.HyperlinkedModelSerializer):
+    lastName = Field(source='last_name')
+    firstName = Field(source='first_name')
+    middleName = Field(source='middle_name')
+
+    class Meta:
+        model = AlivePerson
+        fields = ('id', 'firstName', 'lastName', 'middleName', 'address', 'phones',)
+
+
 class CustomPlaceListSerializer(CreatedAtMixin, serializers.HyperlinkedModelSerializer):
     titlePhoto = HyperlinkedFileField(source='title_photo')
     deadmans = serializers.SerializerMethodField('deadmans_func')
@@ -143,10 +153,11 @@ class DeadPerson2Serializer(UnclearDateFieldMixin, serializers.HyperlinkedModelS
     lastName = Field(source='last_name')
     firstName = Field(source='first_name')
     middleName = Field(source='middle_name')
+    address = serializers.RelatedField(source='address')
 
     class Meta:
         model = DeadPerson
-        fields = ('id', 'firstName', 'lastName', 'middleName', 'birthDate', 'deathDate')
+        fields = ('id', 'firstName', 'lastName', 'middleName', 'birthDate', 'deathDate', 'address')
 
     def restore_object(self, attrs, instance=None):
         data = self.context['request'].DATA

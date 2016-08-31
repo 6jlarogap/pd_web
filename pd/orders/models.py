@@ -1,7 +1,7 @@
 # coding=utf-8
 from __builtin__ import property
 import datetime, time
-import os, shutil
+import os, shutil, decimal
 from autoslug import AutoSlugField
 
 from django.conf import settings
@@ -239,6 +239,7 @@ class Order(GetLogsMixin, BaseModel):
     archived = models.BooleanField(_(u'Архивирован'), editable=False, default=False)
     cost = models.DecimalField(_(u"Цена"), max_digits=20, decimal_places=2, editable=False)
     dt = models.DateField(_(u"Дата заказа"))
+    dt_due = models.DateField(_(u"Дата исполнения заказа"), editable=False, null=True)
     burial = models.ForeignKey(Burial, related_name='burial_orders', editable=False, null=True)
 
     customplace = models.ForeignKey('persons.CustomPlace', verbose_name=_(u"Место захоронения"),
@@ -294,6 +295,8 @@ class Order(GetLogsMixin, BaseModel):
             ('orders', 'OrderWebPay'),
             ('orders', 'ServiceItem'),
             ('orders', 'OrderItem'),
+            ('persons', 'OrderDeadman'),
+            ('burials', 'OrderPlace'),
            ):
             model = get_model(app, model)
             for item in model.objects.filter(order=self):
@@ -677,6 +680,7 @@ class OrderItem(OrderItemMixin, models.Model):
     product = models.ForeignKey(Product, verbose_name=_(u"Товар"))
     quantity = models.DecimalField(_(u"Кол-во"), max_digits=20, decimal_places=2, default=1)
     cost = models.DecimalField(_(u"Цена"), max_digits=20, decimal_places=2, editable=True)
+    discount = models.DecimalField(_(u"Скидка"), max_digits=4, decimal_places=2, editable=False, default='0.00')
 
     # name, description, productcategory, productcategory_name,
     # productgroup, productgroup_name, measure:
@@ -707,7 +711,8 @@ class OrderItem(OrderItemMixin, models.Model):
     def save(self, *args, **kwargs):
         if not self.cost:
             try:
-                self.cost = self.product.price
+                self.cost = self.product.price * \
+                            (decimal.Decimal('100.00') - decimal.Decimal(self.discount)) / 100
             except Product.DoesNotExist:
                 self.cost = 0.00
         if not self.name and self.product:
