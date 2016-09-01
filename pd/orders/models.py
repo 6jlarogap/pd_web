@@ -12,7 +12,8 @@ from django.utils.translation import ugettext as _
 from django.db.models import Sum
 from django.db.models.query_utils import Q
 
-from burials.models import Burial
+from burials.models import Burial, OrderPlace
+from persons.models import OrderDeadPerson
 from reports.models import Report
 from users.models import Org, is_cabinet_user, is_trade_user
 from pd.models import BaseModel, GetLogsMixin, upload_slugified, Files
@@ -295,7 +296,7 @@ class Order(GetLogsMixin, BaseModel):
             ('orders', 'OrderWebPay'),
             ('orders', 'ServiceItem'),
             ('orders', 'OrderItem'),
-            ('persons', 'OrderDeadman'),
+            ('persons', 'OrderDeadPerson'),
             ('burials', 'OrderPlace'),
            ):
             model = get_model(app, model)
@@ -532,6 +533,38 @@ class Order(GetLogsMixin, BaseModel):
 
     def stockable_products(self):
         return self.orderitem_set.filter(product__stockable=True)
+
+    def deadman(self):
+        """
+        усопший при заказе, для отчета
+        """
+        result = ''
+        if self.burial:
+            result = self.burial.deadman_or_bio()
+        else:
+            try:
+                result = self.orderdeadperson
+            except (OrderDeadPerson.DoesNotExist, AttributeError,):
+                result = _(u'Неизвестный')
+        return result
+
+    def cemetery(self):
+        """
+        кладбище при заказе, для отчета
+        """
+        result = ''
+        if self.burial:
+            result = self.burial.cemetery and self.burial.cemetery.name or ''
+        else:
+            try:
+                place = self.orderplace
+                if place.cemetery_text:
+                    result = place.cemetery_text
+                elif place.cemetery:
+                    result = place.cemetery.name
+            except (OrderPlace.DoesNotExist, AttributeError,):
+                pass
+        return result
 
 class OrderItemMixin(object):
 
