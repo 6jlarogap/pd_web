@@ -29,6 +29,7 @@ urlpatterns = patterns('orders.views',
     url(r'^api/loru/products_management/products/(?P<pk>\d+)/?$', 'api_product_detail', name='api_product_detail'),
 
     url(r'^api/loru/orders/?$', 'api_loru_orders', name='api_loru_orders'),
+    url(r'^api/loru/categories/?$', 'api_loru_categories', name='api_loru_categories'),
 
     url(r'^api/catalog/products/(?P<product_slug>[\w-]+)/?$', 'api_catalog_products_detail', name='api_catalog_products_detail'),
 

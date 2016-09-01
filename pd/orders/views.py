@@ -60,7 +60,7 @@ from orders.serializers import ProductCategorySerializer, ProductsSerializer, Pr
                                ProductInfoSerializer, OptOrdersSerializer, OptOrderInfoSerializer, \
                                ProductEditSerializer, ServiceSerializer, OrgServiceSerializer, \
                                ServiceOrderSerializer, OrderCommentsSerializer, ServiceOrderDetailSerializer, \
-                               OrderResultsSerializer
+                               OrderResultsSerializer, ProductCategory2Serializer
 
 from rest_api.fields import UnclearDateFieldSerializer, UnclearDateFieldMixin
 from pd.utils import EmailMessage, str_to_bool_or_None, get_image, is_video, re_search
@@ -2505,3 +2505,17 @@ class ApiLoruOrdersView(CheckLifeDatesMixin, UnclearDateFieldMixin, TradeCemeter
         )
 
 api_loru_orders = ApiLoruOrdersView.as_view()
+
+class ApiLoruCategoriesView(APIView):
+
+    def get(self, request):
+        return Response(
+            data=[ProductCategory2Serializer(
+                    category,
+                    context=dict(request=request),
+                ).data for category in ProductCategory.objects.all()
+            ],
+            status=200,
+        )
+
+api_loru_categories = ApiLoruCategoriesView.as_view()

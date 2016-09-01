@@ -21,10 +21,26 @@ from pd.views import ServiceException
 
 class ProductCategorySerializer(serializers.HyperlinkedModelSerializer):
     icon = HyperlinkedFileField()
-    
+
     class Meta:
         model = ProductCategory
         fields = ('id', 'name', 'icon', )
+
+class ProductCategory2Serializer(serializers.ModelSerializer):
+    title = Field(source='name')
+    products = serializers.SerializerMethodField('products_func')
+
+    class Meta:
+        model = ProductCategory
+        fields = ('id', 'title', 'products' )
+
+    def products_func(self, category):
+        return [ dict(id=product.pk, title=product.name, price=product.price) \
+            for product in Product.objects.filter(
+                    productcategory=category,
+                    loru=self.context['request'].user.profile.org,
+                )
+        ]
 
 class ProductsSerializer(serializers.HyperlinkedModelSerializer):
     photo = HyperlinkedFileField()
