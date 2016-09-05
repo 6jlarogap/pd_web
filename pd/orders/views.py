@@ -2474,11 +2474,7 @@ class ApiLoruOrdersView(CheckLifeDatesMixin, UnclearDateFieldMixin, TradeCemeter
                 cemetery_text = place.get('cemeteryText', '')
                 row = place.get('row', '')
                 place_number = place.get('placeNumber', '')
-                if place.get('size'):
-                    place_length = place['size'].get('length')
-                    place_width = place['size'].get('width')
-                else:
-                    place_length = place_width = None
+                size = place.get('size', '')
                 place = OrderPlace.objects.create(
                     order=order,
                     cemetery=cemetery,
@@ -2486,8 +2482,7 @@ class ApiLoruOrdersView(CheckLifeDatesMixin, UnclearDateFieldMixin, TradeCemeter
                     cemetery_text=cemetery_text,
                     row=row,
                     place=place_number,
-                    place_length=place_length,
-                    place_width=place_width,
+                    size=size,
                 )
             products = request.DATA.get('products', [])
             for item in products:

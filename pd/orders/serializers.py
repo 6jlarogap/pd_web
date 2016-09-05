@@ -13,6 +13,8 @@ from orders.models import Order, ProductCategory, Product, Service, Measure, Org
                           OrderItem, ServiceItem, OrderComment, ResultFile
 from persons.models import OrderDeadPerson
 from persons.serializers import AlivePerson2Serializer, DeadPerson2Serializer
+from burials.models import OrderPlace
+from burials.serializers import OrderPlaceSerializer
 from users.models import Org, is_cabinet_user, is_trade_user, UserPhoto
 from users.serializers import OrgSerializer, OrgShortSerializer, OrgShort3Serializer, OrgShort4Serializer, \
                               OrgShort6Serializer, UserFioSerializer
@@ -322,12 +324,14 @@ class ServiceOrderSerializer(CreatedAtMixin, serializers.ModelSerializer):
     isArchived = serializers.Field(source='archived')
     titlePhoto = HyperlinkedFileField(source='title_photo', required=False)
     deadman = serializers.SerializerMethodField('deadman_func')
+    place = serializers.SerializerMethodField('place_func')
 
     class Meta:
         model = Order
         fields = ('id', 'type', 'performer', 'owner', 'number', 'status', 'isArchived',
                   'totalPrice', 'currency', 'createdAt', 'modifiedAt',
                   'titlePhoto', 'customer', 'dueDate', 'deadman', 'createdDate',
+                  'place',
         )
 
     def deadman_func(self, instance):
@@ -338,6 +342,13 @@ class ServiceOrderSerializer(CreatedAtMixin, serializers.ModelSerializer):
              deadman = instance.burial and instance.burial.deadman
         return deadman and DeadPerson2Serializer(deadman).data
         
+    def place_func(self, instance):
+        try:
+            orderplace = instance.orderplace
+        except (OrderPlace.DoesNotExist, AttributeError,):
+            return None
+        return OrderPlaceSerializer(orderplace).data
+
 class OrderSerializer(CreatedAtMixin, serializers.ModelSerializer):
     type = serializers.Field(source='service_name')
     createdAt = serializers.SerializerMethodField('createdAt_func')
