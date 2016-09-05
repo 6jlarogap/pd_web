@@ -313,6 +313,7 @@ class ServiceOrderSerializer(CreatedAtMixin, serializers.ModelSerializer):
     owner = UserFioSerializer(source='customplace.user')
     customer = AlivePerson2Serializer(source='applicant')
     dueDate = serializers.Field(source='dt_due')
+    createdDate = serializers.Field(source='dt')
     number = serializers.Field(source='number_verbose')
     totalPrice = serializers.Field(source='total_float')
     currency = serializers.Field(source='loru.currency.code')
@@ -326,7 +327,7 @@ class ServiceOrderSerializer(CreatedAtMixin, serializers.ModelSerializer):
         model = Order
         fields = ('id', 'type', 'performer', 'owner', 'number', 'status', 'isArchived',
                   'totalPrice', 'currency', 'createdAt', 'modifiedAt',
-                  'titlePhoto', 'customer', 'dueDate', 'deadman',
+                  'titlePhoto', 'customer', 'dueDate', 'deadman', 'createdDate',
         )
 
     def deadman_func(self, instance):
