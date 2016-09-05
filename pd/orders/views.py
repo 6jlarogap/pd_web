@@ -2401,11 +2401,16 @@ class ApiLoruOrdersView(CheckLifeDatesMixin, UnclearDateFieldMixin, TradeCemeter
             customer = request.DATA.get('customer')
             if not customer or not customer.get('lastName'):
                 raise ServiceException(_(u"Не указан заказчик"))
+            if customer.get('address'):
+                address = Location.objects.create(addr_str=customer['address'])
+            else:
+                address = None
             applicant = AlivePerson.objects.create(
                 last_name=customer['lastName'],
                 first_name=customer.get('firstName', ''),
                 middle_name=customer.get('middleName', ''),
                 phones=customer.get('phoneNumber', ''),
+                address=address,
             )
             dt_due = request.DATA.get('dueDate') or None
             if dt_due:
@@ -2413,10 +2418,16 @@ class ApiLoruOrdersView(CheckLifeDatesMixin, UnclearDateFieldMixin, TradeCemeter
                     dt_due = datetime.datetime.strptime(dt_due, "%Y-%m-%d").date()
                 except ValueError:
                     raise ServiceException(_(u"Неверная дата исполнения заказа"))
+            dt = request.DATA.get('createdDate') or None
+            if dt:
+                try:
+                    dt = datetime.datetime.strptime(dt, "%Y-%m-%d").date()
+                except ValueError:
+                    raise ServiceException(_(u"Неверная дата создания заказа"))
             order = Order.objects.create(
                 loru=request.user.profile.org,
                 applicant=applicant,
-                dt=datetime.date.today(),
+                dt=dt or datetime.date.today(),
                 dt_due=dt_due,
             )
             deadman = request.DATA.get('deadman')
@@ -2463,11 +2474,7 @@ class ApiLoruOrdersView(CheckLifeDatesMixin, UnclearDateFieldMixin, TradeCemeter
                 cemetery_text = place.get('cemeteryText', '')
                 row = place.get('row', '')
                 place_number = place.get('placeNumber', '')
-                if place.get('size'):
-                    place_length = place['size'].get('length')
-                    place_width = place['size'].get('width')
-                else:
-                    place_length = place_width = None
+                size = place.get('size', '')
                 place = OrderPlace.objects.create(
                     order=order,
                     cemetery=cemetery,
@@ -2475,8 +2482,7 @@ class ApiLoruOrdersView(CheckLifeDatesMixin, UnclearDateFieldMixin, TradeCemeter
                     cemetery_text=cemetery_text,
                     row=row,
                     place=place_number,
-                    place_length=place_length,
-                    place_width=place_width,
+                    size=size,
                 )
             products = request.DATA.get('products', [])
             for item in products:

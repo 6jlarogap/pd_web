@@ -44,6 +44,7 @@ class AlivePerson2Serializer(serializers.HyperlinkedModelSerializer):
     lastName = Field(source='last_name')
     firstName = Field(source='first_name')
     middleName = Field(source='middle_name')
+    address = serializers.RelatedField(source='address')
 
     class Meta:
         model = AlivePerson
