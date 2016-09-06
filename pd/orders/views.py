@@ -2406,7 +2406,7 @@ class ApiLoruOrdersView(CheckLifeDatesMixin, UnclearDateFieldMixin, TradeCemeter
                 else:
                     address = None
                 applicant = AlivePerson.objects.create(
-                    last_name=customer['lastName'],
+                    last_name=customer.get('lastName', ''),
                     first_name=customer.get('firstName', ''),
                     middle_name=customer.get('middleName', ''),
                     phones=customer.get('phoneNumber', ''),
@@ -2531,6 +2531,62 @@ class ApiLoruOrdersDetailView(CheckLifeDatesMixin, UnclearDateFieldMixin, TradeC
 
     def get(self, request, pk):
         order = get_object_or_404(Order, loru=request.user.profile.org, pk=pk)
+        return Response(
+            data=LoruOrderSerializer(order,
+                context=dict(request=request),
+                ).data,
+            status=200,
+        )
+
+    @transaction.commit_on_success
+    def put(self, request, pk):
+        order = get_object_or_404(Order, loru=request.user.profile.org, pk=pk)
+        try:
+            order_save = False
+            customer = request.DATA.get('customer')
+            if customer:
+                if order.applicant:
+                    applicant = order.applicant
+                    mapping = (
+                        ('lastName', 'last_name',),
+                        ('firstName', 'first_name',),
+                        ('middleName', 'middle_name',),
+                        ('phoneNumber', 'phones',),
+                    )
+                    applicant_save = False
+                    for req, field in mapping:
+                        if req in customer and getattr(applicant, field) != customer[req]:
+                            applicant_save = True
+                            setattr(applicant, field, customer[req])
+                    if 'address' in customer:
+                        if applicant.address:
+                            if applicant.address.addr_str != customer['address']:
+                                applicant.address.addr_str = customer['address']
+                                applicant.address.save()
+                        else:
+                            applicant.address = Location.objects.create(addr_str=customer['address'])
+                            applicant_save = True
+                    if applicant_save:
+                        applicant.save()
+                else:
+                    order_save = True
+                    if customer.get('address'):
+                        address = Location.objects.create(addr_str=customer['address'])
+                    else:
+                        address = None
+                    applicant = AlivePerson.objects.create(
+                        last_name=customer.get('lastName', ''),
+                        first_name=customer.get('firstName', ''),
+                        middle_name=customer.get('middleName', ''),
+                        phones=customer.get('phoneNumber', ''),
+                        address=address,
+                    )
+                    order.applicant = applicant
+                if order_save:
+                    order.save()
+        except ServiceException as excpt:
+            transaction.rollback()
+            return Response(data=dict(status='error', message=excpt.message), status=400)
         return Response(
             data=LoruOrderSerializer(order,
                 context=dict(request=request),
