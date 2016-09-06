@@ -2399,19 +2399,19 @@ class ApiLoruOrdersView(CheckLifeDatesMixin, UnclearDateFieldMixin, TradeCemeter
     def post(self, request):
         try:
             customer = request.DATA.get('customer')
-            if not customer or not customer.get('lastName'):
-                raise ServiceException(_(u"Не указан заказчик"))
-            if customer.get('address'):
-                address = Location.objects.create(addr_str=customer['address'])
-            else:
-                address = None
-            applicant = AlivePerson.objects.create(
-                last_name=customer['lastName'],
-                first_name=customer.get('firstName', ''),
-                middle_name=customer.get('middleName', ''),
-                phones=customer.get('phoneNumber', ''),
-                address=address,
-            )
+            applicant = None
+            if customer:
+                if customer.get('address'):
+                    address = Location.objects.create(addr_str=customer['address'])
+                else:
+                    address = None
+                applicant = AlivePerson.objects.create(
+                    last_name=customer['lastName'],
+                    first_name=customer.get('firstName', ''),
+                    middle_name=customer.get('middleName', ''),
+                    phones=customer.get('phoneNumber', ''),
+                    address=address,
+                )
             dt_due = request.DATA.get('dueDate') or None
             if dt_due:
                 try:
