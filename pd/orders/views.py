@@ -60,7 +60,7 @@ from orders.serializers import ProductCategorySerializer, ProductsSerializer, Pr
                                ProductInfoSerializer, OptOrdersSerializer, OptOrderInfoSerializer, \
                                ProductEditSerializer, ServiceSerializer, OrgServiceSerializer, \
                                ServiceOrderSerializer, OrderCommentsSerializer, ServiceOrderDetailSerializer, \
-                               OrderResultsSerializer, ProductCategory2Serializer
+                               OrderResultsSerializer, ProductCategory2Serializer, LoruOrderSerializer
 
 from rest_api.fields import UnclearDateFieldSerializer, UnclearDateFieldMixin
 from pd.utils import EmailMessage, str_to_bool_or_None, get_image, is_video, re_search
@@ -2504,7 +2504,7 @@ class ApiLoruOrdersView(CheckLifeDatesMixin, UnclearDateFieldMixin, TradeCemeter
             transaction.rollback()
             return Response(data=dict(status='error', message=excpt.message), status=400)
         return Response(
-            data=ServiceOrderSerializer(order,
+            data=LoruOrderSerializer(order,
                 context=dict(request=request),
                 ).data,
             status=200,
@@ -2525,3 +2525,17 @@ class ApiLoruCategoriesView(APIView):
         )
 
 api_loru_categories = ApiLoruCategoriesView.as_view()
+
+class ApiLoruOrdersDetailView(CheckLifeDatesMixin, UnclearDateFieldMixin, TradeCemeteriesMixin, APIView):
+    permission_classes = (PermitIfTrade,)
+
+    def get(self, request, pk):
+        order = get_object_or_404(Order, loru=request.user.profile.org, pk=pk)
+        return Response(
+            data=LoruOrderSerializer(order,
+                context=dict(request=request),
+                ).data,
+            status=200,
+        )
+
+api_loru_orders_detail = ApiLoruOrdersDetailView.as_view()
