@@ -2415,13 +2415,13 @@ class ApiLoruOrdersView(CheckLifeDatesMixin, UnclearDateFieldMixin, TradeCemeter
             dt_due = request.DATA.get('dueDate') or None
             if dt_due:
                 try:
-                    dt_due = datetime.datetime.strptime(dt_due, "%Y-%m-%d").date()
+                    dt_due = datetime.datetime.strptime(dt_due, "%d.%m.%Y").date()
                 except ValueError:
                     raise ServiceException(_(u"Неверная дата исполнения заказа"))
             dt = request.DATA.get('createdDate') or None
             if dt:
                 try:
-                    dt = datetime.datetime.strptime(dt, "%Y-%m-%d").date()
+                    dt = datetime.datetime.strptime(dt, "%d.%m.%Y").date()
                 except ValueError:
                     raise ServiceException(_(u"Неверная дата создания заказа"))
             order = Order.objects.create(
