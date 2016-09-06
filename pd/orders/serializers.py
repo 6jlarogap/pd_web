@@ -12,7 +12,7 @@ from rest_api.fields import HyperlinkedFileField
 from orders.models import Order, ProductCategory, Product, Service, Measure, OrgService, OrgServicePrice, \
                           OrderItem, ServiceItem, OrderComment, ResultFile
 from persons.models import OrderDeadPerson
-from persons.serializers import AlivePerson2Serializer, DeadPerson2Serializer
+from persons.serializers import AlivePerson2Serializer, DeadPerson3Serializer
 from burials.models import OrderPlace
 from burials.serializers import OrderPlaceSerializer
 from users.models import Org, is_cabinet_user, is_trade_user, UserPhoto
@@ -313,9 +313,6 @@ class ServiceOrderSerializer(CreatedAtMixin, serializers.ModelSerializer):
     location = serializers.Field(source='customer_location')
     performer = OrgShort3Serializer(source='loru')
     owner = UserFioSerializer(source='customplace.user')
-    customer = AlivePerson2Serializer(source='applicant')
-    dueDate = serializers.Field(source='dt_due')
-    createdDate = serializers.Field(source='dt')
     number = serializers.Field(source='number_verbose')
     totalPrice = serializers.Field(source='total_float')
     currency = serializers.Field(source='loru.currency.code')
@@ -323,15 +320,31 @@ class ServiceOrderSerializer(CreatedAtMixin, serializers.ModelSerializer):
     modifiedAt = serializers.SerializerMethodField('modifiedAt_func')
     isArchived = serializers.Field(source='archived')
     titlePhoto = HyperlinkedFileField(source='title_photo', required=False)
-    deadman = serializers.SerializerMethodField('deadman_func')
-    place = serializers.SerializerMethodField('place_func')
 
     class Meta:
         model = Order
         fields = ('id', 'type', 'performer', 'owner', 'number', 'status', 'isArchived',
                   'totalPrice', 'currency', 'createdAt', 'modifiedAt',
-                  'titlePhoto', 'customer', 'dueDate', 'deadman', 'createdDate',
-                  'place',
+                  'titlePhoto',
+        )
+
+class LoruOrderSerializer(CreatedAtMixin, serializers.ModelSerializer):
+    number = serializers.Field(source='number_verbose')
+    createdDate = serializers.Field(source='dt')
+    dueDate = serializers.Field(source='dt_due')
+    customer = AlivePerson2Serializer(source='applicant')
+    deadman = serializers.SerializerMethodField('deadman_func')
+    place = serializers.SerializerMethodField('place_func')
+    createdAt = serializers.SerializerMethodField('createdAt_func')
+    modifiedAt = serializers.SerializerMethodField('modifiedAt_func')
+    totalPrice = serializers.Field(source='total_float')
+    currency = serializers.Field(source='loru.currency.code')
+
+    class Meta:
+        model = Order
+        fields = ('id', 'number', 'createdDate', 'dueDate',
+                  'customer', 'deadman', 'place',
+                  'createdAt', 'modifiedAt', 'totalPrice', 'currency',
         )
 
     def deadman_func(self, instance):
@@ -340,7 +353,7 @@ class ServiceOrderSerializer(CreatedAtMixin, serializers.ModelSerializer):
             deadman = instance.orderdeadperson
         except OrderDeadPerson.DoesNotExist:
              deadman = instance.burial and instance.burial.deadman
-        return deadman and DeadPerson2Serializer(deadman).data
+        return deadman and DeadPerson3Serializer(deadman).data
         
     def place_func(self, instance):
         try:

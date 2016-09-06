@@ -45,10 +45,11 @@ class AlivePerson2Serializer(serializers.HyperlinkedModelSerializer):
     firstName = Field(source='first_name')
     middleName = Field(source='middle_name')
     address = serializers.RelatedField(source='address')
+    phoneNumber = Field(source='phones')
 
     class Meta:
         model = AlivePerson
-        fields = ('id', 'firstName', 'lastName', 'middleName', 'address', 'phones',)
+        fields = ('id', 'firstName', 'lastName', 'middleName', 'address', 'phoneNumber',)
 
 
 class CustomPlaceListSerializer(CreatedAtMixin, serializers.HyperlinkedModelSerializer):
@@ -154,7 +155,6 @@ class DeadPerson2Serializer(UnclearDateFieldMixin, serializers.HyperlinkedModelS
     lastName = Field(source='last_name')
     firstName = Field(source='first_name')
     middleName = Field(source='middle_name')
-    address = serializers.RelatedField(source='address')
 
     class Meta:
         model = DeadPerson
@@ -181,6 +181,18 @@ class DeadPerson2Serializer(UnclearDateFieldMixin, serializers.HyperlinkedModelS
                 setattr(instance, k, fields[k])
             return instance
         return DeadPerson(**fields)
+
+class DeadPerson3Serializer(serializers.ModelSerializer):
+    dob = UnclearDateFieldSerializer('birth_date')
+    dod = UnclearDateFieldSerializer('death_date')
+    lastName = Field(source='last_name')
+    firstName = Field(source='first_name')
+    middleName = Field(source='middle_name')
+    address = serializers.RelatedField(source='address')
+
+    class Meta:
+        model = DeadPerson
+        fields = ('id', 'firstName', 'lastName', 'middleName', 'dob', 'dod', 'address')
 
 class CustomPersonPermissionsMixin(object):
 
