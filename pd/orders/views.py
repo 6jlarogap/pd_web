@@ -2399,29 +2399,29 @@ class ApiLoruOrdersView(CheckLifeDatesMixin, UnclearDateFieldMixin, TradeCemeter
     def post(self, request):
         try:
             customer = request.DATA.get('customer')
-            if not customer or not customer.get('lastName'):
-                raise ServiceException(_(u"Не указан заказчик"))
-            if customer.get('address'):
-                address = Location.objects.create(addr_str=customer['address'])
-            else:
-                address = None
-            applicant = AlivePerson.objects.create(
-                last_name=customer['lastName'],
-                first_name=customer.get('firstName', ''),
-                middle_name=customer.get('middleName', ''),
-                phones=customer.get('phoneNumber', ''),
-                address=address,
-            )
+            applicant = None
+            if customer:
+                if customer.get('address'):
+                    address = Location.objects.create(addr_str=customer['address'])
+                else:
+                    address = None
+                applicant = AlivePerson.objects.create(
+                    last_name=customer['lastName'],
+                    first_name=customer.get('firstName', ''),
+                    middle_name=customer.get('middleName', ''),
+                    phones=customer.get('phoneNumber', ''),
+                    address=address,
+                )
             dt_due = request.DATA.get('dueDate') or None
             if dt_due:
                 try:
-                    dt_due = datetime.datetime.strptime(dt_due, "%Y-%m-%d").date()
+                    dt_due = datetime.datetime.strptime(dt_due, "%d.%m.%Y").date()
                 except ValueError:
                     raise ServiceException(_(u"Неверная дата исполнения заказа"))
             dt = request.DATA.get('createdDate') or None
             if dt:
                 try:
-                    dt = datetime.datetime.strptime(dt, "%Y-%m-%d").date()
+                    dt = datetime.datetime.strptime(dt, "%d.%m.%Y").date()
                 except ValueError:
                     raise ServiceException(_(u"Неверная дата создания заказа"))
             order = Order.objects.create(
@@ -2497,7 +2497,7 @@ class ApiLoruOrdersView(CheckLifeDatesMixin, UnclearDateFieldMixin, TradeCemeter
                 orderitem = OrderItem.objects.create(
                     order=order,
                     product=product,
-                    quantity=item.get('quantity', 0),
+                    quantity=item.get('amount', 0),
                     discount=item.get('discount', 0),
                 )
         except ServiceException as excpt:

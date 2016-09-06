@@ -347,7 +347,7 @@
         <TD COLSPAN=3>
             Дата рождения
             {% if order.deadman %}
-                {{ order.birth_date|default_if_none:"_____________" }}&nbsp;
+                {{ order.deadman.birth_date|default_if_none:"_____________" }}&nbsp;
             {% else %}
             _____________
             {% endif %}
