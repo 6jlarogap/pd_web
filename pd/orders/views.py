@@ -2497,7 +2497,7 @@ class ApiLoruOrdersView(CheckLifeDatesMixin, UnclearDateFieldMixin, TradeCemeter
                 orderitem = OrderItem.objects.create(
                     order=order,
                     product=product,
-                    quantity=item.get('quantity', 0),
+                    quantity=item.get('amount', 0),
                     discount=item.get('discount', 0),
                 )
         except ServiceException as excpt:
