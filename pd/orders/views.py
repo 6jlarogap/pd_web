@@ -2543,8 +2543,27 @@ class ApiLoruOrdersDetailView(CheckLifeDatesMixin, UnclearDateFieldMixin, TradeC
         order = get_object_or_404(Order, loru=request.user.profile.org, pk=pk)
         try:
             order_save = False
-            customer = request.DATA.get('customer')
-            if customer:
+            if 'dueDate' in request.DATA:
+                dt_due = request.DATA['dueDate'] or None
+                if dt_due:
+                    try:
+                        dt_due = datetime.datetime.strptime(dt_due, "%d.%m.%Y").date()
+                    except ValueError:
+                        raise ServiceException(_(u"Неверная дата исполнения заказа"))
+                if order.dt_due != dt_due:
+                    order.dt_due = dt_due
+                    order_save = True
+            dt = request.DATA.get('createdDate') or None
+            if dt:
+                try:
+                    dt = datetime.datetime.strptime(dt, "%d.%m.%Y").date()
+                except ValueError:
+                    raise ServiceException(_(u"Неверная дата создания заказа"))
+                if order.dt != dt:
+                    order.dt = dt
+                    order_save = True
+            if 'customer' in request.DATA:
+                customer = request.DATA['customer']
                 if order.applicant:
                     applicant = order.applicant
                     mapping = (
@@ -2569,7 +2588,6 @@ class ApiLoruOrdersDetailView(CheckLifeDatesMixin, UnclearDateFieldMixin, TradeC
                     if applicant_save:
                         applicant.save()
                 else:
-                    order_save = True
                     if customer.get('address'):
                         address = Location.objects.create(addr_str=customer['address'])
                     else:
@@ -2582,6 +2600,26 @@ class ApiLoruOrdersDetailView(CheckLifeDatesMixin, UnclearDateFieldMixin, TradeC
                         address=address,
                     )
                     order.applicant = applicant
+                    order_save = True
+            if 'products' in request.DATA:
+                products = request.DATA['products']
+                for item in OrderItem.objects.filter(order=order):
+                    item.delete()
+                for item in products:
+                    product_id = item.get('id')
+                    if not product_id:
+                        raise ServiceException(_(u'Нет productId'))
+                    try:
+                        product = Product.objects.get(loru=request.user.profile.org, pk=product_id)
+                    except Product.DoesNotExist:
+                        raise ServiceException(
+                            _(u'Не найден productId=%s вообще или у этого поставщика') % product_id)
+                    orderitem = OrderItem.objects.create(
+                        order=order,
+                        product=product,
+                        quantity=item.get('amount', 0),
+                        discount=item.get('discount', 0),
+                    )
                 if order_save:
                     order.save()
         except ServiceException as excpt:
