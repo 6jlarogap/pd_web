@@ -2525,3 +2525,17 @@ class ApiLoruCategoriesView(APIView):
         )
 
 api_loru_categories = ApiLoruCategoriesView.as_view()
+
+class ApiLoruOrdersDetailView(CheckLifeDatesMixin, UnclearDateFieldMixin, TradeCemeteriesMixin, APIView):
+    permission_classes = (PermitIfTrade,)
+
+    def get(self, request, pk):
+        order = get_object_or_404(Order, loru=request.user.profile.org, pk=pk)
+        return Response(
+            data=LoruOrderSerializer(order,
+                context=dict(request=request),
+                ).data,
+            status=200,
+        )
+
+api_loru_orders_detail = ApiLoruOrdersDetailView.as_view()

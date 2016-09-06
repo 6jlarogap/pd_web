@@ -328,10 +328,20 @@ class ServiceOrderSerializer(CreatedAtMixin, serializers.ModelSerializer):
                   'titlePhoto',
         )
 
+class LoruOrderItemSerializer(serializers.ModelSerializer):
+    id = serializers.Field(source='product.pk')
+    price = serializers.Field(source='product.price')
+    amount = serializers.Field(source='quantity')
+    discount = serializers.Field(source='discount')
+
+    class Meta:
+        model = OrderItem
+        fields = ('id', 'price', 'amount', 'discount', )
+
 class LoruOrderSerializer(CreatedAtMixin, serializers.ModelSerializer):
     number = serializers.Field(source='number_verbose')
-    createdDate = serializers.Field(source='dt')
-    dueDate = serializers.Field(source='dt_due')
+    createdDate = serializers.DateField(source='dt', format="%d.%m.%Y")
+    dueDate = serializers.DateField(source='dt_due', format="%d.%m.%Y")
     customer = AlivePerson2Serializer(source='applicant')
     deadman = serializers.SerializerMethodField('deadman_func')
     place = serializers.SerializerMethodField('place_func')
@@ -339,11 +349,12 @@ class LoruOrderSerializer(CreatedAtMixin, serializers.ModelSerializer):
     modifiedAt = serializers.SerializerMethodField('modifiedAt_func')
     totalPrice = serializers.Field(source='total_float')
     currency = serializers.Field(source='loru.currency.code')
+    products = serializers.SerializerMethodField('products_func')
 
     class Meta:
         model = Order
         fields = ('id', 'number', 'createdDate', 'dueDate',
-                  'customer', 'deadman', 'place',
+                  'customer', 'deadman', 'place', 'products',
                   'createdAt', 'modifiedAt', 'totalPrice', 'currency',
         )
 
@@ -361,6 +372,12 @@ class LoruOrderSerializer(CreatedAtMixin, serializers.ModelSerializer):
         except (OrderPlace.DoesNotExist, AttributeError,):
             return None
         return OrderPlaceSerializer(orderplace).data
+
+    def products_func(self, instance):
+        return [
+            LoruOrderItemSerializer(orderitem).data \
+            for orderitem in OrderItem.objects.filter(order=instance).order_by('pk')
+        ]
 
 class OrderSerializer(CreatedAtMixin, serializers.ModelSerializer):
     type = serializers.Field(source='service_name')
