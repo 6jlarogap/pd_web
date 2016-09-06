@@ -2620,8 +2620,8 @@ class ApiLoruOrdersDetailView(CheckLifeDatesMixin, UnclearDateFieldMixin, TradeC
                         quantity=item.get('amount', 0),
                         discount=item.get('discount', 0),
                     )
-                if order_save:
-                    order.save()
+            if order_save:
+                order.save()
         except ServiceException as excpt:
             transaction.rollback()
             return Response(data=dict(status='error', message=excpt.message), status=400)
