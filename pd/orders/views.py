@@ -2406,7 +2406,7 @@ class ApiLoruOrdersView(CheckLifeDatesMixin, UnclearDateFieldMixin, TradeCemeter
                 else:
                     address = None
                 applicant = AlivePerson.objects.create(
-                    last_name=customer['lastName'],
+                    last_name=customer.get('lastName', ''),
                     first_name=customer.get('firstName', ''),
                     middle_name=customer.get('middleName', ''),
                     phones=customer.get('phoneNumber', ''),
@@ -2531,6 +2531,100 @@ class ApiLoruOrdersDetailView(CheckLifeDatesMixin, UnclearDateFieldMixin, TradeC
 
     def get(self, request, pk):
         order = get_object_or_404(Order, loru=request.user.profile.org, pk=pk)
+        return Response(
+            data=LoruOrderSerializer(order,
+                context=dict(request=request),
+                ).data,
+            status=200,
+        )
+
+    @transaction.commit_on_success
+    def put(self, request, pk):
+        order = get_object_or_404(Order, loru=request.user.profile.org, pk=pk)
+        try:
+            order_save = False
+            if 'dueDate' in request.DATA:
+                dt_due = request.DATA['dueDate'] or None
+                if dt_due:
+                    try:
+                        dt_due = datetime.datetime.strptime(dt_due, "%d.%m.%Y").date()
+                    except ValueError:
+                        raise ServiceException(_(u"Неверная дата исполнения заказа"))
+                if order.dt_due != dt_due:
+                    order.dt_due = dt_due
+                    order_save = True
+            dt = request.DATA.get('createdDate') or None
+            if dt:
+                try:
+                    dt = datetime.datetime.strptime(dt, "%d.%m.%Y").date()
+                except ValueError:
+                    raise ServiceException(_(u"Неверная дата создания заказа"))
+                if order.dt != dt:
+                    order.dt = dt
+                    order_save = True
+            if 'customer' in request.DATA:
+                customer = request.DATA['customer']
+                if order.applicant:
+                    applicant = order.applicant
+                    mapping = (
+                        ('lastName', 'last_name',),
+                        ('firstName', 'first_name',),
+                        ('middleName', 'middle_name',),
+                        ('phoneNumber', 'phones',),
+                    )
+                    applicant_save = False
+                    for req, field in mapping:
+                        if req in customer and getattr(applicant, field) != customer[req]:
+                            applicant_save = True
+                            setattr(applicant, field, customer[req])
+                    if 'address' in customer:
+                        if applicant.address:
+                            if applicant.address.addr_str != customer['address']:
+                                applicant.address.addr_str = customer['address']
+                                applicant.address.save()
+                        else:
+                            applicant.address = Location.objects.create(addr_str=customer['address'])
+                            applicant_save = True
+                    if applicant_save:
+                        applicant.save()
+                else:
+                    if customer.get('address'):
+                        address = Location.objects.create(addr_str=customer['address'])
+                    else:
+                        address = None
+                    applicant = AlivePerson.objects.create(
+                        last_name=customer.get('lastName', ''),
+                        first_name=customer.get('firstName', ''),
+                        middle_name=customer.get('middleName', ''),
+                        phones=customer.get('phoneNumber', ''),
+                        address=address,
+                    )
+                    order.applicant = applicant
+                    order_save = True
+            if 'products' in request.DATA:
+                products = request.DATA['products']
+                for item in OrderItem.objects.filter(order=order):
+                    item.delete()
+                for item in products:
+                    product_id = item.get('id')
+                    if not product_id:
+                        raise ServiceException(_(u'Нет productId'))
+                    try:
+                        product = Product.objects.get(loru=request.user.profile.org, pk=product_id)
+                    except Product.DoesNotExist:
+                        raise ServiceException(
+                            _(u'Не найден productId=%s вообще или у этого поставщика') % product_id)
+                    orderitem = OrderItem.objects.create(
+                        order=order,
+                        product=product,
+                        quantity=item.get('amount', 0),
+                        discount=item.get('discount', 0),
+                    )
+            if order_save:
+                order.save()
+        except ServiceException as excpt:
+            transaction.rollback()
+            return Response(data=dict(status='error', message=excpt.message), status=400)
         return Response(
             data=LoruOrderSerializer(order,
                 context=dict(request=request),
