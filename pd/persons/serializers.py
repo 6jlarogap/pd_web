@@ -158,7 +158,7 @@ class DeadPerson2Serializer(UnclearDateFieldMixin, serializers.HyperlinkedModelS
 
     class Meta:
         model = DeadPerson
-        fields = ('id', 'firstName', 'lastName', 'middleName', 'birthDate', 'deathDate', 'address')
+        fields = ('id', 'firstName', 'lastName', 'middleName', 'birthDate', 'deathDate')
 
     def restore_object(self, attrs, instance=None):
         data = self.context['request'].DATA
