@@ -774,6 +774,12 @@ class OrderItem(OrderItemMixin, models.Model):
         else:
             return int(self.quantity)
 
+    def discount_round(self):
+        if self.discount - int(self.discount) > 0:
+            return self.discount
+        else:
+            return int(self.discount)
+
 class CatafalqueData(models.Model):
     order = models.OneToOneField('orders.Order', editable=False)
 

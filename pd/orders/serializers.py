@@ -332,8 +332,8 @@ class LoruOrderItemSerializer(serializers.ModelSerializer):
     id = serializers.Field(source='product.pk')
     title = serializers.Field(source='product.name')
     price = serializers.Field(source='product.price')
-    amount = serializers.Field(source='quantity')
-    discount = serializers.Field(source='discount')
+    amount = serializers.Field(source='quantity_round')
+    discount = serializers.Field(source='discount_round')
 
     class Meta:
         model = OrderItem
