@@ -2644,12 +2644,12 @@ class ApiLoruOrdersDetailView(CheckLifeDatesMixin, UnclearDateFieldMixin, TradeC
                         if req in deadman and getattr(instance, field) != deadman[req]:
                             deadman_save = True
                             setattr(instance, field, deadman[req])
-                    #if 'dob' in deadman:
-                        #instance.birth_date=self.set_unclear_date(deadman['dob'], format='d.m.y'),
-                        #deadman_save = True
-                    #if 'dod' in deadman:
-                        #instance.death_date=self.set_unclear_date(deadman['dod'], format='d.m.y'),
-                        #deadman_save = True
+                    if 'dob' in deadman:
+                        instance.birth_date = self.set_unclear_date(deadman['dob'], format='d.m.y')
+                        deadman_save = True
+                    if 'dod' in deadman:
+                        instance.death_date = self.set_unclear_date(deadman['dod'], format='d.m.y')
+                        deadman_save = True
                     if 'address' in deadman:
                         if instance.address:
                             if instance.address.addr_str != deadman['address']:
