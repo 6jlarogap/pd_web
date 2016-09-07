@@ -85,8 +85,8 @@
     <TR>
         <TD COLSPAN=4 STYLE="border-bottom: 1px solid">
             <B>Умерший (ФИО)
-            {% if order.burial and order.burial.deadman %}
-                {{ order.burial.deadman }}
+            {% if order.deadman %}
+                {{ order.deadman }}
             {% else %}
             _________________________________
             {% endif %}
@@ -96,15 +96,15 @@
     <TR>
         <TD COLSPAN=4 STYLE="border-bottom: 1px solid">
             Дата рождения
-            {% if order.burial and order.burial.deadman %}
-                {{ order.burial.deadman.birth_date|default_if_none:"_____________" }}&nbsp;
+            {% if order.deadman %}
+                {{ order.deadman.birth_date|default_if_none:"_____________" }}&nbsp;
             {% else %}
             _____________
             {% endif %}
             &nbsp;&nbsp;&nbsp;
             Дата смерти
-            {% if order.burial and order.burial.deadman %}
-                {{ order.burial.deadman.death_date|default_if_none:"_____________" }}&nbsp;
+            {% if order.deadman %}
+                {{ order.deadman.death_date|default_if_none:"_____________" }}&nbsp;
             {% else %}
             _____________
             {% endif %}
@@ -113,8 +113,8 @@
     <TR>
         <TD COLSPAN=4 STYLE="border-bottom: 1px solid">
             <B>Кладбище
-            {% if order.burial %}
-                {{ order.burial.cemetery|default_if_none:"_________________________________" }}&nbsp;
+            {% if order.cemetery %}
+                {{ order.cemetery }}&nbsp;
             {% else %}
             _________________________________
             {% endif %}
@@ -335,8 +335,8 @@
     <TR>
         <TD COLSPAN=3 STYLE="border-bottom: 1px solid">
             <B>Умерший (ФИО)
-            {% if order.burial and order.burial.deadman %}
-                {{ order.burial.deadman }}&nbsp;
+            {% if order.deadman %}
+                {{ order.deadman }}&nbsp;
             {% else %}
             _________________________________
             {% endif %}
@@ -346,15 +346,15 @@
     <TR>
         <TD COLSPAN=3>
             Дата рождения
-            {% if order.burial and order.burial.deadman %}
-                {{ order.burial.deadman.birth_date|default_if_none:"_____________" }}&nbsp;
+            {% if order.deadman %}
+                {{ order.deadman.birth_date|default_if_none:"_____________" }}&nbsp;
             {% else %}
             _____________
             {% endif %}
             &nbsp;&nbsp;&nbsp;
             Дата смерти
-            {% if order.burial and order.burial.deadman %}
-                {{ order.burial.deadman.death_date|default_if_none:"_____________" }}&nbsp;
+            {% if order.deadman %}
+                {{ order.deadman.death_date|default_if_none:"_____________" }}&nbsp;
             {% else %}
             _____________
             {% endif %}
@@ -453,8 +453,8 @@
                 Умерший:
             </TD>
             <TD COLSPAN=6 ALIGN="CENTER">
-                {% if order.burial and order.burial.deadman %}
-                    <B>{{ order.burial.deadman }}</B>
+                {% if order.burial.deadman %}
+                    <B>{{ order.deadman }}</B>
                 {% endif %}
             </TD>
         </TR>
@@ -463,8 +463,8 @@
                 Адрес:
             </TD>
             <TD COLSPAN=6 ALIGN="CENTER">
-                {% if order.burial and order.burial.deadman and order.burial.deadman.address %}
-                    {{ order.burial.deadman.address }}
+                {% if order.deadman and order.deadman.address %}
+                    {{ order.deadman.address }}
                 {% endif %}
             </TD>
         </TR>
@@ -492,7 +492,7 @@
                 Кладбище:
             </TD>
             <TD COLSPAN=3 ALIGN="CENTER">
-                <B>{{ order.burial.cemetery }}</B>
+                <B>{{ order.cemetery }}</B>
             </TD>
         </TR>
         <TR>
@@ -553,8 +553,8 @@
                 Умерший:
             </TD>
             <TD COLSPAN=6 ALIGN="CENTER">
-                {% if order.burial and order.burial.deadman %}
-                    <B>{{ order.burial.deadman }}</B>
+                {% if order.deadman %}
+                    <B>{{ order.deadman }}</B>
                 {% endif %}
             </TD>
         </TR>
@@ -596,7 +596,7 @@
                 Кладбище:
             </TD>
             <TD COLSPAN=3 ALIGN="CENTER">
-                <B>{{ order.burial.cemetery }}</B>
+                <B>{{ order.cemetery }}</B>
             </TD>
         </TR>
         <TR>
@@ -654,8 +654,8 @@
             Умерший:
         </TD>
         <TD COLSPAN=6 ALIGN="CENTER">
-            {% if order.burial and order.burial.deadman %}
-                <B>{{ order.burial.deadman }}</B>
+            {% if order.deadman %}
+                <B>{{ order.deadman }}</B>
             {% endif %}
         </TD>
     </TR>
@@ -697,7 +697,7 @@
             Кладбище:
         </TD>
         <TD COLSPAN=3 ALIGN="CENTER">
-            <B>{{ order.burial.cemetery }}</B>
+            <B>{{ order.cemetery }}</B>
         </TD>
     </TR>
     <TR>

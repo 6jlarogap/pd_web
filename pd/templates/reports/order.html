@@ -133,18 +133,18 @@
             Фамилия, имя, отчество умершего
         </TD>
         <TD STYLE="border-top: 1px solid" COLSPAN=6 ALIGN=CENTER>
-            {{ order.burial.deadman_or_bio }}
+            {{ order.deadman }}
         </TD>
     </TR>
     <TR HEIGHT=20>
         <TD STYLE="border-left: 1px solid" COLSPAN=5>
-            Возраст {{ order.burial.deadman.birth_date|date:"Y" }}
+            Возраст {{ order.deadman.birth_date|date:"Y" }}
         </TD>
         <TD STYLE="border-top: 1px solid" ALIGN=RIGHT>
             Дата смерти
         </TD>
         <TD STYLE="border-top: 1px solid" COLSPAN=3 ALIGN=CENTER>
-            {{ order.burial.deadman.death_date }}
+            {{ order.deadman.death_date }}
         </TD>
     </TR>
     <TR HEIGHT=20>
@@ -188,7 +188,7 @@
             на кладбище:
         </TD>
         <TD STYLE="border-bottom: 1px solid" COLSPAN=2 ALIGN=CENTER>
-            {{ order.burial.cemetery|default_if_none:"" }}
+            {{ order.cemetery }}
         </TD>
     </TR>
     <TR HEIGHT=20>
@@ -477,15 +477,15 @@
         <TD STYLE="border-left: 1px solid" COLSPAN=3 HEIGHT=20 VALIGN=TOP><FONT >Фамилия,
             имя, отчество умершего</FONT></TD>
         <TD STYLE="border-top: 1px solid" COLSPAN=6 ALIGN=CENTER VALIGN=MIDDLE SDNUM="1033;0;@"><FONT
-                >{{ order.burial.deadman_or_bio }}</FONT></TD>
+                >{{ order.deadman }}</FONT></TD>
     </TR>
     <TR>
-        <TD STYLE="border-left: 1px solid" COLSPAN=5 HEIGHT=20 VALIGN=TOP><FONT >Возраст {{ order.burial.deadman.birth_date|date:"Y" }}</FONT>
+        <TD STYLE="border-left: 1px solid" COLSPAN=5 HEIGHT=20 VALIGN=TOP><FONT >Возраст {{ order.deadman.birth_date|date:"Y" }}</FONT>
         </TD>
         <TD STYLE="border-top: 1px solid" ALIGN=RIGHT VALIGN=BOTTOM><FONT >Дата смерти</FONT>
         </TD>
         <TD STYLE="border-top: 1px solid" COLSPAN=3 ALIGN=CENTER VALIGN=BOTTOM><FONT
-                >{{ order.burial.deadman.death_date|default_if_none:"" }}</FONT></TD>
+                >{{ order.deadman.death_date|default_if_none:"" }}</FONT></TD>
     </TR>
     <TR>
         <TD STYLE="border-left: 1px solid" COLSPAN=5 HEIGHT=20 VALIGN=TOP><FONT >Свидетельство
@@ -522,7 +522,7 @@
         </TD>
         <TD VALIGN=TOP><FONT >на кладбище:</FONT></TD>
         <TD STYLE="border-bottom: 1px solid" COLSPAN=2 ALIGN=CENTER VALIGN=TOP><FONT
-                >{{ order.burial.cemetery|default_if_none:"" }}</FONT></TD>
+                >{{ order.cemetery }}</FONT></TD>
     </TR>
     <TR>
         <TD COLSPAN="9" STYLE="border-bottom: 1px solid; border-left: 1px solid" HEIGHT=20
@@ -753,7 +753,7 @@
             представитель Заказчика, - составили настоящий акт о том, что на &laquo;____&raquo; _________ 20___г.
             подтверждаем, что Исполнителем были выполнены качественно и в полном объеме работы согласно счета-заказа
             № {{ order.loru_number }} по захоронению
-            умершего {{ order.burial.deadman_or_bio }} на кладбище {{ order.burial.cemetery|default_if_none:"" }}</FONT></TD>
+            умершего {{ order.deadman }} на кладбище {{ order.cemetery }}</FONT></TD>
     </TR>
     <TR>
         <TD STYLE="border-top: 1px solid; border-left: 1px solid; border-right: 1px solid"
@@ -918,7 +918,7 @@
             представитель Заказчика, - составили настоящий акт о том, что на &laquo;____&raquo; _________ 20___г.
             подтверждаем, что Исполнителем были выполнены качественно и в полном объеме работы согласно счета-заказа
             № {{ order.loru_number }} по захоронению
-            умершего {{ order.burial.deadman_or_bio }} на кладбище {{ order.burial.cemetery|default_if_none:"" }}</FONT></TD>
+            умершего {{ order.deadman }} на кладбище {{ order.cemetery }}</FONT></TD>
     </TR>
     <TR>
         <TD STYLE="border-top: 1px solid; border-left: 1px solid; border-right: 1px solid"
@@ -1123,7 +1123,7 @@
         <TD STYLE="border-left: 1px solid" COLSPAN=3 HEIGHT=20 VALIGN=TOP><FONT >Фамилия,
             имя, отчество умершего</FONT></TD>
         <TD STYLE="border-bottom: 1px solid; " COLSPAN=6 ALIGN=CENTER VALIGN=MIDDLE SDNUM="1033;0;@"><FONT
-                 STYLE="font-size: 170%">{{ order.burial.deadman_or_bio }}</FONT></TD>
+                 STYLE="font-size: 170%">{{ order.deadman }}</FONT></TD>
         <TD VALIGN=MIDDLE><FONT ><BR></FONT></TD>
         <TD VALIGN=MIDDLE><FONT ><BR></FONT></TD>
         <TD VALIGN=MIDDLE><FONT ><BR></FONT></TD>
@@ -1132,9 +1132,9 @@
         <TD STYLE="border-left: 1px solid" COLSPAN=3 HEIGHT=20 VALIGN=TOP><FONT
                 >Даты</FONT></TD>
         <TD STYLE="border-top: 1px solid; " COLSPAN=6 ALIGN=CENTER VALIGN=MIDDLE SDNUM="1033;0;@"><FONT
-                 STYLE="font-size: 170%">{{ order.burial.deadman.birth_date|date:"d.m.Y" }}
-            {% if order.burial.deadman.birth_date and order.burial.deadman.death_date %}
-                &ndash;{% endif %} {{ order.burial.deadman.death_date|date:"d.m.Y" }}</FONT></TD>
+                 STYLE="font-size: 170%">{{ order.deadman.birth_date|date:"d.m.Y" }}
+            {% if order.deadman.birth_date and order.deadman.death_date %}
+                &ndash;{% endif %} {{ order.deadman.death_date|date:"d.m.Y" }}</FONT></TD>
         <TD VALIGN=MIDDLE><FONT ><BR></FONT></TD>
         <TD VALIGN=MIDDLE><FONT ><BR></FONT></TD>
         <TD VALIGN=MIDDLE><FONT ><BR></FONT></TD>
@@ -1152,7 +1152,7 @@
         <TD STYLE="border-top: 1px solid" VALIGN=TOP><FONT >на кладбище:</FONT>
         </TD>
         <TD STYLE="border-top: 1px solid; " COLSPAN=2 ALIGN=CENTER VALIGN=TOP><FONT 
-                                                                                            STYLE="font-size: 170%">{{ order.burial.cemetery|default_if_none:"" }}</FONT>
+                                                                                            STYLE="font-size: 170%">{{ order.cemetery }}</FONT>
         </TD>
         <TD VALIGN=MIDDLE><FONT ><BR></FONT></TD>
         <TD VALIGN=MIDDLE><FONT ><BR></FONT></TD>
@@ -1294,7 +1294,7 @@
             <TD STYLE="border-left: 1px solid" COLSPAN=3 HEIGHT=20 VALIGN=TOP><FONT >Фамилия,
                 имя, отчество умершего</FONT></TD>
             <TD STYLE="border-bottom: 1px solid; " COLSPAN=6 ALIGN=CENTER VALIGN=MIDDLE SDNUM="1033;0;@"><FONT
-                     STYLE="font-size: 170%">{{ order.burial.deadman_or_bio }}</FONT></TD>
+                     STYLE="font-size: 170%">{{ order.deadman }}</FONT></TD>
             <TD VALIGN=MIDDLE><FONT ><BR></FONT></TD>
             <TD VALIGN=MIDDLE><FONT ><BR></FONT></TD>
             <TD VALIGN=MIDDLE><FONT ><BR></FONT></TD>
@@ -1334,7 +1334,7 @@
             <TD STYLE="border-top: 1px solid" VALIGN=TOP><FONT >на кладбище:</FONT>
             </TD>
             <TD STYLE="border-top: 1px solid; " COLSPAN=2 ALIGN=CENTER VALIGN=TOP><FONT 
-                                                                                                STYLE="font-size: 170%">{{ order.burial.cemetery|default_if_none:"" }}</FONT>
+                                                                                                STYLE="font-size: 170%">{{ order.cemetery }}</FONT>
             </TD>
             <TD VALIGN=MIDDLE><FONT ><BR></FONT></TD>
             <TD VALIGN=MIDDLE><FONT ><BR></FONT></TD>
@@ -1511,7 +1511,7 @@
             <TD STYLE="border-left: 1px solid" COLSPAN=3 HEIGHT=20 VALIGN=TOP><FONT >Фамилия,
                 имя, отчество умершего</FONT></TD>
             <TD STYLE="border-bottom: 1px solid; " COLSPAN=6 ALIGN=CENTER VALIGN=MIDDLE SDNUM="1033;0;@"><FONT
-                     STYLE="font-size: 170%">{{ order.burial.deadman_or_bio }}</FONT></TD>
+                     STYLE="font-size: 170%">{{ order.deadman }}</FONT></TD>
             <TD VALIGN=MIDDLE><FONT ><BR></FONT></TD>
             <TD VALIGN=MIDDLE><FONT ><BR></FONT></TD>
             <TD VALIGN=MIDDLE><FONT ><BR></FONT></TD>
@@ -1548,7 +1548,7 @@
             <TD STYLE="border-top: 1px solid" VALIGN=TOP><FONT >на кладбище:</FONT>
             </TD>
             <TD STYLE="border-top: 1px solid; " COLSPAN=2 ALIGN=CENTER VALIGN=TOP><FONT 
-                                                                                                STYLE="font-size: 170%">{{ order.burial.cemetery|default_if_none:"" }}</FONT>
+                                                                                                STYLE="font-size: 170%">{{ order.cemetery }}</FONT>
             </TD>
             <TD VALIGN=MIDDLE><FONT ><BR></FONT></TD>
             <TD VALIGN=MIDDLE><FONT ><BR></FONT></TD>
@@ -1718,7 +1718,7 @@
             <TD STYLE="border-left: 1px solid" COLSPAN=3 HEIGHT=20 VALIGN=TOP><FONT >Фамилия,
                 имя, отчество умершего</FONT></TD>
             <TD STYLE="border-bottom: 1px solid; " COLSPAN=6 ALIGN=CENTER VALIGN=MIDDLE SDNUM="1033;0;@"><FONT
-                     STYLE="font-size: 170%">{{ order.burial.deadman_or_bio }}</FONT></TD>
+                     STYLE="font-size: 170%">{{ order.deadman }}</FONT></TD>
             <TD VALIGN=MIDDLE><FONT ><BR></FONT></TD>
             <TD VALIGN=MIDDLE><FONT ><BR></FONT></TD>
             <TD VALIGN=MIDDLE><FONT ><BR></FONT></TD>
@@ -1727,7 +1727,7 @@
             <TD STYLE="border-left: 1px solid" COLSPAN="3" HEIGHT=20 VALIGN=TOP><FONT >Адрес</FONT>
             </TD>
             <TD STYLE="border-bottom: 1px solid; " COLSPAN="6" ALIGN=CENTER VALIGN=BOTTOM SDNUM="1033;0;@"><FONT
-                     STYLE="font-size: 170%">{{ order.burial.deadman.address|default_if_none:"" }}</FONT></TD>
+                     STYLE="font-size: 170%">{{ order.deadman.address|default_if_none:"" }}</FONT></TD>
             <TD VALIGN=MIDDLE><FONT ><BR></FONT></TD>
             <TD VALIGN=MIDDLE><FONT ><BR></FONT></TD>
             <TD VALIGN=MIDDLE><FONT ><BR></FONT></TD>
@@ -1769,7 +1769,7 @@
             </TD>
             <TD VALIGN=TOP><FONT >на кладбище:</FONT></TD>
             <TD STYLE="border-top: 1px solid; " COLSPAN=2 ALIGN=CENTER VALIGN=TOP><FONT 
-                                                                                                STYLE="font-size: 170%">{{ order.burial.cemetery|default_if_none:"" }}</FONT>
+                                                                                                STYLE="font-size: 170%">{{ order.cemetery }}</FONT>
             </TD>
             <TD VALIGN=MIDDLE><FONT ><BR></FONT></TD>
             <TD VALIGN=MIDDLE><FONT ><BR></FONT></TD>
