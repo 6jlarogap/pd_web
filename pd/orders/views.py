@@ -2437,10 +2437,6 @@ class ApiLoruOrdersView(CheckLifeDatesMixin, UnclearDateFieldMixin, TradeCemeter
                 message = self.check_life_dates(person=deadman, format='d.m.y')
                 if message:
                     raise ServiceException(message)
-                if deadman.get('address'):
-                    address = Location.objects.create(addr_str=deadman['address'])
-                else:
-                    address = None
                 deadman = OrderDeadPerson.objects.create(
                     order=order,
                     last_name=deadman.get('lastName',''),
@@ -2448,7 +2444,6 @@ class ApiLoruOrdersView(CheckLifeDatesMixin, UnclearDateFieldMixin, TradeCemeter
                     middle_name=deadman.get('middleName',''),
                     birth_date=self.set_unclear_date(deadman.get('dob'), format='d.m.y'),
                     death_date=self.set_unclear_date(deadman.get('dod'), format='d.m.y'),
-                    address=address,
                 )
             place = request.DATA.get('place')
             if place:
@@ -2652,21 +2647,9 @@ class ApiLoruOrdersDetailView(CheckLifeDatesMixin, UnclearDateFieldMixin, TradeC
                     if 'dod' in deadman:
                         instance.death_date = self.set_unclear_date(deadman['dod'], format='d.m.y')
                         deadman_save = True
-                    if 'address' in deadman:
-                        if instance.address:
-                            if instance.address.addr_str != deadman['address']:
-                                instance.address.addr_str = deadman['address']
-                                deadman.address.save()
-                        else:
-                            instance.address = Location.objects.create(addr_str=deadman['address'])
-                            deadman_save = True
                     if deadman_save:
                         instance.save()
                 else:
-                    if deadman.get('address'):
-                        address = Location.objects.create(addr_str=deadman['address'])
-                    else:
-                        address = None
                     deadman = OrderDeadPerson.objects.create(
                         order=order,
                         last_name=deadman.get('lastName',''),
@@ -2674,7 +2657,6 @@ class ApiLoruOrdersDetailView(CheckLifeDatesMixin, UnclearDateFieldMixin, TradeC
                         middle_name=deadman.get('middleName',''),
                         birth_date=self.set_unclear_date(deadman.get('dob'), format='d.m.y'),
                         death_date=self.set_unclear_date(deadman.get('dod'), format='d.m.y'),
-                        address=address,
                     )
             if order_save:
                 order.save()
