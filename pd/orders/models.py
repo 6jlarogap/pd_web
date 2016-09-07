@@ -192,6 +192,8 @@ class Order(GetLogsMixin, BaseModel):
     # Типы заказов.
     # "Изначальный" джанго заказ
     TYPE_BURIAL = 'burial'
+    # Заказ похорон, из front-end
+    TYPE_FUNERAL = 'funeral'
     # Оптовый заказ
     TYPE_TRADE = 'trade'
     # Заказ на сервисы, т.е. инмцируемый пользователем- физ-лицом
@@ -419,6 +421,9 @@ class Order(GetLogsMixin, BaseModel):
 
     def is_type_burial(self):
         return self.type == Order.TYPE_BURIAL
+
+    def is_type_funeral(self):
+        return self.type == Order.TYPE_FUNERAL
 
     def is_type_trade(self):
         return self.type == Order.TYPE_TRADE
