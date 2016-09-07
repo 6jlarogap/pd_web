@@ -330,13 +330,14 @@ class ServiceOrderSerializer(CreatedAtMixin, serializers.ModelSerializer):
 
 class LoruOrderItemSerializer(serializers.ModelSerializer):
     id = serializers.Field(source='product.pk')
+    title = serializers.Field(source='product.name')
     price = serializers.Field(source='product.price')
     amount = serializers.Field(source='quantity')
     discount = serializers.Field(source='discount')
 
     class Meta:
         model = OrderItem
-        fields = ('id', 'price', 'amount', 'discount', )
+        fields = ('id', 'title', 'price', 'amount', 'discount', )
 
 class LoruOrderSerializer(CreatedAtMixin, serializers.ModelSerializer):
     number = serializers.Field(source='number_verbose')
