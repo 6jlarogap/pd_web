@@ -2642,7 +2642,6 @@ class ApiLoruOrdersDetailView(
                         raise ServiceException(message)
                 if instance:
                     if deadman is None:
-                        print 'here'
                         instance.delete()
                     else:
                         mapping = (
@@ -2671,6 +2670,66 @@ class ApiLoruOrdersDetailView(
                         middle_name=deadman.get('middleName',''),
                         birth_date=self.set_unclear_date(deadman.get('dob'), format='d.m.y'),
                         death_date=self.set_unclear_date(deadman.get('dod'), format='d.m.y'),
+                    )
+            if 'place' in request.DATA:
+                place = request.DATA['place']
+                cemetery = area = None
+                if place is not None:
+                    if place.get('cemeteryId') or place.get('areaId'):
+                        cemeteries = self.available_cemeteries(request.user)
+                    if place.get('cemeteryId'):
+                        cemetery_msg = _(u"Нет такого кладбища среди доступных")
+                        try:
+                            cemetery = Cemetery.objects.get(pk=place['cemeteryId'])
+                        except Cemetery.DoesNotExist:
+                            raise ServiceException(cemetery_msg)
+                        if cemetery not in cemeteries:
+                            raise ServiceException(cemetery_msg)
+                    if place.get('areaId'):
+                        area_msg = _(u"Нет такого участка кладбищ среди доступных")
+                        try:
+                            area = Area.objects.get(pk=place['areaId'])
+                        except Area.DoesNotExist:
+                            raise ServiceException(area_msg)
+                        cemetery = area.cemetery
+                        if cemetery not in cemeteries:
+                            raise ServiceException(area_msg)
+                try:
+                    instance = order.orderplace
+                except (OrderPlace.DoesNotExist, AttributeError,):
+                    instance = None
+                if instance:
+                    if place is None:
+                        instance.delete()
+                    else:
+                        place_save = False
+                        mapping = (
+                            ('cemeteryText', 'cemetery_text',),
+                            ('row', 'row',),
+                            ('placeNumber', 'place',),
+                            ('size', 'size',),
+                        )
+                        for req, field in mapping:
+                            if req in place and getattr(instance, field) != place[req]:
+                                place_save = True
+                                setattr(instance, field, place[req])
+                        if ('cemeteryId' in place or cemetery) and cemetery != instance.cemetery:
+                            place_save = True
+                            instance.cemetery = cemetery
+                        if 'areaId' in place and area != instance.area:
+                            place_save = True
+                            instance.area = area
+                        if place_save:
+                            instance.save()
+                elif place is not None:
+                    place = OrderPlace.objects.create(
+                        order=order,
+                        cemetery=cemetery,
+                        area=area,
+                        cemetery_text=place.get('cemeteryText', ''),
+                        row=place.get('row', ''),
+                        place=place.get('placeNumber', ''),
+                        size=place.get('size', ''),
                     )
             if order_save:
                 order.save()
