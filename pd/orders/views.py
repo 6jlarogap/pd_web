@@ -2620,6 +2620,60 @@ class ApiLoruOrdersDetailView(CheckLifeDatesMixin, UnclearDateFieldMixin, TradeC
                         quantity=item.get('amount', 0),
                         discount=item.get('discount', 0),
                     )
+            if 'deadman' in request.DATA:
+                deadman = request.DATA['deadman']
+                try:
+                    instance = order.orderdeadperson
+                except (OrderDeadPerson.DoesNotExist, AttributeError,):
+                    instance = None
+                message = self.check_life_dates(
+                    person=deadman,
+                    instance=instance,
+                    format='d.m.y',
+                )
+                if message:
+                    raise ServiceException(message)
+                if instance:
+                    mapping = (
+                        ('lastName', 'last_name',),
+                        ('firstName', 'first_name',),
+                        ('middleName', 'middle_name',),
+                    )
+                    deadman_save = False
+                    for req, field in mapping:
+                        if req in deadman and getattr(instance, field) != deadman[req]:
+                            deadman_save = True
+                            setattr(instance, field, deadman[req])
+                    #if 'dob' in deadman:
+                        #instance.birth_date=self.set_unclear_date(deadman['dob'], format='d.m.y'),
+                        #deadman_save = True
+                    #if 'dod' in deadman:
+                        #instance.death_date=self.set_unclear_date(deadman['dod'], format='d.m.y'),
+                        #deadman_save = True
+                    if 'address' in deadman:
+                        if instance.address:
+                            if instance.address.addr_str != deadman['address']:
+                                instance.address.addr_str = deadman['address']
+                                deadman.address.save()
+                        else:
+                            instance.address = Location.objects.create(addr_str=deadman['address'])
+                            deadman_save = True
+                    if deadman_save:
+                        instance.save()
+                else:
+                    if deadman.get('address'):
+                        address = Location.objects.create(addr_str=deadman['address'])
+                    else:
+                        address = None
+                    deadman = OrderDeadPerson.objects.create(
+                        order=order,
+                        last_name=deadman.get('lastName',''),
+                        first_name=deadman.get('firstName',''),
+                        middle_name=deadman.get('middleName',''),
+                        birth_date=self.set_unclear_date(deadman.get('dob'), format='d.m.y'),
+                        death_date=self.set_unclear_date(deadman.get('dod'), format='d.m.y'),
+                        address=address,
+                    )
             if order_save:
                 order.save()
         except ServiceException as excpt:
