@@ -272,7 +272,7 @@
                     <td>
                         {% if c.is_type_burial %}
                             {{ c.loru_number }}
-                        {% elif c.is_type_trade or c.is_type_customer %}
+                        {% elif c.is_type_trade or c.is_type_customer or c.is_type_funeral %}
                             {{ c.number_verbose }}
                         {% endif %}
                     </td>
