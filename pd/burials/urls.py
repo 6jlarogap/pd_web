@@ -72,6 +72,8 @@ urlpatterns = patterns('burials.views',
 
     url(r'^api/oms/cemeteries/?$', 'api_oms_cemeteries', name='api_oms_cemeteries'),
     url(r'^api/oms/cemeteries/(?P<pk>\d+)/areas/?$', 'api_oms_cemeteries_areas', name='api_oms_cemeteries_areas'),
+    url(r'^api/loru/cemeteries/?$', 'api_loru_cemeteries', name='api_loru_cemeteries'),
+    url(r'^api/loru/cemeteries/(?P<pk>\d+)/areas/?$', 'api_loru_cemeteries_areas', name='api_loru_cemeteries_areas'),
     url(
         r'^api/oms/cemeteries/(?P<cemetery_pk>\d+)/areas/(?P<area_pk>\d+)/places/?$',
         'api_oms_areas_places', name='api_oms_areas_places'),

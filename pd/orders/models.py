@@ -1,7 +1,7 @@
 # coding=utf-8
 from __builtin__ import property
 import datetime, time
-import os, shutil
+import os, shutil, decimal
 from autoslug import AutoSlugField
 
 from django.conf import settings
@@ -12,7 +12,8 @@ from django.utils.translation import ugettext as _
 from django.db.models import Sum
 from django.db.models.query_utils import Q
 
-from burials.models import Burial
+from burials.models import Burial, OrderPlace
+from persons.models import OrderDeadPerson
 from reports.models import Report
 from users.models import Org, is_cabinet_user, is_trade_user
 from pd.models import BaseModel, GetLogsMixin, upload_slugified, Files
@@ -148,6 +149,8 @@ class Product(BaseModel):
     price_wholesale = models.DecimalField(_(u"Цена оптовая"), max_digits=20, decimal_places=2)
     ptype = models.CharField(_(u"Тип"), max_length=255, choices=PRODUCT_TYPES, null=True, blank=True)
     default = models.BooleanField(_(u"По умолчанию"), default=False, blank=True)
+    # True: товар, False: услуга
+    stockable = models.BooleanField(_(u"Товар"), default=True, blank=True)
     photo = models.ImageField(u"Фото", max_length=255, upload_to=upload_slugified, blank=True, null=True)
     productcategory = models.ForeignKey(ProductCategory, verbose_name=_(u"Категория"), on_delete=models.PROTECT)
     productgroup = models.ForeignKey(ProductGroup, verbose_name=_(u"Подкатегория"), null=True, editable=False,
@@ -189,6 +192,8 @@ class Order(GetLogsMixin, BaseModel):
     # Типы заказов.
     # "Изначальный" джанго заказ
     TYPE_BURIAL = 'burial'
+    # Заказ похорон, из front-end
+    TYPE_FUNERAL = 'funeral'
     # Оптовый заказ
     TYPE_TRADE = 'trade'
     # Заказ на сервисы, т.е. инмцируемый пользователем- физ-лицом
@@ -237,6 +242,7 @@ class Order(GetLogsMixin, BaseModel):
     archived = models.BooleanField(_(u'Архивирован'), editable=False, default=False)
     cost = models.DecimalField(_(u"Цена"), max_digits=20, decimal_places=2, editable=False)
     dt = models.DateField(_(u"Дата заказа"))
+    dt_due = models.DateField(_(u"Дата исполнения заказа"), editable=False, null=True)
     burial = models.ForeignKey(Burial, related_name='burial_orders', editable=False, null=True)
 
     customplace = models.ForeignKey('persons.CustomPlace', verbose_name=_(u"Место захоронения"),
@@ -292,6 +298,8 @@ class Order(GetLogsMixin, BaseModel):
             ('orders', 'OrderWebPay'),
             ('orders', 'ServiceItem'),
             ('orders', 'OrderItem'),
+            ('persons', 'OrderDeadPerson'),
+            ('burials', 'OrderPlace'),
            ):
             model = get_model(app, model)
             for item in model.objects.filter(order=self):
@@ -348,6 +356,12 @@ class Order(GetLogsMixin, BaseModel):
 
     def total_float(self):
         return float(self.total)
+
+    def total_int(self):
+        return int(self.total)
+
+    def total_copecks(self):
+        return int((self.total - int(self.total)) * 100)
 
     def has_burial(self):
         return self.orderitem_set.filter(product__ptype=Product.PRODUCT_BURIAL).exists()
@@ -407,6 +421,9 @@ class Order(GetLogsMixin, BaseModel):
 
     def is_type_burial(self):
         return self.type == Order.TYPE_BURIAL
+
+    def is_type_funeral(self):
+        return self.type == Order.TYPE_FUNERAL
 
     def is_type_trade(self):
         return self.type == Order.TYPE_TRADE
@@ -518,6 +535,41 @@ class Order(GetLogsMixin, BaseModel):
             return ResultFile.objects.filter(order=self, is_title=True)[0].bfile
         except IndexError:
             return None
+
+    def stockable_products(self):
+        return self.orderitem_set.filter(product__stockable=True)
+
+    def deadman(self):
+        """
+        усопший при заказе, для отчета
+        """
+        result = ''
+        if self.burial:
+            result = self.burial.deadman_or_bio()
+        else:
+            try:
+                result = self.orderdeadperson
+            except (OrderDeadPerson.DoesNotExist, AttributeError,):
+                result = _(u'Неизвестный')
+        return result
+
+    def cemetery(self):
+        """
+        кладбище при заказе, для отчета
+        """
+        result = ''
+        if self.burial:
+            result = self.burial.cemetery and self.burial.cemetery.name or ''
+        else:
+            try:
+                place = self.orderplace
+                if place.cemetery_text:
+                    result = place.cemetery_text
+                elif place.cemetery:
+                    result = place.cemetery.name
+            except (OrderPlace.DoesNotExist, AttributeError,):
+                pass
+        return result
 
 class OrderItemMixin(object):
 
@@ -666,6 +718,7 @@ class OrderItem(OrderItemMixin, models.Model):
     product = models.ForeignKey(Product, verbose_name=_(u"Товар"))
     quantity = models.DecimalField(_(u"Кол-во"), max_digits=20, decimal_places=2, default=1)
     cost = models.DecimalField(_(u"Цена"), max_digits=20, decimal_places=2, editable=True)
+    discount = models.DecimalField(_(u"Скидка"), max_digits=4, decimal_places=2, editable=False, default='0.00')
 
     # name, description, productcategory, productcategory_name,
     # productgroup, productgroup_name, measure:
@@ -696,7 +749,8 @@ class OrderItem(OrderItemMixin, models.Model):
     def save(self, *args, **kwargs):
         if not self.cost:
             try:
-                self.cost = self.product.price
+                self.cost = self.product.price * \
+                            (decimal.Decimal('100.00') - decimal.Decimal(self.discount)) / 100
             except Product.DoesNotExist:
                 self.cost = 0.00
         if not self.name and self.product:
@@ -718,6 +772,18 @@ class OrderItem(OrderItemMixin, models.Model):
 
     def quantity_float(self):
         return float(self.quantity)
+
+    def quantity_round(self):
+        if self.quantity - int(self.quantity) > 0:
+            return self.quantity
+        else:
+            return int(self.quantity)
+
+    def discount_round(self):
+        if self.discount - int(self.discount) > 0:
+            return self.discount
+        else:
+            return int(self.discount)
 
 class CatafalqueData(models.Model):
     order = models.OneToOneField('orders.Order', editable=False)

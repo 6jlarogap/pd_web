@@ -31,7 +31,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.parsers import MultiPartParser, JSONParser
 from rest_framework.exceptions import PermissionDenied
 
-from pd.models import UnclearDate, SafeDeleteMixin, validate_phone_as_number
+from pd.models import UnclearDate, SafeDeleteMixin, validate_phone_as_number, CheckLifeDatesMixin
 from burials.models import Cemetery, Place, PlacePhoto, Burial, Grave
 from logs.models import write_log, LogOperation
 from users.models import Org, PermitIfCabinet, user_dict, \
@@ -42,7 +42,6 @@ from geo.models import Location
 
 from pd.utils import utcisoformat, get_image, is_video, str_to_bool_or_None
 from pd.views import ServiceException
-
 
 class AutocompleteFIO(View):
     def get(self, request, *args, **kwargs):
@@ -225,68 +224,6 @@ class PhoneViewSet(viewsets.ModelViewSet):
             ))
         else:
             write_log(self.request, object, _(u'Телефон создан'))
-
-class CheckLifeDatesMixin(object):
-
-    def get_parm_(self, *args):
-        """
-        Значение из request.DATA и есть ли в request.DATA
-        """
-        value = None
-        in_request = False
-        for parm in args:
-            in_request = parm in self.request.DATA
-            if in_request:
-                value = self.request.DATA[parm]
-                if value and value.lower() == 'null':
-                    value = None
-                break
-        return value, in_request
-
-    def check_life_dates(self, instance=None, format=''):
-        """
-        Проверка дат рождения/смерти
-
-        в self.request.DATA может быть в датах: 'гггг', 'гггг-мм', 'гггг-мм-дд',
-        None или 'null'
-        при format=='d.m.y' сначала преобразуем к y-m-d
-        """
-        birth_date, req_birth_date = self.get_parm_('birthDate', 'dob', 'birth_date')
-        death_date, req_death_date = self.get_parm_('deathDate', 'dod', 'death_date')
-        fact_date,  req_fact_date  = self.get_parm_('factDate', 'fact_date')
-        message = UnclearDate.check_safe_str(birth_date, check_today=True, format=format)
-        if message:
-            return _(u"Дата рождения: %s") % message
-        message = UnclearDate.check_safe_str(death_date, check_today=True, format=format)
-        if message:
-            return _(u"Дата смерти: %s") % message
-        message = UnclearDate.check_safe_str(fact_date, check_today=True, format=format)
-        if message:
-            return _(u"Дата захоронения: %s") % message
-        msg_dates = _(u"Дата смерти раньше даты рождения")
-        birth_date = UnclearDate.from_str_safe(birth_date, format=format)
-        death_date = UnclearDate.from_str_safe(death_date, format=format)
-        fact_date  = UnclearDate.from_str_safe(fact_date, format=format)
-        if birth_date and death_date and birth_date > death_date:
-            return msg_dates
-        msg_fact_lt_birth = _(u"Дата захоронения меньше даты рождения")
-        if fact_date and birth_date and birth_date > fact_date:
-            return msg_fact_lt_birth
-        msg_fact_lt_death = _(u"Дата захоронения меньше даты смерти")
-        if fact_date and death_date and death_date > fact_date:
-            return msg_fact_lt_death
-        if instance:
-            if not req_death_date and birth_date and instance.death_date and birth_date > instance.death_date:
-                return msg_dates
-            if not req_birth_date and death_date and instance.birth_date and instance.birth_date > death_date:
-                return msg_dates
-            if hasattr(instance, 'fact_date') and not req_fact_date and \
-               birth_date and instance.fact_date  and instance.fact_date < birth_date:
-                return msg_fact_lt_birth
-            if hasattr(instance, 'fact_date') and not req_fact_date and \
-               death_date and instance.fact_date  and instance.fact_date < death_date:
-                return msg_fact_lt_death
-        return ""
 
 class ApiClientPlacesMixin(CheckLifeDatesMixin):
 

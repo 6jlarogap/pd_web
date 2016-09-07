@@ -11,6 +11,10 @@ from rest_framework.fields import Field
 from rest_api.fields import HyperlinkedFileField
 from orders.models import Order, ProductCategory, Product, Service, Measure, OrgService, OrgServicePrice, \
                           OrderItem, ServiceItem, OrderComment, ResultFile
+from persons.models import OrderDeadPerson
+from persons.serializers import AlivePerson2Serializer, DeadPerson3Serializer
+from burials.models import OrderPlace
+from burials.serializers import OrderPlaceSerializer
 from users.models import Org, is_cabinet_user, is_trade_user, UserPhoto
 from users.serializers import OrgSerializer, OrgShortSerializer, OrgShort3Serializer, OrgShort4Serializer, \
                               OrgShort6Serializer, UserFioSerializer
@@ -19,10 +23,26 @@ from pd.views import ServiceException
 
 class ProductCategorySerializer(serializers.HyperlinkedModelSerializer):
     icon = HyperlinkedFileField()
-    
+
     class Meta:
         model = ProductCategory
         fields = ('id', 'name', 'icon', )
+
+class ProductCategory2Serializer(serializers.ModelSerializer):
+    title = Field(source='name')
+    products = serializers.SerializerMethodField('products_func')
+
+    class Meta:
+        model = ProductCategory
+        fields = ('id', 'title', 'products' )
+
+    def products_func(self, category):
+        return [ dict(id=product.pk, title=product.name, price=product.price) \
+            for product in Product.objects.filter(
+                    productcategory=category,
+                    loru=self.context['request'].user.profile.org,
+                )
+        ]
 
 class ProductsSerializer(serializers.HyperlinkedModelSerializer):
     photo = HyperlinkedFileField()
@@ -129,6 +149,7 @@ class ProductEditSerializer(serializers.HyperlinkedModelSerializer):
     categoryName = serializers.RelatedField(source='productcategory')
     measurementUnit = Field(source='measure')
     isDefault = Field(source='default')
+    stockable = Field(source='stockable')
     retailPrice = Field(source='price')
     currency = serializers.Field(source='loru.currency.code')
     tradePrice = Field(source='price_wholesale')
@@ -142,7 +163,7 @@ class ProductEditSerializer(serializers.HyperlinkedModelSerializer):
             'id', 'name', 'description', 'sku',
             'typeId', 'typeName',
             'categoryId', 'categoryName',
-            'measurementUnit', 'isDefault',
+            'measurementUnit', 'isDefault', 'stockable',
             'retailPrice', 'tradePrice', 'currency',
             'isShownInRetailCatalog', 'isShownInTradeCatalog',
             'imageUrl',
@@ -182,6 +203,12 @@ class ProductEditSerializer(serializers.HyperlinkedModelSerializer):
         # При правке продукта правим только то, что в полях kwargs
         # окажется None
 
+        stockable = str_to_bool_or_None(data.get('stockable'))
+        if stockable is None:
+            if instance:
+                stockable = instance.stockable
+            else:
+                stockable = True
         fields_got = dict(
             loru=self.context['request'].user.profile.org if not instance else None,
             name=data.get('name'),
@@ -191,6 +218,7 @@ class ProductEditSerializer(serializers.HyperlinkedModelSerializer):
             price_wholesale=price_wholesale,
             ptype=data.get('typeId'),
             default=str_to_bool_or_None(data.get('isDefault')),
+            stockable=stockable,
             productcategory=ProductCategory.objects.get(pk=data.get('categoryId')) if data.get('categoryId') else None,
             sku=data.get('sku'),
             is_public_catalog=is_public_catalog,
@@ -299,6 +327,58 @@ class ServiceOrderSerializer(CreatedAtMixin, serializers.ModelSerializer):
                   'totalPrice', 'currency', 'createdAt', 'modifiedAt',
                   'titlePhoto',
         )
+
+class LoruOrderItemSerializer(serializers.ModelSerializer):
+    id = serializers.Field(source='product.pk')
+    title = serializers.Field(source='product.name')
+    price = serializers.Field(source='product.price')
+    amount = serializers.Field(source='quantity_round')
+    discount = serializers.Field(source='discount_round')
+
+    class Meta:
+        model = OrderItem
+        fields = ('id', 'title', 'price', 'amount', 'discount', )
+
+class LoruOrderSerializer(CreatedAtMixin, serializers.ModelSerializer):
+    number = serializers.Field(source='number_verbose')
+    createdDate = serializers.DateField(source='dt', format="%d.%m.%Y")
+    dueDate = serializers.DateField(source='dt_due', format="%d.%m.%Y")
+    customer = AlivePerson2Serializer(source='applicant')
+    deadman = serializers.SerializerMethodField('deadman_func')
+    place = serializers.SerializerMethodField('place_func')
+    createdAt = serializers.SerializerMethodField('createdAt_func')
+    modifiedAt = serializers.SerializerMethodField('modifiedAt_func')
+    totalPrice = serializers.Field(source='total_float')
+    currency = serializers.Field(source='loru.currency.code')
+    products = serializers.SerializerMethodField('products_func')
+
+    class Meta:
+        model = Order
+        fields = ('id', 'number', 'createdDate', 'dueDate',
+                  'customer', 'deadman', 'place', 'products',
+                  'createdAt', 'modifiedAt', 'totalPrice', 'currency',
+        )
+
+    def deadman_func(self, instance):
+        deadman = None
+        try:
+            deadman = instance.orderdeadperson
+        except OrderDeadPerson.DoesNotExist:
+             deadman = instance.burial and instance.burial.deadman
+        return deadman and DeadPerson3Serializer(deadman).data
+        
+    def place_func(self, instance):
+        try:
+            orderplace = instance.orderplace
+        except (OrderPlace.DoesNotExist, AttributeError,):
+            return None
+        return OrderPlaceSerializer(orderplace).data
+
+    def products_func(self, instance):
+        return [
+            LoruOrderItemSerializer(orderitem).data \
+            for orderitem in OrderItem.objects.filter(order=instance).order_by('pk')
+        ]
 
 class OrderSerializer(CreatedAtMixin, serializers.ModelSerializer):
     type = serializers.Field(source='service_name')

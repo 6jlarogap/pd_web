@@ -9,7 +9,7 @@ from rest_framework.fields import Field, TimeField
 
 from burials.models import Cemetery, Place, Area, Grave, Burial, AreaPhoto, BurialFiles, ExhumationRequest, \
     AreaPurpose, PlaceSize, PlaceStatus, CemeteryCoordinates, AreaCoordinates, PlaceSize, PlacePhoto, \
-    Reason, CemeteryPhoto, CemeterySchema
+    Reason, CemeteryPhoto, CemeterySchema, OrderPlace
 
 from geo.models import Location
 from geo.serializers import AddressLatLonMixin
@@ -355,6 +355,18 @@ class PlaceSizeSerializer(serializers.ModelSerializer):
         model = PlaceSize
         fields = ('graves_count', 'place_length', 'place_width')
       
+class OrderPlaceSerializer(serializers.ModelSerializer):
+    cemeteryId = serializers.Field('cemetery.id')
+    cemeteryText = serializers.Field('cemetery_text')
+    areaId = serializers.Field('area.id')
+    placeNumber = serializers.Field('place')
+
+    class Meta:
+        model = OrderPlace
+        fields = (
+            'cemeteryId', 'cemeteryText', 'areaId', 'row',
+            'placeNumber', 'size'
+        )
 
 class ArchCemeterySerializer(serializers.ModelSerializer):
     time_begin = TimeField()

@@ -17,6 +17,7 @@ urlpatterns = patterns('orders.views',
     url(r'^order/(?P<pk>\d+)/services/$', 'order_services', name='order_services'),
     url(r'^order/(?P<pk>\d+)/info/$', 'order_info', name='order_info'),
     url(r'^order/(?P<pk>\d+)/print/$', 'order_print', name='order_print'),
+    url(r'^order/(?P<pk>\d+)/receipt/print/$', 'order_receipt_print', name='order_receipt_print'),
     url(r'^order/(?P<pk>\d+)/contract/$', 'order_contract', name='order_contract'),
     url(r'^order/(?P<pk>\d+)/comment/$', 'order_comment', name='order_comment'),
     url(r'^order/(?P<pk>\d+)/annulate/$', 'order_annulate', name='order_annulate'),
@@ -26,6 +27,10 @@ urlpatterns = patterns('orders.views',
     url(r'^api/loru/product_types/?$', 'api_loru_product_types', name='api_loru_product_types'),
     url(r'^api/loru/products_management/products/?$', 'api_product_list', name='api_product_list'),
     url(r'^api/loru/products_management/products/(?P<pk>\d+)/?$', 'api_product_detail', name='api_product_detail'),
+
+    url(r'^api/loru/orders/?$', 'api_loru_orders', name='api_loru_orders'),
+    url(r'^api/loru/orders/(?P<pk>\d+)/?$', 'api_loru_orders_detail', name='api_loru_orders_detail'),
+    url(r'^api/loru/categories/?$', 'api_loru_categories', name='api_loru_categories'),
 
     url(r'^api/catalog/products/(?P<product_slug>[\w-]+)/?$', 'api_catalog_products_detail', name='api_catalog_products_detail'),
 

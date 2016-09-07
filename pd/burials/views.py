@@ -36,7 +36,8 @@ from burials.models import Cemetery, Place, Area, BurialFiles, Grave, Burial, Bu
 from burials.burials_views import *
 from logs.models import write_log, log_object, prepare_m2m_log, compare_obj, LogOperation
 from django.contrib.auth.models import User
-from users.models import Profile, Org, CustomerProfile, PermitIfUgh, Role
+from users.models import Profile, Org, CustomerProfile, PermitIfUgh, PermitIfTrade, Role, \
+                         is_loru_user, is_ugh_user
 from users.views import SupervisorRequiredMixin, UGHRequiredMixin, UghOrLoruRequiredMixin, ApiClientSiteMixin
 from persons.models import Phone, AlivePerson, CustomPlace
 from geo.models import Location
@@ -1648,6 +1649,48 @@ class ApiOmsCemeteriesAreasView(APIView):
         )
 
 api_oms_cemeteries_areas = ApiOmsCemeteriesAreasView.as_view()
+
+class TradeCemeteriesMixin(object):
+
+    def available_cemeteries(self, user):
+        if is_loru_user(user):
+            qs = Q(ugh__loru_list__loru=user.profile.org)
+        elif is_ugh_user(user):
+            qs = Q(ugh=user.profile.org)
+        else:
+            return []
+        return Cemetery.objects.filter(qs)
+
+class ApiLoruCemeteriesView(TradeCemeteriesMixin, APIView):
+    permission_classes = (PermitIfTrade,)
+
+    def get(self, request):
+        cemeteries = self.available_cemeteries(request.user)
+        return Response(
+            status=200,
+            data=[ CemeteryTitleSerializer(cemetery).data \
+                   for cemetery in cemeteries
+            ]
+        )
+
+api_loru_cemeteries = ApiLoruCemeteriesView.as_view()
+
+class ApiLoruCemeteriesAreasView(TradeCemeteriesMixin, APIView):
+    permission_classes = (PermitIfTrade,)
+
+    def get(self, request, pk):
+        cemetery = get_object_or_404(Cemetery, pk=pk)
+        cemeteries = self.available_cemeteries(request.user)
+        if cemetery not in cemeteries:
+            raise Http404
+        return Response(
+            status=200,
+            data=[ AreaTitleSerializer(area).data \
+                   for area in Area.objects.filter(cemetery=cemetery)
+            ]
+        )
+
+api_loru_cemeteries_areas = ApiLoruCemeteriesAreasView.as_view()
 
 class ApiOmsAreasPlacesView(APIView):
     permission_classes = (PermitIfUgh,)

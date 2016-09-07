@@ -1,0 +1,208 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="ru" lang="ru">
+{% load counter %}
+{% load pytils_numeral %}
+{% load pytils_dt %}
+<HTML>
+<HEAD>
+
+    <META HTTP-EQUIV="CONTENT-TYPE" CONTENT="text/html; charset=utf-8">
+    <TITLE>Квитанция покупателя</TITLE>
+
+    <STYLE>
+        <!--
+        BODY, DIV, TABLE, THEAD, TBODY, TFOOT, TR, TH, TD, P {
+            font-family: "Arial";
+            font-size: x-small
+        }
+        -->
+    </STYLE>
+
+</HEAD>
+
+<BODY TEXT="#000000">
+
+<!-- Квитанция-договор -->
+
+<TABLE FRAME=VOID CELLSPACING=0 COLS=6 RULES=NONE BORDER=0>
+    <COLGROUP>
+        <COL style="width:10mm">
+        <COL style="width:13mm">
+        <COL style="width:86mm">
+        <COL style="width:11mm">
+        <COL style="width:24mm">
+        <COL style="width:26mm">
+    </COLGROUP>
+    <TBODY>
+    <TR>
+        <TD COLSPAN=4>
+            <B>{{ user.profile.org.full_name|default:"Полное название организации" }}</B>
+         </TD>
+    </TR>
+        <TD COLSPAN=4>
+            {{ user.profile.org.off_address|default_if_none:"Адрес организации" }}
+        </TD>
+    </TR>
+    </TR>
+        <TD COLSPAN=4>
+            Тел: {{ user.profile.org.phones|default_if_none:"" }}
+        </TD>
+    </TR>
+    <TR>
+        <TD COLSPAN=4>
+            <B><FONT SIZE=4>КВИТАНЦИЯ-ДОГОВОР</FONT></B>
+            №
+            <B><FONT SIZE=3>{{ order.loru_number|default_if_none:"" }}</FONT></B>
+            от {{ now|ru_strftime:"&laquo;%d&raquo; %B %Y"|safe }}г.
+         </TD>
+    </TR>
+    <TR>
+        <TD COLSPAN=4>
+            <B>Заказчик:</B> разовый
+         </TD>
+    </TR>
+    <TR>
+        <TD COLSPAN=4 STYLE="border-bottom: 1px solid">
+            Тел:
+            _____________
+            Адрес:
+            _________________________________
+         </TD>
+    </TR>
+    <TR>
+        <TD STYLE="border-top: 1px solid; border-left: 1px solid; border-bottom: 1px solid;" ALIGN=CENTER>
+            № п/п
+        </TD>
+        <TD STYLE="border-top: 1px solid; border-left: 1px solid; border-bottom: 1px solid;" ALIGN=CENTER>
+            Артикул
+        </TD>
+        <TD STYLE="border-top: 1px solid; border-left: 1px solid; border-bottom: 1px solid;" ALIGN=CENTER>
+            Наименование
+        </TD>
+        <TD STYLE="border-top: 1px solid; border-left: 1px solid; border-bottom: 1px solid;" ALIGN=CENTER>
+            Кол-во
+        </TD>
+        <TD STYLE="border-top: 1px solid; border-left: 1px solid; border-bottom: 1px solid;" ALIGN=CENTER>
+            Цена
+        </TD>
+        <TD STYLE="border-top: 1px solid; border-left: 1px solid; border-right: 1px solid; border-bottom: 1px solid;" ALIGN=CENTER>
+            Сумма
+        </TD>
+    </TR>
+    {% counter reset %}
+    {% for p in order.orderitem_set.all %}
+        <TR>
+            <TD STYLE="border-left: 1px solid; border-bottom: 1px solid;" ALIGN=CENTER>
+                {% counter %}
+            </TD>
+            <TD STYLE="border-left: 1px solid; border-bottom: 1px solid;" ALIGN=CENTER>
+                {{ p.product.sku }}
+            </TD>
+            <TD STYLE="border-left: 1px solid; border-bottom: 1px solid; padding-left:0.5em;">
+                {{ p.product.name }}
+            </TD>
+            <TD STYLE="border-left: 1px solid; border-bottom: 1px solid;" ALIGN=CENTER>
+                {{ p.quantity_round }}
+            </TD>
+            <TD STYLE="border-left: 1px solid; border-bottom: 1px solid; padding-right:0.5em;" ALIGN=right>
+                {{ p.cost|floatformat:"2" }}
+            </TD>
+            <TD STYLE="border-left: 1px solid; border-bottom: 1px solid; border-right: 1px solid; padding-right:0.5em;" ALIGN=right>
+                {{ p.total|floatformat:"2" }}
+            </TD>
+        </TR>
+    {% endfor %}
+    {% for s in order.serviceitem_set.all %}
+        <TR>
+            <TD STYLE="border-left: 1px solid; border-bottom: 1px solid;" ALIGN=CENTER>
+                {% counter %}
+            </TD>
+            <TD STYLE="border-left: 1px solid; border-bottom: 1px solid;" ALIGN=CENTER>
+                <br />
+            </TD>
+            <TD STYLE="border-left: 1px solid; border-bottom: 1px solid; padding-left:0.5em;">
+                {{ s.orgservice.service.title }}
+            </TD>
+            <TD STYLE="border-left: 1px solid; border-bottom: 1px solid;" ALIGN=CENTER>
+                <br />
+            </TD>
+            <TD STYLE="border-left: 1px solid; border-bottom: 1px solid; padding-right:0.5em;" ALIGN=right>
+                <br />
+            </TD>
+            <TD STYLE="border-left: 1px solid; border-bottom: 1px solid; border-right: 1px solid; padding-right:0.5em;" ALIGN=right>
+                {{ s.cost|floatformat:"2" }}
+            </TD>
+        </TR>
+    {% endfor %}
+    <TR>
+        <TD COLSPAN=6>
+            <B>Итого
+            {% if order.total %}
+                {{ order.total_float|floatformat:"2" }}
+            {% else %}
+            _____________
+            {% endif %}
+            {% if order.total_float %}
+                ({{ order.total_int|rubles|capfirst }} {{ order.total_copecks }} коп.)
+            {% endif %}
+            </B>
+         </TD>
+    </TR>
+    <TR>
+        <TD COLSPAN=6>
+            <BR />
+         </TD>
+    </TR>
+    <TR>
+        <TD COLSPAN=6>
+            <B>Ответственный за исполнение заказа</B> ______________________________ (должность, ФИО, подпись)
+         </TD>
+    </TR>
+    <TR>
+        <TD COLSPAN=4>
+            С объемом работ согласен ______________________________
+         </TD>
+        <TD COLSPAN=2>
+            Подпись заказчика
+         </TD>
+    </TR>
+    <TR>
+        <TD COLSPAN=6>
+            <B>Оплачено</B>: наличными денежными средствами _____________ руб. _____ коп. 
+         </TD>
+    </TR>
+    <TR>
+        <TD COLSPAN=6>
+            <B>Получено</B>: ____________________________ &nbsp; Дата осуществления расчета _____________
+         </TD>
+    </TR>
+    <TR>
+        <TD COLSPAN=6>
+            &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <I>должность, ФИО, подпись</I>
+         </TD>
+    </TR>
+    <TR>
+        <TD COLSPAN=6>
+            <B>Заказ выполнен полностью, полученную с меня сумму подтверждаю</B>
+         </TD>
+    </TR>
+    <TR>
+        <TD COLSPAN=6>
+            _____________________________________________________________ (подпись заказчика, дата)
+         </TD>
+    </TR>
+    </TBODY>
+</TABLE>
+
+
+{% if print_now %}
+    <script type="text/javascript">
+        window.onload = function () {
+            window.print();
+        }
+    </script>
+{% endif %}
+</BODY>
+
+</HTML>

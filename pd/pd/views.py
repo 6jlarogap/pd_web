@@ -126,8 +126,12 @@ def is_url_accessible_anonymous(request):
         what = m.group(1)
         pk = m.group(2)
         if what == 'place-photos':
-            place_photo = get_model('burials', 'PlacePhoto').objects.filter(pk=pk)[0]
-            result = place_photo.is_accessible_anonymous()
+            try:
+                place_photo = get_model('burials', 'PlacePhoto').objects.filter(pk=pk)[0]
+            except IndexError:
+                pass
+            else:
+                result = place_photo.is_accessible_anonymous()
     return result
 
 def media_xsendfile(request, path, document_root):

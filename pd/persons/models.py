@@ -139,18 +139,6 @@ class BasePerson(PersonMixin, models.Model):
         self.middle_name = capitalize(self.middle_name).strip('*')
         super(BasePerson, self).save(*args, **kwargs)
 
-    class Meta:
-        ordering = ['last_name', 'first_name', 'middle_name', ]
-        verbose_name = _(u"физ. лицо")
-        verbose_name_plural = _(u"физ. лица")
-
-class DeadPerson(BasePerson):
-    """
-    Мертвое ФЛ
-    """
-    # serialize=False - не выгружать значение поля в фикстуры. Для этого типа поля не описан сериализатор
-    death_date = UnclearDateModelField(_(u"Дата смерти"), serialize=False, blank=True, null=True)
-
     def get_birth_date(self):
         if not self.birth_date:
             return None
@@ -174,6 +162,13 @@ class DeadPerson(BasePerson):
     def unclear_birth_date_str(self):
         return self.unclear_birth_date and self.unclear_birth_date.strftime('%d.%m.%Y') or ''
 
+    class Meta:
+        ordering = ['last_name', 'first_name', 'middle_name', ]
+        verbose_name = _(u"физ. лицо")
+        verbose_name_plural = _(u"физ. лица")
+
+class DeadPersonMixin(object):
+
     def get_death_date(self):
         if not self.death_date:
             return None
@@ -194,6 +189,13 @@ class DeadPerson(BasePerson):
 
     unclear_death_date = property(get_death_date, set_death_date)
 
+class DeadPerson(DeadPersonMixin, BasePerson):
+    """
+    Мертвое ФЛ
+    """
+    # serialize=False - не выгружать значение поля в фикстуры. Для этого типа поля не описан сериализатор
+    death_date = UnclearDateModelField(_(u"Дата смерти"), serialize=False, blank=True, null=True)
+
     def delete(self):
         try:
             self.deathcertificate.delete()
@@ -203,6 +205,14 @@ class DeadPerson(BasePerson):
             super(DeadPerson, self).delete()
         except (ProtectedError, BasePerson.DoesNotExist,):
             pass
+
+class OrderDeadPerson(DeadPersonMixin, BasePerson):
+    """
+    Усопший, указываемый при заказе, для которого еще не сделано захоронение
+    """
+    # serialize=False - не выгружать значение поля в фикстуры. Для этого типа поля не описан сериализатор
+    order = models.OneToOneField('orders.Order', verbose_name=_(u"Заказ"))
+    death_date = UnclearDateModelField(_(u"Дата смерти"), serialize=False, blank=True, null=True)
 
 class AlivePerson(BasePerson, PhonesMixin):
     """
