@@ -64,7 +64,7 @@ from orders.serializers import ProductCategorySerializer, ProductsSerializer, Pr
 
 from rest_api.fields import UnclearDateFieldSerializer, UnclearDateFieldMixin
 from pd.utils import EmailMessage, str_to_bool_or_None, get_image, is_video, re_search
-from pd.models import validate_phone_as_number, CheckLifeDatesMixin
+from pd.models import validate_phone_as_number, CheckLifeDatesMixin, SafeDeleteMixin
 
 from sms_service.utils import send_sms
 
@@ -2523,7 +2523,13 @@ class ApiLoruCategoriesView(APIView):
 
 api_loru_categories = ApiLoruCategoriesView.as_view()
 
-class ApiLoruOrdersDetailView(CheckLifeDatesMixin, UnclearDateFieldMixin, TradeCemeteriesMixin, APIView):
+class ApiLoruOrdersDetailView(
+    SafeDeleteMixin,
+    CheckLifeDatesMixin,
+    UnclearDateFieldMixin,
+    TradeCemeteriesMixin,
+    APIView
+):
     permission_classes = (PermitIfTrade,)
 
     def get(self, request, pk):
@@ -2561,45 +2567,48 @@ class ApiLoruOrdersDetailView(CheckLifeDatesMixin, UnclearDateFieldMixin, TradeC
                     order_save = True
             if 'customer' in request.DATA:
                 customer = request.DATA['customer']
-                if order.applicant:
-                    applicant = order.applicant
-                    mapping = (
-                        ('lastName', 'last_name',),
-                        ('firstName', 'first_name',),
-                        ('middleName', 'middle_name',),
-                        ('phoneNumber', 'phones',),
-                    )
-                    applicant_save = False
-                    for req, field in mapping:
-                        if req in customer and getattr(applicant, field) != customer[req]:
-                            applicant_save = True
-                            setattr(applicant, field, customer[req])
-                    if 'address' in customer:
-                        if applicant.address:
-                            if applicant.address.addr_str != customer['address']:
-                                applicant.address.addr_str = customer['address']
-                                applicant.address.save()
-                        else:
-                            applicant.address = Location.objects.create(addr_str=customer['address'])
-                            applicant_save = True
-                    if applicant_save:
-                        applicant.save()
+                if customer is None:
+                    self.safe_delete('applicant', order)
                 else:
-                    if customer.get('address'):
-                        address = Location.objects.create(addr_str=customer['address'])
+                    if order.applicant:
+                        applicant = order.applicant
+                        mapping = (
+                            ('lastName', 'last_name',),
+                            ('firstName', 'first_name',),
+                            ('middleName', 'middle_name',),
+                            ('phoneNumber', 'phones',),
+                        )
+                        applicant_save = False
+                        for req, field in mapping:
+                            if req in customer and getattr(applicant, field) != customer[req]:
+                                applicant_save = True
+                                setattr(applicant, field, customer[req])
+                        if 'address' in customer:
+                            if applicant.address:
+                                if applicant.address.addr_str != customer['address']:
+                                    applicant.address.addr_str = customer['address']
+                                    applicant.address.save()
+                            else:
+                                applicant.address = Location.objects.create(addr_str=customer['address'])
+                                applicant_save = True
+                        if applicant_save:
+                            applicant.save()
                     else:
-                        address = None
-                    applicant = AlivePerson.objects.create(
-                        last_name=customer.get('lastName', ''),
-                        first_name=customer.get('firstName', ''),
-                        middle_name=customer.get('middleName', ''),
-                        phones=customer.get('phoneNumber', ''),
-                        address=address,
-                    )
-                    order.applicant = applicant
-                    order_save = True
+                        if customer.get('address'):
+                            address = Location.objects.create(addr_str=customer['address'])
+                        else:
+                            address = None
+                        applicant = AlivePerson.objects.create(
+                            last_name=customer.get('lastName', ''),
+                            first_name=customer.get('firstName', ''),
+                            middle_name=customer.get('middleName', ''),
+                            phones=customer.get('phoneNumber', ''),
+                            address=address,
+                        )
+                        order.applicant = applicant
+                        order_save = True
             if 'products' in request.DATA:
-                products = request.DATA['products']
+                products = request.DATA['products'] or []
                 for item in OrderItem.objects.filter(order=order):
                     item.delete()
                 for item in products:
@@ -2623,33 +2632,38 @@ class ApiLoruOrdersDetailView(CheckLifeDatesMixin, UnclearDateFieldMixin, TradeC
                     instance = order.orderdeadperson
                 except (OrderDeadPerson.DoesNotExist, AttributeError,):
                     instance = None
-                message = self.check_life_dates(
-                    person=deadman,
-                    instance=instance,
-                    format='d.m.y',
-                )
-                if message:
-                    raise ServiceException(message)
-                if instance:
-                    mapping = (
-                        ('lastName', 'last_name',),
-                        ('firstName', 'first_name',),
-                        ('middleName', 'middle_name',),
+                if deadman is not None:
+                    message = self.check_life_dates(
+                        person=deadman,
+                        instance=instance,
+                        format='d.m.y',
                     )
-                    deadman_save = False
-                    for req, field in mapping:
-                        if req in deadman and getattr(instance, field) != deadman[req]:
+                    if message:
+                        raise ServiceException(message)
+                if instance:
+                    if deadman is None:
+                        print 'here'
+                        instance.delete()
+                    else:
+                        mapping = (
+                            ('lastName', 'last_name',),
+                            ('firstName', 'first_name',),
+                            ('middleName', 'middle_name',),
+                        )
+                        deadman_save = False
+                        for req, field in mapping:
+                            if req in deadman and getattr(instance, field) != deadman[req]:
+                                deadman_save = True
+                                setattr(instance, field, deadman[req])
+                        if 'dob' in deadman:
+                            instance.birth_date = self.set_unclear_date(deadman['dob'], format='d.m.y')
                             deadman_save = True
-                            setattr(instance, field, deadman[req])
-                    if 'dob' in deadman:
-                        instance.birth_date = self.set_unclear_date(deadman['dob'], format='d.m.y')
-                        deadman_save = True
-                    if 'dod' in deadman:
-                        instance.death_date = self.set_unclear_date(deadman['dod'], format='d.m.y')
-                        deadman_save = True
-                    if deadman_save:
-                        instance.save()
-                else:
+                        if 'dod' in deadman:
+                            instance.death_date = self.set_unclear_date(deadman['dod'], format='d.m.y')
+                            deadman_save = True
+                        if deadman_save:
+                            instance.save()
+                elif deadman is not None:
                     deadman = OrderDeadPerson.objects.create(
                         order=order,
                         last_name=deadman.get('lastName',''),
