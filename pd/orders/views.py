@@ -2429,6 +2429,7 @@ class ApiLoruOrdersView(CheckLifeDatesMixin, UnclearDateFieldMixin, TradeCemeter
                 applicant=applicant,
                 dt=dt or datetime.date.today(),
                 dt_due=dt_due,
+                type=Order.TYPE_FUNERAL,
             )
             deadman = request.DATA.get('deadman')
             if deadman:
