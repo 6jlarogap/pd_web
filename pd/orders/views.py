@@ -2583,7 +2583,7 @@ class ApiLoruOrdersDetailView(
                             if req in customer and getattr(applicant, field) != customer[req]:
                                 applicant_save = True
                                 setattr(applicant, field, customer[req])
-                        if 'address' in customer:
+                        if customer.get('address'):
                             if applicant.address:
                                 if applicant.address.addr_str != customer['address']:
                                     applicant.address.addr_str = customer['address']
@@ -2591,6 +2591,8 @@ class ApiLoruOrdersDetailView(
                             else:
                                 applicant.address = Location.objects.create(addr_str=customer['address'])
                                 applicant_save = True
+                        elif 'address' in customer and applicant.address:
+                            self.safe_delete('address', applicant)
                         if applicant_save:
                             applicant.save()
                     else:
