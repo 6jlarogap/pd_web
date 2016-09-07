@@ -659,6 +659,7 @@ class PrintOrderView(LORURequiredMixin, DetailView):
             customerprofile=customerprofile,
             deadman=deadman,
             password=password,
+            print_now=True,
         ))
         report = make_report(
             user=self.request.user,
