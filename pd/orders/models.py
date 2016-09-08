@@ -438,7 +438,7 @@ class Order(GetLogsMixin, BaseModel):
         return u"%d-%d-%d" % (
             self.dt.year,
             self.loru.pk,
-            self.number,
+            self.number or 0,
         )
 
     number_webpay = number_verbose

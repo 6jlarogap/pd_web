@@ -50,10 +50,10 @@
         </TD>
     </TR>
     <TR>
-        <TD COLSPAN=4>
-            <B><FONT SIZE=4>КВИТАНЦИЯ-ДОГОВОР</FONT></B>
+        <TD COLSPAN=5>
+            <B><FONT SIZE=3>КВИТАНЦИЯ-ДОГОВОР</FONT></B>
             №
-            <B><FONT SIZE=3>{{ order.loru_number|default_if_none:"" }}</FONT></B>
+            <B><FONT SIZE=2>{{ order.number_verbose }}</FONT></B>
             от {{ now|ru_strftime:"&laquo;%d&raquo; %B %Y"|safe }}г.
          </TD>
     </TR>
@@ -309,9 +309,9 @@
     </TR>
     <TR>
         <TD COLSPAN=3>
-            <B><FONT SIZE=4>НАРЯД-ЗАКАЗ</FONT></B>
+            <B><FONT SIZE=3>НАРЯД-ЗАКАЗ</FONT></B>
             №
-            <B><FONT SIZE=3>{{ order.loru_number|default_if_none:"" }}</FONT></B>
+            <B><FONT SIZE=2>{{ order.number_verbose }}</FONT></B>
             от {{ now|ru_strftime:"&laquo;%d&raquo; %B %Y"|safe }}г.
          </TD>
     </TR>
@@ -441,7 +441,7 @@
         </TR>
         <TR>
             <TD ROWSPAN=2 COLSPAN=4 ALIGN="CENTER">
-                <B>Наряд № {{ order.loru_number }}/грузчики</B>
+                <B>Наряд № {{ order.number_verbose }}/грузчики</B>
             </TD>
         </TR>
         <TR style="height:2mm;">
@@ -541,7 +541,7 @@
         </TR>
         <TR>
             <TD ROWSPAN=2 COLSPAN=4 ALIGN="CENTER">
-                <B>Наряд № {{ order.loru_number }}/катафалк</B>
+                <B>Наряд № {{ order.number_verbose }}/катафалк</B>
             </TD>
         </TR>
         <TR style="height:2mm;">
@@ -642,7 +642,7 @@
     </TR>
     <TR>
         <TD ROWSPAN=2 COLSPAN=4 ALIGN="CENTER">
-            <B>Наряд № {{ order.loru_number }}/тр-рт-повкомф</B>
+            <B>Наряд № {{ order.number_verbose }}/тр-рт-повкомф</B>
         </TD>
     </TR>
     <TR style="height:2mm;">
